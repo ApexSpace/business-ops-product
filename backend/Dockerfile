@@ -13,6 +13,8 @@ RUN npm install -g pnpm@9.15.0
 
 # Install deps first (better layer caching)
 COPY package.json pnpm-lock.yaml ./
+# Prisma runs during postinstall ("prisma generate"), so schema must exist before pnpm install
+COPY prisma ./prisma
 RUN pnpm install --frozen-lockfile
 
 # Copy source and build
