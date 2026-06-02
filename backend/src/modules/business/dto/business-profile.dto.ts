@@ -1,16 +1,43 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { BusinessStatus } from '@prisma/client';
+import { Type } from 'class-transformer';
 import {
+  IsBoolean,
   IsEmail,
   IsEnum,
+  IsNumber,
   IsOptional,
   IsString,
   IsUrl,
   IsUUID,
+  Max,
   MaxLength,
+  Min,
   MinLength,
   ValidateIf,
+  ValidateNested,
 } from 'class-validator';
+
+export class TaxesAndCurrencyProfileDto {
+  @ApiPropertyOptional({ example: 'USD' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(3)
+  currencyCode?: string;
+
+  @ApiPropertyOptional({ example: 8, minimum: 0, maximum: 100 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
+  @Max(100)
+  defaultTaxRate?: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  pricesIncludeTax?: boolean;
+}
 
 export class BusinessProfileDto {
   @ApiPropertyOptional()
@@ -109,6 +136,12 @@ export class CreateBusinessDto extends BusinessProfileDto {
   @MinLength(2)
   @MaxLength(200)
   name!: string;
+
+  @ApiPropertyOptional({ type: TaxesAndCurrencyProfileDto })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => TaxesAndCurrencyProfileDto)
+  taxesAndCurrency?: TaxesAndCurrencyProfileDto;
 }
 
 export class UpdateBusinessDto extends BusinessProfileDto {
@@ -118,4 +151,23 @@ export class UpdateBusinessDto extends BusinessProfileDto {
   @MinLength(2)
   @MaxLength(200)
   name?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @ValidateIf((_, v) => v !== '' && v != null)
+  @IsUrl({ require_protocol: true })
+  @MaxLength(500)
+  logoUrl?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  addressLine2?: string;
+
+  @ApiPropertyOptional({ type: TaxesAndCurrencyProfileDto })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => TaxesAndCurrencyProfileDto)
+  taxesAndCurrency?: TaxesAndCurrencyProfileDto;
 }

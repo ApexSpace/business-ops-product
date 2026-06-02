@@ -2,6 +2,7 @@ export interface IndustryLabels {
   contacts: string;
   pipelines: string;
   leads: string;
+  workItems: string;
   appointments: string;
   conversations: string;
 }
@@ -20,6 +21,7 @@ export const DEFAULT_INDUSTRY_LABELS: IndustryLabels = {
   contacts: 'Contacts',
   pipelines: 'Pipelines',
   leads: 'Leads',
+  workItems: 'Work Items',
   appointments: 'Appointments',
   conversations: 'Conversations',
 };

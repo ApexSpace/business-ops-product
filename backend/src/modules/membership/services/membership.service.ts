@@ -11,6 +11,7 @@ import { RequestUser } from '../../../common/decorators/current-user.decorator';
 import { AppException } from '../../../common/exceptions/app.exception';
 import { ErrorCode } from '../../../common/exceptions/error-code.enum';
 import { RootConfig } from '../../../config/configuration';
+import { PrismaService } from '../../../core/database/prisma.service';
 import { AuditService } from '../../audit/services/audit.service';
 import { UserRepository } from '../../auth/repositories/user.repository';
 import { BusinessRepository } from '../../business/repositories/business.repository';
@@ -18,6 +19,7 @@ import { getPaginationParams } from '../../../common/utils/pagination.util';
 import { InviteMemberDto } from '../dto/invite-member.dto';
 import { ListMembersQueryDto } from '../dto/list-members-query.dto';
 import { UpdateMemberDto } from '../dto/update-member.dto';
+import { SetBusinessOwnerDto } from '../dto/set-owner.dto';
 import {
   InviteMemberResponseDto,
   MemberResponseDto,
@@ -32,6 +34,7 @@ export class MembershipService {
     private readonly businessRepository: BusinessRepository,
     private readonly auditService: AuditService,
     private readonly configService: ConfigService<RootConfig, true>,
+    private readonly prisma: PrismaService,
   ) {}
 
   async listForBusiness(
@@ -67,6 +70,106 @@ export class MembershipService {
     const members =
       await this.membershipRepository.findByBusinessId(businessId);
     return members.map((m) => this.toMemberResponse(m));
+  }
+
+  async setOwnerForPlatform(
+    businessId: string,
+    dto: SetBusinessOwnerDto,
+    actor: RequestUser,
+  ): Promise<MemberResponseDto> {
+    const business = await this.businessRepository.findById(businessId);
+    if (!business) {
+      throw new AppException(
+        ErrorCode.BUSINESS_NOT_FOUND,
+        'Business not found',
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    const ownerCount = await this.membershipRepository.countOwners(businessId);
+    if (ownerCount > 0) {
+      throw new AppException(
+        ErrorCode.OWNER_ALREADY_EXISTS,
+        'Business already has an owner',
+        HttpStatus.CONFLICT,
+      );
+    }
+
+    const rounds = this.configService.get('auth.bcryptRounds', { infer: true });
+    const passwordHash = await bcrypt.hash(dto.password, rounds);
+    const email = dto.email.trim().toLowerCase();
+
+    const membershipId = await this.prisma.$transaction(async (tx) => {
+      let user = await tx.user.findUnique({ where: { email } });
+      if (!user) {
+        user = await tx.user.create({
+          data: {
+            email,
+            passwordHash,
+            firstName: dto.firstName?.trim() || undefined,
+            lastName: dto.lastName?.trim() || undefined,
+            status: UserStatus.ACTIVE,
+          },
+        });
+      } else {
+        await tx.user.update({
+          where: { id: user.id },
+          data: {
+            passwordHash,
+            ...(dto.firstName !== undefined
+              ? { firstName: dto.firstName?.trim() || null }
+              : {}),
+            ...(dto.lastName !== undefined
+              ? { lastName: dto.lastName?.trim() || null }
+              : {}),
+            status: UserStatus.ACTIVE,
+          },
+        });
+      }
+
+      const existing = await tx.businessMembership.findUnique({
+        where: { userId_businessId: { userId: user.id, businessId } },
+      });
+
+      if (existing) {
+        const updated = await tx.businessMembership.update({
+          where: { id: existing.id },
+          data: {
+            role: BusinessMemberRole.OWNER,
+            status: MembershipStatus.ACTIVE,
+            joinedAt: existing.joinedAt ?? new Date(),
+            deletedAt: null,
+            inviteToken: null,
+            invitedBy: { connect: { id: actor.id } },
+          },
+        });
+        return updated.id;
+      }
+
+      const created = await tx.businessMembership.create({
+        data: {
+          user: { connect: { id: user.id } },
+          business: { connect: { id: businessId } },
+          role: BusinessMemberRole.OWNER,
+          status: MembershipStatus.ACTIVE,
+          joinedAt: new Date(),
+          invitedBy: { connect: { id: actor.id } },
+        },
+      });
+      return created.id;
+    });
+
+    await this.auditService.log({
+      actorUserId: actor.id,
+      businessId,
+      action: 'membership.owner.set',
+      entityType: 'BusinessMembership',
+      entityId: membershipId,
+      metadata: { email, role: BusinessMemberRole.OWNER },
+    });
+
+    const withUser = await this.membershipRepository.findById(membershipId);
+    return this.toMemberResponse(withUser!);
   }
 
   async invite(
@@ -135,8 +238,8 @@ export class MembershipService {
           invitedBy: { connect: { id: actor.id } },
         });
 
-    const baseUrl = this.configService.get('app.baseUrl', { infer: true });
-    const inviteLink = `${baseUrl}/accept-invite?token=${inviteToken}`;
+    const frontendUrl = this.configService.get('app.frontendUrl', { infer: true });
+    const inviteLink = `${frontendUrl}/accept-invite?token=${inviteToken}`;
 
     await this.auditService.log({
       actorUserId: actor.id,

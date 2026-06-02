@@ -4,6 +4,7 @@ import {
   BusinessMemberRole,
   BusinessStatus,
   MembershipStatus,
+  PlatformMemberRole,
   UserStatus,
 } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
@@ -23,6 +24,7 @@ import { UserRepository, UserWithRelations } from '../repositories/user.reposito
 import { PipelineProvisioningService } from '../../pipelines/services/pipeline-provisioning.service';
 import { IndustriesService } from '../../industries/services/industries.service';
 import { TokenService } from './token.service';
+import { resolvePlatformBusinessRole } from '../utils/platform-business-access.util';
 
 export interface AuthContextItem {
   type: AuthContext;
@@ -454,12 +456,18 @@ export class AuthService {
       );
 
     if (this.hasActivePlatformMembership(user)) {
+      const platformRole = user.platformMembership!.role;
+      const businessRole = resolvePlatformBusinessRole(
+        platformRole,
+        membership?.role,
+      );
       return {
         sub: userId,
         email: user.email,
         context: 'business',
         businessId,
-        businessRole: membership?.role ?? BusinessMemberRole.ADMIN,
+        platformRole,
+        businessRole,
       };
     }
 

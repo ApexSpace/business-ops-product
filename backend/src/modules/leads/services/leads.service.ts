@@ -46,6 +46,7 @@ export class LeadsService {
       pipelineStageId: query.pipelineStageId,
       assignedToId: query.assignedToId,
       status: query.status,
+      contactId: query.contactId,
     });
     return {
       items: items.map(toLeadResponse),

@@ -155,6 +155,25 @@ describe('Contacts (e2e)', () => {
       expect(list.items.some((c) => c.id === contact.id)).toBe(true);
       expect(list.meta.total).toBeGreaterThanOrEqual(1);
 
+      const codeOnlyRes = await request(app.getHttpServer())
+        .post(`/${apiPrefix}/contacts`)
+        .set('Authorization', `Bearer ${ownerToken}`)
+        .send({
+          firstName: 'Code',
+          lastName: 'Only',
+          phoneCountryCode: '+1',
+          timezone: 'America/New_York',
+        })
+        .expect(201);
+      const codeOnly = unwrap<ContactResponse & {
+        phoneCountryCode: string | null;
+        phoneNumber: string | null;
+        phone: string | null;
+      }>(codeOnlyRes.body);
+      expect(codeOnly.phoneCountryCode).toBeNull();
+      expect(codeOnly.phoneNumber).toBeNull();
+      expect(codeOnly.phone).toBeNull();
+
       await request(app.getHttpServer())
         .post(`/${apiPrefix}/contacts`)
         .set('Authorization', `Bearer ${ownerToken}`)

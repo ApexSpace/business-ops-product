@@ -1,12 +1,22 @@
 import { resolveDatabaseUrl } from './database-url.util';
 
+/** Resolves the public frontend origin for OAuth redirects and invite links. */
+export function resolveFrontendUrl(env: NodeJS.ProcessEnv): string {
+  return (
+    env.FRONTEND_URL?.trim() ||
+    env.APP_BASE_URL?.trim() ||
+    'http://localhost:3001'
+  ).replace(/\/$/, '');
+}
+
 export interface AppConfig {
   nodeEnv: string;
   port: number;
   apiPrefix: string;
   corsOrigin: string;
   enableResponseEnvelope: boolean;
-  baseUrl: string;
+  /** Next.js / browser-facing app origin (OAuth redirects, invite links). */
+  frontendUrl: string;
 }
 
 export interface DatabaseConfig {
@@ -29,12 +39,20 @@ export interface SeedConfig {
   superAdminPassword: string;
 }
 
+export interface IntegrationConfig {
+  googleOAuthEnabled: boolean;
+  googleClientId?: string;
+  googleRedirectUri?: string;
+  encryptionKey?: string;
+}
+
 export interface RootConfig {
   app: AppConfig;
   database: DatabaseConfig;
   jwt: JwtConfig;
   auth: AuthConfig;
   seed: SeedConfig;
+  integrations: IntegrationConfig;
 }
 
 export default (): RootConfig => ({
@@ -45,7 +63,7 @@ export default (): RootConfig => ({
     corsOrigin: process.env.CORS_ORIGIN ?? '*',
     enableResponseEnvelope:
       (process.env.ENABLE_RESPONSE_ENVELOPE ?? 'true').toLowerCase() === 'true',
-    baseUrl: process.env.APP_BASE_URL ?? 'http://localhost:3000',
+    frontendUrl: resolveFrontendUrl(process.env),
   },
   database: {
     url: resolveDatabaseUrl(process.env),
@@ -64,5 +82,12 @@ export default (): RootConfig => ({
       process.env.SEED_SUPER_ADMIN_EMAIL ?? 'admin@example.com',
     superAdminPassword:
       process.env.SEED_SUPER_ADMIN_PASSWORD ?? 'ChangeMe123!',
+  },
+  integrations: {
+    googleOAuthEnabled:
+      (process.env.GOOGLE_OAUTH_ENABLED ?? 'false').toLowerCase() === 'true',
+    googleClientId: process.env.GOOGLE_CLIENT_ID,
+    googleRedirectUri: process.env.GOOGLE_OAUTH_REDIRECT_URI,
+    encryptionKey: process.env.INTEGRATION_ENCRYPTION_KEY,
   },
 });

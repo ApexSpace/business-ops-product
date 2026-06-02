@@ -7,6 +7,7 @@ import {
 import { Reflector } from '@nestjs/core';
 import { BusinessMemberRole } from '@prisma/client';
 import { Request } from 'express';
+import { isPlatformBusinessAdmin } from '../../modules/auth/utils/platform-business-access.util';
 import { BUSINESS_ROLES_KEY } from '../decorators/business-roles.decorator';
 import { RequestUser } from '../decorators/current-user.decorator';
 import { AppException } from '../exceptions/app.exception';
@@ -44,6 +45,13 @@ export class BusinessRolesGuard implements CanActivate {
     }
 
     if (!requiredRoles.includes(user.businessRole)) {
+      if (
+        user.platformRole &&
+        isPlatformBusinessAdmin(user.platformRole) &&
+        requiredRoles.includes(BusinessMemberRole.ADMIN)
+      ) {
+        return true;
+      }
       throw new AppException(
         ErrorCode.FORBIDDEN,
         'Insufficient business permissions',

@@ -5,6 +5,7 @@ import {
   BusinessMemberRole,
   BusinessStatus,
   MembershipStatus,
+  PlatformMemberRole,
   UserStatus,
 } from '@prisma/client';
 import { ExtractJwt, Strategy } from 'passport-jwt';
@@ -17,6 +18,7 @@ import { BusinessRepository } from '../../business/repositories/business.reposit
 import { BusinessMembershipRepository } from '../../membership/repositories/business-membership.repository';
 import { PlatformMembershipRepository } from '../repositories/platform-membership.repository';
 import { UserRepository } from '../repositories/user.repository';
+import { resolvePlatformBusinessRole } from '../utils/platform-business-access.util';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
@@ -96,15 +98,19 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       );
 
     if (platformMembership) {
+      const businessRole = resolvePlatformBusinessRole(
+        platformMembership.role,
+        membership?.status === MembershipStatus.ACTIVE
+          ? membership.role
+          : null,
+      );
       return {
         id: user.id,
         email: user.email,
         context: 'business',
         businessId: payload.businessId,
-        businessRole:
-          membership?.status === MembershipStatus.ACTIVE
-            ? membership.role
-            : (payload.businessRole ?? BusinessMemberRole.ADMIN),
+        platformRole: platformMembership.role,
+        businessRole,
       };
     }
 

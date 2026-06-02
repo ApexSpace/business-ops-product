@@ -1,5 +1,6 @@
 import { BusinessStatus, Prisma } from '@prisma/client';
 import { BusinessProfileDto } from '../dto/business-profile.dto';
+import { sanitizePhoneFields } from '../../contacts/utils/contact-profile.util';
 import { buildDisplayName, emptyToUndefined } from './business-profile.util';
 
 type ProfileInput = BusinessProfileDto & {
@@ -14,6 +15,8 @@ export function toBusinessCreateData(
     emptyToUndefined(dto.displayName) ??
     buildDisplayName(dto.firstName, dto.lastName);
 
+  const phone = sanitizePhoneFields(dto.phoneCountryCode, dto.phoneNumber);
+
   return {
     name: dto.name,
     industry: { connect: { id: dto.industryId } },
@@ -22,8 +25,8 @@ export function toBusinessCreateData(
     lastName: emptyToUndefined(dto.lastName),
     displayName,
     email: emptyToUndefined(dto.email),
-    phoneCountryCode: emptyToUndefined(dto.phoneCountryCode),
-    phoneNumber: emptyToUndefined(dto.phoneNumber),
+    phoneCountryCode: phone.phoneCountryCode,
+    phoneNumber: phone.phoneNumber,
     address: emptyToUndefined(dto.address),
     city: emptyToUndefined(dto.city),
     state: emptyToUndefined(dto.state),
@@ -67,6 +70,15 @@ export function toBusinessUpdateData(
     if (dto[field] !== undefined) {
       (data as Record<string, unknown>)[field] = emptyToUndefined(dto[field]);
     }
+  }
+
+  if (dto.phoneCountryCode !== undefined || dto.phoneNumber !== undefined) {
+    const phone = sanitizePhoneFields(
+      dto.phoneCountryCode ?? null,
+      dto.phoneNumber ?? null,
+    );
+    data.phoneCountryCode = phone.phoneCountryCode;
+    data.phoneNumber = phone.phoneNumber;
   }
 
   if (

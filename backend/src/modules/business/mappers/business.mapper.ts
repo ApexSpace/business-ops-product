@@ -1,12 +1,15 @@
 import { Business, Industry } from '@prisma/client';
 import { toIndustryOption } from '../../industries/mappers/industry.mapper';
 import { BusinessResponseDto } from '../dto/business-response.dto';
+import { extractFinancialSettings } from '../utils/financial-settings.util';
 
 type BusinessWithIndustry = Business & { industry?: Industry | null };
 
 export function toBusinessResponse(
   business: BusinessWithIndustry,
 ): BusinessResponseDto {
+  const financial = extractFinancialSettings(business);
+
   return {
     id: business.id,
     name: business.name,
@@ -27,6 +30,9 @@ export function toBusinessResponse(
     zip: business.zip,
     website: business.website,
     timezone: business.timezone,
+    logoUrl: financial.businessInformation.logoUrl || null,
+    addressLine2: financial.businessInformation.addressLine2 || null,
+    taxesAndCurrency: financial.taxesAndCurrency,
     settings: business.settings as Record<string, unknown> | null,
     createdById: business.createdById,
     createdAt: business.createdAt,

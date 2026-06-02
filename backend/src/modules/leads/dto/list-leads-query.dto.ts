@@ -23,4 +23,9 @@ export class ListLeadsQueryDto extends PaginationQueryDto {
   @IsOptional()
   @IsEnum(LeadStatus)
   status?: LeadStatus;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsUUID('4')
+  contactId?: string;
 }

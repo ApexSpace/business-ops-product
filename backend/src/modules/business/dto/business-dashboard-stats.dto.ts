@@ -1,5 +1,19 @@
 import { ApiProperty } from '@nestjs/swagger';
 
+class WorkItemStatsDto {
+  @ApiProperty()
+  total!: number;
+
+  @ApiProperty()
+  scheduled!: number;
+
+  @ApiProperty()
+  completed!: number;
+
+  @ApiProperty()
+  pending!: number;
+}
+
 class LeadStatsDto {
   @ApiProperty()
   total!: number;
@@ -17,6 +31,17 @@ class LeadStatsDto {
   archived!: number;
 }
 
+class AppointmentStatsDto {
+  @ApiProperty()
+  today!: number;
+
+  @ApiProperty()
+  upcoming!: number;
+
+  @ApiProperty()
+  cancelledOrNoShow!: number;
+}
+
 export class BusinessDashboardStatsDto {
   @ApiProperty()
   contacts!: number;
@@ -30,9 +55,15 @@ export class BusinessDashboardStatsDto {
   @ApiProperty()
   appointments!: number;
 
+  @ApiProperty({ type: AppointmentStatsDto })
+  appointmentStats!: AppointmentStatsDto;
+
   @ApiProperty()
   conversations!: number;
 
   @ApiProperty()
   members!: number;
+
+  @ApiProperty({ type: WorkItemStatsDto })
+  workItems!: WorkItemStatsDto;
 }

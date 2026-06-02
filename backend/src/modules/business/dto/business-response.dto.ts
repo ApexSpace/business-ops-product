@@ -1,6 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { BusinessStatus } from '@prisma/client';
 import { IndustryOptionDto } from '../../industries/dto/industry.dto';
+import { TaxesAndCurrencySettingsDto } from './financial-settings.dto';
 
 export class BusinessResponseDto {
   @ApiProperty()
@@ -59,6 +60,15 @@ export class BusinessResponseDto {
 
   @ApiPropertyOptional()
   timezone?: string | null;
+
+  @ApiPropertyOptional()
+  logoUrl?: string | null;
+
+  @ApiPropertyOptional()
+  addressLine2?: string | null;
+
+  @ApiPropertyOptional({ type: TaxesAndCurrencySettingsDto })
+  taxesAndCurrency?: TaxesAndCurrencySettingsDto;
 
   @ApiPropertyOptional()
   settings?: Record<string, unknown> | null;

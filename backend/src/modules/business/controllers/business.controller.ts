@@ -6,9 +6,11 @@ import type { RequestUser } from '../../../common/decorators/current-user.decora
 import { BusinessRoles } from '../../../common/decorators/business-roles.decorator';
 import { BusinessRolesGuard } from '../../../common/guards/business-roles.guard';
 import { BusinessDashboardStatsDto } from '../dto/business-dashboard-stats.dto';
+import { UpdateFinancialSettingsDto } from '../dto/financial-settings.dto';
 import { UpdateBusinessDto } from '../dto/update-business.dto';
 import { BusinessService } from '../services/business.service';
 import { DashboardStatsService } from '../services/dashboard-stats.service';
+import { FinancialSettingsService } from '../services/financial-settings.service';
 
 @ApiTags('business')
 @ApiBearerAuth()
@@ -18,6 +20,7 @@ export class BusinessController {
   constructor(
     private readonly businessService: BusinessService,
     private readonly dashboardStatsService: DashboardStatsService,
+    private readonly financialSettingsService: FinancialSettingsService,
   ) {}
 
   @Get('current')
@@ -49,5 +52,28 @@ export class BusinessController {
     @Body() dto: UpdateBusinessDto,
   ) {
     return this.businessService.updateCurrent(user.businessId!, dto, user);
+  }
+
+  @Get('current/financial-settings')
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
+  getFinancialSettings(@CurrentUser() user: RequestUser) {
+    return this.financialSettingsService.getForBusiness(user.businessId!);
+  }
+
+  @Patch('current/financial-settings')
+  @BusinessRoles(BusinessMemberRole.OWNER, BusinessMemberRole.ADMIN)
+  updateFinancialSettings(
+    @CurrentUser() user: RequestUser,
+    @Body() dto: UpdateFinancialSettingsDto,
+  ) {
+    return this.financialSettingsService.updateForBusiness(
+      user.businessId!,
+      dto,
+      user,
+    );
   }
 }

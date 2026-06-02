@@ -35,6 +35,11 @@ export class IndustryLabelsDto implements IndustryLabels {
   @ApiProperty()
   @IsString()
   @MinLength(1)
+  workItems!: string;
+
+  @ApiProperty()
+  @IsString()
+  @MinLength(1)
   appointments!: string;
 
   @ApiProperty()

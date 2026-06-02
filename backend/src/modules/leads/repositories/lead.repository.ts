@@ -75,6 +75,7 @@ export class LeadRepository {
       pipelineStageId?: string;
       assignedToId?: string;
       status?: LeadStatus;
+      contactId?: string;
     },
   ): Promise<{ items: LeadWithRelations[]; total: number }> {
     const where = this.activeWhere(businessId, {
@@ -84,6 +85,7 @@ export class LeadRepository {
         : {}),
       ...(params.assignedToId ? { assignedToId: params.assignedToId } : {}),
       ...(params.status ? { status: params.status } : {}),
+      ...(params.contactId ? { contactId: params.contactId } : {}),
     });
 
     return Promise.all([

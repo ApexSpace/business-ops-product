@@ -3,6 +3,7 @@ import { ContactProfileDto } from '../dto/contact-profile.dto';
 import {
   buildDisplayName,
   emptyToUndefined,
+  sanitizePhoneFields,
 } from './contact-profile.util';
 
 export function toContactCreateData(
@@ -12,14 +13,16 @@ export function toContactCreateData(
     emptyToUndefined(dto.displayName) ??
     buildDisplayName(dto.firstName, dto.lastName);
 
+  const phone = sanitizePhoneFields(dto.phoneCountryCode, dto.phoneNumber);
+
   return {
     firstName: emptyToUndefined(dto.firstName) ?? null,
     lastName: emptyToUndefined(dto.lastName) ?? null,
     displayName: displayName ?? null,
     companyName: emptyToUndefined(dto.companyName) ?? null,
     email: emptyToUndefined(dto.email) ?? null,
-    phoneCountryCode: emptyToUndefined(dto.phoneCountryCode) ?? null,
-    phoneNumber: emptyToUndefined(dto.phoneNumber) ?? null,
+    phoneCountryCode: phone.phoneCountryCode,
+    phoneNumber: phone.phoneNumber,
     timezone: emptyToUndefined(dto.timezone) ?? null,
     address: emptyToUndefined(dto.address) ?? null,
     city: emptyToUndefined(dto.city) ?? null,
@@ -61,6 +64,15 @@ export function toContactUpdateData(
       (data as Record<string, unknown>)[field] =
         emptyToUndefined(dto[field]) ?? null;
     }
+  }
+
+  if (dto.phoneCountryCode !== undefined || dto.phoneNumber !== undefined) {
+    const phone = sanitizePhoneFields(
+      dto.phoneCountryCode ?? null,
+      dto.phoneNumber ?? null,
+    );
+    data.phoneCountryCode = phone.phoneCountryCode;
+    data.phoneNumber = phone.phoneNumber;
   }
 
   if (

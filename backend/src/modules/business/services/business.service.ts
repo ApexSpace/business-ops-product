@@ -17,6 +17,15 @@ import {
   toBusinessCreateData,
   toBusinessUpdateData,
 } from '../utils/business-profile-data.util';
+import {
+  extractFinancialSettings,
+  mergeFinancialSettings,
+  wrapFinancialSettings,
+} from '../utils/financial-settings.util';
+import {
+  currencySymbolForCode,
+  normalizeCurrencyCode,
+} from '../utils/currency.util';
 
 @Injectable()
 export class BusinessService {
@@ -131,7 +140,7 @@ export class BusinessService {
 
     const business = await this.businessRepository.update(
       id,
-      toBusinessUpdateData(dto),
+      this.buildUpdateData(existing, dto),
     );
 
     await this.auditService.log({
@@ -181,6 +190,66 @@ export class BusinessService {
     actor: RequestUser,
   ) {
     return this.updatePlatform(businessId, dto, actor);
+  }
+
+  private buildUpdateData(
+    existing: Awaited<ReturnType<BusinessRepository['findById']>> & object,
+    dto: UpdateBusinessDto,
+  ) {
+    const data = toBusinessUpdateData(dto);
+
+    const hasProfileExtensions =
+      dto.logoUrl !== undefined ||
+      dto.addressLine2 !== undefined ||
+      dto.taxesAndCurrency !== undefined;
+
+    if (!hasProfileExtensions) {
+      return data;
+    }
+
+    const current = extractFinancialSettings(existing);
+    const patch: Partial<typeof current> = {};
+
+    if (dto.logoUrl !== undefined || dto.addressLine2 !== undefined) {
+      patch.businessInformation = {
+        ...current.businessInformation,
+        ...(dto.logoUrl !== undefined
+          ? { logoUrl: dto.logoUrl?.trim() ?? '' }
+          : {}),
+        ...(dto.addressLine2 !== undefined
+          ? { addressLine2: dto.addressLine2?.trim() ?? '' }
+          : {}),
+      };
+    }
+
+    if (dto.taxesAndCurrency) {
+      const taxesAndCurrency = {
+        ...current.taxesAndCurrency,
+        ...dto.taxesAndCurrency,
+      };
+      if (dto.taxesAndCurrency.currencyCode !== undefined) {
+        taxesAndCurrency.currencyCode = normalizeCurrencyCode(
+          dto.taxesAndCurrency.currencyCode,
+        );
+        taxesAndCurrency.currencySymbol = currencySymbolForCode(
+          taxesAndCurrency.currencyCode,
+        );
+      }
+      if (taxesAndCurrency.defaultTaxRate !== undefined) {
+        taxesAndCurrency.defaultTaxRate = Math.min(
+          100,
+          Math.max(0, Number(taxesAndCurrency.defaultTaxRate) || 0),
+        );
+      }
+      patch.taxesAndCurrency = taxesAndCurrency;
+    }
+
+    data.settings = wrapFinancialSettings(
+      existing.settings,
+      mergeFinancialSettings(current, patch),
+    );
+
+    return data;
   }
 
   private async resolveUniqueSlug(name: string): Promise<string> {

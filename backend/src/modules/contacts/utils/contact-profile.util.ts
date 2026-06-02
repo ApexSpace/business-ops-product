@@ -19,14 +19,25 @@ export function formatPhone(
   phoneNumber?: string | null,
 ): string | null {
   const code = phoneCountryCode?.trim();
-  const number = phoneNumber?.trim();
-  if (!code && !number) {
+  const digits = (phoneNumber?.trim() ?? '').replace(/\D/g, '');
+  if (!digits) {
     return null;
   }
-  if (code && number) {
-    return `${code} ${number}`;
+  const dial = code || '+1';
+  return `${dial}${digits}`;
+}
+
+/** Clears country code when no national digits are present. */
+export function sanitizePhoneFields(
+  phoneCountryCode?: string | null,
+  phoneNumber?: string | null,
+): { phoneCountryCode: string | null; phoneNumber: string | null } {
+  const digits = (phoneNumber?.trim() ?? '').replace(/\D/g, '');
+  if (!digits) {
+    return { phoneCountryCode: null, phoneNumber: null };
   }
-  return code ?? number ?? null;
+  const dial = phoneCountryCode?.trim() || '+1';
+  return { phoneCountryCode: dial, phoneNumber: digits };
 }
 
 /** Normalized key for duplicate phone checks within a business. */

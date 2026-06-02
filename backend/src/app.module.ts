@@ -12,11 +12,21 @@ import { MembershipModule } from './modules/membership/membership.module';
 import { ContactsModule } from './modules/contacts/contacts.module';
 import { LeadsModule } from './modules/leads/leads.module';
 import { ServicesModule } from './modules/services/services.module';
+import { WorkItemsModule } from './modules/work-items/work-items.module';
+import { NotesModule } from './modules/notes/notes.module';
+import { TasksModule } from './modules/tasks/tasks.module';
+import { EstimatesModule } from './modules/estimates/estimates.module';
+import { InvoicesModule } from './modules/invoices/invoices.module';
+import { PaymentsModule } from './modules/payments/payments.module';
 import { PipelinesModule } from './modules/pipelines/pipelines.module';
 import { PlatformModule } from './modules/platform/platform.module';
 import { IndustriesModule } from './modules/industries/industries.module';
 import { PlansModule } from './modules/plans/plans.module';
 import { BillingModule } from './modules/billing/billing.module';
+import { IntegrationsModule } from './modules/integrations/integrations.module';
+import { CalendarsModule } from './modules/calendars/calendars.module';
+import { AppointmentsModule } from './modules/appointments/appointments.module';
+import { GoogleCalendarSyncModule } from './modules/google-calendar-sync/google-calendar-sync.module';
 
 @Module({
   imports: [
@@ -31,10 +41,20 @@ import { BillingModule } from './modules/billing/billing.module';
     PipelinesModule,
     LeadsModule,
     ServicesModule,
+    WorkItemsModule,
+    NotesModule,
+    TasksModule,
+    EstimatesModule,
+    InvoicesModule,
+    PaymentsModule,
     PlatformModule,
     PlansModule,
     IndustriesModule,
     BillingModule,
+    IntegrationsModule,
+    CalendarsModule,
+    AppointmentsModule,
+    GoogleCalendarSyncModule,
   ],
   providers: [
     TransformInterceptor,

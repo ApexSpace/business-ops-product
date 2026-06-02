@@ -1,6 +1,12 @@
 import { Injectable } from '@nestjs/common';
-import { LeadStatus, MembershipStatus } from '@prisma/client';
+import {
+  AppointmentStatus,
+  LeadStatus,
+  MembershipStatus,
+  WorkItemStatus,
+} from '@prisma/client';
 import { PrismaService } from '../../../core/database/prisma.service';
+import { getBusinessDayBoundariesUtc } from '../../../common/utils/timezone.util';
 import { BusinessDashboardStatsDto } from '../dto/business-dashboard-stats.dto';
 
 @Injectable()
@@ -10,11 +16,31 @@ export class DashboardStatsService {
   async getStats(businessId: string): Promise<BusinessDashboardStatsDto> {
     const leadWhere = { businessId, deletedAt: null };
 
+    const workItemWhere = { businessId, deletedAt: null };
+
+    const appointmentWhere = { businessId, deletedAt: null };
+
+    const business = await this.prisma.business.findUnique({
+      where: { id: businessId },
+      select: { timezone: true },
+    });
+    const { startOfToday, endOfToday, now } = getBusinessDayBoundariesUtc(
+      business?.timezone,
+    );
+
     const [
       contacts,
       leadsByStatus,
       pipelines,
       members,
+      workItemsTotal,
+      workItemsScheduled,
+      workItemsCompleted,
+      workItemsPending,
+      appointmentsTotal,
+      appointmentsToday,
+      appointmentsUpcoming,
+      appointmentsCancelledOrNoShow,
     ] = await Promise.all([
       this.prisma.contact.count({
         where: { businessId, deletedAt: null },
@@ -30,6 +56,48 @@ export class DashboardStatsService {
           businessId,
           deletedAt: null,
           status: MembershipStatus.ACTIVE,
+        },
+      }),
+      this.prisma.workItem.count({ where: workItemWhere }),
+      this.prisma.workItem.count({
+        where: { ...workItemWhere, status: WorkItemStatus.SCHEDULED },
+      }),
+      this.prisma.workItem.count({
+        where: { ...workItemWhere, status: WorkItemStatus.COMPLETED },
+      }),
+      this.prisma.workItem.count({
+        where: {
+          ...workItemWhere,
+          status: {
+            in: [WorkItemStatus.DRAFT, WorkItemStatus.IN_PROGRESS],
+          },
+        },
+      }),
+      this.prisma.appointment.count({ where: appointmentWhere }),
+      this.prisma.appointment.count({
+        where: {
+          ...appointmentWhere,
+          startAt: { gte: startOfToday, lte: endOfToday },
+          status: {
+            in: [AppointmentStatus.SCHEDULED, AppointmentStatus.CONFIRMED],
+          },
+        },
+      }),
+      this.prisma.appointment.count({
+        where: {
+          ...appointmentWhere,
+          startAt: { gte: now },
+          status: {
+            in: [AppointmentStatus.SCHEDULED, AppointmentStatus.CONFIRMED],
+          },
+        },
+      }),
+      this.prisma.appointment.count({
+        where: {
+          ...appointmentWhere,
+          status: {
+            in: [AppointmentStatus.CANCELLED, AppointmentStatus.NO_SHOW],
+          },
         },
       }),
     ]);
@@ -61,9 +129,20 @@ export class DashboardStatsService {
         archived: leadCounts.ARCHIVED,
       },
       pipelines,
-      appointments: 0,
+      appointments: appointmentsTotal,
+      appointmentStats: {
+        today: appointmentsToday,
+        upcoming: appointmentsUpcoming,
+        cancelledOrNoShow: appointmentsCancelledOrNoShow,
+      },
       conversations: 0,
       members,
+      workItems: {
+        total: workItemsTotal,
+        scheduled: workItemsScheduled,
+        completed: workItemsCompleted,
+        pending: workItemsPending,
+      },
     };
   }
 }
