@@ -24,8 +24,9 @@ RUN pnpm run build
 # Generate Prisma client (also done via postinstall locally, but explicit here)
 RUN pnpm run db:generate
 
-# Remove devDependencies to keep runtime lean (keeps generated Prisma client)
-RUN pnpm prune --prod
+# Remove devDependencies to keep runtime lean.
+# Pruning re-runs lifecycle scripts; skip them because `prisma` is a devDependency.
+RUN pnpm prune --prod --ignore-scripts
 
 ### Runtime stage
 FROM node:22.12-bookworm-slim AS runtime
