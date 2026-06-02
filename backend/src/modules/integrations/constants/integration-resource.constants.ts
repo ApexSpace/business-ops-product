@@ -47,6 +47,11 @@ export const PROVIDER_RESOURCE_CONFIG: Record<string, ProviderResourceConfig> = 
     syncEnabled: false,
     label: 'Organisations',
   },
+  linkedin: {
+    resourceTypes: [IntegrationResourceType.OTHER],
+    syncEnabled: false,
+    label: 'Accounts',
+  },
 };
 
 export function providerSupportsResources(providerKey: string): boolean {

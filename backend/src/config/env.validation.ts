@@ -49,11 +49,7 @@ const baseSchema = Joi.object({
     then: Joi.string().uri().required(),
     otherwise: Joi.string().uri().optional(),
   }),
-  INTEGRATION_ENCRYPTION_KEY: Joi.when('GOOGLE_OAUTH_ENABLED', {
-    is: 'true',
-    then: Joi.string().min(32).required(),
-    otherwise: Joi.string().min(32).optional(),
-  }),
+  INTEGRATION_ENCRYPTION_KEY: Joi.string().min(32).optional(),
   META_OAUTH_ENABLED: Joi.string().valid('true', 'false').default('false'),
   META_APP_ID: Joi.when('META_OAUTH_ENABLED', {
     is: 'true',
@@ -76,6 +72,24 @@ const baseSchema = Joi.object({
   META_LOGIN_CONFIG_ID: Joi.string().optional(),
   /** WhatsApp Embedded Signup only — do not use for Facebook/Instagram */
   META_EMBEDDED_SIGNUP_CONFIG_ID: Joi.string().optional(),
+
+  LINKEDIN_OAUTH_ENABLED: Joi.string().valid('true', 'false').default('false'),
+  LINKEDIN_CLIENT_ID: Joi.when('LINKEDIN_OAUTH_ENABLED', {
+    is: 'true',
+    then: Joi.string().required(),
+    otherwise: Joi.string().optional(),
+  }),
+  LINKEDIN_CLIENT_SECRET: Joi.when('LINKEDIN_OAUTH_ENABLED', {
+    is: 'true',
+    then: Joi.string().required(),
+    otherwise: Joi.string().optional(),
+  }),
+  LINKEDIN_REDIRECT_URI: Joi.when('LINKEDIN_OAUTH_ENABLED', {
+    is: 'true',
+    then: Joi.string().uri().required(),
+    otherwise: Joi.string().uri().optional(),
+  }),
+  LINKEDIN_API_VERSION: Joi.string().default('202506'),
 });
 
 export const envValidationSchema = baseSchema.custom((env, helpers) => {
@@ -99,6 +113,19 @@ export const envValidationSchema = baseSchema.custom((env, helpers) => {
     return helpers.error('any.custom', {
       message:
         'FRONTEND_URL is required. APP_BASE_URL is deprecated — set FRONTEND_URL to your Next.js origin (e.g. http://localhost:3001).',
+    });
+  }
+
+  const googleEnabled = (env as NodeJS.ProcessEnv).GOOGLE_OAUTH_ENABLED === 'true';
+  const metaEnabled = (env as NodeJS.ProcessEnv).META_OAUTH_ENABLED === 'true';
+  const linkedInEnabled =
+    (env as NodeJS.ProcessEnv).LINKEDIN_OAUTH_ENABLED === 'true';
+  const encryptionKey = (env as NodeJS.ProcessEnv).INTEGRATION_ENCRYPTION_KEY;
+
+  if ((googleEnabled || metaEnabled || linkedInEnabled) && !encryptionKey) {
+    return helpers.error('any.custom', {
+      message:
+        'INTEGRATION_ENCRYPTION_KEY is required when OAuth integrations are enabled (Google, Meta, or LinkedIn).',
     });
   }
 

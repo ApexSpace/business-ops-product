@@ -6,6 +6,8 @@ import { GoogleOAuthController } from './google-oauth.controller';
 import { GoogleOAuthService } from './google-oauth.service';
 import { IntegrationProvidersController } from './integration-providers.controller';
 import { IntegrationsService } from './integrations.service';
+import { LinkedInOAuthController } from './linkedin-oauth.controller';
+import { LinkedInOAuthService } from './linkedin-oauth.service';
 import { MetaOAuthController } from './meta/controllers/meta-oauth.controller';
 import { MetaWebhookController } from './meta/controllers/meta-webhook.controller';
 import { MetaApiClient } from './meta/services/meta-api-client';
@@ -38,6 +40,7 @@ import { IntegrationResourcesService } from './services/integration-resources.se
     BusinessIntegrationResourcesController,
     PlatformIntegrationsController,
     GoogleOAuthController,
+    LinkedInOAuthController,
     MetaOAuthController,
     MetaWebhookController,
   ],
@@ -48,6 +51,7 @@ import { IntegrationResourcesService } from './services/integration-resources.se
     PlatformIntegrationRepository,
     IntegrationsService,
     GoogleOAuthService,
+    LinkedInOAuthService,
     GoogleTokenService,
     IntegrationResourcesService,
     GoogleCalendarResourceSyncHandler,

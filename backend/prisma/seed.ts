@@ -102,10 +102,12 @@ const integrationProviders = [
   {
     key: 'linkedin',
     name: 'LinkedIn',
-    description: 'Connect LinkedIn for lead generation and messaging.',
+    description: 'Connect LinkedIn for business identity and future social features.',
     category: 'SOCIAL_MEDIA',
     isPlatformLevel: false,
     isBusinessLevel: true,
+    connectionType: 'OAUTH',
+    isActive: true,
     sortOrder: 90,
   },
   {
