@@ -8,8 +8,8 @@ RUN apt-get update \
   && apt-get install -y --no-install-recommends python3 make g++ openssl ca-certificates \
   && rm -rf /var/lib/apt/lists/*
 
-# Use pnpm via Corepack (matches package.json "packageManager")
-RUN corepack enable
+# Install pnpm explicitly (avoids Corepack signature/key issues in CI)
+RUN npm install -g pnpm@9.15.0
 
 # Install deps first (better layer caching)
 COPY package.json pnpm-lock.yaml ./
