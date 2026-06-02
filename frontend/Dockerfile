@@ -1,31 +1,27 @@
 ### Build stage
-FROM node:22.12-bookworm-slim AS build
+FROM node:22.13-bookworm-slim AS build
 
 WORKDIR /app
 
-ENV NODE_ENV=production
-
-# Install dependencies (uses package-lock.json)
+# Install all deps (dev deps needed for `next build`)
 COPY package.json package-lock.json ./
 RUN npm ci
 
-# Copy source and build
 COPY . .
-RUN npm run build
+RUN npm run build \
+  && npm prune --omit=dev
 
 ### Runtime stage
-FROM node:22.12-bookworm-slim AS runtime
+FROM node:22.13-bookworm-slim AS runtime
 
 WORKDIR /app
 
 ENV NODE_ENV=production
 ENV PORT=3000
 
-# Install production dependencies only
+# Reuse production node_modules from build (avoids second npm ci + lockfile drift)
 COPY package.json package-lock.json ./
-RUN npm ci --omit=dev
-
-# Copy built app
+COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/.next ./.next
 COPY --from=build /app/public ./public
 COPY --from=build /app/next.config.ts ./next.config.ts
