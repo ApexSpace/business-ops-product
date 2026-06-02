@@ -1,0 +1,16 @@
+[variables]
+NODE_ENV = "production"
+
+[phases.setup]
+# Node provider. Keep this in sync with your Coolify Node setting.
+nixPkgs = ["nodejs_22"]
+
+[phases.install]
+# Use npm lockfile to avoid Corepack/pnpm signature issues in CI.
+cmds = ["npm ci"]
+
+[phases.build]
+cmds = ["npm run build"]
+
+[start]
+cmd = "npm run start"
