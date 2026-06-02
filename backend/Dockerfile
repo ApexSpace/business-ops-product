@@ -46,4 +46,5 @@ COPY --from=build /app/dist ./dist
 
 EXPOSE 3000
 
-CMD ["node", "dist/main"]
+# Some Nest builds output `dist/main.js`, others `dist/src/main.js` depending on config.
+CMD ["sh", "-c", "node dist/main.js || node dist/src/main.js"]
