@@ -12,10 +12,11 @@ import { ErrorCode } from '../../../../common/exceptions/error-code.enum';
 import { encryptIntegrationCredentials } from '../../../../common/utils/integration-encryption.util';
 import { RootConfig } from '../../../../config/configuration';
 import { AuditService } from '../../../audit/services/audit.service';
+import { getMetaScopesForProvider } from '../constants/meta-oauth.constants';
 import {
-  getMetaOAuthAuthorizeUrl,
-  getMetaScopesForProvider,
-} from '../constants/meta-oauth.constants';
+  buildMetaOAuthAuthorizationUrl,
+  getOAuthAuthorizeUrlHost,
+} from '../utils/meta-oauth-url.util';
 import { tryResolveProviderKeyFromOAuthState } from '../utils/meta-oauth-callback.util';
 import { resolveMetaWebhookStatusLabel } from '../utils/meta-webhook-status.util';
 import {
@@ -93,7 +94,6 @@ export class MetaOAuthService {
     }
 
     await this.assertMetaOAuthProvider(normalizedKey);
-    this.metaConfigService.assertLoginConfigForOAuth(normalizedKey);
 
     const providerConfig = getMetaProviderConfig(normalizedKey)!;
     const state = createMetaOAuthState(
@@ -107,9 +107,7 @@ export class MetaOAuthService {
     );
 
     const authUrl = this.buildAuthorizationUrl(normalizedKey, state);
-    this.logger.log(
-      `Meta OAuth auth URL generated providerKey=${normalizedKey} flowType=${providerConfig.flowType}`,
-    );
+    this.logOAuthStartDebug(normalizedKey, authUrl);
 
     res.redirect(authUrl);
   }
@@ -162,7 +160,7 @@ export class MetaOAuthService {
     }
 
     this.logger.log(
-      `Meta OAuth callback providerKey=${payload.providerKey} flowType=${payload.flowType}`,
+      `[Meta OAuth] callback reached providerKey=${payload.providerKey} flowType=${payload.flowType}`,
     );
 
     if (payload.flowType !== 'META_OAUTH') {
@@ -224,17 +222,32 @@ export class MetaOAuthService {
         `Meta OAuth saved BusinessIntegration providerKey=${oauthProviderKey}`,
       );
 
-      await this.metaResourceSyncService.syncAfterConnect(
+      const resourceCount = await this.metaResourceSyncService.syncAfterConnect(
         payload.businessId,
         oauthProviderKey,
       );
 
-      res.redirect(
-        this.buildOAuthCallbackUrl({
-          connected: oauthProviderKey,
-          providerKey: oauthProviderKey,
-        }),
+      this.logger.log(
+        `[Meta OAuth] resource sync providerKey=${oauthProviderKey} resourceCount=${resourceCount}`,
       );
+
+      const callbackParams: {
+        connected: string;
+        providerKey: string;
+        warning?: string;
+      } = {
+        connected: oauthProviderKey,
+        providerKey: oauthProviderKey,
+      };
+
+      if (
+        oauthProviderKey === 'instagram' &&
+        resourceCount === 0
+      ) {
+        callbackParams.warning = 'no_instagram_resources';
+      }
+
+      res.redirect(this.buildOAuthCallbackUrl(callbackParams));
     } catch (err) {
       const message =
         err instanceof AppException
@@ -254,10 +267,14 @@ export class MetaOAuthService {
     state: string,
   ): string {
     const { appId } = this.metaConfigService.getMetaAppConfig();
-    const loginConfigId =
+    const { configId: loginConfigId, source: configIdSource } =
       this.metaConfigService.assertLoginConfigForOAuth(providerKey);
     const redirectUri = this.metaConfigService.getMetaRedirectUri(providerKey);
     const scopes = getMetaScopesForProvider(providerKey);
+
+    if (providerKey === 'instagram') {
+      this.metaConfigService.logInstagramFacebookLoginSetupHint();
+    }
 
     if (scopes.length === 0) {
       throw new AppException(
@@ -267,16 +284,52 @@ export class MetaOAuthService {
       );
     }
 
-    const params = new URLSearchParams({
-      client_id: appId,
-      redirect_uri: redirectUri,
-      response_type: 'code',
-      scope: scopes.join(','),
-      state,
-      config_id: loginConfigId,
-    });
+    let authUrl: string;
+    try {
+      authUrl = buildMetaOAuthAuthorizationUrl({
+        appId,
+        redirectUri,
+        scopes,
+        state,
+        configId: loginConfigId,
+      });
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : 'Invalid Meta OAuth authorization URL';
+      throw new AppException(
+        ErrorCode.BAD_REQUEST,
+        message,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
 
-    return `${getMetaOAuthAuthorizeUrl()}?${params.toString()}`;
+    if (this.isMetaOAuthDebugEnabled()) {
+      this.logger.log(
+        `[Meta OAuth] providerKey=${providerKey} configIdSource=${configIdSource} authorizeHost=${getOAuthAuthorizeUrlHost(authUrl)} redirectUri=${redirectUri}`,
+      );
+    }
+
+    return authUrl;
+  }
+
+  private logOAuthStartDebug(
+    providerKey: string,
+    authUrl: string,
+  ): void {
+    if (!this.isMetaOAuthDebugEnabled()) {
+      return;
+    }
+    const redirectUri = this.metaConfigService.getMetaRedirectUri(providerKey);
+    this.logger.log(
+      `[Meta OAuth] start providerKey=${providerKey} authorizeHost=${getOAuthAuthorizeUrlHost(authUrl)} redirectUri=${redirectUri}`,
+    );
+  }
+
+  private isMetaOAuthDebugEnabled(): boolean {
+    return (
+      process.env.NODE_ENV === 'development' ||
+      (process.env.META_OAUTH_DEBUG ?? '').toLowerCase() === 'true'
+    );
   }
 
   private async saveBusinessIntegration(
@@ -394,6 +447,7 @@ export class MetaOAuthService {
     connected?: string;
     error?: string;
     providerKey?: string;
+    warning?: string;
   }): string {
     const frontendBase = this.configService.get('app.frontendUrl', {
       infer: true,
@@ -404,6 +458,9 @@ export class MetaOAuthService {
     }
     if (params.error) {
       url.searchParams.set('error', params.error);
+    }
+    if (params.warning) {
+      url.searchParams.set('warning', params.warning);
     }
     if (params.providerKey && isMetaProviderKey(params.providerKey)) {
       url.searchParams.set('providerKey', params.providerKey);

@@ -121,6 +121,34 @@ export const INTEGRATION_CATEGORY_TABS: Array<{
   { value: "STORAGE", label: "Storage" },
 ];
 
+/** Connected (or previously connected) providers first, then not connected; preserves sortOrder within each group. */
+export function sortIntegrationProvidersByConnection(
+  providers: IntegrationProviderWithStatus[],
+): IntegrationProviderWithStatus[] {
+  return [...providers].sort((a, b) => {
+    const aNotConnected = a.status === "NOT_CONNECTED" ? 1 : 0;
+    const bNotConnected = b.status === "NOT_CONNECTED" ? 1 : 0;
+    if (aNotConnected !== bNotConnected) {
+      return aNotConnected - bNotConnected;
+    }
+    if (a.sortOrder !== b.sortOrder) {
+      return a.sortOrder - b.sortOrder;
+    }
+    return a.name.localeCompare(b.name);
+  });
+}
+
+export function filterIntegrationProvidersByCategory(
+  providers: IntegrationProviderWithStatus[],
+  category: IntegrationCategory | "ALL",
+): IntegrationProviderWithStatus[] {
+  const filtered =
+    category === "ALL"
+      ? providers
+      : providers.filter((provider) => provider.category === category);
+  return sortIntegrationProvidersByConnection(filtered);
+}
+
 export function getIntegrationActionLabel(
   status: IntegrationStatus,
 ): string {
@@ -146,6 +174,7 @@ export function getIntegrationManageLabel(
   if (provider.key === "facebook") return "Manage Facebook";
   if (provider.key === "instagram") return "Manage Instagram";
   if (provider.key === "whatsapp") return "Manage WhatsApp";
+  if (provider.key === "stripe") return "Manage Stripe";
   if (isGoogleOAuthProvider(provider.key)) {
     return `Manage ${provider.name}`;
   }
@@ -158,6 +187,7 @@ export function getOAuthOpeningLabel(
   if (provider.key === "facebook") return "Opening Facebook…";
   if (provider.key === "instagram") return "Opening Instagram…";
   if (provider.key === "whatsapp") return "Opening WhatsApp…";
+  if (provider.key === "stripe") return "Opening Stripe…";
   if (isGoogleOAuthProvider(provider.key)) return "Opening Google…";
   return "Opening authorization…";
 }
@@ -188,16 +218,37 @@ export function isGoogleOAuthProvider(providerKey: string): boolean {
   );
 }
 
-/** Providers that must always use OAuth / embedded signup, never the manual form. */
-export const AUTOMATED_CONNECT_PROVIDER_KEYS = new Set([
-  "facebook",
-  "instagram",
-  "whatsapp",
-  "google-calendar",
-  "google-business-profile",
-  "google-lead-ads",
-  "linkedin",
-]);
+/**
+ * Explicit OAuth popup start routes per provider.
+ * Do not use Google as a default fallback for unknown providers.
+ */
+export const OAUTH_START_ROUTES = {
+  "google-calendar": "/api/oauth/google/start?providerKey=google-calendar",
+  "google-business-profile":
+    "/api/oauth/google/start?providerKey=google-business-profile",
+  "google-lead-ads": "/api/oauth/google/start?providerKey=google-lead-ads",
+  facebook: "/api/oauth/meta/start?providerKey=facebook",
+  instagram: "/api/oauth/meta/start?providerKey=instagram",
+  whatsapp: "/api/oauth/meta/whatsapp/start",
+  linkedin: "/api/oauth/linkedin/start",
+  stripe: "/api/oauth/stripe/start",
+} as const;
+
+export type OAuthStartProviderKey = keyof typeof OAUTH_START_ROUTES;
+
+export const OAUTH_ROUTE_NOT_CONFIGURED_MESSAGE =
+  "OAuth route is not configured for this provider.";
+
+/** Providers that use OAuth popup or embedded signup — never the manual connect modal. */
+export const AUTOMATED_CONNECT_PROVIDER_KEYS = new Set<string>(
+  Object.keys(OAUTH_START_ROUTES),
+);
+
+export function hasOAuthStartRoute(
+  providerKey: string,
+): providerKey is OAuthStartProviderKey {
+  return Object.prototype.hasOwnProperty.call(OAUTH_START_ROUTES, providerKey);
+}
 
 export function isOAuthProvider(
   provider: Pick<IntegrationProvider, "connectionType">,
@@ -218,10 +269,7 @@ export function shouldUseOAuthPopup(
   if (usesWhatsAppEmbeddedSignup(provider.key)) {
     return false;
   }
-  if (AUTOMATED_CONNECT_PROVIDER_KEYS.has(provider.key)) {
-    return true;
-  }
-  return isOAuthProvider(provider);
+  return hasOAuthStartRoute(provider.key);
 }
 
 export function shouldUseManualConnect(
@@ -266,17 +314,10 @@ export function getMetaOAuthStartUrl(
 }
 
 export function getOAuthStartUrl(providerKey: string): string {
-  if (providerKey === "facebook" || providerKey === "instagram") {
-    return getMetaOAuthStartUrl(providerKey);
+  if (!hasOAuthStartRoute(providerKey)) {
+    throw new Error(OAUTH_ROUTE_NOT_CONFIGURED_MESSAGE);
   }
-  if (providerKey === "whatsapp") {
-    return getMetaOAuthStartUrl("whatsapp");
-  }
-  if (providerKey === "linkedin") {
-    return "/api/oauth/linkedin/start";
-  }
-  const params = new URLSearchParams({ providerKey });
-  return `/api/oauth/google/start?${params.toString()}`;
+  return OAUTH_START_ROUTES[providerKey];
 }
 
 /** @deprecated Use getOAuthStartUrl */
@@ -298,6 +339,7 @@ export function getIntegrationConnectLabel(
     if (provider.key === "whatsapp") return "Connect WhatsApp";
     if (provider.key === "facebook") return "Connect Facebook";
     if (provider.key === "instagram") return "Connect Instagram";
+    if (provider.key === "stripe") return "Connect Stripe";
     if (isGoogleOAuthProvider(provider.key)) return "Connect with Google";
     if (shouldUseOAuthPopup(provider)) return `Connect ${provider.name}`;
     return "Connect";
@@ -308,8 +350,20 @@ export function getIntegrationConnectLabel(
 const META_ENV_NOT_CONFIGURED_MESSAGE =
   "Meta integration is not configured. Please set META_APP_ID, META_APP_SECRET, and META_REDIRECT_URI in backend environment.";
 
+export const META_FACEBOOK_LOGIN_NOT_CONFIGURED_MESSAGE =
+  "Facebook Login configuration is missing. Please set META_FACEBOOK_LOGIN_CONFIG_ID.";
+
+export const META_INSTAGRAM_LOGIN_NOT_CONFIGURED_MESSAGE =
+  "Instagram Login configuration is missing. Please set META_INSTAGRAM_LOGIN_CONFIG_ID.";
+
 export const WHATSAPP_EMBEDDED_SIGNUP_NOT_CONFIGURED_MESSAGE =
-  "WhatsApp Embedded Signup configuration ID is missing. Set META_EMBEDDED_SIGNUP_CONFIG_ID.";
+  "WhatsApp Embedded Signup configuration is missing. Please set META_EMBEDDED_SIGNUP_CONFIG_ID.";
+
+export const META_INSTAGRAM_NO_ACCOUNTS_MESSAGE =
+  "No linked Instagram account was found in the Pages returned by Meta. Please make sure you selected the Facebook Page that is connected to your Instagram Professional Account during authorization.";
+
+export const META_INSTAGRAM_WRONG_OAUTH_FLOW_MESSAGE =
+  "Instagram must connect through Facebook Login (not Instagram direct login). In Meta dashboard use Instagram → API setup with Facebook login, then set META_INSTAGRAM_LOGIN_CONFIG_ID to that Facebook Login for Business configuration ID.";
 
 /** User-facing OAuth / config error messages for the callback page and toasts. */
 export function formatOAuthErrorMessage(error: string): string {
@@ -336,22 +390,73 @@ export function formatOAuthErrorMessage(error: string): string {
     return "LinkedIn OAuth is not configured. Set LINKEDIN_CLIENT_ID, LINKEDIN_CLIENT_SECRET, and LINKEDIN_REDIRECT_URI.";
   }
   if (
+    normalized.includes("meta_facebook_login") ||
+    normalized.includes("facebook login configuration")
+  ) {
+    return META_FACEBOOK_LOGIN_NOT_CONFIGURED_MESSAGE;
+  }
+  if (
+    normalized.includes("meta_instagram_login") ||
+    normalized.includes("instagram login configuration")
+  ) {
+    return META_INSTAGRAM_LOGIN_NOT_CONFIGURED_MESSAGE;
+  }
+  if (
     normalized.includes("meta_login_config_id") ||
     normalized.includes("meta login configuration id")
   ) {
-    return "Meta Login configuration ID is missing. Set META_LOGIN_CONFIG_ID.";
+    return "Meta Login configuration ID is missing. Set META_FACEBOOK_LOGIN_CONFIG_ID and META_INSTAGRAM_LOGIN_CONFIG_ID (or META_LOGIN_CONFIG_ID as fallback).";
   }
   if (
     normalized.includes("embedded_signup") ||
     normalized.includes("meta_embedded_signup_config_id") ||
-    normalized.includes("whatsapp embedded signup configuration id")
+    normalized.includes("whatsapp embedded signup configuration")
   ) {
-    return "WhatsApp Embedded Signup configuration ID is missing. Set META_EMBEDDED_SIGNUP_CONFIG_ID.";
+    return WHATSAPP_EMBEDDED_SIGNUP_NOT_CONFIGURED_MESSAGE;
+  }
+  if (
+    normalized.includes("instagram direct login") ||
+    normalized.includes("instagram.com") ||
+    normalized.includes("instagram business login") ||
+    normalized.includes("api setup with facebook login")
+  ) {
+    return META_INSTAGRAM_WRONG_OAUTH_FLOW_MESSAGE;
+  }
+  if (
+    normalized.includes("oauth route is not configured") ||
+    normalized.includes("oauth_route_not_configured")
+  ) {
+    return OAUTH_ROUTE_NOT_CONFIGURED_MESSAGE;
+  }
+  if (normalized.includes("oauth_wrong_handler")) {
+    return OAUTH_ROUTE_NOT_CONFIGURED_MESSAGE;
+  }
+  if (
+    normalized.includes("not a supported google oauth") ||
+    normalized.includes("google_oauth_invalid_provider")
+  ) {
+    return "This integration does not use Google sign-in. Use the correct Connect action for this provider.";
+  }
+  if (
+    normalized.includes("stripe connect is not configured") ||
+    normalized.includes("stripe_secret_key") ||
+    normalized.includes("stripe_client_id") ||
+    normalized.includes("stripe_redirect_uri") ||
+    normalized.includes("stripe_oauth_failed")
+  ) {
+    return "Stripe Connect is not configured. Please set STRIPE_SECRET_KEY, STRIPE_CLIENT_ID, and STRIPE_REDIRECT_URI.";
   }
   if (normalized.includes("popup") || normalized.includes("blocked")) {
     return "Popup was blocked. Please allow popups for this site and try again.";
   }
   return error.replace(/_/g, " ");
+}
+
+export function formatOAuthWarningMessage(warning: string): string | null {
+  if (warning === "no_instagram_resources") {
+    return META_INSTAGRAM_NO_ACCOUNTS_MESSAGE;
+  }
+  return null;
 }
 
 export function getIntegrationReconnectLabel(
@@ -360,6 +465,7 @@ export function getIntegrationReconnectLabel(
   if (provider.key === "whatsapp") return "Reconnect WhatsApp";
   if (provider.key === "facebook") return "Reconnect Facebook";
   if (provider.key === "instagram") return "Reconnect Instagram";
+  if (provider.key === "stripe") return "Reconnect Stripe";
   if (isGoogleOAuthProviderByConnection(provider)) {
     return "Reconnect with Google";
   }

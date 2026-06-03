@@ -1,5 +1,6 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { AuditModule } from '../audit/audit.module';
+import { ConversationsModule } from '../conversations/conversations.module';
 import { BusinessIntegrationResourcesController } from './business-integration-resources.controller';
 import { BusinessIntegrationsController } from './business-integrations.controller';
 import { GoogleOAuthController } from './google-oauth.controller';
@@ -8,6 +9,13 @@ import { IntegrationProvidersController } from './integration-providers.controll
 import { IntegrationsService } from './integrations.service';
 import { LinkedInOAuthController } from './linkedin-oauth.controller';
 import { LinkedInOAuthService } from './linkedin-oauth.service';
+import { StripeOAuthController } from './stripe/controllers/stripe-oauth.controller';
+import { StripeWebhookController } from './stripe/controllers/stripe-webhook.controller';
+import { StripeAccountService } from './stripe/services/stripe-account.service';
+import { StripeApiService } from './stripe/services/stripe-api.service';
+import { StripeCheckoutService } from './stripe/services/stripe-checkout.service';
+import { StripeOAuthService } from './stripe/services/stripe-oauth.service';
+import { StripeWebhookService } from './stripe/services/stripe-webhook.service';
 import { MetaOAuthController } from './meta/controllers/meta-oauth.controller';
 import { MetaWebhookController } from './meta/controllers/meta-webhook.controller';
 import { MetaApiClient } from './meta/services/meta-api-client';
@@ -24,6 +32,7 @@ import { GoogleBusinessProfileResourceSyncHandler } from './providers/resource-s
 import { GoogleCalendarResourceSyncHandler } from './providers/resource-sync/google-calendar-resource-sync.handler';
 import { InstagramResourceSyncHandler } from './providers/resource-sync/instagram-resource-sync.handler';
 import { IntegrationResourceSyncRegistry } from './providers/resource-sync/integration-resource-sync.registry';
+import { StripeResourceSyncHandler } from './providers/resource-sync/stripe-resource-sync.handler';
 import { WhatsAppResourceSyncHandler } from './providers/resource-sync/whatsapp-resource-sync.handler';
 import { BusinessIntegrationRepository } from './repositories/business-integration.repository';
 import { IntegrationProviderRepository } from './repositories/integration-provider.repository';
@@ -31,9 +40,10 @@ import { IntegrationResourceRepository } from './repositories/integration-resour
 import { PlatformIntegrationRepository } from './repositories/platform-integration.repository';
 import { GoogleTokenService } from './services/google-token.service';
 import { IntegrationResourcesService } from './services/integration-resources.service';
+import { MessagingStatusService } from './services/messaging-status.service';
 
 @Module({
-  imports: [AuditModule],
+  imports: [AuditModule, forwardRef(() => ConversationsModule)],
   controllers: [
     IntegrationProvidersController,
     BusinessIntegrationsController,
@@ -41,6 +51,8 @@ import { IntegrationResourcesService } from './services/integration-resources.se
     PlatformIntegrationsController,
     GoogleOAuthController,
     LinkedInOAuthController,
+    StripeOAuthController,
+    StripeWebhookController,
     MetaOAuthController,
     MetaWebhookController,
   ],
@@ -52,6 +64,11 @@ import { IntegrationResourcesService } from './services/integration-resources.se
     IntegrationsService,
     GoogleOAuthService,
     LinkedInOAuthService,
+    StripeApiService,
+    StripeAccountService,
+    StripeOAuthService,
+    StripeWebhookService,
+    StripeCheckoutService,
     GoogleTokenService,
     IntegrationResourcesService,
     GoogleCalendarResourceSyncHandler,
@@ -59,6 +76,7 @@ import { IntegrationResourcesService } from './services/integration-resources.se
     FacebookResourceSyncHandler,
     InstagramResourceSyncHandler,
     WhatsAppResourceSyncHandler,
+    StripeResourceSyncHandler,
     IntegrationResourceSyncRegistry,
     MetaConfigService,
     MetaApiClient,
@@ -68,6 +86,7 @@ import { IntegrationResourcesService } from './services/integration-resources.se
     MetaEmbeddedSignupService,
     MetaResourceSyncService,
     MetaWebhookService,
+    MessagingStatusService,
   ],
   exports: [
     IntegrationsService,
@@ -75,8 +94,13 @@ import { IntegrationResourcesService } from './services/integration-resources.se
     GoogleTokenService,
     MetaTokenService,
     MetaConfigService,
+    StripeApiService,
+    StripeAccountService,
+    StripeCheckoutService,
     BusinessIntegrationRepository,
     IntegrationResourceRepository,
+    MessagingStatusService,
+    MetaApiClient,
   ],
 })
 export class IntegrationsModule {}

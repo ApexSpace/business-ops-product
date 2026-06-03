@@ -7,7 +7,10 @@ import { encryptIntegrationCredentials } from '../../../../common/utils/integrat
 import { UpsertIntegrationResourceInput } from '../../repositories/integration-resource.repository';
 import { BusinessIntegrationRepository } from '../../repositories/business-integration.repository';
 import { IntegrationResourceRepository } from '../../repositories/integration-resource.repository';
-import { getMetaProviderConfig } from '../constants/meta-provider.config';
+import {
+  getMetaProviderConfig,
+  META_INSTAGRAM_NO_ACCOUNTS_MESSAGE,
+} from '../constants/meta-provider.config';
 import { MetaApiClient } from './meta-api-client';
 import { MetaConfigService } from './meta-config.service';
 import { MetaTokenService } from './meta-token.service';
@@ -27,16 +30,28 @@ export class MetaResourceSyncService {
   async syncAfterConnect(
     businessId: string,
     providerKey: string,
-  ): Promise<void> {
+  ): Promise<number> {
     const integration =
       await this.businessIntegrationRepository.findByBusinessAndKey(
         businessId,
         providerKey,
       );
-    if (!integration) return;
+    if (!integration) return 0;
 
     const items = await this.fetchResources(businessId, providerKey);
-    if (items.length === 0) return;
+
+    if (items.length === 0) {
+      if (providerKey === 'instagram') {
+        await this.businessIntegrationRepository.update(businessId, providerKey, {
+          errorMessage: META_INSTAGRAM_NO_ACCOUNTS_MESSAGE,
+          lastSyncAt: new Date(),
+        });
+        this.logger.warn(
+          `[Instagram Sync] saved resources count=0 — no instagram_business_account on authorized Pages`,
+        );
+      }
+      return 0;
+    }
 
     const resources = await this.resourceRepository.upsertMany(
       integration.id,
@@ -49,7 +64,10 @@ export class MetaResourceSyncService {
 
     await this.businessIntegrationRepository.update(businessId, providerKey, {
       lastSyncAt: new Date(),
+      errorMessage: null,
     });
+
+    return items.length;
   }
 
   private async ensureDefaultResources(
@@ -117,6 +135,9 @@ export class MetaResourceSyncService {
         lastSyncedAt: now,
       }));
     } else if (providerKey === 'instagram') {
+      this.logger.log(
+        `[Instagram Sync] starting fetchResources businessId=${businessId}`,
+      );
       const pages = await this.metaApiClient.listPages(accessToken);
       const accounts = await this.metaApiClient.listInstagramAccounts(
         accessToken,
@@ -124,16 +145,29 @@ export class MetaResourceSyncService {
       );
       items = accounts.map((account) => ({
         externalId: account.id,
-        name: account.username ?? account.linkedPageName,
+        name: account.username ?? account.name ?? account.linkedPageName,
         type: IntegrationResourceType.INSTAGRAM_ACCOUNT,
         metadata: {
           username: account.username ?? null,
+          displayName: account.name ?? null,
           linkedPageId: account.linkedPageId,
-          pageName: account.linkedPageName,
+          linkedPageName: account.linkedPageName,
           profilePictureUrl: account.profile_picture_url ?? null,
+          pageAccessTokenStored: Boolean(account.pageAccessToken),
+          ...(account.pageAccessToken
+            ? {
+                pageAccessTokenEncrypted: encryptIntegrationCredentials(
+                  this.metaConfigService.getEncryptionKey(),
+                  { pageAccessToken: account.pageAccessToken },
+                ),
+              }
+            : {}),
         },
         lastSyncedAt: now,
       }));
+      this.logger.log(
+        `[Instagram Sync] saved resources count=${items.length}`,
+      );
     } else if (providerKey === 'whatsapp') {
       const wabas = await this.metaApiClient.listWhatsAppBusinessAccounts(
         accessToken,

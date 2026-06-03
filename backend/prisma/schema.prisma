@@ -166,6 +166,7 @@ enum IntegrationResourceType {
   XERO_TENANT
   EMAIL_ACCOUNT
   PHONE_NUMBER
+  STRIPE_ACCOUNT
   OTHER
 }
 
@@ -217,6 +218,57 @@ enum DayOfWeek {
   SUNDAY
 }
 
+enum ConversationChannel {
+  FACEBOOK
+  INSTAGRAM
+  WHATSAPP
+  EMAIL
+  SMS
+  WEBCHAT
+  LINKEDIN
+}
+
+enum ConversationStatus {
+  OPEN
+  PENDING
+  CLOSED
+  SPAM
+}
+
+enum ConversationDirection {
+  INBOUND
+  OUTBOUND
+}
+
+enum MessageStatus {
+  RECEIVED
+  SENT
+  DELIVERED
+  READ
+  FAILED
+}
+
+enum MessageSenderType {
+  CONTACT
+  USER
+  SYSTEM
+  AI_AGENT
+}
+
+enum WebhookEventProvider {
+  META
+  STRIPE
+  GOOGLE
+  OTHER
+}
+
+enum WebhookEventStatus {
+  RECEIVED
+  PROCESSED
+  FAILED
+  IGNORED
+}
+
 model User {
   id              String    @id @default(uuid())
   email           String    @unique
@@ -250,6 +302,7 @@ model User {
   assignedAppointments Appointment[]         @relation("AppointmentAssignedTo")
   createdCalendars     Calendar[]            @relation("CalendarCreatedBy")
   createdAppointments  Appointment[]         @relation("AppointmentCreatedBy")
+  assignedConversations Conversation[]       @relation("ConversationAssignedTo")
 
   @@map("users")
 }
@@ -334,6 +387,10 @@ model Business {
   calendarAvailability CalendarAvailability[]
   calendarExceptions   CalendarException[]
   appointments         Appointment[]
+  conversations        Conversation[]
+  conversationMessages ConversationMessage[]
+  conversationParticipants ConversationParticipant[]
+  webhookEvents        WebhookEvent[]
 
   @@index([createdById])
   @@index([industryId])
@@ -417,6 +474,7 @@ model Contact {
   zip              String?
   avatarUrl        String?
   source           String?
+  metadata         Json?
   createdById      String?
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
@@ -433,6 +491,9 @@ model Contact {
   invoices     Invoice[]
   payments     Payment[]
   appointments Appointment[]
+  conversations Conversation[]
+  conversationMessages ConversationMessage[]
+  conversationParticipants ConversationParticipant[]
 
   @@index([businessId])
   @@index([businessId, createdAt])
@@ -1075,4 +1136,122 @@ model Appointment {
   @@index([businessId, startAt])
   @@index([businessId, status])
   @@map("appointments")
+}
+
+model Conversation {
+  id                     String             @id @default(uuid())
+  businessId             String
+  contactId              String?
+  channel                ConversationChannel
+  providerKey            String
+  resourceId             String?
+  externalConversationId String
+  externalParticipantId  String
+  externalPageId         String?
+  title                  String?
+  status                 ConversationStatus @default(OPEN)
+  assignedToUserId       String?
+  lastMessageAt          DateTime?
+  lastMessagePreview     String?
+  unreadCount            Int                @default(0)
+  metadata               Json?
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
+  deletedAt              DateTime?
+
+  business   Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  contact    Contact?  @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  assignedTo User?     @relation("ConversationAssignedTo", fields: [assignedToUserId], references: [id], onDelete: SetNull)
+  messages   ConversationMessage[]
+  participants ConversationParticipant[]
+
+  @@unique([businessId, channel, externalConversationId])
+  @@index([businessId])
+  @@index([contactId])
+  @@index([channel])
+  @@index([status])
+  @@index([assignedToUserId])
+  @@index([lastMessageAt])
+  @@index([businessId, lastMessageAt])
+  @@map("conversations")
+}
+
+model ConversationMessage {
+  id                  String                @id @default(uuid())
+  businessId          String
+  conversationId      String
+  contactId           String?
+  channel             ConversationChannel
+  providerKey         String
+  direction           ConversationDirection
+  senderType          MessageSenderType
+  senderUserId        String?
+  externalMessageId   String?
+  externalSenderId    String?
+  externalRecipientId String?
+  text                String?
+  attachments         Json?
+  status              MessageStatus         @default(RECEIVED)
+  errorMessage        String?
+  metadata            Json?
+  sentAt              DateTime?
+  receivedAt          DateTime?
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
+
+  business     Business     @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  contact      Contact?     @relation(fields: [contactId], references: [id], onDelete: SetNull)
+
+  @@unique([businessId, channel, externalMessageId])
+  @@index([businessId])
+  @@index([conversationId])
+  @@index([channel])
+  @@index([createdAt])
+  @@index([conversationId, createdAt])
+  @@map("conversation_messages")
+}
+
+model ConversationParticipant {
+  id                    String   @id @default(uuid())
+  businessId            String
+  conversationId        String
+  contactId             String?
+  externalParticipantId String
+  name                  String?
+  profilePictureUrl     String?
+  metadata              Json?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  business     Business     @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  contact      Contact?     @relation(fields: [contactId], references: [id], onDelete: SetNull)
+
+  @@unique([conversationId, externalParticipantId])
+  @@index([businessId])
+  @@index([conversationId])
+  @@map("conversation_participants")
+}
+
+model WebhookEvent {
+  id              String               @id @default(uuid())
+  provider        WebhookEventProvider
+  businessId      String?
+  externalEventId String?
+  eventType       String
+  payload         Json?
+  status          WebhookEventStatus   @default(RECEIVED)
+  errorMessage    String?
+  receivedAt      DateTime             @default(now())
+  processedAt     DateTime?
+
+  business Business? @relation(fields: [businessId], references: [id], onDelete: SetNull)
+
+  @@index([provider])
+  @@index([businessId])
+  @@index([externalEventId])
+  @@index([status])
+  @@index([receivedAt])
+  @@map("webhook_events")
 }

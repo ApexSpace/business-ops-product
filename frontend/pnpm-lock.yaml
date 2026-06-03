@@ -72,6 +72,12 @@ importers:
         specifier: ^4.4.3
         version: 4.4.3
     devDependencies:
+      '@emnapi/core':
+        specifier: ^1.10.0
+        version: 1.10.0
+      '@emnapi/runtime':
+        specifier: ^1.10.0
+        version: 1.10.0
       '@tailwindcss/postcss':
         specifier: ^4
         version: 4.3.0
@@ -3398,17 +3404,14 @@ snapshots:
     dependencies:
       '@emnapi/wasi-threads': 1.2.1
       tslib: 2.8.1
-    optional: true
 
   '@emnapi/runtime@1.10.0':
     dependencies:
       tslib: 2.8.1
-    optional: true
 
   '@emnapi/wasi-threads@1.2.1':
     dependencies:
       tslib: 2.8.1
-    optional: true
 
   '@eslint-community/eslint-utils@4.9.1(eslint@9.39.4(jiti@2.7.0))':
     dependencies:

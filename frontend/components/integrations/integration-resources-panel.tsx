@@ -2,35 +2,36 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { InstagramSetupChecklist } from "@/components/integrations/instagram-setup-checklist";
+import { IntegrationEmptyState } from "@/components/integrations/integration-empty-state";
 import { IntegrationResourceList } from "@/components/integrations/integration-resource-list";
 import { SyncResourcesButton } from "@/components/integrations/sync-resources-button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { apiClient } from "@/lib/api-client";
+import { getIntegrationManageCopy } from "@/lib/integration-manage-copy";
 import {
   providerSupportsResources,
   type IntegrationResourcesListResponse,
   type SyncIntegrationResourcesResponse,
 } from "@/lib/integration-resources";
+import { getIntegrationReconnectLabel } from "@/lib/integrations";
 import { queryKeys } from "@/lib/query-keys";
 
 export interface IntegrationResourcesPanelProps {
   providerKey: string;
   isConnected: boolean;
   canManage?: boolean;
-  resourceLabel?: string | null;
-  showInstagramEmptyChecklist?: boolean;
+  onReconnect?: () => void;
 }
 
 export function IntegrationResourcesPanel({
   providerKey,
   isConnected,
   canManage = false,
-  resourceLabel,
-  showInstagramEmptyChecklist = false,
+  onReconnect,
 }: IntegrationResourcesPanelProps) {
   const queryClient = useQueryClient();
   const supportsResources = providerSupportsResources(providerKey);
+  const copy = getIntegrationManageCopy(providerKey);
 
   const { data, isLoading } = useQuery({
     queryKey: queryKeys.integrations.businessResources(providerKey),
@@ -53,10 +54,11 @@ export function IntegrationResourcesPanel({
         { method: "POST" },
       ),
     onSuccess: async (result) => {
-      if (result.synced) {
-        toast.success("Resources synced successfully");
-      } else if (result.message) {
-        toast.message(result.message);
+      const count = result.resources?.length ?? 0;
+      if (count > 0) {
+        toast.success(copy.syncSuccessToast(count));
+      } else {
+        toast.message(copy.syncEmptyToast);
       }
       await invalidateResources();
     },
@@ -93,7 +95,7 @@ export function IntegrationResourcesPanel({
         { method: "POST" },
       ),
     onSuccess: async () => {
-      toast.success("Default resource updated");
+      toast.success("Default updated");
       await invalidateResources();
     },
     onError: (error: Error) => toast.error(error.message),
@@ -109,54 +111,58 @@ export function IntegrationResourcesPanel({
     unselectMutation.isPending ||
     makeDefaultMutation.isPending;
 
-  const label = resourceLabel ?? data?.resourceLabel ?? "Resources";
   const syncEnabled = data?.syncEnabled ?? false;
+  const resources = data?.resources ?? [];
   const isGbp = providerKey === "google-business-profile";
 
   return (
-    <div className="space-y-4 border-t border-border/70 pt-4">
+    <section className="space-y-4">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h3 className="text-sm font-medium">Connected {label}</h3>
-          <p className="text-xs text-muted-foreground">
-            Choose which {label.toLowerCase()} this business should use.
-          </p>
-          {isGbp ? (
-            <p className="mt-1 text-xs text-muted-foreground">
-              Google limits Business Profile API requests. Sync once, then wait about
-              a minute before trying again.
-            </p>
-          ) : null}
-        </div>
+        <h3 className="text-sm font-medium">{copy.resourcesSectionLabel}</h3>
         {canManage ? (
           <SyncResourcesButton
             onSync={() => syncMutation.mutate()}
             isPending={syncMutation.isPending}
             disabled={!syncEnabled}
-            label={syncEnabled ? `Sync ${label.toLowerCase()}` : "Sync unavailable"}
+            label={
+              syncEnabled
+                ? copy.syncButtonLabel
+                : "Sync unavailable"
+            }
           />
         ) : null}
       </div>
 
-      {!syncEnabled && canManage ? (
+      {isGbp ? (
         <p className="text-xs text-muted-foreground">
-          Resource sync will be available when provider handler is enabled.
+          Google limits how often profiles can be refreshed. Sync once, then wait
+          about a minute before trying again.
         </p>
       ) : null}
 
       {isLoading ? (
         <Skeleton className="h-24 w-full" />
-      ) : (data?.resources?.length ?? 0) === 0 &&
-        showInstagramEmptyChecklist ? (
-        <InstagramSetupChecklist />
-      ) : (data?.resources?.length ?? 0) === 0 ? (
-        <p className="text-sm text-muted-foreground">
-          No {label.toLowerCase()} found. Try syncing resources after granting
-          permissions in Meta.
-        </p>
+      ) : resources.length === 0 ? (
+        <IntegrationEmptyState
+          copy={copy.emptyState}
+          onReconnect={canManage ? onReconnect : undefined}
+          reconnectLabel={getIntegrationReconnectLabel({
+            key: providerKey,
+            name: copy.connectionTitle,
+            connectionType: "OAUTH",
+          })}
+          onSync={
+            canManage && syncEnabled
+              ? () => syncMutation.mutate()
+              : undefined
+          }
+          syncLabel={copy.syncButtonLabel}
+          isSyncPending={syncMutation.isPending}
+          syncDisabled={!syncEnabled}
+        />
       ) : (
         <IntegrationResourceList
-          resources={data?.resources ?? []}
+          resources={resources}
           canManage={canManage}
           isPending={isPending}
           onSelect={(id) => selectMutation.mutate(id)}
@@ -164,6 +170,6 @@ export function IntegrationResourcesPanel({
           onMakeDefault={(id) => makeDefaultMutation.mutate(id)}
         />
       )}
-    </div>
+    </section>
   );
 }

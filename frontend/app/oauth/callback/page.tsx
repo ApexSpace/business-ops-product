@@ -19,6 +19,7 @@ function OAuthCallbackContent() {
   useEffect(() => {
     const connected = searchParams.get("connected");
     const error = searchParams.get("error");
+    const warning = searchParams.get("warning") ?? undefined;
     const providerKey =
       searchParams.get("providerKey") ?? connected ?? undefined;
 
@@ -28,6 +29,7 @@ function OAuthCallbackContent() {
       postOAuthResultToOpener({
         type: OAUTH_MESSAGE_TYPE.SUCCESS,
         providerKey: providerKey ?? connected,
+        warning,
       });
       const timer = window.setTimeout(() => window.close(), 1500);
       return () => window.clearTimeout(timer);

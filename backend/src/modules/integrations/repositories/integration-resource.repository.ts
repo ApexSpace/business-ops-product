@@ -14,6 +14,8 @@ export type UpsertIntegrationResourceInput = {
   metadata?: Prisma.InputJsonValue;
   status?: IntegrationResourceStatus;
   lastSyncedAt?: Date;
+  isSelected?: boolean;
+  isDefault?: boolean;
 };
 
 @Injectable()
@@ -106,12 +108,18 @@ export class IntegrationResourceRepository {
             metadata: item.metadata,
             status: item.status ?? IntegrationResourceStatus.ACTIVE,
             lastSyncedAt: item.lastSyncedAt,
+            isSelected: item.isSelected ?? false,
+            isDefault: item.isDefault ?? false,
           },
           update: {
             name: item.name,
             metadata: item.metadata,
             status: item.status ?? IntegrationResourceStatus.ACTIVE,
             lastSyncedAt: item.lastSyncedAt,
+            ...(item.isSelected !== undefined
+              ? { isSelected: item.isSelected }
+              : {}),
+            ...(item.isDefault !== undefined ? { isDefault: item.isDefault } : {}),
           },
         }),
       ),

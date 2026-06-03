@@ -27,7 +27,7 @@ export class MetaOAuthCallbackRouter {
     const flowType = this.resolveCallbackFlow(state, error);
 
     this.logger.log(
-      `Meta OAuth callback flowType=${flowType ?? 'unknown'} hasState=${Boolean(state)} hasError=${Boolean(error)}`,
+      `[Meta OAuth] callback route flowType=${flowType ?? 'unknown'} hasState=${Boolean(state)} hasCode=${Boolean(code)} hasError=${Boolean(error)}`,
     );
 
     if (flowType === 'WHATSAPP_EMBEDDED_SIGNUP') {

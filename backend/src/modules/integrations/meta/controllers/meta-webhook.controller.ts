@@ -1,14 +1,16 @@
 import {
-  Body,
   Controller,
   Get,
+  Headers,
   HttpCode,
   Post,
   Query,
+  Req,
   Res,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
-import type { Response } from 'express';
+import type { RawBodyRequest } from '@nestjs/common';
+import type { Request, Response } from 'express';
 import { Public } from '../../../../common/decorators/public.decorator';
 import { SkipEnvelope } from '../../../../common/decorators/skip-envelope.decorator';
 import { MetaWebhookService } from '../services/meta-webhook.service';
@@ -43,8 +45,15 @@ export class MetaWebhookController {
   @Public()
   @SkipEnvelope()
   @HttpCode(200)
-  async receive(@Body() body: Record<string, unknown>): Promise<{ success: true }> {
-    await this.metaWebhookService.handleEvent(body);
+  receive(
+    @Req() req: RawBodyRequest<Request>,
+    @Headers('x-hub-signature-256') signature: string | undefined,
+  ): { success: true } {
+    const rawBody = req.rawBody;
+    if (!rawBody) {
+      throw new Error('Raw body is required for Meta webhook verification');
+    }
+    this.metaWebhookService.handleEvent(rawBody, signature);
     return { success: true };
   }
 }

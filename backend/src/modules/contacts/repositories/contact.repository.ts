@@ -112,6 +112,22 @@ export class ContactRepository {
     });
   }
 
+  findByMetadataExternalId(
+    businessId: string,
+    metadataKey: 'facebookPsid' | 'instagramUserId',
+    externalId: string,
+  ): Promise<Contact | null> {
+    return this.prisma.contact.findFirst({
+      where: this.activeWhere(businessId, {
+        metadata: {
+          path: [metadataKey],
+          equals: externalId,
+        },
+      }),
+      include: contactWithTags,
+    });
+  }
+
   async findByPhoneKey(
     businessId: string,
     phoneKey: string,

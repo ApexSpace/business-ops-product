@@ -22,6 +22,7 @@ import {
   UpdateIntegrationDto,
 } from './dto/integration.dto';
 import { IntegrationsService } from './integrations.service';
+import { MessagingStatusService } from './services/messaging-status.service';
 import { WhatsAppEmbeddedSignupCompleteDto } from './meta/dto/whatsapp-embedded-signup.dto';
 import { MetaEmbeddedSignupService } from './meta/services/meta-embedded-signup.service';
 
@@ -33,6 +34,7 @@ export class BusinessIntegrationsController {
   constructor(
     private readonly integrationsService: IntegrationsService,
     private readonly metaEmbeddedSignupService: MetaEmbeddedSignupService,
+    private readonly messagingStatusService: MessagingStatusService,
   ) {}
 
   @Get()
@@ -45,6 +47,22 @@ export class BusinessIntegrationsController {
     @CurrentUser() user: RequestUser,
   ): Promise<BusinessIntegrationResponseDto[]> {
     return this.integrationsService.listBusinessIntegrations(user.businessId!);
+  }
+
+  @Get(':providerKey/messaging-status')
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
+  getMessagingStatus(
+    @CurrentUser() user: RequestUser,
+    @Param('providerKey') providerKey: string,
+  ) {
+    return this.messagingStatusService.getMessagingStatus(
+      user.businessId!,
+      providerKey,
+    );
   }
 
   @Get(':providerKey')

@@ -25,8 +25,12 @@ import { apiClient } from "@/lib/api-client";
 import { useAuth } from "@/lib/auth-provider";
 import {
   formatOAuthErrorMessage,
+  formatOAuthWarningMessage,
   getOAuthStartUrl,
+  hasOAuthStartRoute,
+  filterIntegrationProvidersByCategory,
   INTEGRATION_CATEGORY_LABELS,
+  OAUTH_ROUTE_NOT_CONFIGURED_MESSAGE,
   shouldUseManualConnect,
   shouldUseOAuthPopup,
   usesWhatsAppEmbeddedSignup,
@@ -91,10 +95,10 @@ export function BusinessIntegrationsSettings() {
       shouldUseOAuthPopup(selectedProvider),
   });
 
-  const filteredProviders = useMemo(() => {
-    if (category === "ALL") return providers;
-    return providers.filter((provider) => provider.category === category);
-  }, [providers, category]);
+  const filteredProviders = useMemo(
+    () => filterIntegrationProvidersByCategory(providers, category),
+    [providers, category],
+  );
 
   const invalidateIntegrations = async () => {
     await Promise.all([
@@ -121,6 +125,12 @@ export function BusinessIntegrationsSettings() {
         );
         const label = provider?.name ?? message.providerKey;
         toast.success(`${label} connected successfully`);
+        if (message.warning) {
+          const warningText = formatOAuthWarningMessage(message.warning);
+          if (warningText) {
+            toast.warning(warningText);
+          }
+        }
         void invalidateIntegrations();
         if (message.providerKey) {
           void queryClient.invalidateQueries({
@@ -224,9 +234,31 @@ export function BusinessIntegrationsSettings() {
       );
     }
 
+    if (!hasOAuthStartRoute(provider.key)) {
+      toast.error(OAUTH_ROUTE_NOT_CONFIGURED_MESSAGE);
+      return;
+    }
+
     oauthCompletedRef.current = false;
     setConnectingProviderKey(provider.key);
-    const url = getOAuthStartUrl(provider.key);
+
+    let url: string;
+    try {
+      url = getOAuthStartUrl(provider.key);
+    } catch (error) {
+      setConnectingProviderKey(null);
+      toast.error(
+        error instanceof Error
+          ? formatOAuthErrorMessage(error.message)
+          : OAUTH_ROUTE_NOT_CONFIGURED_MESSAGE,
+      );
+      return;
+    }
+
+    if (process.env.NODE_ENV === "development") {
+      console.info(`[integrations] OAuth start url=${url}`);
+    }
+
     const { blocked, popup } = openOAuthPopup(url);
 
     if (blocked) {
@@ -345,6 +377,7 @@ export function BusinessIntegrationsSettings() {
         mode={dialogMode}
         isPending={isPending}
         canDelete={canManage}
+        showAdvancedDetails={canManage}
         onSubmit={handleDialogSubmit}
         onDelete={() => setDeleteOpen(true)}
         onReconnect={

@@ -1,4 +1,4 @@
-import { HttpStatus, Injectable } from '@nestjs/common';
+import { HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AppException } from '../../../../common/exceptions/app.exception';
 import { ErrorCode } from '../../../../common/exceptions/error-code.enum';
@@ -6,21 +6,38 @@ import { RootConfig } from '../../../../config/configuration';
 import {
   isMetaBusinessOAuthProviderKey,
   META_CONFIG_IDS_MUST_DIFFER_MESSAGE,
-  META_LOGIN_NOT_CONFIGURED_MESSAGE,
+  META_FACEBOOK_INSTAGRAM_SAME_CONFIG_WARNING,
+  META_FACEBOOK_LOGIN_NOT_CONFIGURED_MESSAGE,
+  META_INSTAGRAM_LOGIN_CONFIG_SETUP_HINT,
+  META_INSTAGRAM_LOGIN_NOT_CONFIGURED_MESSAGE,
+  META_OAUTH_CONFIG_MATCHES_WHATSAPP_MESSAGE,
   META_WRONG_CONFIG_FOR_OAUTH_MESSAGE,
   WHATSAPP_EMBEDDED_SIGNUP_NOT_CONFIGURED_MESSAGE,
+  type MetaBusinessOAuthProviderKey,
   type MetaProviderKey,
 } from '../constants/meta-provider.config';
 
 export const META_ENV_NOT_CONFIGURED_MESSAGE =
   'Meta integration is not configured. Please set META_APP_ID, META_APP_SECRET, and META_REDIRECT_URI in backend environment.';
 
+export type MetaOAuthLoginConfigSource =
+  | 'META_FACEBOOK_LOGIN_CONFIG_ID'
+  | 'META_INSTAGRAM_LOGIN_CONFIG_ID'
+  | 'META_LOGIN_CONFIG_ID';
+
+export interface MetaOAuthLoginConfigResolution {
+  configId: string;
+  source: MetaOAuthLoginConfigSource;
+}
+
 export interface MetaAppConfig {
   appId: string;
   appSecret: string;
   webhookVerifyToken: string | null;
-  /** Facebook Login for Business — Facebook & Instagram OAuth */
+  /** @deprecated Fallback when provider-specific Login config IDs are unset */
   loginConfigId: string | null;
+  facebookLoginConfigId: string | null;
+  instagramLoginConfigId: string | null;
   /** WhatsApp Embedded Signup only */
   embeddedSignupConfigId: string | null;
   graphApiVersion: string;
@@ -28,6 +45,10 @@ export interface MetaAppConfig {
 
 @Injectable()
 export class MetaConfigService {
+  private readonly logger = new Logger(MetaConfigService.name);
+  private sameConfigWarningLogged = false;
+  private instagramSetupHintLogged = false;
+
   constructor(
     private readonly configService: ConfigService<RootConfig, true>,
   ) {}
@@ -50,6 +71,10 @@ export class MetaConfigService {
       appSecret,
       webhookVerifyToken: process.env.META_WEBHOOK_VERIFY_TOKEN?.trim() ?? null,
       loginConfigId: process.env.META_LOGIN_CONFIG_ID?.trim() ?? null,
+      facebookLoginConfigId:
+        process.env.META_FACEBOOK_LOGIN_CONFIG_ID?.trim() ?? null,
+      instagramLoginConfigId:
+        process.env.META_INSTAGRAM_LOGIN_CONFIG_ID?.trim() ?? null,
       embeddedSignupConfigId:
         process.env.META_EMBEDDED_SIGNUP_CONFIG_ID?.trim() ?? null,
       graphApiVersion: process.env.META_GRAPH_API_VERSION?.trim() ?? 'v20.0',
@@ -85,8 +110,21 @@ export class MetaConfigService {
     return this.getMetaAppConfig().loginConfigId;
   }
 
+  getFacebookLoginConfigId(): string | null {
+    return this.getMetaAppConfig().facebookLoginConfigId;
+  }
+
+  getInstagramLoginConfigId(): string | null {
+    return this.getMetaAppConfig().instagramLoginConfigId;
+  }
+
   hasLoginConfig(): boolean {
-    return Boolean(this.getLoginConfigId());
+    const config = this.getMetaAppConfig();
+    return Boolean(
+      config.loginConfigId ||
+        config.facebookLoginConfigId ||
+        config.instagramLoginConfigId,
+    );
   }
 
   getEmbeddedSignupConfigId(): string | null {
@@ -97,8 +135,10 @@ export class MetaConfigService {
     return Boolean(this.getEmbeddedSignupConfigId());
   }
 
-  /** Facebook / Instagram — must use Login for Business config ID only. */
-  assertLoginConfigForOAuth(providerKey: string): string {
+  /** Facebook / Instagram — Login for Business config ID (provider-specific with fallback). */
+  assertLoginConfigForOAuth(
+    providerKey: string,
+  ): MetaOAuthLoginConfigResolution {
     const normalized = String(providerKey).trim();
     if (!isMetaBusinessOAuthProviderKey(normalized)) {
       throw new AppException(
@@ -108,31 +148,90 @@ export class MetaConfigService {
       );
     }
 
-    const loginId = this.getLoginConfigId();
+    const resolution = this.resolveOAuthLoginConfig(
+      normalized as MetaBusinessOAuthProviderKey,
+    );
+
+    if (!resolution) {
+      throw new AppException(
+        ErrorCode.BAD_REQUEST,
+        normalized === 'facebook'
+          ? META_FACEBOOK_LOGIN_NOT_CONFIGURED_MESSAGE
+          : META_INSTAGRAM_LOGIN_NOT_CONFIGURED_MESSAGE,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    this.assertOAuthConfigNotWhatsAppEmbedded(resolution.configId);
+
+    this.warnIfFacebookAndInstagramShareConfigId();
+
+    return resolution;
+  }
+
+  private resolveOAuthLoginConfig(
+    providerKey: MetaBusinessOAuthProviderKey,
+  ): MetaOAuthLoginConfigResolution | null {
+    const fallback = this.getLoginConfigId();
+
+    if (providerKey === 'facebook') {
+      const specific = this.getFacebookLoginConfigId();
+      if (specific) {
+        return {
+          configId: specific,
+          source: 'META_FACEBOOK_LOGIN_CONFIG_ID',
+        };
+      }
+      if (fallback) {
+        return { configId: fallback, source: 'META_LOGIN_CONFIG_ID' };
+      }
+      return null;
+    }
+
+    const specific = this.getInstagramLoginConfigId();
+    if (specific) {
+      return {
+        configId: specific,
+        source: 'META_INSTAGRAM_LOGIN_CONFIG_ID',
+      };
+    }
+    if (fallback) {
+      return { configId: fallback, source: 'META_LOGIN_CONFIG_ID' };
+    }
+    return null;
+  }
+
+  private assertOAuthConfigNotWhatsAppEmbedded(configId: string): void {
     const embeddedId = this.getEmbeddedSignupConfigId();
-
-    if (!loginId) {
+    if (embeddedId && configId === embeddedId) {
       throw new AppException(
         ErrorCode.BAD_REQUEST,
-        META_LOGIN_NOT_CONFIGURED_MESSAGE,
+        META_OAUTH_CONFIG_MATCHES_WHATSAPP_MESSAGE,
         HttpStatus.BAD_REQUEST,
       );
     }
+  }
 
-    if (embeddedId && loginId === embeddedId) {
-      throw new AppException(
-        ErrorCode.BAD_REQUEST,
-        META_CONFIG_IDS_MUST_DIFFER_MESSAGE,
-        HttpStatus.BAD_REQUEST,
-      );
+  private warnIfFacebookAndInstagramShareConfigId(): void {
+    if (this.sameConfigWarningLogged) {
+      return;
     }
 
-    return loginId;
+    const facebook = this.resolveOAuthLoginConfig('facebook');
+    const instagram = this.resolveOAuthLoginConfig('instagram');
+
+    if (
+      facebook &&
+      instagram &&
+      facebook.configId === instagram.configId
+    ) {
+      this.sameConfigWarningLogged = true;
+      this.logger.warn(META_FACEBOOK_INSTAGRAM_SAME_CONFIG_WARNING);
+    }
   }
 
   /** WhatsApp Embedded Signup — must use embedded signup config ID only. */
   assertEmbeddedSignupConfigForWhatsApp(): string {
-    const loginId = this.getLoginConfigId();
     const embeddedId = this.getEmbeddedSignupConfigId();
 
     if (!embeddedId) {
@@ -143,7 +242,12 @@ export class MetaConfigService {
       );
     }
 
-    if (loginId && loginId === embeddedId) {
+    const facebookId =
+      this.resolveOAuthLoginConfig('facebook')?.configId ?? null;
+    const instagramId =
+      this.resolveOAuthLoginConfig('instagram')?.configId ?? null;
+
+    if (embeddedId === facebookId || embeddedId === instagramId) {
       throw new AppException(
         ErrorCode.BAD_REQUEST,
         META_CONFIG_IDS_MUST_DIFFER_MESSAGE,
@@ -162,10 +266,15 @@ export class MetaConfigService {
   } {
     const { appId, graphApiVersion, embeddedSignupConfigId } =
       this.getMetaAppConfig();
+    const facebookId =
+      this.resolveOAuthLoginConfig('facebook')?.configId ?? null;
+    const instagramId =
+      this.resolveOAuthLoginConfig('instagram')?.configId ?? null;
+    const loginIds = [facebookId, instagramId].filter(Boolean) as string[];
+
     const ready = Boolean(
       embeddedSignupConfigId &&
-        (!this.getLoginConfigId() ||
-          embeddedSignupConfigId !== this.getLoginConfigId()),
+        loginIds.every((id) => id !== embeddedSignupConfigId),
     );
     return {
       appId,
@@ -198,5 +307,14 @@ export class MetaConfigService {
     return (
       (process.env.META_OAUTH_ENABLED ?? 'false').toLowerCase() === 'true'
     );
+  }
+
+  /** Log once — wrong META_INSTAGRAM_LOGIN_CONFIG_ID causes Instagram direct login instead of Facebook OAuth. */
+  logInstagramFacebookLoginSetupHint(): void {
+    if (this.instagramSetupHintLogged) {
+      return;
+    }
+    this.instagramSetupHintLogged = true;
+    this.logger.log(META_INSTAGRAM_LOGIN_CONFIG_SETUP_HINT);
   }
 }

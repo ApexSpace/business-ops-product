@@ -1,74 +1,83 @@
 "use client";
 
-import { MessageSquare, Send } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { cn } from "@/lib/utils";
+import Link from "next/link";
+import { useQuery } from "@tanstack/react-query";
+import { formatRelativeTime } from "@/lib/relative-time";
+import { MessageSquare } from "lucide-react";
+import { channelLabel, listConversationsByContact } from "@/lib/conversations";
+import { queryKeys } from "@/lib/query-keys";
 import { WORKSPACE_PANEL_CLASS } from "@/lib/contact-workspace";
+import { cn } from "@/lib/utils";
 
 interface ContactConversationPanelProps {
+  contactId: string;
   contactName: string;
   className?: string;
 }
 
 export function ContactConversationPanel({
+  contactId,
   contactName,
   className,
 }: ContactConversationPanelProps) {
+  const { data: conversations = [], isLoading } = useQuery({
+    queryKey: queryKeys.conversations.byContact(contactId),
+    queryFn: () => listConversationsByContact(contactId),
+  });
+
   return (
     <section className={cn(WORKSPACE_PANEL_CLASS, className)}>
-      <div className="flex min-h-0 flex-1 flex-col">
-        <div className="flex flex-1 flex-col items-center justify-center gap-4 px-6 text-center">
-          <div className="flex size-16 items-center justify-center rounded-full bg-muted ring-1 ring-border/60">
-            <MessageSquare className="size-7 text-muted-foreground/70" />
-          </div>
-          <div className="max-w-sm space-y-1">
-            <h2 className="text-lg font-semibold tracking-tight">
-              Start a New Conversation
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              Message {contactName} from one inbox. SMS, email, and WhatsApp
-              will connect here soon.
-            </p>
-          </div>
-          <Button size="sm" disabled>
-            Connect channel (soon)
-          </Button>
+      <div className="flex min-h-0 flex-1 flex-col p-4">
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-sm font-semibold">Conversations</h2>
+          <Link
+            href="/business/conversations"
+            className="inline-flex h-8 items-center justify-center rounded-lg border border-border bg-background px-3 text-sm font-medium hover:bg-muted"
+          >
+            Open inbox
+          </Link>
         </div>
 
-        <div className="shrink-0 border-t border-border/60 bg-muted/20 p-3">
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
-            <Select disabled defaultValue="sms">
-              <SelectTrigger className="h-9 w-full sm:w-[140px]" size="sm">
-                <SelectValue placeholder="Channel" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="sms">SMS</SelectItem>
-                <SelectItem value="email">Email</SelectItem>
-                <SelectItem value="whatsapp">WhatsApp</SelectItem>
-              </SelectContent>
-            </Select>
-            <Input
-              disabled
-              placeholder="Type a message…"
-              className="min-h-9 flex-1"
-            />
-            <Button size="sm" disabled className="shrink-0">
-              <Send className="mr-1.5 size-4" />
-              Send
-            </Button>
+        {isLoading ? (
+          <p className="text-sm text-muted-foreground">Loading…</p>
+        ) : conversations.length === 0 ? (
+          <div className="flex flex-1 flex-col items-center justify-center gap-3 text-center">
+            <MessageSquare className="size-8 text-muted-foreground/60" />
+            <p className="text-sm text-muted-foreground">
+              No conversations yet for {contactName}.
+            </p>
           </div>
-          <p className="mt-2 text-center text-xs text-muted-foreground">
-            Composer is a preview — conversations module coming soon
-          </p>
-        </div>
+        ) : (
+          <ul className="space-y-2">
+            {conversations.map((conversation) => (
+              <li key={conversation.id}>
+                <Link
+                  href={`/business/conversations?conversation=${conversation.id}`}
+                  className="block rounded-lg border border-border/70 bg-muted/20 p-3 transition-colors hover:bg-muted/40"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-sm font-medium">
+                      {channelLabel(conversation.channel)}
+                    </span>
+                    {conversation.lastMessageAt ? (
+                      <span className="text-[10px] text-muted-foreground">
+                        {formatRelativeTime(conversation.lastMessageAt)}
+                      </span>
+                    ) : null}
+                  </div>
+                  <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
+                    {conversation.lastMessagePreview ?? "No messages"}
+                  </p>
+                  {conversation.unreadCount > 0 ? (
+                    <p className="mt-1 text-xs font-medium text-primary">
+                      {conversation.unreadCount} unread
+                    </p>
+                  ) : null}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
     </section>
   );

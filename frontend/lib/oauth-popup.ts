@@ -9,6 +9,8 @@ export type OAuthMessageType =
 export interface OAuthSuccessMessage {
   type: typeof OAUTH_MESSAGE_TYPE.SUCCESS;
   providerKey: string;
+  /** Backend warning code (e.g. no_instagram_resources) */
+  warning?: string;
 }
 
 export interface OAuthErrorMessage {

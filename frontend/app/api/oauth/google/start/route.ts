@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getBackendApiUrl } from "@/lib/env";
+import { hasOAuthStartRoute, isGoogleOAuthProvider } from "@/lib/integrations";
 import { getAccessToken } from "@/lib/server-api";
 
 export async function GET(request: NextRequest) {
@@ -9,6 +10,18 @@ export async function GET(request: NextRequest) {
       { message: "providerKey is required" },
       { status: 400 },
     );
+  }
+
+  if (!isGoogleOAuthProvider(providerKey)) {
+    const redirectUrl = new URL("/oauth/callback", request.url);
+    redirectUrl.searchParams.set(
+      "error",
+      hasOAuthStartRoute(providerKey)
+        ? "oauth_wrong_handler"
+        : "oauth_route_not_configured",
+    );
+    redirectUrl.searchParams.set("providerKey", providerKey);
+    return NextResponse.redirect(redirectUrl);
   }
 
   const accessToken = await getAccessToken();

@@ -71,11 +71,13 @@ const integrationProviders = [
   // Payments
   {
     key: 'stripe',
-    name: 'Stripe / Payments and Checkout',
-    description: 'Accept online payments and manage checkout flows.',
+    name: 'Stripe',
+    description:
+      'Connect your Stripe account to accept online payments and invoice checkout.',
     category: 'PAYMENTS',
-    isPlatformLevel: true,
+    isPlatformLevel: false,
     isBusinessLevel: true,
+    connectionType: 'OAUTH',
     sortOrder: 60,
   },
   // Social Media
@@ -112,21 +114,12 @@ const integrationProviders = [
   },
   {
     key: 'tiktok-messaging',
-    name: 'TikTok Messaging',
+    name: 'TikTok',
     description: 'Respond to TikTok direct messages.',
     category: 'SOCIAL_MEDIA',
     isPlatformLevel: false,
     isBusinessLevel: true,
     sortOrder: 100,
-  },
-  {
-    key: 'tiktok-lead-ads',
-    name: 'TikTok Lead Ads',
-    description: 'Capture leads from TikTok advertising campaigns.',
-    category: 'SOCIAL_MEDIA',
-    isPlatformLevel: false,
-    isBusinessLevel: true,
-    sortOrder: 110,
   },
   // Ads
   {
@@ -138,6 +131,15 @@ const integrationProviders = [
     isBusinessLevel: true,
     connectionType: 'OAUTH',
     sortOrder: 120,
+  },
+  {
+    key: 'tiktok-lead-ads',
+    name: 'TikTok Lead Ads',
+    description: 'Capture leads from TikTok advertising campaigns.',
+    category: 'ADS',
+    isPlatformLevel: false,
+    isBusinessLevel: true,
+    sortOrder: 125,
   },
   // Accounting
   {

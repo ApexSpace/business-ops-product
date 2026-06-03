@@ -51,6 +51,16 @@ export class GoogleOAuthService {
     providerKey: string,
     res: Response,
   ): Promise<void> {
+    if (!isGoogleOAuthProviderKey(providerKey)) {
+      res.redirect(
+        this.buildOAuthCallbackUrl({
+          error: 'google_oauth_invalid_provider',
+          providerKey,
+        }),
+      );
+      return;
+    }
+
     this.assertGoogleOAuthConfigured();
     await this.assertOAuthProvider(providerKey);
 

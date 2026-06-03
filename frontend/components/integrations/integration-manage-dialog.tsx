@@ -6,9 +6,10 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
 import { FormDialog } from "@/components/forms/form-dialog";
+import { IntegrationAdvancedDetails } from "@/components/integrations/integration-advanced-details";
+import { IntegrationMessagingStatus } from "@/components/integrations/integration-messaging-status";
+import { IntegrationManageHeader } from "@/components/integrations/integration-manage-header";
 import { IntegrationResourcesPanel } from "@/components/integrations/integration-resources-panel";
-import { IntegrationStatusBadge } from "@/components/integrations/integration-status-badge";
-import { Button } from "@/components/ui/button";
 import {
   FormControl,
   FormDescription,
@@ -19,18 +20,13 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { InstagramSetupChecklist } from "@/components/integrations/instagram-setup-checklist";
-import { MetaAppReviewNotes } from "@/components/integrations/meta-app-review-notes";
-import { MetaWebhookStatus } from "@/components/integrations/meta-webhook-status";
 import {
-  formatIntegrationDate,
   getIntegrationReconnectLabel,
-  isMetaBusinessProvider,
   shouldUseOAuthPopup,
   type BusinessIntegration,
   type IntegrationProviderWithStatus,
-  type IntegrationStatus,
 } from "@/lib/integrations";
+import { getIntegrationManageCopy } from "@/lib/integration-manage-copy";
 import { providerSupportsResources } from "@/lib/integration-resources";
 
 const schema = z.object({
@@ -49,6 +45,7 @@ export interface IntegrationManageDialogProps {
   mode: "connect" | "manage";
   isPending?: boolean;
   canDelete?: boolean;
+  showAdvancedDetails?: boolean;
   onSubmit: (values: IntegrationManageFormValues) => void;
   onDelete?: () => void;
   onReconnect?: () => void;
@@ -77,19 +74,57 @@ export function integrationFormToPayload(values: IntegrationManageFormValues) {
   };
 }
 
-function OAuthScopesList({ scopes }: { scopes: string[] }) {
-  if (scopes.length === 0) return null;
+function OAuthManageDialogBody({
+  provider,
+  integrationDetail,
+  isConnected,
+  canDelete,
+  showAdvancedDetails,
+  oauthScopes,
+  onReconnect,
+}: {
+  provider: IntegrationProviderWithStatus;
+  integrationDetail?: BusinessIntegration | null;
+  isConnected: boolean;
+  canDelete: boolean;
+  showAdvancedDetails: boolean;
+  oauthScopes: string[];
+  onReconnect?: () => void;
+}) {
+  const supportsResources = providerSupportsResources(provider.key);
 
   return (
-    <div className="space-y-2">
-      <p className="text-sm font-medium">Granted scopes</p>
-      <ul className="max-h-32 space-y-1 overflow-y-auto text-xs text-muted-foreground">
-        {scopes.map((scope) => (
-          <li key={scope} className="truncate font-mono">
-            {scope}
-          </li>
-        ))}
-      </ul>
+    <div className="space-y-6">
+      <IntegrationManageHeader provider={provider} />
+
+      {(provider.key === "facebook" || provider.key === "instagram") && (
+        <IntegrationMessagingStatus
+          providerKey={provider.key}
+          isConnected={isConnected}
+        />
+      )}
+
+      {supportsResources && isConnected ? (
+        <IntegrationResourcesPanel
+          providerKey={provider.key}
+          isConnected={isConnected}
+          canManage={canDelete}
+          onReconnect={onReconnect}
+        />
+      ) : provider.key === "linkedin" && isConnected ? (
+        <div className="rounded-lg border border-border/70 bg-muted/20 p-4 text-sm text-muted-foreground">
+          Your LinkedIn account is connected. Additional organization features
+          will appear here when they are available.
+        </div>
+      ) : null}
+
+      {showAdvancedDetails ? (
+        <IntegrationAdvancedDetails
+          provider={provider}
+          integrationDetail={integrationDetail}
+          oauthScopes={oauthScopes}
+        />
+      ) : null}
     </div>
   );
 }
@@ -102,6 +137,7 @@ export function IntegrationManageDialog({
   mode,
   isPending = false,
   canDelete = false,
+  showAdvancedDetails = true,
   onSubmit,
   onDelete,
   onReconnect,
@@ -129,7 +165,9 @@ export function IntegrationManageDialog({
 
   const isOAuth = shouldUseOAuthPopup(provider);
   const isConnected = provider.status !== "NOT_CONNECTED";
-  const title = mode === "connect" ? `Connect ${provider.name}` : `Manage ${provider.name}`;
+  const copy = getIntegrationManageCopy(provider.key);
+  const title =
+    mode === "connect" ? `Connect ${provider.name}` : copy.connectionTitle;
   const oauthScopes = Array.isArray(integrationDetail?.config?.scopes)
     ? (integrationDetail.config.scopes as string[])
     : [];
@@ -149,103 +187,30 @@ export function IntegrationManageDialog({
         open={open}
         onOpenChange={onOpenChange}
         title={title}
-        description={provider.description ?? undefined}
         form={form}
         onSubmit={() => onOpenChange(false)}
         isPending={isPending}
         submitLabel="Close"
         size="lg"
+        footerVariant="actions"
+        hideCancel
+        onReconnect={
+          isConnected && canDelete && onReconnect ? onReconnect : undefined
+        }
+        reconnectLabel={getIntegrationReconnectLabel(provider)}
+        onDelete={isConnected && canDelete && onDelete ? onDelete : undefined}
+        deleteLabel={copy.disconnectLabel}
+        isDeletePending={isPending}
       >
-        <div className="space-y-3 rounded-lg border border-border/70 bg-muted/20 p-4">
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-sm font-medium">Status</span>
-            <IntegrationStatusBadge status={provider.status as IntegrationStatus} />
-          </div>
-          {provider.integration?.connectedAccountName ? (
-            <div className="flex justify-between gap-4 text-sm">
-              <span className="text-muted-foreground">Account</span>
-              <span className="truncate text-right">
-                {provider.integration.connectedAccountName}
-              </span>
-            </div>
-          ) : null}
-          {provider.integration?.connectedAccountEmail ? (
-            <div className="flex justify-between gap-4 text-sm">
-              <span className="text-muted-foreground">Email</span>
-              <span className="truncate text-right">
-                {provider.integration.connectedAccountEmail}
-              </span>
-            </div>
-          ) : null}
-          {provider.integration?.connectedAt ? (
-            <div className="flex justify-between gap-4 text-sm">
-              <span className="text-muted-foreground">Connected</span>
-              <span>{formatIntegrationDate(provider.integration.connectedAt)}</span>
-            </div>
-          ) : null}
-          {provider.integration?.errorMessage ? (
-            <div className="text-sm text-destructive">
-              {provider.integration.errorMessage}
-            </div>
-          ) : null}
-        </div>
-
-        <OAuthScopesList scopes={oauthScopes} />
-
-        {provider.key === "linkedin" ? (
-          <div className="rounded-lg border border-border/70 bg-muted/20 p-4 text-sm text-muted-foreground">
-            LinkedIn account is connected. Organization/Page resources and posting
-            features require LinkedIn Marketing API approval and will be enabled
-            later.
-          </div>
-        ) : null}
-
-        {isMetaBusinessProvider(provider.key) ? (
-          <MetaAppReviewNotes providerKey={provider.key} />
-        ) : null}
-
-        <MetaWebhookStatus
-          webhookStatus={
-            typeof integrationDetail?.config?.webhookStatus === "string"
-              ? String(integrationDetail.config.webhookStatus)
-              : null
-          }
+        <OAuthManageDialogBody
+          provider={provider}
+          integrationDetail={integrationDetail}
+          isConnected={isConnected}
+          canDelete={canDelete}
+          showAdvancedDetails={showAdvancedDetails}
+          oauthScopes={oauthScopes}
+          onReconnect={onReconnect}
         />
-
-        {providerSupportsResources(provider.key) && isConnected ? (
-          <IntegrationResourcesPanel
-            providerKey={provider.key}
-            isConnected={isConnected}
-            canManage={canDelete}
-            showInstagramEmptyChecklist={provider.key === "instagram"}
-          />
-        ) : null}
-
-        {onReconnect && canDelete ? (
-          <Button
-            type="button"
-            variant="outline"
-            className="w-full"
-            disabled={isPending}
-            onClick={onReconnect}
-          >
-            {getIntegrationReconnectLabel(provider)}
-          </Button>
-        ) : null}
-
-        {isConnected && canDelete && onDelete ? (
-          <div className="border-t border-border/70 pt-4">
-            <Button
-              type="button"
-              variant="destructive"
-              className="w-full"
-              disabled={isPending}
-              onClick={onDelete}
-            >
-              Delete integration
-            </Button>
-          </div>
-        ) : null}
       </FormDialog>
     );
   }
@@ -262,31 +227,15 @@ export function IntegrationManageDialog({
       isPending={isPending}
       submitLabel={mode === "connect" ? "Connect" : "Save changes"}
       size="lg"
+      onDelete={
+        mode === "manage" && isConnected && canDelete && onDelete
+          ? onDelete
+          : undefined
+      }
+      deleteLabel={copy.disconnectLabel}
     >
       {mode === "manage" && isConnected ? (
-        <div className="space-y-3 rounded-lg border border-border/70 bg-muted/20 p-4">
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-sm font-medium">Status</span>
-            <IntegrationStatusBadge status={provider.status as IntegrationStatus} />
-          </div>
-          {provider.integration?.connectedAt ? (
-            <div className="flex justify-between gap-4 text-sm">
-              <span className="text-muted-foreground">Connected</span>
-              <span>{formatIntegrationDate(provider.integration.connectedAt)}</span>
-            </div>
-          ) : null}
-          {provider.integration?.lastSyncAt ? (
-            <div className="flex justify-between gap-4 text-sm">
-              <span className="text-muted-foreground">Last sync</span>
-              <span>{formatIntegrationDate(provider.integration.lastSyncAt)}</span>
-            </div>
-          ) : null}
-          {provider.integration?.errorMessage ? (
-            <div className="text-sm text-destructive">
-              {provider.integration.errorMessage}
-            </div>
-          ) : null}
-        </div>
+        <IntegrationManageHeader provider={provider} />
       ) : null}
 
       <FormField
@@ -294,7 +243,7 @@ export function IntegrationManageDialog({
         name="connectedAccountName"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Connected account name</FormLabel>
+            <FormLabel>Account name</FormLabel>
             <FormControl>
               <Input placeholder="Acme Corp" {...field} />
             </FormControl>
@@ -308,7 +257,7 @@ export function IntegrationManageDialog({
         name="connectedAccountEmail"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Connected account email</FormLabel>
+            <FormLabel>Account email</FormLabel>
             <FormControl>
               <Input type="email" placeholder="billing@example.com" {...field} />
             </FormControl>
@@ -339,18 +288,12 @@ export function IntegrationManageDialog({
         )}
       />
 
-      {mode === "manage" && isConnected && canDelete && onDelete ? (
-        <div className="border-t border-border/70 pt-4">
-          <Button
-            type="button"
-            variant="destructive"
-            className="w-full"
-            disabled={isPending}
-            onClick={onDelete}
-          >
-            Delete integration
-          </Button>
-        </div>
+      {mode === "manage" && isConnected && showAdvancedDetails ? (
+        <IntegrationAdvancedDetails
+          provider={provider}
+          integrationDetail={integrationDetail}
+          oauthScopes={oauthScopes}
+        />
       ) : null}
     </FormDialog>
   );

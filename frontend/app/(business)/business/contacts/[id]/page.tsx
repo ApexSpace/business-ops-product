@@ -440,6 +440,7 @@ function ContactWorkspacePageContent() {
 
   const conversationPanel = (
     <ContactConversationPanel
+      contactId={contact.id}
       contactName={contact.label}
       className="h-full w-full min-w-0"
     />

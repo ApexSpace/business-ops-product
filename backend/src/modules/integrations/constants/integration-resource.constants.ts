@@ -52,6 +52,11 @@ export const PROVIDER_RESOURCE_CONFIG: Record<string, ProviderResourceConfig> = 
     syncEnabled: false,
     label: 'Accounts',
   },
+  stripe: {
+    resourceTypes: [IntegrationResourceType.STRIPE_ACCOUNT],
+    syncEnabled: true,
+    label: 'Payment account',
+  },
 };
 
 export function providerSupportsResources(providerKey: string): boolean {

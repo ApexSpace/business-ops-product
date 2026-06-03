@@ -113,6 +113,22 @@ model YourModel {
 pnpm db:migrate
 ```
 
+## Meta OAuth (Facebook, Instagram, WhatsApp)
+
+Create **three** configurations in the Meta app dashboard and map them to env vars:
+
+| Configuration | Meta dashboard setup | Env variable |
+|---------------|----------------------|--------------|
+| Facebook Login for Business | Facebook / Pages / general business login | `META_FACEBOOK_LOGIN_CONFIG_ID` |
+| Instagram API with Facebook Login | Instagram product → **API setup with Facebook login** → Facebook Login for Business (not Instagram Business Login) | `META_INSTAGRAM_LOGIN_CONFIG_ID` |
+| WhatsApp Embedded Signup | WhatsApp Embedded Signup | `META_EMBEDDED_SIGNUP_CONFIG_ID` |
+
+Instagram connect opens `https://www.facebook.com/{version}/dialog/oauth` and returns to `META_REDIRECT_URI`. If the popup shows Instagram “Get Started” onboarding and never redirects back, `META_INSTAGRAM_LOGIN_CONFIG_ID` is pointing at the wrong configuration type.
+
+`META_LOGIN_CONFIG_ID` remains an optional fallback when a provider-specific ID is unset (deprecated for new deployments).
+
+When `META_OAUTH_ENABLED=true`, startup validation requires Facebook and Instagram login config (provider-specific or fallback). WhatsApp must use the embedded signup config only — never the Facebook/Instagram login config IDs.
+
 ## Environment variables
 
 See [`.env.example`](.env.example). The app fails fast on startup if required variables are missing or invalid.

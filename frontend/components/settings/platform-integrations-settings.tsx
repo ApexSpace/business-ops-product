@@ -23,6 +23,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { apiClient } from "@/lib/api-client";
 import { useAuth } from "@/lib/auth-provider";
 import {
+  filterIntegrationProvidersByCategory,
   INTEGRATION_CATEGORY_LABELS,
   type IntegrationCategory,
   type IntegrationProviderWithStatus,
@@ -51,10 +52,10 @@ export function PlatformIntegrationsSettings() {
       ),
   });
 
-  const filteredProviders = useMemo(() => {
-    if (category === "ALL") return providers;
-    return providers.filter((provider) => provider.category === category);
-  }, [providers, category]);
+  const filteredProviders = useMemo(
+    () => filterIntegrationProvidersByCategory(providers, category),
+    [providers, category],
+  );
 
   const invalidateIntegrations = async () => {
     await Promise.all([
@@ -198,6 +199,7 @@ export function PlatformIntegrationsSettings() {
         mode={dialogMode}
         isPending={isPending}
         canDelete={canManage}
+        showAdvancedDetails={canManage}
         onSubmit={handleDialogSubmit}
         onDelete={() => setDeleteOpen(true)}
       />

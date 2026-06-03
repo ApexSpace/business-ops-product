@@ -44,6 +44,15 @@ export class BusinessIntegrationRepository {
     });
   }
 
+  findManyByProviderKey(
+    providerKey: string,
+  ): Promise<BusinessIntegrationWithProvider[]> {
+    return this.prisma.businessIntegration.findMany({
+      where: { providerKey },
+      include: { provider: true },
+    });
+  }
+
   findManyByBusinessIds(
     businessId: string,
     providerKeys: string[],

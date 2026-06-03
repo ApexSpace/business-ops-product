@@ -10,6 +10,7 @@ export type IntegrationResourceType =
   | "XERO_TENANT"
   | "EMAIL_ACCOUNT"
   | "PHONE_NUMBER"
+  | "STRIPE_ACCOUNT"
   | "OTHER";
 
 export interface IntegrationResource {
@@ -53,6 +54,7 @@ export const PROVIDERS_WITH_RESOURCES = new Set([
   "quickbooks",
   "xero",
   "linkedin",
+  "stripe",
 ]);
 
 export const RESOURCE_TYPE_LABELS: Record<IntegrationResourceType, string> = {
@@ -65,6 +67,7 @@ export const RESOURCE_TYPE_LABELS: Record<IntegrationResourceType, string> = {
   XERO_TENANT: "Xero organisation",
   EMAIL_ACCOUNT: "Email account",
   PHONE_NUMBER: "Phone number",
+  STRIPE_ACCOUNT: "Stripe account",
   OTHER: "Other",
 };
 

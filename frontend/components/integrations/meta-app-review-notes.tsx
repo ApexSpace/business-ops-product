@@ -35,16 +35,21 @@ const META_APP_REVIEW_NOTES: Record<
   ],
   instagram: [
     {
+      title: "pages_show_list",
+      purpose:
+        "List Facebook Pages during Facebook Login so we can find linked Instagram accounts.",
+    },
+    {
+      title: "pages_read_engagement",
+      purpose: "Read Page engagement metadata for linked Instagram discovery.",
+    },
+    {
       title: "instagram_basic",
       purpose: "List Instagram professional accounts linked to Pages.",
     },
     {
       title: "instagram_manage_messages",
       purpose: "Receive and respond to Instagram Direct messages.",
-    },
-    {
-      title: "pages_show_list",
-      purpose: "Discover Pages linked to Instagram business accounts.",
     },
   ],
 };
@@ -70,7 +75,9 @@ export function MetaAppReviewNotes({ providerKey }: MetaAppReviewNotesProps) {
         ))}
       </ul>
       <p className="text-xs text-muted-foreground">
-        Meta config IDs: Facebook/Instagram use META_LOGIN_CONFIG_ID; WhatsApp uses
+        Meta config IDs: Facebook uses META_FACEBOOK_LOGIN_CONFIG_ID; Instagram uses
+        META_INSTAGRAM_LOGIN_CONFIG_ID (Facebook Login for Business from Instagram →
+        API setup with Facebook login — not Instagram Business Login); WhatsApp uses
         META_EMBEDDED_SIGNUP_CONFIG_ID. Webhooks use META_WEBHOOK_VERIFY_TOKEN.
       </p>
     </div>

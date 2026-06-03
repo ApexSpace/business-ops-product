@@ -161,6 +161,16 @@ export const queryKeys = {
     detail: (id: string) => ["calendars", "detail", id] as const,
     googleSyncStatus: (id: string) => ["calendars", "google-sync-status", id] as const,
   },
+  conversations: {
+    all: () => ["conversations"] as const,
+    list: (filters?: Record<string, string | number | undefined | null>) =>
+      listKey(["conversations", "list"], filters),
+    detail: (id: string) => ["conversations", "detail", id] as const,
+    messages: (id: string, page?: number) =>
+      ["conversations", id, "messages", page ?? 1] as const,
+    byContact: (contactId: string) =>
+      ["conversations", "by-contact", contactId] as const,
+  },
   appointments: {
     all: () => ["appointments"] as const,
     list: (filters?: Record<string, string | number | undefined | null>) =>
@@ -175,6 +185,8 @@ export const queryKeys = {
       ["integrations", "business", "detail", providerKey] as const,
     businessResources: (providerKey: string) =>
       ["integrations", "business", "resources", providerKey] as const,
+    messagingStatus: (providerKey: string) =>
+      ["integrations", "business", "messaging-status", providerKey] as const,
     platformProviders: () => ["integrations", "platform", "providers"] as const,
     platformList: () => ["integrations", "platform", "list"] as const,
     platformDetail: (providerKey: string) =>

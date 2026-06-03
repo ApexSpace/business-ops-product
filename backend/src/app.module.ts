@@ -27,6 +27,7 @@ import { IntegrationsModule } from './modules/integrations/integrations.module';
 import { CalendarsModule } from './modules/calendars/calendars.module';
 import { AppointmentsModule } from './modules/appointments/appointments.module';
 import { GoogleCalendarSyncModule } from './modules/google-calendar-sync/google-calendar-sync.module';
+import { ConversationsModule } from './modules/conversations/conversations.module';
 
 @Module({
   imports: [
@@ -55,6 +56,7 @@ import { GoogleCalendarSyncModule } from './modules/google-calendar-sync/google-
     CalendarsModule,
     AppointmentsModule,
     GoogleCalendarSyncModule,
+    ConversationsModule,
   ],
   providers: [
     TransformInterceptor,

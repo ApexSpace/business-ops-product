@@ -68,7 +68,11 @@ const baseSchema = Joi.object({
   }),
   META_WEBHOOK_VERIFY_TOKEN: Joi.string().optional(),
   META_GRAPH_API_VERSION: Joi.string().default('v20.0'),
-  /** Facebook Login for Business — used for Facebook & Instagram connect */
+  /** Facebook Login for Business — Facebook connect (Page-oriented variation) */
+  META_FACEBOOK_LOGIN_CONFIG_ID: Joi.string().optional(),
+  /** Instagram Graph API Login for Business — Instagram connect */
+  META_INSTAGRAM_LOGIN_CONFIG_ID: Joi.string().optional(),
+  /** @deprecated Fallback when META_FACEBOOK_LOGIN_CONFIG_ID / META_INSTAGRAM_LOGIN_CONFIG_ID unset */
   META_LOGIN_CONFIG_ID: Joi.string().optional(),
   /** WhatsApp Embedded Signup only — do not use for Facebook/Instagram */
   META_EMBEDDED_SIGNUP_CONFIG_ID: Joi.string().optional(),
@@ -90,6 +94,26 @@ const baseSchema = Joi.object({
     otherwise: Joi.string().uri().optional(),
   }),
   LINKEDIN_API_VERSION: Joi.string().default('202506'),
+
+  STRIPE_CONNECT_ENABLED: Joi.string().valid('true', 'false').default('false'),
+  STRIPE_SECRET_KEY: Joi.when('STRIPE_CONNECT_ENABLED', {
+    is: 'true',
+    then: Joi.string().required(),
+    otherwise: Joi.string().optional(),
+  }),
+  STRIPE_CLIENT_ID: Joi.when('STRIPE_CONNECT_ENABLED', {
+    is: 'true',
+    then: Joi.string().required(),
+    otherwise: Joi.string().optional(),
+  }),
+  STRIPE_REDIRECT_URI: Joi.when('STRIPE_CONNECT_ENABLED', {
+    is: 'true',
+    then: Joi.string().uri().required(),
+    otherwise: Joi.string().uri().optional(),
+  }),
+  STRIPE_WEBHOOK_SECRET_PLATFORM: Joi.string().optional(),
+  STRIPE_WEBHOOK_SECRET_CONNECTED_ACCOUNT: Joi.string().optional(),
+  STRIPE_API_VERSION: Joi.string().default('2025-05-28.basil'),
 });
 
 export const envValidationSchema = baseSchema.custom((env, helpers) => {
@@ -120,13 +144,42 @@ export const envValidationSchema = baseSchema.custom((env, helpers) => {
   const metaEnabled = (env as NodeJS.ProcessEnv).META_OAUTH_ENABLED === 'true';
   const linkedInEnabled =
     (env as NodeJS.ProcessEnv).LINKEDIN_OAUTH_ENABLED === 'true';
+  const stripeEnabled =
+    (env as NodeJS.ProcessEnv).STRIPE_CONNECT_ENABLED === 'true';
   const encryptionKey = (env as NodeJS.ProcessEnv).INTEGRATION_ENCRYPTION_KEY;
 
-  if ((googleEnabled || metaEnabled || linkedInEnabled) && !encryptionKey) {
+  if (
+    (googleEnabled || metaEnabled || linkedInEnabled || stripeEnabled) &&
+    !encryptionKey
+  ) {
     return helpers.error('any.custom', {
       message:
-        'INTEGRATION_ENCRYPTION_KEY is required when OAuth integrations are enabled (Google, Meta, or LinkedIn).',
+        'INTEGRATION_ENCRYPTION_KEY is required when OAuth integrations are enabled (Google, Meta, LinkedIn, or Stripe).',
     });
+  }
+
+  if (metaEnabled) {
+    const metaEnv = env as NodeJS.ProcessEnv;
+    const facebookLoginId =
+      metaEnv.META_FACEBOOK_LOGIN_CONFIG_ID?.trim() ||
+      metaEnv.META_LOGIN_CONFIG_ID?.trim();
+    const instagramLoginId =
+      metaEnv.META_INSTAGRAM_LOGIN_CONFIG_ID?.trim() ||
+      metaEnv.META_LOGIN_CONFIG_ID?.trim();
+
+    if (!facebookLoginId) {
+      return helpers.error('any.custom', {
+        message:
+          'When META_OAUTH_ENABLED=true, set META_FACEBOOK_LOGIN_CONFIG_ID or META_LOGIN_CONFIG_ID for Facebook connect.',
+      });
+    }
+
+    if (!instagramLoginId) {
+      return helpers.error('any.custom', {
+        message:
+          'When META_OAUTH_ENABLED=true, set META_INSTAGRAM_LOGIN_CONFIG_ID or META_LOGIN_CONFIG_ID for Instagram connect.',
+      });
+    }
   }
 
   return { ...env, DATABASE_URL: databaseUrl } as Record<string, unknown>;
