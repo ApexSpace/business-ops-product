@@ -1,6 +1,6 @@
 "use client";
 
-import { useAppRouter } from "@/hooks/use-app-router";
+import { useAppRouter } from "@/lib/hooks/use-app-router";
 import { ChevronsUpDown, Building2, Shield } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -13,15 +13,17 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useAuth } from "@/lib/auth-provider";
+import { useAuth } from "@/lib/auth/provider";
 import {
   contextKey,
   getContextRoleLabel,
   getContextShortLabel,
   getDashboardPath,
   isSameContext,
+  resolveAuthContexts,
+  shouldShowAccountSwitcher,
 } from "@/lib/auth";
-import type { AuthContextItem } from "@/types/api";
+import type { AuthContextItem } from "@/lib/types/shared";
 
 function ContextIcon({ ctx }: { ctx: AuthContextItem }) {
   if (ctx.type === "platform") {
@@ -59,15 +61,19 @@ function ContextMenuItem({
 
 export function AccountSwitcher() {
   const router = useAppRouter();
-  const { contexts, jwt, switchContext } = useAuth();
+  const { contexts, jwt, user, switchContext } = useAuth();
 
-  if (contexts.length === 0) return null;
+  const effectiveContexts = resolveAuthContexts(contexts, jwt, user?.contexts);
 
-  const platformContexts = contexts.filter((c) => c.type === "platform");
-  const businessContexts = contexts.filter((c) => c.type === "business");
+  if (!shouldShowAccountSwitcher(contexts, jwt, user?.contexts)) return null;
+  if (effectiveContexts.length === 0) return null;
+
+  const platformContexts = effectiveContexts.filter((c) => c.type === "platform");
+  const businessContexts = effectiveContexts.filter((c) => c.type === "business");
 
   const active =
-    contexts.find((c) => jwt && isSameContext(c, jwt)) ?? contexts[0];
+    effectiveContexts.find((c) => jwt && isSameContext(c, jwt)) ??
+    effectiveContexts[0];
 
   const handleSelect = async (ctx: AuthContextItem) => {
     if (jwt && isSameContext(ctx, jwt)) return;

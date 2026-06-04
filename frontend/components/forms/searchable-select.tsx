@@ -9,8 +9,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { filterSelectItems } from "@/lib/filter-select-items";
-import { CONTROL_HEIGHT_CLASS } from "@/lib/control-styles";
+import { filterSelectItems } from "@/lib/forms/filter-select-items";
+import { CONTROL_HEIGHT_CLASS } from "@/lib/ui/control-styles";
 import { cn } from "@/lib/utils";
 import type { SelectOption } from "@/components/forms/select-field";
 

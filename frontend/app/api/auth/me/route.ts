@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { getErrorMessage, unwrapApiData } from "@/lib/api-envelope";
-import { getBackendApiUrl } from "@/lib/env";
-import { getAccessToken } from "@/lib/server-api";
-import type { UserMe } from "@/types/api";
+import { getErrorMessage, unwrapApiData } from "@/lib/api/envelope";
+import { getBackendApiUrl } from "@/lib/config/env";
+import { getAccessToken } from "@/lib/api/server";
+import type { UserMe } from "@/lib/types/shared";
 
 export async function GET() {
   const accessToken = await getAccessToken();

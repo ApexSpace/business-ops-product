@@ -1,4 +1,4 @@
-import { BusinessTeamSettings } from "@/components/settings/business-team-settings";
+import { BusinessTeamSettings } from "@/features/settings/components/business-team-settings";
 
 export default function BusinessSettingsTeamPage() {
   return <BusinessTeamSettings />;

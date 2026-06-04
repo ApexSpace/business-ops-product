@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { getErrorMessage, unwrapApiData } from "@/lib/api-envelope";
-import { setAuthCookies } from "@/lib/auth-session";
-import { getBackendApiUrl } from "@/lib/env";
-import type { AuthTokensResponse } from "@/types/api";
+import { getErrorMessage, unwrapApiData } from "@/lib/api/envelope";
+import { setAuthCookies } from "@/lib/auth/session";
+import { getBackendApiUrl } from "@/lib/config/env";
+import type { AuthTokensResponse } from "@/lib/types/shared";
 
 export async function POST(request: Request) {
   const body = await request.json();

@@ -12,7 +12,7 @@ export type ActionButtonProps = ComponentProps<typeof Button> &
 
 /**
  * Standard action control for Save, Cancel, Create, Delete, and list-page CTAs.
- * Toolbar filters use `var(--control-height)` via `lib/control-styles.ts` (same height as this button).
+ * Toolbar filters use `var(--control-height)` via `lib/ui/control-styles.ts` (same height as this button).
  */
 export function ActionButton({
   size = ACTION_BUTTON_SIZE,

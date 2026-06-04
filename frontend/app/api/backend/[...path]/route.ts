@@ -1,9 +1,29 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getErrorMessage } from "@/lib/api-envelope";
-import { clearAuthCookies, setAuthCookies } from "@/lib/auth-session";
-import { fetchRefreshTokens } from "@/lib/refresh-session";
-import { getBackendApiUrl } from "@/lib/env";
-import { getAccessToken, getRefreshToken } from "@/lib/server-api";
+import { getErrorMessage } from "@/lib/api/envelope";
+import { clearAuthCookies, setAuthCookies } from "@/lib/auth/session";
+import { fetchRefreshTokens } from "@/lib/auth/refresh-session";
+import { getBackendApiUrl } from "@/lib/config/env";
+import { getAccessToken, getRefreshToken } from "@/lib/api/server";
+
+/** Fail fast when backend/DB hangs (Prisma timeouts can exceed 60s). */
+const BACKEND_FETCH_TIMEOUT_MS = 30_000;
+
+function serviceErrorResponse(
+  status: number,
+  code: string,
+  message: string,
+): NextResponse {
+  return NextResponse.json(
+    {
+      data: null,
+      meta: {},
+      error: { code, message, details: [] },
+      message,
+      code,
+    },
+    { status },
+  );
+}
 
 async function forward(
   request: NextRequest,
@@ -23,12 +43,20 @@ async function forward(
     body = await request.text();
   }
 
-  return fetch(target, {
-    method: request.method,
-    headers,
-    body: body || undefined,
-    cache: "no-store",
-  });
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), BACKEND_FETCH_TIMEOUT_MS);
+
+  try {
+    return await fetch(target, {
+      method: request.method,
+      headers,
+      body: body || undefined,
+      cache: "no-store",
+      signal: controller.signal,
+    });
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 async function proxy(
@@ -41,14 +69,18 @@ async function proxy(
   let res: Response;
   try {
     res = await forward(request, path, accessToken);
-  } catch {
-    return NextResponse.json(
-      {
-        message:
-          "Backend API is unavailable. Ensure the NestJS server is running on port 3000.",
-        code: "BACKEND_UNAVAILABLE",
-      },
-      { status: 503 },
+  } catch (err) {
+    if (err instanceof Error && err.name === "AbortError") {
+      return serviceErrorResponse(
+        504,
+        "SERVICE_TIMEOUT",
+        "The server took too long to respond. The database or API may be unavailable — please try again shortly.",
+      );
+    }
+    return serviceErrorResponse(
+      503,
+      "BACKEND_UNAVAILABLE",
+      "Backend API is unavailable. Ensure the NestJS server is running and the database is reachable.",
     );
   }
 
@@ -62,14 +94,18 @@ async function proxy(
         accessToken = refreshedTokens.accessToken;
         try {
           res = await forward(request, path, accessToken);
-        } catch {
-          return NextResponse.json(
-            {
-              message:
-                "Backend API is unavailable. Ensure the NestJS server is running on port 3000.",
-              code: "BACKEND_UNAVAILABLE",
-            },
-            { status: 503 },
+        } catch (err) {
+          if (err instanceof Error && err.name === "AbortError") {
+            return serviceErrorResponse(
+              504,
+              "SERVICE_TIMEOUT",
+              "The server took too long to respond. Please try again shortly.",
+            );
+          }
+          return serviceErrorResponse(
+            503,
+            "BACKEND_UNAVAILABLE",
+            "Backend API is unavailable. Ensure the NestJS server is running.",
           );
         }
       }

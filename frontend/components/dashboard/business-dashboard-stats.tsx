@@ -11,11 +11,12 @@ import {
   Workflow,
 } from "lucide-react";
 import { StatsCard } from "@/components/layout/stats-card";
+import { ApiErrorState } from "@/components/data-display/api-error-state";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { IndustryLabels } from "@/types/api";
-import { apiClient } from "@/lib/api-client";
-import { queryKeys } from "@/lib/query-keys";
-import type { BusinessDashboardStats } from "@/types/api";
+import type { IndustryLabels } from "@/lib/types/shared";
+import { queryKeys } from "@/lib/query/keys";
+import type { BusinessDashboardStats } from "@/lib/types/shared";
+import { getBusinessDashboardStats } from "@/features/settings/api/business.api";
 
 interface BusinessDashboardStatsProps {
   labels: IndustryLabels;
@@ -24,10 +25,9 @@ interface BusinessDashboardStatsProps {
 export function BusinessDashboardStatsGrid({
   labels,
 }: BusinessDashboardStatsProps) {
-  const { data, isLoading, isError } = useQuery({
+  const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: queryKeys.business.dashboardStats(),
-    queryFn: () =>
-      apiClient<BusinessDashboardStats>("businesses/current/dashboard-stats"),
+    queryFn: () => getBusinessDashboardStats(),
   });
 
   if (isLoading) {
@@ -40,12 +40,18 @@ export function BusinessDashboardStatsGrid({
     );
   }
 
-  if (isError || !data) {
+  if (isError) {
     return (
-      <p className="text-sm text-destructive">
-        Could not load dashboard stats. Refresh the page to try again.
-      </p>
+      <ApiErrorState
+        error={error}
+        compact
+        onRetry={() => void refetch()}
+      />
     );
+  }
+
+  if (!data) {
+    return null;
   }
 
   const leadDescription = [

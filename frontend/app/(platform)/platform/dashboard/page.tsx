@@ -15,15 +15,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { apiClient } from "@/lib/api-client";
-import { queryKeys } from "@/lib/query-keys";
-import type { PlatformDashboardStats } from "@/types/api";
+import { getPlatformDashboardStats } from "@/features/platform/api/platform.api";
+import { queryKeys } from "@/lib/query/keys";
 
 export default function PlatformDashboardPage() {
   const { data, isLoading, isError } = useQuery({
     queryKey: queryKeys.platform.dashboard.stats(),
-    queryFn: () =>
-      apiClient<PlatformDashboardStats>("platform/dashboard/stats"),
+    queryFn: () => getPlatformDashboardStats(),
   });
 
   const quickLinks = [

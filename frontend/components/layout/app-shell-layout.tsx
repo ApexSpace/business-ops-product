@@ -4,26 +4,27 @@ import { useQuery } from "@tanstack/react-query";
 import { usePathname } from "next/navigation";
 import { Building2, Settings } from "lucide-react";
 import { AppShell } from "@/components/shell";
-import { AccountSwitcher } from "@/components/account-switcher/account-switcher";
 import {
   businessSettingsEntry,
   resolveBusinessOperationalSections,
-} from "@/config/business-menu";
+} from "@/lib/config/navigation/business-menu";
 import {
   businessSettingsSections,
   isBusinessSettingsPath,
-} from "@/config/business-settings-menu";
+} from "@/lib/config/navigation/business-settings-menu";
 import {
   platformBrand,
   platformOperationalSections,
   platformSettingsEntry,
-} from "@/config/platform-menu";
-import { apiClient } from "@/lib/api-client";
-import { queryKeys } from "@/lib/query-keys";
-import { useAuth } from "@/lib/auth-provider";
-import { getIndustryLabels } from "@/config/industry-labels";
-import type { Business } from "@/types/api";
-import type { ShellNavSection } from "@/types/shell-nav";
+} from "@/lib/config/navigation/platform-menu";
+import { ServiceUnavailableBanner } from "@/components/layout/service-unavailable-banner";
+import { shouldShowAccountSwitcher } from "@/lib/auth";
+import { getCurrentBusiness } from "@/features/settings/api/business.api";
+import { queryKeys } from "@/lib/query/keys";
+import { useAuth } from "@/lib/auth/provider";
+import { getIndustryLabels } from "@/lib/config/industry-labels";
+import type { Business } from "@/lib/types/shared";
+import type { ShellNavSection } from "@/lib/types/shell-nav";
 
 interface ShellLayoutProps {
   mode: "platform" | "business";
@@ -32,11 +33,11 @@ interface ShellLayoutProps {
 
 export function AppShellLayout({ mode, children }: ShellLayoutProps) {
   const pathname = usePathname();
-  const { contexts } = useAuth();
+  const { contexts, jwt, user, sessionError, refreshSession } = useAuth();
 
   const { data: currentBusiness } = useQuery({
     queryKey: queryKeys.business.current(),
-    queryFn: () => apiClient<Business>("businesses/current"),
+    queryFn: getCurrentBusiness,
     enabled: mode === "business",
   });
 
@@ -73,22 +74,26 @@ export function AppShellLayout({ mode, children }: ShellLayoutProps) {
             icon: Building2,
           };
 
-  const showAccountSwitcher = contexts.length > 0;
+  const showAccountSwitcher = shouldShowAccountSwitcher(
+    contexts,
+    jwt,
+    user?.contexts,
+  );
 
   return (
-    <AppShell
+    <>
+      {sessionError ? (
+        <ServiceUnavailableBanner
+          error={sessionError}
+          onRetry={() => void refreshSession()}
+        />
+      ) : null}
+      <AppShell
       brand={brand}
       sections={sections}
       navMode={isSettingsMode ? "settings" : "main"}
       footerItems={footerItems}
       showAccountSwitcher={showAccountSwitcher}
-      topbarActions={
-        showAccountSwitcher ? (
-          <div className="sm:hidden">
-            <AccountSwitcher />
-          </div>
-        ) : undefined
-      }
       pageMetadataContext={{
         mode,
         labels,
@@ -97,5 +102,6 @@ export function AppShellLayout({ mode, children }: ShellLayoutProps) {
     >
       {children}
     </AppShell>
+    </>
   );
 }

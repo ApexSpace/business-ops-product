@@ -1,4 +1,4 @@
-import { BusinessFinancialSettings } from "@/components/settings/business-financial-settings";
+import { BusinessFinancialSettings } from "@/features/settings/components/business-financial-settings";
 
 export default function FinancialSettingsPage() {
   return <BusinessFinancialSettings />;

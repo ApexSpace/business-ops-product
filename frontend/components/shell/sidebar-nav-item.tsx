@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
-import type { ShellNavItem } from "@/types/shell-nav";
+import type { ShellNavItem } from "@/lib/types/shell-nav";
 import { isNavItemActive } from "./sidebar-nav-utils";
 
 interface SidebarNavItemProps {

@@ -4,10 +4,10 @@ import { jwtDecode } from "jwt-decode";
 import {
   ACCESS_TOKEN_COOKIE,
   CONTEXTS_COOKIE,
-} from "@/lib/auth-cookies";
+} from "@/lib/auth/cookies";
 import { decodeAccessToken, getDashboardPath } from "@/lib/auth";
-import { parseContextsCookie } from "@/lib/auth-session";
-import type { JwtAccessPayload } from "@/types/api";
+import { parseContextsCookie } from "@/lib/auth/session";
+import type { JwtAccessPayload } from "@/lib/types/shared";
 
 const PUBLIC_PATHS = ["/login", "/select-context"];
 

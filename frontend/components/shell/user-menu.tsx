@@ -1,7 +1,7 @@
 "use client";
 
 import { LogOut } from "lucide-react";
-import { useAppRouter } from "@/hooks/use-app-router";
+import { useAppRouter } from "@/lib/hooks/use-app-router";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -12,7 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { DarkModeMenuItem } from "@/components/theme/dark-mode-toggle";
-import { useAuth } from "@/lib/auth-provider";
+import { useAuth } from "@/lib/auth/provider";
 import { getUserDisplayName } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 

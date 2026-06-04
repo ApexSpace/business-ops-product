@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { Providers } from "@/lib/providers";
+import { OfflineIndicator } from "@/components/layout/offline-indicator";
+import { WebVitalsReporter } from "@/components/layout/web-vitals-reporter";
+import { Providers } from "@/lib/runtime/providers";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -30,7 +32,11 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full font-sans" suppressHydrationWarning>
-        <Providers>{children}</Providers>
+        <Providers>
+          <WebVitalsReporter />
+          {children}
+          <OfflineIndicator />
+        </Providers>
       </body>
     </html>
   );

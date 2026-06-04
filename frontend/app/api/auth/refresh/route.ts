@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
-import { getErrorMessage, unwrapApiData } from "@/lib/api-envelope";
+import { getErrorMessage, unwrapApiData } from "@/lib/api/envelope";
 import {
   clearAuthCookies,
   setAuthCookies,
-} from "@/lib/auth-session";
-import { getBackendApiUrl } from "@/lib/env";
-import { getRefreshToken } from "@/lib/server-api";
-import type { AuthTokensResponse } from "@/types/api";
+} from "@/lib/auth/session";
+import { getBackendApiUrl } from "@/lib/config/env";
+import { getRefreshToken } from "@/lib/api/server";
+import type { AuthTokensResponse } from "@/lib/types/shared";
 
 export async function POST() {
   const refreshToken = await getRefreshToken();

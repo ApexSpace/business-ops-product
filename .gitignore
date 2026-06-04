@@ -4,6 +4,14 @@
 # Build
 **/dist
 **/coverage
+*.tsbuildinfo
+
+# Generated API spec (export via backend openapi:export)
+backend/openapi.json
+
+# Duplicate lockfiles (npm workspaces use root/backend package-lock.json)
+**/pnpm-lock.yaml
+**/pnpm-workspace.yaml
 
 # Environment
 **/.env

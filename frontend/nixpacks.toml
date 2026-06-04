@@ -6,8 +6,10 @@ NODE_ENV = "production"
 nixPkgs = ["nodejs_22"]
 
 [phases.install]
-# Use npm lockfile to avoid Corepack/pnpm signature issues in CI.
+# Monorepo: package-lock.json lives at repo root. Set Coolify/Nixpacks root to the
+# repository (not only frontend/), or use a Dockerfile. From repo root: npm ci && npm run build --workspace=frontend
 cmds = ["npm ci"]
+["npm ci"]
 
 [phases.build]
 cmds = ["npm run build"]

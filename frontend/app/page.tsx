@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
-import { ACCESS_TOKEN_COOKIE } from "@/lib/auth-cookies";
+import { ACCESS_TOKEN_COOKIE } from "@/lib/auth/cookies";
 import { decodeAccessToken, getDashboardPath } from "@/lib/auth";
 
 export default async function HomePage() {

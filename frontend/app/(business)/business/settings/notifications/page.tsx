@@ -1,4 +1,4 @@
-import { SettingsPlaceholder } from "@/components/settings/settings-placeholder";
+import { SettingsPlaceholder } from "@/features/settings/components/settings-placeholder";
 
 export default function BusinessSettingsNotificationsPage() {
   return (

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getBackendApiUrl } from "@/lib/env";
-import { hasOAuthStartRoute, isGoogleOAuthProvider } from "@/lib/integrations";
-import { getAccessToken } from "@/lib/server-api";
+import { getBackendApiUrl } from "@/lib/config/env";
+import { hasOAuthStartRoute, isGoogleOAuthProvider } from "@/features/integrations/utils/integrations";
+import { getAccessToken } from "@/lib/api/server";
 
 export async function GET(request: NextRequest) {
   const providerKey = request.nextUrl.searchParams.get("providerKey");

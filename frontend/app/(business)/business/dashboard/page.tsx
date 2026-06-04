@@ -7,10 +7,10 @@ import { PageHeader } from "@/components/layout/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { apiClient } from "@/lib/api-client";
-import { queryKeys } from "@/lib/query-keys";
-import { getIndustryLabels } from "@/config/industry-labels";
-import type { Business } from "@/types/api";
+import { getCurrentBusiness } from "@/features/settings/api/business.api";
+import { queryKeys } from "@/lib/query/keys";
+import { getIndustryLabels } from "@/lib/config/industry-labels";
+import type { Business } from "@/lib/types/shared";
 
 const quickLinks = [
   { href: "/business/contacts", labelKey: "contacts" as const },
@@ -24,7 +24,7 @@ const quickLinks = [
 export default function BusinessDashboardPage() {
   const { data: business } = useQuery({
     queryKey: queryKeys.business.current(),
-    queryFn: () => apiClient<Business>("businesses/current"),
+    queryFn: () => getCurrentBusiness(),
   });
 
   const labels = getIndustryLabels(business?.industry);

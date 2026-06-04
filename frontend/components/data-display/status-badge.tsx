@@ -1,15 +1,13 @@
 "use client";
 
-import { formatEstimateStatus } from "@/lib/estimate-profile";
-import { formatInvoiceStatus } from "@/lib/invoice-profile";
-import { formatTaskStatus } from "@/lib/task-profile";
-import { formatWorkItemStatus } from "@/lib/work-item-profile";
-import type {
-  EstimateStatus,
-  InvoiceStatus,
-  TaskStatus,
-  WorkItemStatus,
-} from "@/types/api";
+import { formatEstimateStatus } from "@/features/estimates/schemas/estimate-profile";
+import { formatInvoiceStatus } from "@/features/invoices/schemas/invoice-profile";
+import { formatTaskStatus } from "@/features/tasks/schemas/task-profile";
+import { formatWorkItemStatus } from "@/features/work-items/schemas/work-item-profile";
+import type { EstimateStatus } from "@/features/estimates/types";
+import type { InvoiceStatus } from "@/features/invoices/types";
+import type { TaskStatus } from "@/features/tasks/types";
+import type { WorkItemStatus } from "@/features/work-items/types";
 import { cn } from "@/lib/utils";
 
 export type StatusBadgeDomain =

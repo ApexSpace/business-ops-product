@@ -1,7 +1,7 @@
 import dotenv from 'dotenv';
 import { expand } from 'dotenv-expand';
 import { defineConfig } from 'prisma/config';
-import { resolveDatabaseUrl } from './src/config/database-url.util';
+import { resolveDatabaseUrl } from './libs/core/config/database-url.util';
 
 const loaded = dotenv.config();
 expand(loaded);

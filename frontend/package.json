@@ -3,18 +3,28 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --webpack --port 3001",
+    "dev": "next dev --port 3001",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "analyze": "ANALYZE=true next build",
+    "check:bundle": "node scripts/check-bundle-budget.mjs",
+    "codegen:api": "npm run codegen --workspace=@business-automation/api-contract",
+    "dev:clean": "rm -rf .next .turbo && next dev --port 3001",
+    "dev:webpack": "next dev --port 3001 --no-turbopack"
   },
   "dependencies": {
+    "@business-automation/api-contract": "0.1.0",
     "@base-ui/react": "^1.5.0",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/utilities": "^3.2.2",
     "@hookform/resolvers": "^5.4.0",
     "@tanstack/react-query": "^5.100.13",
     "@tanstack/react-table": "^8.21.3",
+    "@tanstack/react-virtual": "^3.13.18",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "jwt-decode": "^4.0.0",
@@ -32,6 +42,10 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@next/bundle-analyzer": "^16.2.6",
+    "@playwright/test": "^1.55.0",
+    "@sentry/nextjs": "^10.38.0",
+    "@vitejs/plugin-react": "^5.1.4",
     "@emnapi/core": "^1.10.0",
     "@emnapi/runtime": "^1.10.0",
     "@tailwindcss/postcss": "^4",
@@ -40,8 +54,11 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
+    "jsdom": "^26.1.0",
     "eslint-config-next": "16.2.6",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^3.2.4",
+    "web-vitals": "^5.1.0"
   }
 }

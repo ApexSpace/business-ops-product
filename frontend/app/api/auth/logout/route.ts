@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { clearAuthCookies } from "@/lib/auth-session";
-import { getBackendApiUrl } from "@/lib/env";
-import { getAccessToken, getRefreshToken } from "@/lib/server-api";
+import { clearAuthCookies } from "@/lib/auth/session";
+import { getBackendApiUrl } from "@/lib/config/env";
+import { getAccessToken, getRefreshToken } from "@/lib/api/server";
 
 export async function POST() {
   const accessToken = await getAccessToken();

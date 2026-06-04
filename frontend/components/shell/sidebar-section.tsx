@@ -6,7 +6,7 @@ import {
   SidebarGroupLabel,
   SidebarMenu,
 } from "@/components/ui/sidebar";
-import type { ShellNavSection } from "@/types/shell-nav";
+import type { ShellNavSection } from "@/lib/types/shell-nav";
 import { SidebarNavItem } from "./sidebar-nav-item";
 
 interface SidebarSectionProps {

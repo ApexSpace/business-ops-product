@@ -19,7 +19,7 @@ import type {
   ShellNavItem,
   ShellNavSection,
   SidebarNavMode,
-} from "@/types/shell-nav";
+} from "@/lib/types/shell-nav";
 import { SHELL_HEADER_HEIGHT } from "./shell-constants";
 import { SidebarFooterCollapseTrigger } from "./sidebar-toggle";
 import { SidebarNavItem } from "./sidebar-nav-item";

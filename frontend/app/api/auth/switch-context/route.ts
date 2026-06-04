@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
-import { getErrorMessage, unwrapApiData } from "@/lib/api-envelope";
-import { setAuthCookies } from "@/lib/auth-session";
-import { getBackendApiUrl } from "@/lib/env";
-import { getAccessToken } from "@/lib/server-api";
-import type { AuthTokensResponse } from "@/types/api";
+import { getErrorMessage, unwrapApiData } from "@/lib/api/envelope";
+import { setAuthCookies } from "@/lib/auth/session";
+import { getBackendApiUrl } from "@/lib/config/env";
+import { getAccessToken } from "@/lib/api/server";
+import type { AuthTokensResponse } from "@/lib/types/shared";
 
 export async function POST(request: Request) {
   const accessToken = await getAccessToken();

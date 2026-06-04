@@ -1,0 +1,17 @@
+{
+  "name": "@business-automation/api-contract",
+  "version": "0.1.0",
+  "private": true,
+  "description": "OpenAPI-generated types shared by web and mobile clients",
+  "scripts": {
+    "codegen": "openapi-typescript ../../backend/openapi.json -o ./src/generated/api.ts",
+    "codegen:check": "test -f ../../backend/openapi.json || (echo 'Run backend once to export openapi.json' && exit 1)"
+  },
+  "devDependencies": {
+    "openapi-typescript": "^7.10.1",
+    "typescript": "^5"
+  },
+  "exports": {
+    ".": "./src/generated/api.ts"
+  }
+}

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Suspense, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import {
   DataTable,
   type DataTableColumn,
@@ -11,11 +11,11 @@ import { SearchInput } from "@/components/forms/search-input";
 import { FilterBar } from "@/components/layout/filter-bar";
 import { ListPage, ListPageSkeleton } from "@/components/layout/list-page";
 import { ListPagination } from "@/components/ui/list-pagination";
-import { useDebouncedValue } from "@/hooks/use-debounced-value";
-import { useListSearchParams } from "@/hooks/use-list-search-params";
-import { apiClient } from "@/lib/api-client";
-import { queryKeys } from "@/lib/query-keys";
-import type { AuditLog, PaginatedResult } from "@/types/api";
+import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
+import { useListSearchParams } from "@/lib/hooks/use-list-search-params";
+import { listPlatformAuditLogs } from "@/features/platform/api/platform.api";
+import { queryKeys } from "@/lib/query/keys";
+import type { AuditLog } from "@/features/platform/types";
 
 const LIST_SCHEMA = {
   page: { default: "1" },
@@ -36,13 +36,12 @@ function PlatformAuditLogsPageContent() {
 
   const { data, isLoading } = useQuery({
     queryKey: queryKeys.platform.auditLogs.list(listFilters),
+    placeholderData: keepPreviousData,
     queryFn: () =>
-      apiClient<PaginatedResult<AuditLog>>("platform/audit-logs", {
-        searchParams: {
-          page,
-          limit: PAGE_LIMIT,
-          ...(debouncedAction ? { action: debouncedAction } : {}),
-        },
+      listPlatformAuditLogs({
+        page,
+        limit: PAGE_LIMIT,
+        search: debouncedAction || undefined,
       }),
   });
 

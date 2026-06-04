@@ -12,7 +12,7 @@ import {
 } from "react-hook-form";
 import type { z } from "zod";
 import { Label } from "@/components/ui/label";
-import { isZodFieldRequired } from "@/lib/zod-required";
+import { isZodFieldRequired } from "@/lib/forms/zod-required";
 import { cn } from "@/lib/utils";
 
 const FormSchemaContext = React.createContext<z.ZodTypeAny | null>(null);

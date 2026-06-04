@@ -1,4 +1,4 @@
-import { ConversationsInbox } from "@/components/conversations/conversations-inbox";
+import { ConversationsInbox } from "@/features/conversations/components/conversations-inbox";
 import { PageHeader } from "@/components/layout/page-header";
 
 export default function BusinessConversationsPage() {

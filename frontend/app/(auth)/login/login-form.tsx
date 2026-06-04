@@ -25,10 +25,10 @@ import {
   FormSchemaProvider,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { useAuth } from "@/lib/auth-provider";
-import { useNavigationLoading } from "@/lib/navigation-loading";
-import { useAppRouter } from "@/hooks/use-app-router";
-import { resolvePostLoginPath, needsContextSelection } from "@/lib/routing";
+import { useAuth } from "@/lib/auth/provider";
+import { useNavigationLoading } from "@/lib/runtime/navigation-loading";
+import { useAppRouter } from "@/lib/hooks/use-app-router";
+import { resolvePostLoginPath, needsContextSelection } from "@/lib/runtime/routing";
 
 const loginSchema = z.object({
   email: z.string().email(),

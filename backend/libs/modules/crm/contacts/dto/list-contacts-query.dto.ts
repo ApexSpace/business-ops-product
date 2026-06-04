@@ -1,0 +1,11 @@
+import { ApiPropertyOptional } from '@nestjs/swagger';
+import { IsOptional, IsString, MaxLength } from 'class-validator';
+import { PaginationQueryDto } from '@app/common/dto/pagination-query.dto';
+
+export class ListContactsQueryDto extends PaginationQueryDto {
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  search?: string;
+}

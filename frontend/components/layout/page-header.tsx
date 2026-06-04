@@ -1,7 +1,7 @@
 "use client";
 
 import { DataToolbar } from "@/components/layout/data-toolbar";
-import { usePageMetadata } from "@/lib/page-metadata-context";
+import { usePageMetadata } from "@/lib/runtime/page-metadata-context";
 import { cn } from "@/lib/utils";
 
 interface PageHeaderProps {

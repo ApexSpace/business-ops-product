@@ -3,10 +3,10 @@
 import Link from "next/link";
 import { Fragment } from "react";
 import { ChevronRight } from "lucide-react";
-import { useHydrated } from "@/hooks/use-hydrated";
-import { usePageMetadata } from "@/lib/page-metadata-context";
+import { useHydrated } from "@/lib/hooks/use-hydrated";
+import { usePageMetadata } from "@/lib/runtime/page-metadata-context";
 import { cn } from "@/lib/utils";
-import type { PageBreadcrumb } from "@/config/page-metadata";
+import type { PageBreadcrumb } from "@/lib/config/page-metadata";
 
 interface PageBreadcrumbsProps {
   className?: string;

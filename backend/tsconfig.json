@@ -20,8 +20,19 @@
     "forceConsistentCasingInFileNames": true,
     "noImplicitAny": true,
     "strictBindCallApply": true,
-    "noFallthroughCasesInSwitch": true
+    "noFallthroughCasesInSwitch": true,
+    "paths": {
+      "@app/common/*": ["libs/common/*"],
+      "@app/core/*": ["libs/core/*"],
+      "@app/modules/*": ["libs/modules/*"]
+    }
   },
-  "include": ["src/**/*", "prisma/**/*", "test/**/*", "prisma.config.ts"],
+  "include": [
+    "apps/**/*",
+    "libs/**/*",
+    "prisma/**/*",
+    "test/**/*",
+    "prisma.config.ts"
+  ],
   "exclude": ["node_modules", "dist"]
 }

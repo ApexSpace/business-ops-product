@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getBackendApiUrl } from "@/lib/env";
-import { getAccessToken } from "@/lib/server-api";
+import { getBackendApiUrl } from "@/lib/config/env";
+import { getAccessToken } from "@/lib/api/server";
 
 const META_OAUTH_PROVIDER_KEYS = new Set(["facebook", "instagram"]);
 

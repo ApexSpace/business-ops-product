@@ -1,5 +1,5 @@
-import { isBusinessSettingsPath } from "@/config/business-settings-menu";
-import type { ShellNavItem, ShellNavSection } from "@/types/shell-nav";
+import { isBusinessSettingsPath } from "@/lib/config/navigation/business-settings-menu";
+import type { ShellNavItem, ShellNavSection } from "@/lib/types/shell-nav";
 
 export function flattenNavSections(sections: ShellNavSection[]): ShellNavItem[] {
   return sections.flatMap((section) => section.items);

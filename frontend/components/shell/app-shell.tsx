@@ -5,16 +5,16 @@ import {
   SidebarInset,
   SidebarProvider,
 } from "@/components/ui/sidebar";
-import { isContactWorkspacePath } from "@/lib/contact-workspace";
-import { PageMetadataProvider } from "@/lib/page-metadata-context";
+import { isContactWorkspacePath } from "@/features/contacts/workspace/contact-workspace";
+import { PageMetadataProvider } from "@/lib/runtime/page-metadata-context";
 import { cn } from "@/lib/utils";
-import type { PageMetadataContext } from "@/config/page-metadata";
+import type { PageMetadataContext } from "@/lib/config/page-metadata";
 import type {
   ShellBrand,
   ShellNavItem,
   ShellNavSection,
   SidebarNavMode,
-} from "@/types/shell-nav";
+} from "@/lib/types/shell-nav";
 import { PageBreadcrumbs } from "@/components/layout/page-breadcrumbs";
 import { AppSidebar } from "./app-sidebar";
 import { MobileSidebarCloseOnNavigate } from "./mobile-sidebar-close";

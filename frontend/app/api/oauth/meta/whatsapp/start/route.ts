@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getBackendApiUrl } from "@/lib/env";
-import { getAccessToken } from "@/lib/server-api";
+import { getBackendApiUrl } from "@/lib/config/env";
+import { getAccessToken } from "@/lib/api/server";
 
 export async function GET(request: NextRequest) {
   const accessToken = await getAccessToken();

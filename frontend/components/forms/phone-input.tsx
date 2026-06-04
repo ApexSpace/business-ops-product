@@ -18,7 +18,7 @@ import {
   PHONE_COUNTRIES,
   toE164Phone,
   type PhoneCountry,
-} from "@/lib/phone";
+} from "@/lib/forms/phone";
 
 export interface PhoneInputProps {
   value?: string | null;

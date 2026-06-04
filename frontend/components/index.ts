@@ -1,9 +1,9 @@
-export { ContactPicker } from "@/components/contacts/contact-picker";
+export { ContactPicker } from "@/features/contacts/components/contact-picker";
 export type {
   ContactPickerProps,
   ContactPickerSelection,
-} from "@/components/contacts/contact-picker";
-export { QuickCreateContactDialog } from "@/components/contacts/quick-create-contact-dialog";
+} from "@/features/contacts/components/contact-picker";
+export { QuickCreateContactDialog } from "@/features/contacts/components/quick-create-contact-dialog";
 export { ActionButton } from "@/components/ui/action-button";
 export { ConfirmDeleteDialog } from "@/components/forms/confirm-delete-dialog";
 export { FormDialog } from "@/components/forms/form-dialog";

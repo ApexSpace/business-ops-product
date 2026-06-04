@@ -2,7 +2,7 @@
 
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import type { PaginatedMeta } from "@/types/api";
+import type { PaginatedMeta } from "@/lib/types/shared";
 
 interface ListPaginationProps {
   meta: PaginatedMeta;

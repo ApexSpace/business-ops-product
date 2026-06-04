@@ -43,7 +43,7 @@ export function Topbar({
       <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
         {actions}
         {showAccountSwitcher ? (
-          <div className="hidden max-w-[200px] sm:block lg:max-w-[240px]">
+          <div className="min-w-0 max-w-[min(240px,40vw)]">
             <AccountSwitcher />
           </div>
         ) : null}

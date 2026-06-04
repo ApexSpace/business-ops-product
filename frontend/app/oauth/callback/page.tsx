@@ -3,11 +3,11 @@
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Loader2 } from "lucide-react";
-import { formatOAuthErrorMessage } from "@/lib/integrations";
+import { formatOAuthErrorMessage } from "@/features/integrations/utils/integrations";
 import {
   OAUTH_MESSAGE_TYPE,
   postOAuthResultToOpener,
-} from "@/lib/oauth-popup";
+} from "@/features/integrations/utils/oauth-popup";
 
 function OAuthCallbackContent() {
   const searchParams = useSearchParams();

@@ -241,11 +241,31 @@ enum ConversationDirection {
 }
 
 enum MessageStatus {
+  PENDING
   RECEIVED
   SENT
   DELIVERED
   READ
   FAILED
+}
+
+enum AsyncJobStatus {
+  QUEUED
+  ACTIVE
+  COMPLETED
+  FAILED
+}
+
+enum FileAssetStatus {
+  PENDING_UPLOAD
+  READY
+  FAILED
+  DELETED
+}
+
+enum FileVisibility {
+  PRIVATE
+  PUBLIC
 }
 
 enum MessageSenderType {
@@ -303,6 +323,8 @@ model User {
   createdCalendars     Calendar[]            @relation("CalendarCreatedBy")
   createdAppointments  Appointment[]         @relation("AppointmentCreatedBy")
   assignedConversations Conversation[]       @relation("ConversationAssignedTo")
+  ownedFileAssets       FileAsset[]            @relation("FileAssetOwner")
+  asyncJobs             AsyncJob[]             @relation("AsyncJobActor")
 
   @@map("users")
 }
@@ -391,6 +413,8 @@ model Business {
   conversationMessages ConversationMessage[]
   conversationParticipants ConversationParticipant[]
   webhookEvents        WebhookEvent[]
+  asyncJobs            AsyncJob[]
+  fileAssets           FileAsset[]
 
   @@index([createdById])
   @@index([industryId])
@@ -1248,6 +1272,7 @@ model WebhookEvent {
 
   business Business? @relation(fields: [businessId], references: [id], onDelete: SetNull)
 
+  @@unique([provider, externalEventId])
   @@index([provider])
   @@index([businessId])
   @@index([externalEventId])
@@ -1255,3 +1280,56 @@ model WebhookEvent {
   @@index([receivedAt])
   @@map("webhook_events")
 }
+
+model AsyncJob {
+  id           String         @id @default(uuid())
+  businessId   String
+  type         String
+  status       AsyncJobStatus   @default(QUEUED)
+  entityType   String?
+  entityId     String?
+  bullJobId    String?
+  idempotencyKey String?
+  result       Json?
+  errorMessage String?
+  createdById  String?
+  createdAt    DateTime       @default(now())
+  completedAt  DateTime?
+
+  business  Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  createdBy User?    @relation("AsyncJobActor", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([businessId, status])
+  @@index([businessId, createdAt])
+  @@unique([businessId, idempotencyKey])
+  @@map("async_jobs")
+}
+
+model FileAsset {
+  id              String           @id @default(uuid())
+  businessId      String
+  ownerId         String
+  entityType      String?
+  entityId        String?
+  storageProvider String
+  bucket          String
+  key             String
+  originalName    String
+  mimeType        String
+  sizeBytes       Int?
+  checksum        String?
+  visibility      FileVisibility   @default(PRIVATE)
+  status          FileAssetStatus  @default(PENDING_UPLOAD)
+  createdAt       DateTime         @default(now())
+  deletedAt       DateTime?
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  owner    User     @relation("FileAssetOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+
+  @@index([businessId])
+  @@index([businessId, entityType, entityId])
+  @@index([businessId, status])
+  @@unique([bucket, key])
+  @@map("file_assets")
+}
+

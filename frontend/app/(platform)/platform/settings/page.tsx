@@ -21,11 +21,13 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { apiClient } from "@/lib/api-client";
-import { queryKeys } from "@/lib/query-keys";
-import { useAuth } from "@/lib/auth-provider";
-import { canManagePlatformSettings } from "@/lib/permissions";
-import type { PlatformSettings } from "@/types/api";
+import {
+  getPlatformSettings,
+  updatePlatformSettings,
+} from "@/features/platform/api/platform.api";
+import { queryKeys } from "@/lib/query/keys";
+import { PERMISSIONS, useCan } from "@/features/auth/permissions";
+import type { PlatformSettings } from "@/features/platform/types";
 
 const schema = z.object({
   platformName: z.string().min(2),
@@ -37,13 +39,12 @@ const schema = z.object({
 type FormValues = z.infer<typeof schema>;
 
 export default function PlatformSettingsPage() {
-  const { jwt } = useAuth();
   const queryClient = useQueryClient();
-  const canManage = canManagePlatformSettings(jwt?.platformRole);
+  const canManage = useCan(PERMISSIONS["platform.settings.manage"]);
 
   const { data, isLoading } = useQuery({
     queryKey: queryKeys.platform.settings(),
-    queryFn: () => apiClient<PlatformSettings>("platform/settings"),
+    queryFn: () => getPlatformSettings(),
   });
 
   const form = useForm<FormValues>({
@@ -63,11 +64,7 @@ export default function PlatformSettingsPage() {
   }, [data, form]);
 
   const mutation = useMutation({
-    mutationFn: (values: FormValues) =>
-      apiClient<PlatformSettings>("platform/settings", {
-        method: "PATCH",
-        body: values,
-      }),
+    mutationFn: (values: FormValues) => updatePlatformSettings(values),
     onSuccess: () => {
       toast.success("Settings saved");
       void queryClient.invalidateQueries({ queryKey: queryKeys.platform.settings() });
