@@ -69,8 +69,10 @@ export function useEstimateForm({
   const { data: financialSettings } = useQuery({
     queryKey: queryKeys.business.financialSettings(),
     queryFn: () => getFinancialSettings(),
-    enabled: open && !isEdit,
+    enabled: open,
   });
+
+  const currencyCode = financialSettings?.taxesAndCurrency.currencyCode ?? "USD";
 
   const { data: services } = useQuery({
     queryKey: queryKeys.services.picker(),
@@ -168,5 +170,6 @@ export function useEstimateForm({
     workItemItems,
     applyServiceToLine,
     estimate: estimate ?? null,
+    currencyCode,
   };
 }

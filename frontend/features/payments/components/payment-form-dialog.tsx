@@ -17,7 +17,11 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { formatMoney } from "@/features/invoices/schemas/invoice-profile";
+import {
+  canRecordInvoicePayment,
+  formatMoney,
+  invoiceOutstandingAmount,
+} from "@/features/invoices/schemas/invoice-profile";
 import {
   PAYMENT_METHOD_OPTIONS,
   invoicePickerLabel,
@@ -71,9 +75,7 @@ export function PaymentFormDialog({
   const payableInvoices = useMemo(() => {
     const items = invoicesData?.items ?? [];
     return items.filter(
-      (inv) =>
-        inv.status !== "VOID" &&
-        (parseFloat(inv.balanceDue) > 0 || inv.id === invoiceId),
+      (inv) => canRecordInvoicePayment(inv) || inv.id === invoiceId,
     );
   }, [invoicesData?.items, invoiceId]);
 
@@ -104,7 +106,7 @@ export function PaymentFormDialog({
       form.reset({
         ...paymentFormDefaults,
         invoiceId: defaultInvoiceId ?? "",
-        amount: preset ? parseFloat(preset.balanceDue) : 0,
+        amount: preset ? invoiceOutstandingAmount(preset) : 0,
         paidAt: toDatetimeLocalValue(new Date().toISOString()),
       });
     }
@@ -112,7 +114,7 @@ export function PaymentFormDialog({
 
   useEffect(() => {
     if (!open || isEdit || !selectedInvoice) return;
-    const balance = parseFloat(selectedInvoice.balanceDue);
+    const balance = invoiceOutstandingAmount(selectedInvoice);
     if (balance > 0) {
       form.setValue("amount", balance);
     }

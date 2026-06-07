@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import type { DataTableColumn } from "@/components/data-display/data-table";
-import { StatusBadge } from "@/components/data-display/status-badge";
+import { InvoiceDueStatus } from "@/features/payments/components/financial-due-status";
 import { getInvoiceDisplayName } from "@/features/payments/utils/financial-table-display";
 import {
   formatInvoiceDate,
@@ -69,9 +69,7 @@ export function useInvoicesTabColumns(): DataTableColumn<Invoice>[] {
         sortable: true,
         sortValue: (row) => row.status,
         className: "whitespace-nowrap",
-        cell: (row) => (
-          <StatusBadge status={row.status} domain="invoice" />
-        ),
+        cell: (row) => <InvoiceDueStatus invoice={row} />,
       },
     ],
     [],

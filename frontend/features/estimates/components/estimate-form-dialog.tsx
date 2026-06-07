@@ -45,6 +45,7 @@ export function EstimateFormDialog({
     workItemItems,
     applyServiceToLine,
     estimate: editingEstimate,
+    currencyCode,
   } = useEstimateForm({
     open,
     estimate,
@@ -59,7 +60,7 @@ export function EstimateFormDialog({
       open={open}
       onOpenChange={onOpenChange}
       title={isEdit ? `Edit ${editingEstimate?.estimateNumber}` : "New estimate"}
-      description="Build a quote for your customer before invoicing."
+      description="Select a customer, add line items, and save."
       form={form}
       schema={estimateFormSchema}
       onSubmit={(values) => mutation.mutate(values)}
@@ -68,8 +69,10 @@ export function EstimateFormDialog({
     >
       <EstimateBasicFields
         form={form}
+        dialogOpen={open}
         isEdit={isEdit}
         estimateNumberPreview={watched.estimateNumberPreview}
+        estimateStatus={editingEstimate?.status}
         lockContact={lockContact}
         lockedContact={lockedContact}
         workItemItems={workItemItems}
@@ -84,11 +87,17 @@ export function EstimateFormDialog({
         watchedItems={watched.items}
         serviceItems={serviceItems}
         applyServiceToLine={applyServiceToLine}
+        currencyCode={currencyCode}
       />
 
-      <EstimateFormSummary form={form} totals={totals} />
+      <EstimateFormSummary
+        form={form}
+        dialogOpen={open}
+        totals={totals}
+        currencyCode={currencyCode}
+      />
 
-      <EstimateFormFooterFields form={form} />
+      <EstimateFormFooterFields form={form} dialogOpen={open} />
     </FormDialog>
   );
 }

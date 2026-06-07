@@ -1,5 +1,6 @@
 import * as Joi from 'joi';
 import { resolveDatabaseUrl } from './database-url.util';
+import { emailEnvValidationSchema } from './email/email-env.validation';
 
 const baseSchema = Joi.object({
   NODE_ENV: Joi.string()
@@ -19,6 +20,10 @@ const baseSchema = Joi.object({
   CORS_ORIGIN: Joi.string().default('*'),
   ENABLE_RESPONSE_ENVELOPE: Joi.string().valid('true', 'false').default('true'),
   FRONTEND_URL: Joi.string().uri().optional(),
+  /** Public API origin for widgets and embed scripts (no trailing slash). */
+  BACKEND_PUBLIC_URL: Joi.string().uri().optional(),
+  /** Host segment when BACKEND_PUBLIC_URL is unset (default localhost). */
+  BACKEND_PUBLIC_HOST: Joi.string().optional(),
   /** @deprecated Use FRONTEND_URL instead. Kept for backward compatibility. */
   APP_BASE_URL: Joi.string().uri().optional(),
   JWT_ACCESS_SECRET: Joi.when('NODE_ENV', {
@@ -131,6 +136,8 @@ const baseSchema = Joi.object({
   REDIS_TLS: Joi.string().valid('true', 'false').optional(),
   /** Password when not embedded in REDIS_URL (e.g. ACL user default). */
   REDIS_PASSWORD: Joi.string().optional(),
+
+  ...emailEnvValidationSchema,
 });
 
 export const envValidationSchema = baseSchema.custom((env, helpers) => {

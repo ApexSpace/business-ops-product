@@ -7,16 +7,14 @@ import { toast } from "sonner";
 import {
   DataTable,
 } from "@/components/data-display/data-table";
-import { ConfirmDeleteDialog } from "@/components/forms/confirm-delete-dialog";
 import { SearchInput } from "@/components/forms/search-input";
 import { SearchableSelect } from "@/components/forms/searchable-select";
 import { FilterBar } from "@/components/layout/filter-bar";
 import { InvoiceFormDialog } from "@/features/invoices/components/invoice-form-dialog";
 import { PaymentFormDialog } from "@/features/payments/components/payment-form-dialog";
-import { FinancialRowActionsMenu } from "@/features/payments/components/workspace/financial-row-actions-menu";
+import { InvoiceTableRowActions } from "@/features/payments/components/workspace/invoice-table-row-actions";
 import { FinancialTabPanel } from "@/features/payments/components/workspace/financial-tab-panel";
 import { Button } from "@/components/ui/button";
-import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { ListPagination } from "@/components/ui/list-pagination";
 import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
@@ -24,14 +22,19 @@ import { useListSearchParams } from "@/lib/hooks/use-list-search-params";
 import { useInvoicesTabColumns } from "@/features/payments/hooks/use-invoices-tab-columns";
 import { usePaymentsTabCreateAction } from "@/features/payments/hooks/use-payments-tab-action";
 import {
-  INVOICE_MANUAL_STATUS_OPTIONS,
+  canRecordInvoicePayment,
   INVOICE_STATUS_OPTIONS,
 } from "@/features/invoices/schemas/invoice-profile";
 import { invalidateFinancialLists } from "@/features/payments/workspace/payments-workspace";
 import { queryKeys } from "@/lib/query/keys";
 import type { Invoice, InvoiceStatus } from "@/features/invoices/types";
 import type { PaginatedResult } from "@/lib/types/shared";
-import { deleteInvoice, duplicateInvoice, listInvoices, updateInvoiceStatus } from "@/features/invoices/api/invoices.api";
+import {
+  duplicateInvoice,
+  listInvoices,
+  updateInvoiceStatus,
+} from "@/features/invoices/api/invoices.api";
+import { openInvoicePublicView } from "@/features/invoices/utils/invoice-payment-link";
 
 const LIST_SCHEMA = {
   page: { default: "1" },
@@ -54,7 +57,6 @@ export function PaymentsInvoicesTab() {
   const debouncedSearch = useDebouncedValue(params.search);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Invoice | null>(null);
-  const [deleteId, setDeleteId] = useState<string | null>(null);
   const [paymentInvoiceId, setPaymentInvoiceId] = useState<string | null>(null);
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
 
@@ -77,17 +79,6 @@ export function PaymentsInvoicesTab() {
     queryFn: () => listInvoices(listFilters),
   });
 
-  const deleteMutation = useMutation({
-    mutationFn: (id: string) =>
-      deleteInvoice(id),
-    onSuccess: () => {
-      toast.success("Invoice deleted");
-      void invalidateFinancialLists(queryClient);
-      setDeleteId(null);
-    },
-    onError: (err: Error) => toast.error(err.message),
-  });
-
   const duplicateMutation = useMutation({
     mutationFn: (id: string) =>
       duplicateInvoice(id),
@@ -108,13 +99,22 @@ export function PaymentsInvoicesTab() {
     onError: (err: Error) => toast.error(err.message),
   });
 
-  const openInvoice = (invoice: Invoice) => {
+  const openInvoiceEditor = (invoice: Invoice) => {
     setEditing(invoice);
     setDialogOpen(true);
   };
 
-  const canRecordPayment = (row: Invoice) =>
-    row.status !== "VOID" && parseFloat(row.balanceDue) > 0;
+  const viewInvoicePublic = (invoice: Invoice) => {
+    if (!openInvoicePublicView(invoice)) {
+      toast.error("Public link is not available for this invoice");
+    }
+  };
+
+  const canRecordPayment = (row: Invoice) => canRecordInvoicePayment(row);
+
+  const canCopyLink = (row: Invoice) => row.status !== "VOID";
+
+  const canVoid = (row: Invoice) => row.status !== "VOID";
 
   const columns = useInvoicesTabColumns();
 
@@ -185,7 +185,7 @@ export function PaymentsInvoicesTab() {
       >
         <div className="-mx-1 overflow-x-auto px-1">
           <DataTable
-            className="min-w-[56rem]"
+            className="min-w-[60rem]"
             density="compact"
             columns={columns}
             data={data?.items ?? []}
@@ -207,26 +207,29 @@ export function PaymentsInvoicesTab() {
               </Button>
             }
             rowActions={(row) => (
-              <FinancialRowActionsMenu
-                onView={() => openInvoice(row)}
-                onEdit={() => openInvoice(row)}
-                onDuplicate={() => duplicateMutation.mutate(row.id)}
-                onDelete={() => setDeleteId(row.id)}
-                statusOptions={INVOICE_MANUAL_STATUS_OPTIONS}
-                onStatusChange={(status) =>
-                  statusMutation.mutate({ id: row.id, status })
+              <InvoiceTableRowActions
+                invoice={row}
+                canCopyLink={canCopyLink(row)}
+                onView={() => viewInvoicePublic(row)}
+                onEdit={
+                  row.status !== "PAID"
+                    ? () => openInvoiceEditor(row)
+                    : undefined
                 }
-                extraItems={
-                  canRecordPayment(row) ? (
-                    <DropdownMenuItem
-                      onClick={() => {
+                onDuplicate={() => duplicateMutation.mutate(row.id)}
+                onVoid={
+                  canVoid(row)
+                    ? () =>
+                        statusMutation.mutate({ id: row.id, status: "VOID" })
+                    : undefined
+                }
+                onRecordPayment={
+                  canRecordPayment(row)
+                    ? () => {
                         setPaymentInvoiceId(row.id);
                         setPaymentDialogOpen(true);
-                      }}
-                    >
-                      Record Payment
-                    </DropdownMenuItem>
-                  ) : null
+                      }
+                    : undefined
                 }
               />
             )}
@@ -255,14 +258,6 @@ export function PaymentsInvoicesTab() {
         onSuccess={() => void invalidateFinancialLists(queryClient)}
       />
 
-      <ConfirmDeleteDialog
-        open={!!deleteId}
-        onOpenChange={(open) => !open && setDeleteId(null)}
-        title="Delete invoice?"
-        description="This invoice will be removed. This cannot be undone."
-        isPending={deleteMutation.isPending}
-        onConfirm={() => deleteId && deleteMutation.mutate(deleteId)}
-      />
     </>
   );
 }

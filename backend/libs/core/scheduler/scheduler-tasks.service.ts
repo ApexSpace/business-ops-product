@@ -1,5 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
+import { FinancialDueStatusService } from '@app/modules/finance/shared/services/financial-due-status.service';
+import { AppointmentReminderService } from '@app/modules/operations/appointments/services/appointment-reminder.service';
 import {
   JOB_CLEANUP_ASYNC_JOBS,
   JOB_CLEANUP_ORPHAN_FILES,
@@ -11,7 +13,11 @@ import { QueueService } from '../queue/queue.service';
 export class SchedulerTasksService {
   private readonly logger = new Logger(SchedulerTasksService.name);
 
-  constructor(private readonly queueService: QueueService) {}
+  constructor(
+    private readonly queueService: QueueService,
+    private readonly appointmentReminderService: AppointmentReminderService,
+    private readonly financialDueStatusService: FinancialDueStatusService,
+  ) {}
 
   @Cron(CronExpression.EVERY_DAY_AT_3AM)
   async enqueueWebhookCleanup(): Promise<void> {
@@ -33,6 +39,32 @@ export class SchedulerTasksService {
     this.logger.log(
       `Enqueued async job cleanup (retention ${days}d) bullJobId=${jobId ?? 'n/a'}`,
     );
+  }
+
+  @Cron(CronExpression.EVERY_DAY_AT_1AM)
+  async syncFinancialDueStatuses(): Promise<void> {
+    try {
+      await this.financialDueStatusService.syncDueStatuses();
+    } catch (error) {
+      this.logger.error(
+        `Financial due status cron failed: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+    }
+  }
+
+  @Cron(CronExpression.EVERY_HOUR)
+  async processAppointmentReminders(): Promise<void> {
+    try {
+      await this.appointmentReminderService.processDueReminders();
+    } catch (error) {
+      this.logger.error(
+        `Appointment reminder cron failed: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+    }
   }
 
   @Cron(CronExpression.EVERY_DAY_AT_5AM)

@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useFieldArray, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   calculateFormTotals,
+  canSendInvoiceFromForm,
   invoiceFormDefaults,
   invoiceFormSchema,
   invoiceFormToApiBody,
@@ -16,7 +17,11 @@ import {
 } from "@/features/invoices/schemas/invoice-profile";
 import { applyInvoiceDefaults } from "@/features/settings/schemas/financial-settings-profile";
 import { listEstimates } from "@/features/estimates/api/estimates.api";
-import { createInvoice, updateInvoice } from "@/features/invoices/api/invoices.api";
+import {
+  createInvoice,
+  updateInvoice,
+  updateInvoiceStatus,
+} from "@/features/invoices/api/invoices.api";
 import { getFinancialSettings } from "@/features/settings/api/financial.api";
 import { listServices } from "@/features/settings/api/services.api";
 import { listWorkItems } from "@/features/work-items/api/work-items.api";
@@ -77,8 +82,10 @@ export function useInvoiceForm({
   const { data: financialSettings } = useQuery({
     queryKey: queryKeys.business.financialSettings(),
     queryFn: () => getFinancialSettings(),
-    enabled: open && !isEdit,
+    enabled: open,
   });
+
+  const currencyCode = financialSettings?.taxesAndCurrency.currencyCode ?? "USD";
 
   const { data: services } = useQuery({
     queryKey: queryKeys.services.picker(),
@@ -173,21 +180,69 @@ export function useInvoiceForm({
     form,
   ]);
 
+  const canSend = canSendInvoiceFromForm(invoice, isEdit);
+
   const mutation = useMutation({
-    mutationFn: async (values: InvoiceFormValues) => {
-      const body = invoiceFormToApiBody(values);
+    mutationFn: async ({
+      values,
+      intent,
+    }: {
+      values: InvoiceFormValues;
+      intent: "draft" | "send";
+    }) => {
       if (isEdit && invoice) {
-        return updateInvoice(invoice.id, body);
+        const preserveStatus = invoice.status !== "DRAFT";
+        const body = invoiceFormToApiBody(values, {
+          includeStatus: !preserveStatus,
+          status: "DRAFT",
+        });
+        await updateInvoice(invoice.id, body);
+
+        if (intent === "send" && invoice.status === "DRAFT") {
+          return updateInvoiceStatus(invoice.id, "SENT");
+        }
+
+        return;
       }
+
+      const body = invoiceFormToApiBody(values, {
+        status: intent === "send" ? "SENT" : "DRAFT",
+      });
       return createInvoice(body);
     },
-    onSuccess: () => {
-      toast.success(isEdit ? "Invoice updated" : "Invoice created");
+    onSuccess: (_data, { intent }) => {
+      if (intent === "send") {
+        toast.success("Invoice sent");
+      } else if (isEdit) {
+        toast.success("Invoice updated");
+      } else {
+        toast.success("Invoice saved as draft");
+      }
       onSuccess();
       onOpenChange(false);
     },
     onError: (err: Error) => toast.error(err.message),
   });
+
+  const [pendingAction, setPendingAction] = useState<
+    "primary" | "secondary" | null
+  >(null);
+
+  useEffect(() => {
+    if (!mutation.isPending) {
+      setPendingAction(null);
+    }
+  }, [mutation.isPending]);
+
+  const saveDraft = (values: InvoiceFormValues) => {
+    setPendingAction(canSend ? "secondary" : "primary");
+    mutation.mutate({ values, intent: "draft" });
+  };
+
+  const sendInvoice = (values: InvoiceFormValues) => {
+    setPendingAction("primary");
+    mutation.mutate({ values, intent: "send" });
+  };
 
   const applyServiceToLine = (index: number, serviceId: string) => {
     const service = services?.items.find((s) => s.id === serviceId);
@@ -207,6 +262,10 @@ export function useInvoiceForm({
     watched,
     totals,
     mutation,
+    pendingAction,
+    canSend,
+    saveDraft,
+    sendInvoice,
     contactId,
     lockedContact,
     serviceItems,
@@ -214,5 +273,6 @@ export function useInvoiceForm({
     workItemItems,
     applyServiceToLine,
     invoice,
+    currencyCode,
   };
 }

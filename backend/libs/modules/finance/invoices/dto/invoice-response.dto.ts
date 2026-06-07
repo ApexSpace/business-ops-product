@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { InvoiceStatus } from '@prisma/client';
+import { InvoicePaymentStatus, InvoiceStatus } from '@prisma/client';
 
 export class InvoiceItemResponseDto {
   @ApiProperty()
@@ -93,6 +93,30 @@ export class InvoiceResponseDto {
 
   @ApiProperty()
   balanceDue!: string;
+
+  @ApiProperty()
+  publicToken!: string;
+
+  @ApiPropertyOptional()
+  publicUrl?: string | null;
+
+  @ApiProperty({ enum: InvoicePaymentStatus })
+  paymentStatus!: InvoicePaymentStatus;
+
+  @ApiProperty()
+  paidAmount!: string;
+
+  @ApiProperty()
+  remainingAmount!: string;
+
+  @ApiPropertyOptional()
+  lastPaymentAt?: Date | null;
+
+  @ApiPropertyOptional()
+  stripeCheckoutUrl?: string | null;
+
+  @ApiPropertyOptional()
+  stripePaymentLinkId?: string | null;
 
   @ApiPropertyOptional()
   notes?: string | null;

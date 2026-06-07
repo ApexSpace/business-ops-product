@@ -15,7 +15,7 @@ import { SearchableSelect } from "@/components/forms/searchable-select";
 import { FilterBar } from "@/components/layout/filter-bar";
 import { PaymentFormDialog } from "@/features/payments/components/payment-form-dialog";
 import { FinancialTabPanel } from "@/features/payments/components/workspace/financial-tab-panel";
-import { TransactionRowActionsMenu } from "@/features/payments/components/workspace/transaction-row-actions-menu";
+import { TransactionTableRowActions } from "@/features/payments/components/workspace/transaction-table-row-actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ListPagination } from "@/components/ui/list-pagination";
@@ -25,15 +25,17 @@ import { usePaymentsTabCreateAction } from "@/features/payments/hooks/use-paymen
 import { formatMoney } from "@/features/invoices/schemas/invoice-profile";
 import {
   PAYMENT_METHOD_OPTIONS,
+  canRefundPayment,
   formatTransactionDate,
   formatTransactionProvider,
   formatTransactionSource,
   getTransactionStatusLabel,
 } from "@/features/payments/schemas/payment-profile";
 import { invalidateFinancialLists } from "@/features/payments/workspace/payments-workspace";
+import { viewTransactionInvoicePublic } from "@/features/payments/utils/transaction-invoice-view";
 import { queryKeys } from "@/lib/query/keys";
-import type { PaginatedResult, Payment } from "@/features/payments/types";
-import { deletePayment, listPayments } from "@/features/payments/api/payments.api";
+import type { Payment } from "@/features/payments/types";
+import { listPayments, refundPayment } from "@/features/payments/api/payments.api";
 
 const LIST_SCHEMA = {
   page: { default: "1" },
@@ -55,18 +57,11 @@ export function PaymentsTransactionsTab() {
   const { params, page, setParams } = useListSearchParams(LIST_SCHEMA);
   const debouncedSearch = useDebouncedValue(params.search);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [editing, setEditing] = useState<Payment | null>(null);
-  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [refundId, setRefundId] = useState<string | null>(null);
 
   usePaymentsTabCreateAction(() => {
-    setEditing(null);
     setDialogOpen(true);
   });
-
-  const openTransaction = (payment: Payment) => {
-    setEditing(payment);
-    setDialogOpen(true);
-  };
 
   const listFilters = {
     page,
@@ -82,13 +77,12 @@ export function PaymentsTransactionsTab() {
     queryFn: () => listPayments(listFilters),
   });
 
-  const deleteMutation = useMutation({
-    mutationFn: (id: string) =>
-      deletePayment(id),
+  const refundMutation = useMutation({
+    mutationFn: (id: string) => refundPayment(id),
     onSuccess: () => {
-      toast.success("Transaction deleted");
+      toast.success("Transaction refunded");
       void invalidateFinancialLists(queryClient);
-      setDeleteId(null);
+      setRefundId(null);
     },
     onError: (err: Error) => toast.error(err.message),
   });
@@ -155,7 +149,7 @@ export function PaymentsTransactionsTab() {
         className: "whitespace-nowrap",
         cell: (row) => (
           <StatusBadge
-            status="SUCCEEDED"
+            status={canRefundPayment(row) ? "SUCCEEDED" : "REFUNDED"}
             domain="transaction"
             label={getTransactionStatusLabel(row)}
           />
@@ -169,14 +163,7 @@ export function PaymentsTransactionsTab() {
     <>
       <FinancialTabPanel
         actions={
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => {
-              setEditing(null);
-              setDialogOpen(true);
-            }}
-          >
+          <Button size="sm" onClick={() => setDialogOpen(true)}>
             <Plus className="mr-1.5 size-4" />
             Record payment
           </Button>
@@ -243,15 +230,19 @@ export function PaymentsTransactionsTab() {
             emptyTitle="No transactions yet"
             emptyDescription="Transactions are usually recorded from an invoice. Use this list to review history or make corrections."
             emptyAction={
-              <p className="text-sm text-muted-foreground">
-                Open the Invoices tab and use Record payment on an open invoice.
-              </p>
+              <Button size="sm" onClick={() => setDialogOpen(true)}>
+                <Plus className="mr-2 size-4" />
+                Record payment
+              </Button>
             }
             rowActions={(row) => (
-              <TransactionRowActionsMenu
-                onView={() => openTransaction(row)}
-                onEdit={() => openTransaction(row)}
-                onDelete={() => setDeleteId(row.id)}
+              <TransactionTableRowActions
+                onView={() => void viewTransactionInvoicePublic(row)}
+                onRefund={
+                  canRefundPayment(row)
+                    ? () => setRefundId(row.id)
+                    : undefined
+                }
               />
             )}
           />
@@ -260,21 +251,18 @@ export function PaymentsTransactionsTab() {
 
       <PaymentFormDialog
         open={dialogOpen}
-        onOpenChange={(open) => {
-          setDialogOpen(open);
-          if (!open) setEditing(null);
-        }}
-        payment={editing}
+        onOpenChange={setDialogOpen}
         onSuccess={() => void invalidateFinancialLists(queryClient)}
       />
 
       <ConfirmDeleteDialog
-        open={!!deleteId}
-        onOpenChange={(open) => !open && setDeleteId(null)}
-        title="Delete transaction?"
-        description="This removes the payment record and recalculates the invoice balance."
-        isPending={deleteMutation.isPending}
-        onConfirm={() => deleteId && deleteMutation.mutate(deleteId)}
+        open={!!refundId}
+        onOpenChange={(open) => !open && setRefundId(null)}
+        title="Refund transaction?"
+        description="This reverses the payment and updates the linked invoice balance. Stripe payments are refunded through your connected account."
+        confirmLabel="Refund"
+        isPending={refundMutation.isPending}
+        onConfirm={() => refundId && refundMutation.mutate(refundId)}
       />
     </>
   );

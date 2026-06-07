@@ -47,6 +47,10 @@ export function InvoiceFormDialog(props: InvoiceFormDialogProps) {
     watched,
     totals,
     mutation,
+    pendingAction,
+    canSend,
+    saveDraft,
+    sendInvoice,
     contactId,
     lockedContact,
     serviceItems,
@@ -54,6 +58,7 @@ export function InvoiceFormDialog(props: InvoiceFormDialogProps) {
     workItemItems,
     applyServiceToLine,
     invoice: editingInvoice,
+    currencyCode,
   } = useInvoiceForm({
     open,
     invoice,
@@ -71,17 +76,30 @@ export function InvoiceFormDialog(props: InvoiceFormDialogProps) {
       open={open}
       onOpenChange={onOpenChange}
       title={isEdit ? `Edit ${editingInvoice?.invoiceNumber}` : "New invoice"}
-      description="Bill your customer — link an estimate or work item when helpful."
+      description={
+        canSend
+          ? "Select a customer, add line items, then save as draft or send."
+          : "Select a customer, add line items, and save."
+      }
       form={form}
       schema={invoiceFormSchema}
-      onSubmit={(values) => mutation.mutate(values)}
+      onSubmit={canSend ? sendInvoice : saveDraft}
+      onSecondarySubmit={canSend ? saveDraft : undefined}
+      showSecondarySubmit={canSend}
+      pendingAction={pendingAction}
+      submitLabel={canSend ? "Send" : "Save"}
+      secondarySubmitLabel="Save as draft"
       isPending={mutation.isPending}
       size="2xl"
     >
       <InvoiceBasicFields
         form={form}
+        dialogOpen={open}
         isEdit={isEdit}
         invoiceNumberPreview={watched.invoiceNumberPreview}
+        invoiceNumber={editingInvoice?.invoiceNumber}
+        invoiceStatus={editingInvoice?.status}
+        invoiceBalanceDue={editingInvoice?.balanceDue}
         lockContact={lockContact}
         lockedContact={lockedContact}
         estimateItems={estimateItems}
@@ -97,11 +115,17 @@ export function InvoiceFormDialog(props: InvoiceFormDialogProps) {
         watchedItems={watched.items}
         serviceItems={serviceItems}
         applyServiceToLine={applyServiceToLine}
+        currencyCode={currencyCode}
       />
 
-      <InvoiceFormSummary form={form} totals={totals} />
+      <InvoiceFormSummary
+        form={form}
+        dialogOpen={open}
+        totals={totals}
+        currencyCode={currencyCode}
+      />
 
-      <InvoiceFormFooterFields form={form} />
+      <InvoiceFormFooterFields form={form} dialogOpen={open} />
     </FormDialog>
   );
 }

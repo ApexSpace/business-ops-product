@@ -71,7 +71,7 @@ export function AppSidebar({
         </div>
       </SidebarHeader>
 
-      <SidebarContent className="gap-0.5 py-2">
+      <SidebarContent className="gap-0.5 overflow-y-auto py-2">
         {isSettingsMode ? (
           <>
             <SidebarMenu className="px-2">

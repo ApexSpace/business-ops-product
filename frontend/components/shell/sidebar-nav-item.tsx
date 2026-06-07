@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar";
+import { useHydrated } from "@/lib/hooks/use-hydrated";
 import { cn } from "@/lib/utils";
 import type { ShellNavItem } from "@/lib/types/shell-nav";
 import { isNavItemActive } from "./sidebar-nav-utils";
@@ -14,7 +15,8 @@ interface SidebarNavItemProps {
 
 export function SidebarNavItem({ item, tooltip }: SidebarNavItemProps) {
   const pathname = usePathname();
-  const active = isNavItemActive(pathname, item);
+  const hydrated = useHydrated();
+  const active = hydrated && isNavItemActive(pathname, item);
   const Icon = item.icon;
 
   return (

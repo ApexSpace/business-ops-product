@@ -40,6 +40,33 @@ export class CalendarRepository {
     });
   }
 
+  findByPublicSlugForBooking(slug: string) {
+    return this.prisma.calendar.findFirst({
+      where: {
+        publicSlug: slug,
+        deletedAt: null,
+        publicBookingEnabled: true,
+        status: CalendarStatus.ACTIVE,
+      },
+      include: {
+        business: { select: { name: true, settings: true } },
+        availability: { orderBy: { dayOfWeek: 'asc' } },
+        exceptions: { orderBy: { date: 'asc' } },
+        staff: true,
+      },
+    });
+  }
+
+  findByPublicSlug(slug: string, excludeCalendarId?: string) {
+    return this.prisma.calendar.findFirst({
+      where: {
+        publicSlug: slug,
+        deletedAt: null,
+        ...(excludeCalendarId ? { id: { not: excludeCalendarId } } : {}),
+      },
+    });
+  }
+
   findByIdWithRelations(
     businessId: string,
     id: string,

@@ -21,6 +21,7 @@ import { CreateInvoiceDto } from '../dto/create-invoice.dto';
 import { ListInvoicesQueryDto } from '../dto/list-invoices-query.dto';
 import { UpdateInvoiceDto } from '../dto/update-invoice.dto';
 import { UpdateInvoiceStatusDto } from '../dto/update-invoice-status.dto';
+import { InvoicePaymentService } from '@app/modules/finance/invoices/services/invoice-payment.service';
 import { InvoicesService } from '@app/modules/finance/invoices/services/invoices.service';
 
 @ApiTags('invoices')
@@ -28,7 +29,10 @@ import { InvoicesService } from '@app/modules/finance/invoices/services/invoices
 @Controller('invoices')
 @UseGuards(BusinessRolesGuard)
 export class InvoicesController {
-  constructor(private readonly invoicesService: InvoicesService) {}
+  constructor(
+    private readonly invoicesService: InvoicesService,
+    private readonly invoicePaymentService: InvoicePaymentService,
+  ) {}
 
   @Post()
   @BusinessRoles(
@@ -78,6 +82,23 @@ export class InvoicesController {
       user.businessId!,
       id,
       dto,
+      user,
+    );
+  }
+
+  @Post(':id/create-payment-link')
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
+  createPaymentLink(
+    @CurrentUser() user: RequestUser,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.invoicePaymentService.createPaymentLink(
+      user.businessId!,
+      id,
       user,
     );
   }

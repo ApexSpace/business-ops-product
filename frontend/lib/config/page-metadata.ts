@@ -136,6 +136,15 @@ const businessRoutes: Record<string, RouteEntry> = {
       { label: "Automations" },
     ],
   },
+  "/business/settings/chatbots": {
+    title: "Chatbots",
+    description:
+      "Create and manage website chat widgets that capture visitors and conversations.",
+    breadcrumbs: [
+      { label: "Settings", href: "/business/settings/profile" },
+      { label: "Chatbots" },
+    ],
+  },
   "/business/settings/billing": {
     title: "Billing",
     breadcrumbs: [
@@ -292,6 +301,29 @@ export function resolvePageMetadata(
       breadcrumbs: [
         { label: "Settings", href: "/business/settings/profile" },
         { label: "Calendars", href: "/business/settings/calendars" },
+        { label: "Edit" },
+      ],
+    };
+  }
+
+  if (pathname.match(/^\/business\/settings\/chatbots\/[^/]+\/edit$/)) {
+    return {
+      title: "Edit chatbot",
+      description: "Configure your website chat widget, replies, and embed code.",
+      breadcrumbs: [
+        { label: "Settings", href: "/business/settings/profile" },
+        { label: "Chatbots", href: "/business/settings/chatbots" },
+        { label: "Edit" },
+      ],
+    };
+  }
+
+  if (pathname.match(/^\/business\/settings\/pipelines\/[^/]+\/edit$/)) {
+    return {
+      title: "Edit pipeline",
+      breadcrumbs: [
+        { label: "Settings", href: "/business/settings/profile" },
+        { label: "Pipelines", href: "/business/settings/pipelines" },
         { label: "Edit" },
       ],
     };

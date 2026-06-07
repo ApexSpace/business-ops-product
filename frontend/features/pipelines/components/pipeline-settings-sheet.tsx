@@ -18,7 +18,6 @@ interface PipelineSettingsSheetProps {
   leads: Lead[];
   canManage: boolean;
   onSuccess: () => void;
-  onDeleted?: (deletedId: string) => void;
 }
 
 /** Optional sheet wrapper around pipeline settings (prefer Settings → Pipelines page). */
@@ -29,7 +28,6 @@ export function PipelineSettingsSheet({
   leads,
   canManage,
   onSuccess,
-  onDeleted,
 }: PipelineSettingsSheetProps) {
   if (!pipeline) return null;
 
@@ -51,10 +49,6 @@ export function PipelineSettingsSheet({
             canManage={canManage}
             onSuccess={() => {
               onSuccess();
-              onOpenChange(false);
-            }}
-            onDeleted={(id) => {
-              onDeleted?.(id);
               onOpenChange(false);
             }}
           />

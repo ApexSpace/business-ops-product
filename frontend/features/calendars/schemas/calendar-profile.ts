@@ -58,6 +58,12 @@ export interface Calendar {
   policySettings: Record<string, unknown> | null;
   widgetSettings: Record<string, unknown> | null;
   googleSyncSettings: Record<string, unknown> | null;
+  publicSlug: string | null;
+  publicBookingEnabled: boolean;
+  embedEnabled: boolean;
+  publicBookingUrl?: string | null;
+  embedUrl?: string | null;
+  embedCode?: string | null;
   staffCount?: number;
   appointmentCount?: number;
   createdAt: string;
@@ -115,7 +121,8 @@ export type CalendarCreationTypeId =
   | "personal"
   | "round_robin"
   | "class"
-  | "collective";
+  | "collective"
+  | "internal";
 
 export interface CalendarCreationTypeOption {
   id: CalendarCreationTypeId;
@@ -130,7 +137,7 @@ export interface CalendarCreationTypeOption {
 export const CALENDAR_CREATION_TYPES: CalendarCreationTypeOption[] = [
   {
     id: "personal",
-    title: "Personal Booking",
+    title: "One-on-One",
     description: "One staff member meets one customer.",
     examples: [
       "Dental consultation",
@@ -143,7 +150,7 @@ export const CALENDAR_CREATION_TYPES: CalendarCreationTypeOption[] = [
   },
   {
     id: "round_robin",
-    title: "Round Robin",
+    title: "Team / Round Robin",
     description: "Appointments are distributed among multiple staff members.",
     examples: ["Sales calls", "Intake consultations"],
     backendType: "ROUND_ROBIN",
@@ -152,7 +159,7 @@ export const CALENDAR_CREATION_TYPES: CalendarCreationTypeOption[] = [
   },
   {
     id: "class",
-    title: "Class Booking",
+    title: "Group / Class",
     description: "One host serves multiple participants.",
     examples: ["Training classes", "Workshops", "Group sessions"],
     backendType: "CLASS_EVENT",
@@ -161,10 +168,19 @@ export const CALENDAR_CREATION_TYPES: CalendarCreationTypeOption[] = [
   },
   {
     id: "collective",
-    title: "Collective Booking",
+    title: "Collective",
     description: "Multiple staff attend one appointment.",
     examples: ["Panel consultations", "Team meetings"],
     backendType: "COLLECTIVE",
+    defaultCapacity: 1,
+    showPrimaryStaff: true,
+  },
+  {
+    id: "internal",
+    title: "Internal Calendar",
+    description: "Staff-only scheduling without a public booking page.",
+    examples: ["Internal meetings", "Team blocks", "Ops scheduling"],
+    backendType: "STAFF",
     defaultCapacity: 1,
     showPrimaryStaff: true,
   },
@@ -179,18 +195,70 @@ export const DURATION_PRESETS = [
   { value: 120, label: "120 min" },
 ] as const;
 
+/** Simplified edit navigation (5 tabs). */
 export const CALENDAR_EDIT_SECTIONS = [
-  { id: "basic", label: "Basic Details" },
-  { id: "staff", label: "Staff & Location" },
+  { id: "general", label: "General" },
   { id: "availability", label: "Availability" },
-  { id: "rules", label: "Booking Rules" },
-  { id: "advanced", label: "Advanced Settings" },
-  { id: "form", label: "Form & Confirmation" },
-  { id: "payments", label: "Payments" },
-  { id: "notifications", label: "Notifications & Policies" },
-  { id: "widget", label: "Widget Appearance" },
-  { id: "google", label: "Google Sync" },
+  { id: "booking-page", label: "Booking Page" },
+  { id: "integrations", label: "Integrations" },
+  { id: "advanced", label: "Advanced" },
 ] as const;
+
+/** Business-friendly booking type labels for list & details. */
+export function getBookingTypeLabel(type: CalendarType): string {
+  switch (type) {
+    case "PERSONAL":
+      return "One-on-One";
+    case "ROUND_ROBIN":
+      return "Round Robin";
+    case "CLASS_EVENT":
+      return "Class / Group";
+    case "COLLECTIVE":
+      return "Collective";
+    case "SERVICE":
+    case "STAFF":
+      return "Internal";
+    default:
+      return type;
+  }
+}
+
+export function formatDurationLabel(minutes: number): string {
+  if (minutes < 60) return `${minutes} min`;
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  if (m === 0) return h === 1 ? "1 hour" : `${h} hours`;
+  return `${h} hr ${m} min`;
+}
+
+export function summarizeWeeklyAvailability(
+  slots: Array<{ dayOfWeek: DayOfWeek; isEnabled: boolean; startTime: string; endTime: string }>,
+): string {
+  const enabled = slots.filter((s) => s.isEnabled);
+  if (enabled.length === 0) return "No hours set";
+  const first = enabled[0]!;
+  const sameHours = enabled.every(
+    (s) => s.startTime === first.startTime && s.endTime === first.endTime,
+  );
+  const weekdays = enabled.filter((s) =>
+    ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"].includes(s.dayOfWeek),
+  );
+  if (
+    sameHours &&
+    weekdays.length === 5 &&
+    enabled.length === 5
+  ) {
+    return `Mon–Fri ${formatTime12(first.startTime)}–${formatTime12(first.endTime)}`;
+  }
+  return `${enabled.length} day${enabled.length === 1 ? "" : "s"} configured`;
+}
+
+function formatTime12(time: string): string {
+  const [h, m] = time.split(":").map(Number);
+  const period = (h ?? 0) >= 12 ? "PM" : "AM";
+  const hour12 = (h ?? 0) % 12 || 12;
+  return `${hour12}:${String(m ?? 0).padStart(2, "0")} ${period}`;
+}
 
 export type CalendarEditSectionId =
   (typeof CALENDAR_EDIT_SECTIONS)[number]["id"];
@@ -200,7 +268,6 @@ export const quickSetupSchema = z.object({
   description: z.string().max(2000).optional(),
   primaryStaffUserId: z.string().optional(),
   defaultDurationMinutes: z.number().min(5).max(480),
-  bookingSlug: z.string().max(100).optional(),
 });
 
 export type QuickSetupValues = z.infer<typeof quickSetupSchema>;
@@ -215,8 +282,7 @@ export function slugifyCalendarName(name: string): string {
 }
 
 export function getBookingSlugFromCalendar(calendar: Calendar): string {
-  const ws = calendar.widgetSettings as { bookingSlug?: string } | null;
-  return ws?.bookingSlug ?? "";
+  return slugifyCalendarName(calendar.name);
 }
 
 export function quickSetupToFormValues(
@@ -224,7 +290,7 @@ export function quickSetupToFormValues(
   values: QuickSetupValues,
   businessTimezone?: string | null,
 ): CalendarFormValues {
-  const slug = values.bookingSlug?.trim() || slugifyCalendarName(values.name);
+  const slug = slugifyCalendarName(values.name);
   return {
     ...calendarFormDefaults,
     timezone: normalizeTimezone(businessTimezone),
@@ -368,6 +434,9 @@ export const calendarFormSchema = z.object({
   notificationSettings: jsonObject,
   policySettings: jsonObject,
   widgetSettings: jsonObject,
+  publicSlug: z.string().max(80).optional(),
+  publicBookingEnabled: z.boolean(),
+  embedEnabled: z.boolean(),
   googleSyncEnabled: z.boolean(),
   googleSyncDirection: z.enum([
     "NONE",
@@ -404,6 +473,9 @@ export const calendarFormDefaults: CalendarFormValues = {
   notificationSettings: {},
   policySettings: {},
   widgetSettings: { title: "Book an appointment", buttonText: "Book now" },
+  publicSlug: "",
+  publicBookingEnabled: false,
+  embedEnabled: true,
   googleSyncEnabled: false,
   googleSyncDirection: "NONE",
   googleIntegrationResourceId: "",
@@ -449,9 +521,11 @@ export function calendarToForm(calendar: CalendarDetail): CalendarFormValues {
     policySettings: (calendar.policySettings as Record<string, unknown>) ?? {},
     widgetSettings: {
       ...ws,
-      bookingSlug:
-        (ws.bookingSlug as string) ?? slugifyCalendarName(calendar.name),
+      bookingSlug: slugifyCalendarName(calendar.name),
     },
+    publicSlug: slugifyCalendarName(calendar.name),
+    publicBookingEnabled: calendar.publicBookingEnabled,
+    embedEnabled: calendar.embedEnabled,
     googleSyncEnabled: Boolean(gs.enabled),
     googleSyncDirection:
       (gs.syncDirection as GoogleSyncDirection) ?? "NONE",
@@ -461,6 +535,12 @@ export function calendarToForm(calendar: CalendarDetail): CalendarFormValues {
 }
 
 export function calendarFormToApiBody(values: CalendarFormValues) {
+  const slug = slugifyCalendarName(values.name.trim());
+  const widgetSettings = {
+    ...(values.widgetSettings ?? {}),
+    ...(values.publicBookingEnabled ? { bookingSlug: slug } : {}),
+  };
+
   return {
     name: values.name.trim(),
     description: values.description?.trim() || undefined,
@@ -484,7 +564,10 @@ export function calendarFormToApiBody(values: CalendarFormValues) {
     paymentSettings: values.paymentSettings,
     notificationSettings: values.notificationSettings,
     policySettings: values.policySettings,
-    widgetSettings: values.widgetSettings,
+    widgetSettings,
+    publicSlug: values.publicBookingEnabled ? slug : undefined,
+    publicBookingEnabled: values.publicBookingEnabled,
+    embedEnabled: values.embedEnabled,
     googleSyncSettings: {
       enabled: values.googleSyncEnabled,
       syncDirection: values.googleSyncDirection,

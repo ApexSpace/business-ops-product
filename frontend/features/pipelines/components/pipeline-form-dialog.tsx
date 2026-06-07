@@ -44,7 +44,7 @@ interface PipelineFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   pipeline?: Pipeline | null;
-  onSuccess: () => void;
+  onSuccess: (pipelineId?: string) => void;
 }
 
 export function PipelineFormDialog({
@@ -86,9 +86,9 @@ export function PipelineFormDialog({
       }
       return createPipeline(values);
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
       toast.success(isEdit ? "Pipeline saved" : "Pipeline created");
-      onSuccess();
+      onSuccess(result?.id);
       onOpenChange(false);
     },
     onError: (err: Error) => toast.error(err.message),

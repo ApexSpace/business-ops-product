@@ -157,6 +157,13 @@ export function ProviderBrandIcon({
         </IconBadge>
       );
 
+    case "webchat":
+      return (
+        <IconBadge className={cn(sizeClass, "bg-emerald-600")}>
+          <MessageSquare className="size-[55%] text-white" strokeWidth={2.5} />
+        </IconBadge>
+      );
+
     case "instagram":
       return (
         <IconBadge

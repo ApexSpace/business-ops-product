@@ -12,6 +12,7 @@ import {
   CalendarStaffResponseDto,
 } from '../dto/calendar.dto';
 import { CalendarWithCounts } from '../repositories/calendar.repository';
+import { buildCalendarPublicUrls } from '../utils/calendar-public-booking.util';
 
 type StaffWithUser = CalendarStaff & {
   user: {
@@ -58,19 +59,36 @@ function baseCalendar(calendar: Calendar): CalendarResponseDto {
     policySettings: jsonRecord(calendar.policySettings),
     widgetSettings: jsonRecord(calendar.widgetSettings),
     googleSyncSettings: jsonRecord(calendar.googleSyncSettings),
+    publicSlug: calendar.publicSlug,
+    publicBookingEnabled: calendar.publicBookingEnabled,
+    embedEnabled: calendar.embedEnabled,
     createdAt: calendar.createdAt,
     updatedAt: calendar.updatedAt,
   };
 }
 
+function withPublicUrls<T extends CalendarResponseDto>(
+  dto: T,
+  frontendUrl: string,
+): T {
+  const urls = buildCalendarPublicUrls(
+    frontendUrl,
+    dto.publicSlug,
+    dto.embedEnabled,
+  );
+  return { ...dto, ...urls };
+}
+
 export function toCalendarResponse(
   calendar: CalendarWithCounts,
+  frontendUrl = '',
 ): CalendarResponseDto {
-  return {
+  const dto = {
     ...baseCalendar(calendar),
     staffCount: calendar._count.staff,
     appointmentCount: calendar._count.appointments,
   };
+  return frontendUrl ? withPublicUrls(dto, frontendUrl) : dto;
 }
 
 export function toCalendarDetailResponse(
@@ -80,8 +98,9 @@ export function toCalendarDetailResponse(
     exceptions: CalendarException[];
     _count?: { staff: number; appointments: number };
   },
+  frontendUrl = '',
 ): CalendarDetailResponseDto {
-  return {
+  const dto = {
     ...baseCalendar(calendar),
     staffCount: calendar._count?.staff ?? calendar.staff.length,
     appointmentCount: calendar._count?.appointments ?? 0,
@@ -89,6 +108,7 @@ export function toCalendarDetailResponse(
     availability: calendar.availability.map(toAvailabilityResponse),
     exceptions: calendar.exceptions.map(toExceptionResponse),
   };
+  return frontendUrl ? withPublicUrls(dto, frontendUrl) : dto;
 }
 
 export function toCalendarStaffResponse(

@@ -17,6 +17,7 @@ export type AppointmentStatus =
 export type AppointmentSource =
   | "INTERNAL"
   | "BOOKING_WIDGET"
+  | "PUBLIC_LINK"
   | "GOOGLE_SYNC"
   | "IMPORTED";
 

@@ -7,8 +7,8 @@ import { BusinessIntegrationRepository } from '../../repositories/business-integ
 import type {
   StripeConnectAccount,
   StripeWebhookEvent,
-  StripeWebhookMetadata,
 } from '../stripe.types';
+import { StripeInvoicePaymentService } from '@app/modules/finance/invoices/services/stripe-invoice-payment.service';
 import { StripeAccountService } from './stripe-account.service';
 import { StripeApiService } from './stripe-api.service';
 
@@ -22,6 +22,7 @@ export class StripeWebhookDispatchService {
     private readonly businessIntegrationRepository: BusinessIntegrationRepository,
     private readonly auditService: AuditService,
     private readonly webhookEventsRepository: WebhookEventsRepository,
+    private readonly stripeInvoicePaymentService: StripeInvoicePaymentService,
   ) {}
 
   async dispatchStoredEvent(
@@ -179,64 +180,23 @@ export class StripeWebhookDispatchService {
   private async handleCheckoutSessionCompleted(
     event: StripeWebhookEvent,
   ): Promise<void> {
-    const session = event.data.object as { metadata?: StripeWebhookMetadata };
-    await this.logPaymentMetadata(
-      event,
-      session.metadata ?? null,
-      'payment.succeeded',
-    );
+    await this.stripeInvoicePaymentService.handleCheckoutSessionCompleted(event);
   }
 
   private async handlePaymentIntentSucceeded(
     event: StripeWebhookEvent,
   ): Promise<void> {
-    const intent = event.data.object as { metadata?: StripeWebhookMetadata };
-    await this.logPaymentMetadata(
-      event,
-      intent.metadata ?? null,
-      'payment.succeeded',
-    );
+    await this.stripeInvoicePaymentService.handlePaymentIntentSucceeded(event);
   }
 
   private async handlePaymentIntentFailed(
     event: StripeWebhookEvent,
   ): Promise<void> {
-    const intent = event.data.object as { metadata?: StripeWebhookMetadata };
-    await this.logPaymentMetadata(event, intent.metadata ?? null, 'payment.failed');
+    await this.stripeInvoicePaymentService.handlePaymentIntentFailed(event);
   }
 
   private async handleChargeRefunded(event: StripeWebhookEvent): Promise<void> {
-    const charge = event.data.object as { metadata?: StripeWebhookMetadata };
-    await this.logPaymentMetadata(event, charge.metadata ?? null, 'refund.created');
+    await this.stripeInvoicePaymentService.handleChargeRefunded(event);
   }
 
-  private async logPaymentMetadata(
-    event: StripeWebhookEvent,
-    metadata: StripeWebhookMetadata,
-    actionSuffix: string,
-  ): Promise<void> {
-    const businessId = metadata?.businessId;
-    const invoiceId = metadata?.invoiceId;
-
-    if (!businessId) {
-      this.logger.warn(
-        `Stripe ${event.type}: unmatched event (missing businessId metadata)`,
-      );
-      return;
-    }
-
-    await this.auditService.log({
-      actorUserId: SYSTEM_AUDIT_ACTOR_SENTINEL,
-      businessId,
-      action: `stripe.${actionSuffix}`,
-      entityType: invoiceId ? 'Invoice' : 'Payment',
-      entityId: invoiceId ?? event.id,
-      metadata: {
-        eventId: event.id,
-        eventType: event.type,
-        paymentId: metadata?.paymentId ?? null,
-        provider: metadata?.provider ?? 'stripe',
-      },
-    });
-  }
 }

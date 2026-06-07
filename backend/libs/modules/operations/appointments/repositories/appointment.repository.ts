@@ -4,6 +4,11 @@ import {
   AppointmentStatus,
   Prisma,
 } from '@prisma/client';
+
+const BLOCKING_STATUSES: AppointmentStatus[] = [
+  AppointmentStatus.SCHEDULED,
+  AppointmentStatus.CONFIRMED,
+];
 import { PrismaService } from '@app/core/database/prisma.service';
 
 export type AppointmentWithRelations = Appointment & {
@@ -142,6 +147,25 @@ export class AppointmentRepository {
     return this.prisma.appointment.update({
       where: { id },
       data: { deletedAt: new Date() },
+    });
+  }
+
+  findBlockingInRange(
+    businessId: string,
+    calendarId: string,
+    rangeStart: Date,
+    rangeEnd: Date,
+    assignedToId?: string,
+  ): Promise<Array<{ startAt: Date; endAt: Date }>> {
+    return this.prisma.appointment.findMany({
+      where: this.activeWhere(businessId, {
+        calendarId,
+        status: { in: BLOCKING_STATUSES },
+        startAt: { lt: rangeEnd },
+        endAt: { gt: rangeStart },
+        ...(assignedToId ? { assignedToId } : {}),
+      }),
+      select: { startAt: true, endAt: true },
     });
   }
 

@@ -1,4 +1,4 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 import {
   CalendarLocationType,
   CalendarStatus,
@@ -171,9 +171,25 @@ export class CreateCalendarDto {
   @IsOptional()
   @IsObject()
   googleSyncSettings?: Record<string, unknown>;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(80)
+  publicSlug?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  publicBookingEnabled?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  embedEnabled?: boolean;
 }
 
-export class UpdateCalendarDto extends CreateCalendarDto {}
+export class UpdateCalendarDto extends PartialType(CreateCalendarDto) {}
 
 export class CalendarStaffUserDto {
   id!: string;
@@ -235,6 +251,12 @@ export class CalendarResponseDto {
   policySettings!: Record<string, unknown> | null;
   widgetSettings!: Record<string, unknown> | null;
   googleSyncSettings!: Record<string, unknown> | null;
+  publicSlug!: string | null;
+  publicBookingEnabled!: boolean;
+  embedEnabled!: boolean;
+  publicBookingUrl?: string | null;
+  embedUrl?: string | null;
+  embedCode?: string | null;
   staffCount?: number;
   appointmentCount?: number;
   createdAt!: Date;

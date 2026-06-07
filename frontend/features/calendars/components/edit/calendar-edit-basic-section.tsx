@@ -109,36 +109,6 @@ export function CalendarEditBasicSection(props: CalendarEditSectionProps) {
           </div>
           <FormField
             control={form.control}
-            name="widgetSettings"
-            render={() => (
-              <FormItem>
-                <FormLabel>Custom URL</FormLabel>
-                <FormControl>
-                  <div className="flex items-center overflow-hidden rounded-md border border-input">
-                    <span className="shrink-0 border-r bg-muted/50 px-3 py-2 text-sm text-muted-foreground">
-                      /book/
-                    </span>
-                    <Input
-                      className="border-0 shadow-none focus-visible:ring-0"
-                      value={
-                        (form.watch("widgetSettings") as { bookingSlug?: string })
-                          ?.bookingSlug ?? ""
-                      }
-                      onChange={(e) =>
-                        form.setValue("widgetSettings", {
-                          ...(form.getValues("widgetSettings") ?? {}),
-                          bookingSlug: e.target.value,
-                        })
-                      }
-                    />
-                  </div>
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
             name="confirmationSettings"
             render={() => (
               <FormItem>

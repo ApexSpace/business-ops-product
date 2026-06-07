@@ -1,6 +1,27 @@
 import { api } from "@/lib/api/client";
 import type { Pipeline, PipelineStage } from "@/features/pipelines/types";
 
+export function formatPipelineTableDate(
+  iso: string | null | undefined,
+): string {
+  if (!iso) return "—";
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "—";
+  return date.toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+export function getPipelineStageCount(pipeline: Pipeline): number {
+  return pipeline.stages?.length ?? 0;
+}
+
+export function pipelineDefaultLabel(pipeline: Pipeline): string {
+  return pipeline.isDefault ? "Default" : "Custom";
+}
+
 export function listPipelines() {
   return api.get<Pipeline[]>("pipelines");
 }

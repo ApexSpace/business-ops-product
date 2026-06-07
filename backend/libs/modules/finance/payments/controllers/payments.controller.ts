@@ -93,6 +93,19 @@ export class PaymentsController {
     return this.paymentsService.update(user.businessId!, id, dto, user);
   }
 
+  @Post(':id/refund')
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
+  refund(
+    @CurrentUser() user: RequestUser,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.paymentsService.refund(user.businessId!, id, user);
+  }
+
   @Delete(':id')
   @BusinessRoles(
     BusinessMemberRole.OWNER,

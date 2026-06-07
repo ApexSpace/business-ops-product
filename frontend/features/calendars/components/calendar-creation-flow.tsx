@@ -4,26 +4,32 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { CalendarCreatedSuccessDialog } from "@/features/calendars/components/calendar-created-success-dialog";
 import { CalendarQuickSetupDialog } from "@/features/calendars/components/calendar-quick-setup-dialog";
 import { CalendarTypePickerDialog } from "@/features/calendars/components/calendar-type-picker-dialog";
 import {
   calendarFormToApiBody,
   defaultWeeklyAvailability,
   quickSetupToFormValues,
+  type Calendar,
   type CalendarCreationTypeId,
   type CalendarCreationTypeOption,
-  type CalendarDetail,
   type QuickSetupValues,
 } from "@/features/calendars/schemas/calendar-profile";
 import { queryKeys } from "@/lib/query/keys";
-import type { Business } from "@/lib/types/shared";
-import { createCalendar, updateCalendarAvailability, updateCalendarStaff } from "@/features/calendars/api/calendars.api";
+import {
+  createCalendar,
+  getCalendar,
+  updateCalendarAvailability,
+  updateCalendarStaff,
+} from "@/features/calendars/api/calendars.api";
 import { getCurrentBusiness } from "@/features/settings/api/business.api";
 
 interface CalendarCreationFlowProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   businessTimezone?: string | null;
+  canManage?: boolean;
   onSuccess?: () => void;
 }
 
@@ -31,6 +37,7 @@ export function CalendarCreationFlow({
   open,
   onOpenChange,
   businessTimezone,
+  canManage = true,
   onSuccess,
 }: CalendarCreationFlowProps) {
   const router = useRouter();
@@ -49,6 +56,8 @@ export function CalendarCreationFlow({
     useState<CalendarCreationTypeId | null>(null);
   const [selectedType, setSelectedType] =
     useState<CalendarCreationTypeOption | null>(null);
+  const [createdCalendar, setCreatedCalendar] = useState<Calendar | null>(null);
+  const [successOpen, setSuccessOpen] = useState(false);
 
   const resetFlow = () => {
     setStep("type");
@@ -57,7 +66,11 @@ export function CalendarCreationFlow({
   };
 
   const handleOpenChange = (next: boolean) => {
-    if (!next) resetFlow();
+    if (!next) {
+      resetFlow();
+      setCreatedCalendar(null);
+      setSuccessOpen(false);
+    }
     onOpenChange(next);
   };
 
@@ -86,21 +99,25 @@ export function CalendarCreationFlow({
           isPrimary: true,
         });
       }
-      return { id: created.id, navigateToEdit };
+      const full = await getCalendar(created.id);
+      return { calendar: full, navigateToEdit };
     },
-    onSuccess: async ({ id, navigateToEdit }) => {
-      toast.success(
-        navigateToEdit ? "Calendar created — finish setup below" : "Calendar created",
-      );
+    onSuccess: async ({ calendar, navigateToEdit }) => {
       await queryClient.invalidateQueries({ queryKey: queryKeys.calendars.all() });
       onSuccess?.();
       handleOpenChange(false);
       if (navigateToEdit) {
-        router.push(`/business/settings/calendars/${id}/edit`);
+        toast.success("Calendar created — finish setup below");
+        router.push(`/business/settings/calendars/${calendar.id}/edit`);
+        return;
       }
+      setCreatedCalendar(calendar);
+      setSuccessOpen(true);
     },
     onError: (err: Error) => toast.error(err.message),
   });
+
+  if (!canManage) return null;
 
   return (
     <>
@@ -126,6 +143,26 @@ export function CalendarCreationFlow({
         onAdvancedSettings={(values) =>
           createMutation.mutate({ values, navigateToEdit: true })
         }
+      />
+      <CalendarCreatedSuccessDialog
+        open={successOpen}
+        onOpenChange={setSuccessOpen}
+        calendar={createdCalendar}
+        onEnablePublicBooking={async (updated) => {
+          setCreatedCalendar(updated);
+          await queryClient.invalidateQueries({
+            queryKey: queryKeys.calendars.all(),
+          });
+          return updated;
+        }}
+        onContinueEditing={(id) => {
+          setSuccessOpen(false);
+          router.push(`/business/settings/calendars/${id}/edit`);
+        }}
+        onBackToList={() => {
+          setSuccessOpen(false);
+          router.push("/business/settings/calendars");
+        }}
       />
     </>
   );

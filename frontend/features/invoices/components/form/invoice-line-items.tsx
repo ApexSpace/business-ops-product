@@ -22,6 +22,7 @@ interface InvoiceLineItemsProps {
   watchedItems: InvoiceFormValues["items"] | undefined | Array<Partial<InvoiceFormValues["items"][number]>>;
   serviceItems: { value: string; label: string }[];
   applyServiceToLine: (index: number, serviceId: string) => void;
+  currencyCode?: string;
 }
 
 export function InvoiceLineItems({
@@ -32,6 +33,7 @@ export function InvoiceLineItems({
   watchedItems,
   serviceItems,
   applyServiceToLine,
+  currencyCode = "USD",
 }: InvoiceLineItemsProps) {
   return (
     <div className="space-y-2">
@@ -135,7 +137,7 @@ export function InvoiceLineItems({
                     />
                   </td>
                   <td className="px-2 py-1.5 text-right align-top text-xs font-medium tabular-nums">
-                    {formatMoney(rowTotal)}
+                    {formatMoney(rowTotal, currencyCode)}
                   </td>
                   <td className="px-1 py-1.5 align-top">
                     <Button

@@ -54,3 +54,15 @@ export function updateInvoiceStatus(
 ) {
   return api.patch<Invoice>(`invoices/${id}/status`, { status });
 }
+
+export type CreateInvoicePaymentLinkResult = {
+  checkoutUrl: string;
+  sessionId: string;
+  publicUrl: string;
+};
+
+export function createInvoicePaymentLink(id: string) {
+  return api.post<CreateInvoicePaymentLinkResult>(
+    `invoices/${id}/create-payment-link`,
+  );
+}

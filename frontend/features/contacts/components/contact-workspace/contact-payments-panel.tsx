@@ -7,16 +7,17 @@ import { ContactFinancialRecordRow } from "@/features/contacts/components/contac
 import { RecordListEmpty } from "@/features/contacts/components/contact-workspace/contact-record-section";
 import { EmptyState } from "@/components/data-display/empty-state";
 import { ConfirmDeleteDialog } from "@/components/forms/confirm-delete-dialog";
-import { PaymentFormDialog } from "@/features/payments/components/payment-form-dialog";
-import { TransactionRowActionsMenu } from "@/features/payments/components/workspace/transaction-row-actions-menu";
-import { deletePayment } from "@/features/payments/api/payments.api";
+import { TransactionTableRowActions } from "@/features/payments/components/workspace/transaction-table-row-actions";
+import { refundPayment } from "@/features/payments/api/payments.api";
 import { invalidateContactFinancial } from "@/features/contacts/utils/contact-financial";
 import { formatMoney } from "@/features/invoices/schemas/invoice-profile";
 import {
+  canRefundPayment,
   formatTransactionDate,
   formatTransactionProvider,
   getTransactionStatusLabel,
 } from "@/features/payments/schemas/payment-profile";
+import { viewTransactionInvoicePublic } from "@/features/payments/utils/transaction-invoice-view";
 import type { Payment } from "@/features/contacts/types";
 
 interface ContactPaymentsPanelProps {
@@ -29,26 +30,19 @@ export function ContactPaymentsPanel({
   isLoading,
 }: ContactPaymentsPanelProps) {
   const queryClient = useQueryClient();
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editing, setEditing] = useState<Payment | null>(null);
-  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [refundId, setRefundId] = useState<string | null>(null);
 
   const refresh = () => void invalidateContactFinancial(queryClient);
 
-  const deleteMutation = useMutation({
-    mutationFn: deletePayment,
+  const refundMutation = useMutation({
+    mutationFn: refundPayment,
     onSuccess: () => {
-      toast.success("Payment deleted");
+      toast.success("Transaction refunded");
       refresh();
-      setDeleteId(null);
+      setRefundId(null);
     },
     onError: (err: Error) => toast.error(err.message),
   });
-
-  const openPayment = (payment: Payment) => {
-    setEditing(payment);
-    setDialogOpen(true);
-  };
 
   if (isLoading) {
     return <RecordListEmpty message="Loading payments…" />;
@@ -73,20 +67,23 @@ export function ContactPaymentsPanel({
             <ContactFinancialRecordRow
               title={payment.invoice?.invoiceNumber ?? "Payment"}
               lines={[
-                `${formatMoney(payment.amount)} · ${formatTransactionProvider(payment.method)}`,
+                `${formatMoney(payment.amount)} · ${formatTransactionProvider(payment)}`,
                 `${formatTransactionDate(payment.paidAt)}${payment.reference ? ` · ${payment.reference}` : ""}`,
               ]}
               status={{
                 domain: "transaction",
-                value: "SUCCEEDED",
+                value: canRefundPayment(payment) ? "SUCCEEDED" : "REFUNDED",
                 label: getTransactionStatusLabel(payment),
               }}
-              onOpen={() => openPayment(payment)}
+              onOpen={() => void viewTransactionInvoicePublic(payment)}
               actions={
-                <TransactionRowActionsMenu
-                  onView={() => openPayment(payment)}
-                  onEdit={() => openPayment(payment)}
-                  onDelete={() => setDeleteId(payment.id)}
+                <TransactionTableRowActions
+                  onView={() => void viewTransactionInvoicePublic(payment)}
+                  onRefund={
+                    canRefundPayment(payment)
+                      ? () => setRefundId(payment.id)
+                      : undefined
+                  }
                 />
               }
             />
@@ -94,23 +91,14 @@ export function ContactPaymentsPanel({
         ))}
       </ul>
 
-      <PaymentFormDialog
-        open={dialogOpen}
-        onOpenChange={(open) => {
-          setDialogOpen(open);
-          if (!open) setEditing(null);
-        }}
-        payment={editing}
-        onSuccess={refresh}
-      />
-
       <ConfirmDeleteDialog
-        open={!!deleteId}
-        onOpenChange={(open) => !open && setDeleteId(null)}
-        title="Delete payment?"
-        description="This removes the payment record and recalculates the invoice balance."
-        isPending={deleteMutation.isPending}
-        onConfirm={() => deleteId && deleteMutation.mutate(deleteId)}
+        open={!!refundId}
+        onOpenChange={(open) => !open && setRefundId(null)}
+        title="Refund transaction?"
+        description="This reverses the payment and updates the linked invoice balance. Stripe payments are refunded through your connected account."
+        confirmLabel="Refund"
+        isPending={refundMutation.isPending}
+        onConfirm={() => refundId && refundMutation.mutate(refundId)}
       />
     </>
   );

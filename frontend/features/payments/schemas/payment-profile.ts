@@ -38,8 +38,16 @@ export function formatTransactionDate(iso: string): string {
 }
 
 /** Payment processor / method shown as Provider. */
-export function formatTransactionProvider(method: PaymentMethod): string {
-  return formatPaymentMethod(method);
+export function formatTransactionProvider(
+  payment: Payment | PaymentMethod,
+): string {
+  if (typeof payment === "string") {
+    return formatPaymentMethod(payment);
+  }
+  if (payment.provider === "STRIPE") {
+    return "Online payment";
+  }
+  return formatPaymentMethod(payment.method);
 }
 
 /** Where the payment was recorded (invoice-linked). */
@@ -54,9 +62,48 @@ export function transactionStatusVariant(): "default" | "secondary" | "outline" 
   return "secondary";
 }
 
-/** Recorded payments are successful transactions. */
-export function getTransactionStatusLabel(_payment: Payment): string {
-  return "Succeeded";
+export function isPaymentRefunded(payment: Payment): boolean {
+  if (payment.stripeRefundId) {
+    return true;
+  }
+  const refundedAt = payment.providerMetadata?.refundedAt;
+  return typeof refundedAt === "string" && refundedAt.length > 0;
+}
+
+export function getPaymentRefundedAmount(payment: Payment): number | null {
+  if (!isPaymentRefunded(payment)) {
+    return null;
+  }
+  const raw = payment.providerMetadata?.amountRefunded;
+  if (raw != null) {
+    const parsed =
+      typeof raw === "number" ? raw : parseFloat(String(raw));
+    if (!Number.isNaN(parsed) && parsed > 0) {
+      const paid = parseFloat(payment.amount);
+      if (!Number.isNaN(paid) && parsed > paid * 10) {
+        return parsed / 100;
+      }
+      return parsed;
+    }
+  }
+  const paid = parseFloat(payment.amount);
+  return Number.isNaN(paid) ? null : paid;
+}
+
+export function canRefundPayment(payment: Payment): boolean {
+  return !isPaymentRefunded(payment);
+}
+
+/** Recorded payments are successful until refunded; refunded rows show the amount reversed. */
+export function getTransactionStatusLabel(payment: Payment): string {
+  if (!isPaymentRefunded(payment)) {
+    return "Succeeded";
+  }
+  const refunded = getPaymentRefundedAmount(payment);
+  if (refunded != null) {
+    return `Refunded ${formatMoney(refunded)}`;
+  }
+  return "Refunded";
 }
 
 export function toDatetimeLocalValue(iso: string | null | undefined): string {

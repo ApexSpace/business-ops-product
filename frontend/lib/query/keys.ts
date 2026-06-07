@@ -159,7 +159,24 @@ export const queryKeys = {
     list: (filters?: { page?: number; limit?: number; search?: string; status?: string }) =>
       listKey(["calendars", "list"], filters),
     detail: (id: string) => ["calendars", "detail", id] as const,
+    exceptions: (id: string) => ["calendars", "exceptions", id] as const,
     googleSyncStatus: (id: string) => ["calendars", "google-sync-status", id] as const,
+  },
+  chatbots: {
+    all: () => ["chatbots"] as const,
+    list: () => ["chatbots", "list"] as const,
+    detail: (id: string) => ["chatbots", "detail", id] as const,
+    rules: (id: string) => ["chatbots", id, "rules"] as const,
+    embed: (id: string) => ["chatbots", id, "embed"] as const,
+  },
+  emailNotifications: {
+    all: () => ["email-notifications"] as const,
+    preferences: () => ["email-notifications", "preferences"] as const,
+    templates: () => ["email-notifications", "templates"] as const,
+    template: (emailType: string) =>
+      ["email-notifications", "template", emailType] as const,
+    logs: (filters?: ListFilters) =>
+      listKey(["email-notifications", "logs"], filters),
   },
   conversations: {
     all: () => ["conversations"] as const,

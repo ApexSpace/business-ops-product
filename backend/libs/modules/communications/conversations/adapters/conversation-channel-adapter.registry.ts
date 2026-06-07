@@ -5,6 +5,7 @@ import { ErrorCode } from '@app/common/exceptions/error-code.enum';
 import { ConversationChannelAdapter } from './conversation-channel-adapter.interface';
 import { FacebookMessengerAdapter } from './meta/facebook-messenger.adapter';
 import { InstagramMessagingAdapter } from './meta/instagram-messaging.adapter';
+import { WebchatAdapter } from './webchat/webchat.adapter';
 
 @Injectable()
 export class ConversationChannelAdapterRegistry {
@@ -13,9 +14,11 @@ export class ConversationChannelAdapterRegistry {
   constructor(
     facebookAdapter: FacebookMessengerAdapter,
     instagramAdapter: InstagramMessagingAdapter,
+    webchatAdapter: WebchatAdapter,
   ) {
     this.byChannel.set(ConversationChannel.FACEBOOK, facebookAdapter);
     this.byChannel.set(ConversationChannel.INSTAGRAM, instagramAdapter);
+    this.byChannel.set(ConversationChannel.WEBCHAT, webchatAdapter);
   }
 
   getAdapter(channel: ConversationChannel): ConversationChannelAdapter {

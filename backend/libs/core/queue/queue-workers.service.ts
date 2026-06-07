@@ -3,6 +3,8 @@ import { Job, Worker } from 'bullmq';
 import { MetaWebhookProcessor } from '@app/modules/communications/webhooks/workers/processors/meta-webhook.processor';
 import { StripeWebhookProcessor } from '@app/modules/communications/webhooks/workers/processors/stripe-webhook.processor';
 import { SendMessageProcessor } from '@app/modules/communications/messages/workers/processors/send-message.processor';
+import { ResendWebhookProcessor } from '@app/modules/communications/email/workers/processors/resend-webhook.processor';
+import { SendEmailProcessor } from '@app/modules/communications/email/workers/processors/send-email.processor';
 import { RedisService } from '../redis/redis.service';
 import { AppointmentGoogleSyncProcessor } from './processors/appointment-google-sync.processor';
 import { CalendarSyncProcessor } from './processors/calendar-sync.processor';
@@ -12,6 +14,7 @@ import { CleanupWebhookEventsProcessor } from './processors/cleanup-webhook-even
 import { IntegrationResourceSyncProcessor } from './processors/integration-resource-sync.processor';
 import { MetaResourceSyncProcessor } from './processors/meta-resource-sync.processor';
 import {
+  EMAIL_QUEUE,
   FILE_QUEUE,
   JOB_APPOINTMENT_GOOGLE_SYNC,
   JOB_CALENDAR_SYNC,
@@ -21,12 +24,15 @@ import {
   JOB_INTEGRATION_RESOURCE_SYNC,
   JOB_META_RESOURCE_SYNC,
   JOB_PROCESS_META_WEBHOOK,
+  JOB_PROCESS_RESEND_WEBHOOK,
   JOB_PROCESS_STRIPE_WEBHOOK,
+  JOB_SEND_EMAIL,
   JOB_SEND_OUTBOUND_MESSAGE,
   MESSAGE_QUEUE,
   SYNC_QUEUE,
   WEBHOOK_QUEUE,
 } from './queue.constants';
+import { resolveEmailConfig } from '../config/email/email.config';
 import type {
   AppointmentGoogleSyncJobPayload,
   CalendarSyncJobPayload,
@@ -36,7 +42,9 @@ import type {
   IntegrationResourceSyncJobPayload,
   MetaResourceSyncJobPayload,
   ProcessMetaWebhookPayload,
+  ProcessResendWebhookPayload,
   ProcessStripeWebhookPayload,
+  SendEmailJobPayload,
   SendOutboundMessagePayload,
 } from './queue.types';
 
@@ -57,6 +65,8 @@ export class QueueWorkersService implements OnModuleInit, OnModuleDestroy {
     private readonly cleanupWebhookEventsProcessor: CleanupWebhookEventsProcessor,
     private readonly cleanupAsyncJobsProcessor: CleanupAsyncJobsProcessor,
     private readonly cleanupOrphanFilesProcessor: CleanupOrphanFilesProcessor,
+    private readonly sendEmailProcessor: SendEmailProcessor,
+    private readonly resendWebhookProcessor: ResendWebhookProcessor,
   ) {}
 
   async onModuleInit(): Promise<void> {
@@ -67,6 +77,8 @@ export class QueueWorkersService implements OnModuleInit, OnModuleDestroy {
       return;
     }
 
+    const emailConfig = resolveEmailConfig();
+
     this.workers.push(
       new Worker(WEBHOOK_QUEUE, (job) => this.handleWebhookJob(job), {
         connection,
@@ -76,6 +88,11 @@ export class QueueWorkersService implements OnModuleInit, OnModuleDestroy {
         connection,
         concurrency: 10,
         limiter: { max: 20, duration: 1000 },
+      }),
+      new Worker(EMAIL_QUEUE, (job) => this.handleEmailJob(job), {
+        connection,
+        concurrency: emailConfig.queue.concurrency,
+        limiter: { max: emailConfig.queue.concurrency * 2, duration: 1000 },
       }),
       new Worker(SYNC_QUEUE, (job) => this.handleSyncJob(job), {
         connection,
@@ -102,8 +119,23 @@ export class QueueWorkersService implements OnModuleInit, OnModuleDestroy {
     }
 
     this.logger.log(
-      'BullMQ workers started (webhook, message, sync, file queues)',
+      'BullMQ workers started (webhook, message, email, sync, file queues)',
     );
+  }
+
+  private async handleEmailJob(job: Job): Promise<void> {
+    switch (job.name) {
+      case JOB_SEND_EMAIL:
+        await this.sendEmailProcessor.process(job.data as SendEmailJobPayload);
+        return;
+      case JOB_PROCESS_RESEND_WEBHOOK:
+        await this.resendWebhookProcessor.process(
+          job.data as ProcessResendWebhookPayload,
+        );
+        return;
+      default:
+        this.logger.warn(`Unknown email job: ${job.name}`);
+    }
   }
 
   private async handleWebhookJob(job: Job): Promise<void> {

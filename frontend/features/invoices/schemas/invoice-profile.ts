@@ -1,5 +1,8 @@
 import { z } from "zod";
 import type { Estimate, Invoice, InvoiceItem, InvoiceStatus } from "@/features/invoices/types";
+import { formatMoney } from "@/features/payments/utils/currencies";
+
+export { formatMoney };
 
 export const INVOICE_STATUS_OPTIONS: {
   value: InvoiceStatus;
@@ -17,6 +20,37 @@ export const INVOICE_STATUS_OPTIONS: {
 export const INVOICE_MANUAL_STATUS_OPTIONS = INVOICE_STATUS_OPTIONS.filter(
   (o) => o.value !== "OVERDUE",
 );
+
+type InvoicePaymentEligibility = Pick<
+  Invoice,
+  "status" | "balanceDue" | "remainingAmount" | "totalAmount" | "paidAmount"
+>;
+
+/** Outstanding balance for manual payment recording. */
+export function invoiceOutstandingAmount(invoice: InvoicePaymentEligibility): number {
+  const balance = parseFloat(invoice.balanceDue);
+  if (!Number.isNaN(balance) && balance > 0) {
+    return balance;
+  }
+  const remaining = parseFloat(invoice.remainingAmount);
+  if (!Number.isNaN(remaining) && remaining > 0) {
+    return remaining;
+  }
+  const total = parseFloat(invoice.totalAmount);
+  const paid = parseFloat(invoice.paidAmount);
+  if (Number.isNaN(total) || Number.isNaN(paid)) {
+    return 0;
+  }
+  return Math.max(0, total - paid);
+}
+
+/** Draft, sent, partial, and overdue invoices with a balance can record payments. */
+export function canRecordInvoicePayment(invoice: InvoicePaymentEligibility): boolean {
+  if (invoice.status === "VOID" || invoice.status === "PAID") {
+    return false;
+  }
+  return invoiceOutstandingAmount(invoice) > 0;
+}
 
 export function formatInvoiceStatus(status: InvoiceStatus): string {
   return (
@@ -39,15 +73,6 @@ export function invoiceStatusVariant(
     default:
       return "outline";
   }
-}
-
-export function formatMoney(value: string | number): string {
-  const n = typeof value === "string" ? parseFloat(value) : value;
-  if (Number.isNaN(n)) return "$0.00";
-  return new Intl.NumberFormat(undefined, {
-    style: "currency",
-    currency: "USD",
-  }).format(n);
 }
 
 export function formatInvoiceDate(iso: string | null | undefined): string {
@@ -187,7 +212,22 @@ export function invoiceFromEstimate(estimate: Estimate): InvoiceFormValues {
   };
 }
 
-export function invoiceFormToApiBody(values: InvoiceFormValues) {
+export function canSendInvoiceFromForm(
+  invoice: Invoice | null | undefined,
+  isEdit: boolean,
+): boolean {
+  if (!isEdit) return true;
+  return invoice?.status === "DRAFT";
+}
+
+export function invoiceFormToApiBody(
+  values: InvoiceFormValues,
+  options?: {
+    status?: InvoiceStatus;
+    includeStatus?: boolean;
+  },
+) {
+  const includeStatus = options?.includeStatus ?? true;
   return {
     contactId: values.contactId,
     ...(values.estimateId ? { estimateId: values.estimateId } : {}),
@@ -196,7 +236,9 @@ export function invoiceFormToApiBody(values: InvoiceFormValues) {
     ...(values.dueDate
       ? { dueDate: new Date(values.dueDate).toISOString() }
       : {}),
-    status: values.status,
+    ...(includeStatus
+      ? { status: options?.status ?? values.status }
+      : {}),
     taxAmount: values.taxAmount,
     discountAmount: values.discountAmount,
     notes: values.notes?.trim() || undefined,

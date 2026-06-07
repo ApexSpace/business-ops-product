@@ -1,5 +1,6 @@
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { RequestMethod } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { Logger } from 'nestjs-pino';
@@ -21,7 +22,12 @@ async function bootstrap(): Promise<void> {
   const port = configService.get('app.port', { infer: true });
   const corsOrigin = configService.get('app.corsOrigin', { infer: true });
 
-  app.setGlobalPrefix(apiPrefix);
+  app.setGlobalPrefix(apiPrefix, {
+    exclude: [
+      { path: 'widgets/chatbot.js', method: RequestMethod.GET },
+      { path: 'widgets/chatbot/:publicKey', method: RequestMethod.GET },
+    ],
+  });
   app.enableCors({
     origin: corsOrigin === '*' ? true : corsOrigin.split(','),
     credentials: true,

@@ -1,130 +1,215 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { PipelineSettingsPanel } from "@/features/pipelines/components/pipeline-settings-panel";
-import { PageHeader } from "@/components/layout/page-header";
-import { SearchableSelect } from "@/components/forms/searchable-select";
-import { Skeleton } from "@/components/ui/skeleton";
+import { useRouter } from "next/navigation";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Plus } from "lucide-react";
+import { toast } from "sonner";
 import {
-  invalidateLeadLists,
-  invalidatePipelines,
-} from "@/lib/query/invalidation";
+  DataTable,
+  type DataTableColumn,
+} from "@/components/data-display/data-table";
+import { DataTableRowActions } from "@/components/data-display/data-table-row-actions";
+import { Badge } from "@/components/ui/badge";
+import { ConfirmDeleteDialog } from "@/components/forms/confirm-delete-dialog";
+import { PageHeader } from "@/components/layout/page-header";
+import { ActionButton } from "@/components/ui/action-button";
+import { Button } from "@/components/ui/button";
+import {
+  deletePipeline,
+  formatPipelineTableDate,
+  getPipelineStageCount,
+  listPipelines,
+  pipelineDefaultLabel,
+} from "@/features/pipelines/api/pipelines.api";
+import { PipelineFormDialog } from "@/features/pipelines/components/pipeline-form-dialog";
 import { PERMISSIONS, useCan } from "@/features/auth/permissions";
+import { invalidatePipelines } from "@/lib/query/invalidation";
 import { queryKeys } from "@/lib/query/keys";
-import { pipelineSelectOptions } from "@/features/pipelines/utils/select-options";
-import type { Lead } from "@/features/leads/types";
-import type { PaginatedResult, Pipeline } from "@/features/pipelines/types";
-import { listLeads } from "@/features/leads/api/leads.api";
-import { listPipelines } from "@/features/pipelines/api/pipelines.api";
+import type { Pipeline } from "@/features/pipelines/types";
 
-const LEAD_COUNT_LIMIT = 100;
+function pipelineDefaultVariant(
+  pipeline: Pipeline,
+): "default" | "secondary" {
+  return pipeline.isDefault ? "default" : "secondary";
+}
 
 export function BusinessPipelinesSettings() {
-  const canManage = useCan(PERMISSIONS["pipelines.manage"]);
+  const router = useRouter();
   const queryClient = useQueryClient();
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const canManage = useCan(PERMISSIONS["pipelines.manage"]);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const { data: pipelines, isLoading } = useQuery({
     queryKey: queryKeys.pipelines.list(),
     queryFn: () => listPipelines(),
   });
 
-  const selectedPipeline = useMemo(() => {
-    if (!pipelines?.length) return null;
-    if (selectedId) {
-      return pipelines.find((p) => p.id === selectedId) ?? pipelines[0];
-    }
-    return pipelines.find((p) => p.isDefault) ?? pipelines[0];
-  }, [pipelines, selectedId]);
-
-  useEffect(() => {
-    if (selectedPipeline && !selectedId) {
-      setSelectedId(selectedPipeline.id);
-    }
-  }, [selectedPipeline, selectedId]);
-
-  const pipelineId = selectedPipeline?.id;
-
-  const { data: leadsData, isLoading: leadsLoading } = useQuery({
-    queryKey: queryKeys.leads.pipeline(pipelineId ?? ""),
-    queryFn: () =>
-      listLeads({
-        pipelineId: pipelineId!,
-        limit: LEAD_COUNT_LIMIT,
-        page: 1,
-      }),
-    enabled: !!pipelineId,
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => deletePipeline(id),
+    onSuccess: async () => {
+      await invalidatePipelines(queryClient);
+      toast.success("Pipeline deleted");
+      setDeleteId(null);
+    },
+    onError: (err: Error) => toast.error(err.message),
   });
 
-  const invalidate = () => {
-    void invalidatePipelines(queryClient);
-    if (pipelineId) {
-      void invalidateLeadLists(queryClient);
-    }
-  };
+  const deleteTarget = useMemo(
+    () => pipelines?.find((p) => p.id === deleteId) ?? null,
+    [pipelines, deleteId],
+  );
 
-  const handleDeleted = (deletedId: string) => {
-    if (selectedId === deletedId) {
-      setSelectedId(null);
-    }
+  const columns = useMemo<DataTableColumn<Pipeline>[]>(
+    () => [
+      {
+        id: "name",
+        header: "Pipeline",
+        sortable: true,
+        sortValue: (row) => row.name,
+        cell: (row) => (
+          <div className="min-w-[180px]">
+            <Link
+              href={`/business/settings/pipelines/${row.id}/edit`}
+              className="font-medium hover:underline"
+            >
+              {row.name}
+            </Link>
+          </div>
+        ),
+      },
+      {
+        id: "stages",
+        header: "Stages",
+        sortable: true,
+        sortValue: (row) => getPipelineStageCount(row),
+        className: "text-right tabular-nums",
+        cell: (row) => (
+          <span className="tabular-nums text-sm">
+            {getPipelineStageCount(row)}
+          </span>
+        ),
+      },
+      {
+        id: "role",
+        header: "Role",
+        sortable: true,
+        sortValue: (row) => pipelineDefaultLabel(row),
+        cell: (row) => (
+          <Badge variant={pipelineDefaultVariant(row)}>
+            {pipelineDefaultLabel(row)}
+          </Badge>
+        ),
+      },
+      {
+        id: "updated",
+        header: "Updated",
+        sortable: true,
+        sortValue: (row) => row.updatedAt,
+        className: "whitespace-nowrap",
+        cell: (row) => (
+          <span className="tabular-nums text-sm text-muted-foreground">
+            {formatPipelineTableDate(row.updatedAt)}
+          </span>
+        ),
+      },
+    ],
+    [],
+  );
+
+  const buildRowActions = (row: Pipeline) => {
+    if (!canManage) return null;
+
+    return (
+      <DataTableRowActions
+        menuLabel={`Actions for ${row.name}`}
+        actions={[
+          {
+            label: "Edit",
+            onClick: () =>
+              router.push(`/business/settings/pipelines/${row.id}/edit`),
+          },
+          {
+            label: "Delete",
+            onClick: () => setDeleteId(row.id),
+            destructive: true,
+            disabled: row.isDefault,
+          },
+        ]}
+      />
+    );
   };
 
   return (
     <div className="w-full min-w-0 space-y-[var(--page-stack-gap)]">
       <PageHeader
-        description="Define pipeline names and stages. Day-to-day lead work happens on the CRM board."
-        filters={
-          isLoading ? (
-            <Skeleton className="h-9 w-64 shrink-0" />
-          ) : pipelines?.length ? (
-            <>
-              <span className="shrink-0 text-sm text-muted-foreground">
-                Editing
-              </span>
-              <SearchableSelect
-                items={pipelineSelectOptions(pipelines)}
-                value={selectedPipeline?.id ?? null}
-                onValueChange={(v) => v && setSelectedId(v)}
-                placeholder="Select pipeline"
-                triggerClassName="w-[min(100%,280px)] shrink-0"
-              />
-            </>
-          ) : undefined
-        }
         actions={
-          <Link
-            href="/business/pipelines"
-            className="shrink-0 text-sm font-medium text-primary underline-offset-4 hover:underline"
-          >
-            Open CRM Pipeline
-          </Link>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              variant="outline"
+              nativeButton={false}
+              render={<Link href="/business/pipelines" />}
+            >
+              Open CRM Pipeline
+            </Button>
+            {canManage ? (
+              <ActionButton onClick={() => setCreateOpen(true)}>
+                <Plus className="mr-2 size-4" />
+                New pipeline
+              </ActionButton>
+            ) : null}
+          </div>
         }
       />
 
-      {!isLoading && !pipelines?.length ? (
-        <p className="text-sm text-muted-foreground">
-          No pipelines yet.{" "}
-          {canManage
-            ? "Create one below once a default pipeline is provisioned for your business."
-            : "Ask an owner or admin to set up pipelines."}
-        </p>
-      ) : (
-        <>
-          {selectedPipeline && !leadsLoading ? (
-            <PipelineSettingsPanel
-              pipeline={selectedPipeline}
-              leads={leadsData?.items ?? []}
-              canManage={canManage}
-              onSuccess={invalidate}
-              onDeleted={handleDeleted}
-            />
-          ) : (
-            <Skeleton className="h-48 w-full" />
-          )}
-        </>
-      )}
+      <DataTable
+        columns={columns}
+        data={pipelines ?? []}
+        getRowId={(row) => row.id}
+        isLoading={isLoading}
+        emptyTitle="No pipelines yet"
+        emptyDescription={
+          canManage
+            ? "Create a pipeline to define stages for your CRM board."
+            : "Ask an owner or admin to set up pipelines."
+        }
+        emptyAction={
+          canManage ? (
+            <ActionButton onClick={() => setCreateOpen(true)}>
+              <Plus className="mr-2 size-4" />
+              New pipeline
+            </ActionButton>
+          ) : undefined
+        }
+        rowActions={buildRowActions}
+      />
+
+      <PipelineFormDialog
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        pipeline={null}
+        onSuccess={(pipelineId) => {
+          void invalidatePipelines(queryClient);
+          if (pipelineId) {
+            router.push(`/business/settings/pipelines/${pipelineId}/edit`);
+          }
+        }}
+      />
+
+      <ConfirmDeleteDialog
+        open={!!deleteId}
+        onOpenChange={(open) => !open && setDeleteId(null)}
+        title="Delete pipeline?"
+        description={
+          deleteTarget?.isDefault
+            ? "The default pipeline cannot be deleted."
+            : "This pipeline and its stages will be removed. Pipelines with active leads cannot be deleted."
+        }
+        isPending={deleteMutation.isPending}
+        onConfirm={() => deleteId && deleteMutation.mutate(deleteId)}
+      />
     </div>
   );
 }

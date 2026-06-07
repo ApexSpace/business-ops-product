@@ -1,5 +1,7 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { InvoiceStatus, Prisma } from '@prisma/client';
+import type { RootConfig } from '@app/core/config/configuration';
 import { RequestUser } from '@app/common/decorators/current-user.decorator';
 import { AppException } from '@app/common/exceptions/app.exception';
 import { ErrorCode } from '@app/common/exceptions/error-code.enum';
@@ -31,6 +33,17 @@ import {
   calculateInvoiceTotals,
   recalculateBalanceDue,
 } from '../utils/invoice-calculations.util';
+import { EmailNotificationService } from '@app/modules/communications/email/services/email-notification.service';
+import {
+  formatContactName,
+  formatMoney,
+} from '@app/modules/communications/email/utils/email-variables.util';
+import { BusinessRepository } from '@app/modules/platform/business/repositories/business.repository';
+import {
+  buildInvoicePublicUrl,
+  generateInvoicePublicToken,
+} from '../utils/invoice-public-token.util';
+import { DateTime } from 'luxon';
 
 @Injectable()
 export class InvoicesService {
@@ -42,6 +55,9 @@ export class InvoicesService {
     private readonly serviceRepository: ServiceRepository,
     private readonly auditService: AuditService,
     private readonly financialSettingsService: FinancialSettingsService,
+    private readonly emailNotificationService: EmailNotificationService,
+    private readonly businessRepository: BusinessRepository,
+    private readonly configService: ConfigService<RootConfig, true>,
   ) {}
 
   async create(
@@ -139,6 +155,18 @@ export class InvoicesService {
       entityType: 'Invoice',
       entityId: invoice.id,
     });
+
+    if (status === InvoiceStatus.SENT) {
+      const withRelations = await this.invoiceRepository.findById(
+        businessId,
+        invoice.id,
+      );
+      if (withRelations) {
+        void this.sendInvoiceSentEmail(businessId, withRelations).catch(
+          () => undefined,
+        );
+      }
+    }
 
     return toInvoiceResponse(invoice);
   }
@@ -377,7 +405,66 @@ export class InvoicesService {
       metadata: { from: existing.status, to: dto.status },
     });
 
+    if (dto.status === InvoiceStatus.SENT && existing.status !== InvoiceStatus.SENT) {
+      void this.sendInvoiceSentEmail(businessId, invoice).catch(() => undefined);
+    }
+
     return toInvoiceResponse(invoice);
+  }
+
+  private async sendInvoiceSentEmail(
+    businessId: string,
+    invoice: NonNullable<Awaited<ReturnType<InvoiceRepository['findById']>>>,
+  ): Promise<void> {
+    const contactEmail = invoice.contact?.email?.trim();
+    if (!contactEmail) {
+      return;
+    }
+
+    const publicUrl = await this.ensureInvoicePublicUrl(businessId, invoice);
+    const business = await this.businessRepository.findById(businessId);
+    const financialSettings =
+      await this.financialSettingsService.getSettingsForBusiness(businessId);
+    const currency = financialSettings.taxesAndCurrency.currencyCode;
+
+    await this.emailNotificationService.enqueueTransactionalEmail({
+      businessId,
+      emailType: 'invoice.sent',
+      toEmail: contactEmail,
+      contactId: invoice.contactId,
+      entityType: 'Invoice',
+      entityId: invoice.id,
+      idempotencyKey: `invoice-sent-${invoice.id}`,
+      variables: {
+        'business.name': business?.name ?? 'Business',
+        'contact.name': formatContactName(invoice.contact),
+        'invoice.number': invoice.invoiceNumber,
+        'invoice.total': formatMoney(invoice.totalAmount, currency),
+        'invoice.due_date': invoice.dueDate
+          ? DateTime.fromJSDate(invoice.dueDate).toFormat('LLL d, yyyy')
+          : '—',
+        'invoice.public_url': publicUrl,
+      },
+    });
+  }
+
+  private async ensureInvoicePublicUrl(
+    businessId: string,
+    invoice: NonNullable<Awaited<ReturnType<InvoiceRepository['findById']>>>,
+  ): Promise<string> {
+    const frontendUrl = this.configService.get('app.frontendUrl', { infer: true });
+    const publicToken =
+      invoice.publicToken ?? generateInvoicePublicToken();
+    const publicUrl = buildInvoicePublicUrl(frontendUrl, publicToken);
+
+    if (!invoice.publicToken || invoice.publicUrl !== publicUrl) {
+      await this.invoiceRepository.update(businessId, invoice.id, {
+        publicToken,
+        publicUrl,
+      });
+    }
+
+    return publicUrl;
   }
 
   async duplicate(

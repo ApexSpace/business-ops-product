@@ -1,4 +1,8 @@
+import { resolveBackendPublicUrl } from './backend-public-url.util';
 import { resolveDatabaseUrl } from './database-url.util';
+import { EmailConfig, resolveEmailConfig } from './email/email.config';
+
+export type { EmailConfig };
 
 /** Resolves the public frontend origin for OAuth redirects and invite links. */
 export function resolveFrontendUrl(env: NodeJS.ProcessEnv): string {
@@ -18,6 +22,8 @@ export interface AppConfig {
   envelopeLegacyFields: boolean;
   /** Next.js / browser-facing app origin (OAuth redirects, invite links). */
   frontendUrl: string;
+  /** Public API origin for widgets, embed scripts, and customer-facing API links. */
+  backendPublicUrl: string;
 }
 
 export interface DatabaseConfig {
@@ -54,6 +60,7 @@ export interface RootConfig {
   auth: AuthConfig;
   seed: SeedConfig;
   integrations: IntegrationConfig;
+  email: EmailConfig;
 }
 
 export default (): RootConfig => ({
@@ -67,6 +74,7 @@ export default (): RootConfig => ({
     envelopeLegacyFields:
       (process.env.ENVELOPE_LEGACY_FIELDS ?? 'true').toLowerCase() === 'true',
     frontendUrl: resolveFrontendUrl(process.env),
+    backendPublicUrl: resolveBackendPublicUrl(process.env),
   },
   database: {
     url: resolveDatabaseUrl(process.env),
@@ -93,4 +101,5 @@ export default (): RootConfig => ({
     googleRedirectUri: process.env.GOOGLE_OAUTH_REDIRECT_URI,
     encryptionKey: process.env.INTEGRATION_ENCRYPTION_KEY,
   },
+  email: resolveEmailConfig(process.env),
 });

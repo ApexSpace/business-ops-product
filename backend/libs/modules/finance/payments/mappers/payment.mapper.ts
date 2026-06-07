@@ -12,6 +12,17 @@ export function toPaymentResponse(
     contactId: payment.contactId,
     amount: payment.amount.toFixed(2),
     method: payment.method,
+    provider: payment.provider,
+    stripePaymentIntentId: payment.stripePaymentIntentId,
+    stripeCheckoutSessionId: payment.stripeCheckoutSessionId,
+    stripeChargeId: payment.stripeChargeId,
+    stripeRefundId: payment.stripeRefundId,
+    providerMetadata:
+      payment.providerMetadata &&
+      typeof payment.providerMetadata === 'object' &&
+      !Array.isArray(payment.providerMetadata)
+        ? (payment.providerMetadata as Record<string, unknown>)
+        : null,
     reference: payment.reference,
     notes: payment.notes,
     paidAt: payment.paidAt,

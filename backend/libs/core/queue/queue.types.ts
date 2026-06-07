@@ -13,6 +13,14 @@ export interface SendOutboundMessagePayload {
   asyncJobId: string;
 }
 
+export interface SendEmailJobPayload {
+  emailMessageId: string;
+}
+
+export interface ProcessResendWebhookPayload {
+  webhookEventId: string;
+}
+
 export interface SearchIndexJobPayload {
   businessId: string;
   entityType: string;

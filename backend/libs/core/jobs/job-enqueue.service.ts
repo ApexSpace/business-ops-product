@@ -110,6 +110,10 @@ export class JobEnqueueService {
     await this.queueService.enqueueStripeWebhook(payload);
   }
 
+  async enqueueResendWebhook(webhookEventId: string): Promise<void> {
+    await this.queueService.enqueueResendWebhook({ webhookEventId });
+  }
+
   async enqueueSendMessage(
     payload: Omit<SendOutboundMessagePayload, 'asyncJobId'> & {
       conversationId: string;

@@ -4,7 +4,7 @@ import { BullMQAdapter } from '@bull-board/api/bullMQAdapter';
 import { ExpressAdapter } from '@bull-board/express';
 import { QueueService } from '@app/core/queue/queue.service';
 import { RedisService } from '@app/core/redis/redis.service';
-import { MESSAGE_QUEUE, WEBHOOK_QUEUE } from '@app/core/queue/queue.constants';
+import { MESSAGE_QUEUE, WEBHOOK_QUEUE, EMAIL_QUEUE } from '@app/core/queue/queue.constants';
 
 @Injectable()
 export class QueueBoardSetup implements OnModuleInit {
@@ -22,7 +22,8 @@ export class QueueBoardSetup implements OnModuleInit {
 
     const webhookQueue = this.queueService.getQueue(WEBHOOK_QUEUE);
     const messageQueue = this.queueService.getQueue(MESSAGE_QUEUE);
-    if (!webhookQueue || !messageQueue) {
+    const emailQueue = this.queueService.getQueue(EMAIL_QUEUE);
+    if (!webhookQueue || !messageQueue || !emailQueue) {
       return;
     }
 
@@ -32,6 +33,7 @@ export class QueueBoardSetup implements OnModuleInit {
       queues: [
         new BullMQAdapter(webhookQueue),
         new BullMQAdapter(messageQueue),
+        new BullMQAdapter(emailQueue),
       ],
       serverAdapter,
     });

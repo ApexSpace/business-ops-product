@@ -46,6 +46,10 @@ export function deletePayment(id: string) {
   return api.delete<void>(`payments/${id}?confirm=true`);
 }
 
+export function refundPayment(id: string) {
+  return api.post<Payment>(`payments/${id}/refund`);
+}
+
 export function getPaymentsOverview() {
   return api.get<PaymentsOverview>("payments/overview");
 }

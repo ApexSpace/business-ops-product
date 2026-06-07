@@ -9,6 +9,7 @@ export { ConfirmDeleteDialog } from "@/components/forms/confirm-delete-dialog";
 export { FormDialog } from "@/components/forms/form-dialog";
 export { FormSection } from "@/components/forms/form-section";
 export { SearchInput } from "@/components/forms/search-input";
+export { CheckboxField } from "@/components/forms/checkbox-field";
 export { SelectField } from "@/components/forms/select-field";
 export { SearchableSelect } from "@/components/forms/searchable-select";
 export { TextField } from "@/components/forms/text-field";

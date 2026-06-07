@@ -24,7 +24,10 @@ import { UserRepository, UserWithRelations } from '../repositories/user.reposito
 import { PipelineProvisioningService } from '@app/modules/crm/pipelines/services/pipeline-provisioning.service';
 import { IndustriesService } from '@app/modules/crm/industries/services/industries.service';
 import { TokenService } from './token.service';
+import { AuthActionTokenService } from './auth-action-token.service';
 import { resolvePlatformBusinessRole } from '../utils/platform-business-access.util';
+import { EmailNotificationService } from '@app/modules/communications/email/services/email-notification.service';
+import { formatUserName } from '@app/modules/communications/email/utils/email-variables.util';
 
 export interface AuthContextItem {
   type: AuthContext;
@@ -55,6 +58,8 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly pipelineProvisioning: PipelineProvisioningService,
     private readonly industriesService: IndustriesService,
+    private readonly authActionTokenService: AuthActionTokenService,
+    private readonly emailNotificationService: EmailNotificationService,
   ) {}
 
   async register(input: {
@@ -126,6 +131,8 @@ export class AuthService {
     });
 
     await this.userRepository.updateLastLogin(result.user.id);
+
+    void this.sendEmailVerification(result.user.id).catch(() => undefined);
 
     const payload: JwtAccessPayload = {
       sub: result.user.id,
@@ -282,6 +289,82 @@ export class AuthService {
     return { ...tokens, contexts: await this.buildContexts(user) };
   }
 
+  async forgotPassword(email: string): Promise<{ sent: boolean }> {
+    const normalized = email.trim().toLowerCase();
+    const user = await this.userRepository.findByEmail(normalized);
+
+    if (user && user.status === UserStatus.ACTIVE) {
+      void this.sendPasswordReset(user.id).catch(() => undefined);
+    }
+
+    return { sent: true };
+  }
+
+  async resetPassword(token: string, password: string): Promise<{ reset: boolean }> {
+    const userId = await this.authActionTokenService.verify(
+      token,
+      'password_reset',
+    );
+    const user = await this.userRepository.findById(userId);
+    if (!user || user.status !== UserStatus.ACTIVE) {
+      throw new AppException(
+        ErrorCode.BAD_REQUEST,
+        'Invalid or expired token',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const rounds = this.configService.get('auth.bcryptRounds', { infer: true });
+    const passwordHash = await bcrypt.hash(password, rounds);
+    await this.userRepository.updatePassword(userId, passwordHash);
+    await this.refreshTokenRepository.revokeAllForUser(userId);
+
+    return { reset: true };
+  }
+
+  async verifyEmail(token: string): Promise<{ verified: boolean }> {
+    const userId = await this.authActionTokenService.verify(
+      token,
+      'email_verification',
+    );
+    const user = await this.userRepository.findById(userId);
+    if (!user) {
+      throw new AppException(
+        ErrorCode.NOT_FOUND,
+        'User not found',
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    if (!user.emailVerifiedAt) {
+      await this.userRepository.setEmailVerifiedAt(userId, new Date());
+    }
+
+    return { verified: true };
+  }
+
+  async resendEmailVerification(userId: string): Promise<{ sent: boolean }> {
+    const user = await this.userRepository.findById(userId);
+    if (!user) {
+      throw new AppException(
+        ErrorCode.NOT_FOUND,
+        'User not found',
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    if (user.emailVerifiedAt) {
+      throw new AppException(
+        ErrorCode.BAD_REQUEST,
+        'Email is already verified',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    await this.sendEmailVerification(userId);
+    return { sent: true };
+  }
+
   async getMe(userId: string) {
     const user = await this.userRepository.findById(userId);
     if (!user) {
@@ -298,8 +381,64 @@ export class AuthService {
       lastName: user.lastName,
       status: user.status,
       lastLoginAt: user.lastLoginAt,
+      emailVerifiedAt: user.emailVerifiedAt,
       contexts: await this.buildContexts(user),
     };
+  }
+
+  private async sendPasswordReset(userId: string): Promise<void> {
+    const user = await this.userRepository.findById(userId);
+    if (!user?.email) {
+      return;
+    }
+
+    const token = await this.authActionTokenService.sign(userId, 'password_reset');
+    const frontendUrl = this.configService.get('app.frontendUrl', { infer: true });
+    const resetLink = `${frontendUrl}/reset-password?token=${encodeURIComponent(token)}`;
+
+    await this.emailNotificationService.enqueueTransactionalEmail({
+      businessId: null,
+      emailType: 'auth.password_reset',
+      toEmail: user.email,
+      userId: user.id,
+      entityType: 'User',
+      entityId: user.id,
+      idempotencyKey: `password-reset-${user.id}-${Date.now()}`,
+      variables: {
+        'user.name': formatUserName(user),
+        'user.email': user.email,
+        reset_link: resetLink,
+      },
+    });
+  }
+
+  private async sendEmailVerification(userId: string): Promise<void> {
+    const user = await this.userRepository.findById(userId);
+    if (!user?.email || user.emailVerifiedAt) {
+      return;
+    }
+
+    const token = await this.authActionTokenService.sign(
+      userId,
+      'email_verification',
+    );
+    const frontendUrl = this.configService.get('app.frontendUrl', { infer: true });
+    const verificationLink = `${frontendUrl}/verify-email?token=${encodeURIComponent(token)}`;
+
+    await this.emailNotificationService.enqueueTransactionalEmail({
+      businessId: null,
+      emailType: 'auth.email_verification',
+      toEmail: user.email,
+      userId: user.id,
+      entityType: 'User',
+      entityId: user.id,
+      idempotencyKey: `email-verification-${user.id}`,
+      variables: {
+        'user.name': formatUserName(user),
+        'user.email': user.email,
+        verification_link: verificationLink,
+      },
+    });
   }
 
   async buildContexts(user: UserWithRelations): Promise<AuthContextItem[]> {

@@ -1,4 +1,9 @@
-import { InvoiceStatus, Prisma } from '@prisma/client';
+import {
+  InvoicePaymentStatus,
+  InvoiceStatus,
+  Prisma,
+} from '@prisma/client';
+import { deriveInvoicePaymentStatus } from './invoice-payment-status.util';
 
 export function sumPaymentAmounts(
   payments: { amount: Prisma.Decimal }[],
@@ -54,4 +59,50 @@ export function invoiceStatusFromPayments(
   }
 
   return currentStatus;
+}
+
+export type InvoicePaymentSyncFields = {
+  balanceDue: Prisma.Decimal;
+  status: InvoiceStatus;
+  paymentStatus: InvoicePaymentStatus;
+  paidAmount: Prisma.Decimal;
+  remainingAmount: Prisma.Decimal;
+  lastPaymentAt: Date | null;
+};
+
+export function computeInvoicePaymentSyncFields(
+  invoice: {
+    status: InvoiceStatus;
+    totalAmount: Prisma.Decimal;
+  },
+  payments: { amount: Prisma.Decimal; paidAt: Date }[],
+): InvoicePaymentSyncFields {
+  const totalPaid = sumPaymentAmounts(payments);
+  const balanceDue = computeBalanceDue(invoice.totalAmount, totalPaid);
+  const status = invoiceStatusFromPayments(
+    invoice.status,
+    invoice.totalAmount,
+    totalPaid,
+  );
+  const paymentStatus = deriveInvoicePaymentStatus(
+    invoice.totalAmount,
+    totalPaid,
+    invoice.status,
+  );
+  const lastPaymentAt =
+    payments.length > 0
+      ? payments.reduce(
+          (latest, p) => (p.paidAt > latest ? p.paidAt : latest),
+          payments[0]!.paidAt,
+        )
+      : null;
+
+  return {
+    balanceDue,
+    status,
+    paymentStatus,
+    paidAmount: totalPaid,
+    remainingAmount: balanceDue,
+    lastPaymentAt,
+  };
 }

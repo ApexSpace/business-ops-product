@@ -25,6 +25,8 @@ import {
   MemberResponseDto,
 } from '../dto/member-response.dto';
 import { BusinessMembershipRepository } from '../repositories/business-membership.repository';
+import { EmailNotificationService } from '@app/modules/communications/email/services/email-notification.service';
+import { formatUserName } from '@app/modules/communications/email/utils/email-variables.util';
 
 @Injectable()
 export class MembershipService {
@@ -35,6 +37,7 @@ export class MembershipService {
     private readonly auditService: AuditService,
     private readonly configService: ConfigService<RootConfig, true>,
     private readonly prisma: PrismaService,
+    private readonly emailNotificationService: EmailNotificationService,
   ) {}
 
   async listForBusiness(
@@ -251,6 +254,26 @@ export class MembershipService {
     });
 
     const withUser = await this.membershipRepository.findById(membership.id);
+    const inviter = await this.userRepository.findById(actor.id);
+
+    void this.emailNotificationService
+      .enqueueTransactionalEmail({
+        businessId,
+        emailType: 'membership.invite',
+        toEmail: dto.email,
+        userId: user.id,
+        entityType: 'BusinessMembership',
+        entityId: membership.id,
+        idempotencyKey: `membership-invite-${membership.id}`,
+        variables: {
+          'invitee.email': dto.email,
+          'inviter.name': formatUserName(inviter ?? { email: actor.email }),
+          'business.name': business.name,
+          invite_link: inviteLink,
+        },
+      })
+      .catch(() => undefined);
+
     return {
       ...this.toMemberResponse(withUser!),
       inviteLink,

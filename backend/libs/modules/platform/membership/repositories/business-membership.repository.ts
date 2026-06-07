@@ -140,6 +140,19 @@ export class BusinessMembershipRepository {
     });
   }
 
+  findOwnersAndAdmins(businessId: string): Promise<BusinessMembershipWithUser[]> {
+    return this.prisma.businessMembership.findMany({
+      where: {
+        businessId,
+        deletedAt: null,
+        status: MembershipStatus.ACTIVE,
+        role: { in: [BusinessMemberRole.OWNER, BusinessMemberRole.ADMIN] },
+      },
+      ...membershipWithUser,
+      orderBy: { createdAt: 'asc' },
+    });
+  }
+
   create(data: Prisma.BusinessMembershipCreateInput): Promise<BusinessMembership> {
     return this.prisma.businessMembership.create({ data });
   }

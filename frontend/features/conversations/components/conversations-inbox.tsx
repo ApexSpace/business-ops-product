@@ -5,7 +5,10 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tansta
 import { toast } from "sonner";
 import { ConversationListPanel } from "@/features/conversations/components/inbox/conversation-list-panel";
 import { ConversationThreadPanel } from "@/features/conversations/components/inbox/conversation-thread-panel";
-import { VIRTUALIZE_THRESHOLD } from "@/features/conversations/components/inbox/conversation-inbox-utils";
+import {
+  isWebchatConversation,
+  VIRTUALIZE_THRESHOLD,
+} from "@/features/conversations/components/inbox/conversation-inbox-utils";
 import {
   closeConversation,
   getConversation,
@@ -67,10 +70,14 @@ export function ConversationsInbox() {
     isFetchingNextPage,
   } = useConversationMessages(selectedId);
 
+  const isWebchat = isWebchatConversation(selected);
+
   const messagingStatusQuery = useQuery({
-    queryKey: queryKeys.integrations.messagingStatus(selected?.providerKey ?? ""),
+    queryKey: queryKeys.integrations.messagingStatus(
+      `${selected?.channel ?? ""}:${selected?.providerKey ?? ""}`,
+    ),
     queryFn: () => getMessagingStatus(selected!.providerKey),
-    enabled: Boolean(selected?.providerKey),
+    enabled: Boolean(selected?.providerKey) && !isWebchat,
   });
 
   const invalidateAll = async () => {
@@ -122,15 +129,19 @@ export function ConversationsInbox() {
   const canSend =
     Boolean(selectedId) &&
     composer.trim().length > 0 &&
-    (messagingStatusQuery.data?.readyForMessaging ?? false);
+    (isWebchat || Boolean(messagingStatusQuery.data?.readyForMessaging));
 
-  const sendDisabledReason = !messagingStatusQuery.data?.readyForMessaging
-    ? selected?.providerKey === "facebook"
-      ? "Select a Facebook Page and complete messaging setup before sending."
-      : selected?.providerKey === "instagram"
-        ? "Select an Instagram account and complete messaging setup before sending."
-        : "Messaging is not ready for this channel."
-    : null;
+  const sendDisabledReason = isWebchat
+    ? null
+    : messagingStatusQuery.isLoading
+      ? null
+      : !messagingStatusQuery.data?.readyForMessaging
+        ? selected?.providerKey === "facebook"
+          ? "Select a Facebook Page and complete messaging setup before sending."
+          : selected?.providerKey === "instagram"
+            ? "Select an Instagram account and complete messaging setup before sending."
+            : "Messaging is not ready for this channel."
+        : null;
 
   const messages = useMemo(
     () => messagesInfinite?.pages.flatMap((page) => page.items) ?? [],

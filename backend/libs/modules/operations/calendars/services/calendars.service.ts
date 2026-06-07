@@ -28,6 +28,11 @@ import {
   toExceptionResponse,
 } from '../mappers/calendar.mapper';
 import { CalendarRepository } from '../repositories/calendar.repository';
+import {
+  deriveCalendarPublicSlugFromName,
+  mergeWidgetSettingsWithSlug,
+} from '../utils/calendar-public-booking.util';
+import { isValidBookingSlug } from '@app/modules/operations/public-booking/utils/booking-slug.util';
 
 @Injectable()
 export class CalendarsService {
@@ -36,6 +41,10 @@ export class CalendarsService {
     private readonly membershipRepository: BusinessMembershipRepository,
     private readonly auditService: AuditService,
   ) {}
+
+  private getFrontendUrl(): string {
+    return process.env.FRONTEND_URL?.replace(/\/$/, '') ?? '';
+  }
 
   async create(
     businessId: string,
@@ -106,8 +115,9 @@ export class CalendarsService {
         status: query.status,
       },
     );
+    const frontendUrl = this.getFrontendUrl();
     return {
-      items: items.map(toCalendarResponse),
+      items: items.map((c) => toCalendarResponse(c, frontendUrl)),
       meta: { total, page, limit },
     };
   }
@@ -127,7 +137,7 @@ export class CalendarsService {
         HttpStatus.NOT_FOUND,
       );
     }
-    return toCalendarDetailResponse(calendar);
+    return toCalendarDetailResponse(calendar, this.getFrontendUrl());
   }
 
   async update(
@@ -136,7 +146,27 @@ export class CalendarsService {
     dto: UpdateCalendarDto,
     actor: RequestUser,
   ): Promise<CalendarDetailResponseDto> {
-    await this.assertCalendar(businessId, id);
+    const existing = await this.assertCalendar(businessId, id);
+
+    const publicBookingEnabled =
+      dto.publicBookingEnabled ?? existing.publicBookingEnabled;
+    const resolvedSlug = this.resolveSlugForUpdate(existing, dto);
+    if (publicBookingEnabled && resolvedSlug) {
+      await this.assertPublicSlugAvailable(resolvedSlug, id);
+    }
+
+    const widgetSettings =
+      dto.widgetSettings !== undefined
+        ? mergeWidgetSettingsWithSlug(
+            dto.widgetSettings ?? existing.widgetSettings,
+            publicBookingEnabled ? resolvedSlug : null,
+          )
+        : publicBookingEnabled && resolvedSlug
+          ? mergeWidgetSettingsWithSlug(
+              existing.widgetSettings,
+              resolvedSlug,
+            )
+          : undefined;
 
     await this.calendarRepository.update(businessId, id, {
       ...(dto.name !== undefined ? { name: dto.name.trim() } : {}),
@@ -189,11 +219,18 @@ export class CalendarsService {
       ...(dto.policySettings !== undefined
         ? { policySettings: dto.policySettings as Prisma.InputJsonValue }
         : {}),
-      ...(dto.widgetSettings !== undefined
-        ? { widgetSettings: dto.widgetSettings as Prisma.InputJsonValue }
-        : {}),
+      ...(widgetSettings !== undefined ? { widgetSettings } : {}),
       ...(dto.googleSyncSettings !== undefined
         ? { googleSyncSettings: dto.googleSyncSettings as Prisma.InputJsonValue }
+        : {}),
+      ...(publicBookingEnabled && resolvedSlug
+        ? { publicSlug: resolvedSlug }
+        : {}),
+      ...(dto.publicBookingEnabled !== undefined
+        ? { publicBookingEnabled: dto.publicBookingEnabled }
+        : {}),
+      ...(dto.embedEnabled !== undefined
+        ? { embedEnabled: dto.embedEnabled }
         : {}),
     });
 
@@ -443,6 +480,58 @@ export class CalendarsService {
         ErrorCode.ASSIGNEE_NOT_MEMBER,
         'User is not an active member of this business',
         HttpStatus.BAD_REQUEST,
+      );
+    }
+  }
+
+  private resolveSlugForUpdate(
+    existing: {
+      name: string;
+      publicSlug: string | null;
+      publicBookingEnabled: boolean;
+    },
+    dto: UpdateCalendarDto,
+  ): string | null {
+    const publicBookingEnabled =
+      dto.publicBookingEnabled ?? existing.publicBookingEnabled;
+
+    if (!publicBookingEnabled) {
+      return existing.publicSlug;
+    }
+
+    const calendarName =
+      dto.name !== undefined ? dto.name.trim() : existing.name;
+    const slug = deriveCalendarPublicSlugFromName(calendarName);
+
+    if (!slug) {
+      throw new AppException(
+        ErrorCode.VALIDATION_ERROR,
+        'A valid booking link could not be generated from the calendar name',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    if (!isValidBookingSlug(slug)) {
+      throw new AppException(
+        ErrorCode.VALIDATION_ERROR,
+        'Public booking slug must be 2–80 lowercase letters, numbers, and hyphens',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    return slug;
+  }
+
+  private async assertPublicSlugAvailable(slug: string, calendarId: string) {
+    const taken = await this.calendarRepository.findByPublicSlug(
+      slug,
+      calendarId,
+    );
+    if (taken) {
+      throw new AppException(
+        ErrorCode.PUBLIC_BOOKING_SLUG_TAKEN,
+        'This booking link slug is already in use',
+        HttpStatus.CONFLICT,
       );
     }
   }

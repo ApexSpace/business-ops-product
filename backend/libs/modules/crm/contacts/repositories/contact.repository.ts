@@ -128,6 +128,20 @@ export class ContactRepository {
     });
   }
 
+  findByChatbotVisitorId(
+    businessId: string,
+    visitorId: string,
+  ): Promise<Contact | null> {
+    return this.prisma.contact.findFirst({
+      where: this.activeWhere(businessId, {
+        metadata: {
+          path: ['visitorId'],
+          equals: visitorId,
+        },
+      }),
+    });
+  }
+
   async findByPhoneKey(
     businessId: string,
     phoneKey: string,
@@ -175,6 +189,27 @@ export class ContactRepository {
       },
       include: contactWithTags,
     });
+  }
+
+  createPublic(
+    businessId: string,
+    data: Omit<Prisma.ContactCreateInput, 'business' | 'createdBy' | 'tags'>,
+  ): Promise<Contact> {
+    return this.prisma.contact.create({
+      data: {
+        ...data,
+        business: { connect: { id: businessId } },
+      },
+    });
+  }
+
+  touchUpdatedAt(businessId: string, id: string): Promise<void> {
+    return this.prisma.contact
+      .updateMany({
+        where: this.activeWhere(businessId, { id }),
+        data: { updatedAt: new Date() },
+      })
+      .then(() => undefined);
   }
 
   async update(

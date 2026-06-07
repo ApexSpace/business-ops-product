@@ -39,6 +39,20 @@ export class UserRepository {
       data: { lastLoginAt: new Date() },
     });
   }
+
+  updatePassword(id: string, passwordHash: string): Promise<User> {
+    return this.prisma.user.update({
+      where: { id },
+      data: { passwordHash },
+    });
+  }
+
+  setEmailVerifiedAt(id: string, verifiedAt: Date): Promise<User> {
+    return this.prisma.user.update({
+      where: { id },
+      data: { emailVerifiedAt: verifiedAt },
+    });
+  }
 }
 
 export { UserStatus };

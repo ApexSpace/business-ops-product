@@ -1,5 +1,8 @@
 import { z } from "zod";
 import type { Estimate, EstimateItem, EstimateStatus } from "@/features/estimates/types";
+import { formatMoney } from "@/features/payments/utils/currencies";
+
+export { formatMoney };
 
 export const ESTIMATE_STATUS_OPTIONS: {
   value: EstimateStatus;
@@ -39,15 +42,6 @@ export function estimateStatusVariant(
     default:
       return "outline";
   }
-}
-
-export function formatMoney(value: string | number): string {
-  const n = typeof value === "string" ? parseFloat(value) : value;
-  if (Number.isNaN(n)) return "$0.00";
-  return new Intl.NumberFormat(undefined, {
-    style: "currency",
-    currency: "USD",
-  }).format(n);
 }
 
 export function formatEstimateDate(iso: string | null | undefined): string {

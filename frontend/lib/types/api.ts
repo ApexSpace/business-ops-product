@@ -428,6 +428,15 @@ export interface InvoiceEstimateSummary {
   estimateNumber: string;
 }
 
+export type InvoicePaymentStatus =
+  | "UNPAID"
+  | "PARTIALLY_PAID"
+  | "PAID"
+  | "OVERPAID"
+  | "REFUNDED";
+
+export type PaymentProvider = "MANUAL" | "STRIPE";
+
 export interface Invoice {
   id: string;
   businessId: string;
@@ -443,6 +452,14 @@ export interface Invoice {
   discountAmount: string;
   totalAmount: string;
   balanceDue: string;
+  publicToken: string;
+  publicUrl: string | null;
+  paymentStatus: InvoicePaymentStatus;
+  paidAmount: string;
+  remainingAmount: string;
+  lastPaymentAt: string | null;
+  stripeCheckoutUrl: string | null;
+  stripePaymentLinkId: string | null;
   notes: string | null;
   paymentTerms: string | null;
   termsAndConditions: string | null;
@@ -470,6 +487,26 @@ export interface PaymentInvoiceSummary {
   status: InvoiceStatus;
 }
 
+export interface PublicInvoice {
+  invoiceNumber: string;
+  businessName: string;
+  issueDate: string;
+  dueDate: string | null;
+  contactLabel: string;
+  subtotal: string;
+  taxAmount: string;
+  discountAmount: string;
+  totalAmount: string;
+  paidAmount: string;
+  balanceDue: string;
+  paymentStatus: InvoicePaymentStatus;
+  currencyCode: string;
+  currencySymbol: string;
+  isOverdue: boolean;
+  canPayOnline: boolean;
+  items: InvoiceItem[];
+}
+
 export interface Payment {
   id: string;
   businessId: string;
@@ -477,6 +514,12 @@ export interface Payment {
   contactId: string;
   amount: string;
   method: PaymentMethod;
+  provider: PaymentProvider;
+  stripePaymentIntentId: string | null;
+  stripeCheckoutSessionId: string | null;
+  stripeChargeId: string | null;
+  stripeRefundId: string | null;
+  providerMetadata: Record<string, unknown> | null;
   reference: string | null;
   notes: string | null;
   paidAt: string;

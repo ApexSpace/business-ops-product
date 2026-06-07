@@ -15,6 +15,7 @@ type InboxFilter =
   | "all"
   | "facebook"
   | "instagram"
+  | "webchat"
   | "open"
   | "unread"
   | "assigned";
@@ -60,6 +61,7 @@ export function ConversationListPanel({
               ["all", "All"],
               ["facebook", "Facebook"],
               ["instagram", "Instagram"],
+              ["webchat", "Website Chat"],
               ["open", "Open"],
               ["unread", "Unread"],
               ["assigned", "Mine"],

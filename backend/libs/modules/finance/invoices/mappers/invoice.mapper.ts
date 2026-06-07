@@ -1,11 +1,12 @@
 import { resolveContactLabel } from '@app/modules/crm/contacts/mappers/contact.mapper';
+import { resolveInvoiceDisplayStatus } from '@app/modules/finance/shared/utils/financial-due-date.util';
 import {
   InvoiceItemResponseDto,
   InvoiceResponseDto,
 } from '../dto/invoice-response.dto';
 import { InvoiceWithRelations } from '../repositories/invoice.repository';
 
-function toItemResponse(
+export function toItemResponse(
   item: InvoiceWithRelations['items'][number],
 ): InvoiceItemResponseDto {
   return {
@@ -30,7 +31,11 @@ export function toInvoiceResponse(
     estimateId: invoice.estimateId,
     workItemId: invoice.workItemId,
     invoiceNumber: invoice.invoiceNumber,
-    status: invoice.status,
+    status: resolveInvoiceDisplayStatus(
+      invoice.status,
+      invoice.dueDate,
+      invoice.balanceDue,
+    ),
     issueDate: invoice.issueDate,
     dueDate: invoice.dueDate,
     subtotal: invoice.subtotal.toString(),
@@ -38,6 +43,14 @@ export function toInvoiceResponse(
     discountAmount: invoice.discountAmount.toString(),
     totalAmount: invoice.totalAmount.toString(),
     balanceDue: invoice.balanceDue.toString(),
+    publicToken: invoice.publicToken,
+    publicUrl: invoice.publicUrl,
+    paymentStatus: invoice.paymentStatus,
+    paidAmount: invoice.paidAmount.toString(),
+    remainingAmount: invoice.remainingAmount.toString(),
+    lastPaymentAt: invoice.lastPaymentAt,
+    stripeCheckoutUrl: invoice.stripeCheckoutUrl,
+    stripePaymentLinkId: invoice.stripePaymentLinkId,
     notes: invoice.notes,
     paymentTerms: invoice.paymentTerms,
     termsAndConditions: invoice.termsAndConditions,

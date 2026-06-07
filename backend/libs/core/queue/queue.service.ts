@@ -6,9 +6,12 @@ import {
 } from '../redis/redis-requirements.util';
 import { RedisService } from '../redis/redis.service';
 import {
+  EMAIL_QUEUE,
   FILE_QUEUE,
   JOB_PROCESS_META_WEBHOOK,
+  JOB_PROCESS_RESEND_WEBHOOK,
   JOB_PROCESS_STRIPE_WEBHOOK,
+  JOB_SEND_EMAIL,
   JOB_SEND_OUTBOUND_MESSAGE,
   MESSAGE_QUEUE,
   SEARCH_QUEUE,
@@ -17,9 +20,12 @@ import {
 } from './queue.constants';
 import type {
   ProcessMetaWebhookPayload,
+  ProcessResendWebhookPayload,
   ProcessStripeWebhookPayload,
+  SendEmailJobPayload,
   SendOutboundMessagePayload,
 } from './queue.types';
+import { resolveEmailConfig } from '../config/email/email.config';
 
 @Injectable()
 export class QueueService {
@@ -76,6 +82,63 @@ export class QueueService {
 
   searchQueue(): Queue | null {
     return this.getQueue(SEARCH_QUEUE);
+  }
+
+  emailQueue(): Queue | null {
+    return this.getQueue(EMAIL_QUEUE);
+  }
+
+  private emailJobOptions() {
+    const email = resolveEmailConfig();
+    return {
+      attempts: email.queue.jobAttempts,
+      backoff: { type: 'exponential' as const, delay: email.queue.jobBackoffMs },
+    };
+  }
+
+  async enqueueSendEmail(
+    payload: SendEmailJobPayload,
+    idempotencyKey?: string,
+  ): Promise<string | null> {
+    const queue = this.emailQueue();
+    const jobId = idempotencyKey
+      ? `email-${idempotencyKey}`
+      : `email-${payload.emailMessageId}`;
+    if (!this.guardQueueAvailable(queue, `enqueue send email (${jobId})`)) {
+      return null;
+    }
+    try {
+      const job = await queue.add(JOB_SEND_EMAIL, payload, {
+        ...this.emailJobOptions(),
+        jobId,
+      });
+      return job.id ?? null;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.error(`Failed to enqueue send email job ${jobId}: ${message}`);
+      throw error;
+    }
+  }
+
+  async enqueueResendWebhook(
+    payload: ProcessResendWebhookPayload,
+  ): Promise<string | null> {
+    const queue = this.emailQueue();
+    const jobId = `resend-webhook-${payload.webhookEventId}`;
+    if (!this.guardQueueAvailable(queue, `enqueue Resend webhook (${jobId})`)) {
+      return null;
+    }
+    try {
+      const job = await queue.add(JOB_PROCESS_RESEND_WEBHOOK, payload, {
+        ...this.emailJobOptions(),
+        jobId,
+      });
+      return job.id ?? null;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.error(`Failed to enqueue Resend webhook job ${jobId}: ${message}`);
+      throw error;
+    }
   }
 
   async enqueueMetaWebhook(

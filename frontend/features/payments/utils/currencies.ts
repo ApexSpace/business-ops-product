@@ -45,3 +45,25 @@ export function normalizeCurrencyCode(code: string): string {
   const normalized = code.trim().toUpperCase();
   return currencyByCode.has(normalized) ? normalized : "USD";
 }
+
+/** Symbol-only money display (e.g. $1,234.56), never currency code or country name. */
+export function formatMoney(
+  value: string | number,
+  currencyCode = "USD",
+): string {
+  const code = normalizeCurrencyCode(currencyCode);
+  const n = typeof value === "string" ? parseFloat(value) : value;
+  const symbol = currencySymbolForCode(code);
+
+  if (Number.isNaN(n)) {
+    return `${symbol}0.00`;
+  }
+
+  const sign = n < 0 ? "−" : "";
+  const amount = Math.abs(n).toLocaleString("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+
+  return `${sign}${symbol}${amount}`;
+}

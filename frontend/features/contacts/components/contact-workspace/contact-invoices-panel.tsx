@@ -7,23 +7,21 @@ import { toast } from "sonner";
 import { ContactFinancialRecordRow } from "@/features/contacts/components/contact-workspace/contact-financial-record-row";
 import { RecordListEmpty } from "@/features/contacts/components/contact-workspace/contact-record-section";
 import { EmptyState } from "@/components/data-display/empty-state";
-import { ConfirmDeleteDialog } from "@/components/forms/confirm-delete-dialog";
 import { InvoiceFormDialog } from "@/features/invoices/components/invoice-form-dialog";
 import { PaymentFormDialog } from "@/features/payments/components/payment-form-dialog";
-import { FinancialRowActionsMenu } from "@/features/payments/components/workspace/financial-row-actions-menu";
+import { InvoiceTableRowActions } from "@/features/payments/components/workspace/invoice-table-row-actions";
 import { ActionButton } from "@/components/ui/action-button";
-import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import {
-  deleteInvoice,
   duplicateInvoice,
   updateInvoiceStatus,
 } from "@/features/invoices/api/invoices.api";
+import { openInvoicePublicView } from "@/features/invoices/utils/invoice-payment-link";
 import { invalidateContactFinancial } from "@/features/contacts/utils/contact-financial";
 import { getInvoiceDisplayName } from "@/features/payments/utils/financial-table-display";
 import {
+  canRecordInvoicePayment,
   formatInvoiceDate,
   formatMoney,
-  INVOICE_MANUAL_STATUS_OPTIONS,
 } from "@/features/invoices/schemas/invoice-profile";
 import type { Invoice, InvoiceStatus } from "@/features/invoices/types";
 
@@ -43,21 +41,10 @@ export function ContactInvoicesPanel({
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Invoice | null>(null);
-  const [deleteId, setDeleteId] = useState<string | null>(null);
   const [paymentInvoiceId, setPaymentInvoiceId] = useState<string | null>(null);
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
 
   const refresh = () => void invalidateContactFinancial(queryClient);
-
-  const deleteMutation = useMutation({
-    mutationFn: deleteInvoice,
-    onSuccess: () => {
-      toast.success("Invoice deleted");
-      refresh();
-      setDeleteId(null);
-    },
-    onError: (err: Error) => toast.error(err.message),
-  });
 
   const duplicateMutation = useMutation({
     mutationFn: duplicateInvoice,
@@ -78,9 +65,15 @@ export function ContactInvoicesPanel({
     onError: (err: Error) => toast.error(err.message),
   });
 
-  const openInvoice = (invoice: Invoice) => {
+  const openInvoiceEditor = (invoice: Invoice) => {
     setEditing(invoice);
     setDialogOpen(true);
+  };
+
+  const viewInvoicePublic = (invoice: Invoice) => {
+    if (!openInvoicePublicView(invoice)) {
+      toast.error("Public link is not available for this invoice");
+    }
   };
 
   const openCreate = () => {
@@ -88,8 +81,11 @@ export function ContactInvoicesPanel({
     setDialogOpen(true);
   };
 
-  const canRecordPayment = (row: Invoice) =>
-    row.status !== "VOID" && parseFloat(row.balanceDue) > 0;
+  const canRecordPayment = (row: Invoice) => canRecordInvoicePayment(row);
+
+  const canCopyLink = (row: Invoice) => row.status !== "VOID";
+
+  const canVoid = (row: Invoice) => row.status !== "VOID";
 
   if (isLoading) {
     return <RecordListEmpty message="Loading invoices…" />;
@@ -143,28 +139,34 @@ export function ContactInvoicesPanel({
                 `${formatInvoiceDate(invoice.issueDate)} · ${formatMoney(invoice.totalAmount)} · Balance ${formatMoney(invoice.balanceDue)}`,
               ]}
               status={{ domain: "invoice", value: invoice.status }}
-              onOpen={() => openInvoice(invoice)}
+              onOpen={() => viewInvoicePublic(invoice)}
               actions={
-                <FinancialRowActionsMenu
-                  onView={() => openInvoice(invoice)}
-                  onEdit={() => openInvoice(invoice)}
-                  onDuplicate={() => duplicateMutation.mutate(invoice.id)}
-                  onDelete={() => setDeleteId(invoice.id)}
-                  statusOptions={INVOICE_MANUAL_STATUS_OPTIONS}
-                  onStatusChange={(status) =>
-                    statusMutation.mutate({ id: invoice.id, status })
+                <InvoiceTableRowActions
+                  invoice={invoice}
+                  canCopyLink={canCopyLink(invoice)}
+                  onView={() => viewInvoicePublic(invoice)}
+                  onEdit={
+                    invoice.status !== "PAID"
+                      ? () => openInvoiceEditor(invoice)
+                      : undefined
                   }
-                  extraItems={
-                    canRecordPayment(invoice) ? (
-                      <DropdownMenuItem
-                        onClick={() => {
+                  onDuplicate={() => duplicateMutation.mutate(invoice.id)}
+                  onVoid={
+                    canVoid(invoice)
+                      ? () =>
+                          statusMutation.mutate({
+                            id: invoice.id,
+                            status: "VOID",
+                          })
+                      : undefined
+                  }
+                  onRecordPayment={
+                    canRecordPayment(invoice)
+                      ? () => {
                           setPaymentInvoiceId(invoice.id);
                           setPaymentDialogOpen(true);
-                        }}
-                      >
-                        Record Payment
-                      </DropdownMenuItem>
-                    ) : null
+                        }
+                      : undefined
                   }
                 />
               }
@@ -197,14 +199,6 @@ export function ContactInvoicesPanel({
         onSuccess={refresh}
       />
 
-      <ConfirmDeleteDialog
-        open={!!deleteId}
-        onOpenChange={(open) => !open && setDeleteId(null)}
-        title="Delete invoice?"
-        description="This invoice will be removed. This cannot be undone."
-        isPending={deleteMutation.isPending}
-        onConfirm={() => deleteId && deleteMutation.mutate(deleteId)}
-      />
     </>
   );
 }

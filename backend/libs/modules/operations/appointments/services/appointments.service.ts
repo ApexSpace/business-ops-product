@@ -20,6 +20,7 @@ import {
 import { toAppointmentResponse } from '../mappers/appointment.mapper';
 import { JobEnqueueService } from '@app/core/jobs/job-enqueue.service';
 import { AppointmentRepository } from '../repositories/appointment.repository';
+import { AppointmentNotificationService } from './appointment-notification.service';
 
 @Injectable()
 export class AppointmentsService {
@@ -34,6 +35,7 @@ export class AppointmentsService {
     private readonly membershipRepository: BusinessMembershipRepository,
     private readonly auditService: AuditService,
     private readonly jobEnqueueService: JobEnqueueService,
+    private readonly appointmentNotificationService: AppointmentNotificationService,
   ) {}
 
   private scheduleGoogleCalendarSync(
@@ -109,6 +111,13 @@ export class AppointmentsService {
 
     this.scheduleGoogleCalendarSync(businessId, appointment.id, actor.id);
 
+    void this.appointmentNotificationService
+      .sendConfirmation(businessId, appointment)
+      .catch(() => undefined);
+    void this.appointmentNotificationService
+      .sendOwnerNotifications(businessId, appointment)
+      .catch(() => undefined);
+
     return toAppointmentResponse(appointment);
   }
 
@@ -177,6 +186,10 @@ export class AppointmentsService {
 
     const startAt = dto.startAt ? new Date(dto.startAt) : existing.startAt;
     const endAt = dto.endAt ? new Date(dto.endAt) : existing.endAt;
+    const scheduleChanged =
+      startAt.getTime() !== existing.startAt.getTime() ||
+      endAt.getTime() !== existing.endAt.getTime();
+    const previousStartAt = existing.startAt;
     this.assertValidRange(startAt, endAt);
 
     if (dto.calendarId) await this.assertCalendar(businessId, dto.calendarId);
@@ -222,6 +235,12 @@ export class AppointmentsService {
 
     this.scheduleGoogleCalendarSync(businessId, id, actor.id);
 
+    if (scheduleChanged) {
+      void this.appointmentNotificationService
+        .sendRescheduled(businessId, appointment, previousStartAt)
+        .catch(() => undefined);
+    }
+
     return toAppointmentResponse(appointment);
   }
 
@@ -254,6 +273,15 @@ export class AppointmentsService {
     });
 
     this.scheduleGoogleCalendarSync(businessId, id, actor.id);
+
+    if (
+      dto.status === AppointmentStatus.CANCELLED &&
+      existing.status !== AppointmentStatus.CANCELLED
+    ) {
+      void this.appointmentNotificationService
+        .sendCancelled(businessId, appointment)
+        .catch(() => undefined);
+    }
 
     return toAppointmentResponse(appointment);
   }

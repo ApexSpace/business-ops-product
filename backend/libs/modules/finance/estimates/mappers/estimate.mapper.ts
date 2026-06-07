@@ -1,4 +1,5 @@
 import { resolveContactLabel } from '@app/modules/crm/contacts/mappers/contact.mapper';
+import { resolveEstimateDisplayStatus } from '@app/modules/finance/shared/utils/financial-due-date.util';
 import {
   EstimateItemResponseDto,
   EstimateResponseDto,
@@ -29,7 +30,10 @@ export function toEstimateResponse(
     contactId: estimate.contactId,
     workItemId: estimate.workItemId,
     estimateNumber: estimate.estimateNumber,
-    status: estimate.status,
+    status: resolveEstimateDisplayStatus(
+      estimate.status,
+      estimate.expiryDate,
+    ),
     issueDate: estimate.issueDate,
     expiryDate: estimate.expiryDate,
     subtotal: estimate.subtotal.toString(),

@@ -5,6 +5,7 @@ import {
   Users,
   GraduationCap,
   UsersRound,
+  Building2,
   type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -28,6 +29,7 @@ const TYPE_ICONS: Record<CalendarCreationTypeId, LucideIcon> = {
   round_robin: Users,
   class: GraduationCap,
   collective: UsersRound,
+  internal: Building2,
 };
 
 interface CalendarTypePickerDialogProps {
@@ -49,9 +51,10 @@ export function CalendarTypePickerDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent size="2xl" className="max-w-3xl">
         <DialogHeader>
-          <DialogTitle>Choose calendar type</DialogTitle>
+          <DialogTitle>Select booking type</DialogTitle>
           <p className="text-sm text-muted-foreground">
-            Pick how appointments are scheduled. You can change details later.
+            Choose how customers or your team will book time. You can adjust
+            details after creating the calendar.
           </p>
         </DialogHeader>
         <DialogBody>

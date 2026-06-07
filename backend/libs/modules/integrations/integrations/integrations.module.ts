@@ -1,4 +1,5 @@
 import { Module, forwardRef } from '@nestjs/common';
+import { InvoicesModule } from '@app/modules/finance/invoices/invoices.module';
 import { AuditModule } from '@app/modules/platform/audit/audit.module';
 import { ConversationsModule } from '@app/modules/communications/conversations/conversations.module';
 import { BusinessIntegrationResourcesController } from './business-integration-resources.controller';
@@ -44,7 +45,11 @@ import { IntegrationResourcesService } from './services/integration-resources.se
 import { MessagingStatusService } from './services/messaging-status.service';
 
 @Module({
-  imports: [AuditModule, forwardRef(() => ConversationsModule)],
+  imports: [
+    AuditModule,
+    forwardRef(() => ConversationsModule),
+    forwardRef(() => InvoicesModule),
+  ],
   controllers: [
     IntegrationProvidersController,
     BusinessIntegrationsController,

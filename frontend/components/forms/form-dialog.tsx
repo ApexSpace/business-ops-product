@@ -24,6 +24,11 @@ export interface FormDialogProps<T extends FieldValues> {
   onSubmit: (values: T) => void;
   isPending?: boolean;
   submitLabel?: string;
+  /** Optional second submit action (e.g. save as draft beside send). */
+  secondarySubmitLabel?: string;
+  onSecondarySubmit?: (values: T) => void;
+  showSecondarySubmit?: boolean;
+  pendingAction?: "primary" | "secondary" | null;
   cancelLabel?: string;
   onDelete?: () => void;
   deleteLabel?: string;
@@ -50,6 +55,10 @@ export function FormDialog<T extends FieldValues>({
   onSubmit,
   isPending = false,
   submitLabel = "Save",
+  secondarySubmitLabel = "Save as draft",
+  onSecondarySubmit,
+  showSecondarySubmit = false,
+  pendingAction = null,
   cancelLabel = "Cancel",
   onDelete,
   deleteLabel = "Delete",
@@ -139,11 +148,27 @@ export function FormDialog<T extends FieldValues>({
                             {cancelLabel}
                           </ActionButton>
                         ) : null}
+                        {showSecondarySubmit && onSecondarySubmit ? (
+                          <ActionButton
+                            type="button"
+                            variant="outline"
+                            onClick={form.handleSubmit(onSecondarySubmit)}
+                            disabled={isPending || isDeletePending}
+                          >
+                            {pendingAction === "secondary"
+                              ? "Saving…"
+                              : secondarySubmitLabel}
+                          </ActionButton>
+                        ) : null}
                         <ActionButton
                           type="submit"
                           disabled={isPending || isDeletePending}
                         >
-                          {isPending ? "Saving…" : submitLabel}
+                          {pendingAction === "primary"
+                            ? showSecondarySubmit
+                              ? "Sending…"
+                              : "Saving…"
+                            : submitLabel}
                         </ActionButton>
                       </div>
                     </>

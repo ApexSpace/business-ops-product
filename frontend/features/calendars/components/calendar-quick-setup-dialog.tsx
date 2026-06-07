@@ -29,7 +29,6 @@ import { SearchableSelect } from "@/components/forms/searchable-select";
 import {
   DURATION_PRESETS,
   quickSetupSchema,
-  slugifyCalendarName,
   type CalendarCreationTypeOption,
   type QuickSetupValues,
 } from "@/features/calendars/schemas/calendar-profile";
@@ -64,7 +63,6 @@ export function CalendarQuickSetupDialog({
       description: "",
       primaryStaffUserId: "",
       defaultDurationMinutes: 30,
-      bookingSlug: "",
     },
   });
 
@@ -75,8 +73,6 @@ export function CalendarQuickSetupDialog({
     enabled: open && !!calendarType?.showPrimaryStaff,
   });
 
-  const name = form.watch("name");
-
   useEffect(() => {
     if (!open) {
       form.reset({
@@ -84,19 +80,9 @@ export function CalendarQuickSetupDialog({
         description: "",
         primaryStaffUserId: "",
         defaultDurationMinutes: 30,
-        bookingSlug: "",
       });
     }
   }, [open, form]);
-
-  useEffect(() => {
-    const slug = form.getValues("bookingSlug");
-    if (!slug && name) {
-      form.setValue("bookingSlug", slugifyCalendarName(name), {
-        shouldDirty: true,
-      });
-    }
-  }, [name, form]);
 
   const memberOptions =
     members?.items.map((m) => ({
@@ -206,31 +192,6 @@ export function CalendarQuickSetupDialog({
                         </button>
                       ))}
                     </div>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="bookingSlug"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Custom URL slug</FormLabel>
-                    <FormControl>
-                      <div className="flex items-center gap-0 overflow-hidden rounded-md border border-input bg-background">
-                        <span className="shrink-0 border-r bg-muted/50 px-3 py-2 text-sm text-muted-foreground">
-                          /book/
-                        </span>
-                        <Input
-                          className="border-0 shadow-none focus-visible:ring-0"
-                          placeholder="consultation"
-                          {...field}
-                        />
-                      </div>
-                    </FormControl>
-                    <FormDescription>
-                      Shareable booking link path for this calendar.
-                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}

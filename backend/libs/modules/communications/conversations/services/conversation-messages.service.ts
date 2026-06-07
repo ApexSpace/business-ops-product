@@ -1,5 +1,7 @@
+import { randomUUID } from 'crypto';
 import { HttpStatus, Injectable } from '@nestjs/common';
 import {
+  ConversationChannel,
   ConversationDirection,
   IntegrationStatus,
   MessageSenderType,
@@ -11,6 +13,7 @@ import { AppException } from '@app/common/exceptions/app.exception';
 import { ErrorCode } from '@app/common/exceptions/error-code.enum';
 import { getPaginationParams } from '@app/common/utils/pagination.util';
 import { JobEnqueueService } from '@app/core/jobs/job-enqueue.service';
+import { WEBCHAT_PROVIDER_KEY } from '@app/modules/communications/chatbots/utils/chatbot-public-key.util';
 import { BusinessIntegrationRepository } from '@app/modules/integrations/integrations/repositories/business-integration.repository';
 import { SendMessageDto } from '../dto/send-message.dto';
 import { ListMessagesQueryDto } from '../dto/list-messages-query.dto';
@@ -110,18 +113,69 @@ export class ConversationMessagesService {
       );
     }
 
-    const integration =
-      await this.businessIntegrationRepository.findByBusinessAndKey(
-        businessId,
-        conversation.providerKey,
-      );
+    const isWebchat =
+      conversation.channel === ConversationChannel.WEBCHAT &&
+      conversation.providerKey === WEBCHAT_PROVIDER_KEY;
 
-    if (!integration || integration.status !== IntegrationStatus.CONNECTED) {
-      throw new AppException(
-        ErrorCode.CONVERSATION_CHANNEL_NOT_READY,
-        `${conversation.providerKey} is not connected.`,
-        HttpStatus.BAD_REQUEST,
-      );
+    if (!isWebchat) {
+      const integration =
+        await this.businessIntegrationRepository.findByBusinessAndKey(
+          businessId,
+          conversation.providerKey,
+        );
+
+      if (!integration || integration.status !== IntegrationStatus.CONNECTED) {
+        throw new AppException(
+          ErrorCode.CONVERSATION_CHANNEL_NOT_READY,
+          `${conversation.providerKey} is not connected.`,
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+    }
+
+    const preview = dto.text.trim().slice(0, 500);
+    const messageBase = {
+      business: { connect: { id: businessId } },
+      conversation: { connect: { id: conversation.id } },
+      contact: conversation.contactId
+        ? { connect: { id: conversation.contactId } }
+        : undefined,
+      channel: conversation.channel,
+      providerKey: conversation.providerKey,
+      direction: ConversationDirection.OUTBOUND,
+      senderType: MessageSenderType.USER,
+      senderUserId: actor.id,
+      text: dto.text.trim(),
+      attachments: (dto.attachments ?? undefined) as Prisma.InputJsonValue | undefined,
+      externalRecipientId: conversation.externalParticipantId,
+      externalSenderId: conversation.externalPageId ?? undefined,
+    };
+
+    const apiPrefix = process.env.API_PREFIX ?? 'api/v1';
+
+    if (isWebchat) {
+      const now = new Date();
+      const message = await this.messagesRepository.create({
+        ...messageBase,
+        status: MessageStatus.SENT,
+        sentAt: now,
+        externalMessageId: `webchat-out-${randomUUID()}`,
+      });
+
+      await this.conversationsRepository.update(conversation.id, {
+        lastMessageAt: now,
+        lastMessagePreview: preview,
+        unreadCount: 0,
+      });
+
+      return {
+        data: toConversationMessageResponse(message),
+        meta: {
+          jobId: message.id,
+          pollUrl: `/${apiPrefix}/jobs/${message.id}`,
+          sseChannel: `business:${businessId}`,
+        },
+      };
     }
 
     const useQueue =
@@ -136,21 +190,8 @@ export class ConversationMessagesService {
     }
 
     const message = await this.messagesRepository.create({
-      business: { connect: { id: businessId } },
-      conversation: { connect: { id: conversation.id } },
-      contact: conversation.contactId
-        ? { connect: { id: conversation.contactId } }
-        : undefined,
-      channel: conversation.channel,
-      providerKey: conversation.providerKey,
-      direction: ConversationDirection.OUTBOUND,
-      senderType: MessageSenderType.USER,
-      senderUserId: actor.id,
-      text: dto.text.trim(),
-      attachments: (dto.attachments ?? undefined) as Prisma.InputJsonValue | undefined,
+      ...messageBase,
       status: MessageStatus.PENDING,
-      externalRecipientId: conversation.externalParticipantId,
-      externalSenderId: conversation.externalPageId ?? undefined,
     });
 
     const { asyncJob } = await this.jobEnqueue.enqueueSendMessage(
@@ -162,8 +203,6 @@ export class ConversationMessagesService {
       idempotencyKey,
       actor.id,
     );
-
-    const apiPrefix = process.env.API_PREFIX ?? 'api/v1';
 
     return {
       data: toConversationMessageResponse(message),

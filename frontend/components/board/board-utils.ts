@@ -14,13 +14,10 @@ export function parseBoardAmount(value: string | null | undefined): number {
   return Number.isNaN(n) ? 0 : n;
 }
 
+import { formatMoney } from "@/features/payments/utils/currencies";
+
 export function formatBoardColumnTotal(total: number): string {
-  return new Intl.NumberFormat(undefined, {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(total);
+  return formatMoney(total);
 }
 
 export function pluralizeCount(count: number, singular: string, plural?: string): string {

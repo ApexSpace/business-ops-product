@@ -8,16 +8,7 @@ import {
 import { decodeAccessToken, getDashboardPath } from "@/lib/auth";
 import { parseContextsCookie } from "@/lib/auth/session";
 import type { JwtAccessPayload } from "@/lib/types/shared";
-
-const PUBLIC_PATHS = ["/login", "/select-context"];
-
-function isPublic(pathname: string): boolean {
-  return (
-    PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`)) ||
-    pathname.startsWith("/api/auth/login") ||
-    pathname.startsWith("/api/auth/refresh")
-  );
-}
+import { isPublicPath } from "@/lib/routing/public-routes";
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -30,7 +21,7 @@ export function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  if (isPublic(pathname)) {
+  if (isPublicPath(pathname)) {
     const token = request.cookies.get(ACCESS_TOKEN_COOKIE)?.value;
     if (token && pathname === "/login") {
       const payload = decodeAccessToken(token);
@@ -62,9 +53,6 @@ export function proxy(request: NextRequest) {
 
   const token = request.cookies.get(ACCESS_TOKEN_COOKIE)?.value;
   if (!token) {
-    if (pathname === "/") {
-      return NextResponse.redirect(new URL("/login", request.url));
-    }
     return NextResponse.redirect(new URL("/login", request.url));
   }
 

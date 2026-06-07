@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import {
+  ConversationChannel,
   IntegrationStatus,
   MessageStatus,
   Prisma,
@@ -10,6 +11,7 @@ import type { SendOutboundMessagePayload } from '@app/core/queue/queue.types';
 import { ConversationChannelAdapterRegistry } from '@app/modules/communications/conversations/adapters/conversation-channel-adapter.registry';
 import { ConversationMessagesRepository } from '@app/modules/communications/conversations/repositories/conversation-messages.repository';
 import { ConversationsRepository } from '@app/modules/communications/conversations/repositories/conversations.repository';
+import { WEBCHAT_PROVIDER_KEY } from '@app/modules/communications/chatbots/utils/chatbot-public-key.util';
 import { BusinessIntegrationRepository } from '@app/modules/integrations/integrations/repositories/business-integration.repository';
 
 @Injectable()
@@ -56,15 +58,21 @@ export class SendMessageProcessor {
       return;
     }
 
-    const integration =
-      await this.businessIntegrationRepository.findByBusinessAndKey(
-        payload.businessId,
-        conversation.providerKey,
-      );
+    const isWebchat =
+      conversation.channel === ConversationChannel.WEBCHAT &&
+      conversation.providerKey === WEBCHAT_PROVIDER_KEY;
 
-    if (!integration || integration.status !== IntegrationStatus.CONNECTED) {
-      await this.failMessage(payload, message.id, 'Integration not connected');
-      return;
+    if (!isWebchat) {
+      const integration =
+        await this.businessIntegrationRepository.findByBusinessAndKey(
+          payload.businessId,
+          conversation.providerKey,
+        );
+
+      if (!integration || integration.status !== IntegrationStatus.CONNECTED) {
+        await this.failMessage(payload, message.id, 'Integration not connected');
+        return;
+      }
     }
 
     const adapter = this.adapterRegistry.getAdapter(conversation.channel);

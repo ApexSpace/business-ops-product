@@ -143,6 +143,9 @@ function resolveTone(domain: StatusBadgeDomain, status: string): StatusTone {
       }
 
     case "transaction":
+      if (normalized === "REFUNDED") {
+        return "warning";
+      }
       return "success";
 
     case "membership":

@@ -10,16 +10,11 @@ import {
   type DayOfWeek,
 } from "@/features/calendars/schemas/calendar-profile";
 import { CalendarEditSectionNav } from "@/features/calendars/components/calendar-edit-section-nav";
+import { CalendarEditGeneralSection } from "@/features/calendars/components/edit/calendar-edit-general-section";
+import { CalendarEditAvailabilityTabSection } from "@/features/calendars/components/edit/calendar-edit-availability-tab-section";
+import { CalendarEditBookingLinkSection } from "@/features/calendars/components/edit/calendar-edit-booking-link-section";
 import { CalendarEditGoogleSection } from "@/features/calendars/components/edit/calendar-edit-google-section";
-import { CalendarEditBasicSection } from "@/features/calendars/components/edit/calendar-edit-basic-section";
-import { CalendarEditStaffSection } from "@/features/calendars/components/edit/calendar-edit-staff-section";
-import { CalendarEditAvailabilitySection } from "@/features/calendars/components/edit/calendar-edit-availability-section";
-import { CalendarEditRulesSection } from "@/features/calendars/components/edit/calendar-edit-rules-section";
-import { CalendarEditAdvancedSection } from "@/features/calendars/components/edit/calendar-edit-advanced-section";
-import { CalendarEditFormSection } from "@/features/calendars/components/edit/calendar-edit-form-section";
-import { CalendarEditPaymentsSection } from "@/features/calendars/components/edit/calendar-edit-payments-section";
-import { CalendarEditNotificationsSection } from "@/features/calendars/components/edit/calendar-edit-notifications-section";
-import { CalendarEditWidgetSection } from "@/features/calendars/components/edit/calendar-edit-widget-section";
+import { CalendarEditAdvancedTabSection } from "@/features/calendars/components/edit/calendar-edit-advanced-tab-section";
 import type { IntegrationResourcesListResponse } from "@/features/integrations/utils/integration-resources";
 
 export { CalendarEditSectionNav, CALENDAR_EDIT_SECTIONS };
@@ -79,25 +74,13 @@ export function CalendarEditSectionContent({
   };
 
   switch (sectionId) {
-    case "basic":
-      return <CalendarEditBasicSection {...sectionProps} />;
-    case "staff":
-      return <CalendarEditStaffSection {...sectionProps} />;
+    case "general":
+      return <CalendarEditGeneralSection {...sectionProps} />;
     case "availability":
-      return <CalendarEditAvailabilitySection {...sectionProps} />;
-    case "rules":
-      return <CalendarEditRulesSection {...sectionProps} />;
-    case "advanced":
-      return <CalendarEditAdvancedSection {...sectionProps} />;
-    case "form":
-      return <CalendarEditFormSection {...sectionProps} />;
-    case "payments":
-      return <CalendarEditPaymentsSection {...sectionProps} />;
-    case "notifications":
-      return <CalendarEditNotificationsSection {...sectionProps} />;
-    case "widget":
-      return <CalendarEditWidgetSection {...sectionProps} />;
-    case "google":
+      return <CalendarEditAvailabilityTabSection {...sectionProps} />;
+    case "booking-page":
+      return <CalendarEditBookingLinkSection {...sectionProps} />;
+    case "integrations":
       return (
         <CalendarEditGoogleSection
           form={form}
@@ -106,6 +89,8 @@ export function CalendarEditSectionContent({
           googleCalendarOptions={googleCalendarOptions}
         />
       );
+    case "advanced":
+      return <CalendarEditAdvancedTabSection {...sectionProps} />;
     default:
       return null;
   }

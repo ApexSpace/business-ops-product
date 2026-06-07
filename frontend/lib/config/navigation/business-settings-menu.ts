@@ -4,6 +4,7 @@ import {
   Calendar,
   CreditCard,
   GitBranch,
+  MessageSquare,
   Palette,
   Plug,
   Receipt,
@@ -57,6 +58,14 @@ const operationsItems: BusinessSettingsNavItem[] = [
   },
 ];
 
+const websiteItems: BusinessSettingsNavItem[] = [
+  {
+    title: "Chatbots",
+    href: "/business/settings/chatbots",
+    icon: MessageSquare,
+  },
+];
+
 const automationItems: BusinessSettingsNavItem[] = [
   {
     title: "Automations",
@@ -93,6 +102,7 @@ const preferencesItems: BusinessSettingsNavItem[] = [
 
 export const businessSettingsSections: ShellNavSection[] = [
   { id: "general", label: "General", items: generalItems },
+  { id: "website", label: "Website", items: websiteItems },
   { id: "operations", label: "Operations", items: operationsItems },
   { id: "automation", label: "Automation", items: automationItems },
   {

@@ -24,7 +24,11 @@ export interface SearchableSelectProps {
   searchPlaceholder?: string;
   emptyMessage?: string;
   triggerClassName?: string;
+  contentClassName?: string;
   id?: string;
+  contentSide?: "top" | "bottom" | "left" | "right";
+  contentAlign?: "start" | "center" | "end";
+  alignItemWithTrigger?: boolean;
 }
 
 export function SearchableSelect({
@@ -37,7 +41,11 @@ export function SearchableSelect({
   searchPlaceholder = "Search…",
   emptyMessage = "No results found",
   triggerClassName,
+  contentClassName,
   id,
+  contentSide = "bottom",
+  contentAlign = "center",
+  alignItemWithTrigger = true,
 }: SearchableSelectProps) {
   const [search, setSearch] = useState("");
 
@@ -65,7 +73,12 @@ export function SearchableSelect({
       >
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>
-      <SelectContent>
+      <SelectContent
+        side={contentSide}
+        align={contentAlign}
+        alignItemWithTrigger={alignItemWithTrigger}
+        className={cn("max-h-64", contentClassName)}
+      >
         {searchable ? (
           <SelectSearch
             value={search}

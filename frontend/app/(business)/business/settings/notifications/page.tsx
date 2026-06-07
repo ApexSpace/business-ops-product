@@ -1,12 +1,5 @@
-import { SettingsPlaceholder } from "@/features/settings/components/settings-placeholder";
+import { BusinessEmailNotificationsSettings } from "@/features/email-notifications/components/business-email-notifications-settings";
 
 export default function BusinessSettingsNotificationsPage() {
-  return (
-    <SettingsPlaceholder
-      title="Notifications"
-      description="Email and in-app alerts for your team."
-      comingSoonTitle="Notification preferences"
-      comingSoonDescription="Per-user and per-event notification controls are not available yet."
-    />
-  );
+  return <BusinessEmailNotificationsSettings />;
 }

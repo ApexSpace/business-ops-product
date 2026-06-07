@@ -5,6 +5,7 @@ import {
   formatInvoiceNumber,
   parseInvoiceSequence,
 } from '../utils/invoice-calculations.util';
+import { generateInvoicePublicToken } from '../utils/invoice-public-token.util';
 
 const invoiceInclude = {
   contact: {
@@ -116,6 +117,18 @@ export class InvoiceRepository {
     });
   }
 
+  findByPublicToken(publicToken: string) {
+    return this.prisma.invoice.findFirst({
+      where: { publicToken, deletedAt: null },
+      include: {
+        ...invoiceInclude,
+        business: {
+          select: { name: true, displayName: true, settings: true },
+        },
+      },
+    });
+  }
+
   findMany(
     businessId: string,
     params: {
@@ -170,6 +183,8 @@ export class InvoiceRepository {
           ? { connect: { id: data.workItemId } }
           : undefined,
         invoiceNumber: data.invoiceNumber,
+        publicToken: generateInvoicePublicToken(),
+        remainingAmount: data.balanceDue,
         status: data.status,
         issueDate: data.issueDate,
         dueDate: data.dueDate,

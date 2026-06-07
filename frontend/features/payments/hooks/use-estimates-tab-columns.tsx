@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import type { DataTableColumn } from "@/components/data-display/data-table";
-import { StatusBadge } from "@/components/data-display/status-badge";
+import { EstimateDueStatus } from "@/features/payments/components/financial-due-status";
 import { getEstimateQuoteName } from "@/features/payments/utils/financial-table-display";
 import {
   formatEstimateDate,
@@ -69,9 +69,7 @@ export function useEstimatesTabColumns(): DataTableColumn<Estimate>[] {
         sortable: true,
         sortValue: (row) => row.status,
         className: "whitespace-nowrap",
-        cell: (row) => (
-          <StatusBadge status={row.status} domain="estimate" />
-        ),
+        cell: (row) => <EstimateDueStatus estimate={row} />,
       },
     ],
     [],

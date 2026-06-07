@@ -13,7 +13,9 @@ export function isNavItemActive(pathname: string, item: ShellNavItem): boolean {
     if (pathname === "/business/settings") {
       return item.href === "/business/settings/profile";
     }
-    return pathname === item.href;
+    return (
+      pathname === item.href || pathname.startsWith(`${item.href}/`)
+    );
   }
   return pathname === item.href || pathname.startsWith(`${item.href}/`);
 }

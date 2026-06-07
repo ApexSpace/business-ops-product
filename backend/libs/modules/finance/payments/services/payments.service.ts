@@ -1,5 +1,5 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
-import { InvoiceStatus, Prisma } from '@prisma/client';
+import { InvoiceStatus, PaymentProvider, Prisma } from '@prisma/client';
 import { RequestUser } from '@app/common/decorators/current-user.decorator';
 import { AppException } from '@app/common/exceptions/app.exception';
 import { ErrorCode } from '@app/common/exceptions/error-code.enum';
@@ -14,10 +14,19 @@ import { UpdatePaymentDto } from '../dto/update-payment.dto';
 import { toPaymentResponse } from '../mappers/payment.mapper';
 import { PaymentRepository } from '../repositories/payment.repository';
 import {
-  computeBalanceDue,
-  invoiceStatusFromPayments,
+  computeInvoicePaymentSyncFields,
   sumPaymentAmounts,
 } from '../utils/invoice-payment-sync.util';
+import { BusinessIntegrationRepository } from '@app/modules/integrations/integrations/repositories/business-integration.repository';
+import { StripeApiService } from '@app/modules/integrations/integrations/stripe/services/stripe-api.service';
+import { assertStripeReadyForPayments } from '@app/modules/integrations/integrations/stripe/utils/stripe-readiness.util';
+import { EmailNotificationService } from '@app/modules/communications/email/services/email-notification.service';
+import {
+  formatContactName,
+  formatMoney,
+} from '@app/modules/communications/email/utils/email-variables.util';
+import { BusinessRepository } from '@app/modules/platform/business/repositories/business.repository';
+import { DateTime } from 'luxon';
 
 @Injectable()
 export class PaymentsService {
@@ -26,6 +35,10 @@ export class PaymentsService {
     private readonly invoiceRepository: InvoiceRepository,
     private readonly prisma: PrismaService,
     private readonly auditService: AuditService,
+    private readonly businessIntegrationRepository: BusinessIntegrationRepository,
+    private readonly stripeApiService: StripeApiService,
+    private readonly emailNotificationService: EmailNotificationService,
+    private readonly businessRepository: BusinessRepository,
   ) {}
 
   async create(
@@ -95,6 +108,13 @@ export class PaymentsService {
       entityId: payment.id,
       metadata: { invoiceId: dto.invoiceId, amount: amount.toFixed(2) },
     });
+
+    void this.sendPaidReceiptEmail(
+      businessId,
+      payment,
+      amount,
+      new Date(dto.paidAt),
+    ).catch(() => undefined);
 
     const refreshed = await this.paymentRepository.findById(
       businessId,
@@ -308,6 +328,141 @@ export class PaymentsService {
     return toPaymentResponse(existing);
   }
 
+  async refund(
+    businessId: string,
+    id: string,
+    actor: RequestUser,
+  ): Promise<PaymentResponseDto> {
+    const existing = await this.paymentRepository.findById(businessId, id);
+    if (!existing) {
+      throw new AppException(
+        ErrorCode.PAYMENT_NOT_FOUND,
+        'Payment not found',
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    if (this.isPaymentRefunded(existing)) {
+      throw new AppException(
+        ErrorCode.PAYMENT_ALREADY_REFUNDED,
+        'This transaction has already been refunded',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const refundedAmount = existing.amount.toFixed(2);
+
+    if (
+      existing.provider === PaymentProvider.STRIPE &&
+      existing.stripePaymentIntentId
+    ) {
+      await this.refundStripePayment(businessId, existing.stripePaymentIntentId);
+      await this.markPaymentRefunded(id, existing.providerMetadata, refundedAmount);
+      await this.auditService.log({
+        actorUserId: actor.id,
+        businessId,
+        action: 'payment.refunded',
+        entityType: 'Payment',
+        entityId: id,
+        metadata: { provider: 'stripe', amountRefunded: refundedAmount },
+      });
+      const refreshed = await this.paymentRepository.findById(businessId, id);
+      return toPaymentResponse(refreshed ?? existing);
+    }
+
+    await this.markPaymentRefunded(id, existing.providerMetadata, refundedAmount);
+
+    await this.auditService.log({
+      actorUserId: actor.id,
+      businessId,
+      action: 'payment.refunded',
+      entityType: 'Payment',
+      entityId: id,
+      metadata: { provider: 'manual', amountRefunded: refundedAmount },
+    });
+
+    const refreshed = await this.paymentRepository.findById(businessId, id);
+    return toPaymentResponse(refreshed ?? existing);
+  }
+
+  private async markPaymentRefunded(
+    paymentId: string,
+    existingMetadata: Prisma.JsonValue | null,
+    amountRefunded: string,
+  ): Promise<void> {
+    await this.prisma.payment.update({
+      where: { id: paymentId },
+      data: {
+        providerMetadata: this.buildRefundedMetadata(
+          existingMetadata,
+          amountRefunded,
+        ),
+      },
+    });
+  }
+
+  private buildRefundedMetadata(
+    existingMetadata: Prisma.JsonValue | null,
+    amountRefunded: string,
+  ): Prisma.InputJsonValue {
+    const base =
+      existingMetadata &&
+      typeof existingMetadata === 'object' &&
+      !Array.isArray(existingMetadata)
+        ? (existingMetadata as Record<string, unknown>)
+        : {};
+    return {
+      ...base,
+      refundedAt: new Date().toISOString(),
+      amountRefunded,
+    } as Prisma.InputJsonValue;
+  }
+
+  private isPaymentRefunded(payment: {
+    stripeRefundId: string | null;
+    providerMetadata: Prisma.JsonValue | null;
+  }): boolean {
+    if (payment.stripeRefundId) {
+      return true;
+    }
+    if (
+      payment.providerMetadata &&
+      typeof payment.providerMetadata === 'object' &&
+      !Array.isArray(payment.providerMetadata)
+    ) {
+      const meta = payment.providerMetadata as Record<string, unknown>;
+      return !!meta.refundedAt;
+    }
+    return false;
+  }
+
+  private async refundStripePayment(
+    businessId: string,
+    paymentIntentId: string,
+  ): Promise<void> {
+    const integration =
+      await this.businessIntegrationRepository.findByBusinessAndKey(
+        businessId,
+        'stripe',
+      );
+    const config = assertStripeReadyForPayments(integration);
+    const stripe = this.stripeApiService.getClient();
+
+    try {
+      await stripe.refunds.create(
+        { payment_intent: paymentIntentId },
+        { stripeAccount: config.stripeAccountId },
+      );
+    } catch (error) {
+      this.stripeApiService.logStripeError('refund.create', error);
+      throw new AppException(
+        ErrorCode.PAYMENT_REFUND_FAILED,
+        'Could not refund this payment through Stripe. Try again or refund in the Stripe Dashboard.',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+  }
+
   private async syncInvoiceInTransaction(
     tx: Prisma.TransactionClient,
     businessId: string,
@@ -322,20 +477,21 @@ export class PaymentsService {
 
     const payments = await tx.payment.findMany({
       where: { businessId, invoiceId, deletedAt: null },
-      select: { amount: true },
+      select: { amount: true, paidAt: true },
     });
 
-    const totalPaid = sumPaymentAmounts(payments);
-    const balanceDue = computeBalanceDue(invoice.totalAmount, totalPaid);
-    const status = invoiceStatusFromPayments(
-      invoice.status,
-      invoice.totalAmount,
-      totalPaid,
-    );
+    const sync = computeInvoicePaymentSyncFields(invoice, payments);
 
     await tx.invoice.update({
       where: { id: invoiceId },
-      data: { balanceDue, status },
+      data: {
+        balanceDue: sync.balanceDue,
+        status: sync.status,
+        paymentStatus: sync.paymentStatus,
+        paidAmount: sync.paidAmount,
+        remainingAmount: sync.remainingAmount,
+        lastPaymentAt: sync.lastPaymentAt,
+      },
     });
   }
 
@@ -386,5 +542,47 @@ export class PaymentsService {
     const d = new Date(date);
     d.setHours(23, 59, 59, 999);
     return d;
+  }
+
+  private async sendPaidReceiptEmail(
+    businessId: string,
+    payment: {
+      id: string;
+      contact: {
+        id: string;
+        displayName: string | null;
+        firstName: string | null;
+        lastName: string | null;
+        companyName: string | null;
+        email: string | null;
+      };
+      invoice: { id: string; invoiceNumber: string };
+    },
+    amount: Prisma.Decimal,
+    paidAt: Date,
+  ): Promise<void> {
+    const contactEmail = payment.contact.email?.trim();
+    if (!contactEmail) {
+      return;
+    }
+
+    const business = await this.businessRepository.findById(businessId);
+
+    await this.emailNotificationService.enqueueTransactionalEmail({
+      businessId,
+      emailType: 'invoice.paid_receipt',
+      toEmail: contactEmail,
+      contactId: payment.contact.id,
+      entityType: 'Payment',
+      entityId: payment.id,
+      idempotencyKey: `invoice-paid-manual-${payment.id}`,
+      variables: {
+        'business.name': business?.name ?? 'Business',
+        'contact.name': formatContactName(payment.contact),
+        'invoice.number': payment.invoice.invoiceNumber,
+        'payment.amount': formatMoney(amount),
+        'payment.date': DateTime.fromJSDate(paidAt).toFormat('LLL d, yyyy'),
+      },
+    });
   }
 }

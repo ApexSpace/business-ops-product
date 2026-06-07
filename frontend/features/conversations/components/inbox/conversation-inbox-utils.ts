@@ -1,9 +1,19 @@
 import type { Conversation, ConversationChannel } from "@/features/conversations/api/conversations.api";
 import { channelLabel } from "@/features/conversations/api/conversations.api";
 
+export function isWebchatConversation(
+  conversation: Conversation | undefined | null,
+): boolean {
+  return (
+    conversation?.channel === "WEBCHAT" ||
+    conversation?.providerKey === "webchat"
+  );
+}
+
 export function channelProviderKey(channel: ConversationChannel): string {
   if (channel === "FACEBOOK") return "facebook";
   if (channel === "INSTAGRAM") return "instagram";
+  if (channel === "WEBCHAT") return "webchat";
   return "email";
 }
 

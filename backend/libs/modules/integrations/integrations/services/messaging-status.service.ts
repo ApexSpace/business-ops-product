@@ -17,6 +17,7 @@ export interface MessagingStatusDto {
 }
 
 const MESSAGING_PROVIDER_KEYS = new Set(['facebook', 'instagram']);
+const WEBCHAT_PROVIDER_KEY = 'webchat';
 
 @Injectable()
 export class MessagingStatusService {
@@ -30,6 +31,17 @@ export class MessagingStatusService {
     providerKey: string,
   ): Promise<MessagingStatusDto> {
     const warnings: string[] = [];
+
+    if (providerKey === WEBCHAT_PROVIDER_KEY) {
+      return {
+        connected: true,
+        defaultResourceSelected: true,
+        webhookEndpointConfigured: true,
+        requiredPermissionsPresent: true,
+        readyForMessaging: true,
+        warnings: [],
+      };
+    }
 
     if (!MESSAGING_PROVIDER_KEYS.has(providerKey)) {
       return {

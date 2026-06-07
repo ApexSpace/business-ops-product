@@ -32,6 +32,7 @@ import type { IntegrationResourcesListResponse } from "@/features/integrations/u
 import { queryKeys } from "@/lib/query/keys";
 import { getCalendar, updateCalendar, updateCalendarAvailability } from "@/features/calendars/api/calendars.api";
 import { listIntegrationResources } from "@/features/integrations/api/integrations.api";
+import { PERMISSIONS, useCan } from "@/features/auth/permissions";
 
 interface CalendarSettingsEditorProps {
   calendarId: string;
@@ -39,8 +40,9 @@ interface CalendarSettingsEditorProps {
 
 export function CalendarSettingsEditor({ calendarId }: CalendarSettingsEditorProps) {
   const queryClient = useQueryClient();
+  const canManage = useCan(PERMISSIONS["settings.business"]);
   const [activeSection, setActiveSection] =
-    useState<CalendarEditSectionId>("basic");
+    useState<CalendarEditSectionId>("general");
   const [availability, setAvailability] = useState(
     defaultWeeklyAvailability(),
   );
@@ -125,7 +127,7 @@ export function CalendarSettingsEditor({ calendarId }: CalendarSettingsEditorPro
     <div className="space-y-6">
       <PageHeader
         title={detail.name}
-        description={`${getCreationTypeLabel(detail.type)} · Advanced configuration`}
+        description={`${getCreationTypeLabel(detail.type)} · Calendar settings`}
         actions={
           <Button
             variant="outline"
@@ -141,7 +143,10 @@ export function CalendarSettingsEditor({ calendarId }: CalendarSettingsEditorPro
       <Form {...form}>
         <FormSchemaProvider schema={calendarFormSchema}>
           <form
-            onSubmit={form.handleSubmit((values) => saveMutation.mutate(values))}
+            onSubmit={form.handleSubmit((values) => {
+              if (!canManage) return;
+              saveMutation.mutate(values);
+            })}
             className="flex flex-col gap-6 lg:flex-row lg:items-start"
           >
           <aside className="w-full shrink-0 lg:sticky lg:top-4 lg:w-56">
@@ -172,11 +177,17 @@ export function CalendarSettingsEditor({ calendarId }: CalendarSettingsEditorPro
                 nativeButton={false}
                 render={<Link href="/business/settings/calendars" />}
               >
-                Cancel
+                {canManage ? "Cancel" : "Back to calendars"}
               </Button>
-              <Button type="submit" disabled={saveMutation.isPending}>
-                {saveMutation.isPending ? "Saving…" : "Save calendar"}
-              </Button>
+              {canManage ? (
+                <Button type="submit" disabled={saveMutation.isPending}>
+                  {saveMutation.isPending ? "Saving…" : "Save calendar"}
+                </Button>
+              ) : (
+                <p className="self-center text-sm text-muted-foreground">
+                  View only — contact an admin to edit this calendar.
+                </p>
+              )}
             </div>
           </div>
           </form>
