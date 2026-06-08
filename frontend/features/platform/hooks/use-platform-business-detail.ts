@@ -12,9 +12,11 @@ import {
   getPlatformBusiness,
   getPlatformBusinessMembers,
   getPlatformBusinessSubscription,
+  getPlatformBusinessUtilization,
   listBusinessAuditLogs,
   listPlatformPlans,
 } from "@/features/platform/api/platform.api";
+import type { PlatformBusinessDetailTab } from "@/features/platform/components/platform-business-detail-tabs";
 import { invalidatePlatformBusinesses } from "@/lib/query/invalidation";
 import { queryKeys } from "@/lib/query/keys";
 import { PERMISSIONS, useCan } from "@/features/auth/permissions";
@@ -29,7 +31,8 @@ export function usePlatformBusinessDetail() {
   const canDelete = useCan(PERMISSIONS["platform.businesses.delete"]);
   const canBilling = useCan(PERMISSIONS["platform.billing.manage"]);
   const canSetOwner = useCan(PERMISSIONS["platform.businesses.update"]);
-  const [editOpen, setEditOpen] = useState(false);
+  const [activeTab, setActiveTab] =
+    useState<PlatformBusinessDetailTab>("overview");
   const [deleteOpen, setDeleteOpen] = useState(false);
 
   const { data: business, isLoading } = useQuery({
@@ -37,14 +40,23 @@ export function usePlatformBusinessDetail() {
     queryFn: () => getPlatformBusiness(id),
   });
 
+  const { data: utilization, isLoading: utilizationLoading } = useQuery({
+    queryKey: queryKeys.platform.businesses.utilization(id),
+    queryFn: () => getPlatformBusinessUtilization(id),
+    staleTime: 60_000,
+  });
+
   const { data: members } = useQuery({
     queryKey: queryKeys.platform.businesses.members(id),
     queryFn: () => getPlatformBusinessMembers(id),
   });
 
-  const { data: auditLogs } = useQuery({
-    queryKey: queryKeys.platform.businesses.audit(id, { page: 1, limit: 50 }),
-    queryFn: () => listBusinessAuditLogs(id, { page: 1, limit: 50 }),
+  const { data: recentAuditLogs } = useQuery({
+    queryKey: queryKeys.platform.businesses.audit(id, {
+      page: 1,
+      limit: 5,
+    }),
+    queryFn: () => listBusinessAuditLogs(id, { page: 1, limit: 5 }),
   });
 
   const { data: subscription } = useQuery({
@@ -107,20 +119,25 @@ export function usePlatformBusinessDetail() {
     });
   }, [business, setPageMetadata]);
 
+  const openProfileTab = () => setActiveTab("profile");
+
   return {
     id,
     business,
     isLoading,
+    utilization,
+    utilizationLoading,
     members,
-    auditLogs,
+    recentAuditLogs: recentAuditLogs?.items,
     subscription,
     plans,
     canUpdate,
     canDelete,
     canBilling,
     canSetOwner,
-    editOpen,
-    setEditOpen,
+    activeTab,
+    setActiveTab,
+    openProfileTab,
     deleteOpen,
     setDeleteOpen,
     selectedPlanId,

@@ -20,6 +20,7 @@ export type StatusBadgeDomain =
   | "membership"
   | "business"
   | "plan"
+  | "snapshot"
   | "subscription"
   | "user"
   | "transaction";
@@ -148,6 +149,18 @@ function resolveTone(domain: StatusBadgeDomain, status: string): StatusTone {
       }
       return "success";
 
+    case "snapshot":
+      switch (normalized) {
+        case "PUBLISHED":
+          return "success";
+        case "DRAFT":
+          return "warning";
+        case "ARCHIVED":
+          return "neutral";
+        default:
+          return "neutral";
+      }
+
     case "membership":
     case "user":
     case "business":
@@ -186,6 +199,8 @@ export interface StatusBadgeProps {
   /** @deprecated Use `domain` instead */
   category?: StatusBadgeDomain;
   label?: string;
+  /** When true, renders a colored dot before the label. Defaults to false. */
+  showDot?: boolean;
   className?: string;
 }
 
@@ -194,6 +209,7 @@ export function StatusBadge({
   domain,
   category,
   label,
+  showDot = false,
   className,
 }: StatusBadgeProps) {
   const resolvedDomain = domain ?? category;
@@ -212,10 +228,12 @@ export function StatusBadge({
         className,
       )}
     >
-      <span
-        className={cn("size-1.5 shrink-0 rounded-full", styles.dot)}
-        aria-hidden
-      />
+      {showDot ? (
+        <span
+          className={cn("size-1.5 shrink-0 rounded-full", styles.dot)}
+          aria-hidden
+        />
+      ) : null}
       <span className="truncate">{displayLabel}</span>
     </span>
   );

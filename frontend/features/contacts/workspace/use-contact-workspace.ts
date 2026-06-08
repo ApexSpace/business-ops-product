@@ -9,7 +9,8 @@ import { useContactFinancialRecords } from "@/features/contacts/hooks/use-contac
 import { useContactRelatedRecords } from "@/features/contacts/hooks/use-contact-related-records";
 import { useContactWorkspaceMutations } from "@/features/contacts/workspace/use-contact-workspace-mutations";
 import { useCurrentBusiness } from "@/features/settings/hooks/use-current-business";
-import { getIndustryLabels } from "@/lib/config/industry-labels";
+import { resolveNavEntityLabels } from "@/lib/snapshot/resolve-terminology";
+import { useSnapshotContext } from "@/lib/snapshot/use-snapshot-context";
 import {
   DEFAULT_CONTACT_RECORDS_SECTION,
   type ContactMobilePanel,
@@ -54,7 +55,8 @@ export function useContactWorkspace(contactId: string) {
   );
 
   const { data: business } = useCurrentBusiness();
-  const labels = getIndustryLabels(business?.industry);
+  const { context: snapshotContext } = useSnapshotContext();
+  const labels = resolveNavEntityLabels(snapshotContext.terminology);
 
   const { data: contactsList } = useQuery({
     queryKey: queryKeys.contacts.list({ page: 1, limit: 1 }),

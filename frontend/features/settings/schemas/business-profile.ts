@@ -15,6 +15,7 @@ export const businessProfileSchema = z.object({
   email: z.string().email("Valid email is required").max(255),
   name: z.string().min(2, "Business name is required").max(200),
   industryId: z.string().uuid("Select an industry"),
+  snapshotId: z.string().uuid().optional().or(z.literal("")),
   phone: z
     .string()
     .min(1, "Phone is required")
@@ -57,6 +58,7 @@ export const businessProfileDefaultValues: BusinessProfileFormValues = {
   email: "",
   name: "",
   industryId: "",
+  snapshotId: "",
   phone: "",
   address: "",
   addressLine2: "",
@@ -120,6 +122,10 @@ export function businessToProfileForm(
     values.status = business.status;
   }
 
+  if ("snapshotId" in business && business.snapshotId) {
+    values.snapshotId = business.snapshotId;
+  }
+
   return values;
 }
 
@@ -130,6 +136,7 @@ export function profileFormToApiBody(values: BusinessProfileFormValues): {
   displayName: string;
   email: string;
   industryId: string;
+  snapshotId?: string;
   phoneCountryCode: string;
   phoneNumber: string;
   address?: string;
@@ -175,5 +182,8 @@ export function profileFormToApiBody(values: BusinessProfileFormValues): {
       pricesIncludeTax: values.taxesAndCurrency.pricesIncludeTax,
     },
     ...(values.status ? { status: values.status } : {}),
+    ...(values.snapshotId?.trim()
+      ? { snapshotId: values.snapshotId.trim() }
+      : {}),
   };
 }

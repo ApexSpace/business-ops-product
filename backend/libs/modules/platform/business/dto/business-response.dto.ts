@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { BusinessStatus } from '@prisma/client';
+import { BusinessStatus, SnapshotStatus } from '@prisma/client';
 import { IndustryOptionDto } from '@app/modules/crm/industries/dto/industry.dto';
 import { TaxesAndCurrencySettingsDto } from './financial-settings.dto';
 
@@ -18,6 +18,18 @@ export class BusinessResponseDto {
 
   @ApiPropertyOptional({ type: IndustryOptionDto })
   industry?: IndustryOptionDto | null;
+
+  @ApiPropertyOptional()
+  snapshotId?: string | null;
+
+  @ApiPropertyOptional()
+  snapshotName?: string | null;
+
+  @ApiPropertyOptional({ enum: SnapshotStatus, nullable: true })
+  snapshotStatus?: SnapshotStatus | null;
+
+  @ApiPropertyOptional()
+  snapshotAppliedAt?: Date | null;
 
   @ApiProperty({ enum: BusinessStatus })
   status!: BusinessStatus;

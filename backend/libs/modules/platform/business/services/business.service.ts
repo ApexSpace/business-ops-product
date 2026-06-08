@@ -7,7 +7,8 @@ import { ErrorCode } from '@app/common/exceptions/error-code.enum';
 import { slugify, withSlugSuffix } from '@app/common/utils/slug.util';
 import { AuditService } from '@app/modules/platform/audit/services/audit.service';
 import { IndustriesService } from '@app/modules/crm/industries/services/industries.service';
-import { PipelineProvisioningService } from '@app/modules/crm/pipelines/services/pipeline-provisioning.service';
+import { SnapshotApplyService } from '@app/modules/platform/snapshots/services/snapshot-apply.service';
+import { SnapshotsService } from '@app/modules/platform/snapshots/services/snapshots.service';
 import { PrismaService } from '@app/core/database/prisma.service';
 import { BusinessRepository } from '../repositories/business.repository';
 import { toBusinessResponse } from '../mappers/business.mapper';
@@ -33,8 +34,9 @@ export class BusinessService {
     private readonly businessRepository: BusinessRepository,
     private readonly auditService: AuditService,
     private readonly prisma: PrismaService,
-    private readonly pipelineProvisioning: PipelineProvisioningService,
     private readonly industriesService: IndustriesService,
+    private readonly snapshotsService: SnapshotsService,
+    private readonly snapshotApplyService: SnapshotApplyService,
   ) {}
 
   async createPlatform(dto: CreateBusinessDto, actor: RequestUser) {
@@ -47,6 +49,18 @@ export class BusinessService {
       throw new AppException(
         ErrorCode.BAD_REQUEST,
         'No active industry is configured. Add an industry in platform settings first.',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const snapshot = await this.snapshotsService.resolveForBusiness(
+      dto.snapshotId,
+    );
+
+    if (!snapshot) {
+      throw new AppException(
+        ErrorCode.BAD_REQUEST,
+        'No published snapshot is configured. Add a snapshot in platform settings first.',
         HttpStatus.BAD_REQUEST,
       );
     }
@@ -66,13 +80,10 @@ export class BusinessService {
         },
         include: { industry: true },
       });
-      await this.pipelineProvisioning.provisionDefaultPipeline(
-        tx,
-        created.id,
-        industry.pipelineTemplate,
-      );
       return created;
     });
+
+    await this.snapshotApplyService.apply(business.id, snapshot.id, actor.id);
 
     await this.auditService.log({
       actorUserId: actor.id,
@@ -91,11 +102,13 @@ export class BusinessService {
     limit: number;
     skip: number;
     status?: BusinessStatus;
+    search?: string;
   }) {
     const { items, total } = await this.businessRepository.findMany({
       skip: params.skip,
       take: params.limit,
       status: params.status,
+      search: params.search,
     });
     return {
       items: items.map(toBusinessResponse),
@@ -138,10 +151,41 @@ export class BusinessService {
       }
     }
 
-    const business = await this.businessRepository.update(
-      id,
-      this.buildUpdateData(existing, dto),
-    );
+    const updateData = this.buildUpdateData(existing, dto);
+
+    if (dto.snapshotId) {
+      const snapshot = await this.snapshotsService.resolveForBusiness(
+        dto.snapshotId,
+      );
+      if (!snapshot || snapshot.id !== dto.snapshotId) {
+        throw new AppException(
+          ErrorCode.BAD_REQUEST,
+          'Invalid or unpublished snapshot',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+      updateData.snapshot = { connect: { id: snapshot.id } };
+    }
+
+    const business = await this.businessRepository.update(id, updateData);
+
+    if (dto.applySnapshot) {
+      const targetSnapshotId = dto.snapshotId ?? existing.snapshotId;
+      if (!targetSnapshotId) {
+        throw new AppException(
+          ErrorCode.BAD_REQUEST,
+          'No snapshot selected to apply',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+      await this.snapshotApplyService.apply(
+        business.id,
+        targetSnapshotId,
+        actor.id,
+      );
+    }
+
+    const refreshed = await this.businessRepository.findById(business.id);
 
     await this.auditService.log({
       actorUserId: actor.id,
@@ -152,7 +196,45 @@ export class BusinessService {
       metadata: { ...dto },
     });
 
-    return toBusinessResponse(business);
+    return toBusinessResponse(refreshed ?? business);
+  }
+
+  async applySnapshotPlatform(
+    businessId: string,
+    snapshotId: string,
+    actor: RequestUser,
+  ) {
+    const existing = await this.businessRepository.findById(businessId);
+    if (!existing) {
+      throw new AppException(
+        ErrorCode.BUSINESS_NOT_FOUND,
+        'Business not found',
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    const snapshot = await this.snapshotsService.resolveForBusiness(snapshotId);
+    if (!snapshot || snapshot.id !== snapshotId) {
+      throw new AppException(
+        ErrorCode.BAD_REQUEST,
+        'Invalid or unpublished snapshot',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    await this.snapshotApplyService.apply(businessId, snapshot.id, actor.id);
+
+    await this.auditService.log({
+      actorUserId: actor.id,
+      businessId,
+      action: 'platform.snapshot.applied',
+      entityType: 'Snapshot',
+      entityId: snapshot.id,
+      metadata: { businessId, name: snapshot.name },
+    });
+
+    const refreshed = await this.businessRepository.findById(businessId);
+    return toBusinessResponse(refreshed!);
   }
 
   async deletePlatform(id: string, actor: RequestUser) {

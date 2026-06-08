@@ -1,7 +1,6 @@
 "use client";
 
 import type { UseFormReturn } from "react-hook-form";
-import { PhoneField } from "@/components/forms/phone-field";
 import { SelectField } from "@/components/forms/select-field";
 import { TextField } from "@/components/forms/text-field";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -16,6 +15,10 @@ export function BusinessProfileBusinessFields({
   showStatus,
   industriesLoading,
   industryOptions,
+  showSnapshotPicker,
+  snapshotsLoading,
+  snapshotOptions,
+  twoColumnLayout = false,
 }: {
   form: UseFormReturn<BusinessProfileFormValues>;
   disabled: boolean;
@@ -23,7 +26,39 @@ export function BusinessProfileBusinessFields({
   showStatus: boolean;
   industriesLoading: boolean;
   industryOptions: { value: string; label: string }[];
+  showSnapshotPicker?: boolean;
+  snapshotsLoading?: boolean;
+  snapshotOptions?: { value: string; label: string }[];
+  twoColumnLayout?: boolean;
 }) {
+  const industryField = industriesLoading ? (
+    <Skeleton className="h-10 w-full" />
+  ) : industryOptions.length === 0 ? (
+    <p className="text-sm text-muted-foreground sm:col-span-2">
+      No industries configured. Ask a platform admin to add industries under
+      Platform → Industries.
+    </p>
+  ) : (
+    <SelectField
+      control={form.control}
+      name="industryId"
+      label="Industry"
+      items={industryOptions}
+      placeholder="Select industry"
+      disabled={disabled}
+    />
+  );
+
+  const statusField = showStatus ? (
+    <SelectField
+      control={form.control}
+      name="status"
+      label="Status"
+      items={businessStatusOptions}
+      disabled={disabled}
+    />
+  ) : null;
+
   return (
     <section className="space-y-4">
       {showSectionTitle ? (
@@ -36,24 +71,34 @@ export function BusinessProfileBusinessFields({
         placeholder="ABC Med Spa"
         disabled={disabled}
       />
-      {industriesLoading ? (
-        <Skeleton className="h-10 w-full" />
-      ) : industryOptions.length === 0 ? (
-        <p className="text-sm text-muted-foreground">
-          No industries configured. Ask a platform admin to add industries
-          under Platform → Industries.
-        </p>
+      {twoColumnLayout && showStatus ? (
+        <div className="grid gap-4 sm:grid-cols-2">
+          {industryField}
+          {statusField}
+        </div>
       ) : (
-        <SelectField
-          control={form.control}
-          name="industryId"
-          label="Industry"
-          items={industryOptions}
-          placeholder="Select industry"
-          disabled={disabled}
-        />
+        <>
+          {industryField}
+          {statusField}
+        </>
       )}
-      <PhoneField control={form.control} name="phone" disabled={disabled} />
+      {showSnapshotPicker ? (
+        snapshotsLoading ? (
+          <Skeleton className="h-10 w-full" />
+        ) : (
+          <SelectField
+            control={form.control}
+            name="snapshotId"
+            label="Snapshot (optional)"
+            items={[
+              { value: "", label: "Default business snapshot" },
+              ...(snapshotOptions ?? []),
+            ]}
+            placeholder="Default business snapshot"
+            disabled={disabled}
+          />
+        )
+      ) : null}
       <TextField
         control={form.control}
         name="logoUrl"
@@ -62,15 +107,6 @@ export function BusinessProfileBusinessFields({
         placeholder="https://example.com/logo.png"
         disabled={disabled}
       />
-      {showStatus ? (
-        <SelectField
-          control={form.control}
-          name="status"
-          label="Status"
-          items={businessStatusOptions}
-          disabled={disabled}
-        />
-      ) : null}
     </section>
   );
 }

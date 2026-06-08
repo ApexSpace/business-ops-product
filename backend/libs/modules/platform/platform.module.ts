@@ -8,6 +8,7 @@ import { JobsModule } from './jobs/jobs.module';
 import { MembershipModule } from './membership/membership.module';
 import { PlansModule } from './plans/plans.module';
 import { PlatformModule as PlatformSettingsModule } from './platform/platform.module';
+import { SnapshotsModule } from './snapshots/snapshots.module';
 
 @Module({
   imports: [
@@ -20,7 +21,8 @@ import { PlatformModule as PlatformSettingsModule } from './platform/platform.mo
     AuditModule,
     JobsModule,
     FilesModule,
+    SnapshotsModule,
   ],
-  exports: [AuthModule, BusinessModule, AuditModule, JobsModule],
+  exports: [AuthModule, BusinessModule, AuditModule, JobsModule, SnapshotsModule],
 })
 export class PlatformModule {}

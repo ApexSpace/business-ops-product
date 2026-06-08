@@ -9,7 +9,9 @@ const PASSWORD = process.env.AUDIT_PASSWORD ?? 'ChangeMe123!';
 const BUSINESS_GET_ROUTES = [
   'auth/me',
   'businesses/current',
+  'businesses/current/snapshot-context',
   'businesses/current/dashboard-stats',
+  'businesses/current/snapshot-context',
   'businesses/current/financial-settings',
   'businesses/current/members?page=1&limit=5',
   'contacts?page=1&limit=5',
@@ -39,6 +41,8 @@ const PLATFORM_GET_ROUTES = [
   'platform/users?page=1&limit=5',
   'platform/plans?page=1&limit=5',
   'platform/industries?page=1&limit=5',
+  'platform/snapshots?page=1&limit=5',
+  'platform/snapshots?page=1&limit=5',
   'platform/audit-logs?page=1&limit=5',
   'platform/billing/overview',
   'platform/billing/subscriptions?page=1&limit=5',

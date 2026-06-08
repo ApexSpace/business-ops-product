@@ -1,36 +1,95 @@
 "use client";
 
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import {
-  Calendar,
-  ClipboardList,
-  Contact,
-  GitBranch,
-  MessageSquare,
-  Users,
-  Workflow,
-} from "lucide-react";
 import { StatsCard } from "@/components/layout/stats-card";
 import { ApiErrorState } from "@/components/data-display/api-error-state";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { IndustryLabels } from "@/lib/types/shared";
+import type { SnapshotDashboardConfig } from "@/features/platform/types/snapshot";
+import { resolveDashboardWidgets } from "@/lib/config/snapshot/resolve-dashboard-widgets";
+import { createTerminologyResolver } from "@/lib/snapshot/resolve-terminology";
 import { queryKeys } from "@/lib/query/keys";
 import type { BusinessDashboardStats } from "@/lib/types/shared";
 import { getBusinessDashboardStats } from "@/features/settings/api/business.api";
 
 interface BusinessDashboardStatsProps {
-  labels: IndustryLabels;
+  dashboardConfig?: SnapshotDashboardConfig;
+  terminology?: Record<string, string>;
+  contextLoading?: boolean;
+}
+
+function widgetValue(
+  key: string,
+  data: BusinessDashboardStats,
+): { value: number | string; description?: string } {
+  switch (key) {
+    case "leads": {
+      const leadDescription = [
+        data.leads.total !== data.leads.active
+          ? `${data.leads.total} total`
+          : null,
+        data.leads.won > 0 ? `${data.leads.won} won` : null,
+        data.leads.lost > 0 ? `${data.leads.lost} lost` : null,
+      ]
+        .filter(Boolean)
+        .join(" · ");
+      return {
+        value: data.leads.active,
+        description: leadDescription || `${data.leads.total} in pipeline`,
+      };
+    }
+    case "contacts":
+      return { value: data.contacts };
+    case "appointments":
+      return {
+        value: data.appointmentStats.today,
+        description: `${data.appointmentStats.upcoming} upcoming · ${data.appointmentStats.cancelledOrNoShow} cancelled/no-show`,
+      };
+    case "conversations":
+      return { value: data.conversations };
+    case "workItems":
+      return {
+        value: data.workItems.total,
+        description: `${data.workItems.scheduled} scheduled · ${data.workItems.pending} in progress`,
+      };
+    case "workItemsCompleted":
+      return { value: data.workItems.completed };
+    case "pipelines":
+      return { value: data.pipelines };
+    case "wonDeals":
+      return {
+        value: data.leads.won,
+        description:
+          data.leads.lost > 0 ? `${data.leads.lost} lost` : undefined,
+      };
+    case "teamMembers":
+      return { value: data.members };
+    default:
+      return { value: 0 };
+  }
 }
 
 export function BusinessDashboardStatsGrid({
-  labels,
+  dashboardConfig,
+  terminology,
+  contextLoading = false,
 }: BusinessDashboardStatsProps) {
   const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: queryKeys.business.dashboardStats(),
     queryFn: () => getBusinessDashboardStats(),
   });
 
-  if (isLoading) {
+  const resolveLabel = useMemo(
+    () => createTerminologyResolver(terminology),
+    [terminology],
+  );
+
+  const widgets = useMemo(
+    () => resolveDashboardWidgets(dashboardConfig?.widgets, resolveLabel),
+    [dashboardConfig?.widgets, resolveLabel],
+  );
+
+  if (isLoading || contextLoading) {
     return (
       <div className="grid items-stretch gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {[1, 2, 3, 4].map((i) => (
@@ -54,85 +113,30 @@ export function BusinessDashboardStatsGrid({
     return null;
   }
 
-  const leadDescription = [
-    data.leads.total !== data.leads.active
-      ? `${data.leads.total} total`
-      : null,
-    data.leads.won > 0 ? `${data.leads.won} won` : null,
-    data.leads.lost > 0 ? `${data.leads.lost} lost` : null,
-  ]
-    .filter(Boolean)
-    .join(" · ");
+  if (widgets.length === 0) {
+    return (
+      <p className="text-sm text-muted-foreground">
+        No dashboard widgets configured for this business.
+      </p>
+    );
+  }
 
   return (
-    <div className="space-y-4">
-      <div className="grid items-stretch gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <StatsCard
-          label={labels.leads}
-          value={data.leads.active}
-          description={
-            leadDescription || `${data.leads.total} in pipeline`
-          }
-          href="/business/pipelines"
-          icon={Workflow}
-        />
-        <StatsCard
-          label={labels.contacts}
-          value={data.contacts}
-          href="/business/contacts"
-          icon={Contact}
-        />
-        <StatsCard
-          label={labels.appointments}
-          value={data.appointmentStats.today}
-          description={`${data.appointmentStats.upcoming} upcoming · ${data.appointmentStats.cancelledOrNoShow} cancelled/no-show`}
-          href="/business/appointments"
-          icon={Calendar}
-        />
-        <StatsCard
-          label={labels.conversations}
-          value={data.conversations}
-          href="/business/conversations"
-          icon={MessageSquare}
-          comingSoon
-        />
-      </div>
-      <div className="grid items-stretch gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <StatsCard
-          label={labels.workItems}
-          value={data.workItems.total}
-          description={`${data.workItems.scheduled} scheduled · ${data.workItems.pending} in progress`}
-          href="/business/work-items"
-          icon={ClipboardList}
-        />
-        <StatsCard
-          label={`Completed ${labels.workItems.toLowerCase()}`}
-          value={data.workItems.completed}
-          href="/business/work-items"
-          icon={ClipboardList}
-        />
-        <StatsCard
-          label={labels.pipelines}
-          value={data.pipelines}
-          href="/business/pipelines"
-          icon={GitBranch}
-        />
-        <StatsCard
-          label="Won deals"
-          value={data.leads.won}
-          description={
-            data.leads.lost > 0 ? `${data.leads.lost} lost` : undefined
-          }
-          href="/business/pipelines"
-          icon={Workflow}
-        />
-        <StatsCard
-          label="Team members"
-          value={data.members}
-          href="/business/settings/team"
-          icon={Users}
-        />
-      </div>
+    <div className="grid items-stretch gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      {widgets.map((widget) => {
+        const { value, description } = widgetValue(widget.key, data);
+        return (
+          <StatsCard
+            key={widget.key}
+            label={widget.label}
+            value={value}
+            description={description}
+            href={widget.href}
+            icon={widget.icon}
+            comingSoon={widget.comingSoon}
+          />
+        );
+      })}
     </div>
   );
 }

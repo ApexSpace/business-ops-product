@@ -5,7 +5,7 @@ import { EmailModule } from '@app/modules/communications/email/email.module';
 import { BusinessModule } from '@app/modules/platform/business/business.module';
 import { MembershipModule } from '@app/modules/platform/membership/membership.module';
 import { IndustriesModule } from '@app/modules/crm/industries/industries.module';
-import { PipelinesModule } from '@app/modules/crm/pipelines/pipelines.module';
+import { SnapshotsModule } from '@app/modules/platform/snapshots/snapshots.module';
 import { AuthController } from './controllers/auth.controller';
 import { PlatformMembershipRepository } from './repositories/platform-membership.repository';
 import { RefreshTokenRepository } from './repositories/refresh-token.repository';
@@ -21,8 +21,8 @@ import { JwtStrategy } from './strategies/jwt.strategy';
     JwtModule.register({}),
     forwardRef(() => BusinessModule),
     forwardRef(() => MembershipModule),
-    PipelinesModule,
     IndustriesModule,
+    SnapshotsModule,
     EmailModule,
   ],
   controllers: [AuthController],

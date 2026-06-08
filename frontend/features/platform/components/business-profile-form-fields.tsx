@@ -14,6 +14,7 @@ import {
 import type { BusinessProfileTab } from "@/features/settings/schemas/business-profile-tabs";
 import { currencySymbolForCode } from "@/features/payments/utils/currencies";
 import { listActiveIndustries } from "@/features/platform/api/platform.api";
+import { listPlatformSnapshots } from "@/features/platform/api/snapshots.api";
 import { queryKeys } from "@/lib/query/keys";
 import { cn } from "@/lib/utils";
 
@@ -21,17 +22,23 @@ export interface BusinessProfileFormFieldsProps {
   form: UseFormReturn<BusinessProfileFormValues>;
   disabled?: boolean;
   showStatus?: boolean;
+  showSnapshotPicker?: boolean;
   activeTab?: BusinessProfileTab;
   constrainScroll?: boolean;
+  /** Wider two-column field rows (platform business profile tab). */
+  twoColumnLayout?: boolean;
 }
 
 export function BusinessProfileFormFields({
   form,
   disabled = false,
   showStatus = false,
+  showSnapshotPicker,
   activeTab,
   constrainScroll = true,
+  twoColumnLayout = false,
 }: BusinessProfileFormFieldsProps) {
+  const resolvedShowSnapshotPicker = showSnapshotPicker ?? showStatus;
   const firstName = form.watch("firstName");
   const lastName = form.watch("lastName");
   const displayName = form.watch("displayName");
@@ -45,8 +52,22 @@ export function BusinessProfileFormFields({
     queryFn: () => listActiveIndustries(),
   });
 
+  const { data: snapshots, isLoading: snapshotsLoading } = useQuery({
+    queryKey: queryKeys.platform.snapshots.list({
+      page: 1,
+      limit: 100,
+      status: "PUBLISHED",
+    }),
+    queryFn: () =>
+      listPlatformSnapshots({ page: 1, limit: 100, status: "PUBLISHED" }),
+    enabled: resolvedShowSnapshotPicker,
+  });
+
   const industryOptions =
     industries?.map((i) => ({ value: i.id, label: i.name })) ?? [];
+
+  const snapshotOptions =
+    snapshots?.items.map((s) => ({ value: s.id, label: s.name })) ?? [];
 
   useEffect(() => {
     const computed = buildDisplayName(firstName, lastName);
@@ -80,6 +101,7 @@ export function BusinessProfileFormFields({
           form={form}
           disabled={disabled}
           showSectionTitle={showSectionTitle}
+          twoColumnLayout={twoColumnLayout}
         />
       ) : null}
 
@@ -91,6 +113,10 @@ export function BusinessProfileFormFields({
           showStatus={showStatus}
           industriesLoading={industriesLoading}
           industryOptions={industryOptions}
+          showSnapshotPicker={resolvedShowSnapshotPicker}
+          snapshotsLoading={snapshotsLoading}
+          snapshotOptions={snapshotOptions}
+          twoColumnLayout={twoColumnLayout}
         />
       ) : null}
 
@@ -109,6 +135,7 @@ export function BusinessProfileFormFields({
           showSectionTitles={showSectionTitle}
           activeTab={!!activeTab}
           currencySymbol={currencySymbol}
+          twoColumnLayout={twoColumnLayout}
         />
       ) : null}
     </div>

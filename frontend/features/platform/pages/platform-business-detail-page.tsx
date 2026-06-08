@@ -1,11 +1,16 @@
 "use client";
 
 import { PageHeader } from "@/components/layout/page-header";
-import { EditBusinessDialog } from "@/features/platform/components/edit-business-dialog";
+import { StatusBadge } from "@/components/data-display/status-badge";
 import { PlatformBusinessAuditTab } from "@/features/platform/components/platform-business-audit-tab";
 import { PlatformBusinessBillingTab } from "@/features/platform/components/platform-business-billing-tab";
+import {
+  PlatformBusinessDetailTabs,
+  type PlatformBusinessDetailTab,
+} from "@/features/platform/components/platform-business-detail-tabs";
 import { PlatformBusinessMembersTab } from "@/features/platform/components/platform-business-members-tab";
 import { PlatformBusinessOverviewTab } from "@/features/platform/components/platform-business-overview-tab";
+import { PlatformBusinessProfileTab } from "@/features/platform/components/platform-business-profile-tab";
 import { usePlatformBusinessDetail } from "@/features/platform/hooks/use-platform-business-detail";
 import {
   AlertDialog,
@@ -17,35 +22,98 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 
-export function PlatformBusinessDetailPage() {
+function renderTabContent(
+  tab: PlatformBusinessDetailTab,
+  props: ReturnType<typeof usePlatformBusinessDetail>,
+) {
   const {
     id,
     business,
-    isLoading,
+    utilization,
+    utilizationLoading,
     members,
-    auditLogs,
+    recentAuditLogs,
     subscription,
     plans,
     canUpdate,
-    canDelete,
     canBilling,
     canSetOwner,
-    editOpen,
-    setEditOpen,
-    deleteOpen,
-    setDeleteOpen,
+    setActiveTab,
     selectedPlanId,
     setSelectedPlanId,
     selectedStatus,
     setSelectedStatus,
     assignSubscriptionMutation,
+  } = props;
+
+  if (!business) return null;
+
+  switch (tab) {
+    case "overview":
+      return (
+        <PlatformBusinessOverviewTab
+          business={business}
+          utilization={utilization}
+          utilizationLoading={utilizationLoading}
+          subscription={subscription}
+          recentAuditLogs={recentAuditLogs}
+          onNavigateTab={setActiveTab}
+        />
+      );
+    case "profile":
+      return (
+        <PlatformBusinessProfileTab
+          business={business}
+          canUpdate={canUpdate}
+        />
+      );
+    case "team":
+      return (
+        <PlatformBusinessMembersTab
+          businessId={id}
+          members={members}
+          canInvite={canUpdate}
+          canSetOwner={canSetOwner}
+        />
+      );
+    case "billing":
+      return (
+        <PlatformBusinessBillingTab
+          subscription={subscription}
+          plans={plans}
+          canBilling={canBilling}
+          selectedPlanId={selectedPlanId}
+          setSelectedPlanId={setSelectedPlanId}
+          selectedStatus={selectedStatus}
+          setSelectedStatus={setSelectedStatus}
+          assignSubscriptionPending={assignSubscriptionMutation.isPending}
+          onAssignSubscription={() => assignSubscriptionMutation.mutate()}
+        />
+      );
+    case "activity":
+      return <PlatformBusinessAuditTab businessId={id} />;
+    default:
+      return null;
+  }
+}
+
+export function PlatformBusinessDetailPage() {
+  const detail = usePlatformBusinessDetail();
+  const {
+    business,
+    isLoading,
+    canUpdate,
+    canDelete,
+    activeTab,
+    setActiveTab,
+    openProfileTab,
+    deleteOpen,
+    setDeleteOpen,
     deleteMutation,
-  } = usePlatformBusinessDetail();
+  } = detail;
 
   if (isLoading) return <Skeleton className="h-48 w-full" />;
   if (!business) return <p>Business not found</p>;
@@ -53,76 +121,41 @@ export function PlatformBusinessDetailPage() {
   return (
     <div className="space-y-6">
       <PageHeader
+        title={
+          <div className="flex flex-wrap items-center gap-2">
+            <h1 className="text-page-title">{business.name}</h1>
+            <StatusBadge status={business.status} domain="business" />
+          </div>
+        }
         description={`Slug: ${business.slug}`}
         actions={
-          canUpdate || canDelete ? (
-            <div className="flex items-center gap-2">
-              <Badge variant="secondary">{business.status}</Badge>
-              {canUpdate ? (
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setEditOpen(true)}
-                >
-                  Edit
-                </Button>
-              ) : null}
-              {canDelete ? (
-                <Button
-                  type="button"
-                  variant="destructive"
-                  onClick={() => setDeleteOpen(true)}
-                >
-                  Delete
-                </Button>
-              ) : null}
-            </div>
-          ) : (
-            <Badge>{business.status}</Badge>
-          )
+          <div className="flex items-center gap-2">
+            {canUpdate ? (
+              <Button type="button" variant="outline" onClick={openProfileTab}>
+                Edit
+              </Button>
+            ) : null}
+            {canDelete ? (
+              <Button
+                type="button"
+                variant="destructive"
+                onClick={() => setDeleteOpen(true)}
+              >
+                Delete
+              </Button>
+            ) : null}
+          </div>
         }
       />
 
-      <Tabs defaultValue="overview">
-        <TabsList>
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="members">Members</TabsTrigger>
-          <TabsTrigger value="billing">Billing</TabsTrigger>
-          <TabsTrigger value="audit">Audit logs</TabsTrigger>
-        </TabsList>
-        <TabsContent value="overview" className="space-y-4">
-          <PlatformBusinessOverviewTab business={business} />
-        </TabsContent>
-        <TabsContent value="members">
-          <PlatformBusinessMembersTab
-            businessId={id}
-            members={members}
-            canSetOwner={canSetOwner}
-          />
-        </TabsContent>
-        <TabsContent value="billing">
-          <PlatformBusinessBillingTab
-            subscription={subscription}
-            plans={plans}
-            canBilling={canBilling}
-            selectedPlanId={selectedPlanId}
-            setSelectedPlanId={setSelectedPlanId}
-            selectedStatus={selectedStatus}
-            setSelectedStatus={setSelectedStatus}
-            assignSubscriptionPending={assignSubscriptionMutation.isPending}
-            onAssignSubscription={() => assignSubscriptionMutation.mutate()}
-          />
-        </TabsContent>
-        <TabsContent value="audit">
-          <PlatformBusinessAuditTab auditLogs={auditLogs} />
-        </TabsContent>
-      </Tabs>
-
-      <EditBusinessDialog
-        business={business}
-        open={editOpen}
-        onOpenChange={setEditOpen}
+      <PlatformBusinessDetailTabs
+        value={activeTab}
+        onValueChange={setActiveTab}
       />
+
+      <div className="min-h-[320px]">
+        {renderTabContent(activeTab, detail)}
+      </div>
 
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <AlertDialogContent>

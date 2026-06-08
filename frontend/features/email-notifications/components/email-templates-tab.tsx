@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Braces } from "lucide-react";
 import { toast } from "sonner";
 import {
   Accordion,
@@ -12,23 +11,6 @@ import {
 } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
 import { ActionButton } from "@/components/ui/action-button";
-import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  EmailTemplateRichEditor,
-  type EmailTemplateRichEditorHandle,
-} from "@/features/email-notifications/components/email-template-rich-editor";
-import { cn } from "@/lib/utils";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -40,6 +22,11 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
+  EmailTemplateEditorPanel,
+  type EmailTemplateContentMode,
+} from "@/features/email-notifications/components/email-template-editor-panel";
+import type { EmailTemplateRichEditorHandle } from "@/features/email-notifications/components/email-template-rich-editor";
+import {
   emailCategoryLabel,
   getEmailTemplate,
   listEmailTemplates,
@@ -49,6 +36,11 @@ import {
   type EmailTemplateSummary,
   type EmailTypeCategory,
 } from "@/features/email-notifications/api/email-notifications.api";
+import {
+  captureSelection,
+  insertAtCursor,
+  type SelectionRange,
+} from "@/features/email-notifications/utils/email-template-editor-utils";
 import { queryKeys } from "@/lib/query/keys";
 import { useDirtyFormWarning } from "@/lib/forms/use-dirty-form-warning";
 
@@ -59,271 +51,9 @@ const CATEGORY_ORDER: EmailTypeCategory[] = [
   "auth",
 ];
 
-type ContentMode = "edit" | "preview";
-
-type SelectionRange = { start: number; end: number };
-
 type OpenSection =
   | { kind: "category"; category: EmailTypeCategory }
   | { kind: "template"; category: EmailTypeCategory; emailType: string };
-
-function emailVariableLabel(key: string): string {
-  const raw = key.includes(".") ? key.split(".").slice(1).join(" ") : key;
-  return raw
-    .split(/[._]/)
-    .filter(Boolean)
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(" ");
-}
-
-function captureSelection(
-  element: HTMLInputElement | HTMLTextAreaElement,
-): SelectionRange {
-  return {
-    start: element.selectionStart ?? element.value.length,
-    end: element.selectionEnd ?? element.value.length,
-  };
-}
-
-function insertAtCursor(
-  token: string,
-  currentValue: string,
-  setValue: (value: string) => void,
-  inputRef: React.RefObject<HTMLInputElement | HTMLTextAreaElement | null>,
-  selectionRef: React.MutableRefObject<SelectionRange | null>,
-) {
-  const element = inputRef.current;
-  let start: number;
-  let end: number;
-
-  if (
-    element != null &&
-    element === document.activeElement &&
-    element.selectionStart != null
-  ) {
-    start = element.selectionStart;
-    end = element.selectionEnd ?? start;
-  } else if (selectionRef.current) {
-    ({ start, end } = selectionRef.current);
-  } else {
-    start = currentValue.length;
-    end = currentValue.length;
-  }
-
-  const nextValue =
-    currentValue.slice(0, start) + token + currentValue.slice(end);
-  setValue(nextValue);
-
-  const cursor = start + token.length;
-  requestAnimationFrame(() => {
-    if (!element) return;
-    element.focus();
-    element.setSelectionRange(cursor, cursor);
-    selectionRef.current = { start: cursor, end: cursor };
-  });
-}
-
-type EmailTemplateVariablePickerProps = {
-  variables: string[];
-  onInsert: (key: string) => void;
-  className?: string;
-};
-
-function EmailTemplateVariablePicker({
-  variables,
-  onInsert,
-  className,
-}: EmailTemplateVariablePickerProps) {
-  if (variables.length === 0) return null;
-
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger
-        render={
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-xs"
-            className={cn("size-8 text-muted-foreground", className)}
-            aria-label="Insert dynamic field"
-          >
-            <Braces className="size-[18px]" />
-          </Button>
-        }
-      />
-      <DropdownMenuContent align="end" className="max-h-64 w-72">
-        <DropdownMenuGroup>
-          <DropdownMenuLabel>Insert variable</DropdownMenuLabel>
-          {variables.map((key) => (
-            <DropdownMenuItem
-              key={key}
-              onClick={() => onInsert(key)}
-              className="flex flex-col items-start gap-0.5 py-2"
-            >
-              <span>
-                {emailVariableLabel(key)}
-                <span className="text-muted-foreground"> — </span>
-                <span className="font-mono text-xs text-muted-foreground">
-                  {key}
-                </span>
-              </span>
-            </DropdownMenuItem>
-          ))}
-        </DropdownMenuGroup>
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
-}
-
-type EmailTemplateEditorProps = {
-  template: NonNullable<
-    Awaited<ReturnType<typeof getEmailTemplate>>
-  >;
-  subject: string;
-  htmlBody: string;
-  contentMode: ContentMode;
-  preview: {
-    subject: string;
-    htmlBody: string;
-    textBody: string | null;
-  } | null;
-  isDirty: boolean;
-  templateVariables: string[];
-  subjectInputRef: React.RefObject<HTMLInputElement | null>;
-  htmlBodyEditorRef: React.RefObject<EmailTemplateRichEditorHandle | null>;
-  onSubjectChange: (value: string) => void;
-  onHtmlBodyChange: (value: string) => void;
-  onContentModeChange: (mode: string) => void;
-  onInsertSubjectVariable: (key: string) => void;
-  onInsertHtmlBodyVariable: (key: string) => void;
-  onCaptureSubjectSelection: (
-    event: React.SyntheticEvent<HTMLInputElement>,
-  ) => void;
-  onSave: () => void;
-  onReset: () => void;
-  isSaving: boolean;
-  isResetting: boolean;
-  isPreviewLoading: boolean;
-};
-
-function EmailTemplateEditor({
-  template,
-  templateRevision,
-  subject,
-  htmlBody,
-  contentMode,
-  preview,
-  isDirty,
-  templateVariables,
-  subjectInputRef,
-  htmlBodyEditorRef,
-  onSubjectChange,
-  onHtmlBodyChange,
-  onContentModeChange,
-  onInsertSubjectVariable,
-  onInsertHtmlBodyVariable,
-  onCaptureSubjectSelection,
-  onSave,
-  onReset,
-  isSaving,
-  isResetting,
-  isPreviewLoading,
-}: EmailTemplateEditorProps & { templateRevision: string }) {
-  return (
-    <div className="space-y-4 pt-1">
-      <div className="space-y-2">
-        <Label htmlFor={`email-subject-${template.emailType}`}>Subject</Label>
-        <div className="relative">
-          <Input
-            ref={subjectInputRef}
-            id={`email-subject-${template.emailType}`}
-            value={subject}
-            onChange={(e) => onSubjectChange(e.target.value)}
-            onSelect={onCaptureSubjectSelection}
-            onClick={onCaptureSubjectSelection}
-            onKeyUp={onCaptureSubjectSelection}
-            onBlur={onCaptureSubjectSelection}
-            className="bg-background pr-12"
-          />
-          <div className="absolute top-1/2 right-3 -translate-y-1/2">
-            <EmailTemplateVariablePicker
-              variables={templateVariables}
-              onInsert={onInsertSubjectVariable}
-            />
-          </div>
-        </div>
-      </div>
-
-      <div className="overflow-hidden rounded-lg border bg-background">
-        <Tabs value={contentMode} onValueChange={onContentModeChange}>
-          <div className="flex items-center justify-between gap-2 border-b bg-muted/30 px-3 py-2">
-            <TabsList className="h-8">
-              <TabsTrigger value="edit">HTML body</TabsTrigger>
-              <TabsTrigger value="preview">Preview</TabsTrigger>
-            </TabsList>
-            <EmailTemplateVariablePicker
-              variables={templateVariables}
-              onInsert={onInsertHtmlBodyVariable}
-            />
-          </div>
-
-          <TabsContent value="edit" className="mt-0">
-            <EmailTemplateRichEditor
-              key={templateRevision}
-              ref={htmlBodyEditorRef}
-              id={`email-html-${template.emailType}`}
-              value={htmlBody}
-              onChange={onHtmlBodyChange}
-            />
-          </TabsContent>
-
-          <TabsContent value="preview" className="mt-0">
-            {isPreviewLoading ? (
-              <p className="p-4 text-sm text-muted-foreground">
-                Loading preview…
-              </p>
-            ) : preview ? (
-              <div className="space-y-3 p-4">
-                <p className="text-sm">
-                  <span className="text-muted-foreground">Subject:</span>{" "}
-                  {preview.subject}
-                </p>
-                <div
-                  className="prose prose-sm max-w-none rounded-md border bg-background p-4"
-                  dangerouslySetInnerHTML={{ __html: preview.htmlBody }}
-                />
-              </div>
-            ) : (
-              <p className="p-4 text-sm text-muted-foreground">
-                Preview unavailable.
-              </p>
-            )}
-          </TabsContent>
-        </Tabs>
-      </div>
-
-      <div className="flex items-center gap-4">
-        {isDirty ? (
-          <p className="text-sm text-amber-600 dark:text-amber-500">
-            You have unsaved changes.
-          </p>
-        ) : null}
-        <div className="ml-auto flex gap-2">
-          <ActionButton onClick={onSave} disabled={isSaving || !isDirty}>
-            Save template
-          </ActionButton>
-          <ActionButton
-            variant="outline"
-            onClick={onReset}
-            disabled={isResetting}
-          >
-            Reset to default
-          </ActionButton>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 export function EmailTemplatesTab() {
   const queryClient = useQueryClient();
@@ -333,7 +63,9 @@ export function EmailTemplatesTab() {
   const [openSection, setOpenSection] = useState<OpenSection | null>(null);
   const [subject, setSubject] = useState("");
   const [htmlBody, setHtmlBody] = useState("");
-  const [contentMode, setContentMode] = useState<ContentMode>("edit");
+  const [contentMode, setContentMode] = useState<EmailTemplateContentMode>(
+    "edit",
+  );
   const [resetOpen, setResetOpen] = useState(false);
   const [unsavedSwitchOpen, setUnsavedSwitchOpen] = useState(false);
   const [pendingTemplateType, setPendingTemplateType] = useState<
@@ -449,7 +181,7 @@ export function EmailTemplatesTab() {
   });
 
   const handleContentModeChange = (mode: string) => {
-    const nextMode = mode as ContentMode;
+    const nextMode = mode as EmailTemplateContentMode;
     setContentMode(nextMode);
     if (nextMode === "preview") {
       previewMutation.mutate();
@@ -638,15 +370,14 @@ export function EmailTemplatesTab() {
                                 Loading template…
                               </p>
                             ) : (
-                              <EmailTemplateEditor
-                                template={template}
-                                templateRevision={templateRevision!}
+                              <EmailTemplateEditorPanel
+                                emailType={template.emailType}
                                 subject={subject}
                                 htmlBody={htmlBody}
                                 contentMode={contentMode}
                                 preview={preview}
-                                isDirty={isDirty}
                                 templateVariables={templateVariables}
+                                editorKey={templateRevision!}
                                 subjectInputRef={subjectInputRef}
                                 htmlBodyEditorRef={htmlBodyEditorRef}
                                 onSubjectChange={setSubject}
@@ -659,11 +390,33 @@ export function EmailTemplatesTab() {
                                 onCaptureSubjectSelection={
                                   captureSubjectSelection
                                 }
-                                onSave={() => saveMutation.mutate()}
-                                onReset={() => setResetOpen(true)}
-                                isSaving={saveMutation.isPending}
-                                isResetting={resetMutation.isPending}
                                 isPreviewLoading={previewMutation.isPending}
+                                footer={
+                                  <div className="flex items-center gap-4">
+                                    {isDirty ? (
+                                      <p className="text-sm text-amber-600 dark:text-amber-500">
+                                        You have unsaved changes.
+                                      </p>
+                                    ) : null}
+                                    <div className="ml-auto flex gap-2">
+                                      <ActionButton
+                                        onClick={() => saveMutation.mutate()}
+                                        disabled={
+                                          saveMutation.isPending || !isDirty
+                                        }
+                                      >
+                                        Save template
+                                      </ActionButton>
+                                      <ActionButton
+                                        variant="outline"
+                                        onClick={() => setResetOpen(true)}
+                                        disabled={resetMutation.isPending}
+                                      >
+                                        Reset to default
+                                      </ActionButton>
+                                    </div>
+                                  </div>
+                                }
                               />
                             )
                           ) : null}

@@ -104,6 +104,28 @@ function PlatformBusinessesPageContent() {
         ),
       },
       {
+        id: "industry",
+        header: "Industry",
+        sortable: true,
+        sortValue: (row) => row.industry?.name ?? "",
+        cell: (row) => (
+          <span className="text-muted-foreground">
+            {row.industry?.name ?? "—"}
+          </span>
+        ),
+      },
+      {
+        id: "snapshot",
+        header: "Snapshot",
+        sortable: true,
+        sortValue: (row) => row.snapshotName ?? "",
+        cell: (row) => (
+          <span className="text-muted-foreground">
+            {row.snapshotName ?? "—"}
+          </span>
+        ),
+      },
+      {
         id: "status",
         header: "Status",
         sortable: true,

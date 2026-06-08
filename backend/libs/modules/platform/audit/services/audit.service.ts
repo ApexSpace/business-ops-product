@@ -89,8 +89,18 @@ export class AuditService {
     return this.cachedSystemActorUserId;
   }
 
-  findByBusinessId(businessId: string, skip: number, take: number) {
-    return this.auditLogRepository.findByBusinessId(businessId, skip, take);
+  findByBusinessId(
+    businessId: string,
+    skip: number,
+    take: number,
+    filters?: { action?: string },
+  ) {
+    return this.auditLogRepository.findByBusinessId(
+      businessId,
+      skip,
+      take,
+      filters,
+    );
   }
 
   findAll(

@@ -26,14 +26,58 @@ export function BusinessProfileRegionalFields({
   showSectionTitles,
   activeTab,
   currencySymbol,
+  twoColumnLayout = false,
 }: {
   form: UseFormReturn<BusinessProfileFormValues>;
   disabled: boolean;
   showSectionTitles: boolean;
   activeTab?: boolean;
   currencySymbol: string;
+  twoColumnLayout?: boolean;
 }) {
   const currencySymbolFieldId = useId();
+
+  const currencySymbolField = (
+    <div className="grid gap-1.5">
+      <Label htmlFor={currencySymbolFieldId}>Currency symbol</Label>
+      <Input
+        id={currencySymbolFieldId}
+        value={currencySymbol}
+        readOnly
+        disabled
+        className="bg-muted"
+      />
+      <p className="text-sm text-muted-foreground">
+        Set automatically from the selected currency.
+      </p>
+    </div>
+  );
+
+  const defaultTaxRateField = (
+    <FormField
+      control={form.control}
+      name="taxesAndCurrency.defaultTaxRate"
+      render={({ field }) => (
+        <FormItem>
+          <FormLabel>Default tax rate (%)</FormLabel>
+          <FormControl>
+            <Input
+              type="number"
+              min={0}
+              max={100}
+              step="0.01"
+              disabled={disabled}
+              {...field}
+              onChange={(e) =>
+                field.onChange(parseFloat(e.target.value) || 0)
+              }
+            />
+          </FormControl>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+  );
 
   return (
     <>
@@ -54,66 +98,60 @@ export function BusinessProfileRegionalFields({
           placeholder="https://example.com"
           disabled={disabled}
         />
-        <SelectField
-          control={form.control}
-          name="timezone"
-          label="Timezone"
-          items={timezoneOptions}
-          disabled={disabled}
-        />
+        {twoColumnLayout ? (
+          <div className="grid items-start gap-4 sm:grid-cols-2">
+            <SelectField
+              control={form.control}
+              name="timezone"
+              label="Timezone"
+              items={timezoneOptions}
+              disabled={disabled}
+            />
+            <SelectField
+              control={form.control}
+              name="taxesAndCurrency.currencyCode"
+              label="Currency"
+              items={currencySelectOptions}
+              placeholder="Select currency"
+              searchable={false}
+              disabled={disabled}
+            />
+          </div>
+        ) : (
+          <SelectField
+            control={form.control}
+            name="timezone"
+            label="Timezone"
+            items={timezoneOptions}
+            disabled={disabled}
+          />
+        )}
       </section>
 
       <section className="space-y-4">
         {showSectionTitles ? (
           <BusinessProfileSectionTitle>Taxes &amp; currency</BusinessProfileSectionTitle>
         ) : null}
-        <div className="grid items-start gap-4 sm:grid-cols-2">
-          <SelectField
-            control={form.control}
-            name="taxesAndCurrency.currencyCode"
-            label="Currency"
-            items={currencySelectOptions}
-            placeholder="Select currency"
-            searchable={false}
-            disabled={disabled}
-          />
-          <div className="grid gap-1.5">
-            <Label htmlFor={currencySymbolFieldId}>Currency symbol</Label>
-            <Input
-              id={currencySymbolFieldId}
-              value={currencySymbol}
-              readOnly
-              disabled
-              className="bg-muted"
-            />
-            <p className="text-sm text-muted-foreground">
-              Set automatically from the selected currency.
-            </p>
+        {twoColumnLayout ? (
+          <div className="grid items-start gap-4 sm:grid-cols-2">
+            {currencySymbolField}
+            {defaultTaxRateField}
           </div>
-          <FormField
-            control={form.control}
-            name="taxesAndCurrency.defaultTaxRate"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Default tax rate (%)</FormLabel>
-                <FormControl>
-                  <Input
-                    type="number"
-                    min={0}
-                    max={100}
-                    step="0.01"
-                    disabled={disabled}
-                    {...field}
-                    onChange={(e) =>
-                      field.onChange(parseFloat(e.target.value) || 0)
-                    }
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
+        ) : (
+          <div className="grid items-start gap-4 sm:grid-cols-2">
+            <SelectField
+              control={form.control}
+              name="taxesAndCurrency.currencyCode"
+              label="Currency"
+              items={currencySelectOptions}
+              placeholder="Select currency"
+              searchable={false}
+              disabled={disabled}
+            />
+            {currencySymbolField}
+            {defaultTaxRateField}
+          </div>
+        )}
         <FormField
           control={form.control}
           name="taxesAndCurrency.pricesIncludeTax"

@@ -4,10 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { usePathname } from "next/navigation";
 import { Building2, Settings } from "lucide-react";
 import { AppShell } from "@/components/shell";
-import {
-  businessSettingsEntry,
-  resolveBusinessOperationalSections,
-} from "@/lib/config/navigation/business-menu";
+import { businessSettingsEntry } from "@/lib/config/navigation/business-menu";
 import {
   businessSettingsSections,
   isBusinessSettingsPath,
@@ -17,13 +14,14 @@ import {
   platformOperationalSections,
   platformSettingsEntry,
 } from "@/lib/config/navigation/platform-menu";
+import { resolveSnapshotNavigation } from "@/lib/config/snapshot/resolve-snapshot-navigation";
 import { ServiceUnavailableBanner } from "@/components/layout/service-unavailable-banner";
 import { shouldShowAccountSwitcher } from "@/lib/auth";
 import { getCurrentBusiness } from "@/features/settings/api/business.api";
 import { queryKeys } from "@/lib/query/keys";
 import { useAuth } from "@/lib/auth/provider";
-import { getIndustryLabels } from "@/lib/config/industry-labels";
-import type { Business } from "@/lib/types/shared";
+import { useSnapshotContext } from "@/lib/snapshot/use-snapshot-context";
+import { hasPlatformBusinessAdminAccess } from "@/features/auth/permissions/permissions-legacy";
 import type { ShellNavSection } from "@/lib/types/shell-nav";
 
 interface ShellLayoutProps {
@@ -34,6 +32,7 @@ interface ShellLayoutProps {
 export function AppShellLayout({ mode, children }: ShellLayoutProps) {
   const pathname = usePathname();
   const { contexts, jwt, user, sessionError, refreshSession } = useAuth();
+  const { context: snapshotContext, t } = useSnapshotContext();
 
   const { data: currentBusiness } = useQuery({
     queryKey: queryKeys.business.current(),
@@ -41,16 +40,22 @@ export function AppShellLayout({ mode, children }: ShellLayoutProps) {
     enabled: mode === "business",
   });
 
-  const labels = getIndustryLabels(currentBusiness?.industry);
   const isSettingsMode =
     mode === "business" && isBusinessSettingsPath(pathname);
+
+  const isPlatformAdmin = hasPlatformBusinessAdminAccess(jwt, contexts);
 
   const sections: ShellNavSection[] =
     mode === "platform"
       ? platformOperationalSections
       : isSettingsMode
         ? businessSettingsSections
-        : resolveBusinessOperationalSections(labels);
+        : resolveSnapshotNavigation({
+            navigation: snapshotContext.navigation,
+            resolveLabel: t,
+            businessRole: jwt?.businessRole,
+            isPlatformAdmin,
+          });
 
   const footerItems =
     mode === "business" && !isSettingsMode
@@ -58,6 +63,11 @@ export function AppShellLayout({ mode, children }: ShellLayoutProps) {
       : mode === "platform"
         ? [platformSettingsEntry]
         : undefined;
+
+  const brandSubtitle =
+    snapshotContext.branding.productName ??
+    snapshotContext.snapshotName ??
+    "";
 
   const brand =
     mode === "platform"
@@ -70,7 +80,7 @@ export function AppShellLayout({ mode, children }: ShellLayoutProps) {
           }
         : {
             title: currentBusiness?.name ?? "Business",
-            subtitle: currentBusiness?.industry?.name ?? "",
+            subtitle: brandSubtitle,
             icon: Building2,
           };
 
@@ -89,19 +99,19 @@ export function AppShellLayout({ mode, children }: ShellLayoutProps) {
         />
       ) : null}
       <AppShell
-      brand={brand}
-      sections={sections}
-      navMode={isSettingsMode ? "settings" : "main"}
-      footerItems={footerItems}
-      showAccountSwitcher={showAccountSwitcher}
-      pageMetadataContext={{
-        mode,
-        labels,
-        settingsMode: isSettingsMode,
-      }}
-    >
-      {children}
-    </AppShell>
+        brand={brand}
+        sections={sections}
+        navMode={isSettingsMode ? "settings" : "main"}
+        footerItems={footerItems}
+        showAccountSwitcher={showAccountSwitcher}
+        pageMetadataContext={{
+          mode,
+          terminology: snapshotContext.terminology,
+          settingsMode: isSettingsMode,
+        }}
+      >
+        {children}
+      </AppShell>
     </>
   );
 }

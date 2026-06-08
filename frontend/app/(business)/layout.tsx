@@ -2,6 +2,7 @@
 
 import { AppShellLayout } from "@/components/layout/app-shell-layout";
 import { BusinessRealtimeProvider } from "@/components/layout/business-realtime-provider";
+import { SnapshotContextProvider } from "@/lib/snapshot/snapshot-context-provider";
 
 export default function BusinessLayout({
   children,
@@ -11,7 +12,9 @@ export default function BusinessLayout({
   return (
     <div className="h-svh min-h-0 overflow-hidden">
       <BusinessRealtimeProvider>
-        <AppShellLayout mode="business">{children}</AppShellLayout>
+        <SnapshotContextProvider>
+          <AppShellLayout mode="business">{children}</AppShellLayout>
+        </SnapshotContextProvider>
       </BusinessRealtimeProvider>
     </div>
   );

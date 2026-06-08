@@ -1,6 +1,7 @@
 "use client";
 
 import type { UseFormReturn } from "react-hook-form";
+import { PhoneField } from "@/components/forms/phone-field";
 import { TextField } from "@/components/forms/text-field";
 import {
   FormControl,
@@ -18,10 +19,12 @@ export function BusinessProfileContactFields({
   form,
   disabled,
   showSectionTitle,
+  twoColumnLayout = false,
 }: {
   form: UseFormReturn<BusinessProfileFormValues>;
   disabled: boolean;
   showSectionTitle: boolean;
+  twoColumnLayout?: boolean;
 }) {
   return (
     <section className="space-y-4">
@@ -60,14 +63,31 @@ export function BusinessProfileContactFields({
           </FormItem>
         )}
       />
-      <TextField
-        control={form.control}
-        name="email"
-        label="Email"
-        type="email"
-        placeholder="jane@example.com"
-        disabled={disabled}
-      />
+      {twoColumnLayout ? (
+        <div className="grid gap-4 sm:grid-cols-2">
+          <PhoneField control={form.control} name="phone" disabled={disabled} />
+          <TextField
+            control={form.control}
+            name="email"
+            label="Email"
+            type="email"
+            placeholder="jane@example.com"
+            disabled={disabled}
+          />
+        </div>
+      ) : (
+        <>
+          <TextField
+            control={form.control}
+            name="email"
+            label="Email"
+            type="email"
+            placeholder="jane@example.com"
+            disabled={disabled}
+          />
+          <PhoneField control={form.control} name="phone" disabled={disabled} />
+        </>
+      )}
     </section>
   );
 }

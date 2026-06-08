@@ -71,6 +71,11 @@ export class BusinessProfileDto {
 
   @ApiPropertyOptional()
   @IsOptional()
+  @IsUUID()
+  snapshotId?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
   @IsString()
   @MaxLength(8)
   phoneCountryCode?: string;
@@ -145,6 +150,11 @@ export class CreateBusinessDto extends BusinessProfileDto {
 }
 
 export class UpdateBusinessDto extends BusinessProfileDto {
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  applySnapshot?: boolean;
+
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()

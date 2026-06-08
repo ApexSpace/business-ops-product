@@ -12,6 +12,14 @@ export type {
   SubscriptionStatus,
 } from "./platform-dto";
 export type {
+  Snapshot,
+  SnapshotAssets,
+  SnapshotContext,
+  SnapshotListItem,
+  SnapshotNavItem,
+  SnapshotStatus,
+} from "./snapshot";
+export type {
   AuditLog,
   Business,
   BusinessMember,
@@ -19,4 +27,5 @@ export type {
   PlatformDashboardStats,
   PlatformSettings,
 } from "@/lib/types/api";
+export type { PlatformBusinessUtilization } from "./platform-business-utilization";
 export type { PlatformMemberRole } from "@/features/auth/types/auth-dto";

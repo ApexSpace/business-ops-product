@@ -56,3 +56,16 @@ export const industryStatusOptions: SelectOption[] = [
   { value: "ACTIVE", label: "Active" },
   { value: "ARCHIVED", label: "Archived" },
 ];
+
+export const snapshotStatusFilterOptions: SelectOption[] = [
+  { value: "all", label: "All Statuses" },
+  { value: "DRAFT", label: "Draft" },
+  { value: "PUBLISHED", label: "Published" },
+  { value: "ARCHIVED", label: "Archived" },
+];
+
+export const snapshotStatusOptions: SelectOption[] = [
+  { value: "DRAFT", label: "Draft" },
+  { value: "PUBLISHED", label: "Published" },
+  { value: "ARCHIVED", label: "Archived" },
+];

@@ -24,17 +24,20 @@ export class AuditController {
   async list(
     @Param('businessId', ParseUUIDPipe) businessId: string,
     @Query() query: PaginationQueryDto,
+    @Query('action') action?: string,
   ): Promise<{ items: AuditLogResponseDto[]; meta: { total: number; page: number; limit: number } }> {
     const { page, limit, skip } = getPaginationParams(query);
     const { items, total } = await this.auditService.findByBusinessId(
       businessId,
       skip,
       limit,
+      { action },
     );
     return {
       items: items.map((log) => ({
         id: log.id,
         actorUserId: log.actorUserId,
+        actorEmail: log.actor?.email ?? null,
         businessId: log.businessId,
         action: log.action,
         entityType: log.entityType,

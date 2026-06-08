@@ -26,6 +26,8 @@ export const queryKeys = {
   },
   business: {
     current: () => ["business", "current"] as const,
+    snapshotContext: (businessId: string) =>
+      ["business", businessId, "snapshot-context"] as const,
     financialSettings: () => ["business", "financial-settings"] as const,
     members: (filters?: { page?: number; limit?: number; search?: string }) =>
       listKey(["business", "members"], filters),
@@ -215,9 +217,13 @@ export const queryKeys = {
       list: (filters: { page?: number; limit?: number; search?: string; status?: string }) =>
         listKey(["platform", "businesses", "list"], filters),
       detail: (id: string) => ["platform", "business", id] as const,
+      utilization: (id: string) =>
+        ["platform", "business", id, "utilization"] as const,
       members: (id: string) => ["platform", "business", id, "members"] as const,
-      audit: (id: string, filters?: { page?: number; limit?: number }) =>
-        listKey(["platform", "business", id, "audit"], filters),
+      audit: (
+        id: string,
+        filters?: { page?: number; limit?: number; action?: string },
+      ) => listKey(["platform", "business", id, "audit"], filters),
       subscription: (id: string) =>
         ["platform", "business", id, "subscription"] as const,
     },
@@ -242,6 +248,12 @@ export const queryKeys = {
       list: (filters: { page?: number; limit?: number; status?: string }) =>
         listKey(["platform", "industries", "list"], filters),
       detail: (id: string) => ["platform", "industries", id] as const,
+    },
+    snapshots: {
+      all: () => ["platform", "snapshots"] as const,
+      list: (filters: { page?: number; limit?: number; status?: string }) =>
+        listKey(["platform", "snapshots", "list"], filters),
+      detail: (id: string) => ["platform", "snapshots", id] as const,
     },
     billing: {
       all: () => ["platform", "billing"] as const,

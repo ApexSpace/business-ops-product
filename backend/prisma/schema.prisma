@@ -47,6 +47,12 @@ enum IndustryStatus {
   ARCHIVED
 }
 
+enum SnapshotStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
 enum PipelineStageType {
   OPEN
   WON
@@ -380,6 +386,8 @@ model User {
   asyncJobs             AsyncJob[]             @relation("AsyncJobActor")
   emailTemplatesCreated EmailTemplate[]        @relation("EmailTemplateCreatedBy")
   emailTemplatesUpdated EmailTemplate[]        @relation("EmailTemplateUpdatedBy")
+  snapshotsCreated      Snapshot[]              @relation("SnapshotCreatedBy")
+  snapshotsUpdated      Snapshot[]              @relation("SnapshotUpdatedBy")
 
   @@map("users")
 }
@@ -415,11 +423,51 @@ model Industry {
   @@map("industries")
 }
 
+model Snapshot {
+  id              String         @id @default(uuid())
+  name            String
+  description     String?
+  status          SnapshotStatus @default(DRAFT)
+  assets          Json
+  publishedAt     DateTime?
+  createdByUserId String?
+  updatedByUserId String?
+  deletedAt       DateTime?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  createdBy User? @relation("SnapshotCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  updatedBy User? @relation("SnapshotUpdatedBy", fields: [updatedByUserId], references: [id], onDelete: SetNull)
+  businesses  Business[]
+  provisions  SnapshotProvision[]
+
+  @@map("snapshots")
+}
+
+model SnapshotProvision {
+  id         String   @id @default(uuid())
+  businessId String
+  snapshotId String
+  assetType  String
+  sourceKey  String
+  entityId   String
+  createdAt  DateTime @default(now())
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  snapshot Snapshot @relation(fields: [snapshotId], references: [id], onDelete: Cascade)
+
+  @@unique([businessId, snapshotId, sourceKey])
+  @@index([businessId])
+  @@map("snapshot_provisions")
+}
+
 model Business {
   id               String         @id @default(uuid())
   name             String
   slug             String         @unique
   industryId       String?
+  snapshotId       String?
+  snapshotAppliedAt DateTime?
   status           BusinessStatus @default(ACTIVE)
   firstName        String?
   lastName         String?
@@ -442,6 +490,8 @@ model Business {
 
   createdBy      User?             @relation("BusinessCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
   industry       Industry?         @relation(fields: [industryId], references: [id], onDelete: SetNull)
+  snapshot       Snapshot?         @relation(fields: [snapshotId], references: [id], onDelete: SetNull)
+  snapshotProvisions SnapshotProvision[]
   memberships    BusinessMembership[]
   subscription   BusinessSubscription?
   auditLogs      AuditLog[]
@@ -479,6 +529,7 @@ model Business {
 
   @@index([createdById])
   @@index([industryId])
+  @@index([snapshotId])
   @@map("businesses")
 }
 
@@ -592,6 +643,7 @@ model Tag {
   id         String   @id @default(uuid())
   businessId String
   name       String
+  color      String?
   createdAt  DateTime @default(now())
 
   business Business     @relation(fields: [businessId], references: [id], onDelete: Cascade)

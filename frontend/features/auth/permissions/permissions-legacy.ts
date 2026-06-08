@@ -29,6 +29,10 @@ export function canManageIndustries(role?: PlatformMemberRole): boolean {
   return role === "SUPER_ADMIN" || role === "PLATFORM_ADMIN";
 }
 
+export function canManageSnapshots(role?: PlatformMemberRole): boolean {
+  return role === "SUPER_ADMIN" || role === "PLATFORM_ADMIN";
+}
+
 export function canManageBilling(role?: PlatformMemberRole): boolean {
   return role === "SUPER_ADMIN" || role === "PLATFORM_ADMIN";
 }

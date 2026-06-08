@@ -4,11 +4,12 @@ import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { DataTableColumn } from "@/components/data-display/data-table";
 import { StatusBadge } from "@/components/data-display/status-badge";
-import { getIndustryLabels } from "@/lib/config/industry-labels";
+import { resolveNavEntityLabels } from "@/lib/snapshot/resolve-terminology";
+import { useSnapshotContext } from "@/lib/snapshot/use-snapshot-context";
 import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
 import { useListSearchParams } from "@/lib/hooks/use-list-search-params";
 import { useWorkItemsList } from "@/features/work-items/hooks/use-work-items-list";
-import { getCurrentBusiness, listBusinessMembers } from "@/features/settings/api/business.api";
+import { listBusinessMembers } from "@/features/settings/api/business.api";
 import { listServices } from "@/features/settings/api/services.api";
 import { queryKeys } from "@/lib/query/keys";
 import {
@@ -47,11 +48,8 @@ export function useWorkItemsPageToolbar() {
     ? WORK_ITEMS_BOARD_PAGE_LIMIT
     : WORK_ITEMS_TABLE_PAGE_LIMIT;
 
-  const { data: business } = useQuery({
-    queryKey: queryKeys.business.current(),
-    queryFn: () => getCurrentBusiness(),
-  });
-  const labels = getIndustryLabels(business?.industry);
+  const { context: snapshotContext } = useSnapshotContext();
+  const labels = resolveNavEntityLabels(snapshotContext.terminology);
   const workItemsLabel = labels.workItems;
 
   const listFilters = {

@@ -41,6 +41,10 @@ export interface Business {
   slug: string;
   industryId: string | null;
   industry?: Industry | null;
+  snapshotId?: string | null;
+  snapshotName?: string | null;
+  snapshotStatus?: string | null;
+  snapshotAppliedAt?: string | null;
   status: BusinessStatus;
   firstName: string | null;
   lastName: string | null;
@@ -135,6 +139,7 @@ export interface BusinessMember {
 export interface AuditLog {
   id: string;
   actorUserId: string | null;
+  actorEmail?: string | null;
   businessId: string | null;
   action: string;
   entityType: string;

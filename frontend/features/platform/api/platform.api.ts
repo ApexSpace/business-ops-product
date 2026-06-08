@@ -7,6 +7,7 @@ import type {
   Industry,
   PaginatedResult,
   Plan,
+  PlatformBusinessUtilization,
   PlatformDashboardStats,
   PlatformSettings,
   PlatformUser,
@@ -38,6 +39,22 @@ export async function listPlatformBusinesses(
 
 export function getPlatformBusiness(id: string) {
   return api.get<Business>(`platform/businesses/${id}`);
+}
+
+export function getPlatformBusinessUtilization(id: string) {
+  return api.get<PlatformBusinessUtilization>(
+    `platform/businesses/${id}/utilization`,
+  );
+}
+
+export function applyPlatformBusinessSnapshot(
+  businessId: string,
+  body: { snapshotId: string },
+) {
+  return api.post<Business>(
+    `platform/businesses/${businessId}/apply-snapshot`,
+    body,
+  );
 }
 
 export function deletePlatformBusiness(id: string) {
@@ -143,7 +160,7 @@ export async function listPlatformAuditLogs(
 
 export async function listBusinessAuditLogs(
   businessId: string,
-  filters: { page?: number; limit?: number } = {},
+  filters: { page?: number; limit?: number; action?: string } = {},
 ): Promise<PaginatedResult<AuditLog>> {
   const { items, meta } = await api.getPaginated<AuditLog>(
     `platform/businesses/${businessId}/audit-logs`,
@@ -151,6 +168,7 @@ export async function listBusinessAuditLogs(
       searchParams: {
         page: filters.page,
         limit: filters.limit,
+        action: filters.action,
       },
     },
   );
@@ -187,6 +205,16 @@ export function updatePlatformBusiness(
 export function getPlatformBusinessMembers(id: string) {
   return api.get<import("@/features/platform/types").BusinessMember[]>(
     `platform/businesses/${id}/members`,
+  );
+}
+
+export function invitePlatformBusinessMember(
+  businessId: string,
+  body: Record<string, unknown>,
+) {
+  return api.post<import("@/features/platform/types").BusinessMember>(
+    `platform/businesses/${businessId}/members/invite`,
+    body,
   );
 }
 

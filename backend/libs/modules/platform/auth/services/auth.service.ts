@@ -21,8 +21,9 @@ import { JwtAccessPayload } from '../interfaces/jwt-payload.interface';
 import { PlatformMembershipRepository } from '../repositories/platform-membership.repository';
 import { RefreshTokenRepository } from '../repositories/refresh-token.repository';
 import { UserRepository, UserWithRelations } from '../repositories/user.repository';
-import { PipelineProvisioningService } from '@app/modules/crm/pipelines/services/pipeline-provisioning.service';
 import { IndustriesService } from '@app/modules/crm/industries/services/industries.service';
+import { SnapshotApplyService } from '@app/modules/platform/snapshots/services/snapshot-apply.service';
+import { SnapshotsService } from '@app/modules/platform/snapshots/services/snapshots.service';
 import { TokenService } from './token.service';
 import { AuthActionTokenService } from './auth-action-token.service';
 import { resolvePlatformBusinessRole } from '../utils/platform-business-access.util';
@@ -56,8 +57,9 @@ export class AuthService {
     private readonly tokenService: TokenService,
     private readonly configService: ConfigService<RootConfig, true>,
     private readonly prisma: PrismaService,
-    private readonly pipelineProvisioning: PipelineProvisioningService,
     private readonly industriesService: IndustriesService,
+    private readonly snapshotsService: SnapshotsService,
+    private readonly snapshotApplyService: SnapshotApplyService,
     private readonly authActionTokenService: AuthActionTokenService,
     private readonly emailNotificationService: EmailNotificationService,
   ) {}
@@ -69,6 +71,7 @@ export class AuthService {
     lastName?: string;
     businessName: string;
     industryId?: string;
+    snapshotId?: string;
   }): Promise<AuthTokensResponse> {
     const existing = await this.userRepository.findByEmail(input.email);
     if (existing) {
@@ -90,6 +93,18 @@ export class AuthService {
       throw new AppException(
         ErrorCode.BAD_REQUEST,
         'No active industry is configured',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const snapshot = await this.snapshotsService.resolveForBusiness(
+      input.snapshotId,
+    );
+
+    if (!snapshot) {
+      throw new AppException(
+        ErrorCode.BAD_REQUEST,
+        'No published snapshot is configured',
         HttpStatus.BAD_REQUEST,
       );
     }
@@ -122,13 +137,14 @@ export class AuthService {
           joinedAt: new Date(),
         },
       });
-      await this.pipelineProvisioning.provisionDefaultPipeline(
-        tx,
-        business.id,
-        industry.pipelineTemplate,
-      );
       return { user, business };
     });
+
+    await this.snapshotApplyService.apply(
+      result.business.id,
+      snapshot.id,
+      result.user.id,
+    );
 
     await this.userRepository.updateLastLogin(result.user.id);
 

@@ -16,7 +16,7 @@ export class BusinessRepository {
         id,
         ...(includeDeleted ? {} : { deletedAt: null }),
       },
-      include: { industry: true },
+      include: { industry: true, snapshot: true },
     });
   }
 
@@ -40,11 +40,22 @@ export class BusinessRepository {
     skip: number;
     take: number;
     status?: BusinessStatus;
+    search?: string;
     includeDeleted?: boolean;
   }): Promise<{ items: Business[]; total: number }> {
+    const search = params.search?.trim();
     const where: Prisma.BusinessWhereInput = {
       ...(params.status ? { status: params.status } : {}),
       ...(params.includeDeleted ? {} : { deletedAt: null }),
+      ...(search
+        ? {
+            OR: [
+              { name: { contains: search, mode: 'insensitive' } },
+              { slug: { contains: search, mode: 'insensitive' } },
+              { email: { contains: search, mode: 'insensitive' } },
+            ],
+          }
+        : {}),
     };
     return Promise.all([
       this.prisma.business.findMany({
@@ -52,7 +63,7 @@ export class BusinessRepository {
         skip: params.skip,
         take: params.take,
         orderBy: { createdAt: 'desc' },
-        include: { industry: true },
+        include: { industry: true, snapshot: true },
       }),
       this.prisma.business.count({ where }),
     ]).then(([items, total]) => ({ items, total }));
@@ -62,7 +73,7 @@ export class BusinessRepository {
     return this.prisma.business.update({
       where: { id },
       data,
-      include: { industry: true },
+      include: { industry: true, snapshot: true },
     });
   }
 

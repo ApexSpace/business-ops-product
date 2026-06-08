@@ -1,5 +1,6 @@
 import {
   Building2,
+  Camera,
   CreditCard,
   Factory,
   FileText,
@@ -40,6 +41,11 @@ export const platformOperationalSections: ShellNavSection[] = [
         title: "Businesses",
         href: "/platform/businesses",
         icon: Building2,
+      },
+      {
+        title: "Snapshots",
+        href: "/platform/snapshots",
+        icon: Camera,
       },
       {
         title: "Industries",

@@ -1,5 +1,5 @@
-import type { IndustryLabels } from "@/lib/types/shared";
 import { isBusinessSettingsPath } from "@/lib/config/navigation/business-settings-menu";
+import { resolveTerminology } from "@/lib/snapshot/resolve-terminology";
 
 export interface PageBreadcrumb {
   label: string;
@@ -14,7 +14,7 @@ export interface PageMetadata {
 
 export interface PageMetadataContext {
   mode: "platform" | "business";
-  labels?: IndustryLabels;
+  terminology?: Record<string, string>;
   settingsMode?: boolean;
 }
 
@@ -189,7 +189,11 @@ const platformRoutes: Record<string, RouteEntry> = {
   },
   "/platform/industries": {
     title: "Industries",
-    description: "Industry templates and labels.",
+    description: "Industry metadata for business classification.",
+  },
+  "/platform/snapshots": {
+    title: "Snapshots",
+    description: "Reusable business blueprints for navigation, terminology, and provisioning.",
   },
   "/platform/users": {
     title: "Users",
@@ -217,25 +221,25 @@ const platformRoutes: Record<string, RouteEntry> = {
   },
 };
 
-const businessLabelKeys: Partial<
-  Record<string, keyof IndustryLabels>
-> = {
-  "/business/contacts": "contacts",
-  "/business/work-items": "workItems",
-  "/business/pipelines": "pipelines",
-  "/business/conversations": "conversations",
-  "/business/appointments": "appointments",
+const businessTerminologyKeys: Partial<Record<string, string>> = {
+  "/business/contacts": "nav.contacts",
+  "/business/work-items": "nav.workItems",
+  "/business/pipelines": "nav.pipelines",
+  "/business/conversations": "nav.conversations",
+  "/business/appointments": "nav.appointments",
 };
 
-function applyIndustryLabels(
+function applyRouteTerminology(
   pathname: string,
   entry: RouteEntry,
-  labels?: IndustryLabels,
+  ctx: PageMetadataContext,
 ): RouteEntry {
-  if (!labels) return entry;
-  const key = businessLabelKeys[pathname];
-  if (!key) return entry;
-  return { ...entry, title: labels[key] };
+  const termKey = businessTerminologyKeys[pathname];
+  if (!termKey) return entry;
+  return {
+    ...entry,
+    title: resolveTerminology(termKey, entry.title, ctx.terminology),
+  };
 }
 
 export function resolvePageMetadata(
@@ -262,9 +266,7 @@ export function resolvePageMetadata(
   const entry = routes[pathname];
   if (entry) {
     const resolved =
-      ctx.mode === "business"
-        ? applyIndustryLabels(pathname, entry, ctx.labels)
-        : entry;
+      ctx.mode === "business" ? applyRouteTerminology(pathname, entry, ctx) : entry;
     return {
       title: resolved.title,
       description: resolved.description,
@@ -282,8 +284,22 @@ export function resolvePageMetadata(
     };
   }
 
+  if (pathname.match(/^\/platform\/snapshots\/[^/]+$/)) {
+    return {
+      title: "Snapshot",
+      breadcrumbs: [
+        { label: "Snapshots", href: "/platform/snapshots" },
+        { label: "Editor" },
+      ],
+    };
+  }
+
   if (pathname.match(/^\/business\/contacts\/[^/]+$/)) {
-    const contactsLabel = ctx.labels?.contacts ?? "Contacts";
+    const contactsLabel = resolveTerminology(
+      "entities.contact.plural",
+      "Contacts",
+      ctx.terminology,
+    );
     return {
       title: "Contact",
       description: "Contact workspace — profile, leads, work items, and more.",

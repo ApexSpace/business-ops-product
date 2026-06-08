@@ -36,4 +36,9 @@ export class RegisterDto {
   @IsOptional()
   @IsUUID()
   industryId?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsUUID()
+  snapshotId?: string;
 }

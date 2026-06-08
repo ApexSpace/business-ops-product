@@ -1,9 +1,12 @@
-import { Business, Industry } from '@prisma/client';
+import { Business, Industry, Snapshot } from '@prisma/client';
 import { toIndustryOption } from '@app/modules/crm/industries/mappers/industry.mapper';
 import { BusinessResponseDto } from '../dto/business-response.dto';
 import { extractFinancialSettings } from '../utils/financial-settings.util';
 
-type BusinessWithIndustry = Business & { industry?: Industry | null };
+type BusinessWithIndustry = Business & {
+  industry?: Industry | null;
+  snapshot?: Pick<Snapshot, 'id' | 'name' | 'status'> | null;
+};
 
 export function toBusinessResponse(
   business: BusinessWithIndustry,
@@ -16,6 +19,10 @@ export function toBusinessResponse(
     slug: business.slug,
     industryId: business.industryId,
     industry: business.industry ? toIndustryOption(business.industry) : null,
+    snapshotId: business.snapshotId,
+    snapshotName: business.snapshot?.name ?? null,
+    snapshotStatus: business.snapshot?.status ?? null,
+    snapshotAppliedAt: business.snapshotAppliedAt,
     status: business.status,
     firstName: business.firstName,
     lastName: business.lastName,

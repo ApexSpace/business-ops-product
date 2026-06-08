@@ -2,8 +2,10 @@ import { PrismaPg } from '@prisma/adapter-pg';
 import {
   PlatformMemberRole,
   PrismaClient,
+  SnapshotStatus,
   UserStatus,
 } from '@prisma/client';
+import { SNAPSHOT_SEED_DEFINITIONS } from '../libs/modules/platform/snapshots/seeds/snapshot-seed-definitions';
 import * as bcrypt from 'bcrypt';
 
 const connectionString = process.env.DATABASE_URL;
@@ -273,8 +275,31 @@ async function main(): Promise<void> {
     });
   }
 
+  for (const def of SNAPSHOT_SEED_DEFINITIONS) {
+    await prisma.snapshot.upsert({
+      where: { id: def.id },
+      create: {
+        id: def.id,
+        name: def.name,
+        description: def.description,
+        status: SnapshotStatus.PUBLISHED,
+        assets: def.assets,
+        publishedAt: new Date(),
+      },
+      update: {
+        name: def.name,
+        description: def.description,
+        assets: def.assets,
+        status: SnapshotStatus.PUBLISHED,
+        publishedAt: new Date(),
+        deletedAt: null,
+      },
+    });
+  }
+
   console.log(`Seeded super admin: ${email}`);
   console.log(`Seeded ${integrationProviders.length} integration providers`);
+  console.log(`Seeded ${SNAPSHOT_SEED_DEFINITIONS.length} snapshots`);
 }
 
 main()

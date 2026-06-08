@@ -8,6 +8,9 @@ export class AuditLogResponseDto {
   actorUserId!: string;
 
   @ApiPropertyOptional()
+  actorEmail?: string | null;
+
+  @ApiPropertyOptional()
   businessId?: string | null;
 
   @ApiProperty()
