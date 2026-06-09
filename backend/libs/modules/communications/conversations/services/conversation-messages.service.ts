@@ -151,7 +151,7 @@ export class ConversationMessagesService {
       direction: ConversationDirection.OUTBOUND,
       senderType: MessageSenderType.USER,
       senderUserId: actor.id,
-      text,
+      text: text || null,
       attachments: (dto.attachments ?? undefined) as
         | Prisma.InputJsonValue
         | undefined,

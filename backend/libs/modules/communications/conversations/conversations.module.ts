@@ -26,6 +26,7 @@ import { ConversationsService } from './services/conversations.service';
     AuditModule,
     BusinessModule,
     ContactsModule,
+    RealtimeModule,
     WebhookEventsModule,
     RealtimeModule,
     forwardRef(() => IntegrationsModule),
@@ -49,6 +50,7 @@ import { ConversationsService } from './services/conversations.service';
   ],
   exports: [
     ConversationWebhookIngestionService,
+    ConversationRealtimeService,
     ConversationsService,
     WebhookEventsModule,
     ConversationMessagesRepository,
