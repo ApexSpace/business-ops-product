@@ -6,6 +6,7 @@ export type ConversationInboxFilterKey =
   | "all"
   | "facebook"
   | "instagram"
+  | "whatsapp"
   | "webchat"
   | "open"
   | "unread"
@@ -23,6 +24,7 @@ export function useConversationsInboxFilters() {
     };
     if (filter === "facebook") base.channel = "FACEBOOK";
     if (filter === "instagram") base.channel = "INSTAGRAM";
+    if (filter === "whatsapp") base.channel = "WHATSAPP";
     if (filter === "webchat") base.channel = "WEBCHAT";
     if (filter === "open") base.status = "OPEN";
     if (filter === "assigned") base.assignedToMe = "true";

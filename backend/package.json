@@ -35,6 +35,7 @@
     "db:push": "prisma db push",
     "db:studio": "prisma studio",
     "db:seed": "prisma db seed",
+    "bootstrap:whatsapp": "ts-node -r tsconfig-paths/register scripts/bootstrap-whatsapp-dev.ts",
     "openapi:export": "WRITE_OPENAPI=true nest start api",
     "postinstall": "prisma generate"
   },

@@ -110,6 +110,9 @@ export class QueueWorkersService implements OnModuleInit, OnModuleDestroy {
     );
 
     for (const worker of this.workers) {
+      worker.on('error', (err) => {
+        this.logger.error(`BullMQ worker connection error: ${err.message}`);
+      });
       worker.on('failed', (job, err) => {
         this.logger.error(
           `Job ${job?.name} (${job?.id}) failed: ${err.message}`,

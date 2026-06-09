@@ -15,6 +15,7 @@ type InboxFilter =
   | "all"
   | "facebook"
   | "instagram"
+  | "whatsapp"
   | "webchat"
   | "open"
   | "unread"
@@ -61,6 +62,7 @@ export function ConversationListPanel({
               ["all", "All"],
               ["facebook", "Facebook"],
               ["instagram", "Instagram"],
+              ["whatsapp", "WhatsApp"],
               ["webchat", "Website Chat"],
               ["open", "Open"],
               ["unread", "Unread"],
@@ -85,8 +87,8 @@ export function ConversationListPanel({
           <p className="p-4 text-sm text-muted-foreground">Loading…</p>
         ) : conversations.length === 0 ? (
           <p className="p-4 text-sm text-muted-foreground">
-            No conversations yet. Messages from connected Facebook or Instagram
-            channels will appear here.
+            No conversations yet. Messages from connected Facebook, Instagram,
+            WhatsApp, or website chat channels will appear here.
           </p>
         ) : useVirtualThreads ? (
           <VirtualList

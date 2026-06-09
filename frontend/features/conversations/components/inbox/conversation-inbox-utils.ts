@@ -13,8 +13,16 @@ export function isWebchatConversation(
 export function channelProviderKey(channel: ConversationChannel): string {
   if (channel === "FACEBOOK") return "facebook";
   if (channel === "INSTAGRAM") return "instagram";
+  if (channel === "WHATSAPP") return "whatsapp";
   if (channel === "WEBCHAT") return "webchat";
   return "email";
+}
+
+export function channelComposerHint(channel: ConversationChannel): string | null {
+  if (channel === "WHATSAPP") {
+    return "WhatsApp free-form replies are only allowed within 24 hours of the customer's last message. Outside that window you must use an approved message template.";
+  }
+  return null;
 }
 
 export function contactDisplayName(conversation: Conversation): string {

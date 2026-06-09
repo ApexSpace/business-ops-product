@@ -377,31 +377,17 @@ export class MetaApiClient {
     pageAccessToken: string,
     recipientPsid: string,
     text: string,
+    attachments?: Array<{ type: string; url: string }>,
   ): Promise<{ messageId: string }> {
-    const url = this.buildGraphUrl(`/${pageId}/messages`, {
-      access_token: pageAccessToken,
-    });
-
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        recipient: { id: recipientPsid },
-        messaging_type: 'RESPONSE',
-        message: { text },
-      }),
-    });
-
-    if (!response.ok) {
-      const detail = this.sanitizeGraphError(await response.text());
-      throw new Error(`Meta send message failed: ${detail}`);
-    }
-
-    const data = (await response.json()) as {
-      message_id?: string;
-      recipient_id?: string;
-    };
-    return { messageId: data.message_id ?? '' };
+    return this.sendGraphMessages(
+      pageId,
+      pageAccessToken,
+      recipientPsid,
+      text,
+      attachments,
+      { messagingType: 'RESPONSE' },
+      'Meta send message failed',
+    );
   }
 
   async sendInstagramMessage(
@@ -409,30 +395,172 @@ export class MetaApiClient {
     accessToken: string,
     recipientId: string,
     text: string,
+    attachments?: Array<{ type: string; url: string }>,
   ): Promise<{ messageId: string }> {
-    const url = this.buildGraphUrl(`/${instagramUserId}/messages`, {
-      access_token: accessToken,
-    });
+    return this.sendGraphMessages(
+      instagramUserId,
+      accessToken,
+      recipientId,
+      text,
+      attachments,
+      {},
+      'Instagram send message failed',
+    );
+  }
 
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        recipient: { id: recipientId },
-        message: { text },
-      }),
-    });
-
-    if (!response.ok) {
-      const detail = this.sanitizeGraphError(await response.text());
-      throw new Error(`Instagram send message failed: ${detail}`);
+  async sendWhatsAppMessage(
+    phoneNumberId: string,
+    accessToken: string,
+    recipientWaId: string,
+    text: string,
+    attachments?: Array<{ type: string; url: string }>,
+  ): Promise<{ messageId: string }> {
+    const payloads = this.buildWhatsAppOutboundPayloads(text, attachments);
+    if (payloads.length === 0) {
+      throw new Error(
+        'WhatsApp send message failed: message text or attachment is required',
+      );
     }
 
-    const data = (await response.json()) as {
-      message_id?: string;
-      recipient_id?: string;
-    };
-    return { messageId: data.message_id ?? '' };
+    let lastMessageId = '';
+    for (const message of payloads) {
+      const url = this.buildGraphUrl(`/${phoneNumberId}/messages`, {
+        access_token: accessToken,
+      });
+
+      const body: Record<string, unknown> = {
+        messaging_product: 'whatsapp',
+        recipient_type: 'individual',
+        to: recipientWaId,
+        ...message,
+      };
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+
+      if (!response.ok) {
+        const detail = this.sanitizeGraphError(await response.text());
+        throw new Error(`WhatsApp send message failed: ${detail}`);
+      }
+
+      const data = (await response.json()) as {
+        messages?: Array<{ id?: string }>;
+      };
+      lastMessageId = data.messages?.[0]?.id ?? lastMessageId;
+    }
+
+    return { messageId: lastMessageId };
+  }
+
+  private buildWhatsAppOutboundPayloads(
+    text: string,
+    attachments?: Array<{ type: string; url: string }>,
+  ): Array<Record<string, unknown>> {
+    const payloads: Array<Record<string, unknown>> = [];
+    const trimmedText = text.trim();
+
+    for (const attachment of attachments ?? []) {
+      const type = attachment.type.trim();
+      const url = attachment.url.trim();
+      if (!url) continue;
+
+      if (type === 'image') {
+        payloads.push({ type: 'image', image: { link: url } });
+      } else if (type === 'video') {
+        payloads.push({ type: 'video', video: { link: url } });
+      } else if (type === 'audio') {
+        payloads.push({ type: 'audio', audio: { link: url } });
+      } else if (type === 'file') {
+        payloads.push({
+          type: 'document',
+          document: { link: url, filename: 'attachment' },
+        });
+      }
+    }
+
+    if (trimmedText) {
+      payloads.push({ type: 'text', text: { body: trimmedText } });
+    }
+
+    return payloads;
+  }
+
+  private async sendGraphMessages(
+    resourceId: string,
+    accessToken: string,
+    recipientId: string,
+    text: string,
+    attachments: Array<{ type: string; url: string }> | undefined,
+    options: { messagingType?: string },
+    errorPrefix: string,
+  ): Promise<{ messageId: string }> {
+    const payloads = this.buildOutboundMessagePayloads(text, attachments);
+    if (payloads.length === 0) {
+      throw new Error(`${errorPrefix}: message text or attachment is required`);
+    }
+
+    let lastMessageId = '';
+    for (const message of payloads) {
+      const url = this.buildGraphUrl(`/${resourceId}/messages`, {
+        access_token: accessToken,
+      });
+
+      const body: Record<string, unknown> = {
+        recipient: { id: recipientId },
+        message,
+      };
+      if (options.messagingType) {
+        body.messaging_type = options.messagingType;
+      }
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+
+      if (!response.ok) {
+        const detail = this.sanitizeGraphError(await response.text());
+        throw new Error(`${errorPrefix}: ${detail}`);
+      }
+
+      const data = (await response.json()) as {
+        message_id?: string;
+        recipient_id?: string;
+      };
+      lastMessageId = data.message_id ?? lastMessageId;
+    }
+
+    return { messageId: lastMessageId };
+  }
+
+  private buildOutboundMessagePayloads(
+    text: string,
+    attachments?: Array<{ type: string; url: string }>,
+  ): Array<Record<string, unknown>> {
+    const payloads: Array<Record<string, unknown>> = [];
+    const trimmedText = text.trim();
+
+    for (const attachment of attachments ?? []) {
+      const type = attachment.type.trim();
+      const url = attachment.url.trim();
+      if (!url) continue;
+      payloads.push({
+        attachment: {
+          type,
+          payload: { url, is_reusable: true },
+        },
+      });
+    }
+
+    if (trimmedText) {
+      payloads.push({ text: trimmedText });
+    }
+
+    return payloads;
   }
 
   async getMessengerUserProfile(

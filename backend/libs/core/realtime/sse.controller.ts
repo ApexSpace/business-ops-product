@@ -52,6 +52,16 @@ export class SseController {
         })
         .then((fn) => {
           unsubscribe = fn;
+        })
+        .catch(() => {
+          subscriber.next({
+            data: JSON.stringify({
+              event: 'realtime.disabled',
+              data: { reason: 'redis_subscribe_failed' },
+              at: new Date().toISOString(),
+            }),
+          } as MessageEvent);
+          subscriber.complete();
         });
 
       return () => {

@@ -3,67 +3,66 @@ import { ConversationChannel } from '@prisma/client';
 import { AppException } from '@app/common/exceptions/app.exception';
 import { ErrorCode } from '@app/common/exceptions/error-code.enum';
 import { MetaApiClient } from '@app/modules/integrations/integrations/meta/services/meta-api-client';
-import { MetaConfigService } from '@app/modules/integrations/integrations/meta/services/meta-config.service';
+import { MetaTokenService } from '@app/modules/integrations/integrations/meta/services/meta-token.service';
 import { IntegrationResourceRepository } from '@app/modules/integrations/integrations/repositories/integration-resource.repository';
 import {
   ConversationChannelAdapter,
   SendChannelMessageParams,
   SendChannelMessageResult,
 } from '../conversation-channel-adapter.interface';
-import { getPageAccessTokenFromResource } from '../../utils/conversation-resource-token.util';
 import { toMetaOutboundAttachments } from './meta-attachment.util';
 
 @Injectable()
-export class FacebookMessengerAdapter implements ConversationChannelAdapter {
+export class WhatsAppMessagingAdapter implements ConversationChannelAdapter {
   constructor(
     private readonly integrationResourceRepository: IntegrationResourceRepository,
     private readonly metaApiClient: MetaApiClient,
-    private readonly metaConfigService: MetaConfigService,
+    private readonly metaTokenService: MetaTokenService,
   ) {}
 
   getProviderKey(): string {
-    return 'facebook';
+    return 'whatsapp';
   }
 
   getChannel(): ConversationChannel {
-    return ConversationChannel.FACEBOOK;
+    return ConversationChannel.WHATSAPP;
   }
 
   async sendMessage(
     params: SendChannelMessageParams,
   ): Promise<SendChannelMessageResult> {
-    const resource =
-      await this.integrationResourceRepository.findByIdAndBusiness(
-        params.resourceId,
-        params.businessId,
-      );
+    const resource = await this.integrationResourceRepository.findByIdAndBusiness(
+      params.resourceId,
+      params.businessId,
+    );
 
     if (!resource || resource.providerKey !== this.getProviderKey()) {
       throw new AppException(
         ErrorCode.INTEGRATION_RESOURCE_NOT_FOUND,
-        'Facebook Page resource not found',
+        'WhatsApp phone number resource not found',
         HttpStatus.BAD_REQUEST,
       );
     }
 
-    const pageAccessToken = getPageAccessTokenFromResource(
-      resource,
-      this.metaConfigService.getEncryptionKey(),
-    );
-
-    if (!pageAccessToken) {
+    let accessToken: string;
+    try {
+      accessToken = await this.metaTokenService.getAccessToken(
+        params.businessId,
+        this.getProviderKey(),
+      );
+    } catch {
       throw new AppException(
         ErrorCode.CONVERSATION_CHANNEL_NOT_READY,
-        'Facebook Page access token is missing. Sync your Facebook Pages and try again.',
+        'WhatsApp access token is missing. Connect WhatsApp and try again.',
         HttpStatus.BAD_REQUEST,
       );
     }
 
     const attachments = toMetaOutboundAttachments(params.attachments);
 
-    const result = await this.metaApiClient.sendMessengerMessage(
+    const result = await this.metaApiClient.sendWhatsAppMessage(
       resource.externalId,
-      pageAccessToken,
+      accessToken,
       params.externalRecipientId,
       params.text,
       attachments,
@@ -71,7 +70,7 @@ export class FacebookMessengerAdapter implements ConversationChannelAdapter {
 
     return {
       externalMessageId: result.messageId || null,
-      metadata: { pageId: resource.externalId },
+      metadata: { phoneNumberId: resource.externalId },
     };
   }
 }

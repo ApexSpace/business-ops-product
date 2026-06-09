@@ -5,6 +5,10 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import { cn } from "@/lib/utils";
 import { formatRelativeTime } from "@/lib/ui/relative-time";
 import type { ConversationMessage } from "@/features/conversations/api/conversations.api";
+import {
+  isImageAttachment,
+  parseMessageAttachments,
+} from "@/features/conversations/utils/message-attachments";
 
 type VirtualizedMessageListProps = {
   messages: ConversationMessage[];
@@ -86,6 +90,7 @@ export function VirtualizedMessageList({
 function MessageBubble({ message }: { message: ConversationMessage }) {
   const outbound = message.direction === "OUTBOUND";
   const failed = message.status === "FAILED";
+  const attachments = parseMessageAttachments(message.attachments);
 
   return (
     <div className={cn("flex", outbound ? "justify-end" : "justify-start")}>
@@ -99,7 +104,57 @@ function MessageBubble({ message }: { message: ConversationMessage }) {
             "border border-destructive/50 bg-destructive/10 text-destructive",
         )}
       >
-        <p>{message.text ?? "[Attachment]"}</p>
+        {attachments.length > 0 ? (
+          <div className="space-y-2">
+            {attachments.map((attachment, index) => {
+              if (isImageAttachment(attachment) && attachment.url) {
+                return (
+                  <a
+                    key={`${message.id}-attachment-${index}`}
+                    href={attachment.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="block overflow-hidden rounded-lg"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={attachment.url}
+                      alt={attachment.title ?? "Image attachment"}
+                      className="max-h-64 w-full object-cover"
+                    />
+                  </a>
+                );
+              }
+
+              if (attachment.url) {
+                return (
+                  <a
+                    key={`${message.id}-attachment-${index}`}
+                    href={attachment.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className={cn(
+                      "block text-sm underline",
+                      outbound ? "text-primary-foreground" : "text-primary",
+                    )}
+                  >
+                    {attachment.title ?? `${attachment.type} attachment`}
+                  </a>
+                );
+              }
+
+              return (
+                <p key={`${message.id}-attachment-${index}`}>
+                  [{attachment.type}]
+                </p>
+              );
+            })}
+          </div>
+        ) : null}
+        {message.text ? <p>{message.text}</p> : null}
+        {!message.text && attachments.length === 0 ? (
+          <p>[Attachment]</p>
+        ) : null}
         <p
           className={cn(
             "mt-1 text-[10px] opacity-70",

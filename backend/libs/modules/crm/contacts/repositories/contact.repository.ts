@@ -114,7 +114,7 @@ export class ContactRepository {
 
   findByMetadataExternalId(
     businessId: string,
-    metadataKey: 'facebookPsid' | 'instagramUserId',
+    metadataKey: 'facebookPsid' | 'instagramUserId' | 'whatsappWaId',
     externalId: string,
   ): Promise<Contact | null> {
     return this.prisma.contact.findFirst({

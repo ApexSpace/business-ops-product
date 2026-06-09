@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { ConversationListPanel } from "@/features/conversations/components/inbox/conversation-list-panel";
@@ -30,10 +31,17 @@ import { queryKeys } from "@/lib/query/keys";
 
 export function ConversationsInbox() {
   const queryClient = useQueryClient();
+  const searchParams = useSearchParams();
+  const conversationFromQuery = searchParams.get("conversation");
   const { filter, setFilter, search, setSearch, listFilters } =
     useConversationsInboxFilters();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [composer, setComposer] = useState("");
+  const [attachmentUrl, setAttachmentUrl] = useState("");
+  const [pendingAttachment, setPendingAttachment] = useState<{
+    type: string;
+    url: string;
+  } | null>(null);
 
   const { data: listData, isLoading: listLoading } = useQuery({
     queryKey: queryKeys.conversations.list(listFilters),
@@ -51,10 +59,15 @@ export function ConversationsInbox() {
   }, [listData?.items, filter]);
 
   useEffect(() => {
+    if (conversationFromQuery) {
+      setSelectedId(conversationFromQuery);
+      return;
+    }
+
     if (!selectedId && conversations.length > 0) {
       setSelectedId(conversations[0].id);
     }
-  }, [conversations, selectedId]);
+  }, [conversationFromQuery, conversations, selectedId]);
 
   const { data: selected } = useQuery({
     queryKey: queryKeys.conversations.detail(selectedId ?? ""),
@@ -85,14 +98,27 @@ export function ConversationsInbox() {
   };
 
   const sendMutation = useMutation({
-    mutationFn: ({ id, text }: { id: string; text: string }) => {
+    mutationFn: ({
+      id,
+      text,
+      attachments,
+    }: {
+      id: string;
+      text: string;
+      attachments?: Array<{ type: string; url: string }>;
+    }) => {
       markMessageSendStart(id);
       markMessageSendPending(id);
-      return sendConversationMessage(id, text);
+      return sendConversationMessage(id, {
+        text: text || undefined,
+        attachments,
+      });
     },
     onSuccess: async (_data, { id }) => {
       markMessageSendComplete(id);
       setComposer("");
+      setAttachmentUrl("");
+      setPendingAttachment(null);
       await invalidateAll();
       if (selectedId) {
         await queryClient.invalidateQueries({
@@ -128,20 +154,42 @@ export function ConversationsInbox() {
 
   const canSend =
     Boolean(selectedId) &&
-    composer.trim().length > 0 &&
+    (composer.trim().length > 0 || Boolean(pendingAttachment)) &&
     (isWebchat || Boolean(messagingStatusQuery.data?.readyForMessaging));
 
-  const sendDisabledReason = isWebchat
-    ? null
-    : messagingStatusQuery.isLoading
-      ? null
-      : !messagingStatusQuery.data?.readyForMessaging
-        ? selected?.providerKey === "facebook"
-          ? "Select a Facebook Page and complete messaging setup before sending."
-          : selected?.providerKey === "instagram"
-            ? "Select an Instagram account and complete messaging setup before sending."
-            : "Messaging is not ready for this channel."
-        : null;
+  const sendDisabledReason = useMemo(() => {
+    if (isWebchat) {
+      return null;
+    }
+
+    if (messagingStatusQuery.data?.readyForMessaging) {
+      return null;
+    }
+
+    const warnings = messagingStatusQuery.data?.warnings ?? [];
+    if (warnings.length > 0) {
+      return warnings.join(" ");
+    }
+
+    if (selected?.providerKey === "facebook") {
+      return "Select a Facebook Page and complete messaging setup before sending.";
+    }
+
+    if (selected?.providerKey === "instagram") {
+      return "Select an Instagram account and complete messaging setup before sending.";
+    }
+
+    if (selected?.providerKey === "whatsapp") {
+      return "Connect WhatsApp, select a default phone number, and complete messaging setup before sending.";
+    }
+
+    return "Messaging is not ready for this channel.";
+  }, [
+    isWebchat,
+    messagingStatusQuery.data?.readyForMessaging,
+    messagingStatusQuery.data?.warnings,
+    selected?.providerKey,
+  ]);
 
   const messages = useMemo(
     () => messagesInfinite?.pages.flatMap((page) => page.items) ?? [],
@@ -175,10 +223,21 @@ export function ConversationsInbox() {
         fetchNextPage={() => void fetchNextPage()}
         composer={composer}
         onComposerChange={setComposer}
+        attachmentUrl={attachmentUrl}
+        onAttachmentUrlChange={setAttachmentUrl}
+        pendingAttachment={pendingAttachment}
+        onAddAttachment={() => {
+          const url = attachmentUrl.trim();
+          if (!url) return;
+          setPendingAttachment({ type: "image", url });
+          setAttachmentUrl("");
+        }}
+        onRemoveAttachment={() => setPendingAttachment(null)}
         canSend={canSend}
         sendDisabledReason={sendDisabledReason}
         sendMutation={sendMutation}
         statusMutation={statusMutation}
+        onAssignSuccess={invalidateAll}
       />
     </div>
   );

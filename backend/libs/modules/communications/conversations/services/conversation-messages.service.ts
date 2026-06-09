@@ -133,7 +133,13 @@ export class ConversationMessagesService {
       }
     }
 
-    const preview = dto.text.trim().slice(0, 500);
+    const text = dto.text?.trim() ?? '';
+    const hasAttachments =
+      Array.isArray(dto.attachments) && dto.attachments.length > 0;
+    const preview = (text || (hasAttachments ? '[Attachment]' : '')).slice(
+      0,
+      500,
+    );
     const messageBase = {
       business: { connect: { id: businessId } },
       conversation: { connect: { id: conversation.id } },
@@ -145,7 +151,7 @@ export class ConversationMessagesService {
       direction: ConversationDirection.OUTBOUND,
       senderType: MessageSenderType.USER,
       senderUserId: actor.id,
-      text: dto.text.trim(),
+      text,
       attachments: (dto.attachments ?? undefined) as
         | Prisma.InputJsonValue
         | undefined,
@@ -187,6 +193,14 @@ export class ConversationMessagesService {
       throw new AppException(
         ErrorCode.BAD_REQUEST,
         'Synchronous message send is disabled',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    if (!text && !hasAttachments) {
+      throw new AppException(
+        ErrorCode.BAD_REQUEST,
+        'Message text or at least one attachment is required.',
         HttpStatus.BAD_REQUEST,
       );
     }

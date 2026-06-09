@@ -2,17 +2,35 @@
 
 import Link from "next/link";
 import { MessageSquare } from "lucide-react";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { UseMutationResult } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { VirtualizedMessageList } from "@/features/conversations/components/virtualized-message-list";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  assignConversation,
   channelLabel,
   type Conversation,
   type ConversationMessage,
 } from "@/features/conversations/api/conversations.api";
-import { contactDisplayName } from "@/features/conversations/components/inbox/conversation-inbox-utils";
-import { MessageComposer } from "@/features/conversations/components/inbox/message-composer";
+import {
+  channelComposerHint,
+  contactDisplayName,
+} from "@/features/conversations/components/inbox/conversation-inbox-utils";
+import {
+  MessageComposer,
+  type PendingMessageAttachment,
+} from "@/features/conversations/components/inbox/message-composer";
+import { listBusinessMembers } from "@/features/settings/api/business.api";
+import { queryKeys } from "@/lib/query/keys";
 
 interface ConversationThreadPanelProps {
   selectedId: string | null;
@@ -24,14 +42,24 @@ interface ConversationThreadPanelProps {
   fetchNextPage: () => void;
   composer: string;
   onComposerChange: (value: string) => void;
+  attachmentUrl: string;
+  onAttachmentUrlChange: (value: string) => void;
+  pendingAttachment: PendingMessageAttachment | null;
+  onAddAttachment: () => void;
+  onRemoveAttachment: () => void;
   canSend: boolean;
   sendDisabledReason: string | null;
-  sendMutation: UseMutationResult<unknown, Error, { id: string; text: string }>;
+  sendMutation: UseMutationResult<
+    unknown,
+    Error,
+    { id: string; text: string; attachments?: Array<{ type: string; url: string }> }
+  >;
   statusMutation: UseMutationResult<
     unknown,
     Error,
     { id: string; action: "close" | "reopen" }
   >;
+  onAssignSuccess: () => Promise<void>;
 }
 
 export function ConversationThreadPanel({
@@ -44,11 +72,46 @@ export function ConversationThreadPanel({
   fetchNextPage,
   composer,
   onComposerChange,
+  attachmentUrl,
+  onAttachmentUrlChange,
+  pendingAttachment,
+  onAddAttachment,
+  onRemoveAttachment,
   canSend,
   sendDisabledReason,
   sendMutation,
   statusMutation,
+  onAssignSuccess,
 }: ConversationThreadPanelProps) {
+  const { data: members } = useQuery({
+    queryKey: queryKeys.business.members({ page: 1, limit: 100 }),
+    queryFn: () => listBusinessMembers({ page: 1, limit: 100 }),
+    enabled: Boolean(selectedId),
+  });
+
+  const assignMutation = useMutation({
+    mutationFn: ({
+      conversationId,
+      assignedToUserId,
+    }: {
+      conversationId: string;
+      assignedToUserId: string | null;
+    }) => assignConversation(conversationId, assignedToUserId),
+    onSuccess: async () => {
+      toast.success("Conversation assignment updated");
+      await onAssignSuccess();
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
+
+  const assigneeItems =
+    members?.items.map((member) => ({
+      value: member.user.id,
+      label:
+        [member.user.firstName, member.user.lastName].filter(Boolean).join(" ") ||
+        member.user.email,
+    })) ?? [];
+
   return (
     <>
       <section className="flex min-w-0 flex-1 flex-col">
@@ -110,12 +173,24 @@ export function ConversationThreadPanel({
             <MessageComposer
               composer={composer}
               onComposerChange={onComposerChange}
+              attachmentUrl={attachmentUrl}
+              onAttachmentUrlChange={onAttachmentUrlChange}
+              pendingAttachment={pendingAttachment}
+              onAddAttachment={onAddAttachment}
+              onRemoveAttachment={onRemoveAttachment}
               canSend={canSend}
               sendDisabledReason={sendDisabledReason}
+              channelHint={
+                selected ? channelComposerHint(selected.channel) : null
+              }
               isPending={sendMutation.isPending}
               onSend={() => {
                 if (selectedId) {
-                  sendMutation.mutate({ id: selectedId, text: composer.trim() });
+                  sendMutation.mutate({
+                    id: selectedId,
+                    text: composer.trim(),
+                    attachments: pendingAttachment ? [pendingAttachment] : undefined,
+                  });
                 }
               }}
             />
@@ -151,6 +226,33 @@ export function ConversationThreadPanel({
                 Status
               </p>
               <p className="mt-1 capitalize">{selected.status.toLowerCase()}</p>
+            </div>
+            <div>
+              <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                Assigned to
+              </p>
+              <Select
+                value={selected.assignedToUserId ?? "unassigned"}
+                onValueChange={(value) => {
+                  assignMutation.mutate({
+                    conversationId: selected.id,
+                    assignedToUserId: value === "unassigned" ? null : value,
+                  });
+                }}
+                disabled={assignMutation.isPending}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Unassigned" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="unassigned">Unassigned</SelectItem>
+                  {assigneeItems.map((member) => (
+                    <SelectItem key={member.value} value={member.value}>
+                      {member.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
         ) : (

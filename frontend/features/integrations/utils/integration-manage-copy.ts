@@ -15,6 +15,7 @@ export interface IntegrationManageCopy {
   syncEmptyToast: string;
   emptyState: IntegrationEmptyStateCopy;
   disconnectLabel: string;
+  messagingComposerHint?: string;
 }
 
 const DEFAULT_COPY: IntegrationManageCopy = {
@@ -89,6 +90,8 @@ const COPY_BY_PROVIDER: Record<string, IntegrationManageCopy> = {
     connectionTitle: "WhatsApp connection",
     description:
       "Connect your WhatsApp Business number so your team can send and receive customer messages.",
+    messagingComposerHint:
+      "Free-form replies are allowed within 24 hours of the customer's last message. Outside that window, use an approved WhatsApp message template to start or continue the conversation.",
     resourcesSectionLabel: "WhatsApp numbers",
     syncButtonLabel: "Sync WhatsApp numbers",
     syncSuccessToast: (count) =>

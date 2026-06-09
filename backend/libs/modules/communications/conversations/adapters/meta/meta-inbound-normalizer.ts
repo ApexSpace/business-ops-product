@@ -1,5 +1,11 @@
 import { ConversationChannel } from '@prisma/client';
+import {
+  normalizeMetaInboundAttachments,
+  normalizeWhatsAppInboundAttachments,
+} from './meta-attachment.util';
 import { NormalizedInboundMessage } from './meta-inbound.types';
+
+const WHATSAPP_WEBHOOK_OBJECTS = new Set(['whatsapp', 'whatsapp_business_account']);
 
 type MetaMessagingEvent = {
   sender?: { id?: string };
@@ -54,7 +60,7 @@ function normalizeMessagingEvent(
     externalSenderId: senderId,
     externalRecipientId: recipientId,
     text: event.message.text ?? null,
-    attachments: event.message.attachments ?? null,
+    attachments: normalizeMetaInboundAttachments(event.message.attachments),
     timestamp: new Date((event.timestamp ?? Date.now()) * 1000),
     senderName: null,
     senderProfilePictureUrl: null,
@@ -110,6 +116,128 @@ export function normalizeMetaInstagramWebhook(entry: {
   return results;
 }
 
+type WhatsAppWebhookContact = {
+  profile?: { name?: string };
+  wa_id?: string;
+};
+
+type WhatsAppWebhookMessage = {
+  from?: string;
+  id?: string;
+  timestamp?: string;
+  type?: string;
+  text?: { body?: string };
+  image?: { id?: string; mime_type?: string; caption?: string };
+  video?: { id?: string; mime_type?: string; caption?: string };
+  audio?: { id?: string; mime_type?: string };
+  document?: { id?: string; mime_type?: string; filename?: string; caption?: string };
+  sticker?: { id?: string; mime_type?: string };
+};
+
+type WhatsAppChangeValue = {
+  messaging_product?: string;
+  metadata?: {
+    display_phone_number?: string;
+    phone_number_id?: string;
+  };
+  contacts?: WhatsAppWebhookContact[];
+  messages?: WhatsAppWebhookMessage[];
+};
+
+function resolveWhatsAppContactName(
+  contacts: WhatsAppWebhookContact[] | undefined,
+  waId: string,
+): string | null {
+  const match = contacts?.find((contact) => contact.wa_id === waId);
+  return match?.profile?.name?.trim() || null;
+}
+
+function normalizeWhatsAppMessage(
+  phoneNumberId: string,
+  wabaId: string | null,
+  value: WhatsAppChangeValue,
+  message: WhatsAppWebhookMessage,
+): NormalizedInboundMessage | null {
+  const senderWaId = message.from?.trim();
+  const messageId = message.id?.trim();
+
+  if (!senderWaId || !messageId) {
+    return null;
+  }
+
+  const text =
+    message.type === 'text' ? (message.text?.body?.trim() ?? null) : null;
+  const timestampSeconds = Number(message.timestamp);
+  const timestamp = Number.isFinite(timestampSeconds)
+    ? new Date(timestampSeconds * 1000)
+    : new Date();
+
+  return {
+    channel: ConversationChannel.WHATSAPP,
+    providerKey: 'whatsapp',
+    externalResourceId: phoneNumberId,
+    externalConversationId: buildExternalConversationId(
+      ConversationChannel.WHATSAPP,
+      phoneNumberId,
+      senderWaId,
+    ),
+    externalParticipantId: senderWaId,
+    externalPageId: null,
+    externalMessageId: messageId,
+    externalSenderId: senderWaId,
+    externalRecipientId: phoneNumberId,
+    text,
+    attachments: normalizeWhatsAppInboundAttachments(message),
+    timestamp,
+    senderName: resolveWhatsAppContactName(value.contacts, senderWaId),
+    senderProfilePictureUrl: null,
+    rawMetadata: {
+      wabaId,
+      messageType: message.type ?? null,
+      displayPhoneNumber: value.metadata?.display_phone_number ?? null,
+    },
+  };
+}
+
+export function normalizeMetaWhatsAppWebhook(
+  entry: { id?: string; changes?: Array<{ value?: WhatsAppChangeValue; field?: string }> },
+): NormalizedInboundMessage[] {
+  const wabaId = entry.id ?? null;
+  if (!entry.changes?.length) {
+    return [];
+  }
+
+  const results: NormalizedInboundMessage[] = [];
+
+  for (const change of entry.changes) {
+    if (change.field !== 'messages') continue;
+
+    const value = change.value;
+    const phoneNumberId = value?.metadata?.phone_number_id?.trim();
+    if (!value || !phoneNumberId || !value.messages?.length) {
+      continue;
+    }
+
+    for (const message of value.messages) {
+      const normalized = normalizeWhatsAppMessage(
+        phoneNumberId,
+        wabaId,
+        value,
+        message,
+      );
+      if (normalized) {
+        results.push(normalized);
+      }
+    }
+  }
+
+  return results;
+}
+
+export function isWhatsAppWebhookObject(objectType: string | null): boolean {
+  return objectType !== null && WHATSAPP_WEBHOOK_OBJECTS.has(objectType);
+}
+
 export function normalizeMetaWebhookPayload(body: Record<string, unknown>): {
   messages: NormalizedInboundMessage[];
   objectType: string | null;
@@ -120,12 +248,19 @@ export function normalizeMetaWebhookPayload(body: Record<string, unknown>): {
 
   for (const entry of entries) {
     if (!entry || typeof entry !== 'object') continue;
-    const record = entry as { id?: string; messaging?: MetaMessagingEvent[] };
 
     if (objectType === 'page') {
+      const record = entry as { id?: string; messaging?: MetaMessagingEvent[] };
       messages.push(...normalizeMetaPageWebhook(record));
     } else if (objectType === 'instagram') {
+      const record = entry as { id?: string; messaging?: MetaMessagingEvent[] };
       messages.push(...normalizeMetaInstagramWebhook(record));
+    } else if (isWhatsAppWebhookObject(objectType)) {
+      const record = entry as {
+        id?: string;
+        changes?: Array<{ value?: WhatsAppChangeValue; field?: string }>;
+      };
+      messages.push(...normalizeMetaWhatsAppWebhook(record));
     }
   }
 

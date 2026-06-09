@@ -13,6 +13,9 @@ import { ConversationMessagesRepository } from '@app/modules/communications/conv
 import { ConversationsRepository } from '@app/modules/communications/conversations/repositories/conversations.repository';
 import { WEBCHAT_PROVIDER_KEY } from '@app/modules/communications/chatbots/utils/chatbot-public-key.util';
 import { BusinessIntegrationRepository } from '@app/modules/integrations/integrations/repositories/business-integration.repository';
+import type { ChannelMessageAttachment } from '@app/modules/communications/conversations/adapters/conversation-channel-adapter.interface';
+import { previewFromMessageContent } from '@app/modules/communications/conversations/adapters/meta/meta-attachment.util';
+import { ConversationRealtimeService } from '@app/modules/communications/conversations/services/conversation-realtime.service';
 
 @Injectable()
 export class SendMessageProcessor {
@@ -25,6 +28,7 @@ export class SendMessageProcessor {
     private readonly businessIntegrationRepository: BusinessIntegrationRepository,
     private readonly asyncJobRepository: AsyncJobRepository,
     private readonly idempotencyService: IdempotencyService,
+    private readonly realtime: ConversationRealtimeService,
   ) {}
 
   async process(payload: SendOutboundMessagePayload): Promise<void> {
@@ -88,7 +92,8 @@ export class SendMessageProcessor {
     }
 
     const adapter = this.adapterRegistry.getAdapter(conversation.channel);
-    const preview = (message.text ?? '').slice(0, 500);
+    const attachments = this.readAttachments(message.attachments);
+    const preview = previewFromMessageContent(message.text, attachments);
     const now = new Date();
 
     try {
@@ -97,6 +102,7 @@ export class SendMessageProcessor {
         resourceId: conversation.resourceId,
         externalRecipientId: conversation.externalParticipantId,
         text: message.text ?? '',
+        attachments,
       });
 
       await this.messagesRepository.update(message.id, {
@@ -114,6 +120,18 @@ export class SendMessageProcessor {
         unreadCount: 0,
       });
 
+      await this.realtime.publishMessageUpdated(payload.businessId, {
+        conversationId: conversation.id,
+        messageId: message.id,
+        status: MessageStatus.SENT,
+        channel: conversation.channel,
+      });
+
+      await this.realtime.publishConversationUpdated(payload.businessId, {
+        conversationId: conversation.id,
+        channel: conversation.channel,
+      });
+
       await this.asyncJobRepository.markCompleted(payload.asyncJobId, {
         messageId: message.id,
         status: MessageStatus.SENT,
@@ -122,8 +140,35 @@ export class SendMessageProcessor {
       const errorMessage =
         error instanceof Error ? error.message : 'Failed to send message';
       await this.failMessage(payload, message.id, errorMessage);
+
+      await this.realtime.publishMessageUpdated(payload.businessId, {
+        conversationId: conversation.id,
+        messageId: message.id,
+        status: MessageStatus.FAILED,
+        channel: conversation.channel,
+      });
+
       throw error;
     }
+  }
+
+  private readAttachments(value: unknown): ChannelMessageAttachment[] | undefined {
+    if (!Array.isArray(value) || value.length === 0) {
+      return undefined;
+    }
+
+    const attachments = value
+      .map((item) => {
+        if (!item || typeof item !== 'object') return null;
+        const record = item as Record<string, unknown>;
+        const type = typeof record.type === 'string' ? record.type.trim() : '';
+        const url = typeof record.url === 'string' ? record.url.trim() : '';
+        if (!type || !url) return null;
+        return { type, url };
+      })
+      .filter((item): item is ChannelMessageAttachment => item !== null);
+
+    return attachments.length > 0 ? attachments : undefined;
   }
 
   private async failMessage(

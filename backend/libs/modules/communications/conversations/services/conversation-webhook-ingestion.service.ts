@@ -11,9 +11,11 @@ import {
 } from '@prisma/client';
 import { SYSTEM_AUDIT_ACTOR_SENTINEL } from '@app/modules/platform/audit/constants/audit.constants';
 import { AuditService } from '@app/modules/platform/audit/services/audit.service';
+import { previewFromMessageContent } from '../adapters/meta/meta-attachment.util';
 import { normalizeMetaWebhookPayload } from '../adapters/meta/meta-inbound-normalizer';
 import { NormalizedInboundMessage } from '../adapters/meta/meta-inbound.types';
 import { ConversationContactResolverService } from './conversation-contact-resolver.service';
+import { ConversationRealtimeService } from './conversation-realtime.service';
 import { ConversationIntegrationRepository } from '../repositories/conversation-integration.repository';
 import { ConversationMessagesRepository } from '../repositories/conversation-messages.repository';
 import { ConversationsRepository } from '../repositories/conversations.repository';
@@ -34,6 +36,7 @@ export class ConversationWebhookIngestionService {
     private readonly webhookEventsRepository: WebhookEventsRepository,
     private readonly auditService: AuditService,
     private readonly prisma: PrismaService,
+    private readonly realtime: ConversationRealtimeService,
   ) {}
 
   async processMetaPayload(
@@ -115,7 +118,7 @@ export class ConversationWebhookIngestionService {
         inbound.externalConversationId,
       );
 
-    const preview = inbound.text?.slice(0, 500) ?? '[Attachment]';
+    const preview = previewFromMessageContent(inbound.text, inbound.attachments);
     const messageAt = inbound.timestamp;
 
     if (!conversation) {
@@ -183,7 +186,7 @@ export class ConversationWebhookIngestionService {
       );
     }
 
-    await this.messagesRepository.create({
+    const createdMessage = await this.messagesRepository.create({
       business: { connect: { id: businessId } },
       conversation: { connect: { id: conversation.id } },
       contact: { connect: { id: contact.id } },
@@ -205,6 +208,18 @@ export class ConversationWebhookIngestionService {
         | undefined,
     });
 
+    await this.realtime.publishMessageReceived(businessId, {
+      conversationId: conversation.id,
+      messageId: createdMessage.id,
+      status: MessageStatus.RECEIVED,
+      channel: inbound.channel,
+    });
+
+    await this.realtime.publishConversationUpdated(businessId, {
+      conversationId: conversation.id,
+      channel: inbound.channel,
+    });
+
     await this.auditService.log({
       actorUserId: SYSTEM_AUDIT_ACTOR_SENTINEL,
       businessId,
@@ -222,6 +237,17 @@ export class ConversationWebhookIngestionService {
     inbound: NormalizedInboundMessage,
     objectType: string | null,
   ) {
+    if (
+      inbound.channel === ConversationChannel.WHATSAPP ||
+      objectType === 'whatsapp' ||
+      objectType === 'whatsapp_business_account'
+    ) {
+      return this.conversationIntegrationRepository.findResourceByExternalId(
+        inbound.externalResourceId,
+        IntegrationResourceType.PHONE_NUMBER,
+      );
+    }
+
     if (
       inbound.channel === ConversationChannel.FACEBOOK ||
       objectType === 'page'
