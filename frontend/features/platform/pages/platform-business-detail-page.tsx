@@ -2,8 +2,10 @@
 
 import { PageHeader } from "@/components/layout/page-header";
 import { StatusBadge } from "@/components/data-display/status-badge";
+import { PlatformBusinessAccessTab } from "@/features/platform/components/platform-business-access-tab";
 import { PlatformBusinessAuditTab } from "@/features/platform/components/platform-business-audit-tab";
-import { PlatformBusinessBillingTab } from "@/features/platform/components/platform-business-billing-tab";
+import { PlatformBusinessPaymentsTab } from "@/features/platform/components/platform-business-payments-tab";
+import { PlatformBusinessSubscriptionsTab } from "@/features/platform/components/platform-business-subscriptions-tab";
 import {
   PlatformBusinessDetailTabs,
   type PlatformBusinessDetailTab,
@@ -35,18 +37,14 @@ function renderTabContent(
     utilization,
     utilizationLoading,
     members,
-    recentAuditLogs,
-    subscription,
-    plans,
+    access,
     canUpdate,
-    canBilling,
     canSetOwner,
+    openPaymentsTab,
+    paymentsAutoOpen,
     setActiveTab,
-    selectedPlanId,
-    setSelectedPlanId,
-    selectedStatus,
-    setSelectedStatus,
-    assignSubscriptionMutation,
+    openSubscriptionsTab,
+    accessLoading,
   } = props;
 
   if (!business) return null;
@@ -56,11 +54,38 @@ function renderTabContent(
       return (
         <PlatformBusinessOverviewTab
           business={business}
+          access={access}
           utilization={utilization}
           utilizationLoading={utilizationLoading}
-          subscription={subscription}
-          recentAuditLogs={recentAuditLogs}
-          onNavigateTab={setActiveTab}
+        />
+      );
+    case "access":
+      return (
+        <PlatformBusinessAccessTab
+          business={business}
+          canUpdate={canUpdate}
+          onNavigateToSubscriptions={openSubscriptionsTab}
+          onNavigateToPayments={openPaymentsTab}
+        />
+      );
+    case "subscriptions":
+      return (
+        <PlatformBusinessSubscriptionsTab
+          businessId={id}
+          access={access}
+          accessLoading={accessLoading}
+          canUpdate={canUpdate}
+          onManageAccess={() => setActiveTab("access")}
+          onRecordPayment={() => openPaymentsTab({ recordPayment: true })}
+        />
+      );
+    case "payments":
+      return (
+        <PlatformBusinessPaymentsTab
+          businessId={id}
+          canUpdate={canUpdate}
+          autoOpenRecord={paymentsAutoOpen}
+          onAutoOpenConsumed={() => setActiveTab("payments")}
         />
       );
     case "profile":
@@ -77,20 +102,6 @@ function renderTabContent(
           members={members}
           canInvite={canUpdate}
           canSetOwner={canSetOwner}
-        />
-      );
-    case "billing":
-      return (
-        <PlatformBusinessBillingTab
-          subscription={subscription}
-          plans={plans}
-          canBilling={canBilling}
-          selectedPlanId={selectedPlanId}
-          setSelectedPlanId={setSelectedPlanId}
-          selectedStatus={selectedStatus}
-          setSelectedStatus={setSelectedStatus}
-          assignSubscriptionPending={assignSubscriptionMutation.isPending}
-          onAssignSubscription={() => assignSubscriptionMutation.mutate()}
         />
       );
     case "activity":
@@ -127,7 +138,6 @@ export function PlatformBusinessDetailPage() {
             <StatusBadge status={business.status} domain="business" />
           </div>
         }
-        description={`Slug: ${business.slug}`}
         actions={
           <div className="flex items-center gap-2">
             {canUpdate ? (

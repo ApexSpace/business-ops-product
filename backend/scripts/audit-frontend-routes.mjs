@@ -9,6 +9,7 @@ const PASSWORD = process.env.AUDIT_PASSWORD ?? 'ChangeMe123!';
 const BUSINESS_GET_ROUTES = [
   'auth/me',
   'businesses/current',
+  'businesses/current/access',
   'businesses/current/snapshot-context',
   'businesses/current/dashboard-stats',
   'businesses/current/snapshot-context',

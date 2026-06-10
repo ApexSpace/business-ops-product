@@ -40,7 +40,10 @@ export class ChatbotRulesRepository {
     return this.prisma.chatbotRule.create({ data });
   }
 
-  update(id: string, data: Prisma.ChatbotRuleUpdateInput): Promise<ChatbotRule> {
+  update(
+    id: string,
+    data: Prisma.ChatbotRuleUpdateInput,
+  ): Promise<ChatbotRule> {
     return this.prisma.chatbotRule.update({ where: { id }, data });
   }
 

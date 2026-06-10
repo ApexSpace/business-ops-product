@@ -23,9 +23,7 @@ export function isPastDueDate(dueDate: Date, ref = new Date()): boolean {
   return daysUntilDate(dueDate, ref) < 0;
 }
 
-function toDecimal(
-  value: Prisma.Decimal | string | number,
-): Prisma.Decimal {
+function toDecimal(value: Prisma.Decimal | string | number): Prisma.Decimal {
   if (value instanceof Prisma.Decimal) {
     return value;
   }
@@ -89,8 +87,7 @@ export function isEstimateExpired(params: {
   }
 
   return (
-    params.status === EstimateStatus.SENT &&
-    isPastDueDate(params.expiryDate)
+    params.status === EstimateStatus.SENT && isPastDueDate(params.expiryDate)
   );
 }
 

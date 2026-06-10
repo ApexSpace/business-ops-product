@@ -4,10 +4,7 @@ import { SYSTEM_AUDIT_ACTOR_SENTINEL } from '@app/modules/platform/audit/constan
 import { AuditService } from '@app/modules/platform/audit/services/audit.service';
 import { WebhookEventsRepository } from '@app/modules/communications/conversations/repositories/webhook-events.repository';
 import { BusinessIntegrationRepository } from '../../repositories/business-integration.repository';
-import type {
-  StripeConnectAccount,
-  StripeWebhookEvent,
-} from '../stripe.types';
+import type { StripeConnectAccount, StripeWebhookEvent } from '../stripe.types';
 import { StripeInvoicePaymentService } from '@app/modules/finance/invoices/services/stripe-invoice-payment.service';
 import { StripeAccountService } from './stripe-account.service';
 import { StripeApiService } from './stripe-api.service';
@@ -79,7 +76,9 @@ export class StripeWebhookDispatchService {
         break;
       case 'invoice.payment_succeeded':
       case 'invoice.payment_failed':
-        this.logger.log(`Stripe ${event.type} received (invoice handler pending)`);
+        this.logger.log(
+          `Stripe ${event.type} received (invoice handler pending)`,
+        );
         break;
       default:
         this.logger.debug(`Unhandled Stripe event type: ${event.type}`);
@@ -120,7 +119,9 @@ export class StripeWebhookDispatchService {
     });
   }
 
-  private async handleAccountAuthorized(event: StripeWebhookEvent): Promise<void> {
+  private async handleAccountAuthorized(
+    event: StripeWebhookEvent,
+  ): Promise<void> {
     const application = event.data.object as { account?: string };
     const accountId = application.account;
     if (!accountId) return;
@@ -163,7 +164,8 @@ export class StripeWebhookDispatchService {
       'stripe',
       {
         status: IntegrationStatus.EXPIRED,
-        errorMessage: 'Stripe disconnected. Reconnect to accept payments again.',
+        errorMessage:
+          'Stripe disconnected. Reconnect to accept payments again.',
       },
     );
 
@@ -180,7 +182,9 @@ export class StripeWebhookDispatchService {
   private async handleCheckoutSessionCompleted(
     event: StripeWebhookEvent,
   ): Promise<void> {
-    await this.stripeInvoicePaymentService.handleCheckoutSessionCompleted(event);
+    await this.stripeInvoicePaymentService.handleCheckoutSessionCompleted(
+      event,
+    );
   }
 
   private async handlePaymentIntentSucceeded(
@@ -198,5 +202,4 @@ export class StripeWebhookDispatchService {
   private async handleChargeRefunded(event: StripeWebhookEvent): Promise<void> {
     await this.stripeInvoicePaymentService.handleChargeRefunded(event);
   }
-
 }

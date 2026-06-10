@@ -1,8 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import {
-  WebhookEventProvider,
-  WebhookEventStatus,
-} from '@prisma/client';
+import { WebhookEventProvider, WebhookEventStatus } from '@prisma/client';
 import { IdempotencyService } from '@app/core/idempotency/idempotency.service';
 import type { ProcessMetaWebhookPayload } from '@app/core/queue/queue.types';
 import { ConversationWebhookIngestionService } from '@app/modules/communications/conversations/services/conversation-webhook-ingestion.service';
@@ -19,7 +16,9 @@ export class MetaWebhookProcessor {
   ) {}
 
   async process(payload: ProcessMetaWebhookPayload): Promise<void> {
-    const event = await this.webhookEventsRepository.findById(payload.webhookEventId);
+    const event = await this.webhookEventsRepository.findById(
+      payload.webhookEventId,
+    );
     if (!event) {
       this.logger.warn(`WebhookEvent ${payload.webhookEventId} not found`);
       return;
@@ -30,11 +29,16 @@ export class MetaWebhookProcessor {
     }
 
     if (event.externalEventId) {
-      const existing = await this.webhookEventsRepository.findByProviderAndExternalId(
-        WebhookEventProvider.META,
-        event.externalEventId,
-      );
-      if (existing && existing.id !== event.id && existing.status === WebhookEventStatus.PROCESSED) {
+      const existing =
+        await this.webhookEventsRepository.findByProviderAndExternalId(
+          WebhookEventProvider.META,
+          event.externalEventId,
+        );
+      if (
+        existing &&
+        existing.id !== event.id &&
+        existing.status === WebhookEventStatus.PROCESSED
+      ) {
         await this.webhookEventsRepository.updateStatus(
           event.id,
           WebhookEventStatus.IGNORED,
@@ -47,7 +51,9 @@ export class MetaWebhookProcessor {
         event.externalEventId,
       );
       if (!claimed) {
-        this.logger.log(`Skipping duplicate Meta event ${event.externalEventId}`);
+        this.logger.log(
+          `Skipping duplicate Meta event ${event.externalEventId}`,
+        );
         return;
       }
     }
@@ -68,7 +74,8 @@ export class MetaWebhookProcessor {
         );
       }
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Processing failed';
+      const message =
+        error instanceof Error ? error.message : 'Processing failed';
       await this.webhookEventsRepository.updateStatus(
         event.id,
         WebhookEventStatus.FAILED,

@@ -57,10 +57,7 @@ export class LeadRepository {
     });
   }
 
-  findByContactId(
-    businessId: string,
-    contactId: string,
-  ): Promise<Lead | null> {
+  findByContactId(businessId: string, contactId: string): Promise<Lead | null> {
     return this.prisma.lead.findFirst({
       where: { businessId, contactId },
     });

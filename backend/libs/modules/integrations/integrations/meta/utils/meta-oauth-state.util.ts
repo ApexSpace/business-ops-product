@@ -28,7 +28,9 @@ function decodeBase64Url(value: string): string {
 }
 
 function signPayload(payloadEncoded: string, secret: string): string {
-  return createHmac('sha256', secret).update(payloadEncoded).digest('base64url');
+  return createHmac('sha256', secret)
+    .update(payloadEncoded)
+    .digest('base64url');
 }
 
 export function createMetaOAuthState(
@@ -46,8 +48,7 @@ export function createMetaOAuthState(
     userId: payload.userId,
     providerKey: payload.providerKey,
     flowType,
-    flow:
-      flowType === 'WHATSAPP_EMBEDDED_SIGNUP' ? 'embedded_signup' : 'oauth',
+    flow: flowType === 'WHATSAPP_EMBEDDED_SIGNUP' ? 'embedded_signup' : 'oauth',
     nonce: randomBytes(16).toString('hex'),
     timestamp: Date.now(),
   };
@@ -65,7 +66,10 @@ function normalizeLegacyPayload(
   }
 
   let flowType: MetaFlowType;
-  if (raw.flowType === 'META_OAUTH' || raw.flowType === 'WHATSAPP_EMBEDDED_SIGNUP') {
+  if (
+    raw.flowType === 'META_OAUTH' ||
+    raw.flowType === 'WHATSAPP_EMBEDDED_SIGNUP'
+  ) {
     flowType = resolveFlowType(providerKey, raw.flowType);
   } else if (raw.flow === 'embedded_signup') {
     flowType = 'WHATSAPP_EMBEDDED_SIGNUP';
@@ -127,7 +131,9 @@ export function verifyMetaOAuthState(
     throw new Error('Unknown provider in OAuth state');
   }
   if (config.flowType !== payload.flowType) {
-    throw new Error('OAuth state flowType does not match provider configuration');
+    throw new Error(
+      'OAuth state flowType does not match provider configuration',
+    );
   }
 
   return payload;

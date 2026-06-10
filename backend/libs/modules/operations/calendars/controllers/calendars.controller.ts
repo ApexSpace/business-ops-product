@@ -17,6 +17,8 @@ import { ConfirmDeleteQueryDto } from '@app/common/dto/confirm-delete-query.dto'
 import { CurrentUser } from '@app/common/decorators/current-user.decorator';
 import type { RequestUser } from '@app/common/decorators/current-user.decorator';
 import { BusinessRoles } from '@app/common/decorators/business-roles.decorator';
+import { RequireModule } from '@app/common/decorators/require-module.decorator';
+import { BusinessCapabilityGuard } from '@app/common/guards/business-capability.guard';
 import { BusinessRolesGuard } from '@app/common/guards/business-roles.guard';
 import {
   AddCalendarStaffDto,
@@ -32,7 +34,8 @@ import { CalendarsService } from '@app/modules/operations/calendars/services/cal
 @ApiTags('calendars')
 @ApiBearerAuth()
 @Controller('calendars')
-@UseGuards(BusinessRolesGuard)
+@UseGuards(BusinessRolesGuard, BusinessCapabilityGuard)
+@RequireModule('calendar')
 export class CalendarsController {
   constructor(private readonly calendarsService: CalendarsService) {}
 
@@ -42,7 +45,10 @@ export class CalendarsController {
     BusinessMemberRole.ADMIN,
     BusinessMemberRole.MEMBER,
   )
-  list(@CurrentUser() user: RequestUser, @Query() query: ListCalendarsQueryDto) {
+  list(
+    @CurrentUser() user: RequestUser,
+    @Query() query: ListCalendarsQueryDto,
+  ) {
     return this.calendarsService.list(user.businessId!, query);
   }
 
@@ -100,7 +106,9 @@ export class CalendarsController {
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
   ) {
-    return this.calendarsService.getById(user.businessId!, id).then((c) => c.availability);
+    return this.calendarsService
+      .getById(user.businessId!, id)
+      .then((c) => c.availability);
   }
 
   @Put(':id/availability')

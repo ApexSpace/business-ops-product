@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { SnapshotStatus } from '@prisma/client';
+import { PaginationQueryDto } from '@app/common/dto/pagination-query.dto';
 import { Type } from 'class-transformer';
 import {
   IsEnum,
@@ -140,7 +141,7 @@ export class SnapshotContextDto {
   branding?: SnapshotAssets['branding'];
 }
 
-export class SnapshotListQueryDto {
+export class SnapshotListQueryDto extends PaginationQueryDto {
   @ApiPropertyOptional({ enum: SnapshotStatus })
   @IsOptional()
   @IsEnum(SnapshotStatus)

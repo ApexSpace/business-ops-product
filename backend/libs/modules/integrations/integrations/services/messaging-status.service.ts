@@ -1,8 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import {
-  IntegrationResourceType,
-  IntegrationStatus,
-} from '@prisma/client';
+import { IntegrationResourceType, IntegrationStatus } from '@prisma/client';
 import { getMetaScopesForProvider } from '../meta/constants/meta-provider.config';
 import { BusinessIntegrationRepository } from '../repositories/business-integration.repository';
 import { IntegrationResourceRepository } from '../repositories/integration-resource.repository';
@@ -50,7 +47,9 @@ export class MessagingStatusService {
         webhookEndpointConfigured: false,
         requiredPermissionsPresent: false,
         readyForMessaging: false,
-        warnings: ['Messaging status is only available for Facebook and Instagram.'],
+        warnings: [
+          'Messaging status is only available for Facebook and Instagram.',
+        ],
       };
     }
 
@@ -95,7 +94,10 @@ export class MessagingStatusService {
       );
     }
 
-    const storedScopes = this.readStoredScopes(integration?.config, integration?.credentials);
+    const storedScopes = this.readStoredScopes(
+      integration?.config,
+      integration?.credentials,
+    );
     const requiredScopes = getMetaScopesForProvider(providerKey);
     const requiredPermissionsPresent =
       storedScopes.length === 0 ||

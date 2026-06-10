@@ -42,10 +42,14 @@ export class MetaResourceSyncService {
 
     if (items.length === 0) {
       if (providerKey === 'instagram') {
-        await this.businessIntegrationRepository.update(businessId, providerKey, {
-          errorMessage: META_INSTAGRAM_NO_ACCOUNTS_MESSAGE,
-          lastSyncAt: new Date(),
-        });
+        await this.businessIntegrationRepository.update(
+          businessId,
+          providerKey,
+          {
+            errorMessage: META_INSTAGRAM_NO_ACCOUNTS_MESSAGE,
+            lastSyncAt: new Date(),
+          },
+        );
         this.logger.warn(
           `[Instagram Sync] saved resources count=0 — no instagram_business_account on authorized Pages`,
         );
@@ -165,22 +169,16 @@ export class MetaResourceSyncService {
         },
         lastSyncedAt: now,
       }));
-      this.logger.log(
-        `[Instagram Sync] saved resources count=${items.length}`,
-      );
+      this.logger.log(`[Instagram Sync] saved resources count=${items.length}`);
     } else if (providerKey === 'whatsapp') {
-      const wabas = await this.metaApiClient.listWhatsAppBusinessAccounts(
-        accessToken,
-      );
+      const wabas =
+        await this.metaApiClient.listWhatsAppBusinessAccounts(accessToken);
 
       for (const waba of wabas) {
         for (const phone of waba.phoneNumbers) {
           items.push({
             externalId: phone.id,
-            name:
-              phone.verified_name ??
-              phone.display_phone_number ??
-              phone.id,
+            name: phone.verified_name ?? phone.display_phone_number ?? phone.id,
             type: IntegrationResourceType.PHONE_NUMBER,
             metadata: {
               wabaId: waba.id,

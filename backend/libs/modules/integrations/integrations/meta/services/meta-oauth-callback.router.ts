@@ -1,9 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import type { Response } from 'express';
 import type { MetaFlowType } from '../constants/meta-provider.config';
-import {
-  verifyMetaOAuthState,
-} from '../utils/meta-oauth-state.util';
+import { verifyMetaOAuthState } from '../utils/meta-oauth-state.util';
 import { MetaConfigService } from './meta-config.service';
 import { MetaEmbeddedSignupService } from './meta-embedded-signup.service';
 import { MetaOAuthService } from './meta-oauth.service';
@@ -67,5 +65,4 @@ export class MetaOAuthCallbackRouter {
       return null;
     }
   }
-
 }

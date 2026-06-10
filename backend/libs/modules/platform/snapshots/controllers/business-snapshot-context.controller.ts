@@ -13,7 +13,9 @@ import { SnapshotContextService } from '../services/snapshot-context.service';
 @Controller('businesses')
 @UseGuards(BusinessRolesGuard)
 export class BusinessSnapshotContextController {
-  constructor(private readonly snapshotContextService: SnapshotContextService) {}
+  constructor(
+    private readonly snapshotContextService: SnapshotContextService,
+  ) {}
 
   @Get('current/snapshot-context')
   @BusinessRoles(

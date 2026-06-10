@@ -15,6 +15,9 @@ export interface AuthContextItem {
   businessRole?: BusinessMemberRole;
   /** Opened via platform staff access (no direct membership). */
   viaPlatform?: boolean;
+  canAccessWorkspace?: boolean;
+  accessReasonCode?: string;
+  accessReasonLabel?: string;
 }
 
 export interface AuthTokensResponse {

@@ -14,8 +14,16 @@ import {
   platformOperationalSections,
   platformSettingsEntry,
 } from "@/lib/config/navigation/platform-menu";
+import { augmentSnapshotNavigationWithCapabilities } from "@/lib/capabilities/augment-snapshot-navigation";
 import { resolveSnapshotNavigation } from "@/lib/config/snapshot/resolve-snapshot-navigation";
+import {
+  isCoreSafeBusinessRoute,
+  resolveRouteCapability,
+} from "@/lib/capabilities/route-capability-map";
+import { BusinessAccessBanner } from "@/components/business-access/business-access-banner";
+import { BusinessAccessGate } from "@/components/business-access/business-access-gate";
 import { ServiceUnavailableBanner } from "@/components/layout/service-unavailable-banner";
+import { useOptionalBusinessAccess } from "@/lib/business-access/use-business-access";
 import { shouldShowAccountSwitcher } from "@/lib/auth";
 import { getCurrentBusiness } from "@/features/settings/api/business.api";
 import { queryKeys } from "@/lib/query/keys";
@@ -33,6 +41,7 @@ export function AppShellLayout({ mode, children }: ShellLayoutProps) {
   const pathname = usePathname();
   const { contexts, jwt, user, sessionError, refreshSession } = useAuth();
   const { context: snapshotContext, t } = useSnapshotContext();
+  const businessAccess = useOptionalBusinessAccess();
 
   const { data: currentBusiness } = useQuery({
     queryKey: queryKeys.business.current(),
@@ -45,24 +54,43 @@ export function AppShellLayout({ mode, children }: ShellLayoutProps) {
 
   const isPlatformAdmin = hasPlatformBusinessAdminAccess(jwt, contexts);
 
+  const hasModule =
+    mode === "business" && businessAccess
+      ? businessAccess.hasModule
+      : undefined;
+
+  const filterSectionsByCapability = (
+    sections: ShellNavSection[],
+  ): ShellNavSection[] => {
+    if (!hasModule) return sections;
+    return sections
+      .map((section) => ({
+        ...section,
+        items: section.items.filter((item) => {
+          if (isCoreSafeBusinessRoute(item.href)) return true;
+          const entry = resolveRouteCapability(item.href);
+          if (!entry) return true;
+          return hasModule(entry.moduleKey);
+        }),
+      }))
+      .filter((section) => section.items.length > 0);
+  };
+
   const sections: ShellNavSection[] =
     mode === "platform"
       ? platformOperationalSections
       : isSettingsMode
-        ? businessSettingsSections
+        ? filterSectionsByCapability(businessSettingsSections)
         : resolveSnapshotNavigation({
-            navigation: snapshotContext.navigation,
+            navigation: augmentSnapshotNavigationWithCapabilities(
+              snapshotContext.navigation,
+              hasModule,
+            ),
             resolveLabel: t,
             businessRole: jwt?.businessRole,
             isPlatformAdmin,
+            hasModule,
           });
-
-  const footerItems =
-    mode === "business" && !isSettingsMode
-      ? [businessSettingsEntry]
-      : mode === "platform"
-        ? [platformSettingsEntry]
-        : undefined;
 
   const brandSubtitle =
     snapshotContext.branding.productName ??
@@ -90,6 +118,30 @@ export function AppShellLayout({ mode, children }: ShellLayoutProps) {
     user?.contexts,
   );
 
+  const shell = (
+    <AppShell
+      brand={brand}
+      sections={sections}
+      navMode={isSettingsMode ? "settings" : "main"}
+      footerItems={
+        mode === "business" && !isSettingsMode
+          ? [businessSettingsEntry]
+          : mode === "platform"
+            ? [platformSettingsEntry]
+            : undefined
+      }
+      showAccountSwitcher={showAccountSwitcher}
+      topbarNotice={mode === "business" ? <BusinessAccessBanner /> : undefined}
+      pageMetadataContext={{
+        mode,
+        terminology: snapshotContext.terminology,
+        settingsMode: isSettingsMode,
+      }}
+    >
+      {children}
+    </AppShell>
+  );
+
   return (
     <>
       {sessionError ? (
@@ -98,20 +150,11 @@ export function AppShellLayout({ mode, children }: ShellLayoutProps) {
           onRetry={() => void refreshSession()}
         />
       ) : null}
-      <AppShell
-        brand={brand}
-        sections={sections}
-        navMode={isSettingsMode ? "settings" : "main"}
-        footerItems={footerItems}
-        showAccountSwitcher={showAccountSwitcher}
-        pageMetadataContext={{
-          mode,
-          terminology: snapshotContext.terminology,
-          settingsMode: isSettingsMode,
-        }}
-      >
-        {children}
-      </AppShell>
+      {mode === "business" ? (
+        <BusinessAccessGate>{shell}</BusinessAccessGate>
+      ) : (
+        shell
+      )}
     </>
   );
 }

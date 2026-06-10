@@ -7,9 +7,7 @@ import {
 } from './resource-sync.types';
 
 @Injectable()
-export class InstagramResourceSyncHandler
-  implements IntegrationResourceSyncHandler
-{
+export class InstagramResourceSyncHandler implements IntegrationResourceSyncHandler {
   readonly providerKey = 'instagram';
 
   constructor(

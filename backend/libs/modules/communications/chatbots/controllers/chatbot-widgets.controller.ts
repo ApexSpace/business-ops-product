@@ -24,7 +24,16 @@ export class ChatbotWidgetsController {
     const candidates = [
       join(process.cwd(), 'assets', 'widgets', 'chatbot.js'),
       join(process.cwd(), 'dist', 'assets', 'widgets', 'chatbot.js'),
-      join(__dirname, '..', '..', '..', '..', 'assets', 'widgets', 'chatbot.js'),
+      join(
+        __dirname,
+        '..',
+        '..',
+        '..',
+        '..',
+        'assets',
+        'widgets',
+        'chatbot.js',
+      ),
     ];
     this.scriptBody = '';
     for (const scriptPath of candidates) {

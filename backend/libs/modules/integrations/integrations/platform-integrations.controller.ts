@@ -142,6 +142,9 @@ export class PlatformIntegrationsController {
     @Query() _query: ConfirmDeleteQueryDto,
     @CurrentUser() user: RequestUser,
   ): Promise<void> {
-    return this.integrationsService.deletePlatformIntegration(providerKey, user);
+    return this.integrationsService.deletePlatformIntegration(
+      providerKey,
+      user,
+    );
   }
 }

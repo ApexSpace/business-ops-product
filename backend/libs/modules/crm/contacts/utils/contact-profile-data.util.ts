@@ -82,10 +82,7 @@ export function toContactUpdateData(
   ) {
     data.displayName =
       emptyToUndefined(dto.displayName) ??
-      buildDisplayName(
-        dto.firstName ?? undefined,
-        dto.lastName ?? undefined,
-      ) ??
+      buildDisplayName(dto.firstName ?? undefined, dto.lastName ?? undefined) ??
       null;
   }
 

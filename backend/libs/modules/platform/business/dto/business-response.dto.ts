@@ -1,5 +1,11 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { BusinessStatus, SnapshotStatus } from '@prisma/client';
+import {
+  BusinessStatus,
+  SnapshotStatus,
+  SubscriptionPaymentMethod,
+  SubscriptionPaymentStatus,
+  SubscriptionStatus,
+} from '@prisma/client';
 import { IndustryOptionDto } from '@app/modules/crm/industries/dto/industry.dto';
 import { TaxesAndCurrencySettingsDto } from './financial-settings.dto';
 
@@ -9,9 +15,6 @@ export class BusinessResponseDto {
 
   @ApiProperty()
   name!: string;
-
-  @ApiProperty()
-  slug!: string;
 
   @ApiPropertyOptional()
   industryId?: string | null;
@@ -93,4 +96,43 @@ export class BusinessResponseDto {
 
   @ApiProperty()
   updatedAt!: Date;
+
+  @ApiPropertyOptional({ enum: SubscriptionStatus })
+  subscriptionStatus?: SubscriptionStatus | null;
+
+  @ApiPropertyOptional()
+  planTierName?: string | null;
+
+  @ApiPropertyOptional()
+  planTierId?: string | null;
+
+  @ApiPropertyOptional({ enum: SubscriptionPaymentMethod })
+  paymentMethod?: SubscriptionPaymentMethod | null;
+
+  @ApiPropertyOptional({ enum: SubscriptionPaymentStatus })
+  paymentStatus?: SubscriptionPaymentStatus | null;
+
+  @ApiPropertyOptional()
+  latestPaymentAt?: Date | null;
+
+  @ApiPropertyOptional()
+  recommendedActionKey?: string | null;
+
+  @ApiPropertyOptional()
+  currentPeriodEnd?: Date | null;
+
+  @ApiPropertyOptional()
+  planGroupName?: string | null;
+
+  @ApiPropertyOptional()
+  canAccessWorkspace?: boolean;
+
+  @ApiPropertyOptional()
+  reasonCode?: string;
+
+  @ApiPropertyOptional()
+  reasonLabel?: string;
+
+  @ApiPropertyOptional({ type: [String] })
+  needsAttention?: string[];
 }

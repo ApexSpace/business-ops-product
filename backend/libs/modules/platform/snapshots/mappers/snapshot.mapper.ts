@@ -1,8 +1,5 @@
 import { Snapshot } from '@prisma/client';
-import {
-  SnapshotListItemDto,
-  SnapshotResponseDto,
-} from '../dto/snapshot.dto';
+import { SnapshotListItemDto, SnapshotResponseDto } from '../dto/snapshot.dto';
 import { parseSnapshotAssets } from './snapshot-assets.parser';
 
 export function toSnapshotResponse(

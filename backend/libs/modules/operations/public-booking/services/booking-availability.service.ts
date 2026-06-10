@@ -68,7 +68,9 @@ export class BookingAvailabilityService {
     const minStart = now.plus({
       minutes: params.calendar.minimumNoticeMinutes,
     });
-    const maxEnd = now.plus({ days: params.calendar.maxBookingDays }).endOf('day');
+    const maxEnd = now
+      .plus({ days: params.calendar.maxBookingDays })
+      .endOf('day');
 
     const rangeStart = DateTime.fromJSDate(params.from, { zone: viewerTz })
       .setZone(calendarTz)
@@ -77,7 +79,8 @@ export class BookingAvailabilityService {
       .setZone(calendarTz)
       .endOf('day');
 
-    let cursor = rangeStart < now.startOf('day') ? now.startOf('day') : rangeStart;
+    let cursor =
+      rangeStart < now.startOf('day') ? now.startOf('day') : rangeStart;
     if (cursor > maxEnd) return [];
 
     const effectiveEnd = rangeEnd < maxEnd ? rangeEnd : maxEnd;
@@ -90,14 +93,13 @@ export class BookingAvailabilityService {
     const bufferAfter = params.calendar.bufferAfterMinutes;
     const capacity = params.calendar.capacity;
 
-    const appointments =
-      await this.appointmentRepository.findBlockingInRange(
-        params.calendar.businessId,
-        params.calendar.id,
-        cursor.toUTC().toJSDate(),
-        effectiveEnd.toUTC().toJSDate(),
-        params.staffId,
-      );
+    const appointments = await this.appointmentRepository.findBlockingInRange(
+      params.calendar.businessId,
+      params.calendar.id,
+      cursor.toUTC().toJSDate(),
+      effectiveEnd.toUTC().toJSDate(),
+      params.staffId,
+    );
 
     const availabilityByDay = new Map(
       params.availability.map((a) => [a.dayOfWeek, a]),
@@ -142,7 +144,9 @@ export class BookingAvailabilityService {
           const slotEnd = slotStart.plus({ minutes: duration });
 
           if (slotStart < minStart) continue;
-          if (this.isMinutesBlocked(startMin, startMin + duration, blockedRanges)) {
+          if (
+            this.isMinutesBlocked(startMin, startMin + duration, blockedRanges)
+          ) {
             continue;
           }
 
@@ -198,8 +202,7 @@ export class BookingAvailabilityService {
       return false;
     }
     if (
-      start >
-      now.plus({ days: params.calendar.maxBookingDays }).endOf('day')
+      start > now.plus({ days: params.calendar.maxBookingDays }).endOf('day')
     ) {
       return false;
     }
@@ -216,7 +219,8 @@ export class BookingAvailabilityService {
     const dateKey = start.toISODate()!;
     const exception = params.exceptions.find(
       (e) =>
-        DateTime.fromJSDate(e.date, { zone: calendarTz }).toISODate() === dateKey,
+        DateTime.fromJSDate(e.date, { zone: calendarTz }).toISODate() ===
+        dateKey,
     );
     if (this.isDayFullyBlocked(exception)) return false;
 
@@ -239,14 +243,19 @@ export class BookingAvailabilityService {
     );
     if (this.isMinutesBlocked(startMin, endMin, blockedRanges)) return false;
 
-    const appointments =
-      await this.appointmentRepository.findBlockingInRange(
-        params.calendar.businessId,
-        params.calendar.id,
-        start.minus({ minutes: params.calendar.bufferBeforeMinutes }).toUTC().toJSDate(),
-        end.plus({ minutes: params.calendar.bufferAfterMinutes }).toUTC().toJSDate(),
-        params.staffId,
-      );
+    const appointments = await this.appointmentRepository.findBlockingInRange(
+      params.calendar.businessId,
+      params.calendar.id,
+      start
+        .minus({ minutes: params.calendar.bufferBeforeMinutes })
+        .toUTC()
+        .toJSDate(),
+      end
+        .plus({ minutes: params.calendar.bufferAfterMinutes })
+        .toUTC()
+        .toJSDate(),
+      params.staffId,
+    );
 
     const occupied = this.countOverlapping(
       appointments,
@@ -297,9 +306,7 @@ export class BookingAvailabilityService {
     bufferBefore: number,
     bufferAfter: number,
   ): number {
-    const blockStart = new Date(
-      slotStart.getTime() - bufferBefore * 60 * 1000,
-    );
+    const blockStart = new Date(slotStart.getTime() - bufferBefore * 60 * 1000);
     const blockEnd = new Date(slotEnd.getTime() + bufferAfter * 60 * 1000);
 
     return appointments.filter(

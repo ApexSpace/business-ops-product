@@ -1,6 +1,10 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { IntegrationConnectionType, IntegrationStatus, Prisma } from '@prisma/client';
+import {
+  IntegrationConnectionType,
+  IntegrationStatus,
+  Prisma,
+} from '@prisma/client';
 import { Response } from 'express';
 import { RequestUser } from '@app/common/decorators/current-user.decorator';
 import { AppException } from '@app/common/exceptions/app.exception';
@@ -129,9 +133,7 @@ export class GoogleOAuthService {
       );
     } catch (err) {
       const message =
-        err instanceof AppException
-          ? err.message
-          : 'oauth_connection_failed';
+        err instanceof AppException ? err.message : 'oauth_connection_failed';
       res.redirect(
         this.buildOAuthCallbackUrl({
           error: message,
@@ -178,7 +180,9 @@ export class GoogleOAuthService {
     return `${GOOGLE_OAUTH_AUTHORIZE_URL}?${params.toString()}`;
   }
 
-  private async exchangeCodeForTokens(code: string): Promise<GoogleTokenResponse> {
+  private async exchangeCodeForTokens(
+    code: string,
+  ): Promise<GoogleTokenResponse> {
     const response = await fetch(GOOGLE_OAUTH_TOKEN_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -259,8 +263,10 @@ export class GoogleOAuthService {
           scopes,
           googleUserId: profile.sub,
           picture: profile.picture ?? null,
-        } as Prisma.InputJsonValue,
-        credentials: { encrypted: encryptedCredentials } as Prisma.InputJsonValue,
+        },
+        credentials: {
+          encrypted: encryptedCredentials,
+        },
         connectedAccountName: profile.name ?? null,
         connectedAccountEmail: profile.email ?? null,
         connectedAt: now,

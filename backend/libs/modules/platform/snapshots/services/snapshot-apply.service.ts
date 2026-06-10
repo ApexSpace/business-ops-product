@@ -50,7 +50,8 @@ export class SnapshotApplyService {
     snapshotId: string,
     _actorUserId?: string,
   ): Promise<void> {
-    const snapshot = await this.snapshotRepository.findPublishedById(snapshotId);
+    const snapshot =
+      await this.snapshotRepository.findPublishedById(snapshotId);
     if (!snapshot) {
       throw new AppException(
         ErrorCode.NOT_FOUND,
@@ -95,7 +96,12 @@ export class SnapshotApplyService {
       }
 
       for (const template of assets.emails?.templates ?? []) {
-        await this.provisionEmailTemplate(tx, businessId, snapshot.id, template);
+        await this.provisionEmailTemplate(
+          tx,
+          businessId,
+          snapshot.id,
+          template,
+        );
       }
     }, SNAPSHOT_APPLY_TX_OPTIONS);
   }
@@ -143,7 +149,7 @@ export class SnapshotApplyService {
     });
 
     for (let i = 0; i < pipeline.stages.length; i++) {
-      const stage = pipeline.stages[i]!;
+      const stage = pipeline.stages[i];
       await tx.pipelineStage.create({
         data: {
           businessId,
@@ -270,15 +276,14 @@ export class SnapshotApplyService {
       },
     });
 
-    const availability =
-      calendar.availabilityTemplate?.length
-        ? calendar.availabilityTemplate.map((slot) => ({
-            dayOfWeek: slot.dayOfWeek as DayOfWeek,
-            startTime: slot.startTime,
-            endTime: slot.endTime,
-            isEnabled: slot.isEnabled,
-          }))
-        : DEFAULT_WEEKLY_AVAILABILITY;
+    const availability = calendar.availabilityTemplate?.length
+      ? calendar.availabilityTemplate.map((slot) => ({
+          dayOfWeek: slot.dayOfWeek as DayOfWeek,
+          startTime: slot.startTime,
+          endTime: slot.endTime,
+          isEnabled: slot.isEnabled,
+        }))
+      : DEFAULT_WEEKLY_AVAILABILITY;
 
     for (const slot of availability) {
       await tx.calendarAvailability.create({

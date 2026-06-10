@@ -10,7 +10,9 @@ import {
 } from '@app/modules/operations/public-booking/utils/public-booking-url.util';
 
 /** Slug is always derived from the calendar name (not user-editable). */
-export function deriveCalendarPublicSlugFromName(calendarName: string): string | null {
+export function deriveCalendarPublicSlugFromName(
+  calendarName: string,
+): string | null {
   const fromName = slugifyBookingSlug(calendarName);
   return isValidBookingSlug(fromName) ? fromName : null;
 }
@@ -32,7 +34,7 @@ export function mergeWidgetSettingsWithSlug(
     widgetSettings && typeof widgetSettings === 'object'
       ? { ...(widgetSettings as Record<string, unknown>) }
       : {};
-  return { ...base, bookingSlug: slug } as Prisma.InputJsonValue;
+  return { ...base, bookingSlug: slug };
 }
 
 export function buildCalendarPublicUrls(

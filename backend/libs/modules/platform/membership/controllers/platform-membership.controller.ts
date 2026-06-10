@@ -35,7 +35,10 @@ export class PlatformMembershipController {
   }
 
   @Post('invite')
-  @PlatformRoles(PlatformMemberRole.SUPER_ADMIN, PlatformMemberRole.PLATFORM_ADMIN)
+  @PlatformRoles(
+    PlatformMemberRole.SUPER_ADMIN,
+    PlatformMemberRole.PLATFORM_ADMIN,
+  )
   invite(
     @Param('businessId', ParseUUIDPipe) businessId: string,
     @Body() dto: InviteMemberDto,
@@ -45,7 +48,10 @@ export class PlatformMembershipController {
   }
 
   @Post('owner')
-  @PlatformRoles(PlatformMemberRole.SUPER_ADMIN, PlatformMemberRole.PLATFORM_ADMIN)
+  @PlatformRoles(
+    PlatformMemberRole.SUPER_ADMIN,
+    PlatformMemberRole.PLATFORM_ADMIN,
+  )
   setOwner(
     @Param('businessId', ParseUUIDPipe) businessId: string,
     @Body() dto: SetBusinessOwnerDto,

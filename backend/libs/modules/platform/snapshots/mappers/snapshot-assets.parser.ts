@@ -40,23 +40,19 @@ export function parseSnapshotAssets(raw: unknown): SnapshotAssets {
       widgets: Array.isArray(dashboardRaw.widgets) ? dashboardRaw.widgets : [],
       quickLinks,
     },
-    ...(o.crm && typeof o.crm === 'object'
-      ? { crm: o.crm as SnapshotAssets['crm'] }
-      : {}),
+    ...(o.crm && typeof o.crm === 'object' ? { crm: o.crm } : {}),
     ...(Array.isArray(o.calendars)
       ? { calendars: o.calendars as SnapshotAssets['calendars'] }
       : {}),
     ...(Array.isArray(o.chatbots)
       ? { chatbots: o.chatbots as SnapshotAssets['chatbots'] }
       : {}),
-    ...(o.emails && typeof o.emails === 'object'
-      ? { emails: o.emails as SnapshotAssets['emails'] }
-      : {}),
+    ...(o.emails && typeof o.emails === 'object' ? { emails: o.emails } : {}),
     ...(o.branding && typeof o.branding === 'object'
-      ? { branding: o.branding as SnapshotAssets['branding'] }
+      ? { branding: o.branding }
       : {}),
     ...(o.integrations && typeof o.integrations === 'object'
-      ? { integrations: o.integrations as SnapshotAssets['integrations'] }
+      ? { integrations: o.integrations }
       : {}),
   };
 }

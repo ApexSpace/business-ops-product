@@ -7,9 +7,7 @@ import {
 } from './resource-sync.types';
 
 @Injectable()
-export class WhatsAppResourceSyncHandler
-  implements IntegrationResourceSyncHandler
-{
+export class WhatsAppResourceSyncHandler implements IntegrationResourceSyncHandler {
   readonly providerKey = 'whatsapp';
 
   constructor(

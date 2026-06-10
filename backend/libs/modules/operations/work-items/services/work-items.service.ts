@@ -106,10 +106,7 @@ export class WorkItemsService {
     };
   }
 
-  async getById(
-    businessId: string,
-    id: string,
-  ): Promise<WorkItemResponseDto> {
+  async getById(businessId: string, id: string): Promise<WorkItemResponseDto> {
     const workItem = await this.workItemRepository.findById(businessId, id);
     if (!workItem) {
       throw new AppException(
@@ -205,11 +202,7 @@ export class WorkItemsService {
           ? { disconnect: true }
           : { connect: { id: dto.assignedToId } };
     }
-    const workItem = await this.workItemRepository.update(
-      businessId,
-      id,
-      data,
-    );
+    const workItem = await this.workItemRepository.update(businessId, id, data);
     if (!workItem) {
       throw new AppException(
         ErrorCode.WORK_ITEM_NOT_FOUND,

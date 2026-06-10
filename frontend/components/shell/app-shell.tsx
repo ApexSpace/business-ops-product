@@ -28,6 +28,7 @@ interface AppShellProps {
   pageMetadataContext: PageMetadataContext;
   showAccountSwitcher?: boolean;
   topbarActions?: React.ReactNode;
+  topbarNotice?: React.ReactNode;
   children: React.ReactNode;
 }
 
@@ -39,6 +40,7 @@ export function AppShell({
   pageMetadataContext,
   showAccountSwitcher = false,
   topbarActions,
+  topbarNotice,
   children,
 }: AppShellProps) {
   const pathname = usePathname();
@@ -65,6 +67,7 @@ export function AppShell({
           <Topbar
             showAccountSwitcher={showAccountSwitcher}
             actions={topbarActions}
+            notice={topbarNotice}
             flushWithContent={contactWorkspace}
           />
           <div

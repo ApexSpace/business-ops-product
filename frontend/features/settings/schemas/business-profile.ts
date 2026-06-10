@@ -46,7 +46,7 @@ export const businessProfileSchema = z.object({
     ),
   timezone: z.string().min(1, "Timezone is required"),
   taxesAndCurrency: taxesAndCurrencySchema,
-  status: z.enum(["ACTIVE", "SUSPENDED", "ARCHIVED"]).optional(),
+  status: z.enum(["ACTIVE", "NOT_ACTIVE", "SUSPENDED", "ARCHIVED"]).optional(),
 });
 
 export type BusinessProfileFormValues = z.infer<typeof businessProfileSchema>;

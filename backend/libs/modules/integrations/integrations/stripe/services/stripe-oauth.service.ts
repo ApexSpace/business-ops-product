@@ -81,7 +81,9 @@ export class StripeOAuthService {
     res: Response,
   ): Promise<void> {
     if (error || !code || !state) {
-      res.redirect(this.buildOAuthCallbackUrl({ error: 'stripe_oauth_failed' }));
+      res.redirect(
+        this.buildOAuthCallbackUrl({ error: 'stripe_oauth_failed' }),
+      );
       return;
     }
 
@@ -89,12 +91,16 @@ export class StripeOAuthService {
     try {
       payload = verifyStripeOAuthState(state, this.getStateSecret());
     } catch {
-      res.redirect(this.buildOAuthCallbackUrl({ error: 'stripe_oauth_failed' }));
+      res.redirect(
+        this.buildOAuthCallbackUrl({ error: 'stripe_oauth_failed' }),
+      );
       return;
     }
 
     if (!isStripeOAuthProviderKey(payload.providerKey)) {
-      res.redirect(this.buildOAuthCallbackUrl({ error: 'stripe_oauth_failed' }));
+      res.redirect(
+        this.buildOAuthCallbackUrl({ error: 'stripe_oauth_failed' }),
+      );
       return;
     }
 
@@ -135,7 +141,9 @@ export class StripeOAuthService {
       );
     } catch (err) {
       this.stripeApiService.logStripeError('OAuth callback', err);
-      res.redirect(this.buildOAuthCallbackUrl({ error: 'stripe_oauth_failed' }));
+      res.redirect(
+        this.buildOAuthCallbackUrl({ error: 'stripe_oauth_failed' }),
+      );
     }
   }
 
@@ -203,8 +211,10 @@ export class StripeOAuthService {
           country: null,
           readinessLabel: 'Setup incomplete',
           webhookStatus: 'pending',
-        } as Prisma.InputJsonValue,
-        credentials: { encrypted: encryptedCredentials } as Prisma.InputJsonValue,
+        },
+        credentials: {
+          encrypted: encryptedCredentials,
+        },
         connectedAt: now,
         errorMessage: null,
       },

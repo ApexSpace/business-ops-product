@@ -1,9 +1,5 @@
 import { HttpStatus, Injectable, Logger } from '@nestjs/common';
-import {
-  AppointmentSource,
-  AppointmentStatus,
-  Prisma,
-} from '@prisma/client';
+import { AppointmentSource, AppointmentStatus, Prisma } from '@prisma/client';
 import { AppException } from '@app/common/exceptions/app.exception';
 import { ErrorCode } from '@app/common/exceptions/error-code.enum';
 import { normalizeTimezone } from '@app/common/utils/timezone.util';
@@ -62,7 +58,11 @@ export class PublicBookingService {
     const calendar = await this.requirePublicCalendar(slug);
     const from = new Date(query.from);
     const to = new Date(query.to);
-    if (Number.isNaN(from.getTime()) || Number.isNaN(to.getTime()) || to < from) {
+    if (
+      Number.isNaN(from.getTime()) ||
+      Number.isNaN(to.getTime()) ||
+      to < from
+    ) {
       throw new AppException(
         ErrorCode.BAD_REQUEST,
         'Invalid availability range',

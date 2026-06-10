@@ -1,10 +1,13 @@
-import { HttpStatus, Injectable } from '@nestjs/common';
-import { BusinessStatus } from '@prisma/client';
-import { randomUUID } from 'crypto';
+import { forwardRef, HttpStatus, Inject, Injectable } from '@nestjs/common';
+import {
+  BusinessMemberRole,
+  BusinessStatus,
+  SubscriptionPaymentStatus,
+  SubscriptionStatus,
+} from '@prisma/client';
 import { RequestUser } from '@app/common/decorators/current-user.decorator';
 import { AppException } from '@app/common/exceptions/app.exception';
 import { ErrorCode } from '@app/common/exceptions/error-code.enum';
-import { slugify, withSlugSuffix } from '@app/common/utils/slug.util';
 import { AuditService } from '@app/modules/platform/audit/services/audit.service';
 import { IndustriesService } from '@app/modules/crm/industries/services/industries.service';
 import { SnapshotApplyService } from '@app/modules/platform/snapshots/services/snapshot-apply.service';
@@ -14,6 +17,13 @@ import { BusinessRepository } from '../repositories/business.repository';
 import { toBusinessResponse } from '../mappers/business.mapper';
 import { CreateBusinessDto } from '../dto/create-business.dto';
 import { UpdateBusinessDto } from '../dto/update-business.dto';
+import { MembershipService } from '@app/modules/platform/membership/services/membership.service';
+import { BusinessAccessService } from './business-access.service';
+import { BusinessAccessResolverService } from './business-access-resolver.service';
+import { BusinessSubscriptionActionService } from './business-subscription-action.service';
+import { BusinessSubscriptionActionAvailabilityService } from './business-subscription-action-availability.service';
+import { BusinessSubscriptionPaymentRepository } from '../repositories/business-subscription-payment.repository';
+import type { NeedsAttentionFlag } from '../types/business-access-resolution.types';
 import {
   toBusinessCreateData,
   toBusinessUpdateData,
@@ -37,10 +47,16 @@ export class BusinessService {
     private readonly industriesService: IndustriesService,
     private readonly snapshotsService: SnapshotsService,
     private readonly snapshotApplyService: SnapshotApplyService,
+    private readonly businessAccessService: BusinessAccessService,
+    private readonly accessResolver: BusinessAccessResolverService,
+    private readonly actionService: BusinessSubscriptionActionService,
+    private readonly actionAvailability: BusinessSubscriptionActionAvailabilityService,
+    private readonly subscriptionPaymentRepository: BusinessSubscriptionPaymentRepository,
+    @Inject(forwardRef(() => MembershipService))
+    private readonly membershipService: MembershipService,
   ) {}
 
   async createPlatform(dto: CreateBusinessDto, actor: RequestUser) {
-    const slug = await this.resolveUniqueSlug(dto.name);
     const industry = await this.industriesService.resolveForBusiness(
       dto.industryId,
     );
@@ -75,7 +91,6 @@ export class BusinessService {
       const created = await tx.business.create({
         data: {
           ...profileData,
-          slug,
           createdBy: { connect: { id: actor.id } },
         },
         include: { industry: true },
@@ -91,10 +106,62 @@ export class BusinessService {
       action: 'business.created',
       entityType: 'Business',
       entityId: business.id,
-      metadata: { name: business.name, slug: business.slug },
+      metadata: { name: business.name },
     });
 
-    return toBusinessResponse(business);
+    const hasAccessFields =
+      dto.status !== undefined ||
+      dto.planGroupId !== undefined ||
+      dto.planTierId !== undefined ||
+      dto.subscriptionStatus !== undefined ||
+      dto.paymentMethod !== undefined ||
+      dto.paymentStatus !== undefined ||
+      dto.billingCycle !== undefined ||
+      dto.currentPeriodStart !== undefined ||
+      dto.currentPeriodEnd !== undefined ||
+      dto.amount !== undefined ||
+      dto.currency !== undefined ||
+      dto.notes !== undefined;
+
+    if (hasAccessFields) {
+      await this.businessAccessService.createAccessForBusiness(
+        business.id,
+        {
+          status: dto.status,
+          planGroupId: dto.planGroupId,
+          planTierId: dto.planTierId,
+          subscriptionStatus: dto.subscriptionStatus,
+          paymentMethod: dto.paymentMethod,
+          paymentStatus: dto.paymentStatus,
+          billingCycle: dto.billingCycle,
+          currentPeriodStart: dto.currentPeriodStart,
+          currentPeriodEnd: dto.currentPeriodEnd,
+          amount: dto.amount,
+          currency: dto.currency,
+          notes: dto.notes,
+          syncCapabilitiesFromTier: dto.syncCapabilitiesFromTier,
+        },
+        actor,
+      );
+    }
+
+    await this.actionService.emitBusinessCreatedEvents(business.id, actor);
+
+    if (dto.inviteOwner && dto.email?.trim()) {
+      await this.membershipService.invite(
+        business.id,
+        {
+          email: dto.email.trim(),
+          role: BusinessMemberRole.ADMIN,
+          firstName: dto.firstName,
+          lastName: dto.lastName,
+        },
+        actor,
+      );
+    }
+
+    const refreshed = await this.businessRepository.findById(business.id);
+    return toBusinessResponse(refreshed ?? business);
   }
 
   async listPlatform(params: {
@@ -102,17 +169,91 @@ export class BusinessService {
     limit: number;
     skip: number;
     status?: BusinessStatus;
+    subscriptionStatus?: SubscriptionStatus;
+    paymentStatus?: SubscriptionPaymentStatus;
+    planGroupId?: string;
+    planTierId?: string;
+    canAccess?: boolean;
+    needsAttention?: NeedsAttentionFlag;
     search?: string;
   }) {
+    const search = params.search?.trim() || undefined;
+    const hasResolverFilter =
+      params.canAccess !== undefined || Boolean(params.needsAttention);
+
+    let businessIds: string[] | undefined;
+    if (hasResolverFilter) {
+      const { items: candidates } = await this.businessRepository.findMany({
+        skip: 0,
+        take: 10_000,
+        status: params.status,
+        subscriptionStatus: params.subscriptionStatus,
+        paymentStatus: params.paymentStatus,
+        planGroupId: params.planGroupId,
+        planTierId: params.planTierId,
+        search,
+      });
+
+      const filtered: string[] = [];
+      for (const business of candidates) {
+        const resolution = await this.accessResolver.resolveForBusiness(
+          business.id,
+        );
+        if (
+          params.canAccess !== undefined &&
+          resolution.canAccessWorkspace !== params.canAccess
+        ) {
+          continue;
+        }
+        if (
+          params.needsAttention &&
+          !resolution.needsAttention.includes(params.needsAttention)
+        ) {
+          continue;
+        }
+        filtered.push(business.id);
+      }
+
+      businessIds = filtered;
+    }
+
     const { items, total } = await this.businessRepository.findMany({
-      skip: params.skip,
-      take: params.limit,
+      skip: hasResolverFilter ? 0 : params.skip,
+      take: hasResolverFilter ? businessIds?.length ?? 0 : params.limit,
       status: params.status,
-      search: params.search,
+      subscriptionStatus: params.subscriptionStatus,
+      paymentStatus: params.paymentStatus,
+      planGroupId: params.planGroupId,
+      planTierId: params.planTierId,
+      search,
+      businessIds: hasResolverFilter ? businessIds : undefined,
     });
+
+    const pagedItems = hasResolverFilter
+      ? items.slice(params.skip, params.skip + params.limit)
+      : items;
+
+    const resolvedItems = await Promise.all(
+      pagedItems.map(async (business) => {
+        const [resolution, latestPaymentAt, actions] = await Promise.all([
+          this.accessResolver.resolveForBusiness(business.id),
+          this.subscriptionPaymentRepository.findLatestPaidAt(business.id),
+          this.actionAvailability.resolveAvailableActions(business.id),
+        ]);
+        return toBusinessResponse(business, resolution, {
+          latestPaymentAt,
+          recommendedActionKey: actions.recommendedAction?.key ?? null,
+        });
+      }),
+    );
+
     return {
-      items: items.map(toBusinessResponse),
-      meta: { total, page: params.page, limit: params.limit },
+      items: resolvedItems,
+      meta: {
+        total: hasResolverFilter ? businessIds?.length ?? 0 : total,
+        page: params.page,
+        limit: params.limit,
+      },
     };
   }
 
@@ -125,7 +266,8 @@ export class BusinessService {
         HttpStatus.NOT_FOUND,
       );
     }
-    return toBusinessResponse(business);
+    const resolution = await this.accessResolver.resolveForBusiness(id);
+    return toBusinessResponse(business, resolution);
   }
 
   async updatePlatform(id: string, dto: UpdateBusinessDto, actor: RequestUser) {
@@ -246,7 +388,7 @@ export class BusinessService {
       action: 'business.deleted',
       entityType: 'Business',
       entityId: business.id,
-      metadata: { name: business.name, slug: business.slug },
+      metadata: { name: business.name },
     });
 
     await this.businessRepository.hardDelete(id);
@@ -263,7 +405,9 @@ export class BusinessService {
         HttpStatus.NOT_FOUND,
       );
     }
-    return toBusinessResponse(business);
+    const resolution =
+      await this.accessResolver.resolveForBusiness(businessId);
+    return toBusinessResponse(business, resolution);
   }
 
   async updateCurrent(
@@ -332,19 +476,5 @@ export class BusinessService {
     );
 
     return data;
-  }
-
-  private async resolveUniqueSlug(name: string): Promise<string> {
-    const base = slugify(name) || 'business';
-    let suffix = 1;
-    while (suffix < 100) {
-      const slug = withSlugSuffix(base, suffix);
-      const existing = await this.businessRepository.findBySlug(slug);
-      if (!existing) {
-        return slug;
-      }
-      suffix += 1;
-    }
-    return `${base}-${randomUUID().slice(0, 8)}`;
   }
 }

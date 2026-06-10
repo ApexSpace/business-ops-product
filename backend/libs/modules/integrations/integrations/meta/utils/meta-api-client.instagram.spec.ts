@@ -61,17 +61,15 @@ describe('MetaApiClient Instagram discovery', () => {
   });
 
   it('falls back to page lookup when instagram_business_account missing on list item', async () => {
-    const fetchMock = jest
-      .fn()
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          instagram_business_account: {
-            id: 'ig-2',
-            username: 'from_page_lookup',
-          },
-        }),
-      });
+    const fetchMock = jest.fn().mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        instagram_business_account: {
+          id: 'ig-2',
+          username: 'from_page_lookup',
+        },
+      }),
+    });
     global.fetch = fetchMock as typeof fetch;
 
     const client = new MetaApiClient({} as MetaConfigService);

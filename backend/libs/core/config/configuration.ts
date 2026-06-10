@@ -89,10 +89,8 @@ export default (): RootConfig => ({
     bcryptRounds: parseInt(process.env.BCRYPT_ROUNDS ?? '12', 10),
   },
   seed: {
-    superAdminEmail:
-      process.env.SEED_SUPER_ADMIN_EMAIL ?? 'admin@example.com',
-    superAdminPassword:
-      process.env.SEED_SUPER_ADMIN_PASSWORD ?? 'ChangeMe123!',
+    superAdminEmail: process.env.SEED_SUPER_ADMIN_EMAIL ?? 'admin@example.com',
+    superAdminPassword: process.env.SEED_SUPER_ADMIN_PASSWORD ?? 'ChangeMe123!',
   },
   integrations: {
     googleOAuthEnabled:

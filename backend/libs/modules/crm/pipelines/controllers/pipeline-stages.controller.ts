@@ -35,12 +35,7 @@ export class PipelineStagesController {
     @Param('pipelineId', ParseUUIDPipe) pipelineId: string,
     @Body() dto: CreatePipelineStageDto,
   ) {
-    return this.stagesService.create(
-      user.businessId!,
-      pipelineId,
-      dto,
-      user,
-    );
+    return this.stagesService.create(user.businessId!, pipelineId, dto, user);
   }
 
   @Patch('reorder')
@@ -50,12 +45,7 @@ export class PipelineStagesController {
     @Param('pipelineId', ParseUUIDPipe) pipelineId: string,
     @Body() dto: ReorderPipelineStagesDto,
   ) {
-    return this.stagesService.reorder(
-      user.businessId!,
-      pipelineId,
-      dto,
-      user,
-    );
+    return this.stagesService.reorder(user.businessId!, pipelineId, dto, user);
   }
 
   @Patch(':stageId')

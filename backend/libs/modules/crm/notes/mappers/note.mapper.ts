@@ -20,9 +20,7 @@ export function toNoteResponse(note: NoteWithRelations): NoteResponseDto {
           label: resolveContactLabel(note.contact),
         }
       : null,
-    lead: note.lead
-      ? { id: note.lead.id, title: note.lead.title }
-      : null,
+    lead: note.lead ? { id: note.lead.id, title: note.lead.title } : null,
     createdBy: note.createdBy,
   };
 }

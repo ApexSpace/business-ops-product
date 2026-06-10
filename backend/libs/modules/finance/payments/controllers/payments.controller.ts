@@ -16,6 +16,8 @@ import { ConfirmDeleteQueryDto } from '@app/common/dto/confirm-delete-query.dto'
 import { CurrentUser } from '@app/common/decorators/current-user.decorator';
 import type { RequestUser } from '@app/common/decorators/current-user.decorator';
 import { BusinessRoles } from '@app/common/decorators/business-roles.decorator';
+import { RequireModule } from '@app/common/decorators/require-module.decorator';
+import { BusinessCapabilityGuard } from '@app/common/guards/business-capability.guard';
 import { BusinessRolesGuard } from '@app/common/guards/business-roles.guard';
 import { CreatePaymentDto } from '../dto/create-payment.dto';
 import { ListPaymentsQueryDto } from '../dto/list-payments-query.dto';
@@ -27,7 +29,8 @@ import { PaymentsService } from '@app/modules/finance/payments/services/payments
 @ApiTags('payments')
 @ApiBearerAuth()
 @Controller('payments')
-@UseGuards(BusinessRolesGuard)
+@UseGuards(BusinessRolesGuard, BusinessCapabilityGuard)
+@RequireModule('payments')
 export class PaymentsController {
   constructor(
     private readonly paymentsService: PaymentsService,
@@ -60,9 +63,7 @@ export class PaymentsController {
     BusinessMemberRole.ADMIN,
     BusinessMemberRole.MEMBER,
   )
-  getOverview(
-    @CurrentUser() user: RequestUser,
-  ): Promise<PaymentsOverviewDto> {
+  getOverview(@CurrentUser() user: RequestUser): Promise<PaymentsOverviewDto> {
     return this.paymentsOverviewService.getOverview(user.businessId!);
   }
 

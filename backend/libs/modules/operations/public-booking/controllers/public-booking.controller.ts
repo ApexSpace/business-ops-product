@@ -47,12 +47,16 @@ export class PublicBookingController {
     @Headers('user-agent') userAgent?: string,
     @Headers('referer') referer?: string,
   ) {
-    return this.publicBookingService.createBooking(slug, {
-      ...dto,
-      referrer: dto.referrer ?? referer,
-    }, {
-      userAgent,
-      isEmbed: dto.source === 'BOOKING_WIDGET',
-    });
+    return this.publicBookingService.createBooking(
+      slug,
+      {
+        ...dto,
+        referrer: dto.referrer ?? referer,
+      },
+      {
+        userAgent,
+        isEmbed: dto.source === 'BOOKING_WIDGET',
+      },
+    );
   }
 }

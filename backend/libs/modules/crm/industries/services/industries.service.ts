@@ -29,11 +29,13 @@ export class IndustriesService {
     limit: number;
     skip: number;
     status?: IndustryStatus;
+    search?: string;
   }) {
     const { items, total } = await this.industryRepository.findMany({
       skip: params.skip,
       take: params.limit,
       status: params.status,
+      search: params.search?.trim() || undefined,
     });
     return {
       items: items.map(toIndustryResponse),
@@ -68,7 +70,8 @@ export class IndustriesService {
       slug,
       description: dto.description,
       labels: dto.labels as unknown as Prisma.InputJsonValue,
-      pipelineTemplate: dto.pipelineTemplate as unknown as Prisma.InputJsonValue,
+      pipelineTemplate:
+        dto.pipelineTemplate as unknown as Prisma.InputJsonValue,
       status: dto.status ?? IndustryStatus.ACTIVE,
       sortOrder: dto.sortOrder ?? 0,
     });
@@ -93,7 +96,9 @@ export class IndustriesService {
 
     const updated = await this.industryRepository.update(id, {
       ...(dto.name !== undefined ? { name: dto.name } : {}),
-      ...(dto.description !== undefined ? { description: dto.description } : {}),
+      ...(dto.description !== undefined
+        ? { description: dto.description }
+        : {}),
       ...(dto.labels !== undefined
         ? { labels: dto.labels as unknown as Prisma.InputJsonValue }
         : {}),

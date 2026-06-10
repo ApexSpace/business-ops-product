@@ -1,12 +1,9 @@
-import { SettingsPlaceholder } from "@/features/settings/components/settings-placeholder";
+import { BusinessBillingSettings } from "@/features/settings/components/business-billing-settings";
+
+export const metadata = {
+  title: "Plan & Billing",
+};
 
 export default function BusinessSettingsBillingPage() {
-  return (
-    <SettingsPlaceholder
-      title="Billing"
-      description="Your subscription and plan details."
-      comingSoonTitle="Subscription & billing"
-      comingSoonDescription="Plan and billing for this business are managed by your platform administrator. A self-service billing view will be added when business billing APIs are available."
-    />
-  );
+  return <BusinessBillingSettings />;
 }

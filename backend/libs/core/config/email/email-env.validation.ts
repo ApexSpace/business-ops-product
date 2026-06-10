@@ -23,5 +23,9 @@ export const emailEnvValidationSchema = {
 
   EMAIL_QUEUE_CONCURRENCY: Joi.number().integer().min(1).max(100).default(10),
   EMAIL_JOB_ATTEMPTS: Joi.number().integer().min(1).max(20).default(5),
-  EMAIL_JOB_BACKOFF_MS: Joi.number().integer().min(100).max(600000).default(2000),
+  EMAIL_JOB_BACKOFF_MS: Joi.number()
+    .integer()
+    .min(100)
+    .max(600000)
+    .default(2000),
 };

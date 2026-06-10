@@ -34,7 +34,10 @@ export class QueueService {
 
   constructor(private readonly redisService: RedisService) {}
 
-  private guardQueueAvailable(queue: Queue | null, operation: string): queue is Queue {
+  private guardQueueAvailable(
+    queue: Queue | null,
+    operation: string,
+  ): queue is Queue {
     if (queue) {
       return true;
     }
@@ -92,7 +95,10 @@ export class QueueService {
     const email = resolveEmailConfig();
     return {
       attempts: email.queue.jobAttempts,
-      backoff: { type: 'exponential' as const, delay: email.queue.jobBackoffMs },
+      backoff: {
+        type: 'exponential' as const,
+        delay: email.queue.jobBackoffMs,
+      },
     };
   }
 
@@ -115,7 +121,9 @@ export class QueueService {
       return job.id ?? null;
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      this.logger.error(`Failed to enqueue send email job ${jobId}: ${message}`);
+      this.logger.error(
+        `Failed to enqueue send email job ${jobId}: ${message}`,
+      );
       throw error;
     }
   }
@@ -136,7 +144,9 @@ export class QueueService {
       return job.id ?? null;
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      this.logger.error(`Failed to enqueue Resend webhook job ${jobId}: ${message}`);
+      this.logger.error(
+        `Failed to enqueue Resend webhook job ${jobId}: ${message}`,
+      );
       throw error;
     }
   }
@@ -188,7 +198,11 @@ export class QueueService {
     if (!this.guardQueueAvailable(queue, `enqueue sync job ${jobName}`)) {
       return null;
     }
-    const job = await queue.add(jobName, payload, jobId ? { jobId } : undefined);
+    const job = await queue.add(
+      jobName,
+      payload,
+      jobId ? { jobId } : undefined,
+    );
     return job.id ?? null;
   }
 

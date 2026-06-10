@@ -1,7 +1,4 @@
-import {
-  IntegrationResourceStatus,
-  IntegrationStatus,
-} from '@prisma/client';
+import { IntegrationResourceStatus, IntegrationStatus } from '@prisma/client';
 import type { StripeConnectAccount } from '../stripe.types';
 
 export interface StripeAccountStatusSnapshot {

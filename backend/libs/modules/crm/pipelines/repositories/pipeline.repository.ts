@@ -14,10 +14,7 @@ export type PipelineWithStages = Prisma.PipelineGetPayload<{
 export class PipelineRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  findById(
-    businessId: string,
-    id: string,
-  ): Promise<PipelineWithStages | null> {
+  findById(businessId: string, id: string): Promise<PipelineWithStages | null> {
     return this.prisma.pipeline.findFirst({
       where: { id, businessId },
       include: pipelineWithStages,

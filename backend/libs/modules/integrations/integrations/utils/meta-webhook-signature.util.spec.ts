@@ -15,9 +15,9 @@ describe('verifyMetaWebhookSignature', () => {
   });
 
   it('rejects invalid signature', () => {
-    expect(
-      verifyMetaWebhookSignature(body, 'sha256=deadbeef', secret),
-    ).toBe(false);
+    expect(verifyMetaWebhookSignature(body, 'sha256=deadbeef', secret)).toBe(
+      false,
+    );
   });
 
   it('rejects missing header', () => {

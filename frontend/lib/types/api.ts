@@ -16,7 +16,6 @@ export type {
 
 export type {
   BillingOverview,
-  BillingSubscription,
   BusinessStatus,
   Industry,
   IndustryLabels,
@@ -38,7 +37,6 @@ import type { BusinessMemberRole } from "@/features/auth/types/auth-dto";
 export interface Business {
   id: string;
   name: string;
-  slug: string;
   industryId: string | null;
   industry?: Industry | null;
   snapshotId?: string | null;
@@ -71,6 +69,21 @@ export interface Business {
   createdById: string | null;
   createdAt: string;
   updatedAt: string;
+  subscriptionStatus?: import("@/features/platform/types/platform-dto").SubscriptionStatus | null;
+  planTierName?: string | null;
+  planTierId?: string | null;
+  planGroupName?: string | null;
+  paymentMethod?: string | null;
+  paymentStatus?: string | null;
+  latestPaymentAt?: string | null;
+  recommendedActionKey?: string | null;
+  /** @deprecated Use recommendedActionKey */
+  recommendedAction?: string | null;
+  currentPeriodEnd?: string | null;
+  canAccessWorkspace?: boolean;
+  reasonCode?: string;
+  reasonLabel?: string;
+  needsAttention?: string[];
 }
 
 export interface PaginatedMeta {
@@ -152,6 +165,7 @@ export interface PlatformDashboardStats {
   businesses: {
     total: number;
     active: number;
+    notActive?: number;
     suspended: number;
     archived: number;
   };

@@ -16,7 +16,9 @@ export class StripeWebhookProcessor {
   ) {}
 
   async process(payload: ProcessStripeWebhookPayload): Promise<void> {
-    const event = await this.webhookEventsRepository.findById(payload.webhookEventId);
+    const event = await this.webhookEventsRepository.findById(
+      payload.webhookEventId,
+    );
     if (!event) {
       this.logger.warn(`WebhookEvent ${payload.webhookEventId} not found`);
       return;
@@ -32,7 +34,9 @@ export class StripeWebhookProcessor {
         event.externalEventId,
       );
       if (!claimed) {
-        this.logger.log(`Skipping duplicate Stripe event ${event.externalEventId}`);
+        this.logger.log(
+          `Skipping duplicate Stripe event ${event.externalEventId}`,
+        );
         return;
       }
     }
@@ -47,7 +51,8 @@ export class StripeWebhookProcessor {
         WebhookEventStatus.PROCESSED,
       );
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Processing failed';
+      const message =
+        error instanceof Error ? error.message : 'Processing failed';
       await this.webhookEventsRepository.updateStatus(
         event.id,
         WebhookEventStatus.FAILED,

@@ -29,16 +29,15 @@ export class PublicBookingContactService {
     let contact: Contact | null = null;
 
     if (email && phoneKey) {
-      const byEmail = await this.contactRepository.findByEmail(businessId, email);
+      const byEmail = await this.contactRepository.findByEmail(
+        businessId,
+        email,
+      );
       const byPhone = await this.contactRepository.findByPhoneKey(
         businessId,
         phoneKey,
       );
-      if (
-        byEmail &&
-        byPhone &&
-        byEmail.id === byPhone.id
-      ) {
+      if (byEmail && byPhone && byEmail.id === byPhone.id) {
         contact = byEmail;
       } else if (byEmail) {
         contact = byEmail;
@@ -48,7 +47,10 @@ export class PublicBookingContactService {
     } else if (email) {
       contact = await this.contactRepository.findByEmail(businessId, email);
     } else if (phoneKey) {
-      contact = await this.contactRepository.findByPhoneKey(businessId, phoneKey);
+      contact = await this.contactRepository.findByPhoneKey(
+        businessId,
+        phoneKey,
+      );
     }
 
     if (contact) {
@@ -58,8 +60,7 @@ export class PublicBookingContactService {
 
     const nameParts = input.customerName.trim().split(/\s+/);
     const firstName = nameParts[0] ?? input.customerName.trim();
-    const lastName =
-      nameParts.length > 1 ? nameParts.slice(1).join(' ') : null;
+    const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : null;
 
     return this.contactRepository.createPublic(businessId, {
       firstName,

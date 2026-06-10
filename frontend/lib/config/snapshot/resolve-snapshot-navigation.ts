@@ -1,6 +1,11 @@
 import type { BusinessMemberRole } from "@/features/auth/types/auth-dto";
 import type { SnapshotNavItem } from "@/features/platform/types/snapshot";
 import type { ShellNavItem, ShellNavSection } from "@/lib/types/shell-nav";
+import {
+  isCoreSafeBusinessRoute,
+  resolveRouteCapability,
+  warnUnmappedBusinessRoute,
+} from "@/lib/capabilities/route-capability-map";
 import { resolveSnapshotIcon } from "./icon-registry";
 import { isKnownSnapshotRoute } from "./route-registry";
 
@@ -11,6 +16,7 @@ export interface ResolveSnapshotNavigationOptions {
   resolveLabel: TerminologyResolver;
   businessRole?: BusinessMemberRole;
   isPlatformAdmin?: boolean;
+  hasModule?: (moduleKey: string) => boolean;
 }
 
 function canAccessNavItem(
@@ -24,17 +30,43 @@ function canAccessNavItem(
   return requiredRoles.includes(businessRole);
 }
 
+function canAccessByCapability(
+  route: string,
+  hasModule: ((moduleKey: string) => boolean) | undefined,
+  isPlatformAdmin: boolean,
+): boolean {
+  if (isPlatformAdmin) return true;
+  if (isCoreSafeBusinessRoute(route)) return true;
+
+  const entry = resolveRouteCapability(route);
+  if (!entry) {
+    warnUnmappedBusinessRoute(route);
+    return true;
+  }
+
+  if (!hasModule) return true;
+  return hasModule(entry.moduleKey);
+}
+
 export function resolveSnapshotNavigation(
   options: ResolveSnapshotNavigationOptions,
 ): ShellNavSection[] {
-  const { navigation, resolveLabel, businessRole, isPlatformAdmin = false } =
-    options;
+  const {
+    navigation,
+    resolveLabel,
+    businessRole,
+    isPlatformAdmin = false,
+    hasModule,
+  } = options;
 
   const items: ShellNavItem[] = navigation
     .filter((item) => item.visible !== false)
     .filter((item) => isKnownSnapshotRoute(item.route))
     .filter((item) =>
       canAccessNavItem(item.requiredRoles, businessRole, isPlatformAdmin),
+    )
+    .filter((item) =>
+      canAccessByCapability(item.route, hasModule, isPlatformAdmin),
     )
     .sort((a, b) => a.order - b.order)
     .map((item) => ({

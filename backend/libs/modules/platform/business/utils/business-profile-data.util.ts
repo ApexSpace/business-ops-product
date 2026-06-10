@@ -10,7 +10,7 @@ type ProfileInput = BusinessProfileDto & {
 
 export function toBusinessCreateData(
   dto: ProfileInput & { name: string; industryId: string },
-): Omit<Prisma.BusinessCreateInput, 'slug' | 'createdBy'> {
+): Omit<Prisma.BusinessCreateInput, 'createdBy'> {
   const displayName =
     emptyToUndefined(dto.displayName) ??
     buildDisplayName(dto.firstName, dto.lastName);

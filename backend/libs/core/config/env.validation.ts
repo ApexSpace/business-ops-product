@@ -164,7 +164,8 @@ export const envValidationSchema = baseSchema.custom((env, helpers) => {
     });
   }
 
-  const googleEnabled = (env as NodeJS.ProcessEnv).GOOGLE_OAUTH_ENABLED === 'true';
+  const googleEnabled =
+    (env as NodeJS.ProcessEnv).GOOGLE_OAUTH_ENABLED === 'true';
   const metaEnabled = (env as NodeJS.ProcessEnv).META_OAUTH_ENABLED === 'true';
   const linkedInEnabled =
     (env as NodeJS.ProcessEnv).LINKEDIN_OAUTH_ENABLED === 'true';

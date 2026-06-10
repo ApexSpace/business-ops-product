@@ -10,7 +10,8 @@ describe('IdempotencyService', () => {
 
   function createService(redisAvailable: boolean) {
     const redisService = {
-      getClient: () => (redisAvailable ? ({ set: jest.fn() } as unknown) : null),
+      getClient: () =>
+        redisAvailable ? ({ set: jest.fn() } as unknown) : null,
     } as unknown as RedisService;
     return new IdempotencyService(redisService);
   }
@@ -26,6 +27,8 @@ describe('IdempotencyService', () => {
     process.env.REQUIRE_REDIS = 'true';
     process.env.REDIS_URL = 'redis://localhost:6379';
     const service = createService(false);
-    await expect(service.claim('scope', 'id-1')).rejects.toThrow('Redis is required');
+    await expect(service.claim('scope', 'id-1')).rejects.toThrow(
+      'Redis is required',
+    );
   });
 });

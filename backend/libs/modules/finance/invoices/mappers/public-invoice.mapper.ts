@@ -17,8 +17,7 @@ export function toPublicInvoiceResponse(
     invoice.business as Parameters<typeof extractFinancialSettings>[0],
   );
   const businessName =
-    invoice.business.displayName?.trim() ||
-    invoice.business.name;
+    invoice.business.displayName?.trim() || invoice.business.name;
 
   const isOverdue = isInvoiceOverdue({
     status: invoice.status,

@@ -45,7 +45,10 @@ export class WorkItemsController {
     BusinessMemberRole.ADMIN,
     BusinessMemberRole.MEMBER,
   )
-  list(@CurrentUser() user: RequestUser, @Query() query: ListWorkItemsQueryDto) {
+  list(
+    @CurrentUser() user: RequestUser,
+    @Query() query: ListWorkItemsQueryDto,
+  ) {
     return this.workItemsService.list(user.businessId!, query);
   }
 

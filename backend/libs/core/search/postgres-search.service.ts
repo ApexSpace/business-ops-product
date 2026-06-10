@@ -6,16 +6,17 @@ import { PrismaService } from '../database/prisma.service';
 export class PostgresSearchService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async searchContacts(
-    businessId: string,
-    query: string,
-    limit = 20,
-  ) {
+  async searchContacts(businessId: string, query: string, limit = 20) {
     const q = query.trim();
     if (!q) return [];
 
     return this.prisma.$queryRaw<
-      Array<{ id: string; firstName: string | null; lastName: string | null; email: string | null }>
+      Array<{
+        id: string;
+        firstName: string | null;
+        lastName: string | null;
+        email: string | null;
+      }>
     >`
       SELECT id, "firstName", "lastName", email
       FROM contacts
@@ -31,11 +32,7 @@ export class PostgresSearchService {
     `;
   }
 
-  async searchConversations(
-    businessId: string,
-    query: string,
-    limit = 20,
-  ) {
+  async searchConversations(businessId: string, query: string, limit = 20) {
     const q = query.trim();
     if (!q) return [];
 

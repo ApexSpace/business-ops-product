@@ -5,9 +5,11 @@ import { cn } from "@/lib/utils";
 
 export const PLATFORM_BUSINESS_DETAIL_TABS = [
   { value: "overview", label: "Overview" },
+  { value: "access", label: "Access" },
+  { value: "subscriptions", label: "Subscriptions" },
+  { value: "payments", label: "Payments" },
   { value: "profile", label: "Profile" },
   { value: "team", label: "Team" },
-  { value: "billing", label: "Billing" },
   { value: "activity", label: "Activity" },
 ] as const;
 

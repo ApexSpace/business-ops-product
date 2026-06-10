@@ -9,7 +9,10 @@ import {
 import { SYSTEM_AUDIT_ACTOR_SENTINEL } from '@app/modules/platform/audit/constants/audit.constants';
 import { AuditService } from '@app/modules/platform/audit/services/audit.service';
 import { PrismaService } from '@app/core/database/prisma.service';
-import type { StripeWebhookEvent, StripeWebhookMetadata } from '@app/modules/integrations/integrations/stripe/stripe.types';
+import type {
+  StripeWebhookEvent,
+  StripeWebhookMetadata,
+} from '@app/modules/integrations/integrations/stripe/stripe.types';
 import { computeInvoicePaymentSyncFields } from '@app/modules/finance/payments/utils/invoice-payment-sync.util';
 import { EmailNotificationService } from '@app/modules/communications/email/services/email-notification.service';
 import {
@@ -62,12 +65,14 @@ export class StripeInvoicePaymentService {
     event: StripeWebhookEvent,
   ): Promise<void> {
     const session = event.data.object as CheckoutSessionObject;
-    await this.recordStripePaymentFromSession(session, event.id, 'checkout.session.completed');
+    await this.recordStripePaymentFromSession(
+      session,
+      event.id,
+      'checkout.session.completed',
+    );
   }
 
-  async handlePaymentIntentSucceeded(
-    event: StripeWebhookEvent,
-  ): Promise<void> {
+  async handlePaymentIntentSucceeded(event: StripeWebhookEvent): Promise<void> {
     const intent = event.data.object as PaymentIntentObject;
     const metadata = intent.metadata ?? null;
     const sessionId =
@@ -114,7 +119,9 @@ export class StripeInvoicePaymentService {
     const businessId = metadata?.businessId;
     const invoiceId = metadata?.invoiceId;
     if (!businessId || !invoiceId) {
-      this.logger.warn(`charge.refunded: missing metadata for event ${event.id}`);
+      this.logger.warn(
+        `charge.refunded: missing metadata for event ${event.id}`,
+      );
       return;
     }
 
@@ -131,8 +138,7 @@ export class StripeInvoicePaymentService {
       : null;
 
     if (payment) {
-      const refundedCents =
-        charge.amount_refunded ?? charge.amount ?? null;
+      const refundedCents = charge.amount_refunded ?? charge.amount ?? null;
       const amountRefunded =
         refundedCents != null
           ? (Number(refundedCents) / 100).toFixed(2)
@@ -149,7 +155,7 @@ export class StripeInvoicePaymentService {
               : {}),
             refundedAt: new Date().toISOString(),
             amountRefunded,
-          } as Prisma.InputJsonValue,
+          },
         },
       });
     }
@@ -317,7 +323,7 @@ export class StripeInvoicePaymentService {
             currency: params.currency ?? null,
             stripeEventId: params.eventId,
             stripeEventType: params.eventType,
-          } as Prisma.InputJsonValue,
+          },
         },
       });
 
@@ -409,7 +415,9 @@ export class StripeInvoicePaymentService {
         'contact.name': formatContactName(invoice.contact),
         'invoice.number': invoice.invoiceNumber,
         'payment.amount': formatMoney(params.amount),
-        'payment.date': DateTime.fromJSDate(params.paidAt).toFormat('LLL d, yyyy'),
+        'payment.date': DateTime.fromJSDate(params.paidAt).toFormat(
+          'LLL d, yyyy',
+        ),
       },
     });
   }
@@ -444,7 +452,9 @@ export class StripeInvoicePaymentService {
     });
   }
 
-  private resolveId(value: string | { id?: string } | null | undefined): string | null {
+  private resolveId(
+    value: string | { id?: string } | null | undefined,
+  ): string | null {
     if (!value) return null;
     if (typeof value === 'string') return value;
     return value.id ?? null;

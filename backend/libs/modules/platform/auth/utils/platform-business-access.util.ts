@@ -1,7 +1,4 @@
-import {
-  BusinessMemberRole,
-  PlatformMemberRole,
-} from '@prisma/client';
+import { BusinessMemberRole, PlatformMemberRole } from '@prisma/client';
 
 export function isPlatformBusinessAdmin(
   platformRole: PlatformMemberRole,

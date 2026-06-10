@@ -140,10 +140,13 @@ export class PublicChatbotSessionService {
         },
       });
     } else if (contact && !conversation.contactId) {
-      conversation = await this.conversationsRepository.update(conversation.id, {
-        contact: { connect: { id: contact.id } },
-        title,
-      });
+      conversation = await this.conversationsRepository.update(
+        conversation.id,
+        {
+          contact: { connect: { id: contact.id } },
+          title,
+        },
+      );
     }
 
     const session = await this.sessionsRepository.create({

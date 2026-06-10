@@ -69,7 +69,9 @@ export class S3StorageProvider {
     );
   }
 
-  async headObject(key: string): Promise<{ sizeBytes: number; contentType?: string }> {
+  async headObject(
+    key: string,
+  ): Promise<{ sizeBytes: number; contentType?: string }> {
     const result = await this.client.send(
       new HeadObjectCommand({ Bucket: this.config.bucket, Key: key }),
     );

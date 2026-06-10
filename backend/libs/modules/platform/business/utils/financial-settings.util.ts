@@ -7,17 +7,11 @@ import {
   InvoiceSettingsConfig,
   TaxesAndCurrencySettings,
 } from '../types/financial-settings.types';
-import {
-  currencySymbolForCode,
-  normalizeCurrencyCode,
-} from './currency.util';
+import { currencySymbolForCode, normalizeCurrencyCode } from './currency.util';
 
 const FINANCIAL_SETTINGS_KEY = 'financial';
 
-export function formatDocumentNumber(
-  prefix: string,
-  sequence: number,
-): string {
+export function formatDocumentNumber(prefix: string, sequence: number): string {
   const normalizedPrefix = prefix.trim().toUpperCase() || 'DOC';
   return `${normalizedPrefix}-${String(sequence).padStart(5, '0')}`;
 }
@@ -90,17 +84,15 @@ export function businessInformationFromProfile(
     digits && business.phoneCountryCode
       ? `${business.phoneCountryCode}${digits}`
       : digits
-        ? business.phoneNumber ?? ''
+        ? (business.phoneNumber ?? '')
         : '';
 
   const stored =
     isRecord(business.settings) &&
     isRecord(business.settings[FINANCIAL_SETTINGS_KEY]) &&
     isRecord(business.settings[FINANCIAL_SETTINGS_KEY].businessInformation)
-      ? (business.settings[FINANCIAL_SETTINGS_KEY].businessInformation as Record<
-          string,
-          unknown
-        >)
+      ? (business.settings[FINANCIAL_SETTINGS_KEY]
+          .businessInformation as Record<string, unknown>)
       : null;
 
   return {

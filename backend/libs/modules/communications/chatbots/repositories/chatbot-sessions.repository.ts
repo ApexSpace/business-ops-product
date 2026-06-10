@@ -23,7 +23,10 @@ export class ChatbotSessionsRepository {
     return this.prisma.chatbotSession.create({ data });
   }
 
-  update(id: string, data: Prisma.ChatbotSessionUpdateInput): Promise<ChatbotSession> {
+  update(
+    id: string,
+    data: Prisma.ChatbotSessionUpdateInput,
+  ): Promise<ChatbotSession> {
     return this.prisma.chatbotSession.update({ where: { id }, data });
   }
 }

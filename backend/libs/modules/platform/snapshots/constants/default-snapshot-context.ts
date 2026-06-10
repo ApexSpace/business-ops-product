@@ -82,8 +82,16 @@ export const DEFAULT_SNAPSHOT_CONTEXT: SnapshotContextResponse = {
       { href: '/business/contacts', labelKey: 'nav.contacts', order: 1 },
       { href: '/business/work-items', labelKey: 'nav.workItems', order: 2 },
       { href: '/business/pipelines', labelKey: 'nav.pipelines', order: 3 },
-      { href: '/business/appointments', labelKey: 'nav.appointments', order: 4 },
-      { href: '/business/conversations', labelKey: 'nav.conversations', order: 5 },
+      {
+        href: '/business/appointments',
+        labelKey: 'nav.appointments',
+        order: 4,
+      },
+      {
+        href: '/business/conversations',
+        labelKey: 'nav.conversations',
+        order: 5,
+      },
       { href: '/business/settings/team', label: 'Team', order: 6 },
     ],
   },

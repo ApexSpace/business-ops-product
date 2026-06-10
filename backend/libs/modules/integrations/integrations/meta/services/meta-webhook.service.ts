@@ -51,6 +51,20 @@ export class MetaWebhookService {
     rawBody: Buffer,
     signatureHeader: string | undefined,
   ): Promise<void> {
+    try {
+      await this.handleEventInternal(rawBody, signatureHeader);
+    } catch (error) {
+      this.logger.error(
+        'Meta webhook handling failed',
+        error instanceof Error ? error.stack : String(error),
+      );
+    }
+  }
+
+  private async handleEventInternal(
+    rawBody: Buffer,
+    signatureHeader: string | undefined,
+  ): Promise<void> {
     let appSecret: string;
     try {
       appSecret = this.metaConfigService.getMetaAppConfig().appSecret;
@@ -88,24 +102,14 @@ export class MetaWebhookService {
     const entries = body.entry as unknown[] | undefined;
     const externalEventId = this.extractEventId(body);
 
-    if (externalEventId) {
-      const existing = await this.webhookEventsRepository.findByProviderAndExternalId(
-        WebhookEventProvider.META,
-        externalEventId,
-      );
-      if (existing?.status === WebhookEventStatus.PROCESSED) {
-        this.logger.log(`Meta webhook ${externalEventId} already processed`);
-        return;
-      }
-    }
-
-    const webhookEvent = await this.webhookEventsRepository.create({
-      provider: WebhookEventProvider.META,
+    const webhookEventId = await this.persistWebhookEvent(
       externalEventId,
-      eventType: object ?? 'unknown',
-      payload: body as Prisma.InputJsonValue,
-      status: WebhookEventStatus.RECEIVED,
-    });
+      object,
+      body,
+    );
+    if (!webhookEventId) {
+      return;
+    }
 
     this.logger.log(
       `Meta webhook received object=${object ?? 'unknown'} entries=${entries?.length ?? 0}`,
@@ -119,26 +123,89 @@ export class MetaWebhookService {
       metadata: {
         object: object ?? null,
         entryCount: entries?.length ?? 0,
-        webhookEventId: webhookEvent.id,
+        webhookEventId,
       },
     });
 
     const bullJobId = await this.queueService.enqueueMetaWebhook({
-      webhookEventId: webhookEvent.id,
+      webhookEventId,
     });
 
     if (!bullJobId) {
       this.logger.error(
-        `Failed to enqueue Meta webhook ${webhookEvent.id}; ensure REDIS_URL is set`,
+        `Failed to enqueue Meta webhook ${webhookEventId}; ensure REDIS_URL is set`,
       );
     }
+  }
+
+  private async persistWebhookEvent(
+    externalEventId: string | null,
+    object: string | undefined,
+    body: Record<string, unknown>,
+  ): Promise<string | null> {
+    let existing: { id: string; status: WebhookEventStatus } | null = null;
+
+    if (externalEventId) {
+      existing = await this.webhookEventsRepository.findByProviderAndExternalId(
+        WebhookEventProvider.META,
+        externalEventId,
+      );
+      if (existing?.status === WebhookEventStatus.PROCESSED) {
+        this.logger.log(`Meta webhook ${externalEventId} already processed`);
+        return null;
+      }
+    }
+
+    let webhookEventId = existing?.id;
+
+    if (!webhookEventId) {
+      try {
+        const created = await this.webhookEventsRepository.create({
+          provider: WebhookEventProvider.META,
+          externalEventId,
+          eventType: object ?? 'unknown',
+          payload: body as Prisma.InputJsonValue,
+          status: WebhookEventStatus.RECEIVED,
+        });
+        webhookEventId = created.id;
+      } catch (error) {
+        if (!externalEventId || !this.isUniqueConstraintError(error)) {
+          throw error;
+        }
+        const duplicate =
+          await this.webhookEventsRepository.findByProviderAndExternalId(
+            WebhookEventProvider.META,
+            externalEventId,
+          );
+        if (!duplicate) {
+          throw error;
+        }
+        if (duplicate.status === WebhookEventStatus.PROCESSED) {
+          this.logger.log(`Meta webhook ${externalEventId} already processed`);
+          return null;
+        }
+        webhookEventId = duplicate.id;
+      }
+    }
+
+    return webhookEventId;
+  }
+
+  private isUniqueConstraintError(error: unknown): boolean {
+    return (
+      typeof error === 'object' &&
+      error !== null &&
+      'code' in error &&
+      (error as { code?: string }).code === 'P2002'
+    );
   }
 
   private extractEventId(body: Record<string, unknown>): string | null {
     const entries = Array.isArray(body.entry) ? body.entry : [];
     const first = entries[0] as { id?: string } | undefined;
-    const messaging = (first as { messaging?: { message?: { mid?: string } }[] })
-      ?.messaging;
+    const messaging = (
+      first as { messaging?: { message?: { mid?: string } }[] }
+    )?.messaging;
     const mid = messaging?.[0]?.message?.mid;
     if (mid) return mid;
     return first?.id ?? null;

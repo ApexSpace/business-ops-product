@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { BusinessModule } from '@app/modules/platform/business/business.module';
 import { ContactsModule } from '@app/modules/crm/contacts/contacts.module';
 import { ConversationsModule } from '../conversations/conversations.module';
 import { ChatbotWidgetsController } from './controllers/chatbot-widgets.controller';
@@ -16,7 +17,7 @@ import { ChatbotsService } from './services/chatbots.service';
 import { PublicChatbotSessionService } from './services/public-chatbot-session.service';
 
 @Module({
-  imports: [ContactsModule, ConversationsModule],
+  imports: [BusinessModule, ContactsModule, ConversationsModule],
   controllers: [
     ChatbotsController,
     PublicChatbotController,

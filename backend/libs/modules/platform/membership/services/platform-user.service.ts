@@ -9,7 +9,10 @@ import { ErrorCode } from '@app/common/exceptions/error-code.enum';
 import { RootConfig } from '@app/core/config/configuration';
 import { AuditService } from '@app/modules/platform/audit/services/audit.service';
 import { UserRepository } from '@app/modules/platform/auth/repositories/user.repository';
-import { CreatePlatformUserDto, UpdatePlatformUserDto } from '../dto/platform-user.dto';
+import {
+  CreatePlatformUserDto,
+  UpdatePlatformUserDto,
+} from '../dto/platform-user.dto';
 import { PlatformUserDto } from '../dto/platform-user-response.dto';
 import {
   PlatformMembershipAdminRepository,
@@ -30,7 +33,10 @@ export class PlatformUserService {
     limit: number;
     skip: number;
     role?: PlatformMemberRole;
-  }): Promise<{ items: PlatformUserDto[]; meta: { total: number; page: number; limit: number } }> {
+  }): Promise<{
+    items: PlatformUserDto[];
+    meta: { total: number; page: number; limit: number };
+  }> {
     const { items, total } = await this.platformMembershipRepository.findMany(
       params.skip,
       params.limit,
@@ -69,7 +75,9 @@ export class PlatformUserService {
         );
       }
     } else {
-      const rounds = this.configService.get('auth.bcryptRounds', { infer: true });
+      const rounds = this.configService.get('auth.bcryptRounds', {
+        infer: true,
+      });
       const password = dto.password ?? randomUUID();
       const passwordHash = await bcrypt.hash(password, rounds);
       user = await this.userRepository.create({

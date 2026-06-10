@@ -17,6 +17,8 @@ import { BusinessMemberRole } from '@prisma/client';
 import { CurrentUser } from '@app/common/decorators/current-user.decorator';
 import type { RequestUser } from '@app/common/decorators/current-user.decorator';
 import { BusinessRoles } from '@app/common/decorators/business-roles.decorator';
+import { RequireModule } from '@app/common/decorators/require-module.decorator';
+import { BusinessCapabilityGuard } from '@app/common/guards/business-capability.guard';
 import { BusinessRolesGuard } from '@app/common/guards/business-roles.guard';
 import { AssignConversationDto } from '../dto/assign-conversation.dto';
 import { ListConversationsQueryDto } from '../dto/list-conversations-query.dto';
@@ -30,7 +32,8 @@ import { ConversationsService } from '../services/conversations.service';
 @ApiTags('conversations')
 @ApiBearerAuth()
 @Controller('conversations')
-@UseGuards(BusinessRolesGuard)
+@UseGuards(BusinessRolesGuard, BusinessCapabilityGuard)
+@RequireModule('conversations')
 export class ConversationsController {
   constructor(
     private readonly conversationsService: ConversationsService,
@@ -48,11 +51,7 @@ export class ConversationsController {
     @CurrentUser() user: RequestUser,
     @Query() query: ListConversationsQueryDto,
   ) {
-    return this.conversationsService.list(
-      user.businessId!,
-      query,
-      user.id,
-    );
+    return this.conversationsService.list(user.businessId!, query, user.id);
   }
 
   @Get('by-contact/:contactId')
@@ -65,10 +64,7 @@ export class ConversationsController {
     @CurrentUser() user: RequestUser,
     @Param('contactId', ParseUUIDPipe) contactId: string,
   ) {
-    return this.conversationsService.listByContact(
-      user.businessId!,
-      contactId,
-    );
+    return this.conversationsService.listByContact(user.businessId!, contactId);
   }
 
   @Get(':id')

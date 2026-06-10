@@ -8,19 +8,25 @@ import {
   UserStatus,
 } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
-import { randomUUID } from 'crypto';
-import { AuthContext, RequestUser } from '@app/common/decorators/current-user.decorator';
+import {
+  AuthContext,
+  RequestUser,
+} from '@app/common/decorators/current-user.decorator';
 import { AppException } from '@app/common/exceptions/app.exception';
 import { ErrorCode } from '@app/common/exceptions/error-code.enum';
-import { slugify, withSlugSuffix } from '@app/common/utils/slug.util';
 import { RootConfig } from '@app/core/config/configuration';
 import { PrismaService } from '@app/core/database/prisma.service';
 import { BusinessRepository } from '@app/modules/platform/business/repositories/business.repository';
+import { BusinessAccessResolverService } from '@app/modules/platform/business/services/business-access-resolver.service';
+import { mapAccessBlockToAuthError } from '@app/modules/platform/business/utils/business-access-auth.util';
 import { BusinessMembershipRepository } from '@app/modules/platform/membership/repositories/business-membership.repository';
 import { JwtAccessPayload } from '../interfaces/jwt-payload.interface';
 import { PlatformMembershipRepository } from '../repositories/platform-membership.repository';
 import { RefreshTokenRepository } from '../repositories/refresh-token.repository';
-import { UserRepository, UserWithRelations } from '../repositories/user.repository';
+import {
+  UserRepository,
+  UserWithRelations,
+} from '../repositories/user.repository';
 import { IndustriesService } from '@app/modules/crm/industries/services/industries.service';
 import { SnapshotApplyService } from '@app/modules/platform/snapshots/services/snapshot-apply.service';
 import { SnapshotsService } from '@app/modules/platform/snapshots/services/snapshots.service';
@@ -38,6 +44,9 @@ export interface AuthContextItem {
   businessRole?: string;
   /** Business opened via platform staff access (no direct membership). */
   viaPlatform?: boolean;
+  canAccessWorkspace?: boolean;
+  accessReasonCode?: string;
+  accessReasonLabel?: string;
 }
 
 export interface AuthTokensResponse {
@@ -53,6 +62,7 @@ export class AuthService {
     private readonly platformMembershipRepository: PlatformMembershipRepository,
     private readonly refreshTokenRepository: RefreshTokenRepository,
     private readonly businessRepository: BusinessRepository,
+    private readonly accessResolver: BusinessAccessResolverService,
     private readonly businessMembershipRepository: BusinessMembershipRepository,
     private readonly tokenService: TokenService,
     private readonly configService: ConfigService<RootConfig, true>,
@@ -84,7 +94,6 @@ export class AuthService {
 
     const rounds = this.configService.get('auth.bcryptRounds', { infer: true });
     const passwordHash = await bcrypt.hash(input.password, rounds);
-    const slug = await this.resolveUniqueSlug(input.businessName);
     const industry = await this.industriesService.resolveForBusiness(
       input.industryId,
     );
@@ -122,7 +131,6 @@ export class AuthService {
       const business = await tx.business.create({
         data: {
           name: input.businessName,
-          slug,
           industryId: industry.id,
           status: BusinessStatus.ACTIVE,
           createdById: user.id,
@@ -163,17 +171,16 @@ export class AuthService {
       'business',
       result.business.id,
     );
-    const userWithRelations = await this.userRepository.findById(result.user.id);
+    const userWithRelations = await this.userRepository.findById(
+      result.user.id,
+    );
     return {
       ...tokens,
       contexts: await this.buildContexts(userWithRelations!),
     };
   }
 
-  async login(
-    email: string,
-    password: string,
-  ): Promise<AuthTokensResponse> {
+  async login(email: string, password: string): Promise<AuthTokensResponse> {
     const user = await this.userRepository.findByEmail(email);
     if (!user) {
       throw new AppException(
@@ -204,8 +211,12 @@ export class AuthService {
     const userWithRelations = await this.userRepository.findById(user.id);
     const contexts = await this.buildContexts(userWithRelations!);
 
-    const defaultContext = this.pickDefaultContext(userWithRelations!);
-    const payload = this.buildAccessPayload(userWithRelations!, defaultContext);
+    const defaultContext = this.pickDefaultContext(contexts);
+    const payload = this.buildAccessPayload(
+      userWithRelations!,
+      defaultContext,
+      contexts,
+    );
     const tokens = await this.tokenService.issueTokenPair(
       payload,
       payload.context,
@@ -245,8 +256,8 @@ export class AuthService {
     } else if (stored.contextType === 'platform') {
       payload = this.buildPlatformPayload(user);
     } else {
-      const defaultContext = this.pickDefaultContext(user);
-      payload = this.buildAccessPayload(user, defaultContext);
+      const defaultContext = this.pickDefaultContext(contexts);
+      payload = this.buildAccessPayload(user, defaultContext, contexts);
     }
 
     const tokens = await this.tokenService.issueTokenPair(
@@ -260,7 +271,8 @@ export class AuthService {
   async logout(userId: string, refreshToken?: string): Promise<void> {
     if (refreshToken) {
       const tokenHash = this.tokenService.hashToken(refreshToken);
-      const stored = await this.refreshTokenRepository.findByTokenHash(tokenHash);
+      const stored =
+        await this.refreshTokenRepository.findByTokenHash(tokenHash);
       if (stored && stored.userId === userId) {
         await this.refreshTokenRepository.revoke(stored.id);
         return;
@@ -316,7 +328,10 @@ export class AuthService {
     return { sent: true };
   }
 
-  async resetPassword(token: string, password: string): Promise<{ reset: boolean }> {
+  async resetPassword(
+    token: string,
+    password: string,
+  ): Promise<{ reset: boolean }> {
     const userId = await this.authActionTokenService.verify(
       token,
       'password_reset',
@@ -408,8 +423,13 @@ export class AuthService {
       return;
     }
 
-    const token = await this.authActionTokenService.sign(userId, 'password_reset');
-    const frontendUrl = this.configService.get('app.frontendUrl', { infer: true });
+    const token = await this.authActionTokenService.sign(
+      userId,
+      'password_reset',
+    );
+    const frontendUrl = this.configService.get('app.frontendUrl', {
+      infer: true,
+    });
     const resetLink = `${frontendUrl}/reset-password?token=${encodeURIComponent(token)}`;
 
     await this.emailNotificationService.enqueueTransactionalEmail({
@@ -438,7 +458,9 @@ export class AuthService {
       userId,
       'email_verification',
     );
-    const frontendUrl = this.configService.get('app.frontendUrl', { infer: true });
+    const frontendUrl = this.configService.get('app.frontendUrl', {
+      infer: true,
+    });
     const verificationLink = `${frontendUrl}/verify-email?token=${encodeURIComponent(token)}`;
 
     await this.emailNotificationService.enqueueTransactionalEmail({
@@ -469,63 +491,70 @@ export class AuthService {
     }
 
     const activeMemberships = user.businessMemberships.filter(
-      (m) =>
-        m.status === MembershipStatus.ACTIVE &&
-        m.business.status === BusinessStatus.ACTIVE &&
-        !m.business.deletedAt,
+      (m) => m.status === MembershipStatus.ACTIVE && !m.business.deletedAt,
     );
     const membershipByBusinessId = new Map(
       activeMemberships.map((m) => [m.businessId, m]),
     );
 
     if (hasPlatform) {
-      const businesses = await this.businessRepository.findAllActive();
+      const businesses = await this.businessRepository.findAllNonDeleted();
       for (const business of businesses) {
         const membership = membershipByBusinessId.get(business.id);
+        const resolution = await this.accessResolver.resolveForBusiness(
+          business.id,
+        );
         contexts.push({
           type: 'business',
           businessId: business.id,
           businessName: business.name,
           businessRole: membership?.role ?? BusinessMemberRole.ADMIN,
           viaPlatform: !membership,
+          canAccessWorkspace: resolution.canAccessWorkspace,
+          accessReasonCode: resolution.reasonCode,
+          accessReasonLabel: resolution.reasonLabel,
         });
       }
       return contexts;
     }
 
     for (const m of activeMemberships) {
+      const resolution = await this.accessResolver.resolveForBusiness(
+        m.businessId,
+      );
       contexts.push({
         type: 'business',
         businessId: m.businessId,
         businessName: m.business.name,
         businessRole: m.role,
+        canAccessWorkspace: resolution.canAccessWorkspace,
+        accessReasonCode: resolution.reasonCode,
+        accessReasonLabel: resolution.reasonLabel,
       });
     }
     return contexts;
   }
 
   private hasActivePlatformMembership(user: UserWithRelations): boolean {
-    return !!(
-      user.platformMembership && !user.platformMembership.deletedAt
-    );
+    return !!(user.platformMembership && !user.platformMembership.deletedAt);
   }
 
-  private pickDefaultContext(user: UserWithRelations): AuthContext {
-    if (user.platformMembership && !user.platformMembership.deletedAt) {
+  private pickDefaultContext(contexts: AuthContextItem[]): AuthContext {
+    const platform = contexts.find((c) => c.type === 'platform');
+    if (platform) {
       return 'platform';
     }
-    const activeMembership = user.businessMemberships.find(
-      (m) =>
-        m.status === MembershipStatus.ACTIVE &&
-        m.business.status === BusinessStatus.ACTIVE &&
-        !m.business.deletedAt,
+
+    const accessibleBusiness = contexts.find(
+      (c) => c.type === 'business' && c.canAccessWorkspace,
     );
-    if (activeMembership) {
+    if (accessibleBusiness) {
       return 'business';
     }
+
     throw new AppException(
       ErrorCode.INVALID_CONTEXT,
-      'No active context available',
+      'No accessible workspace available',
       HttpStatus.FORBIDDEN,
     );
   }
@@ -533,16 +562,47 @@ export class AuthService {
   private buildAccessPayload(
     user: UserWithRelations,
     context: AuthContext,
+    contexts: AuthContextItem[],
   ): JwtAccessPayload {
     if (context === 'platform') {
       return this.buildPlatformPayload(user);
     }
+
+    const selected = contexts.find(
+      (c) => c.type === 'business' && c.canAccessWorkspace,
+    );
+
+    if (!selected?.businessId) {
+      throw new AppException(
+        ErrorCode.INVALID_CONTEXT,
+        'No accessible business workspace',
+        HttpStatus.FORBIDDEN,
+      );
+    }
+
     const membership = user.businessMemberships.find(
       (m) =>
+        m.businessId === selected.businessId &&
         m.status === MembershipStatus.ACTIVE &&
-        m.business.status === BusinessStatus.ACTIVE &&
         !m.business.deletedAt,
     );
+
+    if (this.hasActivePlatformMembership(user)) {
+      const platformRole = user.platformMembership!.role;
+      const businessRole = resolvePlatformBusinessRole(
+        platformRole,
+        membership?.role,
+      );
+      return {
+        sub: user.id,
+        email: user.email,
+        context: 'business',
+        businessId: selected.businessId,
+        platformRole,
+        businessRole,
+      };
+    }
+
     if (!membership) {
       throw new AppException(
         ErrorCode.INVALID_CONTEXT,
@@ -550,11 +610,12 @@ export class AuthService {
         HttpStatus.FORBIDDEN,
       );
     }
+
     return {
       sub: user.id,
       email: user.email,
       context: 'business',
-      businessId: membership.businessId,
+      businessId: selected.businessId,
       businessRole: membership.role,
     };
   }
@@ -596,12 +657,13 @@ export class AuthService {
         HttpStatus.NOT_FOUND,
       );
     }
-    if (business.status !== BusinessStatus.ACTIVE) {
-      throw new AppException(
-        ErrorCode.BUSINESS_SUSPENDED,
-        'Business is not active',
-        HttpStatus.FORBIDDEN,
+    const resolution = await this.accessResolver.resolveForBusiness(businessId);
+    if (!resolution.canAccessWorkspace) {
+      const { code, message } = mapAccessBlockToAuthError(
+        business.status,
+        resolution.reasonCode,
       );
+      throw new AppException(code, message, HttpStatus.FORBIDDEN);
     }
 
     const membership =
@@ -641,19 +703,5 @@ export class AuthService {
       businessId,
       businessRole: membership.role,
     };
-  }
-
-  private async resolveUniqueSlug(name: string): Promise<string> {
-    const base = slugify(name) || 'business';
-    let suffix = 1;
-    while (suffix < 100) {
-      const slug = withSlugSuffix(base, suffix);
-      const existing = await this.businessRepository.findBySlug(slug);
-      if (!existing) {
-        return slug;
-      }
-      suffix += 1;
-    }
-    return `${base}-${randomUUID().slice(0, 8)}`;
   }
 }

@@ -26,7 +26,8 @@ export const META_APP_REVIEW_PERMISSION_NOTES: Record<
   facebook: [
     {
       title: 'pages_show_list',
-      purpose: 'List Facebook Pages the customer manages so they can choose which Page to use.',
+      purpose:
+        'List Facebook Pages the customer manages so they can choose which Page to use.',
     },
     {
       title: 'pages_messaging',
@@ -34,7 +35,8 @@ export const META_APP_REVIEW_PERMISSION_NOTES: Record<
     },
     {
       title: 'pages_manage_metadata',
-      purpose: 'Read Page metadata (name, category, picture) for resource selection in settings.',
+      purpose:
+        'Read Page metadata (name, category, picture) for resource selection in settings.',
     },
   ],
   instagram: [

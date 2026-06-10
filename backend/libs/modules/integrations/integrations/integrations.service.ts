@@ -50,15 +50,10 @@ export class IntegrationsService {
       await this.providerRepository.findActiveBusinessProviders();
     const integrations =
       await this.businessIntegrationRepository.findManyByBusiness(businessId);
-    const integrationMap = new Map(
-      integrations.map((i) => [i.providerKey, i]),
-    );
+    const integrationMap = new Map(integrations.map((i) => [i.providerKey, i]));
 
     return providers.map((provider) =>
-      toBusinessProviderWithStatus(
-        provider,
-        integrationMap.get(provider.key),
-      ),
+      toBusinessProviderWithStatus(provider, integrationMap.get(provider.key)),
     );
   }
 
@@ -209,15 +204,10 @@ export class IntegrationsService {
     const providers =
       await this.providerRepository.findActivePlatformProviders();
     const integrations = await this.platformIntegrationRepository.findMany();
-    const integrationMap = new Map(
-      integrations.map((i) => [i.providerKey, i]),
-    );
+    const integrationMap = new Map(integrations.map((i) => [i.providerKey, i]));
 
     return providers.map((provider) =>
-      toPlatformProviderWithStatus(
-        provider,
-        integrationMap.get(provider.key),
-      ),
+      toPlatformProviderWithStatus(provider, integrationMap.get(provider.key)),
     );
   }
 
@@ -279,7 +269,9 @@ export class IntegrationsService {
 
     const updated = await this.providerRepository.update(id, {
       ...(dto.name !== undefined ? { name: dto.name } : {}),
-      ...(dto.description !== undefined ? { description: dto.description } : {}),
+      ...(dto.description !== undefined
+        ? { description: dto.description }
+        : {}),
       ...(dto.category !== undefined ? { category: dto.category } : {}),
       ...(dto.logoUrl !== undefined ? { logoUrl: dto.logoUrl } : {}),
       ...(dto.isPlatformLevel !== undefined

@@ -15,6 +15,7 @@ import {
   MinLength,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { PaginationQueryDto } from '@app/common/dto/pagination-query.dto';
 
 export class CreateChatbotDto {
   @ApiProperty()
@@ -226,16 +227,9 @@ export class SendChatbotMessageDto {
   text!: string;
 }
 
-export class ListChatbotsQueryDto {
-  @ApiPropertyOptional()
+export class ListChatbotsQueryDto extends PaginationQueryDto {
+  @ApiPropertyOptional({ enum: ChatbotStatus })
   @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  page?: number;
-
-  @ApiPropertyOptional()
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  limit?: number;
+  @IsEnum(ChatbotStatus)
+  status?: ChatbotStatus;
 }

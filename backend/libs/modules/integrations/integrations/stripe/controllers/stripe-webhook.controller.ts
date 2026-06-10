@@ -1,10 +1,4 @@
-import {
-  Controller,
-  Headers,
-  HttpCode,
-  Post,
-  Req,
-} from '@nestjs/common';
+import { Controller, Headers, HttpCode, Post, Req } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import type { RawBodyRequest } from '@nestjs/common';
 import type { Request } from 'express';
@@ -45,7 +39,10 @@ export class StripeWebhookController {
     if (!rawBody) {
       throw new Error('Raw body is required for Stripe webhook verification');
     }
-    void this.stripeWebhookService.handleConnectedAccountWebhook(rawBody, signature);
+    void this.stripeWebhookService.handleConnectedAccountWebhook(
+      rawBody,
+      signature,
+    );
     return { received: true };
   }
 }

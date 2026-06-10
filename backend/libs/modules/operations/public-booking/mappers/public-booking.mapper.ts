@@ -1,8 +1,4 @@
-import {
-  Calendar,
-  CalendarLocationType,
-  Business,
-} from '@prisma/client';
+import { Calendar, CalendarLocationType, Business } from '@prisma/client';
 import {
   PublicBookingCalendarDto,
   PublicBookingConfirmationDto,
@@ -61,8 +57,7 @@ export function toPublicBookingCalendar(
   return {
     slug: calendar.publicSlug!,
     name: calendar.name,
-    title:
-      (typeof ws.title === 'string' && ws.title.trim()) || calendar.name,
+    title: (typeof ws.title === 'string' && ws.title.trim()) || calendar.name,
     description:
       calendar.description ??
       (typeof ws.description === 'string' ? ws.description : null),

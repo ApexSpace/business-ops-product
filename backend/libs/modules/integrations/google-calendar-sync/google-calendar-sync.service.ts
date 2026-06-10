@@ -68,10 +68,11 @@ export class GoogleCalendarSyncService {
 
     let externalCalendarId = settings.externalCalendarId ?? null;
     if (!externalCalendarId && settings.integrationResourceId) {
-      const resource = await this.integrationResourceRepository.findByIdAndBusiness(
-        settings.integrationResourceId,
-        businessId,
-      );
+      const resource =
+        await this.integrationResourceRepository.findByIdAndBusiness(
+          settings.integrationResourceId,
+          businessId,
+        );
       externalCalendarId = resource?.externalId ?? null;
     }
 
@@ -148,7 +149,9 @@ export class GoogleCalendarSyncService {
         lastSyncedAt: new Date().toISOString(),
         syncStatus: summary.errors.length > 0 ? 'ERROR' : 'ACTIVE',
         lastError:
-          summary.errors.length > 0 ? summary.errors[0] ?? 'Sync had errors' : null,
+          summary.errors.length > 0
+            ? (summary.errors[0] ?? 'Sync had errors')
+            : null,
       });
 
       await this.auditService.log({
@@ -200,7 +203,11 @@ export class GoogleCalendarSyncService {
       );
 
       if (appointment.status === AppointmentStatus.CANCELLED) {
-        await this.deleteGoogleEventForAppointment(businessId, appointment, context);
+        await this.deleteGoogleEventForAppointment(
+          businessId,
+          appointment,
+          context,
+        );
         return { synced: true };
       }
 
@@ -327,7 +334,12 @@ export class GoogleCalendarSyncService {
     actorUserId: string,
     context: SyncContext,
   ): Promise<Omit<GoogleCalendarSyncSummary, 'pushed' | 'deleted'>> {
-    const summary = { created: 0, updated: 0, skipped: 0, errors: [] as string[] };
+    const summary = {
+      created: 0,
+      updated: 0,
+      skipped: 0,
+      errors: [] as string[],
+    };
     const accessToken = await this.googleTokenService.getAccessToken(
       businessId,
       GOOGLE_CALENDAR_PROVIDER_KEY,
@@ -370,9 +382,7 @@ export class GoogleCalendarSyncService {
           else if (result === 'updated') summary.updated += 1;
           else summary.skipped += 1;
         } catch (error) {
-          summary.errors.push(
-            `Event ${event.id}: ${this.errorMessage(error)}`,
-          );
+          summary.errors.push(`Event ${event.id}: ${this.errorMessage(error)}`);
         }
       }
 
@@ -391,7 +401,8 @@ export class GoogleCalendarSyncService {
     context: SyncContext,
   ): Promise<'created' | 'updated' | 'skipped'> {
     if (event.status === 'cancelled') {
-      const internalId = event.extendedProperties?.private?.internalAppointmentId;
+      const internalId =
+        event.extendedProperties?.private?.internalAppointmentId;
       if (internalId) {
         const existing = await this.appointmentRepository.findById(
           businessId,
@@ -418,10 +429,9 @@ export class GoogleCalendarSyncService {
     }
 
     const internalId = event.extendedProperties?.private?.internalAppointmentId;
-    let existing =
-      internalId
-        ? await this.appointmentRepository.findById(businessId, internalId)
-        : null;
+    let existing = internalId
+      ? await this.appointmentRepository.findById(businessId, internalId)
+      : null;
 
     if (!existing && event.id) {
       existing = await this.appointmentRepository.findByExternalEvent(
@@ -602,9 +612,11 @@ export class GoogleCalendarSyncService {
     };
   }
 
-  private parseGoogleDateTime(
-    value?: { dateTime?: string; date?: string; timeZone?: string },
-  ): Date | null {
+  private parseGoogleDateTime(value?: {
+    dateTime?: string;
+    date?: string;
+    timeZone?: string;
+  }): Date | null {
     if (!value) return null;
     if (value.dateTime) {
       return new Date(value.dateTime);
@@ -684,10 +696,11 @@ export class GoogleCalendarSyncService {
       );
     }
 
-    const resource = await this.integrationResourceRepository.findByIdAndBusiness(
-      settings.integrationResourceId,
-      businessId,
-    );
+    const resource =
+      await this.integrationResourceRepository.findByIdAndBusiness(
+        settings.integrationResourceId,
+        businessId,
+      );
     if (!resource || resource.providerKey !== GOOGLE_CALENDAR_PROVIDER_KEY) {
       throw new AppException(
         ErrorCode.BAD_REQUEST,
@@ -748,7 +761,10 @@ export class GoogleCalendarSyncService {
     businessId: string,
     calendarId: string,
   ): Promise<Calendar> {
-    const calendar = await this.calendarRepository.findById(businessId, calendarId);
+    const calendar = await this.calendarRepository.findById(
+      businessId,
+      calendarId,
+    );
     if (!calendar) {
       throw new AppException(
         ErrorCode.CALENDAR_NOT_FOUND,

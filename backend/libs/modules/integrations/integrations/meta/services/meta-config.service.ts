@@ -122,8 +122,8 @@ export class MetaConfigService {
     const config = this.getMetaAppConfig();
     return Boolean(
       config.loginConfigId ||
-        config.facebookLoginConfigId ||
-        config.instagramLoginConfigId,
+      config.facebookLoginConfigId ||
+      config.instagramLoginConfigId,
     );
   }
 
@@ -148,9 +148,7 @@ export class MetaConfigService {
       );
     }
 
-    const resolution = this.resolveOAuthLoginConfig(
-      normalized as MetaBusinessOAuthProviderKey,
-    );
+    const resolution = this.resolveOAuthLoginConfig(normalized);
 
     if (!resolution) {
       throw new AppException(
@@ -220,11 +218,7 @@ export class MetaConfigService {
     const facebook = this.resolveOAuthLoginConfig('facebook');
     const instagram = this.resolveOAuthLoginConfig('instagram');
 
-    if (
-      facebook &&
-      instagram &&
-      facebook.configId === instagram.configId
-    ) {
+    if (facebook && instagram && facebook.configId === instagram.configId) {
       this.sameConfigWarningLogged = true;
       this.logger.warn(META_FACEBOOK_INSTAGRAM_SAME_CONFIG_WARNING);
     }
@@ -274,7 +268,7 @@ export class MetaConfigService {
 
     const ready = Boolean(
       embeddedSignupConfigId &&
-        loginIds.every((id) => id !== embeddedSignupConfigId),
+      loginIds.every((id) => id !== embeddedSignupConfigId),
     );
     return {
       appId,
@@ -304,9 +298,7 @@ export class MetaConfigService {
   }
 
   isMetaOAuthEnabled(): boolean {
-    return (
-      (process.env.META_OAUTH_ENABLED ?? 'false').toLowerCase() === 'true'
-    );
+    return (process.env.META_OAUTH_ENABLED ?? 'false').toLowerCase() === 'true';
   }
 
   /** Log once — wrong META_INSTAGRAM_LOGIN_CONFIG_ID causes Instagram direct login instead of Facebook OAuth. */

@@ -147,7 +147,10 @@ export class PaymentsOverviewService {
           count: receivedInvoiceIds.size,
           amount: this.decimalString(paymentsAgg._sum.amount),
         },
-        overdue: this.metric(overdueAgg._count._all, overdueAgg._sum.balanceDue),
+        overdue: this.metric(
+          overdueAgg._count._all,
+          overdueAgg._sum.balanceDue,
+        ),
       },
       estimates: {
         sent: this.metric(sentAgg._count._all, sentAgg._sum.totalAmount),

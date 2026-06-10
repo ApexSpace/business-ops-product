@@ -18,14 +18,16 @@ describe('EmailNotificationService', () => {
     enqueueThrows?: boolean;
   }) {
     const configService = {
-      get: jest.fn((key: string) => (key === 'email' ? emailConfig : undefined)),
+      get: jest.fn((key: string) =>
+        key === 'email' ? emailConfig : undefined,
+      ),
     };
     const preferenceRepository = {
-      findByBusinessAndType: jest.fn().mockResolvedValue(
-        overrides?.preferenceEnabled === false
-          ? { enabled: false }
-          : null,
-      ),
+      findByBusinessAndType: jest
+        .fn()
+        .mockResolvedValue(
+          overrides?.preferenceEnabled === false ? { enabled: false } : null,
+        ),
     };
     const templateRepository = {
       findByBusinessAndType: jest.fn().mockResolvedValue(null),
@@ -35,18 +37,22 @@ describe('EmailNotificationService', () => {
         .fn()
         .mockResolvedValue(overrides?.existingMessage ?? null),
       create: jest.fn().mockResolvedValue({ id: 'msg-1' }),
-      findById: jest.fn().mockResolvedValue({ id: 'msg-1', status: EmailMessageStatus.QUEUED }),
+      findById: jest
+        .fn()
+        .mockResolvedValue({ id: 'msg-1', status: EmailMessageStatus.QUEUED }),
       updateStatus: jest.fn().mockResolvedValue({}),
     };
     const renderer = new EmailTemplateRendererService();
     const queueService = {
       enqueueSendEmail: overrides?.enqueueThrows
         ? jest.fn().mockRejectedValue(new Error('Redis connection refused'))
-        : jest.fn().mockResolvedValue(
-            overrides && 'enqueueResult' in overrides
-              ? overrides.enqueueResult
-              : 'job-1',
-          ),
+        : jest
+            .fn()
+            .mockResolvedValue(
+              overrides && 'enqueueResult' in overrides
+                ? overrides.enqueueResult
+                : 'job-1',
+            ),
     };
 
     const service = new EmailNotificationService(

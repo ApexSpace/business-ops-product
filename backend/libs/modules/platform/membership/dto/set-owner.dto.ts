@@ -21,4 +21,3 @@ export class SetBusinessOwnerDto {
   @IsString()
   lastName?: string;
 }
-

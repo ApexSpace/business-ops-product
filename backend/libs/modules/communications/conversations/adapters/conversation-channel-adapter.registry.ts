@@ -9,7 +9,10 @@ import { WebchatAdapter } from './webchat/webchat.adapter';
 
 @Injectable()
 export class ConversationChannelAdapterRegistry {
-  private readonly byChannel = new Map<ConversationChannel, ConversationChannelAdapter>();
+  private readonly byChannel = new Map<
+    ConversationChannel,
+    ConversationChannelAdapter
+  >();
 
   constructor(
     facebookAdapter: FacebookMessengerAdapter,

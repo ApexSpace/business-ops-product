@@ -1,43 +1,58 @@
 "use client";
 
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { useAppRouter } from "@/lib/hooks/use-app-router";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useSetPageMetadata } from "@/lib/runtime/page-metadata-context";
 import {
-  assignPlatformBusinessSubscription,
   deletePlatformBusiness,
   getPlatformBusiness,
   getPlatformBusinessMembers,
-  getPlatformBusinessSubscription,
   getPlatformBusinessUtilization,
-  listBusinessAuditLogs,
-  listPlatformPlans,
 } from "@/features/platform/api/platform.api";
-import type { PlatformBusinessDetailTab } from "@/features/platform/components/platform-business-detail-tabs";
+import { getPlatformBusinessAccess } from "@/features/platform/api/business-access.api";
+import {
+  PLATFORM_BUSINESS_DETAIL_TABS,
+  type PlatformBusinessDetailTab,
+} from "@/features/platform/components/platform-business-detail-tabs";
 import { invalidatePlatformBusinesses } from "@/lib/query/invalidation";
 import { queryKeys } from "@/lib/query/keys";
 import { PERMISSIONS, useCan } from "@/features/auth/permissions";
-import type { SubscriptionStatus } from "@/features/platform/types";
+
+const VALID_TABS = new Set<PlatformBusinessDetailTab>(
+  PLATFORM_BUSINESS_DETAIL_TABS.map((tab) => tab.value),
+);
 
 export function usePlatformBusinessDetail() {
   const { id } = useParams<{ id: string }>();
   const router = useAppRouter();
+  const searchParams = useSearchParams();
   const queryClient = useQueryClient();
   const setPageMetadata = useSetPageMetadata();
   const canUpdate = useCan(PERMISSIONS["platform.businesses.update"]);
   const canDelete = useCan(PERMISSIONS["platform.businesses.delete"]);
-  const canBilling = useCan(PERMISSIONS["platform.billing.manage"]);
   const canSetOwner = useCan(PERMISSIONS["platform.businesses.update"]);
-  const [activeTab, setActiveTab] =
-    useState<PlatformBusinessDetailTab>("overview");
+  const tabParam = searchParams.get("tab");
+  const normalizedTabParam =
+    tabParam === "subscription" ? "subscriptions" : tabParam;
+  const activeTab: PlatformBusinessDetailTab = VALID_TABS.has(
+    normalizedTabParam as PlatformBusinessDetailTab,
+  )
+    ? (normalizedTabParam as PlatformBusinessDetailTab)
+    : "overview";
+  const paymentsAutoOpen = searchParams.get("recordPayment") === "1";
   const [deleteOpen, setDeleteOpen] = useState(false);
 
   const { data: business, isLoading } = useQuery({
     queryKey: queryKeys.platform.businesses.detail(id),
     queryFn: () => getPlatformBusiness(id),
+  });
+
+  const { data: access, isLoading: accessLoading } = useQuery({
+    queryKey: queryKeys.platform.businesses.access(id),
+    queryFn: () => getPlatformBusinessAccess(id),
   });
 
   const { data: utilization, isLoading: utilizationLoading } = useQuery({
@@ -49,52 +64,6 @@ export function usePlatformBusinessDetail() {
   const { data: members } = useQuery({
     queryKey: queryKeys.platform.businesses.members(id),
     queryFn: () => getPlatformBusinessMembers(id),
-  });
-
-  const { data: recentAuditLogs } = useQuery({
-    queryKey: queryKeys.platform.businesses.audit(id, {
-      page: 1,
-      limit: 5,
-    }),
-    queryFn: () => listBusinessAuditLogs(id, { page: 1, limit: 5 }),
-  });
-
-  const { data: subscription } = useQuery({
-    queryKey: queryKeys.platform.businesses.subscription(id),
-    queryFn: () => getPlatformBusinessSubscription(id),
-  });
-
-  const { data: plans } = useQuery({
-    queryKey: queryKeys.platform.plans.active(),
-    queryFn: () =>
-      listPlatformPlans({ page: 1, limit: 50, status: "ACTIVE" }),
-    enabled: canBilling,
-  });
-
-  const [selectedPlanId, setSelectedPlanId] = useState("");
-  const [selectedStatus, setSelectedStatus] =
-    useState<SubscriptionStatus>("TRIALING");
-
-  const assignSubscriptionMutation = useMutation({
-    mutationFn: () =>
-      assignPlatformBusinessSubscription(
-        id,
-        {
-          planId: selectedPlanId,
-          status: selectedStatus,
-        },
-        Boolean(subscription),
-      ),
-    onSuccess: () => {
-      toast.success("Subscription updated");
-      void queryClient.invalidateQueries({
-        queryKey: queryKeys.platform.businesses.subscription(id),
-      });
-      void queryClient.invalidateQueries({
-        queryKey: queryKeys.platform.billing.all(),
-      });
-    },
-    onError: (err: Error) => toast.error(err.message),
   });
 
   const deleteMutation = useMutation({
@@ -111,7 +80,6 @@ export function usePlatformBusinessDetail() {
     if (!business) return;
     setPageMetadata({
       title: business.name,
-      description: `Slug: ${business.slug}`,
       breadcrumbs: [
         { label: "Businesses", href: "/platform/businesses" },
         { label: business.name },
@@ -119,32 +87,50 @@ export function usePlatformBusinessDetail() {
     });
   }, [business, setPageMetadata]);
 
+  const setActiveTab = useCallback(
+    (tab: PlatformBusinessDetailTab, options?: { recordPayment?: boolean }) => {
+      const params = new URLSearchParams(searchParams.toString());
+      if (tab === "overview") {
+        params.delete("tab");
+      } else {
+        params.set("tab", tab);
+      }
+      if (options?.recordPayment) {
+        params.set("recordPayment", "1");
+      } else {
+        params.delete("recordPayment");
+      }
+      const query = params.toString();
+      router.replace(query ? `?${query}` : "?", { scroll: false });
+    },
+    [router, searchParams],
+  );
+
   const openProfileTab = () => setActiveTab("profile");
+  const openPaymentsTab = (options?: { recordPayment?: boolean }) =>
+    setActiveTab("payments", options);
+  const openSubscriptionsTab = () => setActiveTab("subscriptions");
 
   return {
     id,
     business,
+    access,
+    accessLoading,
     isLoading,
     utilization,
     utilizationLoading,
     members,
-    recentAuditLogs: recentAuditLogs?.items,
-    subscription,
-    plans,
     canUpdate,
     canDelete,
-    canBilling,
     canSetOwner,
     activeTab,
     setActiveTab,
     openProfileTab,
+    openPaymentsTab,
+    openSubscriptionsTab,
+    paymentsAutoOpen,
     deleteOpen,
     setDeleteOpen,
-    selectedPlanId,
-    setSelectedPlanId,
-    selectedStatus,
-    setSelectedStatus,
-    assignSubscriptionMutation,
     deleteMutation,
   };
 }

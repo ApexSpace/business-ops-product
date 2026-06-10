@@ -18,7 +18,9 @@ function decodeBase64Url(value: string): string {
 }
 
 function signPayload(payloadEncoded: string, secret: string): string {
-  return createHmac('sha256', secret).update(payloadEncoded).digest('base64url');
+  return createHmac('sha256', secret)
+    .update(payloadEncoded)
+    .digest('base64url');
 }
 
 export function createLinkedInOAuthState(
@@ -54,11 +56,12 @@ export function verifyLinkedInOAuthState(
     throw new Error('Invalid OAuth state signature');
   }
 
-  const payload = JSON.parse(decodeBase64Url(encoded)) as LinkedInOAuthStatePayload;
+  const payload = JSON.parse(
+    decodeBase64Url(encoded),
+  ) as LinkedInOAuthStatePayload;
   if (Date.now() - payload.timestamp > OAUTH_STATE_TTL_MS) {
     throw new Error('OAuth state expired');
   }
 
   return payload;
 }
-

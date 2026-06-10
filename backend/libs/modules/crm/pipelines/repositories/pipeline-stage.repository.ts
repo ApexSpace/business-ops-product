@@ -45,10 +45,7 @@ export class PipelineStageRepository {
       .then((r) => r._max.position ?? 0);
   }
 
-  countLeads(
-    businessId: string,
-    pipelineStageId: string,
-  ): Promise<number> {
+  countLeads(businessId: string, pipelineStageId: string): Promise<number> {
     return this.prisma.lead.count({
       where: { businessId, pipelineStageId, deletedAt: null },
     });
@@ -124,7 +121,7 @@ export class PipelineStageRepository {
       }
       for (let i = 0; i < stageIds.length; i++) {
         await tx.pipelineStage.update({
-          where: { id: stageIds[i]! },
+          where: { id: stageIds[i] },
           data: { position: i + 1 },
         });
       }

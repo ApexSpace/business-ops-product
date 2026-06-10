@@ -76,7 +76,7 @@ const automationItems: BusinessSettingsNavItem[] = [
 
 const billingItems: BusinessSettingsNavItem[] = [
   {
-    title: "Billing",
+    title: "Plan & Billing",
     href: "/business/settings/billing",
     icon: CreditCard,
   },

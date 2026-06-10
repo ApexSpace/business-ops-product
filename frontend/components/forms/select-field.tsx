@@ -11,7 +11,8 @@ import {
 } from "@/components/ui/form";
 
 export interface SelectOption {
-  value: string;
+  /** Use `null` for a clearable / placeholder list entry (Base UI convention). */
+  value: string | null;
   label: string;
 }
 
@@ -46,7 +47,11 @@ export function SelectField<T extends FieldValues>({
           <FormControl>
             <SearchableSelect
               items={items}
-              value={field.value || null}
+              value={
+                field.value == null || field.value === ""
+                  ? null
+                  : String(field.value)
+              }
               onValueChange={(v) => field.onChange(v ?? "")}
               placeholder={placeholder}
               disabled={disabled}

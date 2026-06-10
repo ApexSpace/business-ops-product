@@ -8,6 +8,7 @@ import { BusinessRolesGuard } from '@app/common/guards/business-roles.guard';
 import { BusinessDashboardStatsDto } from '../dto/business-dashboard-stats.dto';
 import { UpdateFinancialSettingsDto } from '../dto/financial-settings.dto';
 import { UpdateBusinessDto } from '../dto/update-business.dto';
+import { BusinessAccessService } from '@app/modules/platform/business/services/business-access.service';
 import { BusinessService } from '@app/modules/platform/business/services/business.service';
 import { DashboardStatsService } from '@app/modules/platform/business/services/dashboard-stats.service';
 import { FinancialSettingsService } from '@app/modules/platform/business/services/financial-settings.service';
@@ -19,6 +20,7 @@ import { FinancialSettingsService } from '@app/modules/platform/business/service
 export class BusinessController {
   constructor(
     private readonly businessService: BusinessService,
+    private readonly businessAccessService: BusinessAccessService,
     private readonly dashboardStatsService: DashboardStatsService,
     private readonly financialSettingsService: FinancialSettingsService,
   ) {}
@@ -31,6 +33,16 @@ export class BusinessController {
   )
   getCurrent(@CurrentUser() user: RequestUser) {
     return this.businessService.getCurrent(user.businessId!);
+  }
+
+  @Get('current/access')
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
+  getCurrentAccess(@CurrentUser() user: RequestUser) {
+    return this.businessAccessService.getCurrentAccess(user.businessId!);
   }
 
   @Get('current/dashboard-stats')

@@ -73,7 +73,12 @@ export class CalendarRepository {
   ): Promise<
     | (Calendar & {
         staff: (CalendarStaff & {
-          user: { id: string; firstName: string | null; lastName: string | null; email: string };
+          user: {
+            id: string;
+            firstName: string | null;
+            lastName: string | null;
+            email: string;
+          };
         })[];
         availability: CalendarAvailability[];
         exceptions: CalendarException[];
@@ -86,7 +91,12 @@ export class CalendarRepository {
         staff: {
           include: {
             user: {
-              select: { id: true, firstName: true, lastName: true, email: true },
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+              },
             },
           },
         },
@@ -111,7 +121,9 @@ export class CalendarRepository {
         ? {
             OR: [
               { name: { contains: options.search, mode: 'insensitive' } },
-              { description: { contains: options.search, mode: 'insensitive' } },
+              {
+                description: { contains: options.search, mode: 'insensitive' },
+              },
             ],
           }
         : {}),
@@ -242,11 +254,7 @@ export class CalendarRepository {
     return this.prisma.calendarException.create({ data });
   }
 
-  findException(
-    businessId: string,
-    calendarId: string,
-    exceptionId: string,
-  ) {
+  findException(businessId: string, calendarId: string, exceptionId: string) {
     return this.prisma.calendarException.findFirst({
       where: { id: exceptionId, businessId, calendarId },
     });

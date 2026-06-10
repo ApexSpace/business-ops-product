@@ -25,7 +25,7 @@ interface AdoptionGroup {
 function buildAdoptionGroups(
   utilization: PlatformBusinessUtilization,
 ): AdoptionGroup[] {
-  const { crm, operations, finance, communications, integrations } =
+  const { crm, operations, finance, communications, integrations, team } =
     utilization;
 
   return [
@@ -88,12 +88,30 @@ function buildAdoptionGroups(
       title: "Finance",
       items: [
         {
+          label: "Estimates",
+          value: finance.estimates,
+          adopted: finance.estimates > 0,
+          detail:
+            finance.estimates > 0
+              ? `${finance.estimates} estimates`
+              : "Not set up",
+        },
+        {
           label: "Invoices",
           value: finance.invoices,
           adopted: finance.invoices > 0,
           detail:
             finance.invoices > 0
               ? `${finance.invoicesPaid} paid`
+              : "Not set up",
+        },
+        {
+          label: "Transactions",
+          value: finance.payments,
+          adopted: finance.payments > 0,
+          detail:
+            finance.payments > 0
+              ? `${finance.payments} transactions`
               : "Not set up",
         },
       ],
@@ -135,27 +153,60 @@ function buildAdoptionGroups(
         },
       ],
     },
+    {
+      title: "Team",
+      items: [
+        {
+          label: "Active members",
+          value: team.activeMembers,
+          adopted: team.activeMembers > 0,
+          detail:
+            team.activeMembers > 0
+              ? `${team.activeMembers} active`
+              : "Not set up",
+        },
+        {
+          label: "Invited members",
+          value: team.invitedMembers,
+          adopted: team.invitedMembers > 0,
+          detail:
+            team.invitedMembers > 0
+              ? `${team.invitedMembers} invited`
+              : "All members active",
+        },
+      ],
+    },
   ];
 }
 
-function VolumeMetric({
-  label,
-  value,
+function AdoptionGroupColumn({
+  group,
+  index,
+  totalGroups,
 }: {
-  label: string;
-  value: number | string;
+  group: AdoptionGroup;
+  index: number;
+  totalGroups: number;
 }) {
-  return (
-    <span className="inline-flex items-baseline gap-1.5 text-sm">
-      <span className="text-muted-foreground">{label}</span>
-      <span className="font-semibold tabular-nums">{value}</span>
-    </span>
-  );
-}
+  const isFirstRow = index < 3;
+  const isLastGroup = index === totalGroups - 1;
+  const isNotLastColumn = index % 3 !== 2;
 
-function AdoptionGroupColumn({ group }: { group: AdoptionGroup }) {
   return (
-    <div className="min-w-0 px-4 py-3 first:pt-0 last:pb-0 sm:py-0 sm:first:pl-0 sm:last:pr-0">
+    <div
+      className={cn(
+        "min-w-0 px-4 py-3",
+        index > 0 && "border-t border-border/60 sm:border-t-0",
+        index % 3 !== 0 && "sm:border-l sm:border-border/60",
+        index >= 3 && "sm:border-t sm:border-border/60",
+        isFirstRow &&
+          totalGroups > 3 &&
+          "sm:border-b sm:border-border/60",
+        isNotLastColumn &&
+          isLastGroup &&
+          "sm:border-r sm:border-border/60",
+      )}
+    >
       <h4 className="text-sm font-medium">{group.title}</h4>
       <div className="mt-1 divide-y divide-border/60">
         {group.items.map((item) => (
@@ -195,50 +246,18 @@ export function PlatformBusinessUtilizationSection({
 }: {
   utilization: PlatformBusinessUtilization;
 }) {
-  const { crm, operations } = utilization;
   const groups = buildAdoptionGroups(utilization);
 
   return (
-    <div className="divide-y">
-      <div className="flex flex-wrap items-baseline gap-x-5 gap-y-2 px-4 py-3">
-        <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-          Volume
-        </span>
-        <VolumeMetric label="Contacts" value={crm.contacts} />
-        <VolumeMetric label="Leads" value={crm.leads.active} />
-        <VolumeMetric
-          label="Appts today"
-          value={operations.appointmentStats.today}
+    <div className="grid grid-cols-1 sm:grid-cols-3">
+      {groups.map((group, index) => (
+        <AdoptionGroupColumn
+          key={group.title}
+          group={group}
+          index={index}
+          totalGroups={groups.length}
         />
-        <VolumeMetric label="Work items" value={operations.workItems.total} />
-      </div>
-
-      <div className="px-4 py-4">
-        <h3 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-          Feature adoption
-        </h3>
-        <div className="mt-4 -mx-4">
-          <div className="grid divide-y divide-border/60 sm:grid-cols-3 sm:divide-x sm:divide-y-0">
-            {groups.slice(0, 3).map((group) => (
-              <AdoptionGroupColumn key={group.title} group={group} />
-            ))}
-          </div>
-          {groups.length > 3 ? (
-            <div className="grid gap-6 border-t border-border/60 px-4 pt-6 sm:grid-cols-2">
-              {groups.slice(3).map((group) => (
-                <div key={group.title}>
-                  <h4 className="text-sm font-medium">{group.title}</h4>
-                  <div className="mt-1 divide-y divide-border/60">
-                    {group.items.map((item) => (
-                      <AdoptionRow key={item.label} item={item} />
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : null}
-        </div>
-      </div>
+      ))}
     </div>
   );
 }

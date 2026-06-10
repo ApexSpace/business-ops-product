@@ -49,7 +49,9 @@ export class PaymentRepository {
       OR: [
         { reference: { contains: search, mode: 'insensitive' } },
         { notes: { contains: search, mode: 'insensitive' } },
-        { invoice: { invoiceNumber: { contains: search, mode: 'insensitive' } } },
+        {
+          invoice: { invoiceNumber: { contains: search, mode: 'insensitive' } },
+        },
         {
           contact: {
             OR: [

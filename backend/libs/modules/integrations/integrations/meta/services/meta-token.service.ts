@@ -87,7 +87,7 @@ export class MetaTokenService {
     );
 
     await this.businessIntegrationRepository.update(businessId, providerKey, {
-      credentials: { encrypted } as Prisma.InputJsonValue,
+      credentials: { encrypted },
     });
   }
 

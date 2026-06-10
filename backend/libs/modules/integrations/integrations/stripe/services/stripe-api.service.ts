@@ -2,10 +2,7 @@ import { HttpStatus, Injectable, Logger } from '@nestjs/common';
 import Stripe from 'stripe';
 import { AppException } from '@app/common/exceptions/app.exception';
 import { ErrorCode } from '@app/common/exceptions/error-code.enum';
-import type {
-  StripeConnectAccount,
-  StripeWebhookEvent,
-} from '../stripe.types';
+import type { StripeConnectAccount, StripeWebhookEvent } from '../stripe.types';
 
 type StripeClient = InstanceType<typeof Stripe>;
 
@@ -77,7 +74,7 @@ export class StripeApiService {
   ): Promise<StripeConnectAccount> {
     const stripe = this.getClient();
     const account = await stripe.accounts.retrieve(stripeAccountId);
-    return account as unknown as StripeConnectAccount;
+    return account;
   }
 
   constructWebhookEvent(

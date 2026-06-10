@@ -26,6 +26,9 @@ async function bootstrap(): Promise<void> {
     exclude: [
       { path: 'widgets/chatbot.js', method: RequestMethod.GET },
       { path: 'widgets/chatbot/:publicKey', method: RequestMethod.GET },
+      { path: 'public/pricing/:id', method: RequestMethod.GET },
+      { path: 'embed/pricing/:id', method: RequestMethod.GET },
+      { path: 'embed/pricing-widget.js', method: RequestMethod.GET },
     ],
   });
   app.enableCors({

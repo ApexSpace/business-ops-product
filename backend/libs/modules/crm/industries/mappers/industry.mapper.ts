@@ -14,9 +14,7 @@ function parseLabels(raw: unknown): IndustryLabels {
       contacts: String(o.contacts ?? DEFAULT_INDUSTRY_LABELS.contacts),
       pipelines: String(o.pipelines ?? DEFAULT_INDUSTRY_LABELS.pipelines),
       leads: String(o.leads ?? DEFAULT_INDUSTRY_LABELS.leads),
-      workItems: String(
-        o.workItems ?? DEFAULT_INDUSTRY_LABELS.workItems,
-      ),
+      workItems: String(o.workItems ?? DEFAULT_INDUSTRY_LABELS.workItems),
       appointments: String(
         o.appointments ?? DEFAULT_INDUSTRY_LABELS.appointments,
       ),

@@ -11,14 +11,14 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { BusinessStatus, PlatformMemberRole } from '@prisma/client';
+import { PlatformMemberRole } from '@prisma/client';
 import { CurrentUser } from '@app/common/decorators/current-user.decorator';
 import type { RequestUser } from '@app/common/decorators/current-user.decorator';
 import { PlatformRoles } from '@app/common/decorators/platform-roles.decorator';
-import { PaginationQueryDto } from '@app/common/dto/pagination-query.dto';
 import { PlatformRolesGuard } from '@app/common/guards/platform-roles.guard';
 import { getPaginationParams } from '@app/common/utils/pagination.util';
 import { ApplyBusinessSnapshotDto } from '../dto/apply-business-snapshot.dto';
+import { ListPlatformBusinessesQueryDto } from '../dto/list-platform-businesses-query.dto';
 import { CreateBusinessDto } from '../dto/create-business.dto';
 import { PlatformBusinessUtilizationDto } from '../dto/platform-business-utilization.dto';
 import { UpdateBusinessDto } from '../dto/update-business.dto';
@@ -40,10 +40,7 @@ export class PlatformBusinessController {
     PlatformMemberRole.SUPER_ADMIN,
     PlatformMemberRole.PLATFORM_ADMIN,
   )
-  create(
-    @Body() dto: CreateBusinessDto,
-    @CurrentUser() user: RequestUser,
-  ) {
+  create(@Body() dto: CreateBusinessDto, @CurrentUser() user: RequestUser) {
     return this.businessService.createPlatform(dto, user);
   }
 
@@ -53,18 +50,20 @@ export class PlatformBusinessController {
     PlatformMemberRole.PLATFORM_ADMIN,
     PlatformMemberRole.SUPPORT,
   )
-  list(
-    @Query() query: PaginationQueryDto,
-    @Query('status') status?: BusinessStatus,
-    @Query('search') search?: string,
-  ) {
+  list(@Query() query: ListPlatformBusinessesQueryDto) {
     const { page, limit, skip } = getPaginationParams(query);
     return this.businessService.listPlatform({
       page,
       limit,
       skip,
-      status,
-      search,
+      status: query.status,
+      subscriptionStatus: query.subscriptionStatus,
+      paymentStatus: query.paymentStatus,
+      planGroupId: query.planGroupId,
+      planTierId: query.planTierId,
+      canAccess: query.canAccess,
+      needsAttention: query.needsAttention,
+      search: query.search,
     });
   }
 

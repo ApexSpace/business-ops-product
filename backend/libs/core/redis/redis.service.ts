@@ -6,15 +6,9 @@ import {
 } from '@nestjs/common';
 import Redis from 'ioredis';
 import type { ConnectionOptions } from 'bullmq';
-import {
-  attachRedisErrorHandler,
-  maskRedisUrl,
-} from './redis.options';
+import { attachRedisErrorHandler, maskRedisUrl } from './redis.options';
 import { assertRedisAvailable } from './redis-requirements.util';
-import {
-  buildRedisClientOptions,
-  redisEndpointLabel,
-} from './redis-url.util';
+import { buildRedisClientOptions, redisEndpointLabel } from './redis-url.util';
 
 @Injectable()
 export class RedisService implements OnModuleInit, OnModuleDestroy {
@@ -110,7 +104,7 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     return {
       url: resolved.url,
       ...resolved.options,
-    } as ConnectionOptions;
+    };
   }
 
   async onModuleDestroy(): Promise<void> {

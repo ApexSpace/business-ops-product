@@ -1,12 +1,9 @@
 import { api } from "@/lib/api/client";
 import type {
   AuditLog,
-  BillingOverview,
-  BillingSubscription,
   Business,
   Industry,
   PaginatedResult,
-  Plan,
   PlatformBusinessUtilization,
   PlatformDashboardStats,
   PlatformSettings,
@@ -18,6 +15,12 @@ export type PlatformBusinessesListFilters = {
   limit?: number;
   search?: string;
   status?: string;
+  subscriptionStatus?: string;
+  paymentStatus?: string;
+  planGroupId?: string;
+  planTierId?: string;
+  canAccess?: boolean;
+  needsAttention?: string;
 };
 
 export async function listPlatformBusinesses(
@@ -31,6 +34,17 @@ export async function listPlatformBusinesses(
         limit: filters.limit,
         search: filters.search,
         status: filters.status,
+        subscriptionStatus: filters.subscriptionStatus,
+        paymentStatus: filters.paymentStatus,
+        planGroupId: filters.planGroupId,
+        planTierId: filters.planTierId,
+        canAccess:
+          filters.canAccess === undefined
+            ? undefined
+            : filters.canAccess
+              ? "true"
+              : "false",
+        needsAttention: filters.needsAttention,
       },
     },
   );
@@ -85,29 +99,6 @@ export async function listPlatformUsers(
 
 export function deletePlatformUser(id: string) {
   return api.delete<void>(`platform/users/${id}?confirm=true`);
-}
-
-export type PlatformPlansListFilters = {
-  page?: number;
-  limit?: number;
-  status?: string;
-};
-
-export async function listPlatformPlans(
-  filters: PlatformPlansListFilters = {},
-): Promise<PaginatedResult<Plan>> {
-  const { items, meta } = await api.getPaginated<Plan>("platform/plans", {
-    searchParams: {
-      page: filters.page,
-      limit: filters.limit,
-      status: filters.status,
-    },
-  });
-  return { items, meta };
-}
-
-export function deletePlatformPlan(id: string) {
-  return api.delete<void>(`platform/plans/${id}?confirm=true`);
 }
 
 export type PlatformIndustriesListFilters = {
@@ -175,22 +166,6 @@ export async function listBusinessAuditLogs(
   return { items, meta };
 }
 
-export async function listBillingSubscriptions(
-  filters: { page?: number; limit?: number; status?: string } = {},
-): Promise<PaginatedResult<BillingSubscription>> {
-  const { items, meta } = await api.getPaginated<BillingSubscription>(
-    "platform/billing/subscriptions",
-    {
-      searchParams: {
-        page: filters.page,
-        limit: filters.limit,
-        status: filters.status,
-      },
-    },
-  );
-  return { items, meta };
-}
-
 export function createPlatformBusiness(body: Record<string, unknown>) {
   return api.post<Business>("platform/businesses", body);
 }
@@ -228,32 +203,12 @@ export function setPlatformBusinessOwner(
   );
 }
 
-export function getPlatformBusinessBilling(id: string) {
-  return api.get<BillingSubscription | null>(
-    `platform/businesses/${id}/billing`,
-  );
-}
-
-export function updatePlatformBusinessBilling(
-  id: string,
-  body: Record<string, unknown>,
-) {
-  return api.patch<BillingSubscription>(
-    `platform/businesses/${id}/billing`,
-    body,
-  );
-}
-
 export function createPlatformUser(body: Record<string, unknown>) {
   return api.post<PlatformUser>("platform/users", body);
 }
 
 export function updatePlatformUser(id: string, body: Record<string, unknown>) {
   return api.patch<PlatformUser>(`platform/users/${id}`, body);
-}
-
-export function createPlatformPlan(body: Record<string, unknown>) {
-  return api.post<Plan>("platform/plans", body);
 }
 
 export function createPlatformIndustry(body: Record<string, unknown>) {
@@ -283,31 +238,4 @@ export function updatePlatformSettings(body: Record<string, unknown>) {
 
 export function getPlatformDashboardStats() {
   return api.get<PlatformDashboardStats>("platform/dashboard/stats");
-}
-
-export function getBillingOverview() {
-  return api.get<BillingOverview>("platform/billing/overview");
-}
-
-export function getPlatformBusinessSubscription(businessId: string) {
-  return api.get<BillingSubscription | null>(
-    `platform/billing/businesses/${businessId}/subscription`,
-  );
-}
-
-export function assignPlatformBusinessSubscription(
-  businessId: string,
-  body: Record<string, unknown>,
-  exists: boolean,
-) {
-  if (exists) {
-    return api.patch<BillingSubscription>(
-      `platform/billing/businesses/${businessId}/subscription`,
-      body,
-    );
-  }
-  return api.post<BillingSubscription>(
-    `platform/billing/businesses/${businessId}/subscription`,
-    body,
-  );
 }

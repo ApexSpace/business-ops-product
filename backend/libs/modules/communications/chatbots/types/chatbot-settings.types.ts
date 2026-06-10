@@ -41,10 +41,7 @@ export interface ChatbotBusinessHoursSettings {
   enabled: boolean;
   timezone: string;
   /** ISO weekday 1 (Mon) – 7 (Sun) → intervals */
-  schedule: Record<
-    string,
-    { start: string; end: string }[]
-  >;
+  schedule: Record<string, { start: string; end: string }[]>;
 }
 
 export interface ChatbotFormSettings {

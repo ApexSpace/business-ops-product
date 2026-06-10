@@ -84,8 +84,16 @@ function baseDashboard(): SnapshotAssets['dashboard'] {
       { href: '/business/contacts', labelKey: 'nav.contacts', order: 1 },
       { href: '/business/work-items', labelKey: 'nav.workItems', order: 2 },
       { href: '/business/pipelines', labelKey: 'nav.pipelines', order: 3 },
-      { href: '/business/appointments', labelKey: 'nav.appointments', order: 4 },
-      { href: '/business/conversations', labelKey: 'nav.conversations', order: 5 },
+      {
+        href: '/business/appointments',
+        labelKey: 'nav.appointments',
+        order: 4,
+      },
+      {
+        href: '/business/conversations',
+        labelKey: 'nav.conversations',
+        order: 5,
+      },
       { href: '/business/settings/team', label: 'Team', order: 6 },
     ],
   };
@@ -123,7 +131,8 @@ function baseEmailTemplates() {
       subject: 'Invoice {{invoice.number}} from {{business.name}}',
       htmlBody:
         '<p>Hi {{contact.name}},</p><p>Invoice {{invoice.number}} total {{invoice.total}}.</p>',
-      textBody: 'Hi {{contact.name}}, invoice {{invoice.number}} total {{invoice.total}}.',
+      textBody:
+        'Hi {{contact.name}}, invoice {{invoice.number}} total {{invoice.total}}.',
     },
   ];
 }
@@ -147,7 +156,8 @@ function baseChatbot(name: string, sourceKey: string, welcome: string) {
         sourceKey: 'fallback',
         triggerType: ChatbotRuleTriggerType.FALLBACK,
         triggerText: '',
-        responseText: "Thanks for reaching out! A team member will reply shortly.",
+        responseText:
+          'Thanks for reaching out! A team member will reply shortly.',
         sortOrder: 99,
       },
     ],

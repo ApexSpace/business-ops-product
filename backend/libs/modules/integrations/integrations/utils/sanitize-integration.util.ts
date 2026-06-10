@@ -31,9 +31,7 @@ export function sanitizeConfigForResponse(
       continue;
     }
     if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
-      result[key] = sanitizeConfigForResponse(
-        value as Record<string, unknown>,
-      );
+      result[key] = sanitizeConfigForResponse(value as Record<string, unknown>);
     } else {
       result[key] = value;
     }

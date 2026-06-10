@@ -65,7 +65,10 @@ export const META_PROVIDER_CONFIG: Record<MetaProviderKey, MetaProviderConfig> =
     },
   };
 
-export const META_BUSINESS_OAUTH_PROVIDER_KEYS = ['facebook', 'instagram'] as const;
+export const META_BUSINESS_OAUTH_PROVIDER_KEYS = [
+  'facebook',
+  'instagram',
+] as const;
 
 export type MetaBusinessOAuthProviderKey =
   (typeof META_BUSINESS_OAUTH_PROVIDER_KEYS)[number];

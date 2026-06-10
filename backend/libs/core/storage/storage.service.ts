@@ -4,9 +4,18 @@ import { AppException } from '@app/common/exceptions/app.exception';
 import { ErrorCode } from '@app/common/exceptions/error-code.enum';
 import { PrismaService } from '../database/prisma.service';
 import { S3StorageProvider } from './s3-storage.provider';
-import type { StorageConfig, StorageProviderName, UploadIntent } from './storage.types';
+import type {
+  StorageConfig,
+  StorageProviderName,
+  UploadIntent,
+} from './storage.types';
 
-const ALLOWED_MIME_PREFIXES = ['image/', 'application/pdf', 'text/csv', 'text/plain'];
+const ALLOWED_MIME_PREFIXES = [
+  'image/',
+  'application/pdf',
+  'text/csv',
+  'text/plain',
+];
 
 @Injectable()
 export class StorageService {
@@ -24,7 +33,8 @@ export class StorageService {
 
   private resolveConfig(): StorageConfig {
     return {
-      provider: (process.env.STORAGE_PROVIDER ?? 'minio') as StorageProviderName,
+      provider: (process.env.STORAGE_PROVIDER ??
+        'minio') as StorageProviderName,
       bucket: process.env.STORAGE_BUCKET ?? '',
       region: process.env.STORAGE_REGION ?? 'us-east-1',
       endpoint: process.env.STORAGE_ENDPOINT,
@@ -47,9 +57,7 @@ export class StorageService {
   }
 
   validateMimeType(mimeType: string): void {
-    const allowed = ALLOWED_MIME_PREFIXES.some((p) =>
-      mimeType.startsWith(p),
-    );
+    const allowed = ALLOWED_MIME_PREFIXES.some((p) => mimeType.startsWith(p));
     if (!allowed) {
       throw new AppException(
         ErrorCode.BAD_REQUEST,
@@ -164,7 +172,10 @@ export class StorageService {
     }
     const storage = this.requireProvider();
     const expiresInSeconds = 600;
-    const url = await storage.createPresignedDownloadUrl(asset.key, expiresInSeconds);
+    const url = await storage.createPresignedDownloadUrl(
+      asset.key,
+      expiresInSeconds,
+    );
     return { url, expiresInSeconds };
   }
 

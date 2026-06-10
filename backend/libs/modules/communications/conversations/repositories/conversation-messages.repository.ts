@@ -10,7 +10,10 @@ import { PrismaService } from '@app/core/database/prisma.service';
 export class ConversationMessagesRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  findById(businessId: string, id: string): Promise<ConversationMessage | null> {
+  findById(
+    businessId: string,
+    id: string,
+  ): Promise<ConversationMessage | null> {
     return this.prisma.conversationMessage.findFirst({
       where: { id, businessId },
     });
@@ -33,15 +36,17 @@ export class ConversationMessagesRepository {
   ): Promise<{ items: ConversationMessage[]; total: number }> {
     const where = { businessId, conversationId };
 
-    return this.prisma.$transaction([
-      this.prisma.conversationMessage.findMany({
-        where,
-        orderBy: { createdAt: 'asc' },
-        skip: params.skip,
-        take: params.take,
-      }),
-      this.prisma.conversationMessage.count({ where }),
-    ]).then(([items, total]) => ({ items, total }));
+    return this.prisma
+      .$transaction([
+        this.prisma.conversationMessage.findMany({
+          where,
+          orderBy: { createdAt: 'asc' },
+          skip: params.skip,
+          take: params.take,
+        }),
+        this.prisma.conversationMessage.count({ where }),
+      ])
+      .then(([items, total]) => ({ items, total }));
   }
 
   /** Keyset pagination — avoids deep OFFSET scans. */
@@ -71,11 +76,17 @@ export class ConversationMessagesRepository {
         where: { id: params.cursor, businessId, conversationId },
       });
       if (!anchor) {
-        return { items: [], nextCursor: null, prevCursor: null, hasMore: false };
+        return {
+          items: [],
+          nextCursor: null,
+          prevCursor: null,
+          hasMore: false,
+        };
       }
     }
 
-    const direction = params.latest && !params.cursor ? 'before' : params.direction;
+    const direction =
+      params.latest && !params.cursor ? 'before' : params.direction;
     const take = params.take;
 
     if (params.latest && !params.cursor) {

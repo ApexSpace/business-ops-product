@@ -49,7 +49,7 @@ export class AppointmentGoogleSyncProcessor {
             payload.appointmentId,
             payload.actorUserId,
           );
-        return result as unknown as Record<string, unknown>;
+        return result;
       },
     );
   }

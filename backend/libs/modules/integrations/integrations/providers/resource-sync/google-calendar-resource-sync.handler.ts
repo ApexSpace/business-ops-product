@@ -21,9 +21,7 @@ interface GoogleCalendarListResponse {
 }
 
 @Injectable()
-export class GoogleCalendarResourceSyncHandler
-  implements IntegrationResourceSyncHandler
-{
+export class GoogleCalendarResourceSyncHandler implements IntegrationResourceSyncHandler {
   readonly providerKey = 'google-calendar';
 
   constructor(private readonly googleTokenService: GoogleTokenService) {}

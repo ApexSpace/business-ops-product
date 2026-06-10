@@ -14,7 +14,7 @@ import { PlatformUserService } from './services/platform-user.service';
 @Module({
   imports: [
     AuditModule,
-    BusinessModule,
+    forwardRef(() => BusinessModule),
     EmailModule,
     forwardRef(() => AuthModule),
   ],

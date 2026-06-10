@@ -2,7 +2,10 @@
  * Centralized React Query keys for consistent caching and invalidation.
  */
 
-export type ListFilters = Record<string, string | number | undefined | null>;
+export type ListFilters = Record<
+  string,
+  string | number | boolean | undefined | null
+>;
 
 function listKey(
   base: readonly string[],
@@ -13,7 +16,10 @@ function listKey(
   const keys = Object.keys(filters).sort();
   for (const key of keys) {
     const value = filters[key];
-    if (value !== undefined && value !== null && value !== "") {
+    if (value === undefined || value === null || value === "") continue;
+    if (typeof value === "boolean") {
+      parts.push(key, value ? "true" : "false");
+    } else {
       parts.push(key, value);
     }
   }
@@ -26,6 +32,7 @@ export const queryKeys = {
   },
   business: {
     current: () => ["business", "current"] as const,
+    access: () => ["business", "access"] as const,
     snapshotContext: (businessId: string) =>
       ["business", businessId, "snapshot-context"] as const,
     financialSettings: () => ["business", "financial-settings"] as const,
@@ -214,9 +221,28 @@ export const queryKeys = {
   platform: {
     businesses: {
       all: () => ["platform", "businesses"] as const,
-      list: (filters: { page?: number; limit?: number; search?: string; status?: string }) =>
-        listKey(["platform", "businesses", "list"], filters),
+      list: (filters: {
+        page?: number;
+        limit?: number;
+        search?: string;
+        status?: string;
+        subscriptionStatus?: string;
+        paymentStatus?: string;
+      }) => listKey(["platform", "businesses", "list"], filters),
       detail: (id: string) => ["platform", "business", id] as const,
+      access: (id: string) => ["platform", "business", id, "access"] as const,
+      subscriptionEvents: (
+        id: string,
+        filters?: ListFilters,
+      ) => listKey(["platform", "business", id, "subscription-events"], filters),
+      subscriptionEvent: (businessId: string, eventId: string) =>
+        ["platform", "business", businessId, "subscription-events", eventId] as const,
+      subscriptionPayments: (
+        id: string,
+        filters?: ListFilters,
+      ) => listKey(["platform", "business", id, "subscription-payments"], filters),
+      capabilities: (id: string) =>
+        ["platform", "business", id, "capabilities"] as const,
       utilization: (id: string) =>
         ["platform", "business", id, "utilization"] as const,
       members: (id: string) => ["platform", "business", id, "members"] as const,
@@ -224,8 +250,6 @@ export const queryKeys = {
         id: string,
         filters?: { page?: number; limit?: number; action?: string },
       ) => listKey(["platform", "business", id, "audit"], filters),
-      subscription: (id: string) =>
-        ["platform", "business", id, "subscription"] as const,
     },
     auditLogs: {
       all: () => ["platform", "audit-logs"] as const,
@@ -236,12 +260,6 @@ export const queryKeys = {
       all: () => ["platform", "users"] as const,
       list: (filters: { page?: number; limit?: number; role?: string }) =>
         listKey(["platform", "users", "list"], filters),
-    },
-    plans: {
-      all: () => ["platform", "plans"] as const,
-      active: () => ["platform", "plans", "active"] as const,
-      list: (filters: { page?: number; limit?: number; status?: string }) =>
-        listKey(["platform", "plans", "list"], filters),
     },
     industries: {
       all: () => ["platform", "industries"] as const,
@@ -255,14 +273,61 @@ export const queryKeys = {
         listKey(["platform", "snapshots", "list"], filters),
       detail: (id: string) => ["platform", "snapshots", id] as const,
     },
-    billing: {
-      all: () => ["platform", "billing"] as const,
-      overview: () => ["platform", "billing", "overview"] as const,
-      subscriptions: (filters: {
+    planGroups: {
+      all: () => ["platform", "plan-groups"] as const,
+      stats: () => ["platform", "plan-groups", "stats"] as const,
+      list: (filters: {
         page?: number;
         limit?: number;
         status?: string;
-      }) => listKey(["platform", "billing", "subscriptions"], filters),
+        search?: string;
+      }) => listKey(["platform", "plan-groups", "list"], filters),
+      detail: (id: string) => ["platform", "plan-groups", id] as const,
+      tiers: (id: string) => ["platform", "plan-groups", id, "tiers"] as const,
+      tierDefaults: (groupId: string, tierId: string) =>
+        ["platform", "plan-groups", groupId, "tiers", tierId, "defaults"] as const,
+      groupDefaults: (id: string) =>
+        ["platform", "plan-groups", id, "defaults"] as const,
+      featureRows: (id: string) =>
+        ["platform", "plan-groups", id, "feature-rows"] as const,
+      embed: (id: string) => ["platform", "plan-groups", id, "embed"] as const,
+      preview: (id: string) => ["platform", "plan-groups", id, "preview"] as const,
+      activeCapabilities: (snapshotId?: string | null) =>
+        [
+          "platform",
+          "plan-groups",
+          "active-capabilities",
+          snapshotId ?? "none",
+        ] as const,
+    },
+    capabilities: {
+      all: () => ["platform", "capabilities"] as const,
+      stats: () => ["platform", "capabilities", "stats"] as const,
+      list: (filters: {
+        page?: number;
+        limit?: number;
+        status?: string;
+        search?: string;
+      }) => listKey(["platform", "capabilities", "list"], filters),
+      detail: (id: string) => ["platform", "capabilities", id] as const,
+      globalRegistry: () =>
+        ["platform", "capabilities", "registry"] as const,
+      registryModules: () =>
+        ["platform", "capabilities", "registry", "modules"] as const,
+      availableFeatures: (id: string) =>
+        ["platform", "capabilities", id, "available-features"] as const,
+      modules: (id: string) =>
+        ["platform", "capabilities", id, "modules"] as const,
+      features: (id: string) =>
+        ["platform", "capabilities", id, "features"] as const,
+      permissions: (id: string) =>
+        ["platform", "capabilities", id, "permissions"] as const,
+      limits: (id: string) =>
+        ["platform", "capabilities", id, "limits"] as const,
+      navigation: (id: string) =>
+        ["platform", "capabilities", id, "navigation"] as const,
+      configSchemas: (id: string) =>
+        ["platform", "capabilities", id, "config-schemas"] as const,
     },
     settings: () => ["platform", "settings"] as const,
     dashboard: {

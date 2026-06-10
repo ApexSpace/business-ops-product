@@ -34,7 +34,10 @@ export class ChatbotContactResolverService {
       contact = await this.contactRepository.findByEmail(businessId, email);
     }
     if (!contact && phoneKey) {
-      contact = await this.contactRepository.findByPhoneKey(businessId, phoneKey);
+      contact = await this.contactRepository.findByPhoneKey(
+        businessId,
+        phoneKey,
+      );
     }
     if (!contact) {
       contact = await this.contactRepository.findByChatbotVisitorId(
@@ -72,7 +75,7 @@ export class ChatbotContactResolverService {
         visitorId: input.visitorId,
         lastPageUrl: input.pageUrl ?? null,
         firstSeenAt: new Date().toISOString(),
-      } as Prisma.InputJsonValue,
+      },
     });
   }
 

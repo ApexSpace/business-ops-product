@@ -126,8 +126,7 @@ export class TasksService {
 
     const nextContactId =
       dto.contactId !== undefined ? dto.contactId : existing.contactId;
-    const nextLeadId =
-      dto.leadId !== undefined ? dto.leadId : existing.leadId;
+    const nextLeadId = dto.leadId !== undefined ? dto.leadId : existing.leadId;
     this.assertHasLink(nextContactId, nextLeadId);
 
     if (dto.contactId) {

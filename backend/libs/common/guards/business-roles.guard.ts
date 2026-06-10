@@ -18,10 +18,9 @@ export class BusinessRolesGuard implements CanActivate {
   constructor(private readonly reflector: Reflector) {}
 
   canActivate(context: ExecutionContext): boolean {
-    const requiredRoles = this.reflector.getAllAndOverride<BusinessMemberRole[]>(
-      BUSINESS_ROLES_KEY,
-      [context.getHandler(), context.getClass()],
-    );
+    const requiredRoles = this.reflector.getAllAndOverride<
+      BusinessMemberRole[]
+    >(BUSINESS_ROLES_KEY, [context.getHandler(), context.getClass()]);
     if (!requiredRoles?.length) {
       return true;
     }

@@ -73,9 +73,7 @@ export class EmailMessageRepository {
     const notFailed = { not: EmailMessageStatus.FAILED };
 
     const businessFilter =
-      params.businessId === undefined
-        ? {}
-        : { businessId: params.businessId };
+      params.businessId === undefined ? {} : { businessId: params.businessId };
 
     return this.prisma.emailMessage
       .findFirst({
@@ -128,7 +126,10 @@ export class EmailMessageRepository {
           unknown
         >;
         const metadata = data.metadataPatch
-          ? ({ ...currentMetadata, ...data.metadataPatch } as Prisma.InputJsonValue)
+          ? ({
+              ...currentMetadata,
+              ...data.metadataPatch,
+            } as Prisma.InputJsonValue)
           : undefined;
 
         return this.prisma.emailMessage.update({
@@ -198,21 +199,33 @@ export class EmailMessageRepository {
       ...(params.search?.trim()
         ? {
             OR: [
-              { toEmail: { contains: params.search.trim(), mode: 'insensitive' } },
-              { subject: { contains: params.search.trim(), mode: 'insensitive' } },
+              {
+                toEmail: {
+                  contains: params.search.trim(),
+                  mode: 'insensitive',
+                },
+              },
+              {
+                subject: {
+                  contains: params.search.trim(),
+                  mode: 'insensitive',
+                },
+              },
             ],
           }
         : {}),
     };
 
-    return this.prisma.$transaction([
-      this.prisma.emailMessage.findMany({
-        where,
-        skip: params.skip,
-        take: params.take,
-        orderBy: { createdAt: 'desc' },
-      }),
-      this.prisma.emailMessage.count({ where }),
-    ]).then(([items, total]) => ({ items, total }));
+    return this.prisma
+      .$transaction([
+        this.prisma.emailMessage.findMany({
+          where,
+          skip: params.skip,
+          take: params.take,
+          orderBy: { createdAt: 'desc' },
+        }),
+        this.prisma.emailMessage.count({ where }),
+      ])
+      .then(([items, total]) => ({ items, total }));
   }
 }

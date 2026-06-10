@@ -22,13 +22,13 @@ const COUNTRY_FLAGS: Record<string, string> = {
   "+52": "🇲🇽",
 };
 
-export const PHONE_COUNTRIES: PhoneCountry[] = phoneCountryCodeOptions.map(
-  (opt) => ({
+export const PHONE_COUNTRIES: PhoneCountry[] = phoneCountryCodeOptions
+  .filter((opt): opt is typeof opt & { value: string } => Boolean(opt.value))
+  .map((opt) => ({
     dialCode: opt.value,
     flag: COUNTRY_FLAGS[opt.value] ?? "🌐",
     label: opt.label,
-  }),
-);
+  }));
 
 export const DEFAULT_PHONE_DIAL_CODE = "+1";
 

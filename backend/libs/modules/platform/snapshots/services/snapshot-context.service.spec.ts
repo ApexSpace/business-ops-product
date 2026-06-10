@@ -22,7 +22,7 @@ describe('SnapshotContextService', () => {
   });
 
   it('returns lightweight published snapshot context', async () => {
-    const assets = SNAPSHOT_SEED_DEFINITIONS[0]!.assets;
+    const assets = SNAPSHOT_SEED_DEFINITIONS[0].assets;
     const prisma = {
       business: {
         findFirst: jest.fn().mockResolvedValue({
@@ -60,7 +60,7 @@ describe('SnapshotContextService', () => {
             status: SnapshotStatus.DRAFT,
             deletedAt: null,
             updatedAt: new Date(),
-            assets: SNAPSHOT_SEED_DEFINITIONS[0]!.assets,
+            assets: SNAPSHOT_SEED_DEFINITIONS[0].assets,
           },
         }),
       },

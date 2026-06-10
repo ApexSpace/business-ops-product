@@ -1,22 +1,40 @@
-import { Business, Industry, Snapshot } from '@prisma/client';
+import {
+  Business,
+  Industry,
+  Snapshot,
+  BusinessSubscription,
+  PlanTier,
+  PlanGroup,
+} from '@prisma/client';
 import { toIndustryOption } from '@app/modules/crm/industries/mappers/industry.mapper';
 import { BusinessResponseDto } from '../dto/business-response.dto';
+import { BusinessAccessResolution } from '../types/business-access-resolution.types';
 import { extractFinancialSettings } from '../utils/financial-settings.util';
 
 type BusinessWithIndustry = Business & {
   industry?: Industry | null;
   snapshot?: Pick<Snapshot, 'id' | 'name' | 'status'> | null;
+  subscription?:
+    | (BusinessSubscription & {
+        planTier?: Pick<PlanTier, 'name'> | null;
+        planGroup?: Pick<PlanGroup, 'name'> | null;
+      })
+    | null;
 };
 
 export function toBusinessResponse(
   business: BusinessWithIndustry,
+  resolution?: BusinessAccessResolution,
+  extras?: {
+    latestPaymentAt?: Date | null;
+    recommendedActionKey?: string | null;
+  },
 ): BusinessResponseDto {
   const financial = extractFinancialSettings(business);
 
   return {
     id: business.id,
     name: business.name,
-    slug: business.slug,
     industryId: business.industryId,
     industry: business.industry ? toIndustryOption(business.industry) : null,
     snapshotId: business.snapshotId,
@@ -44,5 +62,18 @@ export function toBusinessResponse(
     createdById: business.createdById,
     createdAt: business.createdAt,
     updatedAt: business.updatedAt,
+    subscriptionStatus: business.subscription?.status ?? null,
+    planTierName: business.subscription?.planTier?.name ?? null,
+    planGroupName: business.subscription?.planGroup?.name ?? null,
+    planTierId: business.subscription?.planTierId ?? null,
+    paymentMethod: business.subscription?.paymentMethod ?? null,
+    paymentStatus: business.subscription?.paymentStatus ?? null,
+    latestPaymentAt: extras?.latestPaymentAt ?? null,
+    recommendedActionKey: extras?.recommendedActionKey ?? null,
+    currentPeriodEnd: business.subscription?.currentPeriodEnd ?? null,
+    canAccessWorkspace: resolution?.canAccessWorkspace ?? false,
+    reasonCode: resolution?.reasonCode ?? 'BUSINESS_NOT_ACTIVE',
+    reasonLabel: resolution?.reasonLabel ?? 'Workspace is not active yet.',
+    needsAttention: resolution?.needsAttention ?? [],
   };
 }

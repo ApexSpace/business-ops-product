@@ -59,7 +59,8 @@ export class AppointmentNotificationService {
       timezone,
     );
 
-    const members = await this.membershipRepository.findOwnersAndAdmins(businessId);
+    const members =
+      await this.membershipRepository.findOwnersAndAdmins(businessId);
     for (const member of members) {
       if (!member.user.email) {
         continue;
@@ -128,7 +129,11 @@ export class AppointmentNotificationService {
 
     const business = await this.businessRepository.findById(businessId);
     const variables = {
-      ...this.buildVariables(business?.name ?? 'Business', appointment, timezone),
+      ...this.buildVariables(
+        business?.name ?? 'Business',
+        appointment,
+        timezone,
+      ),
       'appointment.previous_start_at': formatAppointmentDateTime(
         previousStartAt,
         timezone,

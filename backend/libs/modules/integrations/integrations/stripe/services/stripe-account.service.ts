@@ -49,7 +49,10 @@ export class StripeAccountService {
   async syncAccountForBusiness(
     businessId: string,
     actorUserId?: string,
-  ): Promise<{ account: StripeConnectAccount; config: StripeIntegrationConfig }> {
+  ): Promise<{
+    account: StripeConnectAccount;
+    config: StripeIntegrationConfig;
+  }> {
     const integration =
       await this.businessIntegrationRepository.findByBusinessAndKey(
         businessId,
@@ -134,7 +137,7 @@ export class StripeAccountService {
       status: status.integrationStatus,
       connectedAccountName: displayName,
       connectedAccountEmail: account.email ?? existing?.connectedAccountEmail,
-      config: mergedConfig as Prisma.InputJsonValue,
+      config: mergedConfig,
       errorMessage: null,
       lastSyncAt: new Date(),
     });
@@ -162,7 +165,7 @@ export class StripeAccountService {
             modeLabel: status.livemode ? 'Live mode' : 'Test mode',
             dashboardDisplayName:
               account.settings?.dashboard?.display_name ?? null,
-          } as Prisma.InputJsonValue,
+          },
           lastSyncedAt: now,
           isSelected: true,
           isDefault: true,

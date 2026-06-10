@@ -146,7 +146,9 @@ export class ConversationMessagesService {
       senderType: MessageSenderType.USER,
       senderUserId: actor.id,
       text: dto.text.trim(),
-      attachments: (dto.attachments ?? undefined) as Prisma.InputJsonValue | undefined,
+      attachments: (dto.attachments ?? undefined) as
+        | Prisma.InputJsonValue
+        | undefined,
       externalRecipientId: conversation.externalParticipantId,
       externalSenderId: conversation.externalPageId ?? undefined,
     };

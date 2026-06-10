@@ -9,7 +9,13 @@ import { EstimateRepository } from './repositories/estimate.repository';
 import { EstimatesService } from './services/estimates.service';
 
 @Module({
-  imports: [AuditModule, BusinessModule, ContactsModule, ServicesModule, WorkItemsModule],
+  imports: [
+    AuditModule,
+    BusinessModule,
+    ContactsModule,
+    ServicesModule,
+    WorkItemsModule,
+  ],
   controllers: [EstimatesController],
   providers: [EstimateRepository, EstimatesService],
   exports: [EstimateRepository, EstimatesService],

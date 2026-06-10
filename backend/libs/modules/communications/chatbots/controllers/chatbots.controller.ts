@@ -15,6 +15,8 @@ import { BusinessMemberRole } from '@prisma/client';
 import { CurrentUser } from '@app/common/decorators/current-user.decorator';
 import type { RequestUser } from '@app/common/decorators/current-user.decorator';
 import { BusinessRoles } from '@app/common/decorators/business-roles.decorator';
+import { RequireModule } from '@app/common/decorators/require-module.decorator';
+import { BusinessCapabilityGuard } from '@app/common/guards/business-capability.guard';
 import { BusinessRolesGuard } from '@app/common/guards/business-roles.guard';
 import {
   CreateChatbotDto,
@@ -29,7 +31,8 @@ import { ChatbotsService } from '../services/chatbots.service';
 @ApiTags('chatbots')
 @ApiBearerAuth()
 @Controller('chatbots')
-@UseGuards(BusinessRolesGuard)
+@UseGuards(BusinessRolesGuard, BusinessCapabilityGuard)
+@RequireModule('ai_agents')
 export class ChatbotsController {
   constructor(
     private readonly chatbotsService: ChatbotsService,

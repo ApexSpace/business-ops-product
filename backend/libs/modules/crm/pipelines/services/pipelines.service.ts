@@ -22,10 +22,7 @@ export class PipelinesService {
     return pipelines.map(toPipelineResponse);
   }
 
-  async getById(
-    businessId: string,
-    id: string,
-  ): Promise<PipelineResponseDto> {
+  async getById(businessId: string, id: string): Promise<PipelineResponseDto> {
     const pipeline = await this.pipelineRepository.findById(businessId, id);
     if (!pipeline) {
       throw new AppException(
@@ -97,11 +94,7 @@ export class PipelinesService {
       data.isDefault = dto.isDefault;
     }
 
-    const pipeline = await this.pipelineRepository.update(
-      businessId,
-      id,
-      data,
-    );
+    const pipeline = await this.pipelineRepository.update(businessId, id, data);
 
     await this.auditService.log({
       actorUserId: actor.id,
@@ -129,10 +122,7 @@ export class PipelinesService {
       );
     }
 
-    const leadCount = await this.pipelineRepository.countLeads(
-      businessId,
-      id,
-    );
+    const leadCount = await this.pipelineRepository.countLeads(businessId, id);
     if (leadCount > 0) {
       throw new AppException(
         ErrorCode.PIPELINE_HAS_LEADS,

@@ -373,7 +373,7 @@ export class LeadsService {
     if (resolvedStageId) {
       const stage = await this.stageRepository.findById(
         businessId,
-        resolvedPipelineId!,
+        resolvedPipelineId,
         resolvedStageId,
       );
       if (!stage) {
@@ -386,7 +386,7 @@ export class LeadsService {
     } else {
       const firstStage = await this.stageRepository.findFirstByPosition(
         businessId,
-        resolvedPipelineId!,
+        resolvedPipelineId,
         1,
       );
       if (!firstStage) {
@@ -400,8 +400,8 @@ export class LeadsService {
     }
 
     return {
-      pipelineId: resolvedPipelineId!,
-      pipelineStageId: resolvedStageId!,
+      pipelineId: resolvedPipelineId,
+      pipelineStageId: resolvedStageId,
     };
   }
 

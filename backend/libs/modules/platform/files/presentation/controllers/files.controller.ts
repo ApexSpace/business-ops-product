@@ -35,11 +35,7 @@ export class FilesController {
     @CurrentUser() user: RequestUser,
     @Body() dto: CreateUploadIntentDto,
   ) {
-    return this.filesService.createUploadIntent(
-      user.businessId!,
-      user.id,
-      dto,
-    );
+    return this.filesService.createUploadIntent(user.businessId!, user.id, dto);
   }
 
   @Post(':id/confirm')

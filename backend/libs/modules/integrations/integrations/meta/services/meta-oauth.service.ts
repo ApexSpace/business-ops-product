@@ -241,9 +241,7 @@ export class MetaOAuthService {
       );
     } catch (err) {
       const message =
-        err instanceof AppException
-          ? err.message
-          : 'oauth_connection_failed';
+        err instanceof AppException ? err.message : 'oauth_connection_failed';
       res.redirect(
         this.buildOAuthCallbackUrl({
           error: message,
@@ -286,7 +284,9 @@ export class MetaOAuthService {
       });
     } catch (err) {
       const message =
-        err instanceof Error ? err.message : 'Invalid Meta OAuth authorization URL';
+        err instanceof Error
+          ? err.message
+          : 'Invalid Meta OAuth authorization URL';
       throw new AppException(
         ErrorCode.BAD_REQUEST,
         message,
@@ -303,10 +303,7 @@ export class MetaOAuthService {
     return authUrl;
   }
 
-  private logOAuthStartDebug(
-    providerKey: string,
-    authUrl: string,
-  ): void {
+  private logOAuthStartDebug(providerKey: string, authUrl: string): void {
     if (!this.isMetaOAuthDebugEnabled()) {
       return;
     }
@@ -350,8 +347,10 @@ export class MetaOAuthService {
           scopes: credentials.scopes,
           metaUserId: profile.id,
           webhookStatus: resolveMetaWebhookStatusLabel(webhookVerifyToken),
-        } as Prisma.InputJsonValue,
-        credentials: { encrypted: encryptedCredentials } as Prisma.InputJsonValue,
+        },
+        credentials: {
+          encrypted: encryptedCredentials,
+        },
         connectedAccountName: profile.name ?? null,
         connectedAccountEmail: profile.email ?? null,
         connectedAt: new Date(),

@@ -48,8 +48,7 @@ export class ConversationContactResolverService {
 
     const nameParts = displayName.split(/\s+/);
     const firstName = nameParts[0] ?? displayName;
-    const lastName =
-      nameParts.length > 1 ? nameParts.slice(1).join(' ') : null;
+    const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : null;
 
     const metadata: Prisma.InputJsonValue = {
       [metadataKey]: inbound.externalParticipantId,
@@ -68,7 +67,8 @@ export class ConversationContactResolverService {
           inbound.channel === ConversationChannel.FACEBOOK
             ? 'Facebook Messenger'
             : 'Instagram',
-        avatarUrl: profile.profilePic ?? inbound.senderProfilePictureUrl ?? null,
+        avatarUrl:
+          profile.profilePic ?? inbound.senderProfilePictureUrl ?? null,
         metadata,
       },
       SYSTEM_AUDIT_ACTOR_SENTINEL,
@@ -91,19 +91,22 @@ export class ConversationContactResolverService {
     inbound: NormalizedInboundMessage,
     metadataKey: 'facebookPsid' | 'instagramUserId',
   ): Promise<Contact> {
-    const current =
-      (contact.metadata as Record<string, unknown> | null) ?? {};
+    const current = (contact.metadata as Record<string, unknown> | null) ?? {};
     if (current[metadataKey] === inbound.externalParticipantId) {
       return contact;
     }
 
-    const updated = await this.contactRepository.update(contact.businessId, contact.id, {
-      metadata: {
-        ...current,
-        [metadataKey]: inbound.externalParticipantId,
-        channel: inbound.channel,
-      } as Prisma.InputJsonValue,
-    });
+    const updated = await this.contactRepository.update(
+      contact.businessId,
+      contact.id,
+      {
+        metadata: {
+          ...current,
+          [metadataKey]: inbound.externalParticipantId,
+          channel: inbound.channel,
+        } as Prisma.InputJsonValue,
+      },
+    );
 
     return updated ?? contact;
   }

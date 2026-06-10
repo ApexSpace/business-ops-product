@@ -8,6 +8,9 @@ export class PlatformBusinessStatsDto {
   active!: number;
 
   @ApiProperty()
+  notActive!: number;
+
+  @ApiProperty()
   suspended!: number;
 
   @ApiProperty()

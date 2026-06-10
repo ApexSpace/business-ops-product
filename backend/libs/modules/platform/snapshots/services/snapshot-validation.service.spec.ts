@@ -7,7 +7,7 @@ describe('SnapshotValidationService', () => {
   const service = new SnapshotValidationService();
 
   it('accepts valid seeded default-business assets', () => {
-    const assets = SNAPSHOT_SEED_DEFINITIONS[0]!.assets;
+    const assets = SNAPSHOT_SEED_DEFINITIONS[0].assets;
     const result = service.validateAndSanitize(assets);
     expect(result.navigation.length).toBeGreaterThan(0);
     expect(result.dashboard.widgets.length).toBeGreaterThan(0);
@@ -15,7 +15,7 @@ describe('SnapshotValidationService', () => {
 
   it('rejects unknown navigation routes', () => {
     const assets = {
-      ...SNAPSHOT_SEED_DEFINITIONS[0]!.assets,
+      ...SNAPSHOT_SEED_DEFINITIONS[0].assets,
       navigation: [
         {
           key: 'bad',
@@ -32,7 +32,7 @@ describe('SnapshotValidationService', () => {
 
   it('rejects invalid email template types', () => {
     const assets = {
-      ...SNAPSHOT_SEED_DEFINITIONS[0]!.assets,
+      ...SNAPSHOT_SEED_DEFINITIONS[0].assets,
       emails: {
         templates: [
           {
@@ -49,7 +49,7 @@ describe('SnapshotValidationService', () => {
 
   it('rejects invalid pipeline stage types', () => {
     const assets = {
-      ...SNAPSHOT_SEED_DEFINITIONS[0]!.assets,
+      ...SNAPSHOT_SEED_DEFINITIONS[0].assets,
       crm: {
         pipelines: [
           {

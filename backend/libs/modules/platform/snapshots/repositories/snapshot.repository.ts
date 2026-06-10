@@ -27,7 +27,10 @@ export class SnapshotRepository {
     skip: number;
     take: number;
     status?: SnapshotStatus;
-  }): Promise<{ items: Array<Snapshot & { _count: { businesses: number } }>; total: number }> {
+  }): Promise<{
+    items: Array<Snapshot & { _count: { businesses: number } }>;
+    total: number;
+  }> {
     const where: Prisma.SnapshotWhereInput = {
       deletedAt: null,
       ...(params.status ? { status: params.status } : {}),
@@ -60,11 +63,7 @@ export class SnapshotRepository {
     });
   }
 
-  findProvision(
-    businessId: string,
-    snapshotId: string,
-    sourceKey: string,
-  ) {
+  findProvision(businessId: string, snapshotId: string, sourceKey: string) {
     return this.prisma.snapshotProvision.findUnique({
       where: {
         businessId_snapshotId_sourceKey: {

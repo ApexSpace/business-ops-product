@@ -62,9 +62,10 @@ function normalizeMessagingEvent(
   };
 }
 
-export function normalizeMetaPageWebhook(
-  entry: { id?: string; messaging?: MetaMessagingEvent[] },
-): NormalizedInboundMessage[] {
+export function normalizeMetaPageWebhook(entry: {
+  id?: string;
+  messaging?: MetaMessagingEvent[];
+}): NormalizedInboundMessage[] {
   const resourceId = entry.id;
   if (!resourceId || !entry.messaging?.length) {
     return [];
@@ -85,9 +86,10 @@ export function normalizeMetaPageWebhook(
   return results;
 }
 
-export function normalizeMetaInstagramWebhook(
-  entry: { id?: string; messaging?: MetaMessagingEvent[] },
-): NormalizedInboundMessage[] {
+export function normalizeMetaInstagramWebhook(entry: {
+  id?: string;
+  messaging?: MetaMessagingEvent[];
+}): NormalizedInboundMessage[] {
   const resourceId = entry.id;
   if (!resourceId || !entry.messaging?.length) {
     return [];
@@ -112,8 +114,7 @@ export function normalizeMetaWebhookPayload(body: Record<string, unknown>): {
   messages: NormalizedInboundMessage[];
   objectType: string | null;
 } {
-  const objectType =
-    typeof body.object === 'string' ? body.object : null;
+  const objectType = typeof body.object === 'string' ? body.object : null;
   const entries = Array.isArray(body.entry) ? body.entry : [];
   const messages: NormalizedInboundMessage[] = [];
 

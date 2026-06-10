@@ -79,7 +79,9 @@ describe('InvoicesService invoice.sent', () => {
       buildInvoiceMock({ publicToken, publicUrl: 'https://stale.example/old' }),
     );
 
-    expect(emailNotificationService.enqueueTransactionalEmail).toHaveBeenCalledWith(
+    expect(
+      emailNotificationService.enqueueTransactionalEmail,
+    ).toHaveBeenCalledWith(
       expect.objectContaining({
         emailType: 'invoice.sent',
         idempotencyKey: 'invoice-sent-inv-1',
@@ -100,11 +102,14 @@ describe('InvoicesService invoice.sent', () => {
         'sendInvoiceSentEmail',
       )
       .mockResolvedValue(undefined);
-    jest.spyOn(invoiceMapper, 'toInvoiceResponse').mockReturnValue({ id: 'inv-1' } as never);
+    jest
+      .spyOn(invoiceMapper, 'toInvoiceResponse')
+      .mockReturnValue({ id: 'inv-1' } as never);
 
     const { invoiceRepository } = buildService();
-    (service as unknown as { invoiceRepository: typeof invoiceRepository }).invoiceRepository =
-      invoiceRepository;
+    (
+      service as unknown as { invoiceRepository: typeof invoiceRepository }
+    ).invoiceRepository = invoiceRepository;
     invoiceRepository.findById.mockResolvedValue(
       buildInvoiceMock({ status: InvoiceStatus.DRAFT }),
     );
@@ -134,13 +139,20 @@ describe('InvoicesService invoice.sent', () => {
         'sendInvoiceSentEmail',
       )
       .mockResolvedValue(undefined);
-    jest.spyOn(invoiceMapper, 'toInvoiceResponse').mockReturnValue({ id: 'inv-new' } as never);
+    jest
+      .spyOn(invoiceMapper, 'toInvoiceResponse')
+      .mockReturnValue({ id: 'inv-new' } as never);
 
-    (service as unknown as { contactRepository: { findById: jest.Mock } }).contactRepository = {
+    (
+      service as unknown as { contactRepository: { findById: jest.Mock } }
+    ).contactRepository = {
       findById: jest.fn().mockResolvedValue({ id: 'contact-1' }),
     };
-    (service as unknown as { financialSettingsService: Record<string, jest.Mock> })
-      .financialSettingsService = {
+    (
+      service as unknown as {
+        financialSettingsService: Record<string, jest.Mock>;
+      }
+    ).financialSettingsService = {
       getSettingsForBusiness: jest.fn().mockResolvedValue({
         taxesAndCurrency: {
           currencyCode: 'USD',
@@ -166,7 +178,7 @@ describe('InvoicesService invoice.sent', () => {
         contactId: 'contact-1',
         items: [{ title: 'Service', quantity: 1, unitPrice: 100 }],
         status: InvoiceStatus.SENT,
-      } as never,
+      },
       { id: 'user-1' } as never,
     );
 

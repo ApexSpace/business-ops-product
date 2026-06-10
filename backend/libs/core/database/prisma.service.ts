@@ -26,9 +26,7 @@ export class PrismaService
 
     super({
       adapter,
-      log: logQueries
-        ? ['query', 'info', 'warn', 'error']
-        : ['warn', 'error'],
+      log: logQueries ? ['query', 'info', 'warn', 'error'] : ['warn', 'error'],
     });
   }
 

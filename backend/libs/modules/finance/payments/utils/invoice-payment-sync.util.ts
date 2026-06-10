@@ -1,17 +1,10 @@
-import {
-  InvoicePaymentStatus,
-  InvoiceStatus,
-  Prisma,
-} from '@prisma/client';
+import { InvoicePaymentStatus, InvoiceStatus, Prisma } from '@prisma/client';
 import { deriveInvoicePaymentStatus } from './invoice-payment-status.util';
 
 export function sumPaymentAmounts(
   payments: { amount: Prisma.Decimal }[],
 ): Prisma.Decimal {
-  return payments.reduce(
-    (sum, p) => sum.add(p.amount),
-    new Prisma.Decimal(0),
-  );
+  return payments.reduce((sum, p) => sum.add(p.amount), new Prisma.Decimal(0));
 }
 
 export function computeBalanceDue(
@@ -93,7 +86,7 @@ export function computeInvoicePaymentSyncFields(
     payments.length > 0
       ? payments.reduce(
           (latest, p) => (p.paidAt > latest ? p.paidAt : latest),
-          payments[0]!.paidAt,
+          payments[0].paidAt,
         )
       : null;
 

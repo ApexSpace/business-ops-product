@@ -179,18 +179,15 @@ export class InvoicesService {
     meta: { total: number; page: number; limit: number };
   }> {
     const { page, limit, skip, take } = getPaginationParams(query);
-    const { items, total } = await this.invoiceRepository.findMany(
-      businessId,
-      {
-        skip,
-        take,
-        search: query.search?.trim() || undefined,
-        contactId: query.contactId,
-        status: query.status,
-        issueFrom: query.issueFrom ? new Date(query.issueFrom) : undefined,
-        issueTo: query.issueTo ? new Date(query.issueTo) : undefined,
-      },
-    );
+    const { items, total } = await this.invoiceRepository.findMany(businessId, {
+      skip,
+      take,
+      search: query.search?.trim() || undefined,
+      contactId: query.contactId,
+      status: query.status,
+      issueFrom: query.issueFrom ? new Date(query.issueFrom) : undefined,
+      issueTo: query.issueTo ? new Date(query.issueTo) : undefined,
+    });
 
     return {
       items: items.map(toInvoiceResponse),
@@ -294,9 +291,7 @@ export class InvoicesService {
       }));
 
     const taxAmount =
-      dto.taxAmount !== undefined
-        ? dto.taxAmount
-        : Number(existing.taxAmount);
+      dto.taxAmount !== undefined ? dto.taxAmount : Number(existing.taxAmount);
     const discountAmount =
       dto.discountAmount !== undefined
         ? dto.discountAmount
@@ -321,8 +316,11 @@ export class InvoicesService {
       data.discountAmount = totals.discountAmount;
       data.totalAmount = totals.totalAmount;
 
-      const nextStatus = (dto.status ?? existing.status) as InvoiceStatus;
-      if (nextStatus === InvoiceStatus.PAID || nextStatus === InvoiceStatus.VOID) {
+      const nextStatus = dto.status ?? existing.status;
+      if (
+        nextStatus === InvoiceStatus.PAID ||
+        nextStatus === InvoiceStatus.VOID
+      ) {
         data.balanceDue = balanceDueForStatus(nextStatus, totals.totalAmount);
       } else {
         data.balanceDue = recalculateBalanceDue(
@@ -336,10 +334,7 @@ export class InvoicesService {
         itemsData = this.mapItems(dto.items, totals.lineTotals);
       }
     } else if (dto.status !== undefined) {
-      data.balanceDue = balanceDueForStatus(
-        dto.status,
-        existing.totalAmount,
-      );
+      data.balanceDue = balanceDueForStatus(dto.status, existing.totalAmount);
     }
 
     const invoice = await this.invoiceRepository.update(
@@ -405,8 +400,13 @@ export class InvoicesService {
       metadata: { from: existing.status, to: dto.status },
     });
 
-    if (dto.status === InvoiceStatus.SENT && existing.status !== InvoiceStatus.SENT) {
-      void this.sendInvoiceSentEmail(businessId, invoice).catch(() => undefined);
+    if (
+      dto.status === InvoiceStatus.SENT &&
+      existing.status !== InvoiceStatus.SENT
+    ) {
+      void this.sendInvoiceSentEmail(businessId, invoice).catch(
+        () => undefined,
+      );
     }
 
     return toInvoiceResponse(invoice);
@@ -452,9 +452,10 @@ export class InvoicesService {
     businessId: string,
     invoice: NonNullable<Awaited<ReturnType<InvoiceRepository['findById']>>>,
   ): Promise<string> {
-    const frontendUrl = this.configService.get('app.frontendUrl', { infer: true });
-    const publicToken =
-      invoice.publicToken ?? generateInvoicePublicToken();
+    const frontendUrl = this.configService.get('app.frontendUrl', {
+      infer: true,
+    });
+    const publicToken = invoice.publicToken ?? generateInvoicePublicToken();
     const publicUrl = buildInvoicePublicUrl(frontendUrl, publicToken);
 
     if (!invoice.publicToken || invoice.publicUrl !== publicUrl) {

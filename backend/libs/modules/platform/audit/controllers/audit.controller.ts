@@ -1,12 +1,19 @@
-import { Controller, Get, Param, ParseUUIDPipe, Query, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { PlatformMemberRole } from '@prisma/client';
-import { PaginationQueryDto } from '@app/common/dto/pagination-query.dto';
 import { PlatformRoles } from '@app/common/decorators/platform-roles.decorator';
 import { PlatformRolesGuard } from '@app/common/guards/platform-roles.guard';
 import { getPaginationParams } from '@app/common/utils/pagination.util';
 import { AuditService } from '@app/modules/platform/audit/services/audit.service';
 import { AuditLogResponseDto } from '../dto/audit-log-response.dto';
+import { ListBusinessAuditLogsQueryDto } from '../dto/list-business-audit-logs-query.dto';
 
 @ApiTags('audit')
 @ApiBearerAuth()
@@ -23,15 +30,17 @@ export class AuditController {
   @Get()
   async list(
     @Param('businessId', ParseUUIDPipe) businessId: string,
-    @Query() query: PaginationQueryDto,
-    @Query('action') action?: string,
-  ): Promise<{ items: AuditLogResponseDto[]; meta: { total: number; page: number; limit: number } }> {
+    @Query() query: ListBusinessAuditLogsQueryDto,
+  ): Promise<{
+    items: AuditLogResponseDto[];
+    meta: { total: number; page: number; limit: number };
+  }> {
     const { page, limit, skip } = getPaginationParams(query);
     const { items, total } = await this.auditService.findByBusinessId(
       businessId,
       skip,
       limit,
-      { action },
+      { action: query.action },
     );
     return {
       items: items.map((log) => ({

@@ -2,15 +2,11 @@
  * Production queue/idempotency/SSE require Redis.
  * Development and test may run without REDIS_URL (degraded mode).
  */
-export function isProductionEnv(
-  env: NodeJS.ProcessEnv = process.env,
-): boolean {
+export function isProductionEnv(env: NodeJS.ProcessEnv = process.env): boolean {
   return (env.NODE_ENV ?? 'development') === 'production';
 }
 
-export function isRedisRequired(
-  env: NodeJS.ProcessEnv = process.env,
-): boolean {
+export function isRedisRequired(env: NodeJS.ProcessEnv = process.env): boolean {
   if (!isProductionEnv(env)) {
     return false;
   }

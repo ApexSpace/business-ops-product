@@ -27,7 +27,9 @@ export class FinancialSettingsService {
     private readonly auditService: AuditService,
   ) {}
 
-  async getForBusiness(businessId: string): Promise<FinancialSettingsResponseDto> {
+  async getForBusiness(
+    businessId: string,
+  ): Promise<FinancialSettingsResponseDto> {
     const business = await this.requireBusiness(businessId);
     return this.toResponse(business);
   }
@@ -45,7 +47,8 @@ export class FinancialSettingsService {
     if (dto.invoice) {
       const invoice = { ...current.invoice, ...dto.invoice };
       if (invoice.prefix !== undefined) {
-        invoice.prefix = invoice.prefix.trim().toUpperCase().slice(0, 10) || 'INV';
+        invoice.prefix =
+          invoice.prefix.trim().toUpperCase().slice(0, 10) || 'INV';
       }
       if (invoice.nextNumber !== undefined) {
         invoice.nextNumber = Math.max(1, Math.floor(invoice.nextNumber));

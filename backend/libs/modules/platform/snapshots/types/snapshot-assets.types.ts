@@ -1,4 +1,8 @@
-import { CalendarType, ChatbotRuleTriggerType, PipelineStageType } from '@prisma/client';
+import {
+  CalendarType,
+  ChatbotRuleTriggerType,
+  PipelineStageType,
+} from '@prisma/client';
 
 export interface SnapshotNavItem {
   key: string;

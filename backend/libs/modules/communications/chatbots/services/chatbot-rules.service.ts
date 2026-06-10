@@ -1,10 +1,7 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { AppException } from '@app/common/exceptions/app.exception';
 import { ErrorCode } from '@app/common/exceptions/error-code.enum';
-import {
-  CreateChatbotRuleDto,
-  UpdateChatbotRuleDto,
-} from '../dto/chatbot.dto';
+import { CreateChatbotRuleDto, UpdateChatbotRuleDto } from '../dto/chatbot.dto';
 import { ChatbotRuleResponseDto } from '../dto/chatbot-response.dto';
 import { toChatbotRuleResponse } from '../mappers/chatbot.mapper';
 import { ChatbotRulesRepository } from '../repositories/chatbot-rules.repository';
@@ -55,7 +52,9 @@ export class ChatbotRulesService {
   ): Promise<ChatbotRuleResponseDto> {
     const rule = await this.requireRule(businessId, chatbotId, ruleId);
     const updated = await this.rulesRepository.update(rule.id, {
-      ...(dto.triggerType !== undefined ? { triggerType: dto.triggerType } : {}),
+      ...(dto.triggerType !== undefined
+        ? { triggerType: dto.triggerType }
+        : {}),
       ...(dto.triggerText !== undefined
         ? { triggerText: dto.triggerText.trim() }
         : {}),
@@ -78,7 +77,10 @@ export class ChatbotRulesService {
   }
 
   private async requireChatbot(businessId: string, chatbotId: string) {
-    const chatbot = await this.chatbotsRepository.findById(businessId, chatbotId);
+    const chatbot = await this.chatbotsRepository.findById(
+      businessId,
+      chatbotId,
+    );
     if (!chatbot) {
       throw new AppException(
         ErrorCode.CHATBOT_NOT_FOUND,

@@ -131,21 +131,16 @@ export class PaymentsService {
     meta: { total: number; page: number; limit: number };
   }> {
     const { page, limit, skip, take } = getPaginationParams(query);
-    const { items, total } = await this.paymentRepository.findMany(
-      businessId,
-      {
-        skip,
-        take,
-        search: query.search?.trim() || undefined,
-        invoiceId: query.invoiceId,
-        contactId: query.contactId,
-        method: query.method,
-        paidFrom: query.paidFrom ? new Date(query.paidFrom) : undefined,
-        paidTo: query.paidTo
-          ? this.endOfDay(new Date(query.paidTo))
-          : undefined,
-      },
-    );
+    const { items, total } = await this.paymentRepository.findMany(businessId, {
+      skip,
+      take,
+      search: query.search?.trim() || undefined,
+      invoiceId: query.invoiceId,
+      contactId: query.contactId,
+      method: query.method,
+      paidFrom: query.paidFrom ? new Date(query.paidFrom) : undefined,
+      paidTo: query.paidTo ? this.endOfDay(new Date(query.paidTo)) : undefined,
+    });
 
     return {
       items: items.map(toPaymentResponse),
@@ -153,10 +148,7 @@ export class PaymentsService {
     };
   }
 
-  async getById(
-    businessId: string,
-    id: string,
-  ): Promise<PaymentResponseDto> {
+  async getById(businessId: string, id: string): Promise<PaymentResponseDto> {
     const payment = await this.paymentRepository.findById(businessId, id);
     if (!payment) {
       throw new AppException(
@@ -269,11 +261,7 @@ export class PaymentsService {
 
       await this.syncInvoiceInTransaction(tx, businessId, nextInvoiceId);
       if (invoiceChanged) {
-        await this.syncInvoiceInTransaction(
-          tx,
-          businessId,
-          previousInvoiceId,
-        );
+        await this.syncInvoiceInTransaction(tx, businessId, previousInvoiceId);
       }
 
       return updated;
@@ -310,11 +298,7 @@ export class PaymentsService {
         where: { id },
         data: { deletedAt: new Date() },
       });
-      await this.syncInvoiceInTransaction(
-        tx,
-        businessId,
-        existing.invoiceId,
-      );
+      await this.syncInvoiceInTransaction(tx, businessId, existing.invoiceId);
     });
 
     await this.auditService.log({
@@ -356,8 +340,15 @@ export class PaymentsService {
       existing.provider === PaymentProvider.STRIPE &&
       existing.stripePaymentIntentId
     ) {
-      await this.refundStripePayment(businessId, existing.stripePaymentIntentId);
-      await this.markPaymentRefunded(id, existing.providerMetadata, refundedAmount);
+      await this.refundStripePayment(
+        businessId,
+        existing.stripePaymentIntentId,
+      );
+      await this.markPaymentRefunded(
+        id,
+        existing.providerMetadata,
+        refundedAmount,
+      );
       await this.auditService.log({
         actorUserId: actor.id,
         businessId,
@@ -370,7 +361,11 @@ export class PaymentsService {
       return toPaymentResponse(refreshed ?? existing);
     }
 
-    await this.markPaymentRefunded(id, existing.providerMetadata, refundedAmount);
+    await this.markPaymentRefunded(
+      id,
+      existing.providerMetadata,
+      refundedAmount,
+    );
 
     await this.auditService.log({
       actorUserId: actor.id,
@@ -415,7 +410,7 @@ export class PaymentsService {
       ...base,
       refundedAt: new Date().toISOString(),
       amountRefunded,
-    } as Prisma.InputJsonValue;
+    };
   }
 
   private isPaymentRefunded(payment: {
@@ -496,7 +491,10 @@ export class PaymentsService {
   }
 
   private async assertPayableInvoice(businessId: string, invoiceId: string) {
-    const invoice = await this.invoiceRepository.findById(businessId, invoiceId);
+    const invoice = await this.invoiceRepository.findById(
+      businessId,
+      invoiceId,
+    );
     if (!invoice) {
       throw new AppException(
         ErrorCode.INVOICE_NOT_FOUND,

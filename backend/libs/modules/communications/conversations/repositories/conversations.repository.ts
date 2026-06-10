@@ -31,10 +31,7 @@ export class ConversationsRepository {
     return { businessId, deletedAt: null, ...extra };
   }
 
-  findById(
-    businessId: string,
-    id: string,
-  ): Promise<Conversation | null> {
+  findById(businessId: string, id: string): Promise<Conversation | null> {
     return this.prisma.conversation.findFirst({
       where: this.activeWhere(businessId, { id }),
       include: {
@@ -65,21 +62,28 @@ export class ConversationsRepository {
   ): Promise<{ items: Conversation[]; total: number }> {
     const where = this.activeWhere(businessId, this.buildListWhere(filters));
 
-    return this.prisma.$transaction([
-      this.prisma.conversation.findMany({
-        where,
-        orderBy: [{ lastMessageAt: 'desc' }, { updatedAt: 'desc' }],
-        skip: filters.skip,
-        take: filters.take,
-        include: {
-          contact: true,
-          assignedTo: {
-            select: { id: true, firstName: true, lastName: true, email: true },
+    return this.prisma
+      .$transaction([
+        this.prisma.conversation.findMany({
+          where,
+          orderBy: [{ lastMessageAt: 'desc' }, { updatedAt: 'desc' }],
+          skip: filters.skip,
+          take: filters.take,
+          include: {
+            contact: true,
+            assignedTo: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+              },
+            },
           },
-        },
-      }),
-      this.prisma.conversation.count({ where }),
-    ]).then(([items, total]) => ({ items, total }));
+        }),
+        this.prisma.conversation.count({ where }),
+      ])
+      .then(([items, total]) => ({ items, total }));
   }
 
   findByContactId(

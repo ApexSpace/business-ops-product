@@ -24,17 +24,23 @@ describe('SnapshotsService lifecycle', () => {
 
     const service = new SnapshotsService(
       snapshotRepository as never,
-      validationService as never,
+      validationService,
       applyService as never,
       auditService as never,
     );
 
-    return { service, snapshotRepository, validationService, applyService, auditService };
+    return {
+      service,
+      snapshotRepository,
+      validationService,
+      applyService,
+      auditService,
+    };
   }
 
   it('publish validates assets and sets PUBLISHED', async () => {
     const { service, snapshotRepository, validationService } = buildService();
-    const assets = SNAPSHOT_SEED_DEFINITIONS[0]!.assets;
+    const assets = SNAPSHOT_SEED_DEFINITIONS[0].assets;
     snapshotRepository.findById.mockResolvedValue({
       id: 'snap-1',
       name: 'Default',
@@ -65,7 +71,9 @@ describe('SnapshotsService lifecycle', () => {
       assets: {},
     });
 
-    await expect(service.archive('snap-1', actor as never)).rejects.toMatchObject({
+    await expect(
+      service.archive('snap-1', actor as never),
+    ).rejects.toMatchObject({
       getStatus: expect.any(Function),
     });
     try {
@@ -78,7 +86,7 @@ describe('SnapshotsService lifecycle', () => {
 
   it('clone creates a draft copy', async () => {
     const { service, snapshotRepository } = buildService();
-    const assets = SNAPSHOT_SEED_DEFINITIONS[0]!.assets;
+    const assets = SNAPSHOT_SEED_DEFINITIONS[0].assets;
     snapshotRepository.findById.mockResolvedValue({
       id: 'snap-1',
       name: 'Default',
@@ -129,7 +137,10 @@ describe('SnapshotsService lifecycle', () => {
     expect(result.status).toBe(SnapshotStatus.DRAFT);
     expect(snapshotRepository.update).toHaveBeenCalledWith(
       'snap-1',
-      expect.objectContaining({ status: SnapshotStatus.DRAFT, publishedAt: null }),
+      expect.objectContaining({
+        status: SnapshotStatus.DRAFT,
+        publishedAt: null,
+      }),
     );
   });
 });

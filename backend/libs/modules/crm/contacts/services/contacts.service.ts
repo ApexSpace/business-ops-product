@@ -11,7 +11,10 @@ import { UpdateContactDto } from '../dto/update-contact.dto';
 import { toContactResponse } from '../mappers/contact.mapper';
 import { ContactRepository } from '../repositories/contact.repository';
 import { TagRepository } from '../repositories/tag.repository';
-import { toContactCreateData, toContactUpdateData } from '../utils/contact-profile-data.util';
+import {
+  toContactCreateData,
+  toContactUpdateData,
+} from '../utils/contact-profile-data.util';
 import { normalizePhoneKey } from '../utils/contact-profile.util';
 
 @Injectable()
@@ -74,10 +77,11 @@ export class ContactsService {
     meta: { total: number; page: number; limit: number };
   }> {
     const { page, limit, skip, take } = getPaginationParams(query);
-    const { items, total } = await this.contactRepository.findMany(
-      businessId,
-      { skip, take, search: query.search?.trim() || undefined },
-    );
+    const { items, total } = await this.contactRepository.findMany(businessId, {
+      skip,
+      take,
+      search: query.search?.trim() || undefined,
+    });
 
     return {
       items: items.map(toContactResponse),
@@ -85,10 +89,7 @@ export class ContactsService {
     };
   }
 
-  async getById(
-    businessId: string,
-    id: string,
-  ): Promise<ContactResponseDto> {
+  async getById(businessId: string, id: string): Promise<ContactResponseDto> {
     const contact = await this.contactRepository.findById(businessId, id);
     if (!contact) {
       throw new AppException(
@@ -120,18 +121,14 @@ export class ContactsService {
     }
 
     const email =
-      dto.email !== undefined
-        ? this.normalizeEmail(dto.email)
-        : existing.email;
+      dto.email !== undefined ? this.normalizeEmail(dto.email) : existing.email;
 
     const phoneCountryCode =
       dto.phoneCountryCode !== undefined
         ? dto.phoneCountryCode
         : existing.phoneCountryCode;
     const phoneNumber =
-      dto.phoneNumber !== undefined
-        ? dto.phoneNumber
-        : existing.phoneNumber;
+      dto.phoneNumber !== undefined ? dto.phoneNumber : existing.phoneNumber;
     const phoneKey = normalizePhoneKey(phoneCountryCode, phoneNumber);
 
     if (

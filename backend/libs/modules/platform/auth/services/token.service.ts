@@ -66,7 +66,7 @@ export class TokenService {
       userId,
       tokenHash,
       expiresAt,
-      contextType: contextType as AuthContextType | undefined,
+      contextType: contextType,
       businessId,
     });
 

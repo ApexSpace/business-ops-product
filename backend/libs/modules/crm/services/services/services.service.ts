@@ -28,8 +28,7 @@ export class ServicesService {
       name: dto.name.trim(),
       category: dto.category?.trim() || null,
       description: dto.description?.trim() || null,
-      price:
-        dto.price !== undefined ? new Prisma.Decimal(dto.price) : null,
+      price: dto.price !== undefined ? new Prisma.Decimal(dto.price) : null,
       status: dto.status,
     });
 
@@ -52,15 +51,12 @@ export class ServicesService {
     meta: { total: number; page: number; limit: number };
   }> {
     const { page, limit, skip, take } = getPaginationParams(query);
-    const { items, total } = await this.serviceRepository.findMany(
-      businessId,
-      {
-        skip,
-        take,
-        search: query.search?.trim() || undefined,
-        status: query.status,
-      },
-    );
+    const { items, total } = await this.serviceRepository.findMany(businessId, {
+      skip,
+      take,
+      search: query.search?.trim() || undefined,
+      status: query.status,
+    });
 
     return {
       items: items.map(toServiceResponse),
@@ -68,10 +64,7 @@ export class ServicesService {
     };
   }
 
-  async getById(
-    businessId: string,
-    id: string,
-  ): Promise<ServiceResponseDto> {
+  async getById(businessId: string, id: string): Promise<ServiceResponseDto> {
     const service = await this.serviceRepository.findById(businessId, id);
     if (!service) {
       throw new AppException(
@@ -109,8 +102,7 @@ export class ServicesService {
       data.description = dto.description?.trim() || null;
     }
     if (dto.price !== undefined) {
-      data.price =
-        dto.price === null ? null : new Prisma.Decimal(dto.price);
+      data.price = dto.price === null ? null : new Prisma.Decimal(dto.price);
     }
     if (dto.status !== undefined) {
       data.status = dto.status;

@@ -110,15 +110,15 @@ describe('financial-due-date.util', () => {
 
   describe('isPastDueDate', () => {
     it('treats yesterday as past due', () => {
-      expect(
-        isPastDueDate(new Date('2026-06-05T00:00:00.000Z'), ref),
-      ).toBe(true);
+      expect(isPastDueDate(new Date('2026-06-05T00:00:00.000Z'), ref)).toBe(
+        true,
+      );
     });
 
     it('treats today as not past due', () => {
-      expect(
-        isPastDueDate(new Date('2026-06-06T00:00:00.000Z'), ref),
-      ).toBe(false);
+      expect(isPastDueDate(new Date('2026-06-06T00:00:00.000Z'), ref)).toBe(
+        false,
+      );
     });
   });
 });

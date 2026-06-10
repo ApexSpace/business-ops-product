@@ -22,7 +22,9 @@ import { PrismaService } from '@app/core/database/prisma.service';
 
 @Injectable()
 export class ConversationWebhookIngestionService {
-  private readonly logger = new Logger(ConversationWebhookIngestionService.name);
+  private readonly logger = new Logger(
+    ConversationWebhookIngestionService.name,
+  );
 
   constructor(
     private readonly conversationIntegrationRepository: ConversationIntegrationRepository,
@@ -165,17 +167,20 @@ export class ConversationWebhookIngestionService {
         },
       });
     } else {
-      conversation = await this.conversationsRepository.update(conversation.id, {
-        contact: { connect: { id: contact.id } },
-        resourceId: resource.id,
-        lastMessageAt: messageAt,
-        lastMessagePreview: preview,
-        unreadCount: { increment: 1 },
-        status:
-          conversation.status === ConversationStatus.CLOSED
-            ? ConversationStatus.OPEN
-            : conversation.status,
-      });
+      conversation = await this.conversationsRepository.update(
+        conversation.id,
+        {
+          contact: { connect: { id: contact.id } },
+          resourceId: resource.id,
+          lastMessageAt: messageAt,
+          lastMessagePreview: preview,
+          unreadCount: { increment: 1 },
+          status:
+            conversation.status === ConversationStatus.CLOSED
+              ? ConversationStatus.OPEN
+              : conversation.status,
+        },
+      );
     }
 
     await this.messagesRepository.create({
@@ -190,10 +195,14 @@ export class ConversationWebhookIngestionService {
       externalSenderId: inbound.externalSenderId,
       externalRecipientId: inbound.externalRecipientId,
       text: inbound.text,
-      attachments: (inbound.attachments ?? undefined) as Prisma.InputJsonValue | undefined,
+      attachments: (inbound.attachments ?? undefined) as
+        | Prisma.InputJsonValue
+        | undefined,
       status: MessageStatus.RECEIVED,
       receivedAt: messageAt,
-      metadata: (inbound.rawMetadata ?? undefined) as Prisma.InputJsonValue | undefined,
+      metadata: (inbound.rawMetadata ?? undefined) as
+        | Prisma.InputJsonValue
+        | undefined,
     });
 
     await this.auditService.log({

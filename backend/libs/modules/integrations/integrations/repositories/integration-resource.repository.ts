@@ -119,7 +119,9 @@ export class IntegrationResourceRepository {
             ...(item.isSelected !== undefined
               ? { isSelected: item.isSelected }
               : {}),
-            ...(item.isDefault !== undefined ? { isDefault: item.isDefault } : {}),
+            ...(item.isDefault !== undefined
+              ? { isDefault: item.isDefault }
+              : {}),
           },
         }),
       ),

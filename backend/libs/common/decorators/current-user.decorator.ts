@@ -1,9 +1,6 @@
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
 import { Request } from 'express';
-import {
-  BusinessMemberRole,
-  PlatformMemberRole,
-} from '@prisma/client';
+import { BusinessMemberRole, PlatformMemberRole } from '@prisma/client';
 
 export type AuthContext = 'platform' | 'business';
 

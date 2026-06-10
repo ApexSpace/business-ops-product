@@ -7,7 +7,8 @@ import {
 describe('meta-oauth-url.util', () => {
   const baseParams = {
     appId: 'app-123',
-    redirectUri: 'http://localhost:3000/api/v1/integrations/oauth/meta/callback',
+    redirectUri:
+      'http://localhost:3000/api/v1/integrations/oauth/meta/callback',
     scopes: ['email', 'pages_show_list', 'instagram_basic'],
     state: 'signed-state',
     configId: 'login-config-456',
@@ -20,7 +21,9 @@ describe('meta-oauth-url.util', () => {
     expect(parsed.hostname).toBe('www.facebook.com');
     expect(parsed.pathname).toMatch(/\/dialog\/oauth$/);
     expect(parsed.searchParams.get('client_id')).toBe('app-123');
-    expect(parsed.searchParams.get('redirect_uri')).toBe(baseParams.redirectUri);
+    expect(parsed.searchParams.get('redirect_uri')).toBe(
+      baseParams.redirectUri,
+    );
     expect(parsed.searchParams.get('config_id')).toBe('login-config-456');
     expect(parsed.searchParams.get('response_type')).toBe('code');
     expect(parsed.searchParams.get('state')).toBe('signed-state');

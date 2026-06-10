@@ -87,9 +87,7 @@ export class MetaApiClient {
     const { appId, appSecret } = this.metaConfigService.getMetaAppConfig();
     const redirectUri = this.metaConfigService.getMetaRedirectUri(providerKey);
 
-    const url = new URL(
-      `${getMetaGraphBaseUrl()}/oauth/access_token`,
-    );
+    const url = new URL(`${getMetaGraphBaseUrl()}/oauth/access_token`);
     url.searchParams.set('client_id', appId);
     url.searchParams.set('client_secret', appSecret);
     url.searchParams.set('redirect_uri', redirectUri);
@@ -108,9 +106,7 @@ export class MetaApiClient {
     shortLivedToken: string,
   ): Promise<MetaTokenResponse> {
     const { appId, appSecret } = this.metaConfigService.getMetaAppConfig();
-    const url = new URL(
-      `${getMetaGraphBaseUrl()}/oauth/access_token`,
-    );
+    const url = new URL(`${getMetaGraphBaseUrl()}/oauth/access_token`);
     url.searchParams.set('grant_type', 'fb_exchange_token');
     url.searchParams.set('client_id', appId);
     url.searchParams.set('client_secret', appSecret);
@@ -159,7 +155,8 @@ export class MetaApiClient {
         );
       }
 
-      const data = (await response.json()) as MetaGraphListResponse<MetaPageAccount>;
+      const data =
+        (await response.json()) as MetaGraphListResponse<MetaPageAccount>;
       pages.push(...(data.data ?? []));
       nextUrl = data.paging?.next ?? null;
     }
@@ -290,8 +287,8 @@ export class MetaApiClient {
   ): Promise<MetaInstagramBusinessAccountRef | null> {
     const tokens = [
       ...new Set(
-        [pageAccessToken, userAccessToken].filter(
-          (token): token is string => Boolean(token),
+        [pageAccessToken, userAccessToken].filter((token): token is string =>
+          Boolean(token),
         ),
       ),
     ];
@@ -317,10 +314,7 @@ export class MetaApiClient {
     return null;
   }
 
-  private buildGraphUrl(
-    path: string,
-    params: Record<string, string>,
-  ): string {
+  private buildGraphUrl(path: string, params: Record<string, string>): string {
     const url = new URL(`${getMetaGraphBaseUrl()}${path}`);
     for (const [key, value] of Object.entries(params)) {
       url.searchParams.set(key, value);
@@ -366,10 +360,7 @@ export class MetaApiClient {
 
       const wabas = (await wabaRes.json()) as MetaWabaResponse;
       for (const waba of wabas.data ?? []) {
-        const phones = await this.listPhoneNumbersForWaba(
-          waba.id,
-          accessToken,
-        );
+        const phones = await this.listPhoneNumbersForWaba(waba.id, accessToken);
         result.push({
           id: waba.id,
           name: waba.name,
@@ -478,9 +469,7 @@ export class MetaApiClient {
     wabaId: string,
     accessToken: string,
   ): Promise<MetaWhatsAppPhone[]> {
-    const url = new URL(
-      `${getMetaGraphBaseUrl()}/${wabaId}/phone_numbers`,
-    );
+    const url = new URL(`${getMetaGraphBaseUrl()}/${wabaId}/phone_numbers`);
     url.searchParams.set(
       'fields',
       'id,display_phone_number,verified_name,quality_rating,messaging_limit_tier',

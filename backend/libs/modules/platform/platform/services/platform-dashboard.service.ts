@@ -29,20 +29,17 @@ export class PlatformDashboardService {
       this.prisma.contact.count({ where: { deletedAt: null } }),
       this.prisma.lead.count({ where: { deletedAt: null } }),
       this.prisma.businessSubscription.count({
-        where: {
-          status: { in: [SubscriptionStatus.ACTIVE, SubscriptionStatus.TRIALING] },
-        },
+        where: { status: SubscriptionStatus.ACTIVE },
       }),
       this.prisma.businessSubscription.findMany({
-        where: {
-          status: { in: [SubscriptionStatus.ACTIVE, SubscriptionStatus.TRIALING] },
-        },
-        include: { plan: true },
+        where: { status: SubscriptionStatus.ACTIVE },
+        include: { planTier: { select: { priceMonthly: true } } },
       }),
     ]);
 
     const statusCounts: Record<BusinessStatus, number> = {
       ACTIVE: 0,
+      NOT_ACTIVE: 0,
       SUSPENDED: 0,
       ARCHIVED: 0,
     };
@@ -52,10 +49,17 @@ export class PlatformDashboardService {
     }
 
     const totalBusinesses =
-      statusCounts.ACTIVE + statusCounts.SUSPENDED + statusCounts.ARCHIVED;
+      statusCounts.ACTIVE +
+      statusCounts.NOT_ACTIVE +
+      statusCounts.SUSPENDED +
+      statusCounts.ARCHIVED;
 
     const mrr = subscriptionRows.reduce((sum, sub) => {
-      const monthly = Number(sub.plan.priceMonthly);
+      const monthly = sub.amount
+        ? Number(sub.amount)
+        : sub.planTier?.priceMonthly
+          ? Number(sub.planTier.priceMonthly)
+          : 0;
       return sum + monthly;
     }, 0);
 
@@ -63,6 +67,7 @@ export class PlatformDashboardService {
       businesses: {
         total: totalBusinesses,
         active: statusCounts.ACTIVE,
+        notActive: statusCounts.NOT_ACTIVE,
         suspended: statusCounts.SUSPENDED,
         archived: statusCounts.ARCHIVED,
       },

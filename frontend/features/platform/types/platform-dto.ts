@@ -1,4 +1,4 @@
-export type BusinessStatus = "ACTIVE" | "SUSPENDED" | "ARCHIVED";
+export type BusinessStatus = "ACTIVE" | "NOT_ACTIVE" | "SUSPENDED" | "ARCHIVED";
 
 export type IndustryStatus = "ACTIVE" | "ARCHIVED";
 
@@ -72,8 +72,11 @@ export interface Plan {
 export type SubscriptionStatus =
   | "ACTIVE"
   | "TRIALING"
-  | "PAST_DUE"
-  | "CANCELED";
+  | "PENDING_PAYMENT"
+  | "CANCELED"
+  | "EXPIRED"
+  | "INTERNAL"
+  | "PAST_DUE";
 
 export interface BillingOverview {
   mrr: string;
@@ -83,16 +86,3 @@ export interface BillingOverview {
   canceledSubscriptions: number;
 }
 
-export interface BillingSubscription {
-  id: string;
-  businessId: string;
-  businessName: string;
-  businessSlug: string;
-  planId: string;
-  planName: string;
-  priceMonthly: string;
-  status: SubscriptionStatus;
-  currentPeriodEnd: string | null;
-  canceledAt: string | null;
-  createdAt: string;
-}

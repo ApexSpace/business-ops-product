@@ -19,7 +19,11 @@ export class CursorPaginationQueryDto {
   @IsIn(['before', 'after'])
   direction?: 'before' | 'after' = 'before';
 
-  @ApiPropertyOptional({ default: DEFAULT_LIMIT, minimum: 1, maximum: MAX_LIMIT })
+  @ApiPropertyOptional({
+    default: DEFAULT_LIMIT,
+    minimum: 1,
+    maximum: MAX_LIMIT,
+  })
   @IsOptional()
   @Type(() => Number)
   @IsInt()

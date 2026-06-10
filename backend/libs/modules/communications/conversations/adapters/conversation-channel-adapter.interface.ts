@@ -16,5 +16,7 @@ export interface SendChannelMessageResult {
 export interface ConversationChannelAdapter {
   getProviderKey(): string;
   getChannel(): ConversationChannel;
-  sendMessage(params: SendChannelMessageParams): Promise<SendChannelMessageResult>;
+  sendMessage(
+    params: SendChannelMessageParams,
+  ): Promise<SendChannelMessageResult>;
 }

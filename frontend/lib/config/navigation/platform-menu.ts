@@ -1,14 +1,14 @@
 import {
   Building2,
   Camera,
-  CreditCard,
   Factory,
   FileText,
+  Layers,
   LayoutDashboard,
-  Package,
   Plug,
   Settings,
   Shield,
+  TableProperties,
   Users,
 } from "lucide-react";
 import type { ShellNavItem, ShellNavSection } from "@/lib/types/shell-nav";
@@ -48,19 +48,21 @@ export const platformOperationalSections: ShellNavSection[] = [
         icon: Camera,
       },
       {
+        title: "Capabilities",
+        href: "/platform/capabilities",
+        icon: Layers,
+      },
+      {
+        title: "Plan Groups",
+        href: "/platform/plan-groups",
+        icon: TableProperties,
+      },
+      {
         title: "Industries",
         href: "/platform/industries",
         icon: Factory,
       },
       { title: "Users", href: "/platform/users", icon: Users },
-    ],
-  },
-  {
-    id: "billing",
-    label: "Billing & Plans",
-    items: [
-      { title: "Plans", href: "/platform/plans", icon: Package },
-      { title: "Billing", href: "/platform/billing", icon: CreditCard },
     ],
   },
   {

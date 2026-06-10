@@ -22,10 +22,7 @@ export class AsyncJobRepository {
     });
   }
 
-  update(
-    id: string,
-    data: Prisma.AsyncJobUpdateInput,
-  ) {
+  update(id: string, data: Prisma.AsyncJobUpdateInput) {
     return this.prisma.asyncJob.update({ where: { id }, data });
   }
 

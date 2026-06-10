@@ -30,10 +30,7 @@ export class BusinessMembershipController {
 
   @Get()
   @BusinessRoles(BusinessMemberRole.OWNER, BusinessMemberRole.ADMIN)
-  list(
-    @CurrentUser() user: RequestUser,
-    @Query() query: ListMembersQueryDto,
-  ) {
+  list(@CurrentUser() user: RequestUser, @Query() query: ListMembersQueryDto) {
     return this.membershipService.listForBusiness(user.businessId!, query);
   }
 

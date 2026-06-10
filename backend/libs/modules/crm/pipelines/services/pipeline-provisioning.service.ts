@@ -26,7 +26,7 @@ export class PipelineProvisioningService {
     });
 
     for (let i = 0; i < template.stages.length; i++) {
-      const stage = template.stages[i]!;
+      const stage = template.stages[i];
       await tx.pipelineStage.create({
         data: {
           businessId,

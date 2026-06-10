@@ -13,6 +13,13 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: turbopackRoot,
   },
+  /** Expose backend origin to the browser for embed/public pricing URLs (falls back to BACKEND_URL). */
+  env: {
+    NEXT_PUBLIC_BACKEND_URL:
+      process.env.NEXT_PUBLIC_BACKEND_URL?.trim() ||
+      process.env.BACKEND_URL?.trim() ||
+      "",
+  },
   output: "standalone",
   allowedDevOrigins: [
     "ops.codesoltech.com",

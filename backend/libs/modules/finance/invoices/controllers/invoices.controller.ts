@@ -16,6 +16,8 @@ import { ConfirmDeleteQueryDto } from '@app/common/dto/confirm-delete-query.dto'
 import { CurrentUser } from '@app/common/decorators/current-user.decorator';
 import type { RequestUser } from '@app/common/decorators/current-user.decorator';
 import { BusinessRoles } from '@app/common/decorators/business-roles.decorator';
+import { RequireModule } from '@app/common/decorators/require-module.decorator';
+import { BusinessCapabilityGuard } from '@app/common/guards/business-capability.guard';
 import { BusinessRolesGuard } from '@app/common/guards/business-roles.guard';
 import { CreateInvoiceDto } from '../dto/create-invoice.dto';
 import { ListInvoicesQueryDto } from '../dto/list-invoices-query.dto';
@@ -27,7 +29,8 @@ import { InvoicesService } from '@app/modules/finance/invoices/services/invoices
 @ApiTags('invoices')
 @ApiBearerAuth()
 @Controller('invoices')
-@UseGuards(BusinessRolesGuard)
+@UseGuards(BusinessRolesGuard, BusinessCapabilityGuard)
+@RequireModule('payments')
 export class InvoicesController {
   constructor(
     private readonly invoicesService: InvoicesService,
@@ -78,12 +81,7 @@ export class InvoicesController {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateInvoiceStatusDto,
   ) {
-    return this.invoicesService.updateStatus(
-      user.businessId!,
-      id,
-      dto,
-      user,
-    );
+    return this.invoicesService.updateStatus(user.businessId!, id, dto, user);
   }
 
   @Post(':id/create-payment-link')

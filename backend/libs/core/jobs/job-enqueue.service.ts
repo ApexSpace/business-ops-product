@@ -89,7 +89,7 @@ export class JobEnqueueService {
 
     const bullJobId = await this.queueService.addSyncJob(
       params.jobName,
-      fullPayload as Record<string, unknown>,
+      fullPayload,
       params.bullJobId ?? `async-${asyncJob.id}`,
     );
 
@@ -181,7 +181,10 @@ export class JobEnqueueService {
     const op = params.operation ?? 'sync';
     return this.enqueueWithAsyncJob<AppointmentGoogleSyncJobPayload>({
       businessId: params.businessId,
-      type: op === 'delete' ? 'appointment_google_delete' : 'appointment_google_sync',
+      type:
+        op === 'delete'
+          ? 'appointment_google_delete'
+          : 'appointment_google_sync',
       jobName: JOB_APPOINTMENT_GOOGLE_SYNC,
       entityType: 'Appointment',
       entityId: params.appointmentId,

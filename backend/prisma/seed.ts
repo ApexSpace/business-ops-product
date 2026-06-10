@@ -5,6 +5,8 @@ import {
   SnapshotStatus,
   UserStatus,
 } from '@prisma/client';
+import { seedCapabilitiesFromRegistry } from '../libs/modules/platform/capabilities/seeds/capability-seed.runner';
+import { REGISTRY_FEATURES } from '../libs/modules/platform/capabilities/registries/capability-feature.registry';
 import { SNAPSHOT_SEED_DEFINITIONS } from '../libs/modules/platform/snapshots/seeds/snapshot-seed-definitions';
 import * as bcrypt from 'bcrypt';
 
@@ -297,9 +299,12 @@ async function main(): Promise<void> {
     });
   }
 
+  await seedCapabilitiesFromRegistry(prisma);
+
   console.log(`Seeded super admin: ${email}`);
   console.log(`Seeded ${integrationProviders.length} integration providers`);
   console.log(`Seeded ${SNAPSHOT_SEED_DEFINITIONS.length} snapshots`);
+  console.log(`Seeded ${REGISTRY_FEATURES.length} registry features from code catalog`);
 }
 
 main()

@@ -15,10 +15,13 @@ import { PlatformMemberRole } from '@prisma/client';
 import { CurrentUser } from '@app/common/decorators/current-user.decorator';
 import type { RequestUser } from '@app/common/decorators/current-user.decorator';
 import { PlatformRoles } from '@app/common/decorators/platform-roles.decorator';
-import { PaginationQueryDto } from '@app/common/dto/pagination-query.dto';
 import { PlatformRolesGuard } from '@app/common/guards/platform-roles.guard';
 import { getPaginationParams } from '@app/common/utils/pagination.util';
-import { CreatePlatformUserDto, UpdatePlatformUserDto } from '../dto/platform-user.dto';
+import { ListPlatformUsersQueryDto } from '../dto/list-platform-users-query.dto';
+import {
+  CreatePlatformUserDto,
+  UpdatePlatformUserDto,
+} from '../dto/platform-user.dto';
 import { PlatformUserDto } from '../dto/platform-user-response.dto';
 import { PlatformUserService } from '@app/modules/platform/membership/services/platform-user.service';
 
@@ -35,15 +38,17 @@ export class PlatformUsersController {
     PlatformMemberRole.PLATFORM_ADMIN,
     PlatformMemberRole.SUPPORT,
   )
-  list(
-    @Query() query: PaginationQueryDto,
-    @Query('role') role?: PlatformMemberRole,
-  ): Promise<{
+  list(@Query() query: ListPlatformUsersQueryDto): Promise<{
     items: PlatformUserDto[];
     meta: { total: number; page: number; limit: number };
   }> {
     const { page, limit, skip } = getPaginationParams(query);
-    return this.platformUserService.list({ page, limit, skip, role });
+    return this.platformUserService.list({
+      page,
+      limit,
+      skip,
+      role: query.role,
+    });
   }
 
   @Post()

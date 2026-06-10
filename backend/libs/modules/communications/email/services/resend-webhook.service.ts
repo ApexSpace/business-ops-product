@@ -52,12 +52,16 @@ export class ResendWebhookService {
     await this.persistAndEnqueue(parsed);
   }
 
-  async processQueuedEvent(payload: ProcessResendWebhookPayload): Promise<void> {
+  async processQueuedEvent(
+    payload: ProcessResendWebhookPayload,
+  ): Promise<void> {
     const record = await this.webhookEventsRepository.findById(
       payload.webhookEventId,
     );
     if (!record?.payload) {
-      this.logger.warn(`Resend webhook event ${payload.webhookEventId} missing`);
+      this.logger.warn(
+        `Resend webhook event ${payload.webhookEventId} missing`,
+      );
       return;
     }
 
@@ -74,7 +78,9 @@ export class ResendWebhookService {
       );
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : 'Resend webhook processing failed';
+        error instanceof Error
+          ? error.message
+          : 'Resend webhook processing failed';
       await this.webhookEventsRepository.updateStatus(
         record.id,
         WebhookEventStatus.FAILED,
@@ -149,7 +155,7 @@ export class ResendWebhookService {
           provider: WebhookEventProvider.RESEND,
           externalEventId: deliveryId,
           eventType: event.type,
-          payload: event as unknown as Prisma.InputJsonValue,
+          payload: event,
           status: WebhookEventStatus.RECEIVED,
         });
         webhookEventId = created.id;
@@ -194,9 +200,8 @@ export class ResendWebhookService {
       return;
     }
 
-    const message = await this.messageRepository.findByProviderMessageId(
-      providerMessageId,
-    );
+    const message =
+      await this.messageRepository.findByProviderMessageId(providerMessageId);
     if (!message) {
       this.logger.warn(
         `No EmailMessage found for Resend id ${providerMessageId}`,
@@ -219,7 +224,11 @@ export class ResendWebhookService {
 
       await this.messageRepository.updateStatus(message.id, {
         status: nextStatus,
-        errorMessage: this.resolveErrorMessage(event, nextStatus, message.errorMessage),
+        errorMessage: this.resolveErrorMessage(
+          event,
+          nextStatus,
+          message.errorMessage,
+        ),
         sentAt:
           nextStatus === EmailMessageStatus.SENT && !message.sentAt
             ? new Date()
@@ -287,7 +296,9 @@ export class ResendWebhookService {
     return currentError;
   }
 
-  private headerValue(value: string | string[] | undefined): string | undefined {
+  private headerValue(
+    value: string | string[] | undefined,
+  ): string | undefined {
     if (Array.isArray(value)) {
       return value[0];
     }

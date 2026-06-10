@@ -156,9 +156,7 @@ export class MetaEmbeddedSignupService {
       );
     } catch (err) {
       const message =
-        err instanceof AppException
-          ? err.message
-          : 'whatsapp_signup_failed';
+        err instanceof AppException ? err.message : 'whatsapp_signup_failed';
       res.redirect(
         this.buildOAuthCallbackUrl({
           error: message,
@@ -231,7 +229,7 @@ export class MetaEmbeddedSignupService {
                   null,
                 verifiedName:
                   dto.verifiedName ?? existingConfig.verifiedName ?? null,
-              } as Prisma.InputJsonValue,
+              },
             },
           );
         }
@@ -333,8 +331,10 @@ export class MetaEmbeddedSignupService {
           displayPhoneNumber: extra.displayPhoneNumber ?? null,
           verifiedName: extra.verifiedName ?? null,
           webhookStatus: resolveMetaWebhookStatusLabel(webhookVerifyToken),
-        } as Prisma.InputJsonValue,
-        credentials: { encrypted: encryptedCredentials } as Prisma.InputJsonValue,
+        },
+        credentials: {
+          encrypted: encryptedCredentials,
+        },
         connectedAccountName: extra.name,
         connectedAccountEmail: extra.email,
         connectedAt: new Date(),

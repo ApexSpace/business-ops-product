@@ -33,9 +33,17 @@ export class RedisPubSubService implements OnModuleDestroy {
     return `${REALTIME_CHANNEL_PREFIX}${businessId}`;
   }
 
-  async publish(businessId: string, event: string, data: unknown): Promise<void> {
+  async publish(
+    businessId: string,
+    event: string,
+    data: unknown,
+  ): Promise<void> {
     const channel = this.businessChannel(businessId);
-    const message = JSON.stringify({ event, data, at: new Date().toISOString() });
+    const message = JSON.stringify({
+      event,
+      data,
+      at: new Date().toISOString(),
+    });
     const client = this.redisService.getClient();
     if (!client) return;
     await client.publish(channel, message);

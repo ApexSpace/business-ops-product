@@ -6,12 +6,17 @@ import {
 } from "./envelope";
 import { ApiClientError } from "./errors";
 import {
+  classifyApiError,
+  emitBusinessAccessBlocked,
+  emitFeatureUnavailable,
+} from "./error-classifier";
+import {
   FetchNetworkError,
   FetchTimeoutError,
   fetchWithTimeout,
 } from "./fetch-with-timeout";
 import { buildApiHeaders } from "./headers";
-import type { PaginatedList, PaginationMeta } from "./pagination";
+import type { PaginatedList } from "./pagination";
 import { toSearchParams } from "./pagination";
 
 export { ApiClientError } from "./errors";
@@ -74,22 +79,46 @@ async function apiFetch(
   }
 }
 
+function handleClassifiedError(error: ApiClientError): never {
+  const category = classifyApiError(error);
+  if (category === "business_access") {
+    emitBusinessAccessBlocked({
+      code: error.code,
+      message: error.message,
+    });
+  } else if (category === "capability") {
+    emitFeatureUnavailable({
+      code: error.code,
+      message: error.message,
+    });
+  }
+  throw error;
+}
+
+async function handleAuthFailure(): Promise<never> {
+  const refreshed = await tryRefreshSession();
+  if (refreshed) {
+    throw new ApiClientError("RETRY", 401);
+  }
+  if (typeof window !== "undefined") {
+    window.location.href = "/login";
+  }
+  throw new ApiClientError("Session expired", 401);
+}
+
 async function parseResponse<T>(res: Response): Promise<T> {
   const body = await res.json().catch(() => ({}));
 
   if (res.status === 401) {
-    const refreshed = await tryRefreshSession();
-    if (refreshed) {
-      throw new ApiClientError("RETRY", 401);
-    }
-    if (typeof window !== "undefined") {
-      window.location.href = "/login";
-    }
-    throw new ApiClientError("Session expired", 401);
+    return handleAuthFailure();
   }
 
   if (!res.ok) {
-    throw parseApiError(body, res.status);
+    const error = parseApiError(body, res.status);
+    if (res.status === 403) {
+      handleClassifiedError(error);
+    }
+    throw error;
   }
 
   return parseEnvelope<T>(body).data;
@@ -114,18 +143,15 @@ async function requestWithMeta<T>(
     const raw = await res.json().catch(() => ({}));
 
     if (res.status === 401) {
-      const refreshed = await tryRefreshSession();
-      if (refreshed) {
-        throw new ApiClientError("RETRY", 401);
-      }
-      if (typeof window !== "undefined") {
-        window.location.href = "/login";
-      }
-      throw new ApiClientError("Session expired", 401);
+      return handleAuthFailure();
     }
 
     if (!res.ok) {
-      throw parseApiError(raw, res.status);
+      const error = parseApiError(raw, res.status);
+      if (res.status === 403) {
+        handleClassifiedError(error);
+      }
+      throw error;
     }
 
     return parseEnvelope<T>(raw);
@@ -181,18 +207,15 @@ async function requestPaginated<T>(
     const raw = await res.json().catch(() => ({}));
 
     if (res.status === 401) {
-      const refreshed = await tryRefreshSession();
-      if (refreshed) {
-        throw new ApiClientError("RETRY", 401);
-      }
-      if (typeof window !== "undefined") {
-        window.location.href = "/login";
-      }
-      throw new ApiClientError("Session expired", 401);
+      return handleAuthFailure();
     }
 
     if (!res.ok) {
-      throw parseApiError(raw, res.status);
+      const error = parseApiError(raw, res.status);
+      if (res.status === 403) {
+        handleClassifiedError(error);
+      }
+      throw error;
     }
 
     const { items, pagination } = parsePaginated<T>(raw);

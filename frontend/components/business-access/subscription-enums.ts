@@ -1,0 +1,19 @@
+export const SubscriptionStatus = {
+  TRIALING: "TRIALING",
+  ACTIVE: "ACTIVE",
+  PENDING_PAYMENT: "PENDING_PAYMENT",
+  CANCELED: "CANCELED",
+  EXPIRED: "EXPIRED",
+  INTERNAL: "INTERNAL",
+  PAST_DUE: "PAST_DUE",
+} as const;
+
+export const SubscriptionPaymentStatus = {
+  NOT_REQUIRED: "NOT_REQUIRED",
+  PENDING: "PENDING",
+  PAID: "PAID",
+  FAILED: "FAILED",
+  REFUNDED: "REFUNDED",
+  PARTIALLY_PAID: "PARTIALLY_PAID",
+  OVERDUE: "OVERDUE",
+} as const;

@@ -1,5 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import { BusinessIntegration, IntegrationCategory, IntegrationConnectionType, Prisma } from '@prisma/client';
+import {
+  BusinessIntegration,
+  IntegrationCategory,
+  IntegrationConnectionType,
+  Prisma,
+} from '@prisma/client';
 import { PrismaService } from '@app/core/database/prisma.service';
 
 export type BusinessIntegrationWithProvider = BusinessIntegration & {

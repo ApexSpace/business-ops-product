@@ -293,7 +293,9 @@ export const BUSINESS_EMAIL_TYPES = V1_EMAIL_TYPES.filter(
   (key) => !EMAIL_TYPE_REGISTRY[key]?.systemOnly,
 );
 
-export function getEmailTypeDefinition(emailType: string): EmailTypeDefinition | null {
+export function getEmailTypeDefinition(
+  emailType: string,
+): EmailTypeDefinition | null {
   return EMAIL_TYPE_REGISTRY[emailType] ?? null;
 }
 

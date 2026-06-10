@@ -58,9 +58,7 @@ export class IntegrationResourcesService {
     const allowedTypes = config?.resourceTypes ?? [];
     const filteredResources =
       allowedTypes.length > 0
-        ? resources.filter((resource) =>
-            allowedTypes.includes(resource.type),
-          )
+        ? resources.filter((resource) => allowedTypes.includes(resource.type))
         : resources;
 
     return {
@@ -83,9 +81,13 @@ export class IntegrationResourcesService {
     assertSyncAllowed(businessId, providerKey);
     recordSyncAttempt(businessId, providerKey);
 
-    const asyncJob = await this.jobEnqueueService.enqueueIntegrationResourceSync(
-      { businessId, providerKey, actorUserId, idempotencyKey },
-    );
+    const asyncJob =
+      await this.jobEnqueueService.enqueueIntegrationResourceSync({
+        businessId,
+        providerKey,
+        actorUserId,
+        idempotencyKey,
+      });
 
     return { asyncJob, providerKey };
   }
@@ -175,11 +177,7 @@ export class IntegrationResourcesService {
         lastSyncAt: now,
       });
 
-      if (
-        isMetaOAuthProviderKey(providerKey) &&
-        result.synced &&
-        actorUserId
-      ) {
+      if (isMetaOAuthProviderKey(providerKey) && result.synced && actorUserId) {
         await this.auditService.log({
           actorUserId,
           businessId,
@@ -398,10 +396,9 @@ export class IntegrationResourcesService {
     providerKey: string,
     businessIntegrationId: string,
   ): Promise<void> {
-    const resources =
-      await this.resourceRepository.findManyByIntegration(
-        businessIntegrationId,
-      );
+    const resources = await this.resourceRepository.findManyByIntegration(
+      businessIntegrationId,
+    );
 
     const selectedResourceIds = resources
       .filter((r) => r.isSelected)
@@ -423,7 +420,7 @@ export class IntegrationResourcesService {
         ...existingConfig,
         selectedResourceIds,
         defaultResourceId: defaultResource?.id ?? null,
-      } as Prisma.InputJsonValue,
+      },
     });
   }
 }

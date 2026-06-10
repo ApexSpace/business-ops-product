@@ -24,12 +24,16 @@ describe('SendEmailProcessor', () => {
       updateStatus: jest.fn().mockResolvedValue({}),
     };
     const resendProvider = {
-      isConfigured: jest.fn().mockReturnValue(overrides?.resendConfigured ?? true),
+      isConfigured: jest
+        .fn()
+        .mockReturnValue(overrides?.resendConfigured ?? true),
       send: overrides?.resendThrows
         ? jest.fn().mockRejectedValue(overrides.resendThrows)
-        : jest.fn().mockResolvedValue(
-            overrides?.resendResult ?? { providerMessageId: 're_123' },
-          ),
+        : jest
+            .fn()
+            .mockResolvedValue(
+              overrides?.resendResult ?? { providerMessageId: 're_123' },
+            ),
     };
     const idempotencyService = {
       claim: jest.fn().mockResolvedValue(true),
@@ -68,9 +72,9 @@ describe('SendEmailProcessor', () => {
       resendThrows: new Error('Rate limited'),
     });
 
-    await expect(processor.process({ emailMessageId: 'msg-1' })).rejects.toThrow(
-      'Rate limited',
-    );
+    await expect(
+      processor.process({ emailMessageId: 'msg-1' }),
+    ).rejects.toThrow('Rate limited');
 
     expect(messageRepository.updateStatus).toHaveBeenCalledWith('msg-1', {
       status: EmailMessageStatus.FAILED,

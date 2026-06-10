@@ -11,13 +11,13 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { IndustryStatus, PlatformMemberRole } from '@prisma/client';
+import { PlatformMemberRole } from '@prisma/client';
 import { CurrentUser } from '@app/common/decorators/current-user.decorator';
 import type { RequestUser } from '@app/common/decorators/current-user.decorator';
 import { PlatformRoles } from '@app/common/decorators/platform-roles.decorator';
-import { PaginationQueryDto } from '@app/common/dto/pagination-query.dto';
 import { PlatformRolesGuard } from '@app/common/guards/platform-roles.guard';
 import { getPaginationParams } from '@app/common/utils/pagination.util';
+import { ListIndustriesQueryDto } from '../dto/list-industries-query.dto';
 import {
   CreateIndustryDto,
   IndustryOptionDto,
@@ -39,12 +39,15 @@ export class PlatformIndustriesController {
     PlatformMemberRole.PLATFORM_ADMIN,
     PlatformMemberRole.SUPPORT,
   )
-  list(
-    @Query() query: PaginationQueryDto,
-    @Query('status') status?: IndustryStatus,
-  ) {
+  list(@Query() query: ListIndustriesQueryDto) {
     const { page, limit, skip } = getPaginationParams(query);
-    return this.industriesService.list({ page, limit, skip, status });
+    return this.industriesService.list({
+      page,
+      limit,
+      skip,
+      status: query.status,
+      search: query.search,
+    });
   }
 
   @Get('active')

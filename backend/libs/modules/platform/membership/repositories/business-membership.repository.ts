@@ -7,8 +7,8 @@ import {
 } from '@prisma/client';
 import { PrismaService } from '@app/core/database/prisma.service';
 
-const membershipWithUser = Prisma.validator<Prisma.BusinessMembershipDefaultArgs>()(
-  {
+const membershipWithUser =
+  Prisma.validator<Prisma.BusinessMembershipDefaultArgs>()({
     include: {
       user: {
         select: {
@@ -20,8 +20,7 @@ const membershipWithUser = Prisma.validator<Prisma.BusinessMembershipDefaultArgs
         },
       },
     },
-  },
-);
+  });
 
 export type BusinessMembershipWithUser = Prisma.BusinessMembershipGetPayload<
   typeof membershipWithUser
@@ -53,7 +52,10 @@ export class BusinessMembershipRepository {
     userId: string,
     businessId: string,
   ): Promise<
-    (BusinessMembership & { business: { status: string; deletedAt: Date | null } }) | null
+    | (BusinessMembership & {
+        business: { status: string; deletedAt: Date | null };
+      })
+    | null
   > {
     return this.prisma.businessMembership.findFirst({
       where: {
@@ -65,11 +67,7 @@ export class BusinessMembershipRepository {
       include: {
         business: { select: { status: true, deletedAt: true } },
       },
-    }) as Promise<
-      (BusinessMembership & {
-        business: { status: string; deletedAt: Date | null };
-      }) | null
-    >;
+    });
   }
 
   private membershipWhere(
@@ -80,9 +78,7 @@ export class BusinessMembershipRepository {
     const base: Prisma.BusinessMembershipWhereInput = {
       businessId,
       deletedAt: null,
-      ...(includeRemoved
-        ? {}
-        : { status: { not: MembershipStatus.REMOVED } }),
+      ...(includeRemoved ? {} : { status: { not: MembershipStatus.REMOVED } }),
     };
     if (!search?.trim()) return base;
     const term = search.trim();
@@ -140,7 +136,9 @@ export class BusinessMembershipRepository {
     });
   }
 
-  findOwnersAndAdmins(businessId: string): Promise<BusinessMembershipWithUser[]> {
+  findOwnersAndAdmins(
+    businessId: string,
+  ): Promise<BusinessMembershipWithUser[]> {
     return this.prisma.businessMembership.findMany({
       where: {
         businessId,
@@ -153,7 +151,9 @@ export class BusinessMembershipRepository {
     });
   }
 
-  create(data: Prisma.BusinessMembershipCreateInput): Promise<BusinessMembership> {
+  create(
+    data: Prisma.BusinessMembershipCreateInput,
+  ): Promise<BusinessMembership> {
     return this.prisma.businessMembership.create({ data });
   }
 

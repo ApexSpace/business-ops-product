@@ -30,10 +30,7 @@ export function toEstimateResponse(
     contactId: estimate.contactId,
     workItemId: estimate.workItemId,
     estimateNumber: estimate.estimateNumber,
-    status: resolveEstimateDisplayStatus(
-      estimate.status,
-      estimate.expiryDate,
-    ),
+    status: resolveEstimateDisplayStatus(estimate.status, estimate.expiryDate),
     issueDate: estimate.issueDate,
     expiryDate: estimate.expiryDate,
     subtotal: estimate.subtotal.toString(),

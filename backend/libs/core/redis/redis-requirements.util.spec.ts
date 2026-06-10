@@ -28,7 +28,10 @@ describe('redis-requirements.util', () => {
 
   it('assertRedisAvailable throws in production when unavailable', () => {
     expect(() =>
-      assertRedisAvailable(false, { NODE_ENV: 'production', REDIS_URL: 'redis://localhost:6379' }),
+      assertRedisAvailable(false, {
+        NODE_ENV: 'production',
+        REDIS_URL: 'redis://localhost:6379',
+      }),
     ).toThrow(RedisRequiredError);
   });
 

@@ -20,7 +20,9 @@ enum PlatformMemberRole {
 
 enum BusinessStatus {
   ACTIVE
+  NOT_ACTIVE
   SUSPENDED
+  /// Legacy/backward-compat — treated as blocked for workspace access (same as NOT_ACTIVE).
   ARCHIVED
 }
 
@@ -92,16 +94,171 @@ enum TaskPriority {
   HIGH
 }
 
-enum PlanStatus {
-  ACTIVE
+enum PlanGroupStatus {
+  DRAFT
+  PUBLISHED
   ARCHIVED
+}
+
+enum PlanTierStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum PlanEmbedTheme {
+  LIGHT
+  DARK
+  AUTO
+}
+
+enum PlanEmbedLayout {
+  CARDS
+  COMPARISON
+}
+
+enum CapabilityStatus {
+  DRAFT
+  ACTIVE
+  INACTIVE
+  DEPRECATED
+}
+
+enum CapabilityModuleStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum CapabilityFeatureStatus {
+  INTERNAL
+  BETA
+  ACTIVE
+  DISABLED
+  DEPRECATED
+}
+
+enum CapabilityFeatureSource {
+  CODE
+  MANUAL
+}
+
+enum CapabilityNavigationStatus {
+  ACTIVE
+  INACTIVE
 }
 
 enum SubscriptionStatus {
   ACTIVE
   TRIALING
-  PAST_DUE
+  PENDING_PAYMENT
   CANCELED
+  EXPIRED
+  INTERNAL
+  /// Legacy/backward-compat — treated as blocked; prefer PENDING_PAYMENT for new records.
+  PAST_DUE
+}
+
+enum SubscriptionPaymentMethod {
+  STRIPE
+  BANK_TRANSFER
+  WISE
+  PAYPAL
+  CASH
+  JAZZCASH
+  EASYPAISA
+  MANUAL_INVOICE
+  FREE_INTERNAL
+  NOT_SELECTED
+}
+
+enum SubscriptionPaymentStatus {
+  NOT_REQUIRED
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+  PARTIALLY_PAID
+  OVERDUE
+}
+
+enum BusinessSubscriptionEventType {
+  CREATED
+  STATUS_CHANGED
+  PLAN_CHANGED
+  UPGRADED
+  DOWNGRADED
+  TRIAL_STARTED
+  TRIAL_EXTENDED
+  TRIAL_EXPIRED
+  PAYMENT_MARKED_PAID
+  PAYMENT_PENDING
+  PAYMENT_FAILED
+  PAYMENT_REFUNDED
+  PARTIAL_PAYMENT_RECORDED
+  CANCELED
+  EXPIRED
+  REACTIVATED
+  SUSPENDED
+  BUSINESS_STATUS_CHANGED
+  CAPABILITIES_SYNCED
+  SNAPSHOT_CHANGED
+  MANUAL_ADJUSTMENT
+}
+
+enum BusinessSubscriptionEventSource {
+  ADMIN
+  SYSTEM
+  PUBLIC_SIGNUP
+  WEBHOOK
+  IMPORT
+}
+
+enum BusinessSubscriptionEventSeverity {
+  INFO
+  WARNING
+  CRITICAL
+}
+
+enum BusinessSubscriptionPaymentType {
+  SUBSCRIPTION
+  SETUP_FEE
+  TRIAL_CONVERSION
+  UPGRADE_PRORATION
+  REFUND
+  CREDIT
+  ADJUSTMENT
+  MANUAL_PAYMENT
+}
+
+enum BusinessSubscriptionPaymentDirection {
+  INCOMING
+  OUTGOING
+}
+
+enum BusinessSubscriptionPaymentSource {
+  ADMIN
+  SYSTEM
+  PUBLIC_SIGNUP
+  WEBHOOK
+  IMPORT
+}
+
+enum BusinessSubscriptionBillingCycle {
+  MONTHLY
+  YEARLY
+  ONE_TIME
+  CUSTOM
+}
+
+enum BusinessCapabilitySource {
+  PLAN_TIER
+  CUSTOM
+  MANUAL
+}
+
+enum BusinessCapabilityAssignmentStatus {
+  ACTIVE
+  DISABLED
 }
 
 enum EstimateStatus {
@@ -388,6 +545,8 @@ model User {
   emailTemplatesUpdated EmailTemplate[]        @relation("EmailTemplateUpdatedBy")
   snapshotsCreated      Snapshot[]              @relation("SnapshotCreatedBy")
   snapshotsUpdated      Snapshot[]              @relation("SnapshotUpdatedBy")
+  subscriptionEventsCreated BusinessSubscriptionEvent[] @relation("SubscriptionEventCreatedBy")
+  subscriptionPaymentsCreated BusinessSubscriptionPayment[] @relation("SubscriptionPaymentCreatedBy")
 
   @@map("users")
 }
@@ -440,6 +599,7 @@ model Snapshot {
   updatedBy User? @relation("SnapshotUpdatedBy", fields: [updatedByUserId], references: [id], onDelete: SetNull)
   businesses  Business[]
   provisions  SnapshotProvision[]
+  planGroups  PlanGroup[]
 
   @@map("snapshots")
 }
@@ -464,7 +624,6 @@ model SnapshotProvision {
 model Business {
   id               String         @id @default(uuid())
   name             String
-  slug             String         @unique
   industryId       String?
   snapshotId       String?
   snapshotAppliedAt DateTime?
@@ -493,7 +652,9 @@ model Business {
   snapshot       Snapshot?         @relation(fields: [snapshotId], references: [id], onDelete: SetNull)
   snapshotProvisions SnapshotProvision[]
   memberships    BusinessMembership[]
-  subscription   BusinessSubscription?
+  subscription        BusinessSubscription?
+  subscriptionEvents  BusinessSubscriptionEvent[]
+  subscriptionPayments BusinessSubscriptionPayment[]
   auditLogs      AuditLog[]
   contacts       Contact[]
   tags           Tag[]
@@ -526,6 +687,7 @@ model Business {
   businessEmailPreferences BusinessEmailPreference[]
   emailTemplates           EmailTemplate[]
   emailMessages            EmailMessage[]
+  capabilities             BusinessCapability[]
 
   @@index([createdById])
   @@index([industryId])
@@ -1016,40 +1178,504 @@ model Payment {
   @@map("payments")
 }
 
-model Plan {
-  id           String     @id @default(uuid())
-  name         String
-  slug         String     @unique
-  description  String?
-  priceMonthly Decimal    @db.Decimal(10, 2)
-  priceYearly  Decimal?   @db.Decimal(10, 2)
-  features     Json?
-  status       PlanStatus @default(ACTIVE)
-  deletedAt    DateTime?
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
+model PlanGroup {
+  id              String          @id @default(uuid())
+  name            String
+  description     String?
+  currency        String          @default("USD")
+  status          PlanGroupStatus @default(DRAFT)
+  billingCycles   Json            @default("[\"MONTHLY\",\"YEARLY\"]")
+  snapshotId      String?
+  defaultCtaLabel String?
+  defaultCtaUrl   String?
+  designSettings  Json?
+  metadata        Json?
+  publishedAt     DateTime?
+  deletedAt       DateTime?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
 
+  snapshot      Snapshot?         @relation(fields: [snapshotId], references: [id], onDelete: SetNull)
+  tiers         PlanTier[]
+  featureRows   PlanFeatureRow[]
+  embedSettings PlanEmbedSettings?
   subscriptions BusinessSubscription[]
 
-  @@map("plans")
+  @@index([status])
+  @@index([deletedAt])
+  @@index([snapshotId])
+  @@map("plan_groups")
 }
 
-model BusinessSubscription {
-  id               String             @id @default(uuid())
-  businessId       String             @unique
-  planId           String
-  status           SubscriptionStatus @default(TRIALING)
-  currentPeriodEnd DateTime?
-  canceledAt       DateTime?
-  createdAt        DateTime           @default(now())
-  updatedAt        DateTime           @updatedAt
+model PlanTier {
+  id           String         @id @default(uuid())
+  planGroupId  String
+  slug         String
+  name         String
+  description  String?
+  status       PlanTierStatus @default(DRAFT)
+  priceMonthly Decimal?       @db.Decimal(10, 2)
+  priceYearly  Decimal?       @db.Decimal(10, 2)
+  setupFee     Decimal?       @db.Decimal(10, 2)
+  trialDays    Int?
+  badge        String?
+  highlighted  Boolean        @default(false)
+  ctaLabel     String?
+  ctaUrl       String?
+  sortOrder       Int            @default(0)
+  designSettings  Json?
+  metadata        Json?
+  deletedAt       DateTime?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
 
-  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  plan     Plan     @relation(fields: [planId], references: [id], onDelete: Restrict)
+  planGroup     PlanGroup              @relation(fields: [planGroupId], references: [id], onDelete: Cascade)
+  capabilities  PlanTierCapability[]
+  features      PlanTierFeature[]
+  subscriptions BusinessSubscription[]
 
-  @@index([planId])
+  @@unique([planGroupId, slug])
+  @@index([planGroupId, sortOrder])
   @@index([status])
+  @@map("plan_tiers")
+}
+
+model PlanTierCapability {
+  id           String   @id @default(uuid())
+  planTierId   String
+  capabilityId String
+  sortOrder    Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  planTier   PlanTier   @relation(fields: [planTierId], references: [id], onDelete: Cascade)
+  capability Capability @relation(fields: [capabilityId], references: [id], onDelete: Cascade)
+
+  @@unique([planTierId, capabilityId])
+  @@index([planTierId, sortOrder])
+  @@map("plan_tier_capabilities")
+}
+
+model PlanTierFeature {
+  id          String   @id @default(uuid())
+  planTierId  String
+  label       String
+  description String?
+  included    Boolean  @default(true)
+  icon        String?
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  planTier PlanTier @relation(fields: [planTierId], references: [id], onDelete: Cascade)
+
+  @@index([planTierId, sortOrder])
+  @@map("plan_tier_features")
+}
+
+model PlanFeatureRow {
+  id          String   @id @default(uuid())
+  planGroupId String
+  label       String
+  tooltip     String?
+  values      Json     @default("{}")
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  planGroup PlanGroup @relation(fields: [planGroupId], references: [id], onDelete: Cascade)
+
+  @@index([planGroupId, sortOrder])
+  @@map("plan_feature_rows")
+}
+
+model PlanEmbedSettings {
+  id                      String          @id @default(uuid())
+  planGroupId             String          @unique
+  theme                   PlanEmbedTheme  @default(LIGHT)
+  layout                  PlanEmbedLayout @default(CARDS)
+  showMonthlyYearlyToggle Boolean         @default(true)
+  showFeatureComparison   Boolean         @default(true)
+  showSetupFee            Boolean         @default(false)
+  showTrialDays           Boolean         @default(false)
+  showCapabilities        Boolean         @default(true)
+  showTierFeatures        Boolean         @default(true)
+  customCss               String?
+  createdAt               DateTime        @default(now())
+  updatedAt               DateTime        @updatedAt
+
+  planGroup PlanGroup @relation(fields: [planGroupId], references: [id], onDelete: Cascade)
+
+  @@map("plan_embed_settings")
+}
+
+// Future: snapshot_capability_configs — snapshot-level capability configuration overrides.
+
+model Capability {
+  id          String           @id @default(uuid())
+  key         String           @unique
+  name        String
+  description String?
+  icon        String?
+  status      CapabilityStatus @default(DRAFT)
+  sortOrder   Int              @default(0)
+  metadata    Json?
+  deletedAt   DateTime?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  modules              CapabilityModule[] // TODO: legacy — superseded by CapabilityModuleAssignment
+  moduleAssignments    CapabilityModuleAssignment[]
+  features             CapabilityFeature[] // TODO: legacy — superseded by RegistryFeature + CapabilityFeatureAssignment
+  featureAssignments   CapabilityFeatureAssignment[]
+  permissions          CapabilityPermission[] // TODO: unused in v2 assignment model
+  limits               CapabilityLimit[]
+  navigationItems      CapabilityNavigationItem[]
+  configSchemas        CapabilityConfigSchema[]
+  tierAssignments      PlanTierCapability[]
+  businessAssignments  BusinessCapability[]
+
+  @@index([status])
+  @@index([sortOrder])
+  @@map("capabilities")
+}
+
+/// Global code-backed feature catalog (many-to-many with admin-created capabilities).
+model RegistryFeature {
+  id             String                  @id @default(uuid())
+  key            String                  @unique
+  moduleKey      String
+  moduleName     String
+  name           String
+  description    String?
+  permissionKey  String?
+  routeKeys      Json?
+  icon           String?
+  defaultEnabled Boolean                 @default(false)
+  status         CapabilityFeatureStatus @default(ACTIVE)
+  source         CapabilityFeatureSource @default(CODE)
+  isBillable     Boolean                 @default(false)
+  limitKey       String?
+  metadata       Json?
+  deletedAt      DateTime?
+  createdAt      DateTime                @default(now())
+  updatedAt      DateTime                @updatedAt
+
+  assignments CapabilityFeatureAssignment[]
+
+  @@index([moduleKey])
+  @@index([status])
+  @@index([source])
+  @@map("registry_features")
+}
+
+/// Links an admin-created capability bundle to global registry features.
+model CapabilityFeatureAssignment {
+  id           String                  @id @default(uuid())
+  capabilityId String
+  featureKey   String
+  status       CapabilityFeatureStatus @default(ACTIVE)
+  sortOrder    Int                     @default(0)
+  metadata     Json?
+  deletedAt    DateTime?
+  createdAt    DateTime                @default(now())
+  updatedAt    DateTime                @updatedAt
+
+  capability Capability      @relation(fields: [capabilityId], references: [id], onDelete: Cascade)
+  feature    RegistryFeature @relation(fields: [featureKey], references: [key], onDelete: Restrict)
+
+  @@unique([capabilityId, featureKey])
+  @@index([capabilityId])
+  @@index([featureKey])
+  @@map("capability_feature_assignments")
+}
+
+/// Links an admin-created capability bundle to platform modules (auto-includes feature keys).
+model CapabilityModuleAssignment {
+  id           String    @id @default(uuid())
+  capabilityId String
+  moduleKey    String
+  deletedAt    DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  capability Capability @relation(fields: [capabilityId], references: [id], onDelete: Cascade)
+
+  @@unique([capabilityId, moduleKey])
+  @@index([capabilityId])
+  @@index([moduleKey])
+  @@map("capability_module_assignments")
+}
+
+// TODO: legacy — superseded by CapabilityModuleAssignment + registry module catalog.
+model CapabilityModule {
+  id           String                 @id @default(uuid())
+  capabilityId String
+  key          String
+  name         String
+  description  String?
+  status       CapabilityModuleStatus @default(ACTIVE)
+  sortOrder    Int                    @default(0)
+  metadata     Json?
+  deletedAt    DateTime?
+  createdAt    DateTime               @default(now())
+  updatedAt    DateTime               @updatedAt
+
+  capability      Capability                 @relation(fields: [capabilityId], references: [id], onDelete: Cascade)
+  features        CapabilityFeature[]
+  navigationItems CapabilityNavigationItem[]
+
+  @@unique([capabilityId, key])
+  @@map("capability_modules")
+}
+
+// TODO: legacy — superseded by RegistryFeature + CapabilityFeatureAssignment.
+model CapabilityFeature {
+  id             String                  @id @default(uuid())
+  capabilityId   String
+  moduleId       String?
+  key            String                  @unique
+  name           String
+  description    String?
+  status         CapabilityFeatureStatus @default(ACTIVE)
+  source         CapabilityFeatureSource @default(MANUAL)
+  defaultEnabled Boolean                 @default(false)
+  isBillable     Boolean                 @default(false)
+  permissionKey  String?
+  limitKey       String?
+  metadata       Json?
+  deletedAt      DateTime?
+  createdAt      DateTime                @default(now())
+  updatedAt      DateTime                @updatedAt
+
+  capability  Capability             @relation(fields: [capabilityId], references: [id], onDelete: Cascade)
+  module      CapabilityModule?      @relation(fields: [moduleId], references: [id], onDelete: SetNull)
+  permissions CapabilityPermission[]
+
+  @@index([capabilityId])
+  @@index([moduleId])
+  @@index([status])
+  @@map("capability_features")
+}
+
+model CapabilityPermission {
+  id           String    @id @default(uuid())
+  capabilityId String
+  featureId    String?
+  key          String    @unique
+  name         String
+  description  String?
+  metadata     Json?
+  deletedAt    DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  capability Capability         @relation(fields: [capabilityId], references: [id], onDelete: Cascade)
+  feature    CapabilityFeature? @relation(fields: [featureId], references: [id], onDelete: SetNull)
+
+  @@index([capabilityId])
+  @@index([featureId])
+  @@map("capability_permissions")
+}
+
+model CapabilityLimit {
+  id           String    @id @default(uuid())
+  capabilityId String
+  key          String    @unique
+  name         String
+  description  String?
+  unit         String?
+  defaultValue Int?
+  metadata     Json?
+  deletedAt    DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  capability Capability @relation(fields: [capabilityId], references: [id], onDelete: Cascade)
+
+  @@index([capabilityId])
+  @@map("capability_limits")
+}
+
+model CapabilityNavigationItem {
+  id                    String                     @id @default(uuid())
+  capabilityId          String
+  moduleId              String?
+  key                   String
+  label                 String
+  route                 String
+  icon                  String?
+  status                CapabilityNavigationStatus @default(ACTIVE)
+  sortOrder             Int                        @default(0)
+  requiredFeatureKey    String?
+  requiredPermissionKey String?
+  metadata              Json?
+  deletedAt             DateTime?
+  createdAt             DateTime                   @default(now())
+  updatedAt             DateTime                   @updatedAt
+
+  capability Capability        @relation(fields: [capabilityId], references: [id], onDelete: Cascade)
+  module     CapabilityModule? @relation(fields: [moduleId], references: [id], onDelete: SetNull)
+
+  @@unique([capabilityId, key])
+  @@index([capabilityId])
+  @@map("capability_navigation_items")
+}
+
+model CapabilityConfigSchema {
+  id                String    @id @default(uuid())
+  capabilityId      String
+  schemaKey         String
+  name              String
+  description       String?
+  schemaJson        Json
+  defaultConfigJson Json?
+  metadata          Json?
+  deletedAt         DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  capability Capability @relation(fields: [capabilityId], references: [id], onDelete: Cascade)
+
+  @@unique([capabilityId, schemaKey])
+  @@index([capabilityId])
+  @@map("capability_config_schemas")
+}
+
+/// Current commercial and access state for a business (one row per business).
+/// Trial window uses currentPeriodStart/currentPeriodEnd — not separate trial columns.
+model BusinessSubscription {
+  id                 String                    @id @default(uuid())
+  businessId         String                    @unique
+  planGroupId        String?
+  planTierId         String?
+  status             SubscriptionStatus        @default(TRIALING)
+  paymentMethod      SubscriptionPaymentMethod @default(NOT_SELECTED)
+  paymentStatus      SubscriptionPaymentStatus @default(NOT_REQUIRED)
+  billingCycle       BusinessSubscriptionBillingCycle?
+  currentPeriodStart DateTime?
+  currentPeriodEnd   DateTime?
+  amount             Decimal?                  @db.Decimal(10, 2)
+  currency           String?
+  notes              String?
+  metadata           Json?
+  canceledAt         DateTime?
+  createdAt          DateTime                  @default(now())
+  updatedAt          DateTime                  @updatedAt
+
+  business  Business   @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  planGroup PlanGroup? @relation(fields: [planGroupId], references: [id], onDelete: SetNull)
+  planTier  PlanTier?  @relation(fields: [planTierId], references: [id], onDelete: SetNull)
+  events    BusinessSubscriptionEvent[]
+  payments  BusinessSubscriptionPayment[]
+
+  @@index([planGroupId])
+  @@index([planTierId])
+  @@index([status])
+  @@index([paymentStatus])
   @@map("business_subscriptions")
+}
+
+/// Immutable audit log of subscription/access changes. JSON fromState/toState snapshots are allowed.
+model BusinessSubscriptionEvent {
+  id                    String                          @id @default(uuid())
+  businessId            String
+  subscriptionId        String?
+  eventType             BusinessSubscriptionEventType
+  title                 String
+  description           String?
+  fromState             Json?
+  toState               Json?
+  source                BusinessSubscriptionEventSource @default(ADMIN)
+  severity              BusinessSubscriptionEventSeverity @default(INFO)
+  correlationId         String
+  actionKey             String?
+  paymentId             String?
+  reason                String?
+  notes                 String?
+  metadata              Json?
+  createdById           String?
+  createdByNameSnapshot String?
+  createdAt             DateTime                        @default(now())
+
+  business     Business              @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  subscription BusinessSubscription? @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
+  payment      BusinessSubscriptionPayment? @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+  createdBy    User?                 @relation("SubscriptionEventCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([businessId])
+  @@index([subscriptionId])
+  @@index([eventType])
+  @@index([createdAt])
+  @@index([correlationId])
+  @@index([actionKey])
+  @@map("business_subscription_events")
+}
+
+/// Per-payment ledger record. Does not duplicate subscription status fields.
+model BusinessSubscriptionPayment {
+  id                 String                             @id @default(uuid())
+  businessId         String
+  subscriptionId     String?
+  amount             Decimal                            @db.Decimal(10, 2)
+  currency           String
+  paymentMethod      SubscriptionPaymentMethod
+  paymentStatus      SubscriptionPaymentStatus
+  paymentType        BusinessSubscriptionPaymentType
+  billingCycle       BusinessSubscriptionBillingCycle
+  direction          BusinessSubscriptionPaymentDirection @default(INCOMING)
+  source             BusinessSubscriptionPaymentSource  @default(ADMIN)
+  periodStart        DateTime?
+  periodEnd          DateTime?
+  dueDate            DateTime?
+  paidAt             DateTime?
+  recordedAt         DateTime                           @default(now())
+  voidedAt           DateTime?
+  voidReason         String?
+  paymentReference   String?
+  notes              String?
+  metadata           Json?
+  externalProvider   String?
+  externalPaymentId  String?
+  createdById        String?
+  createdAt          DateTime                           @default(now())
+  updatedAt          DateTime                           @updatedAt
+
+  business     Business              @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  subscription BusinessSubscription? @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
+  createdBy    User?                 @relation("SubscriptionPaymentCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  events       BusinessSubscriptionEvent[]
+
+  @@index([businessId])
+  @@index([subscriptionId])
+  @@index([paymentStatus])
+  @@index([paymentMethod])
+  @@index([paymentType])
+  @@index([direction])
+  @@index([paidAt])
+  @@index([dueDate])
+  @@index([recordedAt])
+  @@index([voidedAt])
+  @@map("business_subscription_payments")
+}
+
+model BusinessCapability {
+  id           String                             @id @default(uuid())
+  businessId   String
+  capabilityId String
+  source       BusinessCapabilitySource
+  status       BusinessCapabilityAssignmentStatus @default(ACTIVE)
+  createdAt    DateTime                           @default(now())
+  updatedAt    DateTime                           @updatedAt
+
+  business   Business   @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  capability Capability @relation(fields: [capabilityId], references: [id], onDelete: Cascade)
+
+  @@unique([businessId, capabilityId])
+  @@index([businessId])
+  @@index([capabilityId])
+  @@index([source])
+  @@map("business_capabilities")
 }
 
 model PlatformSetting {

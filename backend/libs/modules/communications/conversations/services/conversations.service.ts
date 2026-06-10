@@ -37,7 +37,7 @@ export class ConversationsService {
         currentUserId,
         contactId: query.contactId,
         resourceId: query.resourceId,
-        search: query.search,
+        search: query.search?.trim() || undefined,
       },
     );
 

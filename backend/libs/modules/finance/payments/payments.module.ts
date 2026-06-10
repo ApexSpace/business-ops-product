@@ -10,7 +10,13 @@ import { PaymentsOverviewService } from './services/payments-overview.service';
 import { PaymentsService } from './services/payments.service';
 
 @Module({
-  imports: [AuditModule, BusinessModule, InvoicesModule, IntegrationsModule, EmailModule],
+  imports: [
+    AuditModule,
+    BusinessModule,
+    InvoicesModule,
+    IntegrationsModule,
+    EmailModule,
+  ],
   controllers: [PaymentsController],
   providers: [PaymentRepository, PaymentsService, PaymentsOverviewService],
   exports: [PaymentRepository, PaymentsService, PaymentsOverviewService],

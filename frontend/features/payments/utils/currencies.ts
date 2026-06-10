@@ -28,9 +28,14 @@ export const CURRENCY_OPTIONS: CurrencyOption[] = [
   { code: "ZAR", symbol: "R", label: "ZAR — South African Rand" },
 ];
 
+function currencySelectLabel(c: CurrencyOption): string {
+  const name = c.label.includes("—") ? c.label.split("—")[1].trim() : c.label;
+  return `${name} (${c.symbol})`;
+}
+
 export const currencySelectOptions = CURRENCY_OPTIONS.map((c) => ({
   value: c.code,
-  label: c.label,
+  label: currencySelectLabel(c),
 }));
 
 const currencyByCode = new Map(

@@ -15,7 +15,7 @@ const auditLogActorInclude = {
 
 const auditLogListInclude = {
   actor: { select: auditLogActorSelect },
-  business: { select: { id: true, name: true, slug: true } },
+  business: { select: { id: true, name: true } },
 } satisfies Prisma.AuditLogInclude;
 
 export type AuditLogWithActor = Prisma.AuditLogGetPayload<{

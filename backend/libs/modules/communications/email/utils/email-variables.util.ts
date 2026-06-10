@@ -27,7 +27,10 @@ export function formatUserName(user: {
   );
 }
 
-export function formatMoney(amount: { toString(): string }, currency = 'USD'): string {
+export function formatMoney(
+  amount: { toString(): string },
+  currency = 'USD',
+): string {
   const value = Number(amount.toString());
   try {
     return new Intl.NumberFormat('en-US', {

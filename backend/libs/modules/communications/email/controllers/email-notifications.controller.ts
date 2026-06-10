@@ -31,7 +31,10 @@ import {
   EmailNotificationService,
   EmailPreferenceService,
 } from '../services/email-notification.service';
-import { EmailLogsService, EmailTemplateService } from '../services/email-template.service';
+import {
+  EmailLogsService,
+  EmailTemplateService,
+} from '../services/email-template.service';
 import { ResendWebhookService } from '../services/resend-webhook.service';
 
 @ApiTags('email-notifications')
@@ -112,7 +115,11 @@ export class EmailNotificationsController {
     @Param('emailType') emailType: string,
     @Body() dto: PreviewEmailTemplateDto,
   ) {
-    return this.templateService.previewTemplate(user.businessId!, emailType, dto);
+    return this.templateService.previewTemplate(
+      user.businessId!,
+      emailType,
+      dto,
+    );
   }
 
   @Post('templates/:emailType/test')

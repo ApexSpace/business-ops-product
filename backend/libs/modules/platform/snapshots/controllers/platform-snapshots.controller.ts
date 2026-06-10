@@ -11,17 +11,17 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { PlatformMemberRole, SnapshotStatus } from '@prisma/client';
+import { PlatformMemberRole } from '@prisma/client';
 import { CurrentUser } from '@app/common/decorators/current-user.decorator';
 import type { RequestUser } from '@app/common/decorators/current-user.decorator';
 import { PlatformRoles } from '@app/common/decorators/platform-roles.decorator';
-import { PaginationQueryDto } from '@app/common/dto/pagination-query.dto';
 import { PlatformRolesGuard } from '@app/common/guards/platform-roles.guard';
 import { getPaginationParams } from '@app/common/utils/pagination.util';
 import {
   ApplySnapshotDto,
   CreateSnapshotDto,
   SnapshotListItemDto,
+  SnapshotListQueryDto,
   SnapshotResponseDto,
   UpdateSnapshotDto,
 } from '../dto/snapshot.dto';
@@ -40,12 +40,14 @@ export class PlatformSnapshotsController {
     PlatformMemberRole.PLATFORM_ADMIN,
     PlatformMemberRole.SUPPORT,
   )
-  list(
-    @Query() query: PaginationQueryDto,
-    @Query('status') status?: SnapshotStatus,
-  ) {
+  list(@Query() query: SnapshotListQueryDto) {
     const { page, limit, skip } = getPaginationParams(query);
-    return this.snapshotsService.list({ page, limit, skip, status });
+    return this.snapshotsService.list({
+      page,
+      limit,
+      skip,
+      status: query.status,
+    });
   }
 
   @Get(':id')

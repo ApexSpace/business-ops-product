@@ -54,7 +54,11 @@ export class TransformInterceptor implements NestInterceptor {
           if (isRecord(payload.meta)) {
             meta = { ...meta, ...payload.meta };
           }
-        } else if (isRecord(payload) && 'items' in payload && 'meta' in payload) {
+        } else if (
+          isRecord(payload) &&
+          'items' in payload &&
+          'meta' in payload
+        ) {
           data = payload.items;
           if (isRecord(payload.meta)) {
             meta = {

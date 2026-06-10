@@ -22,9 +22,12 @@ export class SchedulerTasksService {
   @Cron(CronExpression.EVERY_DAY_AT_3AM)
   async enqueueWebhookCleanup(): Promise<void> {
     const days = parseInt(process.env.WEBHOOK_EVENT_RETENTION_DAYS ?? '30', 10);
-    const jobId = await this.queueService.addFileJob(JOB_CLEANUP_WEBHOOK_EVENTS, {
-      retentionDays: days,
-    });
+    const jobId = await this.queueService.addFileJob(
+      JOB_CLEANUP_WEBHOOK_EVENTS,
+      {
+        retentionDays: days,
+      },
+    );
     this.logger.log(
       `Enqueued webhook cleanup (retention ${days}d) bullJobId=${jobId ?? 'n/a'}`,
     );
@@ -69,10 +72,7 @@ export class SchedulerTasksService {
 
   @Cron(CronExpression.EVERY_DAY_AT_5AM)
   async enqueueOrphanFileCleanup(): Promise<void> {
-    const hours = parseInt(
-      process.env.ORPHAN_FILE_PENDING_HOURS ?? '24',
-      10,
-    );
+    const hours = parseInt(process.env.ORPHAN_FILE_PENDING_HOURS ?? '24', 10);
     const jobId = await this.queueService.addFileJob(JOB_CLEANUP_ORPHAN_FILES, {
       pendingOlderThanHours: hours,
     });

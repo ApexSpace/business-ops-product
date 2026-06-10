@@ -34,9 +34,7 @@ interface GoogleBusinessLocationsResponse {
 }
 
 @Injectable()
-export class GoogleBusinessProfileResourceSyncHandler
-  implements IntegrationResourceSyncHandler
-{
+export class GoogleBusinessProfileResourceSyncHandler implements IntegrationResourceSyncHandler {
   readonly providerKey = 'google-business-profile';
 
   constructor(private readonly googleTokenService: GoogleTokenService) {}

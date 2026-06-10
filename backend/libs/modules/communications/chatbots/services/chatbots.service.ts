@@ -9,7 +9,10 @@ import {
   ListChatbotsQueryDto,
   UpdateChatbotDto,
 } from '../dto/chatbot.dto';
-import { ChatbotEmbedResponseDto, ChatbotResponseDto } from '../dto/chatbot-response.dto';
+import {
+  ChatbotEmbedResponseDto,
+  ChatbotResponseDto,
+} from '../dto/chatbot-response.dto';
 import { toChatbotResponse } from '../mappers/chatbot.mapper';
 import { ChatbotsRepository } from '../repositories/chatbots.repository';
 import { ChatbotEmbedService } from './chatbot-embed.service';
@@ -30,10 +33,14 @@ export class ChatbotsService {
 
   async list(businessId: string, query: ListChatbotsQueryDto) {
     const { page, limit, skip, take } = getPaginationParams(query);
-    const { items, total } = await this.chatbotsRepository.findMany(businessId, {
-      skip,
-      take,
-    });
+    const { items, total } = await this.chatbotsRepository.findMany(
+      businessId,
+      {
+        skip,
+        take,
+        status: query.status,
+      },
+    );
 
     const enriched = await Promise.all(
       items.map(async (row) => {

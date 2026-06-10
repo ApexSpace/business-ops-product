@@ -4,7 +4,8 @@ export const GOOGLE_OAUTH_PROVIDER_KEYS = [
   'google-lead-ads',
 ] as const;
 
-export type GoogleOAuthProviderKey = (typeof GOOGLE_OAUTH_PROVIDER_KEYS)[number];
+export type GoogleOAuthProviderKey =
+  (typeof GOOGLE_OAUTH_PROVIDER_KEYS)[number];
 
 const BASE_SCOPES = ['openid', 'email', 'profile'] as const;
 

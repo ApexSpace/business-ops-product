@@ -70,14 +70,18 @@ export class CalendarsService {
       autoConfirm: dto.autoConfirm,
       capacity: dto.capacity,
       formSettings: dto.formSettings as Prisma.InputJsonValue | undefined,
-      confirmationSettings: dto.confirmationSettings as Prisma.InputJsonValue | undefined,
+      confirmationSettings: dto.confirmationSettings as
+        | Prisma.InputJsonValue
+        | undefined,
       paymentSettings: dto.paymentSettings as Prisma.InputJsonValue | undefined,
-      notificationSettings: dto.notificationSettings as Prisma.InputJsonValue | undefined,
+      notificationSettings: dto.notificationSettings as
+        | Prisma.InputJsonValue
+        | undefined,
       policySettings: dto.policySettings as Prisma.InputJsonValue | undefined,
       widgetSettings: dto.widgetSettings as Prisma.InputJsonValue | undefined,
-      googleSyncSettings:
-        (dto.googleSyncSettings as Prisma.InputJsonValue | undefined) ??
-        ({ syncDirection: 'NONE', enabled: false } as Prisma.InputJsonValue),
+      googleSyncSettings: (dto.googleSyncSettings as
+        | Prisma.InputJsonValue
+        | undefined) ?? { syncDirection: 'NONE', enabled: false },
       createdById: actor.id,
     });
 
@@ -162,10 +166,7 @@ export class CalendarsService {
             publicBookingEnabled ? resolvedSlug : null,
           )
         : publicBookingEnabled && resolvedSlug
-          ? mergeWidgetSettingsWithSlug(
-              existing.widgetSettings,
-              resolvedSlug,
-            )
+          ? mergeWidgetSettingsWithSlug(existing.widgetSettings, resolvedSlug)
           : undefined;
 
     await this.calendarRepository.update(businessId, id, {
@@ -195,33 +196,45 @@ export class CalendarsService {
       ...(dto.slotIntervalMinutes !== undefined
         ? { slotIntervalMinutes: dto.slotIntervalMinutes }
         : {}),
-      ...(dto.locationType !== undefined ? { locationType: dto.locationType } : {}),
+      ...(dto.locationType !== undefined
+        ? { locationType: dto.locationType }
+        : {}),
       ...(dto.locationValue !== undefined
         ? { locationValue: dto.locationValue?.trim() || null }
         : {}),
       ...(dto.requireApproval !== undefined
         ? { requireApproval: dto.requireApproval }
         : {}),
-      ...(dto.autoConfirm !== undefined ? { autoConfirm: dto.autoConfirm } : {}),
+      ...(dto.autoConfirm !== undefined
+        ? { autoConfirm: dto.autoConfirm }
+        : {}),
       ...(dto.capacity !== undefined ? { capacity: dto.capacity } : {}),
       ...(dto.formSettings !== undefined
         ? { formSettings: dto.formSettings as Prisma.InputJsonValue }
         : {}),
       ...(dto.confirmationSettings !== undefined
-        ? { confirmationSettings: dto.confirmationSettings as Prisma.InputJsonValue }
+        ? {
+            confirmationSettings:
+              dto.confirmationSettings as Prisma.InputJsonValue,
+          }
         : {}),
       ...(dto.paymentSettings !== undefined
         ? { paymentSettings: dto.paymentSettings as Prisma.InputJsonValue }
         : {}),
       ...(dto.notificationSettings !== undefined
-        ? { notificationSettings: dto.notificationSettings as Prisma.InputJsonValue }
+        ? {
+            notificationSettings:
+              dto.notificationSettings as Prisma.InputJsonValue,
+          }
         : {}),
       ...(dto.policySettings !== undefined
         ? { policySettings: dto.policySettings as Prisma.InputJsonValue }
         : {}),
       ...(widgetSettings !== undefined ? { widgetSettings } : {}),
       ...(dto.googleSyncSettings !== undefined
-        ? { googleSyncSettings: dto.googleSyncSettings as Prisma.InputJsonValue }
+        ? {
+            googleSyncSettings: dto.googleSyncSettings as Prisma.InputJsonValue,
+          }
         : {}),
       ...(publicBookingEnabled && resolvedSlug
         ? { publicSlug: resolvedSlug }
@@ -293,7 +306,10 @@ export class CalendarsService {
     calendarId: string,
   ): Promise<CalendarStaffResponseDto[]> {
     await this.assertCalendar(businessId, calendarId);
-    const rows = await this.calendarRepository.listStaff(calendarId, businessId);
+    const rows = await this.calendarRepository.listStaff(
+      calendarId,
+      businessId,
+    );
     return rows.map(toCalendarStaffResponse);
   }
 
@@ -409,12 +425,16 @@ export class CalendarsService {
     }
     const row = await this.calendarRepository.updateException(exceptionId, {
       ...(dto.date !== undefined ? { date: new Date(dto.date) } : {}),
-      ...(dto.startTime !== undefined ? { startTime: dto.startTime ?? null } : {}),
+      ...(dto.startTime !== undefined
+        ? { startTime: dto.startTime ?? null }
+        : {}),
       ...(dto.endTime !== undefined ? { endTime: dto.endTime ?? null } : {}),
       ...(dto.isUnavailable !== undefined
         ? { isUnavailable: dto.isUnavailable }
         : {}),
-      ...(dto.reason !== undefined ? { reason: dto.reason?.trim() || null } : {}),
+      ...(dto.reason !== undefined
+        ? { reason: dto.reason?.trim() || null }
+        : {}),
     });
     await this.auditService.log({
       actorUserId: actor.id,

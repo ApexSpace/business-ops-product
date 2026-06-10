@@ -52,11 +52,13 @@ describe('ResendWebhookService', () => {
       mergeMetadata: jest.fn().mockResolvedValue({}),
     };
     const queueService = {
-      enqueueResendWebhook: jest.fn().mockResolvedValue(
-        overrides && 'enqueueResult' in overrides
-          ? overrides.enqueueResult
-          : 'job-1',
-      ),
+      enqueueResendWebhook: jest
+        .fn()
+        .mockResolvedValue(
+          overrides && 'enqueueResult' in overrides
+            ? overrides.enqueueResult
+            : 'job-1',
+        ),
     };
 
     const service = new ResendWebhookService(
@@ -106,7 +108,10 @@ describe('ResendWebhookService', () => {
 
   it('skips create when webhook already processed', async () => {
     const { service, webhookEventsRepository } = createService({
-      existingWebhook: { id: 'wh-existing', status: WebhookEventStatus.PROCESSED },
+      existingWebhook: {
+        id: 'wh-existing',
+        status: WebhookEventStatus.PROCESSED,
+      },
     });
 
     await service.handleWebhook(Buffer.from('{}'), validHeaders);
@@ -116,7 +121,10 @@ describe('ResendWebhookService', () => {
 
   it('reuses RECEIVED webhook and re-enqueues', async () => {
     const { service, webhookEventsRepository, queueService } = createService({
-      existingWebhook: { id: 'wh-existing', status: WebhookEventStatus.RECEIVED },
+      existingWebhook: {
+        id: 'wh-existing',
+        status: WebhookEventStatus.RECEIVED,
+      },
     });
 
     await service.handleWebhook(Buffer.from('{}'), validHeaders);
@@ -136,15 +144,16 @@ describe('ResendWebhookService', () => {
   });
 
   it('maps email.failed to FAILED status', async () => {
-    const { service, messageRepository, webhookEventsRepository } = createService({
-      emailMessage: {
-        id: 'em-1',
-        status: EmailMessageStatus.SENT,
-        sentAt: new Date(),
-        errorMessage: null,
-        metadata: {},
-      },
-    });
+    const { service, messageRepository, webhookEventsRepository } =
+      createService({
+        emailMessage: {
+          id: 'em-1',
+          status: EmailMessageStatus.SENT,
+          sentAt: new Date(),
+          errorMessage: null,
+          metadata: {},
+        },
+      });
 
     webhookEventsRepository.findById.mockResolvedValue({
       id: 'wh-1',
@@ -166,15 +175,16 @@ describe('ResendWebhookService', () => {
   });
 
   it('records delivery_delayed in metadata without status change', async () => {
-    const { service, messageRepository, webhookEventsRepository } = createService({
-      emailMessage: {
-        id: 'em-1',
-        status: EmailMessageStatus.SENT,
-        sentAt: new Date(),
-        errorMessage: null,
-        metadata: {},
-      },
-    });
+    const { service, messageRepository, webhookEventsRepository } =
+      createService({
+        emailMessage: {
+          id: 'em-1',
+          status: EmailMessageStatus.SENT,
+          sentAt: new Date(),
+          errorMessage: null,
+          metadata: {},
+        },
+      });
 
     webhookEventsRepository.findById.mockResolvedValue({
       id: 'wh-1',

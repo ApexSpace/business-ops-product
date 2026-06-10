@@ -1,4 +1,9 @@
-import { IntegrationCategory, IntegrationConnectionType, IntegrationProvider, Prisma } from '@prisma/client';
+import {
+  IntegrationCategory,
+  IntegrationConnectionType,
+  IntegrationProvider,
+  Prisma,
+} from '@prisma/client';
 import {
   BusinessIntegrationResponseDto,
   BusinessIntegrationSummaryDto,
@@ -66,7 +71,7 @@ function parseConfig(
 ): Record<string, unknown> | null {
   if (config === null || config === undefined) return null;
   if (typeof config === 'object' && !Array.isArray(config)) {
-    return config as Record<string, unknown>;
+    return config;
   }
   return null;
 }

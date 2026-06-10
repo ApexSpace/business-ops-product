@@ -22,7 +22,9 @@ import {
   buildChatbotWidgetUrl,
 } from '../utils/chatbot-public-key.util';
 
-export function toChatbotRuleResponse(rule: ChatbotRule): ChatbotRuleResponseDto {
+export function toChatbotRuleResponse(
+  rule: ChatbotRule,
+): ChatbotRuleResponseDto {
   return {
     id: rule.id,
     triggerType: rule.triggerType,

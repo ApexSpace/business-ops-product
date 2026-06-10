@@ -81,7 +81,8 @@ export class AppointmentsService {
     await this.assertContact(businessId, dto.contactId);
     if (dto.serviceId) await this.assertService(businessId, dto.serviceId);
     if (dto.workItemId) await this.assertWorkItem(businessId, dto.workItemId);
-    if (dto.assignedToId) await this.assertAssignee(businessId, dto.assignedToId);
+    if (dto.assignedToId)
+      await this.assertAssignee(businessId, dto.assignedToId);
 
     const appointment = await this.appointmentRepository.create(businessId, {
       calendarId: dto.calendarId,
@@ -196,12 +197,15 @@ export class AppointmentsService {
     if (dto.contactId) await this.assertContact(businessId, dto.contactId);
     if (dto.serviceId) await this.assertService(businessId, dto.serviceId);
     if (dto.workItemId) await this.assertWorkItem(businessId, dto.workItemId);
-    if (dto.assignedToId) await this.assertAssignee(businessId, dto.assignedToId);
+    if (dto.assignedToId)
+      await this.assertAssignee(businessId, dto.assignedToId);
 
     const appointment = await this.appointmentRepository.update(id, {
       ...(dto.calendarId !== undefined ? { calendarId: dto.calendarId } : {}),
       ...(dto.contactId !== undefined ? { contactId: dto.contactId } : {}),
-      ...(dto.serviceId !== undefined ? { serviceId: dto.serviceId ?? null } : {}),
+      ...(dto.serviceId !== undefined
+        ? { serviceId: dto.serviceId ?? null }
+        : {}),
       ...(dto.workItemId !== undefined
         ? { workItemId: dto.workItemId ?? null }
         : {}),
@@ -339,7 +343,10 @@ export class AppointmentsService {
   }
 
   private async assertContact(businessId: string, contactId: string) {
-    const contact = await this.contactRepository.findById(businessId, contactId);
+    const contact = await this.contactRepository.findById(
+      businessId,
+      contactId,
+    );
     if (!contact) {
       throw new AppException(
         ErrorCode.CONTACT_NOT_FOUND,
@@ -350,7 +357,10 @@ export class AppointmentsService {
   }
 
   private async assertService(businessId: string, serviceId: string) {
-    const service = await this.serviceRepository.findById(businessId, serviceId);
+    const service = await this.serviceRepository.findById(
+      businessId,
+      serviceId,
+    );
     if (!service) {
       throw new AppException(
         ErrorCode.SERVICE_NOT_FOUND,

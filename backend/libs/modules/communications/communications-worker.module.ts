@@ -7,8 +7,16 @@ import { StripeWebhookProcessor } from './webhooks/workers/processors/stripe-web
 import { SendMessageProcessor } from './messages/workers/processors/send-message.processor';
 
 @Module({
-  imports: [ConversationsModule, EmailModule, forwardRef(() => IntegrationsModule)],
-  providers: [MetaWebhookProcessor, StripeWebhookProcessor, SendMessageProcessor],
+  imports: [
+    ConversationsModule,
+    EmailModule,
+    forwardRef(() => IntegrationsModule),
+  ],
+  providers: [
+    MetaWebhookProcessor,
+    StripeWebhookProcessor,
+    SendMessageProcessor,
+  ],
   exports: [
     MetaWebhookProcessor,
     StripeWebhookProcessor,

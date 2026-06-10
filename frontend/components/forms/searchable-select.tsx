@@ -29,6 +29,24 @@ export interface SearchableSelectProps {
   contentSide?: "top" | "bottom" | "left" | "right";
   contentAlign?: "start" | "center" | "end";
   alignItemWithTrigger?: boolean;
+  /** Set false when the select is inside a modal dialog to avoid nested-modal focus traps. */
+  modal?: boolean;
+  /**
+   * Use inside Dialog: sets modal={false} and portals the list to document body
+   * (never into dialog content — overflow clipping breaks the popup).
+   */
+  inDialog?: boolean;
+}
+
+function normalizeSelectValue(value: string | null): string | null {
+  if (value == null || value === "") {
+    return null;
+  }
+  return value;
+}
+
+function optionKey(value: string | null): string {
+  return value ?? "__null__";
 }
 
 export function SearchableSelect({
@@ -46,8 +64,11 @@ export function SearchableSelect({
   contentSide = "bottom",
   contentAlign = "center",
   alignItemWithTrigger = true,
+  modal = true,
+  inDialog = false,
 }: SearchableSelectProps) {
   const [search, setSearch] = useState("");
+  const selectValue = normalizeSelectValue(value);
 
   const filteredItems = useMemo(
     () => (searchable ? filterSelectItems(items, search) : items),
@@ -56,10 +77,11 @@ export function SearchableSelect({
 
   return (
     <Select
-      items={items}
-      value={value}
+      items={filteredItems}
+      value={selectValue}
       onValueChange={onValueChange}
       disabled={disabled}
+      modal={inDialog ? false : modal}
       onOpenChange={(open) => {
         if (!open) {
           setSearch("");
@@ -92,7 +114,11 @@ export function SearchableSelect({
           </p>
         ) : (
           filteredItems.map((item) => (
-            <SelectItem key={item.value} value={item.value}>
+            <SelectItem
+              key={optionKey(item.value)}
+              value={item.value}
+              label={item.label}
+            >
               {item.label}
             </SelectItem>
           ))

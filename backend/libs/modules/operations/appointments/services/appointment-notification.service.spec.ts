@@ -27,9 +27,11 @@ describe('AppointmentNotificationService', () => {
       findById: jest.fn().mockResolvedValue({ name: 'Acme' }),
     };
     const membershipRepository = {
-      findOwnersAndAdmins: jest.fn().mockResolvedValue([
-        { userId: 'owner-1', user: { email: 'owner@example.com' } },
-      ]),
+      findOwnersAndAdmins: jest
+        .fn()
+        .mockResolvedValue([
+          { userId: 'owner-1', user: { email: 'owner@example.com' } },
+        ]),
     };
 
     const service = new AppointmentNotificationService(
@@ -46,7 +48,9 @@ describe('AppointmentNotificationService', () => {
 
     await service.sendCancelled('biz-1', appointment as never);
 
-    expect(emailNotificationService.enqueueTransactionalEmail).toHaveBeenCalledWith(
+    expect(
+      emailNotificationService.enqueueTransactionalEmail,
+    ).toHaveBeenCalledWith(
       expect.objectContaining({
         emailType: 'appointment.cancelled',
         idempotencyKey: 'appointment-cancelled-appt-1',
@@ -63,7 +67,9 @@ describe('AppointmentNotificationService', () => {
       new Date('2026-06-10T13:00:00Z'),
     );
 
-    expect(emailNotificationService.enqueueTransactionalEmail).toHaveBeenCalledWith(
+    expect(
+      emailNotificationService.enqueueTransactionalEmail,
+    ).toHaveBeenCalledWith(
       expect.objectContaining({
         emailType: 'appointment.rescheduled',
         idempotencyKey: `appointment-rescheduled-appt-1-${appointment.startAt.toISOString()}`,
@@ -79,7 +85,9 @@ describe('AppointmentNotificationService', () => {
 
     await service.sendReminder('biz-1', appointment as never, 24);
 
-    expect(emailNotificationService.enqueueTransactionalEmail).toHaveBeenCalledWith(
+    expect(
+      emailNotificationService.enqueueTransactionalEmail,
+    ).toHaveBeenCalledWith(
       expect.objectContaining({
         emailType: 'appointment.reminder',
         idempotencyKey: 'appointment-reminder-appt-1-24h',

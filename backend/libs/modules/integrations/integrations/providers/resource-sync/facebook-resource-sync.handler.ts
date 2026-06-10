@@ -7,9 +7,7 @@ import {
 } from './resource-sync.types';
 
 @Injectable()
-export class FacebookResourceSyncHandler
-  implements IntegrationResourceSyncHandler
-{
+export class FacebookResourceSyncHandler implements IntegrationResourceSyncHandler {
   readonly providerKey = 'facebook';
 
   constructor(

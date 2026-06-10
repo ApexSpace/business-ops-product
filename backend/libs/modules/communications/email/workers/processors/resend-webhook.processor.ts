@@ -16,7 +16,9 @@ export class ResendWebhookProcessor {
   ) {}
 
   async process(payload: ProcessResendWebhookPayload): Promise<void> {
-    const event = await this.webhookEventsRepository.findById(payload.webhookEventId);
+    const event = await this.webhookEventsRepository.findById(
+      payload.webhookEventId,
+    );
     if (!event) {
       this.logger.warn(`WebhookEvent ${payload.webhookEventId} not found`);
       return;

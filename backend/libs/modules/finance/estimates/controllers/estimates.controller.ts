@@ -16,6 +16,8 @@ import { ConfirmDeleteQueryDto } from '@app/common/dto/confirm-delete-query.dto'
 import { CurrentUser } from '@app/common/decorators/current-user.decorator';
 import type { RequestUser } from '@app/common/decorators/current-user.decorator';
 import { BusinessRoles } from '@app/common/decorators/business-roles.decorator';
+import { RequireModule } from '@app/common/decorators/require-module.decorator';
+import { BusinessCapabilityGuard } from '@app/common/guards/business-capability.guard';
 import { BusinessRolesGuard } from '@app/common/guards/business-roles.guard';
 import { CreateEstimateDto } from '../dto/create-estimate.dto';
 import { ListEstimatesQueryDto } from '../dto/list-estimates-query.dto';
@@ -26,7 +28,8 @@ import { EstimatesService } from '@app/modules/finance/estimates/services/estima
 @ApiTags('estimates')
 @ApiBearerAuth()
 @Controller('estimates')
-@UseGuards(BusinessRolesGuard)
+@UseGuards(BusinessRolesGuard, BusinessCapabilityGuard)
+@RequireModule('payments')
 export class EstimatesController {
   constructor(private readonly estimatesService: EstimatesService) {}
 
@@ -46,7 +49,10 @@ export class EstimatesController {
     BusinessMemberRole.ADMIN,
     BusinessMemberRole.MEMBER,
   )
-  list(@CurrentUser() user: RequestUser, @Query() query: ListEstimatesQueryDto) {
+  list(
+    @CurrentUser() user: RequestUser,
+    @Query() query: ListEstimatesQueryDto,
+  ) {
     return this.estimatesService.list(user.businessId!, query);
   }
 
@@ -74,12 +80,7 @@ export class EstimatesController {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateEstimateStatusDto,
   ) {
-    return this.estimatesService.updateStatus(
-      user.businessId!,
-      id,
-      dto,
-      user,
-    );
+    return this.estimatesService.updateStatus(user.businessId!, id, dto, user);
   }
 
   @Post(':id/duplicate')

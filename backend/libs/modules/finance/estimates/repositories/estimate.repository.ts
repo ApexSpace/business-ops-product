@@ -96,9 +96,7 @@ export class EstimateRepository {
       orderBy: { createdAt: 'desc' },
       select: { estimateNumber: true },
     });
-    const seq = latest
-      ? parseEstimateSequence(latest.estimateNumber) + 1
-      : 1;
+    const seq = latest ? parseEstimateSequence(latest.estimateNumber) + 1 : 1;
     return formatEstimateNumber(seq);
   }
 

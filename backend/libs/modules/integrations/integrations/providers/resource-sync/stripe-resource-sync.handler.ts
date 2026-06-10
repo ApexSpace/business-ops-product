@@ -23,7 +23,9 @@ export class StripeResourceSyncHandler implements IntegrationResourceSyncHandler
 
   async sync(context: ResourceSyncContext): Promise<ResourceSyncResult> {
     const { account, config } =
-      await this.stripeAccountService.syncAccountForBusiness(context.businessId);
+      await this.stripeAccountService.syncAccountForBusiness(
+        context.businessId,
+      );
 
     const displayName =
       account.business_profile?.name ??

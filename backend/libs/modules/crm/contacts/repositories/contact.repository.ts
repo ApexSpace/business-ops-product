@@ -160,8 +160,7 @@ export class ContactRepository {
     });
 
     const match = contacts.find(
-      (c) =>
-        normalizePhoneKey(c.phoneCountryCode, c.phoneNumber) === phoneKey,
+      (c) => normalizePhoneKey(c.phoneCountryCode, c.phoneNumber) === phoneKey,
     );
 
     if (!match) {
@@ -175,10 +174,7 @@ export class ContactRepository {
 
   create(
     businessId: string,
-    data: Omit<
-      Prisma.ContactCreateInput,
-      'business' | 'createdBy' | 'tags'
-    >,
+    data: Omit<Prisma.ContactCreateInput, 'business' | 'createdBy' | 'tags'>,
     createdById: string,
   ): Promise<ContactWithTags> {
     return this.prisma.contact.create({

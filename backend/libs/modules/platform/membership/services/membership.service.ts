@@ -48,12 +48,14 @@ export class MembershipService {
     meta: { total: number; page: number; limit: number };
   }> {
     const { page, limit, skip, take } = getPaginationParams(query);
-    const { items, total } =
-      await this.membershipRepository.findManyPaginated(businessId, {
+    const { items, total } = await this.membershipRepository.findManyPaginated(
+      businessId,
+      {
         skip,
         take,
         search: query.search?.trim() || undefined,
-      });
+      },
+    );
 
     return {
       items: items.map((m) => this.toMemberResponse(m)),
@@ -201,7 +203,9 @@ export class MembershipService {
     let user = await this.userRepository.findByEmail(dto.email);
 
     if (!user) {
-      const rounds = this.configService.get('auth.bcryptRounds', { infer: true });
+      const rounds = this.configService.get('auth.bcryptRounds', {
+        infer: true,
+      });
       const passwordHash = await bcrypt.hash(randomUUID(), rounds);
       user = await this.userRepository.create({
         email: dto.email,
@@ -216,7 +220,11 @@ export class MembershipService {
       user.id,
       businessId,
     );
-    if (existing && existing.status !== MembershipStatus.REMOVED && !existing.deletedAt) {
+    if (
+      existing &&
+      existing.status !== MembershipStatus.REMOVED &&
+      !existing.deletedAt
+    ) {
       throw new AppException(
         ErrorCode.BAD_REQUEST,
         'User is already a member or invited',
@@ -241,7 +249,9 @@ export class MembershipService {
           invitedBy: { connect: { id: actor.id } },
         });
 
-    const frontendUrl = this.configService.get('app.frontendUrl', { infer: true });
+    const frontendUrl = this.configService.get('app.frontendUrl', {
+      infer: true,
+    });
     const inviteLink = `${frontendUrl}/accept-invite?token=${inviteToken}`;
 
     await this.auditService.log({
@@ -300,11 +310,9 @@ export class MembershipService {
     }
 
     if (dto.role === BusinessMemberRole.OWNER) {
-      const ownerCount = await this.membershipRepository.countOwners(businessId);
-      if (
-        ownerCount > 0 &&
-        membership.role !== BusinessMemberRole.OWNER
-      ) {
+      const ownerCount =
+        await this.membershipRepository.countOwners(businessId);
+      if (ownerCount > 0 && membership.role !== BusinessMemberRole.OWNER) {
         throw new AppException(
           ErrorCode.OWNER_ALREADY_EXISTS,
           'Business already has an owner',
@@ -318,7 +326,8 @@ export class MembershipService {
       dto.role &&
       dto.role !== BusinessMemberRole.OWNER
     ) {
-      const ownerCount = await this.membershipRepository.countOwners(businessId);
+      const ownerCount =
+        await this.membershipRepository.countOwners(businessId);
       if (ownerCount <= 1) {
         throw new AppException(
           ErrorCode.BAD_REQUEST,
@@ -331,7 +340,9 @@ export class MembershipService {
     const updated = await this.membershipRepository.update(membership.id, {
       ...(dto.role ? { role: dto.role } : {}),
       ...(dto.status ? { status: dto.status } : {}),
-      ...(dto.status === MembershipStatus.ACTIVE ? { joinedAt: new Date() } : {}),
+      ...(dto.status === MembershipStatus.ACTIVE
+        ? { joinedAt: new Date() }
+        : {}),
     });
 
     await this.auditService.log({
@@ -366,7 +377,8 @@ export class MembershipService {
     }
 
     if (membership.role === BusinessMemberRole.OWNER) {
-      const ownerCount = await this.membershipRepository.countOwners(businessId);
+      const ownerCount =
+        await this.membershipRepository.countOwners(businessId);
       if (ownerCount <= 1) {
         throw new AppException(
           ErrorCode.BAD_REQUEST,
@@ -399,19 +411,19 @@ export class MembershipService {
     > & {},
   ): MemberResponseDto {
     return {
-      id: membership!.id,
-      userId: membership!.userId,
-      businessId: membership!.businessId,
-      role: membership!.role,
-      status: membership!.status,
-      joinedAt: membership!.joinedAt,
-      createdAt: membership!.createdAt,
+      id: membership.id,
+      userId: membership.userId,
+      businessId: membership.businessId,
+      role: membership.role,
+      status: membership.status,
+      joinedAt: membership.joinedAt,
+      createdAt: membership.createdAt,
       user: {
-        id: membership!.user.id,
-        email: membership!.user.email,
-        firstName: membership!.user.firstName,
-        lastName: membership!.user.lastName,
-        status: membership!.user.status,
+        id: membership.user.id,
+        email: membership.user.email,
+        firstName: membership.user.firstName,
+        lastName: membership.user.lastName,
+        status: membership.user.status,
       },
     };
   }

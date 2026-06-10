@@ -4,8 +4,10 @@ import type { RedisOptions } from 'ioredis';
 export function redisEndpointLabel(url: string): string {
   try {
     const parsed = new URL(url);
-    const db = parsed.pathname && parsed.pathname !== '/' ? parsed.pathname : '';
-    const port = parsed.port || (parsed.protocol === 'rediss:' ? '6380' : '6379');
+    const db =
+      parsed.pathname && parsed.pathname !== '/' ? parsed.pathname : '';
+    const port =
+      parsed.port || (parsed.protocol === 'rediss:' ? '6380' : '6379');
     return `${parsed.hostname}:${port}${db}`;
   } catch {
     return 'unknown-host';
@@ -16,7 +18,9 @@ export function redisEndpointLabel(url: string): string {
  * Resolves Redis URL from env. Applies REDIS_PASSWORD when the URL has no password.
  * Prefer a single REDIS_URL in .env — dotenv keeps the last duplicate key.
  */
-export function resolveRedisUrl(env: NodeJS.ProcessEnv = process.env): string | undefined {
+export function resolveRedisUrl(
+  env: NodeJS.ProcessEnv = process.env,
+): string | undefined {
   const raw = env.REDIS_URL?.trim();
   if (!raw) {
     return undefined;

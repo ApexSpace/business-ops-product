@@ -102,7 +102,9 @@ describe('MetaConfigService', () => {
 
     const service = createService();
 
-    expect(service.assertEmbeddedSignupConfigForWhatsApp()).toBe('whatsapp-only');
+    expect(service.assertEmbeddedSignupConfigForWhatsApp()).toBe(
+      'whatsapp-only',
+    );
   });
 
   it('rejects facebook OAuth config ID equal to WhatsApp embedded config ID', () => {

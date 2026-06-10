@@ -27,7 +27,9 @@ export class SendEmailProcessor {
       return;
     }
 
-    const message = await this.messageRepository.findById(payload.emailMessageId);
+    const message = await this.messageRepository.findById(
+      payload.emailMessageId,
+    );
     if (!message) {
       this.logger.warn(`EmailMessage ${payload.emailMessageId} not found`);
       return;

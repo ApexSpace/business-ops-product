@@ -50,12 +50,16 @@ export class StripeWebhookService {
     await this.persistAndEnqueue(event, 'connected');
   }
 
-  async processQueuedEvent(payload: ProcessStripeWebhookPayload): Promise<void> {
+  async processQueuedEvent(
+    payload: ProcessStripeWebhookPayload,
+  ): Promise<void> {
     const record = await this.webhookEventsRepository.findById(
       payload.webhookEventId,
     );
     if (!record?.payload) {
-      this.logger.warn(`Stripe webhook event ${payload.webhookEventId} missing`);
+      this.logger.warn(
+        `Stripe webhook event ${payload.webhookEventId} missing`,
+      );
       return;
     }
     const event = record.payload as unknown as StripeWebhookEvent;
@@ -98,10 +102,11 @@ export class StripeWebhookService {
     event: StripeWebhookEvent,
     source: 'platform' | 'connected',
   ): Promise<void> {
-    const existing = await this.webhookEventsRepository.findByProviderAndExternalId(
-      WebhookEventProvider.STRIPE,
-      event.id,
-    );
+    const existing =
+      await this.webhookEventsRepository.findByProviderAndExternalId(
+        WebhookEventProvider.STRIPE,
+        event.id,
+      );
     if (existing?.status === WebhookEventStatus.PROCESSED) {
       return;
     }
@@ -164,7 +169,9 @@ export class StripeWebhookService {
   private async handleAccountUpdated(event: StripeWebhookEvent): Promise<void> {
     const account = event.data.object as unknown as StripeConnectAccount;
     const integration =
-      await this.stripeAccountService.findIntegrationByStripeAccountId(account.id);
+      await this.stripeAccountService.findIntegrationByStripeAccountId(
+        account.id,
+      );
     if (!integration) return;
 
     const config = integration.config as Record<string, unknown> | null;
@@ -179,12 +186,16 @@ export class StripeWebhookService {
     );
   }
 
-  private async handleAccountAuthorized(event: StripeWebhookEvent): Promise<void> {
+  private async handleAccountAuthorized(
+    event: StripeWebhookEvent,
+  ): Promise<void> {
     const application = event.data.object as { account?: string };
     const accountId = application.account;
     if (!accountId) return;
     const integration =
-      await this.stripeAccountService.findIntegrationByStripeAccountId(accountId);
+      await this.stripeAccountService.findIntegrationByStripeAccountId(
+        accountId,
+      );
     if (!integration) return;
 
     await this.auditService.log({
@@ -197,13 +208,17 @@ export class StripeWebhookService {
     });
   }
 
-  private async handleAccountDeauthorized(event: StripeWebhookEvent): Promise<void> {
+  private async handleAccountDeauthorized(
+    event: StripeWebhookEvent,
+  ): Promise<void> {
     const application = event.data.object as { account?: string };
     const accountId = application.account;
     if (!accountId) return;
 
     const integration =
-      await this.stripeAccountService.findIntegrationByStripeAccountId(accountId);
+      await this.stripeAccountService.findIntegrationByStripeAccountId(
+        accountId,
+      );
     if (!integration) return;
 
     await this.businessIntegrationRepository.update(
@@ -211,7 +226,8 @@ export class StripeWebhookService {
       'stripe',
       {
         status: IntegrationStatus.EXPIRED,
-        errorMessage: 'Stripe disconnected. Reconnect to accept payments again.',
+        errorMessage:
+          'Stripe disconnected. Reconnect to accept payments again.',
       },
     );
   }
@@ -220,24 +236,42 @@ export class StripeWebhookService {
     event: StripeWebhookEvent,
   ): Promise<void> {
     const session = event.data.object as { metadata?: StripeWebhookMetadata };
-    await this.logPaymentMetadata(event, session.metadata ?? null, 'payment.succeeded');
+    await this.logPaymentMetadata(
+      event,
+      session.metadata ?? null,
+      'payment.succeeded',
+    );
   }
 
   private async handlePaymentIntentSucceeded(
     event: StripeWebhookEvent,
   ): Promise<void> {
     const intent = event.data.object as { metadata?: StripeWebhookMetadata };
-    await this.logPaymentMetadata(event, intent.metadata ?? null, 'payment.succeeded');
+    await this.logPaymentMetadata(
+      event,
+      intent.metadata ?? null,
+      'payment.succeeded',
+    );
   }
 
-  private async handlePaymentIntentFailed(event: StripeWebhookEvent): Promise<void> {
+  private async handlePaymentIntentFailed(
+    event: StripeWebhookEvent,
+  ): Promise<void> {
     const intent = event.data.object as { metadata?: StripeWebhookMetadata };
-    await this.logPaymentMetadata(event, intent.metadata ?? null, 'payment.failed');
+    await this.logPaymentMetadata(
+      event,
+      intent.metadata ?? null,
+      'payment.failed',
+    );
   }
 
   private async handleChargeRefunded(event: StripeWebhookEvent): Promise<void> {
     const charge = event.data.object as { metadata?: StripeWebhookMetadata };
-    await this.logPaymentMetadata(event, charge.metadata ?? null, 'refund.created');
+    await this.logPaymentMetadata(
+      event,
+      charge.metadata ?? null,
+      'refund.created',
+    );
   }
 
   private async logPaymentMetadata(

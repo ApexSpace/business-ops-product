@@ -82,7 +82,10 @@ export class AppointmentReminderService {
         appointment.startAt.getTime() - reminderHours * 60 * 60 * 1000,
       );
 
-      if (now < reminderTarget || now >= new Date(reminderTarget.getTime() + REMINDER_CRON_WINDOW_MS)) {
+      if (
+        now < reminderTarget ||
+        now >= new Date(reminderTarget.getTime() + REMINDER_CRON_WINDOW_MS)
+      ) {
         continue;
       }
 

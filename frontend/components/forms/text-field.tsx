@@ -18,6 +18,7 @@ export interface TextFieldProps<T extends FieldValues> {
   placeholder?: string;
   type?: React.ComponentProps<typeof Input>["type"];
   multiline?: boolean;
+  rows?: number;
   description?: string;
   disabled?: boolean;
 }
@@ -29,6 +30,7 @@ export function TextField<T extends FieldValues>({
   placeholder,
   type = "text",
   multiline = false,
+  rows,
   disabled,
 }: TextFieldProps<T>) {
   return (
@@ -41,6 +43,7 @@ export function TextField<T extends FieldValues>({
           <FormControl>
             {multiline ? (
               <Textarea
+                rows={rows}
                 placeholder={placeholder}
                 disabled={disabled}
                 {...field}

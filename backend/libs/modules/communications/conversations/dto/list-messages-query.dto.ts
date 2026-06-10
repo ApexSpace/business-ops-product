@@ -21,7 +21,8 @@ export class ListMessagesQueryDto extends PaginationQueryDto {
   direction?: 'before' | 'after' = 'before';
 
   @ApiPropertyOptional({
-    description: 'When true with no cursor, returns the latest messages first (chat mode).',
+    description:
+      'When true with no cursor, returns the latest messages first (chat mode).',
     default: false,
   })
   @IsOptional()

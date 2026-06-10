@@ -5,7 +5,7 @@ import { SnapshotApplyService } from './snapshot-apply.service';
 describe('SnapshotApplyService', () => {
   const businessId = 'biz-1';
   const snapshotId = 'snap-1';
-  const assets = SNAPSHOT_SEED_DEFINITIONS[0]!.assets;
+  const assets = SNAPSHOT_SEED_DEFINITIONS[0].assets;
 
   function buildMocks() {
     const provisions = new Map<string, string>();
@@ -77,7 +77,7 @@ describe('SnapshotApplyService', () => {
     const service = new SnapshotApplyService(
       prisma as never,
       snapshotRepository as never,
-      validationService as never,
+      validationService,
     );
 
     return { service, prisma, tx, provisions, pipelines, contacts, leads };
@@ -87,10 +87,10 @@ describe('SnapshotApplyService', () => {
     const { service, prisma } = buildMocks();
     await service.apply(businessId, snapshotId);
 
-    expect(prisma.$transaction).toHaveBeenCalledWith(
-      expect.any(Function),
-      { timeout: 60_000, maxWait: 10_000 },
-    );
+    expect(prisma.$transaction).toHaveBeenCalledWith(expect.any(Function), {
+      timeout: 60_000,
+      maxWait: 10_000,
+    });
   });
 
   it('creates provisioned assets on first apply', async () => {

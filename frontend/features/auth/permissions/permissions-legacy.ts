@@ -33,6 +33,14 @@ export function canManageSnapshots(role?: PlatformMemberRole): boolean {
   return role === "SUPER_ADMIN" || role === "PLATFORM_ADMIN";
 }
 
+export function canManageCapabilities(role?: PlatformMemberRole): boolean {
+  return role === "SUPER_ADMIN" || role === "PLATFORM_ADMIN";
+}
+
+export function canManagePlanGroups(role?: PlatformMemberRole): boolean {
+  return role === "SUPER_ADMIN" || role === "PLATFORM_ADMIN";
+}
+
 export function canManageBilling(role?: PlatformMemberRole): boolean {
   return role === "SUPER_ADMIN" || role === "PLATFORM_ADMIN";
 }

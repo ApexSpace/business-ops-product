@@ -1,7 +1,4 @@
-import {
-  BusinessMemberRole,
-  PlatformMemberRole,
-} from '@prisma/client';
+import { BusinessMemberRole, PlatformMemberRole } from '@prisma/client';
 import { AuthContext } from '@app/common/decorators/current-user.decorator';
 
 export interface JwtAccessPayload {

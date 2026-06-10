@@ -21,6 +21,7 @@ import { CreatePipelineDto } from '../dto/create-pipeline.dto';
 import { UpdatePipelineDto } from '../dto/update-pipeline.dto';
 import { PipelinesService } from '@app/modules/crm/pipelines/services/pipelines.service';
 
+// TODO: capability guard phase 5 — verify route map before enabling pipelines guard
 @ApiTags('pipelines')
 @ApiBearerAuth()
 @Controller('pipelines')

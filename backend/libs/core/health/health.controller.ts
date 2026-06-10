@@ -32,8 +32,7 @@ export class HealthController {
         this.memory.checkHeap(
           'memory_heap',
           parseInt(
-            process.env.HEALTH_HEAP_LIMIT_BYTES ??
-              String(512 * 1024 * 1024),
+            process.env.HEALTH_HEAP_LIMIT_BYTES ?? String(512 * 1024 * 1024),
             10,
           ),
         ),

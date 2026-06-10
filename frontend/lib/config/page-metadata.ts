@@ -146,10 +146,12 @@ const businessRoutes: Record<string, RouteEntry> = {
     ],
   },
   "/business/settings/billing": {
-    title: "Billing",
+    title: "Plan & Billing",
+    description:
+      "Your subscription, plan tier, payment status, and included capabilities.",
     breadcrumbs: [
       { label: "Settings", href: "/business/settings/profile" },
-      { label: "Billing" },
+      { label: "Plan & Billing" },
     ],
   },
   "/business/settings/integrations": {
@@ -199,17 +201,19 @@ const platformRoutes: Record<string, RouteEntry> = {
     title: "Users",
     description: "Platform and business user accounts.",
   },
-  "/platform/plans": {
-    title: "Plans",
-    description: "Subscription plans and packaging.",
-  },
-  "/platform/billing": {
-    title: "Billing",
-    description: "Payments and subscriptions overview.",
+  "/platform/plan-groups": {
+    title: "Plan Groups",
+    description:
+      "Pricing table builder with tiers, capability assignments, comparison rows, and embeddable public pricing.",
   },
   "/platform/audit-logs": {
     title: "Audit Logs",
     description: "Security and activity audit trail.",
+  },
+  "/platform/capabilities": {
+    title: "Capabilities",
+    description:
+      "Platform-level software capabilities—CRM, messaging, automation, and more.",
   },
   "/platform/settings": {
     title: "Platform Settings",
@@ -290,6 +294,26 @@ export function resolvePageMetadata(
       breadcrumbs: [
         { label: "Snapshots", href: "/platform/snapshots" },
         { label: "Editor" },
+      ],
+    };
+  }
+
+  if (pathname.match(/^\/platform\/capabilities\/[^/]+$/)) {
+    return {
+      title: "Capability",
+      breadcrumbs: [
+        { label: "Capabilities", href: "/platform/capabilities" },
+        { label: "Details" },
+      ],
+    };
+  }
+
+  if (pathname.match(/^\/platform\/plan-groups\/[^/]+$/)) {
+    return {
+      title: "Plan Group",
+      breadcrumbs: [
+        { label: "Plan Groups", href: "/platform/plan-groups" },
+        { label: "Details" },
       ],
     };
   }

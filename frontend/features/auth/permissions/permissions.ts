@@ -6,6 +6,8 @@ import {
   canManageBusinessSettings,
   canManageIndustries,
   canManageSnapshots,
+  canManageCapabilities,
+  canManagePlanGroups,
   canManagePipelines,
   canManagePlatformSettings,
   canManagePlatformUsers,
@@ -37,6 +39,8 @@ export const PERMISSIONS = {
   "platform.plans.manage": "platform.plans.manage",
   "platform.industries.manage": "platform.industries.manage",
   "platform.snapshots.manage": "platform.snapshots.manage",
+  "platform.capabilities.manage": "platform.capabilities.manage",
+  "platform.plan_groups.manage": "platform.plan_groups.manage",
   "platform.billing.manage": "platform.billing.manage",
   "platform.settings.manage": "platform.settings.manage",
 } as const;
@@ -79,6 +83,10 @@ export function evaluatePermission(
       return canManageIndustries(jwt.platformRole);
     case PERMISSIONS["platform.snapshots.manage"]:
       return canManageSnapshots(jwt.platformRole);
+    case PERMISSIONS["platform.capabilities.manage"]:
+      return canManageCapabilities(jwt.platformRole);
+    case PERMISSIONS["platform.plan_groups.manage"]:
+      return canManagePlanGroups(jwt.platformRole);
     case PERMISSIONS["platform.billing.manage"]:
       return canManageBilling(jwt.platformRole);
     case PERMISSIONS["platform.settings.manage"]:

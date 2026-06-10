@@ -82,7 +82,9 @@ export class LinkedInOAuthService {
     res: Response,
   ): Promise<void> {
     if (error || !code || !state) {
-      res.redirect(this.buildOAuthCallbackUrl({ error: 'linkedin_oauth_failed' }));
+      res.redirect(
+        this.buildOAuthCallbackUrl({ error: 'linkedin_oauth_failed' }),
+      );
       return;
     }
 
@@ -90,12 +92,16 @@ export class LinkedInOAuthService {
     try {
       payload = verifyLinkedInOAuthState(state, this.getStateSecret());
     } catch {
-      res.redirect(this.buildOAuthCallbackUrl({ error: 'linkedin_oauth_failed' }));
+      res.redirect(
+        this.buildOAuthCallbackUrl({ error: 'linkedin_oauth_failed' }),
+      );
       return;
     }
 
     if (!isLinkedInOAuthProviderKey(payload.providerKey)) {
-      res.redirect(this.buildOAuthCallbackUrl({ error: 'linkedin_oauth_failed' }));
+      res.redirect(
+        this.buildOAuthCallbackUrl({ error: 'linkedin_oauth_failed' }),
+      );
       return;
     }
 
@@ -112,7 +118,9 @@ export class LinkedInOAuthService {
         }),
       );
     } catch {
-      res.redirect(this.buildOAuthCallbackUrl({ error: 'linkedin_oauth_failed' }));
+      res.redirect(
+        this.buildOAuthCallbackUrl({ error: 'linkedin_oauth_failed' }),
+      );
     }
   }
 
@@ -127,7 +135,9 @@ export class LinkedInOAuthService {
     return `${LINKEDIN_OAUTH_AUTHORIZE_URL}?${params.toString()}`;
   }
 
-  private async exchangeCodeForTokens(code: string): Promise<LinkedInTokenResponse> {
+  private async exchangeCodeForTokens(
+    code: string,
+  ): Promise<LinkedInTokenResponse> {
     const response = await fetch(LINKEDIN_OAUTH_TOKEN_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -184,7 +194,9 @@ export class LinkedInOAuthService {
     tokens: LinkedInTokenResponse,
     profile: LinkedInUserInfo,
   ): Promise<void> {
-    const expiresAt = new Date(Date.now() + tokens.expires_in * 1000).toISOString();
+    const expiresAt = new Date(
+      Date.now() + tokens.expires_in * 1000,
+    ).toISOString();
     const scope = tokens.scope ?? [...LINKEDIN_OAUTH_SCOPES].join(' ');
     const scopes = scope.split(' ').filter(Boolean);
 
@@ -213,8 +225,10 @@ export class LinkedInOAuthService {
           linkedInUserId: profile.sub,
           locale: profile.locale ?? null,
           picture: profile.picture ?? null,
-        } as Prisma.InputJsonValue,
-        credentials: { encrypted: encryptedCredentials } as Prisma.InputJsonValue,
+        },
+        credentials: {
+          encrypted: encryptedCredentials,
+        },
         connectedAccountName: profile.name ?? null,
         connectedAccountEmail: profile.email ?? null,
         connectedAt: now,
@@ -236,7 +250,7 @@ export class LinkedInOAuthService {
             picture: profile.picture ?? null,
             locale: profile.locale ?? null,
             scopes,
-          } as Prisma.InputJsonValue,
+          },
           lastSyncedAt: now,
         },
       ],
@@ -382,4 +396,3 @@ export class LinkedInOAuthService {
     return key;
   }
 }
-

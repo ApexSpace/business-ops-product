@@ -1,9 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import {
-  Appointment,
-  AppointmentStatus,
-  Prisma,
-} from '@prisma/client';
+import { Appointment, AppointmentStatus, Prisma } from '@prisma/client';
 
 const BLOCKING_STATUSES: AppointmentStatus[] = [
   AppointmentStatus.SCHEDULED,
@@ -111,7 +107,9 @@ export class AppointmentRepository {
         ? {
             OR: [
               { title: { contains: options.search, mode: 'insensitive' } },
-              { description: { contains: options.search, mode: 'insensitive' } },
+              {
+                description: { contains: options.search, mode: 'insensitive' },
+              },
               { notes: { contains: options.search, mode: 'insensitive' } },
             ],
           }

@@ -53,7 +53,7 @@ export class MetaWebhookController {
     if (!rawBody) {
       throw new Error('Raw body is required for Meta webhook verification');
     }
-    void     void this.metaWebhookService.handleEvent(rawBody, signature);
+    void this.metaWebhookService.handleEvent(rawBody, signature);
     return { success: true };
   }
 }

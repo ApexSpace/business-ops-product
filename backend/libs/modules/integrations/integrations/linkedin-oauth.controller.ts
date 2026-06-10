@@ -36,4 +36,3 @@ export class LinkedInOAuthController {
     await this.linkedInOAuthService.handleCallback(code, state, error, res);
   }
 }
-

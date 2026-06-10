@@ -100,7 +100,10 @@ export class EmailTemplateService {
     },
   ) {
     assertEmailType(emailType);
-    const sampleVariables = this.buildSampleVariables(emailType, data.variables);
+    const sampleVariables = this.buildSampleVariables(
+      emailType,
+      data.variables,
+    );
 
     return this.renderer.renderEmailContent({
       emailType,
@@ -124,7 +127,10 @@ export class EmailTemplateService {
     actor: RequestUser,
   ) {
     assertEmailType(emailType);
-    const sampleVariables = this.buildSampleVariables(emailType, data.variables);
+    const sampleVariables = this.buildSampleVariables(
+      emailType,
+      data.variables,
+    );
 
     void this.emailNotificationService
       .enqueueTransactionalEmail({
@@ -151,7 +157,10 @@ export class EmailTemplateService {
     if (!isBusinessConfigurableEmailType(emailType)) {
       throw new Error(`Email type is not customizable: ${emailType}`);
     }
-    await this.templateRepository.deleteByBusinessAndType(businessId, emailType);
+    await this.templateRepository.deleteByBusinessAndType(
+      businessId,
+      emailType,
+    );
     return this.getTemplate(businessId, emailType);
   }
 
@@ -217,7 +226,9 @@ export class EmailLogsService {
       skip,
       take,
       emailType: query.emailType,
-      status: query.status as import('@prisma/client').EmailMessageStatus | undefined,
+      status: query.status as
+        | import('@prisma/client').EmailMessageStatus
+        | undefined,
       search: query.search,
       dateFrom: query.dateFrom ? new Date(query.dateFrom) : undefined,
       dateTo: query.dateTo ? new Date(query.dateTo) : undefined,
@@ -227,7 +238,9 @@ export class EmailLogsService {
       items: items.map((item) => {
         const metadata = (item.metadata ?? {}) as Record<string, unknown>;
         const deliveredAt =
-          typeof metadata.deliveredAt === 'string' ? metadata.deliveredAt : null;
+          typeof metadata.deliveredAt === 'string'
+            ? metadata.deliveredAt
+            : null;
 
         return {
           id: item.id,

@@ -29,7 +29,11 @@ export class SendMessageProcessor {
 
   async process(payload: SendOutboundMessagePayload): Promise<void> {
     const scope = `send-message:${payload.messageId}`;
-    const claimed = await this.idempotencyService.claim(scope, payload.messageId, 3600);
+    const claimed = await this.idempotencyService.claim(
+      scope,
+      payload.messageId,
+      3600,
+    );
     if (!claimed) {
       this.logger.log(`Send message ${payload.messageId} already processing`);
       return;
@@ -54,7 +58,11 @@ export class SendMessageProcessor {
       message.conversationId,
     );
     if (!conversation?.resourceId) {
-      await this.failMessage(payload, message.id, 'Conversation channel not ready');
+      await this.failMessage(
+        payload,
+        message.id,
+        'Conversation channel not ready',
+      );
       return;
     }
 
@@ -70,7 +78,11 @@ export class SendMessageProcessor {
         );
 
       if (!integration || integration.status !== IntegrationStatus.CONNECTED) {
-        await this.failMessage(payload, message.id, 'Integration not connected');
+        await this.failMessage(
+          payload,
+          message.id,
+          'Integration not connected',
+        );
         return;
       }
     }
@@ -91,7 +103,9 @@ export class SendMessageProcessor {
         externalMessageId: result.externalMessageId ?? undefined,
         status: MessageStatus.SENT,
         sentAt: now,
-        metadata: (result.metadata ?? undefined) as Prisma.InputJsonValue | undefined,
+        metadata: (result.metadata ?? undefined) as
+          | Prisma.InputJsonValue
+          | undefined,
       });
 
       await this.conversationsRepository.update(conversation.id, {

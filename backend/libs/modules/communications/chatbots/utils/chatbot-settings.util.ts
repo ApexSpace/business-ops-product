@@ -107,10 +107,7 @@ function pickNumber(
 }
 
 function parsePlacement(value: unknown): ChatbotWidgetPosition {
-  if (
-    value === ChatbotWidgetPosition.BOTTOM_LEFT ||
-    value === 'BOTTOM_LEFT'
-  ) {
+  if (value === ChatbotWidgetPosition.BOTTOM_LEFT || value === 'BOTTOM_LEFT') {
     return ChatbotWidgetPosition.BOTTOM_LEFT;
   }
   return ChatbotWidgetPosition.BOTTOM_RIGHT;
@@ -149,7 +146,11 @@ export function parseAppearanceSettings(
       o.theme === 'dark' || o.theme === 'auto' || o.theme === 'light'
         ? o.theme
         : DEFAULT_APPEARANCE.theme,
-    primaryColor: pickString(o, 'primaryColor', DEFAULT_APPEARANCE.primaryColor),
+    primaryColor: pickString(
+      o,
+      'primaryColor',
+      DEFAULT_APPEARANCE.primaryColor,
+    ),
     secondaryColor:
       typeof o.secondaryColor === 'string' ? o.secondaryColor : null,
     avatarUrl: typeof o.avatarUrl === 'string' ? o.avatarUrl : null,
@@ -174,7 +175,11 @@ export function parseChatWindowSettings(
   return {
     language: pickString(o, 'language', DEFAULT_CHAT_WINDOW.language),
     title: pickString(o, 'title', DEFAULT_CHAT_WINDOW.title),
-    introMessage: pickString(o, 'introMessage', DEFAULT_CHAT_WINDOW.introMessage),
+    introMessage: pickString(
+      o,
+      'introMessage',
+      DEFAULT_CHAT_WINDOW.introMessage,
+    ),
     offlineMessage: pickString(
       o,
       'offlineMessage',
@@ -199,7 +204,11 @@ export function parseMessagingSettings(
 ): ChatbotMessagingSettings {
   const o = asObject(raw);
   return {
-    welcomeMessage: pickString(o, 'welcomeMessage', DEFAULT_MESSAGING.welcomeMessage),
+    welcomeMessage: pickString(
+      o,
+      'welcomeMessage',
+      DEFAULT_MESSAGING.welcomeMessage,
+    ),
     fallbackMessage: pickString(
       o,
       'fallbackMessage',
@@ -299,7 +308,9 @@ export function settingsToJson(
   };
 }
 
-export function bundleFromCreateDto(dto: CreateChatbotDto): ChatbotSettingsBundle {
+export function bundleFromCreateDto(
+  dto: CreateChatbotDto,
+): ChatbotSettingsBundle {
   const defaults = defaultSettingsBundle();
   return {
     appearance: {
@@ -313,19 +324,25 @@ export function bundleFromCreateDto(dto: CreateChatbotDto): ChatbotSettingsBundl
       ...defaults.chatWindow,
       title: dto.widgetTitle.trim(),
       introMessage: dto.welcomeMessage.trim(),
-      offlineMessage: dto.offlineMessage?.trim() ?? defaults.chatWindow.offlineMessage,
-      handoffMessage: dto.handoffMessage?.trim() ?? defaults.chatWindow.handoffMessage,
+      offlineMessage:
+        dto.offlineMessage?.trim() ?? defaults.chatWindow.offlineMessage,
+      handoffMessage:
+        dto.handoffMessage?.trim() ?? defaults.chatWindow.handoffMessage,
     },
     messaging: {
       ...defaults.messaging,
       welcomeMessage: dto.welcomeMessage.trim(),
-      fallbackMessage: dto.fallbackMessage?.trim() ?? defaults.messaging.fallbackMessage,
-      offlineMessage: dto.offlineMessage?.trim() ?? defaults.messaging.offlineMessage,
-      autoReplyEnabled: dto.autoReplyEnabled ?? defaults.messaging.autoReplyEnabled,
+      fallbackMessage:
+        dto.fallbackMessage?.trim() ?? defaults.messaging.fallbackMessage,
+      offlineMessage:
+        dto.offlineMessage?.trim() ?? defaults.messaging.offlineMessage,
+      autoReplyEnabled:
+        dto.autoReplyEnabled ?? defaults.messaging.autoReplyEnabled,
     },
     form: {
       ...defaults.form,
-      collectContactInfo: dto.collectContactInfo ?? defaults.form.collectContactInfo,
+      collectContactInfo:
+        dto.collectContactInfo ?? defaults.form.collectContactInfo,
       requireName: dto.requireName ?? defaults.form.requireName,
       requireEmail: dto.requireEmail ?? defaults.form.requireEmail,
       requirePhone: dto.requirePhone ?? defaults.form.requirePhone,
@@ -351,10 +368,12 @@ export function mergeUpdateDto(
   const bot = { ...current.bot };
   const businessHours = { ...current.businessHours };
 
-  if (dto.primaryColor !== undefined) appearance.primaryColor = dto.primaryColor;
+  if (dto.primaryColor !== undefined)
+    appearance.primaryColor = dto.primaryColor;
   if (dto.position !== undefined) appearance.placement = dto.position;
   if (dto.avatarUrl !== undefined) appearance.avatarUrl = dto.avatarUrl ?? null;
-  if (dto.showBranding !== undefined) appearance.showBranding = dto.showBranding;
+  if (dto.showBranding !== undefined)
+    appearance.showBranding = dto.showBranding;
 
   if (dto.widgetTitle !== undefined) chatWindow.title = dto.widgetTitle.trim();
   if (dto.welcomeMessage !== undefined) {
@@ -386,8 +405,10 @@ export function mergeUpdateDto(
   if (dto.requireName !== undefined) form.requireName = dto.requireName;
   if (dto.requireEmail !== undefined) form.requireEmail = dto.requireEmail;
   if (dto.requirePhone !== undefined) form.requirePhone = dto.requirePhone;
-  if (dto.showNotesField !== undefined) form.showNotesField = dto.showNotesField;
-  if (dto.allowAnonymous !== undefined) form.allowAnonymous = dto.allowAnonymous;
+  if (dto.showNotesField !== undefined)
+    form.showNotesField = dto.showNotesField;
+  if (dto.allowAnonymous !== undefined)
+    form.allowAnonymous = dto.allowAnonymous;
   if (dto.embedEnabled !== undefined) bot.embedEnabled = dto.embedEnabled;
 
   return {

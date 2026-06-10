@@ -9,7 +9,13 @@ import { WorkItemRepository } from './repositories/work-item.repository';
 import { WorkItemsService } from './services/work-items.service';
 
 @Module({
-  imports: [AuditModule, ContactsModule, ServicesModule, LeadsModule, MembershipModule],
+  imports: [
+    AuditModule,
+    ContactsModule,
+    ServicesModule,
+    LeadsModule,
+    MembershipModule,
+  ],
   controllers: [WorkItemsController],
   providers: [WorkItemRepository, WorkItemsService],
   exports: [WorkItemRepository, WorkItemsService],

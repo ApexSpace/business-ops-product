@@ -89,8 +89,7 @@ export class EmailNotificationService {
     }
 
     const idempotencyKey =
-      params.idempotencyKey ??
-      this.buildDefaultIdempotencyKey(params, toEmail);
+      params.idempotencyKey ?? this.buildDefaultIdempotencyKey(params, toEmail);
 
     const existing = await this.messageRepository.findExistingForSend({
       businessId,
@@ -117,10 +116,11 @@ export class EmailNotificationService {
       htmlBody = params.templateOverride.htmlBody;
       textBody = params.templateOverride.textBody ?? null;
     } else if (!isSystemEmail && businessId) {
-      const customTemplate = await this.templateRepository.findByBusinessAndType(
-        businessId,
-        params.emailType,
-      );
+      const customTemplate =
+        await this.templateRepository.findByBusinessAndType(
+          businessId,
+          params.emailType,
+        );
       if (customTemplate) {
         subject = customTemplate.subject;
         htmlBody = customTemplate.htmlBody;
@@ -155,14 +155,16 @@ export class EmailNotificationService {
         idempotencyKey,
         htmlBody: rendered.htmlBody,
         textBody: rendered.textBody,
-      } as Prisma.InputJsonValue,
+      },
     });
 
     const jobId = await this.queueService
       .enqueueSendEmail({ emailMessageId: message.id }, idempotencyKey)
       .catch(async (error) => {
         const reason =
-          error instanceof Error ? error.message : 'Failed to enqueue email job';
+          error instanceof Error
+            ? error.message
+            : 'Failed to enqueue email job';
         await this.messageRepository.updateStatus(message.id, {
           status: EmailMessageStatus.FAILED,
           errorMessage: reason,

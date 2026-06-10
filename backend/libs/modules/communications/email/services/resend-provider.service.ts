@@ -21,7 +21,9 @@ export class ResendProviderService {
   private readonly logger = new Logger(ResendProviderService.name);
   private client: Resend | null = null;
 
-  constructor(private readonly configService: ConfigService<RootConfig, true>) {}
+  constructor(
+    private readonly configService: ConfigService<RootConfig, true>,
+  ) {}
 
   isConfigured(): boolean {
     const email = this.configService.get('email', { infer: true });
@@ -29,7 +31,9 @@ export class ResendProviderService {
   }
 
   private getClient(): Resend {
-    const apiKey = this.configService.get('email.resend.apiKey', { infer: true });
+    const apiKey = this.configService.get('email.resend.apiKey', {
+      infer: true,
+    });
     if (!apiKey) {
       throw new Error('Resend API key is not configured');
     }
@@ -63,7 +67,9 @@ export class ResendProviderService {
       return { providerMessageId };
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : 'Failed to send email via Resend';
+        error instanceof Error
+          ? error.message
+          : 'Failed to send email via Resend';
       this.logger.error(`Resend send failed: ${message}`);
       throw error instanceof Error ? error : new Error(message);
     }

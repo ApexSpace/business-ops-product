@@ -37,29 +37,34 @@ export class ChatbotsRepository {
 
   findMany(
     businessId: string,
-    params: { skip: number; take: number },
+    params: { skip: number; take: number; status?: ChatbotStatus },
   ): Promise<{ items: ChatbotListItem[]; total: number }> {
-    const where = this.activeWhere(businessId);
-    return this.prisma.$transaction([
-      this.prisma.chatbot.findMany({
-        where,
-        skip: params.skip,
-        take: params.take,
-        orderBy: { createdAt: 'desc' },
-        include: {
-          _count: { select: { sessions: true } },
-          sessions: {
-            take: 1,
-            orderBy: { updatedAt: 'desc' },
-            select: { updatedAt: true },
+    const where = this.activeWhere(
+      businessId,
+      params.status ? { status: params.status } : undefined,
+    );
+    return this.prisma
+      .$transaction([
+        this.prisma.chatbot.findMany({
+          where,
+          skip: params.skip,
+          take: params.take,
+          orderBy: { createdAt: 'desc' },
+          include: {
+            _count: { select: { sessions: true } },
+            sessions: {
+              take: 1,
+              orderBy: { updatedAt: 'desc' },
+              select: { updatedAt: true },
+            },
           },
-        },
-      }),
-      this.prisma.chatbot.count({ where }),
-    ]).then(([items, total]) => ({
-      items: items as ChatbotListItem[],
-      total,
-    }));
+        }),
+        this.prisma.chatbot.count({ where }),
+      ])
+      .then(([items, total]) => ({
+        items: items,
+        total,
+      }));
   }
 
   create(data: Prisma.ChatbotCreateInput): Promise<Chatbot> {

@@ -21,7 +21,7 @@ export function toPaymentResponse(
       payment.providerMetadata &&
       typeof payment.providerMetadata === 'object' &&
       !Array.isArray(payment.providerMetadata)
-        ? (payment.providerMetadata as Record<string, unknown>)
+        ? payment.providerMetadata
         : null,
     reference: payment.reference,
     notes: payment.notes,

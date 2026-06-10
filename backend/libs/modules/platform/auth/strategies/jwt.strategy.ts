@@ -3,11 +3,11 @@ import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import {
   BusinessMemberRole,
-  BusinessStatus,
   MembershipStatus,
   PlatformMemberRole,
   UserStatus,
 } from '@prisma/client';
+import { Request } from 'express';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { RequestUser } from '@app/common/decorators/current-user.decorator';
 import { AppException } from '@app/common/exceptions/app.exception';
@@ -15,10 +15,20 @@ import { ErrorCode } from '@app/common/exceptions/error-code.enum';
 import { RootConfig } from '@app/core/config/configuration';
 import { JwtAccessPayload } from '../interfaces/jwt-payload.interface';
 import { BusinessRepository } from '@app/modules/platform/business/repositories/business.repository';
+import { BusinessAccessResolverService } from '@app/modules/platform/business/services/business-access-resolver.service';
+import { mapAccessBlockToAuthError } from '@app/modules/platform/business/utils/business-access-auth.util';
 import { BusinessMembershipRepository } from '@app/modules/platform/membership/repositories/business-membership.repository';
 import { PlatformMembershipRepository } from '../repositories/platform-membership.repository';
 import { UserRepository } from '../repositories/user.repository';
 import { resolvePlatformBusinessRole } from '../utils/platform-business-access.util';
+
+function isTenantAccessEndpoint(req: Request): boolean {
+  const url = req.originalUrl ?? req.url ?? '';
+  return (
+    req.method === 'GET' &&
+    url.includes('businesses/current/access')
+  );
+}
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
@@ -28,15 +38,17 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     private readonly platformMembershipRepository: PlatformMembershipRepository,
     private readonly businessMembershipRepository: BusinessMembershipRepository,
     private readonly businessRepository: BusinessRepository,
+    private readonly accessResolver: BusinessAccessResolverService,
   ) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
       secretOrKey: configService.get('jwt.accessSecret', { infer: true }),
+      passReqToCallback: true,
     });
   }
 
-  async validate(payload: JwtAccessPayload): Promise<RequestUser> {
+  async validate(req: Request, payload: JwtAccessPayload): Promise<RequestUser> {
     const user = await this.userRepository.findById(payload.sub);
     if (!user || user.status !== UserStatus.ACTIVE) {
       throw new AppException(
@@ -80,12 +92,17 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         HttpStatus.UNAUTHORIZED,
       );
     }
-    if (business.status !== BusinessStatus.ACTIVE) {
-      throw new AppException(
-        ErrorCode.BUSINESS_SUSPENDED,
-        'Business is not active',
-        HttpStatus.UNAUTHORIZED,
+
+    const resolution = await this.accessResolver.resolveForBusiness(
+      payload.businessId,
+    );
+
+    if (!resolution.canAccessWorkspace && !isTenantAccessEndpoint(req)) {
+      const { code, message } = mapAccessBlockToAuthError(
+        business.status,
+        resolution.reasonCode,
       );
+      throw new AppException(code, message, HttpStatus.FORBIDDEN);
     }
 
     const platformMembership =
@@ -100,9 +117,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     if (platformMembership) {
       const businessRole = resolvePlatformBusinessRole(
         platformMembership.role,
-        membership?.status === MembershipStatus.ACTIVE
-          ? membership.role
-          : null,
+        membership?.status === MembershipStatus.ACTIVE ? membership.role : null,
       );
       return {
         id: user.id,

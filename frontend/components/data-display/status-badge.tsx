@@ -20,8 +20,13 @@ export type StatusBadgeDomain =
   | "membership"
   | "business"
   | "plan"
+  | "planGroup"
+  | "planTier"
   | "snapshot"
+  | "capability"
+  | "capabilityFeature"
   | "subscription"
+  | "subscriptionPayment"
   | "user"
   | "transaction";
 
@@ -150,6 +155,8 @@ function resolveTone(domain: StatusBadgeDomain, status: string): StatusTone {
       return "success";
 
     case "snapshot":
+    case "planGroup":
+    case "planTier":
       switch (normalized) {
         case "PUBLISHED":
           return "success";
@@ -161,11 +168,99 @@ function resolveTone(domain: StatusBadgeDomain, status: string): StatusTone {
           return "neutral";
       }
 
+    case "capability":
+      switch (normalized) {
+        case "ACTIVE":
+          return "success";
+        case "DRAFT":
+          return "warning";
+        case "INACTIVE":
+          return "neutral";
+        case "DEPRECATED":
+          return "danger";
+        default:
+          return "neutral";
+      }
+
+    case "capabilityFeature":
+      switch (normalized) {
+        case "ACTIVE":
+          return "success";
+        case "BETA":
+          return "warning";
+        case "INTERNAL":
+          return "info";
+        case "DISABLED":
+          return "neutral";
+        case "DEPRECATED":
+          return "danger";
+        default:
+          return "neutral";
+      }
+
     case "membership":
     case "user":
     case "business":
+      switch (normalized) {
+        case "ACTIVE":
+          return "success";
+        case "NOT_ACTIVE":
+          return "warning";
+        case "SUSPENDED":
+          return "danger";
+        case "ARCHIVED":
+          return "neutral";
+        default:
+          return "neutral";
+      }
+
     case "plan":
+      switch (normalized) {
+        case "ACTIVE":
+          return "success";
+        case "ARCHIVED":
+          return "neutral";
+        default:
+          return "neutral";
+      }
+
     case "subscription":
+      switch (normalized) {
+        case "ACTIVE":
+          return "success";
+        case "TRIALING":
+          return "warning";
+        case "PENDING_PAYMENT":
+          return "warning";
+        case "INTERNAL":
+          return "info";
+        case "CANCELED":
+          return "neutral";
+        case "EXPIRED":
+        case "PAST_DUE":
+          return "danger";
+        default:
+          return "neutral";
+      }
+
+    case "subscriptionPayment":
+      switch (normalized) {
+        case "PAID":
+          return "success";
+        case "PENDING":
+        case "PARTIALLY_PAID":
+          return "warning";
+        case "FAILED":
+        case "OVERDUE":
+          return "danger";
+        case "REFUNDED":
+          return "neutral";
+        case "NOT_REQUIRED":
+          return "info";
+        default:
+          return "neutral";
+      }
+
     case "contact":
       switch (normalized) {
         case "ACTIVE":
@@ -175,11 +270,9 @@ function resolveTone(domain: StatusBadgeDomain, status: string): StatusTone {
         case "INACTIVE":
         case "DISABLED":
         case "ARCHIVED":
-        case "SUSPENDED":
           return "neutral";
         case "CANCELLED":
         case "EXPIRED":
-        case "PAST_DUE":
           return "danger";
         case "PENDING":
         case "TRIAL":

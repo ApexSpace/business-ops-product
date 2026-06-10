@@ -34,7 +34,9 @@ export function resolveContactLabel(contact: {
   return 'Unnamed';
 }
 
-export function toContactResponse(contact: ContactWithTags): ContactResponseDto {
+export function toContactResponse(
+  contact: ContactWithTags,
+): ContactResponseDto {
   return {
     id: contact.id,
     businessId: contact.businessId,

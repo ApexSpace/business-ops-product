@@ -25,9 +25,7 @@ export function toTaskResponse(task: TaskWithRelations): TaskResponseDto {
           label: resolveContactLabel(task.contact),
         }
       : null,
-    lead: task.lead
-      ? { id: task.lead.id, title: task.lead.title }
-      : null,
+    lead: task.lead ? { id: task.lead.id, title: task.lead.title } : null,
     assignedTo: task.assignedTo,
     createdBy: task.createdBy,
   };

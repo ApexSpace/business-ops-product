@@ -13,7 +13,10 @@ import {
   EmailPreferenceService,
 } from './services/email-notification.service';
 import { EmailTemplateRendererService } from './services/email-template-renderer.service';
-import { EmailLogsService, EmailTemplateService } from './services/email-template.service';
+import {
+  EmailLogsService,
+  EmailTemplateService,
+} from './services/email-template.service';
 import { ResendProviderService } from './services/resend-provider.service';
 import { ResendWebhookService } from './services/resend-webhook.service';
 import { ResendWebhookProcessor } from './workers/processors/resend-webhook.processor';

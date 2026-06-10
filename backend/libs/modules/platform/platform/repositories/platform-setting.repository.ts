@@ -32,9 +32,7 @@ export class PlatformSettingRepository {
     return row.value as unknown as PlatformSettingsValue;
   }
 
-  async upsertSettings(
-    value: PlatformSettingsValue,
-  ): Promise<PlatformSetting> {
+  async upsertSettings(value: PlatformSettingsValue): Promise<PlatformSetting> {
     return this.prisma.platformSetting.upsert({
       where: { key: PLATFORM_SETTINGS_KEY },
       create: {

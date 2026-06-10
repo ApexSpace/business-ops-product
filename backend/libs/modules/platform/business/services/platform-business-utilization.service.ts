@@ -17,7 +17,9 @@ export class PlatformBusinessUtilizationService {
     private readonly dashboardStatsService: DashboardStatsService,
   ) {}
 
-  async getUtilization(businessId: string): Promise<PlatformBusinessUtilizationDto> {
+  async getUtilization(
+    businessId: string,
+  ): Promise<PlatformBusinessUtilizationDto> {
     const business = await this.prisma.business.findFirst({
       where: { id: businessId, deletedAt: null },
       select: {
@@ -63,7 +65,9 @@ export class PlatformBusinessUtilizationService {
       this.prisma.estimate.count({ where: { businessId, deletedAt: null } }),
       this.prisma.invoice.count({ where: { businessId, deletedAt: null } }),
       this.prisma.payment.count({ where: { businessId, deletedAt: null } }),
-      this.prisma.conversation.count({ where: { businessId, deletedAt: null } }),
+      this.prisma.conversation.count({
+        where: { businessId, deletedAt: null },
+      }),
       this.prisma.chatbot.count({ where: { businessId, deletedAt: null } }),
       this.prisma.chatbotRule.count({ where: { businessId } }),
       this.prisma.emailTemplate.count({ where: { businessId } }),

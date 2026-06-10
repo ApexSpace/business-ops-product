@@ -22,6 +22,7 @@ import { ListContactsQueryDto } from '../dto/list-contacts-query.dto';
 import { UpdateContactDto } from '../dto/update-contact.dto';
 import { ContactsService } from '@app/modules/crm/contacts/services/contacts.service';
 
+// TODO: capability guard phase 5 — verify route map before enabling contacts guard
 @ApiTags('contacts')
 @ApiBearerAuth()
 @Controller('contacts')

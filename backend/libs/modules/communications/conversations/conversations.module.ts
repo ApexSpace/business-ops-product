@@ -1,5 +1,6 @@
 import { Module, forwardRef } from '@nestjs/common';
 import { AuditModule } from '@app/modules/platform/audit/audit.module';
+import { BusinessModule } from '@app/modules/platform/business/business.module';
 import { ContactsModule } from '@app/modules/crm/contacts/contacts.module';
 import { IntegrationsModule } from '@app/modules/integrations/integrations/integrations.module';
 import { WebhookEventsModule } from '../webhooks/webhook-events.module';
@@ -20,6 +21,7 @@ import { ConversationsService } from './services/conversations.service';
 @Module({
   imports: [
     AuditModule,
+    BusinessModule,
     ContactsModule,
     WebhookEventsModule,
     forwardRef(() => IntegrationsModule),

@@ -149,10 +149,7 @@ export class EstimatesService {
     };
   }
 
-  async getById(
-    businessId: string,
-    id: string,
-  ): Promise<EstimateResponseDto> {
+  async getById(businessId: string, id: string): Promise<EstimateResponseDto> {
     const estimate = await this.estimateRepository.findById(businessId, id);
     if (!estimate) {
       throw new AppException(
@@ -234,15 +231,17 @@ export class EstimatesService {
       }));
 
     const taxAmount =
-      dto.taxAmount !== undefined
-        ? dto.taxAmount
-        : Number(existing.taxAmount);
+      dto.taxAmount !== undefined ? dto.taxAmount : Number(existing.taxAmount);
     const discountAmount =
       dto.discountAmount !== undefined
         ? dto.discountAmount
         : Number(existing.discountAmount);
 
-    if (dto.items || dto.taxAmount !== undefined || dto.discountAmount !== undefined) {
+    if (
+      dto.items ||
+      dto.taxAmount !== undefined ||
+      dto.discountAmount !== undefined
+    ) {
       const totals = calculateEstimateTotals({
         items: itemsInput.map((i) => ({
           quantity: i.quantity,

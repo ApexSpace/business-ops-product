@@ -22,10 +22,19 @@ export class IndustryRepository {
     skip: number;
     take: number;
     status?: IndustryStatus;
+    search?: string;
   }): Promise<{ items: Industry[]; total: number }> {
     const where: Prisma.IndustryWhereInput = {
       deletedAt: null,
       ...(params.status ? { status: params.status } : {}),
+      ...(params.search
+        ? {
+            OR: [
+              { name: { contains: params.search, mode: 'insensitive' } },
+              { slug: { contains: params.search, mode: 'insensitive' } },
+            ],
+          }
+        : {}),
     };
 
     return Promise.all([

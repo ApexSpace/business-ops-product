@@ -1,3 +1,8 @@
+import { getAccessBlockedMessage } from "@/components/business-access/business-access-messages";
+import {
+  classifyApiError,
+  isAuthSessionError,
+} from "./error-classifier";
 import { ApiClientError } from "./errors";
 import { FetchNetworkError, FetchTimeoutError } from "./fetch-with-timeout";
 
@@ -22,10 +27,32 @@ const CODE_MESSAGES: Record<string, string> = {
     "The database or backend is temporarily unavailable. Please try again shortly.",
   INTERNAL_ERROR:
     "Something went wrong on our side. If this keeps happening, contact support with the reference below.",
+  FEATURE_NOT_AVAILABLE:
+    "This feature is not included in your current package.",
 };
 
 export function getUserErrorMessage(error: unknown): UserErrorMessage {
   if (error instanceof ApiClientError) {
+    const category = classifyApiError(error);
+
+    if (category === "business_access" && error.code) {
+      const blocked = getAccessBlockedMessage(error.code);
+      return {
+        title: blocked.title,
+        description: blocked.message,
+        requestId: error.requestId,
+      };
+    }
+
+    if (category === "capability") {
+      return {
+        title: "Feature not included",
+        description:
+          CODE_MESSAGES.FEATURE_NOT_AVAILABLE ?? error.message,
+        requestId: error.requestId,
+      };
+    }
+
     const byCode = error.code ? CODE_MESSAGES[error.code] : undefined;
     const byStatus = STATUS_MESSAGES[error.status];
     const description =
@@ -39,9 +66,11 @@ export function getUserErrorMessage(error: unknown): UserErrorMessage {
       title:
         error.status >= 500
           ? "Service problem"
-          : error.status === 401
+          : isAuthSessionError(error)
             ? "Session expired"
-            : "Request failed",
+            : category === "role"
+              ? "Not authorized"
+              : "Request failed",
       description,
       requestId: error.requestId,
     };

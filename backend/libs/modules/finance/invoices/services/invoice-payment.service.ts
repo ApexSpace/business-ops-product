@@ -1,9 +1,5 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
-import {
-  InvoicePaymentStatus,
-  InvoiceStatus,
-  Prisma,
-} from '@prisma/client';
+import { InvoicePaymentStatus, InvoiceStatus, Prisma } from '@prisma/client';
 import { AppException } from '@app/common/exceptions/app.exception';
 import { ErrorCode } from '@app/common/exceptions/error-code.enum';
 import { AuditService } from '@app/modules/platform/audit/services/audit.service';
@@ -49,7 +45,10 @@ export class InvoicePaymentService {
     invoiceId: string,
     actor: RequestUser,
   ): Promise<CreateInvoicePaymentLinkResult> {
-    const invoice = await this.invoiceRepository.findById(businessId, invoiceId);
+    const invoice = await this.invoiceRepository.findById(
+      businessId,
+      invoiceId,
+    );
     if (!invoice) {
       throw new AppException(
         ErrorCode.INVOICE_NOT_FOUND,
@@ -88,7 +87,8 @@ export class InvoicePaymentService {
       (await this.ensurePublicToken(businessId, invoice)) ?? invoice;
     const financialSettings =
       await this.financialSettingsService.getSettingsForBusiness(businessId);
-    const currency = financialSettings.taxesAndCurrency.currencyCode.toLowerCase();
+    const currency =
+      financialSettings.taxesAndCurrency.currencyCode.toLowerCase();
     const amountCents = Math.round(
       Number(invoiceWithToken.balanceDue.toString()) * 100,
     );
@@ -115,8 +115,9 @@ export class InvoicePaymentService {
       );
 
     const frontendUrl = process.env.FRONTEND_URL?.replace(/\/$/, '') ?? '';
-    const publicUrl = invoiceWithToken.publicUrl
-      ?? buildInvoicePublicUrl(frontendUrl, invoiceWithToken.publicToken);
+    const publicUrl =
+      invoiceWithToken.publicUrl ??
+      buildInvoicePublicUrl(frontendUrl, invoiceWithToken.publicToken);
 
     await this.invoiceRepository.update(businessId, invoiceId, {
       stripeCheckoutUrl: url,
@@ -172,14 +173,19 @@ export class InvoicePaymentService {
         'business.name': business?.name ?? 'Business',
         'contact.name': formatContactName(invoice.contact),
         'invoice.number': invoice.invoiceNumber,
-        'invoice.balance_due': formatMoney(invoice.balanceDue, currency.toUpperCase()),
+        'invoice.balance_due': formatMoney(
+          invoice.balanceDue,
+          currency.toUpperCase(),
+        ),
         payment_link: paymentLink,
         'invoice.public_url': publicUrl,
       },
     });
   }
 
-  async getPublicByToken(publicToken: string): Promise<PublicInvoiceResponseDto> {
+  async getPublicByToken(
+    publicToken: string,
+  ): Promise<PublicInvoiceResponseDto> {
     const invoice = await this.invoiceRepository.findByPublicToken(publicToken);
     if (!invoice) {
       throw new AppException(
@@ -191,7 +197,9 @@ export class InvoicePaymentService {
     return toPublicInvoiceResponse(invoice);
   }
 
-  async startPublicCheckout(publicToken: string): Promise<{ checkoutUrl: string }> {
+  async startPublicCheckout(
+    publicToken: string,
+  ): Promise<{ checkoutUrl: string }> {
     const invoice = await this.invoiceRepository.findByPublicToken(publicToken);
     if (!invoice) {
       throw new AppException(
@@ -220,10 +228,7 @@ export class InvoicePaymentService {
       );
     assertStripeReadyForPayments(integration);
 
-    if (
-      invoice.stripeCheckoutUrl &&
-      invoice.stripePaymentLinkId
-    ) {
+    if (invoice.stripeCheckoutUrl && invoice.stripePaymentLinkId) {
       return { checkoutUrl: invoice.stripeCheckoutUrl };
     }
 
@@ -231,7 +236,8 @@ export class InvoicePaymentService {
       await this.financialSettingsService.getSettingsForBusiness(
         invoice.businessId,
       );
-    const currency = financialSettings.taxesAndCurrency.currencyCode.toLowerCase();
+    const currency =
+      financialSettings.taxesAndCurrency.currencyCode.toLowerCase();
     const amountCents = Math.round(Number(invoice.balanceDue.toString()) * 100);
 
     const { sessionId, url } =
@@ -273,10 +279,14 @@ export class InvoicePaymentService {
     const frontendUrl = process.env.FRONTEND_URL?.replace(/\/$/, '') ?? '';
     const publicUrl = buildInvoicePublicUrl(frontendUrl, publicToken);
 
-    const updated = await this.invoiceRepository.update(businessId, invoice.id, {
-      publicToken,
-      publicUrl,
-    });
+    const updated = await this.invoiceRepository.update(
+      businessId,
+      invoice.id,
+      {
+        publicToken,
+        publicUrl,
+      },
+    );
 
     return updated ?? invoice;
   }

@@ -31,10 +31,11 @@ export class FacebookMessengerAdapter implements ConversationChannelAdapter {
   async sendMessage(
     params: SendChannelMessageParams,
   ): Promise<SendChannelMessageResult> {
-    const resource = await this.integrationResourceRepository.findByIdAndBusiness(
-      params.resourceId,
-      params.businessId,
-    );
+    const resource =
+      await this.integrationResourceRepository.findByIdAndBusiness(
+        params.resourceId,
+        params.businessId,
+      );
 
     if (!resource || resource.providerKey !== this.getProviderKey()) {
       throw new AppException(
