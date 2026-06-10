@@ -30,6 +30,11 @@ import type {
 import { executeSubscriptionAction } from "@/features/platform/utils/subscription-action-executor";
 import { subscriptionPaymentMethodOptions } from "@/features/platform/utils/select-options";
 import { toDateInputValue } from "@/features/platform/utils/business-access-defaults";
+import {
+  buildActionLabelContext,
+  getActionConfirmationCopy,
+  getSubscriptionActionLabel,
+} from "@/features/platform/utils/business-subscription-actions";
 
 function todayInput(): string {
   return toDateInputValue(new Date());
@@ -49,6 +54,9 @@ export function MarkPaidDialog({
   onSuccess: () => void;
 }) {
   const sub = access.subscription;
+  const labelContext = buildActionLabelContext(access);
+  const collectPaymentLabel = getSubscriptionActionLabel("MARK_PAID", labelContext);
+  const confirmation = getActionConfirmationCopy("MARK_PAID", labelContext);
 
   const defaults = useMemo(
     () => ({
@@ -145,7 +153,7 @@ export function MarkPaidDialog({
       <Dialog open={open && !previewOpen} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Mark Paid</DialogTitle>
+            <DialogTitle>{collectPaymentLabel}</DialogTitle>
           </DialogHeader>
           <DialogBody className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
@@ -271,7 +279,9 @@ export function MarkPaidDialog({
         open={previewOpen}
         onOpenChange={setPreviewOpen}
         preview={preview}
-        actionLabel="Mark Paid"
+        actionLabel={collectPaymentLabel}
+        confirmationDescription={confirmation.description}
+        confirmLabel={collectPaymentLabel}
         isExecuting={executeMutation.isPending}
         onConfirm={() => executeMutation.mutate()}
       />

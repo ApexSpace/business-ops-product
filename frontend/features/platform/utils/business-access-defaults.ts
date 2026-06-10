@@ -5,50 +5,29 @@ import type {
   SubscriptionPaymentStatus,
 } from "@/features/platform/types/business-access";
 
-export type CreateBusinessScenario =
-  | "paid"
-  | "trial"
-  | "pending_payment"
-  | "internal"
-  | "custom";
+export type UnpaidAccessMode = "TRIAL" | "PENDING_PAYMENT" | "INTERNAL";
 
-export interface ScenarioOption {
-  value: CreateBusinessScenario;
+export interface UnpaidAccessOption {
+  value: UnpaidAccessMode;
   label: string;
   description: string;
-  summary: string;
 }
 
-export const CREATE_BUSINESS_SCENARIOS: ScenarioOption[] = [
+export const UNPAID_ACCESS_OPTIONS: UnpaidAccessOption[] = [
   {
-    value: "paid",
-    label: "Paid Customer",
-    description: "Active workspace with a paid subscription ready to use.",
-    summary: "Active business · Active subscription · Paid",
+    value: "TRIAL",
+    label: "Start trial",
+    description: "Grant workspace access for a limited trial period.",
   },
   {
-    value: "trial",
-    label: "Trial Customer",
-    description: "Full access during a trial period before billing starts.",
-    summary: "Active business · Trialing · Period end required",
+    value: "PENDING_PAYMENT",
+    label: "Pending payment",
+    description: "Create the workspace but block access until payment is received.",
   },
   {
-    value: "pending_payment",
-    label: "Pending Payment",
-    description: "Workspace created but gated until payment is received.",
-    summary: "Not active · Pending payment · Manual invoice",
-  },
-  {
-    value: "internal",
-    label: "Internal / Test",
+    value: "INTERNAL",
+    label: "Internal / test",
     description: "Free internal account for demos, QA, or platform testing.",
-    summary: "Active business · Internal · Free internal",
-  },
-  {
-    value: "custom",
-    label: "Custom Package",
-    description: "Start with pending payment defaults and configure plan manually.",
-    summary: "Not active · Pending payment · Configure plan",
   },
 ];
 
@@ -59,57 +38,6 @@ export interface AccessFieldDefaults {
   paymentStatus: SubscriptionPaymentStatus;
   currentPeriodStart?: string;
   currentPeriodEnd?: string;
-}
-
-export function applyScenarioDefaults(
-  scenario: CreateBusinessScenario,
-): AccessFieldDefaults {
-  switch (scenario) {
-    case "paid":
-      return {
-        businessStatus: "ACTIVE",
-        subscriptionStatus: "ACTIVE",
-        paymentMethod: "NOT_SELECTED",
-        paymentStatus: "PAID",
-      };
-    case "trial":
-      return {
-        businessStatus: "ACTIVE",
-        subscriptionStatus: "TRIALING",
-        paymentMethod: "NOT_SELECTED",
-        paymentStatus: "NOT_REQUIRED",
-        currentPeriodStart: toDateInputValue(new Date()),
-        currentPeriodEnd: getDefaultTrialEnd(14),
-      };
-    case "pending_payment":
-      return {
-        businessStatus: "NOT_ACTIVE",
-        subscriptionStatus: "PENDING_PAYMENT",
-        paymentMethod: "MANUAL_INVOICE",
-        paymentStatus: "PENDING",
-      };
-    case "internal":
-      return {
-        businessStatus: "ACTIVE",
-        subscriptionStatus: "INTERNAL",
-        paymentMethod: "FREE_INTERNAL",
-        paymentStatus: "NOT_REQUIRED",
-      };
-    case "custom":
-      return {
-        businessStatus: "NOT_ACTIVE",
-        subscriptionStatus: "PENDING_PAYMENT",
-        paymentMethod: "NOT_SELECTED",
-        paymentStatus: "PENDING",
-      };
-    default:
-      return {
-        businessStatus: "NOT_ACTIVE",
-        subscriptionStatus: "TRIALING",
-        paymentMethod: "NOT_SELECTED",
-        paymentStatus: "NOT_REQUIRED",
-      };
-  }
 }
 
 export function applySubscriptionStatusDefaults(
@@ -165,6 +93,73 @@ export function applySubscriptionStatusDefaults(
   }
 }
 
+export function deriveAccessFromPaymentChoice(input: {
+  paymentCollected: boolean;
+  unpaidAccessMode?: UnpaidAccessMode;
+}): AccessFieldDefaults {
+  if (input.paymentCollected) {
+    return {
+      businessStatus: "ACTIVE",
+      subscriptionStatus: "ACTIVE",
+      paymentMethod: "MANUAL_INVOICE",
+      paymentStatus: "PAID",
+      currentPeriodStart: toDateInputValue(new Date()),
+    };
+  }
+
+  const mode = input.unpaidAccessMode ?? "TRIAL";
+
+  switch (mode) {
+    case "TRIAL":
+      return {
+        businessStatus: "ACTIVE",
+        subscriptionStatus: "TRIALING",
+        paymentMethod: "NOT_SELECTED",
+        paymentStatus: "NOT_REQUIRED",
+        currentPeriodStart: toDateInputValue(new Date()),
+        currentPeriodEnd: getDefaultTrialEnd(14),
+      };
+    case "PENDING_PAYMENT":
+      return {
+        businessStatus: "NOT_ACTIVE",
+        subscriptionStatus: "PENDING_PAYMENT",
+        paymentMethod: "MANUAL_INVOICE",
+        paymentStatus: "PENDING",
+      };
+    case "INTERNAL":
+      return {
+        businessStatus: "ACTIVE",
+        subscriptionStatus: "INTERNAL",
+        paymentMethod: "FREE_INTERNAL",
+        paymentStatus: "NOT_REQUIRED",
+      };
+    default:
+      return {
+        businessStatus: "NOT_ACTIVE",
+        subscriptionStatus: "TRIALING",
+        paymentMethod: "NOT_SELECTED",
+        paymentStatus: "NOT_REQUIRED",
+      };
+  }
+}
+
+export function getCreateSuccessToast(input: {
+  paymentCollected: boolean;
+  unpaidAccessMode?: UnpaidAccessMode;
+  paymentRecorded?: boolean;
+}): string {
+  if (input.paymentCollected && input.paymentRecorded) {
+    return "Business created and payment recorded.";
+  }
+  if (!input.paymentCollected && input.unpaidAccessMode === "PENDING_PAYMENT") {
+    return "Business created as pending payment.";
+  }
+  if (!input.paymentCollected && input.unpaidAccessMode === "TRIAL") {
+    return "Trial business created.";
+  }
+  return "Business created successfully.";
+}
+
 export function getDefaultTrialEnd(days = 14): string {
   const date = new Date();
   date.setDate(date.getDate() + days);
@@ -175,6 +170,25 @@ export function toDateInputValue(date: Date): string {
   return date.toISOString().slice(0, 10);
 }
 
+export function getBrowserTimezone(): string {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || "America/New_York";
+  } catch {
+    return "America/New_York";
+  }
+}
+
+export function splitFullName(fullName?: string): {
+  firstName?: string;
+  lastName?: string;
+} {
+  const trimmed = fullName?.trim();
+  if (!trimmed) return {};
+  const parts = trimmed.split(/\s+/);
+  if (parts.length === 1) return { firstName: parts[0] };
+  return { firstName: parts[0], lastName: parts.slice(1).join(" ") };
+}
+
 export function getAccessWarnings(input: {
   businessStatus?: BusinessAccessStatus;
   subscriptionStatus?: SubscriptionAccessStatus;
@@ -182,6 +196,8 @@ export function getAccessWarnings(input: {
   paymentStatus?: SubscriptionPaymentStatus;
   planTierId?: string | null;
   currentPeriodEnd?: string | null;
+  paymentCollected?: boolean;
+  unpaidAccessMode?: UnpaidAccessMode;
 }): string[] {
   const warnings: string[] = [];
 
@@ -189,38 +205,63 @@ export function getAccessWarnings(input: {
     warnings.push("Suspended businesses will have workspace access blocked.");
   }
 
-  if (input.subscriptionStatus === "TRIALING" && !input.currentPeriodEnd) {
+  if (
+    !input.paymentCollected &&
+    input.unpaidAccessMode === "TRIAL" &&
+    !input.currentPeriodEnd
+  ) {
+    warnings.push("Trial businesses require a trial end date.");
+  }
+
+  if (
+    input.paymentCollected &&
+    input.subscriptionStatus === "ACTIVE" &&
+    !input.planTierId
+  ) {
+    warnings.push("Paid subscriptions normally include a plan tier.");
+  }
+
+  if (
+    input.subscriptionStatus === "TRIALING" &&
+    !input.currentPeriodEnd
+  ) {
     warnings.push("Trialing subscriptions require a period end date.");
-  }
-
-  if (input.subscriptionStatus === "ACTIVE" && !input.planTierId) {
-    warnings.push("Active subscriptions normally require a plan tier assignment.");
-  }
-
-  if (
-    input.subscriptionStatus === "INTERNAL" &&
-    input.paymentMethod &&
-    input.paymentMethod !== "FREE_INTERNAL"
-  ) {
-    warnings.push("Internal accounts should use FREE_INTERNAL payment method.");
-  }
-
-  if (
-    input.subscriptionStatus === "PENDING_PAYMENT" &&
-    input.paymentStatus &&
-    input.paymentStatus !== "PENDING"
-  ) {
-    warnings.push("Pending payment subscriptions should use PENDING payment status.");
   }
 
   return warnings;
 }
 
 export function hasBlockingAccessWarnings(input: {
+  paymentCollected?: boolean;
+  unpaidAccessMode?: UnpaidAccessMode;
   subscriptionStatus?: SubscriptionAccessStatus;
   currentPeriodEnd?: string | null;
+  amount?: string | null;
+  paymentMethod?: SubscriptionPaymentMethod;
 }): boolean {
-  return (
-    input.subscriptionStatus === "TRIALING" && !input.currentPeriodEnd
-  );
+  if (input.paymentCollected) {
+    if (!input.amount || Number(input.amount) <= 0) return true;
+    if (
+      !input.paymentMethod ||
+      input.paymentMethod === "NOT_SELECTED" ||
+      input.paymentMethod === "FREE_INTERNAL"
+    ) {
+      return true;
+    }
+    return false;
+  }
+
+  if (input.unpaidAccessMode === "TRIAL" && !input.currentPeriodEnd) {
+    return true;
+  }
+
+  if (
+    input.unpaidAccessMode === "PENDING_PAYMENT" &&
+    input.subscriptionStatus === "PENDING_PAYMENT" &&
+    !input.currentPeriodEnd
+  ) {
+    return false;
+  }
+
+  return false;
 }

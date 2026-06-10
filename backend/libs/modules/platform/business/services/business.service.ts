@@ -1,7 +1,15 @@
+import { randomUUID } from 'crypto';
 import { forwardRef, HttpStatus, Inject, Injectable } from '@nestjs/common';
 import {
   BusinessMemberRole,
   BusinessStatus,
+  BusinessSubscriptionBillingCycle,
+  BusinessSubscriptionEventSource,
+  BusinessSubscriptionEventType,
+  BusinessSubscriptionPaymentSource,
+  BusinessSubscriptionPaymentType,
+  Prisma,
+  SubscriptionPaymentMethod,
   SubscriptionPaymentStatus,
   SubscriptionStatus,
 } from '@prisma/client';
@@ -15,7 +23,6 @@ import { SnapshotsService } from '@app/modules/platform/snapshots/services/snaps
 import { PrismaService } from '@app/core/database/prisma.service';
 import { BusinessRepository } from '../repositories/business.repository';
 import { toBusinessResponse } from '../mappers/business.mapper';
-import { CreateBusinessDto } from '../dto/create-business.dto';
 import { UpdateBusinessDto } from '../dto/update-business.dto';
 import { MembershipService } from '@app/modules/platform/membership/services/membership.service';
 import { BusinessAccessService } from './business-access.service';
@@ -23,6 +30,9 @@ import { BusinessAccessResolverService } from './business-access-resolver.servic
 import { BusinessSubscriptionActionService } from './business-subscription-action.service';
 import { BusinessSubscriptionActionAvailabilityService } from './business-subscription-action-availability.service';
 import { BusinessSubscriptionPaymentRepository } from '../repositories/business-subscription-payment.repository';
+import { BusinessSubscriptionEventService } from './business-subscription-event.service';
+import { BusinessSubscriptionPaymentService } from './business-subscription-payment.service';
+import type { CreateBusinessDto } from '../dto/create-business.dto';
 import type { NeedsAttentionFlag } from '../types/business-access-resolution.types';
 import {
   toBusinessCreateData,
@@ -37,6 +47,7 @@ import {
   currencySymbolForCode,
   normalizeCurrencyCode,
 } from '../utils/currency.util';
+import { resolveCreateBusinessAccess } from '../utils/create-business-access.util';
 
 @Injectable()
 export class BusinessService {
@@ -52,13 +63,33 @@ export class BusinessService {
     private readonly actionService: BusinessSubscriptionActionService,
     private readonly actionAvailability: BusinessSubscriptionActionAvailabilityService,
     private readonly subscriptionPaymentRepository: BusinessSubscriptionPaymentRepository,
+    private readonly subscriptionPaymentService: BusinessSubscriptionPaymentService,
+    private readonly subscriptionEventService: BusinessSubscriptionEventService,
     @Inject(forwardRef(() => MembershipService))
     private readonly membershipService: MembershipService,
   ) {}
 
   async createPlatform(dto: CreateBusinessDto, actor: RequestUser) {
+    const resolvedAccess = resolveCreateBusinessAccess(dto);
+    const effectiveDto: CreateBusinessDto = resolvedAccess
+      ? {
+          ...dto,
+          status: resolvedAccess.status,
+          subscriptionStatus: resolvedAccess.subscriptionStatus,
+          paymentMethod: resolvedAccess.paymentMethod,
+          paymentStatus: resolvedAccess.paymentStatus,
+          billingCycle: resolvedAccess.billingCycle ?? dto.billingCycle,
+          currentPeriodStart:
+            resolvedAccess.currentPeriodStart ?? dto.currentPeriodStart,
+          currentPeriodEnd:
+            resolvedAccess.currentPeriodEnd ?? dto.currentPeriodEnd,
+          syncCapabilitiesFromTier: resolvedAccess.syncCapabilitiesFromTier,
+          recordInitialPayment: resolvedAccess.recordInitialPayment,
+        }
+      : dto;
+
     const industry = await this.industriesService.resolveForBusiness(
-      dto.industryId,
+      effectiveDto.industryId,
     );
 
     if (!industry) {
@@ -70,7 +101,7 @@ export class BusinessService {
     }
 
     const snapshot = await this.snapshotsService.resolveForBusiness(
-      dto.snapshotId,
+      effectiveDto.snapshotId,
     );
 
     if (!snapshot) {
@@ -82,8 +113,8 @@ export class BusinessService {
     }
 
     const profileData = toBusinessCreateData({
-      ...dto,
-      name: dto.name,
+      ...effectiveDto,
+      name: effectiveDto.name,
       industryId: industry.id,
     });
 
@@ -110,51 +141,54 @@ export class BusinessService {
     });
 
     const hasAccessFields =
-      dto.status !== undefined ||
-      dto.planGroupId !== undefined ||
-      dto.planTierId !== undefined ||
-      dto.subscriptionStatus !== undefined ||
-      dto.paymentMethod !== undefined ||
-      dto.paymentStatus !== undefined ||
-      dto.billingCycle !== undefined ||
-      dto.currentPeriodStart !== undefined ||
-      dto.currentPeriodEnd !== undefined ||
-      dto.amount !== undefined ||
-      dto.currency !== undefined ||
-      dto.notes !== undefined;
+      resolvedAccess !== null ||
+      effectiveDto.status !== undefined ||
+      effectiveDto.planGroupId !== undefined ||
+      effectiveDto.planTierId !== undefined ||
+      effectiveDto.subscriptionStatus !== undefined ||
+      effectiveDto.paymentMethod !== undefined ||
+      effectiveDto.paymentStatus !== undefined ||
+      effectiveDto.billingCycle !== undefined ||
+      effectiveDto.currentPeriodStart !== undefined ||
+      effectiveDto.currentPeriodEnd !== undefined ||
+      effectiveDto.amount !== undefined ||
+      effectiveDto.currency !== undefined ||
+      effectiveDto.notes !== undefined;
 
     if (hasAccessFields) {
       await this.businessAccessService.createAccessForBusiness(
         business.id,
         {
-          status: dto.status,
-          planGroupId: dto.planGroupId,
-          planTierId: dto.planTierId,
-          subscriptionStatus: dto.subscriptionStatus,
-          paymentMethod: dto.paymentMethod,
-          paymentStatus: dto.paymentStatus,
-          billingCycle: dto.billingCycle,
-          currentPeriodStart: dto.currentPeriodStart,
-          currentPeriodEnd: dto.currentPeriodEnd,
-          amount: dto.amount,
-          currency: dto.currency,
-          notes: dto.notes,
-          syncCapabilitiesFromTier: dto.syncCapabilitiesFromTier,
+          status: effectiveDto.status,
+          planGroupId: effectiveDto.planGroupId,
+          planTierId: effectiveDto.planTierId,
+          subscriptionStatus: effectiveDto.subscriptionStatus,
+          paymentMethod: effectiveDto.paymentMethod,
+          paymentStatus: effectiveDto.paymentStatus,
+          billingCycle: effectiveDto.billingCycle,
+          currentPeriodStart: effectiveDto.currentPeriodStart,
+          currentPeriodEnd: effectiveDto.currentPeriodEnd,
+          amount: effectiveDto.amount,
+          currency: effectiveDto.currency,
+          notes: effectiveDto.notes,
+          syncCapabilitiesFromTier: effectiveDto.syncCapabilitiesFromTier,
         },
         actor,
       );
+
+      await this.maybeRecordInitialPayment(business.id, effectiveDto, actor);
     }
 
     await this.actionService.emitBusinessCreatedEvents(business.id, actor);
 
-    if (dto.inviteOwner && dto.email?.trim()) {
+    if (effectiveDto.inviteOwner && effectiveDto.email?.trim()) {
       await this.membershipService.invite(
         business.id,
         {
-          email: dto.email.trim(),
+          email: effectiveDto.email.trim(),
           role: BusinessMemberRole.ADMIN,
-          firstName: dto.firstName,
-          lastName: dto.lastName,
+          firstName: effectiveDto.firstName,
+          lastName: effectiveDto.lastName,
         },
         actor,
       );
@@ -162,6 +196,78 @@ export class BusinessService {
 
     const refreshed = await this.businessRepository.findById(business.id);
     return toBusinessResponse(refreshed ?? business);
+  }
+
+  private async maybeRecordInitialPayment(
+    businessId: string,
+    dto: CreateBusinessDto,
+    actor: RequestUser,
+  ): Promise<void> {
+    const shouldRecord =
+      dto.recordInitialPayment !== false &&
+      dto.paymentStatus === SubscriptionPaymentStatus.PAID &&
+      dto.amount != null &&
+      dto.amount > 0;
+
+    if (!shouldRecord) {
+      return;
+    }
+
+    const paymentMethod =
+      dto.paymentMethod &&
+      dto.paymentMethod !== SubscriptionPaymentMethod.NOT_SELECTED
+        ? dto.paymentMethod
+        : SubscriptionPaymentMethod.MANUAL_INVOICE;
+
+    const correlationId = randomUUID();
+    const beforeState = await this.subscriptionEventService.captureState(businessId);
+
+    await this.prisma.$transaction(async (tx) => {
+      const payment = await this.subscriptionPaymentService.recordPayment(
+        tx,
+        businessId,
+        {
+          amount: dto.amount!,
+          currency: dto.currency ?? 'USD',
+          paymentMethod,
+          paymentStatus: SubscriptionPaymentStatus.PAID,
+          paymentType: BusinessSubscriptionPaymentType.SUBSCRIPTION,
+          billingCycle:
+            dto.billingCycle ?? BusinessSubscriptionBillingCycle.MONTHLY,
+          periodStart: dto.currentPeriodStart,
+          periodEnd: dto.currentPeriodEnd,
+          paidAt: dto.paidAt ?? new Date().toISOString(),
+          paymentReference: dto.paymentReference,
+          notes: dto.notes,
+          source: BusinessSubscriptionPaymentSource.PUBLIC_SIGNUP,
+        },
+        actor,
+      );
+
+      const sub = await tx.businessSubscription.findUnique({
+        where: { businessId },
+      });
+      const afterState = await this.subscriptionEventService.captureState(
+        businessId,
+        tx,
+      );
+
+      await this.subscriptionEventService.createEvent(
+        tx,
+        {
+          businessId,
+          subscriptionId: sub?.id,
+          eventType: BusinessSubscriptionEventType.PAYMENT_MARKED_PAID,
+          actionKey: 'CREATE_BUSINESS',
+          paymentId: payment.id,
+          correlationId,
+          fromState: beforeState as unknown as Prisma.InputJsonValue,
+          toState: afterState as unknown as Prisma.InputJsonValue,
+          source: BusinessSubscriptionEventSource.ADMIN,
+        },
+        actor,
+      );
+    });
   }
 
   async listPlatform(params: {

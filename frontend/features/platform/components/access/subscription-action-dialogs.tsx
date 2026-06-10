@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
+import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,91 +13,33 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { AccessAdvancedSection } from "@/features/platform/components/access/access-advanced-section";
 import { ActionImpactPreviewDialog } from "@/features/platform/components/access/action-impact-preview-dialog";
 import { ChangePackageDialog } from "@/features/platform/components/access/change-package-dialog";
-import { MarkPaidDialog } from "@/features/platform/components/access/mark-paid-dialog";
 import { ChangeSnapshotDialog } from "@/features/platform/components/access/change-snapshot-dialog";
+import { MarkPaidDialog } from "@/features/platform/components/access/mark-paid-dialog";
 import { ReactivateBusinessDialog } from "@/features/platform/components/access/reactivate-business-dialog";
-import {
-  RecommendedActionCard,
-  SubscriptionActionGroups,
-} from "@/features/platform/components/access/subscription-action-groups";
 import { useSubscriptionActionFlow } from "@/features/platform/components/access/use-subscription-action-flow";
-import {
-  getPlatformBusinessAccess,
-  previewPlatformBusinessAccessAction,
-} from "@/features/platform/api/business-access.api";
-import type { Business } from "@/features/platform/types";
+import { previewPlatformBusinessAccessAction } from "@/features/platform/api/business-access.api";
 import type { BusinessAccess } from "@/features/platform/types/business-access";
 import type { SubscriptionActionDefinition } from "@/features/platform/types/business-subscription";
-import { listPlatformPlanGroups } from "@/features/platform/api/plan-groups.api";
 import {
   buildActionLabelContext,
   getActionConfirmationCopy,
   getSubscriptionActionLabel,
   withFriendlyActionLabel,
 } from "@/features/platform/utils/business-subscription-actions";
-import { queryKeys } from "@/lib/query/keys";
 
-export function PlatformBusinessAccessTab({
-  business,
-  canUpdate,
-  onNavigateToPayments,
-}: {
-  business: Business;
-  canUpdate: boolean;
-  onNavigateToPayments?: (options?: { recordPayment?: boolean }) => void;
-}) {
-  const { data: access, isLoading } = useQuery({
-    queryKey: queryKeys.platform.businesses.access(business.id),
-    queryFn: () => getPlatformBusinessAccess(business.id),
-  });
-
-  if (isLoading) {
-    return <p className="text-sm text-muted-foreground">Loading access settings…</p>;
-  }
-
-  if (!access) {
-    return <p className="text-sm text-muted-foreground">Access settings unavailable.</p>;
-  }
-
-  return (
-    <PlatformBusinessAccessPanel
-      key={`${access.businessId}-${access.subscription?.updatedAt ?? "none"}`}
-      business={business}
-      access={access}
-      canUpdate={canUpdate}
-      onNavigateToPayments={onNavigateToPayments}
-    />
-  );
-}
-
-function PlatformBusinessAccessPanel({
-  business,
+export function useSubscriptionActionDialogs({
+  businessId,
   access,
-  canUpdate,
-  onNavigateToPayments,
+  onSuccess,
+  onRecordPayment,
 }: {
-  business: Business;
-  access: BusinessAccess;
-  canUpdate: boolean;
-  onNavigateToPayments?: (options?: { recordPayment?: boolean }) => void;
+  businessId: string;
+  access?: BusinessAccess | null;
+  onSuccess: () => void;
+  onRecordPayment: () => void;
 }) {
-  const queryClient = useQueryClient();
-  const planGroupsListKey = queryKeys.platform.planGroups.list({
-    status: "PUBLISHED",
-    limit: 50,
-  });
-
-  useEffect(() => {
-    void queryClient.prefetchQuery({
-      queryKey: planGroupsListKey,
-      queryFn: () =>
-        listPlatformPlanGroups({ page: 1, limit: 50, status: "PUBLISHED" }),
-    });
-  }, [queryClient, planGroupsListKey]);
-
   const [changePackageOpen, setChangePackageOpen] = useState(false);
   const [markPaidOpen, setMarkPaidOpen] = useState(false);
   const [changeSnapshotOpen, setChangeSnapshotOpen] = useState(false);
@@ -106,34 +48,16 @@ function PlatformBusinessAccessPanel({
   const [extendDays, setExtendDays] = useState("14");
   const [extendTrialEnd, setExtendTrialEnd] = useState("");
 
-  const labelContext = buildActionLabelContext(access);
-
-  const invalidateAccess = () => {
-    void queryClient.invalidateQueries({
-      queryKey: queryKeys.platform.businesses.access(business.id),
-    });
-    void queryClient.invalidateQueries({
-      queryKey: queryKeys.platform.businesses.subscriptionEvents(business.id),
-    });
-    void queryClient.invalidateQueries({
-      queryKey: queryKeys.platform.businesses.subscriptionPayments(business.id),
-    });
-    void queryClient.invalidateQueries({
-      queryKey: queryKeys.platform.businesses.detail(business.id),
-    });
-    void queryClient.invalidateQueries({
-      queryKey: queryKeys.platform.businesses.all(),
-    });
-  };
+  const labelContext = access ? buildActionLabelContext(access) : {};
 
   const actionFlow = useSubscriptionActionFlow({
-    businessId: business.id,
-    onSuccess: invalidateAccess,
+    businessId,
+    onSuccess,
   });
 
   const extendPreviewMutation = useMutation({
     mutationFn: () =>
-      previewPlatformBusinessAccessAction(business.id, {
+      previewPlatformBusinessAccessAction(businessId, {
         actionKey: "EXTEND_TRIAL",
         input: {
           days: extendTrialEnd ? undefined : Number(extendDays) || 14,
@@ -169,7 +93,9 @@ function PlatformBusinessAccessPanel({
   });
 
   const handleAction = (action: SubscriptionActionDefinition) => {
-    if (!action.enabled) return;
+    if (!access || !action.enabled) return;
+
+    const friendlyAction = withFriendlyActionLabel(action, labelContext);
 
     switch (action.key) {
       case "CHANGE_PACKAGE":
@@ -182,7 +108,7 @@ function PlatformBusinessAccessPanel({
         setMarkPaidOpen(true);
         return;
       case "RECORD_PAYMENT":
-        onNavigateToPayments?.({ recordPayment: true });
+        onRecordPayment();
         return;
       case "REACTIVATE_BUSINESS":
         setReactivateOpen(true);
@@ -191,45 +117,20 @@ function PlatformBusinessAccessPanel({
         setExtendTrialOpen(true);
         return;
       case "MANUAL_ADJUSTMENT":
-        toast.message("Use the Advanced section below for manual adjustments.");
+        toast.message("Open the Access tab to use advanced adjustments.");
         return;
       default:
-        actionFlow.startPreview(action);
+        actionFlow.startPreview(friendlyAction);
     }
   };
 
-  const availableActions = access.availableActions ?? [];
   const pendingConfirmation =
     actionFlow.pendingAction?.key != null
       ? getActionConfirmationCopy(actionFlow.pendingAction.key, labelContext)
       : null;
 
-  return (
-    <div className="space-y-6">
-      <RecommendedActionCard
-        action={access.recommendedAction}
-        access={access}
-        canUpdate={canUpdate}
-        onAction={handleAction}
-        isLoading={actionFlow.isPreviewing || actionFlow.isExecuting}
-      />
-
-      <SubscriptionActionGroups
-        actions={availableActions}
-        access={access}
-        excludeActionKey={access.recommendedAction?.key}
-        canUpdate={canUpdate}
-        onAction={handleAction}
-        isLoading={actionFlow.isPreviewing || actionFlow.isExecuting}
-      />
-
-      <AccessAdvancedSection
-        businessId={business.id}
-        access={access}
-        canUpdate={canUpdate}
-        onSuccess={invalidateAccess}
-      />
-
+  const dialogs = access ? (
+    <>
       <ActionImpactPreviewDialog
         open={actionFlow.previewOpen}
         onOpenChange={actionFlow.setPreviewOpen}
@@ -249,36 +150,36 @@ function PlatformBusinessAccessPanel({
       />
 
       <ChangePackageDialog
-        businessId={business.id}
+        businessId={businessId}
         access={access}
         open={changePackageOpen}
         onOpenChange={setChangePackageOpen}
-        onSuccess={invalidateAccess}
+        onSuccess={onSuccess}
       />
 
       <MarkPaidDialog
-        businessId={business.id}
+        businessId={businessId}
         access={access}
         open={markPaidOpen}
         onOpenChange={setMarkPaidOpen}
-        onSuccess={invalidateAccess}
+        onSuccess={onSuccess}
       />
 
       <ChangeSnapshotDialog
-        businessId={business.id}
+        businessId={businessId}
         currentSnapshotId={access.snapshotId}
         currentSnapshotName={access.snapshotName}
         open={changeSnapshotOpen}
         onOpenChange={setChangeSnapshotOpen}
-        onSuccess={invalidateAccess}
+        onSuccess={onSuccess}
       />
 
       <ReactivateBusinessDialog
-        businessId={business.id}
+        businessId={businessId}
         subscriptionStatus={access.subscription?.status}
         open={reactivateOpen}
         onOpenChange={setReactivateOpen}
-        onSuccess={invalidateAccess}
+        onSuccess={onSuccess}
       />
 
       <Dialog open={extendTrialOpen} onOpenChange={setExtendTrialOpen}>
@@ -315,6 +216,12 @@ function PlatformBusinessAccessPanel({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
-  );
+    </>
+  ) : null;
+
+  return {
+    handleAction,
+    dialogs,
+    isLoading: actionFlow.isPreviewing || actionFlow.isExecuting,
+  };
 }

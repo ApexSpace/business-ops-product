@@ -8,11 +8,20 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { z } from "zod";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { CheckboxField } from "@/components/forms/checkbox-field";
 import { PhoneField } from "@/components/forms/phone-field";
 import { SearchableSelect } from "@/components/forms/searchable-select";
 import { TextField } from "@/components/forms/text-field";
-import { StatusBadge } from "@/components/data-display/status-badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -25,10 +34,9 @@ import {
 } from "@/components/ui/dialog";
 import { Form } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
-import { createPlatformBusiness, listActiveIndustries } from "@/features/platform/api/platform.api";
+import { createPlatformBusiness } from "@/features/platform/api/platform.api";
 import {
   getPlatformPlanGroupDefaults,
   getPlatformPlanGroupTierDefaults,
@@ -36,30 +44,31 @@ import {
   listPlatformPlanGroupTiers,
 } from "@/features/platform/api/plan-groups.api";
 import { PackageImpactPreview } from "@/features/platform/components/access/package-impact-preview";
-import { BusinessAccessSummaryCard } from "@/features/platform/components/access/business-access-summary-card";
 import { listPlatformSnapshots } from "@/features/platform/api/snapshots.api";
 import type {
-  BusinessAccessStatus,
-  SubscriptionAccessStatus,
   SubscriptionPaymentMethod,
-  SubscriptionPaymentStatus,
+  UnpaidAccessMode,
 } from "@/features/platform/types/business-access";
 import {
-  applyScenarioDefaults,
-  applySubscriptionStatusDefaults,
-  CREATE_BUSINESS_SCENARIOS,
+  deriveAccessFromPaymentChoice,
   getAccessWarnings,
+  getBrowserTimezone,
+  getCreateSuccessToast,
   getDefaultTrialEnd,
   hasBlockingAccessWarnings,
+  splitFullName,
   toDateInputValue,
-  type CreateBusinessScenario,
+  UNPAID_ACCESS_OPTIONS,
 } from "@/features/platform/utils/business-access-defaults";
 import {
+  formatBusinessStatus,
+  formatPaymentMethod,
+  formatPaymentStatus,
+  formatSubscriptionStatus,
+} from "@/features/platform/utils/access-labels";
+import {
   billingCycleOptions,
-  businessStatusOptions,
   subscriptionPaymentMethodOptions,
-  subscriptionPaymentStatusOptions,
-  subscriptionStatusOptions,
 } from "@/features/platform/utils/select-options";
 import type { BusinessSubscriptionBillingCycle } from "@/features/platform/types/business-subscription";
 import {
@@ -67,103 +76,106 @@ import {
   formatBillingCycleLabel,
   resolveTierPriceFromStrings,
 } from "@/features/platform/utils/tier-price.util";
-import {
-  buildDisplayName,
-  profileFormToApiBody,
-  type BusinessProfileFormValues,
-} from "@/features/settings/schemas/business-profile";
-import { hasPhoneDigits } from "@/lib/forms/phone";
-import { countryOptions, timezoneOptions } from "@/lib/config/geo-options";
+import { hasPhoneDigits, phoneToApiFields } from "@/lib/forms/phone";
 import { invalidatePlatformBusinesses } from "@/lib/query/invalidation";
 import { queryKeys } from "@/lib/query/keys";
 import { resolveBusinessAccess } from "@/features/platform/utils/business-access-resolver.util";
 import { cn } from "@/lib/utils";
 
 const STEPS = [
-  { id: 1, title: "Scenario", description: "Choose the onboarding path" },
-  { id: 2, title: "Business Details", description: "Workspace and owner contact" },
-  { id: 3, title: "Package & Experience", description: "Tier, capabilities, and experience" },
-  { id: 4, title: "Billing / Trial", description: "Subscription and payment defaults" },
-  { id: 5, title: "Review & Create", description: "Confirm and provision" },
+  { id: 1, title: "Business", description: "Name and owner contact" },
+  { id: 2, title: "Package", description: "Plan group, tier, and experience" },
+  { id: 3, title: "Payment", description: "Billing cycle, access, and payment" },
+  { id: 4, title: "Review", description: "Confirm details before creating" },
 ] as const;
+
+const MAX_STEP = STEPS.length;
 
 const wizardDetailsSchema = z
   .object({
     name: z.string().min(2, "Business name is required").max(200),
-    website: z
+    fullName: z.string().max(200).optional(),
+    email: z
       .string()
-      .max(500)
+      .max(255)
       .optional()
-      .refine(
-        (v) => !v || v === "" || /^https?:\/\/.+/i.test(v),
-        "Website must start with http:// or https://",
-      ),
+      .or(z.literal("")),
     phone: z.string().optional(),
-    country: z.string().max(100).optional(),
-    timezone: z.string().min(1, "Timezone is required"),
-    firstName: z.string().max(100).optional(),
-    lastName: z.string().max(100).optional(),
-    email: z.string().email("Valid owner email is required").max(255),
     inviteOwner: z.boolean(),
-    industryId: z.string().uuid().optional(),
+  })
+  .superRefine((data, ctx) => {
+    const email = data.email?.trim() ?? "";
+    if (data.inviteOwner) {
+      if (!email) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["email"],
+          message: "Email is required to send an invite",
+        });
+      } else if (!z.string().email().safeParse(email).success) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["email"],
+          message: "Enter a valid email",
+        });
+      }
+    } else if (email && !z.string().email().safeParse(email).success) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["email"],
+        message: "Enter a valid email",
+      });
+    }
   });
 
 type WizardDetailsValues = z.infer<typeof wizardDetailsSchema>;
 
 const detailsDefaults: WizardDetailsValues = {
   name: "",
-  website: "",
-  phone: "",
-  country: "",
-  timezone: "America/New_York",
-  firstName: "",
-  lastName: "",
+  fullName: "",
   email: "",
-  inviteOwner: true,
-  industryId: "",
+  phone: "",
+  inviteOwner: false,
 };
 
-interface AccessFormState {
-  businessStatus: BusinessAccessStatus;
-  subscriptionStatus: SubscriptionAccessStatus;
-  paymentMethod: SubscriptionPaymentMethod;
-  paymentStatus: SubscriptionPaymentStatus;
+interface PaymentFormState {
+  paymentCollected: boolean;
+  unpaidAccessMode: UnpaidAccessMode;
   billingCycle: BusinessSubscriptionBillingCycle;
-  currentPeriodStart?: string;
+  paymentMethod: SubscriptionPaymentMethod;
+  currentPeriodStart: string;
   currentPeriodEnd?: string;
   amount?: string;
-  currency?: string;
+  currency: string;
+  paymentReference?: string;
   notes?: string;
 }
 
-function toAccessState(
-  defaults: ReturnType<typeof applyScenarioDefaults>,
-): AccessFormState {
-  return {
-    businessStatus: defaults.businessStatus,
-    subscriptionStatus: defaults.subscriptionStatus,
-    paymentMethod: defaults.paymentMethod,
-    paymentStatus: defaults.paymentStatus,
-    billingCycle: "MONTHLY",
-    currentPeriodStart: defaults.currentPeriodStart,
-    currentPeriodEnd: defaults.currentPeriodEnd,
-    currency: "USD",
-  };
-}
+const paymentDefaults: PaymentFormState = {
+  paymentCollected: false,
+  unpaidAccessMode: "TRIAL",
+  billingCycle: "MONTHLY",
+  paymentMethod: "MANUAL_INVOICE",
+  currentPeriodStart: toDateInputValue(new Date()),
+  currentPeriodEnd: getDefaultTrialEnd(14),
+  currency: "USD",
+};
+
+const collectedPaymentMethods = subscriptionPaymentMethodOptions.filter(
+  (o) => o.value !== "NOT_SELECTED" && o.value !== "FREE_INTERNAL",
+);
 
 export function CreateBusinessWizard() {
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState(1);
-  const [scenario, setScenario] = useState<CreateBusinessScenario>("trial");
-  const [access, setAccess] = useState<AccessFormState>(() =>
-    toAccessState(applyScenarioDefaults("trial")),
-  );
+  const [skipPackageOpen, setSkipPackageOpen] = useState(false);
   const [planGroupId, setPlanGroupId] = useState<string | null>(null);
   const [planTierId, setPlanTierId] = useState<string | null>(null);
   const [snapshotId, setSnapshotId] = useState<string | null>(null);
   const [snapshotManuallySet, setSnapshotManuallySet] = useState(false);
-  const [showDraftSnapshots, setShowDraftSnapshots] = useState(false);
-  const [customCapabilityMode, setCustomCapabilityMode] = useState(false);
+  const [payment, setPayment] = useState<PaymentFormState>(paymentDefaults);
+  const [showNotesField, setShowNotesField] = useState(false);
+  const [showReferenceField, setShowReferenceField] = useState(false);
 
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -173,19 +185,7 @@ export function CreateBusinessWizard() {
     defaultValues: detailsDefaults,
   });
 
-  const { data: industries } = useQuery({
-    queryKey: queryKeys.industries.active(),
-    queryFn: () => listActiveIndustries(),
-    enabled: open,
-  });
-
-  useEffect(() => {
-    if (industries?.length && !detailsForm.getValues("industryId")) {
-      detailsForm.setValue("industryId", industries[0]!.id);
-    }
-  }, [industries, detailsForm]);
-
-  const snapshotStatus = showDraftSnapshots ? undefined : "PUBLISHED";
+  const inviteOwner = detailsForm.watch("inviteOwner");
 
   const { data: planGroups } = useQuery({
     queryKey: queryKeys.platform.planGroups.list({ status: "PUBLISHED", limit: 50 }),
@@ -216,6 +216,7 @@ export function CreateBusinessWizard() {
   });
 
   const selectedTier = tiers?.find((t) => t.id === planTierId);
+  const selectedGroup = planGroups?.items.find((g) => g.id === planGroupId);
 
   useEffect(() => {
     if (!groupDefaults?.suggestedSnapshotId || snapshotManuallySet) return;
@@ -224,79 +225,108 @@ export function CreateBusinessWizard() {
 
   useEffect(() => {
     if (!tierDefaults || !selectedTier) return;
-    const resolved = resolveTierPriceFromStrings(
-      selectedTier,
-      access.billingCycle,
-    );
-    setAccess((prev) => {
-      const periodStart = prev.currentPeriodStart ?? toDateInputValue(new Date());
-      const next: AccessFormState = {
-        ...prev,
-        amount: resolved != null ? String(resolved) : tierDefaults.amount ?? prev.amount,
-        currency: tierDefaults.currency ?? prev.currency,
-      };
-      if (scenario === "trial" && tierDefaults.trialDays && !prev.currentPeriodEnd) {
-        next.currentPeriodEnd = getDefaultTrialEnd(tierDefaults.trialDays);
-        next.currentPeriodStart = periodStart;
-      } else if (
-        prev.subscriptionStatus === "ACTIVE" &&
-        prev.billingCycle !== "CUSTOM"
-      ) {
-        next.currentPeriodStart = periodStart;
-        const end = computePeriodEndFromBillingCycle(prev.billingCycle, periodStart);
-        if (end) next.currentPeriodEnd = end;
-      }
-      return next;
-    });
     if (!snapshotManuallySet && tierDefaults.suggestedSnapshotId) {
       setSnapshotId(tierDefaults.suggestedSnapshotId);
     }
-  }, [tierDefaults, selectedTier, scenario, snapshotManuallySet, access.billingCycle]);
+  }, [tierDefaults, selectedTier, snapshotManuallySet]);
+
+  const accessDefaults = useMemo(
+    () =>
+      deriveAccessFromPaymentChoice({
+        paymentCollected: payment.paymentCollected,
+        unpaidAccessMode: payment.unpaidAccessMode,
+      }),
+    [payment.paymentCollected, payment.unpaidAccessMode],
+  );
+
+  useEffect(() => {
+    if (payment.paymentCollected) {
+      setPayment((prev) => ({
+        ...prev,
+        currentPeriodStart: prev.currentPeriodStart || toDateInputValue(new Date()),
+      }));
+    } else if (payment.unpaidAccessMode === "TRIAL" && !payment.currentPeriodEnd) {
+      setPayment((prev) => ({
+        ...prev,
+        currentPeriodStart: prev.currentPeriodStart || toDateInputValue(new Date()),
+        currentPeriodEnd: getDefaultTrialEnd(tierDefaults?.trialDays ?? 14),
+      }));
+    } else if (payment.unpaidAccessMode === "INTERNAL") {
+      setPayment((prev) => ({
+        ...prev,
+        billingCycle: "CUSTOM",
+      }));
+    }
+  }, [
+    payment.paymentCollected,
+    payment.unpaidAccessMode,
+    payment.currentPeriodEnd,
+    tierDefaults?.trialDays,
+  ]);
+
+  useEffect(() => {
+    if (!selectedTier || payment.unpaidAccessMode === "INTERNAL") return;
+    const resolved = resolveTierPriceFromStrings(selectedTier, payment.billingCycle);
+    setPayment((prev) => {
+      const start = prev.currentPeriodStart || toDateInputValue(new Date());
+      const amount =
+        resolved != null ? String(resolved) : tierDefaults?.amount ?? prev.amount;
+      const currency = tierDefaults?.currency ?? prev.currency;
+      let currentPeriodEnd = prev.currentPeriodEnd;
+
+      if (payment.paymentCollected) {
+        currentPeriodEnd =
+          payment.billingCycle === "CUSTOM"
+            ? prev.currentPeriodEnd
+            : computePeriodEndFromBillingCycle(payment.billingCycle, start) ??
+              prev.currentPeriodEnd;
+      } else if (payment.unpaidAccessMode === "TRIAL" && tierDefaults?.trialDays) {
+        currentPeriodEnd = getDefaultTrialEnd(tierDefaults.trialDays);
+      }
+
+      return {
+        ...prev,
+        amount,
+        currency,
+        currentPeriodStart: start,
+        currentPeriodEnd,
+      };
+    });
+  }, [
+    selectedTier,
+    tierDefaults,
+    payment.billingCycle,
+    payment.paymentCollected,
+    payment.unpaidAccessMode,
+    payment.currentPeriodStart,
+  ]);
 
   const { data: snapshots } = useQuery({
     queryKey: queryKeys.platform.snapshots.list({
-      status: snapshotStatus ?? "all",
+      status: "PUBLISHED",
       limit: 50,
     }),
     queryFn: () =>
       listPlatformSnapshots({
         page: 1,
         limit: 50,
-        status: snapshotStatus,
+        status: "PUBLISHED",
       }),
     enabled: open,
   });
 
-  const selectedScenario = CREATE_BUSINESS_SCENARIOS.find((s) => s.value === scenario);
-
-  const warnings = useMemo(
-    () =>
-      getAccessWarnings({
-        businessStatus: access.businessStatus,
-        subscriptionStatus: access.subscriptionStatus,
-        paymentMethod: access.paymentMethod,
-        paymentStatus: access.paymentStatus,
-        planTierId,
-        currentPeriodEnd: access.currentPeriodEnd,
-      }),
-    [access, planTierId],
-  );
-
-  const blockingWarnings = hasBlockingAccessWarnings({
-    subscriptionStatus: access.subscriptionStatus,
-    currentPeriodEnd: access.currentPeriodEnd,
-  });
+  const selectedSnapshot = snapshots?.items.find((s) => s.id === snapshotId);
 
   const previewResolution = useMemo(
     () =>
       resolveBusinessAccess({
-        businessStatus: access.businessStatus,
+        businessStatus: accessDefaults.businessStatus,
         snapshotId,
         subscription: {
-          status: access.subscriptionStatus,
+          status: accessDefaults.subscriptionStatus,
           planTierId,
-          paymentStatus: access.paymentStatus,
-          currentPeriodEnd: access.currentPeriodEnd,
+          paymentStatus: accessDefaults.paymentStatus,
+          currentPeriodEnd: payment.currentPeriodEnd,
         },
         capabilities:
           tierDefaults?.capabilities ??
@@ -306,96 +336,120 @@ export function CreateBusinessWizard() {
           })) ??
           [],
         hasPendingOwnerInvite:
-          detailsForm.watch("inviteOwner") && access.businessStatus !== "ACTIVE",
+          detailsForm.watch("inviteOwner") &&
+          accessDefaults.businessStatus !== "ACTIVE",
       }),
-    [access, snapshotId, planTierId, tierDefaults, selectedTier, detailsForm],
-  );
-
-  const previewAccess = useMemo(
-    () => ({
-      businessId: "preview",
-      businessStatus: access.businessStatus,
-      snapshotId,
-      snapshotName:
-        snapshots?.items.find((s) => s.id === snapshotId)?.name ?? null,
-      subscription: {
-        id: "preview",
-        status: access.subscriptionStatus,
-        planTierId,
-        planTierName: selectedTier?.name ?? null,
-        paymentMethod: access.paymentMethod,
-        paymentStatus: access.paymentStatus,
-        currentPeriodEnd: access.currentPeriodEnd,
-        createdAt: "",
-        updatedAt: "",
-      },
-      capabilities: [],
-      resolution: previewResolution,
-    }),
     [
-      access,
+      accessDefaults,
       snapshotId,
-      snapshots,
       planTierId,
+      tierDefaults,
       selectedTier,
-      previewResolution,
+      payment.currentPeriodEnd,
+      detailsForm,
     ],
   );
+
+  const warnings = useMemo(
+    () =>
+      getAccessWarnings({
+        businessStatus: accessDefaults.businessStatus,
+        subscriptionStatus: accessDefaults.subscriptionStatus,
+        paymentMethod: payment.paymentMethod,
+        paymentStatus: accessDefaults.paymentStatus,
+        planTierId,
+        currentPeriodEnd: payment.currentPeriodEnd,
+        paymentCollected: payment.paymentCollected,
+        unpaidAccessMode: payment.unpaidAccessMode,
+      }),
+    [accessDefaults, payment, planTierId],
+  );
+
+  const blockingWarnings = hasBlockingAccessWarnings({
+    paymentCollected: payment.paymentCollected,
+    unpaidAccessMode: payment.unpaidAccessMode,
+    subscriptionStatus: accessDefaults.subscriptionStatus,
+    currentPeriodEnd: payment.currentPeriodEnd,
+    amount: payment.amount,
+    paymentMethod: payment.paymentMethod,
+  });
+
+  const periodEndLabel = useMemo(() => {
+    if (payment.paymentCollected) {
+      return payment.billingCycle === "ONE_TIME" ? "Service end" : "Next billing date";
+    }
+    if (payment.unpaidAccessMode === "TRIAL") return "Trial end";
+    if (payment.unpaidAccessMode === "PENDING_PAYMENT") return "Payment due";
+    return "Period end";
+  }, [payment.paymentCollected, payment.unpaidAccessMode, payment.billingCycle]);
+
+  const isPeriodEndAutoCalculated =
+    payment.paymentCollected && payment.billingCycle !== "CUSTOM";
 
   const mutation = useMutation({
     mutationFn: async () => {
       const details = detailsForm.getValues();
-      const profileValues: BusinessProfileFormValues = {
-        name: details.name,
-        firstName: details.firstName?.trim() || "Owner",
-        lastName: details.lastName?.trim() || "Contact",
-        displayName:
-          buildDisplayName(details.firstName, details.lastName) || "Owner Contact",
-        email: details.email.trim(),
-        industryId: details.industryId || industries?.[0]?.id || "",
-        phone: hasPhoneDigits(details.phone ?? "") ? details.phone! : "+12025550100",
-        country: details.country,
-        website: details.website,
-        timezone: details.timezone,
+      const { firstName, lastName } = splitFullName(details.fullName);
+      const phoneFields = hasPhoneDigits(details.phone ?? "")
+        ? phoneToApiFields(details.phone!)
+        : {};
+
+      const amount = payment.amount ? Number(payment.amount) : undefined;
+      const recordInitialPayment =
+        payment.paymentCollected && amount != null && amount > 0;
+
+      return createPlatformBusiness({
+        name: details.name.trim(),
+        firstName,
+        lastName,
+        displayName: details.fullName?.trim() || undefined,
+        email: details.email?.trim() || undefined,
+        ...phoneFields,
+        timezone: getBrowserTimezone(),
         taxesAndCurrency: {
-          currencyCode: access.currency || "USD",
+          currencyCode: payment.currency || "USD",
           defaultTaxRate: 0,
           pricesIncludeTax: false,
         },
-        address: "",
-        addressLine2: "",
-        city: "",
-        state: "",
-        zip: "",
-        logoUrl: "",
-        snapshotId: snapshotId ?? "",
-      };
-      const profile = profileFormToApiBody(profileValues);
-
-      return createPlatformBusiness({
-        ...profile,
-        snapshotId: snapshotId ?? profile.snapshotId,
-        status: access.businessStatus,
+        snapshotId: snapshotId ?? undefined,
         planGroupId: planGroupId ?? undefined,
         planTierId: planTierId ?? undefined,
-        subscriptionStatus: access.subscriptionStatus,
-        paymentMethod: access.paymentMethod,
-        paymentStatus: access.paymentStatus,
         billingCycle:
-          access.subscriptionStatus === "INTERNAL"
+          payment.unpaidAccessMode === "INTERNAL"
             ? undefined
-            : access.billingCycle,
-        currentPeriodStart: access.currentPeriodStart || undefined,
-        currentPeriodEnd: access.currentPeriodEnd || undefined,
-        amount: access.amount ? Number(access.amount) : undefined,
-        currency: access.currency || undefined,
-        notes: access.notes || undefined,
-        syncCapabilitiesFromTier: Boolean(planTierId) && !customCapabilityMode,
+            : payment.billingCycle,
+        amount,
+        currency: payment.currency || undefined,
+        notes: payment.notes || undefined,
+        paymentCollected: payment.paymentCollected,
+        unpaidAccessMode: payment.paymentCollected
+          ? undefined
+          : payment.unpaidAccessMode,
+        paymentMethod: payment.paymentCollected
+          ? payment.paymentMethod
+          : payment.unpaidAccessMode === "PENDING_PAYMENT"
+            ? payment.paymentMethod
+            : undefined,
+        currentPeriodStart: payment.currentPeriodStart || undefined,
+        currentPeriodEnd: payment.currentPeriodEnd || undefined,
+        paymentReference: payment.paymentCollected
+          ? payment.paymentReference
+          : undefined,
+        syncCapabilitiesFromTier: Boolean(planTierId),
+        recordInitialPayment,
         inviteOwner: details.inviteOwner && Boolean(details.email?.trim()),
       });
     },
     onSuccess: (business) => {
-      toast.success("Business created");
+      const amount = payment.amount ? Number(payment.amount) : undefined;
+      toast.success(
+        getCreateSuccessToast({
+          paymentCollected: payment.paymentCollected,
+          unpaidAccessMode: payment.unpaidAccessMode,
+          paymentRecorded:
+            payment.paymentCollected && amount != null && amount > 0,
+        }),
+      );
       void invalidatePlatformBusinesses(queryClient);
       setOpen(false);
       resetWizard();
@@ -404,64 +458,109 @@ export function CreateBusinessWizard() {
     onError: (err: Error) => toast.error(err.message),
   });
 
-  const handleScenarioChange = (value: CreateBusinessScenario) => {
-    setScenario(value);
-    setAccess(toAccessState(applyScenarioDefaults(value)));
-    if (value === "custom") {
-      setCustomCapabilityMode(true);
-    }
-  };
-
-  const handleSubscriptionStatusChange = (
-    value: AccessFormState["subscriptionStatus"],
-  ) => {
-    const defaults = applySubscriptionStatusDefaults(value);
-    setAccess((prev) => ({
-      ...prev,
-      subscriptionStatus: value,
-      businessStatus: defaults.businessStatus,
-      paymentMethod: defaults.paymentMethod,
-      paymentStatus: defaults.paymentStatus,
-      ...(value === "TRIALING" && !prev.currentPeriodEnd
-        ? {
-            currentPeriodStart: toDateInputValue(new Date()),
-            currentPeriodEnd: getDefaultTrialEnd(14),
-          }
-        : {}),
-    }));
-  };
-
   const resetWizard = () => {
     setStep(1);
-    setScenario("trial");
-    setAccess(toAccessState(applyScenarioDefaults("trial")));
     setPlanGroupId(null);
     setPlanTierId(null);
     setSnapshotId(null);
     setSnapshotManuallySet(false);
-    setShowDraftSnapshots(false);
-    setCustomCapabilityMode(false);
+    setPayment({
+      ...paymentDefaults,
+      currentPeriodStart: toDateInputValue(new Date()),
+      currentPeriodEnd: getDefaultTrialEnd(14),
+    });
+    setShowNotesField(false);
+    setShowReferenceField(false);
     detailsForm.reset(detailsDefaults);
   };
 
+  const handlePaymentCollectedChange = (collected: boolean) => {
+    const defaults = deriveAccessFromPaymentChoice({
+      paymentCollected: collected,
+      unpaidAccessMode: payment.unpaidAccessMode,
+    });
+    setPayment((prev) => ({
+      ...prev,
+      paymentCollected: collected,
+      paymentMethod: collected ? "MANUAL_INVOICE" : defaults.paymentMethod,
+      currentPeriodStart:
+        defaults.currentPeriodStart ?? prev.currentPeriodStart,
+      currentPeriodEnd: collected
+        ? computePeriodEndFromBillingCycle(
+            prev.billingCycle,
+            prev.currentPeriodStart,
+          ) ?? prev.currentPeriodEnd
+        : defaults.currentPeriodEnd ?? prev.currentPeriodEnd,
+    }));
+  };
+
+  const handleUnpaidModeChange = (mode: UnpaidAccessMode) => {
+    const defaults = deriveAccessFromPaymentChoice({
+      paymentCollected: false,
+      unpaidAccessMode: mode,
+    });
+    setPayment((prev) => ({
+      ...prev,
+      unpaidAccessMode: mode,
+      paymentMethod: defaults.paymentMethod,
+      currentPeriodStart:
+        defaults.currentPeriodStart ?? prev.currentPeriodStart,
+      currentPeriodEnd:
+        mode === "TRIAL"
+          ? getDefaultTrialEnd(tierDefaults?.trialDays ?? 14)
+          : prev.currentPeriodEnd,
+      billingCycle: mode === "INTERNAL" ? "CUSTOM" : prev.billingCycle,
+    }));
+  };
+
+  const handleBillingCycleChange = (cycle: BusinessSubscriptionBillingCycle) => {
+    setPayment((prev) => {
+      const start = prev.currentPeriodStart || toDateInputValue(new Date());
+      const resolved = selectedTier
+        ? resolveTierPriceFromStrings(selectedTier, cycle)
+        : null;
+      const end =
+        prev.paymentCollected && cycle !== "CUSTOM"
+          ? computePeriodEndFromBillingCycle(cycle, start) ?? prev.currentPeriodEnd
+          : prev.currentPeriodEnd;
+      return {
+        ...prev,
+        billingCycle: cycle,
+        currentPeriodStart: start,
+        currentPeriodEnd: end,
+        amount: resolved != null ? String(resolved) : prev.amount,
+      };
+    });
+  };
+
   const canGoNext = () => {
-    if (step === 2) return Boolean(detailsForm.watch("name")?.trim());
-    if (step === 4 && blockingWarnings) return false;
+    if (step === 1) return Boolean(detailsForm.watch("name")?.trim());
+    if (step === 2) return true;
+    if (step === 3) return !blockingWarnings;
     return true;
   };
 
   const handleNext = async () => {
-    if (step === 2) {
+    if (step === 1) {
       const valid = await detailsForm.trigger();
       if (!valid) return;
     }
+    if (step === 2 && !planTierId) {
+      setSkipPackageOpen(true);
+      return;
+    }
+    if (step === 3 && blockingWarnings) return;
     if (!canGoNext()) return;
-    setStep((s) => Math.min(5, s + 1));
+    setStep((s) => Math.min(MAX_STEP, s + 1));
   };
 
-  const subscriptionStatusItems = subscriptionStatusOptions.filter(
-    (o) => o.value !== "PAST_DUE",
-  );
+  const handleCreate = async () => {
+    const valid = await detailsForm.trigger();
+    if (!valid || blockingWarnings) return;
+    mutation.mutate();
+  };
+
+  const showBillingFields = payment.unpaidAccessMode !== "INTERNAL";
 
   return (
     <>
@@ -496,18 +595,10 @@ export function CreateBusinessWizard() {
               ))}
             </div>
             <p className="mb-4 text-sm font-medium">
-              Step {step} of 5 · {STEPS[step - 1]?.title}
+              Step {step} of {MAX_STEP} · {STEPS[step - 1]?.title}
             </p>
 
             {step === 1 ? (
-              <OptionCards
-                options={CREATE_BUSINESS_SCENARIOS}
-                value={scenario}
-                onChange={(v) => handleScenarioChange(v as CreateBusinessScenario)}
-              />
-            ) : null}
-
-            {step === 2 ? (
               <Form {...detailsForm}>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="sm:col-span-2">
@@ -518,64 +609,19 @@ export function CreateBusinessWizard() {
                       placeholder="Acme Dental"
                     />
                   </div>
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium">Industry</p>
-                    <SearchableSelect
-                      items={
-                        industries?.map((i) => ({ value: i.id, label: i.name })) ?? []
+                  <div className="sm:col-span-2">
+                    <TextField
+                      control={detailsForm.control}
+                      name="fullName"
+                      label="Owner full name"
+                      placeholder="Jane Smith"
+                      description={
+                        inviteOwner
+                          ? "Recommended when sending an invite."
+                          : "Optional"
                       }
-                      value={detailsForm.watch("industryId") || null}
-                      onValueChange={(v) =>
-                        v &&
-                        detailsForm.setValue("industryId", v, { shouldDirty: true })
-                      }
-                      placeholder="Select industry"
                     />
                   </div>
-                  <TextField
-                    control={detailsForm.control}
-                    name="website"
-                    label="Website"
-                    placeholder="https://example.com"
-                  />
-                  <PhoneField
-                    control={detailsForm.control}
-                    name="phone"
-                    label="Phone"
-                  />
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium">Country</p>
-                    <SearchableSelect
-                      items={countryOptions}
-                      value={detailsForm.watch("country") || null}
-                      onValueChange={(v) =>
-                        detailsForm.setValue("country", v ?? "", { shouldDirty: true })
-                      }
-                      placeholder="Select country"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium">Timezone</p>
-                    <SearchableSelect
-                      items={timezoneOptions}
-                      value={detailsForm.watch("timezone")}
-                      onValueChange={(v) =>
-                        v &&
-                        detailsForm.setValue("timezone", v, { shouldDirty: true })
-                      }
-                      placeholder="Select timezone"
-                    />
-                  </div>
-                  <TextField
-                    control={detailsForm.control}
-                    name="firstName"
-                    label="Owner first name"
-                  />
-                  <TextField
-                    control={detailsForm.control}
-                    name="lastName"
-                    label="Owner last name"
-                  />
                   <div className="sm:col-span-2">
                     <TextField
                       control={detailsForm.control}
@@ -583,20 +629,25 @@ export function CreateBusinessWizard() {
                       label="Owner email"
                       type="email"
                       placeholder="owner@company.com"
+                      description="Optional unless you invite the owner now."
                     />
                   </div>
+                  <PhoneField
+                    control={detailsForm.control}
+                    name="phone"
+                    label="Phone number"
+                  />
                   <div className="sm:col-span-2">
                     <CheckboxField
                       control={detailsForm.control}
                       name="inviteOwner"
-                      label="Invite owner to workspace"
+                      label="Invite owner now"
                       description="Sends an admin invite to the owner email after the business is created."
                     />
-                    {detailsForm.watch("inviteOwner") &&
-                    access.businessStatus !== "ACTIVE" ? (
+                    {inviteOwner && accessDefaults.businessStatus !== "ACTIVE" ? (
                       <p className="mt-2 text-sm text-amber-700 dark:text-amber-300">
-                        Owner will be invited while the workspace is not active. They
-                        cannot sign in until access is granted.
+                        Owner will be invited while workspace access is limited. They
+                        may not be able to sign in until access is granted.
                       </p>
                     ) : null}
                   </div>
@@ -604,19 +655,23 @@ export function CreateBusinessWizard() {
               </Form>
             ) : null}
 
-            {step === 3 ? (
+            {step === 2 ? (
               <div className="space-y-4">
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-1">
                     <p className="text-sm font-medium">Plan group</p>
                     <SearchableSelect
                       items={
-                        planGroups?.items.map((g) => ({ value: g.id, label: g.name })) ?? []
+                        planGroups?.items.map((g) => ({
+                          value: g.id,
+                          label: g.name,
+                        })) ?? []
                       }
                       value={planGroupId}
                       onValueChange={(v) => {
                         setPlanGroupId(v);
                         setPlanTierId(null);
+                        setSnapshotManuallySet(false);
                       }}
                       placeholder="Select plan group"
                     />
@@ -624,259 +679,275 @@ export function CreateBusinessWizard() {
                   <div className="space-y-1">
                     <p className="text-sm font-medium">Plan tier</p>
                     <SearchableSelect
-                      items={tiers?.map((t) => ({ value: t.id, label: t.name })) ?? []}
+                      items={
+                        tiers?.map((t) => ({ value: t.id, label: t.name })) ?? []
+                      }
                       value={planTierId}
-                      onValueChange={setPlanTierId}
+                      onValueChange={(v) => {
+                        setPlanTierId(v);
+                        setSnapshotManuallySet(false);
+                      }}
                       placeholder="Select plan tier"
                       disabled={!planGroupId}
                     />
                   </div>
                   <div className="space-y-1 sm:col-span-2">
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="text-sm font-medium">Snapshot</p>
-                      <div className="flex items-center gap-2">
-                        <Label htmlFor="show-drafts" className="text-xs text-muted-foreground">
-                          Show drafts
-                        </Label>
-                        <Switch
-                          id="show-drafts"
-                          checked={showDraftSnapshots}
-                          onCheckedChange={setShowDraftSnapshots}
-                        />
-                      </div>
-                    </div>
+                    <p className="text-sm font-medium">Snapshot</p>
                     <SearchableSelect
                       items={
-                        snapshots?.items.map((s) => ({ value: s.id, label: s.name })) ?? []
+                        snapshots?.items.map((s) => ({
+                          value: s.id,
+                          label: s.name,
+                        })) ?? []
                       }
                       value={snapshotId}
                       onValueChange={(v) => {
                         setSnapshotId(v);
                         setSnapshotManuallySet(true);
                       }}
-                      placeholder="Select snapshot"
+                      placeholder="Auto-suggested from package"
                     />
+                    <p className="text-xs text-muted-foreground">
+                      Snapshot controls labels, navigation, and workspace experience.
+                      Leave as suggested or pick another published snapshot.
+                    </p>
                   </div>
                 </div>
                 {planGroupId && planTierId ? (
                   <PackageImpactPreview
                     snapshotName={
-                      snapshots?.items.find((s) => s.id === snapshotId)?.name ??
-                      tierDefaults?.suggestedSnapshotName
+                      selectedSnapshot?.name ?? tierDefaults?.suggestedSnapshotName
                     }
                     capabilities={tierDefaults?.capabilities ?? []}
-                    amount={tierDefaults?.amount ?? access.amount}
-                    currency={tierDefaults?.currency ?? access.currency}
+                    amount={payment.amount ?? tierDefaults?.amount}
+                    currency={payment.currency ?? tierDefaults?.currency}
                     trialDays={tierDefaults?.trialDays}
                   />
-                ) : null}
-                <div className="flex items-center justify-between rounded-md border p-3">
-                  <div>
-                    <p className="text-sm font-medium">Custom capability override</p>
-                    <p className="text-xs text-muted-foreground">
-                      Skip auto-sync on create and configure capabilities manually later.
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    Select a plan group and tier to preview included modules and
+                    suggested pricing. You can also continue without a package and
+                    configure access later.
+                  </p>
+                )}
+                {selectedGroup && selectedTier ? (
+                  <div className="rounded-md border bg-muted/30 p-3 text-sm">
+                    <p>
+                      <span className="font-medium">Package:</span>{" "}
+                      {selectedGroup.name} / {selectedTier.name}
+                    </p>
+                    <p>
+                      <span className="font-medium">Snapshot:</span>{" "}
+                      {selectedSnapshot?.name ??
+                        tierDefaults?.suggestedSnapshotName ??
+                        "Platform default"}
                     </p>
                   </div>
-                  <Switch
-                    checked={customCapabilityMode}
-                    onCheckedChange={setCustomCapabilityMode}
-                  />
-                </div>
+                ) : null}
               </div>
             ) : null}
 
-            {step === 4 ? (
-              <div className="space-y-4">
-                {selectedScenario ? (
-                  <div className="rounded-md border bg-muted/30 p-3 text-sm">
-                    <span className="font-medium">Scenario: </span>
-                    {selectedScenario.label} — {selectedScenario.summary}
+            {step === 3 ? (
+              <div className="space-y-6">
+                <div className="space-y-3">
+                  <p className="text-sm font-medium">Payment collected?</p>
+                  <RadioGroup
+                    value={payment.paymentCollected ? "yes" : "no"}
+                    onValueChange={(v) =>
+                      handlePaymentCollectedChange(v === "yes")
+                    }
+                    className="grid gap-2 sm:grid-cols-2"
+                  >
+                    <label
+                      htmlFor="pay-yes"
+                      className={cn(
+                        "flex cursor-pointer items-center gap-2 rounded-md border p-3",
+                        payment.paymentCollected && "border-primary bg-primary/5",
+                      )}
+                    >
+                      <RadioGroupItem value="yes" id="pay-yes" />
+                      <div>
+                        <p className="text-sm font-medium">Yes</p>
+                        <p className="text-xs text-muted-foreground">
+                          Payment received — activate with paid access.
+                        </p>
+                      </div>
+                    </label>
+                    <label
+                      htmlFor="pay-no"
+                      className={cn(
+                        "flex cursor-pointer items-center gap-2 rounded-md border p-3",
+                        !payment.paymentCollected && "border-primary bg-primary/5",
+                      )}
+                    >
+                      <RadioGroupItem value="no" id="pay-no" />
+                      <div>
+                        <p className="text-sm font-medium">No</p>
+                        <p className="text-xs text-muted-foreground">
+                          Choose trial, pending payment, or internal access.
+                        </p>
+                      </div>
+                    </label>
+                  </RadioGroup>
+                </div>
+
+                {!payment.paymentCollected ? (
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">Access type</p>
+                    <OptionCards
+                      options={UNPAID_ACCESS_OPTIONS}
+                      value={payment.unpaidAccessMode}
+                      onChange={(v) => handleUnpaidModeChange(v as UnpaidAccessMode)}
+                    />
                   </div>
                 ) : null}
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium">Business status</p>
-                    <SearchableSelect
-                      items={businessStatusOptions}
-                      value={access.businessStatus}
-                      onValueChange={(v) =>
-                        v &&
-                        setAccess((prev) => ({
-                          ...prev,
-                          businessStatus: v as BusinessAccessStatus,
-                        }))
-                      }
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium">Subscription status</p>
-                    <SearchableSelect
-                      items={subscriptionStatusItems}
-                      value={access.subscriptionStatus}
-                      onValueChange={(v) =>
-                        v && handleSubscriptionStatusChange(v as AccessFormState["subscriptionStatus"])
-                      }
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium">Payment method</p>
-                    <SearchableSelect
-                      items={subscriptionPaymentMethodOptions}
-                      value={access.paymentMethod}
-                      onValueChange={(v) =>
-                        v &&
-                        setAccess((prev) => ({
-                          ...prev,
-                          paymentMethod: v as SubscriptionPaymentMethod,
-                        }))
-                      }
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium">Payment status</p>
-                    <SearchableSelect
-                      items={subscriptionPaymentStatusOptions}
-                      value={access.paymentStatus}
-                      onValueChange={(v) =>
-                        v &&
-                        setAccess((prev) => ({
-                          ...prev,
-                          paymentStatus: v as SubscriptionPaymentStatus,
-                        }))
-                      }
-                    />
-                  </div>
-                  {access.subscriptionStatus !== "INTERNAL" ? (
+
+                {showBillingFields ? (
+                  <div className="grid gap-4 sm:grid-cols-2">
                     <div className="space-y-1">
                       <p className="text-sm font-medium">Billing cycle</p>
                       <SearchableSelect
                         items={billingCycleOptions}
-                        value={access.billingCycle}
+                        value={payment.billingCycle}
                         onValueChange={(v) => {
-                          if (!v) return;
-                          const cycle = v as BusinessSubscriptionBillingCycle;
-                          setAccess((prev) => {
-                            const start =
-                              prev.currentPeriodStart ?? toDateInputValue(new Date());
-                            const resolved = selectedTier
-                              ? resolveTierPriceFromStrings(selectedTier, cycle)
-                              : null;
-                            const end =
-                              prev.subscriptionStatus === "TRIALING"
-                                ? prev.currentPeriodEnd
-                                : cycle === "CUSTOM"
-                                  ? prev.currentPeriodEnd
-                                  : computePeriodEndFromBillingCycle(cycle, start) ??
-                                    prev.currentPeriodEnd;
+                          if (v) handleBillingCycleChange(v as BusinessSubscriptionBillingCycle);
+                        }}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium">Price / amount</p>
+                      <Input
+                        type="number"
+                        min={0}
+                        step="0.01"
+                        value={payment.amount ?? ""}
+                        onChange={(e) =>
+                          setPayment((prev) => ({ ...prev, amount: e.target.value }))
+                        }
+                      />
+                    </div>
+                    {payment.paymentCollected ? (
+                      <>
+                        <div className="space-y-1">
+                          <p className="text-sm font-medium">Payment method</p>
+                          <SearchableSelect
+                            items={collectedPaymentMethods}
+                            value={payment.paymentMethod}
+                            onValueChange={(v) =>
+                              v &&
+                              setPayment((prev) => ({
+                                ...prev,
+                                paymentMethod: v as SubscriptionPaymentMethod,
+                              }))
+                            }
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-sm font-medium">Currency</p>
+                          <Input
+                            value={payment.currency}
+                            onChange={(e) =>
+                              setPayment((prev) => ({
+                                ...prev,
+                                currency: e.target.value.toUpperCase(),
+                              }))
+                            }
+                            maxLength={3}
+                          />
+                        </div>
+                      </>
+                    ) : payment.unpaidAccessMode === "PENDING_PAYMENT" ? (
+                      <div className="space-y-1">
+                        <p className="text-sm font-medium">Payment method</p>
+                        <SearchableSelect
+                          items={subscriptionPaymentMethodOptions.filter(
+                            (o) =>
+                              o.value !== "FREE_INTERNAL" &&
+                              o.value !== "NOT_SELECTED",
+                          )}
+                          value={payment.paymentMethod}
+                          onValueChange={(v) =>
+                            v &&
+                            setPayment((prev) => ({
+                              ...prev,
+                              paymentMethod: v as SubscriptionPaymentMethod,
+                            }))
+                          }
+                        />
+                      </div>
+                    ) : null}
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium">Start date</p>
+                      <Input
+                        type="date"
+                        value={payment.currentPeriodStart}
+                        onChange={(e) => {
+                          const start = e.target.value;
+                          setPayment((prev) => {
+                            const currentPeriodEnd =
+                              prev.paymentCollected &&
+                              prev.billingCycle !== "CUSTOM"
+                                ? computePeriodEndFromBillingCycle(
+                                    prev.billingCycle,
+                                    start,
+                                  ) ?? prev.currentPeriodEnd
+                                : prev.currentPeriodEnd;
                             return {
                               ...prev,
-                              billingCycle: cycle,
                               currentPeriodStart: start,
-                              currentPeriodEnd: end ?? prev.currentPeriodEnd,
-                              amount:
-                                resolved != null ? String(resolved) : prev.amount,
+                              currentPeriodEnd,
                             };
                           });
                         }}
                       />
                     </div>
-                  ) : null}
-                  {planTierId && access.subscriptionStatus !== "INTERNAL" ? (
-                    <div className="space-y-1 sm:col-span-2 rounded-md border bg-muted/30 p-3 text-sm">
-                      <p>
-                        <span className="font-medium">Selected tier:</span>{" "}
-                        {selectedTier?.name ?? "—"}
-                      </p>
-                      <p>
-                        <span className="font-medium">Billing cycle:</span>{" "}
-                        {formatBillingCycleLabel(access.billingCycle)}
-                      </p>
-                      <p>
-                        <span className="font-medium">Price:</span>{" "}
-                        {access.amount
-                          ? `${access.amount} ${access.currency ?? "USD"}`
-                          : "Not set"}
-                        {access.billingCycle === "MONTHLY"
-                          ? " / month"
-                          : access.billingCycle === "YEARLY"
-                            ? " / year"
-                            : ""}
-                      </p>
-                      {access.currentPeriodEnd ? (
-                        <p>
-                          <span className="font-medium">
-                            {access.subscriptionStatus === "TRIALING"
-                              ? "Trial ends"
-                              : "Next billing date"}
-                            :
-                          </span>{" "}
-                          {new Date(access.currentPeriodEnd).toLocaleDateString()}
-                        </p>
-                      ) : null}
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium">{periodEndLabel}</p>
+                      {isPeriodEndAutoCalculated ? (
+                        <>
+                          <Input
+                            type="date"
+                            value={payment.currentPeriodEnd ?? ""}
+                            disabled
+                            readOnly
+                            className="bg-muted text-muted-foreground"
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            Calculated from billing cycle and start date.
+                          </p>
+                        </>
+                      ) : (
+                        <Input
+                          type="date"
+                          value={payment.currentPeriodEnd ?? ""}
+                          onChange={(e) =>
+                            setPayment((prev) => ({
+                              ...prev,
+                              currentPeriodEnd: e.target.value,
+                            }))
+                          }
+                        />
+                      )}
                     </div>
-                  ) : null}
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium">Period start</p>
-                    <Input
-                      type="date"
-                      value={access.currentPeriodStart ?? ""}
-                      onChange={(e) =>
-                        setAccess((prev) => ({
-                          ...prev,
-                          currentPeriodStart: e.target.value,
-                        }))
-                      }
-                    />
                   </div>
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium">Period end</p>
-                    <Input
-                      type="date"
-                      value={access.currentPeriodEnd ?? ""}
-                      onChange={(e) =>
-                        setAccess((prev) => ({
-                          ...prev,
-                          currentPeriodEnd: e.target.value,
-                        }))
-                      }
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium">Amount</p>
-                    <Input
-                      type="number"
-                      min={0}
-                      step="0.01"
-                      value={access.amount ?? ""}
-                      onChange={(e) =>
-                        setAccess((prev) => ({ ...prev, amount: e.target.value }))
-                      }
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium">Currency</p>
-                    <Input
-                      value={access.currency ?? "USD"}
-                      onChange={(e) =>
-                        setAccess((prev) => ({
-                          ...prev,
-                          currency: e.target.value.toUpperCase(),
-                        }))
-                      }
-                      maxLength={3}
-                    />
-                  </div>
-                  <div className="space-y-1 sm:col-span-2">
-                    <p className="text-sm font-medium">Notes</p>
-                    <Textarea
-                      value={access.notes ?? ""}
-                      onChange={(e) =>
-                        setAccess((prev) => ({ ...prev, notes: e.target.value }))
-                      }
-                      rows={3}
-                    />
-                  </div>
-                </div>
+                ) : null}
+
+                <PaymentOptionalFieldsSection
+                  notes={payment.notes ?? ""}
+                  notesVisible={showNotesField}
+                  onNotesVisibleChange={setShowNotesField}
+                  onNotesChange={(notes) =>
+                    setPayment((prev) => ({ ...prev, notes }))
+                  }
+                  reference={payment.paymentReference ?? ""}
+                  referenceVisible={showReferenceField}
+                  onReferenceVisibleChange={setShowReferenceField}
+                  onReferenceChange={(paymentReference) =>
+                    setPayment((prev) => ({ ...prev, paymentReference }))
+                  }
+                  showReferenceButton={payment.paymentCollected}
+                />
+
                 {warnings.length ? (
                   <div className="rounded-md border border-amber-500/30 bg-amber-500/5 p-2 text-sm text-amber-900 dark:text-amber-200">
                     {warnings.map((w) => (
@@ -887,73 +958,117 @@ export function CreateBusinessWizard() {
               </div>
             ) : null}
 
-            {step === 5 ? (
+            {step === 4 ? (
               <div className="space-y-4">
-                <BusinessAccessSummaryCard access={previewAccess} compact />
-              <Card>
-                <CardContent className="space-y-3 pt-6 text-sm">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="font-medium">
-                      {detailsForm.watch("name") || "—"}
-                    </span>
-                    <StatusBadge status={access.businessStatus} domain="business" />
-                    <StatusBadge status={access.subscriptionStatus} domain="subscription" />
-                    <StatusBadge status={access.paymentStatus} domain="subscriptionPayment" />
+                {warnings.length ? (
+                  <div className="rounded-md border border-amber-500/30 bg-amber-500/5 p-2 text-sm text-amber-900 dark:text-amber-200">
+                    {warnings.map((w) => (
+                      <p key={w}>{w}</p>
+                    ))}
                   </div>
-                  <SummaryRow
-                    label="Scenario"
-                    value={selectedScenario?.label ?? "—"}
-                  />
-                  <SummaryRow
-                    label="Owner"
-                    value={
-                      [
-                        detailsForm.watch("firstName"),
-                        detailsForm.watch("lastName"),
-                      ]
-                        .filter(Boolean)
-                        .join(" ") || "—"
-                    }
-                  />
-                  <SummaryRow
-                    label="Owner email"
-                    value={detailsForm.watch("email") || "—"}
-                  />
-                  <SummaryRow
-                    label="Invite owner"
-                    value={detailsForm.watch("inviteOwner") ? "Yes" : "No"}
-                  />
-                  <SummaryRow
-                    label="Plan"
-                    value={`${planGroups?.items.find((g) => g.id === planGroupId)?.name ?? "—"} / ${selectedTier?.name ?? "—"}`}
-                  />
-                  <SummaryRow
-                    label="Snapshot"
-                    value={
-                      snapshots?.items.find((s) => s.id === snapshotId)?.name ?? "—"
-                    }
-                  />
-                  <SummaryRow
-                    label="Trial period"
-                    value={`${access.currentPeriodStart || "—"} → ${access.currentPeriodEnd || "—"}`}
-                  />
-                  <SummaryRow
-                    label="Capabilities"
-                    value={
-                      customCapabilityMode
-                        ? "Manual configuration"
-                        : `${selectedTier?.capabilities?.length ?? 0} from tier`
-                    }
-                  />
-                  {warnings.length ? (
-                    <div className="rounded-md border border-amber-500/30 bg-amber-500/5 p-2 text-amber-900 dark:text-amber-200">
-                      {warnings.map((w) => (
-                        <p key={w}>{w}</p>
-                      ))}
-                    </div>
-                  ) : null}
-                </CardContent>
-              </Card>
+                ) : null}
+
+                <Card>
+                  <CardContent className="space-y-3 pt-6 text-sm">
+                    <p className="font-medium">Review summary</p>
+                    <SummaryRow
+                      label="Business"
+                      value={detailsForm.watch("name") || "—"}
+                    />
+                    <SummaryRow
+                      label="Owner"
+                      value={
+                        detailsForm.watch("fullName")?.trim() ||
+                        detailsForm.watch("email")?.trim() ||
+                        "No owner contact"
+                      }
+                    />
+                    <SummaryRow
+                      label="Invite owner"
+                      value={detailsForm.watch("inviteOwner") ? "Yes" : "No"}
+                    />
+                    <SummaryRow
+                      label="Package"
+                      value={
+                        selectedGroup && selectedTier
+                          ? `${selectedGroup.name} / ${selectedTier.name}`
+                          : "None — configure in Access tab"
+                      }
+                    />
+                    <SummaryRow
+                      label="Snapshot"
+                      value={
+                        selectedSnapshot?.name ??
+                        tierDefaults?.suggestedSnapshotName ??
+                        "Platform default"
+                      }
+                    />
+                    <SummaryRow
+                      label="Billing"
+                      value={
+                        payment.unpaidAccessMode === "INTERNAL"
+                          ? "Free internal"
+                          : [
+                              formatBillingCycleLabel(payment.billingCycle),
+                              payment.amount
+                                ? `${payment.amount} ${payment.currency}`
+                                : null,
+                            ]
+                              .filter(Boolean)
+                              .join(" · ") || "—"
+                      }
+                    />
+                    <SummaryRow
+                      label="Workspace"
+                      value={formatBusinessStatus(accessDefaults.businessStatus)}
+                    />
+                    <SummaryRow
+                      label="Subscription"
+                      value={formatSubscriptionStatus(
+                        accessDefaults.subscriptionStatus,
+                      )}
+                    />
+                    <SummaryRow
+                      label="Payment"
+                      value={formatPaymentStatus(accessDefaults.paymentStatus)}
+                    />
+                    {payment.paymentCollected ? (
+                      <SummaryRow
+                        label="Payment method"
+                        value={formatPaymentMethod(payment.paymentMethod)}
+                      />
+                    ) : null}
+                    {showBillingFields && payment.currentPeriodStart ? (
+                      <SummaryRow
+                        label="Start date"
+                        value={formatDisplayDate(payment.currentPeriodStart)}
+                      />
+                    ) : null}
+                    {showBillingFields && payment.currentPeriodEnd ? (
+                      <SummaryRow
+                        label={periodEndLabel}
+                        value={formatDisplayDate(payment.currentPeriodEnd)}
+                      />
+                    ) : null}
+                    <SummaryRow
+                      label="Workspace access"
+                      value={
+                        previewResolution.canAccessWorkspace
+                          ? "Yes — can access"
+                          : `No — ${previewResolution.reasonLabel}`
+                      }
+                    />
+                    {payment.paymentReference?.trim() ? (
+                      <SummaryRow
+                        label="Reference"
+                        value={payment.paymentReference.trim()}
+                      />
+                    ) : null}
+                    {payment.notes?.trim() ? (
+                      <SummaryRow label="Notes" value={payment.notes.trim()} />
+                    ) : null}
+                  </CardContent>
+                </Card>
               </div>
             ) : null}
           </DialogBody>
@@ -967,7 +1082,7 @@ export function CreateBusinessWizard() {
               <ChevronLeft className="mr-1 size-4" />
               Back
             </Button>
-            {step < 5 ? (
+            {step < MAX_STEP ? (
               <Button type="button" onClick={() => void handleNext()} disabled={!canGoNext()}>
                 Next
                 <ChevronRight className="ml-1 size-4" />
@@ -975,7 +1090,7 @@ export function CreateBusinessWizard() {
             ) : (
               <Button
                 type="button"
-                onClick={() => mutation.mutate()}
+                onClick={() => void handleCreate()}
                 disabled={mutation.isPending || blockingWarnings}
               >
                 {mutation.isPending ? "Creating…" : "Create business"}
@@ -984,6 +1099,30 @@ export function CreateBusinessWizard() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={skipPackageOpen} onOpenChange={setSkipPackageOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Create without a package?</AlertDialogTitle>
+            <AlertDialogDescription>
+              No plan tier is selected. The business will be created without
+              package capabilities. You can assign a plan and snapshot later from
+              the Access tab.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Go back</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setSkipPackageOpen(false);
+                setStep(3);
+              }}
+            >
+              Continue without package
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
@@ -993,7 +1132,7 @@ function OptionCards({
   value,
   onChange,
 }: {
-  options: { value: string; label: string; description: string; summary?: string }[];
+  options: { value: string; label: string; description: string }[];
   value: string;
   onChange: (value: string) => void;
 }) {
@@ -1013,11 +1152,114 @@ function OptionCards({
         >
           <p className="font-medium">{option.label}</p>
           <p className="text-sm text-muted-foreground">{option.description}</p>
-          {option.summary ? (
-            <p className="mt-1 text-xs text-muted-foreground">{option.summary}</p>
-          ) : null}
         </button>
       ))}
+    </div>
+  );
+}
+
+function PaymentOptionalFieldsSection({
+  notes,
+  notesVisible,
+  onNotesVisibleChange,
+  onNotesChange,
+  reference,
+  referenceVisible,
+  onReferenceVisibleChange,
+  onReferenceChange,
+  showReferenceButton,
+}: {
+  notes: string;
+  notesVisible: boolean;
+  onNotesVisibleChange: (visible: boolean) => void;
+  onNotesChange: (notes: string) => void;
+  reference: string;
+  referenceVisible: boolean;
+  onReferenceVisibleChange: (visible: boolean) => void;
+  onReferenceChange: (reference: string) => void;
+  showReferenceButton: boolean;
+}) {
+  const hasHiddenField =
+    !notesVisible || (showReferenceButton && !referenceVisible);
+
+  return (
+    <div className="space-y-3">
+      {hasHiddenField ? (
+        <div className="flex flex-wrap gap-2">
+          {showReferenceButton && !referenceVisible ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => onReferenceVisibleChange(true)}
+            >
+              <Plus className="mr-1.5 size-3.5" />
+              Add reference
+            </Button>
+          ) : null}
+          {!notesVisible ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => onNotesVisibleChange(true)}
+            >
+              <Plus className="mr-1.5 size-3.5" />
+              Add notes
+            </Button>
+          ) : null}
+        </div>
+      ) : null}
+
+      {showReferenceButton && referenceVisible ? (
+        <div className="space-y-1">
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-sm font-medium">Reference (optional)</p>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-7 text-xs"
+              onClick={() => {
+                onReferenceChange("");
+                onReferenceVisibleChange(false);
+              }}
+            >
+              Remove
+            </Button>
+          </div>
+          <Input
+            value={reference}
+            onChange={(e) => onReferenceChange(e.target.value)}
+            placeholder="Invoice #, receipt ID"
+          />
+        </div>
+      ) : null}
+
+      {notesVisible ? (
+        <div className="space-y-1">
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-sm font-medium">Notes (optional)</p>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-7 text-xs"
+              onClick={() => {
+                onNotesChange("");
+                onNotesVisibleChange(false);
+              }}
+            >
+              Remove
+            </Button>
+          </div>
+          <Textarea
+            value={notes}
+            onChange={(e) => onNotesChange(e.target.value)}
+            rows={2}
+          />
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -1029,4 +1271,10 @@ function SummaryRow({ label, value }: { label: string; value: string }) {
       <span className="text-right font-medium">{value}</span>
     </div>
   );
+}
+
+function formatDisplayDate(value: string): string {
+  const date = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleDateString();
 }

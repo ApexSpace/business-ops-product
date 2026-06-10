@@ -348,6 +348,42 @@ export class BusinessAccessCreateFieldsDto {
   @IsOptional()
   @IsBoolean()
   inviteOwner?: boolean;
+
+  @ApiPropertyOptional({
+    description:
+      'Simplified create flow: payment was collected at provisioning time.',
+  })
+  @IsOptional()
+  @IsBoolean()
+  paymentCollected?: boolean;
+
+  @ApiPropertyOptional({
+    enum: ['TRIAL', 'PENDING_PAYMENT', 'INTERNAL'],
+    description:
+      'When paymentCollected is false, selects trial, pending payment, or internal access.',
+  })
+  @IsOptional()
+  @IsString()
+  unpaidAccessMode?: 'TRIAL' | 'PENDING_PAYMENT' | 'INTERNAL';
+
+  @ApiPropertyOptional({
+    description:
+      'When true and payment status is PAID with an amount, creates a subscription payment record on create.',
+  })
+  @IsOptional()
+  @IsBoolean()
+  recordInitialPayment?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsDateString()
+  paidAt?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  paymentReference?: string;
 }
 
 export class ExtendTrialDto {

@@ -51,6 +51,10 @@ import {
   formatBillingCycleLabel,
   resolveTierPriceFromStrings,
 } from "@/features/platform/utils/tier-price.util";
+import {
+  getActionConfirmationCopy,
+  getSubscriptionActionLabel,
+} from "@/features/platform/utils/business-subscription-actions";
 import { queryKeys } from "@/lib/query/keys";
 import type { SelectOption } from "@/components/forms/select-field";
 
@@ -67,8 +71,8 @@ function withCurrentOption(
 
 const PAYMENT_OPTIONS: { value: ChangePackagePaymentOption; label: string }[] = [
   { value: "no_payment", label: "No payment now" },
-  { value: "record_payment", label: "Record manual payment now" },
-  { value: "move_pending", label: "Move to pending payment" },
+  { value: "record_payment", label: "Collect payment now" },
+  { value: "move_pending", label: "Mark as awaiting payment" },
   { value: "keep_status", label: "Keep current payment status" },
 ];
 
@@ -270,7 +274,7 @@ export function ChangePackageDialog({
       return executeSubscriptionAction(businessId, "CHANGE_PACKAGE", payload);
     },
     onSuccess: () => {
-      toast.success("Package updated");
+      toast.success("Plan updated");
       setPreviewOpen(false);
       onOpenChange(false);
       onSuccess();
@@ -303,17 +307,42 @@ export function ChangePackageDialog({
   );
 
   const currentSub = access.subscription;
+  const currentAmount = currentSub?.amount ? Number(currentSub.amount) : null;
+  const newAmount = amount ? Number(amount) : null;
+  const planPriceComparison: "upgrade" | "downgrade" | "same" | null =
+    currentAmount != null &&
+    newAmount != null &&
+    !Number.isNaN(currentAmount) &&
+    !Number.isNaN(newAmount)
+      ? newAmount > currentAmount
+        ? "upgrade"
+        : newAmount < currentAmount
+          ? "downgrade"
+          : "same"
+      : null;
+  const changePlanContext = {
+    hasPlanTier: Boolean(currentSub?.planTierId),
+    planPriceComparison,
+  };
+  const changePlanLabel = getSubscriptionActionLabel(
+    "CHANGE_PACKAGE",
+    changePlanContext,
+  );
+  const changePlanConfirmation = getActionConfirmationCopy(
+    "CHANGE_PACKAGE",
+    changePlanContext,
+  );
 
   return (
     <>
       <Dialog open={open && !previewOpen} onOpenChange={handleOpenChange}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Change Package</DialogTitle>
+            <DialogTitle>{changePlanLabel}</DialogTitle>
           </DialogHeader>
           <DialogBody className="space-y-4">
             <p className="text-sm text-amber-700 dark:text-amber-400">
-              This package change applies immediately.
+              This plan change applies immediately.
             </p>
 
             {step === 1 && (
@@ -541,7 +570,7 @@ export function ChangePackageDialog({
                 onClick={() => previewMutation.mutate()}
                 disabled={previewMutation.isPending}
               >
-                Preview & confirm
+                {changePlanLabel}
               </Button>
             )}
           </DialogFooter>
@@ -552,7 +581,9 @@ export function ChangePackageDialog({
         open={previewOpen}
         onOpenChange={setPreviewOpen}
         preview={preview}
-        actionLabel="Change Package"
+        actionLabel={changePlanConfirmation.title}
+        confirmationDescription={changePlanConfirmation.description}
+        confirmLabel={changePlanLabel}
         isExecuting={executeMutation.isPending}
         onConfirm={() => executeMutation.mutate()}
       />

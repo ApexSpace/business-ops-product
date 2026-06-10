@@ -3,31 +3,32 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { SubscriptionActionDefinition } from "@/features/platform/types/business-subscription";
-import { groupActionsByCategory } from "@/features/platform/utils/business-subscription-actions";
-
-const CATEGORY_LABELS: Record<string, string> = {
-  billing: "Billing",
-  trial: "Trial",
-  access: "Access",
-  package: "Package",
-  snapshot: "Snapshot",
-  danger: "Danger",
-};
+import {
+  ACCESS_TAB_CATEGORY_LABELS,
+  applyFriendlyActionLabels,
+  buildActionLabelContext,
+  groupActionsByCategory,
+} from "@/features/platform/utils/business-subscription-actions";
+import type { BusinessAccess } from "@/features/platform/types/business-access";
 
 export function SubscriptionActionGroups({
   actions,
+  access,
   canUpdate,
   onAction,
   isLoading,
   excludeActionKey,
 }: {
   actions: SubscriptionActionDefinition[];
+  access?: BusinessAccess;
   canUpdate: boolean;
   onAction: (action: SubscriptionActionDefinition) => void;
   isLoading?: boolean;
   excludeActionKey?: SubscriptionActionDefinition["key"] | null;
 }) {
-  const groups = groupActionsByCategory(actions, excludeActionKey);
+  const labelContext = access ? buildActionLabelContext(access) : {};
+  const friendlyActions = applyFriendlyActionLabels(actions, labelContext);
+  const groups = groupActionsByCategory(friendlyActions, excludeActionKey);
 
   if (!canUpdate) return null;
 
@@ -56,7 +57,7 @@ export function SubscriptionActionGroups({
           return (
             <div key={category} className="space-y-2">
               <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                {CATEGORY_LABELS[category] ?? category}
+                {ACCESS_TAB_CATEGORY_LABELS[category] ?? category}
               </p>
               <div className="flex flex-wrap gap-2">
                 {categoryActions.map((action) => (
@@ -87,16 +88,21 @@ export function SubscriptionActionGroups({
 
 export function RecommendedActionCard({
   action,
+  access,
   canUpdate,
   onAction,
   isLoading,
 }: {
   action: SubscriptionActionDefinition | null | undefined;
+  access?: BusinessAccess;
   canUpdate: boolean;
   onAction: (action: SubscriptionActionDefinition) => void;
   isLoading?: boolean;
 }) {
   if (!action || !canUpdate) return null;
+
+  const labelContext = access ? buildActionLabelContext(access) : {};
+  const friendlyAction = applyFriendlyActionLabels([action], labelContext)[0];
 
   return (
     <Card className="border-primary/30 bg-primary/5">
@@ -105,18 +111,18 @@ export function RecommendedActionCard({
       </CardHeader>
       <CardContent className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="font-medium">{action.label}</p>
-          {action.description && (
-            <p className="text-sm text-muted-foreground">{action.description}</p>
+          <p className="font-medium">{friendlyAction.label}</p>
+          {friendlyAction.description && (
+            <p className="text-sm text-muted-foreground">{friendlyAction.description}</p>
           )}
         </div>
         <Button
           size="sm"
-          disabled={!action.enabled || isLoading}
-          title={action.disabledReason}
+          disabled={!friendlyAction.enabled || isLoading}
+          title={friendlyAction.disabledReason}
           onClick={() => onAction(action)}
         >
-          {action.label}
+          {friendlyAction.label}
         </Button>
       </CardContent>
     </Card>

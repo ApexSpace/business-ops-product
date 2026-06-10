@@ -23,6 +23,7 @@ import {
   executeSubscriptionAction,
   type SubscriptionActionPayload,
 } from "@/features/platform/utils/subscription-action-executor";
+import { getActionConfirmationCopy } from "@/features/platform/utils/business-subscription-actions";
 import { queryKeys } from "@/lib/query/keys";
 import type { SelectOption } from "@/components/forms/select-field";
 
@@ -128,6 +129,8 @@ export function ChangeSnapshotDialog({
     [snapshots?.items, currentSnapshotId, currentSnapshotName],
   );
 
+  const snapshotConfirmation = getActionConfirmationCopy("CHANGE_SNAPSHOT");
+
   const selectedSnapshotName =
     snapshots?.items.find((s) => s.id === snapshotId)?.name ??
     currentSnapshotName ??
@@ -138,7 +141,7 @@ export function ChangeSnapshotDialog({
       <Dialog open={open && !previewOpen} onOpenChange={handleOpenChange}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Change Snapshot</DialogTitle>
+            <DialogTitle>Change Business Experience</DialogTitle>
           </DialogHeader>
           <DialogBody className="space-y-4">
             {step === 1 && (
@@ -227,7 +230,9 @@ export function ChangeSnapshotDialog({
         open={previewOpen}
         onOpenChange={setPreviewOpen}
         preview={preview}
-        actionLabel="Change Snapshot"
+        actionLabel={snapshotConfirmation.title}
+        confirmationDescription={snapshotConfirmation.description}
+        confirmLabel={snapshotConfirmation.confirmLabel}
         isExecuting={executeMutation.isPending}
         onConfirm={() => executeMutation.mutate()}
       />

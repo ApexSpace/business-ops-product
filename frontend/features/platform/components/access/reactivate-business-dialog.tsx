@@ -24,6 +24,11 @@ import {
   executeSubscriptionAction,
   type SubscriptionActionPayload,
 } from "@/features/platform/utils/subscription-action-executor";
+import type { SubscriptionAccessStatus } from "@/features/platform/types/business-access";
+import {
+  getActionConfirmationCopy,
+  getSubscriptionActionLabel,
+} from "@/features/platform/utils/business-subscription-actions";
 
 const MODE_OPTIONS: { value: ReactivateBusinessMode; label: string; description: string }[] = [
   {
@@ -53,14 +58,19 @@ export function ReactivateBusinessDialog({
   open,
   onOpenChange,
   recommendedMode,
+  subscriptionStatus,
   onSuccess,
 }: {
   businessId: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   recommendedMode?: ReactivateBusinessMode;
+  subscriptionStatus?: SubscriptionAccessStatus | null;
   onSuccess: () => void;
 }) {
+  const restoreLabel = getSubscriptionActionLabel("REACTIVATE_BUSINESS", {
+    subscriptionStatus,
+  });
   const [mode, setMode] = useState<ReactivateBusinessMode>(
     recommendedMode ?? "business_only",
   );
@@ -128,7 +138,7 @@ export function ReactivateBusinessDialog({
       <Dialog open={open && !previewOpen} onOpenChange={handleOpenChange}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Reactivate Business</DialogTitle>
+            <DialogTitle>{restoreLabel}</DialogTitle>
           </DialogHeader>
           <DialogBody className="space-y-4">
             <div className="space-y-2">
@@ -185,7 +195,12 @@ export function ReactivateBusinessDialog({
         open={previewOpen}
         onOpenChange={setPreviewOpen}
         preview={preview}
-        actionLabel="Reactivate Business"
+        actionLabel={restoreLabel}
+        confirmationDescription={
+          getActionConfirmationCopy("REACTIVATE_BUSINESS", { subscriptionStatus })
+            .description
+        }
+        confirmLabel={restoreLabel}
         isExecuting={executeMutation.isPending}
         onConfirm={() => executeMutation.mutate()}
       />

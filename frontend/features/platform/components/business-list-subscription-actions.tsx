@@ -18,9 +18,11 @@ import { useSubscriptionActionFlow } from "@/features/platform/components/access
 import { previewPlatformBusinessAccessAction } from "@/features/platform/api/business-access.api";
 import type { SubscriptionActionKey } from "@/features/platform/types/business-subscription";
 import {
-  ACTION_KEY_LABELS,
   ACTIONS_REQUIRING_ACCESS_TAB,
+  buildActionLabelContextFromBusiness,
   deriveListRowActions,
+  getActionConfirmationCopy,
+  getSubscriptionActionLabel,
 } from "@/features/platform/utils/business-subscription-actions";
 import type { Business } from "@/features/platform/types";
 import { MoreVertical } from "lucide-react";
@@ -47,6 +49,7 @@ export function BusinessListSubscriptionActions({
   });
 
   const { recommendedAction, moreActions } = deriveListRowActions(business);
+  const labelContext = buildActionLabelContextFromBusiness(business);
 
   const previewMutation = useMutation({
     mutationFn: (actionKey: SubscriptionActionKey) =>
@@ -54,7 +57,7 @@ export function BusinessListSubscriptionActions({
     onSuccess: (result, actionKey) => {
       actionFlow.openPreview(result, {
         key: actionKey,
-        label: ACTION_KEY_LABELS[actionKey],
+        label: getSubscriptionActionLabel(actionKey, labelContext),
         category: DANGER_ACTIONS.has(actionKey) ? "danger" : "billing",
         visible: true,
         enabled: true,
@@ -97,7 +100,7 @@ export function BusinessListSubscriptionActions({
             disabled={previewMutation.isPending || actionFlow.isExecuting}
             onClick={() => handleActionKey(recommendedAction)}
           >
-            {ACTION_KEY_LABELS[recommendedAction]}
+            {getSubscriptionActionLabel(recommendedAction, labelContext)}
           </Button>
         )}
         {moreActions.length > 0 && (
@@ -116,7 +119,7 @@ export function BusinessListSubscriptionActions({
                   variant={DANGER_ACTIONS.has(actionKey) ? "destructive" : "default"}
                   onClick={() => handleActionKey(actionKey)}
                 >
-                  {ACTION_KEY_LABELS[actionKey]}
+                  {getSubscriptionActionLabel(actionKey, labelContext)}
                 </DropdownMenuItem>
               ))}
             </DropdownMenuContent>
@@ -129,10 +132,28 @@ export function BusinessListSubscriptionActions({
         onOpenChange={actionFlow.setPreviewOpen}
         preview={actionFlow.preview}
         actionLabel={
-          actionFlow.pendingAction?.label ??
-          (actionFlow.pendingAction?.key
-            ? ACTION_KEY_LABELS[actionFlow.pendingAction.key]
-            : "Action")
+          actionFlow.pendingAction?.key
+            ? getSubscriptionActionLabel(
+                actionFlow.pendingAction.key,
+                labelContext,
+              )
+            : "Action"
+        }
+        confirmationDescription={
+          actionFlow.pendingAction?.key
+            ? getActionConfirmationCopy(
+                actionFlow.pendingAction.key,
+                labelContext,
+              ).description
+            : undefined
+        }
+        confirmLabel={
+          actionFlow.pendingAction?.key
+            ? getActionConfirmationCopy(
+                actionFlow.pendingAction.key,
+                labelContext,
+              ).confirmLabel
+            : undefined
         }
         isExecuting={actionFlow.isExecuting}
         onConfirm={actionFlow.confirmAction}

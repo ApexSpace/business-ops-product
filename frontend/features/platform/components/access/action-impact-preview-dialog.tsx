@@ -63,6 +63,8 @@ export function ActionImpactPreviewDialog({
   onOpenChange,
   preview,
   actionLabel,
+  confirmationDescription,
+  confirmLabel,
   isExecuting,
   onConfirm,
 }: {
@@ -70,6 +72,8 @@ export function ActionImpactPreviewDialog({
   onOpenChange: (open: boolean) => void;
   preview: PreviewActionResult | null;
   actionLabel: string;
+  confirmationDescription?: string;
+  confirmLabel?: string;
   isExecuting?: boolean;
   onConfirm: () => void;
 }) {
@@ -89,9 +93,12 @@ export function ActionImpactPreviewDialog({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Confirm: {actionLabel}</DialogTitle>
+          <DialogTitle>{actionLabel}</DialogTitle>
         </DialogHeader>
         <DialogBody className="space-y-4">
+          {confirmationDescription ? (
+            <p className="text-sm text-muted-foreground">{confirmationDescription}</p>
+          ) : null}
           {!preview.allowed && (
             <p className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
               {preview.reason ?? "This action is not allowed in the current state."}
@@ -219,7 +226,7 @@ export function ActionImpactPreviewDialog({
             onClick={onConfirm}
             disabled={!preview.allowed || !canConfirm || isExecuting}
           >
-            {isExecuting ? "Applying…" : "Confirm"}
+            {isExecuting ? "Applying…" : (confirmLabel ?? "Confirm")}
           </Button>
         </DialogFooter>
       </DialogContent>

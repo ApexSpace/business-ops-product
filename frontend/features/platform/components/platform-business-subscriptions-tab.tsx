@@ -8,9 +8,16 @@ import {
 } from "@/components/data-display/data-table";
 import { SearchableSelect } from "@/components/forms/searchable-select";
 import { FilterBar } from "@/components/layout/filter-bar";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SubscriptionEventDetailDrawer } from "@/features/platform/components/access/subscription-event-detail-drawer";
+import { useSubscriptionActionDialogs } from "@/features/platform/components/access/subscription-action-dialogs";
 import { SubscriptionOverviewSection } from "@/features/platform/components/access/subscription-overview-section";
 import { listPlatformBusinessSubscriptionEvents } from "@/features/platform/api/business-access.api";
 import type { BusinessAccess } from "@/features/platform/types/business-access";
@@ -19,7 +26,6 @@ import type {
   BusinessSubscriptionEventListItem,
   BusinessSubscriptionEventType,
   ListSubscriptionEventsQuery,
-  SubscriptionActionDefinition,
 } from "@/features/platform/types/business-subscription";
 import { formatSubscriptionEventLabel } from "@/features/platform/utils/access-labels";
 import {
@@ -51,6 +57,9 @@ export function PlatformBusinessSubscriptionsTab({
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+  const [historyAccordionOpen, setHistoryAccordionOpen] = useState<string[]>(
+    [],
+  );
 
   const listFilters: ListSubscriptionEventsQuery = {
     eventType:
@@ -92,8 +101,6 @@ export function PlatformBusinessSubscriptionsTab({
     [data],
   );
 
-  const lastEvent = events[0] ?? null;
-
   const invalidateSubscriptionData = () => {
     void queryClient.invalidateQueries({
       queryKey: queryKeys.platform.businesses.access(businessId),
@@ -106,23 +113,12 @@ export function PlatformBusinessSubscriptionsTab({
     });
   };
 
-  const handleMoreAction = (action: SubscriptionActionDefinition) => {
-    if (
-      action.key === "CHANGE_PACKAGE" ||
-      action.key === "MARK_PAID" ||
-      action.key === "EXTEND_TRIAL" ||
-      action.key === "MANUAL_ADJUSTMENT" ||
-      action.key === "SYNC_CAPABILITIES" ||
-      action.key === "CHANGE_SNAPSHOT" ||
-      action.key === "REACTIVATE_BUSINESS" ||
-      action.key === "SUSPEND_BUSINESS" ||
-      action.key === "CANCEL_SUBSCRIPTION" ||
-      action.key === "EXPIRE_TRIAL" ||
-      action.key === "MOVE_PENDING"
-    ) {
-      onManageAccess();
-    }
-  };
+  const actionDialogs = useSubscriptionActionDialogs({
+    businessId,
+    access,
+    onSuccess: invalidateSubscriptionData,
+    onRecordPayment,
+  });
 
   const resetFilters = () => {
     setEventType("all");
@@ -206,90 +202,104 @@ export function PlatformBusinessSubscriptionsTab({
         access={access}
         canUpdate={canUpdate}
         isLoading={accessLoading}
-        lastEvent={lastEvent}
         onManageAccess={onManageAccess}
-        onRecordPayment={onRecordPayment}
         onPackageChanged={invalidateSubscriptionData}
-        onAction={handleMoreAction}
+        onAction={access ? actionDialogs.handleAction : undefined}
+        actionBarLoading={actionDialogs.isLoading}
       />
 
-      <div className="space-y-4">
-        <div className="space-y-1">
-          <h3 className="text-base font-semibold">Subscription History</h3>
-          <p className="text-sm text-muted-foreground">
-            Lifecycle events for this business. Open an event for before/after
-            state details.
-          </p>
-        </div>
+      {actionDialogs.dialogs}
 
-        <FilterBar>
-          <SearchableSelect
-            items={subscriptionEventTypeFilterOptions}
-            value={eventType}
-            onValueChange={(v) => setEventType(v ?? "all")}
-            placeholder="Event type"
-            triggerClassName="w-[180px]"
-          />
-          <SearchableSelect
-            items={subscriptionStatusFilterOptions}
-            value={subscriptionStatus}
-            onValueChange={(v) => setSubscriptionStatus(v ?? "all")}
-            placeholder="Status"
-            triggerClassName="w-[180px]"
-          />
-          <Input
-            type="date"
-            value={fromDate}
-            onChange={(e) => setFromDate(e.target.value)}
-            className="w-[160px]"
-            aria-label="From date"
-          />
-          <Input
-            type="date"
-            value={toDate}
-            onChange={(e) => setToDate(e.target.value)}
-            className="w-[160px]"
-            aria-label="To date"
-          />
-          <Button type="button" variant="ghost" size="sm" onClick={resetFilters}>
-            Clear
-          </Button>
-        </FilterBar>
+      <Accordion
+        value={historyAccordionOpen}
+        onValueChange={setHistoryAccordionOpen}
+        className="rounded-lg border px-4"
+      >
+        <AccordionItem value="subscription-history">
+          <AccordionTrigger className="py-3 hover:no-underline">
+            <span className="font-medium">Subscription History</span>
+          </AccordionTrigger>
+          <AccordionContent className="space-y-4 pb-4">
+            <p className="text-sm text-muted-foreground">
+              Lifecycle events for this business. Open an event for before/after
+              state details.
+            </p>
 
-        <DataTable
-          columns={columns}
-          data={events}
-          getRowId={(row) => row.id}
-          isLoading={eventsLoading && events.length === 0}
-          emptyTitle="No subscription events"
-          emptyDescription="Subscription lifecycle events will appear here."
-          rowActions={(row) => (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => openEvent(row)}
-            >
-              View
-            </Button>
-          )}
-          actionsColumnHeader="Actions"
-        />
+            <FilterBar>
+              <SearchableSelect
+                items={subscriptionEventTypeFilterOptions}
+                value={eventType}
+                onValueChange={(v) => setEventType(v ?? "all")}
+                placeholder="Event type"
+                triggerClassName="w-[180px]"
+              />
+              <SearchableSelect
+                items={subscriptionStatusFilterOptions}
+                value={subscriptionStatus}
+                onValueChange={(v) => setSubscriptionStatus(v ?? "all")}
+                placeholder="Status"
+                triggerClassName="w-[180px]"
+              />
+              <Input
+                type="date"
+                value={fromDate}
+                onChange={(e) => setFromDate(e.target.value)}
+                className="w-[160px]"
+                aria-label="From date"
+              />
+              <Input
+                type="date"
+                value={toDate}
+                onChange={(e) => setToDate(e.target.value)}
+                className="w-[160px]"
+                aria-label="To date"
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={resetFilters}
+              >
+                Clear
+              </Button>
+            </FilterBar>
 
-        {hasNextPage ? (
-          <div className="flex justify-center">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              disabled={isFetchingNextPage}
-              onClick={() => void fetchNextPage()}
-            >
-              {isFetchingNextPage ? "Loading…" : "Load more"}
-            </Button>
-          </div>
-        ) : null}
-      </div>
+            <DataTable
+              columns={columns}
+              data={events}
+              getRowId={(row) => row.id}
+              isLoading={eventsLoading && events.length === 0}
+              emptyTitle="No subscription events"
+              emptyDescription="Subscription lifecycle events will appear here."
+              rowActions={(row) => (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => openEvent(row)}
+                >
+                  View
+                </Button>
+              )}
+              actionsColumnHeader="Actions"
+            />
+
+            {hasNextPage ? (
+              <div className="flex justify-center">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={isFetchingNextPage}
+                  onClick={() => void fetchNextPage()}
+                >
+                  {isFetchingNextPage ? "Loading…" : "Load more"}
+                </Button>
+              </div>
+            ) : null}
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
 
       <SubscriptionEventDetailDrawer
         businessId={businessId}

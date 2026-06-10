@@ -43,7 +43,6 @@ function renderTabContent(
     openPaymentsTab,
     paymentsAutoOpen,
     setActiveTab,
-    openSubscriptionsTab,
     accessLoading,
   } = props;
 
@@ -64,7 +63,6 @@ function renderTabContent(
         <PlatformBusinessAccessTab
           business={business}
           canUpdate={canUpdate}
-          onNavigateToSubscriptions={openSubscriptionsTab}
           onNavigateToPayments={openPaymentsTab}
         />
       );

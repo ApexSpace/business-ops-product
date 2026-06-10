@@ -139,6 +139,8 @@ export interface UpdateBusinessAccessInput {
   adminNotes?: string;
 }
 
+export type UnpaidAccessMode = "TRIAL" | "PENDING_PAYMENT" | "INTERNAL";
+
 export interface CreateBusinessAccessInput {
   status?: BusinessAccessStatus;
   planGroupId?: string;
@@ -154,4 +156,9 @@ export interface CreateBusinessAccessInput {
   notes?: string;
   syncCapabilitiesFromTier?: boolean;
   inviteOwner?: boolean;
+  paymentCollected?: boolean;
+  unpaidAccessMode?: UnpaidAccessMode;
+  recordInitialPayment?: boolean;
+  paidAt?: string;
+  paymentReference?: string;
 }

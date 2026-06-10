@@ -1,36 +1,23 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ChevronDown } from "lucide-react";
 import { StatusBadge } from "@/components/data-display/status-badge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ChangePackageDialog } from "@/features/platform/components/access/change-package-dialog";
+import { SubscriptionActionBar } from "@/features/platform/components/access/subscription-action-bar";
 import type { BusinessAccess } from "@/features/platform/types/business-access";
-import type {
-  BusinessSubscriptionEventListItem,
-  SubscriptionActionDefinition,
-} from "@/features/platform/types/business-subscription";
+import type { SubscriptionActionDefinition } from "@/features/platform/types/business-subscription";
 import { formatPaymentMethod } from "@/features/platform/utils/access-labels";
+import { deriveSubscriptionTabActionLayout } from "@/features/platform/utils/business-subscription-actions";
 import { formatBillingCycleLabel } from "@/features/platform/utils/tier-price.util";
 import {
   formatBillingPeriod,
   resolveNextBillingLabel,
   resolveSubscriptionTotal,
 } from "@/features/platform/utils/subscription-overview.util";
-
-const PRIMARY_ACTION_KEYS = new Set<SubscriptionActionDefinition["key"]>([
-  "CHANGE_PACKAGE",
-  "RECORD_PAYMENT",
-]);
 
 type CapabilityRow = BusinessAccess["capabilities"][number];
 
@@ -71,20 +58,18 @@ export function SubscriptionOverviewSection({
   access,
   canUpdate,
   isLoading,
-  lastEvent,
   onManageAccess,
-  onRecordPayment,
   onPackageChanged,
   onAction,
+  actionBarLoading,
 }: {
   access?: BusinessAccess | null;
   canUpdate: boolean;
   isLoading?: boolean;
-  lastEvent?: BusinessSubscriptionEventListItem | null;
   onManageAccess: () => void;
-  onRecordPayment: () => void;
   onPackageChanged?: () => void;
   onAction?: (action: SubscriptionActionDefinition) => void;
+  actionBarLoading?: boolean;
 }) {
   const [changePackageOpen, setChangePackageOpen] = useState(false);
 
@@ -94,15 +79,10 @@ export function SubscriptionOverviewSection({
     [access?.capabilities],
   );
 
-  const moreActions = useMemo(() => {
-    const actions = access?.availableActions ?? [];
-    return actions.filter(
-      (a) =>
-        a.visible &&
-        a.enabled &&
-        !PRIMARY_ACTION_KEYS.has(a.key),
-    );
-  }, [access?.availableActions]);
+  const actionLayout = useMemo(
+    () => (access ? deriveSubscriptionTabActionLayout(access) : null),
+    [access],
+  );
 
   if (isLoading) {
     return (
@@ -111,11 +91,6 @@ export function SubscriptionOverviewSection({
         <div className="grid gap-4 lg:grid-cols-3">
           <Skeleton className="h-56 lg:col-span-2" />
           <Skeleton className="h-56" />
-        </div>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <Skeleton key={i} className="h-20" />
-          ))}
         </div>
       </div>
     );
@@ -149,53 +124,41 @@ export function SubscriptionOverviewSection({
     subscription.currentPeriodEnd,
   );
 
+  const handleAction = (action: SubscriptionActionDefinition) => {
+    if (action.key === "CHANGE_PACKAGE") {
+      setChangePackageOpen(true);
+      return;
+    }
+    onAction?.(action);
+  };
+
   return (
     <div className="space-y-6">
-      <div className="space-y-1">
-        <h2 className="text-lg font-semibold tracking-tight">Current Subscription</h2>
-        <p className="text-sm text-muted-foreground">
-          Plan, billing, and access for this workspace.
-        </p>
-      </div>
-
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <SummaryMiniCard
-          label="Current Status"
-          value={
-            subscription.status ? (
-              <StatusBadge status={subscription.status} domain="subscription" />
-            ) : (
-              "—"
-            )
-          }
-        />
-        <SummaryMiniCard label="Total" value={total.display} />
-        <SummaryMiniCard label={nextBilling.label} value={nextBilling.value} />
-        <SummaryMiniCard
-          label="Last Change"
-          value={lastEvent?.title ?? "—"}
-        />
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="space-y-1">
+          <h2 className="text-lg font-semibold tracking-tight">
+            Current Subscription
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            Plan, billing, and access for this workspace.
+          </p>
+        </div>
+        {actionLayout && onAction ? (
+          <SubscriptionActionBar
+            layout={actionLayout}
+            canUpdate={canUpdate}
+            isLoading={actionBarLoading}
+            onAction={handleAction}
+            onManageAccess={onManageAccess}
+          />
+        ) : null}
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-2">
           <CardHeader className="pb-3">
             <div className="flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <CardTitle className="text-base">Current Plan</CardTitle>
-                <p className="mt-1 text-lg font-semibold">
-                  {subscription.planTierName ?? (
-                    <span className="text-muted-foreground font-normal text-sm">
-                      No plan tier assigned.
-                    </span>
-                  )}
-                </p>
-                {subscription.planGroupName ? (
-                  <p className="text-sm text-muted-foreground">
-                    {subscription.planGroupName}
-                  </p>
-                ) : null}
-              </div>
+              <CardTitle className="text-base">Current Plan</CardTitle>
               <div className="flex flex-wrap items-center gap-2">
                 {subscription.status ? (
                   <StatusBadge status={subscription.status} domain="subscription" />
@@ -231,13 +194,21 @@ export function SubscriptionOverviewSection({
                     className="h-auto p-0"
                     onClick={() => setChangePackageOpen(true)}
                   >
-                    Change Package
+                    Assign Plan
                   </Button>
                 ) : null}
               </div>
             ) : null}
 
             <dl className="grid gap-3 sm:grid-cols-2">
+              <OverviewField
+                label="Plan group"
+                value={subscription.planGroupName ?? "—"}
+              />
+              <OverviewField
+                label="Plan tier"
+                value={subscription.planTierName ?? "—"}
+              />
               <OverviewField
                 label="Billing cycle"
                 value={formatBillingCycleLabel(subscription.billingCycle)}
@@ -247,12 +218,12 @@ export function SubscriptionOverviewSection({
                 value={total.display}
               />
               <OverviewField
-                label={nextBilling.label}
-                value={nextBilling.value}
-              />
-              <OverviewField
                 label="Current period"
                 value={billingPeriod}
+              />
+              <OverviewField
+                label={nextBilling.label}
+                value={nextBilling.value}
               />
               <OverviewField
                 label="Payment method"
@@ -263,73 +234,6 @@ export function SubscriptionOverviewSection({
                 }
               />
             </dl>
-
-            {resolution?.reasonLabel ? (
-              <p className="text-sm text-muted-foreground">
-                Access result: {resolution.reasonLabel}
-              </p>
-            ) : null}
-
-            {canUpdate ? (
-              <div className="flex flex-wrap items-center gap-2 border-t pt-4">
-                <Button
-                  type="button"
-                  size="sm"
-                  onClick={() => setChangePackageOpen(true)}
-                >
-                  Change Package
-                </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="secondary"
-                  onClick={onRecordPayment}
-                >
-                  Record Payment
-                </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  onClick={onManageAccess}
-                >
-                  Manage Access
-                </Button>
-                {moreActions.length > 0 ? (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger
-                      render={
-                        <Button type="button" size="sm" variant="outline">
-                          More actions
-                          <ChevronDown className="ml-1 size-4" />
-                        </Button>
-                      }
-                    />
-                    <DropdownMenuContent align="start">
-                      {moreActions.map((action) => (
-                        <DropdownMenuItem
-                          key={action.key}
-                          disabled={!action.enabled}
-                          onClick={() => {
-                            if (action.key === "RECORD_PAYMENT") {
-                              onRecordPayment();
-                              return;
-                            }
-                            if (onAction) {
-                              onAction(action);
-                              return;
-                            }
-                            onManageAccess();
-                          }}
-                        >
-                          {action.label}
-                        </DropdownMenuItem>
-                      ))}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                ) : null}
-              </div>
-            ) : null}
           </CardContent>
         </Card>
 
@@ -377,23 +281,6 @@ export function SubscriptionOverviewSection({
         />
       ) : null}
     </div>
-  );
-}
-
-function SummaryMiniCard({
-  label,
-  value,
-}: {
-  label: string;
-  value: React.ReactNode;
-}) {
-  return (
-    <Card>
-      <CardContent className="pt-4">
-        <p className="text-xs text-muted-foreground">{label}</p>
-        <div className="mt-1 text-sm font-medium">{value}</div>
-      </CardContent>
-    </Card>
   );
 }
 
