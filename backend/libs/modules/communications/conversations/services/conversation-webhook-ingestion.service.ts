@@ -39,6 +39,10 @@ export class ConversationWebhookIngestionService {
     private readonly realtime: ConversationRealtimeService,
   ) {}
 
+  async ingestNormalizedInbound(inbound: NormalizedInboundMessage): Promise<void> {
+    await this.ingestInboundMessage(inbound, null);
+  }
+
   async processMetaPayload(
     body: Record<string, unknown>,
     webhookEventId?: string,
@@ -55,29 +59,27 @@ export class ConversationWebhookIngestionService {
       return;
     }
 
+    let lastError: string | undefined;
+
     for (const inbound of messages) {
       try {
         await this.ingestInboundMessage(inbound, objectType);
-        if (webhookEventId) {
-          await this.webhookEventsRepository.updateStatus(
-            webhookEventId,
-            WebhookEventStatus.PROCESSED,
-          );
-        }
       } catch (error) {
         const message =
           error instanceof Error ? error.message : 'Unknown ingestion error';
+        lastError = message;
         this.logger.error(
           `Failed to ingest ${inbound.channel} message ${inbound.externalMessageId}: ${message}`,
         );
-        if (webhookEventId) {
-          await this.webhookEventsRepository.updateStatus(
-            webhookEventId,
-            WebhookEventStatus.FAILED,
-            message,
-          );
-        }
       }
+    }
+
+    if (webhookEventId) {
+      await this.webhookEventsRepository.updateStatus(
+        webhookEventId,
+        lastError ? WebhookEventStatus.FAILED : WebhookEventStatus.PROCESSED,
+        lastError,
+      );
     }
   }
 
@@ -208,6 +210,10 @@ export class ConversationWebhookIngestionService {
         | undefined,
     });
 
+    this.logger.log(
+      `Ingested ${inbound.channel} message ${inbound.externalMessageId} → conversation ${conversation.id}`,
+    );
+
     await this.realtime.publishMessageReceived(businessId, {
       conversationId: conversation.id,
       messageId: createdMessage.id,
@@ -237,6 +243,12 @@ export class ConversationWebhookIngestionService {
     inbound: NormalizedInboundMessage,
     objectType: string | null,
   ) {
+    if (inbound.channel === ConversationChannel.EMAIL) {
+      return this.conversationIntegrationRepository.findDefaultEmailResourceForBusiness(
+        inbound.externalResourceId,
+      );
+    }
+
     if (
       inbound.channel === ConversationChannel.WHATSAPP ||
       objectType === 'whatsapp' ||

@@ -42,4 +42,19 @@ export class WebhookEventsRepository {
       },
     });
   }
+
+  resetForReprocessing(
+    id: string,
+    payload: Prisma.InputJsonValue,
+  ) {
+    return this.prisma.webhookEvent.update({
+      where: { id },
+      data: {
+        payload,
+        status: WebhookEventStatus.RECEIVED,
+        errorMessage: null,
+        processedAt: null,
+      },
+    });
+  }
 }

@@ -1,4 +1,6 @@
 export const WEBHOOK_QUEUE = 'webhook-queue';
+/** Limits concurrent webhook DB work (ingestion holds many connections). */
+export const WEBHOOK_QUEUE_CONCURRENCY = 2;
 export const MESSAGE_QUEUE = 'message-queue';
 export const EMAIL_QUEUE = 'email-queue';
 /** Sprint 2+ stubs for Bull Board / future processors */

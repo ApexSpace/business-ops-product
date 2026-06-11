@@ -5,6 +5,7 @@ import {
   useInfiniteQuery,
 } from "@tanstack/react-query";
 import { listConversationMessages } from "@/features/conversations/api/conversations.api";
+import { isFeatureEnabled } from "@/lib/config/feature-flags";
 import { queryKeys } from "@/lib/query/keys";
 
 const MESSAGE_PAGE_SIZE = 50;
@@ -34,6 +35,7 @@ export function useConversationMessages(conversationId: string | null) {
     },
     enabled: Boolean(conversationId),
     placeholderData: keepPreviousData,
-    staleTime: 10_000,
+    staleTime: 5_000,
+    refetchInterval: isFeatureEnabled("realtimeSse") ? 12_000 : 5_000,
   });
 }

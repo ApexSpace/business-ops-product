@@ -43,6 +43,19 @@ export class ConversationsRepository {
     });
   }
 
+  findByExternalParticipantId(
+    businessId: string,
+    channel: ConversationChannel,
+    externalParticipantId: string,
+  ): Promise<Conversation | null> {
+    return this.prisma.conversation.findFirst({
+      where: this.activeWhere(businessId, {
+        channel,
+        externalParticipantId,
+      }),
+    });
+  }
+
   findByExternalConversationId(
     businessId: string,
     channel: ConversationChannel,
@@ -56,7 +69,7 @@ export class ConversationsRepository {
     });
   }
 
-  findMany(
+  async findMany(
     businessId: string,
     filters: ConversationListFilters,
   ): Promise<{ items: Conversation[]; total: number }> {

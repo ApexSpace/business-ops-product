@@ -25,9 +25,11 @@ import { ListConversationsQueryDto } from '../dto/list-conversations-query.dto';
 import { ListMessagesQueryDto } from '../dto/list-messages-query.dto';
 import { SendMessageDto } from '../dto/send-message.dto';
 import { UpdateConversationDto } from '../dto/update-conversation.dto';
+import { StartEmailConversationDto } from '../dto/start-email-conversation.dto';
 import { ConversationAssignmentService } from '../services/conversation-assignment.service';
 import { ConversationMessagesService } from '../services/conversation-messages.service';
 import { ConversationsService } from '../services/conversations.service';
+import { EmailConversationsService } from '../services/email-conversations.service';
 
 @ApiTags('conversations')
 @ApiBearerAuth()
@@ -39,7 +41,26 @@ export class ConversationsController {
     private readonly conversationsService: ConversationsService,
     private readonly messagesService: ConversationMessagesService,
     private readonly assignmentService: ConversationAssignmentService,
+    private readonly emailConversationsService: EmailConversationsService,
   ) {}
+
+  @Post('email/start')
+  @HttpCode(HttpStatus.CREATED)
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
+  startEmailConversation(
+    @CurrentUser() user: RequestUser,
+    @Body() dto: StartEmailConversationDto,
+  ) {
+    return this.emailConversationsService.startConversation(
+      user.businessId!,
+      dto,
+      user,
+    );
+  }
 
   @Get()
   @BusinessRoles(

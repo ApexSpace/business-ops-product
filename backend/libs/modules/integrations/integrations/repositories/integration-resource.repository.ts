@@ -50,6 +50,24 @@ export class IntegrationResourceRepository {
     });
   }
 
+  findBySlugForProvider(
+    providerKey: string,
+    slug: string,
+    excludeBusinessId?: string,
+  ): Promise<IntegrationResource | null> {
+    return this.prisma.integrationResource.findFirst({
+      where: {
+        providerKey,
+        type: IntegrationResourceType.EMAIL_ACCOUNT,
+        ...(excludeBusinessId ? { businessId: { not: excludeBusinessId } } : {}),
+        metadata: {
+          path: ['slug'],
+          equals: slug,
+        },
+      },
+    });
+  }
+
   findDefault(
     businessId: string,
     providerKey: string,

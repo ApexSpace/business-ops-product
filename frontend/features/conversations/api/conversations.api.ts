@@ -181,7 +181,15 @@ export type SendMessageResult = {
 
 export type SendConversationMessageInput = {
   text?: string;
+  subject?: string;
   attachments?: Array<{ type: string; url: string }>;
+};
+
+export type StartEmailConversationInput = {
+  toEmail: string;
+  contactId?: string;
+  subject?: string;
+  text?: string;
 };
 
 export async function sendConversationMessage(
@@ -193,6 +201,7 @@ export async function sendConversationMessage(
       ? { text: input }
       : {
           text: input.text,
+          subject: input.subject,
           attachments: input.attachments,
         };
 
@@ -206,6 +215,10 @@ export async function sendConversationMessage(
     jobId: typeof meta.jobId === "string" ? meta.jobId : undefined,
     pollUrl: typeof meta.pollUrl === "string" ? meta.pollUrl : undefined,
   };
+}
+
+export function startEmailConversation(input: StartEmailConversationInput) {
+  return api.post<Conversation>("conversations/email/start", input);
 }
 
 export function listConversationsByContact(contactId: string) {

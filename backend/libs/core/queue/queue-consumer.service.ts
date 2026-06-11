@@ -15,6 +15,7 @@ import {
   JOB_SEND_OUTBOUND_MESSAGE,
   MESSAGE_QUEUE,
   WEBHOOK_QUEUE,
+  WEBHOOK_QUEUE_CONCURRENCY,
 } from './queue.constants';
 
 @Injectable()
@@ -41,7 +42,7 @@ export class QueueConsumerService implements OnModuleInit, OnModuleDestroy {
       new Worker(
         WEBHOOK_QUEUE,
         async (job: Job) => this.handleWebhookJob(job),
-        { connection, concurrency: 5 },
+        { connection, concurrency: WEBHOOK_QUEUE_CONCURRENCY },
       ),
       new Worker(
         MESSAGE_QUEUE,

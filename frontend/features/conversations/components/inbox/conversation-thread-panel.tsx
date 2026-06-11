@@ -49,10 +49,17 @@ interface ConversationThreadPanelProps {
   onRemoveAttachment: () => void;
   canSend: boolean;
   sendDisabledReason: string | null;
+  emailSubject: string;
+  onEmailSubjectChange: (value: string) => void;
   sendMutation: UseMutationResult<
     unknown,
     Error,
-    { id: string; text: string; attachments?: Array<{ type: string; url: string }> }
+    {
+      id: string;
+      text: string;
+      subject?: string;
+      attachments?: Array<{ type: string; url: string }>;
+    }
   >;
   statusMutation: UseMutationResult<
     unknown,
@@ -79,6 +86,8 @@ export function ConversationThreadPanel({
   onRemoveAttachment,
   canSend,
   sendDisabledReason,
+  emailSubject,
+  onEmailSubjectChange,
   sendMutation,
   statusMutation,
   onAssignSuccess,
@@ -114,7 +123,7 @@ export function ConversationThreadPanel({
 
   return (
     <>
-      <section className="flex min-w-0 flex-1 flex-col">
+      <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
         {!selectedId || !selected ? (
           <div className="flex flex-1 flex-col items-center justify-center text-center text-muted-foreground">
             <MessageSquare className="mb-3 size-10 opacity-40" />
@@ -122,7 +131,7 @@ export function ConversationThreadPanel({
           </div>
         ) : (
           <>
-            <header className="flex items-center justify-between gap-3 border-b border-border/80 px-4 py-3">
+            <header className="flex shrink-0 items-center justify-between gap-3 border-b border-border/80 px-4 py-3">
               <div>
                 <p className="font-semibold">{contactDisplayName(selected)}</p>
                 <div className="mt-0.5 flex items-center gap-2 text-xs text-muted-foreground">
@@ -155,7 +164,7 @@ export function ConversationThreadPanel({
               </div>
             </header>
 
-            <div className="flex-1 px-2 py-2">
+            <div className="min-h-0 flex-1 overflow-hidden px-2 py-2">
               {messagesLoading ? (
                 <p className="px-2 text-sm text-muted-foreground">Loading messages…</p>
               ) : messages.length === 0 ? (
@@ -183,12 +192,19 @@ export function ConversationThreadPanel({
               channelHint={
                 selected ? channelComposerHint(selected.channel) : null
               }
+              showSubject={selected?.channel === "EMAIL"}
+              subject={emailSubject}
+              onSubjectChange={onEmailSubjectChange}
               isPending={sendMutation.isPending}
               onSend={() => {
                 if (selectedId) {
                   sendMutation.mutate({
                     id: selectedId,
                     text: composer.trim(),
+                    subject:
+                      selected?.channel === "EMAIL"
+                        ? emailSubject.trim() || selected.title || undefined
+                        : undefined,
                     attachments: pendingAttachment ? [pendingAttachment] : undefined,
                   });
                 }
@@ -198,7 +214,7 @@ export function ConversationThreadPanel({
         )}
       </section>
 
-      <aside className="hidden w-72 shrink-0 flex-col border-l border-border/80 lg:flex">
+      <aside className="hidden h-full min-h-0 w-72 shrink-0 flex-col overflow-y-auto border-l border-border/80 lg:flex">
         {selected ? (
           <div className="space-y-4 p-4 text-sm">
             <div>

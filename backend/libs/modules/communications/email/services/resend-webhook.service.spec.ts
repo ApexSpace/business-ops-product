@@ -16,13 +16,17 @@ describe('ResendWebhookService', () => {
     enabled: true,
     defaultFrom: 'Test <no-reply@example.com>',
     defaultReplyTo: null,
+    platform: {
+      sendingDomain: 'notify.codesoltech.com',
+      inboundDomain: 'notify.codesoltech.com',
+    },
     resend: { apiKey: 're_test', webhookSecret: 'whsec_test' },
     queue: { concurrency: 10, jobAttempts: 5, jobBackoffMs: 2000 },
   };
 
   function createService(overrides?: {
     existingWebhook?: { id: string; status: WebhookEventStatus } | null;
-    enqueueResult?: string | null;
+    dispatchResult?: boolean;
     emailMessage?: Record<string, unknown> | null;
   }) {
     const configService = {
@@ -51,28 +55,31 @@ describe('ResendWebhookService', () => {
       updateStatus: jest.fn().mockResolvedValue({}),
       mergeMetadata: jest.fn().mockResolvedValue({}),
     };
-    const queueService = {
-      enqueueResendWebhook: jest
-        .fn()
-        .mockResolvedValue(
-          overrides && 'enqueueResult' in overrides
-            ? overrides.enqueueResult
-            : 'job-1',
-        ),
+    const resendWebhookDispatch = {
+      dispatch: jest.fn().mockResolvedValue(
+        overrides && 'dispatchResult' in overrides
+          ? overrides.dispatchResult
+          : true,
+      ),
+    };
+
+    const resendInboundEmailService = {
+      processInboundPayload: jest.fn().mockResolvedValue(undefined),
     };
 
     const service = new ResendWebhookService(
       configService as never,
       webhookEventsRepository as never,
       messageRepository as never,
-      queueService as never,
+      resendWebhookDispatch as never,
+      resendInboundEmailService as never,
     );
 
     return {
       service,
       webhookEventsRepository,
       messageRepository,
-      queueService,
+      resendWebhookDispatch,
     };
   }
 
@@ -90,8 +97,8 @@ describe('ResendWebhookService', () => {
     ).rejects.toMatchObject({ status: 400 });
   });
 
-  it('persists and enqueues on valid webhook', async () => {
-    const { service, webhookEventsRepository, queueService } = createService();
+  it('persists and dispatches on valid webhook', async () => {
+    const { service, webhookEventsRepository, resendWebhookDispatch } = createService();
 
     await service.handleWebhook(Buffer.from('{}'), validHeaders);
 
@@ -101,9 +108,7 @@ describe('ResendWebhookService', () => {
         eventType: 'email.delivered',
       }),
     );
-    expect(queueService.enqueueResendWebhook).toHaveBeenCalledWith({
-      webhookEventId: 'wh-1',
-    });
+    expect(resendWebhookDispatch.dispatch).toHaveBeenCalledWith('wh-1');
   });
 
   it('skips create when webhook already processed', async () => {
@@ -119,24 +124,19 @@ describe('ResendWebhookService', () => {
     expect(webhookEventsRepository.create).not.toHaveBeenCalled();
   });
 
-  it('reuses RECEIVED webhook and re-enqueues', async () => {
-    const { service, webhookEventsRepository, queueService } = createService({
-      existingWebhook: {
-        id: 'wh-existing',
-        status: WebhookEventStatus.RECEIVED,
-      },
+  it('reuses RECEIVED webhook and re-dispatches', async () => {
+    const { service, webhookEventsRepository, resendWebhookDispatch } = createService({
+      existingWebhook: { id: 'wh-existing', status: WebhookEventStatus.RECEIVED },
     });
 
     await service.handleWebhook(Buffer.from('{}'), validHeaders);
 
     expect(webhookEventsRepository.create).not.toHaveBeenCalled();
-    expect(queueService.enqueueResendWebhook).toHaveBeenCalledWith({
-      webhookEventId: 'wh-existing',
-    });
+    expect(resendWebhookDispatch.dispatch).toHaveBeenCalledWith('wh-existing');
   });
 
-  it('throws when enqueue fails so Resend retries', async () => {
-    const { service } = createService({ enqueueResult: null });
+  it('throws when dispatch fails so Resend retries', async () => {
+    const { service } = createService({ dispatchResult: false });
 
     await expect(
       service.handleWebhook(Buffer.from('{}'), validHeaders),

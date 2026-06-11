@@ -79,8 +79,7 @@ export class MetaWebhookProcessor {
         );
       }
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : 'Processing failed';
+      const message = error instanceof Error ? error.message : 'Processing failed';
       await this.webhookEventsRepository.updateStatus(
         event.id,
         WebhookEventStatus.FAILED,

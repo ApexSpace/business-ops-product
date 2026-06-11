@@ -55,6 +55,7 @@ export const PROVIDERS_WITH_RESOURCES = new Set([
   "xero",
   "linkedin",
   "stripe",
+  "email",
 ]);
 
 export const RESOURCE_TYPE_LABELS: Record<IntegrationResourceType, string> = {

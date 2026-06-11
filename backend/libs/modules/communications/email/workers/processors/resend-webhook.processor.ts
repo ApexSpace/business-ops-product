@@ -1,5 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { WebhookEventStatus } from '@prisma/client';
+import { forwardRef, Inject, Injectable, Logger } from '@nestjs/common';
+import { WebhookEventProvider, WebhookEventStatus } from '@prisma/client';
 import { IdempotencyService } from '@app/core/idempotency/idempotency.service';
 import type { ProcessResendWebhookPayload } from '@app/core/queue/queue.types';
 import { WebhookEventsRepository } from '@app/modules/communications/conversations/repositories/webhook-events.repository';
@@ -11,6 +11,7 @@ export class ResendWebhookProcessor {
 
   constructor(
     private readonly webhookEventsRepository: WebhookEventsRepository,
+    @Inject(forwardRef(() => ResendWebhookService))
     private readonly resendWebhookService: ResendWebhookService,
     private readonly idempotencyService: IdempotencyService,
   ) {}
@@ -29,18 +30,40 @@ export class ResendWebhookProcessor {
     }
 
     if (event.externalEventId) {
+      const existing = await this.webhookEventsRepository.findByProviderAndExternalId(
+        WebhookEventProvider.RESEND,
+        event.externalEventId,
+      );
+      if (
+        existing &&
+        existing.id !== event.id &&
+        existing.status === WebhookEventStatus.PROCESSED
+      ) {
+        await this.webhookEventsRepository.updateStatus(
+          event.id,
+          WebhookEventStatus.IGNORED,
+        );
+        return;
+      }
+
       const claimed = await this.idempotencyService.claim(
         'resend-webhook',
         event.externalEventId,
       );
       if (!claimed) {
         this.logger.log(
-          `Skipping duplicate Resend event ${event.externalEventId}`,
+          `Resend event ${event.externalEventId} already claimed; continuing processing check`,
         );
-        return;
       }
     }
 
-    await this.resendWebhookService.processQueuedEvent(payload);
+    try {
+      await this.resendWebhookService.processQueuedEvent(payload);
+    } catch (error) {
+      if (event.externalEventId) {
+        await this.idempotencyService.release('resend-webhook', event.externalEventId);
+      }
+      throw error;
+    }
   }
 }

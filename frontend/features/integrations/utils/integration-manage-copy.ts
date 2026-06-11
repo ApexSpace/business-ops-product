@@ -167,6 +167,26 @@ const COPY_BY_PROVIDER: Record<string, IntegrationManageCopy> = {
     },
     disconnectLabel: "Disconnect Stripe",
   },
+  email: {
+    connectionTitle: "Email for conversations",
+    description:
+      "Conversation email is enabled on CodeSol's shared domain by default. Customers can reply to your messages and those replies appear in your inbox.",
+    resourcesSectionLabel: "Email address",
+    syncButtonLabel: "Refresh email address",
+    syncSuccessToast: () => "Email address refreshed",
+    syncEmptyToast: "No email address found",
+    emptyState: {
+      title: "No email address",
+      message: "Platform email has not been activated for this business yet.",
+      checklist: [
+        "Ensure EMAIL_ENABLED and RESEND_API_KEY are set on the server.",
+        "Open this screen again to activate the shared address.",
+      ],
+    },
+    disconnectLabel: "Disconnect email",
+    messagingComposerHint:
+      "Replies from customers are routed back to this conversation automatically.",
+  },
   linkedin: {
     connectionTitle: "LinkedIn connection",
     description:

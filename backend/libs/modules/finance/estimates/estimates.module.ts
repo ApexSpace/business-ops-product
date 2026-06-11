@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { AuditModule } from '@app/modules/platform/audit/audit.module';
 import { BusinessModule } from '@app/modules/platform/business/business.module';
 import { ContactsModule } from '@app/modules/crm/contacts/contacts.module';
@@ -11,7 +11,7 @@ import { EstimatesService } from './services/estimates.service';
 @Module({
   imports: [
     AuditModule,
-    BusinessModule,
+    forwardRef(() => BusinessModule),
     ContactsModule,
     ServicesModule,
     WorkItemsModule,

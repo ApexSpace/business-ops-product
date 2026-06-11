@@ -30,6 +30,26 @@ export class ConversationIntegrationRepository {
     });
   }
 
+  findDefaultEmailResourceForBusiness(
+    businessId: string,
+  ): Promise<IntegrationResource | null> {
+    return this.prisma.integrationResource.findFirst({
+      where: {
+        businessId,
+        providerKey: 'email',
+        type: IntegrationResourceType.EMAIL_ACCOUNT,
+        isDefault: true,
+        status: IntegrationResourceStatus.ACTIVE,
+        businessIntegration: {
+          status: IntegrationStatus.CONNECTED,
+        },
+      },
+      include: {
+        businessIntegration: true,
+      },
+    });
+  }
+
   findInstagramResourceByLinkedPageId(
     linkedPageId: string,
   ): Promise<IntegrationResource | null> {

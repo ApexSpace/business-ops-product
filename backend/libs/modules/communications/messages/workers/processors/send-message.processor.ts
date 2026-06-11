@@ -12,6 +12,7 @@ import { ConversationChannelAdapterRegistry } from '@app/modules/communications/
 import { ConversationMessagesRepository } from '@app/modules/communications/conversations/repositories/conversation-messages.repository';
 import { ConversationsRepository } from '@app/modules/communications/conversations/repositories/conversations.repository';
 import { WEBCHAT_PROVIDER_KEY } from '@app/modules/communications/chatbots/utils/chatbot-public-key.util';
+import { isPlatformEmailConversation } from '@app/modules/communications/email/utils/platform-email-channel.util';
 import { BusinessIntegrationRepository } from '@app/modules/integrations/integrations/repositories/business-integration.repository';
 import type { ChannelMessageAttachment } from '@app/modules/communications/conversations/adapters/conversation-channel-adapter.interface';
 import { previewFromMessageContent } from '@app/modules/communications/conversations/adapters/meta/meta-attachment.util';
@@ -73,8 +74,12 @@ export class SendMessageProcessor {
     const isWebchat =
       conversation.channel === ConversationChannel.WEBCHAT &&
       conversation.providerKey === WEBCHAT_PROVIDER_KEY;
+    const isPlatformEmail = isPlatformEmailConversation(
+      conversation.channel,
+      conversation.providerKey,
+    );
 
-    if (!isWebchat) {
+    if (!isWebchat && !isPlatformEmail) {
       const integration =
         await this.businessIntegrationRepository.findByBusinessAndKey(
           payload.businessId,
@@ -103,6 +108,15 @@ export class SendMessageProcessor {
         externalRecipientId: conversation.externalParticipantId,
         text: message.text ?? '',
         attachments,
+        metadata: {
+          conversationId: conversation.id,
+          messageId: message.id,
+          subject:
+            typeof (message.metadata as Record<string, unknown> | null)?.subject ===
+            'string'
+              ? ((message.metadata as Record<string, unknown>).subject as string)
+              : conversation.title ?? undefined,
+        },
       });
 
       await this.messagesRepository.update(message.id, {

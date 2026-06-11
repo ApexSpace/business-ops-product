@@ -1,10 +1,8 @@
 import { Module } from '@nestjs/common';
-import { ConversationsModule } from '../conversations/conversations.module';
-import { SendMessageProcessor } from './workers/processors/send-message.processor';
+import { SendMessageProcessorModule } from './send-message-processor.module';
 
 @Module({
-  imports: [ConversationsModule],
-  providers: [SendMessageProcessor],
-  exports: [SendMessageProcessor],
+  imports: [SendMessageProcessorModule],
+  exports: [SendMessageProcessorModule],
 })
 export class MessagesWorkerModule {}

@@ -5,6 +5,7 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import { cn } from "@/lib/utils";
 import { formatRelativeTime } from "@/lib/ui/relative-time";
 import type { ConversationMessage } from "@/features/conversations/api/conversations.api";
+import { displayInboundEmailBody } from "@/features/conversations/utils/email-reply-body";
 import {
   isImageAttachment,
   parseMessageAttachments,
@@ -37,7 +38,7 @@ export function VirtualizedMessageList({
   return (
     <div
       ref={parentRef}
-      className="h-full max-h-[calc(100vh-16rem)] overflow-y-auto px-1"
+      className="h-full min-h-0 overflow-y-auto px-1"
       onScroll={(e) => {
         const el = e.currentTarget;
         if (
@@ -87,10 +88,32 @@ export function VirtualizedMessageList({
   );
 }
 
+function getEmptyMessageFallback(message: ConversationMessage): string {
+  if (isInboundEmailMessage(message)) {
+    return "(Email reply)";
+  }
+  return "[Attachment]";
+}
+
+function isInboundEmailMessage(message: ConversationMessage): boolean {
+  return (
+    message.direction === "INBOUND" &&
+    (message.channel === "EMAIL" || message.providerKey === "email")
+  );
+}
+
+function messageDisplayText(message: ConversationMessage): string | null {
+  if (isInboundEmailMessage(message)) {
+    return displayInboundEmailBody(message.text);
+  }
+  return message.text;
+}
+
 function MessageBubble({ message }: { message: ConversationMessage }) {
   const outbound = message.direction === "OUTBOUND";
   const failed = message.status === "FAILED";
   const attachments = parseMessageAttachments(message.attachments);
+  const displayText = messageDisplayText(message);
 
   return (
     <div className={cn("flex", outbound ? "justify-end" : "justify-start")}>
@@ -151,9 +174,11 @@ function MessageBubble({ message }: { message: ConversationMessage }) {
             })}
           </div>
         ) : null}
-        {message.text ? <p>{message.text}</p> : null}
-        {!message.text && attachments.length === 0 ? (
-          <p>[Attachment]</p>
+        {displayText ? <p>{displayText}</p> : null}
+        {!displayText && attachments.length === 0 ? (
+          <p className="text-muted-foreground">
+            {getEmptyMessageFallback(message)}
+          </p>
         ) : null}
         <p
           className={cn(

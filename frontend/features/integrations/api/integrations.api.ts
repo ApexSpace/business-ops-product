@@ -155,6 +155,27 @@ export function getMetaClientConfig() {
   return api.get<MetaClientConfig>("integrations/oauth/meta/client-config");
 }
 
+export type PlatformDefaultEmail = {
+  integrationId: string;
+  resourceId: string;
+  fromName: string;
+  fromAddress: string;
+  slug: string;
+  sendingDomain: string;
+};
+
+export function getPlatformDefaultEmail() {
+  return api.get<PlatformDefaultEmail | null>(
+    "integrations/business/email/platform-default",
+  );
+}
+
+export function connectPlatformDefaultEmail() {
+  return api.post<PlatformDefaultEmail>(
+    "integrations/business/email/connect-platform-default",
+  );
+}
+
 export function listBusinessIntegrationProviders() {
   return api.get<IntegrationProviderWithStatus[]>("integrations/providers");
 }

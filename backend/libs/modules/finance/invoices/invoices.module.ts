@@ -17,13 +17,13 @@ import { StripeInvoicePaymentService } from './services/stripe-invoice-payment.s
 @Module({
   imports: [
     AuditModule,
-    BusinessModule,
+    forwardRef(() => BusinessModule),
     ContactsModule,
     EstimatesModule,
     ServicesModule,
     WorkItemsModule,
     forwardRef(() => IntegrationsModule),
-    EmailModule,
+    forwardRef(() => EmailModule),
   ],
   controllers: [InvoicesController, PublicInvoicesController],
   providers: [

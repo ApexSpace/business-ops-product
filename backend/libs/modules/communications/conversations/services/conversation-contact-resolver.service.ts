@@ -23,6 +23,16 @@ export class ConversationContactResolverService {
     inbound: NormalizedInboundMessage,
     resource: IntegrationResource,
   ): Promise<Contact> {
+    if (inbound.channel === ConversationChannel.EMAIL) {
+      const existingByEmail = await this.contactRepository.findByEmail(
+        businessId,
+        inbound.externalParticipantId,
+      );
+      if (existingByEmail) {
+        return existingByEmail;
+      }
+    }
+
     const metadataKey = this.resolveMetadataKey(inbound.channel);
 
     const existing = await this.contactRepository.findByMetadataExternalId(
@@ -58,6 +68,10 @@ export class ConversationContactResolverService {
         firstName,
         lastName,
         displayName,
+        email:
+          inbound.channel === ConversationChannel.EMAIL
+            ? inbound.externalParticipantId
+            : undefined,
         source: this.contactSourceLabel(inbound.channel),
         avatarUrl: profile.profilePic ?? inbound.senderProfilePictureUrl ?? null,
         metadata,
@@ -79,9 +93,10 @@ export class ConversationContactResolverService {
 
   private resolveMetadataKey(
     channel: ConversationChannel,
-  ): 'facebookPsid' | 'instagramUserId' | 'whatsappWaId' {
+  ): 'facebookPsid' | 'instagramUserId' | 'whatsappWaId' | 'emailAddress' {
     if (channel === ConversationChannel.FACEBOOK) return 'facebookPsid';
     if (channel === ConversationChannel.WHATSAPP) return 'whatsappWaId';
+    if (channel === ConversationChannel.EMAIL) return 'emailAddress';
     return 'instagramUserId';
   }
 
@@ -95,19 +110,23 @@ export class ConversationContactResolverService {
         ? externalParticipantId
         : `+${externalParticipantId}`;
     }
+    if (channel === ConversationChannel.EMAIL) {
+      return externalParticipantId;
+    }
     return 'Instagram User';
   }
 
   private contactSourceLabel(channel: ConversationChannel): string {
     if (channel === ConversationChannel.FACEBOOK) return 'Facebook Messenger';
     if (channel === ConversationChannel.WHATSAPP) return 'WhatsApp';
+    if (channel === ConversationChannel.EMAIL) return 'Email';
     return 'Instagram';
   }
 
   private async mergeContactMetadata(
     contact: Contact,
     inbound: NormalizedInboundMessage,
-    metadataKey: 'facebookPsid' | 'instagramUserId' | 'whatsappWaId',
+    metadataKey: 'facebookPsid' | 'instagramUserId' | 'whatsappWaId' | 'emailAddress',
   ): Promise<Contact> {
     const current = (contact.metadata as Record<string, unknown> | null) ?? {};
     if (current[metadataKey] === inbound.externalParticipantId) {

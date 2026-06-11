@@ -13,6 +13,7 @@ const baseSchema = Joi.object({
   DB_USERNAME: Joi.string().optional(),
   DB_PASSWORD: Joi.string().optional(),
   DB_DATABASE: Joi.string().optional(),
+  DB_POOL_MAX: Joi.number().integer().min(1).max(100).optional(),
   LOG_LEVEL: Joi.string()
     .valid('fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent')
     .default('info'),

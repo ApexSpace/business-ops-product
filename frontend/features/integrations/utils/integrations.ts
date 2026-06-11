@@ -272,9 +272,16 @@ export function shouldUseOAuthPopup(
   return hasOAuthStartRoute(provider.key);
 }
 
+export function isPlatformEmailProvider(providerKey: string): boolean {
+  return providerKey === "email";
+}
+
 export function shouldUseManualConnect(
   provider: Pick<IntegrationProvider, "connectionType" | "key">,
 ): boolean {
+  if (isPlatformEmailProvider(provider.key)) {
+    return false;
+  }
   return !shouldUseOAuthPopup(provider);
 }
 
@@ -340,6 +347,7 @@ export function getIntegrationConnectLabel(
     if (provider.key === "facebook") return "Connect Facebook";
     if (provider.key === "instagram") return "Connect Instagram";
     if (provider.key === "stripe") return "Connect Stripe";
+    if (isPlatformEmailProvider(provider.key)) return "Activate email";
     if (isGoogleOAuthProvider(provider.key)) return "Connect with Google";
     if (shouldUseOAuthPopup(provider)) return `Connect ${provider.name}`;
     return "Connect";

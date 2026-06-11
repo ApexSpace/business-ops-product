@@ -36,6 +36,7 @@ import {
   MESSAGE_QUEUE,
   SYNC_QUEUE,
   WEBHOOK_QUEUE,
+  WEBHOOK_QUEUE_CONCURRENCY,
 } from './queue.constants';
 import { resolveEmailConfig } from '../config/email/email.config';
 import type {
@@ -87,7 +88,7 @@ export class QueueWorkersService implements OnModuleInit, OnModuleDestroy {
     this.workers.push(
       new Worker(WEBHOOK_QUEUE, (job) => this.handleWebhookJob(job), {
         connection,
-        concurrency: 5,
+        concurrency: WEBHOOK_QUEUE_CONCURRENCY,
       }),
       new Worker(MESSAGE_QUEUE, (job) => this.handleMessageJob(job), {
         connection,

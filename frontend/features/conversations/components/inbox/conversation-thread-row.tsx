@@ -11,6 +11,7 @@ import {
   contactDisplayName,
   initials,
 } from "@/features/conversations/components/inbox/conversation-inbox-utils";
+import { displayInboundEmailBody } from "@/features/conversations/utils/email-reply-body";
 
 export function ConversationThreadRow({
   conversation,
@@ -23,6 +24,11 @@ export function ConversationThreadRow({
 }) {
   const name = contactDisplayName(conversation);
   const active = conversation.id === selectedId;
+  const previewText =
+    conversation.channel === "EMAIL" && conversation.lastMessagePreview
+      ? (displayInboundEmailBody(conversation.lastMessagePreview) ??
+        conversation.lastMessagePreview)
+      : conversation.lastMessagePreview;
 
   return (
     <li>
@@ -54,7 +60,7 @@ export function ConversationThreadRow({
               className="!size-4 shrink-0"
             />
             <span className="truncate text-xs text-muted-foreground">
-              {conversation.lastMessagePreview ?? "No messages"}
+              {previewText ?? "No messages"}
             </span>
           </div>
         </div>

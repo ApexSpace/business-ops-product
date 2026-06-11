@@ -20,4 +20,10 @@ export class SendMessageDto {
   @IsOptional()
   @IsArray()
   attachments?: unknown[];
+
+  @ApiPropertyOptional({ description: 'Email subject (EMAIL channel only)' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  subject?: string;
 }

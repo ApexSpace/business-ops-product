@@ -21,6 +21,9 @@ interface MessageComposerProps {
   canSend: boolean;
   sendDisabledReason: string | null;
   channelHint?: string | null;
+  subject?: string;
+  onSubjectChange?: (value: string) => void;
+  showSubject?: boolean;
   isPending: boolean;
   onSend: () => void;
 }
@@ -36,16 +39,29 @@ export function MessageComposer({
   canSend,
   sendDisabledReason,
   channelHint,
+  subject,
+  onSubjectChange,
+  showSubject = false,
   isPending,
   onSend,
 }: MessageComposerProps) {
   return (
-    <footer className="border-t border-border/80 p-3">
+    <footer className="shrink-0 border-t border-border/80 bg-card p-3">
       {channelHint ? (
         <p className="mb-2 text-xs text-muted-foreground">{channelHint}</p>
       ) : null}
       {sendDisabledReason ? (
         <p className="mb-2 text-xs text-muted-foreground">{sendDisabledReason}</p>
+      ) : null}
+      {showSubject ? (
+        <div className="mb-2">
+          <Input
+            value={subject ?? ""}
+            onChange={(e) => onSubjectChange?.(e.target.value)}
+            placeholder="Email subject"
+            disabled={!canSend && Boolean(sendDisabledReason)}
+          />
+        </div>
       ) : null}
       {pendingAttachment ? (
         <div className="mb-2 flex items-center justify-between rounded-lg border border-border/70 bg-muted/20 px-3 py-2 text-xs">
@@ -65,7 +81,7 @@ export function MessageComposer({
       ) : (
         <div className="mb-2 flex gap-2">
           <Input
-            value={attachmentUrl}
+            value={attachmentUrl ?? ""}
             onChange={(e) => onAttachmentUrlChange(e.target.value)}
             placeholder="Paste public image URL to attach…"
             disabled={!canSend && Boolean(sendDisabledReason)}
@@ -75,7 +91,8 @@ export function MessageComposer({
             variant="outline"
             className="shrink-0"
             disabled={
-              !attachmentUrl.trim() || (!canSend && Boolean(sendDisabledReason))
+              !(attachmentUrl ?? "").trim() ||
+              (!canSend && Boolean(sendDisabledReason))
             }
             onClick={onAddAttachment}
           >

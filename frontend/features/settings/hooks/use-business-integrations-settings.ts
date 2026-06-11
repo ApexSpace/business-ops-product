@@ -14,6 +14,7 @@ import {
   hasOAuthStartRoute,
   filterIntegrationProvidersByCategory,
   OAUTH_ROUTE_NOT_CONFIGURED_MESSAGE,
+  isPlatformEmailProvider,
   shouldUseManualConnect,
   shouldUseOAuthPopup,
   usesWhatsAppEmbeddedSignup,
@@ -34,6 +35,7 @@ import { PERMISSIONS, useCan } from "@/features/auth/permissions";
 import { queryKeys } from "@/lib/query/keys";
 import {
   connectBusinessIntegration,
+  connectPlatformDefaultEmail,
   confirmDisconnectBusinessIntegration,
   getBusinessIntegration,
   listBusinessIntegrationProviders,
@@ -154,6 +156,19 @@ export function useBusinessIntegrationsSettings() {
     }
   };
 
+  const platformEmailMutation = useMutation({
+    mutationFn: () => connectPlatformDefaultEmail(),
+    onSuccess: async () => {
+      toast.success("Email activated for your business");
+      setDialogOpen(false);
+      await invalidateIntegrations();
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.integrations.platformEmail(),
+      });
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
+
   const connectMutation = useMutation({
     mutationFn: ({
       providerKey,
@@ -253,6 +268,18 @@ export function useBusinessIntegrationsSettings() {
   };
 
   const openConnect = (provider: IntegrationProviderWithStatus) => {
+    if (isPlatformEmailProvider(provider.key)) {
+      if (
+        provider.status === "NOT_CONNECTED" ||
+        provider.status === "EXPIRED" ||
+        provider.status === "ERROR"
+      ) {
+        platformEmailMutation.mutate();
+        return;
+      }
+      openManage(provider);
+      return;
+    }
     if (usesWhatsAppEmbeddedSignup(provider.key)) {
       void startWhatsAppEmbeddedSignup(provider);
       return;
@@ -302,6 +329,7 @@ export function useBusinessIntegrationsSettings() {
 
   const isPending =
     connectMutation.isPending ||
+    platformEmailMutation.isPending ||
     updateMutation.isPending ||
     deleteMutation.isPending;
 

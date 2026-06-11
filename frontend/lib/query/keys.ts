@@ -213,6 +213,7 @@ export const queryKeys = {
       ["integrations", "business", "resources", providerKey] as const,
     messagingStatus: (providerKey: string) =>
       ["integrations", "business", "messaging-status", providerKey] as const,
+    platformEmail: () => ["integrations", "business", "platform-email"] as const,
     platformProviders: () => ["integrations", "platform", "providers"] as const,
     platformList: () => ["integrations", "platform", "list"] as const,
     platformDetail: (providerKey: string) =>

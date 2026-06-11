@@ -16,6 +16,16 @@ export interface SendEmailResult {
   providerMessageId: string;
 }
 
+export interface ReceivedEmailContent {
+  from?: string;
+  to?: string[];
+  subject?: string;
+  text?: string | null;
+  html?: string | null;
+  message_id?: string;
+  headers?: Record<string, string | string[]>;
+}
+
 @Injectable()
 export class ResendProviderService {
   private readonly logger = new Logger(ResendProviderService.name);
@@ -73,5 +83,29 @@ export class ResendProviderService {
       this.logger.error(`Resend send failed: ${message}`);
       throw error instanceof Error ? error : new Error(message);
     }
+  }
+
+  async getReceivedEmail(emailId: string): Promise<ReceivedEmailContent> {
+    const client = this.getClient();
+    const response = await client.emails.receiving.get(emailId);
+
+    if (response.error) {
+      throw new Error(response.error.message);
+    }
+
+    const email = response.data;
+    if (!email) {
+      throw new Error('Resend did not return received email content');
+    }
+
+    return {
+      from: email.from,
+      to: Array.isArray(email.to) ? email.to : email.to ? [email.to] : undefined,
+      subject: email.subject,
+      text: email.text,
+      html: email.html,
+      message_id: email.message_id,
+      headers: email.headers as Record<string, string | string[]> | undefined,
+    };
   }
 }
