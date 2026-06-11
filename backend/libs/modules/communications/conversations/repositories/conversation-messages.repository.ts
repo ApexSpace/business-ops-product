@@ -29,6 +29,16 @@ export class ConversationMessagesRepository {
     });
   }
 
+  findByChannelExternalMessageId(
+    channel: ConversationChannel,
+    externalMessageId: string,
+  ): Promise<ConversationMessage | null> {
+    return this.prisma.conversationMessage.findFirst({
+      where: { channel, externalMessageId },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
   async findManyByConversation(
     businessId: string,
     conversationId: string,
