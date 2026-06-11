@@ -13,8 +13,20 @@ export function isWebchatConversation(
 export function channelProviderKey(channel: ConversationChannel): string {
   if (channel === "FACEBOOK") return "facebook";
   if (channel === "INSTAGRAM") return "instagram";
+  if (channel === "WHATSAPP") return "whatsapp";
   if (channel === "WEBCHAT") return "webchat";
   return "email";
+}
+
+/** Channel-specific composer guidance shown above the message input. */
+export function channelComposerHint(channel: ConversationChannel): string | null {
+  if (channel === "EMAIL") {
+    return "Replies are sent from your CodeSol business address. Customer replies return to this thread.";
+  }
+  if (channel === "WHATSAPP") {
+    return "Free-form replies work within 24 hours of the customer's last message. Outside that window, use an approved WhatsApp template.";
+  }
+  return null;
 }
 
 export function contactDisplayName(conversation: Conversation): string {

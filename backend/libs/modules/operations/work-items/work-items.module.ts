@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { AuditModule } from '@app/modules/platform/audit/audit.module';
 import { ContactsModule } from '@app/modules/crm/contacts/contacts.module';
 import { LeadsModule } from '@app/modules/crm/leads/leads.module';
@@ -13,8 +13,8 @@ import { WorkItemsService } from './services/work-items.service';
     AuditModule,
     ContactsModule,
     ServicesModule,
-    LeadsModule,
-    MembershipModule,
+    forwardRef(() => LeadsModule),
+    forwardRef(() => MembershipModule),
   ],
   controllers: [WorkItemsController],
   providers: [WorkItemRepository, WorkItemsService],

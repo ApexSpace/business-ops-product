@@ -17,16 +17,50 @@ export class RedisPubSubService implements OnModuleDestroy {
     return this.redisService.isAvailable();
   }
 
-  private getSubscriber(): Redis | null {
+  private resetSubscriber(): void {
+    if (this.subscriber) {
+      void this.subscriber.quit().catch(() => undefined);
+      this.subscriber = null;
+    }
+  }
+
+  private async getSubscriber(): Promise<Redis | null> {
     const client = this.redisService.getClient();
     if (!client) {
       return null;
     }
-    if (!this.subscriber) {
-      this.subscriber = client.duplicate();
-      attachRedisErrorHandler(this.subscriber, () => undefined);
+
+    if (this.subscriber && this.subscriber.status === 'ready') {
+      return this.subscriber;
     }
-    return this.subscriber;
+
+    this.resetSubscriber();
+
+    const sub = client.duplicate();
+    attachRedisErrorHandler(sub, (err) => {
+      this.logger.warn(
+        `Redis subscriber connection error: ${err.message}`,
+      );
+      this.resetSubscriber();
+    });
+
+    try {
+      if (sub.status === 'wait') {
+        await sub.connect();
+      }
+      if (sub.status !== 'ready') {
+        this.logger.warn(`Redis subscriber not ready (status=${sub.status})`);
+        await sub.quit().catch(() => undefined);
+        return null;
+      }
+      this.subscriber = sub;
+      return sub;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.warn(`Failed to connect Redis subscriber: ${message}`);
+      await sub.quit().catch(() => undefined);
+      return null;
+    }
   }
 
   businessChannel(businessId: string): string {
@@ -46,7 +80,13 @@ export class RedisPubSubService implements OnModuleDestroy {
     });
     const client = this.redisService.getClient();
     if (!client) return;
-    await client.publish(channel, message);
+
+    try {
+      await client.publish(channel, message);
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
+      this.logger.warn(`Failed to publish realtime event: ${msg}`);
+    }
   }
 
   async subscribe(
@@ -58,23 +98,37 @@ export class RedisPubSubService implements OnModuleDestroy {
     if (!set) {
       set = new Set();
       this.handlers.set(channel, set);
-      const sub = this.getSubscriber();
-      if (!sub) return () => undefined;
-      await sub.subscribe(channel);
-      sub.on('message', (ch, message) => {
-        if (ch !== channel) return;
-        const handlers = this.handlers.get(channel);
-        handlers?.forEach((h) => {
-          try {
-            h(message);
-          } catch (err) {
-            this.logger.error(
-              `Realtime handler error: ${err instanceof Error ? err.message : String(err)}`,
-            );
-          }
+
+      const sub = await this.getSubscriber();
+      if (!sub) {
+        this.handlers.delete(channel);
+        return () => undefined;
+      }
+
+      try {
+        await sub.subscribe(channel);
+        sub.on('message', (ch, message) => {
+          if (ch !== channel) return;
+          const handlers = this.handlers.get(channel);
+          handlers?.forEach((h) => {
+            try {
+              h(message);
+            } catch (err) {
+              this.logger.error(
+                `Realtime handler error: ${err instanceof Error ? err.message : String(err)}`,
+              );
+            }
+          });
         });
-      });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        this.logger.warn(`Redis subscribe failed for ${channel}: ${message}`);
+        this.handlers.delete(channel);
+        this.resetSubscriber();
+        return () => undefined;
+      }
     }
+
     set.add(handler);
     return () => {
       set?.delete(handler);
@@ -82,9 +136,6 @@ export class RedisPubSubService implements OnModuleDestroy {
   }
 
   async onModuleDestroy(): Promise<void> {
-    if (this.subscriber) {
-      await this.subscriber.quit();
-      this.subscriber = null;
-    }
+    this.resetSubscriber();
   }
 }

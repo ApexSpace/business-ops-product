@@ -11,6 +11,7 @@ import {
   SendChannelMessageResult,
 } from '../conversation-channel-adapter.interface';
 import { getPageAccessTokenFromResource } from '../../utils/conversation-resource-token.util';
+import { toMetaOutboundAttachments } from './meta-attachment.util';
 
 @Injectable()
 export class InstagramMessagingAdapter implements ConversationChannelAdapter {
@@ -58,11 +59,14 @@ export class InstagramMessagingAdapter implements ConversationChannelAdapter {
       );
     }
 
+    const attachments = toMetaOutboundAttachments(params.attachments);
+
     const result = await this.metaApiClient.sendInstagramMessage(
       resource.externalId,
       accessToken,
       params.externalRecipientId,
       params.text,
+      attachments,
     );
 
     return {

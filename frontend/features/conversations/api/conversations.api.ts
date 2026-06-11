@@ -179,13 +179,35 @@ export type SendMessageResult = {
   pollUrl?: string;
 };
 
+export type SendConversationMessageInput = {
+  text?: string;
+  subject?: string;
+  attachments?: Array<{ type: string; url: string }>;
+};
+
+export type StartEmailConversationInput = {
+  toEmail: string;
+  contactId?: string;
+  subject?: string;
+  text?: string;
+};
+
 export async function sendConversationMessage(
   id: string,
-  text: string,
+  input: string | SendConversationMessageInput,
 ): Promise<SendMessageResult> {
+  const body =
+    typeof input === "string"
+      ? { text: input }
+      : {
+          text: input.text,
+          subject: input.subject,
+          attachments: input.attachments,
+        };
+
   const { data, meta } = await api.postWithMeta<ConversationMessage>(
     `conversations/${id}/messages`,
-    { text },
+    body,
   );
 
   return {
@@ -193,6 +215,10 @@ export async function sendConversationMessage(
     jobId: typeof meta.jobId === "string" ? meta.jobId : undefined,
     pollUrl: typeof meta.pollUrl === "string" ? meta.pollUrl : undefined,
   };
+}
+
+export function startEmailConversation(input: StartEmailConversationInput) {
+  return api.post<Conversation>("conversations/email/start", input);
 }
 
 export function listConversationsByContact(contactId: string) {
@@ -209,6 +235,15 @@ export function closeConversation(id: string) {
 
 export function reopenConversation(id: string) {
   return api.post<Conversation>(`conversations/${id}/reopen`);
+}
+
+export function assignConversation(
+  id: string,
+  assignedToUserId: string | null,
+) {
+  return api.post<Conversation>(`conversations/${id}/assign`, {
+    assignedToUserId,
+  });
 }
 
 export function getMessagingStatus(providerKey: string) {

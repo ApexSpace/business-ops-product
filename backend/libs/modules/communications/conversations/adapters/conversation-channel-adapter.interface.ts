@@ -1,10 +1,16 @@
 import { ConversationChannel } from '@prisma/client';
 
+export interface ChannelMessageAttachment {
+  type: string;
+  url: string;
+}
+
 export interface SendChannelMessageParams {
   businessId: string;
   resourceId: string;
   externalRecipientId: string;
   text: string;
+  attachments?: ChannelMessageAttachment[];
   metadata?: Record<string, unknown>;
 }
 

@@ -120,7 +120,7 @@ export class JobEnqueueService {
     },
     idempotencyKey: string | undefined,
     _actorUserId: string,
-  ): Promise<{ asyncJob: AsyncJob }> {
+  ): Promise<{ asyncJob: AsyncJob; queued: boolean }> {
     const asyncJob = await this.createJob({
       businessId: payload.businessId,
       type: 'send_outbound_message',
@@ -142,7 +142,7 @@ export class JobEnqueueService {
       await this.asyncJobRepository.update(asyncJob.id, { bullJobId });
     }
 
-    return { asyncJob };
+    return { asyncJob, queued: Boolean(bullJobId) };
   }
 
   async enqueueCalendarSync(params: {

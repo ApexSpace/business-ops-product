@@ -3,8 +3,10 @@ import { ConversationChannel } from '@prisma/client';
 import { AppException } from '@app/common/exceptions/app.exception';
 import { ErrorCode } from '@app/common/exceptions/error-code.enum';
 import { ConversationChannelAdapter } from './conversation-channel-adapter.interface';
+import { EmailMessagingAdapter } from './email/email-messaging.adapter';
 import { FacebookMessengerAdapter } from './meta/facebook-messenger.adapter';
 import { InstagramMessagingAdapter } from './meta/instagram-messaging.adapter';
+import { WhatsAppMessagingAdapter } from './meta/whatsapp-messaging.adapter';
 import { WebchatAdapter } from './webchat/webchat.adapter';
 
 @Injectable()
@@ -15,12 +17,16 @@ export class ConversationChannelAdapterRegistry {
   >();
 
   constructor(
+    emailAdapter: EmailMessagingAdapter,
     facebookAdapter: FacebookMessengerAdapter,
     instagramAdapter: InstagramMessagingAdapter,
+    whatsappAdapter: WhatsAppMessagingAdapter,
     webchatAdapter: WebchatAdapter,
   ) {
+    this.byChannel.set(ConversationChannel.EMAIL, emailAdapter);
     this.byChannel.set(ConversationChannel.FACEBOOK, facebookAdapter);
     this.byChannel.set(ConversationChannel.INSTAGRAM, instagramAdapter);
+    this.byChannel.set(ConversationChannel.WHATSAPP, whatsappAdapter);
     this.byChannel.set(ConversationChannel.WEBCHAT, webchatAdapter);
   }
 

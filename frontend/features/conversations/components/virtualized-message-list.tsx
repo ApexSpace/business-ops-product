@@ -5,6 +5,11 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import { cn } from "@/lib/utils";
 import { formatRelativeTime } from "@/lib/ui/relative-time";
 import type { ConversationMessage } from "@/features/conversations/api/conversations.api";
+import { displayInboundEmailBody } from "@/features/conversations/utils/email-reply-body";
+import {
+  isImageAttachment,
+  parseMessageAttachments,
+} from "@/features/conversations/utils/message-attachments";
 
 type VirtualizedMessageListProps = {
   messages: ConversationMessage[];
@@ -33,7 +38,7 @@ export function VirtualizedMessageList({
   return (
     <div
       ref={parentRef}
-      className="h-full max-h-[calc(100vh-16rem)] overflow-y-auto px-1"
+      className="h-full min-h-0 overflow-y-auto px-1"
       onScroll={(e) => {
         const el = e.currentTarget;
         if (
@@ -83,9 +88,32 @@ export function VirtualizedMessageList({
   );
 }
 
+function getEmptyMessageFallback(message: ConversationMessage): string {
+  if (isInboundEmailMessage(message)) {
+    return "(Email reply)";
+  }
+  return "[Attachment]";
+}
+
+function isInboundEmailMessage(message: ConversationMessage): boolean {
+  return (
+    message.direction === "INBOUND" &&
+    (message.channel === "EMAIL" || message.providerKey === "email")
+  );
+}
+
+function messageDisplayText(message: ConversationMessage): string | null {
+  if (isInboundEmailMessage(message)) {
+    return displayInboundEmailBody(message.text);
+  }
+  return message.text;
+}
+
 function MessageBubble({ message }: { message: ConversationMessage }) {
   const outbound = message.direction === "OUTBOUND";
   const failed = message.status === "FAILED";
+  const attachments = parseMessageAttachments(message.attachments);
+  const displayText = messageDisplayText(message);
 
   return (
     <div className={cn("flex", outbound ? "justify-end" : "justify-start")}>
@@ -99,7 +127,59 @@ function MessageBubble({ message }: { message: ConversationMessage }) {
             "border border-destructive/50 bg-destructive/10 text-destructive",
         )}
       >
-        <p>{message.text ?? "[Attachment]"}</p>
+        {attachments.length > 0 ? (
+          <div className="space-y-2">
+            {attachments.map((attachment, index) => {
+              if (isImageAttachment(attachment) && attachment.url) {
+                return (
+                  <a
+                    key={`${message.id}-attachment-${index}`}
+                    href={attachment.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="block overflow-hidden rounded-lg"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={attachment.url}
+                      alt={attachment.title ?? "Image attachment"}
+                      className="max-h-64 w-full object-cover"
+                    />
+                  </a>
+                );
+              }
+
+              if (attachment.url) {
+                return (
+                  <a
+                    key={`${message.id}-attachment-${index}`}
+                    href={attachment.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className={cn(
+                      "block text-sm underline",
+                      outbound ? "text-primary-foreground" : "text-primary",
+                    )}
+                  >
+                    {attachment.title ?? `${attachment.type} attachment`}
+                  </a>
+                );
+              }
+
+              return (
+                <p key={`${message.id}-attachment-${index}`}>
+                  [{attachment.type}]
+                </p>
+              );
+            })}
+          </div>
+        ) : null}
+        {displayText ? <p>{displayText}</p> : null}
+        {!displayText && attachments.length === 0 ? (
+          <p className="text-muted-foreground">
+            {getEmptyMessageFallback(message)}
+          </p>
+        ) : null}
         <p
           className={cn(
             "mt-1 text-[10px] opacity-70",

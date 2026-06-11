@@ -31,6 +31,7 @@ import {
 import { BusinessIntegrationRepository } from './repositories/business-integration.repository';
 import { IntegrationProviderRepository } from './repositories/integration-provider.repository';
 import { PlatformIntegrationRepository } from './repositories/platform-integration.repository';
+import { PlatformEmailProvisioningService } from './email/services/platform-email-provisioning.service';
 
 @Injectable()
 export class IntegrationsService {
@@ -39,6 +40,7 @@ export class IntegrationsService {
     private readonly businessIntegrationRepository: BusinessIntegrationRepository,
     private readonly platformIntegrationRepository: PlatformIntegrationRepository,
     private readonly auditService: AuditService,
+    private readonly platformEmailProvisioning: PlatformEmailProvisioningService,
   ) {}
 
   // ── Business providers ──────────────────────────────────────────────
@@ -46,6 +48,10 @@ export class IntegrationsService {
   async listBusinessProviders(
     businessId: string,
   ): Promise<IntegrationProviderWithStatusDto[]> {
+    await this.platformEmailProvisioning
+      .ensurePlatformDefaultEmail(businessId)
+      .catch(() => null);
+
     const providers =
       await this.providerRepository.findActiveBusinessProviders();
     const integrations =

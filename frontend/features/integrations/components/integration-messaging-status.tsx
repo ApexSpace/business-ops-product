@@ -16,7 +16,10 @@ export function IntegrationMessagingStatus({
   isConnected,
 }: IntegrationMessagingStatusProps) {
   const enabled =
-    isConnected && (providerKey === "facebook" || providerKey === "instagram");
+    isConnected &&
+    (providerKey === "facebook" ||
+      providerKey === "instagram" ||
+      providerKey === "whatsapp");
 
   const { data, isLoading } = useQuery({
     queryKey: queryKeys.integrations.messagingStatus(providerKey),
@@ -62,7 +65,12 @@ export function IntegrationMessagingStatus({
         </li>
         <li>
           {data.defaultResourceSelected ? "✓" : "○"} Default{" "}
-          {providerKey === "facebook" ? "Page" : "account"} selected
+          {providerKey === "facebook"
+            ? "Page"
+            : providerKey === "whatsapp"
+              ? "phone number"
+              : "account"}{" "}
+          selected
         </li>
         <li>
           {data.webhookEndpointConfigured ? "✓" : "○"} Webhook verify token

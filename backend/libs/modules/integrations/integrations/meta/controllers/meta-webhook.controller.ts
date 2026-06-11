@@ -3,6 +3,7 @@ import {
   Get,
   Headers,
   HttpCode,
+  Logger,
   Post,
   Query,
   Req,
@@ -18,6 +19,8 @@ import { MetaWebhookService } from '../services/meta-webhook.service';
 @ApiTags('webhooks')
 @Controller('webhooks/meta')
 export class MetaWebhookController {
+  private readonly logger = new Logger(MetaWebhookController.name);
+
   constructor(private readonly metaWebhookService: MetaWebhookService) {}
 
   @Get()
@@ -53,7 +56,11 @@ export class MetaWebhookController {
     if (!rawBody) {
       throw new Error('Raw body is required for Meta webhook verification');
     }
-    void this.metaWebhookService.handleEvent(rawBody, signature);
+    void this.metaWebhookService.handleEvent(rawBody, signature).catch((error) => {
+      const message =
+        error instanceof Error ? error.message : 'Meta webhook processing failed';
+      this.logger.error(message);
+    });
     return { success: true };
   }
 }

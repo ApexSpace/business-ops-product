@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Contact, Prisma } from '@prisma/client';
 import { PrismaService } from '@app/core/database/prisma.service';
+import { SYSTEM_AUDIT_ACTOR_SENTINEL } from '@app/modules/platform/audit/constants/audit.constants';
 import { normalizePhoneKey } from '../utils/contact-profile.util';
 
 const contactWithTags = {
@@ -114,7 +115,7 @@ export class ContactRepository {
 
   findByMetadataExternalId(
     businessId: string,
-    metadataKey: 'facebookPsid' | 'instagramUserId',
+    metadataKey: 'facebookPsid' | 'instagramUserId' | 'whatsappWaId' | 'emailAddress',
     externalId: string,
   ): Promise<Contact | null> {
     return this.prisma.contact.findFirst({
@@ -181,7 +182,9 @@ export class ContactRepository {
       data: {
         ...data,
         business: { connect: { id: businessId } },
-        createdBy: { connect: { id: createdById } },
+        ...(createdById !== SYSTEM_AUDIT_ACTOR_SENTINEL
+          ? { createdBy: { connect: { id: createdById } } }
+          : {}),
       },
       include: contactWithTags,
     });

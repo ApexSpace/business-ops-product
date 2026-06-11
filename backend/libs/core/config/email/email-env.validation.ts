@@ -12,6 +12,9 @@ export const emailEnvValidationSchema = {
 
   EMAIL_DEFAULT_REPLY_TO: Joi.string().email().optional(),
 
+  RESEND_SENDING_DOMAIN: Joi.string().hostname().optional(),
+  RESEND_INBOUND_DOMAIN: Joi.string().hostname().optional(),
+
   RESEND_API_KEY: Joi.when('EMAIL_ENABLED', {
     is: 'true',
     then: Joi.string().required(),

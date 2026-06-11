@@ -7,7 +7,9 @@ import { toast } from "sonner";
 import { FormDialog } from "@/components/forms/form-dialog";
 import { IntegrationAdvancedDetails } from "@/features/integrations/components/integration-advanced-details";
 import { IntegrationManageHeader } from "@/features/integrations/components/integration-manage-header";
+import { IntegrationManageEmailBody } from "@/features/integrations/components/integration-manage-email-body";
 import { IntegrationManageOAuthBody } from "@/features/integrations/components/integration-manage-oauth-body";
+import { isPlatformEmailProvider } from "@/features/integrations/utils/integrations";
 import {
   FormControl,
   FormDescription,
@@ -83,6 +85,7 @@ export function IntegrationManageDialog({
   if (!provider) return null;
 
   const isOAuth = shouldUseOAuthPopup(provider);
+  const isPlatformEmail = isPlatformEmailProvider(provider.key);
   const isConnected = provider.status !== "NOT_CONNECTED";
   const copy = getIntegrationManageCopy(provider.key);
   const title =
@@ -99,6 +102,29 @@ export function IntegrationManageDialog({
       toast.error(error instanceof Error ? error.message : "Invalid form data");
     }
   };
+
+  if (isPlatformEmail) {
+    return (
+      <FormDialog
+        open={open}
+        onOpenChange={onOpenChange}
+        title={title}
+        description={copy.description}
+        form={form}
+        onSubmit={() => onOpenChange(false)}
+        isPending={isPending}
+        submitLabel="Close"
+        size="lg"
+        footerVariant="actions"
+        hideCancel
+      >
+        <IntegrationManageEmailBody
+          provider={provider}
+          isConnected={isConnected}
+        />
+      </FormDialog>
+    );
+  }
 
   if (isOAuth && mode === "manage") {
     return (

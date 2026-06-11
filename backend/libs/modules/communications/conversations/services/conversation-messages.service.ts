@@ -12,8 +12,10 @@ import { RequestUser } from '@app/common/decorators/current-user.decorator';
 import { AppException } from '@app/common/exceptions/app.exception';
 import { ErrorCode } from '@app/common/exceptions/error-code.enum';
 import { getPaginationParams } from '@app/common/utils/pagination.util';
-import { JobEnqueueService } from '@app/core/jobs/job-enqueue.service';
+import { OutboundMessageDispatchService } from '@app/modules/communications/messages/services/outbound-message-dispatch.service';
 import { WEBCHAT_PROVIDER_KEY } from '@app/modules/communications/chatbots/utils/chatbot-public-key.util';
+import { isPlatformEmailConversation } from '@app/modules/communications/email/utils/platform-email-channel.util';
+import { PlatformEmailProvisioningService } from '@app/modules/integrations/integrations/email/services/platform-email-provisioning.service';
 import { BusinessIntegrationRepository } from '@app/modules/integrations/integrations/repositories/business-integration.repository';
 import { SendMessageDto } from '../dto/send-message.dto';
 import { ListMessagesQueryDto } from '../dto/list-messages-query.dto';
@@ -37,7 +39,8 @@ export class ConversationMessagesService {
     private readonly conversationsRepository: ConversationsRepository,
     private readonly messagesRepository: ConversationMessagesRepository,
     private readonly businessIntegrationRepository: BusinessIntegrationRepository,
-    private readonly jobEnqueue: JobEnqueueService,
+    private readonly platformEmailProvisioning: PlatformEmailProvisioningService,
+    private readonly outboundMessageDispatch: OutboundMessageDispatchService,
   ) {}
 
   async list(
@@ -116,8 +119,24 @@ export class ConversationMessagesService {
     const isWebchat =
       conversation.channel === ConversationChannel.WEBCHAT &&
       conversation.providerKey === WEBCHAT_PROVIDER_KEY;
+    const isPlatformEmail = isPlatformEmailConversation(
+      conversation.channel,
+      conversation.providerKey,
+    );
 
-    if (!isWebchat) {
+    if (isPlatformEmail) {
+      const provisioned =
+        await this.platformEmailProvisioning.ensurePlatformDefaultEmail(businessId);
+      if (!provisioned) {
+        throw new AppException(
+          ErrorCode.CONVERSATION_CHANNEL_NOT_READY,
+          'Platform email is not configured on the server.',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+    }
+
+    if (!isWebchat && !isPlatformEmail) {
       const integration =
         await this.businessIntegrationRepository.findByBusinessAndKey(
           businessId,
@@ -133,7 +152,13 @@ export class ConversationMessagesService {
       }
     }
 
-    const preview = dto.text.trim().slice(0, 500);
+    const text = dto.text?.trim() ?? '';
+    const hasAttachments =
+      Array.isArray(dto.attachments) && dto.attachments.length > 0;
+    const preview = (text || (hasAttachments ? '[Attachment]' : '')).slice(
+      0,
+      500,
+    );
     const messageBase = {
       business: { connect: { id: businessId } },
       conversation: { connect: { id: conversation.id } },
@@ -145,7 +170,7 @@ export class ConversationMessagesService {
       direction: ConversationDirection.OUTBOUND,
       senderType: MessageSenderType.USER,
       senderUserId: actor.id,
-      text: dto.text.trim(),
+      text: text || null,
       attachments: (dto.attachments ?? undefined) as
         | Prisma.InputJsonValue
         | undefined,
@@ -191,12 +216,24 @@ export class ConversationMessagesService {
       );
     }
 
+    if (!text && !hasAttachments) {
+      throw new AppException(
+        ErrorCode.BAD_REQUEST,
+        'Message text or at least one attachment is required.',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
     const message = await this.messagesRepository.create({
       ...messageBase,
       status: MessageStatus.PENDING,
+      metadata:
+        isPlatformEmail && dto.subject?.trim()
+          ? ({ subject: dto.subject.trim() } as Prisma.InputJsonValue)
+          : undefined,
     });
 
-    const { asyncJob } = await this.jobEnqueue.enqueueSendMessage(
+    const { asyncJob } = await this.outboundMessageDispatch.dispatch(
       {
         messageId: message.id,
         businessId,

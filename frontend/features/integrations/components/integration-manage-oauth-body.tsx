@@ -33,7 +33,9 @@ export function IntegrationManageOAuthBody({
     <div className="space-y-6">
       <IntegrationManageHeader provider={provider} />
 
-      {(provider.key === "facebook" || provider.key === "instagram") && (
+      {(provider.key === "facebook" ||
+        provider.key === "instagram" ||
+        provider.key === "whatsapp") && (
         <IntegrationMessagingStatus
           providerKey={provider.key}
           isConnected={isConnected}

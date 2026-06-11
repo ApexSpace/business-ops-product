@@ -1,15 +1,18 @@
 import { Injectable, Logger } from '@nestjs/common';
 import {
   Prisma,
+  WebhookEvent,
   WebhookEventProvider,
   WebhookEventStatus,
 } from '@prisma/client';
-import { QueueService } from '@app/core/queue/queue.service';
 import { SYSTEM_AUDIT_ACTOR_SENTINEL } from '@app/modules/platform/audit/constants/audit.constants';
 import { AuditService } from '@app/modules/platform/audit/services/audit.service';
+import { normalizeMetaWebhookPayload } from '@app/modules/communications/conversations/adapters/meta/meta-inbound-normalizer';
 import { WebhookEventsRepository } from '@app/modules/communications/conversations/repositories/webhook-events.repository';
+import { extractMetaWebhookEventId } from '../utils/meta-webhook-event-id.util';
 import { verifyMetaWebhookSignature } from '../../utils/meta-webhook-signature.util';
 import { MetaConfigService } from './meta-config.service';
+import { MetaWebhookDispatchService } from './meta-webhook-dispatch.service';
 
 @Injectable()
 export class MetaWebhookService {
@@ -19,7 +22,7 @@ export class MetaWebhookService {
     private readonly metaConfigService: MetaConfigService,
     private readonly auditService: AuditService,
     private readonly webhookEventsRepository: WebhookEventsRepository,
-    private readonly queueService: QueueService,
+    private readonly metaWebhookDispatch: MetaWebhookDispatchService,
   ) {}
 
   async verifyChallenge(
@@ -54,10 +57,9 @@ export class MetaWebhookService {
     try {
       await this.handleEventInternal(rawBody, signatureHeader);
     } catch (error) {
-      this.logger.error(
-        'Meta webhook handling failed',
-        error instanceof Error ? error.stack : String(error),
-      );
+      const message =
+        error instanceof Error ? error.message : 'Unknown Meta webhook error';
+      this.logger.error(`Meta webhook handler failed: ${message}`);
     }
   }
 
@@ -100,114 +102,147 @@ export class MetaWebhookService {
 
     const object = body.object as string | undefined;
     const entries = body.entry as unknown[] | undefined;
-    const externalEventId = this.extractEventId(body);
+    const externalEventId = extractMetaWebhookEventId(body);
 
-    const webhookEventId = await this.persistWebhookEvent(
-      externalEventId,
+    if (externalEventId) {
+      const existing = await this.webhookEventsRepository.findByProviderAndExternalId(
+        WebhookEventProvider.META,
+        externalEventId,
+      );
+      if (existing) {
+        await this.resumeWebhookEvent(
+          existing,
+          body,
+          object,
+          entries?.length ?? 0,
+        );
+        return;
+      }
+    }
+
+    let webhookEvent: WebhookEvent;
+    try {
+      webhookEvent = await this.webhookEventsRepository.create({
+        provider: WebhookEventProvider.META,
+        externalEventId,
+        eventType: object ?? 'unknown',
+        payload: body as Prisma.InputJsonValue,
+        status: WebhookEventStatus.RECEIVED,
+      });
+    } catch (error) {
+      if (
+        externalEventId &&
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        const existing = await this.webhookEventsRepository.findByProviderAndExternalId(
+          WebhookEventProvider.META,
+          externalEventId,
+        );
+        if (existing) {
+          await this.resumeWebhookEvent(
+            existing,
+            body,
+            object,
+            entries?.length ?? 0,
+          );
+          return;
+        }
+      }
+      throw error;
+    }
+
+    await this.recordAndEnqueueWebhook(
+      webhookEvent,
       object,
-      body,
+      entries?.length ?? 0,
+      externalEventId,
     );
-    if (!webhookEventId) {
+  }
+
+  private async resumeWebhookEvent(
+    existing: WebhookEvent,
+    body: Record<string, unknown>,
+    object: string | undefined,
+    entryCount: number,
+  ): Promise<void> {
+    const incomingMessages = normalizeMetaWebhookPayload(body).messages;
+
+    if (existing.status === WebhookEventStatus.PROCESSED) {
+      this.logger.log(
+        `Meta webhook ${existing.externalEventId ?? existing.id} already processed`,
+      );
+      return;
+    }
+
+    if (existing.status === WebhookEventStatus.IGNORED) {
+      if (incomingMessages.length === 0) {
+        this.logger.log(
+          `Meta webhook ${existing.externalEventId ?? existing.id} already ignored (status-only)`,
+        );
+        return;
+      }
+
+      this.logger.log(
+        `Re-opening ignored Meta webhook ${existing.externalEventId ?? existing.id} for inbound message`,
+      );
+      await this.webhookEventsRepository.resetForReprocessing(
+        existing.id,
+        body as Prisma.InputJsonValue,
+      );
+      await this.enqueueWebhookJob(existing.id, object, entryCount);
       return;
     }
 
     this.logger.log(
-      `Meta webhook received object=${object ?? 'unknown'} entries=${entries?.length ?? 0}`,
+      `Meta webhook retry for ${existing.externalEventId ?? existing.id} (status=${existing.status})`,
     );
 
-    await this.auditService.log({
-      actorUserId: SYSTEM_AUDIT_ACTOR_SENTINEL,
-      action: 'meta.webhook.received',
-      entityType: 'MetaWebhook',
-      entityId: externalEventId ?? object ?? 'unknown',
-      metadata: {
-        object: object ?? null,
-        entryCount: entries?.length ?? 0,
-        webhookEventId,
-      },
-    });
-
-    const bullJobId = await this.queueService.enqueueMetaWebhook({
-      webhookEventId,
-    });
-
-    if (!bullJobId) {
-      this.logger.error(
-        `Failed to enqueue Meta webhook ${webhookEventId}; ensure REDIS_URL is set`,
-      );
-    }
+    await this.enqueueWebhookJob(existing.id, object, entryCount);
   }
 
-  private async persistWebhookEvent(
-    externalEventId: string | null,
+  private async recordAndEnqueueWebhook(
+    webhookEvent: WebhookEvent,
     object: string | undefined,
-    body: Record<string, unknown>,
-  ): Promise<string | null> {
-    let existing: { id: string; status: WebhookEventStatus } | null = null;
-
-    if (externalEventId) {
-      existing = await this.webhookEventsRepository.findByProviderAndExternalId(
-        WebhookEventProvider.META,
-        externalEventId,
-      );
-      if (existing?.status === WebhookEventStatus.PROCESSED) {
-        this.logger.log(`Meta webhook ${externalEventId} already processed`);
-        return null;
-      }
-    }
-
-    let webhookEventId = existing?.id;
-
-    if (!webhookEventId) {
-      try {
-        const created = await this.webhookEventsRepository.create({
-          provider: WebhookEventProvider.META,
-          externalEventId,
-          eventType: object ?? 'unknown',
-          payload: body as Prisma.InputJsonValue,
-          status: WebhookEventStatus.RECEIVED,
-        });
-        webhookEventId = created.id;
-      } catch (error) {
-        if (!externalEventId || !this.isUniqueConstraintError(error)) {
-          throw error;
-        }
-        const duplicate =
-          await this.webhookEventsRepository.findByProviderAndExternalId(
-            WebhookEventProvider.META,
-            externalEventId,
-          );
-        if (!duplicate) {
-          throw error;
-        }
-        if (duplicate.status === WebhookEventStatus.PROCESSED) {
-          this.logger.log(`Meta webhook ${externalEventId} already processed`);
-          return null;
-        }
-        webhookEventId = duplicate.id;
-      }
-    }
-
-    return webhookEventId;
-  }
-
-  private isUniqueConstraintError(error: unknown): boolean {
-    return (
-      typeof error === 'object' &&
-      error !== null &&
-      'code' in error &&
-      (error as { code?: string }).code === 'P2002'
+    entryCount: number,
+    externalEventId: string | null,
+  ): Promise<void> {
+    this.logger.log(
+      `Meta webhook received object=${object ?? 'unknown'} entries=${entryCount}`,
     );
+
+    void this.auditService
+      .log({
+        actorUserId: SYSTEM_AUDIT_ACTOR_SENTINEL,
+        action: 'meta.webhook.received',
+        entityType: 'MetaWebhook',
+        entityId: externalEventId ?? object ?? 'unknown',
+        metadata: {
+          object: object ?? null,
+          entryCount,
+          webhookEventId: webhookEvent.id,
+        },
+      })
+      .catch((error) => {
+        const message =
+          error instanceof Error ? error.message : 'Audit log failed';
+        this.logger.warn(`Meta webhook audit skipped: ${message}`);
+      });
+
+    await this.enqueueWebhookJob(webhookEvent.id, object, entryCount);
   }
 
-  private extractEventId(body: Record<string, unknown>): string | null {
-    const entries = Array.isArray(body.entry) ? body.entry : [];
-    const first = entries[0] as { id?: string } | undefined;
-    const messaging = (
-      first as { messaging?: { message?: { mid?: string } }[] }
-    )?.messaging;
-    const mid = messaging?.[0]?.message?.mid;
-    if (mid) return mid;
-    return first?.id ?? null;
+  private async enqueueWebhookJob(
+    webhookEventId: string,
+    object: string | undefined,
+    entryCount: number,
+  ): Promise<void> {
+    const dispatched = await this.metaWebhookDispatch.dispatch(webhookEventId);
+
+    if (!dispatched) {
+      this.logger.error(
+        `Failed to process Meta webhook ${webhookEventId} (object=${object ?? 'unknown'} entries=${entryCount}); start Redis (redis://127.0.0.1:6379) and the worker process`,
+      );
+    }
   }
 }

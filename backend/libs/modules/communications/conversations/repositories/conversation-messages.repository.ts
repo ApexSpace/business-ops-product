@@ -29,7 +29,7 @@ export class ConversationMessagesRepository {
     });
   }
 
-  findManyByConversation(
+  async findManyByConversation(
     businessId: string,
     conversationId: string,
     params: { skip: number; take: number },

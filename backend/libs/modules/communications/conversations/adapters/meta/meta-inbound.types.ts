@@ -1,4 +1,5 @@
 import { ConversationChannel } from '@prisma/client';
+import type { MetaNormalizedAttachment } from './meta-attachment.util';
 
 export interface NormalizedInboundMessage {
   channel: ConversationChannel;
@@ -11,7 +12,7 @@ export interface NormalizedInboundMessage {
   externalSenderId: string;
   externalRecipientId: string;
   text: string | null;
-  attachments: unknown[] | null;
+  attachments: MetaNormalizedAttachment[] | null;
   timestamp: Date;
   senderName: string | null;
   senderProfilePictureUrl: string | null;

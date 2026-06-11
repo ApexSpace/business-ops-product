@@ -7,12 +7,14 @@ import { AuditService } from '@app/modules/platform/audit/services/audit.service
 import { ConversationsRepository } from '../repositories/conversations.repository';
 import { toConversationResponse } from '../mappers/conversation.mapper';
 import { ConversationResponseDto } from '../dto/conversation-response.dto';
+import { ConversationRealtimeService } from './conversation-realtime.service';
 
 @Injectable()
 export class ConversationAssignmentService {
   constructor(
     private readonly conversationsRepository: ConversationsRepository,
     private readonly auditService: AuditService,
+    private readonly realtime: ConversationRealtimeService,
   ) {}
 
   async assign(
@@ -45,6 +47,12 @@ export class ConversationAssignmentService {
       businessId,
       updated.id,
     );
+
+    await this.realtime.publishConversationUpdated(businessId, {
+      conversationId: conversation.id,
+      channel: conversation.channel,
+    });
+
     return toConversationResponse(fresh!);
   }
 
@@ -124,6 +132,11 @@ export class ConversationAssignmentService {
       entityType: 'Conversation',
       entityId: conversation.id,
       metadata: { status },
+    });
+
+    await this.realtime.publishConversationUpdated(businessId, {
+      conversationId: conversation.id,
+      channel: conversation.channel,
     });
 
     return toConversationResponse(updated);

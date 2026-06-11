@@ -1,6 +1,6 @@
 "use client";
 
-import { Search } from "lucide-react";
+import { MailPlus, Search } from "lucide-react";
 import { VirtualList } from "@/components/data-display/virtual-list";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,6 +15,8 @@ type InboxFilter =
   | "all"
   | "facebook"
   | "instagram"
+  | "whatsapp"
+  | "email"
   | "webchat"
   | "open"
   | "unread"
@@ -30,6 +32,7 @@ interface ConversationListPanelProps {
   selectedId: string | null;
   onSelect: (id: string) => void;
   useVirtualThreads: boolean;
+  onNewEmail?: () => void;
 }
 
 export function ConversationListPanel({
@@ -42,9 +45,10 @@ export function ConversationListPanel({
   selectedId,
   onSelect,
   useVirtualThreads,
+  onNewEmail,
 }: ConversationListPanelProps) {
   return (
-    <aside className="flex w-full max-w-sm flex-col border-r border-border/80">
+    <aside className="flex h-full min-h-0 w-full max-w-sm flex-col overflow-hidden border-r border-border/80">
       <div className="space-y-3 border-b border-border/80 p-3">
         <div className="relative">
           <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
@@ -55,12 +59,20 @@ export function ConversationListPanel({
             className="pl-8"
           />
         </div>
+        {onNewEmail ? (
+          <Button size="sm" className="w-full" onClick={onNewEmail}>
+            <MailPlus className="mr-2 size-4" />
+            New email
+          </Button>
+        ) : null}
         <div className="flex flex-wrap gap-1">
           {(
             [
               ["all", "All"],
               ["facebook", "Facebook"],
               ["instagram", "Instagram"],
+              ["whatsapp", "WhatsApp"],
+              ["email", "Email"],
               ["webchat", "Website Chat"],
               ["open", "Open"],
               ["unread", "Unread"],
@@ -85,8 +97,8 @@ export function ConversationListPanel({
           <p className="p-4 text-sm text-muted-foreground">Loading…</p>
         ) : conversations.length === 0 ? (
           <p className="p-4 text-sm text-muted-foreground">
-            No conversations yet. Messages from connected Facebook or Instagram
-            channels will appear here.
+            No conversations yet. Messages from connected Facebook, Instagram,
+            WhatsApp, or website chat channels will appear here.
           </p>
         ) : useVirtualThreads ? (
           <VirtualList

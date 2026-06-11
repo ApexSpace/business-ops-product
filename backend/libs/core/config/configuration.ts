@@ -28,6 +28,7 @@ export interface AppConfig {
 
 export interface DatabaseConfig {
   url: string;
+  poolMax: number;
 }
 
 export interface JwtConfig {
@@ -78,6 +79,7 @@ export default (): RootConfig => ({
   },
   database: {
     url: resolveDatabaseUrl(process.env),
+    poolMax: parseInt(process.env.DB_POOL_MAX ?? '20', 10),
   },
   jwt: {
     accessSecret: process.env.JWT_ACCESS_SECRET ?? '',

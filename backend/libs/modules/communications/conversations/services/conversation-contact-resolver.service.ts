@@ -23,10 +23,17 @@ export class ConversationContactResolverService {
     inbound: NormalizedInboundMessage,
     resource: IntegrationResource,
   ): Promise<Contact> {
-    const metadataKey =
-      inbound.channel === ConversationChannel.FACEBOOK
-        ? 'facebookPsid'
-        : 'instagramUserId';
+    if (inbound.channel === ConversationChannel.EMAIL) {
+      const existingByEmail = await this.contactRepository.findByEmail(
+        businessId,
+        inbound.externalParticipantId,
+      );
+      if (existingByEmail) {
+        return existingByEmail;
+      }
+    }
+
+    const metadataKey = this.resolveMetadataKey(inbound.channel);
 
     const existing = await this.contactRepository.findByMetadataExternalId(
       businessId,
@@ -42,9 +49,7 @@ export class ConversationContactResolverService {
     const displayName =
       profile.name ??
       inbound.senderName ??
-      (inbound.channel === ConversationChannel.FACEBOOK
-        ? 'Facebook User'
-        : 'Instagram User');
+      this.defaultDisplayName(inbound.channel, inbound.externalParticipantId);
 
     const nameParts = displayName.split(/\s+/);
     const firstName = nameParts[0] ?? displayName;
@@ -63,12 +68,12 @@ export class ConversationContactResolverService {
         firstName,
         lastName,
         displayName,
-        source:
-          inbound.channel === ConversationChannel.FACEBOOK
-            ? 'Facebook Messenger'
-            : 'Instagram',
-        avatarUrl:
-          profile.profilePic ?? inbound.senderProfilePictureUrl ?? null,
+        email:
+          inbound.channel === ConversationChannel.EMAIL
+            ? inbound.externalParticipantId
+            : undefined,
+        source: this.contactSourceLabel(inbound.channel),
+        avatarUrl: profile.profilePic ?? inbound.senderProfilePictureUrl ?? null,
         metadata,
       },
       SYSTEM_AUDIT_ACTOR_SENTINEL,
@@ -86,10 +91,42 @@ export class ConversationContactResolverService {
     return contact;
   }
 
+  private resolveMetadataKey(
+    channel: ConversationChannel,
+  ): 'facebookPsid' | 'instagramUserId' | 'whatsappWaId' | 'emailAddress' {
+    if (channel === ConversationChannel.FACEBOOK) return 'facebookPsid';
+    if (channel === ConversationChannel.WHATSAPP) return 'whatsappWaId';
+    if (channel === ConversationChannel.EMAIL) return 'emailAddress';
+    return 'instagramUserId';
+  }
+
+  private defaultDisplayName(
+    channel: ConversationChannel,
+    externalParticipantId: string,
+  ): string {
+    if (channel === ConversationChannel.FACEBOOK) return 'Facebook User';
+    if (channel === ConversationChannel.WHATSAPP) {
+      return externalParticipantId.startsWith('+')
+        ? externalParticipantId
+        : `+${externalParticipantId}`;
+    }
+    if (channel === ConversationChannel.EMAIL) {
+      return externalParticipantId;
+    }
+    return 'Instagram User';
+  }
+
+  private contactSourceLabel(channel: ConversationChannel): string {
+    if (channel === ConversationChannel.FACEBOOK) return 'Facebook Messenger';
+    if (channel === ConversationChannel.WHATSAPP) return 'WhatsApp';
+    if (channel === ConversationChannel.EMAIL) return 'Email';
+    return 'Instagram';
+  }
+
   private async mergeContactMetadata(
     contact: Contact,
     inbound: NormalizedInboundMessage,
-    metadataKey: 'facebookPsid' | 'instagramUserId',
+    metadataKey: 'facebookPsid' | 'instagramUserId' | 'whatsappWaId' | 'emailAddress',
   ): Promise<Contact> {
     const current = (contact.metadata as Record<string, unknown> | null) ?? {};
     if (current[metadataKey] === inbound.externalParticipantId) {
@@ -115,6 +152,10 @@ export class ConversationContactResolverService {
     inbound: NormalizedInboundMessage,
     resource: IntegrationResource,
   ): Promise<{ name?: string; profilePic?: string }> {
+    if (inbound.channel === ConversationChannel.WHATSAPP) {
+      return inbound.senderName ? { name: inbound.senderName } : {};
+    }
+
     if (inbound.channel !== ConversationChannel.FACEBOOK) {
       return {};
     }

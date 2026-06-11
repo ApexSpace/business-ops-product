@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { formatRelativeTime } from "@/lib/ui/relative-time";
 import { MessageSquare } from "lucide-react";
 import { channelLabel, listConversationsByContact } from "@/features/conversations/api/conversations.api";
+import { displayInboundEmailBody } from "@/features/conversations/utils/email-reply-body";
 import { queryKeys } from "@/lib/query/keys";
 import { WORKSPACE_PANEL_CLASS } from "@/features/contacts/workspace/contact-workspace";
 import { cn } from "@/lib/utils";
@@ -66,7 +67,11 @@ export function ContactConversationPanel({
                     ) : null}
                   </div>
                   <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
-                    {conversation.lastMessagePreview ?? "No messages"}
+                    {conversation.channel === "EMAIL" &&
+                    conversation.lastMessagePreview
+                      ? (displayInboundEmailBody(conversation.lastMessagePreview) ??
+                        conversation.lastMessagePreview)
+                      : (conversation.lastMessagePreview ?? "No messages")}
                   </p>
                   {conversation.unreadCount > 0 ? (
                     <p className="mt-1 text-xs font-medium text-primary">

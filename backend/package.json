@@ -35,6 +35,7 @@
     "db:push": "prisma db push",
     "db:studio": "prisma studio",
     "db:seed": "prisma db seed",
+    "bootstrap:whatsapp": "ts-node -r tsconfig-paths/register scripts/bootstrap-whatsapp-dev.ts",
     "openapi:export": "WRITE_OPENAPI=true nest start api",
     "postinstall": "prisma generate"
   },
@@ -73,7 +74,7 @@
     "resend": "^6.12.4",
     "rxjs": "^7.8.1",
     "stripe": "^22.2.0",
-    "svix": "^1.95.1"
+    "svix": "^1.95.2"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",

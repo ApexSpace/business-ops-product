@@ -1,4 +1,4 @@
-import { HttpStatus, Injectable, Logger } from '@nestjs/common';
+import { forwardRef, HttpStatus, Inject, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
   EmailMessageStatus,
@@ -10,10 +10,11 @@ import { Webhook } from 'svix';
 import { AppException } from '@app/common/exceptions/app.exception';
 import { ErrorCode } from '@app/common/exceptions/error-code.enum';
 import type { RootConfig } from '@app/core/config/configuration';
-import { QueueService } from '@app/core/queue/queue.service';
 import type { ProcessResendWebhookPayload } from '@app/core/queue/queue.types';
 import { WebhookEventsRepository } from '@app/modules/communications/conversations/repositories/webhook-events.repository';
 import { EmailMessageRepository } from '../repositories/email-message.repository';
+import { ResendInboundEmailService } from './resend-inbound-email.service';
+import { ResendWebhookDispatchService } from './resend-webhook-dispatch.service';
 
 type ResendWebhookEvent = {
   type: string;
@@ -41,7 +42,9 @@ export class ResendWebhookService {
     private readonly configService: ConfigService<RootConfig, true>,
     private readonly webhookEventsRepository: WebhookEventsRepository,
     private readonly messageRepository: EmailMessageRepository,
-    private readonly queueService: QueueService,
+    @Inject(forwardRef(() => ResendWebhookDispatchService))
+    private readonly resendWebhookDispatch: ResendWebhookDispatchService,
+    private readonly resendInboundEmailService: ResendInboundEmailService,
   ) {}
 
   async handleWebhook(
@@ -178,23 +181,36 @@ export class ResendWebhookService {
       }
     }
 
-    const jobId = await this.queueService.enqueueResendWebhook({
-      webhookEventId,
-    });
+    const dispatched = await this.resendWebhookDispatch.dispatch(webhookEventId);
 
-    if (!jobId) {
+    if (!dispatched) {
       this.logger.error(
-        `Failed to enqueue Resend webhook ${webhookEventId}; ensure REDIS_URL is set`,
+        `Failed to process Resend webhook ${webhookEventId} (type=${event.type}); ensure Redis is available or check logs`,
       );
       throw new AppException(
         ErrorCode.INTERNAL_ERROR,
-        'Failed to enqueue Resend webhook for processing',
+        'Failed to process Resend webhook',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }
 
   private async dispatchEvent(event: ResendWebhookEvent): Promise<void> {
+    if (event.type === 'email.received') {
+      await this.resendInboundEmailService.processInboundPayload({
+        email_id: event.data?.email_id,
+        from: event.data?.from,
+        to: event.data?.to,
+        subject: event.data?.subject,
+        text: (event.data as { text?: string } | undefined)?.text,
+        html: (event.data as { html?: string } | undefined)?.html,
+        message_id: (event.data as { message_id?: string } | undefined)?.message_id,
+        headers: (event.data as { headers?: Record<string, string | string[]> } | undefined)
+          ?.headers,
+      });
+      return;
+    }
+
     const providerMessageId = event.data?.email_id;
     if (!providerMessageId) {
       return;

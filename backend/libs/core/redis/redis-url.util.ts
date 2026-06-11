@@ -23,6 +23,10 @@ export function resolveRedisUrl(
 ): string | undefined {
   const raw = env.REDIS_URL?.trim();
   if (!raw) {
+    const nodeEnv = env.NODE_ENV ?? 'development';
+    if (nodeEnv !== 'production' && nodeEnv !== 'test') {
+      return 'redis://127.0.0.1:6379';
+    }
     return undefined;
   }
 

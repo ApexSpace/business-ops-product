@@ -15,7 +15,7 @@ import { PlatformUserService } from './services/platform-user.service';
   imports: [
     AuditModule,
     forwardRef(() => BusinessModule),
-    EmailModule,
+    forwardRef(() => EmailModule),
     forwardRef(() => AuthModule),
   ],
   controllers: [
