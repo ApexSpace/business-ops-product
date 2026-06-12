@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConversationChannel, MessageStatus } from '@prisma/client';
 import { RedisPubSubService } from '@app/core/realtime/redis-pub-sub.service';
+import { ConversationMessageResponseDto } from '../dto/conversation-response.dto';
 
 export const CONVERSATION_REALTIME_EVENTS = {
   messageReceived: 'conversation.message.received',
@@ -14,6 +15,7 @@ export interface ConversationRealtimePayload {
   status?: MessageStatus | string;
   channel?: ConversationChannel | string;
   id?: string;
+  message?: ConversationMessageResponseDto;
 }
 
 @Injectable()

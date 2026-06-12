@@ -566,9 +566,9 @@ export class MetaApiClient {
   async getMessengerUserProfile(
     psid: string,
     pageAccessToken: string,
-  ): Promise<{ name?: string; profilePic?: string }> {
+  ): Promise<{ name?: string; profilePic?: string; email?: string }> {
     const url = this.buildGraphUrl(`/${psid}`, {
-      fields: 'first_name,last_name,name,profile_pic',
+      fields: 'first_name,last_name,name,profile_pic,email',
       access_token: pageAccessToken,
     });
 
@@ -582,6 +582,7 @@ export class MetaApiClient {
       first_name?: string;
       last_name?: string;
       profile_pic?: string;
+      email?: string;
     };
 
     const combinedName = [data.first_name, data.last_name]
@@ -589,8 +590,34 @@ export class MetaApiClient {
       .join(' ')
       .trim();
     const name = data.name ?? (combinedName || undefined);
+    const email = data.email?.trim().toLowerCase() || undefined;
 
-    return { name, profilePic: data.profile_pic };
+    return { name, profilePic: data.profile_pic, email };
+  }
+
+  async getInstagramUserProfile(
+    instagramScopedUserId: string,
+    pageAccessToken: string,
+  ): Promise<{ name?: string; profilePic?: string }> {
+    const url = this.buildGraphUrl(`/${instagramScopedUserId}`, {
+      fields: 'name,profile_pic',
+      access_token: pageAccessToken,
+    });
+
+    const response = await fetch(url);
+    if (!response.ok) {
+      return {};
+    }
+
+    const data = (await response.json()) as {
+      name?: string;
+      profile_pic?: string;
+    };
+
+    return {
+      name: data.name?.trim() || undefined,
+      profilePic: data.profile_pic,
+    };
   }
 
   async listPhoneNumbersForWaba(

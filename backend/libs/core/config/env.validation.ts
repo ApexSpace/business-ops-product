@@ -19,6 +19,8 @@ const baseSchema = Joi.object({
     .default('info'),
   API_PREFIX: Joi.string().required(),
   CORS_ORIGIN: Joi.string().default('*'),
+  REALTIME_WEBSOCKET_ENABLED: Joi.string().valid('true', 'false').default('false'),
+  REALTIME_CORS_ORIGIN: Joi.string().optional(),
   ENABLE_RESPONSE_ENVELOPE: Joi.string().valid('true', 'false').default('true'),
   FRONTEND_URL: Joi.string().uri().optional(),
   /** Public API origin for widgets and embed scripts (no trailing slash). */

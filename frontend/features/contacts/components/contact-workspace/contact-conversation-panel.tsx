@@ -1,89 +1,152 @@
 "use client";
 
 import Link from "next/link";
-import { useQuery } from "@tanstack/react-query";
-import { formatRelativeTime } from "@/lib/ui/relative-time";
-import { MessageSquare } from "lucide-react";
-import { channelLabel, listConversationsByContact } from "@/features/conversations/api/conversations.api";
-import { displayInboundEmailBody } from "@/features/conversations/utils/email-reply-body";
-import { queryKeys } from "@/lib/query/keys";
-import { WORKSPACE_PANEL_CLASS } from "@/features/contacts/workspace/contact-workspace";
+import { ExternalLink, MessageSquare } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { MessageComposer } from "@/features/conversations/components/inbox/message-composer";
+import { VirtualizedMessageList } from "@/features/conversations/components/virtualized-message-list";
+import { useContactConversationComposer } from "@/features/contacts/hooks/use-contact-conversation-composer";
 import { cn } from "@/lib/utils";
+
+const CONTACT_CONVERSATION_PANEL_CLASS =
+  "flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-border/60 bg-background shadow-elevation-xs";
 
 interface ContactConversationPanelProps {
   contactId: string;
   contactName: string;
+  contactAvatarUrl?: string | null;
+  businessName?: string | null;
   className?: string;
 }
 
 export function ContactConversationPanel({
   contactId,
   contactName,
+  contactAvatarUrl,
+  businessName,
   className,
 }: ContactConversationPanelProps) {
-  const { data: conversations = [], isLoading } = useQuery({
-    queryKey: queryKeys.conversations.byContact(contactId),
-    queryFn: () => listConversationsByContact(contactId),
-  });
+  const {
+    messages,
+    messagesLoading,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    replyChannels,
+    effectiveReplyChannel,
+    handleReplyChannelChange,
+    composer,
+    setComposer,
+    attachmentUrl,
+    setAttachmentUrl,
+    pendingAttachment,
+    setPendingAttachment,
+    emailSubject,
+    setEmailSubject,
+    canSend,
+    sendDisabledReason,
+    channelHint,
+    sendMutation,
+    activeReplyChannel,
+  } = useContactConversationComposer(contactId);
+
+  const inboxHref = `/business/conversations?thread=${encodeURIComponent(contactId)}`;
+  const showEmailSubject = effectiveReplyChannel === "EMAIL";
+  const hasChannels = replyChannels.length > 0;
 
   return (
-    <section className={cn(WORKSPACE_PANEL_CLASS, className)}>
-      <div className="flex min-h-0 flex-1 flex-col p-4">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-sm font-semibold">Conversations</h2>
-          <Link
-            href="/business/conversations"
-            className="inline-flex h-8 items-center justify-center rounded-lg border border-border bg-background px-3 text-sm font-medium hover:bg-muted"
-          >
-            Open inbox
-          </Link>
+    <section className={cn(CONTACT_CONVERSATION_PANEL_CLASS, className)}>
+      <header className="flex shrink-0 items-center justify-between gap-3 border-b border-border/60 px-4 py-3">
+        <div className="flex min-w-0 items-center gap-3">
+          <Avatar className="size-10 shrink-0">
+            {contactAvatarUrl ? (
+              <AvatarImage src={contactAvatarUrl} alt="" />
+            ) : null}
+            <AvatarFallback className="bg-primary/10 text-sm font-medium text-primary">
+              {contactName.slice(0, 2).toUpperCase()}
+            </AvatarFallback>
+          </Avatar>
+          <h2 className="truncate text-base font-semibold">{contactName}</h2>
         </div>
+        <Link
+          href={inboxHref}
+          aria-label="Open in inbox"
+          className="inline-flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted/60"
+        >
+          <ExternalLink className="size-4" />
+        </Link>
+      </header>
 
-        {isLoading ? (
-          <p className="text-sm text-muted-foreground">Loading…</p>
-        ) : conversations.length === 0 ? (
-          <div className="flex flex-1 flex-col items-center justify-center gap-3 text-center">
+      <div className="min-h-0 flex-1 overflow-hidden bg-muted/15">
+        {messagesLoading ? (
+          <p className="px-4 py-3 text-sm text-muted-foreground">Loading messages…</p>
+        ) : !hasChannels ? (
+          <div className="flex h-full flex-col items-center justify-center gap-3 px-4 text-center">
             <MessageSquare className="size-8 text-muted-foreground/60" />
             <p className="text-sm text-muted-foreground">
-              No conversations yet for {contactName}.
+              Add a phone number or email to {contactName} to start messaging.
+            </p>
+          </div>
+        ) : messages.length === 0 ? (
+          <div className="flex h-full flex-col items-center justify-center gap-3 px-4 text-center">
+            <MessageSquare className="size-8 text-muted-foreground/60" />
+            <p className="text-sm text-muted-foreground">
+              No messages yet. Choose a channel below and send the first message.
             </p>
           </div>
         ) : (
-          <ul className="space-y-2">
-            {conversations.map((conversation) => (
-              <li key={conversation.id}>
-                <Link
-                  href={`/business/conversations?conversation=${conversation.id}`}
-                  className="block rounded-lg border border-border/70 bg-muted/20 p-3 transition-colors hover:bg-muted/40"
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-sm font-medium">
-                      {channelLabel(conversation.channel)}
-                    </span>
-                    {conversation.lastMessageAt ? (
-                      <span className="text-[10px] text-muted-foreground">
-                        {formatRelativeTime(conversation.lastMessageAt)}
-                      </span>
-                    ) : null}
-                  </div>
-                  <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
-                    {conversation.channel === "EMAIL" &&
-                    conversation.lastMessagePreview
-                      ? (displayInboundEmailBody(conversation.lastMessagePreview) ??
-                        conversation.lastMessagePreview)
-                      : (conversation.lastMessagePreview ?? "No messages")}
-                  </p>
-                  {conversation.unreadCount > 0 ? (
-                    <p className="mt-1 text-xs font-medium text-primary">
-                      {conversation.unreadCount} unread
-                    </p>
-                  ) : null}
-                </Link>
-              </li>
-            ))}
-          </ul>
+          <VirtualizedMessageList
+            messages={messages}
+            hasMore={hasNextPage}
+            isLoadingMore={isFetchingNextPage}
+            onLoadMore={() => void fetchNextPage()}
+            variant="thread"
+            threadContext={{
+              contactName,
+              contactAvatarUrl,
+              businessName,
+            }}
+          />
         )}
       </div>
+
+      {hasChannels ? (
+        <MessageComposer
+          variant="thread"
+          composer={composer}
+          onComposerChange={setComposer}
+          attachmentUrl={attachmentUrl}
+          onAttachmentUrlChange={setAttachmentUrl}
+          pendingAttachment={pendingAttachment}
+          onAddAttachment={() => {
+            const url = attachmentUrl.trim();
+            if (!url) return;
+            setPendingAttachment({ type: "image", url });
+            setAttachmentUrl("");
+          }}
+          onRemoveAttachment={() => setPendingAttachment(null)}
+          canSend={canSend}
+          sendDisabledReason={sendDisabledReason}
+          channelHint={channelHint}
+          subject={emailSubject}
+          onSubjectChange={setEmailSubject}
+          showSubject={showEmailSubject}
+          replyChannels={replyChannels}
+          selectedReplyChannel={effectiveReplyChannel}
+          onReplyChannelChange={handleReplyChannelChange}
+          onSend={() => {
+            const attachments = pendingAttachment
+              ? [{ type: pendingAttachment.type, url: pendingAttachment.url }]
+              : undefined;
+            sendMutation.mutate({
+              text: composer,
+              subject: showEmailSubject ? emailSubject : undefined,
+              attachments,
+              replyChannel: activeReplyChannel,
+            });
+          }}
+        />
+      ) : null}
     </section>
   );
 }

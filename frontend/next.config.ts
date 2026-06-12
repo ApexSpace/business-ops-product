@@ -19,6 +19,12 @@ const nextConfig: NextConfig = {
       process.env.NEXT_PUBLIC_BACKEND_URL?.trim() ||
       process.env.BACKEND_URL?.trim() ||
       "",
+    NEXT_PUBLIC_BACKEND_WS_URL:
+      process.env.NEXT_PUBLIC_BACKEND_WS_URL?.trim() || "",
+    NEXT_PUBLIC_ENABLE_WEBSOCKET:
+      process.env.NEXT_PUBLIC_ENABLE_WEBSOCKET?.trim() || "",
+    NEXT_PUBLIC_REALTIME_TRANSPORT:
+      process.env.NEXT_PUBLIC_REALTIME_TRANSPORT?.trim() || "",
   },
   output: "standalone",
   allowedDevOrigins: [

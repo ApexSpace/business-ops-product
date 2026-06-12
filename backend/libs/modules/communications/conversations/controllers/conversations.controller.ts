@@ -30,6 +30,9 @@ import { ConversationAssignmentService } from '../services/conversation-assignme
 import { ConversationMessagesService } from '../services/conversation-messages.service';
 import { ConversationsService } from '../services/conversations.service';
 import { EmailConversationsService } from '../services/email-conversations.service';
+import { BackfillContactIdentityQueryDto } from '../dto/backfill-contact-identity-query.dto';
+import { ContactIdentityBackfillService } from '../services/contact-identity-backfill.service';
+import { UnifiedConversationsService } from '../services/unified-conversations.service';
 
 @ApiTags('conversations')
 @ApiBearerAuth()
@@ -39,9 +42,11 @@ import { EmailConversationsService } from '../services/email-conversations.servi
 export class ConversationsController {
   constructor(
     private readonly conversationsService: ConversationsService,
+    private readonly unifiedConversationsService: UnifiedConversationsService,
     private readonly messagesService: ConversationMessagesService,
     private readonly assignmentService: ConversationAssignmentService,
     private readonly emailConversationsService: EmailConversationsService,
+    private readonly contactIdentityBackfillService: ContactIdentityBackfillService,
   ) {}
 
   @Post('email/start')
@@ -73,6 +78,37 @@ export class ConversationsController {
     @Query() query: ListConversationsQueryDto,
   ) {
     return this.conversationsService.list(user.businessId!, query, user.id);
+  }
+
+  @Post('admin/backfill-contact-identity')
+  @HttpCode(HttpStatus.OK)
+  @BusinessRoles(BusinessMemberRole.OWNER, BusinessMemberRole.ADMIN)
+  backfillContactIdentity(
+    @CurrentUser() user: RequestUser,
+    @Query() query: BackfillContactIdentityQueryDto,
+  ) {
+    return this.contactIdentityBackfillService.run({
+      businessId: query.businessId ?? user.businessId ?? undefined,
+      dryRun: query.dryRun ?? true,
+      includePhone: query.includePhone ?? true,
+    });
+  }
+
+  @Get('unified')
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
+  listUnified(
+    @CurrentUser() user: RequestUser,
+    @Query() query: ListConversationsQueryDto,
+  ) {
+    return this.unifiedConversationsService.list(
+      user.businessId!,
+      query,
+      user.id,
+    );
   }
 
   @Get('by-contact/:contactId')

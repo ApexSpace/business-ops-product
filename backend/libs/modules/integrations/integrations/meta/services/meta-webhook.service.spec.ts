@@ -1,5 +1,5 @@
 import { createHmac } from 'crypto';
-import { WebhookEventStatus } from '@prisma/client';
+import { Prisma, WebhookEventStatus } from '@prisma/client';
 import { MetaWebhookService } from './meta-webhook.service';
 
 const APP_SECRET = 'meta_test_secret';
@@ -50,13 +50,13 @@ describe('MetaWebhookService', () => {
       findById: jest.fn(),
       updateStatus: jest.fn(),
     };
-    const queueService = {
-      enqueueMetaWebhook: jest
+    const metaWebhookDispatch = {
+      dispatch: jest
         .fn()
         .mockResolvedValue(
           overrides && 'enqueueResult' in overrides
-            ? overrides.enqueueResult
-            : 'job-1',
+            ? Boolean(overrides.enqueueResult)
+            : true,
         ),
     };
 
@@ -64,20 +64,21 @@ describe('MetaWebhookService', () => {
       metaConfigService as never,
       auditService as never,
       webhookEventsRepository as never,
-      queueService as never,
+      metaWebhookDispatch as never,
     );
 
     return {
       service,
       webhookEventsRepository,
-      queueService,
+      metaWebhookDispatch,
       auditService,
     };
   }
 
   it('persists and enqueues on valid webhook', async () => {
     const body = Buffer.from(JSON.stringify(samplePayload));
-    const { service, webhookEventsRepository, queueService } = createService();
+    const { service, webhookEventsRepository, metaWebhookDispatch } =
+      createService();
 
     await service.handleEvent(body, signBody(body));
 
@@ -87,14 +88,13 @@ describe('MetaWebhookService', () => {
         eventType: 'page',
       }),
     );
-    expect(queueService.enqueueMetaWebhook).toHaveBeenCalledWith({
-      webhookEventId: 'wh-new',
-    });
+    expect(metaWebhookDispatch.dispatch).toHaveBeenCalledWith('wh-new');
   });
 
   it('skips create when webhook already processed', async () => {
     const body = Buffer.from(JSON.stringify(samplePayload));
-    const { service, webhookEventsRepository, queueService } = createService({
+    const { service, webhookEventsRepository, metaWebhookDispatch } =
+      createService({
       existingWebhook: {
         id: 'wh-existing',
         status: WebhookEventStatus.PROCESSED,
@@ -104,12 +104,13 @@ describe('MetaWebhookService', () => {
     await service.handleEvent(body, signBody(body));
 
     expect(webhookEventsRepository.create).not.toHaveBeenCalled();
-    expect(queueService.enqueueMetaWebhook).not.toHaveBeenCalled();
+    expect(metaWebhookDispatch.dispatch).not.toHaveBeenCalled();
   });
 
   it('reuses RECEIVED webhook and re-enqueues', async () => {
     const body = Buffer.from(JSON.stringify(samplePayload));
-    const { service, webhookEventsRepository, queueService } = createService({
+    const { service, webhookEventsRepository, metaWebhookDispatch } =
+      createService({
       existingWebhook: {
         id: 'wh-existing',
         status: WebhookEventStatus.RECEIVED,
@@ -119,17 +120,17 @@ describe('MetaWebhookService', () => {
     await service.handleEvent(body, signBody(body));
 
     expect(webhookEventsRepository.create).not.toHaveBeenCalled();
-    expect(queueService.enqueueMetaWebhook).toHaveBeenCalledWith({
-      webhookEventId: 'wh-existing',
-    });
+    expect(metaWebhookDispatch.dispatch).toHaveBeenCalledWith('wh-existing');
   });
 
   it('handles concurrent duplicate create (P2002) without throwing', async () => {
     const body = Buffer.from(JSON.stringify(samplePayload));
-    const p2002 = Object.assign(new Error('Unique constraint failed'), {
-      code: 'P2002',
-    });
-    const { service, webhookEventsRepository, queueService } = createService({
+    const p2002 = new Prisma.PrismaClientKnownRequestError(
+      'Unique constraint failed',
+      { code: 'P2002', clientVersion: 'test' },
+    );
+    const { service, webhookEventsRepository, metaWebhookDispatch } =
+      createService({
       createError: p2002,
       duplicateAfterRace: {
         id: 'wh-race',
@@ -142,17 +143,17 @@ describe('MetaWebhookService', () => {
     ).resolves.toBeUndefined();
 
     expect(webhookEventsRepository.create).toHaveBeenCalled();
-    expect(queueService.enqueueMetaWebhook).toHaveBeenCalledWith({
-      webhookEventId: 'wh-race',
-    });
+    expect(metaWebhookDispatch.dispatch).toHaveBeenCalledWith('wh-race');
   });
 
   it('returns early when P2002 race resolves to processed duplicate', async () => {
     const body = Buffer.from(JSON.stringify(samplePayload));
-    const p2002 = Object.assign(new Error('Unique constraint failed'), {
-      code: 'P2002',
-    });
-    const { service, webhookEventsRepository, queueService } = createService({
+    const p2002 = new Prisma.PrismaClientKnownRequestError(
+      'Unique constraint failed',
+      { code: 'P2002', clientVersion: 'test' },
+    );
+    const { service, webhookEventsRepository, metaWebhookDispatch } =
+      createService({
       createError: p2002,
       duplicateAfterRace: {
         id: 'wh-race',
@@ -163,6 +164,6 @@ describe('MetaWebhookService', () => {
     await service.handleEvent(body, signBody(body));
 
     expect(webhookEventsRepository.create).toHaveBeenCalled();
-    expect(queueService.enqueueMetaWebhook).not.toHaveBeenCalled();
+    expect(metaWebhookDispatch.dispatch).not.toHaveBeenCalled();
   });
 });

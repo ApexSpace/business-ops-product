@@ -6,8 +6,17 @@ import { ContactRepository } from '@app/modules/crm/contacts/repositories/contac
 import { MetaApiClient } from '@app/modules/integrations/integrations/meta/services/meta-api-client';
 import { MetaConfigService } from '@app/modules/integrations/integrations/meta/services/meta-config.service';
 import { IntegrationResource } from '@prisma/client';
-import { getPageAccessTokenFromResource } from '../utils/conversation-resource-token.util';
 import { NormalizedInboundMessage } from '../adapters/meta/meta-inbound.types';
+import {
+  buildInboundContactIdentity,
+  ChannelMetadataKey,
+  contactSourceLabel,
+  defaultInboundDisplayName,
+  InboundContactIdentity,
+  resolveChannelMetadataKey,
+  SenderProfileSnapshot,
+} from '../utils/contact-channel-identity.util';
+import { getPageAccessTokenFromResource } from '../utils/conversation-resource-token.util';
 
 @Injectable()
 export class ConversationContactResolverService {
@@ -23,43 +32,160 @@ export class ConversationContactResolverService {
     inbound: NormalizedInboundMessage,
     resource: IntegrationResource,
   ): Promise<Contact> {
-    if (inbound.channel === ConversationChannel.EMAIL) {
-      const existingByEmail = await this.contactRepository.findByEmail(
-        businessId,
-        inbound.externalParticipantId,
+    const metadataKey = resolveChannelMetadataKey(inbound.channel);
+    const profile = await this.fetchSenderProfile(inbound, resource);
+    const identity = buildInboundContactIdentity(inbound, profile);
+
+    const existing = await this.findExistingContact(
+      businessId,
+      inbound,
+      metadataKey,
+      identity,
+    );
+
+    if (existing) {
+      return this.enrichExistingContact(
+        existing,
+        inbound,
+        metadataKey,
+        identity,
+        profile,
       );
-      if (existingByEmail) {
-        return existingByEmail;
+    }
+
+    return this.createContactFromInbound(
+      businessId,
+      inbound,
+      metadataKey,
+      identity,
+      profile,
+    );
+  }
+
+  private async findExistingContact(
+    businessId: string,
+    inbound: NormalizedInboundMessage,
+    metadataKey: ChannelMetadataKey,
+    identity: InboundContactIdentity,
+  ): Promise<Contact | null> {
+    if (identity.email) {
+      const byEmail = await this.contactRepository.findByEmail(
+        businessId,
+        identity.email,
+      );
+      if (byEmail) {
+        return byEmail;
       }
     }
 
-    const metadataKey = this.resolveMetadataKey(inbound.channel);
+    if (identity.phoneKey) {
+      const byPhone = await this.contactRepository.findByPhoneKey(
+        businessId,
+        identity.phoneKey,
+      );
+      if (byPhone) {
+        return byPhone;
+      }
+    }
 
-    const existing = await this.contactRepository.findByMetadataExternalId(
+    return this.contactRepository.findByMetadataExternalId(
       businessId,
       metadataKey,
       inbound.externalParticipantId,
     );
+  }
 
-    if (existing) {
-      return this.mergeContactMetadata(existing, inbound, metadataKey);
-    }
+  private async enrichExistingContact(
+    contact: Contact,
+    inbound: NormalizedInboundMessage,
+    metadataKey: ChannelMetadataKey,
+    identity: InboundContactIdentity,
+    profile: SenderProfileSnapshot,
+  ): Promise<Contact> {
+    const current = (contact.metadata as Record<string, unknown> | null) ?? {};
+    const profilePic =
+      profile.profilePic ?? inbound.senderProfilePictureUrl ?? null;
 
-    const profile = await this.fetchSenderProfile(inbound, resource);
+    const metadata: Prisma.InputJsonValue = {
+      ...current,
+      [metadataKey]: inbound.externalParticipantId,
+      channel: inbound.channel,
+      ...(profilePic ? { profilePictureUrl: profilePic } : {}),
+    };
+
     const displayName =
       profile.name ??
       inbound.senderName ??
-      this.defaultDisplayName(inbound.channel, inbound.externalParticipantId);
+      contact.displayName ??
+      defaultInboundDisplayName(
+        inbound.channel,
+        inbound.externalParticipantId,
+      );
+
+    const nameParts = displayName.split(/\s+/);
+    const firstName = nameParts[0] ?? displayName;
+    const lastName =
+      nameParts.length > 1 ? nameParts.slice(1).join(' ') : contact.lastName;
+
+    const updateData: Prisma.ContactUpdateInput = {
+      metadata,
+      ...(identity.email && !contact.email ? { email: identity.email } : {}),
+      ...(!contact.phoneNumber && identity.phoneFields.phoneNumber
+        ? {
+            phoneCountryCode: identity.phoneFields.phoneCountryCode,
+            phoneNumber: identity.phoneFields.phoneNumber,
+          }
+        : {}),
+      ...(!contact.displayName && displayName ? { displayName } : {}),
+      ...(!contact.firstName && firstName ? { firstName } : {}),
+      ...(contact.lastName == null && lastName ? { lastName } : {}),
+      ...(!contact.avatarUrl && profilePic ? { avatarUrl: profilePic } : {}),
+    };
+
+    const hasMetadataChange = current[metadataKey] !== inbound.externalParticipantId;
+    const hasFieldChange =
+      Boolean(identity.email && !contact.email) ||
+      Boolean(!contact.phoneNumber && identity.phoneFields.phoneNumber) ||
+      Boolean(!contact.avatarUrl && profilePic);
+
+    if (!hasMetadataChange && !hasFieldChange) {
+      return contact;
+    }
+
+    const updated = await this.contactRepository.update(
+      contact.businessId,
+      contact.id,
+      updateData,
+    );
+
+    return updated ?? contact;
+  }
+
+  private async createContactFromInbound(
+    businessId: string,
+    inbound: NormalizedInboundMessage,
+    metadataKey: ChannelMetadataKey,
+    identity: InboundContactIdentity,
+    profile: SenderProfileSnapshot,
+  ): Promise<Contact> {
+    const displayName =
+      profile.name ??
+      inbound.senderName ??
+      defaultInboundDisplayName(
+        inbound.channel,
+        inbound.externalParticipantId,
+      );
 
     const nameParts = displayName.split(/\s+/);
     const firstName = nameParts[0] ?? displayName;
     const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : null;
+    const profilePic =
+      profile.profilePic ?? inbound.senderProfilePictureUrl ?? null;
 
     const metadata: Prisma.InputJsonValue = {
       [metadataKey]: inbound.externalParticipantId,
       channel: inbound.channel,
-      profilePictureUrl:
-        profile.profilePic ?? inbound.senderProfilePictureUrl ?? null,
+      profilePictureUrl: profilePic,
     };
 
     const contact = await this.contactRepository.create(
@@ -68,12 +194,11 @@ export class ConversationContactResolverService {
         firstName,
         lastName,
         displayName,
-        email:
-          inbound.channel === ConversationChannel.EMAIL
-            ? inbound.externalParticipantId
-            : undefined,
-        source: this.contactSourceLabel(inbound.channel),
-        avatarUrl: profile.profilePic ?? inbound.senderProfilePictureUrl ?? null,
+        email: identity.email ?? undefined,
+        phoneCountryCode: identity.phoneFields.phoneCountryCode ?? undefined,
+        phoneNumber: identity.phoneFields.phoneNumber ?? undefined,
+        source: contactSourceLabel(inbound.channel),
+        avatarUrl: profilePic,
         metadata,
       },
       SYSTEM_AUDIT_ACTOR_SENTINEL,
@@ -91,72 +216,15 @@ export class ConversationContactResolverService {
     return contact;
   }
 
-  private resolveMetadataKey(
-    channel: ConversationChannel,
-  ): 'facebookPsid' | 'instagramUserId' | 'whatsappWaId' | 'emailAddress' {
-    if (channel === ConversationChannel.FACEBOOK) return 'facebookPsid';
-    if (channel === ConversationChannel.WHATSAPP) return 'whatsappWaId';
-    if (channel === ConversationChannel.EMAIL) return 'emailAddress';
-    return 'instagramUserId';
-  }
-
-  private defaultDisplayName(
-    channel: ConversationChannel,
-    externalParticipantId: string,
-  ): string {
-    if (channel === ConversationChannel.FACEBOOK) return 'Facebook User';
-    if (channel === ConversationChannel.WHATSAPP) {
-      return externalParticipantId.startsWith('+')
-        ? externalParticipantId
-        : `+${externalParticipantId}`;
-    }
-    if (channel === ConversationChannel.EMAIL) {
-      return externalParticipantId;
-    }
-    return 'Instagram User';
-  }
-
-  private contactSourceLabel(channel: ConversationChannel): string {
-    if (channel === ConversationChannel.FACEBOOK) return 'Facebook Messenger';
-    if (channel === ConversationChannel.WHATSAPP) return 'WhatsApp';
-    if (channel === ConversationChannel.EMAIL) return 'Email';
-    return 'Instagram';
-  }
-
-  private async mergeContactMetadata(
-    contact: Contact,
-    inbound: NormalizedInboundMessage,
-    metadataKey: 'facebookPsid' | 'instagramUserId' | 'whatsappWaId' | 'emailAddress',
-  ): Promise<Contact> {
-    const current = (contact.metadata as Record<string, unknown> | null) ?? {};
-    if (current[metadataKey] === inbound.externalParticipantId) {
-      return contact;
-    }
-
-    const updated = await this.contactRepository.update(
-      contact.businessId,
-      contact.id,
-      {
-        metadata: {
-          ...current,
-          [metadataKey]: inbound.externalParticipantId,
-          channel: inbound.channel,
-        } as Prisma.InputJsonValue,
-      },
-    );
-
-    return updated ?? contact;
-  }
-
   private async fetchSenderProfile(
     inbound: NormalizedInboundMessage,
     resource: IntegrationResource,
-  ): Promise<{ name?: string; profilePic?: string }> {
+  ): Promise<SenderProfileSnapshot> {
     if (inbound.channel === ConversationChannel.WHATSAPP) {
       return inbound.senderName ? { name: inbound.senderName } : {};
     }
 
-    if (inbound.channel !== ConversationChannel.FACEBOOK) {
+    if (inbound.channel === ConversationChannel.EMAIL) {
       return {};
     }
 
@@ -169,12 +237,23 @@ export class ConversationContactResolverService {
     }
 
     try {
-      return await this.metaApiClient.getMessengerUserProfile(
-        inbound.externalParticipantId,
-        pageAccessToken,
-      );
+      if (inbound.channel === ConversationChannel.FACEBOOK) {
+        return await this.metaApiClient.getMessengerUserProfile(
+          inbound.externalParticipantId,
+          pageAccessToken,
+        );
+      }
+
+      if (inbound.channel === ConversationChannel.INSTAGRAM) {
+        return await this.metaApiClient.getInstagramUserProfile(
+          inbound.externalParticipantId,
+          pageAccessToken,
+        );
+      }
     } catch {
       return {};
     }
+
+    return {};
   }
 }

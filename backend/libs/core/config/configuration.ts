@@ -1,8 +1,13 @@
 import { resolveBackendPublicUrl } from './backend-public-url.util';
 import { resolveDatabaseUrl } from './database-url.util';
 import { EmailConfig, resolveEmailConfig } from './email/email.config';
+import {
+  RealtimeConfig,
+  resolveRealtimeConfig,
+} from '../realtime/realtime.config';
 
 export type { EmailConfig };
+export type { RealtimeConfig } from '../realtime/realtime.config';
 
 /** Resolves the public frontend origin for OAuth redirects and invite links. */
 export function resolveFrontendUrl(env: NodeJS.ProcessEnv): string {
@@ -62,6 +67,7 @@ export interface RootConfig {
   seed: SeedConfig;
   integrations: IntegrationConfig;
   email: EmailConfig;
+  realtime: RealtimeConfig;
 }
 
 export default (): RootConfig => ({
@@ -102,4 +108,5 @@ export default (): RootConfig => ({
     encryptionKey: process.env.INTEGRATION_ENCRYPTION_KEY,
   },
   email: resolveEmailConfig(process.env),
+  realtime: resolveRealtimeConfig(process.env),
 });

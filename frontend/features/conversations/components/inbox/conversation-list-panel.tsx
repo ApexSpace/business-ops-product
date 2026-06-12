@@ -4,8 +4,8 @@ import { MailPlus, Search } from "lucide-react";
 import { VirtualList } from "@/components/data-display/virtual-list";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import type { Conversation } from "@/features/conversations/api/conversations.api";
-import { ConversationThreadRow } from "@/features/conversations/components/inbox/conversation-thread-row";
+import type { UnifiedConversationThread } from "@/features/conversations/api/conversations.api";
+import { UnifiedThreadRow } from "@/features/conversations/components/inbox/unified-thread-row";
 import {
   THREAD_ROW_HEIGHT,
   VIRTUALIZE_THRESHOLD,
@@ -27,10 +27,10 @@ interface ConversationListPanelProps {
   onSearchChange: (value: string) => void;
   filter: InboxFilter;
   onFilterChange: (filter: InboxFilter) => void;
-  conversations: Conversation[];
+  threads: UnifiedConversationThread[];
   listLoading: boolean;
-  selectedId: string | null;
-  onSelect: (id: string) => void;
+  selectedThreadKey: string | null;
+  onSelectThread: (thread: UnifiedConversationThread) => void;
   useVirtualThreads: boolean;
   onNewEmail?: () => void;
 }
@@ -40,10 +40,10 @@ export function ConversationListPanel({
   onSearchChange,
   filter,
   onFilterChange,
-  conversations,
+  threads,
   listLoading,
-  selectedId,
-  onSelect,
+  selectedThreadKey,
+  onSelectThread,
   useVirtualThreads,
   onNewEmail,
 }: ConversationListPanelProps) {
@@ -95,7 +95,7 @@ export function ConversationListPanel({
       <div className="min-h-0 flex-1">
         {listLoading ? (
           <p className="p-4 text-sm text-muted-foreground">Loading…</p>
-        ) : conversations.length === 0 ? (
+        ) : threads.length === 0 ? (
           <p className="p-4 text-sm text-muted-foreground">
             No conversations yet. Messages from connected Facebook, Instagram,
             WhatsApp, or website chat channels will appear here.
@@ -103,25 +103,25 @@ export function ConversationListPanel({
         ) : useVirtualThreads ? (
           <VirtualList
             className="h-full"
-            items={conversations}
+            items={threads}
             estimateSize={THREAD_ROW_HEIGHT}
-            getKey={(c) => c.id}
-            renderItem={(conversation) => (
-              <ConversationThreadRow
-                conversation={conversation}
-                selectedId={selectedId}
-                onSelect={onSelect}
+            getKey={(thread) => thread.threadKey}
+            renderItem={(thread) => (
+              <UnifiedThreadRow
+                thread={thread}
+                selectedThreadKey={selectedThreadKey}
+                onSelect={onSelectThread}
               />
             )}
           />
         ) : (
           <ul className="divide-y divide-border/60 overflow-auto h-full">
-            {conversations.map((conversation) => (
-              <ConversationThreadRow
-                key={conversation.id}
-                conversation={conversation}
-                selectedId={selectedId}
-                onSelect={onSelect}
+            {threads.map((thread) => (
+              <UnifiedThreadRow
+                key={thread.threadKey}
+                thread={thread}
+                selectedThreadKey={selectedThreadKey}
+                onSelect={onSelectThread}
               />
             ))}
           </ul>

@@ -161,15 +161,14 @@ export const WORKSPACE_PADDING_CLASS = "p-2 sm:p-2.5 lg:p-3";
 export const WORKSPACE_GAP_CLASS = "gap-1.5 sm:gap-2";
 
 /**
- * Desktop xl+ — grid with fixed side tracks; center fills remainder (not all extra space on narrow lg).
- * Below xl, tablet layout is used instead of squeezing four columns.
+ * Desktop xl+ — conversation fills left; contact sidebar + icon rail on the right.
  */
 export const WORKSPACE_DESKTOP_ROW_CLASS = [
   "hidden h-full min-h-0 w-full max-w-full flex-1 items-stretch overflow-x-auto overflow-y-hidden xl:grid",
   WORKSPACE_GAP_CLASS,
   WORKSPACE_PADDING_CLASS,
-  "xl:grid-cols-[280px_minmax(240px,1fr)_300px_3rem]",
-  "2xl:grid-cols-[320px_minmax(280px,1fr)_360px_3.5rem]",
+  "xl:grid-cols-[minmax(360px,1fr)_minmax(280px,340px)_3rem]",
+  "2xl:grid-cols-[minmax(420px,1fr)_360px_3.5rem]",
 ].join(" ");
 
 /** Grid/flex cell wrapper — track size comes from parent layout */
@@ -182,29 +181,31 @@ export const WORKSPACE_CONVERSATION_COL_CLASS = WORKSPACE_COLUMN_CELL_CLASS;
 export const WORKSPACE_RECORDS_COL_CLASS = WORKSPACE_COLUMN_CELL_CLASS;
 export const WORKSPACE_RAIL_COL_CLASS = WORKSPACE_COLUMN_CELL_CLASS;
 
-/** Tablet md–xl: contact + conversation (balanced flex, no tiny side columns) */
+/** Tablet md–xl: conversation + sidebar + rail in one row */
 export const WORKSPACE_TABLET_MAIN_ROW_CLASS = [
-  "flex min-h-0 flex-1 overflow-hidden",
+  "flex h-full min-h-0 w-full flex-1 overflow-hidden",
   WORKSPACE_GAP_CLASS,
 ].join(" ");
-
-export const WORKSPACE_TABLET_DETAILS_COL_CLASS =
-  "flex h-full min-h-0 w-[min(38%,320px)] min-w-[240px] max-w-[360px] shrink-0 overflow-hidden";
 
 export const WORKSPACE_TABLET_CONVERSATION_COL_CLASS =
-  "flex h-full min-h-0 min-w-[200px] flex-1 basis-0 overflow-hidden";
+  "flex h-full min-h-0 min-w-[240px] flex-1 basis-0 overflow-hidden";
 
-/** Tablet: records + rail */
-export const WORKSPACE_TABLET_BOTTOM_ROW_CLASS = [
-  "flex shrink-0 overflow-hidden",
-  WORKSPACE_GAP_CLASS,
-  "min-h-[200px] max-h-[min(38vh,300px)]",
-].join(" ");
-
-export const WORKSPACE_TABLET_RECORDS_COL_CLASS =
-  "flex min-h-0 min-w-0 flex-1 basis-0 overflow-hidden";
+export const WORKSPACE_TABLET_SIDEBAR_COL_CLASS =
+  "flex h-full min-h-0 w-[min(42%,360px)] min-w-[260px] max-w-[380px] shrink-0 overflow-hidden";
 
 export const WORKSPACE_TABLET_RAIL_COL_CLASS = "flex w-11 shrink-0 overflow-hidden";
+
+/** @deprecated tablet bottom row removed — records live in sidebar */
+export const WORKSPACE_TABLET_DETAILS_COL_CLASS =
+  WORKSPACE_TABLET_SIDEBAR_COL_CLASS;
+
+/** @deprecated */
+export const WORKSPACE_TABLET_BOTTOM_ROW_CLASS =
+  "hidden";
+
+/** @deprecated */
+export const WORKSPACE_TABLET_RECORDS_COL_CLASS =
+  WORKSPACE_COLUMN_CELL_CLASS;
 
 /** Contact detail workspace route (full-bleed below topbar, no shell content padding). */
 export function isContactWorkspacePath(pathname: string): boolean {

@@ -1,3 +1,44 @@
+function toDayKey(iso: string): string {
+  const date = new Date(iso);
+  return [
+    date.getFullYear(),
+    date.getMonth(),
+    date.getDate(),
+  ].join("-");
+}
+
+export function formatMessageTime(iso: string): string {
+  return new Date(iso).toLocaleTimeString(undefined, {
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+export function formatMessageDateSeparator(iso: string): string {
+  const date = new Date(iso);
+  const today = new Date();
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+
+  if (toDayKey(iso) === toDayKey(today.toISOString())) {
+    return "Today";
+  }
+  if (toDayKey(iso) === toDayKey(yesterday.toISOString())) {
+    return "Yesterday";
+  }
+
+  return date.toLocaleDateString(undefined, {
+    weekday: "long",
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+export function isSameMessageDay(a: string, b: string): boolean {
+  return toDayKey(a) === toDayKey(b);
+}
+
 export function formatRelativeTime(iso: string): string {
   const date = new Date(iso);
   const diffMs = date.getTime() - Date.now();

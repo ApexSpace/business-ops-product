@@ -1,9 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import {
+  Contact,
   ConversationChannel,
   ConversationMessage,
   Prisma,
 } from '@prisma/client';
+import { buildContactMessageScopeWhere } from '../utils/contact-message-scope.util';
 import { PrismaService } from '@app/core/database/prisma.service';
 
 @Injectable()
@@ -26,6 +28,16 @@ export class ConversationMessagesRepository {
   ): Promise<ConversationMessage | null> {
     return this.prisma.conversationMessage.findFirst({
       where: { businessId, channel, externalMessageId },
+    });
+  }
+
+  findByChannelExternalMessageId(
+    channel: ConversationChannel,
+    externalMessageId: string,
+  ): Promise<ConversationMessage | null> {
+    return this.prisma.conversationMessage.findFirst({
+      where: { channel, externalMessageId },
+      orderBy: { createdAt: 'desc' },
     });
   }
 
@@ -181,4 +193,145 @@ export class ConversationMessagesRepository {
       data,
     });
   }
+
+  updateContactIdForConversations(
+    conversationIds: string[],
+    contactId: string,
+  ): Promise<void> {
+    if (conversationIds.length === 0) {
+      return Promise.resolve();
+    }
+
+    return this.prisma.conversationMessage
+      .updateMany({
+        where: { conversationId: { in: conversationIds } },
+        data: { contactId },
+      })
+      .then(() => undefined);
+  }
+
+  /** Merged timeline across all conversations for one contact. */
+  async findManyByContactIdCursor(
+    businessId: string,
+    contact: Contact,
+    params: {
+      take: number;
+      cursor?: string;
+      direction: 'before' | 'after';
+      latest?: boolean;
+    },
+  ): Promise<{
+    items: ConversationMessage[];
+    nextCursor: string | null;
+    prevCursor: string | null;
+    hasMore: boolean;
+  }> {
+    const scopeWhere = buildContactMessageScopeWhere(businessId, contact);
+
+    let anchor: ConversationMessage | null = null;
+    if (params.cursor) {
+      anchor = await this.prisma.conversationMessage.findFirst({
+        where: {
+          AND: [scopeWhere, { id: params.cursor }],
+        },
+      });
+      if (!anchor) {
+        return {
+          items: [],
+          nextCursor: null,
+          prevCursor: null,
+          hasMore: false,
+        };
+      }
+    }
+
+    const direction =
+      params.latest && !params.cursor ? 'before' : params.direction;
+    const take = params.take;
+
+    if (params.latest && !params.cursor) {
+      const rows = await this.prisma.conversationMessage.findMany({
+        where: scopeWhere,
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        take: take + 1,
+      });
+      const hasMore = rows.length > take;
+      const slice = hasMore ? rows.slice(0, take) : rows;
+      const items = slice.reverse();
+      return {
+        items,
+        nextCursor: items[0]?.id ?? null,
+        prevCursor: items[items.length - 1]?.id ?? null,
+        hasMore,
+      };
+    }
+
+    if (!anchor) {
+      const rows = await this.prisma.conversationMessage.findMany({
+        where: scopeWhere,
+        orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+        take: take + 1,
+      });
+      const hasMore = rows.length > take;
+      const items = hasMore ? rows.slice(0, take) : rows;
+      return {
+        items,
+        nextCursor: items[items.length - 1]?.id ?? null,
+        prevCursor: items[0]?.id ?? null,
+        hasMore,
+      };
+    }
+
+    if (direction === 'before') {
+      const rows = await this.prisma.conversationMessage.findMany({
+        where: {
+          AND: [
+            scopeWhere,
+            {
+              OR: [
+                { createdAt: { lt: anchor.createdAt } },
+                { createdAt: anchor.createdAt, id: { lt: anchor.id } },
+              ],
+            },
+          ],
+        },
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        take: take + 1,
+      });
+      const hasMore = rows.length > take;
+      const slice = hasMore ? rows.slice(0, take) : rows;
+      const items = slice.reverse();
+      return {
+        items,
+        nextCursor: items[0]?.id ?? anchor.id,
+        prevCursor: items[items.length - 1]?.id ?? null,
+        hasMore,
+      };
+    }
+
+    const rows = await this.prisma.conversationMessage.findMany({
+      where: {
+        AND: [
+          scopeWhere,
+          {
+            OR: [
+              { createdAt: { gt: anchor.createdAt } },
+              { createdAt: anchor.createdAt, id: { gt: anchor.id } },
+            ],
+          },
+        ],
+      },
+      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+      take: take + 1,
+    });
+    const hasMore = rows.length > take;
+    const items = hasMore ? rows.slice(0, take) : rows;
+    return {
+      items,
+      nextCursor: items[items.length - 1]?.id ?? null,
+      prevCursor: items[0]?.id ?? anchor.id,
+      hasMore,
+    };
+  }
+
 }

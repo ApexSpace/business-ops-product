@@ -5,6 +5,7 @@ import { TransformInterceptor } from '@app/common/interceptors/transform.interce
 import { JwtAuthGuard } from '@app/common/guards/jwt-auth.guard';
 import { IdempotencyMiddleware } from '@app/common/middleware/idempotency.middleware';
 import { CoreModule } from '@app/core/core.module';
+import { RealtimeWebSocketModule } from '@app/core/realtime/realtime-websocket.module';
 import { CommunicationsApiModule } from '@app/modules/communications/communications-api.module';
 import { CrmApiModule } from '@app/modules/crm/crm-api.module';
 import { FinanceApiModule } from '@app/modules/finance/finance-api.module';
@@ -16,6 +17,7 @@ import { QueueBoardModule } from './queue-board.module';
 @Module({
   imports: [
     CoreModule,
+    RealtimeWebSocketModule.register(),
     ThrottlerModule.forRoot([
       {
         ttl: 60000,

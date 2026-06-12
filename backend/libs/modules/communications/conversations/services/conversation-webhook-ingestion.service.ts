@@ -12,8 +12,14 @@ import {
 import { SYSTEM_AUDIT_ACTOR_SENTINEL } from '@app/modules/platform/audit/constants/audit.constants';
 import { AuditService } from '@app/modules/platform/audit/services/audit.service';
 import { previewFromMessageContent } from '../adapters/meta/meta-attachment.util';
-import { normalizeMetaWebhookPayload } from '../adapters/meta/meta-inbound-normalizer';
+import {
+  extractWhatsAppDeliveryStatuses,
+  normalizeMetaWebhookPayload,
+  type NormalizedWhatsAppDeliveryStatus,
+} from '../adapters/meta/meta-inbound-normalizer';
+import { WhatsAppDeliveryStatusBufferService } from './whatsapp-delivery-status-buffer.service';
 import { NormalizedInboundMessage } from '../adapters/meta/meta-inbound.types';
+import { toConversationMessageResponse } from '../mappers/conversation.mapper';
 import { ConversationContactResolverService } from './conversation-contact-resolver.service';
 import { ConversationRealtimeService } from './conversation-realtime.service';
 import { ConversationIntegrationRepository } from '../repositories/conversation-integration.repository';
@@ -37,7 +43,24 @@ export class ConversationWebhookIngestionService {
     private readonly auditService: AuditService,
     private readonly prisma: PrismaService,
     private readonly realtime: ConversationRealtimeService,
+    private readonly whatsAppDeliveryStatusBuffer: WhatsAppDeliveryStatusBufferService,
   ) {}
+
+  /** Replays delivery/read webhooks that arrived before outbound wamid was persisted. */
+  async replayBufferedWhatsAppDeliveryStatuses(
+    externalMessageId: string,
+  ): Promise<void> {
+    const buffered =
+      await this.whatsAppDeliveryStatusBuffer.takeAll(externalMessageId);
+    if (buffered.length === 0) {
+      return;
+    }
+
+    this.logger.log(
+      `Replaying ${buffered.length} buffered WhatsApp status update(s) for ${externalMessageId}`,
+    );
+    await this.applyWhatsAppDeliveryStatuses(buffered, { fromReplay: true });
+  }
 
   async ingestNormalizedInbound(inbound: NormalizedInboundMessage): Promise<void> {
     await this.ingestInboundMessage(inbound, null);
@@ -48,12 +71,19 @@ export class ConversationWebhookIngestionService {
     webhookEventId?: string,
   ): Promise<void> {
     const { messages, objectType } = normalizeMetaWebhookPayload(body);
+    const deliveryStatuses = extractWhatsAppDeliveryStatuses(body);
+
+    if (deliveryStatuses.length > 0) {
+      await this.applyWhatsAppDeliveryStatuses(deliveryStatuses);
+    }
 
     if (messages.length === 0) {
       if (webhookEventId) {
         await this.webhookEventsRepository.updateStatus(
           webhookEventId,
-          WebhookEventStatus.IGNORED,
+          deliveryStatuses.length > 0
+            ? WebhookEventStatus.PROCESSED
+            : WebhookEventStatus.IGNORED,
         );
       }
       return;
@@ -219,6 +249,7 @@ export class ConversationWebhookIngestionService {
       messageId: createdMessage.id,
       status: MessageStatus.RECEIVED,
       channel: inbound.channel,
+      message: toConversationMessageResponse(createdMessage),
     });
 
     await this.realtime.publishConversationUpdated(businessId, {
@@ -237,6 +268,88 @@ export class ConversationWebhookIngestionService {
         channel: inbound.channel,
       },
     });
+  }
+
+  private async applyWhatsAppDeliveryStatuses(
+    statuses: NormalizedWhatsAppDeliveryStatus[],
+    options?: { fromReplay?: boolean },
+  ): Promise<void> {
+    for (const status of statuses) {
+      const message =
+        await this.messagesRepository.findByChannelExternalMessageId(
+          ConversationChannel.WHATSAPP,
+          status.externalMessageId,
+        );
+      if (!message) {
+        if (!options?.fromReplay) {
+          await this.whatsAppDeliveryStatusBuffer.buffer(status);
+          this.logger.debug(
+            `Buffered WhatsApp ${status.status} for ${status.externalMessageId} (outbound row not ready)`,
+          );
+        } else {
+          this.logger.warn(
+            `WhatsApp ${status.status} for ${status.externalMessageId} could not be applied after replay`,
+          );
+        }
+        continue;
+      }
+
+      const nextStatus = this.mapWhatsAppDeliveryStatus(status.status);
+      if (!nextStatus || !this.shouldApplyDeliveryStatus(message.status, nextStatus)) {
+        continue;
+      }
+
+      await this.messagesRepository.update(message.id, {
+        status: nextStatus,
+        ...(nextStatus === MessageStatus.FAILED
+          ? { errorMessage: status.errorMessage ?? 'WhatsApp delivery failed' }
+          : {}),
+      });
+
+      await this.realtime.publishMessageUpdated(message.businessId, {
+        conversationId: message.conversationId,
+        messageId: message.id,
+        status: nextStatus,
+        channel: ConversationChannel.WHATSAPP,
+      });
+    }
+  }
+
+  private mapWhatsAppDeliveryStatus(
+    status: 'sent' | 'delivered' | 'read' | 'failed',
+  ): MessageStatus | null {
+    switch (status) {
+      case 'sent':
+        return MessageStatus.SENT;
+      case 'delivered':
+        return MessageStatus.DELIVERED;
+      case 'read':
+        return MessageStatus.READ;
+      case 'failed':
+        return MessageStatus.FAILED;
+      default:
+        return null;
+    }
+  }
+
+  private shouldApplyDeliveryStatus(
+    current: MessageStatus,
+    next: MessageStatus,
+  ): boolean {
+    const rank: Record<MessageStatus, number> = {
+      [MessageStatus.RECEIVED]: 0,
+      [MessageStatus.PENDING]: 1,
+      [MessageStatus.SENT]: 2,
+      [MessageStatus.DELIVERED]: 3,
+      [MessageStatus.READ]: 4,
+      [MessageStatus.FAILED]: 5,
+    };
+
+    if (next === MessageStatus.FAILED) {
+      return current !== MessageStatus.READ;
+    }
+
+    return rank[next] > rank[current];
   }
 
   private async resolveResource(

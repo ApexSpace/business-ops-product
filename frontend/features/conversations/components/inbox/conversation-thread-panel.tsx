@@ -18,13 +18,19 @@ import {
 import {
   assignConversation,
   channelLabel,
+  type ContactReplyChannel,
   type Conversation,
+  type ConversationChannel,
   type ConversationMessage,
+  type UnifiedConversationThread,
 } from "@/features/conversations/api/conversations.api";
 import {
   channelComposerHint,
+  channelProviderKey,
   contactDisplayName,
 } from "@/features/conversations/components/inbox/conversation-inbox-utils";
+import { IntegrationProviderIcon } from "@/features/integrations/components/integration-provider-icon";
+import { unifiedThreadDisplayName } from "@/features/conversations/utils/unified-thread.utils";
 import {
   MessageComposer,
   type PendingMessageAttachment,
@@ -35,11 +41,16 @@ import { queryKeys } from "@/lib/query/keys";
 interface ConversationThreadPanelProps {
   selectedId: string | null;
   selected: Conversation | undefined;
+  selectedThread?: UnifiedConversationThread;
   messages: ConversationMessage[];
   messagesLoading: boolean;
   hasNextPage: boolean;
   isFetchingNextPage: boolean;
   fetchNextPage: () => void;
+  mergedTimeline?: boolean;
+  replyChannels?: ContactReplyChannel[];
+  selectedReplyChannel?: ConversationChannel | null;
+  onReplyChannelChange?: (channel: ConversationChannel) => void;
   composer: string;
   onComposerChange: (value: string) => void;
   attachmentUrl: string;
@@ -55,7 +66,6 @@ interface ConversationThreadPanelProps {
     unknown,
     Error,
     {
-      id: string;
       text: string;
       subject?: string;
       attachments?: Array<{ type: string; url: string }>;
@@ -72,11 +82,16 @@ interface ConversationThreadPanelProps {
 export function ConversationThreadPanel({
   selectedId,
   selected,
+  selectedThread,
   messages,
   messagesLoading,
   hasNextPage,
   isFetchingNextPage,
   fetchNextPage,
+  mergedTimeline = false,
+  replyChannels,
+  selectedReplyChannel,
+  onReplyChannelChange,
   composer,
   onComposerChange,
   attachmentUrl,
@@ -133,10 +148,37 @@ export function ConversationThreadPanel({
           <>
             <header className="flex shrink-0 items-center justify-between gap-3 border-b border-border/80 px-4 py-3">
               <div>
-                <p className="font-semibold">{contactDisplayName(selected)}</p>
-                <div className="mt-0.5 flex items-center gap-2 text-xs text-muted-foreground">
-                  <Badge variant="outline">{channelLabel(selected.channel)}</Badge>
-                  <span className="capitalize">{selected.status.toLowerCase()}</span>
+                <p className="font-semibold">
+                  {selectedThread
+                    ? unifiedThreadDisplayName(selectedThread)
+                    : contactDisplayName(selected)}
+                </p>
+                <div className="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                  {selectedThread && selectedThread.channels.length > 1 ? (
+                    <div className="flex items-center gap-1">
+                      {selectedThread.channels.map((channel) => (
+                        <Badge
+                          key={channel}
+                          variant="outline"
+                          className="gap-1 px-1.5 py-0 text-[10px]"
+                        >
+                          <IntegrationProviderIcon
+                            providerKey={channelProviderKey(channel)}
+                            size="sm"
+                            className="!size-3"
+                          />
+                          {channelLabel(channel)}
+                        </Badge>
+                      ))}
+                    </div>
+                  ) : (
+                    <Badge variant="outline">
+                      {channelLabel(selected.channel)}
+                    </Badge>
+                  )}
+                  <span className="capitalize">
+                    {(selectedThread?.status ?? selected.status).toLowerCase()}
+                  </span>
                 </div>
               </div>
               <div className="flex gap-2">
@@ -168,7 +210,9 @@ export function ConversationThreadPanel({
               {messagesLoading ? (
                 <p className="px-2 text-sm text-muted-foreground">Loading messages…</p>
               ) : messages.length === 0 ? (
-                <p className="px-2 text-sm text-muted-foreground">No messages yet.</p>
+                <p className="px-2 text-sm text-muted-foreground">
+                  No messages yet.
+                </p>
               ) : (
                 <VirtualizedMessageList
                   messages={messages}
@@ -190,24 +234,25 @@ export function ConversationThreadPanel({
               canSend={canSend}
               sendDisabledReason={sendDisabledReason}
               channelHint={
-                selected ? channelComposerHint(selected.channel) : null
+                selectedReplyChannel
+                  ? channelComposerHint(selectedReplyChannel)
+                  : null
               }
-              showSubject={selected?.channel === "EMAIL"}
+              showSubject={selectedReplyChannel === "EMAIL"}
               subject={emailSubject}
               onSubjectChange={onEmailSubjectChange}
-              isPending={sendMutation.isPending}
+              replyChannels={replyChannels}
+              selectedReplyChannel={selectedReplyChannel}
+              onReplyChannelChange={onReplyChannelChange}
               onSend={() => {
-                if (selectedId) {
-                  sendMutation.mutate({
-                    id: selectedId,
-                    text: composer.trim(),
-                    subject:
-                      selected?.channel === "EMAIL"
-                        ? emailSubject.trim() || selected.title || undefined
-                        : undefined,
-                    attachments: pendingAttachment ? [pendingAttachment] : undefined,
-                  });
-                }
+                sendMutation.mutate({
+                  text: composer.trim(),
+                  subject:
+                    selectedReplyChannel === "EMAIL"
+                      ? emailSubject.trim() || undefined
+                      : undefined,
+                  attachments: pendingAttachment ? [pendingAttachment] : undefined,
+                });
               }}
             />
           </>
@@ -221,10 +266,14 @@ export function ConversationThreadPanel({
               <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 Contact
               </p>
-              <p className="mt-1 font-medium">{contactDisplayName(selected)}</p>
-              {selected.contactId ? (
+              <p className="mt-1 font-medium">
+                {selectedThread
+                  ? unifiedThreadDisplayName(selectedThread)
+                  : contactDisplayName(selected)}
+              </p>
+              {(selectedThread?.contactId ?? selected.contactId) ? (
                 <Link
-                  href={`/business/contacts/${selected.contactId}`}
+                  href={`/business/contacts/${selectedThread?.contactId ?? selected.contactId}`}
                   className="text-sm font-medium text-primary hover:underline"
                 >
                   Open contact
@@ -233,9 +282,20 @@ export function ConversationThreadPanel({
             </div>
             <div>
               <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                Channel
+                Channels
               </p>
-              <p className="mt-1">{channelLabel(selected.channel)}</p>
+              <div className="mt-1 flex flex-wrap gap-1.5">
+                {(selectedThread?.channels ?? [selected.channel]).map((channel) => (
+                  <Badge key={channel} variant="secondary" className="gap-1">
+                    <IntegrationProviderIcon
+                      providerKey={channelProviderKey(channel)}
+                      size="sm"
+                      className="!size-3"
+                    />
+                    {channelLabel(channel)}
+                  </Badge>
+                ))}
+              </div>
             </div>
             <div>
               <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">

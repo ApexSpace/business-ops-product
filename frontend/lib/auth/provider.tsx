@@ -118,6 +118,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 
   const logout = useCallback(async () => {
+    const { clearWsAccessTokenCache } = await import(
+      "@/lib/realtime/fetch-ws-access-token"
+    );
+    clearWsAccessTokenCache();
+
     await fetch("/api/auth/logout", {
       method: "POST",
       credentials: "include",

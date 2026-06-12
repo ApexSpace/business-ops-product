@@ -9,6 +9,7 @@ export const REALTIME_CHANNEL_PREFIX = 'business:';
 export class RedisPubSubService implements OnModuleDestroy {
   private readonly logger = new Logger(RedisPubSubService.name);
   private subscriber: Redis | null = null;
+  private messageListenerAttached = false;
   private readonly handlers = new Map<string, Set<(payload: string) => void>>();
 
   constructor(private readonly redisService: RedisService) {}
@@ -22,6 +23,27 @@ export class RedisPubSubService implements OnModuleDestroy {
       void this.subscriber.quit().catch(() => undefined);
       this.subscriber = null;
     }
+    this.messageListenerAttached = false;
+  }
+
+  private attachMessageListener(sub: Redis): void {
+    if (this.messageListenerAttached) {
+      return;
+    }
+
+    this.messageListenerAttached = true;
+    sub.on('message', (channel, message) => {
+      const handlers = this.handlers.get(channel);
+      handlers?.forEach((handler) => {
+        try {
+          handler(message);
+        } catch (err) {
+          this.logger.error(
+            `Realtime handler error: ${err instanceof Error ? err.message : String(err)}`,
+          );
+        }
+      });
+    });
   }
 
   private async getSubscriber(): Promise<Redis | null> {
@@ -54,6 +76,7 @@ export class RedisPubSubService implements OnModuleDestroy {
         return null;
       }
       this.subscriber = sub;
+      this.attachMessageListener(sub);
       return sub;
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
@@ -95,6 +118,7 @@ export class RedisPubSubService implements OnModuleDestroy {
   ): Promise<() => void> {
     const channel = this.businessChannel(businessId);
     let set = this.handlers.get(channel);
+
     if (!set) {
       set = new Set();
       this.handlers.set(channel, set);
@@ -107,19 +131,6 @@ export class RedisPubSubService implements OnModuleDestroy {
 
       try {
         await sub.subscribe(channel);
-        sub.on('message', (ch, message) => {
-          if (ch !== channel) return;
-          const handlers = this.handlers.get(channel);
-          handlers?.forEach((h) => {
-            try {
-              h(message);
-            } catch (err) {
-              this.logger.error(
-                `Realtime handler error: ${err instanceof Error ? err.message : String(err)}`,
-              );
-            }
-          });
-        });
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         this.logger.warn(`Redis subscribe failed for ${channel}: ${message}`);
@@ -131,11 +142,21 @@ export class RedisPubSubService implements OnModuleDestroy {
 
     set.add(handler);
     return () => {
-      set?.delete(handler);
+      const handlers = this.handlers.get(channel);
+      handlers?.delete(handler);
+      if (handlers && handlers.size === 0) {
+        this.handlers.delete(channel);
+        void this.subscriber?.unsubscribe(channel).catch((error) => {
+          const message =
+            error instanceof Error ? error.message : String(error);
+          this.logger.warn(`Redis unsubscribe failed for ${channel}: ${message}`);
+        });
+      }
     };
   }
 
   async onModuleDestroy(): Promise<void> {
+    this.handlers.clear();
     this.resetSubscriber();
   }
 }

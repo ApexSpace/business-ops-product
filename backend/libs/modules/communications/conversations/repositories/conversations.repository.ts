@@ -129,6 +129,45 @@ export class ConversationsRepository {
     });
   }
 
+  async reassignToContact(
+    businessId: string,
+    conversationIds: string[],
+    contactId: string,
+  ): Promise<number> {
+    if (conversationIds.length === 0) {
+      return 0;
+    }
+
+    const result = await this.prisma.conversation.updateMany({
+      where: {
+        businessId,
+        deletedAt: null,
+        id: { in: conversationIds },
+      },
+      data: { contactId },
+    });
+
+    return result.count;
+  }
+
+  findByChannelIdentities(
+    businessId: string,
+    filters: Prisma.ConversationWhereInput[],
+    excludeContactId: string,
+  ): Promise<Array<{ id: string }>> {
+    if (filters.length === 0) {
+      return Promise.resolve([]);
+    }
+
+    return this.prisma.conversation.findMany({
+      where: this.activeWhere(businessId, {
+        contactId: { not: excludeContactId },
+        OR: filters,
+      }),
+      select: { id: true },
+    });
+  }
+
   private buildListWhere(
     filters: ConversationListFilters,
   ): Prisma.ConversationWhereInput {
