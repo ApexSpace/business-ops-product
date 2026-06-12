@@ -11,7 +11,7 @@ import { AppException } from '@app/common/exceptions/app.exception';
 import { ErrorCode } from '@app/common/exceptions/error-code.enum';
 import { PrismaService } from '@app/core/database/prisma.service';
 import { IntegrationResourceRepository } from '@app/modules/integrations/integrations/repositories/integration-resource.repository';
-import { AuditService } from '@app/modules/platform/audit/audit.service';
+import { AuditService } from '@app/modules/platform/audit/services/audit.service';
 import { SYSTEM_AUDIT_ACTOR_SENTINEL } from '@app/modules/platform/audit/constants/audit.constants';
 import { ContactRepository } from '@app/modules/crm/contacts/repositories/contact.repository';
 import { ConversationResponseDto } from '../dto/conversation-response.dto';
@@ -22,25 +22,30 @@ import { resolveChannelMetadataKey } from '../utils/contact-channel-identity.uti
 import { resolveMetaParticipantId } from '../utils/contact-outbound-identity.util';
 import { ConversationMessagesService } from './conversation-messages.service';
 
+type MetaConversationChannel = Extract<
+  ConversationChannel,
+  'WHATSAPP' | 'FACEBOOK' | 'INSTAGRAM'
+>;
+
 const CHANNEL_CONFIG: Record<
-  ConversationChannel.WHATSAPP | ConversationChannel.FACEBOOK | ConversationChannel.INSTAGRAM,
+  MetaConversationChannel,
   {
     providerKey: string;
     resourceType: IntegrationResourceType;
     identityLabel: string;
   }
 > = {
-  [ConversationChannel.WHATSAPP]: {
+  WHATSAPP: {
     providerKey: 'whatsapp',
     resourceType: IntegrationResourceType.PHONE_NUMBER,
     identityLabel: 'phone number or WhatsApp ID',
   },
-  [ConversationChannel.FACEBOOK]: {
+  FACEBOOK: {
     providerKey: 'facebook',
     resourceType: IntegrationResourceType.FACEBOOK_PAGE,
     identityLabel: 'Facebook Messenger ID',
   },
-  [ConversationChannel.INSTAGRAM]: {
+  INSTAGRAM: {
     providerKey: 'instagram',
     resourceType: IntegrationResourceType.INSTAGRAM_ACCOUNT,
     identityLabel: 'Instagram user ID',
@@ -61,10 +66,7 @@ export class MetaConversationsService {
   async startConversation(
     businessId: string,
     contact: Contact,
-    channel:
-      | ConversationChannel.WHATSAPP
-      | ConversationChannel.FACEBOOK
-      | ConversationChannel.INSTAGRAM,
+    channel: MetaConversationChannel,
     actor: RequestUser,
     options?: { text?: string },
   ): Promise<ConversationResponseDto> {
@@ -155,7 +157,7 @@ export class MetaConversationsService {
       externalConversationId,
       externalParticipantId: participantId,
       externalPageId:
-        channel === ConversationChannel.FACEBOOK ? resource.externalId : null,
+        channel === 'FACEBOOK' ? resource.externalId : null,
       title: contact.displayName ?? contact.firstName ?? null,
       status: ConversationStatus.OPEN,
       lastMessageAt: options?.text?.trim() ? new Date() : null,
@@ -195,7 +197,7 @@ export class MetaConversationsService {
       },
     });
 
-    if (channel === ConversationChannel.WHATSAPP) {
+    if (channel === 'WHATSAPP') {
       await this.persistWhatsAppIdentity(contact, participantId);
     } else {
       await this.persistChannelIdentity(contact, channel, participantId);
@@ -238,7 +240,7 @@ export class MetaConversationsService {
       metadata: {
         ...metadata,
         whatsappWaId: participantId,
-        channel: ConversationChannel.WHATSAPP,
+        channel: 'WHATSAPP',
       } as Prisma.InputJsonValue,
     });
   }
