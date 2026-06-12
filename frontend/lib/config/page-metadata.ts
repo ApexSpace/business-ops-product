@@ -166,7 +166,7 @@ const businessRoutes: Record<string, RouteEntry> = {
   "/business/settings/billing": {
     title: "Plan & Billing",
     description:
-      "Your subscription, plan tier, payment status, and included capabilities.",
+      "Your subscription, plan tier, and payment status.",
     breadcrumbs: [
       { label: "Settings", href: "/business/settings/profile" },
       { label: "Plan & Billing" },
