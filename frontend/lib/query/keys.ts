@@ -178,6 +178,19 @@ export const queryKeys = {
     rules: (id: string) => ["chatbots", id, "rules"] as const,
     embed: (id: string) => ["chatbots", id, "embed"] as const,
   },
+  forms: {
+    all: () => ["forms"] as const,
+    list: (filters?: {
+      search?: string;
+      status?: string;
+      sort?: string;
+      sortDir?: string;
+    }) => listKey(["forms", "list"], filters),
+    detail: (id: string) => ["forms", "detail", id] as const,
+    embed: (id: string) => ["forms", "embed", id] as const,
+    submissions: (formId: string, filters?: { page?: number; limit?: number }) =>
+      listKey(["forms", formId, "submissions"], filters),
+  },
   emailNotifications: {
     all: () => ["email-notifications"] as const,
     preferences: () => ["email-notifications", "preferences"] as const,

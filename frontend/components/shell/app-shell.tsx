@@ -45,6 +45,7 @@ export function AppShell({
 }: AppShellProps) {
   const pathname = usePathname();
   const contactWorkspace = isContactWorkspacePath(pathname);
+  const fullBleedContent = contactWorkspace;
 
   return (
     <SidebarProvider
@@ -73,7 +74,7 @@ export function AppShell({
           <div
             className={cn(
               "min-h-0 flex-1",
-              contactWorkspace
+              fullBleedContent
                 ? "flex flex-col overflow-hidden p-0"
                 : "overflow-y-auto overflow-x-hidden px-[var(--page-padding-x)] py-[var(--page-padding-y)]",
             )}
