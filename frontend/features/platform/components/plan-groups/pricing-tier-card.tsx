@@ -78,6 +78,11 @@ export type PricingTierCardProps = {
   currency: string;
   cycle: "MONTHLY" | "YEARLY";
   compact?: boolean;
+  currentTierSlug?: string | null;
+  interactive?: boolean;
+  selectLabel?: string;
+  isSelecting?: boolean;
+  onSelect?: () => void;
 };
 
 export function PricingTierCard({
@@ -86,7 +91,15 @@ export function PricingTierCard({
   currency,
   cycle,
   compact = false,
+  currentTierSlug,
+  interactive = false,
+  selectLabel,
+  isSelecting = false,
+  onSelect,
 }: PricingTierCardProps) {
+  const isCurrentPlan = Boolean(
+    currentTierSlug && tier.slug === currentTierSlug,
+  );
   const badge = tierBadge(tier, settings.showBadges);
   const price = cycle === "YEARLY" ? tier.priceYearly : tier.priceMonthly;
   const tierStyles = resolveTierCardStyles(settings, tier.designSettings);
@@ -95,10 +108,10 @@ export function PricingTierCard({
   return (
     <div
       className={cn(
-        "relative flex h-full flex-col gap-[var(--plan-tier-gap,1.25em)] border p-6 transition-shadow",
+        "relative flex h-full flex-col gap-[var(--plan-tier-gap,1.25em)] overflow-visible border p-6 transition-shadow",
         cardWidthClass(settings.cardWidth),
         compact && "p-4",
-        tier.highlighted && "ring-1",
+        (tier.highlighted || isCurrentPlan) && "ring-1",
       )}
       style={{
         ...tierStyle,
@@ -108,16 +121,28 @@ export function PricingTierCard({
             : "var(--plan-card-max-width)",
         background: "var(--plan-tier-card-bg, var(--plan-card-bg))",
         color: "var(--plan-tier-card-text, var(--plan-card-text))",
-        borderColor: tier.highlighted
+        borderColor:
+          tier.highlighted || isCurrentPlan
           ? "var(--plan-accent)"
           : "var(--plan-tier-card-border, var(--plan-card-border))",
         borderRadius: "var(--plan-tier-card-radius, var(--plan-card-radius))",
-        boxShadow: tier.highlighted
+        boxShadow:
+          tier.highlighted || isCurrentPlan
           ? "0 8px 24px color-mix(in srgb, var(--plan-accent) 20%, transparent), 0 0 0 1px var(--plan-accent)"
           : "var(--plan-tier-card-shadow, var(--plan-card-shadow))",
       }}
     >
-      {badge ? (
+      {isCurrentPlan ? (
+        <Badge
+          className="absolute -top-3 left-1/2 z-10 w-max max-w-[calc(100%-1.5rem)] -translate-x-1/2 uppercase tracking-wide"
+          style={{
+            background: "var(--plan-tier-badge-bg, var(--plan-accent))",
+            color: "var(--plan-tier-badge-text, #fff)",
+          }}
+        >
+          Current plan
+        </Badge>
+      ) : badge ? (
         <Badge
           className="w-fit uppercase tracking-wide"
           style={{
@@ -252,28 +277,61 @@ export function PricingTierCard({
       ) : null}
 
       <div className={cn("flex", flexJustifyClass(settings.ctaAlignment))}>
-        <a
-          href={tier.ctaUrl?.trim() || "#"}
-          target="_blank"
-          rel="noopener noreferrer"
-          className={cn(
-            "inline-flex items-center justify-center px-4 py-2 text-sm transition-opacity hover:opacity-90",
-            settings.ctaAlignment === "center" && "w-full",
-            tierStyles.buttonStyle === "outline" && "border",
-          )}
-          style={{
-            background: tierStyles.buttonBackgroundColor,
-            color: tierStyles.buttonTextColor,
-            borderColor:
-              tierStyles.buttonStyle === "outline"
-                ? tierStyles.buttonTextColor
+        {interactive ? (
+          <button
+            type="button"
+            disabled={isCurrentPlan || isSelecting}
+            onClick={onSelect}
+            className={cn(
+              "inline-flex items-center justify-center px-4 py-2 text-sm transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60",
+              settings.ctaAlignment === "center" && "w-full",
+              tierStyles.buttonStyle === "outline" && "border",
+            )}
+            style={{
+              background: isCurrentPlan
+                ? "color-mix(in srgb, var(--plan-accent) 12%, var(--plan-card-bg))"
                 : tierStyles.buttonBackgroundColor,
-            borderRadius: tierStyles.buttonBorderRadius,
-            fontWeight: settings.ctaBold ? 700 : 400,
-          }}
-        >
-          {tier.ctaLabel?.trim() || "Get started"}
-        </a>
+              color: isCurrentPlan
+                ? "var(--plan-accent)"
+                : tierStyles.buttonTextColor,
+              borderColor:
+                tierStyles.buttonStyle === "outline" || isCurrentPlan
+                  ? "var(--plan-accent)"
+                  : tierStyles.buttonBackgroundColor,
+              borderRadius: tierStyles.buttonBorderRadius,
+              fontWeight: settings.ctaBold ? 700 : 400,
+            }}
+          >
+            {isCurrentPlan
+              ? "Current plan"
+              : isSelecting
+                ? "Updating…"
+                : selectLabel || "Select plan"}
+          </button>
+        ) : (
+          <a
+            href={tier.ctaUrl?.trim() || "#"}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={cn(
+              "inline-flex items-center justify-center px-4 py-2 text-sm transition-opacity hover:opacity-90",
+              settings.ctaAlignment === "center" && "w-full",
+              tierStyles.buttonStyle === "outline" && "border",
+            )}
+            style={{
+              background: tierStyles.buttonBackgroundColor,
+              color: tierStyles.buttonTextColor,
+              borderColor:
+                tierStyles.buttonStyle === "outline"
+                  ? tierStyles.buttonTextColor
+                  : tierStyles.buttonBackgroundColor,
+              borderRadius: tierStyles.buttonBorderRadius,
+              fontWeight: settings.ctaBold ? 700 : 400,
+            }}
+          >
+            {tier.ctaLabel?.trim() || "Get started"}
+          </a>
+        )}
       </div>
     </div>
   );

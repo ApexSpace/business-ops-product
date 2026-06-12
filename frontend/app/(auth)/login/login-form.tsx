@@ -51,6 +51,7 @@ export function LoginForm() {
   });
 
   const errorParam = searchParams.get("error");
+  const reasonParam = searchParams.get("reason");
 
   const onSubmit = async (values: LoginFormValues) => {
     setLoading(true);
@@ -80,6 +81,12 @@ export function LoginForm() {
         <CardDescription>Sign in to app.codesoltech.com</CardDescription>
       </CardHeader>
       <CardContent>
+        {reasonParam === "subscription-canceled" ? (
+          <p className="mb-4 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-100">
+            Your subscription was canceled and your workspace access has been
+            removed. Sign in again to open another workspace.
+          </p>
+        ) : null}
         {errorParam === "no_access" ? (
           <p className="mb-4 text-sm text-destructive">
             Your account has no active platform or business access.

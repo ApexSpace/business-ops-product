@@ -3,6 +3,7 @@ import { AuditModule } from '@app/modules/platform/audit/audit.module';
 import { IndustriesModule } from '@app/modules/crm/industries/industries.module';
 import { SnapshotsModule } from '@app/modules/platform/snapshots/snapshots.module';
 import { MembershipModule } from '@app/modules/platform/membership/membership.module';
+import { PlanGroupsModule } from '@app/modules/platform/plan-groups/plan-groups.module';
 import { BusinessController } from './controllers/business.controller';
 import { PlatformBusinessAccessController } from './controllers/platform-business-access.controller';
 import { PlatformBusinessController } from './controllers/platform-business.controller';
@@ -24,12 +25,14 @@ import { BusinessSubscriptionActionAvailabilityService } from './services/busine
 import { BusinessSubscriptionActionService } from './services/business-subscription-action.service';
 import { BusinessSubscriptionEventService } from './services/business-subscription-event.service';
 import { BusinessSubscriptionPaymentService } from './services/business-subscription-payment.service';
+import { BusinessBillingService } from './services/business-billing.service';
 
 @Module({
   imports: [
     AuditModule,
     IndustriesModule,
     SnapshotsModule,
+    PlanGroupsModule,
     forwardRef(() => MembershipModule),
   ],
   controllers: [
@@ -56,6 +59,7 @@ import { BusinessSubscriptionPaymentService } from './services/business-subscrip
     BusinessSubscriptionPaymentService,
     BusinessSubscriptionActionAvailabilityService,
     BusinessSubscriptionActionService,
+    BusinessBillingService,
   ],
   exports: [
     BusinessRepository,

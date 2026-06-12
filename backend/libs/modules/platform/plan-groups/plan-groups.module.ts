@@ -24,6 +24,11 @@ import { PlanValidationService } from './services/plan-validation.service';
     PlanValidationService,
     PlanGroupsRepository,
   ],
-  exports: [PlanGroupsService, PlanGroupsRepository, PlanTierDefaultsService],
+  exports: [
+    PlanGroupsService,
+    PlanGroupsRepository,
+    PlanTierDefaultsService,
+    PlanEmbedService,
+  ],
 })
 export class PlanGroupsModule {}

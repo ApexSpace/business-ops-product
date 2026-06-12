@@ -1,15 +1,16 @@
 "use client";
 
+import { useMemo, useState } from "react";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
+import { ConfirmDeleteDialog } from "@/components/forms/confirm-delete-dialog";
+import { useAuth } from "@/lib/auth/provider";
+import { useAppRouter } from "@/lib/hooks/use-app-router";
 import { useBusinessAccess } from "@/lib/business-access/use-business-access";
 import { getAccessBlockedMessage } from "@/components/business-access/business-access-messages";
-import Link from "next/link";
-import {
-  getBookCallHref,
-  getSupportHref,
-  getSupportMailto,
-} from "@/lib/config/support";
 import { PageHeader } from "@/components/layout/page-header";
-import { Button } from "@/components/ui/button";
+import { ActionButton } from "@/components/ui/action-button";
 import {
   Card,
   CardContent,
@@ -18,6 +19,22 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import {
+  cancelBusinessSubscription,
+  getBusinessPlanOptions,
+} from "@/features/settings/api/business-billing.api";
+import {
+  PlanChangeDialog,
+  type PlanChangeMode,
+} from "@/features/settings/components/plan-change-dialog";
+import {
+  canChangePlanBothWays,
+  canDowngrade,
+  canUpgrade,
+  getPlanChangeButtonLabel,
+  getTierPosition,
+} from "@/features/settings/utils/plan-tier-position.util";
+import { queryKeys } from "@/lib/query/keys";
 
 function formatLabel(value?: string | null): string {
   if (!value) return "—";
@@ -34,7 +51,53 @@ function formatDate(value?: string | null): string {
 }
 
 export function BusinessBillingSettings() {
+  const router = useAppRouter();
+  const { logout } = useAuth();
   const { access, isLoading } = useBusinessAccess();
+  const [planDialogMode, setPlanDialogMode] = useState<PlanChangeMode | null>(
+    null,
+  );
+  const [cancelOpen, setCancelOpen] = useState(false);
+
+  const hasPlanGroup = Boolean(access?.subscription?.planGroupId);
+
+  const { data: planOptions } = useQuery({
+    queryKey: queryKeys.business.planOptions(),
+    queryFn: getBusinessPlanOptions,
+    enabled: hasPlanGroup,
+  });
+
+  const tierPosition = useMemo(
+    () =>
+      getTierPosition(
+        planOptions?.currentPlanTierIndex ?? -1,
+        planOptions?.tiers.length ?? 0,
+      ),
+    [planOptions?.currentPlanTierIndex, planOptions?.tiers.length],
+  );
+
+  const showBothWays = hasPlanGroup && canChangePlanBothWays(tierPosition);
+  const showUpgradeOnly =
+    hasPlanGroup && canUpgrade(tierPosition) && !showBothWays;
+  const showDowngradeOnly =
+    hasPlanGroup && canDowngrade(tierPosition) && !showBothWays;
+  const planChangeLabel = getPlanChangeButtonLabel(tierPosition);
+  const subscriptionStatus = access?.subscription?.status?.toUpperCase();
+  const showCancelSubscription =
+    Boolean(access?.subscription?.id) && subscriptionStatus !== "CANCELED";
+
+  const cancelMutation = useMutation({
+    mutationFn: () => cancelBusinessSubscription(),
+    onSuccess: async () => {
+      setCancelOpen(false);
+      toast.info(
+        "Your subscription has been canceled. Removing workspace access…",
+      );
+      await logout();
+      router.push("/login?reason=subscription-canceled");
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
 
   if (isLoading) {
     return (
@@ -70,23 +133,71 @@ export function BusinessBillingSettings() {
             <CardTitle>Current plan</CardTitle>
             <CardDescription>Package assigned to this workspace.</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-2 text-sm">
-            <div className="flex justify-between gap-4">
-              <span className="text-muted-foreground">Plan group</span>
-              <span>{sub?.planGroupName ?? "—"}</span>
+          <CardContent className="space-y-4 text-sm">
+            <div className="space-y-2">
+              <div className="flex justify-between gap-4">
+                <span className="text-muted-foreground">Plan group</span>
+                <span>{sub?.planGroupName ?? "—"}</span>
+              </div>
+              <div className="flex justify-between gap-4">
+                <span className="text-muted-foreground">Plan tier</span>
+                <span>{sub?.planTierName ?? "—"}</span>
+              </div>
+              <div className="flex justify-between gap-4">
+                <span className="text-muted-foreground">Subscription status</span>
+                <Badge variant="secondary">{formatLabel(sub?.status)}</Badge>
+              </div>
+              <div className="flex justify-between gap-4">
+                <span className="text-muted-foreground">Access status</span>
+                <span>{access?.reasonLabel ?? "—"}</span>
+              </div>
             </div>
-            <div className="flex justify-between gap-4">
-              <span className="text-muted-foreground">Plan tier</span>
-              <span>{sub?.planTierName ?? "—"}</span>
-            </div>
-            <div className="flex justify-between gap-4">
-              <span className="text-muted-foreground">Subscription status</span>
-              <Badge variant="secondary">{formatLabel(sub?.status)}</Badge>
-            </div>
-            <div className="flex justify-between gap-4">
-              <span className="text-muted-foreground">Access status</span>
-              <span>{access?.reasonLabel ?? "—"}</span>
-            </div>
+
+            {showBothWays ||
+            showUpgradeOnly ||
+            showDowngradeOnly ||
+            showCancelSubscription ? (
+              <div className="flex flex-wrap justify-end gap-2 border-t pt-4">
+                {showBothWays ? (
+                  <ActionButton
+                    size="sm"
+                    onClick={() => setPlanDialogMode("both")}
+                  >
+                    <ArrowUpDown className="mr-2 size-4" />
+                    {planChangeLabel}
+                  </ActionButton>
+                ) : null}
+                {showUpgradeOnly ? (
+                  <ActionButton
+                    size="sm"
+                    onClick={() => setPlanDialogMode("upgrade")}
+                  >
+                    <ArrowUp className="mr-2 size-4" />
+                    {planChangeLabel}
+                  </ActionButton>
+                ) : null}
+                {showDowngradeOnly ? (
+                  <ActionButton
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setPlanDialogMode("downgrade")}
+                  >
+                    <ArrowDown className="mr-2 size-4" />
+                    {planChangeLabel}
+                  </ActionButton>
+                ) : null}
+                {showCancelSubscription ? (
+                  <ActionButton
+                    size="sm"
+                    variant="outline"
+                    className="text-destructive hover:text-destructive"
+                    onClick={() => setCancelOpen(true)}
+                  >
+                    Cancel subscription
+                  </ActionButton>
+                ) : null}
+              </div>
+            ) : null}
           </CardContent>
         </Card>
 
@@ -120,36 +231,6 @@ export function BusinessBillingSettings() {
         </Card>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Included capabilities</CardTitle>
-          <CardDescription>
-            Features enabled for this workspace.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {access?.effectiveCapabilities.length ? (
-            <ul className="grid gap-2 sm:grid-cols-2">
-              {access.effectiveCapabilities.map((cap) => (
-                <li
-                  key={cap.id}
-                  className="rounded-md border px-3 py-2 text-sm"
-                >
-                  <p className="font-medium">{cap.name}</p>
-                  {cap.description ? (
-                    <p className="text-muted-foreground">{cap.description}</p>
-                  ) : null}
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-sm text-muted-foreground">
-              No capabilities are assigned yet.
-            </p>
-          )}
-        </CardContent>
-      </Card>
-
       {access?.warnings.length ? (
         <Card>
           <CardHeader>
@@ -165,40 +246,22 @@ export function BusinessBillingSettings() {
         </Card>
       ) : null}
 
-      <div className="flex flex-wrap gap-2">
-        <Button nativeButton={false} render={<a href={getSupportHref()} />}>
-          Contact support
-        </Button>
-        <Button
-          variant="outline"
-          nativeButton={false}
-          render={<a href={getSupportMailto("Request plan upgrade")} />}
-        >
-          Request upgrade
-        </Button>
-        {getBookCallHref() ? (
-          <Button
-            variant="outline"
-            nativeButton={false}
-            render={
-              <a
-                href={getBookCallHref()!}
-                target="_blank"
-                rel="noreferrer"
-              />
-            }
-          >
-            Book call
-          </Button>
-        ) : null}
-        <Button
-          variant="ghost"
-          nativeButton={false}
-          render={<Link href="/business/dashboard" />}
-        >
-          Go to dashboard
-        </Button>
-      </div>
+      <PlanChangeDialog
+        open={planDialogMode !== null}
+        onOpenChange={(open) => !open && setPlanDialogMode(null)}
+        mode={planDialogMode ?? "both"}
+      />
+
+      <ConfirmDeleteDialog
+        open={cancelOpen}
+        onOpenChange={setCancelOpen}
+        title="Cancel subscription?"
+        description="Your subscription will end immediately, your workspace access will be removed, and you will be signed out."
+        confirmLabel="Cancel subscription"
+        pendingLabel="Canceling…"
+        isPending={cancelMutation.isPending}
+        onConfirm={() => cancelMutation.mutate()}
+      />
     </div>
   );
 }

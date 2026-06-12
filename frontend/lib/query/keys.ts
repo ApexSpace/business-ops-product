@@ -39,6 +39,7 @@ export const queryKeys = {
     members: (filters?: { page?: number; limit?: number; search?: string }) =>
       listKey(["business", "members"], filters),
     dashboardStats: () => ["business", "dashboard-stats"] as const,
+    planOptions: () => ["business", "plan-options"] as const,
   },
   services: {
     all: () => ["services"] as const,

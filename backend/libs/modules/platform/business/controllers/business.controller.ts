@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Patch, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Patch, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { BusinessMemberRole } from '@prisma/client';
 import { CurrentUser } from '@app/common/decorators/current-user.decorator';
@@ -12,6 +12,9 @@ import { BusinessAccessService } from '@app/modules/platform/business/services/b
 import { BusinessService } from '@app/modules/platform/business/services/business.service';
 import { DashboardStatsService } from '@app/modules/platform/business/services/dashboard-stats.service';
 import { FinancialSettingsService } from '@app/modules/platform/business/services/financial-settings.service';
+import { BusinessBillingService } from '@app/modules/platform/business/services/business-billing.service';
+import { CancelBusinessSubscriptionDto } from '../dto/cancel-business-subscription.dto';
+import { ChangeBusinessPlanTierDto } from '../dto/change-business-plan-tier.dto';
 
 @ApiTags('business')
 @ApiBearerAuth()
@@ -23,6 +26,7 @@ export class BusinessController {
     private readonly businessAccessService: BusinessAccessService,
     private readonly dashboardStatsService: DashboardStatsService,
     private readonly financialSettingsService: FinancialSettingsService,
+    private readonly businessBillingService: BusinessBillingService,
   ) {}
 
   @Get('current')
@@ -64,6 +68,42 @@ export class BusinessController {
     @Body() dto: UpdateBusinessDto,
   ) {
     return this.businessService.updateCurrent(user.businessId!, dto, user);
+  }
+
+  @Get('current/plan-options')
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
+  getCurrentPlanOptions(@CurrentUser() user: RequestUser) {
+    return this.businessBillingService.getCurrentPlanOptions(user.businessId!);
+  }
+
+  @Post('current/change-plan-tier')
+  @BusinessRoles(BusinessMemberRole.OWNER, BusinessMemberRole.ADMIN)
+  changeCurrentPlanTier(
+    @CurrentUser() user: RequestUser,
+    @Body() dto: ChangeBusinessPlanTierDto,
+  ) {
+    return this.businessBillingService.changeCurrentPlanTier(
+      user.businessId!,
+      dto,
+      user,
+    );
+  }
+
+  @Post('current/cancel-subscription')
+  @BusinessRoles(BusinessMemberRole.OWNER, BusinessMemberRole.ADMIN)
+  cancelCurrentSubscription(
+    @CurrentUser() user: RequestUser,
+    @Body() dto: CancelBusinessSubscriptionDto,
+  ) {
+    return this.businessBillingService.cancelCurrentSubscription(
+      user.businessId!,
+      dto,
+      user,
+    );
   }
 
   @Get('current/financial-settings')
