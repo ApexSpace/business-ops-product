@@ -2,9 +2,20 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { useBusinessEvents } from "@/features/realtime/hooks/use-business-events";
+import { RealtimeModeProvider } from "@/features/realtime/realtime-mode-context";
 import { getCurrentBusiness } from "@/features/settings/api/business.api";
 import { queryKeys } from "@/lib/query/keys";
-import type { Business } from "@/lib/types/shared";
+
+function BusinessRealtimeConnection({
+  businessId,
+  children,
+}: {
+  businessId: string | undefined;
+  children: React.ReactNode;
+}) {
+  useBusinessEvents(businessId);
+  return <>{children}</>;
+}
 
 export function BusinessRealtimeProvider({
   children,
@@ -16,7 +27,11 @@ export function BusinessRealtimeProvider({
     queryFn: getCurrentBusiness,
   });
 
-  useBusinessEvents(business?.id);
-
-  return <>{children}</>;
+  return (
+    <RealtimeModeProvider>
+      <BusinessRealtimeConnection businessId={business?.id}>
+        {children}
+      </BusinessRealtimeConnection>
+    </RealtimeModeProvider>
+  );
 }

@@ -17,6 +17,7 @@ import { BusinessIntegrationRepository } from '@app/modules/integrations/integra
 import type { ChannelMessageAttachment } from '@app/modules/communications/conversations/adapters/conversation-channel-adapter.interface';
 import { previewFromMessageContent } from '@app/modules/communications/conversations/adapters/meta/meta-attachment.util';
 import { ConversationRealtimeService } from '@app/modules/communications/conversations/services/conversation-realtime.service';
+import { ConversationWebhookIngestionService } from '@app/modules/communications/conversations/services/conversation-webhook-ingestion.service';
 
 @Injectable()
 export class SendMessageProcessor {
@@ -30,6 +31,7 @@ export class SendMessageProcessor {
     private readonly asyncJobRepository: AsyncJobRepository,
     private readonly idempotencyService: IdempotencyService,
     private readonly realtime: ConversationRealtimeService,
+    private readonly conversationWebhookIngestion: ConversationWebhookIngestionService,
   ) {}
 
   async process(payload: SendOutboundMessagePayload): Promise<void> {
@@ -119,8 +121,10 @@ export class SendMessageProcessor {
         },
       });
 
+      const externalMessageId = result.externalMessageId?.trim() || undefined;
+
       await this.messagesRepository.update(message.id, {
-        externalMessageId: result.externalMessageId ?? undefined,
+        externalMessageId,
         status: MessageStatus.SENT,
         sentAt: now,
         metadata: (result.metadata ?? undefined) as
@@ -128,16 +132,31 @@ export class SendMessageProcessor {
           | undefined,
       });
 
+      if (
+        externalMessageId &&
+        conversation.channel === ConversationChannel.WHATSAPP
+      ) {
+        await this.conversationWebhookIngestion.replayBufferedWhatsAppDeliveryStatuses(
+          externalMessageId,
+        );
+      }
+
       await this.conversationsRepository.update(conversation.id, {
         lastMessageAt: now,
         lastMessagePreview: preview,
         unreadCount: 0,
       });
 
+      const freshMessage = await this.messagesRepository.findById(
+        payload.businessId,
+        message.id,
+      );
+      const finalStatus = freshMessage?.status ?? MessageStatus.SENT;
+
       await this.realtime.publishMessageUpdated(payload.businessId, {
         conversationId: conversation.id,
         messageId: message.id,
-        status: MessageStatus.SENT,
+        status: finalStatus,
         channel: conversation.channel,
       });
 
@@ -148,7 +167,7 @@ export class SendMessageProcessor {
 
       await this.asyncJobRepository.markCompleted(payload.asyncJobId, {
         messageId: message.id,
-        status: MessageStatus.SENT,
+        status: finalStatus,
       });
     } catch (error) {
       const errorMessage =

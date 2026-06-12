@@ -1,6 +1,7 @@
 import { randomUUID } from 'crypto';
 import { HttpStatus, Injectable } from '@nestjs/common';
 import {
+  Contact,
   ConversationChannel,
   ConversationDirection,
   ConversationStatus,
@@ -97,11 +98,22 @@ export class EmailConversationsService {
       );
     }
 
-    let contact =
-      (dto.contactId
-        ? await this.contactRepository.findById(businessId, dto.contactId)
-        : null) ??
-      (await this.contactRepository.findByEmail(businessId, toEmail));
+    let contact: Contact | null = null;
+
+    if (dto.contactId) {
+      contact = await this.contactRepository.findById(businessId, dto.contactId);
+      if (!contact) {
+        throw new AppException(
+          ErrorCode.CONTACT_NOT_FOUND,
+          'Contact not found',
+          HttpStatus.NOT_FOUND,
+        );
+      }
+    }
+
+    if (!contact) {
+      contact = await this.contactRepository.findByEmail(businessId, toEmail);
+    }
 
     if (!contact) {
       const localPart = toEmail.split('@')[0] ?? toEmail;
@@ -122,19 +134,41 @@ export class EmailConversationsService {
       );
     }
 
+    const participantEmail =
+      contact.email?.trim().toLowerCase() || toEmail;
+
     const existing =
       await this.conversationsRepository.findByExternalParticipantId(
         businessId,
         ConversationChannel.EMAIL,
-        toEmail,
+        participantEmail,
       );
 
     if (existing) {
-      const response: ConversationResponseDto = toConversationResponse(existing);
+      if (existing.contactId !== contact.id) {
+        await this.conversationsRepository.update(existing.id, {
+          contact: { connect: { id: contact.id } },
+        });
+      }
+
+      const conversation = await this.conversationsRepository.findById(
+        businessId,
+        existing.id,
+      );
+      if (!conversation) {
+        throw new AppException(
+          ErrorCode.CONVERSATION_NOT_FOUND,
+          'Conversation not found',
+          HttpStatus.NOT_FOUND,
+        );
+      }
+
+      const response: ConversationResponseDto =
+        toConversationResponse(conversation);
       if (dto.text?.trim()) {
         await this.conversationMessagesService.send(
           businessId,
-          existing.id,
+          conversation.id,
           { text: dto.text.trim(), subject: dto.subject },
           actor,
         );
@@ -151,9 +185,9 @@ export class EmailConversationsService {
       providerKey: EMAIL_PROVIDER_KEY,
       resourceId: resource.id,
       externalConversationId: conversationId,
-      externalParticipantId: toEmail,
+      externalParticipantId: participantEmail,
       externalPageId: fromAddress,
-      title: dto.subject?.trim() || toEmail,
+      title: dto.subject?.trim() || participantEmail,
       status: ConversationStatus.OPEN,
       lastMessageAt: new Date(),
       lastMessagePreview: dto.text?.trim()?.slice(0, 500) ?? null,

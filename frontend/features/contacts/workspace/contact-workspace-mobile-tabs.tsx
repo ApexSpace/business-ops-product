@@ -18,7 +18,7 @@ interface ContactWorkspaceMobileTabsProps {
   activeSection: ContactRecordsSectionId;
   onSectionChange: (section: ContactRecordsSectionId) => void;
   onRailSelect: (item: ContactRailItem) => void;
-  detailsPanel: ReactNode;
+  sidebarPanel: ReactNode;
   conversationPanel: ReactNode;
   recordsPanelProps: React.ComponentProps<typeof ContactRecordsPanel>;
 }
@@ -28,7 +28,7 @@ export function ContactWorkspaceMobileTabs({
   onMobilePanelChange,
   activeSection,
   onRailSelect,
-  detailsPanel,
+  sidebarPanel,
   conversationPanel,
   recordsPanelProps,
   onSectionChange,
@@ -42,7 +42,7 @@ export function ContactWorkspaceMobileTabs({
       >
         <TabsList className="mx-2 mt-2 grid h-10 shrink-0 grid-cols-4 px-0 sm:mx-2.5">
           <TabsTrigger value="details" className="text-xs">
-            Details
+            Contact
           </TabsTrigger>
           <TabsTrigger value="conversation" className="text-xs">
             Messages
@@ -61,7 +61,7 @@ export function ContactWorkspaceMobileTabs({
             WORKSPACE_PADDING_CLASS,
           )}
         >
-          {detailsPanel}
+          {sidebarPanel}
         </TabsContent>
         <TabsContent
           value="conversation"

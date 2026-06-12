@@ -233,6 +233,12 @@ export class ConversationMessagesService {
           : undefined,
     });
 
+    await this.conversationsRepository.update(conversation.id, {
+      lastMessageAt: message.createdAt,
+      lastMessagePreview: preview,
+      unreadCount: 0,
+    });
+
     const { asyncJob } = await this.outboundMessageDispatch.dispatch(
       {
         messageId: message.id,

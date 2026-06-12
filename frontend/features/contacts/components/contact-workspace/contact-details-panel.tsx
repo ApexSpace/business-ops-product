@@ -6,10 +6,8 @@ import {
   ChevronRight,
   Pencil,
   Trash2,
-  Users,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import { ActionButton } from "@/components/ui/action-button";
 import { Button } from "@/components/ui/button";
 import { IconButton } from "@/components/ui/icon-button";
@@ -181,23 +179,6 @@ export function ContactDetailsPanel({
               </div>
             </div>
           </div>
-
-          <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
-            <Users className="size-3.5 shrink-0" />
-            <span>Followers — coming soon</span>
-          </div>
-
-          {contact.tags.length > 0 ? (
-            <div className="mt-3 flex flex-wrap gap-1">
-              {contact.tags.map((tag) => (
-                <Badge key={tag.id} variant="secondary" className="text-xs">
-                  {tag.name}
-                </Badge>
-              ))}
-            </div>
-          ) : (
-            <p className="mt-3 text-xs text-muted-foreground">No tags</p>
-          )}
         </div>
 
         <section className="space-y-3 px-4 pb-4 pt-1">
@@ -223,12 +204,6 @@ export function ContactDetailsPanel({
           {additionalFields.map((f) => (
             <DetailField key={f.label} label={f.label} value={f.value} />
           ))}
-
-          <DetailField
-            label="Followers"
-            value={null}
-            placeholder="Coming soon"
-          />
         </section>
 
         <Separator />

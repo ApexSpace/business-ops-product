@@ -3,7 +3,7 @@
 import { EmptyState } from "@/components/data-display/empty-state";
 import { ContactActionRail } from "@/features/contacts/components/contact-workspace/contact-action-rail";
 import { ContactConversationPanel } from "@/features/contacts/components/contact-workspace/contact-conversation-panel";
-import { ContactDetailsPanel } from "@/features/contacts/components/contact-workspace/contact-details-panel";
+import { ContactSidebarPanel } from "@/features/contacts/components/contact-workspace/contact-sidebar-panel";
 import { ContactRecordsPanel } from "@/features/contacts/components/contact-workspace/contact-records-panel";
 import { ContactWorkspaceColumns } from "@/features/contacts/components/contact-workspace/contact-workspace-columns";
 import { ContactWorkspaceShell } from "@/features/contacts/components/contact-workspace/contact-workspace-shell";
@@ -82,7 +82,6 @@ export function ContactWorkspaceView(state: ContactWorkspaceState) {
           <Skeleton className="h-full min-h-0 rounded-2xl" />
           <Skeleton className="h-full min-h-0 rounded-2xl" />
           <Skeleton className="h-full min-h-0 rounded-2xl" />
-          <Skeleton className="h-full min-h-0 rounded-2xl" />
         </div>
       </ContactWorkspaceShell>
     );
@@ -150,12 +149,10 @@ export function ContactWorkspaceView(state: ContactWorkspaceState) {
     className: "h-full w-full min-w-0" as const,
   };
 
-  const detailsPanel = (
-    <ContactDetailsPanel
-      contact={contact}
-      leads={leads}
-      contactTotal={contactTotal}
-      onBack={() => router.push("/business/contacts")}
+  const sidebarPanel = (
+    <ContactSidebarPanel
+      {...recordsPanelProps}
+      activeSection={activeSection}
       onEdit={() => setEditOpen(true)}
       onDelete={() => setDeleteContactOpen(true)}
       className="h-full w-full min-w-0"
@@ -166,6 +163,8 @@ export function ContactWorkspaceView(state: ContactWorkspaceState) {
     <ContactConversationPanel
       contactId={contact.id}
       contactName={contact.label}
+      contactAvatarUrl={contact.avatarUrl}
+      businessName={business?.name}
       className="h-full w-full min-w-0"
     />
   );
@@ -180,16 +179,8 @@ export function ContactWorkspaceView(state: ContactWorkspaceState) {
     <TooltipProvider>
       <ContactWorkspaceShell>
         <ContactWorkspaceColumns
-          details={detailsPanel}
           conversation={conversationPanel}
-          records={<ContactRecordsPanel {...recordsPanelProps} />}
-          tabletRecords={
-            <ContactRecordsPanel
-              {...recordsPanelProps}
-              showSectionPicker
-              onSectionChange={setActiveSection}
-            />
-          }
+          sidebar={sidebarPanel}
           rail={
             <ContactActionRail
               activeSection={activeSection}
@@ -205,7 +196,7 @@ export function ContactWorkspaceView(state: ContactWorkspaceState) {
           activeSection={activeSection}
           onSectionChange={setActiveSection}
           onRailSelect={handleRailSelect}
-          detailsPanel={detailsPanel}
+          sidebarPanel={sidebarPanel}
           conversationPanel={conversationPanel}
           recordsPanelProps={recordsPanelProps}
         />

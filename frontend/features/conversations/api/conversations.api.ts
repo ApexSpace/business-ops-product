@@ -14,6 +14,7 @@ export type ConversationStatus = "OPEN" | "PENDING" | "CLOSED" | "SPAM";
 export type ConversationDirection = "INBOUND" | "OUTBOUND";
 
 export type MessageStatus =
+  | "PENDING"
   | "RECEIVED"
   | "SENT"
   | "DELIVERED"
@@ -33,6 +34,21 @@ export interface ConversationAssignee {
   firstName: string | null;
   lastName: string | null;
   email: string;
+}
+
+export interface UnifiedConversationThread {
+  threadKey: string;
+  contactId: string | null;
+  contact: ConversationContactSummary | null;
+  channels: ConversationChannel[];
+  conversations: Conversation[];
+  primaryConversationId: string;
+  status: ConversationStatus;
+  assignedToUserId: string | null;
+  assignedTo: ConversationAssignee | null;
+  lastMessageAt: string | null;
+  lastMessagePreview: string | null;
+  unreadCount: number;
 }
 
 export interface Conversation {
@@ -105,6 +121,26 @@ export async function listConversations(filters: ConversationListFilters = {}) {
       assignedToMe: filters.assignedToMe ? "true" : undefined,
     },
   });
+  return { items, meta };
+}
+
+export async function listUnifiedConversations(
+  filters: ConversationListFilters = {},
+) {
+  const { items, meta } = await api.getPaginated<UnifiedConversationThread>(
+    "conversations/unified",
+    {
+      searchParams: {
+        page: filters.page,
+        limit: filters.limit,
+        channel: filters.channel,
+        status: filters.status,
+        search: filters.search,
+        contactId: filters.contactId,
+        assignedToMe: filters.assignedToMe ? "true" : undefined,
+      },
+    },
+  );
   return { items, meta };
 }
 
@@ -249,6 +285,76 @@ export function assignConversation(
 export function getMessagingStatus(providerKey: string) {
   return api.get<MessagingStatus>(
     `integrations/business/${providerKey}/messaging-status`,
+  );
+}
+
+export interface ContactReplyChannel {
+  channel: ConversationChannel;
+  providerKey: string;
+  conversationId: string | null;
+  readyForMessaging: boolean;
+  messagingStatus: MessagingStatus;
+  unavailableReason: string | null;
+}
+
+export async function listContactMessages(
+  contactId: string,
+  options: {
+    limit?: number;
+    cursor?: string;
+    direction?: "before" | "after";
+    latest?: boolean;
+  } = {},
+) {
+  const { limit = 50, cursor, direction, latest } = options;
+  const searchParams: Record<string, string | number | boolean | undefined> = {
+    limit,
+  };
+
+  if (cursor) searchParams.cursor = cursor;
+  if (direction) searchParams.direction = direction;
+  if (latest) searchParams.latest = true;
+
+  const { data, meta } = await api.getEnvelope<ConversationMessage[]>(
+    `contacts/${contactId}/messages`,
+    { searchParams },
+  );
+  const items = Array.isArray(data) ? data : [];
+
+  return {
+    items,
+    meta: {
+      limit,
+      nextCursor:
+        typeof meta.nextCursor === "string" || meta.nextCursor === null
+          ? meta.nextCursor
+          : undefined,
+      prevCursor:
+        typeof meta.prevCursor === "string" || meta.prevCursor === null
+          ? meta.prevCursor
+          : undefined,
+      hasMore: meta.hasMore === true,
+    },
+  };
+}
+
+export function listContactReplyChannels(contactId: string) {
+  return api.get<ContactReplyChannel[]>(`contacts/${contactId}/reply-channels`);
+}
+
+export type EnsureContactConversationInput = {
+  channel: "EMAIL" | "WHATSAPP" | "FACEBOOK" | "INSTAGRAM";
+  subject?: string;
+  text?: string;
+};
+
+export function ensureContactConversation(
+  contactId: string,
+  input: EnsureContactConversationInput,
+) {
+  return api.post<Conversation>(
+    `contacts/${contactId}/conversations/ensure`,
+    input,
   );
 }
 

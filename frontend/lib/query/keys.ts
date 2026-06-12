@@ -191,9 +191,15 @@ export const queryKeys = {
     all: () => ["conversations"] as const,
     list: (filters?: Record<string, string | number | undefined | null>) =>
       listKey(["conversations", "list"], filters),
+    unifiedList: (filters?: Record<string, string | number | undefined | null>) =>
+      listKey(["conversations", "unified", "list"], filters),
     detail: (id: string) => ["conversations", "detail", id] as const,
     messages: (id: string, page?: number) =>
       ["conversations", id, "messages", page ?? 1] as const,
+    contactMessages: (contactId: string, page?: number) =>
+      ["conversations", "contacts", contactId, "messages", page ?? 0] as const,
+    replyChannels: (contactId: string) =>
+      ["conversations", "contacts", contactId, "reply-channels"] as const,
     byContact: (contactId: string) =>
       ["conversations", "by-contact", contactId] as const,
   },

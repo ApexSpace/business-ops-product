@@ -15,8 +15,11 @@ import { previewFromMessageContent } from '../adapters/meta/meta-attachment.util
 import {
   extractWhatsAppDeliveryStatuses,
   normalizeMetaWebhookPayload,
+  type NormalizedWhatsAppDeliveryStatus,
 } from '../adapters/meta/meta-inbound-normalizer';
+import { WhatsAppDeliveryStatusBufferService } from './whatsapp-delivery-status-buffer.service';
 import { NormalizedInboundMessage } from '../adapters/meta/meta-inbound.types';
+import { toConversationMessageResponse } from '../mappers/conversation.mapper';
 import { ConversationContactResolverService } from './conversation-contact-resolver.service';
 import { ConversationRealtimeService } from './conversation-realtime.service';
 import { ConversationIntegrationRepository } from '../repositories/conversation-integration.repository';
@@ -40,7 +43,24 @@ export class ConversationWebhookIngestionService {
     private readonly auditService: AuditService,
     private readonly prisma: PrismaService,
     private readonly realtime: ConversationRealtimeService,
+    private readonly whatsAppDeliveryStatusBuffer: WhatsAppDeliveryStatusBufferService,
   ) {}
+
+  /** Replays delivery/read webhooks that arrived before outbound wamid was persisted. */
+  async replayBufferedWhatsAppDeliveryStatuses(
+    externalMessageId: string,
+  ): Promise<void> {
+    const buffered =
+      await this.whatsAppDeliveryStatusBuffer.takeAll(externalMessageId);
+    if (buffered.length === 0) {
+      return;
+    }
+
+    this.logger.log(
+      `Replaying ${buffered.length} buffered WhatsApp status update(s) for ${externalMessageId}`,
+    );
+    await this.applyWhatsAppDeliveryStatuses(buffered, { fromReplay: true });
+  }
 
   async ingestNormalizedInbound(inbound: NormalizedInboundMessage): Promise<void> {
     await this.ingestInboundMessage(inbound, null);
@@ -229,6 +249,7 @@ export class ConversationWebhookIngestionService {
       messageId: createdMessage.id,
       status: MessageStatus.RECEIVED,
       channel: inbound.channel,
+      message: toConversationMessageResponse(createdMessage),
     });
 
     await this.realtime.publishConversationUpdated(businessId, {
@@ -250,7 +271,8 @@ export class ConversationWebhookIngestionService {
   }
 
   private async applyWhatsAppDeliveryStatuses(
-    statuses: ReturnType<typeof extractWhatsAppDeliveryStatuses>,
+    statuses: NormalizedWhatsAppDeliveryStatus[],
+    options?: { fromReplay?: boolean },
   ): Promise<void> {
     for (const status of statuses) {
       const message =
@@ -259,6 +281,16 @@ export class ConversationWebhookIngestionService {
           status.externalMessageId,
         );
       if (!message) {
+        if (!options?.fromReplay) {
+          await this.whatsAppDeliveryStatusBuffer.buffer(status);
+          this.logger.debug(
+            `Buffered WhatsApp ${status.status} for ${status.externalMessageId} (outbound row not ready)`,
+          );
+        } else {
+          this.logger.warn(
+            `WhatsApp ${status.status} for ${status.externalMessageId} could not be applied after replay`,
+          );
+        }
         continue;
       }
 

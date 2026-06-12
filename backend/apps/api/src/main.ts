@@ -7,6 +7,11 @@ import { Logger } from 'nestjs-pino';
 import { AllExceptionsFilter } from '@app/common/filters/all-exceptions.filter';
 import { TransformInterceptor } from '@app/common/interceptors/transform.interceptor';
 import { RootConfig } from '@app/core/config/configuration';
+import {
+  isRealtimeWebSocketEnabled,
+  resolveRealtimeConfig,
+} from '@app/core/realtime/realtime.config';
+import { RealtimeIoAdapter } from '@app/core/realtime/realtime-io.adapter';
 import { ApiModule } from './api.module';
 
 async function bootstrap(): Promise<void> {
@@ -35,6 +40,13 @@ async function bootstrap(): Promise<void> {
     origin: corsOrigin === '*' ? true : corsOrigin.split(','),
     credentials: true,
   });
+
+  if (isRealtimeWebSocketEnabled()) {
+    const realtimeConfig = resolveRealtimeConfig(process.env);
+    app.useWebSocketAdapter(
+      new RealtimeIoAdapter(app, realtimeConfig.corsOrigin),
+    );
+  }
 
   app.useGlobalPipes(
     new ValidationPipe({

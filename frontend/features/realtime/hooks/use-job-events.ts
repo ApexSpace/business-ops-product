@@ -2,19 +2,21 @@
 
 import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { SseClient } from "@/features/realtime/sse-client";
 import { handleRealtimeEvent } from "@/features/realtime/event-handlers";
-import { isFeatureEnabled } from "@/lib/config/feature-flags";
+import { isAnyRealtimeTransportEnabled } from "@/features/realtime/realtime-polling";
+import { RealtimeClient } from "@/features/realtime/transport/realtime-client";
+import { fetchWsAccessToken } from "@/lib/realtime/fetch-ws-access-token";
 import { queryKeys } from "@/lib/query/keys";
 
 export function useJobEvents(businessId: string | undefined) {
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    if (!businessId || !isFeatureEnabled("realtimeSse")) return;
+    if (!businessId || !isAnyRealtimeTransportEnabled()) return;
 
-    const client = new SseClient({
+    const client = new RealtimeClient({
       businessId,
+      getAccessToken: fetchWsAccessToken,
       maxRetries: 8,
       maxBackoffMs: 30_000,
       onEvent: (payload) => {
