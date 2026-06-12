@@ -2,6 +2,7 @@ import {
   Bell,
   Briefcase,
   Calendar,
+  ClipboardList,
   CreditCard,
   GitBranch,
   MessageSquare,
@@ -63,6 +64,11 @@ const websiteItems: BusinessSettingsNavItem[] = [
     title: "Chatbots",
     href: "/business/settings/chatbots",
     icon: MessageSquare,
+  },
+  {
+    title: "Forms",
+    href: "/business/settings/forms",
+    icon: ClipboardList,
   },
 ];
 

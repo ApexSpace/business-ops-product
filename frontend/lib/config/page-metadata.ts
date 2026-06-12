@@ -145,6 +145,24 @@ const businessRoutes: Record<string, RouteEntry> = {
       { label: "Chatbots" },
     ],
   },
+  "/business/settings/forms": {
+    title: "Forms",
+    description:
+      "Build and manage lead capture forms for your website and landing pages.",
+    breadcrumbs: [
+      { label: "Settings", href: "/business/settings/profile" },
+      { label: "Forms" },
+    ],
+  },
+  "/business/settings/forms/new": {
+    title: "New form",
+    description: "Design a new lead capture form.",
+    breadcrumbs: [
+      { label: "Settings", href: "/business/settings/profile" },
+      { label: "Forms", href: "/business/settings/forms" },
+      { label: "New" },
+    ],
+  },
   "/business/settings/billing": {
     title: "Plan & Billing",
     description:
@@ -354,6 +372,30 @@ export function resolvePageMetadata(
         { label: "Settings", href: "/business/settings/profile" },
         { label: "Chatbots", href: "/business/settings/chatbots" },
         { label: "Edit" },
+      ],
+    };
+  }
+
+  if (pathname.match(/^\/business\/settings\/forms\/[^/]+\/edit$/)) {
+    return {
+      title: "Edit form",
+      description: "Design fields, validation, and submission settings.",
+      breadcrumbs: [
+        { label: "Settings", href: "/business/settings/profile" },
+        { label: "Forms", href: "/business/settings/forms" },
+        { label: "Edit" },
+      ],
+    };
+  }
+
+  if (pathname.match(/^\/business\/settings\/forms\/[^/]+\/submissions$/)) {
+    return {
+      title: "Form submissions",
+      description: "Review and manage responses collected from this form.",
+      breadcrumbs: [
+        { label: "Settings", href: "/business/settings/profile" },
+        { label: "Forms", href: "/business/settings/forms" },
+        { label: "Submissions" },
       ],
     };
   }

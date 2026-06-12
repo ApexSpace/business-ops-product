@@ -188,3 +188,28 @@ export function invalidatePlatformAuditLogs(queryClient: QueryClient) {
     queryKey: queryKeys.platform.auditLogs.all(),
   });
 }
+
+export function invalidateFormLists(queryClient: QueryClient) {
+  return queryClient.invalidateQueries({
+    queryKey: queryKeys.forms.all(),
+    predicate: (query) => {
+      const key = query.queryKey;
+      return key[1] === "list" || key.length === 1;
+    },
+  });
+}
+
+export function invalidateFormDetail(queryClient: QueryClient, id: string) {
+  return queryClient.invalidateQueries({
+    queryKey: queryKeys.forms.detail(id),
+  });
+}
+
+export function invalidateFormSubmissions(
+  queryClient: QueryClient,
+  formId: string,
+) {
+  return queryClient.invalidateQueries({
+    queryKey: ["forms", formId, "submissions"],
+  });
+}

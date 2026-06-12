@@ -44,12 +44,25 @@ describe('CapabilityModulesService', () => {
     expect(catalog.every((m) => m.featureCount > 0)).toBe(true);
     expect(catalog.every((m) => !('features' in m))).toBe(true);
     expect(catalog.map((m) => m.moduleKey)).not.toEqual(
-      expect.arrayContaining(['forms', 'automation', 'email_marketing']),
+      expect.arrayContaining(['automation', 'email_marketing']),
     );
+    expect(catalog.map((m) => m.moduleKey)).not.toContain('forms');
     const settings = catalog.find((m) => m.moduleKey === 'settings');
     expect(
       settings?.availableOptions.some((o) => o.key === 'settings.team'),
     ).toBe(true);
+    expect(settings?.availableOptions.map((o) => o.key)).toEqual(
+      expect.arrayContaining([
+        'settings.forms.list',
+        'settings.forms.create',
+        'settings.forms.edit',
+        'settings.forms.delete',
+      ]),
+    );
+    const formsOptions = settings?.availableOptions.filter((o) =>
+      o.key.startsWith('settings.forms.'),
+    );
+    expect([...new Set(formsOptions?.map((o) => o.group))]).toEqual(['Forms']);
     const payments = catalog.find((m) => m.moduleKey === 'payments');
     expect(payments?.availableOptions.map((o) => o.key)).toEqual(
       expect.arrayContaining([

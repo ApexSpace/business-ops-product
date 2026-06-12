@@ -9,6 +9,7 @@ import {
   businessSettingsSections,
   isBusinessSettingsPath,
 } from "@/lib/config/navigation/business-settings-menu";
+import { isFullScreenEditorRoute } from "@/lib/config/navigation/full-screen-editor-routes";
 import {
   platformBrand,
   platformOperationalSections,
@@ -117,6 +118,32 @@ export function AppShellLayout({ mode, children }: ShellLayoutProps) {
     jwt,
     user?.contexts,
   );
+
+  const fullScreenEditor = isFullScreenEditorRoute(pathname);
+
+  if (fullScreenEditor) {
+    return (
+      <>
+        {sessionError ? (
+          <ServiceUnavailableBanner
+            error={sessionError}
+            onRetry={() => void refreshSession()}
+          />
+        ) : null}
+        {mode === "business" ? (
+          <BusinessAccessGate>
+            <div className="flex h-svh min-h-0 flex-col overflow-hidden bg-background">
+              {children}
+            </div>
+          </BusinessAccessGate>
+        ) : (
+          <div className="flex h-svh min-h-0 flex-col overflow-hidden bg-background">
+            {children}
+          </div>
+        )}
+      </>
+    );
+  }
 
   const shell = (
     <AppShell

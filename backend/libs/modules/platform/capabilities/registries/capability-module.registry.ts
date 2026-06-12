@@ -209,7 +209,6 @@ function integrationProviderOptions(): RegistryModuleOption[] {
  * Platform module catalog — primary admin-facing unit.
  *
  * Removed modules (no shipped business UI as of 2026-06-08):
- * - forms — no form builder or submissions pages
  * - automation — /business/settings/automations is a placeholder only
  * - email_marketing — no campaigns, templates, or automations UI
  */
@@ -628,6 +627,18 @@ export const REGISTRY_MODULES: RegistryModuleDefinition[] = [
         icon: 'message-square',
         group: 'Website',
       }),
+      ...crudOptions(
+        'settings',
+        'Forms',
+        'lead capture forms',
+        'forms.builder.read',
+        'forms.builder.write',
+        ['/business/settings/forms'],
+        'clipboard-list',
+        true,
+        'Forms',
+        'forms',
+      ),
       option('settings', 'automations', {
         name: 'Automations',
         description: 'Workflow automations (placeholder UI).',

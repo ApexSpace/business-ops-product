@@ -4,5 +4,7 @@ export default function BusinessSettingsLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return <div className="w-full min-w-0">{children}</div>;
+  return (
+    <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col">{children}</div>
+  );
 }
