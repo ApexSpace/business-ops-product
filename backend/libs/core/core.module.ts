@@ -10,7 +10,6 @@ import { QueueModule } from './queue/queue.module';
 import { RealtimeModule } from './realtime/realtime.module';
 import { RedisModule } from './redis/redis.module';
 import { SearchModule } from './search/search.module';
-import { StorageModule } from './storage/storage.module';
 
 @Global()
 @Module({
@@ -21,7 +20,6 @@ import { StorageModule } from './storage/storage.module';
     QueueModule,
     IdempotencyModule,
     JobEnqueueModule,
-    StorageModule,
     SearchModule,
     EventBusModule,
     RealtimeModule,
@@ -35,7 +33,6 @@ import { StorageModule } from './storage/storage.module';
     QueueModule,
     IdempotencyModule,
     JobEnqueueModule,
-    StorageModule,
     SearchModule,
     EventBusModule,
     RealtimeModule,

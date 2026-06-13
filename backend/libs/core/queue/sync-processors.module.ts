@@ -2,6 +2,7 @@ import { Module, forwardRef } from '@nestjs/common';
 import { GoogleCalendarSyncModule } from '@app/modules/integrations/google-calendar-sync/google-calendar-sync.module';
 import { IntegrationsModule } from '@app/modules/integrations/integrations/integrations.module';
 import { AppointmentsModule } from '@app/modules/operations/appointments/appointments.module';
+import { StorageModule } from '@app/modules/storage/storage.module';
 import { AppointmentGoogleSyncProcessor } from './processors/appointment-google-sync.processor';
 import { CalendarSyncProcessor } from './processors/calendar-sync.processor';
 import { CleanupAsyncJobsProcessor } from './processors/cleanup-async-jobs.processor';
@@ -14,6 +15,7 @@ import { MetaResourceSyncProcessor } from './processors/meta-resource-sync.proce
   imports: [
     GoogleCalendarSyncModule,
     IntegrationsModule,
+    StorageModule,
     forwardRef(() => AppointmentsModule),
   ],
   providers: [

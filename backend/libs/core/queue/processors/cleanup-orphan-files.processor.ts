@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { FileAssetStatus } from '@prisma/client';
 import { PrismaService } from '@app/core/database/prisma.service';
-import { StorageService } from '@app/core/storage/storage.service';
+import { StorageService } from '@app/modules/storage/services/storage.service';
 import type { CleanupOrphanFilesJobPayload } from '../queue.types';
 
 @Injectable()
@@ -19,7 +19,7 @@ export class CleanupOrphanFilesProcessor {
 
     const orphans = await this.prisma.fileAsset.findMany({
       where: {
-        status: FileAssetStatus.PENDING_UPLOAD,
+        status: FileAssetStatus.PENDING,
         createdAt: { lt: cutoff },
         deletedAt: null,
       },
@@ -27,7 +27,7 @@ export class CleanupOrphanFilesProcessor {
     });
 
     for (const asset of orphans) {
-      await this.storageService.deleteObject(asset.id, asset.businessId);
+      await this.storageService.deleteOrphanPending(asset.id, asset.businessId);
     }
 
     this.logger.log(
