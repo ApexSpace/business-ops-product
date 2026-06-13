@@ -62,11 +62,19 @@ export class StripeApiService {
   }
 
   getPlatformWebhookSecret(): string | null {
-    return process.env.STRIPE_WEBHOOK_SECRET_PLATFORM?.trim() || null;
+    return (
+      process.env.STRIPE_PLATFORM_WEBHOOK_SECRET?.trim() ||
+      process.env.STRIPE_WEBHOOK_SECRET_PLATFORM?.trim() ||
+      null
+    );
   }
 
   getConnectedAccountWebhookSecret(): string | null {
-    return process.env.STRIPE_WEBHOOK_SECRET_CONNECTED_ACCOUNT?.trim() || null;
+    return (
+      process.env.STRIPE_CONNECT_WEBHOOK_SECRET?.trim() ||
+      process.env.STRIPE_WEBHOOK_SECRET_CONNECTED_ACCOUNT?.trim() ||
+      null
+    );
   }
 
   async retrieveConnectedAccount(

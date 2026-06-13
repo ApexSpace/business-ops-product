@@ -6,6 +6,7 @@ import {
   BusinessSubscriptionBillingCycle,
   SubscriptionPaymentMethod,
   SubscriptionPaymentStatus,
+  SubscriptionBillingSource,
   SubscriptionStatus,
 } from '@prisma/client';
 import type {
@@ -55,6 +56,9 @@ export class BusinessAccessSubscriptionDto {
 
   @ApiProperty({ enum: SubscriptionPaymentStatus })
   paymentStatus!: SubscriptionPaymentStatus;
+
+  @ApiProperty({ enum: SubscriptionBillingSource })
+  billingSource!: SubscriptionBillingSource;
 
   @ApiPropertyOptional({ enum: BusinessSubscriptionBillingCycle })
   billingCycle?: BusinessSubscriptionBillingCycle | null;

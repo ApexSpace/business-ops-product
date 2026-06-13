@@ -338,4 +338,12 @@ export class ActionReasonDto {
   @IsString()
   @MaxLength(2000)
   notes?: string;
+
+  @ApiPropertyOptional({
+    description:
+      'When true and billing source is Stripe, cancels immediately in Stripe.',
+  })
+  @IsOptional()
+  @IsBoolean()
+  immediate?: boolean;
 }

@@ -182,7 +182,9 @@ export class PlatformBusinessAccessController {
     @Body() dto: ActionReasonDto,
     @CurrentUser() user: RequestUser,
   ): Promise<SubscriptionActionResultDto> {
-    return this.actionService.cancelSubscription(id, user, dto.reason);
+    return this.actionService.cancelSubscription(id, user, dto.reason, {
+      immediate: dto.immediate,
+    });
   }
 
   @Post(':id/access/expire-trial')

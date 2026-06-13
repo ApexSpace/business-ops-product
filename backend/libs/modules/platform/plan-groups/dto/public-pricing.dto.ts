@@ -91,6 +91,16 @@ export class PublicPricingTierDto {
   @ApiPropertyOptional()
   ctaUrl?: string | null;
 
+  @ApiPropertyOptional({
+    description: 'True when tier metadata includes Stripe price IDs for checkout.',
+  })
+  stripeCheckoutEnabled?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Plan tier ID for Stripe checkout (public embed).',
+  })
+  planTierId?: string;
+
   @ApiProperty({ type: [PublicPricingCapabilityDto] })
   capabilities!: PublicPricingCapabilityDto[];
 

@@ -107,22 +107,69 @@ export class StripeWebhookService {
         WebhookEventProvider.STRIPE,
         event.id,
       );
-    if (existing?.status === WebhookEventStatus.PROCESSED) {
+    if (existing) {
+      await this.resumeWebhookEvent(existing.id, event, source);
       return;
     }
 
-    const webhookEvent = await this.webhookEventsRepository.create({
-      provider: WebhookEventProvider.STRIPE,
-      externalEventId: event.id,
-      eventType: event.type,
-      payload: event as unknown as Prisma.InputJsonValue,
-      status: WebhookEventStatus.RECEIVED,
-    });
+    let webhookEvent;
+    try {
+      webhookEvent = await this.webhookEventsRepository.create({
+        provider: WebhookEventProvider.STRIPE,
+        externalEventId: event.id,
+        eventType: event.type,
+        payload: event as unknown as Prisma.InputJsonValue,
+        status: WebhookEventStatus.RECEIVED,
+      });
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        const raced =
+          await this.webhookEventsRepository.findByProviderAndExternalId(
+            WebhookEventProvider.STRIPE,
+            event.id,
+          );
+        if (raced) {
+          await this.resumeWebhookEvent(raced.id, event, source);
+          return;
+        }
+      }
+      throw error;
+    }
 
     await this.jobEnqueue.enqueueStripeWebhook({
       webhookEventId: webhookEvent.id,
       source,
     });
+  }
+
+  private async resumeWebhookEvent(
+    webhookEventId: string,
+    event: StripeWebhookEvent,
+    source: 'platform' | 'connected',
+  ): Promise<void> {
+    const existing = await this.webhookEventsRepository.findById(webhookEventId);
+    if (!existing) return;
+
+    if (existing.status === WebhookEventStatus.PROCESSED) {
+      this.logger.log(`Stripe webhook ${event.id} already processed`);
+      return;
+    }
+
+    if (
+      existing.status === WebhookEventStatus.RECEIVED ||
+      existing.status === WebhookEventStatus.FAILED
+    ) {
+      this.logger.log(
+        `Stripe webhook retry for ${event.id} (status=${existing.status})`,
+      );
+      await this.jobEnqueue.enqueueStripeWebhook({
+        webhookEventId: existing.id,
+        source,
+      });
+    }
   }
 
   private async dispatchEvent(

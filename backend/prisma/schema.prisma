@@ -250,6 +250,12 @@ enum BusinessSubscriptionBillingCycle {
   CUSTOM
 }
 
+enum SubscriptionBillingSource {
+  STRIPE
+  MANUAL
+  INTERNAL
+}
+
 enum BusinessCapabilitySource {
   PLAN_TIER
   CUSTOM
@@ -1590,6 +1596,7 @@ model BusinessSubscription {
   status             SubscriptionStatus        @default(TRIALING)
   paymentMethod      SubscriptionPaymentMethod @default(NOT_SELECTED)
   paymentStatus      SubscriptionPaymentStatus @default(NOT_REQUIRED)
+  billingSource      SubscriptionBillingSource   @default(MANUAL)
   billingCycle       BusinessSubscriptionBillingCycle?
   currentPeriodStart DateTime?
   currentPeriodEnd   DateTime?
