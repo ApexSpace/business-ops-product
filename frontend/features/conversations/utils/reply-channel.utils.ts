@@ -6,7 +6,43 @@ import type {
   UnifiedConversationThread,
 } from "@/features/conversations/api/conversations.api";
 import { isWebchatConversation } from "@/features/conversations/components/inbox/conversation-inbox-utils";
+import { deriveWhatsAppSessionFromMessages } from "@/features/conversations/utils/whatsapp-template-send.util";
 import { primaryConversation } from "@/features/conversations/utils/unified-thread.utils";
+
+export interface WhatsAppComposerMode {
+  requiresTemplate: boolean;
+  sessionOpen: boolean;
+}
+
+export function resolveWhatsAppComposerMode(input: {
+  channel: ContactReplyChannel | null;
+  conversation?: Conversation | null;
+  messages?: ConversationMessage[];
+}): WhatsAppComposerMode | null {
+  const isWhatsApp =
+    input.channel?.channel === "WHATSAPP" ||
+    input.conversation?.channel === "WHATSAPP";
+
+  if (!isWhatsApp) {
+    return null;
+  }
+
+  const whatsAppMessages =
+    input.messages?.filter((message) => message.channel === "WHATSAPP") ?? [];
+
+  if (whatsAppMessages.length > 0) {
+    return deriveWhatsAppSessionFromMessages(whatsAppMessages);
+  }
+
+  if (input.channel?.requiresTemplate != null) {
+    return {
+      requiresTemplate: Boolean(input.channel.requiresTemplate),
+      sessionOpen: Boolean(input.channel.sessionOpen),
+    };
+  }
+
+  return { requiresTemplate: true, sessionOpen: false };
+}
 
 export function pickDefaultReplyChannel(
   channels: ContactReplyChannel[],
@@ -48,6 +84,7 @@ export function findReplyChannel(
 export function replyChannelSendDisabledReason(
   channel: ContactReplyChannel | null,
   conversation: Conversation | undefined,
+  whatsAppMode?: WhatsAppComposerMode | null,
 ): string | null {
   if (!channel) {
     return "Select a reply channel.";
@@ -57,44 +94,59 @@ export function replyChannelSendDisabledReason(
     return null;
   }
 
-  if (channel.readyForMessaging) {
+  if (!channel.readyForMessaging) {
+    if (channel.unavailableReason?.trim()) {
+      return channel.unavailableReason.trim();
+    }
+
+    const warnings = channel.messagingStatus.warnings ?? [];
+    if (warnings.length > 0) {
+      return warnings.join(" ");
+    }
+
+    if (channel.providerKey === "facebook") {
+      return "Select a Facebook Page and complete messaging setup before sending.";
+    }
+
+    if (channel.providerKey === "instagram") {
+      return "Select an Instagram account and complete messaging setup before sending.";
+    }
+
+    if (channel.providerKey === "whatsapp") {
+      return "Connect WhatsApp, select a default phone number, and complete messaging setup before sending.";
+    }
+
+    if (channel.providerKey === "email") {
+      return "Platform email is not ready. Check integrations or server email settings.";
+    }
+
+    return "Messaging is not ready for this channel.";
+  }
+
+  if (whatsAppMode?.requiresTemplate) {
     return null;
   }
 
-  if (channel.unavailableReason?.trim()) {
-    return channel.unavailableReason.trim();
-  }
-
-  const warnings = channel.messagingStatus.warnings ?? [];
-  if (warnings.length > 0) {
-    return warnings.join(" ");
-  }
-
-  if (channel.providerKey === "facebook") {
-    return "Select a Facebook Page and complete messaging setup before sending.";
-  }
-
-  if (channel.providerKey === "instagram") {
-    return "Select an Instagram account and complete messaging setup before sending.";
-  }
-
-  if (channel.providerKey === "whatsapp") {
-    return "Connect WhatsApp, select a default phone number, and complete messaging setup before sending.";
-  }
-
-  if (channel.providerKey === "email") {
-    return "Platform email is not ready. Check integrations or server email settings.";
-  }
-
-  return "Messaging is not ready for this channel.";
+  return null;
 }
 
 export function canSendViaReplyChannel(
   channel: ContactReplyChannel | null,
   conversation: Conversation | undefined,
   hasContent: boolean,
+  whatsAppMode?: WhatsAppComposerMode | null,
+  hasTemplateContent = false,
 ): boolean {
-  if (!hasContent || !channel) return false;
-  if (isWebchatConversation(conversation)) return true;
-  return channel.readyForMessaging;
+  if (!channel) return false;
+  if (isWebchatConversation(conversation)) return hasContent;
+
+  if (!channel.readyForMessaging) {
+    return false;
+  }
+
+  if (whatsAppMode?.requiresTemplate) {
+    return hasTemplateContent;
+  }
+
+  return hasContent;
 }

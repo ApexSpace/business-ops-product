@@ -409,6 +409,23 @@ export const REGISTRY_MODULES: RegistryModuleDefinition[] = [
         icon: 'message-square',
         group: 'Messaging',
       }),
+      option('conversations', 'whatsapp_templates_view', {
+        name: 'WhatsApp templates (view)',
+        description: 'View WhatsApp message templates and approval status.',
+        permissionKey: 'whatsapp.templates.view',
+        routeKeys: ['/business/settings/whatsapp'],
+        icon: 'file-text',
+        group: 'Messaging',
+        defaultEnabled: true,
+      }),
+      option('conversations', 'whatsapp_templates_manage', {
+        name: 'WhatsApp templates (manage)',
+        description: 'Create, edit, sync, and delete WhatsApp message templates.',
+        permissionKey: 'whatsapp.templates.manage',
+        routeKeys: ['/business/settings/whatsapp'],
+        icon: 'file-text',
+        group: 'Messaging',
+      }),
     ],
   },
   {

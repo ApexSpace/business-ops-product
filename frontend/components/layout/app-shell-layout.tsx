@@ -18,8 +18,8 @@ import {
 import { augmentSnapshotNavigationWithCapabilities } from "@/lib/capabilities/augment-snapshot-navigation";
 import { resolveSnapshotNavigation } from "@/lib/config/snapshot/resolve-snapshot-navigation";
 import {
+  canAccessBusinessRoute,
   isCoreSafeBusinessRoute,
-  resolveRouteCapability,
 } from "@/lib/capabilities/route-capability-map";
 import { BusinessAccessBanner } from "@/components/business-access/business-access-banner";
 import { BusinessAccessGate } from "@/components/business-access/business-access-gate";
@@ -59,19 +59,21 @@ export function AppShellLayout({ mode, children }: ShellLayoutProps) {
     mode === "business" && businessAccess
       ? businessAccess.hasModule
       : undefined;
+  const capabilityKeys =
+    mode === "business" && businessAccess
+      ? businessAccess.capabilityKeys
+      : undefined;
 
   const filterSectionsByCapability = (
     sections: ShellNavSection[],
   ): ShellNavSection[] => {
-    if (!hasModule) return sections;
+    if (!capabilityKeys) return sections;
     return sections
       .map((section) => ({
         ...section,
         items: section.items.filter((item) => {
           if (isCoreSafeBusinessRoute(item.href)) return true;
-          const entry = resolveRouteCapability(item.href);
-          if (!entry) return true;
-          return hasModule(entry.moduleKey);
+          return canAccessBusinessRoute(item.href, capabilityKeys);
         }),
       }))
       .filter((section) => section.items.length > 0);

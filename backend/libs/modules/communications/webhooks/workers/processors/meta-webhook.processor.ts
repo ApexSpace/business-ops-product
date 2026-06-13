@@ -2,9 +2,13 @@ import { Injectable, Logger } from '@nestjs/common';
 import { WebhookEventProvider, WebhookEventStatus } from '@prisma/client';
 import { IdempotencyService } from '@app/core/idempotency/idempotency.service';
 import type { ProcessMetaWebhookPayload } from '@app/core/queue/queue.types';
-import { isWhatsAppWebhookObject } from '@app/modules/communications/conversations/adapters/meta/meta-inbound-normalizer';
+import {
+  isWhatsAppWebhookObject,
+} from '@app/modules/communications/conversations/adapters/meta/meta-inbound-normalizer';
 import { ConversationWebhookIngestionService } from '@app/modules/communications/conversations/services/conversation-webhook-ingestion.service';
 import { WebhookEventsRepository } from '@app/modules/communications/conversations/repositories/webhook-events.repository';
+import { WhatsAppTemplateWebhookService } from '@app/modules/integrations/whatsapp/services/whatsapp-template-webhook.service';
+import { extractWhatsAppTemplateStatusUpdates } from '@app/modules/integrations/whatsapp/utils/template-webhook.util';
 
 @Injectable()
 export class MetaWebhookProcessor {
@@ -14,6 +18,7 @@ export class MetaWebhookProcessor {
     private readonly webhookEventsRepository: WebhookEventsRepository,
     private readonly conversationWebhookIngestion: ConversationWebhookIngestionService,
     private readonly idempotencyService: IdempotencyService,
+    private readonly whatsAppTemplateWebhookService: WhatsAppTemplateWebhookService,
   ) {}
 
   async process(payload: ProcessMetaWebhookPayload): Promise<void> {
@@ -68,6 +73,15 @@ export class MetaWebhookProcessor {
         object === 'instagram' ||
         isWhatsAppWebhookObject(object ?? null)
       ) {
+        if (isWhatsAppWebhookObject(object ?? null)) {
+          const templateUpdates = extractWhatsAppTemplateStatusUpdates(body);
+          if (templateUpdates.length > 0) {
+            await this.whatsAppTemplateWebhookService.processStatusUpdates(
+              templateUpdates,
+            );
+          }
+        }
+
         await this.conversationWebhookIngestion.processMetaPayload(
           body,
           event.id,

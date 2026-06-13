@@ -21,6 +21,7 @@ import { buildReplyChannelCandidates } from '../utils/contact-reply-channels.uti
 import { resolveMetaParticipantId } from '../utils/contact-outbound-identity.util';
 import { EmailConversationsService } from './email-conversations.service';
 import { MetaConversationsService } from './meta-conversations.service';
+import { WhatsAppSessionWindowService } from './whatsapp-session-window.service';
 
 @Injectable()
 export class ContactConversationsService {
@@ -31,6 +32,7 @@ export class ContactConversationsService {
     private readonly messagingStatusService: MessagingStatusService,
     private readonly emailConversationsService: EmailConversationsService,
     private readonly metaConversationsService: MetaConversationsService,
+    private readonly whatsAppSessionWindowService: WhatsAppSessionWindowService,
   ) {}
 
   async listMessages(
@@ -109,6 +111,11 @@ export class ContactConversationsService {
 
     const candidates = buildReplyChannelCandidates(contact, conversations);
     const channels: ContactReplyChannelDto[] = [];
+    const whatsAppSession =
+      await this.whatsAppSessionWindowService.getSessionStateForContactRecord(
+        businessId,
+        contact,
+      );
 
     for (const candidate of candidates) {
       const messagingStatus =
@@ -128,6 +135,12 @@ export class ContactConversationsService {
           messagingStatus.readyForMessaging,
           messagingStatus.warnings,
         ),
+        ...(candidate.channel === ConversationChannel.WHATSAPP
+          ? {
+              sessionOpen: whatsAppSession.sessionOpen,
+              requiresTemplate: whatsAppSession.requiresTemplate,
+            }
+          : {}),
       });
     }
 

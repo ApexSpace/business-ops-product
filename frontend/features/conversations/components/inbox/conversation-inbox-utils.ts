@@ -19,12 +19,18 @@ export function channelProviderKey(channel: ConversationChannel): string {
 }
 
 /** Channel-specific composer guidance shown above the message input. */
-export function channelComposerHint(channel: ConversationChannel): string | null {
+export function channelComposerHint(
+  channel: ConversationChannel,
+  options?: { requiresTemplate?: boolean | null },
+): string | null {
   if (channel === "EMAIL") {
     return "Replies are sent from your CodeSol business address. Customer replies return to this thread.";
   }
   if (channel === "WHATSAPP") {
-    return "Free-form replies work within 24 hours of the customer's last message. Outside that window, use an approved WhatsApp template.";
+    if (options?.requiresTemplate) {
+      return "This contact hasn't messaged on WhatsApp in the last 24 hours. Send an approved template to reach them — free-form replies unlock for 24 hours after they reply.";
+    }
+    return "Free-form WhatsApp replies are available for 24 hours after the customer's last message.";
   }
   return null;
 }

@@ -68,6 +68,31 @@ interface MetaPhoneNumbersResponse {
   data?: MetaWhatsAppPhone[];
 }
 
+export interface MetaMessageTemplate {
+  id: string;
+  name: string;
+  language: string;
+  status: string;
+  category: string;
+  components?: unknown[];
+  rejected_reason?: string;
+  quality_score?: unknown;
+  parameter_format?: string;
+}
+
+interface MetaMessageTemplateListResponse {
+  data?: MetaMessageTemplate[];
+  paging?: { next?: string };
+}
+
+interface MetaResumableUploadSessionResponse {
+  id: string;
+}
+
+interface MetaResumableUploadResponse {
+  h: string;
+}
+
 /** Nested field expansion for /me/accounts — required for instagram_business_account data. */
 const PAGE_LIST_FIELDS =
   'id,name,access_token,category,picture,tasks,instagram_business_account{id,username,name,profile_picture_url}';
@@ -636,5 +661,215 @@ export class MetaApiClient {
 
     const data = (await response.json()) as MetaPhoneNumbersResponse;
     return data.data ?? [];
+  }
+
+  async listMessageTemplates(
+    wabaId: string,
+    accessToken: string,
+    fields = 'id,name,language,status,category,components,rejected_reason,quality_score,parameter_format',
+  ): Promise<MetaMessageTemplate[]> {
+    const templates: MetaMessageTemplate[] = [];
+    let nextUrl: string | null = this.buildGraphUrl(
+      `/${wabaId}/message_templates`,
+      {
+        fields,
+        limit: '100',
+        access_token: accessToken,
+      },
+    );
+
+    while (nextUrl) {
+      const response = await fetch(nextUrl);
+      if (!response.ok) {
+        const detail = this.sanitizeGraphError(await response.text());
+        throw new Error(`Meta list message templates failed: ${detail}`);
+      }
+
+      const data =
+        (await response.json()) as MetaMessageTemplateListResponse;
+      templates.push(...(data.data ?? []));
+      nextUrl = data.paging?.next ?? null;
+    }
+
+    return templates;
+  }
+
+  async getMessageTemplate(
+    metaTemplateId: string,
+    accessToken: string,
+    fields = 'id,name,language,status,category,components,rejected_reason,quality_score,parameter_format',
+  ): Promise<MetaMessageTemplate> {
+    const url = this.buildGraphUrl(`/${metaTemplateId}`, {
+      fields,
+      access_token: accessToken,
+    });
+
+    const response = await fetch(url);
+    if (!response.ok) {
+      const detail = this.sanitizeGraphError(await response.text());
+      throw new Error(`Meta get message template failed: ${detail}`);
+    }
+
+    return (await response.json()) as MetaMessageTemplate;
+  }
+
+  async createMessageTemplate(
+    wabaId: string,
+    accessToken: string,
+    payload: Record<string, unknown>,
+  ): Promise<MetaMessageTemplate> {
+    const url = this.buildGraphUrl(`/${wabaId}/message_templates`, {
+      access_token: accessToken,
+    });
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      const detail = this.sanitizeGraphError(await response.text());
+      throw new Error(`Meta create message template failed: ${detail}`);
+    }
+
+    return (await response.json()) as MetaMessageTemplate;
+  }
+
+  async updateMessageTemplate(
+    metaTemplateId: string,
+    accessToken: string,
+    payload: Record<string, unknown>,
+  ): Promise<MetaMessageTemplate> {
+    const url = this.buildGraphUrl(`/${metaTemplateId}`, {
+      access_token: accessToken,
+    });
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      const detail = this.sanitizeGraphError(await response.text());
+      throw new Error(`Meta update message template failed: ${detail}`);
+    }
+
+    return (await response.json()) as MetaMessageTemplate;
+  }
+
+  async deleteMessageTemplate(
+    wabaId: string,
+    accessToken: string,
+    name: string,
+  ): Promise<void> {
+    const url = this.buildGraphUrl(`/${wabaId}/message_templates`, {
+      name,
+      access_token: accessToken,
+    });
+
+    const response = await fetch(url, { method: 'DELETE' });
+    if (!response.ok) {
+      const detail = this.sanitizeGraphError(await response.text());
+      throw new Error(`Meta delete message template failed: ${detail}`);
+    }
+  }
+
+  async createResumableUploadSession(
+    appId: string,
+    accessToken: string,
+    fileLength: number,
+    mimeType: string,
+  ): Promise<MetaResumableUploadSessionResponse> {
+    const url = this.buildGraphUrl(`/${appId}/uploads`, {
+      access_token: accessToken,
+    });
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        file_length: fileLength,
+        file_type: mimeType,
+      }),
+    });
+
+    if (!response.ok) {
+      const detail = this.sanitizeGraphError(await response.text());
+      throw new Error(`Meta resumable upload session failed: ${detail}`);
+    }
+
+    return (await response.json()) as MetaResumableUploadSessionResponse;
+  }
+
+  async uploadToResumableSession(
+    uploadSessionId: string,
+    accessToken: string,
+    buffer: Buffer,
+  ): Promise<string> {
+    const url = `${getMetaGraphBaseUrl()}/${uploadSessionId}`;
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        Authorization: `OAuth ${accessToken}`,
+        file_offset: '0',
+        'Content-Type': 'application/octet-stream',
+      },
+      body: new Uint8Array(buffer),
+    });
+
+    if (!response.ok) {
+      const detail = this.sanitizeGraphError(await response.text());
+      throw new Error(`Meta resumable upload failed: ${detail}`);
+    }
+
+    const data = (await response.json()) as MetaResumableUploadResponse;
+    if (!data.h) {
+      throw new Error('Meta resumable upload did not return a file handle.');
+    }
+
+    return data.h;
+  }
+
+  async sendWhatsAppTemplate(
+    phoneNumberId: string,
+    accessToken: string,
+    recipientWaId: string,
+    template: {
+      name: string;
+      language: { code: string };
+      components?: unknown[];
+    },
+  ): Promise<{ messageId: string }> {
+    const url = this.buildGraphUrl(`/${phoneNumberId}/messages`, {
+      access_token: accessToken,
+    });
+
+    const body = {
+      messaging_product: 'whatsapp',
+      recipient_type: 'individual',
+      to: recipientWaId,
+      type: 'template',
+      template,
+    };
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+
+    if (!response.ok) {
+      const detail = this.sanitizeGraphError(await response.text());
+      throw new Error(`WhatsApp template send failed: ${detail}`);
+    }
+
+    const data = (await response.json()) as {
+      messages?: Array<{ id?: string }>;
+    };
+
+    return { messageId: data.messages?.[0]?.id ?? '' };
   }
 }

@@ -49,6 +49,16 @@ export function IntegrationResourcesPanel({
       queryKey: queryKeys.integrations.businessResources(providerKey),
     });
 
+  const invalidateWhatsAppSettings = () => {
+    if (providerKey !== "whatsapp") return;
+    void queryClient.invalidateQueries({
+      queryKey: queryKeys.whatsappSettings.overview(),
+    });
+    void queryClient.invalidateQueries({
+      queryKey: queryKeys.whatsappSettings.numbers(),
+    });
+  };
+
   const syncMutation = useMutation({
     mutationFn: () => syncIntegrationResources(providerKey),
     onSuccess: async (result) => {
@@ -59,6 +69,7 @@ export function IntegrationResourcesPanel({
         toast.message(copy.syncEmptyToast);
       }
       await invalidateResources();
+      invalidateWhatsAppSettings();
     },
     onError: (error: Error) => toast.error(error.message),
   });
@@ -87,6 +98,7 @@ export function IntegrationResourcesPanel({
     onSuccess: async () => {
       toast.success("Default updated");
       await invalidateResources();
+      invalidateWhatsAppSettings();
     },
     onError: (error: Error) => toast.error(error.message),
   });
@@ -104,6 +116,8 @@ export function IntegrationResourcesPanel({
   const syncEnabled = data?.syncEnabled ?? false;
   const resources = data?.resources ?? [];
   const isGbp = providerKey === "google-business-profile";
+  const isWhatsApp = providerKey === "whatsapp";
+  const hasWhatsAppDefault = isWhatsApp && resources.some((r) => r.isDefault);
 
   return (
     <section className="space-y-4">
@@ -127,6 +141,14 @@ export function IntegrationResourcesPanel({
         <p className="text-xs text-muted-foreground">
           Google limits how often profiles can be refreshed. Sync once, then wait
           about a minute before trying again.
+        </p>
+      ) : null}
+
+      {isWhatsApp ? (
+        <p className="text-xs text-muted-foreground">
+          {hasWhatsAppDefault
+            ? "Your default WhatsApp number is used for outbound messaging. Only one number is supported per business for now."
+            : "Select one WhatsApp number as default. Only one number is supported per business for now."}
         </p>
       ) : null}
 

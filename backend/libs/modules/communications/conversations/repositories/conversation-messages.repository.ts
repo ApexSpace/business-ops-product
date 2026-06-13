@@ -2,7 +2,9 @@ import { Injectable } from '@nestjs/common';
 import {
   Contact,
   ConversationChannel,
+  ConversationDirection,
   ConversationMessage,
+  MessageSenderType,
   Prisma,
 } from '@prisma/client';
 import { buildContactMessageScopeWhere } from '../utils/contact-message-scope.util';
@@ -332,6 +334,41 @@ export class ConversationMessagesRepository {
       prevCursor: items[0]?.id ?? anchor.id,
       hasMore,
     };
+  }
+
+  findLastInboundContactMessage(
+    businessId: string,
+    conversationId: string,
+    channel: ConversationChannel = ConversationChannel.WHATSAPP,
+  ): Promise<ConversationMessage | null> {
+    return this.prisma.conversationMessage.findFirst({
+      where: {
+        businessId,
+        conversationId,
+        channel,
+        direction: ConversationDirection.INBOUND,
+        senderType: MessageSenderType.CONTACT,
+      },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+    });
+  }
+
+  findLastInboundContactMessageForContact(
+    businessId: string,
+    contact: Contact,
+    channel: ConversationChannel = ConversationChannel.WHATSAPP,
+  ): Promise<ConversationMessage | null> {
+    const scopeWhere = buildContactMessageScopeWhere(businessId, contact);
+
+    return this.prisma.conversationMessage.findFirst({
+      where: {
+        ...scopeWhere,
+        channel,
+        direction: ConversationDirection.INBOUND,
+        senderType: MessageSenderType.CONTACT,
+      },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+    });
   }
 
 }

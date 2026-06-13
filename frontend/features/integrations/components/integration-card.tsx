@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Loader2, MoreVertical } from "lucide-react";
 import { IntegrationProviderIcon } from "@/features/integrations/components/integration-provider-icon";
 import { IntegrationStatusBadge } from "@/features/integrations/components/integration-status-badge";
@@ -51,6 +52,7 @@ export function IntegrationCard({
   onRefreshStatus,
 }: IntegrationCardProps) {
   const isConnected = provider.status !== "NOT_CONNECTED";
+  const isWhatsApp = provider.key === "whatsapp";
   const accountLabel =
     provider.integration?.connectedAccountName ??
     provider.integration?.connectedAccountEmail;
@@ -171,6 +173,14 @@ export function IntegrationCard({
             getIntegrationConnectLabel(provider, provider.status)
           )}
         </Button>
+        {isWhatsApp && isConnected ? (
+          <Link
+            href="/business/settings/whatsapp?tab=numbers"
+            className="text-center text-xs font-medium text-primary hover:underline"
+          >
+            View in WhatsApp Settings
+          </Link>
+        ) : null}
       </CardFooter>
     </Card>
   );

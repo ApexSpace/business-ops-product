@@ -181,6 +181,15 @@ const businessRoutes: Record<string, RouteEntry> = {
       { label: "Integrations" },
     ],
   },
+  "/business/settings/whatsapp": {
+    title: "WhatsApp",
+    description:
+      "View your connected number, manage message templates, and configure WhatsApp settings.",
+    breadcrumbs: [
+      { label: "Settings", href: "/business/settings/profile" },
+      { label: "WhatsApp" },
+    ],
+  },
   "/business/settings/notifications": {
     title: "Notifications",
     breadcrumbs: [

@@ -31,6 +31,7 @@ import { ContactIdentityBackfillService } from './services/contact-identity-back
 import { EmailConversationsService } from './services/email-conversations.service';
 import { MetaConversationsService } from './services/meta-conversations.service';
 import { UnifiedConversationsService } from './services/unified-conversations.service';
+import { WhatsAppSessionWindowService } from './services/whatsapp-session-window.service';
 
 @Module({
   imports: [
@@ -59,6 +60,7 @@ import { UnifiedConversationsService } from './services/unified-conversations.se
     WhatsAppDeliveryStatusBufferService,
     EmailConversationsService,
     MetaConversationsService,
+    WhatsAppSessionWindowService,
     EmailMessagingAdapter,
     FacebookMessengerAdapter,
     InstagramMessagingAdapter,
@@ -76,6 +78,7 @@ import { UnifiedConversationsService } from './services/unified-conversations.se
     ConversationMessagesRepository,
     ConversationsRepository,
     ConversationChannelAdapterRegistry,
+    WhatsAppSessionWindowService,
     ConversationRealtimeService,
   ],
 })

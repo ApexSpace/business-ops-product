@@ -62,6 +62,21 @@ interface ConversationThreadPanelProps {
   sendDisabledReason: string | null;
   emailSubject: string;
   onEmailSubjectChange: (value: string) => void;
+  whatsAppRequiresTemplate?: boolean;
+  selectedTemplateId?: string | null;
+  onTemplateIdChange?: (templateId: string | null) => void;
+  templateVariableValues?: Record<string, string>;
+  onTemplateVariableValueChange?: (key: string, value: string) => void;
+  templateHeaderMediaUrl?: string;
+  onTemplateHeaderMediaUrlChange?: (value: string) => void;
+  buildTemplatePayload?: () =>
+    | {
+        name: string;
+        language: string;
+        components?: unknown[];
+        headerMedia?: { type: string; url: string };
+      }
+    | undefined;
   sendMutation: UseMutationResult<
     unknown,
     Error,
@@ -69,6 +84,12 @@ interface ConversationThreadPanelProps {
       text: string;
       subject?: string;
       attachments?: Array<{ type: string; url: string }>;
+      template?: {
+        name: string;
+        language: string;
+        components?: unknown[];
+        headerMedia?: { type: string; url: string };
+      };
     }
   >;
   statusMutation: UseMutationResult<
@@ -103,6 +124,14 @@ export function ConversationThreadPanel({
   sendDisabledReason,
   emailSubject,
   onEmailSubjectChange,
+  whatsAppRequiresTemplate = false,
+  selectedTemplateId = null,
+  onTemplateIdChange,
+  templateVariableValues = {},
+  onTemplateVariableValueChange,
+  templateHeaderMediaUrl = "",
+  onTemplateHeaderMediaUrlChange,
+  buildTemplatePayload,
   sendMutation,
   statusMutation,
   onAssignSuccess,
@@ -235,7 +264,9 @@ export function ConversationThreadPanel({
               sendDisabledReason={sendDisabledReason}
               channelHint={
                 selectedReplyChannel
-                  ? channelComposerHint(selectedReplyChannel)
+                  ? channelComposerHint(selectedReplyChannel, {
+                      requiresTemplate: whatsAppRequiresTemplate,
+                    })
                   : null
               }
               showSubject={selectedReplyChannel === "EMAIL"}
@@ -244,14 +275,29 @@ export function ConversationThreadPanel({
               replyChannels={replyChannels}
               selectedReplyChannel={selectedReplyChannel}
               onReplyChannelChange={onReplyChannelChange}
+              whatsAppRequiresTemplate={whatsAppRequiresTemplate}
+              selectedTemplateId={selectedTemplateId}
+              onTemplateIdChange={onTemplateIdChange}
+              templateVariableValues={templateVariableValues}
+              onTemplateVariableValueChange={onTemplateVariableValueChange}
+              templateHeaderMediaUrl={templateHeaderMediaUrl}
+              onTemplateHeaderMediaUrlChange={onTemplateHeaderMediaUrlChange}
               onSend={() => {
+                const template = whatsAppRequiresTemplate
+                  ? buildTemplatePayload?.()
+                  : undefined;
                 sendMutation.mutate({
-                  text: composer.trim(),
+                  text: template ? "" : composer.trim(),
                   subject:
                     selectedReplyChannel === "EMAIL"
                       ? emailSubject.trim() || undefined
                       : undefined,
-                  attachments: pendingAttachment ? [pendingAttachment] : undefined,
+                  attachments: template
+                    ? undefined
+                    : pendingAttachment
+                      ? [pendingAttachment]
+                      : undefined,
+                  template,
                 });
               }}
             />

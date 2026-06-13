@@ -48,6 +48,14 @@ export function ContactConversationPanel({
     channelHint,
     sendMutation,
     activeReplyChannel,
+    whatsAppMode,
+    selectedTemplateId,
+    handleTemplateIdChange,
+    templateVariableValues,
+    handleTemplateVariableValueChange,
+    templateHeaderMediaUrl,
+    setTemplateHeaderMediaUrl,
+    buildTemplatePayload,
   } = useContactConversationComposer(contactId);
 
   const inboxHref = `/business/conversations?thread=${encodeURIComponent(contactId)}`;
@@ -134,14 +142,25 @@ export function ContactConversationPanel({
           replyChannels={replyChannels}
           selectedReplyChannel={effectiveReplyChannel}
           onReplyChannelChange={handleReplyChannelChange}
+          whatsAppRequiresTemplate={Boolean(whatsAppMode?.requiresTemplate)}
+          selectedTemplateId={selectedTemplateId}
+          onTemplateIdChange={handleTemplateIdChange}
+          templateVariableValues={templateVariableValues}
+          onTemplateVariableValueChange={handleTemplateVariableValueChange}
+          templateHeaderMediaUrl={templateHeaderMediaUrl}
+          onTemplateHeaderMediaUrlChange={setTemplateHeaderMediaUrl}
           onSend={() => {
             const attachments = pendingAttachment
               ? [{ type: pendingAttachment.type, url: pendingAttachment.url }]
               : undefined;
+            const template = whatsAppMode?.requiresTemplate
+              ? buildTemplatePayload()
+              : undefined;
             sendMutation.mutate({
-              text: composer,
+              text: template ? "" : composer,
               subject: showEmailSubject ? emailSubject : undefined,
-              attachments,
+              attachments: template ? undefined : attachments,
+              template,
               replyChannel: activeReplyChannel,
             });
           }}

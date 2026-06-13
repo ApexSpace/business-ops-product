@@ -5,6 +5,9 @@ import {
 } from './meta-attachment.util';
 import { NormalizedInboundMessage } from './meta-inbound.types';
 
+export { extractWhatsAppTemplateStatusUpdates } from '@app/modules/integrations/whatsapp/utils/template-webhook.util';
+export type { WhatsAppTemplateStatusUpdate } from '@app/modules/integrations/whatsapp/utils/template-webhook.util';
+
 const WHATSAPP_WEBHOOK_OBJECTS = new Set(['whatsapp', 'whatsapp_business_account']);
 
 type MetaMessagingEvent = {

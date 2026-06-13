@@ -5,6 +5,7 @@ import {
   ClipboardList,
   CreditCard,
   GitBranch,
+  MessageCircle,
   MessageSquare,
   Palette,
   Plug,
@@ -90,6 +91,11 @@ const billingItems: BusinessSettingsNavItem[] = [
     title: "Integrations",
     href: "/business/settings/integrations",
     icon: Plug,
+  },
+  {
+    title: "WhatsApp",
+    href: "/business/settings/whatsapp",
+    icon: MessageCircle,
   },
 ];
 

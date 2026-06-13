@@ -48,6 +48,16 @@ const ROUTE_CAPABILITY_MAP = new Map<string, RouteCapabilityEntry>([
     "/business/settings/integrations",
     { moduleKey: "settings", capabilityKeys: ["settings.integrations"] },
   ],
+  [
+    "/business/settings/whatsapp",
+    {
+      moduleKey: "conversations",
+      capabilityKeys: [
+        "conversations.inbox",
+        "settings.integrations.whatsapp",
+      ],
+    },
+  ],
 ]);
 
 const CORE_SAFE_PREFIXES = [
@@ -93,6 +103,22 @@ export function isCoreSafeBusinessRoute(pathname: string): boolean {
   );
 }
 
+function hasModuleInKeys(
+  capabilityKeys: Set<string>,
+  moduleKey: string,
+): boolean {
+  if (capabilityKeys.has(moduleKey)) {
+    return true;
+  }
+  const prefix = `${moduleKey}.`;
+  for (const key of capabilityKeys) {
+    if (key.startsWith(prefix)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 export function hasModuleForRoute(
   route: string,
   capabilityKeys: Set<string>,
@@ -105,6 +131,22 @@ export function hasModuleForRoute(
     entry.capabilityKeys.some((key) => capabilityKeys.has(key)) ||
     Array.from(capabilityKeys).some((key) => key.startsWith(prefix))
   );
+}
+
+/** Nav/route gate aligned with registry feature keys (not permission keys). */
+export function canAccessBusinessRoute(
+  route: string,
+  capabilityKeys: Set<string>,
+): boolean {
+  if (route === "/business/settings/whatsapp") {
+    return (
+      hasModuleInKeys(capabilityKeys, "conversations") &&
+      (capabilityKeys.has("settings.integrations.whatsapp") ||
+        capabilityKeys.has("settings.integrations"))
+    );
+  }
+
+  return hasModuleForRoute(route, capabilityKeys);
 }
 
 export function getMappedRoutes(): string[] {

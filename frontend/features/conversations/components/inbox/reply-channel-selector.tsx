@@ -13,6 +13,7 @@ import {
   type ConversationChannel,
 } from "@/features/conversations/api/conversations.api";
 import { IntegrationProviderIcon } from "@/features/integrations/components/integration-provider-icon";
+import { cn } from "@/lib/utils";
 
 interface ReplyChannelSelectorProps {
   channels: ContactReplyChannel[];
@@ -35,9 +36,6 @@ export function ReplyChannelSelector({
   if (!only || !controlledValue) {
     return null;
   }
-
-  const activeChannel =
-    channels.find((channel) => channel.channel === controlledValue) ?? only;
 
   if (channels.length <= 1) {
     if (variant === "compact") {
@@ -69,39 +67,43 @@ export function ReplyChannelSelector({
 
   if (variant === "compact") {
     return (
-      <Select
-        value={controlledValue}
-        onValueChange={(next) => onChange(next as ConversationChannel)}
-        disabled={disabled}
+      <div
+        className="flex shrink-0 items-center gap-0.5 rounded-md border border-border/60 bg-muted/30 p-0.5"
+        role="group"
+        aria-label="Select reply channel"
       >
-        <SelectTrigger
-          className="size-9 shrink-0 border-0 bg-transparent p-0 shadow-none hover:bg-muted/60 [&>svg:last-child]:hidden"
-          aria-label="Select reply channel"
-        >
-          <IntegrationProviderIcon
-            providerKey={activeChannel.providerKey}
-            size="sm"
-            className="!size-4"
-          />
-        </SelectTrigger>
-        <SelectContent align="start">
-          {channels.map((channel) => (
-            <SelectItem key={channel.channel} value={channel.channel}>
-              <span className="flex items-center gap-2">
-                <IntegrationProviderIcon
-                  providerKey={channel.providerKey}
-                  size="sm"
-                  className="!size-3.5"
-                />
-                {channelLabel(channel.channel)}
-                {!channel.readyForMessaging ? (
-                  <span className="text-muted-foreground">(setup required)</span>
-                ) : null}
-              </span>
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+        {channels.map((channel) => {
+          const isActive = channel.channel === controlledValue;
+          return (
+            <button
+              key={channel.channel}
+              type="button"
+              disabled={disabled}
+              aria-label={`Reply via ${channelLabel(channel.channel)}`}
+              aria-pressed={isActive}
+              title={
+                channel.readyForMessaging
+                  ? channelLabel(channel.channel)
+                  : `${channelLabel(channel.channel)} (setup required)`
+              }
+              onClick={() => onChange(channel.channel)}
+              className={cn(
+                "flex size-8 items-center justify-center rounded-sm transition-colors",
+                isActive
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:bg-background/60 hover:text-foreground",
+                disabled && "pointer-events-none opacity-50",
+              )}
+            >
+              <IntegrationProviderIcon
+                providerKey={channel.providerKey}
+                size="sm"
+                className="!size-4"
+              />
+            </button>
+          );
+        })}
+      </div>
     );
   }
 
