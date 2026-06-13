@@ -20,6 +20,22 @@ export async function getBusinessPlanOptions(): Promise<BusinessPlanOptions> {
   return api.get<BusinessPlanOptions>("businesses/current/plan-options");
 }
 
+export async function createBusinessCheckoutSession(input: {
+  planTierId: string;
+  billingCycle: "MONTHLY" | "YEARLY";
+}): Promise<{ sessionId: string; url: string }> {
+  return api.post<{ sessionId: string; url: string }>(
+    "businesses/current/billing/stripe/checkout-session",
+    input,
+  );
+}
+
+export async function createBusinessPortalSession(): Promise<{ url: string }> {
+  return api.post<{ url: string }>(
+    "businesses/current/billing/stripe/portal-session",
+  );
+}
+
 export async function changeBusinessPlanTier(planTierId: string): Promise<void> {
   await api.post<void>("businesses/current/change-plan-tier", { planTierId });
 }

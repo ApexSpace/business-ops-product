@@ -39,6 +39,8 @@ export interface TenantAccessSubscription {
   planTierName?: string | null;
   paymentMethod: string;
   paymentStatus: string;
+  billingSource?: string;
+  billingCycle?: string | null;
   currentPeriodStart?: string | null;
   currentPeriodEnd?: string | null;
   amount?: string | null;
