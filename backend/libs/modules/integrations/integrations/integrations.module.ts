@@ -4,6 +4,7 @@ import { InvoicesModule } from '@app/modules/finance/invoices/invoices.module';
 import { AuditModule } from '@app/modules/platform/audit/audit.module';
 import { ConversationsModule } from '@app/modules/communications/conversations/conversations.module';
 import { MetaWebhookProcessorModule } from '@app/modules/communications/webhooks/meta-webhook-processor.module';
+import { StripePlatformBillingModule } from '@app/modules/platform/billing/stripe/stripe-platform-billing.module';
 import { BusinessIntegrationResourcesController } from './business-integration-resources.controller';
 import { BusinessIntegrationsController } from './business-integrations.controller';
 import { BusinessWhatsAppController } from './controllers/business-whatsapp.controller';
@@ -62,6 +63,7 @@ import { WhatsAppTemplatesController } from '../whatsapp/controllers/whatsapp-te
     forwardRef(() => InvoicesModule),
     MetaWebhookProcessorModule,
     WhatsAppModule,
+    StripePlatformBillingModule,
   ],
   controllers: [
     IntegrationProvidersController,

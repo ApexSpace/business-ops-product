@@ -4,6 +4,7 @@ import { IndustriesModule } from '@app/modules/crm/industries/industries.module'
 import { SnapshotsModule } from '@app/modules/platform/snapshots/snapshots.module';
 import { MembershipModule } from '@app/modules/platform/membership/membership.module';
 import { PlanGroupsModule } from '@app/modules/platform/plan-groups/plan-groups.module';
+import { StripePlatformBillingModule } from '@app/modules/platform/billing/stripe/stripe-platform-billing.module';
 import { BusinessController } from './controllers/business.controller';
 import { PlatformBusinessAccessController } from './controllers/platform-business-access.controller';
 import { PlatformBusinessController } from './controllers/platform-business.controller';
@@ -34,6 +35,7 @@ import { BusinessBillingService } from './services/business-billing.service';
     SnapshotsModule,
     PlanGroupsModule,
     forwardRef(() => MembershipModule),
+    forwardRef(() => StripePlatformBillingModule),
   ],
   controllers: [
     PlatformBusinessController,
@@ -68,10 +70,12 @@ import { BusinessBillingService } from './services/business-billing.service';
     BusinessAccessResolverService,
     BusinessCapabilityCheckService,
     BusinessCapabilityGuard,
+    BusinessCapabilitySyncService,
     BusinessEffectiveCapabilitiesService,
     BusinessSubscriptionActionService,
     BusinessSubscriptionEventService,
     BusinessSubscriptionPaymentService,
+    BusinessSubscriptionPaymentRepository,
     FinancialSettingsService,
   ],
 })

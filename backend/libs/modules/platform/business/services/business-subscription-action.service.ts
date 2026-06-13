@@ -6,6 +6,7 @@ import {
   BusinessSubscriptionEventType,
   BusinessSubscriptionPaymentType,
   Prisma,
+  SubscriptionBillingSource,
   SubscriptionPaymentMethod,
   SubscriptionPaymentStatus,
   SubscriptionStatus,
@@ -46,6 +47,7 @@ import {
   assertCustomPeriodEndRequired,
   assertTierPriceOrCustomAmount,
 } from '../utils/subscription-billing-validation.util';
+import { StripePlatformSubscriptionService } from '@app/modules/platform/billing/stripe/services/stripe-platform-subscription.service';
 
 type ActionResult = BusinessAccessDto & { correlationId?: string };
 
@@ -59,6 +61,7 @@ export class BusinessSubscriptionActionService {
     private readonly paymentService: BusinessSubscriptionPaymentService,
     private readonly availabilityService: BusinessSubscriptionActionAvailabilityService,
     private readonly capabilitySyncService: BusinessCapabilitySyncService,
+    private readonly stripeSubscriptionService: StripePlatformSubscriptionService,
   ) {}
 
   async previewAction(
@@ -383,7 +386,49 @@ export class BusinessSubscriptionActionService {
     businessId: string,
     actor: RequestUser,
     reason?: string,
+    options?: { immediate?: boolean },
   ): Promise<ActionResult> {
+    const existing = await this.prisma.businessSubscription.findUnique({
+      where: { businessId },
+    });
+
+    if (existing?.billingSource === SubscriptionBillingSource.STRIPE) {
+      if (options?.immediate) {
+        await this.stripeSubscriptionService.cancelImmediately(businessId);
+      } else {
+        await this.stripeSubscriptionService.cancelAtPeriodEnd(
+          businessId,
+          reason,
+        );
+        return this.executeAction(
+          businessId,
+          'CANCEL_SUBSCRIPTION',
+          actor,
+          async (tx, correlationId, before) => {
+            const after = await this.eventService.captureState(businessId, tx);
+            const subscription = await tx.businessSubscription.findUnique({
+              where: { businessId },
+            });
+            await this.eventService.createEvent(
+              tx,
+              {
+                businessId,
+                subscriptionId: subscription?.id,
+                eventType: BusinessSubscriptionEventType.STATUS_CHANGED,
+                actionKey: 'CANCEL_SUBSCRIPTION',
+                correlationId,
+                fromState: before as unknown as Prisma.InputJsonValue,
+                toState: after as unknown as Prisma.InputJsonValue,
+                reason,
+                notes: 'Stripe cancel at period end scheduled',
+              },
+              actor,
+            );
+          },
+        );
+      }
+    }
+
     return this.executeAction(businessId, 'CANCEL_SUBSCRIPTION', actor, async (tx, correlationId, before) => {
       const sub = await tx.businessSubscription.findUnique({ where: { businessId } });
       if (sub?.status === SubscriptionStatus.CANCELED) {
@@ -624,6 +669,26 @@ export class BusinessSubscriptionActionService {
         'Move pending cannot set paid payment status',
         HttpStatus.BAD_REQUEST,
       );
+    }
+
+    const existingSub = await this.prisma.businessSubscription.findUnique({
+      where: { businessId },
+    });
+    if (existingSub?.billingSource === SubscriptionBillingSource.STRIPE) {
+      const groupId =
+        dto.planGroupId ?? existingSub.planGroupId ?? undefined;
+      const billingCycle =
+        dto.billingCycle ??
+        existingSub.billingCycle ??
+        BusinessSubscriptionBillingCycle.MONTHLY;
+      if (groupId) {
+        await this.stripeSubscriptionService.updateSubscriptionTier({
+          businessId,
+          planGroupId: groupId,
+          planTierId: dto.planTierId,
+          billingCycle,
+        });
+      }
     }
 
     return this.executeAction(businessId, 'CHANGE_PACKAGE', actor, async (tx, correlationId, before) => {

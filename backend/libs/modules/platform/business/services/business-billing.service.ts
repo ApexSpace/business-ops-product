@@ -1,10 +1,11 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
-import { PlanTierStatus } from '@prisma/client';
+import { PlanTierStatus, SubscriptionBillingSource } from '@prisma/client';
 import { RequestUser } from '@app/common/decorators/current-user.decorator';
 import { AppException } from '@app/common/exceptions/app.exception';
 import { ErrorCode } from '@app/common/exceptions/error-code.enum';
 import { PlanEmbedService } from '@app/modules/platform/plan-groups/services/plan-embed.service';
 import { PrismaService } from '@app/core/database/prisma.service';
+import { StripePlatformSubscriptionService } from '@app/modules/platform/billing/stripe/services/stripe-platform-subscription.service';
 import {
   BusinessPlanOptionsDto,
   BusinessPlanTierOptionDto,
@@ -19,6 +20,7 @@ export class BusinessBillingService {
     private readonly prisma: PrismaService,
     private readonly embedService: PlanEmbedService,
     private readonly subscriptionActionService: BusinessSubscriptionActionService,
+    private readonly stripeSubscriptionService: StripePlatformSubscriptionService,
   ) {}
 
   async getCurrentPlanOptions(
@@ -114,6 +116,16 @@ export class BusinessBillingService {
       );
     }
 
+    if (subscription.billingSource === SubscriptionBillingSource.STRIPE) {
+      await this.stripeSubscriptionService.updateSubscriptionTier({
+        businessId,
+        planGroupId: subscription.planGroupId,
+        planTierId: dto.planTierId,
+        billingCycle:
+          subscription.billingCycle ?? ('MONTHLY' as const),
+      });
+    }
+
     return this.subscriptionActionService.changePackage(
       businessId,
       {
@@ -143,6 +155,14 @@ export class BusinessBillingService {
         'No subscription is assigned to this workspace',
         HttpStatus.BAD_REQUEST,
       );
+    }
+
+    if (subscription.billingSource === SubscriptionBillingSource.STRIPE) {
+      const result = await this.stripeSubscriptionService.cancelAtPeriodEnd(
+        businessId,
+        dto.reason?.trim() || 'Self-service cancellation',
+      );
+      return { businessId, ...result } as { businessId: string; cancelAtPeriodEnd: boolean };
     }
 
     return this.subscriptionActionService.cancelSubscription(

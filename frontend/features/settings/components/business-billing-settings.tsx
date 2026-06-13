@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
+import { ArrowDown, ArrowUp, ArrowUpDown, CreditCard, ExternalLink } from "lucide-react";
 import { ConfirmDeleteDialog } from "@/components/forms/confirm-delete-dialog";
 import { useAuth } from "@/lib/auth/provider";
 import { useAppRouter } from "@/lib/hooks/use-app-router";
@@ -21,6 +21,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import {
   cancelBusinessSubscription,
+  createBusinessCheckoutSession,
+  createBusinessPortalSession,
   getBusinessPlanOptions,
 } from "@/features/settings/api/business-billing.api";
 import {
@@ -60,6 +62,7 @@ export function BusinessBillingSettings() {
   const [cancelOpen, setCancelOpen] = useState(false);
 
   const hasPlanGroup = Boolean(access?.subscription?.planGroupId);
+  const isStripeBilling = access?.subscription?.billingSource === "STRIPE";
 
   const { data: planOptions } = useQuery({
     queryKey: queryKeys.business.planOptions(),
@@ -86,10 +89,32 @@ export function BusinessBillingSettings() {
   const showCancelSubscription =
     Boolean(access?.subscription?.id) && subscriptionStatus !== "CANCELED";
 
+  const portalMutation = useMutation({
+    mutationFn: createBusinessPortalSession,
+    onSuccess: (data) => {
+      window.location.href = data.url;
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  const checkoutMutation = useMutation({
+    mutationFn: createBusinessCheckoutSession,
+    onSuccess: (data) => {
+      window.location.href = data.url;
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
   const cancelMutation = useMutation({
     mutationFn: () => cancelBusinessSubscription(),
     onSuccess: async () => {
       setCancelOpen(false);
+      if (isStripeBilling) {
+        toast.success(
+          "Cancellation scheduled. Your workspace stays active until the current billing period ends.",
+        );
+        return;
+      }
       toast.info(
         "Your subscription has been canceled. Removing workspace access…",
       );
@@ -98,6 +123,18 @@ export function BusinessBillingSettings() {
     },
     onError: (err: Error) => toast.error(err.message),
   });
+
+  const startCheckout = () => {
+    const tierId = planOptions?.currentPlanTierId;
+    if (!tierId) {
+      toast.error("No plan tier is assigned to this workspace.");
+      return;
+    }
+    checkoutMutation.mutate({
+      planTierId: tierId,
+      billingCycle: "MONTHLY",
+    });
+  };
 
   if (isLoading) {
     return (
@@ -124,6 +161,14 @@ export function BusinessBillingSettings() {
             <CardTitle className="text-base">{blockedCopy.title}</CardTitle>
             <CardDescription>{blockedCopy.message}</CardDescription>
           </CardHeader>
+          {sub?.billingSource !== "STRIPE" ? (
+            <CardContent>
+              <ActionButton size="sm" onClick={startCheckout}>
+                <CreditCard className="mr-2 size-4" />
+                Subscribe with Stripe
+              </ActionButton>
+            </CardContent>
+          ) : null}
         </Card>
       ) : null}
 
@@ -144,6 +189,10 @@ export function BusinessBillingSettings() {
                 <span>{sub?.planTierName ?? "—"}</span>
               </div>
               <div className="flex justify-between gap-4">
+                <span className="text-muted-foreground">Billing source</span>
+                <span>{formatLabel(sub?.billingSource)}</span>
+              </div>
+              <div className="flex justify-between gap-4">
                 <span className="text-muted-foreground">Subscription status</span>
                 <Badge variant="secondary">{formatLabel(sub?.status)}</Badge>
               </div>
@@ -153,51 +202,66 @@ export function BusinessBillingSettings() {
               </div>
             </div>
 
-            {showBothWays ||
-            showUpgradeOnly ||
-            showDowngradeOnly ||
-            showCancelSubscription ? (
-              <div className="flex flex-wrap justify-end gap-2 border-t pt-4">
-                {showBothWays ? (
-                  <ActionButton
-                    size="sm"
-                    onClick={() => setPlanDialogMode("both")}
-                  >
-                    <ArrowUpDown className="mr-2 size-4" />
-                    {planChangeLabel}
-                  </ActionButton>
-                ) : null}
-                {showUpgradeOnly ? (
-                  <ActionButton
-                    size="sm"
-                    onClick={() => setPlanDialogMode("upgrade")}
-                  >
-                    <ArrowUp className="mr-2 size-4" />
-                    {planChangeLabel}
-                  </ActionButton>
-                ) : null}
-                {showDowngradeOnly ? (
-                  <ActionButton
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setPlanDialogMode("downgrade")}
-                  >
-                    <ArrowDown className="mr-2 size-4" />
-                    {planChangeLabel}
-                  </ActionButton>
-                ) : null}
-                {showCancelSubscription ? (
-                  <ActionButton
-                    size="sm"
-                    variant="outline"
-                    className="text-destructive hover:text-destructive"
-                    onClick={() => setCancelOpen(true)}
-                  >
-                    Cancel subscription
-                  </ActionButton>
-                ) : null}
-              </div>
-            ) : null}
+            <div className="flex flex-wrap justify-end gap-2 border-t pt-4">
+              {isStripeBilling ? (
+                <ActionButton
+                  size="sm"
+                  variant="outline"
+                  onClick={() => portalMutation.mutate()}
+                  disabled={portalMutation.isPending}
+                >
+                  <ExternalLink className="mr-2 size-4" />
+                  Manage billing
+                </ActionButton>
+              ) : hasPlanGroup ? (
+                <ActionButton
+                  size="sm"
+                  onClick={startCheckout}
+                  disabled={checkoutMutation.isPending}
+                >
+                  <CreditCard className="mr-2 size-4" />
+                  Subscribe with Stripe
+                </ActionButton>
+              ) : null}
+              {showBothWays ? (
+                <ActionButton
+                  size="sm"
+                  onClick={() => setPlanDialogMode("both")}
+                >
+                  <ArrowUpDown className="mr-2 size-4" />
+                  {planChangeLabel}
+                </ActionButton>
+              ) : null}
+              {showUpgradeOnly ? (
+                <ActionButton
+                  size="sm"
+                  onClick={() => setPlanDialogMode("upgrade")}
+                >
+                  <ArrowUp className="mr-2 size-4" />
+                  {planChangeLabel}
+                </ActionButton>
+              ) : null}
+              {showDowngradeOnly ? (
+                <ActionButton
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setPlanDialogMode("downgrade")}
+                >
+                  <ArrowDown className="mr-2 size-4" />
+                  {planChangeLabel}
+                </ActionButton>
+              ) : null}
+              {showCancelSubscription ? (
+                <ActionButton
+                  size="sm"
+                  variant="outline"
+                  className="text-destructive hover:text-destructive"
+                  onClick={() => setCancelOpen(true)}
+                >
+                  Cancel subscription
+                </ActionButton>
+              ) : null}
+            </div>
           </CardContent>
         </Card>
 
@@ -256,7 +320,11 @@ export function BusinessBillingSettings() {
         open={cancelOpen}
         onOpenChange={setCancelOpen}
         title="Cancel subscription?"
-        description="Your subscription will end immediately, your workspace access will be removed, and you will be signed out."
+        description={
+          isStripeBilling
+            ? "Your subscription will remain active until the end of the current billing period. Stripe will stop renewing after that date."
+            : "Your subscription will end immediately, your workspace access will be removed, and you will be signed out."
+        }
         confirmLabel="Cancel subscription"
         pendingLabel="Canceling…"
         isPending={cancelMutation.isPending}

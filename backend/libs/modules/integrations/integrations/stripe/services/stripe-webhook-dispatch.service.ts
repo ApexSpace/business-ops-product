@@ -3,11 +3,13 @@ import { IntegrationStatus, Prisma } from '@prisma/client';
 import { SYSTEM_AUDIT_ACTOR_SENTINEL } from '@app/modules/platform/audit/constants/audit.constants';
 import { AuditService } from '@app/modules/platform/audit/services/audit.service';
 import { WebhookEventsRepository } from '@app/modules/communications/conversations/repositories/webhook-events.repository';
+import { StripePlatformWebhookHandlerService } from '@app/modules/platform/billing/stripe/services/stripe-platform-webhook-handler.service';
 import { BusinessIntegrationRepository } from '../../repositories/business-integration.repository';
 import type { StripeConnectAccount, StripeWebhookEvent } from '../stripe.types';
 import { StripeInvoicePaymentService } from '@app/modules/finance/invoices/services/stripe-invoice-payment.service';
 import { StripeAccountService } from './stripe-account.service';
 import { StripeApiService } from './stripe-api.service';
+import { PLATFORM_SUBSCRIPTION_PURPOSE } from '@app/modules/platform/billing/stripe/types/stripe-platform-billing.types';
 
 @Injectable()
 export class StripeWebhookDispatchService {
@@ -20,6 +22,7 @@ export class StripeWebhookDispatchService {
     private readonly auditService: AuditService,
     private readonly webhookEventsRepository: WebhookEventsRepository,
     private readonly stripeInvoicePaymentService: StripeInvoicePaymentService,
+    private readonly platformWebhookHandler: StripePlatformWebhookHandlerService,
   ) {}
 
   async dispatchStoredEvent(
@@ -52,6 +55,10 @@ export class StripeWebhookDispatchService {
       },
     });
 
+    if (await this.tryDispatchPlatformBilling(event, source)) {
+      return;
+    }
+
     switch (event.type) {
       case 'account.updated':
         await this.handleAccountUpdated(event);
@@ -83,6 +90,63 @@ export class StripeWebhookDispatchService {
       default:
         this.logger.debug(`Unhandled Stripe event type: ${event.type}`);
     }
+  }
+
+  private async tryDispatchPlatformBilling(
+    event: StripeWebhookEvent,
+    source: 'platform' | 'connected',
+  ): Promise<boolean> {
+    if (source !== 'platform') {
+      return false;
+    }
+
+    const platformTypes = new Set([
+      'checkout.session.completed',
+      'customer.subscription.created',
+      'customer.subscription.updated',
+      'customer.subscription.deleted',
+      'invoice.paid',
+      'invoice.payment_failed',
+    ]);
+
+    if (!platformTypes.has(event.type)) {
+      return false;
+    }
+
+    const object = event.data.object as { metadata?: Record<string, string> };
+    const metadata = object.metadata ?? null;
+
+    const subscriptionObjectTypes = new Set([
+      'customer.subscription.created',
+      'customer.subscription.updated',
+      'customer.subscription.deleted',
+      'invoice.paid',
+      'invoice.payment_failed',
+    ]);
+
+    if (
+      event.type === 'checkout.session.completed' &&
+      metadata?.purpose !== PLATFORM_SUBSCRIPTION_PURPOSE
+    ) {
+      return false;
+    }
+
+    if (
+      subscriptionObjectTypes.has(event.type) &&
+      metadata?.purpose !== PLATFORM_SUBSCRIPTION_PURPOSE
+    ) {
+      const invoice = event.data.object as {
+        subscription?: string | { id?: string } | null;
+      };
+      if (event.type.startsWith('invoice.') && invoice.subscription) {
+        const handled = await this.platformWebhookHandler.handleEvent(event);
+        return handled;
+      }
+      return false;
+    }
+
+    const handled = await this.platformWebhookHandler.handleEvent(event);
+    return handled;
   }
 
   private async handleAccountUpdated(event: StripeWebhookEvent): Promise<void> {

@@ -9,6 +9,7 @@ import { CapabilitiesModule } from './capabilities/capabilities.module';
 import { PlanGroupsModule } from './plan-groups/plan-groups.module';
 import { SnapshotsModule } from './snapshots/snapshots.module';
 import { StorageModule } from '@app/modules/storage/storage.module';
+import { StripePlatformBillingModule } from './billing/stripe/stripe-platform-billing.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { StorageModule } from '@app/modules/storage/storage.module';
     SnapshotsModule,
     CapabilitiesModule,
     PlanGroupsModule,
+    StripePlatformBillingModule,
   ],
   exports: [
     AuthModule,
@@ -31,6 +33,7 @@ import { StorageModule } from '@app/modules/storage/storage.module';
     SnapshotsModule,
     CapabilitiesModule,
     PlanGroupsModule,
+    StripePlatformBillingModule,
   ],
 })
 export class PlatformModule {}
