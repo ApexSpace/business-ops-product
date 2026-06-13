@@ -239,6 +239,10 @@ export const queryKeys = {
     platformDetail: (providerKey: string) =>
       ["integrations", "platform", "detail", providerKey] as const,
   },
+  storage: {
+    all: ["storage"] as const,
+    file: (id: string) => ["storage", "file", id] as const,
+  },
   platform: {
     businesses: {
       all: () => ["platform", "businesses"] as const,

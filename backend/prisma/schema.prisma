@@ -434,7 +434,7 @@ enum AsyncJobStatus {
 }
 
 enum FileAssetStatus {
-  PENDING_UPLOAD
+  PENDING
   READY
   FAILED
   DELETED
@@ -443,6 +443,16 @@ enum FileAssetStatus {
 enum FileVisibility {
   PRIVATE
   PUBLIC
+  SIGNED
+}
+
+enum FileCategory {
+  IMAGE
+  PDF
+  DOCUMENT
+  VIDEO
+  AUDIO
+  OTHER
 }
 
 enum MessageSenderType {
@@ -545,7 +555,7 @@ model User {
   createdCalendars     Calendar[]            @relation("CalendarCreatedBy")
   createdAppointments  Appointment[]         @relation("AppointmentCreatedBy")
   assignedConversations Conversation[]       @relation("ConversationAssignedTo")
-  ownedFileAssets       FileAsset[]            @relation("FileAssetOwner")
+  uploadedFileAssets    FileAsset[]
   asyncJobs             AsyncJob[]             @relation("AsyncJobActor")
   emailTemplatesCreated EmailTemplate[]        @relation("EmailTemplateCreatedBy")
   emailTemplatesUpdated EmailTemplate[]        @relation("EmailTemplateUpdatedBy")
@@ -2266,30 +2276,28 @@ model AsyncJob {
 }
 
 model FileAsset {
-  id              String           @id @default(uuid())
-  businessId      String
-  ownerId         String
-  entityType      String?
-  entityId        String?
-  storageProvider String
-  bucket          String
-  key             String
-  originalName    String
-  mimeType        String
-  sizeBytes       Int?
-  checksum        String?
-  visibility      FileVisibility   @default(PRIVATE)
-  status          FileAssetStatus  @default(PENDING_UPLOAD)
-  createdAt       DateTime         @default(now())
-  deletedAt       DateTime?
-
-  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  owner    User     @relation("FileAssetOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  id           String          @id @default(cuid())
+  businessId   String
+  business     Business        @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  uploadedById String?
+  uploadedBy   User?           @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
+  originalName String
+  filename     String
+  mimeType     String
+  size         Int
+  category     FileCategory
+  objectKey    String          @unique
+  status       FileAssetStatus @default(PENDING)
+  visibility   FileVisibility  @default(PRIVATE)
+  metadata     Json?
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+  deletedAt    DateTime?
 
   @@index([businessId])
-  @@index([businessId, entityType, entityId])
-  @@index([businessId, status])
-  @@unique([bucket, key])
+  @@index([uploadedById])
+  @@index([businessId, category])
+  @@index([status])
   @@map("file_assets")
 }
 

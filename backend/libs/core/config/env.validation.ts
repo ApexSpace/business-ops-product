@@ -140,6 +140,17 @@ const baseSchema = Joi.object({
   /** Password when not embedded in REDIS_URL (e.g. ACL user default). */
   REDIS_PASSWORD: Joi.string().optional(),
 
+  R2_BUCKET: Joi.string().optional(),
+  R2_ENDPOINT: Joi.string().uri().optional(),
+  R2_ACCESS_KEY_ID: Joi.string().optional(),
+  R2_SECRET_ACCESS_KEY: Joi.string().optional(),
+  R2_PUBLIC_BASE_URL: Joi.string().uri().optional(),
+  R2_SIGNED_UPLOAD_EXPIRES_SECONDS: Joi.number().integer().min(60).default(900),
+  R2_SIGNED_DOWNLOAD_EXPIRES_SECONDS: Joi.number()
+    .integer()
+    .min(60)
+    .default(300),
+
   ...emailEnvValidationSchema,
 });
 
