@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { currencySelectOptions } from "@/features/payments/utils/currencies";
+import { planTierStripeSchema } from "@/features/platform/schemas/plan-tier-stripe.schema";
 
 const planGroupCurrencySchema = z
   .string()
@@ -99,6 +100,7 @@ export const createPlanTierSchema = z.object({
   highlighted: z.boolean().optional(),
   ctaLabel: z.string().optional(),
   ctaUrl: z.string().optional(),
+  stripe: planTierStripeSchema.optional(),
 });
 
 export type CreatePlanTierValues = z.infer<typeof createPlanTierSchema>;

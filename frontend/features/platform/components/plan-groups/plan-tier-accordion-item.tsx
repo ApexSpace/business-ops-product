@@ -35,10 +35,8 @@ import type {
 import { queryKeys } from "@/lib/query/keys";
 import { PlanTierCapabilityField } from "./plan-tier-meta-fields";
 import {
-  parseTierStripeFormValues,
   PlanTierStripeFields,
-  stripeFormValuesToMetadata,
-  type PlanTierStripeFormValues,
+  stripeFormStripeToMetadata,
 } from "./plan-tier-stripe-fields";
 import { PlanTierFormFields } from "./plan-tier-form-fields";
 import {
@@ -117,9 +115,6 @@ export const PlanTierAccordionItem = forwardRef<
   const [designSettings, setDesignSettings] = useState<PlanTierDesignSettings>(
     tier.designSettings ?? {},
   );
-  const [stripeValues, setStripeValues] = useState<PlanTierStripeFormValues>(
-    () => parseTierStripeFormValues(tier.metadata),
-  );
 
   const invalidate = () =>
     queryClient.invalidateQueries({
@@ -174,16 +169,19 @@ export const PlanTierAccordionItem = forwardRef<
 
   useImperativeHandle(ref, () => ({
     validate: () => form.trigger(),
-    getPayload: () => ({
-      values: form.getValues(),
-      capabilityIds: capabilities
-        .map(resolveTierCapabilityId)
-        .filter(Boolean),
-      originalCapabilities: tier.capabilities,
-      features,
-      designSettings,
-      stripeMetadata: stripeFormValuesToMetadata(stripeValues),
-    }),
+    getPayload: () => {
+      const values = form.getValues();
+      return {
+        values,
+        capabilityIds: capabilities
+          .map(resolveTierCapabilityId)
+          .filter(Boolean),
+        originalCapabilities: tier.capabilities,
+        features,
+        designSettings,
+        stripeMetadata: stripeFormStripeToMetadata(values.stripe),
+      };
+    },
   }));
 
   const deleteMutation = useMutation({
@@ -246,6 +244,10 @@ export const PlanTierAccordionItem = forwardRef<
                       })
                     }
                   />
+                  <PlanTierStripeFields
+                    control={form.control}
+                    disabled={fieldsDisabled}
+                  />
                 </div>
               </FormSchemaProvider>
             </Form>
@@ -254,14 +256,6 @@ export const PlanTierAccordionItem = forwardRef<
               features={features}
               onChange={setFeatures}
               disabled={fieldsDisabled}
-            />
-
-            <PlanTierStripeFields
-              values={stripeValues}
-              disabled={fieldsDisabled}
-              onChange={(field, value) =>
-                setStripeValues((prev) => ({ ...prev, [field]: value }))
-              }
             />
 
             <PlanTierCapabilityField
@@ -350,11 +344,6 @@ export const PlanTierDraftAccordionItem = forwardRef<
   >([]);
   const [features, setFeatures] = useState<TierFeatureInput[]>([]);
   const [designSettings, setDesignSettings] = useState<PlanTierDesignSettings>({});
-  const [stripeValues, setStripeValues] = useState<PlanTierStripeFormValues>({
-    stripeProductId: "",
-    stripeMonthlyPriceId: "",
-    stripeYearlyPriceId: "",
-  });
 
   const form = useForm<CreatePlanTierValues>({
     resolver: zodResolver(createPlanTierSchema),
@@ -396,13 +385,16 @@ export const PlanTierDraftAccordionItem = forwardRef<
 
   useImperativeHandle(ref, () => ({
     validate: () => form.trigger(),
-    getPayload: () => ({
-      values: form.getValues(),
-      capabilityIds: pendingCapabilities.map((cap) => cap.id),
-      features,
-      designSettings,
-      stripeMetadata: stripeFormValuesToMetadata(stripeValues),
-    }),
+    getPayload: () => {
+      const values = form.getValues();
+      return {
+        values,
+        capabilityIds: pendingCapabilities.map((cap) => cap.id),
+        features,
+        designSettings,
+        stripeMetadata: stripeFormStripeToMetadata(values.stripe),
+      };
+    },
   }));
 
   const fieldsDisabled = !canManage || disabled;
@@ -455,6 +447,10 @@ export const PlanTierDraftAccordionItem = forwardRef<
                       })
                     }
                   />
+                  <PlanTierStripeFields
+                    control={form.control}
+                    disabled={fieldsDisabled}
+                  />
                 </div>
               </FormSchemaProvider>
             </Form>
@@ -463,14 +459,6 @@ export const PlanTierDraftAccordionItem = forwardRef<
               features={features}
               onChange={setFeatures}
               disabled={fieldsDisabled}
-            />
-
-            <PlanTierStripeFields
-              values={stripeValues}
-              disabled={fieldsDisabled}
-              onChange={(field, value) =>
-                setStripeValues((prev) => ({ ...prev, [field]: value }))
-              }
             />
 
             <PlanTierCapabilityField

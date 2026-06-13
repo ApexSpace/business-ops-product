@@ -3,6 +3,7 @@ import {
   parseOptionalInt,
   type CreatePlanTierValues,
 } from "@/features/platform/schemas/plan-group-form";
+import { emptyPlanTierStripeValues } from "@/features/platform/schemas/plan-tier-stripe.schema";
 import type {
   PlanTier,
   PublicPricingCapability,
@@ -14,6 +15,10 @@ import {
   isEmptyTierDesignSettings,
   stripEmptyDesignSettings,
 } from "@/features/platform/utils/plan-design-settings.util";
+import {
+  stripeFormToApiBody,
+  tierStripeToFormValues,
+} from "@/features/platform/utils/plan-tier-stripe.util";
 
 type PreviewCapabilitySource = {
   id?: string;
@@ -47,6 +52,7 @@ export const emptyTierValues: CreatePlanTierValues = {
   highlighted: false,
   ctaLabel: "",
   ctaUrl: "",
+  stripe: emptyPlanTierStripeValues,
 };
 
 export function tierToFormValues(tier: PlanTier): CreatePlanTierValues {
@@ -61,6 +67,7 @@ export function tierToFormValues(tier: PlanTier): CreatePlanTierValues {
     highlighted: tier.highlighted,
     ctaLabel: tier.ctaLabel ?? "",
     ctaUrl: tier.ctaUrl ?? "",
+    stripe: tierStripeToFormValues(tier),
   };
 }
 
@@ -96,6 +103,7 @@ export function valuesToTierBody(
     ctaLabel: values.ctaLabel || undefined,
     ctaUrl: values.ctaUrl || undefined,
     ...(metadata && Object.keys(metadata).length ? { metadata } : {}),
+    stripe: stripeFormToApiBody(values.stripe ?? emptyPlanTierStripeValues),
     ...(features !== undefined
       ? {
           features: features.map((feature, index) => ({

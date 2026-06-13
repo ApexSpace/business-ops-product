@@ -15,6 +15,7 @@ import {
 import { toPlanTier } from '../mappers/plan-group.mapper';
 import { PlanGroupsRepository } from '../repositories/plan-groups.repository';
 import { PlanValidationService } from './plan-validation.service';
+import { resolvePlanTierMetadata } from '../utils/plan-tier-stripe.util';
 
 @Injectable()
 export class PlanTiersService {
@@ -47,6 +48,11 @@ export class PlanTiersService {
 
     this.validation.validateTierFeatures(dto.features);
 
+    const tierMetadata = resolvePlanTierMetadata({
+      metadata: dto.metadata,
+      stripe: dto.stripe,
+    });
+
     const tier = await this.repository.createTier({
       planGroup: { connect: { id: planGroupId } },
       slug,
@@ -62,7 +68,11 @@ export class PlanTiersService {
       ctaLabel: dto.ctaLabel?.trim(),
       ctaUrl: dto.ctaUrl?.trim(),
       sortOrder,
-      metadata: dto.metadata as Prisma.InputJsonValue | undefined,
+      ...(tierMetadata !== undefined
+        ? { metadata: tierMetadata as Prisma.InputJsonValue }
+        : dto.metadata !== undefined
+          ? { metadata: dto.metadata as Prisma.InputJsonValue }
+          : {}),
       ...(dto.designSettings !== undefined
         ? {
             designSettings: this.validation.sanitizeTierDesignSettings(
@@ -112,6 +122,15 @@ export class PlanTiersService {
         ? this.validation.sanitizeTierDesignSettings(dto.designSettings)
         : undefined;
 
+    const existingTier = await this.requireTier(planGroupId, tierId);
+    const tierMetadata = resolvePlanTierMetadata(
+      {
+        metadata: dto.metadata,
+        stripe: dto.stripe,
+      },
+      existingTier.metadata,
+    );
+
     await this.repository.updateTier(tierId, {
       ...(dto.name !== undefined ? { name: dto.name.trim() } : {}),
       ...(dto.slug !== undefined ? { slug: dto.slug } : {}),
@@ -133,9 +152,11 @@ export class PlanTiersService {
       ...(dto.ctaLabel !== undefined ? { ctaLabel: dto.ctaLabel?.trim() } : {}),
       ...(dto.ctaUrl !== undefined ? { ctaUrl: dto.ctaUrl?.trim() } : {}),
       ...(dto.sortOrder !== undefined ? { sortOrder: dto.sortOrder } : {}),
-      ...(dto.metadata !== undefined
-        ? { metadata: dto.metadata as Prisma.InputJsonValue }
-        : {}),
+      ...(tierMetadata !== undefined
+        ? { metadata: tierMetadata as Prisma.InputJsonValue }
+        : dto.metadata !== undefined
+          ? { metadata: dto.metadata as Prisma.InputJsonValue }
+          : {}),
       ...(designSettings !== undefined
         ? { designSettings: designSettings }
         : {}),

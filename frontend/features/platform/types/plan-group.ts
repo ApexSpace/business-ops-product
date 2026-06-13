@@ -72,6 +72,12 @@ export type TierFeatureInput = {
   sortOrder: number;
 };
 
+export type PlanTierStripeMapping = {
+  productId?: string | null;
+  monthlyPriceId?: string | null;
+  yearlyPriceId?: string | null;
+};
+
 export type PlanTier = {
   id: string;
   planGroupId: string;
@@ -89,6 +95,7 @@ export type PlanTier = {
   ctaUrl?: string | null;
   sortOrder: number;
   metadata?: Record<string, unknown> | null;
+  stripe?: PlanTierStripeMapping | null;
   designSettings?: PlanTierDesignSettings | null;
   capabilities: TierCapability[];
   features: PlanTierFeature[];

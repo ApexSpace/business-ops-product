@@ -15,10 +15,41 @@ import {
   Matches,
   Min,
   MinLength,
+  ValidateIf,
   ValidateNested,
 } from 'class-validator';
 
 const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const STRIPE_ID_PATTERN = /^[a-zA-Z0-9_]+$/;
+
+export class PlanTierStripeDto {
+  @ApiPropertyOptional({ example: 'prod_123' })
+  @IsOptional()
+  @IsString()
+  @ValidateIf((_, value) => typeof value === 'string' && value.trim() !== '')
+  @Matches(STRIPE_ID_PATTERN, {
+    message: 'productId must be a valid Stripe ID',
+  })
+  productId?: string;
+
+  @ApiPropertyOptional({ example: 'price_monthly_123' })
+  @IsOptional()
+  @IsString()
+  @ValidateIf((_, value) => typeof value === 'string' && value.trim() !== '')
+  @Matches(STRIPE_ID_PATTERN, {
+    message: 'monthlyPriceId must be a valid Stripe ID',
+  })
+  monthlyPriceId?: string;
+
+  @ApiPropertyOptional({ example: 'price_yearly_123' })
+  @IsOptional()
+  @IsString()
+  @ValidateIf((_, value) => typeof value === 'string' && value.trim() !== '')
+  @Matches(STRIPE_ID_PATTERN, {
+    message: 'yearlyPriceId must be a valid Stripe ID',
+  })
+  yearlyPriceId?: string;
+}
 
 export class TierFeatureInputDto {
   @ApiPropertyOptional()
@@ -142,6 +173,12 @@ export class CreatePlanTierDto {
   @IsObject()
   metadata?: Record<string, unknown>;
 
+  @ApiPropertyOptional({ type: PlanTierStripeDto })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => PlanTierStripeDto)
+  stripe?: PlanTierStripeDto;
+
   @ApiPropertyOptional()
   @IsOptional()
   @IsObject()
@@ -226,6 +263,12 @@ export class UpdatePlanTierDto {
   @IsOptional()
   @IsObject()
   metadata?: Record<string, unknown>;
+
+  @ApiPropertyOptional({ type: PlanTierStripeDto })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => PlanTierStripeDto)
+  stripe?: PlanTierStripeDto;
 
   @ApiPropertyOptional()
   @IsOptional()
@@ -322,6 +365,9 @@ export class PlanTierDto {
 
   @ApiPropertyOptional()
   metadata?: Record<string, unknown> | null;
+
+  @ApiPropertyOptional({ type: PlanTierStripeDto })
+  stripe?: PlanTierStripeDto | null;
 
   @ApiPropertyOptional()
   designSettings?: PlanTierDesignSettings | null;

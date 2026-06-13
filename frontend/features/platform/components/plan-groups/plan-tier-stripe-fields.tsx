@@ -1,15 +1,13 @@
 "use client";
 
+import type { Control } from "react-hook-form";
+import { TextField } from "@/components/forms/text-field";
+import type { CreatePlanTierValues } from "@/features/platform/schemas/plan-group-form";
+
 export type PlanTierStripeFormValues = {
   stripeProductId: string;
   stripeMonthlyPriceId: string;
   stripeYearlyPriceId: string;
-};
-
-type PlanTierStripeFieldsProps = {
-  values: PlanTierStripeFormValues;
-  onChange: (field: keyof PlanTierStripeFormValues, value: string) => void;
-  disabled?: boolean;
 };
 
 export function parseTierStripeFormValues(
@@ -48,57 +46,60 @@ export function stripeFormValuesToMetadata(
   return Object.keys(stripe).length ? { stripe } : {};
 }
 
+export function stripeFormStripeToMetadata(
+  stripe?: {
+    productId?: string;
+    monthlyPriceId?: string;
+    yearlyPriceId?: string;
+  } | null,
+): Record<string, unknown> {
+  return stripeFormValuesToMetadata({
+    stripeProductId: stripe?.productId ?? "",
+    stripeMonthlyPriceId: stripe?.monthlyPriceId ?? "",
+    stripeYearlyPriceId: stripe?.yearlyPriceId ?? "",
+  });
+}
+
+type PlanTierStripeFieldsProps = {
+  control: Control<CreatePlanTierValues>;
+  disabled?: boolean;
+};
+
 export function PlanTierStripeFields({
-  values,
-  onChange,
+  control,
   disabled,
 }: PlanTierStripeFieldsProps) {
   return (
-    <div className="space-y-4 rounded-lg border p-4">
+    <div className="space-y-3 rounded-lg border border-dashed p-4">
       <div>
         <p className="text-sm font-medium">Stripe billing</p>
         <p className="text-xs text-muted-foreground">
           Map this tier to Stripe product and price IDs for platform subscription
-          checkout.
+          checkout. Leave blank for manual or internal plans.
         </p>
       </div>
-      <div className="grid gap-4 sm:grid-cols-2">
-        <label className="space-y-1.5 sm:col-span-2">
-          <span className="text-sm font-medium">Stripe product ID</span>
-          <input
-            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-            value={values.stripeProductId}
-            disabled={disabled}
-            placeholder="prod_..."
-            onChange={(event) =>
-              onChange("stripeProductId", event.target.value)
-            }
-          />
-        </label>
-        <label className="space-y-1.5">
-          <span className="text-sm font-medium">Monthly price ID</span>
-          <input
-            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-            value={values.stripeMonthlyPriceId}
-            disabled={disabled}
-            placeholder="price_..."
-            onChange={(event) =>
-              onChange("stripeMonthlyPriceId", event.target.value)
-            }
-          />
-        </label>
-        <label className="space-y-1.5">
-          <span className="text-sm font-medium">Yearly price ID</span>
-          <input
-            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-            value={values.stripeYearlyPriceId}
-            disabled={disabled}
-            placeholder="price_..."
-            onChange={(event) =>
-              onChange("stripeYearlyPriceId", event.target.value)
-            }
-          />
-        </label>
+      <div className="grid gap-4 sm:grid-cols-1">
+        <TextField
+          control={control}
+          name="stripe.productId"
+          label="Stripe product ID"
+          disabled={disabled}
+          placeholder="prod_..."
+        />
+        <TextField
+          control={control}
+          name="stripe.monthlyPriceId"
+          label="Stripe monthly price ID"
+          disabled={disabled}
+          placeholder="price_..."
+        />
+        <TextField
+          control={control}
+          name="stripe.yearlyPriceId"
+          label="Stripe yearly price ID"
+          disabled={disabled}
+          placeholder="price_..."
+        />
       </div>
     </div>
   );

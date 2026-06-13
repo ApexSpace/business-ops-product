@@ -20,6 +20,7 @@ import {
   parsePlanGroupDesignSettings,
   parsePlanTierDesignSettings,
 } from '../utils/plan-design-settings.util';
+import { parsePlanTierStripe } from '../utils/plan-tier-stripe.util';
 
 type PlanGroupWithCounts = PlanGroup & {
   _count: { tiers: number; featureRows: number };
@@ -136,6 +137,17 @@ export function toPlanTierFeature(
   };
 }
 
+function toPlanTierStripeDto(
+  mapping: ReturnType<typeof parsePlanTierStripe>,
+): PlanTierDto['stripe'] {
+  if (!mapping) return null;
+  return {
+    ...(mapping.productId ? { productId: mapping.productId } : {}),
+    ...(mapping.monthlyPriceId ? { monthlyPriceId: mapping.monthlyPriceId } : {}),
+    ...(mapping.yearlyPriceId ? { yearlyPriceId: mapping.yearlyPriceId } : {}),
+  };
+}
+
 export function toPlanTier(tier: PlanTierWithRelations): PlanTierDto {
   return {
     id: tier.id,
@@ -154,6 +166,7 @@ export function toPlanTier(tier: PlanTierWithRelations): PlanTierDto {
     ctaUrl: tier.ctaUrl,
     sortOrder: tier.sortOrder,
     metadata: parseMetadata(tier.metadata),
+    stripe: toPlanTierStripeDto(parsePlanTierStripe(tier.metadata)),
     designSettings: parsePlanTierDesignSettings(tier.designSettings),
     capabilities: tier.capabilities.map(toTierCapability),
     features: tier.features.map(toPlanTierFeature),
