@@ -171,13 +171,6 @@ export function VirtualizedMessageList({
   );
 }
 
-function getEmptyMessageFallback(message: ConversationMessage): string {
-  if (isInboundEmailMessage(message)) {
-    return "(Email reply)";
-  }
-  return "[Attachment]";
-}
-
 function isInboundEmailMessage(message: ConversationMessage): boolean {
   return (
     message.direction === "INBOUND" &&
@@ -185,11 +178,42 @@ function isInboundEmailMessage(message: ConversationMessage): boolean {
   );
 }
 
+function getEmptyMessageFallback(message: ConversationMessage): string {
+  if (isInboundEmailMessage(message)) {
+    return "(Email reply)";
+  }
+  if (
+    message.channel === "WHATSAPP" &&
+    message.direction === "OUTBOUND" &&
+    !message.text?.trim()
+  ) {
+    return "Template message";
+  }
+  return "[Attachment]";
+}
+
+function isWhatsAppTemplateMessage(message: ConversationMessage): boolean {
+  const text = message.text?.trim() ?? "";
+  return (
+    message.channel === "WHATSAPP" &&
+    (text.startsWith("Template:") || (!text && message.direction === "OUTBOUND"))
+  );
+}
+
 function messageDisplayText(message: ConversationMessage): string | null {
   if (isInboundEmailMessage(message)) {
     return displayInboundEmailBody(message.text);
   }
-  return message.text;
+
+  const text = message.text?.trim();
+  if (text) {
+    if (text.startsWith("Template:")) {
+      return text.replace(/^Template:\s*/, "");
+    }
+    return text;
+  }
+
+  return null;
 }
 
 function DateSeparator({ label }: { label: string }) {
@@ -323,8 +347,15 @@ function MessageBody({
   displayText: string | null;
   outbound?: boolean;
 }) {
+  const isTemplate = isWhatsAppTemplateMessage(message);
+
   return (
     <>
+      {isTemplate ? (
+        <p className="mb-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+          Template
+        </p>
+      ) : null}
       {attachments.length > 0 ? (
         <div className="space-y-2">
           {attachments.map((attachment, index) => {

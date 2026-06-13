@@ -30,6 +30,7 @@ import {
   sendConversationMessage,
   type ContactReplyChannel,
   type ConversationChannel,
+  type EnsureContactConversationInput,
   type UnifiedConversationThread,
 } from "@/features/conversations/api/conversations.api";
 import { useContactMessages } from "@/features/conversations/hooks/use-contact-messages";
@@ -40,6 +41,7 @@ import {
   pickDefaultReplyChannel,
   replyChannelSendDisabledReason,
 } from "@/features/conversations/utils/reply-channel.utils";
+import { useWhatsAppTemplateComposerState } from "@/features/conversations/hooks/use-whatsapp-template-composer-state";
 import { useConversationsInboxFilters } from "@/features/conversations/hooks/use-conversations-inbox-filters";
 import { RealtimeOfflineBanner } from "@/features/realtime/components/realtime-offline-banner";
 import { createOptimisticOutboundMessage } from "@/features/conversations/utils/optimistic-message";
@@ -269,6 +271,25 @@ export function ConversationsInbox() {
     ? (selected ?? statusConversation)
     : selected;
 
+  const {
+    whatsAppMode,
+    selectedTemplateId,
+    handleTemplateIdChange,
+    templateVariableValues,
+    handleTemplateVariableValueChange,
+    templateHeaderMediaUrl,
+    setTemplateHeaderMediaUrl,
+    hasTemplateContent,
+    buildTemplatePayload,
+    templatePreviewText,
+    resetTemplateComposer,
+  } = useWhatsAppTemplateComposerState({
+    activeReplyChannel: mergedTimeline ? activeReplyChannel : null,
+    conversation: threadConversation,
+    messages,
+    selectedReplyChannel: effectiveReplyChannel,
+  });
+
   const isWebchat = isWebchatConversation(threadConversation);
 
   const messagingStatusQuery = useQuery({
@@ -294,7 +315,7 @@ export function ConversationsInbox() {
       }
       if (contactId) {
         const conversation = await ensureContactConversation(contactId, {
-          channel: channel.channel,
+          channel: channel.channel as EnsureContactConversationInput["channel"],
         });
         await queryClient.invalidateQueries({
           queryKey: queryKeys.conversations.replyChannels(contactId),
@@ -314,11 +335,18 @@ export function ConversationsInbox() {
       text,
       subject,
       attachments,
+      template,
       replyChannel,
     }: {
       text: string;
       subject?: string;
       attachments?: Array<{ type: string; url: string }>;
+      template?: {
+        name: string;
+        language: string;
+        components?: unknown[];
+        headerMedia?: { type: string; url: string };
+      };
       replyChannel: ContactReplyChannel | null;
     }) => {
       const conversationId = mergedTimeline
@@ -328,9 +356,10 @@ export function ConversationsInbox() {
         text: text || undefined,
         subject,
         attachments,
+        template,
       }).then((result) => ({ ...result, conversationId }));
     },
-    onMutate: async ({ text, attachments, replyChannel }) => {
+    onMutate: async ({ text, attachments, replyChannel, template }) => {
       const conversationId = mergedTimeline
         ? replyChannel?.conversationId ?? null
         : orphanConversationId;
@@ -339,6 +368,12 @@ export function ConversationsInbox() {
       const sendProviderKey =
         replyChannel?.providerKey ?? threadConversation?.providerKey ?? "whatsapp";
       const trackingId = conversationId ?? `pending-${sendChannel}`;
+      const optimisticText =
+        text.trim() ||
+        (template
+          ? templatePreviewText ||
+            (template.name ? `Template: ${template.name}` : "Template message")
+          : "");
 
       markMessageSendStart(trackingId);
       markMessageSendPending(trackingId);
@@ -360,7 +395,7 @@ export function ConversationsInbox() {
           channel: sendChannel,
           providerKey: sendProviderKey,
         },
-        text,
+        text: optimisticText,
         attachments,
       });
 
@@ -381,6 +416,9 @@ export function ConversationsInbox() {
       setComposer("");
       setAttachmentUrl("");
       setPendingAttachment(null);
+      if (template) {
+        resetTemplateComposer();
+      }
 
       return {
         optimisticId: optimisticMessage.id,
@@ -469,6 +507,8 @@ export function ConversationsInbox() {
         activeReplyChannel,
         threadConversation,
         hasComposerContent,
+        whatsAppMode,
+        hasTemplateContent,
       ) ||
       (activeReplyChannel?.channel === "EMAIL" &&
         hasComposerContent &&
@@ -484,6 +524,7 @@ export function ConversationsInbox() {
       return replyChannelSendDisabledReason(
         activeReplyChannel,
         threadConversation,
+        whatsAppMode,
       );
     }
 
@@ -524,6 +565,7 @@ export function ConversationsInbox() {
     messagingStatusQuery.data?.readyForMessaging,
     messagingStatusQuery.data?.warnings,
     threadConversation,
+    whatsAppMode,
   ]);
 
   const useVirtualThreads =
@@ -577,6 +619,14 @@ export function ConversationsInbox() {
         sendDisabledReason={sendDisabledReason}
         emailSubject={emailSubject}
         onEmailSubjectChange={setEmailSubject}
+        whatsAppRequiresTemplate={Boolean(whatsAppMode?.requiresTemplate)}
+        selectedTemplateId={selectedTemplateId}
+        onTemplateIdChange={handleTemplateIdChange}
+        templateVariableValues={templateVariableValues}
+        onTemplateVariableValueChange={handleTemplateVariableValueChange}
+        templateHeaderMediaUrl={templateHeaderMediaUrl}
+        onTemplateHeaderMediaUrlChange={setTemplateHeaderMediaUrl}
+        buildTemplatePayload={buildTemplatePayload}
         sendMutation={{
           ...sendMutation,
           mutate: (variables) =>

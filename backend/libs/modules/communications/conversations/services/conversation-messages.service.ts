@@ -23,6 +23,9 @@ import { ConversationMessageResponseDto } from '../dto/conversation-response.dto
 import { toConversationMessageResponse } from '../mappers/conversation.mapper';
 import { ConversationMessagesRepository } from '../repositories/conversation-messages.repository';
 import { ConversationsRepository } from '../repositories/conversations.repository';
+import { WhatsAppSessionWindowService } from './whatsapp-session-window.service';
+import type { SendWhatsAppTemplateDto } from '../dto/send-message.dto';
+import { buildWhatsAppTemplateDisplayText } from '@app/modules/integrations/whatsapp/utils/whatsapp-template-display.util';
 
 export interface AsyncMessageResponse {
   data: ConversationMessageResponseDto;
@@ -41,6 +44,7 @@ export class ConversationMessagesService {
     private readonly businessIntegrationRepository: BusinessIntegrationRepository,
     private readonly platformEmailProvisioning: PlatformEmailProvisioningService,
     private readonly outboundMessageDispatch: OutboundMessageDispatchService,
+    private readonly whatsAppSessionWindowService: WhatsAppSessionWindowService,
   ) {}
 
   async list(
@@ -155,10 +159,38 @@ export class ConversationMessagesService {
     const text = dto.text?.trim() ?? '';
     const hasAttachments =
       Array.isArray(dto.attachments) && dto.attachments.length > 0;
-    const preview = (text || (hasAttachments ? '[Attachment]' : '')).slice(
-      0,
-      500,
+    const hasTemplate = Boolean(dto.template?.name?.trim());
+    const hasFreeForm = Boolean(text) || hasAttachments;
+
+    if (conversation.channel === ConversationChannel.WHATSAPP) {
+      const session =
+        await this.whatsAppSessionWindowService.getSessionStateForConversation(
+          businessId,
+          conversation.id,
+        );
+
+      if (session.requiresTemplate) {
+        if (!hasTemplate) {
+          throw new AppException(
+            ErrorCode.WHATSAPP_SESSION_CLOSED,
+            hasFreeForm
+              ? 'The 24-hour WhatsApp customer service window has closed. Send an approved template instead of a free-form message.'
+              : 'An approved WhatsApp template is required outside the 24-hour customer service window.',
+            HttpStatus.UNPROCESSABLE_ENTITY,
+          );
+        }
+      }
+    }
+
+    const preview = this.resolveMessagePreview(
+      text,
+      hasAttachments,
+      dto.template,
     );
+    const templateDisplayText = dto.template
+      ? buildWhatsAppTemplateDisplayText(dto.template)
+      : null;
+    const messageText = text || templateDisplayText || null;
     const messageBase = {
       business: { connect: { id: businessId } },
       conversation: { connect: { id: conversation.id } },
@@ -170,7 +202,7 @@ export class ConversationMessagesService {
       direction: ConversationDirection.OUTBOUND,
       senderType: MessageSenderType.USER,
       senderUserId: actor.id,
-      text: text || null,
+      text: messageText,
       attachments: (dto.attachments ?? undefined) as
         | Prisma.InputJsonValue
         | undefined,
@@ -216,21 +248,24 @@ export class ConversationMessagesService {
       );
     }
 
-    if (!text && !hasAttachments) {
+    if (!text && !hasAttachments && !hasTemplate) {
       throw new AppException(
         ErrorCode.BAD_REQUEST,
-        'Message text or at least one attachment is required.',
+        'Message text, a template, or at least one attachment is required.',
         HttpStatus.BAD_REQUEST,
       );
     }
 
+    const messageMetadata = this.buildOutboundMessageMetadata(
+      conversation.channel,
+      dto,
+      isPlatformEmail,
+    );
+
     const message = await this.messagesRepository.create({
       ...messageBase,
       status: MessageStatus.PENDING,
-      metadata:
-        isPlatformEmail && dto.subject?.trim()
-          ? ({ subject: dto.subject.trim() } as Prisma.InputJsonValue)
-          : undefined,
+      metadata: messageMetadata,
     });
 
     await this.conversationsRepository.update(conversation.id, {
@@ -257,6 +292,50 @@ export class ConversationMessagesService {
         sseChannel: `business:${businessId}`,
       },
     };
+  }
+
+  private resolveMessagePreview(
+    text: string,
+    hasAttachments: boolean,
+    template?: SendMessageDto['template'],
+  ): string {
+    if (text) {
+      return text.slice(0, 500);
+    }
+    if (template?.name?.trim()) {
+      return `Template: ${template.name.trim()}`.slice(0, 500);
+    }
+    if (hasAttachments) {
+      return '[Attachment]';
+    }
+    return '';
+  }
+
+  private buildOutboundMessageMetadata(
+    channel: ConversationChannel,
+    dto: SendMessageDto,
+    isPlatformEmail: boolean,
+  ): Prisma.InputJsonValue | undefined {
+    const metadata: Record<string, unknown> = {};
+
+    if (isPlatformEmail && dto.subject?.trim()) {
+      metadata.subject = dto.subject.trim();
+    }
+
+    if (channel === ConversationChannel.WHATSAPP && dto.template) {
+      metadata.whatsappTemplate = {
+        name: dto.template.name.trim(),
+        language: dto.template.language.trim(),
+        components: dto.template.components ?? [],
+        ...(dto.template.headerMedia
+          ? { headerMedia: dto.template.headerMedia }
+          : {}),
+      };
+    }
+
+    return Object.keys(metadata).length > 0
+      ? (metadata as Prisma.InputJsonValue)
+      : undefined;
   }
 
   private async requireConversation(businessId: string, id: string) {

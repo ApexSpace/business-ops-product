@@ -219,6 +219,12 @@ export type SendConversationMessageInput = {
   text?: string;
   subject?: string;
   attachments?: Array<{ type: string; url: string }>;
+  template?: {
+    name: string;
+    language: string;
+    components?: unknown[];
+    headerMedia?: { type: string; url: string };
+  };
 };
 
 export type StartEmailConversationInput = {
@@ -239,6 +245,7 @@ export async function sendConversationMessage(
           text: input.text,
           subject: input.subject,
           attachments: input.attachments,
+          template: input.template,
         };
 
   const { data, meta } = await api.postWithMeta<ConversationMessage>(
@@ -295,6 +302,8 @@ export interface ContactReplyChannel {
   readyForMessaging: boolean;
   messagingStatus: MessagingStatus;
   unavailableReason: string | null;
+  sessionOpen?: boolean | null;
+  requiresTemplate?: boolean | null;
 }
 
 export async function listContactMessages(

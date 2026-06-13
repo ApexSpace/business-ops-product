@@ -11,6 +11,7 @@ import {
   sendConversationMessage,
   type ContactReplyChannel,
   type ConversationChannel,
+  type EnsureContactConversationInput,
 } from "@/features/conversations/api/conversations.api";
 import { useContactMessages } from "@/features/conversations/hooks/use-contact-messages";
 import {
@@ -19,6 +20,7 @@ import {
   pickDefaultReplyChannel,
   replyChannelSendDisabledReason,
 } from "@/features/conversations/utils/reply-channel.utils";
+import { useWhatsAppTemplateComposerState } from "@/features/conversations/hooks/use-whatsapp-template-composer-state";
 import { createOptimisticOutboundMessage } from "@/features/conversations/utils/optimistic-message";
 import {
   appendMessageToContactCache,
@@ -74,6 +76,24 @@ export function useContactConversationComposer(contactId: string) {
     [replyChannels, effectiveReplyChannel],
   );
 
+  const {
+    whatsAppMode,
+    selectedTemplateId,
+    handleTemplateIdChange,
+    templateVariableValues,
+    handleTemplateVariableValueChange,
+    templateHeaderMediaUrl,
+    setTemplateHeaderMediaUrl,
+    hasTemplateContent,
+    buildTemplatePayload,
+    templatePreviewText,
+    resetTemplateComposer,
+  } = useWhatsAppTemplateComposerState({
+    activeReplyChannel,
+    messages,
+    selectedReplyChannel: effectiveReplyChannel,
+  });
+
   const handleReplyChannelChange = useCallback(
     (channel: ConversationChannel) => {
       setSelectedReplyChannel(channel);
@@ -94,7 +114,7 @@ export function useContactConversationComposer(contactId: string) {
       }
 
       const conversation = await ensureContactConversation(contactId, {
-        channel: channel.channel,
+        channel: channel.channel as EnsureContactConversationInput["channel"],
         subject:
           channel.channel === "EMAIL" ? emailSubject.trim() || undefined : undefined,
       });
@@ -116,11 +136,18 @@ export function useContactConversationComposer(contactId: string) {
       text,
       subject,
       attachments,
+      template,
       replyChannel,
     }: {
       text: string;
       subject?: string;
       attachments?: Array<{ type: string; url: string }>;
+      template?: {
+        name: string;
+        language: string;
+        components?: unknown[];
+        headerMedia?: { type: string; url: string };
+      };
       replyChannel: ContactReplyChannel | null;
     }) => {
       const conversationId = await resolveSendConversationId(replyChannel);
@@ -128,13 +155,20 @@ export function useContactConversationComposer(contactId: string) {
         text: text || undefined,
         subject,
         attachments,
+        template,
       }).then((result) => ({ ...result, conversationId }));
     },
-    onMutate: async ({ text, attachments, replyChannel }) => {
+    onMutate: async ({ text, attachments, replyChannel, template }) => {
       const conversationId = replyChannel?.conversationId ?? null;
       const sendChannel = replyChannel?.channel ?? "WHATSAPP";
       const sendProviderKey = replyChannel?.providerKey ?? "whatsapp";
       const trackingId = conversationId ?? `pending-${sendChannel}`;
+      const optimisticText =
+        text.trim() ||
+        (template
+          ? templatePreviewText ||
+            (template.name ? `Template: ${template.name}` : "Template message")
+          : "");
 
       await queryClient.cancelQueries({
         queryKey: queryKeys.conversations.contactMessages(contactId, 0),
@@ -146,7 +180,7 @@ export function useContactConversationComposer(contactId: string) {
           channel: sendChannel,
           providerKey: sendProviderKey,
         },
-        text,
+        text: optimisticText,
         attachments,
       });
 
@@ -155,6 +189,9 @@ export function useContactConversationComposer(contactId: string) {
       setComposer("");
       setAttachmentUrl("");
       setPendingAttachment(null);
+      if (template) {
+        resetTemplateComposer();
+      }
 
       return {
         optimisticId: optimisticMessage.id,
@@ -206,7 +243,13 @@ export function useContactConversationComposer(contactId: string) {
     composer.trim().length > 0 || Boolean(pendingAttachment);
 
   const canSend =
-    canSendViaReplyChannel(activeReplyChannel, undefined, hasComposerContent) ||
+    canSendViaReplyChannel(
+      activeReplyChannel,
+      undefined,
+      hasComposerContent,
+      whatsAppMode,
+      hasTemplateContent,
+    ) ||
     (activeReplyChannel?.channel === "EMAIL" &&
       hasComposerContent &&
       Boolean(contactId) &&
@@ -216,10 +259,13 @@ export function useContactConversationComposer(contactId: string) {
   const sendDisabledReason = replyChannelSendDisabledReason(
     activeReplyChannel,
     undefined,
+    whatsAppMode,
   );
 
   const channelHint = effectiveReplyChannel
-    ? channelComposerHint(effectiveReplyChannel)
+    ? channelComposerHint(effectiveReplyChannel, {
+        requiresTemplate: whatsAppMode?.requiresTemplate,
+      })
     : null;
 
   return {
@@ -244,5 +290,14 @@ export function useContactConversationComposer(contactId: string) {
     channelHint,
     sendMutation,
     activeReplyChannel,
+    whatsAppMode,
+    selectedTemplateId,
+    handleTemplateIdChange,
+    templateVariableValues,
+    handleTemplateVariableValueChange,
+    templateHeaderMediaUrl,
+    setTemplateHeaderMediaUrl,
+    buildTemplatePayload,
+    resetTemplateComposer,
   };
 }

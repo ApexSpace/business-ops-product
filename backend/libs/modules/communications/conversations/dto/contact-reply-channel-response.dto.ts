@@ -8,4 +8,6 @@ export class ContactReplyChannelDto {
   readyForMessaging!: boolean;
   messagingStatus!: MessagingStatusDto;
   unavailableReason!: string | null;
+  sessionOpen?: boolean | null;
+  requiresTemplate?: boolean | null;
 }

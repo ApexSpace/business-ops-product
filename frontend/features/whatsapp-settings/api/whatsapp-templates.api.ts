@@ -103,6 +103,12 @@ export function listWhatsAppTemplates(filters: WhatsAppTemplatesListFilters = {}
   ) as Promise<PaginatedList<WhatsAppTemplateListItem>>;
 }
 
+export function listApprovedWhatsAppTemplates() {
+  return api.get<WhatsAppTemplateListItem[]>(
+    "integrations/business/whatsapp/templates/approved",
+  );
+}
+
 export function getWhatsAppTemplateOptions() {
   return api.get<WhatsAppTemplateOptions>(
     "integrations/business/whatsapp/templates/options",

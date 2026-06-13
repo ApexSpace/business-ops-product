@@ -23,6 +23,11 @@ import { WhatsAppTemplateWebhookService } from './services/whatsapp-template-web
     MetaApiClient,
     MetaConfigService,
   ],
-  exports: [WhatsAppTemplateService, WhatsAppTemplateWebhookService],
+  exports: [
+    WhatsAppTemplateService,
+    WhatsAppTemplateWebhookService,
+    WhatsAppTemplateRepository,
+    WhatsAppBusinessContextService,
+  ],
 })
 export class WhatsAppModule {}
