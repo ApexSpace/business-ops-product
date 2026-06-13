@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { IntegrationAdvancedDetails } from "@/features/integrations/components/integration-advanced-details";
 import { IntegrationMessagingStatus } from "@/features/integrations/components/integration-messaging-status";
 import { IntegrationManageHeader } from "@/features/integrations/components/integration-manage-header";
@@ -41,6 +42,20 @@ export function IntegrationManageOAuthBody({
           isConnected={isConnected}
         />
       )}
+
+      {provider.key === "whatsapp" && isConnected ? (
+        <p className="text-sm text-muted-foreground">
+          One WhatsApp number is supported per business for now. Manage your
+          connected number in{" "}
+          <Link
+            href="/business/settings/whatsapp?tab=numbers"
+            className="font-medium text-primary hover:underline"
+          >
+            WhatsApp Settings
+          </Link>
+          .
+        </p>
+      ) : null}
 
       {supportsResources && isConnected ? (
         <IntegrationResourcesPanel

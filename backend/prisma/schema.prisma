@@ -332,6 +332,24 @@ enum IntegrationResourceStatus {
   ERROR
 }
 
+enum WhatsAppTemplateStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  PAUSED
+  DISABLED
+  IN_APPEAL
+  PENDING_DELETION
+  DELETED
+  LIMIT_EXCEEDED
+}
+
+enum WhatsAppTemplateCategory {
+  MARKETING
+  UTILITY
+  AUTHENTICATION
+}
+
 enum IntegrationResourceType {
   CALENDAR
   GBP_LOCATION
@@ -559,6 +577,7 @@ model User {
   asyncJobs             AsyncJob[]             @relation("AsyncJobActor")
   emailTemplatesCreated EmailTemplate[]        @relation("EmailTemplateCreatedBy")
   emailTemplatesUpdated EmailTemplate[]        @relation("EmailTemplateUpdatedBy")
+  whatsappMessageTemplatesCreated WhatsAppMessageTemplate[] @relation("WhatsAppTemplateCreatedBy")
   snapshotsCreated      Snapshot[]              @relation("SnapshotCreatedBy")
   snapshotsUpdated      Snapshot[]              @relation("SnapshotUpdatedBy")
   subscriptionEventsCreated BusinessSubscriptionEvent[] @relation("SubscriptionEventCreatedBy")
@@ -704,6 +723,7 @@ model Business {
   fileAssets               FileAsset[]
   businessEmailPreferences BusinessEmailPreference[]
   emailTemplates           EmailTemplate[]
+  whatsappMessageTemplates WhatsAppMessageTemplate[]
   emailMessages            EmailMessage[]
   capabilities             BusinessCapability[]
 
@@ -2299,5 +2319,33 @@ model FileAsset {
   @@index([businessId, category])
   @@index([status])
   @@map("file_assets")
+}
+
+model WhatsAppMessageTemplate {
+  id              String                   @id @default(uuid())
+  businessId      String
+  wabaId          String
+  name            String
+  language        String
+  category        WhatsAppTemplateCategory
+  status          WhatsAppTemplateStatus   @default(PENDING)
+  parameterFormat String                   @default("POSITIONAL")
+  metaTemplateId  String?
+  components      Json
+  bodyPreview     String?
+  rejectionReason String?
+  qualityScore    Json?
+  submittedAt     DateTime?
+  lastSyncedAt    DateTime?
+  createdByUserId String?
+  createdAt       DateTime                 @default(now())
+  updatedAt       DateTime                 @updatedAt
+
+  business  Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  createdBy User?    @relation("WhatsAppTemplateCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
+
+  @@unique([businessId, name, language])
+  @@index([businessId, status])
+  @@map("whatsapp_message_templates")
 }
 

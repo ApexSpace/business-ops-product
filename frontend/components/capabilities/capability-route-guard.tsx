@@ -18,7 +18,7 @@ export function CapabilityRouteGuard({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const { canAccessWorkspace, hasModule } = useBusinessAccess();
+  const { canAccessWorkspace, canAccessRoute } = useBusinessAccess();
 
   if (!canAccessWorkspace) {
     return <>{children}</>;
@@ -35,7 +35,7 @@ export function CapabilityRouteGuard({
     return <>{children}</>;
   }
 
-  if (!hasModule(entry.moduleKey)) {
+  if (!canAccessRoute(path)) {
     return <FeatureUnavailableScreen moduleKey={entry.moduleKey} />;
   }
 

@@ -243,6 +243,19 @@ export const queryKeys = {
     all: ["storage"] as const,
     file: (id: string) => ["storage", "file", id] as const,
   },
+  whatsappSettings: {
+    overview: () => ["whatsapp-settings", "overview"] as const,
+    numbers: () => ["whatsapp-settings", "numbers"] as const,
+    templates: {
+      all: () => ["whatsapp-settings", "templates"] as const,
+      list: (filters: Record<string, unknown>) =>
+        ["whatsapp-settings", "templates", "list", filters] as const,
+      options: () => ["whatsapp-settings", "templates", "options"] as const,
+      approved: () => ["whatsapp-settings", "templates", "approved"] as const,
+      detail: (id: string) =>
+        ["whatsapp-settings", "templates", "detail", id] as const,
+    },
+  },
   platform: {
     businesses: {
       all: () => ["platform", "businesses"] as const,

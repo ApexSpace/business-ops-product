@@ -6,6 +6,7 @@ import { ConversationsModule } from '@app/modules/communications/conversations/c
 import { MetaWebhookProcessorModule } from '@app/modules/communications/webhooks/meta-webhook-processor.module';
 import { BusinessIntegrationResourcesController } from './business-integration-resources.controller';
 import { BusinessIntegrationsController } from './business-integrations.controller';
+import { BusinessWhatsAppController } from './controllers/business-whatsapp.controller';
 import { GoogleOAuthController } from './google-oauth.controller';
 import { GoogleOAuthService } from './google-oauth.service';
 import { IntegrationProvidersController } from './integration-providers.controller';
@@ -49,6 +50,9 @@ import { PlatformIntegrationRepository } from './repositories/platform-integrati
 import { GoogleTokenService } from './services/google-token.service';
 import { IntegrationResourcesService } from './services/integration-resources.service';
 import { MessagingStatusService } from './services/messaging-status.service';
+import { WhatsAppNumbersService } from './services/whatsapp-numbers.service';
+import { WhatsAppModule } from '../whatsapp/whatsapp.module';
+import { WhatsAppTemplatesController } from '../whatsapp/controllers/whatsapp-templates.controller';
 
 @Module({
   imports: [
@@ -57,11 +61,14 @@ import { MessagingStatusService } from './services/messaging-status.service';
     forwardRef(() => ConversationsModule),
     forwardRef(() => InvoicesModule),
     MetaWebhookProcessorModule,
+    WhatsAppModule,
   ],
   controllers: [
     IntegrationProvidersController,
     BusinessIntegrationsController,
     BusinessIntegrationResourcesController,
+    BusinessWhatsAppController,
+    WhatsAppTemplatesController,
     PlatformIntegrationsController,
     GoogleOAuthController,
     LinkedInOAuthController,
@@ -106,6 +113,7 @@ import { MessagingStatusService } from './services/messaging-status.service';
     MetaWebhookService,
     PlatformEmailProvisioningService,
     MessagingStatusService,
+    WhatsAppNumbersService,
   ],
   exports: [
     IntegrationsService,

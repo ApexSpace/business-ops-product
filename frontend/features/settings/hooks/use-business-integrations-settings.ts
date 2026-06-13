@@ -147,6 +147,12 @@ export function useBusinessIntegrationsSettings() {
       void queryClient.invalidateQueries({
         queryKey: queryKeys.integrations.businessResources("whatsapp"),
       });
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.whatsappSettings.overview(),
+      });
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.whatsappSettings.numbers(),
+      });
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "WhatsApp signup failed";
@@ -212,6 +218,12 @@ export function useBusinessIntegrationsSettings() {
       setDialogOpen(false);
       setSelectedProvider(null);
       await invalidateIntegrations();
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.whatsappSettings.overview(),
+      });
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.whatsappSettings.numbers(),
+      });
     },
     onError: (error: Error) => toast.error(error.message),
   });
@@ -281,6 +293,10 @@ export function useBusinessIntegrationsSettings() {
       return;
     }
     if (usesWhatsAppEmbeddedSignup(provider.key)) {
+      if (provider.status === "CONNECTED") {
+        openManage(provider);
+        return;
+      }
       void startWhatsAppEmbeddedSignup(provider);
       return;
     }
