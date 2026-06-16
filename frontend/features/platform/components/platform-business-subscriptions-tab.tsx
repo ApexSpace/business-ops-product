@@ -41,14 +41,12 @@ export function PlatformBusinessSubscriptionsTab({
   access,
   accessLoading,
   canUpdate,
-  onManageAccess,
   onRecordPayment,
 }: {
   businessId: string;
   access?: BusinessAccess | null;
   accessLoading?: boolean;
   canUpdate: boolean;
-  onManageAccess: () => void;
   onRecordPayment: () => void;
 }) {
   const queryClient = useQueryClient();
@@ -202,8 +200,6 @@ export function PlatformBusinessSubscriptionsTab({
         access={access}
         canUpdate={canUpdate}
         isLoading={accessLoading}
-        onManageAccess={onManageAccess}
-        onPackageChanged={invalidateSubscriptionData}
         onAction={access ? actionDialogs.handleAction : undefined}
         actionBarLoading={actionDialogs.isLoading}
       />

@@ -2,6 +2,10 @@
 
 import { Check, Circle, Plus, X } from "lucide-react";
 import type { PublicPricingTier } from "@/features/platform/types/plan-group";
+import {
+  isRecoveryPlanSelection,
+  type PlanSelectionMode,
+} from "@/features/settings/utils/plan-tier-position.util";
 import type {
   PlanFeatureIconSize,
   PlanFeatureIconStyle,
@@ -22,6 +26,17 @@ import {
   planPricePeriodSuffix,
 } from "@/features/platform/utils/plan-price.util";
 import type { CSSProperties, ReactNode } from "react";
+import { toast } from "sonner";
+
+function tierStripeCapable(
+  tier: PublicPricingTier,
+  cycle: "MONTHLY" | "YEARLY",
+): boolean {
+  if (cycle === "MONTHLY") {
+    return Boolean(tier.stripeMonthlyEnabled ?? tier.stripeCheckoutEnabled);
+  }
+  return Boolean(tier.stripeYearlyEnabled ?? tier.stripeCheckoutEnabled);
+}
 
 function tierBadge(
   tier: PublicPricingTier,
@@ -79,10 +94,22 @@ export type PricingTierCardProps = {
   cycle: "MONTHLY" | "YEARLY";
   compact?: boolean;
   currentTierSlug?: string | null;
+  planSelectionMode?: PlanSelectionMode;
+  /** Overrides the default "Current plan" badge when this tier is current. */
+  currentTierBadgeLabel?: string | null;
+  /** Optional helper copy shown below the tier name for the current tier. */
+  currentTierHelperText?: string | null;
+  /** When false, the current tier CTA stays enabled (e.g. trial checkout). Default true. */
+  disableCurrentTier?: boolean;
   interactive?: boolean;
   selectLabel?: string;
   isSelecting?: boolean;
   onSelect?: () => void;
+  stripeCheckoutEnabled?: boolean;
+  onSubscribe?: () => void;
+  isSubscribing?: boolean;
+  subscribeLabel?: string;
+  stripeCheckoutBlockedMessage?: string;
 };
 
 export function PricingTierCard({
@@ -92,18 +119,88 @@ export function PricingTierCard({
   cycle,
   compact = false,
   currentTierSlug,
+  planSelectionMode = "default",
+  currentTierBadgeLabel,
+  currentTierHelperText,
+  disableCurrentTier,
   interactive = false,
   selectLabel,
   isSelecting = false,
   onSelect,
+  stripeCheckoutEnabled = false,
+  onSubscribe,
+  isSubscribing = false,
+  subscribeLabel,
+  stripeCheckoutBlockedMessage = "Sign in to subscribe to this plan.",
 }: PricingTierCardProps) {
   const isCurrentPlan = Boolean(
     currentTierSlug && tier.slug === currentTierSlug,
   );
+  const isRecoverySelection = isRecoveryPlanSelection(planSelectionMode);
+  const lockCurrentTier =
+    isCurrentPlan &&
+    (disableCurrentTier ?? true) &&
+    planSelectionMode !== "trial" &&
+    !isRecoverySelection;
+  const resolvedCtaLabel =
+    subscribeLabel ||
+    selectLabel ||
+    (isRecoverySelection ? undefined : tier.ctaLabel?.trim()) ||
+    "Get started";
   const badge = tierBadge(tier, settings.showBadges);
   const price = cycle === "YEARLY" ? tier.priceYearly : tier.priceMonthly;
   const tierStyles = resolveTierCardStyles(settings, tier.designSettings);
   const tierStyle = tierStylesToCssVariables(tierStyles) as CSSProperties;
+  const useStripeCheckout = Boolean(stripeCheckoutEnabled && onSubscribe);
+  const stripeNotReadyMessage =
+    "This plan is not connected to Stripe yet. Please contact support.";
+  const ctaBusy = isSelecting || isSubscribing;
+
+  const handleStripeCtaClick = () => {
+    const stripeCapable = tierStripeCapable(tier, cycle);
+    const logContext = {
+      source: "pricing-tier-card",
+      tierSlug: tier.slug,
+      tierName: tier.name,
+      planTierId: tier.planTierId ?? null,
+      cycle,
+      isCurrentPlan,
+      useStripeCheckout,
+      hasOnSubscribe: Boolean(onSubscribe),
+      stripeCapable,
+      stripeCheckoutEnabled,
+      stripeMonthlyEnabled: tier.stripeMonthlyEnabled ?? null,
+      stripeYearlyEnabled: tier.stripeYearlyEnabled ?? null,
+    };
+
+    if (useStripeCheckout && onSubscribe) {
+      console.debug("[plan-tier-cta]", { ...logContext, branch: "subscribe" });
+      onSubscribe();
+      return;
+    }
+    if (stripeCapable) {
+      console.debug("[plan-tier-cta]", {
+        ...logContext,
+        branch: "blocked_toast",
+        message: stripeCheckoutBlockedMessage,
+      });
+      toast.error(stripeCheckoutBlockedMessage);
+      return;
+    }
+    console.debug("[plan-tier-cta]", {
+      ...logContext,
+      branch: "not_configured",
+      message: stripeNotReadyMessage,
+    });
+    toast.error(stripeNotReadyMessage);
+  };
+  const ctaText = lockCurrentTier
+    ? "Current plan"
+    : ctaBusy
+      ? isSubscribing
+        ? "Redirecting to checkout…"
+        : "Updating…"
+      : resolvedCtaLabel;
 
   return (
     <div
@@ -140,7 +237,7 @@ export function PricingTierCard({
             color: "var(--plan-tier-badge-text, #fff)",
           }}
         >
-          Current plan
+          {currentTierBadgeLabel ?? "Current plan"}
         </Badge>
       ) : badge ? (
         <Badge
@@ -166,6 +263,15 @@ export function PricingTierCard({
       >
         {tier.name}
       </h3>
+
+      {isCurrentPlan && currentTierHelperText ? (
+        <p
+          className="text-sm"
+          style={{ color: "var(--plan-section-muted)" }}
+        >
+          {currentTierHelperText}
+        </p>
+      ) : null}
 
       <div className="flex flex-col gap-[0.35em] leading-none">
         <div className={cn(textAlignmentClass(settings.priceAlignment))}>
@@ -280,7 +386,7 @@ export function PricingTierCard({
         {interactive ? (
           <button
             type="button"
-            disabled={isCurrentPlan || isSelecting}
+            disabled={lockCurrentTier || ctaBusy}
             onClick={onSelect}
             className={cn(
               "inline-flex items-center justify-center px-4 py-2 text-sm transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60",
@@ -288,49 +394,55 @@ export function PricingTierCard({
               tierStyles.buttonStyle === "outline" && "border",
             )}
             style={{
-              background: isCurrentPlan
+              background: lockCurrentTier
                 ? "color-mix(in srgb, var(--plan-accent) 12%, var(--plan-card-bg))"
                 : tierStyles.buttonBackgroundColor,
-              color: isCurrentPlan
+              color: lockCurrentTier
                 ? "var(--plan-accent)"
                 : tierStyles.buttonTextColor,
               borderColor:
-                tierStyles.buttonStyle === "outline" || isCurrentPlan
+                tierStyles.buttonStyle === "outline" || lockCurrentTier
                   ? "var(--plan-accent)"
                   : tierStyles.buttonBackgroundColor,
               borderRadius: tierStyles.buttonBorderRadius,
               fontWeight: settings.ctaBold ? 700 : 400,
             }}
           >
-            {isCurrentPlan
+            {lockCurrentTier
               ? "Current plan"
-              : isSelecting
-                ? "Updating…"
-                : selectLabel || "Select plan"}
+              : ctaBusy
+                ? isSubscribing
+                  ? "Redirecting to checkout…"
+                  : "Updating…"
+                : selectLabel || resolvedCtaLabel}
           </button>
         ) : (
-          <a
-            href={tier.ctaUrl?.trim() || "#"}
-            target="_blank"
-            rel="noopener noreferrer"
+          <button
+            type="button"
+            disabled={lockCurrentTier || ctaBusy}
+            onClick={handleStripeCtaClick}
             className={cn(
-              "inline-flex items-center justify-center px-4 py-2 text-sm transition-opacity hover:opacity-90",
+              "inline-flex items-center justify-center px-4 py-2 text-sm transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60",
               settings.ctaAlignment === "center" && "w-full",
               tierStyles.buttonStyle === "outline" && "border",
             )}
             style={{
-              background: tierStyles.buttonBackgroundColor,
-              color: tierStyles.buttonTextColor,
+              background: lockCurrentTier
+                ? "color-mix(in srgb, var(--plan-accent) 12%, var(--plan-card-bg))"
+                : tierStyles.buttonBackgroundColor,
+              color: lockCurrentTier
+                ? "var(--plan-accent)"
+                : tierStyles.buttonTextColor,
               borderColor:
-                tierStyles.buttonStyle === "outline"
-                  ? tierStyles.buttonTextColor
+                tierStyles.buttonStyle === "outline" || lockCurrentTier
+                  ? "var(--plan-accent)"
                   : tierStyles.buttonBackgroundColor,
               borderRadius: tierStyles.buttonBorderRadius,
               fontWeight: settings.ctaBold ? 700 : 400,
             }}
           >
-            {tier.ctaLabel?.trim() || "Get started"}
-          </a>
+            {ctaText}
+          </button>
         )}
       </div>
     </div>

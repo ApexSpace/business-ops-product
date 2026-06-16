@@ -17,6 +17,10 @@ import { JwtAccessPayload } from '../interfaces/jwt-payload.interface';
 import { BusinessRepository } from '@app/modules/platform/business/repositories/business.repository';
 import { BusinessAccessResolverService } from '@app/modules/platform/business/services/business-access-resolver.service';
 import { mapAccessBlockToAuthError } from '@app/modules/platform/business/utils/business-access-auth.util';
+import {
+  isBillingRecoveryAllowedRequest,
+  isBillingRecoveryMode,
+} from '@app/modules/platform/business/utils/business-workspace-access.util';
 import { BusinessMembershipRepository } from '@app/modules/platform/membership/repositories/business-membership.repository';
 import { PlatformMembershipRepository } from '../repositories/platform-membership.repository';
 import { UserRepository } from '../repositories/user.repository';
@@ -24,10 +28,7 @@ import { resolvePlatformBusinessRole } from '../utils/platform-business-access.u
 
 function isTenantAccessEndpoint(req: Request): boolean {
   const url = req.originalUrl ?? req.url ?? '';
-  return (
-    req.method === 'GET' &&
-    url.includes('businesses/current/access')
-  );
+  return req.method === 'GET' && url.includes('businesses/current/access');
 }
 
 @Injectable()
@@ -48,7 +49,10 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
   }
 
-  async validate(req: Request, payload: JwtAccessPayload): Promise<RequestUser> {
+  async validate(
+    req: Request,
+    payload: JwtAccessPayload,
+  ): Promise<RequestUser> {
     const user = await this.userRepository.findById(payload.sub);
     if (!user || user.status !== UserStatus.ACTIVE) {
       throw new AppException(
@@ -97,7 +101,17 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       payload.businessId,
     );
 
-    if (!resolution.canAccessWorkspace && !isTenantAccessEndpoint(req)) {
+    if (
+      !resolution.canAccessWorkspace &&
+      !isTenantAccessEndpoint(req) &&
+      !(
+        isBillingRecoveryMode(
+          business.status,
+          resolution.canAccessWorkspace,
+          resolution.reasonCode,
+        ) && isBillingRecoveryAllowedRequest(req)
+      )
+    ) {
       const { code, message } = mapAccessBlockToAuthError(
         business.status,
         resolution.reasonCode,

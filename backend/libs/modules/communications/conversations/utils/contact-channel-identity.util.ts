@@ -45,11 +45,17 @@ export function parseWhatsAppWaIdToPhone(waId: string): {
 } {
   const digits = waId.replace(/\D/g, '');
   if (!digits) {
-    return { phoneKey: null, phoneFields: { phoneCountryCode: null, phoneNumber: null } };
+    return {
+      phoneKey: null,
+      phoneFields: { phoneCountryCode: null, phoneNumber: null },
+    };
   }
 
   const phoneFields = sanitizePhoneFields('+', digits);
-  const phoneKey = normalizePhoneKey(phoneFields.phoneCountryCode, phoneFields.phoneNumber);
+  const phoneKey = normalizePhoneKey(
+    phoneFields.phoneCountryCode,
+    phoneFields.phoneNumber,
+  );
 
   return { phoneKey, phoneFields };
 }

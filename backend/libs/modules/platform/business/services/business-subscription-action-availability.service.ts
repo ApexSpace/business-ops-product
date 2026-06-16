@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import {
   BusinessStatus,
+  SubscriptionBillingSource,
   SubscriptionPaymentStatus,
   SubscriptionStatus,
 } from '@prisma/client';
@@ -13,6 +14,10 @@ import {
 } from '../types/subscription-action.types';
 import { BusinessAccessReasonCode } from '../types/business-access-resolution.types';
 import { SubscriptionStateSnapshot } from '../types/subscription-state-snapshot.types';
+import {
+  isActionVisibleForBillingSource,
+  STRIPE_MANAGED_MESSAGE,
+} from '../utils/billing-source-action.util';
 
 @Injectable()
 export class BusinessSubscriptionActionAvailabilityService {
@@ -43,6 +48,7 @@ export class BusinessSubscriptionActionAvailabilityService {
 
     const state: SubscriptionStateSnapshot = {
       businessStatus: business.status,
+      billingSource: subscription?.billingSource ?? null,
       subscriptionStatus: subscription?.status ?? null,
       paymentMethod: subscription?.paymentMethod ?? null,
       paymentStatus: subscription?.paymentStatus ?? null,
@@ -70,6 +76,7 @@ export class BusinessSubscriptionActionAvailabilityService {
       state.businessStatus,
       state.subscriptionStatus
         ? {
+            billingSource: state.billingSource ?? null,
             status: state.subscriptionStatus,
             paymentStatus:
               state.paymentStatus ?? SubscriptionPaymentStatus.NOT_REQUIRED,
@@ -108,11 +115,21 @@ export class BusinessSubscriptionActionAvailabilityService {
     state: SubscriptionStateSnapshot,
   ): SubscriptionActionDefinition | null {
     const enabled = actions.filter((a) => a.visible && a.enabled);
+    const isStripe =
+      state.billingSource === SubscriptionBillingSource.STRIPE;
 
     if (
       state.subscriptionStatus === SubscriptionStatus.PENDING_PAYMENT ||
       state.paymentStatus === SubscriptionPaymentStatus.PENDING
     ) {
+      if (isStripe) {
+        return (
+          enabled.find((a) => a.key === 'RESYNC_FROM_STRIPE') ??
+          enabled.find((a) => a.key === 'OPEN_STRIPE_PORTAL') ??
+          enabled.find((a) => a.category === 'recommended') ??
+          null
+        );
+      }
       return (
         enabled.find((a) => a.key === 'MARK_PAID') ??
         enabled.find((a) => a.category === 'recommended') ??
@@ -132,8 +149,24 @@ export class BusinessSubscriptionActionAvailabilityService {
     }
 
     if (state.subscriptionStatus === SubscriptionStatus.TRIALING) {
-      const periodEnd = state.currentPeriodEnd ? new Date(state.currentPeriodEnd) : null;
+      const periodEnd = state.currentPeriodEnd
+        ? new Date(state.currentPeriodEnd)
+        : null;
       if (periodEnd && periodEnd < new Date()) {
+        if (isStripe) {
+          return (
+            enabled.find((a) => a.key === 'OPEN_STRIPE_PORTAL') ??
+            enabled.find((a) => a.key === 'CHANGE_PACKAGE') ??
+            null
+          );
+        }
+        if (state.billingSource === SubscriptionBillingSource.NOT_SELECTED) {
+          return (
+            enabled.find((a) => a.key === 'EXTEND_TRIAL') ??
+            enabled.find((a) => a.key === 'CHANGE_PACKAGE') ??
+            null
+          );
+        }
         return (
           enabled.find((a) => a.key === 'EXTEND_TRIAL') ??
           enabled.find((a) => a.key === 'MARK_PAID') ??
@@ -148,6 +181,7 @@ export class BusinessSubscriptionActionAvailabilityService {
   private buildActionDefinitions(
     businessStatus: BusinessStatus,
     subscription: {
+      billingSource?: SubscriptionBillingSource | null;
       status: SubscriptionStatus;
       paymentStatus: SubscriptionPaymentStatus;
       planTierId: string | null;
@@ -156,6 +190,8 @@ export class BusinessSubscriptionActionAvailabilityService {
       ReturnType<BusinessAccessResolverService['resolveForBusiness']>
     >,
   ): SubscriptionActionDefinition[] {
+    const billingSource =
+      subscription?.billingSource ?? SubscriptionBillingSource.NOT_SELECTED;
     const subStatus = subscription?.status;
     const paymentStatus = subscription?.paymentStatus;
     const hasPlanTier = Boolean(subscription?.planTierId);
@@ -168,18 +204,18 @@ export class BusinessSubscriptionActionAvailabilityService {
       subStatus === SubscriptionStatus.PENDING_PAYMENT ||
       paymentStatus === SubscriptionPaymentStatus.PENDING;
     const isTrialing = subStatus === SubscriptionStatus.TRIALING;
-    const isActivePaid =
-      subStatus === SubscriptionStatus.ACTIVE &&
-      paymentStatus === SubscriptionPaymentStatus.PAID;
-    const isInternal = subStatus === SubscriptionStatus.INTERNAL;
+    const isInternalStatus = subStatus === SubscriptionStatus.INTERNAL;
     const isTerminal = isCanceled || isExpired;
+    const isStripe = billingSource === SubscriptionBillingSource.STRIPE;
+    const isInternalBilling =
+      billingSource === SubscriptionBillingSource.INTERNAL;
 
     const def = (
       key: SubscriptionActionKey,
       partial: Omit<SubscriptionActionDefinition, 'key'>,
     ): SubscriptionActionDefinition => ({ key, ...partial });
 
-    return [
+    const baseActions: SubscriptionActionDefinition[] = [
       def('MARK_PAID', {
         label: 'Mark Paid',
         category: isPending ? 'recommended' : 'billing',
@@ -207,10 +243,10 @@ export class BusinessSubscriptionActionAvailabilityService {
         label: 'Move to Pending Payment',
         category: 'billing',
         visible: !isPending && !isSuspended && !isTerminal,
-        enabled: !isPending && isActiveBusiness && !isInternal,
+        enabled: !isPending && isActiveBusiness && !isInternalStatus,
         disabledReason: isPending
           ? 'Already pending payment'
-          : isInternal
+          : isInternalStatus
             ? 'Internal subscriptions do not require payment'
             : undefined,
         severity: 'warning',
@@ -229,9 +265,11 @@ export class BusinessSubscriptionActionAvailabilityService {
       def('CANCEL_SUBSCRIPTION', {
         label: 'Cancel Subscription',
         category: 'danger',
-        visible: !isCanceled,
+        visible: !isCanceled && !isInternalBilling,
         enabled: Boolean(subscription) && !isCanceled && !isSuspended,
-        disabledReason: isCanceled ? 'Subscription is already canceled' : undefined,
+        disabledReason: isCanceled
+          ? 'Subscription is already canceled'
+          : undefined,
         severity: 'danger',
         requiresConfirmation: true,
         requiresInput: false,
@@ -241,7 +279,9 @@ export class BusinessSubscriptionActionAvailabilityService {
         category: 'danger',
         visible: isTrialing && !isExpired,
         enabled: isTrialing && !isSuspended,
-        disabledReason: !isTrialing ? 'Subscription is not trialing' : undefined,
+        disabledReason: !isTrialing
+          ? 'Subscription is not trialing'
+          : undefined,
         severity: 'danger',
         requiresConfirmation: true,
         requiresInput: false,
@@ -251,7 +291,9 @@ export class BusinessSubscriptionActionAvailabilityService {
         category: 'danger',
         visible: !isSuspended,
         enabled: !isSuspended,
-        disabledReason: isSuspended ? 'Business is already suspended' : undefined,
+        disabledReason: isSuspended
+          ? 'Business is already suspended'
+          : undefined,
         severity: 'danger',
         requiresConfirmation: true,
         requiresInput: false,
@@ -291,9 +333,7 @@ export class BusinessSubscriptionActionAvailabilityService {
         category: 'package',
         visible: !isSuspended,
         enabled: hasPlanTier && !isSuspended,
-        disabledReason: !hasPlanTier
-          ? 'No plan tier assigned'
-          : undefined,
+        disabledReason: !hasPlanTier ? 'No plan tier assigned' : undefined,
         severity: 'warning',
         requiresConfirmation: true,
         requiresInput: false,
@@ -308,5 +348,63 @@ export class BusinessSubscriptionActionAvailabilityService {
         requiresInput: true,
       }),
     ];
+
+    const stripeActions: SubscriptionActionDefinition[] = isStripe
+      ? [
+          def('OPEN_STRIPE_PORTAL', {
+            label: 'Manage Billing',
+            category: 'billing',
+            visible: true,
+            enabled: Boolean(subscription),
+            severity: 'safe',
+            requiresConfirmation: false,
+            requiresInput: false,
+          }),
+          def('RESYNC_FROM_STRIPE', {
+            label: 'Resync from Stripe',
+            category: 'billing',
+            visible: true,
+            enabled: Boolean(subscription),
+            severity: 'safe',
+            requiresConfirmation: true,
+            requiresInput: false,
+          }),
+        ]
+      : [];
+
+    return [...baseActions, ...stripeActions].map((action) =>
+      this.applyBillingSourceGating(action, billingSource),
+    );
+  }
+
+  private applyBillingSourceGating(
+    action: SubscriptionActionDefinition,
+    billingSource: SubscriptionBillingSource,
+  ): SubscriptionActionDefinition {
+    if (!isActionVisibleForBillingSource(action.key, billingSource)) {
+      return {
+        ...action,
+        visible: false,
+        enabled: false,
+        disabledReason:
+          billingSource === SubscriptionBillingSource.STRIPE
+            ? STRIPE_MANAGED_MESSAGE
+            : 'Action is not available for this billing source',
+      };
+    }
+
+    if (
+      billingSource === SubscriptionBillingSource.STRIPE &&
+      action.key === 'MANUAL_ADJUSTMENT'
+    ) {
+      return {
+        ...action,
+        visible: false,
+        enabled: false,
+        disabledReason: STRIPE_MANAGED_MESSAGE,
+      };
+    }
+
+    return action;
   }
 }

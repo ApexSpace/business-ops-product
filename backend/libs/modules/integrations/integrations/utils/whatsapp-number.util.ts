@@ -1,7 +1,4 @@
-import {
-  IntegrationResource,
-  IntegrationResourceType,
-} from '@prisma/client';
+import { IntegrationResource, IntegrationResourceType } from '@prisma/client';
 import {
   WhatsAppNumberResponseDto,
   WhatsAppOverviewResponseDto,
@@ -9,10 +6,7 @@ import {
 
 const WHATSAPP_PROVIDER_KEY = 'whatsapp';
 
-function readMetadataString(
-  metadata: unknown,
-  key: string,
-): string | null {
+function readMetadataString(metadata: unknown, key: string): string | null {
   if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) {
     return null;
   }
@@ -30,8 +24,7 @@ export function mapWhatsAppNumberResponse(
   return {
     id: resource.id,
     phoneNumber: displayPhone,
-    displayName:
-      readMetadataString(metadata, 'verifiedName') ?? resource.name,
+    displayName: readMetadataString(metadata, 'verifiedName') ?? resource.name,
     messagingLimit: readMetadataString(metadata, 'messagingLimit'),
     qualityRating: readMetadataString(metadata, 'qualityRating'),
     status: resource.status,
@@ -69,7 +62,9 @@ export function buildWhatsAppOverview(
   };
 }
 
-export function isWhatsAppPhoneResource(resource: IntegrationResource): boolean {
+export function isWhatsAppPhoneResource(
+  resource: IntegrationResource,
+): boolean {
   return (
     resource.providerKey === WHATSAPP_PROVIDER_KEY &&
     resource.type === IntegrationResourceType.PHONE_NUMBER

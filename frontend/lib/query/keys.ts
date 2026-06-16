@@ -40,6 +40,8 @@ export const queryKeys = {
       listKey(["business", "members"], filters),
     dashboardStats: () => ["business", "dashboard-stats"] as const,
     planOptions: () => ["business", "plan-options"] as const,
+    billingInvoices: (filters?: { cursor?: string; limit?: number }) =>
+      listKey(["business", "billing-invoices"], filters),
   },
   services: {
     all: () => ["services"] as const,
@@ -279,6 +281,10 @@ export const queryKeys = {
         id: string,
         filters?: ListFilters,
       ) => listKey(["platform", "business", id, "subscription-payments"], filters),
+      billingInvoices: (
+        id: string,
+        filters?: { cursor?: string; limit?: number },
+      ) => listKey(["platform", "business", id, "billing-invoices"], filters),
       capabilities: (id: string) =>
         ["platform", "business", id, "capabilities"] as const,
       utilization: (id: string) =>

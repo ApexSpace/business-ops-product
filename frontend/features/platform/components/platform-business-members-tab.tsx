@@ -46,6 +46,10 @@ export function PlatformBusinessMembersTab({
     members?.filter((m) => m.status === "ACTIVE").length ?? 0;
   const invitedCount =
     members?.filter((m) => m.status === "INVITED").length ?? 0;
+  const hasOwner =
+    members?.some(
+      (member) => member.role === "OWNER" && member.status !== "REMOVED",
+    ) ?? false;
   const ownerCount =
     members?.filter((m) => m.role === "OWNER").length ?? 0;
   const adminCount =
@@ -104,7 +108,7 @@ export function PlatformBusinessMembersTab({
             {canInvite ? (
               <InvitePlatformBusinessMemberDialog businessId={businessId} />
             ) : null}
-            {canSetOwner ? (
+            {canSetOwner && !hasOwner ? (
               <SetBusinessOwnerDialog businessId={businessId} />
             ) : null}
           </div>

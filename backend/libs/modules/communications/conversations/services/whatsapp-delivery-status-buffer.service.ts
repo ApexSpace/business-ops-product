@@ -15,7 +15,10 @@ type SerializedStatus = {
 
 @Injectable()
 export class WhatsAppDeliveryStatusBufferService {
-  private readonly memory = new Map<string, NormalizedWhatsAppDeliveryStatus[]>();
+  private readonly memory = new Map<
+    string,
+    NormalizedWhatsAppDeliveryStatus[]
+  >();
 
   constructor(private readonly redisService: RedisService) {}
 

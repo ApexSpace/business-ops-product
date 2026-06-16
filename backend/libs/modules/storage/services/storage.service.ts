@@ -174,7 +174,10 @@ export class StorageService {
     return toFileAssetResponse(updated);
   }
 
-  async deleteOrphanPending(fileAssetId: string, businessId: string): Promise<void> {
+  async deleteOrphanPending(
+    fileAssetId: string,
+    businessId: string,
+  ): Promise<void> {
     const asset = await this.fileAssetRepository.findByIdIncludingDeleted(
       businessId,
       fileAssetId,

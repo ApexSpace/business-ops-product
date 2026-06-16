@@ -10,6 +10,33 @@ import { parseContextsCookie } from "@/lib/auth/session";
 import type { JwtAccessPayload } from "@/lib/types/shared";
 import { isPublicPath } from "@/lib/routing/public-routes";
 
+function resolveReturnUrl(
+  returnUrlParam: string | null,
+  request: NextRequest,
+): URL | null {
+  if (!returnUrlParam) return null;
+  try {
+    if (returnUrlParam.startsWith("/")) {
+      return new URL(returnUrlParam, request.url);
+    }
+    const parsed = new URL(returnUrlParam);
+    if (parsed.origin === new URL(request.url).origin) {
+      return parsed;
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
+
+function loginRedirectWithReturnUrl(request: NextRequest): NextResponse {
+  const loginUrl = new URL("/login", request.url);
+  const returnPath =
+    request.nextUrl.pathname + request.nextUrl.search;
+  loginUrl.searchParams.set("returnUrl", returnPath);
+  return NextResponse.redirect(loginUrl);
+}
+
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
@@ -26,6 +53,13 @@ export function proxy(request: NextRequest) {
     if (token && pathname === "/login") {
       const payload = decodeAccessToken(token);
       if (payload) {
+        const returnUrl = resolveReturnUrl(
+          request.nextUrl.searchParams.get("returnUrl"),
+          request,
+        );
+        if (returnUrl) {
+          return NextResponse.redirect(returnUrl);
+        }
         return NextResponse.redirect(
           new URL(getDashboardPath(payload.context), request.url),
         );
@@ -38,6 +72,13 @@ export function proxy(request: NextRequest) {
       if (contexts.length <= 1) {
         const payload = decodeAccessToken(token);
         if (payload) {
+          const returnUrl = resolveReturnUrl(
+            request.nextUrl.searchParams.get("returnUrl"),
+            request,
+          );
+          if (returnUrl) {
+            return NextResponse.redirect(returnUrl);
+          }
           return NextResponse.redirect(
             new URL(getDashboardPath(payload.context), request.url),
           );
@@ -53,14 +94,14 @@ export function proxy(request: NextRequest) {
 
   const token = request.cookies.get(ACCESS_TOKEN_COOKIE)?.value;
   if (!token) {
-    return NextResponse.redirect(new URL("/login", request.url));
+    return loginRedirectWithReturnUrl(request);
   }
 
   let payload: JwtAccessPayload | null;
   try {
     payload = jwtDecode<JwtAccessPayload>(token);
   } catch {
-    return NextResponse.redirect(new URL("/login", request.url));
+    return loginRedirectWithReturnUrl(request);
   }
 
   if (pathname === "/") {

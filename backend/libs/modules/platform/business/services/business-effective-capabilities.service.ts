@@ -93,7 +93,10 @@ export class BusinessEffectiveCapabilitiesService {
       .map((key) => this.toEffectiveCapability(key));
   }
 
-  private addLegacyCapabilityKey(keys: Set<string>, capabilityKey: string): void {
+  private addLegacyCapabilityKey(
+    keys: Set<string>,
+    capabilityKey: string,
+  ): void {
     if (this.registryModuleKeys.has(capabilityKey)) {
       for (const key of getFeatureKeysForModule(capabilityKey)) {
         keys.add(key);

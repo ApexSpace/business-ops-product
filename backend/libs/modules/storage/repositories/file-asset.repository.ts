@@ -56,10 +56,7 @@ export class FileAssetRepository {
     });
   }
 
-  update(
-    id: string,
-    data: Prisma.FileAssetUpdateInput,
-  ): Promise<FileAsset> {
+  update(id: string, data: Prisma.FileAssetUpdateInput): Promise<FileAsset> {
     return this.prisma.fileAsset.update({ where: { id }, data });
   }
 

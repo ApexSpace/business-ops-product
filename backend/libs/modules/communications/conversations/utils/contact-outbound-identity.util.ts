@@ -15,10 +15,11 @@ function contactPhoneDigits(contact: Contact): string | null {
     return numberDigits;
   }
 
-  const combined = `${contact.phoneCountryCode ?? ''}${contact.phoneNumber ?? ''}`.replace(
-    /\D/g,
-    '',
-  );
+  const combined =
+    `${contact.phoneCountryCode ?? ''}${contact.phoneNumber ?? ''}`.replace(
+      /\D/g,
+      '',
+    );
   return combined || null;
 }
 

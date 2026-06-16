@@ -77,8 +77,10 @@ const REASON_LABELS: Record<BusinessAccessReasonCode, string> = {
 const NEEDS_ATTENTION_LABELS: Record<NeedsAttentionFlag, string> = {
   TRIAL_EXPIRED: "Trial expired",
   PENDING_PAYMENT: "Pending payment",
-  ACTIVE_WITH_EXPIRED_SUBSCRIPTION: "Active business with expired subscription",
-  ACTIVE_WITH_CANCELED_SUBSCRIPTION: "Active business with canceled subscription",
+  ACTIVE_WITH_EXPIRED_SUBSCRIPTION:
+    "Your workspace is active, but access is limited until you start a paid subscription.",
+  ACTIVE_WITH_CANCELED_SUBSCRIPTION:
+    "Your workspace is active, but access is limited until you start a paid subscription.",
   NO_PLAN_TIER: "No plan tier assigned",
   NO_CAPABILITIES: "No capabilities assigned",
   SNAPSHOT_NOT_APPLIED: "Snapshot not applied",

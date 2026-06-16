@@ -8,9 +8,12 @@ import { StripePlatformCheckoutService } from './services/stripe-platform-checko
 import { StripePlatformMetadataService } from './services/stripe-platform-metadata.service';
 import { StripePlatformPlanMappingService } from './services/stripe-platform-plan-mapping.service';
 import { StripePlatformPortalService } from './services/stripe-platform-portal.service';
+import { StripePlatformSubscribeService } from './services/stripe-platform-subscribe.service';
 import { StripePlatformSubscriptionService } from './services/stripe-platform-subscription.service';
 import { StripePlatformWebhookHandlerService } from './services/stripe-platform-webhook-handler.service';
 import { StripePlatformWebhookRecoveryService } from './services/stripe-platform-webhook-recovery.service';
+import { StripePlatformResyncService } from './services/stripe-platform-resync.service';
+import { StripePlatformSyncService } from './services/stripe-platform-sync.service';
 
 @Module({
   imports: [
@@ -25,9 +28,12 @@ import { StripePlatformWebhookRecoveryService } from './services/stripe-platform
     StripePlatformMetadataService,
     StripePlatformCheckoutService,
     StripePlatformPortalService,
+    StripePlatformSubscribeService,
     StripePlatformSubscriptionService,
     StripePlatformWebhookHandlerService,
     StripePlatformWebhookRecoveryService,
+    StripePlatformResyncService,
+    StripePlatformSyncService,
   ],
   exports: [
     StripePlatformApiService,
@@ -35,8 +41,11 @@ import { StripePlatformWebhookRecoveryService } from './services/stripe-platform
     StripePlatformMetadataService,
     StripePlatformCheckoutService,
     StripePlatformPortalService,
+    StripePlatformSubscribeService,
     StripePlatformSubscriptionService,
     StripePlatformWebhookHandlerService,
+    StripePlatformResyncService,
+    StripePlatformSyncService,
   ],
 })
 export class StripePlatformBillingModule {}

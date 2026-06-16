@@ -68,6 +68,7 @@ export function toBusinessResponse(
     planTierId: business.subscription?.planTierId ?? null,
     paymentMethod: business.subscription?.paymentMethod ?? null,
     paymentStatus: business.subscription?.paymentStatus ?? null,
+    billingSource: business.subscription?.billingSource ?? null,
     latestPaymentAt: extras?.latestPaymentAt ?? null,
     recommendedActionKey: extras?.recommendedActionKey ?? null,
     currentPeriodEnd: business.subscription?.currentPeriodEnd ?? null,

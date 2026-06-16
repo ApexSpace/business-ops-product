@@ -34,7 +34,6 @@ import {
 } from "@/components/ui/dialog";
 import { Form } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
 import { createPlatformBusiness } from "@/features/platform/api/platform.api";
 import {
@@ -45,37 +44,22 @@ import {
 } from "@/features/platform/api/plan-groups.api";
 import { PackageImpactPreview } from "@/features/platform/components/access/package-impact-preview";
 import { listPlatformSnapshots } from "@/features/platform/api/snapshots.api";
-import type {
-  SubscriptionPaymentMethod,
-  UnpaidAccessMode,
-} from "@/features/platform/types/business-access";
 import {
+  CREATE_ACCESS_OPTIONS,
   deriveAccessFromPaymentChoice,
   getAccessWarnings,
   getBrowserTimezone,
   getCreateSuccessToast,
   getDefaultTrialEnd,
-  hasBlockingAccessWarnings,
+  hasBlockingCreateAccessWarnings,
+  isTrialDateRangeValid,
   splitFullName,
   toDateInputValue,
-  UNPAID_ACCESS_OPTIONS,
 } from "@/features/platform/utils/business-access-defaults";
 import {
   formatBusinessStatus,
-  formatPaymentMethod,
-  formatPaymentStatus,
   formatSubscriptionStatus,
 } from "@/features/platform/utils/access-labels";
-import {
-  billingCycleOptions,
-  subscriptionPaymentMethodOptions,
-} from "@/features/platform/utils/select-options";
-import type { BusinessSubscriptionBillingCycle } from "@/features/platform/types/business-subscription";
-import {
-  computePeriodEndFromBillingCycle,
-  formatBillingCycleLabel,
-  resolveTierPriceFromStrings,
-} from "@/features/platform/utils/tier-price.util";
 import { hasPhoneDigits, phoneToApiFields } from "@/lib/forms/phone";
 import { invalidatePlatformBusinesses } from "@/lib/query/invalidation";
 import { queryKeys } from "@/lib/query/keys";
@@ -84,8 +68,8 @@ import { cn } from "@/lib/utils";
 
 const STEPS = [
   { id: 1, title: "Business", description: "Name and owner contact" },
-  { id: 2, title: "Package", description: "Plan group, tier, and experience" },
-  { id: 3, title: "Payment", description: "Billing cycle, access, and payment" },
+  { id: 2, title: "Access", description: "Trial or internal access" },
+  { id: 3, title: "Package", description: "Plan group, tier, and experience" },
   { id: 4, title: "Review", description: "Confirm details before creating" },
 ] as const;
 
@@ -138,32 +122,20 @@ const detailsDefaults: WizardDetailsValues = {
   inviteOwner: false,
 };
 
-interface PaymentFormState {
-  paymentCollected: boolean;
-  unpaidAccessMode: UnpaidAccessMode;
-  billingCycle: BusinessSubscriptionBillingCycle;
-  paymentMethod: SubscriptionPaymentMethod;
-  currentPeriodStart: string;
-  currentPeriodEnd?: string;
-  amount?: string;
-  currency: string;
-  paymentReference?: string;
+type CreateAccessMode = "TRIAL" | "INTERNAL";
+
+interface AccessFormState {
+  accessMode: CreateAccessMode;
+  trialStart: string;
+  trialEnd: string;
   notes?: string;
 }
 
-const paymentDefaults: PaymentFormState = {
-  paymentCollected: false,
-  unpaidAccessMode: "TRIAL",
-  billingCycle: "MONTHLY",
-  paymentMethod: "MANUAL_INVOICE",
-  currentPeriodStart: toDateInputValue(new Date()),
-  currentPeriodEnd: getDefaultTrialEnd(14),
-  currency: "USD",
+const accessDefaults: AccessFormState = {
+  accessMode: "TRIAL",
+  trialStart: toDateInputValue(new Date()),
+  trialEnd: getDefaultTrialEnd(14),
 };
-
-const collectedPaymentMethods = subscriptionPaymentMethodOptions.filter(
-  (o) => o.value !== "NOT_SELECTED" && o.value !== "FREE_INTERNAL",
-);
 
 export function CreateBusinessWizard() {
   const [open, setOpen] = useState(false);
@@ -173,9 +145,8 @@ export function CreateBusinessWizard() {
   const [planTierId, setPlanTierId] = useState<string | null>(null);
   const [snapshotId, setSnapshotId] = useState<string | null>(null);
   const [snapshotManuallySet, setSnapshotManuallySet] = useState(false);
-  const [payment, setPayment] = useState<PaymentFormState>(paymentDefaults);
+  const [access, setAccess] = useState<AccessFormState>(accessDefaults);
   const [showNotesField, setShowNotesField] = useState(false);
-  const [showReferenceField, setShowReferenceField] = useState(false);
 
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -230,76 +201,22 @@ export function CreateBusinessWizard() {
     }
   }, [tierDefaults, selectedTier, snapshotManuallySet]);
 
-  const accessDefaults = useMemo(
+  useEffect(() => {
+    if (access.accessMode !== "TRIAL" || !tierDefaults?.trialDays) return;
+    setAccess((prev) => ({
+      ...prev,
+      trialEnd: getDefaultTrialEnd(tierDefaults.trialDays ?? 14),
+    }));
+  }, [access.accessMode, tierDefaults?.trialDays]);
+
+  const accessResolution = useMemo(
     () =>
       deriveAccessFromPaymentChoice({
-        paymentCollected: payment.paymentCollected,
-        unpaidAccessMode: payment.unpaidAccessMode,
+        paymentCollected: false,
+        unpaidAccessMode: access.accessMode,
       }),
-    [payment.paymentCollected, payment.unpaidAccessMode],
+    [access.accessMode],
   );
-
-  useEffect(() => {
-    if (payment.paymentCollected) {
-      setPayment((prev) => ({
-        ...prev,
-        currentPeriodStart: prev.currentPeriodStart || toDateInputValue(new Date()),
-      }));
-    } else if (payment.unpaidAccessMode === "TRIAL" && !payment.currentPeriodEnd) {
-      setPayment((prev) => ({
-        ...prev,
-        currentPeriodStart: prev.currentPeriodStart || toDateInputValue(new Date()),
-        currentPeriodEnd: getDefaultTrialEnd(tierDefaults?.trialDays ?? 14),
-      }));
-    } else if (payment.unpaidAccessMode === "INTERNAL") {
-      setPayment((prev) => ({
-        ...prev,
-        billingCycle: "CUSTOM",
-      }));
-    }
-  }, [
-    payment.paymentCollected,
-    payment.unpaidAccessMode,
-    payment.currentPeriodEnd,
-    tierDefaults?.trialDays,
-  ]);
-
-  useEffect(() => {
-    if (!selectedTier || payment.unpaidAccessMode === "INTERNAL") return;
-    const resolved = resolveTierPriceFromStrings(selectedTier, payment.billingCycle);
-    setPayment((prev) => {
-      const start = prev.currentPeriodStart || toDateInputValue(new Date());
-      const amount =
-        resolved != null ? String(resolved) : tierDefaults?.amount ?? prev.amount;
-      const currency = tierDefaults?.currency ?? prev.currency;
-      let currentPeriodEnd = prev.currentPeriodEnd;
-
-      if (payment.paymentCollected) {
-        currentPeriodEnd =
-          payment.billingCycle === "CUSTOM"
-            ? prev.currentPeriodEnd
-            : computePeriodEndFromBillingCycle(payment.billingCycle, start) ??
-              prev.currentPeriodEnd;
-      } else if (payment.unpaidAccessMode === "TRIAL" && tierDefaults?.trialDays) {
-        currentPeriodEnd = getDefaultTrialEnd(tierDefaults.trialDays);
-      }
-
-      return {
-        ...prev,
-        amount,
-        currency,
-        currentPeriodStart: start,
-        currentPeriodEnd,
-      };
-    });
-  }, [
-    selectedTier,
-    tierDefaults,
-    payment.billingCycle,
-    payment.paymentCollected,
-    payment.unpaidAccessMode,
-    payment.currentPeriodStart,
-  ]);
 
   const { data: snapshots } = useQuery({
     queryKey: queryKeys.platform.snapshots.list({
@@ -317,35 +234,56 @@ export function CreateBusinessWizard() {
 
   const selectedSnapshot = snapshots?.items.find((s) => s.id === snapshotId);
 
+  const capabilities = useMemo(
+    () =>
+      tierDefaults?.capabilities ??
+      selectedTier?.capabilities?.map((c) => ({
+        key: c.key,
+        name: c.name,
+      })) ??
+      [],
+    [tierDefaults?.capabilities, selectedTier?.capabilities],
+  );
+
+  const tierPriceSummary = useMemo(() => {
+    if (!selectedTier) return null;
+    const parts: string[] = [];
+    if (selectedTier.priceMonthly) {
+      parts.push(`${selectedTier.priceMonthly} ${tierDefaults?.currency ?? "USD"}/month`);
+    }
+    if (selectedTier.priceYearly) {
+      parts.push(`${selectedTier.priceYearly} ${tierDefaults?.currency ?? "USD"}/year`);
+    }
+    if (selectedTier.setupFee) {
+      parts.push(`${selectedTier.setupFee} ${tierDefaults?.currency ?? "USD"} setup`);
+    }
+    return parts.length > 0 ? parts.join(" · ") : null;
+  }, [selectedTier, tierDefaults?.currency]);
+
   const previewResolution = useMemo(
     () =>
       resolveBusinessAccess({
-        businessStatus: accessDefaults.businessStatus,
+        businessStatus: accessResolution.businessStatus,
         snapshotId,
         subscription: {
-          status: accessDefaults.subscriptionStatus,
+          status: accessResolution.subscriptionStatus,
           planTierId,
-          paymentStatus: accessDefaults.paymentStatus,
-          currentPeriodEnd: payment.currentPeriodEnd,
+          paymentStatus: accessResolution.paymentStatus,
+          currentPeriodEnd:
+            access.accessMode === "TRIAL" ? access.trialEnd : undefined,
         },
-        capabilities:
-          tierDefaults?.capabilities ??
-          selectedTier?.capabilities?.map((c) => ({
-            key: c.key,
-            name: c.name,
-          })) ??
-          [],
+        capabilities,
         hasPendingOwnerInvite:
           detailsForm.watch("inviteOwner") &&
-          accessDefaults.businessStatus !== "ACTIVE",
+          accessResolution.businessStatus !== "ACTIVE",
       }),
     [
-      accessDefaults,
+      accessResolution,
       snapshotId,
       planTierId,
-      tierDefaults,
-      selectedTier,
-      payment.currentPeriodEnd,
+      access.accessMode,
+      access.trialEnd,
+      capabilities,
       detailsForm,
     ],
   );
@@ -353,38 +291,34 @@ export function CreateBusinessWizard() {
   const warnings = useMemo(
     () =>
       getAccessWarnings({
-        businessStatus: accessDefaults.businessStatus,
-        subscriptionStatus: accessDefaults.subscriptionStatus,
-        paymentMethod: payment.paymentMethod,
-        paymentStatus: accessDefaults.paymentStatus,
+        businessStatus: accessResolution.businessStatus,
+        subscriptionStatus: accessResolution.subscriptionStatus,
+        paymentStatus: accessResolution.paymentStatus,
         planTierId,
-        currentPeriodEnd: payment.currentPeriodEnd,
-        paymentCollected: payment.paymentCollected,
-        unpaidAccessMode: payment.unpaidAccessMode,
+        currentPeriodEnd: access.accessMode === "TRIAL" ? access.trialEnd : null,
+        paymentCollected: false,
+        unpaidAccessMode: access.accessMode,
       }),
-    [accessDefaults, payment, planTierId],
+    [accessResolution, access, planTierId],
   );
 
-  const blockingWarnings = hasBlockingAccessWarnings({
-    paymentCollected: payment.paymentCollected,
-    unpaidAccessMode: payment.unpaidAccessMode,
-    subscriptionStatus: accessDefaults.subscriptionStatus,
-    currentPeriodEnd: payment.currentPeriodEnd,
-    amount: payment.amount,
-    paymentMethod: payment.paymentMethod,
+  const blockingWarnings = hasBlockingCreateAccessWarnings({
+    accessMode: access.accessMode,
+    trialStart: access.trialStart,
+    trialEnd: access.trialEnd,
   });
 
-  const periodEndLabel = useMemo(() => {
-    if (payment.paymentCollected) {
-      return payment.billingCycle === "ONE_TIME" ? "Service end" : "Next billing date";
-    }
-    if (payment.unpaidAccessMode === "TRIAL") return "Trial end";
-    if (payment.unpaidAccessMode === "PENDING_PAYMENT") return "Payment due";
-    return "Period end";
-  }, [payment.paymentCollected, payment.unpaidAccessMode, payment.billingCycle]);
+  const trialDateError =
+    access.accessMode === "TRIAL" &&
+    access.trialStart &&
+    access.trialEnd &&
+    !isTrialDateRangeValid(access.trialStart, access.trialEnd)
+      ? "Trial end date must be after trial start date."
+      : null;
 
-  const isPeriodEndAutoCalculated =
-    payment.paymentCollected && payment.billingCycle !== "CUSTOM";
+  const selectedAccessLabel =
+    CREATE_ACCESS_OPTIONS.find((o) => o.value === access.accessMode)?.label ??
+    access.accessMode;
 
   const mutation = useMutation({
     mutationFn: async () => {
@@ -393,10 +327,6 @@ export function CreateBusinessWizard() {
       const phoneFields = hasPhoneDigits(details.phone ?? "")
         ? phoneToApiFields(details.phone!)
         : {};
-
-      const amount = payment.amount ? Number(payment.amount) : undefined;
-      const recordInitialPayment =
-        payment.paymentCollected && amount != null && amount > 0;
 
       return createPlatformBusiness({
         name: details.name.trim(),
@@ -407,53 +337,35 @@ export function CreateBusinessWizard() {
         ...phoneFields,
         timezone: getBrowserTimezone(),
         taxesAndCurrency: {
-          currencyCode: payment.currency || "USD",
+          currencyCode: tierDefaults?.currency ?? "USD",
           defaultTaxRate: 0,
           pricesIncludeTax: false,
         },
         snapshotId: snapshotId ?? undefined,
         planGroupId: planGroupId ?? undefined,
         planTierId: planTierId ?? undefined,
-        billingCycle:
-          payment.unpaidAccessMode === "INTERNAL"
-            ? undefined
-            : payment.billingCycle,
-        amount,
-        currency: payment.currency || undefined,
-        notes: payment.notes || undefined,
-        paymentCollected: payment.paymentCollected,
-        unpaidAccessMode: payment.paymentCollected
-          ? undefined
-          : payment.unpaidAccessMode,
-        paymentMethod: payment.paymentCollected
-          ? payment.paymentMethod
-          : payment.unpaidAccessMode === "PENDING_PAYMENT"
-            ? payment.paymentMethod
-            : undefined,
-        currentPeriodStart: payment.currentPeriodStart || undefined,
-        currentPeriodEnd: payment.currentPeriodEnd || undefined,
-        paymentReference: payment.paymentCollected
-          ? payment.paymentReference
-          : undefined,
+        unpaidAccessMode: access.accessMode,
+        paymentCollected: false,
+        currentPeriodStart:
+          access.accessMode === "TRIAL" ? access.trialStart : undefined,
+        currentPeriodEnd:
+          access.accessMode === "TRIAL" ? access.trialEnd : undefined,
+        notes: access.notes || undefined,
         syncCapabilitiesFromTier: Boolean(planTierId),
-        recordInitialPayment,
         inviteOwner: details.inviteOwner && Boolean(details.email?.trim()),
       });
     },
     onSuccess: (business) => {
-      const amount = payment.amount ? Number(payment.amount) : undefined;
       toast.success(
         getCreateSuccessToast({
-          paymentCollected: payment.paymentCollected,
-          unpaidAccessMode: payment.unpaidAccessMode,
-          paymentRecorded:
-            payment.paymentCollected && amount != null && amount > 0,
+          paymentCollected: false,
+          unpaidAccessMode: access.accessMode,
         }),
       );
       void invalidatePlatformBusinesses(queryClient);
       setOpen(false);
       resetWizard();
-      router.push(`/platform/businesses/${business.id}?tab=access`);
+      router.push(`/platform/businesses/${business.id}?tab=subscriptions`);
     },
     onError: (err: Error) => toast.error(err.message),
   });
@@ -464,79 +376,30 @@ export function CreateBusinessWizard() {
     setPlanTierId(null);
     setSnapshotId(null);
     setSnapshotManuallySet(false);
-    setPayment({
-      ...paymentDefaults,
-      currentPeriodStart: toDateInputValue(new Date()),
-      currentPeriodEnd: getDefaultTrialEnd(14),
+    setAccess({
+      ...accessDefaults,
+      trialStart: toDateInputValue(new Date()),
+      trialEnd: getDefaultTrialEnd(14),
     });
     setShowNotesField(false);
-    setShowReferenceField(false);
     detailsForm.reset(detailsDefaults);
   };
 
-  const handlePaymentCollectedChange = (collected: boolean) => {
-    const defaults = deriveAccessFromPaymentChoice({
-      paymentCollected: collected,
-      unpaidAccessMode: payment.unpaidAccessMode,
-    });
-    setPayment((prev) => ({
+  const handleAccessModeChange = (mode: CreateAccessMode) => {
+    setAccess((prev) => ({
       ...prev,
-      paymentCollected: collected,
-      paymentMethod: collected ? "MANUAL_INVOICE" : defaults.paymentMethod,
-      currentPeriodStart:
-        defaults.currentPeriodStart ?? prev.currentPeriodStart,
-      currentPeriodEnd: collected
-        ? computePeriodEndFromBillingCycle(
-            prev.billingCycle,
-            prev.currentPeriodStart,
-          ) ?? prev.currentPeriodEnd
-        : defaults.currentPeriodEnd ?? prev.currentPeriodEnd,
-    }));
-  };
-
-  const handleUnpaidModeChange = (mode: UnpaidAccessMode) => {
-    const defaults = deriveAccessFromPaymentChoice({
-      paymentCollected: false,
-      unpaidAccessMode: mode,
-    });
-    setPayment((prev) => ({
-      ...prev,
-      unpaidAccessMode: mode,
-      paymentMethod: defaults.paymentMethod,
-      currentPeriodStart:
-        defaults.currentPeriodStart ?? prev.currentPeriodStart,
-      currentPeriodEnd:
+      accessMode: mode,
+      trialStart: prev.trialStart || toDateInputValue(new Date()),
+      trialEnd:
         mode === "TRIAL"
-          ? getDefaultTrialEnd(tierDefaults?.trialDays ?? 14)
-          : prev.currentPeriodEnd,
-      billingCycle: mode === "INTERNAL" ? "CUSTOM" : prev.billingCycle,
+          ? prev.trialEnd || getDefaultTrialEnd(tierDefaults?.trialDays ?? 14)
+          : prev.trialEnd,
     }));
-  };
-
-  const handleBillingCycleChange = (cycle: BusinessSubscriptionBillingCycle) => {
-    setPayment((prev) => {
-      const start = prev.currentPeriodStart || toDateInputValue(new Date());
-      const resolved = selectedTier
-        ? resolveTierPriceFromStrings(selectedTier, cycle)
-        : null;
-      const end =
-        prev.paymentCollected && cycle !== "CUSTOM"
-          ? computePeriodEndFromBillingCycle(cycle, start) ?? prev.currentPeriodEnd
-          : prev.currentPeriodEnd;
-      return {
-        ...prev,
-        billingCycle: cycle,
-        currentPeriodStart: start,
-        currentPeriodEnd: end,
-        amount: resolved != null ? String(resolved) : prev.amount,
-      };
-    });
   };
 
   const canGoNext = () => {
     if (step === 1) return Boolean(detailsForm.watch("name")?.trim());
-    if (step === 2) return true;
-    if (step === 3) return !blockingWarnings;
+    if (step === 2) return !blockingWarnings && !trialDateError;
     return true;
   };
 
@@ -545,22 +408,20 @@ export function CreateBusinessWizard() {
       const valid = await detailsForm.trigger();
       if (!valid) return;
     }
-    if (step === 2 && !planTierId) {
+    if (step === 3 && !planTierId) {
       setSkipPackageOpen(true);
       return;
     }
-    if (step === 3 && blockingWarnings) return;
+    if (step === 2 && (blockingWarnings || trialDateError)) return;
     if (!canGoNext()) return;
     setStep((s) => Math.min(MAX_STEP, s + 1));
   };
 
   const handleCreate = async () => {
     const valid = await detailsForm.trigger();
-    if (!valid || blockingWarnings) return;
+    if (!valid || blockingWarnings || trialDateError) return;
     mutation.mutate();
   };
-
-  const showBillingFields = payment.unpaidAccessMode !== "INTERNAL";
 
   return (
     <>
@@ -644,7 +505,7 @@ export function CreateBusinessWizard() {
                       label="Invite owner now"
                       description="Sends an admin invite to the owner email after the business is created."
                     />
-                    {inviteOwner && accessDefaults.businessStatus !== "ACTIVE" ? (
+                    {inviteOwner && accessResolution.businessStatus !== "ACTIVE" ? (
                       <p className="mt-2 text-sm text-amber-700 dark:text-amber-300">
                         Owner will be invited while workspace access is limited. They
                         may not be able to sign in until access is granted.
@@ -656,6 +517,107 @@ export function CreateBusinessWizard() {
             ) : null}
 
             {step === 2 ? (
+              <div className="space-y-6">
+                <div className="space-y-2">
+                  <p className="text-sm font-medium">Access type</p>
+                  <p className="text-sm text-muted-foreground">
+                    Paid billing is configured later from the Subscription tab or
+                    Stripe checkout.
+                  </p>
+                  <OptionCards
+                    options={CREATE_ACCESS_OPTIONS}
+                    value={access.accessMode}
+                    onChange={(v) => handleAccessModeChange(v as CreateAccessMode)}
+                  />
+                </div>
+
+                {access.accessMode === "TRIAL" ? (
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium">Trial start date</p>
+                      <Input
+                        type="date"
+                        value={access.trialStart}
+                        onChange={(e) =>
+                          setAccess((prev) => ({
+                            ...prev,
+                            trialStart: e.target.value,
+                          }))
+                        }
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium">Trial end date</p>
+                      <Input
+                        type="date"
+                        value={access.trialEnd}
+                        onChange={(e) =>
+                          setAccess((prev) => ({
+                            ...prev,
+                            trialEnd: e.target.value,
+                          }))
+                        }
+                      />
+                    </div>
+                  </div>
+                ) : null}
+
+                {access.accessMode === "INTERNAL" || showNotesField ? (
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-sm font-medium">Notes (optional)</p>
+                      {showNotesField ? (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 text-xs"
+                          onClick={() => {
+                            setAccess((prev) => ({ ...prev, notes: "" }));
+                            setShowNotesField(false);
+                          }}
+                        >
+                          Remove
+                        </Button>
+                      ) : null}
+                    </div>
+                    {showNotesField ? (
+                      <Textarea
+                        value={access.notes ?? ""}
+                        onChange={(e) =>
+                          setAccess((prev) => ({ ...prev, notes: e.target.value }))
+                        }
+                        rows={2}
+                      />
+                    ) : (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowNotesField(true)}
+                      >
+                        <Plus className="mr-1.5 size-3.5" />
+                        Add notes
+                      </Button>
+                    )}
+                  </div>
+                ) : null}
+
+                {trialDateError ? (
+                  <p className="text-sm text-destructive">{trialDateError}</p>
+                ) : null}
+
+                {warnings.length ? (
+                  <div className="rounded-md border border-amber-500/30 bg-amber-500/5 p-2 text-sm text-amber-900 dark:text-amber-200">
+                    {warnings.map((w) => (
+                      <p key={w}>{w}</p>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
+
+            {step === 3 ? (
               <div className="space-y-4">
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-1">
@@ -714,20 +676,25 @@ export function CreateBusinessWizard() {
                   </div>
                 </div>
                 {planGroupId && planTierId ? (
-                  <PackageImpactPreview
-                    snapshotName={
-                      selectedSnapshot?.name ?? tierDefaults?.suggestedSnapshotName
-                    }
-                    capabilities={tierDefaults?.capabilities ?? []}
-                    amount={payment.amount ?? tierDefaults?.amount}
-                    currency={payment.currency ?? tierDefaults?.currency}
-                    trialDays={tierDefaults?.trialDays}
-                  />
+                  <>
+                    <PackageImpactPreview
+                      snapshotName={
+                        selectedSnapshot?.name ?? tierDefaults?.suggestedSnapshotName
+                      }
+                      capabilities={tierDefaults?.capabilities ?? []}
+                      trialDays={tierDefaults?.trialDays}
+                    />
+                    {tierPriceSummary ? (
+                      <p className="text-sm text-muted-foreground">
+                        This price will be used when the business subscribes to a
+                        paid plan: {tierPriceSummary}
+                      </p>
+                    ) : null}
+                  </>
                 ) : (
                   <p className="text-sm text-muted-foreground">
-                    Select a plan group and tier to preview included modules and
-                    suggested pricing. You can also continue without a package and
-                    configure access later.
+                    Select a plan group and tier to preview included modules. You can
+                    also continue without a package and configure access later.
                   </p>
                 )}
                 {selectedGroup && selectedTier ? (
@@ -742,217 +709,6 @@ export function CreateBusinessWizard() {
                         tierDefaults?.suggestedSnapshotName ??
                         "Platform default"}
                     </p>
-                  </div>
-                ) : null}
-              </div>
-            ) : null}
-
-            {step === 3 ? (
-              <div className="space-y-6">
-                <div className="space-y-3">
-                  <p className="text-sm font-medium">Payment collected?</p>
-                  <RadioGroup
-                    value={payment.paymentCollected ? "yes" : "no"}
-                    onValueChange={(v) =>
-                      handlePaymentCollectedChange(v === "yes")
-                    }
-                    className="grid gap-2 sm:grid-cols-2"
-                  >
-                    <label
-                      htmlFor="pay-yes"
-                      className={cn(
-                        "flex cursor-pointer items-center gap-2 rounded-md border p-3",
-                        payment.paymentCollected && "border-primary bg-primary/5",
-                      )}
-                    >
-                      <RadioGroupItem value="yes" id="pay-yes" />
-                      <div>
-                        <p className="text-sm font-medium">Yes</p>
-                        <p className="text-xs text-muted-foreground">
-                          Payment received — activate with paid access.
-                        </p>
-                      </div>
-                    </label>
-                    <label
-                      htmlFor="pay-no"
-                      className={cn(
-                        "flex cursor-pointer items-center gap-2 rounded-md border p-3",
-                        !payment.paymentCollected && "border-primary bg-primary/5",
-                      )}
-                    >
-                      <RadioGroupItem value="no" id="pay-no" />
-                      <div>
-                        <p className="text-sm font-medium">No</p>
-                        <p className="text-xs text-muted-foreground">
-                          Choose trial, pending payment, or internal access.
-                        </p>
-                      </div>
-                    </label>
-                  </RadioGroup>
-                </div>
-
-                {!payment.paymentCollected ? (
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium">Access type</p>
-                    <OptionCards
-                      options={UNPAID_ACCESS_OPTIONS}
-                      value={payment.unpaidAccessMode}
-                      onChange={(v) => handleUnpaidModeChange(v as UnpaidAccessMode)}
-                    />
-                  </div>
-                ) : null}
-
-                {showBillingFields ? (
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div className="space-y-1">
-                      <p className="text-sm font-medium">Billing cycle</p>
-                      <SearchableSelect
-                        items={billingCycleOptions}
-                        value={payment.billingCycle}
-                        onValueChange={(v) => {
-                          if (v) handleBillingCycleChange(v as BusinessSubscriptionBillingCycle);
-                        }}
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-sm font-medium">Price / amount</p>
-                      <Input
-                        type="number"
-                        min={0}
-                        step="0.01"
-                        value={payment.amount ?? ""}
-                        onChange={(e) =>
-                          setPayment((prev) => ({ ...prev, amount: e.target.value }))
-                        }
-                      />
-                    </div>
-                    {payment.paymentCollected ? (
-                      <>
-                        <div className="space-y-1">
-                          <p className="text-sm font-medium">Payment method</p>
-                          <SearchableSelect
-                            items={collectedPaymentMethods}
-                            value={payment.paymentMethod}
-                            onValueChange={(v) =>
-                              v &&
-                              setPayment((prev) => ({
-                                ...prev,
-                                paymentMethod: v as SubscriptionPaymentMethod,
-                              }))
-                            }
-                          />
-                        </div>
-                        <div className="space-y-1">
-                          <p className="text-sm font-medium">Currency</p>
-                          <Input
-                            value={payment.currency}
-                            onChange={(e) =>
-                              setPayment((prev) => ({
-                                ...prev,
-                                currency: e.target.value.toUpperCase(),
-                              }))
-                            }
-                            maxLength={3}
-                          />
-                        </div>
-                      </>
-                    ) : payment.unpaidAccessMode === "PENDING_PAYMENT" ? (
-                      <div className="space-y-1">
-                        <p className="text-sm font-medium">Payment method</p>
-                        <SearchableSelect
-                          items={subscriptionPaymentMethodOptions.filter(
-                            (o) =>
-                              o.value !== "FREE_INTERNAL" &&
-                              o.value !== "NOT_SELECTED",
-                          )}
-                          value={payment.paymentMethod}
-                          onValueChange={(v) =>
-                            v &&
-                            setPayment((prev) => ({
-                              ...prev,
-                              paymentMethod: v as SubscriptionPaymentMethod,
-                            }))
-                          }
-                        />
-                      </div>
-                    ) : null}
-                    <div className="space-y-1">
-                      <p className="text-sm font-medium">Start date</p>
-                      <Input
-                        type="date"
-                        value={payment.currentPeriodStart}
-                        onChange={(e) => {
-                          const start = e.target.value;
-                          setPayment((prev) => {
-                            const currentPeriodEnd =
-                              prev.paymentCollected &&
-                              prev.billingCycle !== "CUSTOM"
-                                ? computePeriodEndFromBillingCycle(
-                                    prev.billingCycle,
-                                    start,
-                                  ) ?? prev.currentPeriodEnd
-                                : prev.currentPeriodEnd;
-                            return {
-                              ...prev,
-                              currentPeriodStart: start,
-                              currentPeriodEnd,
-                            };
-                          });
-                        }}
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-sm font-medium">{periodEndLabel}</p>
-                      {isPeriodEndAutoCalculated ? (
-                        <>
-                          <Input
-                            type="date"
-                            value={payment.currentPeriodEnd ?? ""}
-                            disabled
-                            readOnly
-                            className="bg-muted text-muted-foreground"
-                          />
-                          <p className="text-xs text-muted-foreground">
-                            Calculated from billing cycle and start date.
-                          </p>
-                        </>
-                      ) : (
-                        <Input
-                          type="date"
-                          value={payment.currentPeriodEnd ?? ""}
-                          onChange={(e) =>
-                            setPayment((prev) => ({
-                              ...prev,
-                              currentPeriodEnd: e.target.value,
-                            }))
-                          }
-                        />
-                      )}
-                    </div>
-                  </div>
-                ) : null}
-
-                <PaymentOptionalFieldsSection
-                  notes={payment.notes ?? ""}
-                  notesVisible={showNotesField}
-                  onNotesVisibleChange={setShowNotesField}
-                  onNotesChange={(notes) =>
-                    setPayment((prev) => ({ ...prev, notes }))
-                  }
-                  reference={payment.paymentReference ?? ""}
-                  referenceVisible={showReferenceField}
-                  onReferenceVisibleChange={setShowReferenceField}
-                  onReferenceChange={(paymentReference) =>
-                    setPayment((prev) => ({ ...prev, paymentReference }))
-                  }
-                  showReferenceButton={payment.paymentCollected}
-                />
-
-                {warnings.length ? (
-                  <div className="rounded-md border border-amber-500/30 bg-amber-500/5 p-2 text-sm text-amber-900 dark:text-amber-200">
-                    {warnings.map((w) => (
-                      <p key={w}>{w}</p>
-                    ))}
                   </div>
                 ) : null}
               </div>
@@ -987,12 +743,25 @@ export function CreateBusinessWizard() {
                       label="Invite owner"
                       value={detailsForm.watch("inviteOwner") ? "Yes" : "No"}
                     />
+                    <SummaryRow label="Access type" value={selectedAccessLabel} />
+                    {access.accessMode === "TRIAL" ? (
+                      <>
+                        <SummaryRow
+                          label="Trial start"
+                          value={formatDisplayDate(access.trialStart)}
+                        />
+                        <SummaryRow
+                          label="Trial end"
+                          value={formatDisplayDate(access.trialEnd)}
+                        />
+                      </>
+                    ) : null}
                     <SummaryRow
                       label="Package"
                       value={
                         selectedGroup && selectedTier
                           ? `${selectedGroup.name} / ${selectedTier.name}`
-                          : "None — configure in Access tab"
+                          : "None — configure in Subscriptions tab"
                       }
                     />
                     <SummaryRow
@@ -1004,52 +773,29 @@ export function CreateBusinessWizard() {
                       }
                     />
                     <SummaryRow
-                      label="Billing"
+                      label="Capabilities"
                       value={
-                        payment.unpaidAccessMode === "INTERNAL"
-                          ? "Free internal"
-                          : [
-                              formatBillingCycleLabel(payment.billingCycle),
-                              payment.amount
-                                ? `${payment.amount} ${payment.currency}`
-                                : null,
-                            ]
-                              .filter(Boolean)
-                              .join(" · ") || "—"
+                        capabilities.length > 0
+                          ? `${capabilities.length} module${capabilities.length === 1 ? "" : "s"}`
+                          : planTierId
+                            ? "0 modules"
+                            : "None until package is assigned"
                       }
                     />
                     <SummaryRow
                       label="Workspace"
-                      value={formatBusinessStatus(accessDefaults.businessStatus)}
+                      value={formatBusinessStatus(accessResolution.businessStatus)}
                     />
                     <SummaryRow
                       label="Subscription"
                       value={formatSubscriptionStatus(
-                        accessDefaults.subscriptionStatus,
+                        accessResolution.subscriptionStatus,
                       )}
                     />
                     <SummaryRow
                       label="Payment"
-                      value={formatPaymentStatus(accessDefaults.paymentStatus)}
+                      value="No payment will be collected during creation"
                     />
-                    {payment.paymentCollected ? (
-                      <SummaryRow
-                        label="Payment method"
-                        value={formatPaymentMethod(payment.paymentMethod)}
-                      />
-                    ) : null}
-                    {showBillingFields && payment.currentPeriodStart ? (
-                      <SummaryRow
-                        label="Start date"
-                        value={formatDisplayDate(payment.currentPeriodStart)}
-                      />
-                    ) : null}
-                    {showBillingFields && payment.currentPeriodEnd ? (
-                      <SummaryRow
-                        label={periodEndLabel}
-                        value={formatDisplayDate(payment.currentPeriodEnd)}
-                      />
-                    ) : null}
                     <SummaryRow
                       label="Workspace access"
                       value={
@@ -1058,15 +804,13 @@ export function CreateBusinessWizard() {
                           : `No — ${previewResolution.reasonLabel}`
                       }
                     />
-                    {payment.paymentReference?.trim() ? (
-                      <SummaryRow
-                        label="Reference"
-                        value={payment.paymentReference.trim()}
-                      />
+                    {access.notes?.trim() ? (
+                      <SummaryRow label="Notes" value={access.notes.trim()} />
                     ) : null}
-                    {payment.notes?.trim() ? (
-                      <SummaryRow label="Notes" value={payment.notes.trim()} />
-                    ) : null}
+                    <p className="border-t pt-3 text-xs text-muted-foreground">
+                      Paid billing is configured later from the Subscription tab or
+                      Stripe checkout.
+                    </p>
                   </CardContent>
                 </Card>
               </div>
@@ -1091,7 +835,7 @@ export function CreateBusinessWizard() {
               <Button
                 type="button"
                 onClick={() => void handleCreate()}
-                disabled={mutation.isPending || blockingWarnings}
+                disabled={mutation.isPending || blockingWarnings || Boolean(trialDateError)}
               >
                 {mutation.isPending ? "Creating…" : "Create business"}
               </Button>
@@ -1107,7 +851,7 @@ export function CreateBusinessWizard() {
             <AlertDialogDescription>
               No plan tier is selected. The business will be created without
               package capabilities. You can assign a plan and snapshot later from
-              the Access tab.
+              the Subscriptions tab.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -1115,7 +859,7 @@ export function CreateBusinessWizard() {
             <AlertDialogAction
               onClick={() => {
                 setSkipPackageOpen(false);
-                setStep(3);
+                setStep(4);
               }}
             >
               Continue without package
@@ -1154,112 +898,6 @@ function OptionCards({
           <p className="text-sm text-muted-foreground">{option.description}</p>
         </button>
       ))}
-    </div>
-  );
-}
-
-function PaymentOptionalFieldsSection({
-  notes,
-  notesVisible,
-  onNotesVisibleChange,
-  onNotesChange,
-  reference,
-  referenceVisible,
-  onReferenceVisibleChange,
-  onReferenceChange,
-  showReferenceButton,
-}: {
-  notes: string;
-  notesVisible: boolean;
-  onNotesVisibleChange: (visible: boolean) => void;
-  onNotesChange: (notes: string) => void;
-  reference: string;
-  referenceVisible: boolean;
-  onReferenceVisibleChange: (visible: boolean) => void;
-  onReferenceChange: (reference: string) => void;
-  showReferenceButton: boolean;
-}) {
-  const hasHiddenField =
-    !notesVisible || (showReferenceButton && !referenceVisible);
-
-  return (
-    <div className="space-y-3">
-      {hasHiddenField ? (
-        <div className="flex flex-wrap gap-2">
-          {showReferenceButton && !referenceVisible ? (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => onReferenceVisibleChange(true)}
-            >
-              <Plus className="mr-1.5 size-3.5" />
-              Add reference
-            </Button>
-          ) : null}
-          {!notesVisible ? (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => onNotesVisibleChange(true)}
-            >
-              <Plus className="mr-1.5 size-3.5" />
-              Add notes
-            </Button>
-          ) : null}
-        </div>
-      ) : null}
-
-      {showReferenceButton && referenceVisible ? (
-        <div className="space-y-1">
-          <div className="flex items-center justify-between gap-2">
-            <p className="text-sm font-medium">Reference (optional)</p>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="h-7 text-xs"
-              onClick={() => {
-                onReferenceChange("");
-                onReferenceVisibleChange(false);
-              }}
-            >
-              Remove
-            </Button>
-          </div>
-          <Input
-            value={reference}
-            onChange={(e) => onReferenceChange(e.target.value)}
-            placeholder="Invoice #, receipt ID"
-          />
-        </div>
-      ) : null}
-
-      {notesVisible ? (
-        <div className="space-y-1">
-          <div className="flex items-center justify-between gap-2">
-            <p className="text-sm font-medium">Notes (optional)</p>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="h-7 text-xs"
-              onClick={() => {
-                onNotesChange("");
-                onNotesVisibleChange(false);
-              }}
-            >
-              Remove
-            </Button>
-          </div>
-          <Textarea
-            value={notes}
-            onChange={(e) => onNotesChange(e.target.value)}
-            rows={2}
-          />
-        </div>
-      ) : null}
     </div>
   );
 }

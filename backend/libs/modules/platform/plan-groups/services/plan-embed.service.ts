@@ -19,7 +19,7 @@ import {
   resolvePlanGroupDesignSettings,
 } from '../utils/plan-design-settings.util';
 import { PlanValidationService } from './plan-validation.service';
-import { tierHasStripePrice } from '../utils/plan-tier-stripe.util';
+import { parsePlanTierStripeMetadata } from '../utils/plan-tier-stripe.util';
 
 @Injectable()
 export class PlanEmbedService {
@@ -118,38 +118,46 @@ export class PlanEmbedService {
         if (options?.preview) return true;
         return tier.status === PlanTierStatus.PUBLISHED;
       })
-      .map((tier) => ({
-        planTierId: tier.id,
-        slug: tier.slug,
-        name: tier.name,
-        description: tier.description,
-        priceMonthly: tier.priceMonthly?.toString() ?? null,
-        priceYearly: tier.priceYearly?.toString() ?? null,
-        setupFee: tier.setupFee?.toString() ?? null,
-        trialDays: tier.trialDays,
-        badge: tier.badge,
-        highlighted: tier.highlighted,
-        stripeCheckoutEnabled: tierHasStripePrice(tier.metadata),
-        ctaLabel:
-          tier.ctaLabel?.trim() ||
-          group.defaultCtaLabel?.trim() ||
-          'Get started',
-        ctaUrl: tier.ctaUrl?.trim() || group.defaultCtaUrl?.trim() || '#',
-        designSettings: parsePlanTierDesignSettings(tier.designSettings),
-        capabilities: tier.capabilities
-          .filter((a) => !a.capability.deletedAt)
-          .map((a) => ({
-            key: a.capability.key,
-            name: a.capability.name,
-            description: a.capability.description,
+      .map((tier) => {
+        const stripeMeta = parsePlanTierStripeMetadata(tier.metadata);
+        return {
+          planTierId: tier.id,
+          slug: tier.slug,
+          name: tier.name,
+          description: tier.description,
+          priceMonthly: tier.priceMonthly?.toString() ?? null,
+          priceYearly: tier.priceYearly?.toString() ?? null,
+          setupFee: tier.setupFee?.toString() ?? null,
+          trialDays: tier.trialDays,
+          badge: tier.badge,
+          highlighted: tier.highlighted,
+          stripeCheckoutEnabled: Boolean(
+            stripeMeta?.monthlyPriceId?.trim() ||
+            stripeMeta?.yearlyPriceId?.trim(),
+          ),
+          stripeMonthlyEnabled: Boolean(stripeMeta?.monthlyPriceId?.trim()),
+          stripeYearlyEnabled: Boolean(stripeMeta?.yearlyPriceId?.trim()),
+          ctaLabel:
+            tier.ctaLabel?.trim() ||
+            group.defaultCtaLabel?.trim() ||
+            'Get started',
+          ctaUrl: tier.ctaUrl?.trim() || group.defaultCtaUrl?.trim() || '#',
+          designSettings: parsePlanTierDesignSettings(tier.designSettings),
+          capabilities: tier.capabilities
+            .filter((a) => !a.capability.deletedAt)
+            .map((a) => ({
+              key: a.capability.key,
+              name: a.capability.name,
+              description: a.capability.description,
+            })),
+          features: tier.features.map((feature) => ({
+            label: feature.label,
+            description: feature.description,
+            included: feature.included,
+            icon: feature.icon,
           })),
-        features: tier.features.map((feature) => ({
-          label: feature.label,
-          description: feature.description,
-          included: feature.included,
-          icon: feature.icon,
-        })),
-      }));
+        };
+      });
 
     const featureRows = group.featureRows.map((row) => {
       const values: Record<string, { included: boolean; text?: string }> = {};
@@ -224,6 +232,7 @@ export class PlanEmbedService {
 
     const safeCss = customCss ? this.sanitizeCssForInjection(customCss) : '';
     const dataJson = this.escapeJsonForScriptTag(JSON.stringify(dto));
+    const frontendUrl = process.env.FRONTEND_URL?.replace(/\/$/, '') ?? '';
     const tierCount = dto.tiers.length;
     const gridCols = embedGridColumns(settings.columns, tierCount);
     const isCompact = settings.layout === 'compact';
@@ -276,6 +285,12 @@ export class PlanEmbedService {
     table.compare th:first-child, table.compare td:first-child { text-align: left; }
     .yes { color: var(--plan-accent); font-weight: 600; }
     .no { color: var(--plan-section-muted); }
+    .embed-message { position: fixed; top: 16px; left: 50%; transform: translateX(-50%); z-index: 9999; max-width: min(520px, calc(100% - 32px)); display: flex; align-items: flex-start; gap: 12px; padding: 12px 16px; border-radius: 10px; font-size: 14px; line-height: 1.4; box-shadow: 0 8px 24px rgba(0,0,0,.12); }
+    .embed-message.error { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+    .embed-message.success { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
+    .embed-message-text { flex: 1; }
+    .embed-message-close { border: none; background: transparent; color: inherit; font-size: 18px; line-height: 1; cursor: pointer; padding: 0; opacity: .7; }
+    .embed-message-close:hover { opacity: 1; }
     ${safeCss}
   </style>
 </head>
@@ -290,16 +305,80 @@ export class PlanEmbedService {
   var SETTINGS = DATA.designSettings || {};
   var params = new URLSearchParams(window.location.search);
   var businessId = params.get("businessId");
+  var frontendUrl = ${JSON.stringify(frontendUrl)};
+
+  function showMessage(text, type) {
+    var existing = document.getElementById("plan-embed-message");
+    if (existing) existing.remove();
+    var banner = document.createElement("div");
+    banner.id = "plan-embed-message";
+    banner.className = "embed-message " + (type || "error");
+    var textEl = document.createElement("span");
+    textEl.className = "embed-message-text";
+    textEl.textContent = text;
+    var close = document.createElement("button");
+    close.type = "button";
+    close.className = "embed-message-close";
+    close.setAttribute("aria-label", "Dismiss");
+    close.textContent = "\\u00d7";
+    close.onclick = function () { banner.remove(); };
+    banner.appendChild(textEl);
+    banner.appendChild(close);
+    document.body.appendChild(banner);
+  }
+
+  function billingSubscribeReturnUrl(tier) {
+    var query = new URLSearchParams({
+      subscribePlanGroupId: DATA.id,
+      subscribePlanTierId: tier.planTierId,
+      billingCycle: cycle
+    });
+    return frontendUrl + "/business/settings/billing?" + query.toString();
+  }
+
+  function tierStripeReadyForCycle(tier) {
+    if (cycle === "YEARLY") return Boolean(tier.stripeYearlyEnabled);
+    return Boolean(tier.stripeMonthlyEnabled);
+  }
 
   function startStripeCheckout(tier) {
+    var stripeReadyForCycle = tierStripeReadyForCycle(tier);
+    console.log("[plan-tier-cta]", {
+      source: "plan-embed",
+      event: "start_stripe_checkout",
+      planTierId: tier.planTierId || null,
+      tierSlug: tier.slug,
+      tierName: tier.name,
+      cycle: cycle,
+      stripeCheckoutEnabled: Boolean(tier.stripeCheckoutEnabled),
+      stripeMonthlyEnabled: Boolean(tier.stripeMonthlyEnabled),
+      stripeYearlyEnabled: Boolean(tier.stripeYearlyEnabled),
+      stripeReadyForCycle: stripeReadyForCycle,
+      businessId: businessId || null,
+      planGroupId: DATA.id
+    });
     if (!tier.stripeCheckoutEnabled || !tier.planTierId) {
-      alert("Stripe billing is not configured for this plan.");
+      console.log("[plan-tier-cta]", { source: "plan-embed", branch: "not_configured" });
+      showMessage("This plan is not connected to Stripe yet.", "error");
+      return;
+    }
+    if (!stripeReadyForCycle) {
+      console.log("[plan-tier-cta]", { source: "plan-embed", branch: "cycle_not_configured", cycle: cycle });
+      showMessage("This plan is not connected to Stripe yet.", "error");
       return;
     }
     if (!businessId) {
-      alert("Missing businessId query parameter for Stripe checkout.");
+      if (frontendUrl) {
+        var billingUrl = billingSubscribeReturnUrl(tier);
+        console.log("[plan-tier-cta]", { source: "plan-embed", branch: "billing_redirect", targetUrl: billingUrl, hasFrontendUrl: true });
+        window.top.location.href = billingUrl;
+      } else {
+        console.log("[plan-tier-cta]", { source: "plan-embed", branch: "login_blocked", hasFrontendUrl: false });
+        showMessage("Sign in to subscribe, then open billing settings to complete checkout.", "error");
+      }
       return;
     }
+    console.log("[plan-tier-cta]", { source: "plan-embed", branch: "fetch_checkout", planGroupId: DATA.id, planTierId: tier.planTierId, billingCycle: cycle });
     var apiBase = window.location.pathname.replace(/\\/embed\\/pricing\\/[^/]+$/, "");
     fetch(apiBase + "/public/pricing/" + DATA.id + "/stripe/checkout-session", {
       method: "POST",
@@ -312,16 +391,32 @@ export class PlanEmbedService {
     }).then(function (res) {
       if (!res.ok) {
         return res.json().then(function (body) {
-          throw new Error((body && body.error && body.error.message) || "Checkout failed");
+          var err = body && body.error ? body.error : body;
+          throw new Error((err && err.message) || "Checkout failed");
         });
       }
       return res.json();
     }).then(function (body) {
-      var url = (body && body.data && body.data.url) || (body && body.url);
+      var payload = body && body.data ? body.data : body;
+      console.log("[plan-tier-cta]", { source: "plan-embed", event: "checkout_response", action: payload && payload.action, hasUrl: Boolean(payload && payload.url) });
+      if (payload.action === "tier_updated") {
+        showMessage("Your plan has been updated.", "success");
+        window.setTimeout(function () {
+          if (window.top && window.top !== window) {
+            window.top.location.reload();
+          } else {
+            window.location.reload();
+          }
+        }, 1200);
+        return;
+      }
+      var url = payload.url;
       if (!url) throw new Error("No checkout URL returned");
+      console.log("[plan-tier-cta]", { source: "plan-embed", event: "redirect_checkout" });
       window.top.location.href = url;
     }).catch(function (err) {
-      alert(err.message || "Unable to start checkout");
+      console.log("[plan-tier-cta]", { source: "plan-embed", event: "checkout_error", message: err && err.message });
+      showMessage(err.message || "Unable to start checkout", "error");
     });
   }
 
@@ -457,26 +552,16 @@ export class PlanEmbedService {
         });
         card.appendChild(caps);
       }
-      if (tier.stripeCheckoutEnabled || tier.ctaUrl) {
+      if (tier.stripeCheckoutEnabled || tier.planTierId) {
         var ctaWrap = el("div", "cta-wrap" + (SETTINGS.ctaAlignment === "center" ? " center" : ""));
         var btnClass = "cta";
         if (SETTINGS.buttonStyle === "outline") btnClass += " outline";
-        if (tier.stripeCheckoutEnabled) {
-          var btn = document.createElement("button");
-          btn.type = "button";
-          btn.className = btnClass;
-          btn.textContent = tier.ctaLabel || "Get started";
-          btn.addEventListener("click", function () { startStripeCheckout(tier); });
-          ctaWrap.appendChild(btn);
-        } else {
-          var a = document.createElement("a");
-          a.className = btnClass;
-          a.href = tier.ctaUrl;
-          a.target = "_blank";
-          a.rel = "noopener noreferrer";
-          a.textContent = tier.ctaLabel || "Get started";
-          ctaWrap.appendChild(a);
-        }
+        var btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = btnClass;
+        btn.textContent = tier.ctaLabel || "Get started";
+        btn.addEventListener("click", function () { startStripeCheckout(tier); });
+        ctaWrap.appendChild(btn);
         card.appendChild(ctaWrap);
       }
       tiersEl.appendChild(card);

@@ -126,8 +126,7 @@ export function resolveCreateBusinessAccess(
           subscriptionStatus: SubscriptionStatus.TRIALING,
           paymentMethod: SubscriptionPaymentMethod.NOT_SELECTED,
           paymentStatus: SubscriptionPaymentStatus.NOT_REQUIRED,
-          billingCycle:
-            dto.billingCycle ?? BusinessSubscriptionBillingCycle.MONTHLY,
+          billingCycle: dto.billingCycle,
           currentPeriodStart: dto.currentPeriodStart ?? today,
           currentPeriodEnd: dto.currentPeriodEnd,
           syncCapabilitiesFromTier,
@@ -136,7 +135,7 @@ export function resolveCreateBusinessAccess(
       }
       case 'PENDING_PAYMENT': {
         return {
-          status: BusinessStatus.NOT_ACTIVE,
+          status: BusinessStatus.ACTIVE,
           subscriptionStatus: SubscriptionStatus.PENDING_PAYMENT,
           paymentMethod:
             dto.paymentMethod ?? SubscriptionPaymentMethod.MANUAL_INVOICE,

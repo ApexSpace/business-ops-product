@@ -12,7 +12,10 @@ export class RealtimeIoAdapter extends IoAdapter {
     super(app);
   }
 
-  createIOServer(port: number, options?: ServerOptions): ReturnType<IoAdapter['createIOServer']> {
+  createIOServer(
+    port: number,
+    options?: ServerOptions,
+  ): ReturnType<IoAdapter['createIOServer']> {
     const origins =
       this.corsOrigin === '*'
         ? true

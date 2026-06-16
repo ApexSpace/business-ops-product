@@ -8,6 +8,7 @@ import {
   Prisma,
   SubscriptionPaymentMethod,
   SubscriptionPaymentStatus,
+  SubscriptionBillingSource,
   SubscriptionStatus,
 } from '@prisma/client';
 import { RequestUser } from '@app/common/decorators/current-user.decorator';
@@ -32,6 +33,7 @@ import { BusinessAccessResolverService } from './business-access-resolver.servic
 import { BusinessCapabilitySyncService } from './business-capability-sync.service';
 import { BusinessEffectiveCapabilitiesService } from './business-effective-capabilities.service';
 import { BusinessSubscriptionActionAvailabilityService } from './business-subscription-action-availability.service';
+import { StripePlatformMetadataService } from '@app/modules/platform/billing/stripe/services/stripe-platform-metadata.service';
 import { SubscriptionActionDefinition } from '../types/subscription-action.types';
 import { calculateSubscriptionPeriod } from '../utils/calculate-subscription-period.util';
 import { resolveTierPrice } from '../utils/resolve-tier-price.util';
@@ -40,6 +42,11 @@ import {
   assertCustomPeriodEndRequired,
   assertTierPriceOrCustomAmount,
 } from '../utils/subscription-billing-validation.util';
+import {
+  STRIPE_MANAGED_MESSAGE,
+  getStripeControlledFieldsInUpdate,
+} from '../utils/billing-source-action.util';
+import { resolveBillingSourceForSubscriptionUpsert } from '../utils/resolve-billing-source.util';
 
 const subscriptionInclude = {
   planGroup: { select: { id: true, name: true, currency: true } },
@@ -72,6 +79,7 @@ export class BusinessAccessService {
     private readonly effectiveCapabilitiesService: BusinessEffectiveCapabilitiesService,
     private readonly auditService: AuditService,
     private readonly actionAvailability: BusinessSubscriptionActionAvailabilityService,
+    private readonly stripeMetadataService: StripePlatformMetadataService,
   ) {}
 
   async getCurrentAccess(businessId: string): Promise<BusinessTenantAccessDto> {
@@ -84,14 +92,18 @@ export class BusinessAccessService {
       );
     }
 
-    const [subscription, effectiveCapabilities, resolution] = await Promise.all([
-      this.prisma.businessSubscription.findUnique({
-        where: { businessId },
-        include: subscriptionInclude,
-      }),
-      this.effectiveCapabilitiesService.resolveEffectiveCapabilities(businessId),
-      this.accessResolver.resolveForBusiness(businessId),
-    ]);
+    const [subscription, effectiveCapabilities, resolution] = await Promise.all(
+      [
+        this.prisma.businessSubscription.findUnique({
+          where: { businessId },
+          include: subscriptionInclude,
+        }),
+        this.effectiveCapabilitiesService.resolveEffectiveCapabilities(
+          businessId,
+        ),
+        this.accessResolver.resolveForBusiness(businessId),
+      ],
+    );
 
     return {
       businessId: business.id,
@@ -103,22 +115,7 @@ export class BusinessAccessService {
       warnings: resolution.warnings,
       needsAttention: resolution.needsAttention,
       subscription: subscription
-        ? {
-            id: subscription.id,
-            status: subscription.status,
-            planGroupId: subscription.planGroupId,
-            planGroupName: subscription.planGroup?.name ?? null,
-            planTierId: subscription.planTierId,
-            planTierName: subscription.planTier?.name ?? null,
-            paymentMethod: subscription.paymentMethod,
-            paymentStatus: subscription.paymentStatus,
-            billingSource: subscription.billingSource,
-            billingCycle: subscription.billingCycle,
-            currentPeriodStart: subscription.currentPeriodStart,
-            currentPeriodEnd: subscription.currentPeriodEnd,
-            amount: subscription.amount?.toString() ?? null,
-            currency: subscription.currency,
-          }
+        ? this.toTenantSubscriptionDto(subscription)
         : null,
       effectiveCapabilities: effectiveCapabilities.map((cap) => ({
         id: cap.key,
@@ -144,15 +141,17 @@ export class BusinessAccessService {
       );
     }
 
-    const [subscription, capabilities, resolution, actions] = await Promise.all([
-      this.prisma.businessSubscription.findUnique({
-        where: { businessId },
-        include: subscriptionInclude,
-      }),
-      this.businessCapabilityRepository.findByBusinessId(businessId),
-      this.accessResolver.resolveForBusiness(businessId),
-      this.actionAvailability.resolveAvailableActions(businessId),
-    ]);
+    const [subscription, capabilities, resolution, actions] = await Promise.all(
+      [
+        this.prisma.businessSubscription.findUnique({
+          where: { businessId },
+          include: subscriptionInclude,
+        }),
+        this.businessCapabilityRepository.findByBusinessId(businessId),
+        this.accessResolver.resolveForBusiness(businessId),
+        this.actionAvailability.resolveAvailableActions(businessId),
+      ],
+    );
 
     return {
       businessId: business.id,
@@ -168,12 +167,29 @@ export class BusinessAccessService {
     };
   }
 
-  async updateAccessInternal(
+  /**
+   * WEBHOOK-ONLY: trusted Stripe webhook/resync path. Bypasses billing-source
+   * manual-action guards while preserving other validation.
+   */
+  async updateAccessFromStripeSync(
     tx: Prisma.TransactionClient | PrismaService,
     businessId: string,
     dto: UpdateBusinessAccessDto,
     actor: RequestUser,
     options?: { skipAudit?: boolean },
+  ): Promise<void> {
+    return this.updateAccessInternal(tx, businessId, dto, actor, {
+      ...options,
+      skipBillingSourceGuard: true,
+    });
+  }
+
+  async updateAccessInternal(
+    tx: Prisma.TransactionClient | PrismaService,
+    businessId: string,
+    dto: UpdateBusinessAccessDto,
+    actor: RequestUser,
+    options?: { skipAudit?: boolean; skipBillingSourceGuard?: boolean },
   ): Promise<void> {
     const business = await tx.business.findFirst({
       where: { id: businessId, deletedAt: null },
@@ -186,7 +202,7 @@ export class BusinessAccessService {
       );
     }
 
-    await this.validateAccessUpdate(dto, businessId);
+    await this.validateAccessUpdate(dto, businessId, options);
 
     const existingSubscription = await tx.businessSubscription.findUnique({
       where: { businessId },
@@ -284,7 +300,8 @@ export class BusinessAccessService {
       amount: dto.amount,
       currency: dto.currency,
       notes: dto.notes,
-      syncCapabilitiesFromTier: dto.syncCapabilitiesFromTier ?? Boolean(dto.planTierId),
+      syncCapabilitiesFromTier:
+        dto.syncCapabilitiesFromTier ?? Boolean(dto.planTierId),
     };
 
     await this.updateAccessInternal(this.prisma, businessId, updateDto, actor);
@@ -317,9 +334,7 @@ export class BusinessAccessService {
         );
       }
 
-      const source =
-        item.source ??
-        BusinessCapabilitySource.CUSTOM;
+      const source = item.source ?? BusinessCapabilitySource.CUSTOM;
 
       if (
         source === BusinessCapabilitySource.PLAN_TIER &&
@@ -355,7 +370,39 @@ export class BusinessAccessService {
   private async validateAccessUpdate(
     dto: UpdateBusinessAccessDto,
     businessId?: string,
+    options?: { skipBillingSourceGuard?: boolean },
   ): Promise<void> {
+    if (businessId && !options?.skipBillingSourceGuard) {
+      const existing = await this.prisma.businessSubscription.findUnique({
+        where: { businessId },
+        select: { billingSource: true },
+      });
+      if (existing?.billingSource === SubscriptionBillingSource.STRIPE) {
+        const blocked = getStripeControlledFieldsInUpdate(
+          dto as unknown as Record<string, unknown>,
+        );
+        if (blocked.length > 0) {
+          throw new AppException(
+            ErrorCode.BAD_REQUEST,
+            STRIPE_MANAGED_MESSAGE,
+            HttpStatus.BAD_REQUEST,
+          );
+        }
+      }
+      if (existing?.billingSource === SubscriptionBillingSource.INTERNAL) {
+        const blocked = getStripeControlledFieldsInUpdate(
+          dto as unknown as Record<string, unknown>,
+        );
+        if (blocked.length > 0) {
+          throw new AppException(
+            ErrorCode.BAD_REQUEST,
+            'Payment and billing fields cannot be changed for internal subscriptions',
+            HttpStatus.BAD_REQUEST,
+          );
+        }
+      }
+    }
+
     if (dto.subscriptionStatus === SubscriptionStatus.TRIALING) {
       if (dto.currentPeriodEnd === null) {
         throw new AppException(
@@ -375,6 +422,23 @@ export class BusinessAccessService {
             HttpStatus.BAD_REQUEST,
           );
         }
+      }
+      const trialStart =
+        dto.currentPeriodStart ??
+        (businessId
+          ? (
+              await this.prisma.businessSubscription.findUnique({
+                where: { businessId },
+              })
+            )?.currentPeriodStart?.toISOString().slice(0, 10)
+          : undefined);
+      const trialEnd = dto.currentPeriodEnd;
+      if (trialStart && trialEnd && trialEnd <= trialStart) {
+        throw new AppException(
+          ErrorCode.BAD_REQUEST,
+          'Trial end date must be after trial start date',
+          HttpStatus.BAD_REQUEST,
+        );
       }
     }
 
@@ -484,13 +548,13 @@ export class BusinessAccessService {
     const billingCycle =
       dto.billingCycle !== undefined
         ? dto.billingCycle
-        : existing?.billingCycle ??
+        : (existing?.billingCycle ??
           (!existing &&
           status !== SubscriptionStatus.INTERNAL &&
           (status === SubscriptionStatus.ACTIVE ||
             status === SubscriptionStatus.TRIALING)
             ? BusinessSubscriptionBillingCycle.MONTHLY
-            : undefined);
+            : undefined));
 
     assertBillingCycleRequired(status, billingCycle);
 
@@ -519,7 +583,8 @@ export class BusinessAccessService {
         assertTierPriceOrCustomAmount({
           billingCycle,
           tier,
-          amount: dto.amount ?? (existing?.amount ? Number(existing.amount) : null),
+          amount:
+            dto.amount ?? (existing?.amount ? Number(existing.amount) : null),
           currency: dto.currency ?? existing?.currency,
           customPrice: dto.amount !== undefined,
         });
@@ -555,12 +620,14 @@ export class BusinessAccessService {
       where: { businessId },
     });
 
-    const status = dto.subscriptionStatus ?? existing?.status ?? SubscriptionStatus.TRIALING;
+    const status =
+      dto.subscriptionStatus ?? existing?.status ?? SubscriptionStatus.TRIALING;
 
     if (status === SubscriptionStatus.TRIALING) {
-      const periodEnd = dto.currentPeriodEnd !== undefined
-        ? this.parseDate(dto.currentPeriodEnd)
-        : existing?.currentPeriodEnd;
+      const periodEnd =
+        dto.currentPeriodEnd !== undefined
+          ? this.parseDate(dto.currentPeriodEnd)
+          : existing?.currentPeriodEnd;
       if (!periodEnd) {
         throw new AppException(
           ErrorCode.BAD_REQUEST,
@@ -574,7 +641,7 @@ export class BusinessAccessService {
       dto.paymentMethod ??
       (status === SubscriptionStatus.INTERNAL
         ? SubscriptionPaymentMethod.FREE_INTERNAL
-        : existing?.paymentMethod ?? SubscriptionPaymentMethod.NOT_SELECTED);
+        : (existing?.paymentMethod ?? SubscriptionPaymentMethod.NOT_SELECTED));
 
     const isCreate = !existing;
     const statusChanging =
@@ -594,16 +661,24 @@ export class BusinessAccessService {
               ? SubscriptionPaymentStatus.PAID
               : SubscriptionPaymentStatus.NOT_REQUIRED;
     } else if (statusChanging) {
-      paymentStatus = existing!.paymentStatus;
+      paymentStatus = existing.paymentStatus;
     } else {
-      paymentStatus = existing!.paymentStatus;
+      paymentStatus = existing.paymentStatus;
     }
+
+    const billingSource = resolveBillingSourceForSubscriptionUpsert({
+      isCreate,
+      status,
+      paymentStatus,
+      existingBillingSource: existing?.billingSource,
+    });
 
     const base: Prisma.BusinessSubscriptionUncheckedCreateInput = {
       businessId,
       status,
       paymentMethod,
       paymentStatus,
+      ...(billingSource !== undefined ? { billingSource } : {}),
     };
 
     if (dto.planGroupId !== undefined) {
@@ -614,7 +689,7 @@ export class BusinessAccessService {
     }
     if (dto.billingCycle !== undefined) {
       base.billingCycle = dto.billingCycle;
-    } else if (isCreate && status !== SubscriptionStatus.INTERNAL) {
+    } else if (isCreate && status === SubscriptionStatus.ACTIVE) {
       base.billingCycle = BusinessSubscriptionBillingCycle.MONTHLY;
     }
     if (dto.currentPeriodStart !== undefined) {
@@ -638,10 +713,18 @@ export class BusinessAccessService {
     }
 
     const update: Prisma.BusinessSubscriptionUpdateInput = {
-      ...(dto.subscriptionStatus !== undefined ? { status: dto.subscriptionStatus } : {}),
-      ...(dto.paymentMethod !== undefined ? { paymentMethod: dto.paymentMethod } : {}),
-      ...(dto.paymentStatus !== undefined ? { paymentStatus: dto.paymentStatus } : {}),
-      ...(dto.billingCycle !== undefined ? { billingCycle: dto.billingCycle } : {}),
+      ...(dto.subscriptionStatus !== undefined
+        ? { status: dto.subscriptionStatus }
+        : {}),
+      ...(dto.paymentMethod !== undefined
+        ? { paymentMethod: dto.paymentMethod }
+        : {}),
+      ...(dto.paymentStatus !== undefined
+        ? { paymentStatus: dto.paymentStatus }
+        : {}),
+      ...(dto.billingCycle !== undefined
+        ? { billingCycle: dto.billingCycle }
+        : {}),
       ...(dto.planGroupId !== undefined
         ? dto.planGroupId
           ? { planGroup: { connect: { id: dto.planGroupId } } }
@@ -661,6 +744,9 @@ export class BusinessAccessService {
       ...(dto.amount !== undefined ? { amount: dto.amount } : {}),
       ...(dto.currency !== undefined ? { currency: dto.currency } : {}),
       ...(dto.notes !== undefined ? { notes: dto.notes } : {}),
+      ...(billingSource !== undefined && !isCreate
+        ? { billingSource }
+        : {}),
       ...(dto.subscriptionStatus === SubscriptionStatus.CANCELED
         ? { canceledAt: new Date() }
         : {}),
@@ -721,8 +807,59 @@ export class BusinessAccessService {
       nextBillingLabel: period.nextBillingLabel,
       notes: sub.notes,
       canceledAt: sub.canceledAt,
+      ...this.resolveStripeCancelFields(sub.metadata),
       createdAt: sub.createdAt,
       updatedAt: sub.updatedAt,
+    };
+  }
+
+  private toTenantSubscriptionDto(
+    sub: SubscriptionWithRelations,
+  ): BusinessTenantAccessDto['subscription'] {
+    const stripeCancel = this.resolveStripeCancelFields(sub.metadata);
+    const period = calculateSubscriptionPeriod({
+      billingCycle: sub.billingCycle,
+      startDate: sub.currentPeriodStart,
+      currentPeriodEnd: sub.currentPeriodEnd,
+      trialDays: sub.planTier?.trialDays,
+      subscriptionStatus: sub.status,
+    });
+
+    return {
+      id: sub.id,
+      status: sub.status,
+      planGroupId: sub.planGroupId,
+      planGroupName: sub.planGroup?.name ?? null,
+      planTierId: sub.planTierId,
+      planTierName: sub.planTier?.name ?? null,
+      paymentMethod: sub.paymentMethod,
+      paymentStatus: sub.paymentStatus,
+      billingSource: sub.billingSource,
+      billingCycle: sub.billingCycle,
+      currentPeriodStart: sub.currentPeriodStart,
+      currentPeriodEnd: sub.currentPeriodEnd,
+      nextBillingDate: period.nextBillingDate,
+      nextBillingLabel: period.nextBillingLabel,
+      amount: sub.amount?.toString() ?? null,
+      currency: sub.currency,
+      ...stripeCancel,
+    };
+  }
+
+  private resolveStripeCancelFields(metadata: unknown): {
+    cancelAtPeriodEnd?: boolean;
+    cancelAt?: Date | null;
+  } {
+    const stripeMeta =
+      this.stripeMetadataService.parseSubscriptionStripeMetadata(metadata);
+
+    if (!stripeMeta) {
+      return {};
+    }
+
+    return {
+      cancelAtPeriodEnd: stripeMeta.cancelAtPeriodEnd,
+      cancelAt: stripeMeta.cancelAt ? new Date(stripeMeta.cancelAt) : null,
     };
   }
 
@@ -736,8 +873,7 @@ export class BusinessAccessService {
 
     const billingCycle =
       sub.billingCycle ?? BusinessSubscriptionBillingCycle.MONTHLY;
-    const currency =
-      sub.currency ?? sub.planGroup?.currency ?? 'USD';
+    const currency = sub.currency ?? sub.planGroup?.currency ?? 'USD';
     const resolved = resolveTierPrice(sub.planTier, billingCycle, { currency });
 
     return {

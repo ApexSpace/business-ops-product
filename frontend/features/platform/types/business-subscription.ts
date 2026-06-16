@@ -17,7 +17,9 @@ export type SubscriptionActionKey =
   | "CHANGE_PACKAGE"
   | "CHANGE_SNAPSHOT"
   | "SYNC_CAPABILITIES"
-  | "MANUAL_ADJUSTMENT";
+  | "MANUAL_ADJUSTMENT"
+  | "OPEN_STRIPE_PORTAL"
+  | "RESYNC_FROM_STRIPE";
 
 export type SubscriptionActionCategory =
   | "recommended"
@@ -46,6 +48,7 @@ export interface SubscriptionActionDefinition {
 
 export interface SubscriptionStateSnapshot {
   businessStatus: BusinessAccessStatus;
+  billingSource?: string | null;
   subscriptionStatus?: SubscriptionAccessStatus | null;
   paymentMethod?: SubscriptionPaymentMethod | null;
   paymentStatus?: SubscriptionPaymentStatus | null;

@@ -1,9 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import {
-  IntegrationResourceType,
-  IntegrationStatus,
-} from '@prisma/client';
+import { IntegrationResourceType, IntegrationStatus } from '@prisma/client';
 import type { RootConfig } from '@app/core/config/configuration';
 import { EMAIL_PROVIDER_KEY } from '@app/modules/communications/email/constants/email-platform.constants';
 import { PlatformEmailProvisioningService } from '../email/services/platform-email-provisioning.service';
@@ -20,11 +17,7 @@ export interface MessagingStatusDto {
   warnings: string[];
 }
 
-const MESSAGING_PROVIDER_KEYS = new Set([
-  'facebook',
-  'instagram',
-  'whatsapp',
-]);
+const MESSAGING_PROVIDER_KEYS = new Set(['facebook', 'instagram', 'whatsapp']);
 const WEBCHAT_PROVIDER_KEY = 'webchat';
 
 @Injectable()

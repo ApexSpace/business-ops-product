@@ -3,7 +3,8 @@ import { NextResponse } from "next/server";
 import { decodeAccessToken } from "@/lib/auth";
 import { CONTEXTS_COOKIE, REFRESH_MAX_AGE } from "@/lib/auth/cookies";
 import { resolveSessionContexts } from "@/lib/auth/session";
-import { getAccessToken, serverApiFetch } from "@/lib/api/server";
+import { parseApiError, parseEnvelope } from "@/lib/api/envelope";
+import { getAccessToken, serverApiFetchRaw } from "@/lib/api/server";
 import type { UserMe } from "@/lib/types/shared";
 
 export async function GET() {
@@ -16,7 +17,35 @@ export async function GET() {
 
   let user: UserMe;
   try {
-    user = await serverApiFetch<UserMe>("/auth/me", { accessToken });
+    const res = await serverApiFetchRaw("/auth/me", {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    const body = await res.json().catch(() => ({}));
+
+    if (!res.ok) {
+      const err = parseApiError(body, res.status);
+      if (res.status >= 500) {
+        return NextResponse.json(
+          {
+            authenticated: false,
+            code: err.code ?? "SERVICE_UNAVAILABLE",
+            message: err.message,
+          },
+          { status: 503 },
+        );
+      }
+
+      return NextResponse.json(
+        {
+          authenticated: false,
+          code: err.code,
+          message: err.message,
+        },
+        { status: res.status },
+      );
+    }
+
+    user = parseEnvelope<UserMe>(body).data;
   } catch {
     return NextResponse.json(
       {

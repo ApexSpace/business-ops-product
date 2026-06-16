@@ -37,9 +37,11 @@ export function getTemplatePolicy(
       editBlockedReason =
         'This template is under Meta review and cannot be edited yet.';
     } else if (status === 'PENDING_DELETION' || status === 'DELETED') {
-      editBlockedReason = 'This template has been deleted or is pending deletion.';
+      editBlockedReason =
+        'This template has been deleted or is pending deletion.';
     } else {
-      editBlockedReason = 'This template cannot be edited in its current status.';
+      editBlockedReason =
+        'This template cannot be edited in its current status.';
     }
   }
 

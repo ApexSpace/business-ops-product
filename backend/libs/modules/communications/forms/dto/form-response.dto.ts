@@ -40,6 +40,10 @@ export class FormResponseDto extends FormListItemResponseDto {
   @ApiProperty({ type: FormDefinitionDto })
   definition!: FormDefinitionDto;
 
-  @ApiPropertyOptional({ type: 'object', additionalProperties: true, nullable: true })
+  @ApiPropertyOptional({
+    type: 'object',
+    additionalProperties: true,
+    nullable: true,
+  })
   metadata?: Record<string, unknown> | null;
 }

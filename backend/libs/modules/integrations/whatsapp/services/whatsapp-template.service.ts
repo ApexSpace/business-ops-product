@@ -91,9 +91,8 @@ export class WhatsAppTemplateService {
     dto: CreateWhatsAppTemplateDto,
     actor: RequestUser,
   ) {
-    const context = await this.businessContextService.requireConnectedContext(
-      businessId,
-    );
+    const context =
+      await this.businessContextService.requireConnectedContext(businessId);
     const payload = buildMetaCreatePayload({
       name: dto.name,
       language: dto.language,
@@ -153,9 +152,8 @@ export class WhatsAppTemplateService {
       );
     }
 
-    const context = await this.businessContextService.requireConnectedContext(
-      businessId,
-    );
+    const context =
+      await this.businessContextService.requireConnectedContext(businessId);
     const headerHandle = await this.metaUploadService.uploadHeaderSample({
       accessToken: context.accessToken,
       buffer: file.buffer,
@@ -183,11 +181,7 @@ export class WhatsAppTemplateService {
     );
   }
 
-  async update(
-    businessId: string,
-    id: string,
-    dto: UpdateWhatsAppTemplateDto,
-  ) {
+  async update(businessId: string, id: string, dto: UpdateWhatsAppTemplateDto) {
     const template = await this.requireTemplate(businessId, id);
     const policy = getTemplatePolicy(template.status);
     if (!policy.canEdit) {
@@ -198,10 +192,10 @@ export class WhatsAppTemplateService {
       );
     }
 
-    const context = await this.businessContextService.requireConnectedContext(
-      businessId,
-    );
-    const nextComponents = dto.components ?? (template.components as Record<string, unknown>[]);
+    const context =
+      await this.businessContextService.requireConnectedContext(businessId);
+    const nextComponents =
+      dto.components ?? (template.components as Record<string, unknown>[]);
     const metaPayload: Record<string, unknown> = {};
 
     if (dto.category) {
@@ -251,9 +245,8 @@ export class WhatsAppTemplateService {
   }
 
   async syncAll(businessId: string) {
-    const context = await this.businessContextService.requireConnectedContext(
-      businessId,
-    );
+    const context =
+      await this.businessContextService.requireConnectedContext(businessId);
     const remoteTemplates = await this.metaApiClient.listMessageTemplates(
       context.wabaId,
       context.accessToken,
@@ -279,9 +272,8 @@ export class WhatsAppTemplateService {
 
   async syncOne(businessId: string, id: string) {
     const template = await this.requireTemplate(businessId, id);
-    const context = await this.businessContextService.requireConnectedContext(
-      businessId,
-    );
+    const context =
+      await this.businessContextService.requireConnectedContext(businessId);
 
     const remote = template.metaTemplateId
       ? await this.metaApiClient.getMessageTemplate(
@@ -332,9 +324,8 @@ export class WhatsAppTemplateService {
       );
     }
 
-    const context = await this.businessContextService.requireConnectedContext(
-      businessId,
-    );
+    const context =
+      await this.businessContextService.requireConnectedContext(businessId);
 
     await this.metaApiClient.deleteMessageTemplate(
       context.wabaId,

@@ -1,8 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { toast } from "sonner";
+import { useQuery } from "@tanstack/react-query";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -13,10 +12,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Dialog, DialogBody, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogBody, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { LoadingState } from "@/components/data-display/loading-state";
+import { useBusinessBillingMutation } from "@/features/settings/hooks/use-business-billing-mutation";
+import { BillingOwnerRequiredDialog } from "@/features/settings/components/billing-owner-required-dialog";
 import {
-  changeBusinessPlanTier,
   getBusinessPlanOptions,
   type BusinessPlanTierOption,
 } from "@/features/settings/api/business-billing.api";
@@ -27,12 +27,27 @@ import {
 import type { PublicPricingTier } from "@/features/platform/types/plan-group";
 import { queryKeys } from "@/lib/query/keys";
 
-export type PlanChangeMode = "upgrade" | "downgrade" | "both";
+import {
+  getPlanDialogTitle,
+  isRecoverySubscriptionStatus,
+  resolvePlanChangeDirection,
+  type PlanChangeDirection,
+  type PlanSelectionMode,
+  resolvePlanSelectionMode,
+} from "@/features/settings/utils/plan-tier-position.util";
+
+export type PlanChangeMode = PlanChangeDirection;
 
 interface PlanChangeDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   mode: PlanChangeMode;
+  planSelectionMode?: PlanSelectionMode;
+  subscriptionStatus?: string | null;
+  billingSource?: string | null;
+  isBillingRecovery?: boolean;
+  showTrialLayout?: boolean;
+  cancellationScheduled?: boolean;
 }
 
 function findTierOption(
@@ -52,11 +67,34 @@ function resolveChangeDirection(
 export function PlanChangeDialog({
   open,
   onOpenChange,
-  mode,
+  mode = "both",
+  planSelectionMode: planSelectionModeProp = "default",
+  subscriptionStatus,
+  billingSource,
+  isBillingRecovery = false,
+  showTrialLayout = false,
+  cancellationScheduled = false,
 }: PlanChangeDialogProps) {
-  const [pendingTier, setPendingTier] = useState<{
-    option: BusinessPlanTierOption;
+  const effectivePlanSelectionMode = resolvePlanSelectionMode({
+    subscriptionStatus,
+    billingSource,
+    isBillingRecovery:
+      isBillingRecovery ||
+      planSelectionModeProp === "recovery" ||
+      isRecoverySubscriptionStatus(subscriptionStatus),
+    showTrialLayout: showTrialLayout || planSelectionModeProp === "trial",
+  });
+  const effectiveChangeDirection = resolvePlanChangeDirection(
+    effectivePlanSelectionMode,
+    mode,
+  );
+  const dialogTitle = getPlanDialogTitle(
+    effectivePlanSelectionMode,
+    effectiveChangeDirection,
+  );
+  const [pendingStripeTier, setPendingStripeTier] = useState<{
     previewTier: PublicPricingTier;
+    billingCycle: "MONTHLY" | "YEARLY";
   } | null>(null);
 
   const { data, isLoading, isError, error, refetch } = useQuery({
@@ -65,51 +103,89 @@ export function PlanChangeDialog({
     enabled: open,
   });
 
-  const tierFilter: PlanTierFilter =
-    mode === "both" ? "all" : mode === "upgrade" ? "higher" : "lower";
+  const {
+    startTierCheckout,
+    redirectingTierSlug,
+    ownerRequiredOpen,
+    setOwnerRequiredOpen,
+    canManageTeam,
+  } = useBusinessBillingMutation(effectivePlanSelectionMode);
 
-  const pendingDirection = useMemo(() => {
-    if (!pendingTier || !data) return null;
+  const isTrialSelection = effectivePlanSelectionMode === "trial";
+  const isRecoverySelection = effectivePlanSelectionMode === "recovery";
+
+  const tierFilter: PlanTierFilter =
+    isTrialSelection || isRecoverySelection
+      ? "all"
+      : effectiveChangeDirection === "both"
+        ? "all"
+        : effectiveChangeDirection === "upgrade"
+          ? "higher"
+          : "lower";
+
+  const pendingStripeDirection = useMemo(() => {
+    if (!pendingStripeTier || !data) return null;
     const targetIndex = data.tiers.findIndex(
-      (tier) => tier.id === pendingTier.option.id,
+      (tier) => tier.slug === pendingStripeTier.previewTier.slug,
     );
     if (targetIndex < 0 || data.currentPlanTierIndex < 0) return null;
     return resolveChangeDirection(data.currentPlanTierIndex, targetIndex);
-  }, [data, pendingTier]);
+  }, [data, pendingStripeTier]);
 
-  const changeMutation = useMutation({
-    mutationFn: ({
-      planTierId,
-    }: {
-      planTierId: string;
-      direction: "upgrade" | "downgrade";
-    }) => changeBusinessPlanTier(planTierId),
-    onSuccess: (_, { direction }) => {
-      toast.success(
-        direction === "upgrade" ? "Plan upgraded" : "Plan downgraded",
-      );
-      window.location.reload();
-    },
-    onError: (err: Error) => toast.error(err.message),
-  });
-
-  const selectingTierSlug = useMemo(() => {
-    if (!changeMutation.isPending || !pendingTier) return null;
-    return pendingTier.previewTier.slug;
-  }, [changeMutation.isPending, pendingTier]);
-
-  const handleSelectTier = (tier: PublicPricingTier) => {
+  const handleSubscribeTier = (
+    tier: PublicPricingTier,
+    billingCycle: "MONTHLY" | "YEARLY",
+  ) => {
     if (!data) return;
     const option = findTierOption(data.tiers, tier.slug);
-    if (!option || option.id === data.currentPlanTierId) return;
-    setPendingTier({ option, previewTier: tier });
+    const isSameTier = option?.id === data.currentPlanTierId;
+    if (!option || (isSameTier && !isTrialSelection && !isRecoverySelection)) {
+      return;
+    }
+
+    const checkoutInput = {
+      planGroupId: data.pricing.id,
+      planTierId: option.id,
+      billingCycle,
+      tierSlug: tier.slug,
+    };
+
+    if (isTrialSelection || isRecoverySelection) {
+      startTierCheckout(checkoutInput);
+      return;
+    }
+
+    setPendingStripeTier({ previewTier: tier, billingCycle });
   };
 
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="w-auto max-w-[calc(100%-2rem)] overflow-hidden sm:max-w-[calc(100%-2rem)]">
+          <DialogHeader>
+            <DialogTitle>{dialogTitle}</DialogTitle>
+          </DialogHeader>
           <DialogBody className="space-y-4 overflow-x-auto">
+            {isRecoverySelection ? (
+              <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-100">
+                Choose a paid plan to restore access to your workspace.
+              </p>
+            ) : null}
+
+            {isTrialSelection ? (
+              <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-100">
+                You are currently trialing this plan. Choose a paid plan to
+                continue after your trial ends.
+              </p>
+            ) : null}
+
+            {cancellationScheduled ? (
+              <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-100">
+                Changing your plan will keep your subscription active and remove
+                the scheduled cancellation.
+              </p>
+            ) : null}
+
             {isLoading ? <LoadingState variant="skeleton" rows={4} /> : null}
 
             {isError ? (
@@ -133,12 +209,13 @@ export function PlanChangeDialog({
               <PricingTablePreview
                 data={data.pricing}
                 currentTierSlug={data.currentPlanTierSlug}
+                planSelectionMode={effectivePlanSelectionMode}
                 tierFilter={tierFilter}
-                interactive
+                enableStripeCheckout
                 fitContent
                 showGroupHeader={false}
-                selectingTierSlug={selectingTierSlug}
-                onSelectTier={handleSelectTier}
+                subscribingTierSlug={redirectingTierSlug}
+                onSubscribeTier={handleSubscribeTier}
               />
             ) : null}
           </DialogBody>
@@ -146,63 +223,58 @@ export function PlanChangeDialog({
       </Dialog>
 
       <AlertDialog
-        open={!!pendingTier}
-        onOpenChange={(nextOpen) => !nextOpen && setPendingTier(null)}
+        open={!!pendingStripeTier}
+        onOpenChange={(nextOpen) => !nextOpen && setPendingStripeTier(null)}
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>
-              {pendingDirection === "upgrade"
-                ? "Confirm upgrade?"
-                : pendingDirection === "downgrade"
-                  ? "Confirm downgrade?"
-                  : "Confirm plan change?"}
-            </AlertDialogTitle>
+            <AlertDialogTitle>Continue to checkout?</AlertDialogTitle>
             <AlertDialogDescription>
-              {pendingTier
-                ? `Switch to ${pendingTier.option.name}? Your workspace capabilities will update to match the selected plan.`
-                : "Confirm this plan change."}
+              {pendingStripeTier
+                ? `You will be redirected to Stripe to ${
+                    isTrialSelection
+                      ? "subscribe to"
+                      : pendingStripeDirection === "downgrade"
+                        ? "downgrade to"
+                        : "upgrade to"
+                  } ${pendingStripeTier.previewTier.name} (${pendingStripeTier.billingCycle === "YEARLY" ? "yearly" : "monthly"} billing).`
+                : "Confirm checkout."}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={changeMutation.isPending}>
+            <AlertDialogCancel disabled={!!redirectingTierSlug}>
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction
-              disabled={changeMutation.isPending}
+              disabled={!!redirectingTierSlug}
               onClick={(event) => {
                 event.preventDefault();
-                if (!pendingTier || !data) return;
-                const targetIndex = data.tiers.findIndex(
-                  (tier) => tier.id === pendingTier.option.id,
+                if (!pendingStripeTier || !data) return;
+                const option = findTierOption(
+                  data.tiers,
+                  pendingStripeTier.previewTier.slug,
                 );
-                const direction =
-                  pendingDirection ??
-                  (targetIndex >= 0 && data.currentPlanTierIndex >= 0
-                    ? resolveChangeDirection(
-                        data.currentPlanTierIndex,
-                        targetIndex,
-                      )
-                    : mode === "downgrade"
-                      ? "downgrade"
-                      : "upgrade");
-                changeMutation.mutate({
-                  planTierId: pendingTier.option.id,
-                  direction,
+                if (!option) return;
+                startTierCheckout({
+                  planGroupId: data.pricing.id,
+                  planTierId: option.id,
+                  billingCycle: pendingStripeTier.billingCycle,
+                  tierSlug: pendingStripeTier.previewTier.slug,
                 });
+                setPendingStripeTier(null);
               }}
             >
-              {changeMutation.isPending
-                ? "Updating…"
-                : pendingDirection === "upgrade"
-                  ? "Upgrade"
-                  : pendingDirection === "downgrade"
-                    ? "Downgrade"
-                    : "Confirm"}
+              {redirectingTierSlug ? "Redirecting to checkout…" : "Continue"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <BillingOwnerRequiredDialog
+        open={ownerRequiredOpen}
+        onOpenChange={setOwnerRequiredOpen}
+        canManageTeam={canManageTeam}
+      />
     </>
   );
 }

@@ -41,9 +41,7 @@ export class PublicFormsService {
     metadata: FormSubmissionMetadata = {},
   ): Promise<FormSubmissionResponseDto> {
     const form = await this.requirePublishedForm(publicKey);
-    const definition = sanitizeFormDefinition(
-      parseFormDefinition(form) as { fields: unknown[]; settings: Record<string, unknown> },
-    );
+    const definition = sanitizeFormDefinition(parseFormDefinition(form));
     const data =
       dto.data && typeof dto.data === 'object' && !Array.isArray(dto.data)
         ? dto.data
@@ -55,7 +53,9 @@ export class PublicFormsService {
         ErrorCode.VALIDATION_ERROR,
         'Please fix the highlighted fields',
         HttpStatus.BAD_REQUEST,
-        Object.fromEntries(errors.map((error) => [error.field, [error.message]])),
+        Object.fromEntries(
+          errors.map((error) => [error.field, [error.message]]),
+        ),
       );
     }
 
@@ -69,7 +69,7 @@ export class PublicFormsService {
         ip: metadata.ip ?? null,
         userAgent: metadata.userAgent ?? null,
         referer: metadata.referer ?? null,
-      } as Prisma.InputJsonValue,
+      },
     });
 
     const redirectUrl =

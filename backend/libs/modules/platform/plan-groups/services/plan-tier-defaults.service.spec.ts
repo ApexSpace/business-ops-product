@@ -48,8 +48,8 @@ describe('PlanTierDefaultsService', () => {
   it('throws when tier is missing', async () => {
     (prisma.planTier.findFirst as jest.Mock).mockResolvedValue(null);
 
-    await expect(service.getTierDefaults('group-1', 'tier-1')).rejects.toBeInstanceOf(
-      AppException,
-    );
+    await expect(
+      service.getTierDefaults('group-1', 'tier-1'),
+    ).rejects.toBeInstanceOf(AppException);
   });
 });

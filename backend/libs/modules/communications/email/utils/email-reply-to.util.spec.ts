@@ -45,10 +45,14 @@ describe('email-reply-to.util', () => {
       conversationId: 'cb5493b6-c065-4319-be7e-eaa8d873d35c',
       tenantId: '989a6bca-d694-4c6a-a404-ba51abb28db8',
     });
-    expect(normalizeRoutableEmailAddress(bare, domain)).toBe(`${bare}@${domain}`);
+    expect(normalizeRoutableEmailAddress(bare, domain)).toBe(
+      `${bare}@${domain}`,
+    );
   });
 
   it('returns null for non-conversation addresses', () => {
-    expect(parseConversationReplyToAddress('support@notify.codesoltech.com')).toBeNull();
+    expect(
+      parseConversationReplyToAddress('support@notify.codesoltech.com'),
+    ).toBeNull();
   });
 });

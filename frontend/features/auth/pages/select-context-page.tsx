@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useAppRouter } from "@/lib/hooks/use-app-router";
 import { ArrowRight, Building2, Loader2, Shield } from "lucide-react";
 import { toast } from "sonner";
@@ -36,7 +37,7 @@ function ContextCard({
 }) {
   const Icon = ctx.type === "platform" ? Shield : Building2;
   const isDisabled =
-    ctx.type === "business" && ctx.canAccessWorkspace === false;
+    ctx.type === "business" && ctx.canSelectWorkspace === false;
   const blockedCopy =
     isDisabled && ctx.accessReasonCode
       ? getAccessBlockedMessage(ctx.accessReasonCode)
@@ -133,8 +134,26 @@ function ContextSection({
   );
 }
 
+function redirectAfterContextSwitch(
+  router: ReturnType<typeof useAppRouter>,
+  ctx: AuthContextItem,
+  returnUrl: string | null,
+) {
+  if (returnUrl) {
+    if (returnUrl.startsWith("/")) {
+      router.push(returnUrl);
+    } else {
+      window.location.href = returnUrl;
+    }
+    return;
+  }
+  router.push(getDashboardPath(ctx.type));
+}
+
 export function SelectContextPage() {
   const router = useAppRouter();
+  const searchParams = useSearchParams();
+  const returnUrlParam = searchParams.get("returnUrl");
   const { contexts, switchContext, user } = useAuth();
   const { stop } = useNavigationLoading();
   const [loadingKey, setLoadingKey] = useState<string | null>(null);
@@ -150,7 +169,7 @@ export function SelectContextPage() {
           platform.push(ctx);
         } else {
           business.push(ctx);
-          if (ctx.canAccessWorkspace !== false) {
+          if (ctx.canSelectWorkspace !== false) {
             accessible += 1;
           }
         }
@@ -164,7 +183,7 @@ export function SelectContextPage() {
     }, [contexts]);
 
   const handleSelect = async (ctx: AuthContextItem) => {
-    if (ctx.type === "business" && ctx.canAccessWorkspace === false) {
+    if (ctx.type === "business" && ctx.canSelectWorkspace === false) {
       return;
     }
 
@@ -174,7 +193,7 @@ export function SelectContextPage() {
         ctx.type,
         ctx.type === "business" ? ctx.businessId : undefined,
       );
-      router.push(getDashboardPath(ctx.type));
+      redirectAfterContextSwitch(router, ctx, returnUrlParam);
       router.refresh();
     } catch (err) {
       stop();

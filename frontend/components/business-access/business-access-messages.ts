@@ -45,7 +45,7 @@ const ACCESS_BLOCKED_MESSAGES: Record<string, AccessMessage> = {
   TRIAL_EXPIRED: {
     title: "Trial ended",
     message:
-      "Your trial has expired. Contact support to continue using your workspace.",
+      "Your trial has expired. Go to billing to subscribe and restore full access.",
     primaryCta: "Contact support",
     secondaryCtas: ["Switch workspace"],
   },
@@ -57,23 +57,23 @@ const ACCESS_BLOCKED_MESSAGES: Record<string, AccessMessage> = {
     secondaryCtas: ["Switch workspace"],
   },
   SUBSCRIPTION_EXPIRED: {
-    title: "Access expired",
+    title: "Subscription expired",
     message:
-      "Your access period has expired. Please contact support to renew your access.",
+      "Your subscription has expired. Go to billing to renew and restore full access.",
     primaryCta: "Contact support",
     secondaryCtas: ["Switch workspace"],
   },
   BUSINESS_SUBSCRIPTION_CANCELED: {
     title: "Subscription canceled",
     message:
-      "Your subscription has been canceled. Please contact support if you want to reactivate your workspace.",
+      "Your subscription has been canceled. Go to billing to reactivate your workspace.",
     primaryCta: "Contact support",
     secondaryCtas: ["Switch workspace"],
   },
   SUBSCRIPTION_CANCELED: {
     title: "Subscription canceled",
     message:
-      "Your subscription has been canceled. Please contact support if you want to reactivate your workspace.",
+      "Your subscription has been canceled. Go to billing to reactivate your workspace.",
     primaryCta: "Contact support",
     secondaryCtas: ["Switch workspace"],
   },

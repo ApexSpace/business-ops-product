@@ -117,10 +117,7 @@ export class ConversationContactResolverService {
       profile.name ??
       inbound.senderName ??
       contact.displayName ??
-      defaultInboundDisplayName(
-        inbound.channel,
-        inbound.externalParticipantId,
-      );
+      defaultInboundDisplayName(inbound.channel, inbound.externalParticipantId);
 
     const nameParts = displayName.split(/\s+/);
     const firstName = nameParts[0] ?? displayName;
@@ -142,7 +139,8 @@ export class ConversationContactResolverService {
       ...(!contact.avatarUrl && profilePic ? { avatarUrl: profilePic } : {}),
     };
 
-    const hasMetadataChange = current[metadataKey] !== inbound.externalParticipantId;
+    const hasMetadataChange =
+      current[metadataKey] !== inbound.externalParticipantId;
     const hasFieldChange =
       Boolean(identity.email && !contact.email) ||
       Boolean(!contact.phoneNumber && identity.phoneFields.phoneNumber) ||
@@ -171,10 +169,7 @@ export class ConversationContactResolverService {
     const displayName =
       profile.name ??
       inbound.senderName ??
-      defaultInboundDisplayName(
-        inbound.channel,
-        inbound.externalParticipantId,
-      );
+      defaultInboundDisplayName(inbound.channel, inbound.externalParticipantId);
 
     const nameParts = displayName.split(/\s+/);
     const firstName = nameParts[0] ?? displayName;

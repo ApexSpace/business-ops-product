@@ -25,21 +25,18 @@ export function SubscriptionActionBar({
   canUpdate,
   isLoading,
   onAction,
-  onManageAccess,
 }: {
   layout: SubscriptionTabActionLayout;
   canUpdate: boolean;
   isLoading?: boolean;
   onAction: (action: SubscriptionActionDefinition) => void;
-  onManageAccess?: () => void;
 }) {
   if (!canUpdate) return null;
 
-  const { primary, secondary, moreGroups, trialEndingSoon, showManageAccessSecondary } =
-    layout;
+  const { primary, secondary, moreGroups, trialEndingSoon } = layout;
 
   const hasHeaderActions =
-    primary || secondary || showManageAccessSecondary || moreGroups.length > 0;
+    primary || secondary || moreGroups.length > 0;
 
   if (!hasHeaderActions) return null;
 
@@ -73,16 +70,6 @@ export function SubscriptionActionBar({
             onClick={() => onAction(secondary)}
           >
             {secondary.label}
-          </Button>
-        ) : showManageAccessSecondary && onManageAccess ? (
-          <Button
-            type="button"
-            size="sm"
-            variant="secondary"
-            disabled={isLoading}
-            onClick={onManageAccess}
-          >
-            Manage Access
           </Button>
         ) : null}
         {moreGroups.length > 0 ? (

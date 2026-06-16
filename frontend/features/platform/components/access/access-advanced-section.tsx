@@ -23,6 +23,7 @@ import type {
   PreviewActionResult,
 } from "@/features/platform/types/business-subscription";
 import { applySubscriptionStatusDefaults } from "@/features/platform/utils/business-access-defaults";
+import { getBillingSource } from "@/features/platform/utils/business-subscription-actions";
 import {
   executeSubscriptionAction,
   type SubscriptionActionPayload,
@@ -50,7 +51,8 @@ export function AccessAdvancedSection({
   canUpdate: boolean;
   onSuccess: () => void;
 }) {
-  const [open, setOpen] = useState(false);
+  const billingSource = getBillingSource(access);
+  const billingFieldsLocked = billingSource !== "MANUAL";
   const [businessStatus, setBusinessStatus] = useState<BusinessAccessStatus>(
     access.businessStatus,
   );
@@ -75,17 +77,18 @@ export function AccessAdvancedSection({
   const [adminNotes, setAdminNotes] = useState("");
   const [preview, setPreview] = useState<PreviewActionResult | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [open, setOpen] = useState(false);
 
   const buildManualUpdate = (): ManualAccessUpdateInput => ({
     businessStatus,
-    subscriptionStatus,
-    paymentMethod,
-    paymentStatus,
-    currentPeriodStart: currentPeriodStart || null,
-    currentPeriodEnd: currentPeriodEnd || null,
-    amount: amount ? Number(amount) : null,
-    currency: currency || null,
-    notes: notes || null,
+    subscriptionStatus: billingFieldsLocked ? undefined : subscriptionStatus,
+    paymentMethod: billingFieldsLocked ? undefined : paymentMethod,
+    paymentStatus: billingFieldsLocked ? undefined : paymentStatus,
+    currentPeriodStart: billingFieldsLocked ? undefined : currentPeriodStart || null,
+    currentPeriodEnd: billingFieldsLocked ? undefined : currentPeriodEnd || null,
+    amount: billingFieldsLocked ? undefined : amount ? Number(amount) : null,
+    currency: billingFieldsLocked ? undefined : currency || null,
+    notes: billingFieldsLocked ? undefined : notes || null,
     reason,
     adminNotes,
   });
@@ -126,6 +129,10 @@ export function AccessAdvancedSection({
     setPaymentStatus(defaults.paymentStatus);
   };
 
+  if (!canUpdate && billingSource === "STRIPE") {
+    return null;
+  }
+
   const handlePreview = () => {
     if (!reason.trim() || !adminNotes.trim()) {
       toast.error("Reason and notes are required for manual adjustments");
@@ -149,10 +156,18 @@ export function AccessAdvancedSection({
         </CardHeader>
         {open && (
           <CardContent className="space-y-4">
-            <p className="text-sm text-amber-700 dark:text-amber-400">
-              Manual adjustments require a reason and notes. Changes are previewed
-              before applying.
-            </p>
+            {billingFieldsLocked ? (
+              <p className="text-sm text-muted-foreground">
+                {billingSource === "STRIPE"
+                  ? "Billing and payment fields are managed by Stripe. Use the Subscriptions tab for billing changes."
+                  : "Internal subscriptions do not use payment or billing fields. Only workspace access fields can be adjusted here."}
+              </p>
+            ) : (
+              <p className="text-sm text-amber-700 dark:text-amber-400">
+                Manual adjustments require a reason and notes. Changes are previewed
+                before applying.
+              </p>
+            )}
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Business status">
                 <SearchableSelect
@@ -162,74 +177,80 @@ export function AccessAdvancedSection({
                   disabled={!canUpdate}
                 />
               </Field>
-              <Field label="Subscription status">
-                <SearchableSelect
-                  items={subscriptionStatusOptions.filter((o) => o.value !== "PAST_DUE")}
-                  value={subscriptionStatus}
-                  onValueChange={(v) =>
-                    v && handleSubscriptionStatusChange(v as SubscriptionAccessStatus)
-                  }
-                  disabled={!canUpdate}
-                />
-              </Field>
-              <Field label="Payment method">
-                <SearchableSelect
-                  items={subscriptionPaymentMethodOptions}
-                  value={paymentMethod}
-                  onValueChange={(v) =>
-                    v && setPaymentMethod(v as SubscriptionPaymentMethod)
-                  }
-                  disabled={!canUpdate}
-                />
-              </Field>
-              <Field label="Payment status">
-                <SearchableSelect
-                  items={subscriptionPaymentStatusOptions}
-                  value={paymentStatus}
-                  onValueChange={(v) =>
-                    v && setPaymentStatus(v as SubscriptionPaymentStatus)
-                  }
-                  disabled={!canUpdate}
-                />
-              </Field>
-              <Field label="Period start">
-                <Input
-                  type="date"
-                  value={currentPeriodStart}
-                  onChange={(e) => setCurrentPeriodStart(e.target.value)}
-                  disabled={!canUpdate}
-                />
-              </Field>
-              <Field label="Period end">
-                <Input
-                  type="date"
-                  value={currentPeriodEnd}
-                  onChange={(e) => setCurrentPeriodEnd(e.target.value)}
-                  disabled={!canUpdate}
-                />
-              </Field>
-              <Field label="Amount">
-                <Input
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  disabled={!canUpdate}
-                />
-              </Field>
-              <Field label="Currency">
-                <Input
-                  value={currency}
-                  onChange={(e) => setCurrency(e.target.value)}
-                  disabled={!canUpdate}
-                />
-              </Field>
+              {!billingFieldsLocked ? (
+                <>
+                  <Field label="Subscription status">
+                    <SearchableSelect
+                      items={subscriptionStatusOptions.filter((o) => o.value !== "PAST_DUE")}
+                      value={subscriptionStatus}
+                      onValueChange={(v) =>
+                        v && handleSubscriptionStatusChange(v as SubscriptionAccessStatus)
+                      }
+                      disabled={!canUpdate}
+                    />
+                  </Field>
+                  <Field label="Payment method">
+                    <SearchableSelect
+                      items={subscriptionPaymentMethodOptions}
+                      value={paymentMethod}
+                      onValueChange={(v) =>
+                        v && setPaymentMethod(v as SubscriptionPaymentMethod)
+                      }
+                      disabled={!canUpdate}
+                    />
+                  </Field>
+                  <Field label="Payment status">
+                    <SearchableSelect
+                      items={subscriptionPaymentStatusOptions}
+                      value={paymentStatus}
+                      onValueChange={(v) =>
+                        v && setPaymentStatus(v as SubscriptionPaymentStatus)
+                      }
+                      disabled={!canUpdate}
+                    />
+                  </Field>
+                  <Field label="Period start">
+                    <Input
+                      type="date"
+                      value={currentPeriodStart}
+                      onChange={(e) => setCurrentPeriodStart(e.target.value)}
+                      disabled={!canUpdate}
+                    />
+                  </Field>
+                  <Field label="Period end">
+                    <Input
+                      type="date"
+                      value={currentPeriodEnd}
+                      onChange={(e) => setCurrentPeriodEnd(e.target.value)}
+                      disabled={!canUpdate}
+                    />
+                  </Field>
+                  <Field label="Amount">
+                    <Input
+                      value={amount}
+                      onChange={(e) => setAmount(e.target.value)}
+                      disabled={!canUpdate}
+                    />
+                  </Field>
+                  <Field label="Currency">
+                    <Input
+                      value={currency}
+                      onChange={(e) => setCurrency(e.target.value)}
+                      disabled={!canUpdate}
+                    />
+                  </Field>
+                </>
+              ) : null}
             </div>
-            <Field label="Subscription notes">
-              <Textarea
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                disabled={!canUpdate}
-              />
-            </Field>
+            {!billingFieldsLocked ? (
+              <Field label="Subscription notes">
+                <Textarea
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  disabled={!canUpdate}
+                />
+              </Field>
+            ) : null}
             <Field label="Reason (required)">
               <Input
                 value={reason}

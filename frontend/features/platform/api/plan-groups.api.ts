@@ -73,6 +73,10 @@ export function getPlatformPlanGroupPreview(id: string) {
   return api.get<PublicPricing>(`platform/plan-groups/${id}/preview`);
 }
 
+export function getPublicPlanPricing(planGroupId: string) {
+  return api.get<PublicPricing>(`public/pricing/${planGroupId}`);
+}
+
 export function listPlatformPlanGroupTiers(planGroupId: string) {
   return api.get<PlanTier[]>(`platform/plan-groups/${planGroupId}/tiers`);
 }

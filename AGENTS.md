@@ -1,3 +1,8 @@
+---
+description: 
+alwaysApply: true
+---
+
 # AGENTS.md — Business Automation Application
 
 Guidance for AI agents and contributors working in this monorepo. Read this before adding or changing features.

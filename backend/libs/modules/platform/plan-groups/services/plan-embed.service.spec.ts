@@ -84,6 +84,10 @@ function minimalPricingDto(): PublicPricingDto {
         trialDays: null,
         badge: null,
         highlighted: false,
+        stripeCheckoutEnabled: true,
+        stripeMonthlyEnabled: true,
+        stripeYearlyEnabled: true,
+        planTierId: '94c8f772-69b1-4e79-b1cb-0b7ee59128a8',
         ctaLabel: 'Get started',
         ctaUrl: '#',
         designSettings: {},
@@ -107,7 +111,9 @@ describe('PlanEmbedService', () => {
 
   it('renders embed HTML with parseable JSON (not HTML entities)', () => {
     const html = service.renderEmbedHtml(minimalPricingDto());
-    expect(html).toContain('<script type="application/json" id="pricing-data">');
+    expect(html).toContain(
+      '<script type="application/json" id="pricing-data">',
+    );
     expect(html).toContain(
       'JSON.parse(document.getElementById("pricing-data").textContent)',
     );
@@ -133,5 +139,13 @@ describe('PlanEmbedService', () => {
     expect(html).toContain(
       '<title>Test &lt;Plan&gt; &amp; &quot;Pro&quot; — Pricing</title>',
     );
+  });
+
+  it('redirects anonymous embed CTA to billing subscribe deep-link', () => {
+    const html = service.renderEmbedHtml(minimalPricingDto());
+    expect(html).toContain('branch: "billing_redirect"');
+    expect(html).toContain('billingSubscribeReturnUrl(tier)');
+    expect(html).toContain('window.top.location.href = billingUrl');
+    expect(html).not.toContain('branch: "login_redirect"');
   });
 });

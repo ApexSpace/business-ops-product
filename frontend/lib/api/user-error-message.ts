@@ -29,6 +29,13 @@ const CODE_MESSAGES: Record<string, string> = {
     "Something went wrong on our side. If this keeps happening, contact support with the reference below.",
   FEATURE_NOT_AVAILABLE:
     "This feature is not included in your current package.",
+  MISSING_STRIPE_MAPPING: "This plan is not connected to Stripe yet.",
+  ALREADY_ON_TIER: "Already on this plan",
+  BUSINESS_OWNER_REQUIRED:
+    "This workspace needs an owner before you can subscribe.",
+  NO_BUSINESS_CONTEXT: "Sign in to a business workspace to subscribe.",
+  MANUAL_BILLING_PLAN_CHANGE:
+    "Your plan is managed by our team. Change plans from billing settings.",
 };
 
 export function getUserErrorMessage(error: unknown): UserErrorMessage {

@@ -1,5 +1,9 @@
 import { HttpStatus } from '@nestjs/common';
-import { PlanTierStatus } from '@prisma/client';
+import {
+  PlanTierStatus,
+  SubscriptionBillingSource,
+  SubscriptionStatus,
+} from '@prisma/client';
 import { ErrorCode } from '@app/common/exceptions/error-code.enum';
 import { BusinessBillingService } from './business-billing.service';
 
@@ -7,6 +11,9 @@ function buildService() {
   const prisma = {
     businessSubscription: {
       findUnique: jest.fn(),
+    },
+    business: {
+      findFirst: jest.fn(),
     },
     planTier: {
       findFirst: jest.fn(),
@@ -20,12 +27,35 @@ function buildService() {
     changePackage: jest.fn(),
     cancelSubscription: jest.fn(),
   };
+  const stripeSubscriptionService = {
+    cancelAtPeriodEnd: jest.fn(),
+    updateSubscriptionTier: jest.fn(),
+    resumeSubscription: jest.fn(),
+  };
+  const metadataService = {
+    parseSubscriptionStripeMetadata: jest.fn(),
+  };
+  const eventService = {
+    captureState: jest.fn(),
+    createEvent: jest.fn(),
+  };
   const service = new BusinessBillingService(
     prisma as never,
     embedService as never,
     subscriptionActionService as never,
+    stripeSubscriptionService as never,
+    metadataService as never,
+    eventService as never,
   );
-  return { service, prisma, embedService, subscriptionActionService };
+  return {
+    service,
+    prisma,
+    embedService,
+    subscriptionActionService,
+    stripeSubscriptionService,
+    metadataService,
+    eventService,
+  };
 }
 
 describe('BusinessBillingService', () => {
@@ -36,6 +66,7 @@ describe('BusinessBillingService', () => {
       planTierId: 'tier-2',
       planTier: { id: 'tier-2', slug: 'pro' },
     });
+    prisma.business.findFirst.mockResolvedValue({ snapshotId: null });
     embedService.buildPublicPricing.mockResolvedValue({
       id: 'group-1',
       tiers: [],
@@ -66,11 +97,9 @@ describe('BusinessBillingService', () => {
     });
     subscriptionActionService.changePackage.mockResolvedValue({ ok: true });
 
-    await service.changeCurrentPlanTier(
-      'biz-1',
-      { planTierId: 'tier-2' },
-      { userId: 'user-1' } as never,
-    );
+    await service.changeCurrentPlanTier('biz-1', { planTierId: 'tier-2' }, {
+      userId: 'user-1',
+    } as never);
 
     expect(subscriptionActionService.changePackage).toHaveBeenCalledWith(
       'biz-1',
@@ -84,12 +113,36 @@ describe('BusinessBillingService', () => {
     );
   });
 
-  it('cancels the current subscription', async () => {
-    const { service, prisma, subscriptionActionService } = buildService();
-    prisma.businessSubscription.findUnique.mockResolvedValue({ id: 'sub-1' });
-    subscriptionActionService.cancelSubscription.mockResolvedValue({ ok: true });
+  it('cancels manual subscriptions through the action service', async () => {
+    const { service, prisma, subscriptionActionService, metadataService } =
+      buildService();
+    prisma.businessSubscription.findUnique
+      .mockResolvedValueOnce({
+        id: 'sub-1',
+        billingSource: SubscriptionBillingSource.MANUAL,
+        status: SubscriptionStatus.ACTIVE,
+        paymentMethod: 'MANUAL_INVOICE',
+        paymentStatus: 'PAID',
+        billingCycle: 'MONTHLY',
+        currentPeriodEnd: new Date('2026-07-01'),
+        metadata: null,
+      })
+      .mockResolvedValueOnce({
+        id: 'sub-1',
+        billingSource: SubscriptionBillingSource.MANUAL,
+        status: SubscriptionStatus.CANCELED,
+        paymentMethod: 'MANUAL_INVOICE',
+        paymentStatus: 'PAID',
+        billingCycle: 'MONTHLY',
+        currentPeriodEnd: new Date('2026-07-01'),
+        metadata: null,
+      });
+    metadataService.parseSubscriptionStripeMetadata.mockReturnValue(null);
+    subscriptionActionService.cancelSubscription.mockResolvedValue({
+      ok: true,
+    });
 
-    await service.cancelCurrentSubscription(
+    const result = await service.cancelCurrentSubscription(
       'biz-1',
       { reason: 'No longer needed' },
       { userId: 'user-1' } as never,
@@ -100,6 +153,164 @@ describe('BusinessBillingService', () => {
       expect.anything(),
       'No longer needed',
     );
+    expect(result.status).toBe(SubscriptionStatus.CANCELED);
+  });
+
+  it('schedules Stripe cancellation at period end without local cancel', async () => {
+    const {
+      service,
+      prisma,
+      subscriptionActionService,
+      stripeSubscriptionService,
+      metadataService,
+      eventService,
+    } = buildService();
+    prisma.businessSubscription.findUnique
+      .mockResolvedValueOnce({
+        id: 'sub-1',
+        billingSource: SubscriptionBillingSource.STRIPE,
+        status: SubscriptionStatus.ACTIVE,
+        paymentMethod: 'STRIPE',
+        paymentStatus: 'PAID',
+        billingCycle: 'MONTHLY',
+        currentPeriodEnd: new Date('2026-07-01'),
+        metadata: { stripe: { subscriptionId: 'sub_stripe_1' } },
+      })
+      .mockResolvedValueOnce({
+        id: 'sub-1',
+        billingSource: SubscriptionBillingSource.STRIPE,
+        status: SubscriptionStatus.ACTIVE,
+        paymentMethod: 'STRIPE',
+        paymentStatus: 'PAID',
+        billingCycle: 'MONTHLY',
+        currentPeriodEnd: new Date('2026-07-01'),
+        metadata: {
+          stripe: {
+            subscriptionId: 'sub_stripe_1',
+            cancelAtPeriodEnd: true,
+            cancelAt: '2026-07-01T00:00:00.000Z',
+          },
+        },
+      });
+    eventService.captureState.mockResolvedValue({});
+    stripeSubscriptionService.cancelAtPeriodEnd.mockResolvedValue({
+      cancelAtPeriodEnd: true,
+      cancelAt: '2026-07-01T00:00:00.000Z',
+    });
+    metadataService.parseSubscriptionStripeMetadata.mockReturnValue({
+      cancelAtPeriodEnd: true,
+      cancelAt: '2026-07-01T00:00:00.000Z',
+    });
+
+    const result = await service.cancelCurrentSubscription(
+      'biz-1',
+      { reason: 'No longer needed' },
+      { userId: 'user-1' } as never,
+    );
+
+    expect(stripeSubscriptionService.cancelAtPeriodEnd).toHaveBeenCalledWith(
+      'biz-1',
+      'No longer needed',
+    );
+    expect(subscriptionActionService.cancelSubscription).not.toHaveBeenCalled();
+    expect(eventService.createEvent).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        eventType: 'CANCELLATION_SCHEDULED',
+        actionKey: 'CANCEL_SUBSCRIPTION',
+      }),
+      expect.anything(),
+    );
+    expect(result.cancelAtPeriodEnd).toBe(true);
+    expect(result.status).toBe(SubscriptionStatus.ACTIVE);
+  });
+
+  it('resumes Stripe subscription and records cancellation reversed event', async () => {
+    const {
+      service,
+      prisma,
+      stripeSubscriptionService,
+      metadataService,
+      eventService,
+    } = buildService();
+    prisma.businessSubscription.findUnique
+      .mockResolvedValueOnce({
+        id: 'sub-1',
+        billingSource: SubscriptionBillingSource.STRIPE,
+        status: SubscriptionStatus.ACTIVE,
+        paymentMethod: 'STRIPE',
+        paymentStatus: 'PAID',
+        billingCycle: 'MONTHLY',
+        currentPeriodEnd: new Date('2026-07-01'),
+        metadata: {
+          stripe: {
+            subscriptionId: 'sub_stripe_1',
+            cancelAtPeriodEnd: true,
+          },
+        },
+      })
+      .mockResolvedValueOnce({
+        id: 'sub-1',
+        billingSource: SubscriptionBillingSource.STRIPE,
+        status: SubscriptionStatus.ACTIVE,
+        paymentMethod: 'STRIPE',
+        paymentStatus: 'PAID',
+        billingCycle: 'MONTHLY',
+        currentPeriodEnd: new Date('2026-07-01'),
+        metadata: {
+          stripe: {
+            subscriptionId: 'sub_stripe_1',
+            cancelAtPeriodEnd: false,
+          },
+        },
+      });
+    eventService.captureState.mockResolvedValue({});
+    stripeSubscriptionService.resumeSubscription.mockResolvedValue({
+      cancelAtPeriodEnd: false,
+      cancelAt: null,
+    });
+    metadataService.parseSubscriptionStripeMetadata.mockReturnValue({
+      cancelAtPeriodEnd: false,
+      cancelAt: null,
+    });
+
+    const result = await service.resumeCurrentSubscription('biz-1', {
+      userId: 'user-1',
+    } as never);
+
+    expect(stripeSubscriptionService.resumeSubscription).toHaveBeenCalledWith(
+      'biz-1',
+    );
+    expect(eventService.createEvent).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        eventType: 'REACTIVATED',
+        title: 'Cancellation reversed',
+        actionKey: 'RESUME_SUBSCRIPTION',
+      }),
+      expect.anything(),
+    );
+    expect(result.cancelAtPeriodEnd).toBe(false);
+    expect(result.status).toBe(SubscriptionStatus.ACTIVE);
+  });
+
+  it('rejects internal subscription cancellation', async () => {
+    const { service, prisma } = buildService();
+    prisma.businessSubscription.findUnique.mockResolvedValue({
+      id: 'sub-1',
+      billingSource: SubscriptionBillingSource.INTERNAL,
+    });
+
+    await expect(
+      service.cancelCurrentSubscription(
+        'biz-1',
+        { reason: 'No longer needed' },
+        { userId: 'user-1' } as never,
+      ),
+    ).rejects.toMatchObject({
+      code: ErrorCode.BAD_REQUEST,
+      status: HttpStatus.BAD_REQUEST,
+    });
   });
 
   it('rejects changing to the current tier', async () => {
@@ -110,13 +321,11 @@ describe('BusinessBillingService', () => {
     });
 
     await expect(
-      service.changeCurrentPlanTier(
-        'biz-1',
-        { planTierId: 'tier-1' },
-        { userId: 'user-1' } as never,
-      ),
+      service.changeCurrentPlanTier('biz-1', { planTierId: 'tier-1' }, {
+        userId: 'user-1',
+      } as never),
     ).rejects.toMatchObject({
-      code: ErrorCode.BAD_REQUEST,
+      code: ErrorCode.ALREADY_ON_TIER,
       status: HttpStatus.BAD_REQUEST,
     });
   });

@@ -17,6 +17,11 @@ import {
 import { supportConfig } from "@/lib/config/support";
 import { useAuth } from "@/lib/auth/provider";
 import { queryKeys } from "@/lib/query/keys";
+import {
+  isBillingRecoveryAccess,
+  isBillingRecoveryReason,
+  isWorkspaceHardBlocked,
+} from "./billing-recovery";
 import { getCurrentBusinessAccess } from "./business-access.api";
 import type { BusinessTenantAccess } from "./types";
 
@@ -25,6 +30,7 @@ export type BusinessAccessContextValue = {
   isLoading: boolean;
   isError: boolean;
   canAccessWorkspace: boolean;
+  isBillingRecovery: boolean;
   isBlocked: boolean;
   blockedReasonCode?: string;
   capabilityKeys: Set<string>;
@@ -115,6 +121,10 @@ export function BusinessAccessProvider({ children }: { children: ReactNode }) {
   const canAccessWorkspace = blockedOverride
     ? false
     : (data?.canAccessWorkspace ?? false);
+  const isBillingRecovery = Boolean(data && isBillingRecoveryAccess(data));
+  const isHardBlocked = Boolean(
+    businessId && data && isWorkspaceHardBlocked(data),
+  );
 
   const value = useMemo<BusinessAccessContextValue>(
     () => ({
@@ -122,7 +132,16 @@ export function BusinessAccessProvider({ children }: { children: ReactNode }) {
       isLoading: Boolean(businessId) && isLoading,
       isError,
       canAccessWorkspace,
-      isBlocked: Boolean(businessId) && !isLoading && !canAccessWorkspace,
+      isBillingRecovery,
+      isBlocked:
+        Boolean(businessId) &&
+        !isLoading &&
+        (isHardBlocked ||
+          Boolean(
+            blockedOverride &&
+              !isBillingRecoveryReason(blockedOverride.code) &&
+              !isBillingRecoveryAccess(data),
+          )),
       blockedReasonCode: blockedOverride?.code ?? data?.reasonCode,
       capabilityKeys: new Set(
         data?.effectiveCapabilities.map((cap) => cap.key) ?? [],
@@ -138,7 +157,9 @@ export function BusinessAccessProvider({ children }: { children: ReactNode }) {
       isLoading,
       isError,
       canAccessWorkspace,
+      isBillingRecovery,
       blockedOverride,
+      isHardBlocked,
       setBlockedFromError,
       clearBlockedState,
       refetch,

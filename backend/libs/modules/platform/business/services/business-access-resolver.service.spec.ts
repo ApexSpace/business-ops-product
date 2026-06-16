@@ -1,4 +1,8 @@
-import { BusinessStatus, SubscriptionPaymentStatus, SubscriptionStatus } from '@prisma/client';
+import {
+  BusinessStatus,
+  SubscriptionPaymentStatus,
+  SubscriptionStatus,
+} from '@prisma/client';
 import { BusinessAccessResolverService } from './business-access-resolver.service';
 import { BusinessEffectiveCapabilitiesService } from './business-effective-capabilities.service';
 
@@ -6,7 +10,9 @@ describe('BusinessAccessResolverService', () => {
   const prisma = {
     business: { findFirst: jest.fn() },
     businessMembership: { findFirst: jest.fn() },
-  } as unknown as ConstructorParameters<typeof BusinessAccessResolverService>[0];
+  } as unknown as ConstructorParameters<
+    typeof BusinessAccessResolverService
+  >[0];
 
   const effectiveCapabilitiesService = {
     resolveEffectiveCapabilities: jest.fn().mockResolvedValue([]),
@@ -69,5 +75,38 @@ describe('BusinessAccessResolverService', () => {
 
     expect(result.needsAttention).toContain('NO_PLAN_TIER');
     expect(result.needsAttention).toContain('NO_CAPABILITIES');
+  });
+
+  it('denies access for canceled subscription while business stays active', () => {
+    const result = service.resolve({
+      businessId: 'b1',
+      businessStatus: BusinessStatus.ACTIVE,
+      capabilities: [{ key: 'crm', name: 'CRM' }],
+      subscription: {
+        status: SubscriptionStatus.CANCELED,
+        planTierId: 'tier-1',
+        paymentStatus: SubscriptionPaymentStatus.NOT_REQUIRED,
+      },
+    });
+
+    expect(result.canAccessWorkspace).toBe(false);
+    expect(result.reasonCode).toBe('SUBSCRIPTION_CANCELED');
+    expect(result.needsAttention).toContain('ACTIVE_WITH_CANCELED_SUBSCRIPTION');
+  });
+
+  it('denies access when business is suspended', () => {
+    const result = service.resolve({
+      businessId: 'b1',
+      businessStatus: BusinessStatus.SUSPENDED,
+      capabilities: [{ key: 'crm', name: 'CRM' }],
+      subscription: {
+        status: SubscriptionStatus.ACTIVE,
+        planTierId: 'tier-1',
+        paymentStatus: SubscriptionPaymentStatus.PAID,
+      },
+    });
+
+    expect(result.canAccessWorkspace).toBe(false);
+    expect(result.reasonCode).toBe('BUSINESS_SUSPENDED');
   });
 });

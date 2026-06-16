@@ -2,6 +2,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   BusinessStatus,
   SnapshotStatus,
+  SubscriptionBillingSource,
   SubscriptionPaymentMethod,
   SubscriptionPaymentStatus,
   SubscriptionStatus,
@@ -111,6 +112,9 @@ export class BusinessResponseDto {
 
   @ApiPropertyOptional({ enum: SubscriptionPaymentStatus })
   paymentStatus?: SubscriptionPaymentStatus | null;
+
+  @ApiPropertyOptional({ enum: SubscriptionBillingSource })
+  billingSource?: SubscriptionBillingSource | null;
 
   @ApiPropertyOptional()
   latestPaymentAt?: Date | null;

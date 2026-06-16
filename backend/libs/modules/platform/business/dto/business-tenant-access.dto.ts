@@ -63,11 +63,33 @@ export class TenantAccessSubscriptionDto {
   @ApiPropertyOptional()
   currentPeriodEnd?: Date | null;
 
+  @ApiPropertyOptional({
+    description: 'Computed next billing/trial/payment date — not persisted.',
+  })
+  nextBillingDate?: Date | null;
+
+  @ApiPropertyOptional({
+    description: 'Computed label for next billing display — not persisted.',
+  })
+  nextBillingLabel?: string | null;
+
   @ApiPropertyOptional()
   amount?: string | null;
 
   @ApiPropertyOptional()
   currency?: string | null;
+
+  @ApiPropertyOptional({
+    description:
+      'When Stripe cancel_at_period_end is true — sourced from subscription metadata.',
+  })
+  cancelAtPeriodEnd?: boolean;
+
+  @ApiPropertyOptional({
+    description:
+      'Scheduled Stripe cancellation date — sourced from subscription metadata.',
+  })
+  cancelAt?: Date | null;
 }
 
 export class BusinessTenantAccessDto {

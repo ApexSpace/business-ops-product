@@ -12,6 +12,13 @@ import {
   gridColumnsClass,
   resolvePlanGroupDesignSettings,
 } from "@/features/platform/utils/plan-design-settings.util";
+import {
+  getTierActionLabel,
+  isRecoveryPlanSelection,
+  PREVIOUS_PLAN_HELPER_TEXT,
+  shouldLockCurrentPlanTier,
+  type PlanSelectionMode,
+} from "@/features/settings/utils/plan-tier-position.util";
 import { PricingTierCard } from "./pricing-tier-card";
 
 export type PlanTierFilter = "all" | "higher" | "lower";
@@ -19,29 +26,49 @@ export type PlanTierFilter = "all" | "higher" | "lower";
 type PricingTablePreviewProps = {
   data: PublicPricing;
   currentTierSlug?: string | null;
+  planSelectionMode?: PlanSelectionMode;
   tierFilter?: PlanTierFilter;
   interactive?: boolean;
   selectingTierSlug?: string | null;
-  onSelectTier?: (tier: PublicPricingTier) => void;
+  onSelectTier?: (tier: PublicPricingTier, cycle: "MONTHLY" | "YEARLY") => void;
+  enableStripeCheckout?: boolean;
+  subscribingTierSlug?: string | null;
+  onSubscribeTier?: (tier: PublicPricingTier, cycle: "MONTHLY" | "YEARLY") => void;
   /** Size the layout to the visible tier cards (e.g. inside a dialog). */
   fitContent?: boolean;
   /** Show plan group title and description above the tiers. */
   showGroupHeader?: boolean;
+  stripeCheckoutBlockedMessage?: string;
 };
 
 function tierSelectLabel(
-  tierSlug: string,
+  tier: PublicPricingTier,
   currentTierSlug: string | null | undefined,
   allTiers: PublicPricingTier[],
+  planSelectionMode: PlanSelectionMode,
 ): string {
   if (!currentTierSlug) return "Select plan";
 
-  const currentIndex = allTiers.findIndex((tier) => tier.slug === currentTierSlug);
-  const tierIndex = allTiers.findIndex((tier) => tier.slug === tierSlug);
+  const currentIndex = allTiers.findIndex((item) => item.slug === currentTierSlug);
+  const tierIndex = allTiers.findIndex((item) => item.slug === tier.slug);
   if (currentIndex < 0 || tierIndex < 0) return "Select plan";
-  if (tierIndex > currentIndex) return "Upgrade";
-  if (tierIndex < currentIndex) return "Downgrade";
-  return "Current plan";
+
+  return getTierActionLabel(
+    tier.name,
+    currentIndex,
+    tierIndex,
+    planSelectionMode,
+  );
+}
+
+function tierStripeReady(
+  tier: PublicPricingTier,
+  billingCycle: "MONTHLY" | "YEARLY",
+): boolean {
+  if (billingCycle === "MONTHLY") {
+    return Boolean(tier.stripeMonthlyEnabled ?? tier.stripeCheckoutEnabled);
+  }
+  return Boolean(tier.stripeYearlyEnabled ?? tier.stripeCheckoutEnabled);
 }
 
 function filterTiers(
@@ -66,12 +93,17 @@ function filterTiers(
 export function PricingTablePreview({
   data,
   currentTierSlug,
+  planSelectionMode = "default",
   tierFilter = "all",
   interactive = false,
   selectingTierSlug,
   onSelectTier,
+  enableStripeCheckout = false,
+  subscribingTierSlug,
+  onSubscribeTier,
   fitContent = false,
   showGroupHeader = true,
+  stripeCheckoutBlockedMessage,
 }: PricingTablePreviewProps) {
   const settings = useMemo(
     () =>
@@ -198,7 +230,28 @@ export function PricingTablePreview({
         )}
         style={tierGridStyle}
       >
-        {visibleTiers.map((tier) => (
+        {visibleTiers.map((tier) => {
+          const stripeReady = tierStripeReady(tier, cycle);
+          const useStripeCheckout =
+            Boolean(onSubscribeTier) || enableStripeCheckout;
+          const useInteractiveSelect =
+            interactive && !useStripeCheckout && Boolean(onSelectTier);
+          const isCurrentTier = Boolean(
+            currentTierSlug && tier.slug === currentTierSlug,
+          );
+          const actionLabel = tierSelectLabel(
+            tier,
+            currentTierSlug,
+            data.tiers,
+            planSelectionMode,
+          );
+          const useRecoveryLabels = isRecoveryPlanSelection(planSelectionMode);
+          const tierCtaLabel =
+            useRecoveryLabels || planSelectionMode === "trial"
+              ? actionLabel
+              : tier.ctaLabel?.trim() || actionLabel;
+
+          return (
           <div key={tier.slug} className="h-full">
             <PricingTierCard
               tier={tier}
@@ -207,21 +260,57 @@ export function PricingTablePreview({
               cycle={cycle}
               compact={isCompact}
               currentTierSlug={currentTierSlug}
-              interactive={interactive}
+              planSelectionMode={planSelectionMode}
+              currentTierBadgeLabel={
+                isCurrentTier && planSelectionMode === "trial"
+                  ? "Current trial"
+                  : isCurrentTier && useRecoveryLabels
+                    ? "Previous plan"
+                    : isCurrentTier && planSelectionMode === "paid-stripe"
+                      ? "Current plan"
+                      : undefined
+              }
+              currentTierHelperText={
+                isCurrentTier && useRecoveryLabels
+                  ? PREVIOUS_PLAN_HELPER_TEXT
+                  : undefined
+              }
+              disableCurrentTier={
+                isCurrentTier
+                  ? shouldLockCurrentPlanTier(planSelectionMode)
+                  : undefined
+              }
+              interactive={useInteractiveSelect}
               isSelecting={selectingTierSlug === tier.slug}
+              isSubscribing={subscribingTierSlug === tier.slug}
+              stripeCheckoutEnabled={useStripeCheckout && stripeReady}
+              subscribeLabel={stripeReady ? tierCtaLabel : undefined}
               selectLabel={
+                useRecoveryLabels ||
+                planSelectionMode === "trial" ||
                 tierFilter === "all"
-                  ? tierSelectLabel(tier.slug, currentTierSlug, data.tiers)
+                  ? actionLabel
                   : tierFilter === "higher"
-                    ? "Upgrade"
-                    : "Downgrade"
+                    ? planSelectionMode === "trial"
+                      ? `Upgrade to ${tier.name}`
+                      : "Upgrade"
+                    : planSelectionMode === "trial"
+                      ? "Choose this plan"
+                      : "Downgrade"
               }
               onSelect={
-                onSelectTier ? () => onSelectTier(tier) : undefined
+                onSelectTier ? () => onSelectTier(tier, cycle) : undefined
               }
+              onSubscribe={
+                onSubscribeTier
+                  ? () => onSubscribeTier(tier, cycle)
+                  : undefined
+              }
+              stripeCheckoutBlockedMessage={stripeCheckoutBlockedMessage}
             />
           </div>
-        ))}
+        );
+        })}
       </div>
     </div>
   );

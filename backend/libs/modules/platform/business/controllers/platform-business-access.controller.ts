@@ -46,7 +46,12 @@ import {
   SubscriptionPaymentsListDto,
   VoidPaymentDto,
 } from '../dto/business-subscription-payment.dto';
+import {
+  BusinessBillingInvoicesListDto,
+  ListBusinessBillingInvoicesQueryDto,
+} from '../dto/business-billing-invoice.dto';
 import { BusinessAccessService } from '../services/business-access.service';
+import { BusinessBillingInvoicesService } from '../services/business-billing-invoices.service';
 import { BusinessSubscriptionActionService } from '../services/business-subscription-action.service';
 import { BusinessSubscriptionEventService } from '../services/business-subscription-event.service';
 import { BusinessSubscriptionPaymentService } from '../services/business-subscription-payment.service';
@@ -72,6 +77,7 @@ export class PlatformBusinessAccessController {
     private readonly actionService: BusinessSubscriptionActionService,
     private readonly eventService: BusinessSubscriptionEventService,
     private readonly paymentService: BusinessSubscriptionPaymentService,
+    private readonly billingInvoicesService: BusinessBillingInvoicesService,
   ) {}
 
   @Get(':id/access')
@@ -232,6 +238,15 @@ export class PlatformBusinessAccessController {
     @Param('eventId', ParseUUIDPipe) eventId: string,
   ): Promise<BusinessSubscriptionEventDetailDto> {
     return this.eventService.getEvent(id, eventId);
+  }
+
+  @Get(':id/billing/invoices')
+  @PlatformRoles(...READ_ROLES)
+  listBillingInvoices(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Query() query: ListBusinessBillingInvoicesQueryDto,
+  ): Promise<BusinessBillingInvoicesListDto> {
+    return this.billingInvoicesService.listAllInvoicesForBusiness(id, query);
   }
 
   @Get(':id/subscription-payments')

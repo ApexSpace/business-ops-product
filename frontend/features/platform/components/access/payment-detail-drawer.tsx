@@ -12,9 +12,11 @@ import type { BusinessSubscriptionPayment } from "@/features/platform/types/busi
 import {
   formatPaymentDirection,
   formatPaymentMethod,
-  formatPaymentSource,
+  formatPaymentRecordSource,
   formatSubscriptionPaymentType,
 } from "@/features/platform/utils/access-labels";
+import { isStripeManagedPaymentRow } from "@/features/platform/utils/business-subscription-actions";
+import { Badge } from "@/components/ui/badge";
 
 function DetailRow({
   label,
@@ -57,6 +59,7 @@ export function PaymentDetailDrawer({
     payment.direction === "OUTGOING"
       ? `−${payment.amount}`
       : `+${payment.amount}`;
+  const stripeManaged = isStripeManagedPaymentRow(payment);
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -80,6 +83,9 @@ export function PaymentDetailDrawer({
               status={payment.paymentStatus}
               domain="subscriptionPayment"
             />
+            {stripeManaged ? (
+              <Badge variant="secondary">Managed by Stripe</Badge>
+            ) : null}
             {payment.voidedAt ? (
               <span className="text-xs text-muted-foreground">Voided</span>
             ) : null}
@@ -91,12 +97,12 @@ export function PaymentDetailDrawer({
               value={formatPaymentDirection(payment.direction)}
             />
             <DetailRow
-              label="Method"
+              label="Payment method"
               value={formatPaymentMethod(payment.paymentMethod)}
             />
             <DetailRow
-              label="Source"
-              value={formatPaymentSource(payment.source)}
+              label="Payment record source"
+              value={formatPaymentRecordSource(payment.source)}
             />
             <DetailRow label="Billing cycle" value={payment.billingCycle} />
             <DetailRow label="Period" value={formatPeriod(payment)} />

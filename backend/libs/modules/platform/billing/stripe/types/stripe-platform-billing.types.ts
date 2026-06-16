@@ -20,6 +20,11 @@ export type BusinessSubscriptionStripeMetadata = {
   canceledAt?: string | null;
   latestInvoiceId?: string | null;
   lastSyncedAt?: string;
+  pendingCheckoutSessionId?: string | null;
+  pendingPlanGroupId?: string | null;
+  pendingPlanTierId?: string | null;
+  pendingBillingCycle?: BusinessSubscriptionBillingCycle | null;
+  checkoutStartedAt?: string | null;
 };
 
 export type PlatformCheckoutMetadata = {
@@ -43,6 +48,8 @@ export type StripeSubscriptionObject = {
   items?: {
     data?: Array<{
       id?: string;
+      current_period_start?: number;
+      current_period_end?: number;
       price?: { id?: string; product?: string | { id?: string } };
     }>;
   };

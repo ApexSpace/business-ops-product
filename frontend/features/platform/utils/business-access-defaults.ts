@@ -31,6 +31,20 @@ export const UNPAID_ACCESS_OPTIONS: UnpaidAccessOption[] = [
   },
 ];
 
+/** Options shown in the platform create-business wizard only. */
+export const CREATE_ACCESS_OPTIONS: UnpaidAccessOption[] = [
+  {
+    value: "TRIAL",
+    label: "Trial access",
+    description: "Temporary access before the business subscribes to a paid plan.",
+  },
+  {
+    value: "INTERNAL",
+    label: "Internal account",
+    description: "Free internal or test account with no customer billing.",
+  },
+];
+
 export interface AccessFieldDefaults {
   businessStatus: BusinessAccessStatus;
   subscriptionStatus: SubscriptionAccessStatus;
@@ -62,7 +76,7 @@ export function applySubscriptionStatusDefaults(
       };
     case "PENDING_PAYMENT":
       return {
-        businessStatus: "NOT_ACTIVE",
+        businessStatus: "ACTIVE",
         paymentMethod: "MANUAL_INVOICE",
         paymentStatus: "PENDING",
       };
@@ -74,19 +88,19 @@ export function applySubscriptionStatusDefaults(
       };
     case "EXPIRED":
       return {
-        businessStatus: "NOT_ACTIVE",
+        businessStatus: "ACTIVE",
         paymentMethod: "NOT_SELECTED",
         paymentStatus: "PENDING",
       };
     case "CANCELED":
       return {
-        businessStatus: "NOT_ACTIVE",
+        businessStatus: "ACTIVE",
         paymentMethod: "NOT_SELECTED",
         paymentStatus: "NOT_REQUIRED",
       };
     default:
       return {
-        businessStatus: "NOT_ACTIVE",
+        businessStatus: "ACTIVE",
         paymentMethod: "NOT_SELECTED",
         paymentStatus: "NOT_REQUIRED",
       };
@@ -121,7 +135,7 @@ export function deriveAccessFromPaymentChoice(input: {
       };
     case "PENDING_PAYMENT":
       return {
-        businessStatus: "NOT_ACTIVE",
+        businessStatus: "ACTIVE",
         subscriptionStatus: "PENDING_PAYMENT",
         paymentMethod: "MANUAL_INVOICE",
         paymentStatus: "PENDING",
@@ -144,7 +158,7 @@ export function deriveAccessFromPaymentChoice(input: {
 }
 
 export function getCreateSuccessToast(input: {
-  paymentCollected: boolean;
+  paymentCollected?: boolean;
   unpaidAccessMode?: UnpaidAccessMode;
   paymentRecorded?: boolean;
 }): string {
@@ -157,6 +171,9 @@ export function getCreateSuccessToast(input: {
   if (!input.paymentCollected && input.unpaidAccessMode === "TRIAL") {
     return "Trial business created.";
   }
+  if (!input.paymentCollected && input.unpaidAccessMode === "INTERNAL") {
+    return "Internal account created.";
+  }
   return "Business created successfully.";
 }
 
@@ -164,6 +181,24 @@ export function getDefaultTrialEnd(days = 14): string {
   const date = new Date();
   date.setDate(date.getDate() + days);
   return toDateInputValue(date);
+}
+
+export function isTrialDateRangeValid(
+  trialStart: string,
+  trialEnd: string,
+): boolean {
+  if (!trialStart?.trim() || !trialEnd?.trim()) return false;
+  return trialEnd > trialStart;
+}
+
+export function hasBlockingCreateAccessWarnings(input: {
+  accessMode: "TRIAL" | "INTERNAL";
+  trialStart?: string | null;
+  trialEnd?: string | null;
+}): boolean {
+  if (input.accessMode !== "TRIAL") return false;
+  if (!input.trialStart?.trim() || !input.trialEnd?.trim()) return true;
+  return !isTrialDateRangeValid(input.trialStart, input.trialEnd);
 }
 
 export function toDateInputValue(date: Date): string {

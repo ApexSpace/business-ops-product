@@ -33,9 +33,9 @@ describe('StripePlatformPlanMappingService', () => {
   });
 
   it('detects stripe price presence', () => {
-    expect(
-      service.tierHasStripePrice({ monthlyPriceId: 'price_m' }),
-    ).toBe(true);
+    expect(service.tierHasStripePrice({ monthlyPriceId: 'price_m' })).toBe(
+      true,
+    );
     expect(service.tierHasStripePrice({})).toBe(false);
   });
 });

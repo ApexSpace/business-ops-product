@@ -2,9 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { WebhookEventProvider, WebhookEventStatus } from '@prisma/client';
 import { IdempotencyService } from '@app/core/idempotency/idempotency.service';
 import type { ProcessMetaWebhookPayload } from '@app/core/queue/queue.types';
-import {
-  isWhatsAppWebhookObject,
-} from '@app/modules/communications/conversations/adapters/meta/meta-inbound-normalizer';
+import { isWhatsAppWebhookObject } from '@app/modules/communications/conversations/adapters/meta/meta-inbound-normalizer';
 import { ConversationWebhookIngestionService } from '@app/modules/communications/conversations/services/conversation-webhook-ingestion.service';
 import { WebhookEventsRepository } from '@app/modules/communications/conversations/repositories/webhook-events.repository';
 import { WhatsAppTemplateWebhookService } from '@app/modules/integrations/whatsapp/services/whatsapp-template-webhook.service';
@@ -93,7 +91,8 @@ export class MetaWebhookProcessor {
         );
       }
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Processing failed';
+      const message =
+        error instanceof Error ? error.message : 'Processing failed';
       await this.webhookEventsRepository.updateStatus(
         event.id,
         WebhookEventStatus.FAILED,

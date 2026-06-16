@@ -79,6 +79,7 @@ export interface BusinessAccessSubscription {
   planTierName?: string | null;
   paymentMethod: SubscriptionPaymentMethod;
   paymentStatus: SubscriptionPaymentStatus;
+  billingSource?: "STRIPE" | "MANUAL" | "INTERNAL" | "NOT_SELECTED" | null;
   currentPeriodStart?: string | null;
   currentPeriodEnd?: string | null;
   amount?: string | null;

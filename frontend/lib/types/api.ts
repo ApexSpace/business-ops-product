@@ -75,6 +75,7 @@ export interface Business {
   planGroupName?: string | null;
   paymentMethod?: string | null;
   paymentStatus?: string | null;
+  billingSource?: "STRIPE" | "MANUAL" | "INTERNAL" | "NOT_SELECTED" | null;
   latestPaymentAt?: string | null;
   recommendedActionKey?: string | null;
   /** @deprecated Use recommendedActionKey */

@@ -1,6 +1,12 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { BusinessSubscriptionBillingCycle } from '@prisma/client';
-import { IsBoolean, IsEnum, IsOptional, IsString, IsUUID } from 'class-validator';
+import {
+  IsBoolean,
+  IsEnum,
+  IsOptional,
+  IsString,
+  IsUUID,
+} from 'class-validator';
 
 export class PlanTierStripeMetadataDto {
   @ApiPropertyOptional()
@@ -45,6 +51,14 @@ export class CreateBusinessCheckoutSessionDto {
   @ApiProperty({ enum: BusinessSubscriptionBillingCycle })
   @IsEnum(BusinessSubscriptionBillingCycle)
   billingCycle!: BusinessSubscriptionBillingCycle;
+
+  @ApiPropertyOptional({
+    description:
+      'Plan group for first-time checkout when workspace has no assigned group yet.',
+  })
+  @IsOptional()
+  @IsUUID()
+  planGroupId?: string;
 }
 
 export class CreatePublicCheckoutSessionDto {
@@ -67,6 +81,31 @@ export class CheckoutSessionResponseDto {
 
   @ApiProperty()
   url!: string;
+}
+
+export class SubscribePlanTierResponseDto {
+  @ApiProperty({ enum: ['checkout', 'tier_updated'] })
+  action!: 'checkout' | 'tier_updated';
+
+  @ApiPropertyOptional()
+  sessionId?: string;
+
+  @ApiPropertyOptional()
+  url?: string;
+}
+
+export class SubscribePlanTierDto {
+  @ApiProperty()
+  @IsUUID()
+  planGroupId!: string;
+
+  @ApiProperty()
+  @IsUUID()
+  planTierId!: string;
+
+  @ApiProperty({ enum: BusinessSubscriptionBillingCycle })
+  @IsEnum(BusinessSubscriptionBillingCycle)
+  billingCycle!: BusinessSubscriptionBillingCycle;
 }
 
 export class PortalSessionResponseDto {

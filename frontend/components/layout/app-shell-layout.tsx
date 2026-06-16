@@ -23,6 +23,7 @@ import {
 } from "@/lib/capabilities/route-capability-map";
 import { BusinessAccessBanner } from "@/components/business-access/business-access-banner";
 import { BusinessAccessGate } from "@/components/business-access/business-access-gate";
+import { isBusinessAccessError } from "@/lib/api/error-classifier";
 import { ServiceUnavailableBanner } from "@/components/layout/service-unavailable-banner";
 import { useOptionalBusinessAccess } from "@/lib/business-access/use-business-access";
 import { shouldShowAccountSwitcher } from "@/lib/auth";
@@ -43,6 +44,9 @@ export function AppShellLayout({ mode, children }: ShellLayoutProps) {
   const { contexts, jwt, user, sessionError, refreshSession } = useAuth();
   const { context: snapshotContext, t } = useSnapshotContext();
   const businessAccess = useOptionalBusinessAccess();
+  const isBillingRecovery = Boolean(
+    mode === "business" && businessAccess?.isBillingRecovery,
+  );
 
   const { data: currentBusiness } = useQuery({
     queryKey: queryKeys.business.current(),
@@ -79,8 +83,9 @@ export function AppShellLayout({ mode, children }: ShellLayoutProps) {
       .filter((section) => section.items.length > 0);
   };
 
-  const sections: ShellNavSection[] =
-    mode === "platform"
+  const sections: ShellNavSection[] = isBillingRecovery
+    ? []
+    : mode === "platform"
       ? platformOperationalSections
       : isSettingsMode
         ? filterSectionsByCapability(businessSettingsSections)
@@ -123,18 +128,27 @@ export function AppShellLayout({ mode, children }: ShellLayoutProps) {
 
   const fullScreenEditor = isFullScreenEditorRoute(pathname);
 
+  const showSessionUnavailableBanner =
+    sessionError != null && !isBusinessAccessError(sessionError);
+
+  const sessionErrorBanner = showSessionUnavailableBanner ? (
+    <ServiceUnavailableBanner
+      error={sessionError}
+      onRetry={() => void refreshSession()}
+      placement={mode === "business" ? "inline" : "fixed-top"}
+    />
+  ) : null;
+
   if (fullScreenEditor) {
     return (
       <>
-        {sessionError ? (
-          <ServiceUnavailableBanner
-            error={sessionError}
-            onRetry={() => void refreshSession()}
-          />
-        ) : null}
+        {mode !== "business" ? sessionErrorBanner : null}
         {mode === "business" ? (
           <BusinessAccessGate>
             <div className="flex h-svh min-h-0 flex-col overflow-hidden bg-background">
+              {sessionErrorBanner ? (
+                <div className="shrink-0 px-4 pt-4">{sessionErrorBanner}</div>
+              ) : null}
               {children}
             </div>
           </BusinessAccessGate>
@@ -153,14 +167,18 @@ export function AppShellLayout({ mode, children }: ShellLayoutProps) {
       sections={sections}
       navMode={isSettingsMode ? "settings" : "main"}
       footerItems={
-        mode === "business" && !isSettingsMode
-          ? [businessSettingsEntry]
-          : mode === "platform"
-            ? [platformSettingsEntry]
-            : undefined
+        isBillingRecovery
+          ? undefined
+          : mode === "business" && !isSettingsMode
+            ? [businessSettingsEntry]
+            : mode === "platform"
+              ? [platformSettingsEntry]
+              : undefined
       }
+      hideSidebar={isBillingRecovery}
       showAccountSwitcher={showAccountSwitcher}
       topbarNotice={mode === "business" ? <BusinessAccessBanner /> : undefined}
+      contentNotice={mode === "business" ? sessionErrorBanner : undefined}
       pageMetadataContext={{
         mode,
         terminology: snapshotContext.terminology,
@@ -173,12 +191,7 @@ export function AppShellLayout({ mode, children }: ShellLayoutProps) {
 
   return (
     <>
-      {sessionError ? (
-        <ServiceUnavailableBanner
-          error={sessionError}
-          onRetry={() => void refreshSession()}
-        />
-      ) : null}
+      {mode !== "business" ? sessionErrorBanner : null}
       {mode === "business" ? (
         <BusinessAccessGate>{shell}</BusinessAccessGate>
       ) : (

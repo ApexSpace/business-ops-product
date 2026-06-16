@@ -4,9 +4,7 @@ import { BusinessEffectiveCapabilitiesService } from './business-effective-capab
 describe('BusinessCapabilityCheckService', () => {
   const businessId = 'biz-1';
 
-  function createService(
-    keys: string[],
-  ): BusinessCapabilityCheckService {
+  function createService(keys: string[]): BusinessCapabilityCheckService {
     const effectiveCapabilitiesService = {
       resolveFeatureKeys: jest.fn().mockResolvedValue(new Set(keys)),
     } as unknown as BusinessEffectiveCapabilitiesService;
@@ -39,8 +37,8 @@ describe('BusinessCapabilityCheckService', () => {
     await service.hasModule(businessId, 'payments');
     await service.hasModule(businessId, 'payments');
 
-    expect(effectiveCapabilitiesService.resolveFeatureKeys).toHaveBeenCalledTimes(
-      1,
-    );
+    expect(
+      effectiveCapabilitiesService.resolveFeatureKeys,
+    ).toHaveBeenCalledTimes(1);
   });
 });

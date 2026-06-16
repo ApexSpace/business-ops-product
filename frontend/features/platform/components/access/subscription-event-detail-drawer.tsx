@@ -14,6 +14,8 @@ import { getPlatformBusinessSubscriptionEvent } from "@/features/platform/api/bu
 import type { SubscriptionStateSnapshot } from "@/features/platform/types/business-subscription";
 import {
   formatAccessImpact,
+  formatBillingSource,
+  formatPaymentMethod,
   formatSubscriptionEventSeverity,
   formatSubscriptionEventSource,
   formatSubscriptionEventType,
@@ -58,6 +60,31 @@ function StateBlock({
               <StatusBadge
                 status={state.subscriptionStatus}
                 domain="subscription"
+              />
+            ) : (
+              "—"
+            )}
+          </dd>
+        </div>
+        <div>
+          <dt className="text-muted-foreground">Billing source</dt>
+          <dd>{formatBillingSource(state.billingSource)}</dd>
+        </div>
+        <div>
+          <dt className="text-muted-foreground">Payment method</dt>
+          <dd>
+            {state.paymentMethod
+              ? formatPaymentMethod(state.paymentMethod)
+              : "—"}
+          </dd>
+        </div>
+        <div>
+          <dt className="text-muted-foreground">Payment status</dt>
+          <dd>
+            {state.paymentStatus ? (
+              <StatusBadge
+                status={state.paymentStatus}
+                domain="subscriptionPayment"
               />
             ) : (
               "—"

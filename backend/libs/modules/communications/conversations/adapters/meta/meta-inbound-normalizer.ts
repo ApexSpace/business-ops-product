@@ -8,7 +8,10 @@ import { NormalizedInboundMessage } from './meta-inbound.types';
 export { extractWhatsAppTemplateStatusUpdates } from '@app/modules/integrations/whatsapp/utils/template-webhook.util';
 export type { WhatsAppTemplateStatusUpdate } from '@app/modules/integrations/whatsapp/utils/template-webhook.util';
 
-const WHATSAPP_WEBHOOK_OBJECTS = new Set(['whatsapp', 'whatsapp_business_account']);
+const WHATSAPP_WEBHOOK_OBJECTS = new Set([
+  'whatsapp',
+  'whatsapp_business_account',
+]);
 
 type MetaMessagingEvent = {
   sender?: { id?: string };
@@ -133,7 +136,12 @@ type WhatsAppWebhookMessage = {
   image?: { id?: string; mime_type?: string; caption?: string };
   video?: { id?: string; mime_type?: string; caption?: string };
   audio?: { id?: string; mime_type?: string };
-  document?: { id?: string; mime_type?: string; filename?: string; caption?: string };
+  document?: {
+    id?: string;
+    mime_type?: string;
+    filename?: string;
+    caption?: string;
+  };
   sticker?: { id?: string; mime_type?: string };
 };
 
@@ -202,9 +210,10 @@ function normalizeWhatsAppMessage(
   };
 }
 
-export function normalizeMetaWhatsAppWebhook(
-  entry: { id?: string; changes?: Array<{ value?: WhatsAppChangeValue; field?: string }> },
-): NormalizedInboundMessage[] {
+export function normalizeMetaWhatsAppWebhook(entry: {
+  id?: string;
+  changes?: Array<{ value?: WhatsAppChangeValue; field?: string }>;
+}): NormalizedInboundMessage[] {
   const wabaId = entry.id ?? null;
   if (!entry.changes?.length) {
     return [];
@@ -310,8 +319,14 @@ export function extractWhatsAppDeliveryStatuses(
 
   for (const entry of entries) {
     if (!entry || typeof entry !== 'object') continue;
-    const changes = (entry as { changes?: Array<{ field?: string; value?: WhatsAppChangeValue & { statuses?: WhatsAppStatusUpdate[] } }> })
-      .changes;
+    const changes = (
+      entry as {
+        changes?: Array<{
+          field?: string;
+          value?: WhatsAppChangeValue & { statuses?: WhatsAppStatusUpdate[] };
+        }>;
+      }
+    ).changes;
     for (const change of changes ?? []) {
       if (change.field !== 'messages') continue;
       for (const status of change.value?.statuses ?? []) {

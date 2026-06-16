@@ -159,6 +159,10 @@ export type PublicPricingTier = {
   highlighted: boolean;
   ctaLabel?: string | null;
   ctaUrl?: string | null;
+  planTierId?: string;
+  stripeCheckoutEnabled?: boolean;
+  stripeMonthlyEnabled?: boolean;
+  stripeYearlyEnabled?: boolean;
   designSettings?: PlanTierDesignSettings | null;
   capabilities: PublicPricingCapability[];
   features: PublicPricingTierFeature[];

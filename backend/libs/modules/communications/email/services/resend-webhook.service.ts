@@ -1,4 +1,10 @@
-import { forwardRef, HttpStatus, Inject, Injectable, Logger } from '@nestjs/common';
+import {
+  forwardRef,
+  HttpStatus,
+  Inject,
+  Injectable,
+  Logger,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
   EmailMessageStatus,
@@ -181,7 +187,8 @@ export class ResendWebhookService {
       }
     }
 
-    const dispatched = await this.resendWebhookDispatch.dispatch(webhookEventId);
+    const dispatched =
+      await this.resendWebhookDispatch.dispatch(webhookEventId);
 
     if (!dispatched) {
       this.logger.error(
@@ -204,9 +211,13 @@ export class ResendWebhookService {
         subject: event.data?.subject,
         text: (event.data as { text?: string } | undefined)?.text,
         html: (event.data as { html?: string } | undefined)?.html,
-        message_id: (event.data as { message_id?: string } | undefined)?.message_id,
-        headers: (event.data as { headers?: Record<string, string | string[]> } | undefined)
-          ?.headers,
+        message_id: (event.data as { message_id?: string } | undefined)
+          ?.message_id,
+        headers: (
+          event.data as
+            | { headers?: Record<string, string | string[]> }
+            | undefined
+        )?.headers,
       });
       return;
     }

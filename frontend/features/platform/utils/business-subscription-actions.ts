@@ -1,14 +1,171 @@
 import type { Business } from "@/features/platform/types";
 import type {
-  BusinessAccessStatus,
   BusinessAccess,
+  BusinessAccessStatus,
   SubscriptionAccessStatus,
   SubscriptionPaymentStatus,
 } from "@/features/platform/types/business-access";
 import type {
+  BusinessSubscriptionPayment,
   SubscriptionActionDefinition,
   SubscriptionActionKey,
 } from "@/features/platform/types/business-subscription";
+
+export type BillingSourceType =
+  | "STRIPE"
+  | "MANUAL"
+  | "INTERNAL"
+  | "NOT_SELECTED";
+
+export function getBillingSource(
+  access?: BusinessAccess | null,
+): BillingSourceType {
+  const source = access?.subscription?.billingSource;
+  if (
+    source === "STRIPE" ||
+    source === "INTERNAL" ||
+    source === "MANUAL" ||
+    source === "NOT_SELECTED"
+  ) {
+    return source;
+  }
+  return "NOT_SELECTED";
+}
+
+export const BILLING_SOURCE_LABELS: Record<BillingSourceType, string> = {
+  STRIPE: "Stripe",
+  MANUAL: "Manual",
+  INTERNAL: "Internal",
+  NOT_SELECTED: "Not selected",
+};
+
+const ACCESS_TAB_HIDDEN_ACTION_KEYS = new Set<SubscriptionActionKey>([
+  "MARK_PAID",
+  "RECORD_PAYMENT",
+  "MOVE_PENDING",
+  "EXTEND_TRIAL",
+  "EXPIRE_TRIAL",
+  "MANUAL_ADJUSTMENT",
+  "CHANGE_PACKAGE",
+  "CANCEL_SUBSCRIPTION",
+  "OPEN_STRIPE_PORTAL",
+  "RESYNC_FROM_STRIPE",
+]);
+
+const PAYMENT_ACTION_KEYS = new Set<SubscriptionActionKey>([
+  "MARK_PAID",
+  "RECORD_PAYMENT",
+  "MOVE_PENDING",
+]);
+
+const TRIAL_ACTION_KEYS = new Set<SubscriptionActionKey>([
+  "EXTEND_TRIAL",
+  "EXPIRE_TRIAL",
+]);
+
+export function filterActionsForAccessTab(
+  actions: SubscriptionActionDefinition[],
+  access: BusinessAccess,
+): SubscriptionActionDefinition[] {
+  const billingSource = getBillingSource(access);
+  return actions.filter((action) => {
+    if (!action.visible) return false;
+    if (billingSource === "STRIPE" && ACCESS_TAB_HIDDEN_ACTION_KEYS.has(action.key)) {
+      return false;
+    }
+    if (
+      billingSource === "INTERNAL" &&
+      (PAYMENT_ACTION_KEYS.has(action.key) ||
+        TRIAL_ACTION_KEYS.has(action.key) ||
+        action.key === "CANCEL_SUBSCRIPTION" ||
+        action.key === "MANUAL_ADJUSTMENT")
+    ) {
+      return false;
+    }
+    if (
+      billingSource === "MANUAL" &&
+      (action.key === "OPEN_STRIPE_PORTAL" || action.key === "RESYNC_FROM_STRIPE")
+    ) {
+      return false;
+    }
+    if (
+      billingSource === "NOT_SELECTED" &&
+      (PAYMENT_ACTION_KEYS.has(action.key) ||
+        action.key === "MANUAL_ADJUSTMENT" ||
+        action.key === "OPEN_STRIPE_PORTAL" ||
+        action.key === "RESYNC_FROM_STRIPE")
+    ) {
+      return false;
+    }
+    return true;
+  });
+}
+
+export function resolveRecommendedActionForAccessTab(
+  access: BusinessAccess,
+): SubscriptionActionDefinition | null {
+  const recommended = access.recommendedAction;
+  if (!recommended?.visible || !recommended.enabled) return null;
+  const filtered = filterActionsForAccessTab([recommended], access);
+  return filtered[0] ?? null;
+}
+
+export function isListActionAllowedForBillingSource(
+  actionKey: SubscriptionActionKey,
+  billingSource: BillingSourceType,
+): boolean {
+  if (billingSource === "STRIPE") {
+    return ![
+      "MARK_PAID",
+      "RECORD_PAYMENT",
+      "MOVE_PENDING",
+      "EXTEND_TRIAL",
+      "EXPIRE_TRIAL",
+      "MANUAL_ADJUSTMENT",
+      "CHANGE_PACKAGE",
+      "CANCEL_SUBSCRIPTION",
+    ].includes(actionKey);
+  }
+  if (billingSource === "MANUAL") {
+    return actionKey !== "OPEN_STRIPE_PORTAL" && actionKey !== "RESYNC_FROM_STRIPE";
+  }
+  if (billingSource === "INTERNAL") {
+    return [
+      "SUSPEND_BUSINESS",
+      "REACTIVATE_BUSINESS",
+      "CHANGE_SNAPSHOT",
+      "SYNC_CAPABILITIES",
+      "CHANGE_PACKAGE",
+    ].includes(actionKey);
+  }
+  if (billingSource === "NOT_SELECTED") {
+    return ![
+      "MARK_PAID",
+      "RECORD_PAYMENT",
+      "MOVE_PENDING",
+      "MANUAL_ADJUSTMENT",
+      "OPEN_STRIPE_PORTAL",
+      "RESYNC_FROM_STRIPE",
+    ].includes(actionKey);
+  }
+  return true;
+}
+
+export function canRecordSubscriptionPayments(
+  access?: BusinessAccess | null,
+): boolean {
+  const billingSource = getBillingSource(access);
+  return billingSource === "MANUAL";
+}
+
+export function isStripeManagedPaymentRow(
+  payment: Pick<
+    BusinessSubscriptionPayment,
+    "source" | "externalProvider"
+  >,
+): boolean {
+  return payment.source === "WEBHOOK" || payment.externalProvider === "stripe";
+}
 
 const LIST_EXECUTABLE_ACTIONS: SubscriptionActionKey[] = [
   "MARK_PAID",
@@ -77,6 +234,8 @@ const ACTION_TO_TAB_GROUP: Record<
   SYNC_CAPABILITIES: "experience",
   CANCEL_SUBSCRIPTION: "danger",
   MANUAL_ADJUSTMENT: "advanced",
+  OPEN_STRIPE_PORTAL: "payment",
+  RESYNC_FROM_STRIPE: "payment",
 };
 
 export const ACCESS_TAB_CATEGORY_LABELS: Record<string, string> = {
@@ -110,18 +269,9 @@ export const ACTION_KEY_LABELS: Record<SubscriptionActionKey, string> = {
   CHANGE_SNAPSHOT: "Change Business Experience",
   SYNC_CAPABILITIES: "Refresh Included Features",
   MANUAL_ADJUSTMENT: "Advanced Adjustment",
+  OPEN_STRIPE_PORTAL: "Manage Billing",
+  RESYNC_FROM_STRIPE: "Resync from Stripe",
 };
-
-const PAYMENT_ACTION_KEYS = new Set<SubscriptionActionKey>([
-  "MARK_PAID",
-  "RECORD_PAYMENT",
-  "MOVE_PENDING",
-]);
-
-const TRIAL_ACTION_KEYS = new Set<SubscriptionActionKey>([
-  "EXTEND_TRIAL",
-  "EXPIRE_TRIAL",
-]);
 
 type ListActionBusiness = Pick<
   Business,
@@ -133,6 +283,7 @@ type ListActionBusiness = Pick<
   | "currentPeriodEnd"
   | "recommendedActionKey"
   | "recommendedAction"
+  | "billingSource"
 >;
 
 export function buildActionLabelContext(
@@ -389,11 +540,24 @@ export function deriveListRowActions(business: ListActionBusiness): {
 } {
   const candidates = buildListActionCandidates(business);
   const backendRecommended = getRecommendedActionKey(business);
+  const billingSource: BillingSourceType =
+    business.billingSource === "STRIPE" ||
+    business.billingSource === "INTERNAL" ||
+    business.billingSource === "MANUAL" ||
+    business.billingSource === "NOT_SELECTED"
+      ? business.billingSource
+      : "NOT_SELECTED";
 
-  const recommended =
-    backendRecommended && candidates.includes(backendRecommended)
-      ? backendRecommended
-      : pickRecommendedFromState(business, candidates);
+  let recommended: SubscriptionActionKey | null = null;
+  if (
+    backendRecommended &&
+    candidates.includes(backendRecommended) &&
+    isListActionAllowedForBillingSource(backendRecommended, billingSource)
+  ) {
+    recommended = backendRecommended;
+  } else if (billingSource !== "STRIPE") {
+    recommended = pickRecommendedFromState(business, candidates);
+  }
 
   return {
     recommendedAction: recommended,
@@ -407,6 +571,13 @@ export const mirrorListRowActions = deriveListRowActions;
 function buildListActionCandidates(
   business: ListActionBusiness,
 ): SubscriptionActionKey[] {
+  const billingSource: BillingSourceType =
+    business.billingSource === "STRIPE" ||
+    business.billingSource === "INTERNAL" ||
+    business.billingSource === "MANUAL" ||
+    business.billingSource === "NOT_SELECTED"
+      ? business.billingSource
+      : "NOT_SELECTED";
   const subStatus = business.subscriptionStatus;
   const paymentStatus = business.paymentStatus;
   const businessStatus = business.status;
@@ -467,7 +638,8 @@ function buildListActionCandidates(
   return definitions
     .filter((action) => action.visible && action.enabled)
     .map((action) => action.key)
-    .filter((key) => LIST_EXECUTABLE_ACTIONS.includes(key));
+    .filter((key) => LIST_EXECUTABLE_ACTIONS.includes(key))
+    .filter((key) => isListActionAllowedForBillingSource(key, billingSource));
 }
 
 function pickRecommendedFromState(
@@ -516,6 +688,7 @@ export function filterActionsForSubscriptionsTab(
   actions: SubscriptionActionDefinition[],
   access: BusinessAccess,
 ): SubscriptionActionDefinition[] {
+  const billingSource = getBillingSource(access);
   const sub = access.subscription;
   const subStatus = sub?.status;
   const paymentStatus = sub?.paymentStatus;
@@ -532,6 +705,38 @@ export function filterActionsForSubscriptionsTab(
 
   return actions.filter((action) => {
     if (!action.visible) return false;
+
+    if (action.key === "CHANGE_PACKAGE") return false;
+
+    if (
+      billingSource === "MANUAL" &&
+      (action.key === "OPEN_STRIPE_PORTAL" || action.key === "RESYNC_FROM_STRIPE")
+    ) {
+      return false;
+    }
+
+    if (billingSource === "INTERNAL") {
+      if (
+        PAYMENT_ACTION_KEYS.has(action.key) ||
+        TRIAL_ACTION_KEYS.has(action.key) ||
+        action.key === "CANCEL_SUBSCRIPTION" ||
+        action.key === "OPEN_STRIPE_PORTAL" ||
+        action.key === "RESYNC_FROM_STRIPE"
+      ) {
+        return false;
+      }
+    }
+
+    if (billingSource === "NOT_SELECTED") {
+      if (
+        PAYMENT_ACTION_KEYS.has(action.key) ||
+        action.key === "MANUAL_ADJUSTMENT" ||
+        action.key === "OPEN_STRIPE_PORTAL" ||
+        action.key === "RESYNC_FROM_STRIPE"
+      ) {
+        return false;
+      }
+    }
 
     if (isInternal && PAYMENT_ACTION_KEYS.has(action.key)) return false;
 
@@ -553,6 +758,17 @@ export function filterActionsForSubscriptionsTab(
   });
 }
 
+function pickFirstAvailable(
+  keySet: Set<SubscriptionActionKey>,
+  candidates: SubscriptionActionKey[],
+): SubscriptionActionKey | null {
+  for (const key of candidates) {
+    if (key === "CHANGE_PACKAGE") continue;
+    if (keySet.has(key)) return key;
+  }
+  return null;
+}
+
 function pickStatePrimarySecondary(
   keys: SubscriptionActionKey[],
   access: BusinessAccess,
@@ -566,6 +782,7 @@ function pickStatePrimarySecondary(
   const paymentStatus = sub?.paymentStatus;
   const businessStatus = access.businessStatus;
   const hasPlan = Boolean(sub?.planTierId);
+  const billingSource = getBillingSource(access);
 
   const pick = (
     primary: SubscriptionActionKey | null,
@@ -579,23 +796,45 @@ function pickStatePrimarySecondary(
   });
 
   if (!hasPlan) {
-    return pick("CHANGE_PACKAGE", null);
+    const primary = pickFirstAvailable(keySet, [
+      "EXTEND_TRIAL",
+      "REACTIVATE_BUSINESS",
+      "MARK_PAID",
+    ]);
+    return pick(primary, null);
   }
 
-  if (subStatus === "INTERNAL") {
-    return pick("CHANGE_PACKAGE", null);
+  if (subStatus === "INTERNAL" || billingSource === "INTERNAL") {
+    const primary = pickFirstAvailable(keySet, [
+      "CHANGE_SNAPSHOT",
+      "SYNC_CAPABILITIES",
+      "SUSPEND_BUSINESS",
+    ]);
+    return pick(primary, null);
+  }
+
+  if (billingSource === "STRIPE") {
+    if (keySet.has("OPEN_STRIPE_PORTAL")) {
+      const secondary = pickFirstAvailable(keySet, ["RESYNC_FROM_STRIPE"]);
+      return pick("OPEN_STRIPE_PORTAL", secondary);
+    }
+    const primary = pickFirstAvailable(keySet, ["RESYNC_FROM_STRIPE"]);
+    return pick(primary, null);
   }
 
   if (subStatus === "TRIALING") {
+    if (billingSource === "NOT_SELECTED") {
+      return pick("EXTEND_TRIAL", null);
+    }
     return pick("MARK_PAID", "EXTEND_TRIAL");
   }
 
   if (subStatus === "PENDING_PAYMENT" || paymentStatus === "PENDING") {
-    return pick("MARK_PAID", "CHANGE_PACKAGE");
+    return pick("MARK_PAID", null);
   }
 
   if (businessStatus === "SUSPENDED") {
-    return pick("REACTIVATE_BUSINESS", "CHANGE_PACKAGE");
+    return pick("REACTIVATE_BUSINESS", null);
   }
 
   if (subStatus === "CANCELED" || subStatus === "EXPIRED") {
@@ -603,14 +842,11 @@ function pickStatePrimarySecondary(
   }
 
   if (subStatus === "ACTIVE" && paymentStatus === "PAID") {
-    return pick("CHANGE_PACKAGE", "RECORD_PAYMENT");
+    return pick("RECORD_PAYMENT", null);
   }
 
-  if (keySet.has("CHANGE_PACKAGE")) {
-    return pick("CHANGE_PACKAGE", keySet.has("MARK_PAID") ? "MARK_PAID" : null);
-  }
-
-  return pick(keys[0] ?? null, keys[1] ?? null);
+  const nonChangeKeys = keys.filter((key) => key !== "CHANGE_PACKAGE");
+  return pick(nonChangeKeys[0] ?? null, nonChangeKeys[1] ?? null);
 }
 
 export interface SubscriptionTabActionLayout {
@@ -622,7 +858,6 @@ export interface SubscriptionTabActionLayout {
     actions: SubscriptionActionDefinition[];
   }>;
   trialEndingSoon: boolean;
-  showManageAccessSecondary: boolean;
 }
 
 export function deriveSubscriptionTabActionLayout(
@@ -680,14 +915,11 @@ export function deriveSubscriptionTabActionLayout(
     return [{ id, label: SUBSCRIPTION_TAB_GROUP_LABELS[id], actions }];
   });
 
-  const hasPlan = Boolean(access.subscription?.planTierId);
-
   return {
     primary: primaryKey ? (friendlyByKey.get(primaryKey) ?? null) : null,
     secondary: secondaryKey ? (friendlyByKey.get(secondaryKey) ?? null) : null,
     moreGroups,
     trialEndingSoon: context.isTrialEndingSoon ?? false,
-    showManageAccessSecondary: !hasPlan,
   };
 }
 

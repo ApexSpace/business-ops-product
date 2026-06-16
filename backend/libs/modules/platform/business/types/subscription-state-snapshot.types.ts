@@ -1,5 +1,6 @@
 import {
   BusinessStatus,
+  SubscriptionBillingSource,
   SubscriptionPaymentMethod,
   SubscriptionPaymentStatus,
   SubscriptionStatus,
@@ -7,6 +8,7 @@ import {
 
 export type SubscriptionStateSnapshot = {
   businessStatus: BusinessStatus;
+  billingSource?: SubscriptionBillingSource | null;
   subscriptionStatus?: SubscriptionStatus | null;
   paymentMethod?: SubscriptionPaymentMethod | null;
   paymentStatus?: SubscriptionPaymentStatus | null;

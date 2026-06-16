@@ -16,6 +16,7 @@ export interface AuthContextItem {
   /** Opened via platform staff access (no direct membership). */
   viaPlatform?: boolean;
   canAccessWorkspace?: boolean;
+  canSelectWorkspace?: boolean;
   accessReasonCode?: string;
   accessReasonLabel?: string;
 }

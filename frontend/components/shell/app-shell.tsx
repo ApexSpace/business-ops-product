@@ -29,6 +29,10 @@ interface AppShellProps {
   showAccountSwitcher?: boolean;
   topbarActions?: React.ReactNode;
   topbarNotice?: React.ReactNode;
+  /** Renders at the top of the main content scroll area (below topbar, right of sidebar). */
+  contentNotice?: React.ReactNode;
+  /** When true, hides sidebar navigation for billing recovery. */
+  hideSidebar?: boolean;
   children: React.ReactNode;
 }
 
@@ -41,6 +45,8 @@ export function AppShell({
   showAccountSwitcher = false,
   topbarActions,
   topbarNotice,
+  contentNotice,
+  hideSidebar = false,
   children,
 }: AppShellProps) {
   const pathname = usePathname();
@@ -58,12 +64,14 @@ export function AppShell({
     >
       <PageMetadataProvider context={pageMetadataContext}>
         <MobileSidebarCloseOnNavigate />
-        <AppSidebar
-          brand={brand}
-          sections={sections}
-          navMode={navMode}
-          footerItems={footerItems}
-        />
+        {!hideSidebar ? (
+          <AppSidebar
+            brand={brand}
+            sections={sections}
+            navMode={navMode}
+            footerItems={footerItems}
+          />
+        ) : null}
         <SidebarInset className="flex min-h-0 flex-1 flex-col overflow-hidden bg-background">
           <Topbar
             showAccountSwitcher={showAccountSwitcher}
@@ -79,6 +87,17 @@ export function AppShell({
                 : "overflow-y-auto overflow-x-hidden px-[var(--page-padding-x)] py-[var(--page-padding-y)]",
             )}
           >
+            {contentNotice ? (
+              <div
+                className={cn(
+                  "shrink-0",
+                  fullBleedContent &&
+                    "px-[var(--page-padding-x)] pt-[var(--page-padding-y)]",
+                )}
+              >
+                {contentNotice}
+              </div>
+            ) : null}
             <PageBreadcrumbs
               className={cn(
                 "shrink-0 md:hidden",

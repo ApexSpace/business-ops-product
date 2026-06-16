@@ -52,6 +52,7 @@ export function LoginForm() {
 
   const errorParam = searchParams.get("error");
   const reasonParam = searchParams.get("reason");
+  const returnUrlParam = searchParams.get("returnUrl");
 
   const onSubmit = async (values: LoginFormValues) => {
     setLoading(true);
@@ -61,7 +62,16 @@ export function LoginForm() {
       await refreshSession();
 
       if (needsContextSelection(tokens.contexts)) {
-        router.push("/select-context");
+        const selectContextPath = returnUrlParam
+          ? `/select-context?returnUrl=${encodeURIComponent(returnUrlParam)}`
+          : "/select-context";
+        router.push(selectContextPath);
+      } else if (returnUrlParam) {
+        if (returnUrlParam.startsWith("/")) {
+          router.push(returnUrlParam);
+        } else {
+          window.location.href = returnUrlParam;
+        }
       } else {
         router.push(resolvePostLoginPath(tokens));
       }

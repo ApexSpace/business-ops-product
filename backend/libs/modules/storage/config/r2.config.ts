@@ -1,6 +1,8 @@
 import type { R2Config } from '../types/storage.types';
 
-export function resolveR2Config(env: NodeJS.ProcessEnv = process.env): R2Config | null {
+export function resolveR2Config(
+  env: NodeJS.ProcessEnv = process.env,
+): R2Config | null {
   const bucket = env.R2_BUCKET?.trim();
   const endpoint = env.R2_ENDPOINT?.trim();
   const accessKeyId = env.R2_ACCESS_KEY_ID?.trim();

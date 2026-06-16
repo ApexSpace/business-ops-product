@@ -130,7 +130,9 @@ export class ConversationMessagesService {
 
     if (isPlatformEmail) {
       const provisioned =
-        await this.platformEmailProvisioning.ensurePlatformDefaultEmail(businessId);
+        await this.platformEmailProvisioning.ensurePlatformDefaultEmail(
+          businessId,
+        );
       if (!provisioned) {
         throw new AppException(
           ErrorCode.CONVERSATION_CHANNEL_NOT_READY,

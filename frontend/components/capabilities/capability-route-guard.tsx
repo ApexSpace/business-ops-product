@@ -1,6 +1,8 @@
 "use client";
 
 import { usePathname } from "next/navigation";
+import { useAppRouter } from "@/lib/hooks/use-app-router";
+import { isBillingRecoverySafeRoute } from "@/lib/business-access/billing-recovery";
 import { isCoreSafeBusinessRoute, resolveRouteCapability } from "@/lib/capabilities/route-capability-map";
 import { useBusinessAccess } from "@/lib/business-access/use-business-access";
 import { FeatureUnavailableScreen } from "./feature-unavailable-screen";
@@ -18,13 +20,23 @@ export function CapabilityRouteGuard({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const { canAccessWorkspace, canAccessRoute } = useBusinessAccess();
+  const router = useAppRouter();
+  const { canAccessWorkspace, isBillingRecovery, canAccessRoute } =
+    useBusinessAccess();
+
+  const path = normalizePath(pathname);
+
+  if (isBillingRecovery) {
+    if (isBillingRecoverySafeRoute(path)) {
+      return <>{children}</>;
+    }
+    router.replace("/business/settings/billing");
+    return null;
+  }
 
   if (!canAccessWorkspace) {
     return <>{children}</>;
   }
-
-  const path = normalizePath(pathname);
 
   if (isCoreSafeBusinessRoute(path)) {
     return <>{children}</>;

@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Patch, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { BusinessMemberRole } from '@prisma/client';
 import { CurrentUser } from '@app/common/decorators/current-user.decorator';
@@ -13,8 +13,13 @@ import { BusinessService } from '@app/modules/platform/business/services/busines
 import { DashboardStatsService } from '@app/modules/platform/business/services/dashboard-stats.service';
 import { FinancialSettingsService } from '@app/modules/platform/business/services/financial-settings.service';
 import { BusinessBillingService } from '@app/modules/platform/business/services/business-billing.service';
+import { BusinessBillingInvoicesService } from '@app/modules/platform/business/services/business-billing-invoices.service';
 import { CancelBusinessSubscriptionDto } from '../dto/cancel-business-subscription.dto';
 import { ChangeBusinessPlanTierDto } from '../dto/change-business-plan-tier.dto';
+import {
+  BusinessBillingInvoicesListDto,
+  ListBusinessBillingInvoicesQueryDto,
+} from '../dto/business-billing-invoice.dto';
 
 @ApiTags('business')
 @ApiBearerAuth()
@@ -27,6 +32,7 @@ export class BusinessController {
     private readonly dashboardStatsService: DashboardStatsService,
     private readonly financialSettingsService: FinancialSettingsService,
     private readonly businessBillingService: BusinessBillingService,
+    private readonly businessBillingInvoicesService: BusinessBillingInvoicesService,
   ) {}
 
   @Get('current')
@@ -90,6 +96,22 @@ export class BusinessController {
       user.businessId!,
       dto,
       user,
+    );
+  }
+
+  @Get('current/billing/invoices')
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
+  listCurrentBillingInvoices(
+    @CurrentUser() user: RequestUser,
+    @Query() query: ListBusinessBillingInvoicesQueryDto,
+  ): Promise<BusinessBillingInvoicesListDto> {
+    return this.businessBillingInvoicesService.listCurrentInvoices(
+      user.businessId!,
+      query,
     );
   }
 

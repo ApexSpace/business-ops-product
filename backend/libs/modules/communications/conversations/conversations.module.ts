@@ -83,4 +83,3 @@ import { WhatsAppSessionWindowService } from './services/whatsapp-session-window
   ],
 })
 export class ConversationsModule {}
-

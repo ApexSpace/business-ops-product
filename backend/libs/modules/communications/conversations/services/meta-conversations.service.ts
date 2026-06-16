@@ -156,14 +156,13 @@ export class MetaConversationsService {
       resourceId: resource.id,
       externalConversationId,
       externalParticipantId: participantId,
-      externalPageId:
-        channel === 'FACEBOOK' ? resource.externalId : null,
+      externalPageId: channel === 'FACEBOOK' ? resource.externalId : null,
       title: contact.displayName ?? contact.firstName ?? null,
       status: ConversationStatus.OPEN,
       lastMessageAt: options?.text?.trim() ? new Date() : null,
       lastMessagePreview: options?.text?.trim()?.slice(0, 500) ?? null,
       unreadCount: 0,
-      metadata: { source: 'contact.outbound' } as Prisma.InputJsonValue,
+      metadata: { source: 'contact.outbound' },
     });
 
     await this.auditService.log({
@@ -241,7 +240,7 @@ export class MetaConversationsService {
         ...metadata,
         whatsappWaId: participantId,
         channel: 'WHATSAPP',
-      } as Prisma.InputJsonValue,
+      },
     });
   }
 

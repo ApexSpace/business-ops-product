@@ -1,5 +1,5 @@
 import { HttpStatus, Injectable, Logger } from '@nestjs/common';
-import { SubscriptionBillingSource } from '@prisma/client';
+import { BusinessMemberRole, MembershipStatus } from '@prisma/client';
 import { AppException } from '@app/common/exceptions/app.exception';
 import { ErrorCode } from '@app/common/exceptions/error-code.enum';
 import { PrismaService } from '@app/core/database/prisma.service';
@@ -110,10 +110,16 @@ export class StripePlatformCheckoutService {
       await this.prisma.businessSubscription.update({
         where: { businessId: input.businessId },
         data: {
-          billingSource: SubscriptionBillingSource.STRIPE,
-          planGroupId: input.planGroupId,
-          planTierId: input.planTierId,
-          billingCycle: input.billingCycle,
+          metadata: this.metadataService.mergeSubscriptionStripeMetadata(
+            subscription.metadata,
+            {
+              pendingCheckoutSessionId: session.id,
+              pendingPlanGroupId: input.planGroupId,
+              pendingPlanTierId: input.planTierId,
+              pendingBillingCycle: input.billingCycle,
+              checkoutStartedAt: new Date().toISOString(),
+            },
+          ),
         },
       });
     }
@@ -125,16 +131,41 @@ export class StripePlatformCheckoutService {
     return { sessionId: session.id, url: session.url };
   }
 
+  async resolveActiveOwnerEmail(businessId: string): Promise<string> {
+    const ownerMembership = await this.prisma.businessMembership.findFirst({
+      where: {
+        businessId,
+        role: BusinessMemberRole.OWNER,
+        deletedAt: null,
+        status: MembershipStatus.ACTIVE,
+      },
+      select: {
+        user: { select: { email: true } },
+      },
+    });
+
+    const email = ownerMembership?.user?.email?.trim();
+    if (!email) {
+      throw new AppException(
+        ErrorCode.BUSINESS_OWNER_REQUIRED,
+        'A business owner must be set before starting checkout.',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    return email;
+  }
+
   async createCheckoutSessionForCurrentBusiness(
     businessId: string,
     dto: CreateBusinessCheckoutSessionDto,
-    customerEmail?: string | null,
   ): Promise<CheckoutSessionResponseDto> {
     const subscription = await this.prisma.businessSubscription.findUnique({
       where: { businessId },
     });
 
-    if (!subscription?.planGroupId) {
+    const planGroupId = dto.planGroupId ?? subscription?.planGroupId;
+    if (!planGroupId) {
       throw new AppException(
         ErrorCode.BAD_REQUEST,
         'No plan group is assigned to this workspace',
@@ -142,9 +173,11 @@ export class StripePlatformCheckoutService {
       );
     }
 
+    const customerEmail = await this.resolveActiveOwnerEmail(businessId);
+
     return this.createCheckoutSession({
       businessId,
-      planGroupId: subscription.planGroupId,
+      planGroupId,
       planTierId: dto.planTierId,
       billingCycle: dto.billingCycle,
       customerEmail,

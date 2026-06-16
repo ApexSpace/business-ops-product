@@ -1,17 +1,18 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { StatusBadge } from "@/components/data-display/status-badge";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ChangePackageDialog } from "@/features/platform/components/access/change-package-dialog";
 import { SubscriptionActionBar } from "@/features/platform/components/access/subscription-action-bar";
 import type { BusinessAccess } from "@/features/platform/types/business-access";
 import type { SubscriptionActionDefinition } from "@/features/platform/types/business-subscription";
-import { formatPaymentMethod } from "@/features/platform/utils/access-labels";
-import { deriveSubscriptionTabActionLayout } from "@/features/platform/utils/business-subscription-actions";
+import { formatPaymentMethod, formatBillingSource } from "@/features/platform/utils/access-labels";
+import {
+  deriveSubscriptionTabActionLayout,
+  getBillingSource,
+} from "@/features/platform/utils/business-subscription-actions";
 import { formatBillingCycleLabel } from "@/features/platform/utils/tier-price.util";
 import {
   formatBillingPeriod,
@@ -58,20 +59,15 @@ export function SubscriptionOverviewSection({
   access,
   canUpdate,
   isLoading,
-  onManageAccess,
-  onPackageChanged,
   onAction,
   actionBarLoading,
 }: {
   access?: BusinessAccess | null;
   canUpdate: boolean;
   isLoading?: boolean;
-  onManageAccess: () => void;
-  onPackageChanged?: () => void;
   onAction?: (action: SubscriptionActionDefinition) => void;
   actionBarLoading?: boolean;
 }) {
-  const [changePackageOpen, setChangePackageOpen] = useState(false);
 
   const resolution = access?.resolution;
   const { planTier, customManual } = useMemo(
@@ -106,17 +102,13 @@ export function SubscriptionOverviewSection({
           <p className="text-sm text-muted-foreground">
             No subscription configured yet.
           </p>
-          {canUpdate ? (
-            <Button type="button" size="sm" onClick={onManageAccess}>
-              Manage Access
-            </Button>
-          ) : null}
         </CardContent>
       </Card>
     );
   }
 
   const subscription = access.subscription;
+  const billingSource = getBillingSource(access);
   const total = resolveSubscriptionTotal(subscription);
   const nextBilling = resolveNextBillingLabel(subscription);
   const billingPeriod = formatBillingPeriod(
@@ -125,10 +117,6 @@ export function SubscriptionOverviewSection({
   );
 
   const handleAction = (action: SubscriptionActionDefinition) => {
-    if (action.key === "CHANGE_PACKAGE") {
-      setChangePackageOpen(true);
-      return;
-    }
     onAction?.(action);
   };
 
@@ -149,7 +137,6 @@ export function SubscriptionOverviewSection({
             canUpdate={canUpdate}
             isLoading={actionBarLoading}
             onAction={handleAction}
-            onManageAccess={onManageAccess}
           />
         ) : null}
       </div>
@@ -180,6 +167,12 @@ export function SubscriptionOverviewSection({
                       : "Cannot access"}
                   </Badge>
                 ) : null}
+                <Badge variant="outline">
+                  Billing source: {formatBillingSource(billingSource)}
+                </Badge>
+                {billingSource === "STRIPE" ? (
+                  <Badge variant="secondary">Stripe managed</Badge>
+                ) : null}
               </div>
             </div>
           </CardHeader>
@@ -187,16 +180,6 @@ export function SubscriptionOverviewSection({
             {!subscription.planTierId ? (
               <div className="rounded-md border border-dashed p-3 text-sm">
                 <p className="text-muted-foreground">No plan tier assigned.</p>
-                {canUpdate ? (
-                  <Button
-                    type="button"
-                    variant="link"
-                    className="h-auto p-0"
-                    onClick={() => setChangePackageOpen(true)}
-                  >
-                    Assign Plan
-                  </Button>
-                ) : null}
               </div>
             ) : null}
 
@@ -224,6 +207,10 @@ export function SubscriptionOverviewSection({
               <OverviewField
                 label={nextBilling.label}
                 value={nextBilling.value}
+              />
+              <OverviewField
+                label="Billing source"
+                value={formatBillingSource(billingSource)}
               />
               <OverviewField
                 label="Payment method"
@@ -267,19 +254,6 @@ export function SubscriptionOverviewSection({
           </CardContent>
         </Card>
       </div>
-
-      {canUpdate ? (
-        <ChangePackageDialog
-          businessId={access.businessId}
-          access={access}
-          open={changePackageOpen}
-          onOpenChange={setChangePackageOpen}
-          onSuccess={() => {
-            setChangePackageOpen(false);
-            onPackageChanged?.();
-          }}
-        />
-      ) : null}
     </div>
   );
 }

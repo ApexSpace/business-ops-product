@@ -69,17 +69,53 @@ export function formatPaymentMethod(
 ): string {
   const labels: Record<SubscriptionPaymentMethod, string> = {
     STRIPE: "Stripe",
-    BANK_TRANSFER: "Bank Transfer",
+    BANK_TRANSFER: "Bank transfer",
     WISE: "Wise",
     PAYPAL: "PayPal",
     CASH: "Cash",
     JAZZCASH: "JazzCash",
     EASYPAISA: "EasyPaisa",
-    MANUAL_INVOICE: "Manual Invoice",
-    FREE_INTERNAL: "Free/Internal",
-    NOT_SELECTED: "Not Selected",
+    MANUAL_INVOICE: "Manual invoice",
+    FREE_INTERNAL: "Free internal",
+    NOT_SELECTED: "Not selected",
   };
   return labels[method] ?? method;
+}
+
+export type BillingSourceType =
+  | "STRIPE"
+  | "MANUAL"
+  | "INTERNAL"
+  | "NOT_SELECTED";
+
+export function formatBillingSource(
+  source?: BillingSourceType | string | null,
+): string {
+  switch (source) {
+    case "STRIPE":
+      return "Stripe managed";
+    case "MANUAL":
+      return "Manual billing";
+    case "INTERNAL":
+      return "Internal / free";
+    case "NOT_SELECTED":
+      return "Not selected";
+    default:
+      return "Not selected";
+  }
+}
+
+export function formatPaymentRecordSource(
+  source: BusinessSubscriptionPaymentSource,
+): string {
+  const labels: Record<BusinessSubscriptionPaymentSource, string> = {
+    ADMIN: "Admin",
+    SYSTEM: "System",
+    PUBLIC_SIGNUP: "Public signup",
+    WEBHOOK: "Stripe webhook",
+    IMPORT: "Import",
+  };
+  return labels[source] ?? source;
 }
 
 export function formatPaymentStatus(
@@ -189,14 +225,7 @@ export function formatPaymentDirection(
 export function formatPaymentSource(
   source: BusinessSubscriptionPaymentSource,
 ): string {
-  const labels: Record<BusinessSubscriptionPaymentSource, string> = {
-    ADMIN: "Admin",
-    SYSTEM: "System",
-    PUBLIC_SIGNUP: "Public signup",
-    WEBHOOK: "Webhook",
-    IMPORT: "Import",
-  };
-  return labels[source] ?? source;
+  return formatPaymentRecordSource(source);
 }
 
 const PAYMENT_RELATED_SUBSCRIPTION_EVENT_TYPES: BusinessSubscriptionEventType[] =

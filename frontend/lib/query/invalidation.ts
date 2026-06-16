@@ -170,6 +170,23 @@ export function invalidatePipelines(queryClient: QueryClient) {
   });
 }
 
+export function invalidateBusinessBilling(queryClient: QueryClient) {
+  return Promise.all([
+    queryClient.invalidateQueries({
+      queryKey: queryKeys.business.access(),
+    }),
+    queryClient.invalidateQueries({
+      queryKey: queryKeys.business.current(),
+    }),
+    queryClient.invalidateQueries({
+      queryKey: queryKeys.business.planOptions(),
+    }),
+    queryClient.invalidateQueries({
+      queryKey: ["business", "billing-invoices"],
+    }),
+  ]);
+}
+
 export function invalidateBusinessMembers(queryClient: QueryClient) {
   return queryClient.invalidateQueries({
     queryKey: ["business", "members"],

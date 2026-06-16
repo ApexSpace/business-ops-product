@@ -19,6 +19,7 @@ import { PrismaService } from '@app/core/database/prisma.service';
 import { BusinessRepository } from '@app/modules/platform/business/repositories/business.repository';
 import { BusinessAccessResolverService } from '@app/modules/platform/business/services/business-access-resolver.service';
 import { mapAccessBlockToAuthError } from '@app/modules/platform/business/utils/business-access-auth.util';
+import { canSelectBusinessWorkspace } from '@app/modules/platform/business/utils/business-workspace-access.util';
 import { BusinessMembershipRepository } from '@app/modules/platform/membership/repositories/business-membership.repository';
 import { JwtAccessPayload } from '../interfaces/jwt-payload.interface';
 import { PlatformMembershipRepository } from '../repositories/platform-membership.repository';
@@ -45,6 +46,7 @@ export interface AuthContextItem {
   /** Business opened via platform staff access (no direct membership). */
   viaPlatform?: boolean;
   canAccessWorkspace?: boolean;
+  canSelectWorkspace?: boolean;
   accessReasonCode?: string;
   accessReasonLabel?: string;
 }
@@ -511,6 +513,7 @@ export class AuthService {
           businessRole: membership?.role ?? BusinessMemberRole.ADMIN,
           viaPlatform: !membership,
           canAccessWorkspace: resolution.canAccessWorkspace,
+          canSelectWorkspace: canSelectBusinessWorkspace(business.status),
           accessReasonCode: resolution.reasonCode,
           accessReasonLabel: resolution.reasonLabel,
         });
@@ -528,6 +531,7 @@ export class AuthService {
         businessName: m.business.name,
         businessRole: m.role,
         canAccessWorkspace: resolution.canAccessWorkspace,
+        canSelectWorkspace: canSelectBusinessWorkspace(m.business.status),
         accessReasonCode: resolution.reasonCode,
         accessReasonLabel: resolution.reasonLabel,
       });
@@ -545,10 +549,10 @@ export class AuthService {
       return 'platform';
     }
 
-    const accessibleBusiness = contexts.find(
-      (c) => c.type === 'business' && c.canAccessWorkspace,
+    const selectableBusiness = contexts.find(
+      (c) => c.type === 'business' && c.canSelectWorkspace !== false,
     );
-    if (accessibleBusiness) {
+    if (selectableBusiness) {
       return 'business';
     }
 
@@ -569,7 +573,7 @@ export class AuthService {
     }
 
     const selected = contexts.find(
-      (c) => c.type === 'business' && c.canAccessWorkspace,
+      (c) => c.type === 'business' && c.canSelectWorkspace !== false,
     );
 
     if (!selected?.businessId) {
@@ -658,7 +662,10 @@ export class AuthService {
       );
     }
     const resolution = await this.accessResolver.resolveForBusiness(businessId);
-    if (!resolution.canAccessWorkspace) {
+    if (
+      !resolution.canAccessWorkspace &&
+      !canSelectBusinessWorkspace(business.status)
+    ) {
       const { code, message } = mapAccessBlockToAuthError(
         business.status,
         resolution.reasonCode,

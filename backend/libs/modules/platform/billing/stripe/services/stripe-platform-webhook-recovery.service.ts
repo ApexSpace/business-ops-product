@@ -11,7 +11,9 @@ import { WebhookEventsRepository } from '@app/modules/communications/conversatio
 /** Re-processes Stripe platform webhooks left in RECEIVED/FAILED when enqueue failed. */
 @Injectable()
 export class StripePlatformWebhookRecoveryService implements OnModuleInit {
-  private readonly logger = new Logger(StripePlatformWebhookRecoveryService.name);
+  private readonly logger = new Logger(
+    StripePlatformWebhookRecoveryService.name,
+  );
 
   constructor(
     private readonly prisma: PrismaService,
@@ -21,8 +23,9 @@ export class StripePlatformWebhookRecoveryService implements OnModuleInit {
 
   async onModuleInit(): Promise<void> {
     if (
-      (process.env.STRIPE_WEBHOOK_RECOVERY_ON_STARTUP ?? 'true').toLowerCase() ===
-      'false'
+      (
+        process.env.STRIPE_WEBHOOK_RECOVERY_ON_STARTUP ?? 'true'
+      ).toLowerCase() === 'false'
     ) {
       return;
     }
@@ -52,7 +55,9 @@ export class StripePlatformWebhookRecoveryService implements OnModuleInit {
       } catch (error) {
         const message =
           error instanceof Error ? error.message : 'Recovery failed';
-        this.logger.warn(`Stripe webhook recovery failed for ${event.id}: ${message}`);
+        this.logger.warn(
+          `Stripe webhook recovery failed for ${event.id}: ${message}`,
+        );
       }
     }
   }

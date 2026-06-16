@@ -21,6 +21,7 @@ import {
   BusinessSubscriptionPaymentRepository,
   CreateSubscriptionPaymentInput,
 } from '../repositories/business-subscription-payment.repository';
+import { STRIPE_MANAGED_MESSAGE } from '../utils/billing-source-action.util';
 
 @Injectable()
 export class BusinessSubscriptionPaymentService {
@@ -41,7 +42,9 @@ export class BusinessSubscriptionPaymentService {
 
     const paymentStatus =
       dto.paymentStatus ??
-      (dto.paidAt ? SubscriptionPaymentStatus.PAID : SubscriptionPaymentStatus.PENDING);
+      (dto.paidAt
+        ? SubscriptionPaymentStatus.PAID
+        : SubscriptionPaymentStatus.PENDING);
 
     return this.paymentRepository.create(
       {
@@ -85,6 +88,17 @@ export class BusinessSubscriptionPaymentService {
         ErrorCode.NOT_FOUND,
         'Payment not found',
         HttpStatus.NOT_FOUND,
+      );
+    }
+
+    if (
+      payment.source === BusinessSubscriptionPaymentSource.WEBHOOK ||
+      payment.externalProvider === 'stripe'
+    ) {
+      throw new AppException(
+        ErrorCode.BAD_REQUEST,
+        STRIPE_MANAGED_MESSAGE,
+        HttpStatus.BAD_REQUEST,
       );
     }
 
@@ -159,8 +173,7 @@ export class BusinessSubscriptionPaymentService {
         currency: original.currency,
         paymentMethod: original.paymentMethod,
         paymentStatus: SubscriptionPaymentStatus.REFUNDED,
-        paymentType:
-          dto.paymentType ?? BusinessSubscriptionPaymentType.REFUND,
+        paymentType: dto.paymentType ?? BusinessSubscriptionPaymentType.REFUND,
         billingCycle: original.billingCycle,
         direction: BusinessSubscriptionPaymentDirection.OUTGOING,
         source: BusinessSubscriptionPaymentSource.ADMIN,
@@ -196,7 +209,7 @@ export class BusinessSubscriptionPaymentService {
 
     return {
       items: items.map((row) => this.toDto(row)),
-      nextCursor: hasMore ? items[items.length - 1]?.id ?? null : null,
+      nextCursor: hasMore ? (items[items.length - 1]?.id ?? null) : null,
       hasMore,
     };
   }
@@ -206,7 +219,9 @@ export class BusinessSubscriptionPaymentService {
   }
 
   toDto(
-    row: Awaited<ReturnType<BusinessSubscriptionPaymentRepository['findById']>> &
+    row: Awaited<
+      ReturnType<BusinessSubscriptionPaymentRepository['findById']>
+    > &
       object,
   ): BusinessSubscriptionPaymentDto {
     return {

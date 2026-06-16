@@ -62,7 +62,9 @@ export class ConversationWebhookIngestionService {
     await this.applyWhatsAppDeliveryStatuses(buffered, { fromReplay: true });
   }
 
-  async ingestNormalizedInbound(inbound: NormalizedInboundMessage): Promise<void> {
+  async ingestNormalizedInbound(
+    inbound: NormalizedInboundMessage,
+  ): Promise<void> {
     await this.ingestInboundMessage(inbound, null);
   }
 
@@ -150,7 +152,10 @@ export class ConversationWebhookIngestionService {
         inbound.externalConversationId,
       );
 
-    const preview = previewFromMessageContent(inbound.text, inbound.attachments);
+    const preview = previewFromMessageContent(
+      inbound.text,
+      inbound.attachments,
+    );
     const messageAt = inbound.timestamp;
 
     if (!conversation) {
@@ -295,7 +300,10 @@ export class ConversationWebhookIngestionService {
       }
 
       const nextStatus = this.mapWhatsAppDeliveryStatus(status.status);
-      if (!nextStatus || !this.shouldApplyDeliveryStatus(message.status, nextStatus)) {
+      if (
+        !nextStatus ||
+        !this.shouldApplyDeliveryStatus(message.status, nextStatus)
+      ) {
         continue;
       }
 

@@ -10,7 +10,9 @@ export type SubscriptionActionKey =
   | 'CHANGE_PACKAGE'
   | 'CHANGE_SNAPSHOT'
   | 'SYNC_CAPABILITIES'
-  | 'MANUAL_ADJUSTMENT';
+  | 'MANUAL_ADJUSTMENT'
+  | 'OPEN_STRIPE_PORTAL'
+  | 'RESYNC_FROM_STRIPE';
 
 export type SubscriptionActionCategory =
   | 'recommended'

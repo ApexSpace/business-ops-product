@@ -131,10 +131,10 @@ export class SendMessageProcessor {
           conversationId: conversation.id,
           messageId: message.id,
           subject:
-            typeof (message.metadata as Record<string, unknown> | null)?.subject ===
-            'string'
-              ? ((message.metadata as Record<string, unknown>).subject as string)
-              : conversation.title ?? undefined,
+            typeof (message.metadata as Record<string, unknown> | null)
+              ?.subject === 'string'
+              ? (message.metadata as Record<string, unknown>).subject
+              : (conversation.title ?? undefined),
         },
       });
 
@@ -206,7 +206,9 @@ export class SendMessageProcessor {
     }
   }
 
-  private readAttachments(value: unknown): ChannelMessageAttachment[] | undefined {
+  private readAttachments(
+    value: unknown,
+  ): ChannelMessageAttachment[] | undefined {
     if (!Array.isArray(value) || value.length === 0) {
       return undefined;
     }

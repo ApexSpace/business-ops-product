@@ -37,6 +37,7 @@ const EVENT_TITLES: Partial<Record<BusinessSubscriptionEventType, string>> = {
   PAYMENT_REFUNDED: 'Payment refunded',
   PARTIAL_PAYMENT_RECORDED: 'Partial payment recorded',
   CANCELED: 'Subscription canceled',
+  CANCELLATION_SCHEDULED: 'Cancellation scheduled',
   EXPIRED: 'Subscription expired',
   REACTIVATED: 'Business reactivated',
   SUSPENDED: 'Business suspended',
@@ -92,19 +93,23 @@ export class BusinessSubscriptionEventService {
 
     if (!business) {
       return {
-        businessStatus: 'NOT_ACTIVE' as SubscriptionStateSnapshot['businessStatus'],
+        businessStatus:
+          'NOT_ACTIVE' as SubscriptionStateSnapshot['businessStatus'],
       };
     }
 
     const [resolution, effectiveCapabilities] = await Promise.all([
       this.accessResolver.resolveForBusiness(businessId),
-      this.effectiveCapabilitiesService.resolveEffectiveCapabilities(businessId),
+      this.effectiveCapabilitiesService.resolveEffectiveCapabilities(
+        businessId,
+      ),
     ]);
 
     const sub = business.subscription;
 
     return {
       businessStatus: business.status,
+      billingSource: sub?.billingSource ?? null,
       subscriptionStatus: sub?.status ?? null,
       paymentMethod: sub?.paymentMethod ?? null,
       paymentStatus: sub?.paymentStatus ?? null,
@@ -200,7 +205,7 @@ export class BusinessSubscriptionEventService {
 
     return {
       items: items.map((row) => this.toListItemDto(row)),
-      nextCursor: hasMore ? items[items.length - 1]?.id ?? null : null,
+      nextCursor: hasMore ? (items[items.length - 1]?.id ?? null) : null,
       hasMore,
     };
   }
@@ -239,12 +244,19 @@ export class BusinessSubscriptionEventService {
       notes: row.notes,
       planTierLabel: derivePlanTierLabel(fromState, toState),
       statusTransition: deriveStatusTransition(fromState, toState),
-      paymentSnippet: derivePaymentSnippet(row.eventType, row.paymentId, fromState, toState),
+      paymentSnippet: derivePaymentSnippet(
+        row.eventType,
+        row.paymentId,
+        fromState,
+        toState,
+      ),
       createdAt: row.createdAt,
     };
   }
 
-  private toDetailDto(row: BusinessSubscriptionEvent): BusinessSubscriptionEventDetailDto {
+  private toDetailDto(
+    row: BusinessSubscriptionEvent,
+  ): BusinessSubscriptionEventDetailDto {
     return {
       id: row.id,
       businessId: row.businessId,

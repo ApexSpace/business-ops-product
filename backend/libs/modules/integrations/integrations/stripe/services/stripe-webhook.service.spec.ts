@@ -1,4 +1,8 @@
-import { Prisma, WebhookEventProvider, WebhookEventStatus } from '@prisma/client';
+import {
+  Prisma,
+  WebhookEventProvider,
+  WebhookEventStatus,
+} from '@prisma/client';
 import { StripeWebhookService } from './stripe-webhook.service';
 
 describe('StripeWebhookService ingress dedup', () => {

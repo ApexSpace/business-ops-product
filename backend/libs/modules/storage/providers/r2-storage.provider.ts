@@ -74,7 +74,9 @@ export class R2StorageProvider {
     return { uploadUrl, expiresIn };
   }
 
-  async createSignedDownloadUrl(objectKey: string): Promise<SignedDownloadResult> {
+  async createSignedDownloadUrl(
+    objectKey: string,
+  ): Promise<SignedDownloadResult> {
     const { client, config } = this.requireClient();
     const expiresIn = config.signedDownloadExpiresSeconds;
 

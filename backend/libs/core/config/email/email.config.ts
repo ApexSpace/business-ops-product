@@ -22,8 +22,7 @@ export function resolveEmailConfig(
 ): EmailConfig {
   const sendingDomain =
     env.RESEND_SENDING_DOMAIN?.trim() || 'notify.codesoltech.com';
-  const inboundDomain =
-    env.RESEND_INBOUND_DOMAIN?.trim() || sendingDomain;
+  const inboundDomain = env.RESEND_INBOUND_DOMAIN?.trim() || sendingDomain;
 
   return {
     enabled: (env.EMAIL_ENABLED ?? 'false').toLowerCase() === 'true',

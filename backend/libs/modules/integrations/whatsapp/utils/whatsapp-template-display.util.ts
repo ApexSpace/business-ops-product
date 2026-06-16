@@ -7,7 +7,11 @@ export function buildWhatsAppTemplateDisplayText(
   const parameterTexts: string[] = [];
 
   for (const component of template.components ?? []) {
-    if (!component || typeof component !== 'object' || Array.isArray(component)) {
+    if (
+      !component ||
+      typeof component !== 'object' ||
+      Array.isArray(component)
+    ) {
       continue;
     }
 
@@ -21,7 +25,11 @@ export function buildWhatsAppTemplateDisplayText(
     }
 
     for (const parameter of record.parameters) {
-      if (!parameter || typeof parameter !== 'object' || Array.isArray(parameter)) {
+      if (
+        !parameter ||
+        typeof parameter !== 'object' ||
+        Array.isArray(parameter)
+      ) {
         continue;
       }
       const text = (parameter as Record<string, unknown>).text;

@@ -1,5 +1,9 @@
 import { api } from "@/lib/api/client";
 import type {
+  BusinessBillingInvoicesResult,
+  ListBusinessBillingInvoicesQuery,
+} from "@/features/settings/api/business-billing.api";
+import type {
   BusinessAccess,
   BusinessCapabilityAssignment,
   UpdateBusinessAccessInput,
@@ -186,6 +190,21 @@ export function getPlatformBusinessSubscriptionEvent(
   );
 }
 
+export function listPlatformBusinessBillingInvoices(
+  businessId: string,
+  query: ListBusinessBillingInvoicesQuery = {},
+) {
+  return api.get<BusinessBillingInvoicesResult>(
+    `platform/businesses/${businessId}/billing/invoices`,
+    {
+      searchParams: query as Record<
+        string,
+        string | number | boolean | undefined | null
+      >,
+    },
+  );
+}
+
 export function listPlatformBusinessSubscriptionPayments(
   businessId: string,
   query?: ListSubscriptionPaymentsQuery,
@@ -247,6 +266,20 @@ export function refundPlatformBusinessSubscriptionPayment(
 export function listPlatformBusinessCapabilities(businessId: string) {
   return api.get<BusinessCapabilityAssignment[]>(
     `platform/businesses/${businessId}/capabilities`,
+  );
+}
+
+export function createPlatformBusinessPortalSession(businessId: string) {
+  return api.post<{ url: string }>(
+    `platform/businesses/${businessId}/billing/stripe/portal-session`,
+    {},
+  );
+}
+
+export function resyncPlatformBusinessFromStripe(businessId: string) {
+  return api.post<BusinessAccess>(
+    `platform/businesses/${businessId}/billing/stripe/resync`,
+    {},
   );
 }
 

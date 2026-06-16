@@ -27,6 +27,7 @@ import { BusinessSubscriptionActionService } from './services/business-subscript
 import { BusinessSubscriptionEventService } from './services/business-subscription-event.service';
 import { BusinessSubscriptionPaymentService } from './services/business-subscription-payment.service';
 import { BusinessBillingService } from './services/business-billing.service';
+import { BusinessBillingInvoicesService } from './services/business-billing-invoices.service';
 
 @Module({
   imports: [
@@ -62,6 +63,7 @@ import { BusinessBillingService } from './services/business-billing.service';
     BusinessSubscriptionActionAvailabilityService,
     BusinessSubscriptionActionService,
     BusinessBillingService,
+    BusinessBillingInvoicesService,
   ],
   exports: [
     BusinessRepository,
@@ -77,6 +79,8 @@ import { BusinessBillingService } from './services/business-billing.service';
     BusinessSubscriptionPaymentService,
     BusinessSubscriptionPaymentRepository,
     FinancialSettingsService,
+    BusinessBillingService,
+    BusinessBillingInvoicesService,
   ],
 })
 export class BusinessModule {}

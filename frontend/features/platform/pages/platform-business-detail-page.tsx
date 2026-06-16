@@ -2,7 +2,6 @@
 
 import { PageHeader } from "@/components/layout/page-header";
 import { StatusBadge } from "@/components/data-display/status-badge";
-import { PlatformBusinessAccessTab } from "@/features/platform/components/platform-business-access-tab";
 import { PlatformBusinessAuditTab } from "@/features/platform/components/platform-business-audit-tab";
 import { PlatformBusinessPaymentsTab } from "@/features/platform/components/platform-business-payments-tab";
 import { PlatformBusinessSubscriptionsTab } from "@/features/platform/components/platform-business-subscriptions-tab";
@@ -41,8 +40,6 @@ function renderTabContent(
     canUpdate,
     canSetOwner,
     openPaymentsTab,
-    paymentsAutoOpen,
-    setActiveTab,
     accessLoading,
   } = props;
 
@@ -58,14 +55,6 @@ function renderTabContent(
           utilizationLoading={utilizationLoading}
         />
       );
-    case "access":
-      return (
-        <PlatformBusinessAccessTab
-          business={business}
-          canUpdate={canUpdate}
-          onNavigateToPayments={openPaymentsTab}
-        />
-      );
     case "subscriptions":
       return (
         <PlatformBusinessSubscriptionsTab
@@ -73,18 +62,12 @@ function renderTabContent(
           access={access}
           accessLoading={accessLoading}
           canUpdate={canUpdate}
-          onManageAccess={() => setActiveTab("access")}
           onRecordPayment={() => openPaymentsTab({ recordPayment: true })}
         />
       );
     case "payments":
       return (
-        <PlatformBusinessPaymentsTab
-          businessId={id}
-          canUpdate={canUpdate}
-          autoOpenRecord={paymentsAutoOpen}
-          onAutoOpenConsumed={() => setActiveTab("payments")}
-        />
+        <PlatformBusinessPaymentsTab businessId={id} />
       );
     case "profile":
       return (

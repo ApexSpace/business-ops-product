@@ -16,7 +16,9 @@ import { WhatsAppNumbersService } from '../services/whatsapp-numbers.service';
 @Controller('integrations/business/whatsapp')
 @UseGuards(BusinessRolesGuard)
 export class BusinessWhatsAppController {
-  constructor(private readonly whatsAppNumbersService: WhatsAppNumbersService) {}
+  constructor(
+    private readonly whatsAppNumbersService: WhatsAppNumbersService,
+  ) {}
 
   @Get('overview')
   @BusinessRoles(

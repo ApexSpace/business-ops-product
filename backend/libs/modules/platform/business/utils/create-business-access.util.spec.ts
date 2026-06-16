@@ -37,7 +37,10 @@ describe('resolveCreateBusinessAccess', () => {
       paymentStatus: SubscriptionPaymentStatus.NOT_REQUIRED,
       paymentMethod: SubscriptionPaymentMethod.NOT_SELECTED,
       recordInitialPayment: false,
+      currentPeriodStart: expect.any(String),
+      currentPeriodEnd: '2026-06-24',
     });
+    expect(result?.billingCycle).toBeUndefined();
   });
 
   it('maps pending payment access mode', () => {
@@ -48,6 +51,7 @@ describe('resolveCreateBusinessAccess', () => {
     });
 
     expect(result).toMatchObject({
+      status: 'ACTIVE',
       subscriptionStatus: SubscriptionStatus.PENDING_PAYMENT,
       paymentStatus: SubscriptionPaymentStatus.PENDING,
       paymentMethod: SubscriptionPaymentMethod.MANUAL_INVOICE,

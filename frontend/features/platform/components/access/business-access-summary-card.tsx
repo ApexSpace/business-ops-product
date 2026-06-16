@@ -12,9 +12,11 @@ import {
 } from "@/components/ui/tooltip";
 import type { BusinessAccess } from "@/features/platform/types/business-access";
 import {
+  formatBillingSource,
   formatNeedsAttentionFlag,
   formatPaymentMethod,
 } from "@/features/platform/utils/access-labels";
+import { getBillingSource } from "@/features/platform/utils/business-subscription-actions";
 
 function formatDate(value?: string | null): string {
   if (!value) return "—";
@@ -41,6 +43,7 @@ export function BusinessAccessSummaryCard({
   if (!resolution) return null;
 
   const sub = access.subscription;
+  const billingSource = getBillingSource(access as BusinessAccess);
   const activeCapabilities =
     resolution.effectiveCapabilities.length ||
     access.capabilities.filter((c) => c.status === "ACTIVE").length;
@@ -94,6 +97,9 @@ export function BusinessAccessSummaryCard({
             <span className="text-sm">
               {sub?.amount ? `${sub.amount} ${sub.currency ?? ""}`.trim() : "—"}
             </span>
+          </SummaryItem>
+          <SummaryItem label="Billing source">
+            <span className="text-sm">{formatBillingSource(billingSource)}</span>
           </SummaryItem>
           <SummaryItem label="Payment method">
             <span className="text-sm">

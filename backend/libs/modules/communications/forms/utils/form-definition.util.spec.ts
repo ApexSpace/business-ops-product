@@ -6,9 +6,13 @@ import {
 
 describe('form-definition.util', () => {
   it('sanitizes corrupt top-level field arrays', () => {
-    expect(sanitizeFormFields([[], [], { id: 'f1', type: 'email', label: 'E', name: 'e' }])).toEqual([
-      { id: 'f1', type: 'email', label: 'E', name: 'e' },
-    ]);
+    expect(
+      sanitizeFormFields([
+        [],
+        [],
+        { id: 'f1', type: 'email', label: 'E', name: 'e' },
+      ]),
+    ).toEqual([{ id: 'f1', type: 'email', label: 'E', name: 'e' }]);
   });
 
   it('sanitizes nested column fields', () => {
@@ -18,20 +22,14 @@ describe('form-definition.util', () => {
         type: 'columns',
         label: 'Columns',
         name: 'columns',
-        columns: [
-          [{ id: 'f1', type: 'text', label: 'A', name: 'a' }],
-          [],
-        ],
+        columns: [[{ id: 'f1', type: 'text', label: 'A', name: 'a' }], []],
       },
     ]);
 
     expect(fields).toHaveLength(1);
     expect(fields[0]).toMatchObject({
       type: 'columns',
-      columns: [
-        [{ id: 'f1', type: 'text', label: 'A', name: 'a' }],
-        [],
-      ],
+      columns: [[{ id: 'f1', type: 'text', label: 'A', name: 'a' }], []],
     });
   });
 
@@ -49,7 +47,13 @@ describe('form-definition.util', () => {
 
   it('keeps valid field rows with id, type, and label', () => {
     const fields = sanitizeFormFields([
-      { id: 'f1', type: 'heading', label: 'Welcome', name: 'welcome', content: 'Hi' },
+      {
+        id: 'f1',
+        type: 'heading',
+        label: 'Welcome',
+        name: 'welcome',
+        content: 'Hi',
+      },
       { id: 'f2', type: 'email', label: 'Email', name: 'email' },
       { id: 'f3', type: 'select', label: 'Pick', name: 'pick', options: [] },
     ]);

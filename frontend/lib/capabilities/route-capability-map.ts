@@ -64,6 +64,7 @@ const CORE_SAFE_PREFIXES = [
   "/business/dashboard",
   "/business/settings/profile",
   "/business/settings/billing",
+  "/business/billing",
   "/business/settings/team",
   "/business/settings/notifications",
   "/business/settings/appearance",

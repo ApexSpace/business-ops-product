@@ -1,9 +1,7 @@
 import { ConversationChannel, ConversationStatus } from '@prisma/client';
 import { groupConversationsIntoUnifiedThreads } from './unified-threads.util';
 
-function conversation(
-  overrides: Record<string, unknown> = {},
-) {
+function conversation(overrides: Record<string, unknown> = {}) {
   return {
     id: 'conv-1',
     businessId: 'biz-1',

@@ -18,7 +18,9 @@ export class StripePlatformPlanMappingService {
     }
     const root = metadata as Record<string, unknown>;
     const stripe =
-      root.stripe && typeof root.stripe === 'object' && !Array.isArray(root.stripe)
+      root.stripe &&
+      typeof root.stripe === 'object' &&
+      !Array.isArray(root.stripe)
         ? (root.stripe as Record<string, unknown>)
         : null;
     if (!stripe) return null;
@@ -125,8 +127,8 @@ export class StripePlatformPlanMappingService {
 
     if (!priceId) {
       throw new AppException(
-        ErrorCode.BAD_REQUEST,
-        `No Stripe price configured for ${billingCycle} billing on this tier`,
+        ErrorCode.MISSING_STRIPE_MAPPING,
+        'This plan is not connected to Stripe yet.',
         HttpStatus.BAD_REQUEST,
       );
     }

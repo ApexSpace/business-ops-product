@@ -16,7 +16,11 @@ import { RequestUser } from '@app/common/decorators/current-user.decorator';
 import { AppException } from '@app/common/exceptions/app.exception';
 import { ErrorCode } from '@app/common/exceptions/error-code.enum';
 import { PrismaService } from '@app/core/database/prisma.service';
-import { BusinessAccessDto, ExtendTrialDto, UpdateBusinessAccessDto } from '../dto/business-access.dto';
+import {
+  BusinessAccessDto,
+  ExtendTrialDto,
+  UpdateBusinessAccessDto,
+} from '../dto/business-access.dto';
 import {
   ChangePackageActionDto,
   ChangeSnapshotActionDto,
@@ -48,6 +52,10 @@ import {
   assertTierPriceOrCustomAmount,
 } from '../utils/subscription-billing-validation.util';
 import { StripePlatformSubscriptionService } from '@app/modules/platform/billing/stripe/services/stripe-platform-subscription.service';
+import {
+  STRIPE_MANAGED_MESSAGE,
+  getStripeControlledFieldsInUpdate,
+} from '../utils/billing-source-action.util';
 
 type ActionResult = BusinessAccessDto & { correlationId?: string };
 
@@ -64,13 +72,46 @@ export class BusinessSubscriptionActionService {
     private readonly stripeSubscriptionService: StripePlatformSubscriptionService,
   ) {}
 
+  private async rejectStripeManagedBilling(businessId: string): Promise<void> {
+    const subscription = await this.prisma.businessSubscription.findUnique({
+      where: { businessId },
+      select: { billingSource: true },
+    });
+    if (subscription?.billingSource === SubscriptionBillingSource.STRIPE) {
+      throw new AppException(
+        ErrorCode.BAD_REQUEST,
+        STRIPE_MANAGED_MESSAGE,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+  }
+
+  private async rejectInternalBillingPaymentActions(
+    businessId: string,
+  ): Promise<void> {
+    const subscription = await this.prisma.businessSubscription.findUnique({
+      where: { businessId },
+      select: { billingSource: true },
+    });
+    if (subscription?.billingSource === SubscriptionBillingSource.INTERNAL) {
+      throw new AppException(
+        ErrorCode.BAD_REQUEST,
+        'Payment actions are not available for internal subscriptions',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+  }
+
   async previewAction(
     businessId: string,
     dto: PreviewActionDto,
   ): Promise<PreviewActionResultDto> {
-    const actionKey = dto.actionKey as SubscriptionActionKey;
+    const actionKey = dto.actionKey;
     const beforeState = await this.eventService.captureState(businessId);
-    const action = this.availabilityService.resolveAction(actionKey, beforeState);
+    const action = this.availabilityService.resolveAction(
+      actionKey,
+      beforeState,
+    );
 
     if (!action.visible || !action.enabled) {
       return {
@@ -110,6 +151,9 @@ export class BusinessSubscriptionActionService {
     dto: MarkPaidDto,
     actor: RequestUser,
   ): Promise<ActionResult> {
+    await this.rejectStripeManagedBilling(businessId);
+    await this.rejectInternalBillingPaymentActions(businessId);
+
     if (dto.skipPaymentRecord) {
       if (!dto.reason?.trim() || !dto.notes?.trim()) {
         throw new AppException(
@@ -146,75 +190,90 @@ export class BusinessSubscriptionActionService {
       );
     }
 
-    return this.executeAction(businessId, 'MARK_PAID', actor, async (tx, correlationId, before) => {
-      const update: UpdateBusinessAccessDto = {
-        businessStatus: BusinessStatus.ACTIVE,
-        subscriptionStatus: SubscriptionStatus.ACTIVE,
-        paymentStatus: SubscriptionPaymentStatus.PAID,
-        paymentMethod: dto.paymentMethod ?? SubscriptionPaymentMethod.MANUAL_INVOICE,
-      };
+    return this.executeAction(
+      businessId,
+      'MARK_PAID',
+      actor,
+      async (tx, correlationId, before) => {
+        const update: UpdateBusinessAccessDto = {
+          businessStatus: BusinessStatus.ACTIVE,
+          subscriptionStatus: SubscriptionStatus.ACTIVE,
+          paymentStatus: SubscriptionPaymentStatus.PAID,
+          paymentMethod:
+            dto.paymentMethod ?? SubscriptionPaymentMethod.MANUAL_INVOICE,
+        };
 
-      await this.accessService.updateAccessInternal(tx, businessId, update, actor, {
-        skipAudit: true,
-      });
-
-      let paymentId: string | null = null;
-      if (!dto.skipPaymentRecord && amount != null) {
-        const payment = await this.paymentService.recordPayment(
+        await this.accessService.updateAccessInternal(
           tx,
           businessId,
+          update,
+          actor,
           {
-            amount,
-            currency,
-            paymentMethod: dto.paymentMethod ?? SubscriptionPaymentMethod.MANUAL_INVOICE,
-            paymentStatus: SubscriptionPaymentStatus.PAID,
-            paymentType: BusinessSubscriptionPaymentType.SUBSCRIPTION,
-            billingCycle,
-            periodStart:
-              dto.periodStart ??
-              subscription?.currentPeriodStart?.toISOString().slice(0, 10),
-            periodEnd:
-              dto.periodEnd ??
-              subscription?.currentPeriodEnd?.toISOString().slice(0, 10),
-            paidAt: dto.paidAt ?? new Date().toISOString(),
-            paymentReference: dto.paymentReference,
-            notes: dto.notes,
+            skipAudit: true,
           },
+        );
+
+        let paymentId: string | null = null;
+        if (!dto.skipPaymentRecord && amount != null) {
+          const payment = await this.paymentService.recordPayment(
+            tx,
+            businessId,
+            {
+              amount,
+              currency,
+              paymentMethod:
+                dto.paymentMethod ?? SubscriptionPaymentMethod.MANUAL_INVOICE,
+              paymentStatus: SubscriptionPaymentStatus.PAID,
+              paymentType: BusinessSubscriptionPaymentType.SUBSCRIPTION,
+              billingCycle,
+              periodStart:
+                dto.periodStart ??
+                subscription?.currentPeriodStart?.toISOString().slice(0, 10),
+              periodEnd:
+                dto.periodEnd ??
+                subscription?.currentPeriodEnd?.toISOString().slice(0, 10),
+              paidAt: dto.paidAt ?? new Date().toISOString(),
+              paymentReference: dto.paymentReference,
+              notes: dto.notes,
+            },
+            actor,
+          );
+          paymentId = payment.id;
+        }
+
+        const after = await this.eventService.captureState(businessId, tx);
+        const sub = await tx.businessSubscription.findUnique({
+          where: { businessId },
+        });
+
+        await this.eventService.createCorrelatedEvents(
+          tx,
+          correlationId,
+          [
+            {
+              businessId,
+              subscriptionId: sub?.id,
+              eventType: BusinessSubscriptionEventType.PAYMENT_MARKED_PAID,
+              actionKey: 'MARK_PAID',
+              paymentId,
+              fromState: before,
+              toState: after,
+              reason: dto.reason,
+              notes: dto.notes,
+            },
+            {
+              businessId,
+              subscriptionId: sub?.id,
+              eventType: BusinessSubscriptionEventType.STATUS_CHANGED,
+              actionKey: 'MARK_PAID',
+              fromState: before,
+              toState: after,
+            },
+          ],
           actor,
         );
-        paymentId = payment.id;
-      }
-
-      const after = await this.eventService.captureState(businessId, tx);
-      const sub = await tx.businessSubscription.findUnique({ where: { businessId } });
-
-      await this.eventService.createCorrelatedEvents(
-        tx,
-        correlationId,
-        [
-          {
-            businessId,
-            subscriptionId: sub?.id,
-            eventType: BusinessSubscriptionEventType.PAYMENT_MARKED_PAID,
-            actionKey: 'MARK_PAID',
-            paymentId,
-            fromState: before as unknown as Prisma.InputJsonValue,
-            toState: after as unknown as Prisma.InputJsonValue,
-            reason: dto.reason,
-            notes: dto.notes,
-          },
-          {
-            businessId,
-            subscriptionId: sub?.id,
-            eventType: BusinessSubscriptionEventType.STATUS_CHANGED,
-            actionKey: 'MARK_PAID',
-            fromState: before as unknown as Prisma.InputJsonValue,
-            toState: after as unknown as Prisma.InputJsonValue,
-          },
-        ],
-        actor,
-      );
-    });
+      },
+    );
   }
 
   async recordPayment(
@@ -222,47 +281,62 @@ export class BusinessSubscriptionActionService {
     dto: RecordPaymentDto,
     actor: RequestUser,
   ): Promise<ActionResult> {
-    return this.executeAction(businessId, 'RECORD_PAYMENT', actor, async (tx, correlationId, before) => {
-      const payment = await this.paymentService.recordPayment(tx, businessId, dto, actor);
+    await this.rejectStripeManagedBilling(businessId);
+    await this.rejectInternalBillingPaymentActions(businessId);
 
-      if (dto.activateSubscription) {
-        await this.accessService.updateAccessInternal(
+    return this.executeAction(
+      businessId,
+      'RECORD_PAYMENT',
+      actor,
+      async (tx, correlationId, before) => {
+        const payment = await this.paymentService.recordPayment(
           tx,
           businessId,
+          dto,
+          actor,
+        );
+
+        if (dto.activateSubscription) {
+          await this.accessService.updateAccessInternal(
+            tx,
+            businessId,
+            {
+              businessStatus: BusinessStatus.ACTIVE,
+              subscriptionStatus: SubscriptionStatus.ACTIVE,
+              paymentStatus: SubscriptionPaymentStatus.PAID,
+              paymentMethod: dto.paymentMethod,
+            },
+            actor,
+            { skipAudit: true },
+          );
+        }
+
+        const after = await this.eventService.captureState(businessId, tx);
+        const sub = await tx.businessSubscription.findUnique({
+          where: { businessId },
+        });
+        const eventType =
+          dto.paymentStatus === SubscriptionPaymentStatus.PARTIALLY_PAID
+            ? BusinessSubscriptionEventType.PARTIAL_PAYMENT_RECORDED
+            : BusinessSubscriptionEventType.PAYMENT_MARKED_PAID;
+
+        await this.eventService.createEvent(
+          tx,
           {
-            businessStatus: BusinessStatus.ACTIVE,
-            subscriptionStatus: SubscriptionStatus.ACTIVE,
-            paymentStatus: SubscriptionPaymentStatus.PAID,
-            paymentMethod: dto.paymentMethod,
+            businessId,
+            subscriptionId: sub?.id,
+            eventType,
+            actionKey: 'RECORD_PAYMENT',
+            paymentId: payment.id,
+            correlationId,
+            fromState: before,
+            toState: after,
+            notes: dto.notes,
           },
           actor,
-          { skipAudit: true },
         );
-      }
-
-      const after = await this.eventService.captureState(businessId, tx);
-      const sub = await tx.businessSubscription.findUnique({ where: { businessId } });
-      const eventType =
-        dto.paymentStatus === SubscriptionPaymentStatus.PARTIALLY_PAID
-          ? BusinessSubscriptionEventType.PARTIAL_PAYMENT_RECORDED
-          : BusinessSubscriptionEventType.PAYMENT_MARKED_PAID;
-
-      await this.eventService.createEvent(
-        tx,
-        {
-          businessId,
-          subscriptionId: sub?.id,
-          eventType,
-          actionKey: 'RECORD_PAYMENT',
-          paymentId: payment.id,
-          correlationId,
-          fromState: before as unknown as Prisma.InputJsonValue,
-          toState: after as unknown as Prisma.InputJsonValue,
-          notes: dto.notes,
-        },
-        actor,
-      );
-    });
+      },
+    );
   }
 
   async moveToPendingPayment(
@@ -270,57 +344,69 @@ export class BusinessSubscriptionActionService {
     actor: RequestUser,
     reason?: string,
   ): Promise<ActionResult> {
-    return this.executeAction(businessId, 'MOVE_PENDING', actor, async (tx, correlationId, before) => {
-      const sub = await tx.businessSubscription.findUnique({ where: { businessId } });
-      if (sub?.status === SubscriptionStatus.PENDING_PAYMENT) {
-        throw new AppException(
-          ErrorCode.BAD_REQUEST,
-          'Already pending payment',
-          HttpStatus.BAD_REQUEST,
+    await this.rejectStripeManagedBilling(businessId);
+    await this.rejectInternalBillingPaymentActions(businessId);
+
+    return this.executeAction(
+      businessId,
+      'MOVE_PENDING',
+      actor,
+      async (tx, correlationId, before) => {
+        const sub = await tx.businessSubscription.findUnique({
+          where: { businessId },
+        });
+        if (sub?.status === SubscriptionStatus.PENDING_PAYMENT) {
+          throw new AppException(
+            ErrorCode.BAD_REQUEST,
+            'Already pending payment',
+            HttpStatus.BAD_REQUEST,
+          );
+        }
+
+        await this.accessService.updateAccessInternal(
+          tx,
+          businessId,
+          {
+            businessStatus: BusinessStatus.ACTIVE,
+            subscriptionStatus: SubscriptionStatus.PENDING_PAYMENT,
+            paymentMethod: SubscriptionPaymentMethod.MANUAL_INVOICE,
+            paymentStatus: SubscriptionPaymentStatus.PENDING,
+          },
+          actor,
+          { skipAudit: true },
         );
-      }
 
-      await this.accessService.updateAccessInternal(
-        tx,
-        businessId,
-        {
-          businessStatus: BusinessStatus.NOT_ACTIVE,
-          subscriptionStatus: SubscriptionStatus.PENDING_PAYMENT,
-          paymentMethod: SubscriptionPaymentMethod.MANUAL_INVOICE,
-          paymentStatus: SubscriptionPaymentStatus.PENDING,
-        },
-        actor,
-        { skipAudit: true },
-      );
+        const after = await this.eventService.captureState(businessId, tx);
+        const subscription = await tx.businessSubscription.findUnique({
+          where: { businessId },
+        });
 
-      const after = await this.eventService.captureState(businessId, tx);
-      const subscription = await tx.businessSubscription.findUnique({ where: { businessId } });
-
-      await this.eventService.createCorrelatedEvents(
-        tx,
-        correlationId,
-        [
-          {
-            businessId,
-            subscriptionId: subscription?.id,
-            eventType: BusinessSubscriptionEventType.PAYMENT_PENDING,
-            actionKey: 'MOVE_PENDING',
-            fromState: before as unknown as Prisma.InputJsonValue,
-            toState: after as unknown as Prisma.InputJsonValue,
-            reason,
-          },
-          {
-            businessId,
-            subscriptionId: subscription?.id,
-            eventType: BusinessSubscriptionEventType.STATUS_CHANGED,
-            actionKey: 'MOVE_PENDING',
-            fromState: before as unknown as Prisma.InputJsonValue,
-            toState: after as unknown as Prisma.InputJsonValue,
-          },
-        ],
-        actor,
-      );
-    });
+        await this.eventService.createCorrelatedEvents(
+          tx,
+          correlationId,
+          [
+            {
+              businessId,
+              subscriptionId: subscription?.id,
+              eventType: BusinessSubscriptionEventType.PAYMENT_PENDING,
+              actionKey: 'MOVE_PENDING',
+              fromState: before,
+              toState: after,
+              reason,
+            },
+            {
+              businessId,
+              subscriptionId: subscription?.id,
+              eventType: BusinessSubscriptionEventType.STATUS_CHANGED,
+              actionKey: 'MOVE_PENDING',
+              fromState: before,
+              toState: after,
+            },
+          ],
+          actor,
+        );
+      },
+    );
   }
 
   async extendTrial(
@@ -328,58 +414,68 @@ export class BusinessSubscriptionActionService {
     dto: ExtendTrialDto,
     actor: RequestUser,
   ): Promise<ActionResult> {
-    return this.executeAction(businessId, 'EXTEND_TRIAL', actor, async (tx, correlationId, before) => {
-      const subscription = await tx.businessSubscription.findUnique({
-        where: { businessId },
-      });
+    await this.rejectStripeManagedBilling(businessId);
+    await this.rejectInternalBillingPaymentActions(businessId);
 
-      let periodEnd: Date;
-      if (dto.currentPeriodEnd) {
-        periodEnd = new Date(dto.currentPeriodEnd);
-      } else {
-        const days = dto.days ?? 14;
-        const base = subscription?.currentPeriodEnd ?? new Date();
-        periodEnd = new Date(base);
-        periodEnd.setDate(periodEnd.getDate() + days);
-      }
+    return this.executeAction(
+      businessId,
+      'EXTEND_TRIAL',
+      actor,
+      async (tx, correlationId, before) => {
+        const subscription = await tx.businessSubscription.findUnique({
+          where: { businessId },
+        });
 
-      const update: UpdateBusinessAccessDto = {
-        businessStatus: BusinessStatus.ACTIVE,
-        subscriptionStatus: SubscriptionStatus.TRIALING,
-        paymentMethod: SubscriptionPaymentMethod.NOT_SELECTED,
-        paymentStatus: SubscriptionPaymentStatus.NOT_REQUIRED,
-        currentPeriodEnd: periodEnd.toISOString().slice(0, 10),
-      };
+        let periodEnd: Date;
+        if (dto.currentPeriodEnd) {
+          periodEnd = new Date(dto.currentPeriodEnd);
+        } else {
+          const days = dto.days ?? 14;
+          const base = subscription?.currentPeriodEnd ?? new Date();
+          periodEnd = new Date(base);
+          periodEnd.setDate(periodEnd.getDate() + days);
+        }
 
-      if (!subscription?.currentPeriodStart) {
-        update.currentPeriodStart = new Date().toISOString().slice(0, 10);
-      }
+        const update: UpdateBusinessAccessDto = {
+          businessStatus: BusinessStatus.ACTIVE,
+          subscriptionStatus: SubscriptionStatus.TRIALING,
+          paymentMethod: SubscriptionPaymentMethod.NOT_SELECTED,
+          paymentStatus: SubscriptionPaymentStatus.NOT_REQUIRED,
+          currentPeriodEnd: periodEnd.toISOString().slice(0, 10),
+        };
 
-      await this.accessService.updateAccessInternal(
-        tx,
-        businessId,
-        update,
-        actor,
-        { skipAudit: true },
-      );
+        if (!subscription?.currentPeriodStart) {
+          update.currentPeriodStart = new Date().toISOString().slice(0, 10);
+        }
 
-      const after = await this.eventService.captureState(businessId, tx);
-      const sub = await tx.businessSubscription.findUnique({ where: { businessId } });
-
-      await this.eventService.createEvent(
-        tx,
-        {
+        await this.accessService.updateAccessInternal(
+          tx,
           businessId,
-          subscriptionId: sub?.id,
-          eventType: BusinessSubscriptionEventType.TRIAL_EXTENDED,
-          actionKey: 'EXTEND_TRIAL',
-          correlationId,
-          fromState: before as unknown as Prisma.InputJsonValue,
-          toState: after as unknown as Prisma.InputJsonValue,
-        },
-        actor,
-      );
-    });
+          update,
+          actor,
+          { skipAudit: true },
+        );
+
+        const after = await this.eventService.captureState(businessId, tx);
+        const sub = await tx.businessSubscription.findUnique({
+          where: { businessId },
+        });
+
+        await this.eventService.createEvent(
+          tx,
+          {
+            businessId,
+            subscriptionId: sub?.id,
+            eventType: BusinessSubscriptionEventType.TRIAL_EXTENDED,
+            actionKey: 'EXTEND_TRIAL',
+            correlationId,
+            fromState: before,
+            toState: after,
+          },
+          actor,
+        );
+      },
+    );
   }
 
   async cancelSubscription(
@@ -417,8 +513,8 @@ export class BusinessSubscriptionActionService {
                 eventType: BusinessSubscriptionEventType.STATUS_CHANGED,
                 actionKey: 'CANCEL_SUBSCRIPTION',
                 correlationId,
-                fromState: before as unknown as Prisma.InputJsonValue,
-                toState: after as unknown as Prisma.InputJsonValue,
+                fromState: before,
+                toState: after,
                 reason,
                 notes: 'Stripe cancel at period end scheduled',
               },
@@ -429,90 +525,114 @@ export class BusinessSubscriptionActionService {
       }
     }
 
-    return this.executeAction(businessId, 'CANCEL_SUBSCRIPTION', actor, async (tx, correlationId, before) => {
-      const sub = await tx.businessSubscription.findUnique({ where: { businessId } });
-      if (sub?.status === SubscriptionStatus.CANCELED) {
-        throw new AppException(
-          ErrorCode.BAD_REQUEST,
-          'Subscription is already canceled',
-          HttpStatus.BAD_REQUEST,
-        );
-      }
+    return this.executeAction(
+      businessId,
+      'CANCEL_SUBSCRIPTION',
+      actor,
+      async (tx, correlationId, before) => {
+        const sub = await tx.businessSubscription.findUnique({
+          where: { businessId },
+        });
+        if (sub?.status === SubscriptionStatus.CANCELED) {
+          throw new AppException(
+            ErrorCode.BAD_REQUEST,
+            'Subscription is already canceled',
+            HttpStatus.BAD_REQUEST,
+          );
+        }
 
-      await this.accessService.updateAccessInternal(
-        tx,
-        businessId,
-        {
-          businessStatus: BusinessStatus.NOT_ACTIVE,
-          subscriptionStatus: SubscriptionStatus.CANCELED,
-        },
-        actor,
-        { skipAudit: true },
-      );
-
-      const after = await this.eventService.captureState(businessId, tx);
-      const subscription = await tx.businessSubscription.findUnique({ where: { businessId } });
-
-      await this.eventService.createEvent(
-        tx,
-        {
+        await this.accessService.updateAccessInternal(
+          tx,
           businessId,
-          subscriptionId: subscription?.id,
-          eventType: BusinessSubscriptionEventType.CANCELED,
-          actionKey: 'CANCEL_SUBSCRIPTION',
-          correlationId,
-          fromState: before as unknown as Prisma.InputJsonValue,
-          toState: after as unknown as Prisma.InputJsonValue,
-          reason,
-        },
-        actor,
-      );
-    });
+          {
+            businessStatus: BusinessStatus.ACTIVE,
+            subscriptionStatus: SubscriptionStatus.CANCELED,
+          },
+          actor,
+          { skipAudit: true },
+        );
+
+        const after = await this.eventService.captureState(businessId, tx);
+        const subscription = await tx.businessSubscription.findUnique({
+          where: { businessId },
+        });
+
+        await this.eventService.createEvent(
+          tx,
+          {
+            businessId,
+            subscriptionId: subscription?.id,
+            eventType: BusinessSubscriptionEventType.CANCELED,
+            actionKey: 'CANCEL_SUBSCRIPTION',
+            correlationId,
+            fromState: before,
+            toState: after,
+            reason,
+          },
+          actor,
+        );
+      },
+    );
   }
 
-  async expireTrial(businessId: string, actor: RequestUser): Promise<ActionResult> {
-    return this.executeAction(businessId, 'EXPIRE_TRIAL', actor, async (tx, correlationId, before) => {
-      const sub = await tx.businessSubscription.findUnique({ where: { businessId } });
-      if (sub?.status === SubscriptionStatus.EXPIRED) {
-        throw new AppException(
-          ErrorCode.BAD_REQUEST,
-          'Subscription is already expired',
-          HttpStatus.BAD_REQUEST,
-        );
-      }
+  async expireTrial(
+    businessId: string,
+    actor: RequestUser,
+  ): Promise<ActionResult> {
+    await this.rejectStripeManagedBilling(businessId);
+    await this.rejectInternalBillingPaymentActions(businessId);
 
-      await this.accessService.updateAccessInternal(
-        tx,
-        businessId,
-        {
-          businessStatus: BusinessStatus.NOT_ACTIVE,
-          subscriptionStatus: SubscriptionStatus.EXPIRED,
-        },
-        actor,
-        { skipAudit: true },
-      );
+    return this.executeAction(
+      businessId,
+      'EXPIRE_TRIAL',
+      actor,
+      async (tx, correlationId, before) => {
+        const sub = await tx.businessSubscription.findUnique({
+          where: { businessId },
+        });
+        if (sub?.status === SubscriptionStatus.EXPIRED) {
+          throw new AppException(
+            ErrorCode.BAD_REQUEST,
+            'Subscription is already expired',
+            HttpStatus.BAD_REQUEST,
+          );
+        }
 
-      const after = await this.eventService.captureState(businessId, tx);
-      const subscription = await tx.businessSubscription.findUnique({ where: { businessId } });
-      const eventType =
-        before.subscriptionStatus === SubscriptionStatus.TRIALING
-          ? BusinessSubscriptionEventType.TRIAL_EXPIRED
-          : BusinessSubscriptionEventType.EXPIRED;
-
-      await this.eventService.createEvent(
-        tx,
-        {
+        await this.accessService.updateAccessInternal(
+          tx,
           businessId,
-          subscriptionId: subscription?.id,
-          eventType,
-          actionKey: 'EXPIRE_TRIAL',
-          correlationId,
-          fromState: before as unknown as Prisma.InputJsonValue,
-          toState: after as unknown as Prisma.InputJsonValue,
-        },
-        actor,
-      );
-    });
+          {
+            businessStatus: BusinessStatus.ACTIVE,
+            subscriptionStatus: SubscriptionStatus.EXPIRED,
+          },
+          actor,
+          { skipAudit: true },
+        );
+
+        const after = await this.eventService.captureState(businessId, tx);
+        const subscription = await tx.businessSubscription.findUnique({
+          where: { businessId },
+        });
+        const eventType =
+          before.subscriptionStatus === SubscriptionStatus.TRIALING
+            ? BusinessSubscriptionEventType.TRIAL_EXPIRED
+            : BusinessSubscriptionEventType.EXPIRED;
+
+        await this.eventService.createEvent(
+          tx,
+          {
+            businessId,
+            subscriptionId: subscription?.id,
+            eventType,
+            actionKey: 'EXPIRE_TRIAL',
+            correlationId,
+            fromState: before,
+            toState: after,
+          },
+          actor,
+        );
+      },
+    );
   }
 
   async suspendBusiness(
@@ -520,42 +640,51 @@ export class BusinessSubscriptionActionService {
     actor: RequestUser,
     reason?: string,
   ): Promise<ActionResult> {
-    return this.executeAction(businessId, 'SUSPEND_BUSINESS', actor, async (tx, correlationId, before) => {
-      const business = await tx.business.findUnique({ where: { id: businessId } });
-      if (business?.status === BusinessStatus.SUSPENDED) {
-        throw new AppException(
-          ErrorCode.BAD_REQUEST,
-          'Business is already suspended',
-          HttpStatus.BAD_REQUEST,
-        );
-      }
+    return this.executeAction(
+      businessId,
+      'SUSPEND_BUSINESS',
+      actor,
+      async (tx, correlationId, before) => {
+        const business = await tx.business.findUnique({
+          where: { id: businessId },
+        });
+        if (business?.status === BusinessStatus.SUSPENDED) {
+          throw new AppException(
+            ErrorCode.BAD_REQUEST,
+            'Business is already suspended',
+            HttpStatus.BAD_REQUEST,
+          );
+        }
 
-      await this.accessService.updateAccessInternal(
-        tx,
-        businessId,
-        { businessStatus: BusinessStatus.SUSPENDED },
-        actor,
-        { skipAudit: true },
-      );
-
-      const after = await this.eventService.captureState(businessId, tx);
-      const sub = await tx.businessSubscription.findUnique({ where: { businessId } });
-
-      await this.eventService.createEvent(
-        tx,
-        {
+        await this.accessService.updateAccessInternal(
+          tx,
           businessId,
-          subscriptionId: sub?.id,
-          eventType: BusinessSubscriptionEventType.SUSPENDED,
-          actionKey: 'SUSPEND_BUSINESS',
-          correlationId,
-          fromState: before as unknown as Prisma.InputJsonValue,
-          toState: after as unknown as Prisma.InputJsonValue,
-          reason,
-        },
-        actor,
-      );
-    });
+          { businessStatus: BusinessStatus.SUSPENDED },
+          actor,
+          { skipAudit: true },
+        );
+
+        const after = await this.eventService.captureState(businessId, tx);
+        const sub = await tx.businessSubscription.findUnique({
+          where: { businessId },
+        });
+
+        await this.eventService.createEvent(
+          tx,
+          {
+            businessId,
+            subscriptionId: sub?.id,
+            eventType: BusinessSubscriptionEventType.SUSPENDED,
+            actionKey: 'SUSPEND_BUSINESS',
+            correlationId,
+            fromState: before,
+            toState: after,
+            reason,
+          },
+          actor,
+        );
+      },
+    );
   }
 
   async reactivateBusiness(
@@ -563,82 +692,101 @@ export class BusinessSubscriptionActionService {
     dto: ReactivateBusinessDto,
     actor: RequestUser,
   ): Promise<ActionResult> {
-    return this.executeAction(businessId, 'REACTIVATE_BUSINESS', actor, async (tx, correlationId, before) => {
-      const update: UpdateBusinessAccessDto = {
-        businessStatus: BusinessStatus.ACTIVE,
-      };
+    return this.executeAction(
+      businessId,
+      'REACTIVATE_BUSINESS',
+      actor,
+      async (tx, correlationId, before) => {
+        const update: UpdateBusinessAccessDto = {
+          businessStatus: BusinessStatus.ACTIVE,
+        };
 
-      if (dto.mode === 'restore_paid') {
-        update.subscriptionStatus = SubscriptionStatus.ACTIVE;
-        update.paymentStatus = SubscriptionPaymentStatus.PAID;
-      } else if (dto.mode === 'restore_trial') {
-        update.subscriptionStatus = SubscriptionStatus.TRIALING;
-        update.paymentStatus = SubscriptionPaymentStatus.NOT_REQUIRED;
-        update.paymentMethod = SubscriptionPaymentMethod.NOT_SELECTED;
-        if (dto.currentPeriodEnd) update.currentPeriodEnd = dto.currentPeriodEnd;
-      } else if (dto.mode === 'restore_internal') {
-        update.subscriptionStatus = SubscriptionStatus.INTERNAL;
-        update.paymentMethod = SubscriptionPaymentMethod.FREE_INTERNAL;
-        update.paymentStatus = SubscriptionPaymentStatus.NOT_REQUIRED;
-      }
+        if (dto.mode === 'restore_paid') {
+          update.subscriptionStatus = SubscriptionStatus.ACTIVE;
+          update.paymentStatus = SubscriptionPaymentStatus.PAID;
+        } else if (dto.mode === 'restore_trial') {
+          update.subscriptionStatus = SubscriptionStatus.TRIALING;
+          update.paymentStatus = SubscriptionPaymentStatus.NOT_REQUIRED;
+          update.paymentMethod = SubscriptionPaymentMethod.NOT_SELECTED;
+          if (dto.currentPeriodEnd)
+            update.currentPeriodEnd = dto.currentPeriodEnd;
+        } else if (dto.mode === 'restore_internal') {
+          update.subscriptionStatus = SubscriptionStatus.INTERNAL;
+          update.paymentMethod = SubscriptionPaymentMethod.FREE_INTERNAL;
+          update.paymentStatus = SubscriptionPaymentStatus.NOT_REQUIRED;
+        }
 
-      await this.accessService.updateAccessInternal(tx, businessId, update, actor, {
-        skipAudit: true,
-      });
-
-      let paymentId: string | null = null;
-      if (dto.payment) {
-        const payment = await this.paymentService.recordPayment(
+        await this.accessService.updateAccessInternal(
           tx,
           businessId,
-          dto.payment,
+          update,
+          actor,
+          {
+            skipAudit: true,
+          },
+        );
+
+        let paymentId: string | null = null;
+        if (dto.payment) {
+          const payment = await this.paymentService.recordPayment(
+            tx,
+            businessId,
+            dto.payment,
+            actor,
+          );
+          paymentId = payment.id;
+        }
+
+        const after = await this.eventService.captureState(businessId, tx);
+        const sub = await tx.businessSubscription.findUnique({
+          where: { businessId },
+        });
+
+        const events: Array<{
+          businessId: string;
+          subscriptionId?: string | null;
+          eventType: BusinessSubscriptionEventType;
+          actionKey: string;
+          paymentId?: string | null;
+          fromState: Prisma.InputJsonValue;
+          toState: Prisma.InputJsonValue;
+          reason?: string;
+          notes?: string;
+        }> = [
+          {
+            businessId,
+            subscriptionId: sub?.id,
+            eventType: BusinessSubscriptionEventType.REACTIVATED,
+            actionKey: 'REACTIVATE_BUSINESS',
+            paymentId,
+            fromState: before,
+            toState: after,
+            reason: dto.reason,
+            notes: dto.notes,
+          },
+        ];
+
+        if (dto.mode !== 'business_only') {
+          events.push({
+            businessId,
+            subscriptionId: sub?.id,
+            eventType: BusinessSubscriptionEventType.STATUS_CHANGED,
+            actionKey: 'REACTIVATE_BUSINESS',
+            fromState: before,
+            toState: after,
+            reason: dto.reason,
+            notes: dto.notes,
+          });
+        }
+
+        await this.eventService.createCorrelatedEvents(
+          tx,
+          correlationId,
+          events,
           actor,
         );
-        paymentId = payment.id;
-      }
-
-      const after = await this.eventService.captureState(businessId, tx);
-      const sub = await tx.businessSubscription.findUnique({ where: { businessId } });
-
-      const events: Array<{
-        businessId: string;
-        subscriptionId?: string | null;
-        eventType: BusinessSubscriptionEventType;
-        actionKey: string;
-        paymentId?: string | null;
-        fromState: Prisma.InputJsonValue;
-        toState: Prisma.InputJsonValue;
-        reason?: string;
-        notes?: string;
-      }> = [
-        {
-          businessId,
-          subscriptionId: sub?.id,
-          eventType: BusinessSubscriptionEventType.REACTIVATED,
-          actionKey: 'REACTIVATE_BUSINESS',
-          paymentId,
-          fromState: before as unknown as Prisma.InputJsonValue,
-          toState: after as unknown as Prisma.InputJsonValue,
-          reason: dto.reason,
-          notes: dto.notes,
-        },
-      ];
-
-      if (dto.mode !== 'business_only') {
-        events.push({
-          businessId,
-          subscriptionId: sub?.id,
-          eventType: BusinessSubscriptionEventType.STATUS_CHANGED,
-          actionKey: 'REACTIVATE_BUSINESS',
-          fromState: before as unknown as Prisma.InputJsonValue,
-          toState: after as unknown as Prisma.InputJsonValue,
-          reason: dto.reason,
-          notes: dto.notes,
-        });
-      }
-
-      await this.eventService.createCorrelatedEvents(tx, correlationId, events, actor);
-    });
+      },
+    );
   }
 
   async changePackage(
@@ -647,7 +795,11 @@ export class BusinessSubscriptionActionService {
     actor: RequestUser,
   ): Promise<ActionResult> {
     if (dto.paymentOption === 'record_payment') {
-      if (!dto.payment?.amount || !dto.payment.currency || !dto.payment.paymentMethod) {
+      if (
+        !dto.payment?.amount ||
+        !dto.payment.currency ||
+        !dto.payment.paymentMethod
+      ) {
         throw new AppException(
           ErrorCode.BAD_REQUEST,
           'Record payment requires amount, currency, and payment method',
@@ -663,7 +815,10 @@ export class BusinessSubscriptionActionService {
       }
     }
 
-    if (dto.paymentOption === 'move_pending' && dto.payment?.paymentStatus === SubscriptionPaymentStatus.PAID) {
+    if (
+      dto.paymentOption === 'move_pending' &&
+      dto.payment?.paymentStatus === SubscriptionPaymentStatus.PAID
+    ) {
       throw new AppException(
         ErrorCode.BAD_REQUEST,
         'Move pending cannot set paid payment status',
@@ -675,8 +830,7 @@ export class BusinessSubscriptionActionService {
       where: { businessId },
     });
     if (existingSub?.billingSource === SubscriptionBillingSource.STRIPE) {
-      const groupId =
-        dto.planGroupId ?? existingSub.planGroupId ?? undefined;
+      const groupId = dto.planGroupId ?? existingSub.planGroupId ?? undefined;
       const billingCycle =
         dto.billingCycle ??
         existingSub.billingCycle ??
@@ -691,220 +845,248 @@ export class BusinessSubscriptionActionService {
       }
     }
 
-    return this.executeAction(businessId, 'CHANGE_PACKAGE', actor, async (tx, correlationId, before) => {
-      const tier = await tx.planTier.findFirst({
-        where: { id: dto.planTierId, deletedAt: null },
-        include: { planGroup: { select: { currency: true } } },
-      });
-      if (!tier) {
-        throw new AppException(ErrorCode.NOT_FOUND, 'Plan tier not found', HttpStatus.NOT_FOUND);
-      }
-
-      const groupId = dto.planGroupId ?? tier.planGroupId;
-      const existing = await tx.businessSubscription.findUnique({ where: { businessId } });
-
-      const billingCycle =
-        dto.billingCycle ??
-        existing?.billingCycle ??
-        BusinessSubscriptionBillingCycle.MONTHLY;
-
-      assertCustomPeriodEndRequired(
-        billingCycle,
-        dto.currentPeriodEnd ?? existing?.currentPeriodEnd,
-      );
-
-      if (!dto.keepCurrentPrice) {
-        assertTierPriceOrCustomAmount({
-          billingCycle,
-          tier,
-          amount: dto.customPrice ? dto.amount : undefined,
-          currency: dto.currency ?? existing?.currency ?? tier.planGroup.currency,
-          customPrice: dto.customPrice,
+    return this.executeAction(
+      businessId,
+      'CHANGE_PACKAGE',
+      actor,
+      async (tx, correlationId, before) => {
+        const tier = await tx.planTier.findFirst({
+          where: { id: dto.planTierId, deletedAt: null },
+          include: { planGroup: { select: { currency: true } } },
         });
-      }
+        if (!tier) {
+          throw new AppException(
+            ErrorCode.NOT_FOUND,
+            'Plan tier not found',
+            HttpStatus.NOT_FOUND,
+          );
+        }
 
-      const currency =
-        dto.currency ??
-        existing?.currency ??
-        tier.planGroup.currency ??
-        'USD';
+        const groupId = dto.planGroupId ?? tier.planGroupId;
+        const existing = await tx.businessSubscription.findUnique({
+          where: { businessId },
+        });
 
-      let amount: number | undefined;
-      if (dto.keepCurrentPrice && existing?.amount != null) {
-        amount = Number(existing.amount);
-      } else if (dto.customPrice && dto.amount != null) {
-        amount = dto.amount;
-      } else {
-        const resolved = resolveTierPrice(tier, billingCycle, { currency });
-        amount = resolved.amount ?? undefined;
-      }
+        const billingCycle =
+          dto.billingCycle ??
+          existing?.billingCycle ??
+          BusinessSubscriptionBillingCycle.MONTHLY;
 
-      const subscriptionStatus =
-        dto.paymentOption === 'move_pending'
-          ? SubscriptionStatus.PENDING_PAYMENT
-          : dto.paymentOption === 'record_payment'
-            ? SubscriptionStatus.ACTIVE
-            : existing?.status ?? SubscriptionStatus.ACTIVE;
+        assertCustomPeriodEndRequired(
+          billingCycle,
+          dto.currentPeriodEnd ?? existing?.currentPeriodEnd,
+        );
 
-      const period = calculateSubscriptionPeriod({
-        billingCycle,
-        startDate:
-          dto.currentPeriodStart ??
-          existing?.currentPeriodStart ??
-          new Date(),
-        currentPeriodEnd: dto.currentPeriodEnd ?? existing?.currentPeriodEnd,
-        trialDays: tier.trialDays,
-        subscriptionStatus,
-      });
+        if (!dto.keepCurrentPrice) {
+          assertTierPriceOrCustomAmount({
+            billingCycle,
+            tier,
+            amount: dto.customPrice ? dto.amount : undefined,
+            currency:
+              dto.currency ?? existing?.currency ?? tier.planGroup.currency,
+            customPrice: dto.customPrice,
+          });
+        }
 
-      const oldTier = existing?.planTierId
-        ? await tx.planTier.findUnique({ where: { id: existing.planTierId } })
-        : null;
-      const oldMonthly = normalizeMonthlyPrice(
-        existing?.billingCycle ?? billingCycle,
-        oldTier,
-        existing?.amount,
-      );
-      const newMonthly = normalizeMonthlyPrice(billingCycle, tier, null);
-      const tierChanged = existing?.planTierId !== dto.planTierId;
-      const eventType = resolvePlanChangeEventType(
-        oldMonthly,
-        newMonthly,
-        tierChanged,
-      );
+        const currency =
+          dto.currency ??
+          existing?.currency ??
+          tier.planGroup.currency ??
+          'USD';
 
-      const update: UpdateBusinessAccessDto = {
-        planGroupId: groupId,
-        planTierId: dto.planTierId,
-        billingCycle,
-        syncCapabilitiesFromTier: dto.syncCapabilities ?? true,
-      };
+        let amount: number | undefined;
+        if (dto.keepCurrentPrice && existing?.amount != null) {
+          amount = Number(existing.amount);
+        } else if (dto.customPrice && dto.amount != null) {
+          amount = dto.amount;
+        } else {
+          const resolved = resolveTierPrice(tier, billingCycle, { currency });
+          amount = resolved.amount ?? undefined;
+        }
 
-      if (!dto.keepCurrentPrice && amount != null) {
-        update.amount = amount;
-        update.currency = currency;
-      } else if (dto.currency) {
-        update.currency = currency;
-      }
+        const subscriptionStatus =
+          dto.paymentOption === 'move_pending'
+            ? SubscriptionStatus.PENDING_PAYMENT
+            : dto.paymentOption === 'record_payment'
+              ? SubscriptionStatus.ACTIVE
+              : (existing?.status ?? SubscriptionStatus.ACTIVE);
 
-      if (dto.currentPeriodStart || period.currentPeriodStart) {
-        update.currentPeriodStart = (
-          dto.currentPeriodStart
-            ? new Date(dto.currentPeriodStart)
-            : period.currentPeriodStart!
-        )
-          .toISOString()
-          .slice(0, 10);
-      }
-      if (dto.currentPeriodEnd || period.currentPeriodEnd) {
-        update.currentPeriodEnd = (
-          dto.currentPeriodEnd
-            ? new Date(dto.currentPeriodEnd)
-            : period.currentPeriodEnd!
-        )
-          .toISOString()
-          .slice(0, 10);
-      }
+        const period = calculateSubscriptionPeriod({
+          billingCycle,
+          startDate:
+            dto.currentPeriodStart ??
+            existing?.currentPeriodStart ??
+            new Date(),
+          currentPeriodEnd: dto.currentPeriodEnd ?? existing?.currentPeriodEnd,
+          trialDays: tier.trialDays,
+          subscriptionStatus,
+        });
 
-      if (dto.paymentOption === 'move_pending') {
-        update.businessStatus = BusinessStatus.NOT_ACTIVE;
-        update.subscriptionStatus = SubscriptionStatus.PENDING_PAYMENT;
-        update.paymentStatus = SubscriptionPaymentStatus.PENDING;
-        update.paymentMethod = SubscriptionPaymentMethod.MANUAL_INVOICE;
-      } else if (dto.paymentOption === 'record_payment') {
-        update.businessStatus = BusinessStatus.ACTIVE;
-        update.subscriptionStatus = SubscriptionStatus.ACTIVE;
-        update.paymentStatus = SubscriptionPaymentStatus.PAID;
-        update.paymentMethod =
-          dto.payment?.paymentMethod ?? SubscriptionPaymentMethod.MANUAL_INVOICE;
-      } else if (dto.paymentOption === 'keep_status') {
-        // no payment/status changes
-      }
+        const oldTier = existing?.planTierId
+          ? await tx.planTier.findUnique({ where: { id: existing.planTierId } })
+          : null;
+        const oldMonthly = normalizeMonthlyPrice(
+          existing?.billingCycle ?? billingCycle,
+          oldTier,
+          existing?.amount,
+        );
+        const newMonthly = normalizeMonthlyPrice(billingCycle, tier, null);
+        const tierChanged = existing?.planTierId !== dto.planTierId;
+        const eventType = resolvePlanChangeEventType(
+          oldMonthly,
+          newMonthly,
+          tierChanged,
+        );
 
-      await this.accessService.updateAccessInternal(tx, businessId, update, actor, {
-        skipAudit: true,
-      });
+        const update: UpdateBusinessAccessDto = {
+          planGroupId: groupId,
+          planTierId: dto.planTierId,
+          billingCycle,
+          syncCapabilitiesFromTier: dto.syncCapabilities ?? true,
+        };
 
-      let paymentId: string | null = null;
-      if (dto.paymentOption === 'record_payment' && dto.payment) {
-        const payment = await this.paymentService.recordPayment(
+        if (!dto.keepCurrentPrice && amount != null) {
+          update.amount = amount;
+          update.currency = currency;
+        } else if (dto.currency) {
+          update.currency = currency;
+        }
+
+        if (dto.currentPeriodStart || period.currentPeriodStart) {
+          update.currentPeriodStart = (
+            dto.currentPeriodStart
+              ? new Date(dto.currentPeriodStart)
+              : period.currentPeriodStart!
+          )
+            .toISOString()
+            .slice(0, 10);
+        }
+        if (dto.currentPeriodEnd || period.currentPeriodEnd) {
+          update.currentPeriodEnd = (
+            dto.currentPeriodEnd
+              ? new Date(dto.currentPeriodEnd)
+              : period.currentPeriodEnd!
+          )
+            .toISOString()
+            .slice(0, 10);
+        }
+
+        if (dto.paymentOption === 'move_pending') {
+          update.businessStatus = BusinessStatus.ACTIVE;
+          update.subscriptionStatus = SubscriptionStatus.PENDING_PAYMENT;
+          update.paymentStatus = SubscriptionPaymentStatus.PENDING;
+          update.paymentMethod = SubscriptionPaymentMethod.MANUAL_INVOICE;
+        } else if (dto.paymentOption === 'record_payment') {
+          update.businessStatus = BusinessStatus.ACTIVE;
+          update.subscriptionStatus = SubscriptionStatus.ACTIVE;
+          update.paymentStatus = SubscriptionPaymentStatus.PAID;
+          update.paymentMethod =
+            dto.payment?.paymentMethod ??
+            SubscriptionPaymentMethod.MANUAL_INVOICE;
+        } else if (dto.paymentOption === 'keep_status') {
+          // no payment/status changes
+        }
+
+        await this.accessService.updateAccessInternal(
           tx,
           businessId,
+          update,
+          actor,
           {
-            ...dto.payment,
-            billingCycle: dto.payment.billingCycle ?? billingCycle,
-            paymentStatus: SubscriptionPaymentStatus.PAID,
-            periodStart:
-              dto.payment.periodStart ?? update.currentPeriodStart ?? undefined,
-            periodEnd:
-              dto.payment.periodEnd ?? update.currentPeriodEnd ?? undefined,
+            skipAudit: true,
           },
+        );
+
+        let paymentId: string | null = null;
+        if (dto.paymentOption === 'record_payment' && dto.payment) {
+          const payment = await this.paymentService.recordPayment(
+            tx,
+            businessId,
+            {
+              ...dto.payment,
+              billingCycle: dto.payment.billingCycle ?? billingCycle,
+              paymentStatus: SubscriptionPaymentStatus.PAID,
+              periodStart:
+                dto.payment.periodStart ??
+                update.currentPeriodStart ??
+                undefined,
+              periodEnd:
+                dto.payment.periodEnd ?? update.currentPeriodEnd ?? undefined,
+            },
+            actor,
+          );
+          paymentId = payment.id;
+        }
+
+        const after = await this.eventService.captureState(businessId, tx);
+        const sub = await tx.businessSubscription.findUnique({
+          where: { businessId },
+        });
+
+        const events: Array<{
+          businessId: string;
+          subscriptionId?: string | null;
+          eventType: BusinessSubscriptionEventType;
+          actionKey: string;
+          paymentId?: string | null;
+          fromState: Prisma.InputJsonValue;
+          toState: Prisma.InputJsonValue;
+          reason?: string;
+          notes?: string;
+        }> = [
+          {
+            businessId,
+            subscriptionId: sub?.id,
+            eventType,
+            actionKey: 'CHANGE_PACKAGE',
+            paymentId,
+            fromState: before,
+            toState: after,
+            reason: dto.reason,
+            notes: dto.notes,
+          },
+        ];
+
+        if (dto.paymentOption === 'record_payment' && paymentId) {
+          events.push({
+            businessId,
+            subscriptionId: sub?.id,
+            eventType: BusinessSubscriptionEventType.PAYMENT_MARKED_PAID,
+            actionKey: 'CHANGE_PACKAGE',
+            paymentId,
+            fromState: before,
+            toState: after,
+          });
+        } else if (dto.paymentOption === 'move_pending') {
+          events.push({
+            businessId,
+            subscriptionId: sub?.id,
+            eventType: BusinessSubscriptionEventType.PAYMENT_PENDING,
+            actionKey: 'CHANGE_PACKAGE',
+            fromState: before,
+            toState: after,
+          });
+        }
+
+        if (dto.syncCapabilities ?? true) {
+          events.push({
+            businessId,
+            subscriptionId: sub?.id,
+            eventType: BusinessSubscriptionEventType.CAPABILITIES_SYNCED,
+            actionKey: 'CHANGE_PACKAGE',
+            fromState: before,
+            toState: after,
+          });
+        }
+
+        await this.eventService.createCorrelatedEvents(
+          tx,
+          correlationId,
+          events,
           actor,
         );
-        paymentId = payment.id;
-      }
-
-      const after = await this.eventService.captureState(businessId, tx);
-      const sub = await tx.businessSubscription.findUnique({ where: { businessId } });
-
-      const events: Array<{
-        businessId: string;
-        subscriptionId?: string | null;
-        eventType: BusinessSubscriptionEventType;
-        actionKey: string;
-        paymentId?: string | null;
-        fromState: Prisma.InputJsonValue;
-        toState: Prisma.InputJsonValue;
-        reason?: string;
-        notes?: string;
-      }> = [
-        {
-          businessId,
-          subscriptionId: sub?.id,
-          eventType,
-          actionKey: 'CHANGE_PACKAGE',
-          paymentId,
-          fromState: before as unknown as Prisma.InputJsonValue,
-          toState: after as unknown as Prisma.InputJsonValue,
-          reason: dto.reason,
-          notes: dto.notes,
-        },
-      ];
-
-      if (dto.paymentOption === 'record_payment' && paymentId) {
-        events.push({
-          businessId,
-          subscriptionId: sub?.id,
-          eventType: BusinessSubscriptionEventType.PAYMENT_MARKED_PAID,
-          actionKey: 'CHANGE_PACKAGE',
-          paymentId,
-          fromState: before as unknown as Prisma.InputJsonValue,
-          toState: after as unknown as Prisma.InputJsonValue,
-        });
-      } else if (dto.paymentOption === 'move_pending') {
-        events.push({
-          businessId,
-          subscriptionId: sub?.id,
-          eventType: BusinessSubscriptionEventType.PAYMENT_PENDING,
-          actionKey: 'CHANGE_PACKAGE',
-          fromState: before as unknown as Prisma.InputJsonValue,
-          toState: after as unknown as Prisma.InputJsonValue,
-        });
-      }
-
-      if (dto.syncCapabilities ?? true) {
-        events.push({
-          businessId,
-          subscriptionId: sub?.id,
-          eventType: BusinessSubscriptionEventType.CAPABILITIES_SYNCED,
-          actionKey: 'CHANGE_PACKAGE',
-          fromState: before as unknown as Prisma.InputJsonValue,
-          toState: after as unknown as Prisma.InputJsonValue,
-        });
-      }
-
-      await this.eventService.createCorrelatedEvents(tx, correlationId, events, actor);
-    });
+      },
+    );
   }
 
   async changeSnapshot(
@@ -912,94 +1094,109 @@ export class BusinessSubscriptionActionService {
     dto: ChangeSnapshotActionDto,
     actor: RequestUser,
   ): Promise<ActionResult> {
-    return this.executeAction(businessId, 'CHANGE_SNAPSHOT', actor, async (tx, correlationId, before) => {
-      const business = await tx.business.findFirst({
-        where: { id: businessId },
-        include: { snapshot: { select: { id: true, name: true } } },
-      });
+    return this.executeAction(
+      businessId,
+      'CHANGE_SNAPSHOT',
+      actor,
+      async (tx, correlationId, before) => {
+        const business = await tx.business.findFirst({
+          where: { id: businessId },
+          include: { snapshot: { select: { id: true, name: true } } },
+        });
 
-      await this.accessService.updateAccessInternal(
-        tx,
-        businessId,
-        {
-          snapshotId: dto.snapshotId,
-          applySnapshot: dto.applySnapshot ?? false,
-        },
-        actor,
-        { skipAudit: true },
-      );
-
-      const after = await this.eventService.captureState(businessId, tx);
-      const sub = await tx.businessSubscription.findUnique({ where: { businessId } });
-
-      await this.eventService.createEvent(
-        tx,
-        {
+        await this.accessService.updateAccessInternal(
+          tx,
           businessId,
-          subscriptionId: sub?.id,
-          eventType: BusinessSubscriptionEventType.SNAPSHOT_CHANGED,
-          actionKey: 'CHANGE_SNAPSHOT',
-          correlationId,
-          fromState: before as unknown as Prisma.InputJsonValue,
-          toState: after as unknown as Prisma.InputJsonValue,
-          reason: dto.reason,
-          notes: dto.notes,
-          metadata: {
-            oldSnapshotId: business?.snapshotId,
-            newSnapshotId: dto.snapshotId,
-            oldSnapshotName: business?.snapshot?.name,
+          {
+            snapshotId: dto.snapshotId,
             applySnapshot: dto.applySnapshot ?? false,
-            mayOverwriteConfiguration: Boolean(dto.applySnapshot),
           },
-        },
-        actor,
-      );
-    });
-  }
-
-  async syncCapabilities(businessId: string, actor: RequestUser): Promise<ActionResult> {
-    return this.executeAction(businessId, 'SYNC_CAPABILITIES', actor, async (tx, correlationId, before) => {
-      const subscription = await tx.businessSubscription.findUnique({
-        where: { businessId },
-      });
-      if (!subscription?.planTierId) {
-        throw new AppException(
-          ErrorCode.BAD_REQUEST,
-          'No plan tier assigned',
-          HttpStatus.BAD_REQUEST,
+          actor,
+          { skipAudit: true },
         );
-      }
 
-      const result = await this.capabilitySyncService.syncFromPlanTier(
-        businessId,
-        subscription.planTierId,
-      );
+        const after = await this.eventService.captureState(businessId, tx);
+        const sub = await tx.businessSubscription.findUnique({
+          where: { businessId },
+        });
 
-      const after = await this.eventService.captureState(businessId, tx);
-
-      await this.eventService.createEvent(
-        tx,
-        {
-          businessId,
-          subscriptionId: subscription.id,
-          eventType: BusinessSubscriptionEventType.CAPABILITIES_SYNCED,
-          actionKey: 'SYNC_CAPABILITIES',
-          correlationId,
-          fromState: before as unknown as Prisma.InputJsonValue,
-          toState: after as unknown as Prisma.InputJsonValue,
-          metadata: {
-            capabilityDiff: {
-              added: [],
-              removed: [],
-              unchanged: [],
-              preservedCustomManual: [],
-              syncResult: result,
+        await this.eventService.createEvent(
+          tx,
+          {
+            businessId,
+            subscriptionId: sub?.id,
+            eventType: BusinessSubscriptionEventType.SNAPSHOT_CHANGED,
+            actionKey: 'CHANGE_SNAPSHOT',
+            correlationId,
+            fromState: before,
+            toState: after,
+            reason: dto.reason,
+            notes: dto.notes,
+            metadata: {
+              oldSnapshotId: business?.snapshotId,
+              newSnapshotId: dto.snapshotId,
+              oldSnapshotName: business?.snapshot?.name,
+              applySnapshot: dto.applySnapshot ?? false,
+              mayOverwriteConfiguration: Boolean(dto.applySnapshot),
             },
           },
-        },
-        actor,
-      );
-    });
+          actor,
+        );
+      },
+    );
+  }
+
+  async syncCapabilities(
+    businessId: string,
+    actor: RequestUser,
+  ): Promise<ActionResult> {
+    return this.executeAction(
+      businessId,
+      'SYNC_CAPABILITIES',
+      actor,
+      async (tx, correlationId, before) => {
+        const subscription = await tx.businessSubscription.findUnique({
+          where: { businessId },
+        });
+        if (!subscription?.planTierId) {
+          throw new AppException(
+            ErrorCode.BAD_REQUEST,
+            'No plan tier assigned',
+            HttpStatus.BAD_REQUEST,
+          );
+        }
+
+        const result = await this.capabilitySyncService.syncFromPlanTier(
+          businessId,
+          subscription.planTierId,
+        );
+
+        const after = await this.eventService.captureState(businessId, tx);
+
+        await this.eventService.createEvent(
+          tx,
+          {
+            businessId,
+            subscriptionId: subscription.id,
+            eventType: BusinessSubscriptionEventType.CAPABILITIES_SYNCED,
+            actionKey: 'SYNC_CAPABILITIES',
+            correlationId,
+            fromState: before,
+            toState: after,
+            metadata: {
+              capabilityDiff: {
+                added: [],
+                removed: [],
+                unchanged: [],
+                preservedCustomManual: [],
+                syncResult: result,
+              },
+            },
+          },
+          actor,
+        );
+      },
+    );
   }
 
   async recordRefund(
@@ -1008,6 +1205,25 @@ export class BusinessSubscriptionActionService {
     dto: RefundPaymentDto,
     actor: RequestUser,
   ): Promise<ActionResult> {
+    await this.rejectStripeManagedBilling(businessId);
+    await this.rejectInternalBillingPaymentActions(businessId);
+
+    const original = await this.prisma.businessSubscriptionPayment.findUnique(
+      {
+        where: { id: originalPaymentId },
+      },
+    );
+    if (
+      original?.source === 'WEBHOOK' ||
+      original?.externalProvider === 'stripe'
+    ) {
+      throw new AppException(
+        ErrorCode.BAD_REQUEST,
+        STRIPE_MANAGED_MESSAGE,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
     return this.executeAction(
       businessId,
       'RECORD_PAYMENT',
@@ -1034,8 +1250,8 @@ export class BusinessSubscriptionActionService {
             actionKey: 'RECORD_PAYMENT',
             paymentId: refund.id,
             correlationId,
-            fromState: before as unknown as Prisma.InputJsonValue,
-            toState: after as unknown as Prisma.InputJsonValue,
+            fromState: before,
+            toState: after,
             notes: dto.notes,
             metadata: { originalPaymentId },
           },
@@ -1058,29 +1274,71 @@ export class BusinessSubscriptionActionService {
       );
     }
 
-    return this.executeAction(businessId, 'MANUAL_ADJUSTMENT', actor, async (tx, correlationId, before) => {
-      await this.accessService.updateAccessInternal(tx, businessId, dto, actor, {
-        skipAudit: true,
-      });
-      const after = await this.eventService.captureState(businessId, tx);
-      const sub = await tx.businessSubscription.findUnique({ where: { businessId } });
-
-      await this.eventService.createEvent(
-        tx,
-        {
-          businessId,
-          subscriptionId: sub?.id,
-          eventType: BusinessSubscriptionEventType.MANUAL_ADJUSTMENT,
-          actionKey: 'MANUAL_ADJUSTMENT',
-          correlationId,
-          fromState: before as unknown as Prisma.InputJsonValue,
-          toState: after as unknown as Prisma.InputJsonValue,
-          reason: dto.reason,
-          notes: dto.notes,
-        },
-        actor,
-      );
+    const subscription = await this.prisma.businessSubscription.findUnique({
+      where: { businessId },
+      select: { billingSource: true },
     });
+    if (subscription?.billingSource === SubscriptionBillingSource.STRIPE) {
+      const blocked = getStripeControlledFieldsInUpdate(
+        dto as unknown as Record<string, unknown>,
+      );
+      if (blocked.length > 0) {
+        throw new AppException(
+          ErrorCode.BAD_REQUEST,
+          STRIPE_MANAGED_MESSAGE,
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+    }
+    if (subscription?.billingSource === SubscriptionBillingSource.INTERNAL) {
+      const blocked = getStripeControlledFieldsInUpdate(
+        dto as unknown as Record<string, unknown>,
+      );
+      if (blocked.length > 0) {
+        throw new AppException(
+          ErrorCode.BAD_REQUEST,
+          'Payment and billing fields cannot be changed for internal subscriptions',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+    }
+
+    return this.executeAction(
+      businessId,
+      'MANUAL_ADJUSTMENT',
+      actor,
+      async (tx, correlationId, before) => {
+        await this.accessService.updateAccessInternal(
+          tx,
+          businessId,
+          dto,
+          actor,
+          {
+            skipAudit: true,
+          },
+        );
+        const after = await this.eventService.captureState(businessId, tx);
+        const sub = await tx.businessSubscription.findUnique({
+          where: { businessId },
+        });
+
+        await this.eventService.createEvent(
+          tx,
+          {
+            businessId,
+            subscriptionId: sub?.id,
+            eventType: BusinessSubscriptionEventType.MANUAL_ADJUSTMENT,
+            actionKey: 'MANUAL_ADJUSTMENT',
+            correlationId,
+            fromState: before,
+            toState: after,
+            reason: dto.reason,
+            notes: dto.notes,
+          },
+          actor,
+        );
+      },
+    );
   }
 
   async emitBusinessCreatedEvents(
@@ -1106,8 +1364,8 @@ export class BusinessSubscriptionActionService {
             eventType: BusinessSubscriptionEventType.CREATED,
             actionKey: 'MANUAL_ADJUSTMENT',
             source,
-            fromState: before as unknown as Prisma.InputJsonValue,
-            toState: after as unknown as Prisma.InputJsonValue,
+            fromState: before,
+            toState: after,
           },
           {
             businessId,
@@ -1115,8 +1373,8 @@ export class BusinessSubscriptionActionService {
             eventType: BusinessSubscriptionEventType.STATUS_CHANGED,
             actionKey: 'MANUAL_ADJUSTMENT',
             source,
-            fromState: before as unknown as Prisma.InputJsonValue,
-            toState: after as unknown as Prisma.InputJsonValue,
+            fromState: before,
+            toState: after,
           },
         ],
         actor,
@@ -1135,7 +1393,10 @@ export class BusinessSubscriptionActionService {
     ) => Promise<void>,
   ): Promise<ActionResult> {
     const beforeState = await this.eventService.captureState(businessId);
-    const action = this.availabilityService.resolveAction(actionKey, beforeState);
+    const action = this.availabilityService.resolveAction(
+      actionKey,
+      beforeState,
+    );
 
     if (!action.enabled) {
       throw new AppException(
@@ -1223,7 +1484,7 @@ export class BusinessSubscriptionActionService {
         after.paymentStatus = SubscriptionPaymentStatus.PAID;
         break;
       case 'MOVE_PENDING':
-        after.businessStatus = BusinessStatus.NOT_ACTIVE;
+        after.businessStatus = BusinessStatus.ACTIVE;
         after.subscriptionStatus = SubscriptionStatus.PENDING_PAYMENT;
         after.paymentStatus = SubscriptionPaymentStatus.PENDING;
         break;
@@ -1231,11 +1492,11 @@ export class BusinessSubscriptionActionService {
         after.businessStatus = BusinessStatus.SUSPENDED;
         break;
       case 'CANCEL_SUBSCRIPTION':
-        after.businessStatus = BusinessStatus.NOT_ACTIVE;
+        after.businessStatus = BusinessStatus.ACTIVE;
         after.subscriptionStatus = SubscriptionStatus.CANCELED;
         break;
       case 'EXPIRE_TRIAL':
-        after.businessStatus = BusinessStatus.NOT_ACTIVE;
+        after.businessStatus = BusinessStatus.ACTIVE;
         after.subscriptionStatus = SubscriptionStatus.EXPIRED;
         break;
       case 'REACTIVATE_BUSINESS':
@@ -1268,7 +1529,8 @@ export class BusinessSubscriptionActionService {
               status: snapshot.subscriptionStatus,
               planTierId: snapshot.planTierId,
               paymentStatus:
-                snapshot.paymentStatus ?? SubscriptionPaymentStatus.NOT_REQUIRED,
+                snapshot.paymentStatus ??
+                SubscriptionPaymentStatus.NOT_REQUIRED,
               currentPeriodEnd: this.snapshotPeriodEnd(snapshot),
             }
           : null,
@@ -1296,5 +1558,4 @@ export class BusinessSubscriptionActionService {
     const end = snapshot.currentPeriodEnd ?? snapshot.trialEnd;
     return end ? new Date(end) : null;
   }
-
 }

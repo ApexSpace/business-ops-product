@@ -69,14 +69,14 @@ export function BusinessListSubscriptionActions({
     onError: (err: Error) => toast.error(err.message),
   });
 
-  const openAccessTab = () => {
-    router.push(`/platform/businesses/${business.id}?tab=access`);
-    toast.message("Complete this action on the Access tab.");
+  const openSubscriptionsTab = () => {
+    router.push(`/platform/businesses/${business.id}?tab=subscriptions`);
+    toast.message("Complete this action on the Subscriptions tab.");
   };
 
   const handleActionKey = (actionKey: SubscriptionActionKey) => {
     if (ACTIONS_REQUIRING_ACCESS_TAB.includes(actionKey)) {
-      openAccessTab();
+      openSubscriptionsTab();
       return;
     }
     if (actionKey === "REACTIVATE_BUSINESS") {

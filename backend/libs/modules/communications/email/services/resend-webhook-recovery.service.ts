@@ -33,8 +33,9 @@ export class ResendWebhookRecoveryService implements OnModuleInit {
       return;
     }
     if (
-      (process.env.RESEND_WEBHOOK_RECOVERY_ON_STARTUP ?? 'true').toLowerCase() ===
-      'false'
+      (
+        process.env.RESEND_WEBHOOK_RECOVERY_ON_STARTUP ?? 'true'
+      ).toLowerCase() === 'false'
     ) {
       return;
     }
@@ -78,14 +79,16 @@ export class ResendWebhookRecoveryService implements OnModuleInit {
         if (event.status === WebhookEventStatus.IGNORED) {
           await this.webhookEventsRepository.resetForReprocessing(
             event.id,
-            (event.payload ?? {}) as Prisma.InputJsonValue,
+            event.payload ?? {},
           );
         }
         await this.resendWebhookDispatch.dispatch(event.id);
       } catch (error) {
         const message =
           error instanceof Error ? error.message : 'Recovery failed';
-        this.logger.warn(`Resend webhook recovery failed for ${event.id}: ${message}`);
+        this.logger.warn(
+          `Resend webhook recovery failed for ${event.id}: ${message}`,
+        );
       }
     }
   }

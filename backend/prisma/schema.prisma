@@ -196,6 +196,7 @@ enum BusinessSubscriptionEventType {
   PAYMENT_REFUNDED
   PARTIAL_PAYMENT_RECORDED
   CANCELED
+  CANCELLATION_SCHEDULED
   EXPIRED
   REACTIVATED
   SUSPENDED
@@ -254,6 +255,7 @@ enum SubscriptionBillingSource {
   STRIPE
   MANUAL
   INTERNAL
+  NOT_SELECTED
 }
 
 enum BusinessCapabilitySource {
@@ -1596,7 +1598,7 @@ model BusinessSubscription {
   status             SubscriptionStatus        @default(TRIALING)
   paymentMethod      SubscriptionPaymentMethod @default(NOT_SELECTED)
   paymentStatus      SubscriptionPaymentStatus @default(NOT_REQUIRED)
-  billingSource      SubscriptionBillingSource   @default(MANUAL)
+  billingSource      SubscriptionBillingSource   @default(NOT_SELECTED)
   billingCycle       BusinessSubscriptionBillingCycle?
   currentPeriodStart DateTime?
   currentPeriodEnd   DateTime?

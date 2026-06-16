@@ -43,14 +43,18 @@ function isFieldObject(value: unknown): value is Record<string, unknown> {
 
 function fieldName(field: Record<string, unknown>): string | null {
   const name = field.name;
-  return typeof name === 'string' && name.trim().length > 0 ? name.trim() : null;
+  return typeof name === 'string' && name.trim().length > 0
+    ? name.trim()
+    : null;
 }
 
 function fieldType(field: Record<string, unknown>): string {
   return typeof field.type === 'string' ? field.type : 'text';
 }
 
-function validationRules(field: Record<string, unknown>): Record<string, unknown> {
+function validationRules(
+  field: Record<string, unknown>,
+): Record<string, unknown> {
   const validation = field.validation;
   return isFieldObject(validation) ? validation : {};
 }
@@ -95,7 +99,12 @@ function expandCompositeField(
 
   const type = fieldType(field);
   if (type === 'name') {
-    const parts: Array<{ key: string; label: string; type: string; required?: boolean }> = [];
+    const parts: Array<{
+      key: string;
+      label: string;
+      type: string;
+      required?: boolean;
+    }> = [];
     if (field.showFirstName !== false) {
       parts.push({ key: `${base}_first`, label: 'First name', type: 'text' });
     }
@@ -197,11 +206,17 @@ function validateFieldValue(
 
   const stringValue = asString(value);
 
-  if (typeof rules.minLength === 'number' && stringValue.length < rules.minLength) {
+  if (
+    typeof rules.minLength === 'number' &&
+    stringValue.length < rules.minLength
+  ) {
     return `${label} must be at least ${rules.minLength} characters`;
   }
 
-  if (typeof rules.maxLength === 'number' && stringValue.length > rules.maxLength) {
+  if (
+    typeof rules.maxLength === 'number' &&
+    stringValue.length > rules.maxLength
+  ) {
     return `${label} must be at most ${rules.maxLength} characters`;
   }
 
@@ -252,7 +267,8 @@ function validateFieldValue(
     try {
       const regex = new RegExp(rules.pattern);
       if (!regex.test(stringValue)) {
-        return typeof rules.patternMessage === 'string' && rules.patternMessage.trim()
+        return typeof rules.patternMessage === 'string' &&
+          rules.patternMessage.trim()
           ? rules.patternMessage.trim()
           : `${label} is invalid`;
       }
@@ -304,7 +320,12 @@ export function validateFormSubmission(
           .filter((optionValue) => {
             const key = `${name}.${optionValue}`;
             const raw = data[key] ?? data[optionValue];
-            return raw === true || raw === 'true' || raw === 'on' || raw === optionValue;
+            return (
+              raw === true ||
+              raw === 'true' ||
+              raw === 'on' ||
+              raw === optionValue
+            );
           });
       } else {
         value = value === true || value === 'true' || value === 'on';
@@ -340,10 +361,12 @@ export function sanitizeFormSubmissionData(
     if (!name) continue;
 
     const type = fieldType(field);
-    let value: unknown = data[name];
+    const value: unknown = data[name];
 
     if (type === 'hidden') {
-      sanitized[name] = asString(value || field.hiddenValue || field.defaultValue || '');
+      sanitized[name] = asString(
+        value || field.hiddenValue || field.defaultValue || '',
+      );
       continue;
     }
 
@@ -356,7 +379,12 @@ export function sanitizeFormSubmissionData(
           .filter((optionValue) => {
             const key = `${name}.${optionValue}`;
             const raw = data[key] ?? data[optionValue];
-            return raw === true || raw === 'true' || raw === 'on' || raw === optionValue;
+            return (
+              raw === true ||
+              raw === 'true' ||
+              raw === 'on' ||
+              raw === optionValue
+            );
           });
       } else {
         sanitized[name] = value === true || value === 'true' || value === 'on';

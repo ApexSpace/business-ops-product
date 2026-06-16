@@ -85,7 +85,14 @@ export class WhatsAppTemplatesController {
         components: { type: 'string', description: 'JSON array of components' },
         parameterFormat: { type: 'string' },
       },
-      required: ['file', 'name', 'language', 'category', 'headerFormat', 'components'],
+      required: [
+        'file',
+        'name',
+        'language',
+        'category',
+        'headerFormat',
+        'components',
+      ],
     },
   })
   @UseInterceptors(

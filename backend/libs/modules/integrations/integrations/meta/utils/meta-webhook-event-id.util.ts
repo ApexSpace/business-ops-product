@@ -45,8 +45,9 @@ export function isMetaStatusOnlyWebhook(
   const entries = Array.isArray(body.entry) ? body.entry : [];
   for (const entry of entries) {
     if (!entry || typeof entry !== 'object') continue;
-    const changes = (entry as { changes?: Array<{ value?: WhatsAppChangeValue }> })
-      .changes;
+    const changes = (
+      entry as { changes?: Array<{ value?: WhatsAppChangeValue }> }
+    ).changes;
     for (const change of changes ?? []) {
       const value = change.value;
       if (value?.messages?.length) {

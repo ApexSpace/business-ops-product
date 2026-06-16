@@ -31,7 +31,10 @@ export function extractInboundEmailBody(
   return stripped.trim() || null;
 }
 
-function pickBodySource(text?: string | null, html?: string | null): string | null {
+function pickBodySource(
+  text?: string | null,
+  html?: string | null,
+): string | null {
   const plain = text?.trim();
   if (plain) {
     return normalizeEmailBodyText(plain);

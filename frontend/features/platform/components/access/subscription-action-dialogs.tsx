@@ -14,12 +14,15 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { ActionImpactPreviewDialog } from "@/features/platform/components/access/action-impact-preview-dialog";
-import { ChangePackageDialog } from "@/features/platform/components/access/change-package-dialog";
 import { ChangeSnapshotDialog } from "@/features/platform/components/access/change-snapshot-dialog";
 import { MarkPaidDialog } from "@/features/platform/components/access/mark-paid-dialog";
 import { ReactivateBusinessDialog } from "@/features/platform/components/access/reactivate-business-dialog";
 import { useSubscriptionActionFlow } from "@/features/platform/components/access/use-subscription-action-flow";
-import { previewPlatformBusinessAccessAction } from "@/features/platform/api/business-access.api";
+import {
+  createPlatformBusinessPortalSession,
+  previewPlatformBusinessAccessAction,
+  resyncPlatformBusinessFromStripe,
+} from "@/features/platform/api/business-access.api";
 import type { BusinessAccess } from "@/features/platform/types/business-access";
 import type { SubscriptionActionDefinition } from "@/features/platform/types/business-subscription";
 import {
@@ -40,7 +43,6 @@ export function useSubscriptionActionDialogs({
   onSuccess: () => void;
   onRecordPayment: () => void;
 }) {
-  const [changePackageOpen, setChangePackageOpen] = useState(false);
   const [markPaidOpen, setMarkPaidOpen] = useState(false);
   const [changeSnapshotOpen, setChangeSnapshotOpen] = useState(false);
   const [reactivateOpen, setReactivateOpen] = useState(false);
@@ -53,6 +55,25 @@ export function useSubscriptionActionDialogs({
   const actionFlow = useSubscriptionActionFlow({
     businessId,
     onSuccess,
+  });
+
+  const portalMutation = useMutation({
+    mutationFn: () => createPlatformBusinessPortalSession(businessId),
+    onSuccess: (data) => {
+      if (data.url) {
+        window.location.assign(data.url);
+      }
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  const resyncMutation = useMutation({
+    mutationFn: () => resyncPlatformBusinessFromStripe(businessId),
+    onSuccess: () => {
+      toast.success("Subscription resynced from Stripe");
+      onSuccess();
+    },
+    onError: (err: Error) => toast.error(err.message),
   });
 
   const extendPreviewMutation = useMutation({
@@ -98,9 +119,6 @@ export function useSubscriptionActionDialogs({
     const friendlyAction = withFriendlyActionLabel(action, labelContext);
 
     switch (action.key) {
-      case "CHANGE_PACKAGE":
-        setChangePackageOpen(true);
-        return;
       case "CHANGE_SNAPSHOT":
         setChangeSnapshotOpen(true);
         return;
@@ -116,8 +134,14 @@ export function useSubscriptionActionDialogs({
       case "EXTEND_TRIAL":
         setExtendTrialOpen(true);
         return;
+      case "OPEN_STRIPE_PORTAL":
+        portalMutation.mutate();
+        return;
+      case "RESYNC_FROM_STRIPE":
+        resyncMutation.mutate();
+        return;
       case "MANUAL_ADJUSTMENT":
-        toast.message("Open the Access tab to use advanced adjustments.");
+        toast.message("Manual adjustments are not available from this view.");
         return;
       default:
         actionFlow.startPreview(friendlyAction);
@@ -147,14 +171,6 @@ export function useSubscriptionActionDialogs({
         confirmLabel={pendingConfirmation?.confirmLabel}
         isExecuting={actionFlow.isExecuting}
         onConfirm={actionFlow.confirmAction}
-      />
-
-      <ChangePackageDialog
-        businessId={businessId}
-        access={access}
-        open={changePackageOpen}
-        onOpenChange={setChangePackageOpen}
-        onSuccess={onSuccess}
       />
 
       <MarkPaidDialog

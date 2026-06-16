@@ -32,10 +32,12 @@ export function pickCanonicalContact(contacts: Contact[]): Contact {
     const scoreDiff = contactCompletenessScore(b) - contactCompletenessScore(a);
     if (scoreDiff !== 0) return scoreDiff;
     return a.createdAt.getTime() - b.createdAt.getTime();
-  })[0]!;
+  })[0];
 }
 
-export function groupContactsByEmail(contacts: Contact[]): Map<string, Contact[]> {
+export function groupContactsByEmail(
+  contacts: Contact[],
+): Map<string, Contact[]> {
   const groups = new Map<string, Contact[]>();
 
   for (const contact of contacts) {
@@ -50,7 +52,9 @@ export function groupContactsByEmail(contacts: Contact[]): Map<string, Contact[]
   return groups;
 }
 
-export function groupContactsByPhone(contacts: Contact[]): Map<string, Contact[]> {
+export function groupContactsByPhone(
+  contacts: Contact[],
+): Map<string, Contact[]> {
   const groups = new Map<string, Contact[]>();
 
   for (const contact of contacts) {
@@ -78,7 +82,11 @@ export function mergeContactMetadata(
     const metadata = asMetadataRecord(duplicate.metadata);
     for (const [key, value] of Object.entries(metadata)) {
       if (value === null || value === undefined || value === '') continue;
-      if (merged[key] === undefined || merged[key] === null || merged[key] === '') {
+      if (
+        merged[key] === undefined ||
+        merged[key] === null ||
+        merged[key] === ''
+      ) {
         merged[key] = value;
       }
     }
@@ -130,7 +138,9 @@ export function buildCanonicalContactUpdate(
   return update;
 }
 
-function asMetadataRecord(value: Prisma.JsonValue | null): Record<string, unknown> {
+function asMetadataRecord(
+  value: Prisma.JsonValue | null,
+): Record<string, unknown> {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     return {};
   }

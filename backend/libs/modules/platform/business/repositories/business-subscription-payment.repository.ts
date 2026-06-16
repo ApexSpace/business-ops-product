@@ -61,6 +61,7 @@ export class BusinessSubscriptionPaymentRepository {
     from?: Date;
     to?: Date;
     includeVoided?: boolean;
+    includePlanDetails?: boolean;
     cursor?: string;
     limit: number;
   }): Promise<BusinessSubscriptionPayment[]> {
@@ -90,6 +91,18 @@ export class BusinessSubscriptionPaymentRepository {
       where,
       orderBy: [{ recordedAt: 'desc' }, { id: 'desc' }],
       take: params.limit + 1,
+      ...(params.includePlanDetails
+        ? {
+            include: {
+              subscription: {
+                select: {
+                  planGroup: { select: { name: true } },
+                  planTier: { select: { name: true } },
+                },
+              },
+            },
+          }
+        : {}),
     });
   }
 

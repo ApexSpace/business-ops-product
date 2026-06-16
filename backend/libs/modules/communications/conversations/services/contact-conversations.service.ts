@@ -283,7 +283,10 @@ export class ContactConversationsService {
   }
 
   private async requireContact(businessId: string, contactId: string) {
-    const contact = await this.contactRepository.findById(businessId, contactId);
+    const contact = await this.contactRepository.findById(
+      businessId,
+      contactId,
+    );
     if (!contact) {
       throw new AppException(
         ErrorCode.CONTACT_NOT_FOUND,
@@ -293,5 +296,4 @@ export class ContactConversationsService {
     }
     return contact;
   }
-
 }

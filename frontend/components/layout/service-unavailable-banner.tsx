@@ -7,17 +7,24 @@ import { getUserErrorMessage } from "@/lib/api/user-error-message";
 type ServiceUnavailableBannerProps = {
   error: unknown;
   onRetry?: () => void;
+  /** `fixed-top`: full-width strip above the shell; `inline`: in-page alert inside content. */
+  placement?: "fixed-top" | "inline";
 };
 
 export function ServiceUnavailableBanner({
   error,
   onRetry,
+  placement = "fixed-top",
 }: ServiceUnavailableBannerProps) {
   const message = getUserErrorMessage(error);
 
   return (
     <div
-      className="flex flex-wrap items-center justify-between gap-3 border-b border-amber-500/30 bg-amber-500/10 px-4 py-2.5 text-sm"
+      className={
+        placement === "inline"
+          ? "mb-[var(--page-stack-gap)] flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-2.5 text-sm"
+          : "flex flex-wrap items-center justify-between gap-3 border-b border-amber-500/30 bg-amber-500/10 px-4 py-2.5 text-sm"
+      }
       role="alert"
     >
       <div className="flex min-w-0 items-start gap-2">

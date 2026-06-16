@@ -43,6 +43,10 @@ export interface TenantAccessSubscription {
   billingCycle?: string | null;
   currentPeriodStart?: string | null;
   currentPeriodEnd?: string | null;
+  nextBillingDate?: string | null;
+  nextBillingLabel?: string | null;
+  cancelAtPeriodEnd?: boolean;
+  cancelAt?: string | null;
   amount?: string | null;
   currency?: string | null;
 }

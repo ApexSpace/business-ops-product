@@ -420,7 +420,8 @@ export const REGISTRY_MODULES: RegistryModuleDefinition[] = [
       }),
       option('conversations', 'whatsapp_templates_manage', {
         name: 'WhatsApp templates (manage)',
-        description: 'Create, edit, sync, and delete WhatsApp message templates.',
+        description:
+          'Create, edit, sync, and delete WhatsApp message templates.',
         permissionKey: 'whatsapp.templates.manage',
         routeKeys: ['/business/settings/whatsapp'],
         icon: 'file-text',

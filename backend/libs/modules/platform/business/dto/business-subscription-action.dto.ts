@@ -128,7 +128,8 @@ export class MarkPaidDto {
   paymentReference?: string;
 
   @ApiPropertyOptional({
-    description: 'Skip ledger record when no payment details; requires reason and notes.',
+    description:
+      'Skip ledger record when no payment details; requires reason and notes.',
   })
   @IsOptional()
   @IsBoolean()
@@ -212,12 +213,7 @@ export class ChangePackageActionDto {
   syncCapabilities?: boolean;
 
   @ApiPropertyOptional({
-    enum: [
-      'no_payment',
-      'record_payment',
-      'move_pending',
-      'keep_status',
-    ],
+    enum: ['no_payment', 'record_payment', 'move_pending', 'keep_status'],
   })
   @IsOptional()
   @IsString()
@@ -267,11 +263,20 @@ export class ChangeSnapshotActionDto {
 
 export class ReactivateBusinessDto {
   @ApiPropertyOptional({
-    enum: ['business_only', 'restore_paid', 'restore_trial', 'restore_internal'],
+    enum: [
+      'business_only',
+      'restore_paid',
+      'restore_trial',
+      'restore_internal',
+    ],
   })
   @IsOptional()
   @IsString()
-  mode?: 'business_only' | 'restore_paid' | 'restore_trial' | 'restore_internal';
+  mode?:
+    | 'business_only'
+    | 'restore_paid'
+    | 'restore_trial'
+    | 'restore_internal';
 
   @ApiPropertyOptional()
   @IsOptional()

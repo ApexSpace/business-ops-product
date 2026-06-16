@@ -1,6 +1,7 @@
 import {
   BusinessStatus,
   BusinessSubscriptionBillingCycle,
+  SubscriptionBillingSource,
   SubscriptionPaymentMethod,
   SubscriptionPaymentStatus,
   SubscriptionStatus,
@@ -30,7 +31,9 @@ describe('BusinessSubscriptionActionService', () => {
         },
       }),
     ),
-  } as unknown as ConstructorParameters<typeof BusinessSubscriptionActionService>[0];
+  } as unknown as ConstructorParameters<
+    typeof BusinessSubscriptionActionService
+  >[0];
 
   const beforeState = {
     businessStatus: BusinessStatus.NOT_ACTIVE,
@@ -89,12 +92,15 @@ describe('BusinessSubscriptionActionService', () => {
 
   const capabilitySyncService = {} as unknown as BusinessCapabilitySyncService;
 
-  const accessResolver = new BusinessAccessResolverService(
-    prisma,
-    {
-      resolveEffectiveCapabilities: jest.fn().mockResolvedValue([]),
-    } as unknown as BusinessEffectiveCapabilitiesService,
-  );
+  const stripeSubscriptionService = {
+    cancelAtPeriodEnd: jest.fn(),
+    cancelImmediately: jest.fn(),
+    updateSubscriptionTier: jest.fn(),
+  };
+
+  const accessResolver = new BusinessAccessResolverService(prisma, {
+    resolveEffectiveCapabilities: jest.fn().mockResolvedValue([]),
+  } as unknown as BusinessEffectiveCapabilitiesService);
 
   const service = new BusinessSubscriptionActionService(
     prisma,
@@ -104,6 +110,7 @@ describe('BusinessSubscriptionActionService', () => {
     paymentService,
     availabilityService,
     capabilitySyncService,
+    stripeSubscriptionService as never,
   );
 
   const actor = {
@@ -178,7 +185,9 @@ describe('BusinessSubscriptionActionService', () => {
       SubscriptionStatus.PENDING_PAYMENT,
     );
     expect(result.accessImpact.beforeCanAccess).toBe(false);
-    expect(result.afterState.subscriptionStatus).toBe(SubscriptionStatus.ACTIVE);
+    expect(result.afterState.subscriptionStatus).toBe(
+      SubscriptionStatus.ACTIVE,
+    );
   });
 
   it('markPaid requires skip reason when skipping payment record', async () => {
@@ -215,9 +224,7 @@ describe('BusinessSubscriptionActionService', () => {
     expect(eventService.createCorrelatedEvents).toHaveBeenCalledWith(
       expect.anything(),
       expect.any(String),
-      expect.arrayContaining([
-        expect.objectContaining({ paymentId: 'pay-1' }),
-      ]),
+      expect.arrayContaining([expect.objectContaining({ paymentId: 'pay-1' })]),
       actor,
     );
   });
@@ -333,11 +340,98 @@ describe('BusinessSubscriptionActionService', () => {
       expect.objectContaining({
         subscriptionStatus: SubscriptionStatus.PENDING_PAYMENT,
         paymentStatus: SubscriptionPaymentStatus.PENDING,
-        businessStatus: BusinessStatus.NOT_ACTIVE,
+        businessStatus: BusinessStatus.ACTIVE,
       }),
       actor,
       expect.anything(),
     );
+  });
+
+  it('cancelSubscription keeps business active and sets subscription canceled', async () => {
+    (availabilityService.resolveAction as jest.Mock).mockReturnValue({
+      key: 'CANCEL_SUBSCRIPTION',
+      enabled: true,
+      visible: true,
+      requiresConfirmation: true,
+    });
+    (prisma.$transaction as jest.Mock).mockImplementation(async (fn) =>
+      fn({
+        businessSubscription: {
+          findUnique: jest.fn().mockResolvedValue({
+            id: 'sub-1',
+            status: SubscriptionStatus.ACTIVE,
+          }),
+        },
+      }),
+    );
+
+    await service.cancelSubscription('b1', actor);
+
+    expect(accessService.updateAccessInternal).toHaveBeenCalledWith(
+      expect.anything(),
+      'b1',
+      expect.objectContaining({
+        businessStatus: BusinessStatus.ACTIVE,
+        subscriptionStatus: SubscriptionStatus.CANCELED,
+      }),
+      actor,
+      expect.anything(),
+    );
+  });
+
+  it('expireTrial keeps business active and sets subscription expired', async () => {
+    (availabilityService.resolveAction as jest.Mock).mockReturnValue({
+      key: 'EXPIRE_TRIAL',
+      enabled: true,
+      visible: true,
+      requiresConfirmation: true,
+    });
+    (prisma.$transaction as jest.Mock).mockImplementation(async (fn) =>
+      fn({
+        businessSubscription: {
+          findUnique: jest.fn().mockResolvedValue({
+            id: 'sub-1',
+            status: SubscriptionStatus.TRIALING,
+          }),
+        },
+      }),
+    );
+
+    await service.expireTrial('b1', actor);
+
+    expect(accessService.updateAccessInternal).toHaveBeenCalledWith(
+      expect.anything(),
+      'b1',
+      expect.objectContaining({
+        businessStatus: BusinessStatus.ACTIVE,
+        subscriptionStatus: SubscriptionStatus.EXPIRED,
+      }),
+      actor,
+      expect.anything(),
+    );
+  });
+
+  it('recordPayment rejects Stripe-managed subscriptions', async () => {
+    (prisma.businessSubscription.findUnique as jest.Mock).mockResolvedValue({
+      id: 'sub-1',
+      billingSource: SubscriptionBillingSource.STRIPE,
+    });
+
+    await expect(
+      service.recordPayment(
+        'b1',
+        {
+          amount: 99,
+          currency: 'USD',
+          paymentMethod: SubscriptionPaymentMethod.MANUAL_INVOICE,
+        },
+        actor,
+      ),
+    ).rejects.toThrow(
+      'This subscription is managed by Stripe. Use Stripe billing actions instead.',
+    );
+
+    expect(paymentService.recordPayment).not.toHaveBeenCalled();
   });
 
   it('cancelSubscription rejects already canceled subscription', async () => {

@@ -34,8 +34,10 @@ import type { SubscriptionActionDefinition } from "@/features/platform/types/bus
 import { listPlatformPlanGroups } from "@/features/platform/api/plan-groups.api";
 import {
   buildActionLabelContext,
+  filterActionsForAccessTab,
   getActionConfirmationCopy,
   getSubscriptionActionLabel,
+  resolveRecommendedActionForAccessTab,
   withFriendlyActionLabel,
 } from "@/features/platform/utils/business-subscription-actions";
 import { queryKeys } from "@/lib/query/keys";
@@ -44,10 +46,12 @@ export function PlatformBusinessAccessTab({
   business,
   canUpdate,
   onNavigateToPayments,
+  onNavigateToSubscriptions,
 }: {
   business: Business;
   canUpdate: boolean;
   onNavigateToPayments?: (options?: { recordPayment?: boolean }) => void;
+  onNavigateToSubscriptions?: () => void;
 }) {
   const { data: access, isLoading } = useQuery({
     queryKey: queryKeys.platform.businesses.access(business.id),
@@ -69,6 +73,7 @@ export function PlatformBusinessAccessTab({
       access={access}
       canUpdate={canUpdate}
       onNavigateToPayments={onNavigateToPayments}
+      onNavigateToSubscriptions={onNavigateToSubscriptions}
     />
   );
 }
@@ -78,11 +83,13 @@ function PlatformBusinessAccessPanel({
   access,
   canUpdate,
   onNavigateToPayments,
+  onNavigateToSubscriptions,
 }: {
   business: Business;
   access: BusinessAccess;
   canUpdate: boolean;
   onNavigateToPayments?: (options?: { recordPayment?: boolean }) => void;
+  onNavigateToSubscriptions?: () => void;
 }) {
   const queryClient = useQueryClient();
   const planGroupsListKey = queryKeys.platform.planGroups.list({
@@ -198,7 +205,14 @@ function PlatformBusinessAccessPanel({
     }
   };
 
-  const availableActions = access.availableActions ?? [];
+  const availableActions = filterActionsForAccessTab(
+    access.availableActions ?? [],
+    access,
+  );
+  const recommendedAction = resolveRecommendedActionForAccessTab(access);
+  const showManageSubscriptionsLink =
+    access.subscription?.billingSource === "STRIPE" && onNavigateToSubscriptions;
+  const billingSource = access.subscription?.billingSource;
   const pendingConfirmation =
     actionFlow.pendingAction?.key != null
       ? getActionConfirmationCopy(actionFlow.pendingAction.key, labelContext)
@@ -206,8 +220,19 @@ function PlatformBusinessAccessPanel({
 
   return (
     <div className="space-y-6">
+      {showManageSubscriptionsLink ? (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border bg-muted/30 px-4 py-3">
+          <p className="text-sm text-muted-foreground">
+            This subscription is managed by Stripe. Manage billing actions in the Subscriptions tab.
+          </p>
+          <Button type="button" size="sm" variant="outline" onClick={onNavigateToSubscriptions}>
+            Go to Subscriptions
+          </Button>
+        </div>
+      ) : null}
+
       <RecommendedActionCard
-        action={access.recommendedAction}
+        action={recommendedAction}
         access={access}
         canUpdate={canUpdate}
         onAction={handleAction}
@@ -217,7 +242,7 @@ function PlatformBusinessAccessPanel({
       <SubscriptionActionGroups
         actions={availableActions}
         access={access}
-        excludeActionKey={access.recommendedAction?.key}
+        excludeActionKey={recommendedAction?.key}
         canUpdate={canUpdate}
         onAction={handleAction}
         isLoading={actionFlow.isPreviewing || actionFlow.isExecuting}
@@ -226,7 +251,7 @@ function PlatformBusinessAccessPanel({
       <AccessAdvancedSection
         businessId={business.id}
         access={access}
-        canUpdate={canUpdate}
+        canUpdate={canUpdate && billingSource !== "STRIPE"}
         onSuccess={invalidateAccess}
       />
 

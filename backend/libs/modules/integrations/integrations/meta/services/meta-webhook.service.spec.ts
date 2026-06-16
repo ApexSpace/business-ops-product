@@ -95,11 +95,11 @@ describe('MetaWebhookService', () => {
     const body = Buffer.from(JSON.stringify(samplePayload));
     const { service, webhookEventsRepository, metaWebhookDispatch } =
       createService({
-      existingWebhook: {
-        id: 'wh-existing',
-        status: WebhookEventStatus.PROCESSED,
-      },
-    });
+        existingWebhook: {
+          id: 'wh-existing',
+          status: WebhookEventStatus.PROCESSED,
+        },
+      });
 
     await service.handleEvent(body, signBody(body));
 
@@ -111,11 +111,11 @@ describe('MetaWebhookService', () => {
     const body = Buffer.from(JSON.stringify(samplePayload));
     const { service, webhookEventsRepository, metaWebhookDispatch } =
       createService({
-      existingWebhook: {
-        id: 'wh-existing',
-        status: WebhookEventStatus.RECEIVED,
-      },
-    });
+        existingWebhook: {
+          id: 'wh-existing',
+          status: WebhookEventStatus.RECEIVED,
+        },
+      });
 
     await service.handleEvent(body, signBody(body));
 
@@ -131,12 +131,12 @@ describe('MetaWebhookService', () => {
     );
     const { service, webhookEventsRepository, metaWebhookDispatch } =
       createService({
-      createError: p2002,
-      duplicateAfterRace: {
-        id: 'wh-race',
-        status: WebhookEventStatus.RECEIVED,
-      },
-    });
+        createError: p2002,
+        duplicateAfterRace: {
+          id: 'wh-race',
+          status: WebhookEventStatus.RECEIVED,
+        },
+      });
 
     await expect(
       service.handleEvent(body, signBody(body)),
@@ -154,12 +154,12 @@ describe('MetaWebhookService', () => {
     );
     const { service, webhookEventsRepository, metaWebhookDispatch } =
       createService({
-      createError: p2002,
-      duplicateAfterRace: {
-        id: 'wh-race',
-        status: WebhookEventStatus.PROCESSED,
-      },
-    });
+        createError: p2002,
+        duplicateAfterRace: {
+          id: 'wh-race',
+          status: WebhookEventStatus.PROCESSED,
+        },
+      });
 
     await service.handleEvent(body, signBody(body));
 

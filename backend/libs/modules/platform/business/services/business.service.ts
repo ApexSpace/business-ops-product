@@ -70,6 +70,7 @@ export class BusinessService {
   ) {}
 
   async createPlatform(dto: CreateBusinessDto, actor: RequestUser) {
+    this.validateCreateTrialAccess(dto);
     const resolvedAccess = resolveCreateBusinessAccess(dto);
     const effectiveDto: CreateBusinessDto = resolvedAccess
       ? {
@@ -198,6 +199,43 @@ export class BusinessService {
     return toBusinessResponse(refreshed ?? business);
   }
 
+  private validateCreateTrialAccess(dto: CreateBusinessDto): void {
+    if (dto.paymentCollected === true) {
+      return;
+    }
+    if (dto.unpaidAccessMode === 'INTERNAL') {
+      return;
+    }
+    if (dto.unpaidAccessMode === 'PENDING_PAYMENT') {
+      return;
+    }
+
+    const usesSimpleCreateFlow =
+      dto.paymentCollected !== undefined || dto.unpaidAccessMode !== undefined;
+    if (!usesSimpleCreateFlow) {
+      return;
+    }
+
+    const trialStart =
+      dto.currentPeriodStart ?? new Date().toISOString().slice(0, 10);
+
+    if (!dto.currentPeriodEnd?.trim()) {
+      throw new AppException(
+        ErrorCode.BAD_REQUEST,
+        'Trial end date is required',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    if (dto.currentPeriodEnd <= trialStart) {
+      throw new AppException(
+        ErrorCode.BAD_REQUEST,
+        'Trial end date must be after trial start date',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+  }
+
   private async maybeRecordInitialPayment(
     businessId: string,
     dto: CreateBusinessDto,
@@ -220,7 +258,8 @@ export class BusinessService {
         : SubscriptionPaymentMethod.MANUAL_INVOICE;
 
     const correlationId = randomUUID();
-    const beforeState = await this.subscriptionEventService.captureState(businessId);
+    const beforeState =
+      await this.subscriptionEventService.captureState(businessId);
 
     await this.prisma.$transaction(async (tx) => {
       const payment = await this.subscriptionPaymentService.recordPayment(
@@ -261,8 +300,8 @@ export class BusinessService {
           actionKey: 'CREATE_BUSINESS',
           paymentId: payment.id,
           correlationId,
-          fromState: beforeState as unknown as Prisma.InputJsonValue,
-          toState: afterState as unknown as Prisma.InputJsonValue,
+          fromState: beforeState,
+          toState: afterState,
           source: BusinessSubscriptionEventSource.ADMIN,
         },
         actor,
@@ -325,7 +364,7 @@ export class BusinessService {
 
     const { items, total } = await this.businessRepository.findMany({
       skip: hasResolverFilter ? 0 : params.skip,
-      take: hasResolverFilter ? businessIds?.length ?? 0 : params.limit,
+      take: hasResolverFilter ? (businessIds?.length ?? 0) : params.limit,
       status: params.status,
       subscriptionStatus: params.subscriptionStatus,
       paymentStatus: params.paymentStatus,
@@ -356,7 +395,7 @@ export class BusinessService {
     return {
       items: resolvedItems,
       meta: {
-        total: hasResolverFilter ? businessIds?.length ?? 0 : total,
+        total: hasResolverFilter ? (businessIds?.length ?? 0) : total,
         page: params.page,
         limit: params.limit,
       },
@@ -511,8 +550,7 @@ export class BusinessService {
         HttpStatus.NOT_FOUND,
       );
     }
-    const resolution =
-      await this.accessResolver.resolveForBusiness(businessId);
+    const resolution = await this.accessResolver.resolveForBusiness(businessId);
     return toBusinessResponse(business, resolution);
   }
 

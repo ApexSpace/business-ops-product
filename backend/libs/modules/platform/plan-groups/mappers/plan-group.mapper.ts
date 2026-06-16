@@ -143,7 +143,9 @@ function toPlanTierStripeDto(
   if (!mapping) return null;
   return {
     ...(mapping.productId ? { productId: mapping.productId } : {}),
-    ...(mapping.monthlyPriceId ? { monthlyPriceId: mapping.monthlyPriceId } : {}),
+    ...(mapping.monthlyPriceId
+      ? { monthlyPriceId: mapping.monthlyPriceId }
+      : {}),
     ...(mapping.yearlyPriceId ? { yearlyPriceId: mapping.yearlyPriceId } : {}),
   };
 }

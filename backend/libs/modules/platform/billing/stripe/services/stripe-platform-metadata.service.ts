@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { BusinessSubscriptionBillingCycle, Prisma } from '@prisma/client';
 import type { BusinessSubscriptionStripeMetadata } from '../types/stripe-platform-billing.types';
 
 @Injectable()
@@ -12,7 +12,9 @@ export class StripePlatformMetadataService {
     }
     const root = metadata as Record<string, unknown>;
     const stripe =
-      root.stripe && typeof root.stripe === 'object' && !Array.isArray(root.stripe)
+      root.stripe &&
+      typeof root.stripe === 'object' &&
+      !Array.isArray(root.stripe)
         ? (root.stripe as Record<string, unknown>)
         : null;
     if (!stripe) return null;
@@ -52,6 +54,35 @@ export class StripePlatformMetadataService {
       lastSyncedAt:
         typeof stripe.lastSyncedAt === 'string'
           ? stripe.lastSyncedAt
+          : undefined,
+      pendingCheckoutSessionId:
+        stripe.pendingCheckoutSessionId === null ||
+        typeof stripe.pendingCheckoutSessionId === 'string'
+          ? stripe.pendingCheckoutSessionId
+          : undefined,
+      pendingPlanGroupId:
+        stripe.pendingPlanGroupId === null ||
+        typeof stripe.pendingPlanGroupId === 'string'
+          ? stripe.pendingPlanGroupId
+          : undefined,
+      pendingPlanTierId:
+        stripe.pendingPlanTierId === null ||
+        typeof stripe.pendingPlanTierId === 'string'
+          ? stripe.pendingPlanTierId
+          : undefined,
+      pendingBillingCycle:
+        stripe.pendingBillingCycle === null
+          ? null
+          : stripe.pendingBillingCycle ===
+                BusinessSubscriptionBillingCycle.MONTHLY ||
+              stripe.pendingBillingCycle ===
+                BusinessSubscriptionBillingCycle.YEARLY
+            ? stripe.pendingBillingCycle
+            : undefined,
+      checkoutStartedAt:
+        stripe.checkoutStartedAt === null ||
+        typeof stripe.checkoutStartedAt === 'string'
+          ? stripe.checkoutStartedAt
           : undefined,
     };
   }

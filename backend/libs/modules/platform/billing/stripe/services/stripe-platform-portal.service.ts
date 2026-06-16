@@ -17,7 +17,9 @@ export class StripePlatformPortalService {
     private readonly metadataService: StripePlatformMetadataService,
   ) {}
 
-  async createPortalSession(businessId: string): Promise<PortalSessionResponseDto> {
+  async createPortalSession(
+    businessId: string,
+  ): Promise<PortalSessionResponseDto> {
     const subscription = await this.prisma.businessSubscription.findUnique({
       where: { businessId },
     });
