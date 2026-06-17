@@ -144,11 +144,21 @@ export class ConversationWebhookIngestionService {
     );
 
     let conversation =
-      await this.conversationsRepository.findByExternalConversationId(
-        businessId,
-        inbound.channel,
-        inbound.externalConversationId,
-      );
+      inbound.channel === ConversationChannel.EMAIL
+        ? await this.conversationsRepository.findById(
+            businessId,
+            inbound.externalConversationId,
+          )
+        : null;
+
+    if (!conversation) {
+      conversation =
+        await this.conversationsRepository.findByExternalConversationId(
+          businessId,
+          inbound.channel,
+          inbound.externalConversationId,
+        );
+    }
 
     const preview = previewFromMessageContent(inbound.text, inbound.attachments);
     const messageAt = inbound.timestamp;

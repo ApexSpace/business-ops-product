@@ -1,12 +1,16 @@
-import { SettingsPlaceholder } from "@/features/settings/components/settings-placeholder";
+import dynamic from "next/dynamic";
+import { Skeleton } from "@/components/ui/skeleton";
 
-export default function BusinessSettingsAutomationsPage() {
-  return (
-    <SettingsPlaceholder
-      title="Automations"
-      description="Rules that run when leads move, messages arrive, or appointments are booked."
-      comingSoonTitle="Automation workflows"
-      comingSoonDescription="Visual workflow builder and triggers are on the roadmap."
-    />
-  );
+const AutomationsSettingsPage = dynamic(
+  () =>
+    import("@/features/automations/components/automations-settings-page").then(
+      (m) => m.AutomationsSettingsPage,
+    ),
+  {
+    loading: () => <Skeleton className="min-h-[24rem] w-full" />,
+  },
+);
+
+export default function Page() {
+  return <AutomationsSettingsPage />;
 }

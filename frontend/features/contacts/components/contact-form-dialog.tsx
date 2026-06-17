@@ -3,9 +3,10 @@
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { ContactFormFields } from "@/features/contacts/components/contact-form-fields";
+import { queryKeys } from "@/lib/query/keys";
 import { FormDialog } from "@/components/forms/form-dialog";
 import { createContact, updateContact } from "@/features/contacts/api/contacts.api";
 import { mapApiFieldErrorsToForm } from "@/lib/forms/map-api-field-errors";
@@ -32,6 +33,7 @@ export function ContactFormDialog({
   contact,
   onSuccess,
 }: ContactFormDialogProps) {
+  const queryClient = useQueryClient();
   const isEdit = !!contact;
 
   const form = useForm<ContactProfileFormValues>({
@@ -55,7 +57,18 @@ export function ContactFormDialog({
       }
       return createContact(body);
     },
-    onSuccess: () => {
+    onSuccess: (_data, values) => {
+      const nextAssetId = values.avatarAssetId?.trim() || "";
+      if (nextAssetId) {
+        void queryClient.invalidateQueries({
+          queryKey: queryKeys.storage.file(nextAssetId),
+        });
+      }
+      if (contact?.avatarAssetId && contact.avatarAssetId !== nextAssetId) {
+        void queryClient.invalidateQueries({
+          queryKey: queryKeys.storage.file(contact.avatarAssetId),
+        });
+      }
       toast.success(isEdit ? "Contact updated" : "Contact created");
       onSuccess();
       onOpenChange(false);
@@ -83,7 +96,12 @@ export function ContactFormDialog({
       submitLabel={isEdit ? "Save changes" : "Create contact"}
       className="sm:max-w-2xl"
     >
-      <ContactFormFields form={form} />
+      <ContactFormFields
+        form={form}
+        avatarPreviewUrl={
+          contact && !contact.avatarAssetId ? contact.avatarUrl : undefined
+        }
+      />
     </FormDialog>
   );
 }

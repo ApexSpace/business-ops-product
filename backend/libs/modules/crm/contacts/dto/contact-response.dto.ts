@@ -21,6 +21,7 @@ export class ContactResponseDto {
   country!: string | null;
   zip!: string | null;
   avatarUrl!: string | null;
+  avatarAssetId!: string | null;
   source!: string | null;
   createdById!: string | null;
   createdAt!: Date;

@@ -48,6 +48,20 @@ describe('email-reply-to.util', () => {
     expect(normalizeRoutableEmailAddress(bare, domain)).toBe(`${bare}@${domain}`);
   });
 
+  it('strips display names before parsing routing addresses', () => {
+    const compact =
+      'c571a92e420242488cb3652098383235989a6bcad6944c6aa404ba51abb28db8';
+    const wrapped = `Routing <${compact}@${domain}>`;
+
+    expect(normalizeRoutableEmailAddress(wrapped, domain)).toBe(
+      `${compact}@${domain}`,
+    );
+    expect(parseConversationReplyToAddress(wrapped)).toEqual({
+      conversationId,
+      tenantId,
+    });
+  });
+
   it('returns null for non-conversation addresses', () => {
     expect(parseConversationReplyToAddress('support@notify.codesoltech.com')).toBeNull();
   });

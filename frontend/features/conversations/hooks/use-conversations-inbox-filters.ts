@@ -2,36 +2,16 @@
 
 import { useMemo, useState } from "react";
 
-export type ConversationInboxFilterKey =
-  | "all"
-  | "facebook"
-  | "instagram"
-  | "whatsapp"
-  | "email"
-  | "webchat"
-  | "open"
-  | "unread"
-  | "assigned";
-
 export function useConversationsInboxFilters() {
-  const [filter, setFilter] = useState<ConversationInboxFilterKey>("all");
   const [search, setSearch] = useState("");
 
   const listFilters = useMemo(() => {
-    const base: Record<string, string | number | undefined> = {
+    return {
       page: 1,
       limit: 50,
       search: search.trim() || undefined,
     };
-    if (filter === "facebook") base.channel = "FACEBOOK";
-    if (filter === "instagram") base.channel = "INSTAGRAM";
-    if (filter === "whatsapp") base.channel = "WHATSAPP";
-    if (filter === "email") base.channel = "EMAIL";
-    if (filter === "webchat") base.channel = "WEBCHAT";
-    if (filter === "open") base.status = "OPEN";
-    if (filter === "assigned") base.assignedToMe = "true";
-    return base;
-  }, [filter, search]);
+  }, [search]);
 
-  return { filter, setFilter, search, setSearch, listFilters };
+  return { search, setSearch, listFilters };
 }

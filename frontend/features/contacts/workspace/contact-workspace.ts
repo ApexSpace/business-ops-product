@@ -8,6 +8,7 @@ import {
   Receipt,
   StickyNote,
   Target,
+  UserRound,
   Wallet,
   Wrench,
 } from "lucide-react";
@@ -23,6 +24,7 @@ import {
 import { formatDateTimeInTimezone } from "@/features/calendars/utils/timezone";
 
 export type ContactRecordsSectionId =
+  | "profile"
   | "leads"
   | "work-items"
   | "appointments"
@@ -35,7 +37,7 @@ export type ContactRecordsSectionId =
   | "automations";
 
 export const DEFAULT_CONTACT_RECORDS_SECTION: ContactRecordsSectionId =
-  "activity";
+  "profile";
 
 export type ContactMobilePanel =
   | "details"
@@ -51,8 +53,14 @@ export interface ContactRailItem {
   placeholder?: boolean;
 }
 
-/** Rail order: activity first (default), then operational sections */
+/** Rail order: profile first, then activity and operational sections */
 export const CONTACT_RAIL_ITEMS: ContactRailItem[] = [
+  {
+    id: "profile",
+    label: "Profile",
+    icon: UserRound,
+    sectionId: "profile",
+  },
   {
     id: "activity",
     label: "Activity",
@@ -121,6 +129,8 @@ export function getRecordsSectionTitle(
   labels: IndustryLabels,
 ): string {
   switch (section) {
+    case "profile":
+      return "Contact details";
     case "leads":
       return labels.leads;
     case "work-items":
@@ -191,7 +201,7 @@ export const WORKSPACE_TABLET_CONVERSATION_COL_CLASS =
   "flex h-full min-h-0 min-w-[240px] flex-1 basis-0 overflow-hidden";
 
 export const WORKSPACE_TABLET_SIDEBAR_COL_CLASS =
-  "flex h-full min-h-0 w-[min(42%,360px)] min-w-[260px] max-w-[380px] shrink-0 overflow-hidden";
+  "flex h-full min-h-0 w-[min(34%,300px)] min-w-[240px] max-w-[320px] shrink-0 overflow-hidden";
 
 export const WORKSPACE_TABLET_RAIL_COL_CLASS = "flex w-11 shrink-0 overflow-hidden";
 
@@ -211,6 +221,34 @@ export const WORKSPACE_TABLET_RECORDS_COL_CLASS =
 export function isContactWorkspacePath(pathname: string): boolean {
   return /^\/business\/contacts\/[^/]+$/.test(pathname);
 }
+
+/** Conversations inbox — same full-bleed shell treatment as contact workspace. */
+export function isConversationsInboxPath(pathname: string): boolean {
+  return pathname === "/business/conversations";
+}
+
+/**
+ * Desktop xl+ — list, thread, contact sidebar, icon rail (matches contact workspace spacing).
+ */
+export const INBOX_DESKTOP_ROW_CLASS = [
+  "hidden h-full min-h-0 w-full max-w-full flex-1 items-stretch overflow-x-auto overflow-y-hidden xl:grid",
+  WORKSPACE_GAP_CLASS,
+  WORKSPACE_PADDING_CLASS,
+  "xl:grid-cols-[minmax(220px,260px)_minmax(400px,2fr)_minmax(240px,280px)_3rem]",
+  "2xl:grid-cols-[240px_minmax(480px,2fr)_280px_3.5rem]",
+].join(" ");
+
+/** Tablet md–xl: list + thread + sidebar + rail in one row */
+export const INBOX_TABLET_MAIN_ROW_CLASS = [
+  "flex h-full min-h-0 w-full flex-1 overflow-hidden",
+  WORKSPACE_GAP_CLASS,
+].join(" ");
+
+export const INBOX_TABLET_LIST_COL_CLASS =
+  "flex h-full min-h-0 w-[min(30%,240px)] min-w-[200px] max-w-[260px] shrink-0 overflow-hidden";
+
+export const INBOX_TABLET_THREAD_COL_CLASS =
+  "flex h-full min-h-0 min-w-[280px] flex-[1.4] basis-0 overflow-hidden";
 
 export type TimelineEventType =
   | "contact_created"

@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { AuditModule } from '@app/modules/platform/audit/audit.module';
 import { BusinessModule } from '@app/modules/platform/business/business.module';
 import { BusinessFormsController } from './controllers/business-forms.controller';
 import { FormWidgetsController } from './controllers/form-widgets.controller';
@@ -12,7 +13,7 @@ import { FormsService } from './services/forms.service';
 import { PublicFormsService } from './services/public-forms.service';
 
 @Module({
-  imports: [BusinessModule],
+  imports: [AuditModule, BusinessModule],
   controllers: [
     BusinessFormsController,
     PublicFormsController,

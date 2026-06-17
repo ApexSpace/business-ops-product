@@ -1,6 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PlatformMemberRole, Prisma } from '@prisma/client';
+import { EventPublisherService } from '@app/core/events/event-publisher.service';
 import { PrismaService } from '@app/core/database/prisma.service';
+import { AUDIT_LOGGED_EVENT } from '../constants/audit.constants';
 import { SYSTEM_AUDIT_ACTOR_SENTINEL } from '../constants/audit.constants';
 import { AuditLogRepository } from '../repositories/audit-log.repository';
 
@@ -22,6 +24,7 @@ export class AuditService {
   constructor(
     private readonly auditLogRepository: AuditLogRepository,
     private readonly prisma: PrismaService,
+    private readonly eventPublisher: EventPublisherService,
   ) {}
 
   async log(input: AuditLogInput): Promise<void> {
@@ -39,6 +42,18 @@ export class AuditService {
         actorUserId,
         metadata: input.metadata as Prisma.InputJsonValue | undefined,
       });
+
+      if (input.businessId) {
+        this.eventPublisher.publish(AUDIT_LOGGED_EVENT, {
+          actorUserId,
+          businessId: input.businessId,
+          action: input.action,
+          entityType: input.entityType,
+          entityId: input.entityId,
+          metadata: input.metadata,
+          occurredAt: new Date().toISOString(),
+        });
+      }
     } catch (error) {
       this.logger.warn(
         `Audit log failed (${input.action}): ${

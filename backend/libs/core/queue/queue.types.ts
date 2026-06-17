@@ -72,3 +72,9 @@ export interface CleanupAsyncJobsJobPayload {
 export interface CleanupOrphanFilesJobPayload {
   pendingOlderThanHours: number;
 }
+
+export interface AutomationStepJobPayload {
+  businessId: string;
+  runId: string;
+  stepIndex: number;
+}

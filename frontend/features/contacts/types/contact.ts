@@ -20,6 +20,7 @@ export interface Contact {
   state: string | null;
   country: string | null;
   zip: string | null;
+  avatarAssetId: string | null;
   avatarUrl: string | null;
   source: string | null;
   createdById: string | null;

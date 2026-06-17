@@ -22,6 +22,7 @@ import { resolveMetaParticipantId } from '../utils/contact-outbound-identity.uti
 import { EmailConversationsService } from './email-conversations.service';
 import { MetaConversationsService } from './meta-conversations.service';
 import { WhatsAppSessionWindowService } from './whatsapp-session-window.service';
+import { WhatsAppParticipantSyncService } from './whatsapp-participant-sync.service';
 
 @Injectable()
 export class ContactConversationsService {
@@ -33,6 +34,7 @@ export class ContactConversationsService {
     private readonly emailConversationsService: EmailConversationsService,
     private readonly metaConversationsService: MetaConversationsService,
     private readonly whatsAppSessionWindowService: WhatsAppSessionWindowService,
+    private readonly whatsAppParticipantSyncService: WhatsAppParticipantSyncService,
   ) {}
 
   async listMessages(
@@ -235,6 +237,11 @@ export class ContactConversationsService {
     businessId: string,
     contact: Contact,
   ): Promise<void> {
+    await this.whatsAppParticipantSyncService.syncContactWhatsAppIdentity(
+      businessId,
+      contact,
+    );
+
     const identityFilters: Prisma.ConversationWhereInput[] = [];
 
     const email = contact.email?.trim().toLowerCase();

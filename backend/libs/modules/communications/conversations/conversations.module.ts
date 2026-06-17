@@ -31,13 +31,14 @@ import { ContactIdentityBackfillService } from './services/contact-identity-back
 import { EmailConversationsService } from './services/email-conversations.service';
 import { MetaConversationsService } from './services/meta-conversations.service';
 import { UnifiedConversationsService } from './services/unified-conversations.service';
+import { WhatsAppParticipantSyncService } from './services/whatsapp-participant-sync.service';
 import { WhatsAppSessionWindowService } from './services/whatsapp-session-window.service';
 
 @Module({
   imports: [
     AuditModule,
     forwardRef(() => BusinessModule),
-    ContactsModule,
+    forwardRef(() => ContactsModule),
     WebhookEventsModule,
     forwardRef(() => EmailModule),
     forwardRef(() => IntegrationsModule),
@@ -61,6 +62,7 @@ import { WhatsAppSessionWindowService } from './services/whatsapp-session-window
     EmailConversationsService,
     MetaConversationsService,
     WhatsAppSessionWindowService,
+    WhatsAppParticipantSyncService,
     EmailMessagingAdapter,
     FacebookMessengerAdapter,
     InstagramMessagingAdapter,
@@ -79,6 +81,7 @@ import { WhatsAppSessionWindowService } from './services/whatsapp-session-window
     ConversationsRepository,
     ConversationChannelAdapterRegistry,
     WhatsAppSessionWindowService,
+    WhatsAppParticipantSyncService,
     ConversationRealtimeService,
   ],
 })

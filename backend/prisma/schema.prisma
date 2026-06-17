@@ -584,6 +584,7 @@ model User {
   emailTemplatesCreated EmailTemplate[]        @relation("EmailTemplateCreatedBy")
   emailTemplatesUpdated EmailTemplate[]        @relation("EmailTemplateUpdatedBy")
   whatsappMessageTemplatesCreated WhatsAppMessageTemplate[] @relation("WhatsAppTemplateCreatedBy")
+  automationWorkflowsCreated     AutomationWorkflow[]      @relation("AutomationWorkflowCreatedBy")
   snapshotsCreated      Snapshot[]              @relation("SnapshotCreatedBy")
   snapshotsUpdated      Snapshot[]              @relation("SnapshotUpdatedBy")
   subscriptionEventsCreated BusinessSubscriptionEvent[] @relation("SubscriptionEventCreatedBy")
@@ -732,6 +733,8 @@ model Business {
   whatsappMessageTemplates WhatsAppMessageTemplate[]
   emailMessages            EmailMessage[]
   capabilities             BusinessCapability[]
+  automationWorkflows      AutomationWorkflow[]
+  automationWorkflowRuns   AutomationWorkflowRun[]
 
   @@index([createdById])
   @@index([industryId])
@@ -815,6 +818,7 @@ model Contact {
   country          String?
   zip              String?
   avatarUrl        String?
+  avatarAssetId    String?
   source           String?
   metadata         Json?
   createdById      String?
@@ -842,6 +846,7 @@ model Contact {
   @@index([businessId, createdAt])
   @@index([businessId, email])
   @@index([businessId, phoneNumber])
+  @@index([avatarAssetId])
   @@map("contacts")
 }
 
@@ -2354,5 +2359,107 @@ model WhatsAppMessageTemplate {
   @@unique([businessId, name, language])
   @@index([businessId, status])
   @@map("whatsapp_message_templates")
+}
+
+enum AutomationWorkflowStatus {
+  DRAFT
+  ACTIVE
+  INACTIVE
+}
+
+enum AutomationWorkflowRunStatus {
+  RUNNING
+  WAITING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum AutomationWorkflowRunStepStatus {
+  PENDING
+  RUNNING
+  WAITING
+  COMPLETED
+  FAILED
+  SKIPPED
+}
+
+model AutomationWorkflow {
+  id               String                   @id @default(uuid())
+  businessId       String
+  name             String
+  description      String?
+  status           AutomationWorkflowStatus @default(DRAFT)
+  triggerKey       String
+  triggerFilters   Json?
+  steps            Json
+  settings         Json                     @default("{}")
+  isSystemTemplate Boolean                  @default(false)
+  createdById      String?
+  deletedAt        DateTime?
+  createdAt        DateTime                 @default(now())
+  updatedAt        DateTime                 @updatedAt
+
+  business Business               @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  createdBy User?                   @relation("AutomationWorkflowCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  runs      AutomationWorkflowRun[]
+
+  @@index([businessId, deletedAt])
+  @@index([businessId, status])
+  @@index([businessId, triggerKey])
+  @@map("automation_workflows")
+}
+
+model AutomationWorkflowRun {
+  id                String                      @id @default(uuid())
+  businessId        String
+  workflowId        String
+  status            AutomationWorkflowRunStatus @default(RUNNING)
+  triggerKey        String
+  subjectId         String
+  subjectType       String
+  contextEntityId   String?
+  contextEntityType String?
+  contactId         String?
+  currentStepIndex  Int                         @default(0)
+  enrollmentReason  String?
+  startedAt         DateTime                    @default(now())
+  completedAt       DateTime?
+  failedAt          DateTime?
+  errorMessage      String?
+  metadata          Json?
+
+  business Business                    @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  workflow AutomationWorkflow          @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  steps    AutomationWorkflowRunStep[]
+
+  @@index([businessId, workflowId])
+  @@index([businessId, contactId])
+  @@index([businessId, status])
+  @@index([workflowId, status])
+  @@map("automation_workflow_runs")
+}
+
+model AutomationWorkflowRunStep {
+  id           String                          @id @default(uuid())
+  businessId   String
+  runId        String
+  stepIndex    Int
+  actionKey    String
+  status       AutomationWorkflowRunStepStatus @default(PENDING)
+  config       Json
+  input        Json?
+  output       Json?
+  errorMessage String?
+  scheduledFor DateTime?
+  startedAt    DateTime?
+  completedAt  DateTime?
+
+  run AutomationWorkflowRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+
+  @@unique([runId, stepIndex])
+  @@index([runId])
+  @@index([businessId])
+  @@map("automation_workflow_run_steps")
 }
 

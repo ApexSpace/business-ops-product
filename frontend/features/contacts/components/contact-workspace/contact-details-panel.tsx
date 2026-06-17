@@ -7,7 +7,7 @@ import {
   Pencil,
   Trash2,
 } from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { ProfileAvatar } from "@/components/ui/profile-avatar";
 import { ActionButton } from "@/components/ui/action-button";
 import { Button } from "@/components/ui/button";
 import { IconButton } from "@/components/ui/icon-button";
@@ -155,14 +155,12 @@ export function ContactDetailsPanel({
       <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
         <div className="border-b border-border/60 px-4 py-4">
           <div className="flex items-start gap-3">
-            <Avatar className="size-14 shrink-0">
-              {contact.avatarUrl ? (
-                <AvatarImage src={contact.avatarUrl} alt="" />
-              ) : null}
-              <AvatarFallback className="text-base">
-                {contact.label.slice(0, 2).toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
+            <ProfileAvatar
+              name={contact.label}
+              avatarUrl={contact.avatarUrl}
+              className="size-14"
+              fallbackClassName="text-base"
+            />
             <div className="min-w-0 flex-1">
               <h2 className="truncate text-base font-semibold">{contact.label}</h2>
               <div className="mt-2 flex gap-1">

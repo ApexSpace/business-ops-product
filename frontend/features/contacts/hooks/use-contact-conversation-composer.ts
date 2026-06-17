@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import type { PendingMessageAttachment } from "@/features/conversations/components/inbox/message-composer";
-import { channelComposerHint } from "@/features/conversations/components/inbox/conversation-inbox-utils";
+import { channelComposerHint, resolveOutboundEmailSubject } from "@/features/conversations/components/inbox/conversation-inbox-utils";
 import {
   ensureContactConversation,
   listContactReplyChannels,
@@ -21,6 +21,7 @@ import {
   replyChannelSendDisabledReason,
 } from "@/features/conversations/utils/reply-channel.utils";
 import { useWhatsAppTemplateComposerState } from "@/features/conversations/hooks/use-whatsapp-template-composer-state";
+import { mergeConversationMessagePages } from "@/features/conversations/utils/merge-message-pages";
 import { createOptimisticOutboundMessage } from "@/features/conversations/utils/optimistic-message";
 import {
   appendMessageToContactCache,
@@ -60,7 +61,7 @@ export function useContactConversationComposer(contactId: string) {
   }, [contactId, queryClient]);
 
   const messages = useMemo(
-    () => messagesInfinite?.pages.flatMap((page) => page.items) ?? [],
+    () => mergeConversationMessagePages(messagesInfinite?.pages),
     [messagesInfinite?.pages],
   );
 

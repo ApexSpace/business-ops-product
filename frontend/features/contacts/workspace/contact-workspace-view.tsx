@@ -163,6 +163,7 @@ export function ContactWorkspaceView(state: ContactWorkspaceState) {
     <ContactConversationPanel
       contactId={contact.id}
       contactName={contact.label}
+      contactEmail={contact.email}
       contactAvatarUrl={contact.avatarUrl}
       businessName={business?.name}
       className="h-full w-full min-w-0"

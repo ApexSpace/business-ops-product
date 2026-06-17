@@ -2,7 +2,8 @@ export type EmailTypeCategory =
   | 'membership'
   | 'appointments'
   | 'invoices'
-  | 'auth';
+  | 'auth'
+  | 'automation';
 
 export interface EmailTypeDefinition {
   key: string;
@@ -248,6 +249,18 @@ export const EMAIL_TYPE_REGISTRY: Record<string, EmailTypeDefinition> = {
       'payment.date',
     ],
   },
+  'automation.workflow': {
+    key: 'automation.workflow',
+    category: 'automation',
+    label: 'Automation email',
+    description: 'Sent by a workflow automation step.',
+    defaultEnabled: true,
+    businessConfigurable: false,
+    defaultSubject: 'Notification from {{business.name}}',
+    defaultHtmlBody: WRAPPER('<p>{{contact.name}}</p>'),
+    defaultTextBody: 'Notification from {{business.name}}',
+    variables: ['business.name', 'contact.name', 'contact.email'],
+  },
   'auth.password_reset': {
     key: 'auth.password_reset',
     category: 'auth',
@@ -321,6 +334,7 @@ export function listEmailTypesByCategory(): Record<
     appointments: [],
     invoices: [],
     auth: [],
+    automation: [],
   };
   for (const def of Object.values(EMAIL_TYPE_REGISTRY)) {
     grouped[def.category].push(def);

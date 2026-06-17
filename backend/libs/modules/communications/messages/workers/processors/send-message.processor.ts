@@ -20,6 +20,7 @@ import type { ChannelMessageAttachment } from '@app/modules/communications/conve
 import { previewFromMessageContent } from '@app/modules/communications/conversations/adapters/meta/meta-attachment.util';
 import { ConversationRealtimeService } from '@app/modules/communications/conversations/services/conversation-realtime.service';
 import { ConversationWebhookIngestionService } from '@app/modules/communications/conversations/services/conversation-webhook-ingestion.service';
+import { WhatsAppParticipantSyncService } from '@app/modules/communications/conversations/services/whatsapp-participant-sync.service';
 import { WhatsAppBusinessContextService } from '@app/modules/integrations/whatsapp/services/whatsapp-business-context.service';
 import { WhatsAppTemplateRepository } from '@app/modules/integrations/whatsapp/repositories/whatsapp-template.repository';
 import { getTemplatePolicy } from '@app/modules/integrations/whatsapp/utils/template-policy.util';
@@ -40,6 +41,7 @@ export class SendMessageProcessor {
     private readonly conversationWebhookIngestion: ConversationWebhookIngestionService,
     private readonly whatsAppTemplateRepository: WhatsAppTemplateRepository,
     private readonly whatsAppBusinessContextService: WhatsAppBusinessContextService,
+    private readonly whatsAppParticipantSyncService: WhatsAppParticipantSyncService,
   ) {}
 
   async process(payload: SendOutboundMessagePayload): Promise<void> {
@@ -113,6 +115,11 @@ export class SendMessageProcessor {
       conversation.channel,
       message.metadata,
     );
+    const externalRecipientId =
+      await this.whatsAppParticipantSyncService.resolveSendRecipient(
+        payload.businessId,
+        conversation,
+      );
     const preview = previewFromMessageContent(
       message.text ?? (template ? `Template: ${template.name}` : ''),
       attachments,
@@ -123,7 +130,7 @@ export class SendMessageProcessor {
       const result = await adapter.sendMessage({
         businessId: payload.businessId,
         resourceId: conversation.resourceId,
-        externalRecipientId: conversation.externalParticipantId,
+        externalRecipientId,
         text: message.text ?? '',
         attachments,
         template,

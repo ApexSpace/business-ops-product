@@ -3,6 +3,7 @@
 import { ContactEstimatesPanel } from "@/features/contacts/components/contact-workspace/contact-estimates-panel";
 import { ContactInvoicesPanel } from "@/features/contacts/components/contact-workspace/contact-invoices-panel";
 import { ContactPaymentsPanel } from "@/features/contacts/components/contact-workspace/contact-payments-panel";
+import { ContactSidebarDetailsFields } from "@/features/contacts/components/contact-workspace/contact-sidebar-details-fields";
 import {
   isPlaceholderSection,
   type ContactRecordsSectionId,
@@ -54,6 +55,10 @@ export function ContactRecordsSectionBody({
   }
 
   switch (activeSection) {
+    case "profile":
+      return (
+        <ContactSidebarDetailsFields contact={contact} leads={props.leads} />
+      );
     case "leads":
       return <ContactRecordsLeadsSection {...props} />;
     case "work-items":

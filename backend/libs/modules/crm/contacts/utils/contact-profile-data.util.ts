@@ -29,7 +29,10 @@ export function toContactCreateData(
     state: emptyToUndefined(dto.state) ?? null,
     country: emptyToUndefined(dto.country) ?? null,
     zip: emptyToUndefined(dto.zip) ?? null,
-    avatarUrl: emptyToUndefined(dto.avatarUrl) ?? null,
+    avatarUrl: dto.avatarAssetId?.trim()
+      ? null
+      : emptyToUndefined(dto.avatarUrl) ?? null,
+    avatarAssetId: emptyToUndefined(dto.avatarAssetId) ?? null,
     source: emptyToUndefined(dto.source) ?? null,
   };
 }
@@ -57,12 +60,23 @@ export function toContactUpdateData(
     'country',
     'zip',
     'avatarUrl',
+    'avatarAssetId',
   ] as const;
 
   for (const field of fields) {
     if (dto[field] !== undefined) {
       (data as Record<string, unknown>)[field] =
         emptyToUndefined(dto[field]) ?? null;
+    }
+  }
+
+  if (dto.avatarAssetId !== undefined) {
+    const assetId = emptyToUndefined(dto.avatarAssetId) ?? null;
+    data.avatarAssetId = assetId;
+    if (assetId) {
+      data.avatarUrl = null;
+    } else if (dto.avatarUrl === undefined) {
+      data.avatarUrl = null;
     }
   }
 

@@ -22,3 +22,4 @@ export const JOB_INTEGRATION_RESOURCE_SYNC = 'integration-resource-sync';
 export const JOB_META_RESOURCE_SYNC = 'meta-resource-sync';
 export const JOB_CLEANUP_WEBHOOK_EVENTS = 'cleanup-webhook-events';
 export const JOB_CLEANUP_ASYNC_JOBS = 'cleanup-async-jobs';
+export const JOB_AUTOMATION_STEP = 'automation-step';

@@ -11,6 +11,7 @@ import {
   JOB_PROCESS_META_WEBHOOK,
   JOB_PROCESS_RESEND_WEBHOOK,
   JOB_PROCESS_STRIPE_WEBHOOK,
+  JOB_AUTOMATION_STEP,
   JOB_SEND_EMAIL,
   JOB_SEND_OUTBOUND_MESSAGE,
   MESSAGE_QUEUE,
@@ -24,6 +25,7 @@ import type {
   ProcessStripeWebhookPayload,
   SendEmailJobPayload,
   SendOutboundMessagePayload,
+  AutomationStepJobPayload,
 } from './queue.types';
 import { resolveEmailConfig } from '../config/email/email.config';
 
@@ -216,5 +218,29 @@ export class QueueService {
     }
     const job = await queue.add(jobName, payload);
     return job.id ?? null;
+  }
+
+  async enqueueAutomationStep(
+    payload: AutomationStepJobPayload,
+    options?: { delay?: number },
+  ): Promise<string | null> {
+    const queue = this.syncQueue();
+    const jobId = `automation-${payload.runId}-${payload.stepIndex}`;
+    if (!this.guardQueueAvailable(queue, `enqueue automation step (${jobId})`)) {
+      return null;
+    }
+    try {
+      const job = await queue.add(JOB_AUTOMATION_STEP, payload, {
+        jobId,
+        ...(options?.delay ? { delay: options.delay } : {}),
+      });
+      return job.id ?? null;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.error(
+        `Failed to enqueue automation step job ${jobId}: ${message}`,
+      );
+      throw error;
+    }
   }
 }

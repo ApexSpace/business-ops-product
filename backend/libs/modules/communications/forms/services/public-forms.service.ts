@@ -2,6 +2,8 @@ import { HttpStatus, Injectable } from '@nestjs/common';
 import { Form, FormStatus, Prisma } from '@prisma/client';
 import { AppException } from '@app/common/exceptions/app.exception';
 import { ErrorCode } from '@app/common/exceptions/error-code.enum';
+import { AuditService } from '@app/modules/platform/audit/services/audit.service';
+import { SYSTEM_AUDIT_ACTOR_SENTINEL } from '@app/modules/platform/audit/constants/audit.constants';
 import { FormSubmissionResponseDto } from '../dto/form-submission-response.dto';
 import { SubmitFormDto } from '../dto/submit-form.dto';
 import { PublicFormConfigDto } from '../dto/form-embed.dto';
@@ -28,6 +30,7 @@ export class PublicFormsService {
   constructor(
     private readonly formsRepository: FormsRepository,
     private readonly submissionsRepository: FormSubmissionsRepository,
+    private readonly auditService: AuditService,
   ) {}
 
   async getConfig(publicKey: string): Promise<PublicFormConfigDto> {
@@ -70,6 +73,20 @@ export class PublicFormsService {
         userAgent: metadata.userAgent ?? null,
         referer: metadata.referer ?? null,
       } as Prisma.InputJsonValue,
+    });
+
+    await this.auditService.log({
+      actorUserId: SYSTEM_AUDIT_ACTOR_SENTINEL,
+      businessId: form.businessId,
+      action: 'form.submitted',
+      entityType: 'FormSubmission',
+      entityId: submission.id,
+      metadata: {
+        formId: form.id,
+        submissionId: submission.id,
+        submittedAt: submission.createdAt.toISOString(),
+        formName: form.name,
+      },
     });
 
     const redirectUrl =

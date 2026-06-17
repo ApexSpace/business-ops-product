@@ -1,5 +1,7 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { AuditModule } from '@app/modules/platform/audit/audit.module';
+import { ConversationsModule } from '@app/modules/communications/conversations/conversations.module';
+import { StorageModule } from '@app/modules/storage/storage.module';
 import { ContactTagsController } from './controllers/contact-tags.controller';
 import { ContactsController } from './controllers/contacts.controller';
 import { ContactRepository } from './repositories/contact.repository';
@@ -8,7 +10,7 @@ import { ContactTagsService } from './services/contact-tags.service';
 import { ContactsService } from './services/contacts.service';
 
 @Module({
-  imports: [AuditModule],
+  imports: [AuditModule, StorageModule, forwardRef(() => ConversationsModule)],
   controllers: [ContactsController, ContactTagsController],
   providers: [
     ContactRepository,

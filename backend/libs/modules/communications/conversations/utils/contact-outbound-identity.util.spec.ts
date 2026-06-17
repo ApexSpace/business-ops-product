@@ -15,6 +15,16 @@ describe('contact-outbound-identity.util', () => {
     ).toBe('923014863718');
   });
 
+  it('normalizes local-format whatsappWaId with country code', () => {
+    expect(
+      resolveWhatsAppParticipantId({
+        metadata: { whatsappWaId: '03014863718' },
+        phoneCountryCode: '+92',
+        phoneNumber: '3014863718',
+      } as never),
+    ).toBe('923014863718');
+  });
+
   it('prefers stored whatsappWaId metadata', () => {
     expect(
       resolveWhatsAppParticipantId({

@@ -28,6 +28,11 @@ export const LEGACY_FEATURE_KEY_MAP: Record<string, string> = {
   'forms.create': 'settings.forms.create',
   'forms.edit': 'settings.forms.edit',
   'forms.delete': 'settings.forms.delete',
+  'settings.automations.read': 'settings.automations.list',
+  'automations.list': 'settings.automations.list',
+  'automations.create': 'settings.automations.create',
+  'automations.edit': 'settings.automations.edit',
+  'automations.delete': 'settings.automations.delete',
   // CRUD rename (view/update → list/edit)
   'contacts.view': 'contacts.list',
   'contacts.update': 'contacts.edit',

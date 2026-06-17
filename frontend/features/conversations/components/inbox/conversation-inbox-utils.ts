@@ -18,19 +18,19 @@ export function channelProviderKey(channel: ConversationChannel): string {
   return "email";
 }
 
-/** Channel-specific composer guidance shown above the message input. */
+/** Short channel guidance shown beside the reply-channel selector. */
 export function channelComposerHint(
   channel: ConversationChannel,
   options?: { requiresTemplate?: boolean | null },
 ): string | null {
   if (channel === "EMAIL") {
-    return "Replies are sent from your CodeSol business address. Customer replies return to this thread.";
+    return "Sent from your business address.";
   }
   if (channel === "WHATSAPP") {
     if (options?.requiresTemplate) {
-      return "This contact hasn't messaged on WhatsApp in the last 24 hours. Send an approved template to reach them — free-form replies unlock for 24 hours after they reply.";
+      return "24h window closed — use an approved template.";
     }
-    return "Free-form WhatsApp replies are available for 24 hours after the customer's last message.";
+    return "24h reply window open.";
   }
   return null;
 }
@@ -43,14 +43,7 @@ export function contactDisplayName(conversation: Conversation): string {
   );
 }
 
-export function initials(name: string): string {
-  return name
-    .split(/\s+/)
-    .map((p) => p[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
-}
+export { displayInitials as initials } from "@/lib/ui/display-initials";
 
 export const THREAD_ROW_HEIGHT = 72;
 export const VIRTUALIZE_THRESHOLD = 30;

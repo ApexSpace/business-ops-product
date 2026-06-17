@@ -30,11 +30,13 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
 export interface ContactFormFieldsProps {
   form: UseFormReturn<ContactProfileFormValues>;
   disabled?: boolean;
+  avatarPreviewUrl?: string | null;
 }
 
 export function ContactFormFields({
   form,
   disabled = false,
+  avatarPreviewUrl,
 }: ContactFormFieldsProps) {
   const firstName = form.watch("firstName");
   const lastName = form.watch("lastName");
@@ -51,8 +53,9 @@ export function ContactFormFields({
     <div className="max-h-[min(70vh,640px)] space-y-6 overflow-y-auto pr-1">
       <AvatarUploadField
         control={form.control}
-        name="avatarUrl"
+        name="avatarAssetId"
         disabled={disabled}
+        fallbackPreviewUrl={avatarPreviewUrl}
       />
 
       <section className="space-y-4">

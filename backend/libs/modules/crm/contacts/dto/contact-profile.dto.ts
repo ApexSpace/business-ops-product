@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEmail, IsOptional, IsString, MaxLength } from 'class-validator';
+import { IsEmail, IsOptional, IsString, IsUUID, MaxLength } from 'class-validator';
 
 export class ContactProfileDto {
   @ApiPropertyOptional()
@@ -81,10 +81,17 @@ export class ContactProfileDto {
   zip?: string;
 
   @ApiPropertyOptional({
-    description: 'HTTPS URL or data:image/* URL for contact avatar',
+    description: 'HTTPS URL or data:image/* URL for contact avatar (legacy)',
   })
   @IsOptional()
   @IsString()
   @MaxLength(500_000)
   avatarUrl?: string;
+
+  @ApiPropertyOptional({
+    description: 'Storage file asset id for contact avatar',
+  })
+  @IsOptional()
+  @IsUUID()
+  avatarAssetId?: string | null;
 }

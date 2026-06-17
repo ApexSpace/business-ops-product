@@ -9,24 +9,38 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { ArrowLeft } from "lucide-react";
 import { ConversationListPanel } from "@/features/conversations/components/inbox/conversation-list-panel";
+import { ConversationInboxContactSidebar } from "@/features/conversations/components/inbox/conversation-inbox-contact-sidebar";
+import { ConversationsInboxColumns } from "@/features/conversations/components/inbox/conversations-inbox-columns";
 import { ConversationThreadPanel } from "@/features/conversations/components/inbox/conversation-thread-panel";
+import type { ThreadChannelFilterValue } from "@/features/conversations/components/inbox/thread-channel-filter";
+import { filterMessagesByThreadChannel } from "@/features/conversations/components/inbox/thread-channel-filter";
+import { ContactWorkspaceShell } from "@/features/contacts/components/contact-workspace/contact-workspace-shell";
+import { ContactFormDialog } from "@/features/contacts/components/contact-form-dialog";
+import { useConversationInboxContactSidebar } from "@/features/conversations/hooks/use-conversation-inbox-contact-sidebar";
+import { WORKSPACE_PADDING_CLASS } from "@/features/contacts/workspace/contact-workspace";
+import {
+  invalidateContactDetail,
+  invalidateContactLists,
+  invalidateContactPicker,
+} from "@/lib/query/invalidation";
 import { NewEmailDialog } from "@/features/conversations/components/inbox/new-email-dialog";
+import { Button } from "@/components/ui/button";
 import { getPlatformDefaultEmail } from "@/features/integrations/api/integrations.api";
 import type { PendingMessageAttachment } from "@/features/conversations/components/inbox/message-composer";
+import { mergeConversationMessagePages } from "@/features/conversations/utils/merge-message-pages";
 import {
   isWebchatConversation,
   VIRTUALIZE_THRESHOLD,
 } from "@/features/conversations/components/inbox/conversation-inbox-utils";
 import {
-  closeConversation,
   ensureContactConversation,
   getConversation,
   getMessagingStatus,
   listContactReplyChannels,
   listUnifiedConversations,
   markConversationRead,
-  reopenConversation,
   sendConversationMessage,
   type ContactReplyChannel,
   type ConversationChannel,
@@ -70,6 +84,9 @@ import {
 } from "@/lib/observability/message-send-latency";
 import { isFeatureEnabled } from "@/lib/config/feature-flags";
 import { queryKeys } from "@/lib/query/keys";
+import { cn } from "@/lib/utils";
+
+type InboxMobilePane = "list" | "thread" | "contact";
 
 export function ConversationsInbox() {
   const queryClient = useQueryClient();
@@ -82,8 +99,7 @@ export function ConversationsInbox() {
   const searchParams = useSearchParams();
   const threadFromQuery = searchParams.get("thread");
   const conversationFromQuery = searchParams.get("conversation");
-  const { filter, setFilter, search, setSearch, listFilters } =
-    useConversationsInboxFilters();
+  const { search, setSearch, listFilters } = useConversationsInboxFilters();
   const [manualThreadKey, setManualThreadKey] = useState<string | null>(null);
   const [composer, setComposer] = useState("");
   const [attachmentUrl, setAttachmentUrl] = useState("");
@@ -93,6 +109,9 @@ export function ConversationsInbox() {
   const [newEmailOpen, setNewEmailOpen] = useState(false);
   const [selectedReplyChannel, setSelectedReplyChannel] =
     useState<ConversationChannel | null>(null);
+  const [threadChannelFilter, setThreadChannelFilter] =
+    useState<ThreadChannelFilterValue>("ALL");
+  const [mobilePane, setMobilePane] = useState<InboxMobilePane>("list");
 
   useQuery({
     queryKey: queryKeys.integrations.platformEmail(),
@@ -108,13 +127,7 @@ export function ConversationsInbox() {
     refetchInterval: pollInterval,
   });
 
-  const threads = useMemo(() => {
-    const items = listData?.items ?? [];
-    if (filter === "unread") {
-      return items.filter((thread) => thread.unreadCount > 0);
-    }
-    return items;
-  }, [listData?.items, filter]);
+  const threads = useMemo(() => listData?.items ?? [], [listData?.items]);
 
   const threadsReady = !listLoading;
 
@@ -147,7 +160,9 @@ export function ConversationsInbox() {
     (thread: UnifiedConversationThread) => {
       setManualThreadKey(thread.threadKey);
       setSelectedReplyChannel(null);
+      setThreadChannelFilter("ALL");
       setEmailSubject("");
+      setMobilePane("thread");
       const params = buildInboxThreadSearchParams(thread, searchParams);
       router.replace(`${pathname}?${params.toString()}`, { scroll: false });
       if (thread.contactId) {
@@ -158,6 +173,21 @@ export function ConversationsInbox() {
     },
     [queryClient, pathname, router, searchParams],
   );
+
+  useEffect(() => {
+    if (!activeThread) {
+      setMobilePane("list");
+      return;
+    }
+    if (threadFromQuery || conversationFromQuery || manualThreadKey) {
+      setMobilePane((pane) => (pane === "list" ? "thread" : pane));
+    }
+  }, [
+    activeThread,
+    conversationFromQuery,
+    manualThreadKey,
+    threadFromQuery,
+  ]);
 
   useEffect(() => {
     if (!threadsReady || !activeThread || manualThreadKey) return;
@@ -178,16 +208,22 @@ export function ConversationsInbox() {
   const handleReplyChannelChange = useCallback(
     (channel: ConversationChannel) => {
       setSelectedReplyChannel(channel);
-      if (channel === "EMAIL") {
-        const emailConversation = activeThread?.conversations.find(
-          (conversation) => conversation.channel === "EMAIL",
-        );
-        setEmailSubject(emailConversation?.title ?? "");
-      } else {
-        setEmailSubject("");
-      }
+      setThreadChannelFilter(channel);
+      setEmailSubject("");
     },
-    [activeThread?.conversations],
+    [],
+  );
+
+  const handleThreadChannelFilterChange = useCallback(
+    (filter: ThreadChannelFilterValue) => {
+      setThreadChannelFilter(filter);
+      if (filter === "ALL") {
+        return;
+      }
+      setSelectedReplyChannel(filter);
+      setEmailSubject("");
+    },
+    [],
   );
 
   const { data: replyChannels = [] } = useQuery({
@@ -232,9 +268,18 @@ export function ConversationsInbox() {
     : isFetchingNextConversationPage;
 
   const messages = useMemo(
-    () => messagesInfinite?.pages.flatMap((page) => page.items) ?? [],
+    () => mergeConversationMessagePages(messagesInfinite?.pages),
     [messagesInfinite?.pages],
   );
+
+  const filteredMessages = useMemo(
+    () => filterMessagesByThreadChannel(messages, threadChannelFilter),
+    [messages, threadChannelFilter],
+  );
+
+  const messageScrollKey = mergedTimeline
+    ? `${activeThread?.threadKey ?? ""}:${threadChannelFilter}`
+    : `${orphanConversationId ?? ""}:${threadChannelFilter}`;
 
   const defaultReplyChannel = useMemo(
     () =>
@@ -270,6 +315,20 @@ export function ConversationsInbox() {
   const threadConversation = mergedTimeline
     ? (selected ?? statusConversation)
     : selected;
+
+  const threadChannels = useMemo(() => {
+    if (activeThread?.channels.length) {
+      return activeThread.channels;
+    }
+    if (threadConversation?.channel) {
+      return [threadConversation.channel];
+    }
+    return [];
+  }, [activeThread?.channels, threadConversation?.channel]);
+
+  const sidebarContactId =
+    activeThread?.contactId ?? threadConversation?.contactId ?? null;
+  const contactSidebar = useConversationInboxContactSidebar(sidebarContactId);
 
   const {
     whatsAppMode,
@@ -477,17 +536,6 @@ export function ConversationsInbox() {
     onSuccess: invalidateAll,
   });
 
-  const statusMutation = useMutation({
-    mutationFn: async ({
-      id,
-      action,
-    }: {
-      id: string;
-      action: "close" | "reopen";
-    }) => (action === "close" ? closeConversation(id) : reopenConversation(id)),
-    onSuccess: invalidateAll,
-  });
-
   useEffect(() => {
     if (!activeThread) return;
 
@@ -572,77 +620,176 @@ export function ConversationsInbox() {
     isFeatureEnabled("virtualizedLists") &&
     threads.length >= VIRTUALIZE_THRESHOLD;
 
+  const listPanel = (
+    <ConversationListPanel
+      search={search}
+      onSearchChange={setSearch}
+      threads={threads}
+      listLoading={listLoading}
+      selectedThreadKey={activeThread?.threadKey ?? null}
+      onSelectThread={selectThread}
+      useVirtualThreads={useVirtualThreads}
+      onNewEmail={() => setNewEmailOpen(true)}
+      className="h-full w-full"
+    />
+  );
+
+  const threadPanel = (
+    <ConversationThreadPanel
+      selectedId={statusConversationId}
+      selected={threadConversation}
+      selectedThread={activeThread}
+      messages={filteredMessages}
+      totalMessageCount={messages.length}
+      messagesLoading={messagesLoading}
+      hasNextPage={hasNextPage ?? false}
+      isFetchingNextPage={isFetchingNextPage}
+      fetchNextPage={() => void fetchNextPage()}
+      messageScrollKey={messageScrollKey}
+      mergedTimeline={mergedTimeline}
+      threadChannels={threadChannels}
+      threadChannelFilter={threadChannelFilter}
+      onThreadChannelFilterChange={
+        threadChannels.length > 1 ? handleThreadChannelFilterChange : undefined
+      }
+      replyChannels={mergedTimeline ? replyChannels : undefined}
+      selectedReplyChannel={mergedTimeline ? effectiveReplyChannel : undefined}
+      onReplyChannelChange={
+        mergedTimeline ? handleReplyChannelChange : undefined
+      }
+      hideReplyChannelSelector={mergedTimeline && threadChannelFilter !== "ALL"}
+      composer={composer}
+      onComposerChange={setComposer}
+      attachmentUrl={attachmentUrl}
+      onAttachmentUrlChange={setAttachmentUrl}
+      pendingAttachment={pendingAttachment}
+      onAddAttachment={() => {
+        const url = attachmentUrl.trim();
+        if (!url) return;
+        setPendingAttachment({ type: "image", url });
+        setAttachmentUrl("");
+      }}
+      onRemoveAttachment={() => setPendingAttachment(null)}
+      canSend={canSend}
+      sendDisabledReason={sendDisabledReason}
+      emailSubject={emailSubject}
+      onEmailSubjectChange={setEmailSubject}
+      recipientEmail={contactSidebar.contact?.email ?? null}
+      whatsAppRequiresTemplate={Boolean(whatsAppMode?.requiresTemplate)}
+      selectedTemplateId={selectedTemplateId}
+      onTemplateIdChange={handleTemplateIdChange}
+      templateVariableValues={templateVariableValues}
+      onTemplateVariableValueChange={handleTemplateVariableValueChange}
+      templateHeaderMediaUrl={templateHeaderMediaUrl}
+      onTemplateHeaderMediaUrlChange={setTemplateHeaderMediaUrl}
+      buildTemplatePayload={buildTemplatePayload}
+      sendMutation={{
+        ...sendMutation,
+        mutate: (variables) =>
+          sendMutation.mutate({
+            ...variables,
+            replyChannel: activeReplyChannel,
+          }),
+        mutateAsync: (variables) =>
+          sendMutation.mutateAsync({
+            ...variables,
+            replyChannel: activeReplyChannel,
+          }),
+      }}
+      onBackToList={() => setMobilePane("list")}
+      onOpenContactDetails={() => setMobilePane("contact")}
+      className="h-full w-full"
+    />
+  );
+
+  const contactSidebarPanel = (
+    <ConversationInboxContactSidebar
+      part="sidebar"
+      sidebarState={contactSidebar}
+      selected={threadConversation}
+      selectedThread={activeThread}
+      className="h-full w-full"
+    />
+  );
+
+  const contactRailPanel = (
+    <ConversationInboxContactSidebar
+      part="rail"
+      sidebarState={contactSidebar}
+      selected={threadConversation}
+      selectedThread={activeThread}
+      className="h-full w-full"
+    />
+  );
+
   return (
-    <div className="overflow-hidden rounded-xl border border-border/80 bg-card shadow-sm">
+    <ContactWorkspaceShell>
       <RealtimeOfflineBanner />
-      <div className="flex h-[min(720px,calc(100svh-12rem))] min-h-[420px] overflow-hidden">
-      <ConversationListPanel
-        search={search}
-        onSearchChange={setSearch}
-        filter={filter}
-        onFilterChange={setFilter}
-        threads={threads}
-        listLoading={listLoading}
-        selectedThreadKey={activeThread?.threadKey ?? null}
-        onSelectThread={selectThread}
-        useVirtualThreads={useVirtualThreads}
-        onNewEmail={() => setNewEmailOpen(true)}
-      />
-      <ConversationThreadPanel
-        selectedId={statusConversationId}
-        selected={threadConversation}
-        selectedThread={activeThread}
-        messages={messages}
-        messagesLoading={messagesLoading}
-        hasNextPage={hasNextPage ?? false}
-        isFetchingNextPage={isFetchingNextPage}
-        fetchNextPage={() => void fetchNextPage()}
-        mergedTimeline={mergedTimeline}
-        replyChannels={mergedTimeline ? replyChannels : undefined}
-        selectedReplyChannel={mergedTimeline ? effectiveReplyChannel : undefined}
-        onReplyChannelChange={
-          mergedTimeline ? handleReplyChannelChange : undefined
-        }
-        composer={composer}
-        onComposerChange={setComposer}
-        attachmentUrl={attachmentUrl}
-        onAttachmentUrlChange={setAttachmentUrl}
-        pendingAttachment={pendingAttachment}
-        onAddAttachment={() => {
-          const url = attachmentUrl.trim();
-          if (!url) return;
-          setPendingAttachment({ type: "image", url });
-          setAttachmentUrl("");
-        }}
-        onRemoveAttachment={() => setPendingAttachment(null)}
-        canSend={canSend}
-        sendDisabledReason={sendDisabledReason}
-        emailSubject={emailSubject}
-        onEmailSubjectChange={setEmailSubject}
-        whatsAppRequiresTemplate={Boolean(whatsAppMode?.requiresTemplate)}
-        selectedTemplateId={selectedTemplateId}
-        onTemplateIdChange={handleTemplateIdChange}
-        templateVariableValues={templateVariableValues}
-        onTemplateVariableValueChange={handleTemplateVariableValueChange}
-        templateHeaderMediaUrl={templateHeaderMediaUrl}
-        onTemplateHeaderMediaUrlChange={setTemplateHeaderMediaUrl}
-        buildTemplatePayload={buildTemplatePayload}
-        sendMutation={{
-          ...sendMutation,
-          mutate: (variables) =>
-            sendMutation.mutate({
-              ...variables,
-              replyChannel: activeReplyChannel,
-            }),
-          mutateAsync: (variables) =>
-            sendMutation.mutateAsync({
-              ...variables,
-              replyChannel: activeReplyChannel,
-            }),
-        }}
-        statusMutation={statusMutation}
-        onAssignSuccess={invalidateAll}
-      />
+      <div className="hidden min-h-0 flex-1 overflow-hidden md:flex">
+        <ConversationsInboxColumns
+          className="min-h-0 flex-1"
+          list={listPanel}
+          thread={threadPanel}
+          sidebar={contactSidebarPanel}
+          rail={contactRailPanel}
+        />
+      </div>
+
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden md:hidden">
+        <div
+          className={cn(
+            "min-h-0 flex-1 overflow-hidden",
+            WORKSPACE_PADDING_CLASS,
+            mobilePane !== "list" && "hidden",
+          )}
+        >
+          {listPanel}
+        </div>
+        <div
+          className={cn(
+            "min-h-0 flex-1 overflow-hidden",
+            WORKSPACE_PADDING_CLASS,
+            mobilePane !== "thread" && "hidden",
+          )}
+        >
+          {threadPanel}
+        </div>
+        <div
+          className={cn(
+            "flex min-h-0 flex-1 flex-col overflow-hidden",
+            mobilePane !== "contact" && "hidden",
+          )}
+        >
+          <header className="flex shrink-0 items-center gap-2 border-b border-border/80 px-3 py-2.5">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-8 gap-1 px-2"
+              onClick={() => setMobilePane("thread")}
+            >
+              <ArrowLeft className="size-4" />
+              Back
+            </Button>
+            <span className="text-sm font-semibold">Contact details</span>
+          </header>
+          <div
+            className={cn(
+              "min-h-0 flex-1 overflow-hidden pb-2",
+              WORKSPACE_PADDING_CLASS,
+            )}
+          >
+            <ConversationInboxContactSidebar
+              part="both"
+              sidebarState={contactSidebar}
+              selected={threadConversation}
+              selectedThread={activeThread}
+              className="h-full w-full"
+            />
+          </div>
+        </div>
+      </div>
+
       <NewEmailDialog
         open={newEmailOpen}
         onOpenChange={setNewEmailOpen}
@@ -658,8 +805,23 @@ export function ConversationsInbox() {
           }
         }}
       />
-      </div>
-    </div>
+
+      <ContactFormDialog
+        open={contactSidebar.editOpen}
+        onOpenChange={contactSidebar.setEditOpen}
+        contact={contactSidebar.contact}
+        onSuccess={() => {
+          if (sidebarContactId) {
+            void invalidateContactDetail(queryClient, sidebarContactId);
+            void invalidateContactLists(queryClient);
+            void invalidateContactPicker(queryClient);
+          }
+          void queryClient.invalidateQueries({
+            queryKey: queryKeys.conversations.all(),
+          });
+        }}
+      />
+    </ContactWorkspaceShell>
   );
 }
 

@@ -1,4 +1,4 @@
-import { HttpStatus, Injectable } from '@nestjs/common';
+import { HttpStatus, Inject, Injectable, forwardRef } from '@nestjs/common';
 import { RequestUser } from '@app/common/decorators/current-user.decorator';
 import { AppException } from '@app/common/exceptions/app.exception';
 import { ErrorCode } from '@app/common/exceptions/error-code.enum';
@@ -9,13 +9,18 @@ import { ContactResponseDto } from '../dto/contact-response.dto';
 import { ListContactsQueryDto } from '../dto/list-contacts-query.dto';
 import { UpdateContactDto } from '../dto/update-contact.dto';
 import { toContactResponse } from '../mappers/contact.mapper';
-import { ContactRepository } from '../repositories/contact.repository';
+import {
+  ContactRepository,
+  ContactWithTags,
+} from '../repositories/contact.repository';
 import { TagRepository } from '../repositories/tag.repository';
 import {
   toContactCreateData,
   toContactUpdateData,
 } from '../utils/contact-profile-data.util';
 import { normalizePhoneKey } from '../utils/contact-profile.util';
+import { WhatsAppParticipantSyncService } from '@app/modules/communications/conversations/services/whatsapp-participant-sync.service';
+import { StorageService } from '@app/modules/storage/services/storage.service';
 
 @Injectable()
 export class ContactsService {
@@ -23,6 +28,9 @@ export class ContactsService {
     private readonly contactRepository: ContactRepository,
     private readonly tagRepository: TagRepository,
     private readonly auditService: AuditService,
+    @Inject(forwardRef(() => WhatsAppParticipantSyncService))
+    private readonly whatsAppParticipantSyncService: WhatsAppParticipantSyncService,
+    private readonly storageService: StorageService,
   ) {}
 
   async create(
@@ -31,7 +39,11 @@ export class ContactsService {
     actor: RequestUser,
   ): Promise<ContactResponseDto> {
     this.assertHasIdentity(dto);
-    this.assertValidAvatar(dto.avatarUrl);
+    if (dto.avatarAssetId?.trim()) {
+      await this.assertValidAvatarAsset(businessId, dto.avatarAssetId.trim());
+    } else {
+      this.assertValidAvatar(dto.avatarUrl);
+    }
 
     const email = this.normalizeEmail(dto.email);
     const phoneKey = normalizePhoneKey(dto.phoneCountryCode, dto.phoneNumber);
@@ -66,7 +78,7 @@ export class ContactsService {
       businessId,
       contact.id,
     );
-    return toContactResponse(withTags!);
+    return this.enrichContactResponse(businessId, withTags!);
   }
 
   async list(
@@ -84,7 +96,9 @@ export class ContactsService {
     });
 
     return {
-      items: items.map(toContactResponse),
+      items: await Promise.all(
+        items.map((item) => this.enrichContactResponse(businessId, item)),
+      ),
       meta: { total, page, limit },
     };
   }
@@ -98,7 +112,7 @@ export class ContactsService {
         HttpStatus.NOT_FOUND,
       );
     }
-    return toContactResponse(contact);
+    return this.enrichContactResponse(businessId, contact);
   }
 
   async update(
@@ -116,7 +130,12 @@ export class ContactsService {
       );
     }
 
-    if (dto.avatarUrl !== undefined) {
+    if (dto.avatarAssetId !== undefined) {
+      const trimmed = dto.avatarAssetId?.trim() ?? '';
+      if (trimmed) {
+        await this.assertValidAvatarAsset(businessId, trimmed);
+      }
+    } else if (dto.avatarUrl !== undefined) {
       this.assertValidAvatar(dto.avatarUrl);
     }
 
@@ -142,6 +161,9 @@ export class ContactsService {
     if (dto.tagIds !== undefined) {
       await this.validateTagIds(businessId, dto.tagIds);
     }
+
+    const phoneChanged =
+      dto.phoneCountryCode !== undefined || dto.phoneNumber !== undefined;
 
     const profileDto = {
       ...dto,
@@ -178,7 +200,13 @@ export class ContactsService {
     });
 
     const withTags = await this.contactRepository.findById(businessId, id);
-    return toContactResponse(withTags!);
+    if (phoneChanged && withTags) {
+      await this.whatsAppParticipantSyncService.syncContactWhatsAppIdentity(
+        businessId,
+        withTags,
+      );
+    }
+    return this.enrichContactResponse(businessId, withTags!);
   }
 
   async remove(
@@ -205,7 +233,7 @@ export class ContactsService {
       entityId: id,
     });
 
-    return toContactResponse(existing);
+    return this.enrichContactResponse(businessId, existing);
   }
 
   private assertHasIdentity(dto: CreateContactDto): void {
@@ -241,6 +269,49 @@ export class ContactsService {
       'Avatar must be an image URL or uploaded image',
       HttpStatus.BAD_REQUEST,
     );
+  }
+
+  private async assertValidAvatarAsset(
+    businessId: string,
+    avatarAssetId: string,
+  ): Promise<void> {
+    const asset = await this.storageService.getFile(businessId, avatarAssetId);
+    if (asset.category !== 'IMAGE') {
+      throw new AppException(
+        ErrorCode.BAD_REQUEST,
+        'Avatar must be an image file',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+    if (asset.status !== 'READY') {
+      throw new AppException(
+        ErrorCode.BAD_REQUEST,
+        'Avatar upload is not ready yet',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+  }
+
+  private async enrichContactResponse(
+    businessId: string,
+    contact: ContactWithTags,
+  ): Promise<ContactResponseDto> {
+    const response = toContactResponse(contact);
+    if (!contact.avatarAssetId) {
+      return response;
+    }
+
+    try {
+      const { downloadUrl } = await this.storageService.getDownloadUrl(
+        businessId,
+        contact.avatarAssetId,
+      );
+      response.avatarUrl = downloadUrl;
+    } catch {
+      // Keep legacy avatarUrl fallback when signed URL resolution fails.
+    }
+
+    return response;
   }
 
   private normalizeEmail(email?: string): string | null {

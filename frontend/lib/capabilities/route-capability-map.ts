@@ -45,6 +45,10 @@ const ROUTE_CAPABILITY_MAP = new Map<string, RouteCapabilityEntry>([
     { moduleKey: "settings", capabilityKeys: ["settings.forms.list"] },
   ],
   [
+    "/business/settings/automations",
+    { moduleKey: "settings", capabilityKeys: ["settings.automations.list"] },
+  ],
+  [
     "/business/settings/integrations",
     { moduleKey: "settings", capabilityKeys: ["settings.integrations"] },
   ],
@@ -69,7 +73,6 @@ const CORE_SAFE_PREFIXES = [
   "/business/settings/appearance",
   "/business/settings/financial",
   "/business/settings/templates",
-  "/business/settings/automations",
   "/business/access-blocked",
   "/business/feature-unavailable",
 ];

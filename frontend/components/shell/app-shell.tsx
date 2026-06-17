@@ -5,7 +5,7 @@ import {
   SidebarInset,
   SidebarProvider,
 } from "@/components/ui/sidebar";
-import { isContactWorkspacePath } from "@/features/contacts/workspace/contact-workspace";
+import { isContactWorkspacePath, isConversationsInboxPath } from "@/features/contacts/workspace/contact-workspace";
 import { PageMetadataProvider } from "@/lib/runtime/page-metadata-context";
 import { cn } from "@/lib/utils";
 import type { PageMetadataContext } from "@/lib/config/page-metadata";
@@ -45,7 +45,8 @@ export function AppShell({
 }: AppShellProps) {
   const pathname = usePathname();
   const contactWorkspace = isContactWorkspacePath(pathname);
-  const fullBleedContent = contactWorkspace;
+  const conversationsInbox = isConversationsInboxPath(pathname);
+  const fullBleedContent = contactWorkspace || conversationsInbox;
 
   return (
     <SidebarProvider

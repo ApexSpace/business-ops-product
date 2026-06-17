@@ -3,12 +3,7 @@
 import { useEffect, useRef } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { MoreHorizontal } from "lucide-react";
-import {
-  Avatar,
-  AvatarBadge,
-  AvatarFallback,
-  AvatarImage,
-} from "@/components/ui/avatar";
+import { ProfileAvatar } from "@/components/ui/profile-avatar";
 import { cn } from "@/lib/utils";
 import {
   formatMessageDateSeparator,
@@ -18,11 +13,6 @@ import {
 } from "@/lib/ui/relative-time";
 import type { ConversationMessage } from "@/features/conversations/api/conversations.api";
 import { MessageDeliveryStatus } from "@/features/conversations/components/message-delivery-status";
-import {
-  channelProviderKey,
-  initials,
-} from "@/features/conversations/components/inbox/conversation-inbox-utils";
-import { IntegrationProviderIcon } from "@/features/integrations/components/integration-provider-icon";
 import { displayInboundEmailBody } from "@/features/conversations/utils/email-reply-body";
 import {
   isImageAttachment,
@@ -44,6 +34,8 @@ type VirtualizedMessageListProps = {
   isLoadingMore?: boolean;
   variant?: "default" | "thread";
   threadContext?: MessageListThreadContext;
+  /** Resets scroll anchoring when the active thread/conversation changes. */
+  scrollKey?: string | null;
 };
 
 export function VirtualizedMessageList({
@@ -53,15 +45,18 @@ export function VirtualizedMessageList({
   isLoadingMore,
   variant = "default",
   threadContext,
+  scrollKey = null,
 }: VirtualizedMessageListProps) {
   const parentRef = useRef<HTMLDivElement>(null);
   const isNearBottomRef = useRef(true);
   const previousCountRef = useRef(messages.length);
+  const paginationReadyRef = useRef(false);
+  const loadMoreLockRef = useRef(false);
 
   const virtualizer = useVirtualizer({
     count: messages.length,
     getScrollElement: () => parentRef.current,
-    estimateSize: () => (variant === "thread" ? 120 : 72),
+    estimateSize: () => (variant === "thread" ? 132 : 72),
     overscan: 8,
   });
 
@@ -83,10 +78,48 @@ export function VirtualizedMessageList({
   }, []);
 
   useEffect(() => {
+    paginationReadyRef.current = false;
+    loadMoreLockRef.current = false;
+    isNearBottomRef.current = true;
+    previousCountRef.current = 0;
+  }, [scrollKey]);
+
+  useEffect(() => {
+    if (messages.length === 0 || paginationReadyRef.current) return;
+
+    const frame = requestAnimationFrame(() => {
+      virtualizer.scrollToIndex(messages.length - 1, { align: "end" });
+      requestAnimationFrame(() => {
+        const parent = parentRef.current;
+        if (parent) {
+          parent.scrollTop = parent.scrollHeight;
+        }
+        paginationReadyRef.current = true;
+        isNearBottomRef.current = true;
+        previousCountRef.current = messages.length;
+      });
+    });
+
+    return () => cancelAnimationFrame(frame);
+  }, [scrollKey, messages.length, messages[messages.length - 1]?.id, virtualizer]);
+
+  useEffect(() => {
     const grew = messages.length > previousCountRef.current;
+    const prepended =
+      grew &&
+      paginationReadyRef.current &&
+      !isNearBottomRef.current;
     previousCountRef.current = messages.length;
 
-    if (!grew || !isNearBottomRef.current || messages.length === 0) {
+    if (!grew || messages.length === 0) {
+      return;
+    }
+
+    if (prepended) {
+      return;
+    }
+
+    if (!isNearBottomRef.current) {
       return;
     }
 
@@ -95,21 +128,30 @@ export function VirtualizedMessageList({
     });
   }, [messages.length, virtualizer]);
 
+  useEffect(() => {
+    if (!isLoadingMore) {
+      loadMoreLockRef.current = false;
+    }
+  }, [isLoadingMore]);
+
   return (
     <div
       ref={parentRef}
       className={cn(
-        "h-full min-h-0 overflow-y-auto",
+        "scrollbar-thin h-full min-h-0 overflow-y-auto",
         variant === "thread" ? "px-4 py-3" : "px-1",
       )}
       onScroll={(e) => {
         const el = e.currentTarget;
         if (
+          paginationReadyRef.current &&
           hasMore &&
           !isLoadingMore &&
+          !loadMoreLockRef.current &&
           el.scrollTop < 80 &&
           onLoadMore
         ) {
+          loadMoreLockRef.current = true;
           onLoadMore();
         }
       }}
@@ -145,7 +187,7 @@ export function VirtualizedMessageList({
                 width: "100%",
                 transform: `translateY(${virtualRow.start}px)`,
               }}
-              className={cn(variant === "thread" ? "px-0 py-2" : "px-2 py-1.5")}
+              className={cn(variant === "thread" ? "px-0 py-2.5" : "px-2 py-1.5")}
             >
               {showDateSeparator ? (
                 <DateSeparator label={formatMessageDateSeparator(message.createdAt)} />
@@ -216,12 +258,37 @@ function messageDisplayText(message: ConversationMessage): string | null {
   return null;
 }
 
+function parseTemplateDisplay(message: ConversationMessage): {
+  templateName: string;
+  body?: string;
+} | null {
+  if (!isWhatsAppTemplateMessage(message)) {
+    return null;
+  }
+
+  const text = message.text?.trim() ?? "";
+  if (text.startsWith("Template:")) {
+    const templateName = text.replace(/^Template:\s*/, "").trim();
+    return {
+      templateName: templateName || "Template message",
+    };
+  }
+
+  if (!text) {
+    return { templateName: "Template message" };
+  }
+
+  return null;
+}
+
 function DateSeparator({ label }: { label: string }) {
   return (
-    <div className="mb-3 flex items-center gap-3">
-      <div className="h-px flex-1 bg-border/60" />
-      <span className="text-xs font-medium text-muted-foreground">{label}</span>
-      <div className="h-px flex-1 bg-border/60" />
+    <div className="mb-4 flex items-center gap-3">
+      <div className="h-px flex-1 bg-border/50" />
+      <span className="shrink-0 rounded-full border border-border/60 bg-muted/30 px-2.5 py-0.5 text-[11px] font-medium text-muted-foreground">
+        {label}
+      </span>
+      <div className="h-px flex-1 bg-border/50" />
     </div>
   );
 }
@@ -229,33 +296,29 @@ function DateSeparator({ label }: { label: string }) {
 function MessageAvatar({
   name,
   avatarUrl,
-  channel,
   outbound,
 }: {
   name: string;
   avatarUrl?: string | null;
-  channel: ConversationMessage["channel"];
   outbound: boolean;
 }) {
+  if (outbound) {
+    return (
+      <ProfileAvatar
+        name={name}
+        className="mt-0.5 size-8"
+        fallbackClassName="bg-primary/12 text-[11px] font-semibold text-primary"
+      />
+    );
+  }
+
   return (
-    <Avatar size="default" className="size-9 shrink-0">
-      {avatarUrl ? <AvatarImage src={avatarUrl} alt="" /> : null}
-      <AvatarFallback
-        className={cn(
-          "text-xs font-medium",
-          outbound ? "bg-primary/15 text-primary" : "bg-muted text-foreground",
-        )}
-      >
-        {initials(name)}
-      </AvatarFallback>
-      <AvatarBadge className="bg-background text-foreground ring-background">
-        <IntegrationProviderIcon
-          providerKey={channelProviderKey(channel)}
-          size="sm"
-          className="!size-2.5"
-        />
-      </AvatarBadge>
-    </Avatar>
+    <ProfileAvatar
+      name={name}
+      avatarUrl={avatarUrl}
+      className="mt-0.5 size-8"
+      fallbackClassName="bg-muted text-[11px] font-semibold text-foreground"
+    />
   );
 }
 
@@ -270,6 +333,7 @@ function ThreadMessageBubble({
   const failed = message.status === "FAILED";
   const attachments = parseMessageAttachments(message.attachments);
   const displayText = messageDisplayText(message);
+  const templateDisplay = parseTemplateDisplay(message);
   const senderName = outbound
     ? threadContext.businessName?.trim() || "You"
     : threadContext.contactName;
@@ -278,55 +342,63 @@ function ThreadMessageBubble({
   return (
     <div
       className={cn(
-        "flex gap-2.5",
+        "group/message flex gap-3",
         outbound ? "flex-row-reverse" : "flex-row",
       )}
     >
       <MessageAvatar
         name={senderName}
         avatarUrl={avatarUrl}
-        channel={message.channel}
         outbound={outbound}
       />
       <div
         className={cn(
-          "min-w-0 max-w-[min(75%,520px)]",
-          outbound ? "items-end text-right" : "items-start text-left",
+          "flex min-w-0 max-w-[min(78%,540px)] flex-col gap-1.5",
+          outbound ? "items-end" : "items-start",
         )}
       >
-        <p className="mb-1 text-xs font-medium text-muted-foreground">
+        <p
+          className={cn(
+            "px-0.5 text-[11px] font-medium tracking-wide text-muted-foreground",
+            outbound ? "text-right" : "text-left",
+          )}
+        >
           {senderName}
         </p>
         <div
           className={cn(
-            "rounded-lg px-3 py-2 text-sm shadow-sm",
+            "w-full rounded-xl border px-3.5 py-2.5 text-sm shadow-elevation-xs",
             outbound
-              ? "bg-primary/15 text-foreground"
-              : "border border-border/50 bg-muted/50 text-foreground",
+              ? "border-primary/15 bg-primary/[0.06]"
+              : "border-border/60 bg-card",
             failed &&
-              "border border-destructive/50 bg-destructive/10 text-destructive",
+              "border-destructive/40 bg-destructive/8 text-destructive",
           )}
         >
           <MessageBody
             message={message}
             attachments={attachments}
             displayText={displayText}
+            templateDisplay={templateDisplay}
+            variant="thread"
           />
         </div>
         <div
           className={cn(
-            "mt-1 flex items-center gap-1.5 text-[11px] text-muted-foreground",
-            outbound ? "justify-end" : "justify-start",
+            "flex items-center gap-1.5 px-0.5 text-[11px] tabular-nums text-muted-foreground/80",
+            outbound ? "flex-row-reverse" : "flex-row",
           )}
         >
           <span>{formatMessageTime(message.createdAt)}</span>
-          {failed ? <span>· Failed to send</span> : null}
+          {failed ? (
+            <span className="text-destructive">· Failed to send</span>
+          ) : null}
           {outbound && !failed ? (
             <MessageDeliveryStatus status={message.status} />
           ) : null}
           <button
             type="button"
-            className="inline-flex size-5 items-center justify-center rounded hover:bg-muted/60"
+            className="inline-flex size-5 items-center justify-center rounded-md text-muted-foreground/70 opacity-0 transition-opacity hover:bg-muted/60 hover:text-foreground group-hover/message:opacity-100"
             aria-label="Message options"
           >
             <MoreHorizontal className="size-3.5" />
@@ -341,20 +413,34 @@ function MessageBody({
   message,
   attachments,
   displayText,
+  templateDisplay = null,
+  variant = "default",
 }: {
   message: ConversationMessage;
   attachments: ReturnType<typeof parseMessageAttachments>;
   displayText: string | null;
-  outbound?: boolean;
+  templateDisplay?: ReturnType<typeof parseTemplateDisplay>;
+  variant?: "default" | "thread";
 }) {
-  const isTemplate = isWhatsAppTemplateMessage(message);
+  const isTemplate = Boolean(templateDisplay);
+  const isThread = variant === "thread";
 
   return (
-    <>
-      {isTemplate ? (
-        <p className="mb-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-          Template
-        </p>
+    <div className={cn(isThread && "space-y-2")}>
+      {isTemplate && templateDisplay ? (
+        <div className="space-y-1">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground/75">
+            Template
+          </p>
+          <p className="font-medium leading-snug text-foreground text-sm">
+            {templateDisplay.templateName}
+          </p>
+          {templateDisplay.body ? (
+            <p className="text-sm leading-relaxed break-words whitespace-pre-wrap text-foreground/90">
+              {templateDisplay.body}
+            </p>
+          ) : null}
+        </div>
       ) : null}
       {attachments.length > 0 ? (
         <div className="space-y-2">
@@ -366,7 +452,7 @@ function MessageBody({
                   href={attachment.url}
                   target="_blank"
                   rel="noreferrer"
-                  className="block overflow-hidden rounded-md"
+                  className="block overflow-hidden rounded-lg ring-1 ring-border/40"
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
@@ -385,7 +471,7 @@ function MessageBody({
                   href={attachment.url}
                   target="_blank"
                   rel="noreferrer"
-                  className="block text-sm underline text-primary"
+                  className="block text-sm text-primary underline-offset-2 hover:underline"
                 >
                   {attachment.title ?? `${attachment.type} attachment`}
                 </a>
@@ -400,13 +486,17 @@ function MessageBody({
           })}
         </div>
       ) : null}
-      {displayText ? <p className="whitespace-pre-wrap">{displayText}</p> : null}
-      {!displayText && attachments.length === 0 ? (
-        <p className="text-muted-foreground">
+      {!isTemplate && displayText ? (
+        <p className="text-sm leading-relaxed break-words whitespace-pre-wrap text-foreground">
+          {displayText}
+        </p>
+      ) : null}
+      {!isTemplate && !displayText && attachments.length === 0 ? (
+        <p className="text-sm text-muted-foreground">
           {getEmptyMessageFallback(message)}
         </p>
       ) : null}
-    </>
+    </div>
   );
 }
 
@@ -415,6 +505,7 @@ function MessageBubble({ message }: { message: ConversationMessage }) {
   const failed = message.status === "FAILED";
   const attachments = parseMessageAttachments(message.attachments);
   const displayText = messageDisplayText(message);
+  const templateDisplay = parseTemplateDisplay(message);
 
   return (
     <div className={cn("flex", outbound ? "justify-end" : "justify-start")}>
@@ -432,6 +523,7 @@ function MessageBubble({ message }: { message: ConversationMessage }) {
           message={message}
           attachments={attachments}
           displayText={displayText}
+          templateDisplay={templateDisplay}
         />
         <p
           className={cn(

@@ -201,6 +201,31 @@ export const queryKeys = {
     logs: (filters?: ListFilters) =>
       listKey(["email-notifications", "logs"], filters),
   },
+  automations: {
+    all: () => ["automations"] as const,
+    categories: (scope?: string) =>
+      listKey(["automations", "categories"], scope ? { scope } : undefined),
+    triggers: (filters?: ListFilters) =>
+      listKey(["automations", "triggers"], filters),
+    actions: (filters?: ListFilters) =>
+      listKey(["automations", "actions"], filters),
+    customValues: (filters?: ListFilters) =>
+      listKey(["automations", "custom-values"], filters),
+    conditions: (filters?: ListFilters) =>
+      listKey(["automations", "conditions"], filters),
+    filterOperators: () => ["automations", "filter-operators"] as const,
+    workflows: {
+      all: () => ["automations", "workflows"] as const,
+      list: (filters?: ListFilters) =>
+        listKey(["automations", "workflows", "list"], filters),
+      detail: (id: string) => ["automations", "workflows", "detail", id] as const,
+    },
+    workflowRuns: {
+      all: () => ["automations", "workflow-runs"] as const,
+      list: (filters?: ListFilters) =>
+        listKey(["automations", "workflow-runs", "list"], filters),
+    },
+  },
   conversations: {
     all: () => ["conversations"] as const,
     list: (filters?: Record<string, string | number | undefined | null>) =>

@@ -1,22 +1,13 @@
 "use client";
 
-import Link from "next/link";
-import { MessageSquare } from "lucide-react";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { ArrowLeft, MessageSquare, UserRound } from "lucide-react";
 import { UseMutationResult } from "@tanstack/react-query";
-import { toast } from "sonner";
 import { VirtualizedMessageList } from "@/features/conversations/components/virtualized-message-list";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { IconButton } from "@/components/ui/icon-button";
+import { ProfileAvatar } from "@/components/ui/profile-avatar";
+import { ThreadChannelFilter } from "@/features/conversations/components/inbox/thread-channel-filter";
+import type { ThreadChannelFilterValue } from "@/features/conversations/components/inbox/thread-channel-filter";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  assignConversation,
   channelLabel,
   type ContactReplyChannel,
   type Conversation,
@@ -26,31 +17,37 @@ import {
 } from "@/features/conversations/api/conversations.api";
 import {
   channelComposerHint,
-  channelProviderKey,
   contactDisplayName,
 } from "@/features/conversations/components/inbox/conversation-inbox-utils";
-import { IntegrationProviderIcon } from "@/features/integrations/components/integration-provider-icon";
 import { unifiedThreadDisplayName } from "@/features/conversations/utils/unified-thread.utils";
 import {
   MessageComposer,
   type PendingMessageAttachment,
 } from "@/features/conversations/components/inbox/message-composer";
-import { listBusinessMembers } from "@/features/settings/api/business.api";
-import { queryKeys } from "@/lib/query/keys";
+import { cn } from "@/lib/utils";
+
+const INBOX_THREAD_PANEL_CLASS =
+  "flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-border/60 bg-background shadow-elevation-xs";
 
 interface ConversationThreadPanelProps {
   selectedId: string | null;
   selected: Conversation | undefined;
   selectedThread?: UnifiedConversationThread;
   messages: ConversationMessage[];
+  totalMessageCount?: number;
   messagesLoading: boolean;
   hasNextPage: boolean;
   isFetchingNextPage: boolean;
   fetchNextPage: () => void;
+  messageScrollKey?: string | null;
   mergedTimeline?: boolean;
+  threadChannels?: ConversationChannel[];
+  threadChannelFilter?: ThreadChannelFilterValue;
+  onThreadChannelFilterChange?: (value: ThreadChannelFilterValue) => void;
   replyChannels?: ContactReplyChannel[];
   selectedReplyChannel?: ConversationChannel | null;
   onReplyChannelChange?: (channel: ConversationChannel) => void;
+  hideReplyChannelSelector?: boolean;
   composer: string;
   onComposerChange: (value: string) => void;
   attachmentUrl: string;
@@ -62,6 +59,7 @@ interface ConversationThreadPanelProps {
   sendDisabledReason: string | null;
   emailSubject: string;
   onEmailSubjectChange: (value: string) => void;
+  recipientEmail?: string | null;
   whatsAppRequiresTemplate?: boolean;
   selectedTemplateId?: string | null;
   onTemplateIdChange?: (templateId: string | null) => void;
@@ -92,12 +90,9 @@ interface ConversationThreadPanelProps {
       };
     }
   >;
-  statusMutation: UseMutationResult<
-    unknown,
-    Error,
-    { id: string; action: "close" | "reopen" }
-  >;
-  onAssignSuccess: () => Promise<void>;
+  onBackToList?: () => void;
+  onOpenContactDetails?: () => void;
+  className?: string;
 }
 
 export function ConversationThreadPanel({
@@ -105,14 +100,20 @@ export function ConversationThreadPanel({
   selected,
   selectedThread,
   messages,
+  totalMessageCount = 0,
   messagesLoading,
   hasNextPage,
   isFetchingNextPage,
   fetchNextPage,
+  messageScrollKey = null,
   mergedTimeline = false,
+  threadChannels = [],
+  threadChannelFilter = "ALL",
+  onThreadChannelFilterChange,
   replyChannels,
   selectedReplyChannel,
   onReplyChannelChange,
+  hideReplyChannelSelector = false,
   composer,
   onComposerChange,
   attachmentUrl,
@@ -124,6 +125,7 @@ export function ConversationThreadPanel({
   sendDisabledReason,
   emailSubject,
   onEmailSubjectChange,
+  recipientEmail,
   whatsAppRequiresTemplate = false,
   selectedTemplateId = null,
   onTemplateIdChange,
@@ -133,41 +135,20 @@ export function ConversationThreadPanel({
   onTemplateHeaderMediaUrlChange,
   buildTemplatePayload,
   sendMutation,
-  statusMutation,
-  onAssignSuccess,
+  onBackToList,
+  onOpenContactDetails,
+  className,
 }: ConversationThreadPanelProps) {
-  const { data: members } = useQuery({
-    queryKey: queryKeys.business.members({ page: 1, limit: 100 }),
-    queryFn: () => listBusinessMembers({ page: 1, limit: 100 }),
-    enabled: Boolean(selectedId),
-  });
-
-  const assignMutation = useMutation({
-    mutationFn: ({
-      conversationId,
-      assignedToUserId,
-    }: {
-      conversationId: string;
-      assignedToUserId: string | null;
-    }) => assignConversation(conversationId, assignedToUserId),
-    onSuccess: async () => {
-      toast.success("Conversation assignment updated");
-      await onAssignSuccess();
-    },
-    onError: (error: Error) => toast.error(error.message),
-  });
-
-  const assigneeItems =
-    members?.items.map((member) => ({
-      value: member.user.id,
-      label:
-        [member.user.firstName, member.user.lastName].filter(Boolean).join(" ") ||
-        member.user.email,
-    })) ?? [];
+  const threadDisplayName = selected
+    ? selectedThread
+      ? unifiedThreadDisplayName(selectedThread)
+      : contactDisplayName(selected)
+    : "";
+  const threadAvatarUrl =
+    selectedThread?.contact?.avatarUrl ?? selected?.contact?.avatarUrl ?? null;
 
   return (
-    <>
-      <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+    <section className={cn(INBOX_THREAD_PANEL_CLASS, className)}>
         {!selectedId || !selected ? (
           <div className="flex flex-1 flex-col items-center justify-center text-center text-muted-foreground">
             <MessageSquare className="mb-3 size-10 opacity-40" />
@@ -175,84 +156,75 @@ export function ConversationThreadPanel({
           </div>
         ) : (
           <>
-            <header className="flex shrink-0 items-center justify-between gap-3 border-b border-border/80 px-4 py-3">
-              <div>
-                <p className="font-semibold">
-                  {selectedThread
-                    ? unifiedThreadDisplayName(selectedThread)
-                    : contactDisplayName(selected)}
+            <header className="flex shrink-0 items-center justify-between gap-3 border-b border-border/60 px-4 py-2.5">
+              <div className="flex min-w-0 flex-1 items-center gap-3">
+                {onBackToList ? (
+                  <IconButton
+                    aria-label="Back to conversations"
+                    className="size-8 shrink-0 md:hidden"
+                    onClick={onBackToList}
+                  >
+                    <ArrowLeft className="size-4" />
+                  </IconButton>
+                ) : null}
+                <ProfileAvatar
+                  name={threadDisplayName}
+                  avatarUrl={threadAvatarUrl}
+                  className="size-9 shrink-0"
+                  fallbackClassName="bg-primary/10 text-xs font-semibold text-primary"
+                />
+                <p className="min-w-0 flex-1 truncate text-base font-semibold leading-none">
+                  {threadDisplayName}
                 </p>
-                <div className="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                  {selectedThread && selectedThread.channels.length > 1 ? (
-                    <div className="flex items-center gap-1">
-                      {selectedThread.channels.map((channel) => (
-                        <Badge
-                          key={channel}
-                          variant="outline"
-                          className="gap-1 px-1.5 py-0 text-[10px]"
-                        >
-                          <IntegrationProviderIcon
-                            providerKey={channelProviderKey(channel)}
-                            size="sm"
-                            className="!size-3"
-                          />
-                          {channelLabel(channel)}
-                        </Badge>
-                      ))}
-                    </div>
-                  ) : (
-                    <Badge variant="outline">
-                      {channelLabel(selected.channel)}
-                    </Badge>
-                  )}
-                  <span className="capitalize">
-                    {(selectedThread?.status ?? selected.status).toLowerCase()}
-                  </span>
-                </div>
               </div>
-              <div className="flex gap-2">
-                {selected.status === "CLOSED" ? (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() =>
-                      statusMutation.mutate({ id: selected.id, action: "reopen" })
-                    }
+              <div className="flex shrink-0 items-center gap-2">
+                {onThreadChannelFilterChange ? (
+                  <ThreadChannelFilter
+                    channels={threadChannels}
+                    value={threadChannelFilter}
+                    onChange={onThreadChannelFilterChange}
+                  />
+                ) : null}
+                {onOpenContactDetails ? (
+                  <IconButton
+                    aria-label="Contact details"
+                    className="size-8 shrink-0 md:hidden"
+                    onClick={onOpenContactDetails}
                   >
-                    Reopen
-                  </Button>
-                ) : (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() =>
-                      statusMutation.mutate({ id: selected.id, action: "close" })
-                    }
-                  >
-                    Close
-                  </Button>
-                )}
+                    <UserRound className="size-4" />
+                  </IconButton>
+                ) : null}
               </div>
             </header>
 
-            <div className="min-h-0 flex-1 overflow-hidden px-2 py-2">
+            <div className="min-h-0 flex-1 overflow-hidden bg-muted/15">
               {messagesLoading ? (
                 <p className="px-2 text-sm text-muted-foreground">Loading messages…</p>
               ) : messages.length === 0 ? (
-                <p className="px-2 text-sm text-muted-foreground">
-                  No messages yet.
+                <p className="px-4 py-3 text-sm text-muted-foreground">
+                  {totalMessageCount > 0 && threadChannelFilter !== "ALL"
+                    ? `No ${channelLabel(threadChannelFilter)} messages yet.`
+                    : "No messages yet."}
                 </p>
               ) : (
                 <VirtualizedMessageList
+                  key={messageScrollKey ?? selectedId}
+                  scrollKey={messageScrollKey ?? selectedId}
                   messages={messages}
                   hasMore={hasNextPage}
                   isLoadingMore={isFetchingNextPage}
                   onLoadMore={() => void fetchNextPage()}
+                  variant="thread"
+                  threadContext={{
+                    contactName: threadDisplayName,
+                    contactAvatarUrl: threadAvatarUrl,
+                  }}
                 />
               )}
             </div>
 
             <MessageComposer
+              variant="thread"
               composer={composer}
               onComposerChange={onComposerChange}
               attachmentUrl={attachmentUrl}
@@ -272,9 +244,11 @@ export function ConversationThreadPanel({
               showSubject={selectedReplyChannel === "EMAIL"}
               subject={emailSubject}
               onSubjectChange={onEmailSubjectChange}
+              recipientEmail={recipientEmail}
               replyChannels={replyChannels}
               selectedReplyChannel={selectedReplyChannel}
               onReplyChannelChange={onReplyChannelChange}
+              hideReplyChannelSelector={hideReplyChannelSelector}
               whatsAppRequiresTemplate={whatsAppRequiresTemplate}
               selectedTemplateId={selectedTemplateId}
               onTemplateIdChange={onTemplateIdChange}
@@ -303,84 +277,6 @@ export function ConversationThreadPanel({
             />
           </>
         )}
-      </section>
-
-      <aside className="hidden h-full min-h-0 w-72 shrink-0 flex-col overflow-y-auto border-l border-border/80 lg:flex">
-        {selected ? (
-          <div className="space-y-4 p-4 text-sm">
-            <div>
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                Contact
-              </p>
-              <p className="mt-1 font-medium">
-                {selectedThread
-                  ? unifiedThreadDisplayName(selectedThread)
-                  : contactDisplayName(selected)}
-              </p>
-              {(selectedThread?.contactId ?? selected.contactId) ? (
-                <Link
-                  href={`/business/contacts/${selectedThread?.contactId ?? selected.contactId}`}
-                  className="text-sm font-medium text-primary hover:underline"
-                >
-                  Open contact
-                </Link>
-              ) : null}
-            </div>
-            <div>
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                Channels
-              </p>
-              <div className="mt-1 flex flex-wrap gap-1.5">
-                {(selectedThread?.channels ?? [selected.channel]).map((channel) => (
-                  <Badge key={channel} variant="secondary" className="gap-1">
-                    <IntegrationProviderIcon
-                      providerKey={channelProviderKey(channel)}
-                      size="sm"
-                      className="!size-3"
-                    />
-                    {channelLabel(channel)}
-                  </Badge>
-                ))}
-              </div>
-            </div>
-            <div>
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                Status
-              </p>
-              <p className="mt-1 capitalize">{selected.status.toLowerCase()}</p>
-            </div>
-            <div>
-              <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                Assigned to
-              </p>
-              <Select
-                value={selected.assignedToUserId ?? "unassigned"}
-                onValueChange={(value) => {
-                  assignMutation.mutate({
-                    conversationId: selected.id,
-                    assignedToUserId: value === "unassigned" ? null : value,
-                  });
-                }}
-                disabled={assignMutation.isPending}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Unassigned" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="unassigned">Unassigned</SelectItem>
-                  {assigneeItems.map((member) => (
-                    <SelectItem key={member.value} value={member.value}>
-                      {member.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        ) : (
-          <p className="p-4 text-sm text-muted-foreground">No conversation selected.</p>
-        )}
-      </aside>
-    </>
+    </section>
   );
 }

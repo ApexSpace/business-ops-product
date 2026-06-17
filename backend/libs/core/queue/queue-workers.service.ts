@@ -18,10 +18,12 @@ import { CleanupOrphanFilesProcessor } from './processors/cleanup-orphan-files.p
 import { CleanupWebhookEventsProcessor } from './processors/cleanup-webhook-events.processor';
 import { IntegrationResourceSyncProcessor } from './processors/integration-resource-sync.processor';
 import { MetaResourceSyncProcessor } from './processors/meta-resource-sync.processor';
+import { AutomationStepProcessor } from '@app/modules/communications/automations/workers/processors/automation-step.processor';
 import {
   EMAIL_QUEUE,
   FILE_QUEUE,
   JOB_APPOINTMENT_GOOGLE_SYNC,
+  JOB_AUTOMATION_STEP,
   JOB_CALENDAR_SYNC,
   JOB_CLEANUP_ASYNC_JOBS,
   JOB_CLEANUP_ORPHAN_FILES,
@@ -47,6 +49,7 @@ import type {
   CleanupWebhookEventsJobPayload,
   IntegrationResourceSyncJobPayload,
   MetaResourceSyncJobPayload,
+  AutomationStepJobPayload,
   ProcessMetaWebhookPayload,
   ProcessResendWebhookPayload,
   ProcessStripeWebhookPayload,
@@ -73,6 +76,7 @@ export class QueueWorkersService implements OnModuleInit, OnModuleDestroy {
     private readonly cleanupOrphanFilesProcessor: CleanupOrphanFilesProcessor,
     private readonly sendEmailProcessor: SendEmailProcessor,
     private readonly resendWebhookProcessor: ResendWebhookProcessor,
+    private readonly automationStepProcessor: AutomationStepProcessor,
   ) {}
 
   async onModuleInit(): Promise<void> {
@@ -194,6 +198,11 @@ export class QueueWorkersService implements OnModuleInit, OnModuleDestroy {
       case JOB_META_RESOURCE_SYNC:
         await this.metaResourceSyncProcessor.process(
           job.data as MetaResourceSyncJobPayload,
+        );
+        return;
+      case JOB_AUTOMATION_STEP:
+        await this.automationStepProcessor.process(
+          job.data as AutomationStepJobPayload,
         );
         return;
       default:

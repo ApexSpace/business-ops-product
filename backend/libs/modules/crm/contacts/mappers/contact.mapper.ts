@@ -55,6 +55,7 @@ export function toContactResponse(
     country: contact.country,
     zip: contact.zip,
     avatarUrl: contact.avatarUrl,
+    avatarAssetId: contact.avatarAssetId,
     source: contact.source,
     createdById: contact.createdById,
     createdAt: contact.createdAt,
