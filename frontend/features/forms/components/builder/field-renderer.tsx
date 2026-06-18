@@ -2,7 +2,6 @@
 
 import {
   Heart,
-  ImageIcon,
   PenLine,
   ShieldCheck,
   Star,
@@ -16,9 +15,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import type { FormField, FormSettings } from "@/features/forms/types";
+import { FormFileUploadControl } from "@/features/forms/components/form-file-upload-control";
+import { FormImageDisplay } from "@/features/forms/components/form-image-display";
+import { resizeFormFieldColumns } from "@/features/forms/utils/field-defaults.util";
 import {
   getBorderRadiusClass,
-  getFieldWidthClass,
+  getColumnGridClass,
+  getFieldLayoutClassName,
   getFieldWrapperStyle,
   getFontClass,
   getInputInlineStyle,
@@ -35,9 +38,23 @@ interface FieldRendererProps {
   showRequiredIndicator?: boolean;
   mode?: "builder" | "preview";
   interactive?: boolean;
+  /** When true, the parent row applies width/margin/text-align layout. */
+  embedInBuilderRow?: boolean;
   fieldError?: string;
   fieldErrors?: Record<string, string>;
+  publicKey?: string;
   className?: string;
+}
+
+function fieldLayoutProps(
+  field: FormField,
+  applyLayout: boolean,
+): { className?: string; style?: React.CSSProperties } {
+  if (!applyLayout) return {};
+  return {
+    className: getFieldLayoutClassName(field.style),
+    style: getFieldWrapperStyle(field.style),
+  };
 }
 
 function RequiredMark({ required }: { required?: boolean }) {
@@ -87,25 +104,27 @@ function InputChrome({
   showRequiredIndicator,
   fieldError,
   className,
+  applyLayout = true,
 }: {
   field: FormField;
   children: React.ReactNode;
   showRequiredIndicator?: boolean;
   fieldError?: string;
   className?: string;
+  applyLayout?: boolean;
 }) {
   const required = field.validation?.required;
   const position = field.style?.labelPosition ?? "top";
+  const layout = fieldLayoutProps(field, applyLayout);
 
   return (
     <div
       className={cn(
-        getFieldWidthClass(field.style?.width),
+        layout.className,
         getLabelPositionClass(position),
-        getTextAlignClass(field.style?.textAlign),
         className,
       )}
-      style={getFieldWrapperStyle(field.style)}
+      style={layout.style}
     >
       {position === "left" ? (
         <>
@@ -134,6 +153,16 @@ function InputChrome({
   );
 }
 
+function fieldValueBinding(
+  interactive: boolean,
+  value: string | undefined,
+): Pick<React.ComponentProps<"input">, "value" | "defaultValue"> {
+  if (interactive) {
+    return value !== undefined ? { defaultValue: value } : {};
+  }
+  return { value: value ?? "" };
+}
+
 function StyledInput({
   field,
   type = "text",
@@ -153,7 +182,7 @@ function StyledInput({
       name={interactive ? field.name : undefined}
       placeholder={field.placeholder}
       disabled={disabled}
-      defaultValue={field.defaultValue}
+      {...fieldValueBinding(interactive, field.defaultValue)}
       required={interactive ? field.validation?.required : undefined}
       minLength={interactive ? field.validation?.minLength : undefined}
       maxLength={interactive ? field.validation?.maxLength : undefined}
@@ -162,6 +191,7 @@ function StyledInput({
         getInputSizeClass(field.style?.inputSize),
         getBorderRadiusClass(field.style?.inputBorderRadius),
         getFontClass(undefined),
+        getTextAlignClass(field.style?.textAlign),
         className,
       )}
       style={getInputInlineStyle(field.style)}
@@ -198,13 +228,17 @@ export function FieldRenderer({
   showRequiredIndicator = true,
   mode = "builder",
   interactive = false,
+  embedInBuilderRow = false,
   fieldError,
   fieldErrors,
+  publicKey,
   className,
 }: FieldRendererProps) {
   const disabled = !interactive;
   const required = field.validation?.required;
   const inputFont = settings?.inputFont;
+  const applyLayout = !(mode === "builder" && embedInBuilderRow);
+  const layout = fieldLayoutProps(field, applyLayout);
 
   if (field.type === "heading") {
     const level = field.level ?? 2;
@@ -219,14 +253,8 @@ export function FieldRenderer({
             : "text-base";
     return (
       <Tag
-        className={cn(
-          "font-semibold",
-          sizeClass,
-          getFieldWidthClass(field.style?.width),
-          getTextAlignClass(field.style?.textAlign),
-          className,
-        )}
-        style={getFieldWrapperStyle(field.style)}
+        className={cn("font-semibold", sizeClass, layout.className, className)}
+        style={layout.style}
       >
         {field.content || field.label}
       </Tag>
@@ -238,12 +266,11 @@ export function FieldRenderer({
       <p
         className={cn(
           "text-sm text-muted-foreground",
-          getFieldWidthClass(field.style?.width),
-          getTextAlignClass(field.style?.textAlign),
           getFontClass(inputFont),
+          layout.className,
           className,
         )}
-        style={getFieldWrapperStyle(field.style)}
+        style={layout.style}
       >
         {field.content || field.label}
       </p>
@@ -253,8 +280,8 @@ export function FieldRenderer({
   if (field.type === "divider") {
     return (
       <hr
-        className={cn("border-border", getFieldWidthClass(field.style?.width), className)}
-        style={getFieldWrapperStyle(field.style)}
+        className={cn("border-border", layout.className, className)}
+        style={layout.style}
       />
     );
   }
@@ -263,9 +290,9 @@ export function FieldRenderer({
     return (
       <div
         aria-hidden
-        className={cn(getFieldWidthClass(field.style?.width), className)}
+        className={cn(layout.className, className)}
         style={{
-          ...getFieldWrapperStyle(field.style),
+          ...layout.style,
           height: field.spacerHeight ?? 24,
         }}
       />
@@ -275,25 +302,15 @@ export function FieldRenderer({
   if (field.type === "image") {
     return (
       <div
-        className={cn(
-          getFieldWidthClass(field.style?.width),
-          getTextAlignClass(field.style?.textAlign),
-          className,
-        )}
-        style={getFieldWrapperStyle(field.style)}
+        className={cn(layout.className, className)}
+        style={layout.style}
       >
-        {field.src ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={field.src}
-            alt={field.label}
-            className="max-h-48 w-full rounded-md object-cover"
-          />
-        ) : (
-          <div className="flex h-32 items-center justify-center rounded-md border border-dashed bg-muted/30">
-            <ImageIcon className="size-8 text-muted-foreground" />
-          </div>
-        )}
+        <FormImageDisplay
+          fileAssetId={field.fileAssetId}
+          src={field.src}
+          alt={field.label}
+          publicKey={publicKey}
+        />
       </div>
     );
   }
@@ -311,8 +328,8 @@ export function FieldRenderer({
     if (mode === "preview") return null;
     return (
       <p
-        className={cn("text-xs italic text-muted-foreground", className)}
-        style={getFieldWrapperStyle(field.style)}
+        className={cn("text-xs italic text-muted-foreground", layout.className, className)}
+        style={layout.style}
       >
         Hidden field: {field.name}
       </p>
@@ -320,19 +337,15 @@ export function FieldRenderer({
   }
 
   if (field.type === "columns" && field.columns) {
-    const cols = field.columnCount ?? 2;
+    const cols = field.columnCount ?? field.columns.length;
+    const columnsToRender = resizeFormFieldColumns(field.columns, cols);
     return (
       <div
-        className={cn(
-          "grid gap-4",
-          cols === 3 ? "sm:grid-cols-3" : "sm:grid-cols-2",
-          getFieldWidthClass(field.style?.width),
-          className,
-        )}
-        style={getFieldWrapperStyle(field.style)}
+        className={cn("grid gap-4", getColumnGridClass(cols), layout.className, className)}
+        style={layout.style}
       >
-        {field.columns.map((column, columnIndex) => (
-          <div key={columnIndex} className="space-y-4">
+        {columnsToRender.map((column, columnIndex) => (
+          <div key={columnIndex} className="min-w-0 space-y-4">
             {column.map((nested) => (
               <FieldRenderer
                 key={nested.id}
@@ -343,6 +356,7 @@ export function FieldRenderer({
                 interactive={interactive}
                 fieldError={fieldError}
                 fieldErrors={fieldErrors}
+                publicKey={publicKey}
               />
             ))}
           </div>
@@ -353,7 +367,7 @@ export function FieldRenderer({
 
   if (field.type === "captcha") {
     return (
-      <InputChrome field={field} showRequiredIndicator={showRequiredIndicator} className={className}>
+      <InputChrome applyLayout={applyLayout} field={field} showRequiredIndicator={showRequiredIndicator} className={className}>
         <div className="flex items-center gap-3 rounded-md border bg-muted/40 px-4 py-3">
           <Checkbox disabled={disabled} />
           <div className="flex items-center gap-2 text-sm">
@@ -370,7 +384,7 @@ export function FieldRenderer({
 
   if (field.type === "signature") {
     return (
-      <InputChrome field={field} showRequiredIndicator={showRequiredIndicator} className={className}>
+      <InputChrome applyLayout={applyLayout} field={field} showRequiredIndicator={showRequiredIndicator} className={className}>
         <div
           className={cn(
             "flex h-28 items-center justify-center rounded-md border border-dashed bg-muted/20",
@@ -388,8 +402,28 @@ export function FieldRenderer({
   }
 
   if (field.type === "file") {
+    if (interactive) {
+      return (
+        <InputChrome
+          applyLayout={applyLayout}
+          field={field}
+          showRequiredIndicator={showRequiredIndicator}
+          className={className}
+          fieldError={fieldError}
+        >
+          <FormFileUploadControl
+            variant="file"
+            accept={field.accept}
+            publicKey={publicKey}
+            inputName={field.name}
+            required={field.validation?.required}
+          />
+        </InputChrome>
+      );
+    }
+
     return (
-      <InputChrome field={field} showRequiredIndicator={showRequiredIndicator} className={className}>
+      <InputChrome applyLayout={applyLayout} field={field} showRequiredIndicator={showRequiredIndicator} className={className}>
         <div
           className={cn(
             "flex flex-col items-center justify-center gap-2 rounded-md border border-dashed px-4 py-8 text-center",
@@ -412,7 +446,7 @@ export function FieldRenderer({
   if (field.type === "rating") {
     const count = field.maxStars ?? 5;
     return (
-      <InputChrome field={field} showRequiredIndicator={showRequiredIndicator} className={className}>
+      <InputChrome applyLayout={applyLayout} field={field} showRequiredIndicator={showRequiredIndicator} className={className}>
         <RatingIcons style={field.ratingStyle ?? "stars"} count={count} />
       </InputChrome>
     );
@@ -421,14 +455,15 @@ export function FieldRenderer({
   if (field.type === "range") {
     const min = field.validation?.min ?? 0;
     const max = field.validation?.max ?? 100;
+    const rangeValue = field.defaultValue ?? String(Math.round((min + max) / 2));
     return (
-      <InputChrome field={field} showRequiredIndicator={showRequiredIndicator} className={className}>
+      <InputChrome applyLayout={applyLayout} field={field} showRequiredIndicator={showRequiredIndicator} className={className}>
         <input
           type="range"
           min={min}
           max={max}
           step={field.step ?? 1}
-          defaultValue={field.defaultValue ?? String(Math.round((min + max) / 2))}
+          {...fieldValueBinding(interactive, rangeValue)}
           disabled={disabled}
           className="w-full"
         />
@@ -443,6 +478,7 @@ export function FieldRenderer({
   if (field.type === "toggle") {
     return (
       <InputChrome
+        applyLayout={applyLayout}
         field={field}
         showRequiredIndicator={showRequiredIndicator}
         fieldError={fieldError}
@@ -468,6 +504,7 @@ export function FieldRenderer({
   if (field.type === "name") {
     return (
       <InputChrome
+        applyLayout={applyLayout}
         field={field}
         showRequiredIndicator={showRequiredIndicator}
         fieldError={fieldError}
@@ -522,6 +559,7 @@ export function FieldRenderer({
     const subInputStyle = getInputInlineStyle(field.style);
     return (
       <InputChrome
+        applyLayout={applyLayout}
         field={field}
         showRequiredIndicator={showRequiredIndicator}
         fieldError={fieldError}
@@ -576,6 +614,7 @@ export function FieldRenderer({
   if (field.type === "textarea") {
     return (
       <InputChrome
+        applyLayout={applyLayout}
         field={field}
         showRequiredIndicator={showRequiredIndicator}
         fieldError={fieldError}
@@ -585,12 +624,13 @@ export function FieldRenderer({
           name={interactive ? field.name : undefined}
           placeholder={field.placeholder}
           disabled={disabled}
-          defaultValue={field.defaultValue}
+          {...fieldValueBinding(interactive, field.defaultValue)}
           required={interactive ? field.validation?.required : undefined}
           rows={field.rows ?? 4}
           className={cn(
             getBorderRadiusClass(field.style?.inputBorderRadius),
             getFontClass(inputFont),
+            getTextAlignClass(field.style?.textAlign),
           )}
           style={getInputInlineStyle(field.style)}
         />
@@ -601,6 +641,7 @@ export function FieldRenderer({
   if (field.type === "select") {
     return (
       <InputChrome
+        applyLayout={applyLayout}
         field={field}
         showRequiredIndicator={showRequiredIndicator}
         fieldError={fieldError}
@@ -614,6 +655,7 @@ export function FieldRenderer({
             getInputSizeClass(field.style?.inputSize),
             getBorderRadiusClass(field.style?.inputBorderRadius),
             getFontClass(inputFont),
+            getTextAlignClass(field.style?.textAlign),
           )}
           style={getInputInlineStyle(field.style)}
           disabled={disabled}
@@ -635,6 +677,7 @@ export function FieldRenderer({
   if (field.type === "multiselect") {
     return (
       <InputChrome
+        applyLayout={applyLayout}
         field={field}
         showRequiredIndicator={showRequiredIndicator}
         fieldError={fieldError}
@@ -664,6 +707,7 @@ export function FieldRenderer({
   if (field.type === "radio") {
     return (
       <InputChrome
+        applyLayout={applyLayout}
         field={field}
         showRequiredIndicator={showRequiredIndicator}
         fieldError={fieldError}
@@ -691,12 +735,8 @@ export function FieldRenderer({
     const options = field.options ?? [];
     return (
       <div
-        className={cn(
-          getFieldWidthClass(field.style?.width),
-          "space-y-2",
-          className,
-        )}
-        style={getFieldWrapperStyle(field.style)}
+        className={cn("space-y-2", layout.className, className)}
+        style={layout.style}
       >
         {options.length > 0 ? (
           options.map((option) => (
@@ -762,6 +802,7 @@ export function FieldRenderer({
 
   return (
     <InputChrome
+      applyLayout={applyLayout}
       field={field}
       showRequiredIndicator={showRequiredIndicator}
       fieldError={fieldError}

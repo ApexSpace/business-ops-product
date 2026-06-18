@@ -5,6 +5,7 @@ import { RequestUser } from '@app/common/decorators/current-user.decorator';
 import { AppException } from '@app/common/exceptions/app.exception';
 import { ErrorCode } from '@app/common/exceptions/error-code.enum';
 import { AuditService } from '@app/modules/platform/audit/services/audit.service';
+import { SYSTEM_AUDIT_ACTOR_SENTINEL } from '@app/modules/platform/audit/constants/audit.constants';
 import { CreateUploadDto } from '../dto/create-upload.dto';
 import { FileAssetResponseDto } from '../dto/file-asset-response.dto';
 import { SignedDownloadResponseDto } from '../dto/signed-download-response.dto';
@@ -30,12 +31,26 @@ export class StorageService {
     dto: CreateUploadDto,
     actor: RequestUser,
   ): Promise<CreateUploadResult> {
+    return this.createBusinessUpload(businessId, dto, {
+      uploadedById: actor.id,
+      auditActorUserId: actor.id,
+    });
+  }
+
+  async createBusinessUpload(
+    businessId: string,
+    dto: CreateUploadDto,
+    options: {
+      uploadedById?: string;
+      auditActorUserId?: string;
+    } = {},
+  ): Promise<CreateUploadResult> {
     this.fileAssetService.validateUploadInput(dto);
 
     const fileAssetId = randomUUID();
     const assetData = this.fileAssetService.buildPendingAssetData(
       businessId,
-      actor.id,
+      options.uploadedById,
       dto,
       fileAssetId,
     );
@@ -50,7 +65,7 @@ export class StorageService {
       });
 
     await this.auditService.log({
-      actorUserId: actor.id,
+      actorUserId: options.auditActorUserId ?? SYSTEM_AUDIT_ACTOR_SENTINEL,
       businessId,
       action: 'file_asset.upload_created',
       entityType: 'FileAsset',
@@ -60,10 +75,10 @@ export class StorageService {
     return { fileAssetId: asset.id, uploadUrl, expiresIn };
   }
 
-  async confirmUpload(
+  async confirmBusinessUpload(
     businessId: string,
     fileAssetId: string,
-    actor: RequestUser,
+    auditActorUserId: string = SYSTEM_AUDIT_ACTOR_SENTINEL,
   ): Promise<FileAssetResponseDto> {
     const asset = await this.fileAssetService.getActiveAsset(
       businessId,
@@ -88,7 +103,7 @@ export class StorageService {
         : await this.fileAssetService.markReady(asset.id);
 
     await this.auditService.log({
-      actorUserId: actor.id,
+      actorUserId: auditActorUserId,
       businessId,
       action: 'file_asset.upload_confirmed',
       entityType: 'FileAsset',
@@ -98,11 +113,11 @@ export class StorageService {
     return toFileAssetResponse(updated);
   }
 
-  async failUpload(
+  async failBusinessUpload(
     businessId: string,
     fileAssetId: string,
     reason: string,
-    actor: RequestUser,
+    auditActorUserId: string = SYSTEM_AUDIT_ACTOR_SENTINEL,
   ): Promise<FileAssetResponseDto> {
     const asset = await this.fileAssetService.getActiveAsset(
       businessId,
@@ -113,7 +128,7 @@ export class StorageService {
     const updated = await this.fileAssetService.markFailed(asset.id, reason);
 
     await this.auditService.log({
-      actorUserId: actor.id,
+      actorUserId: auditActorUserId,
       businessId,
       action: 'file_asset.upload_failed',
       entityType: 'FileAsset',
@@ -122,6 +137,23 @@ export class StorageService {
     });
 
     return toFileAssetResponse(updated);
+  }
+
+  async confirmUpload(
+    businessId: string,
+    fileAssetId: string,
+    actor: RequestUser,
+  ): Promise<FileAssetResponseDto> {
+    return this.confirmBusinessUpload(businessId, fileAssetId, actor.id);
+  }
+
+  async failUpload(
+    businessId: string,
+    fileAssetId: string,
+    reason: string,
+    actor: RequestUser,
+  ): Promise<FileAssetResponseDto> {
+    return this.failBusinessUpload(businessId, fileAssetId, reason, actor.id);
   }
 
   async getFile(

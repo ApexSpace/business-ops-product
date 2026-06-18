@@ -24,6 +24,7 @@ interface FormRuntimeViewProps {
   isSubmitting?: boolean;
   submitError?: string | null;
   fieldErrors?: Record<string, string>;
+  publicKey?: string;
   onSubmit: (data: Record<string, unknown>) => void | Promise<void>;
   onResetSubmitted?: () => void;
   className?: string;
@@ -35,6 +36,7 @@ export function FormRuntimeView({
   isSubmitting = false,
   submitError = null,
   fieldErrors: externalFieldErrors = {},
+  publicKey,
   onSubmit,
   onResetSubmitted,
   className,
@@ -94,7 +96,7 @@ export function FormRuntimeView({
               </div>
             ) : null}
 
-            <div className="space-y-1">
+            <div>
               {fields.map((field) => (
                 <FieldRenderer
                   key={field.id}
@@ -105,6 +107,7 @@ export function FormRuntimeView({
                   interactive
                   fieldError={displayedFieldErrors[field.name]}
                   fieldErrors={displayedFieldErrors}
+                  publicKey={publicKey}
                 />
               ))}
             </div>

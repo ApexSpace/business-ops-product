@@ -37,6 +37,7 @@ export type InputSize = "sm" | "md" | "lg";
 export type BorderRadius = "none" | "sm" | "md" | "lg" | "full";
 export type FieldWidth = 25 | 33 | 50 | 67 | 75 | 100;
 export type TextAlign = "left" | "center" | "right";
+export type ColumnCount = 1 | 2 | 3 | 4;
 export type RatingStyle = "stars" | "hearts" | "thumbs" | "numbers";
 export type FontPreset = "system" | "serif" | "sans" | "mono";
 export type SubmitButtonAlign = "left" | "center" | "right";
@@ -100,7 +101,8 @@ export interface FormField {
   level?: 1 | 2 | 3 | 4;
   spacerHeight?: number;
   src?: string;
-  columnCount?: 2 | 3;
+  fileAssetId?: string;
+  columnCount?: ColumnCount;
   showFirstName?: boolean;
   showMiddleName?: boolean;
   showLastName?: boolean;

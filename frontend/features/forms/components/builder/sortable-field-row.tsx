@@ -13,6 +13,11 @@ import {
 import { IconButton } from "@/components/ui/icon-button";
 import { cn } from "@/lib/utils";
 import type { FormField, FormSettings } from "@/features/forms/types";
+import {
+  getFieldLayoutClassName,
+  getFieldMarginStyle,
+  getFieldSizeStyle,
+} from "@/features/forms/utils/field-style.util";
 import { FieldRenderer } from "@/features/forms/components/builder/field-renderer";
 
 interface SortableFieldRowProps {
@@ -62,12 +67,9 @@ export function SortableFieldRow({
       style={{
         transform: CSS.Transform.toString(transform),
         transition,
+        ...getFieldMarginStyle(field.style),
       }}
-      className={cn(
-        "group relative pt-8",
-        !isFirst && "-mt-6",
-        isDragging && "z-10",
-      )}
+      className={cn("group relative w-full pt-8", isDragging && "z-10")}
       data-selected={selected ? "true" : undefined}
       onPointerDown={(event) => event.stopPropagation()}
     >
@@ -134,8 +136,10 @@ export function SortableFieldRow({
       </div>
 
       <div
+        style={getFieldSizeStyle(field.style)}
         className={cn(
           "flex items-center gap-2 rounded-lg border bg-card p-5 transition-colors",
+          getFieldLayoutClassName(field.style),
           selected ? "border-primary ring-2 ring-primary/30" : "border-border",
           isDragging && "opacity-80 shadow-md",
         )}
@@ -170,6 +174,7 @@ export function SortableFieldRow({
             settings={settings}
             showRequiredIndicator={showRequiredIndicator}
             mode="builder"
+            embedInBuilderRow
           />
         </div>
       </div>

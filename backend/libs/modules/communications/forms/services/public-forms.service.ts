@@ -4,6 +4,8 @@ import { AppException } from '@app/common/exceptions/app.exception';
 import { ErrorCode } from '@app/common/exceptions/error-code.enum';
 import { AuditService } from '@app/modules/platform/audit/services/audit.service';
 import { SYSTEM_AUDIT_ACTOR_SENTINEL } from '@app/modules/platform/audit/constants/audit.constants';
+import { CreateUploadDto } from '@app/modules/storage/dto/create-upload.dto';
+import { StorageService } from '@app/modules/storage/services/storage.service';
 import { FormSubmissionResponseDto } from '../dto/form-submission-response.dto';
 import { SubmitFormDto } from '../dto/submit-form.dto';
 import { PublicFormConfigDto } from '../dto/form-embed.dto';
@@ -31,6 +33,7 @@ export class PublicFormsService {
     private readonly formsRepository: FormsRepository,
     private readonly submissionsRepository: FormSubmissionsRepository,
     private readonly auditService: AuditService,
+    private readonly storageService: StorageService,
   ) {}
 
   async getConfig(publicKey: string): Promise<PublicFormConfigDto> {
@@ -100,6 +103,37 @@ export class PublicFormsService {
       success: true,
       redirectUrl,
     };
+  }
+
+  async createUpload(publicKey: string, dto: CreateUploadDto) {
+    const form = await this.requirePublishedForm(publicKey);
+    return this.storageService.createBusinessUpload(form.businessId, dto, {
+      auditActorUserId: SYSTEM_AUDIT_ACTOR_SENTINEL,
+    });
+  }
+
+  async confirmUpload(publicKey: string, fileAssetId: string) {
+    const form = await this.requirePublishedForm(publicKey);
+    return this.storageService.confirmBusinessUpload(
+      form.businessId,
+      fileAssetId,
+      SYSTEM_AUDIT_ACTOR_SENTINEL,
+    );
+  }
+
+  async failUpload(publicKey: string, fileAssetId: string, reason: string) {
+    const form = await this.requirePublishedForm(publicKey);
+    return this.storageService.failBusinessUpload(
+      form.businessId,
+      fileAssetId,
+      reason,
+      SYSTEM_AUDIT_ACTOR_SENTINEL,
+    );
+  }
+
+  async getFileDownloadUrl(publicKey: string, fileAssetId: string) {
+    const form = await this.requirePublishedForm(publicKey);
+    return this.storageService.getDownloadUrl(form.businessId, fileAssetId);
   }
 
   private async requirePublishedForm(publicKey: string): Promise<Form> {

@@ -1,41 +1,15 @@
+import {
+  FORM_SUBMISSION_INPUT_KEYS,
+  FORM_SUBMISSION_LAYOUT_SKIP_KEYS,
+} from '../registries/form-field-registry.util';
+
 export interface FormSubmissionFieldError {
   field: string;
   message: string;
 }
 
-const LAYOUT_TYPES = new Set([
-  'heading',
-  'paragraph',
-  'divider',
-  'spacer',
-  'image',
-]);
-
-const INPUT_TYPES = new Set([
-  'text',
-  'email',
-  'phone',
-  'number',
-  'password',
-  'textarea',
-  'select',
-  'multiselect',
-  'radio',
-  'checkbox',
-  'toggle',
-  'date',
-  'time',
-  'datetime',
-  'file',
-  'signature',
-  'rating',
-  'range',
-  'hidden',
-  'captcha',
-  'name',
-  'address',
-  'website',
-]);
+const LAYOUT_TYPES = FORM_SUBMISSION_LAYOUT_SKIP_KEYS;
+const INPUT_TYPES = FORM_SUBMISSION_INPUT_KEYS;
 
 function isFieldObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);

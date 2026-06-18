@@ -1,5 +1,6 @@
 import { randomUUID } from 'crypto';
 import { Form, Prisma } from '@prisma/client';
+import { FORM_SUBMISSION_INPUT_KEYS } from '../registries/form-field-registry.util';
 
 export interface FormDefinitionView {
   fields: unknown[];
@@ -118,31 +119,7 @@ export function countFormBuilderFields(fields: unknown[]): number {
 }
 
 export function countFormFields(fields: unknown[]): number {
-  const inputTypes = new Set([
-    'text',
-    'email',
-    'phone',
-    'number',
-    'password',
-    'textarea',
-    'select',
-    'multiselect',
-    'radio',
-    'checkbox',
-    'toggle',
-    'date',
-    'time',
-    'datetime',
-    'file',
-    'signature',
-    'rating',
-    'range',
-    'hidden',
-    'captcha',
-    'name',
-    'address',
-    'website',
-  ]);
+  const inputTypes = FORM_SUBMISSION_INPUT_KEYS;
 
   let count = 0;
   for (const field of fields) {

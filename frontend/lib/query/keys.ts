@@ -191,6 +191,11 @@ export const queryKeys = {
     embed: (id: string) => ["forms", "embed", id] as const,
     submissions: (formId: string, filters?: { page?: number; limit?: number }) =>
       listKey(["forms", formId, "submissions"], filters),
+    categories: () => ["forms", "metadata", "categories"] as const,
+    fieldTypes: (filters?: ListFilters) =>
+      listKey(["forms", "metadata", "field-types"], filters),
+    palette: (filters?: ListFilters) =>
+      listKey(["forms", "metadata", "palette"], filters),
   },
   emailNotifications: {
     all: () => ["email-notifications"] as const,

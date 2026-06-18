@@ -33,11 +33,22 @@ describe('PublicFormsService', () => {
     const submissionsRepository = {
       create: jest.fn(),
     };
+    const auditService = {
+      log: jest.fn(),
+    };
+    const storageService = {
+      createBusinessUpload: jest.fn(),
+      confirmBusinessUpload: jest.fn(),
+      failBusinessUpload: jest.fn(),
+      getDownloadUrl: jest.fn(),
+    };
     const service = new PublicFormsService(
       formsRepository as never,
       submissionsRepository as never,
+      auditService as never,
+      storageService as never,
     );
-    return { service, formsRepository, submissionsRepository };
+    return { service, formsRepository, submissionsRepository, storageService };
   }
 
   it('returns public config for a published form', async () => {

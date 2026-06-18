@@ -104,7 +104,7 @@ export function FormCanvas({
               items={fields.map((field) => field.id)}
               strategy={verticalListSortingStrategy}
             >
-              <div className="space-y-1">
+              <div>
                 {fields.map((field, index) => (
                   <SortableFieldRow
                     key={field.id}

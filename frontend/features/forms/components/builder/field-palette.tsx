@@ -15,6 +15,7 @@ import {
   Image,
   KeyRound,
   List,
+  Loader2,
   Mail,
   Minus,
   PenLine,
@@ -39,50 +40,46 @@ import {
 import { SearchInput } from "@/components/forms/search-input";
 import { cn } from "@/lib/utils";
 import type { FieldType } from "@/features/forms/types";
-import {
-  getFieldTypeLabel,
-  PALETTE_CATEGORIES,
-} from "@/features/forms/utils/field-defaults.util";
+import { useFormFieldPalette } from "@/features/forms/hooks/use-form-metadata";
 
-const FIELD_ICONS: Partial<Record<FieldType, React.ComponentType<{ className?: string }>>> = {
-  text: Type,
-  email: Mail,
+const FIELD_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
+  type: Type,
+  mail: Mail,
   phone: Phone,
-  number: Hash,
-  password: KeyRound,
-  textarea: AlignLeft,
-  select: List,
-  multiselect: List,
-  radio: CircleDot,
-  checkbox: CheckSquare,
-  toggle: ToggleLeft,
-  date: Calendar,
-  time: Calendar,
-  datetime: CalendarClock,
-  file: FileUp,
-  signature: PenLine,
-  rating: Star,
-  range: SlidersHorizontal,
+  hash: Hash,
+  "key-round": KeyRound,
+  "align-left": AlignLeft,
+  list: List,
+  "circle-dot": CircleDot,
+  "check-square": CheckSquare,
+  "toggle-left": ToggleLeft,
+  calendar: Calendar,
+  "calendar-clock": CalendarClock,
+  "file-up": FileUp,
+  "pen-line": PenLine,
+  star: Star,
+  "sliders-horizontal": SlidersHorizontal,
+  "eye-off": EyeOff,
+  shield: Shield,
+  user: User,
+  globe: Globe,
   heading: Heading,
-  paragraph: TextCursorInput,
-  divider: Minus,
-  spacer: Space,
+  "text-cursor-input": TextCursorInput,
+  minus: Minus,
+  space: Space,
   image: Image,
-  hidden: EyeOff,
-  name: User,
-  address: AlignLeft,
-  website: Globe,
-  captcha: Shield,
-  columns: Columns2,
+  "columns-2": Columns2,
 };
 
 interface PaletteItemProps {
   type: FieldType;
+  label: string;
+  icon?: string;
   onAddField: (type: FieldType) => void;
 }
 
-function PaletteItem({ type, onAddField }: PaletteItemProps) {
-  const Icon = FIELD_ICONS[type] ?? Type;
+function PaletteItem({ type, label, icon, onAddField }: PaletteItemProps) {
+  const Icon = (icon && FIELD_ICONS[icon]) ?? Type;
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: `palette-${type}`,
     data: { type, source: "palette" as const },
@@ -101,7 +98,7 @@ function PaletteItem({ type, onAddField }: PaletteItemProps) {
       {...attributes}
     >
       <Icon className="size-4 shrink-0 text-muted-foreground" />
-      <span className="min-w-0 truncate">{getFieldTypeLabel(type)}</span>
+      <span className="min-w-0 truncate">{label}</span>
     </button>
   );
 }
@@ -111,28 +108,31 @@ interface FieldPaletteProps {
   className?: string;
 }
 
-const DEFAULT_OPEN_CATEGORY = PALETTE_CATEGORIES[0]?.id ?? "basic";
-
 export function FieldPalette({ onAddField, className }: FieldPaletteProps) {
   const [search, setSearch] = useState("");
-  const [openCategory, setOpenCategory] = useState<string | null>(DEFAULT_OPEN_CATEGORY);
+  const [openCategory, setOpenCategory] = useState<string | null>("basic");
+  const { data: palette = [], isLoading } = useFormFieldPalette({
+    status: "implemented",
+    search: search.trim() || undefined,
+  });
 
   const categories = useMemo(() => {
     const query = search.trim().toLowerCase();
-    if (!query) return PALETTE_CATEGORIES;
+    if (!query) return palette;
 
-    return PALETTE_CATEGORIES.map((category) => ({
-      ...category,
-      types: category.types.filter((type) =>
-        getFieldTypeLabel(type).toLowerCase().includes(query),
-      ),
-    })).filter((category) => category.types.length > 0);
-  }, [search]);
+    return palette
+      .map((category) => ({
+        ...category,
+        fields: category.fields.filter((field) =>
+          field.label.toLowerCase().includes(query),
+        ),
+      }))
+      .filter((category) => category.fields.length > 0);
+  }, [palette, search]);
 
-  // Single-open accordion: while searching, open the first category (palette order) with matches.
   const effectiveOpenCategory = useMemo(() => {
     if (search.trim()) {
-      return categories[0]?.id ?? null;
+      return categories[0]?.key ?? null;
     }
     return openCategory;
   }, [search, categories, openCategory]);
@@ -159,27 +159,40 @@ export function FieldPalette({ onAddField, className }: FieldPaletteProps) {
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden py-1 pl-[var(--page-padding-x)] pr-2">
-        <Accordion
-          value={effectiveOpenCategory ? [effectiveOpenCategory] : []}
-          onValueChange={(value) => setOpenCategory(value[0] ?? null)}
-        >
-          {categories.map((category) => (
-            <AccordionItem key={category.id} value={category.id}>
-              <AccordionTrigger className="px-1 py-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                {category.label}
-              </AccordionTrigger>
-              <AccordionContent className="px-0 pb-1.5">
-                <div className="grid grid-cols-2 gap-2">
-                  {category.types.map((type) => (
-                    <PaletteItem key={type} type={type} onAddField={onAddField} />
-                  ))}
-                </div>
-              </AccordionContent>
-            </AccordionItem>
-          ))}
-        </Accordion>
+        {isLoading ? (
+          <div className="flex items-center gap-2 px-1 py-4 text-sm text-muted-foreground">
+            <Loader2 className="size-4 animate-spin" />
+            Loading field types…
+          </div>
+        ) : (
+          <Accordion
+            value={effectiveOpenCategory ? [effectiveOpenCategory] : []}
+            onValueChange={(value) => setOpenCategory(value[0] ?? null)}
+          >
+            {categories.map((category) => (
+              <AccordionItem key={category.key} value={category.key}>
+                <AccordionTrigger className="px-1 py-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  {category.label}
+                </AccordionTrigger>
+                <AccordionContent className="px-0 pb-1.5">
+                  <div className="grid grid-cols-2 gap-2">
+                    {category.fields.map((field) => (
+                      <PaletteItem
+                        key={field.key}
+                        type={field.key as FieldType}
+                        label={field.label}
+                        icon={field.icon}
+                        onAddField={onAddField}
+                      />
+                    ))}
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
+        )}
 
-        {categories.length === 0 ? (
+        {!isLoading && categories.length === 0 ? (
           <p className="px-1 py-2 text-sm text-muted-foreground">
             No fields match your search.
           </p>

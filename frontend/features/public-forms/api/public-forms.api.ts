@@ -1,4 +1,4 @@
-import type { FormDefinition } from "@/features/forms/types";
+import type { FileAsset } from "@/lib/storage/types/storage.types";
 import { getErrorMessage, parseEnvelope } from "@/lib/api/envelope";
 import { ApiClientError } from "@/lib/api/errors";
 
@@ -57,5 +57,57 @@ export function submitPublicForm(
       method: "POST",
       body: JSON.stringify({ data }),
     },
+  );
+}
+
+export function createPublicFormUpload(
+  publicKey: string,
+  input: {
+    filename: string;
+    mimeType: string;
+    size: number;
+    category: string;
+    visibility?: string;
+  },
+) {
+  return publicFetch<{ fileAssetId: string; uploadUrl: string; expiresIn: number }>(
+    `public/forms/${encodeURIComponent(publicKey)}/uploads`,
+    {
+      method: "POST",
+      body: JSON.stringify(input),
+    },
+  );
+}
+
+export function confirmPublicFormUpload(publicKey: string, fileAssetId: string) {
+  return publicFetch<FileAsset>(
+    `public/forms/${encodeURIComponent(publicKey)}/uploads/${encodeURIComponent(fileAssetId)}/confirm`,
+    {
+      method: "POST",
+      body: JSON.stringify({}),
+    },
+  );
+}
+
+export function failPublicFormUpload(
+  publicKey: string,
+  fileAssetId: string,
+  reason: string,
+) {
+  return publicFetch<{ id: string }>(
+    `public/forms/${encodeURIComponent(publicKey)}/uploads/${encodeURIComponent(fileAssetId)}/fail`,
+    {
+      method: "POST",
+      body: JSON.stringify({ reason }),
+    },
+  );
+}
+
+export function getPublicFormFileDownloadUrl(
+  publicKey: string,
+  fileAssetId: string,
+) {
+  return publicFetch<{ downloadUrl: string; expiresIn: number }>(
+    `public/forms/${encodeURIComponent(publicKey)}/files/${encodeURIComponent(fileAssetId)}/download-url`,
   );
 }

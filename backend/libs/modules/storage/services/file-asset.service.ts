@@ -71,7 +71,7 @@ export class FileAssetService {
 
   buildPendingAssetData(
     businessId: string,
-    uploadedById: string,
+    uploadedById: string | undefined,
     dto: CreateUploadDto,
     fileAssetId: string,
   ): CreateFileAssetData {

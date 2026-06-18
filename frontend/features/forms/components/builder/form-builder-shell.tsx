@@ -58,9 +58,18 @@ export function FormBuilderShell({
   };
 
   const handleBuilderPointerDown = (event: React.PointerEvent) => {
-    const target = event.target as Node;
+    const target = event.target;
+    if (!(target instanceof Node)) return;
     if (canvasColumnRef.current?.contains(target)) return;
     if (settingsPanelRef.current?.contains(target)) return;
+    if (
+      target instanceof Element &&
+      target.closest(
+        '[data-slot="dropdown-menu-content"], [data-slot="select-content"], [data-slot="popover-content"]',
+      )
+    ) {
+      return;
+    }
     handleDeselectField();
   };
 

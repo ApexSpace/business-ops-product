@@ -218,10 +218,16 @@ export function useFormBuilderState({
     (fieldId: string, patch: Partial<FormField>) => {
       setDefinition((current) => ({
         ...current,
-        fields: mapFields(current.fields, fieldId, (field) => ({
-          ...field,
-          ...patch,
-        })),
+        fields: mapFields(current.fields, fieldId, (field) => {
+          const next = { ...field, ...patch };
+          if (patch.style) {
+            next.style = { ...field.style, ...patch.style };
+          }
+          if (patch.validation) {
+            next.validation = { ...field.validation, ...patch.validation };
+          }
+          return next;
+        }),
       }));
       markDirty();
     },

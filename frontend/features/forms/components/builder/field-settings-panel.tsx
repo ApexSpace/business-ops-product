@@ -9,12 +9,14 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
-import type { FieldStyle, FormField, FormSettings } from "@/features/forms/types";
+import type { FieldStyle, FieldType, FormField, FormSettings } from "@/features/forms/types";
+import { useFormFieldTypeMap } from "@/features/forms/hooks/use-form-metadata";
 import {
-  CHOICE_FIELD_TYPES,
+  COLUMN_COUNT_OPTIONS,
   getFieldTypeLabel,
-  LAYOUT_FIELD_TYPES,
+  resizeFormFieldColumns,
 } from "@/features/forms/utils/field-defaults.util";
+import type { ColumnCount } from "@/features/forms/types";
 import { SectionHeader } from "@/features/forms/components/builder/settings-controls/section-header";
 import { SettingInput } from "@/features/forms/components/builder/settings-controls/setting-input";
 import { SettingRow } from "@/features/forms/components/builder/settings-controls/setting-row";
@@ -27,6 +29,9 @@ import { SubmitButtonSection } from "@/features/forms/components/builder/form-se
 import { AfterSubmitSection } from "@/features/forms/components/builder/form-settings/after-submit-section";
 import { FormStylingSection } from "@/features/forms/components/builder/form-settings/form-styling-section";
 import { MultiStepSection } from "@/features/forms/components/builder/form-settings/multi-step-section";
+import { FormFileUploadControl } from "@/features/forms/components/form-file-upload-control";
+import { FORM_IMAGE_ACCEPT } from "@/features/forms/utils/form-upload.util";
+import { parseFieldWidth } from "@/features/forms/utils/field-style.util";
 
 interface FieldSettingsPanelProps {
   selectedField: FormField | null;
@@ -108,26 +113,21 @@ function FieldEditor({
   field: FormField;
   onUpdate: (patch: Partial<FormField>) => void;
 }) {
-  const isLayout = LAYOUT_FIELD_TYPES.includes(field.type);
-  const hasOptions = CHOICE_FIELD_TYPES.includes(field.type);
-  const skipInputStyle = [
-    ...LAYOUT_FIELD_TYPES,
-    "rating",
-    "range",
-    "signature",
-    "captcha",
-    "divider",
-    "spacer",
-  ].includes(field.type);
-  const skipValidation = isLayout || field.type === "hidden";
-  const skipLabelStyle = isLayout;
+  const { byKey } = useFormFieldTypeMap({ status: "implemented" });
+  const meta = byKey.get(field.type);
+  const isLayout = meta?.role === "layout";
+  const hasOptions = meta?.supportsOptions ?? false;
+  const skipInputStyle = meta ? !meta.supportsInputStyle : false;
+  const skipValidation = meta ? !meta.supportsValidation : false;
+  const skipLabelStyle = meta ? !meta.supportsLabelStyle : false;
+  const supportsLabel = meta?.supportsLabel ?? !isLayout;
 
   const widthValue = String(
     field.style?.width === "half"
       ? 50
       : field.style?.width === "full"
         ? 100
-        : (field.style?.width ?? 100),
+        : parseFieldWidth(field.style?.width),
   );
 
   return (
@@ -138,7 +138,7 @@ function FieldEditor({
 
       <Accordion key={field.id} defaultValue={["General"]}>
       <SectionHeader title="General">
-        {!isLayout && field.type !== "divider" && field.type !== "spacer" ? (
+        {supportsLabel ? (
           <>
             <SettingRow label="Label">
               <SettingInput
@@ -179,12 +179,16 @@ function FieldEditor({
         ) : null}
 
         {field.type === "image" ? (
-          <SettingRow label="Image URL">
-            <SettingInput
-              value={field.src ?? ""}
-              onChange={(value) => onUpdate({ src: value })}
-              type="url"
-              placeholder="https://…"
+          <SettingRow label="Image">
+            <FormFileUploadControl
+              variant="image"
+              accept={FORM_IMAGE_ACCEPT}
+              maxSizeMb={5}
+              value={field.fileAssetId ?? ""}
+              onChange={(fileAssetId) =>
+                onUpdate({ fileAssetId, src: undefined })
+              }
+              onClear={() => onUpdate({ fileAssetId: undefined, src: undefined })}
             />
           </SettingRow>
         ) : null}
@@ -295,22 +299,18 @@ function FieldEditor({
         {field.type === "columns" ? (
           <SettingRow label="Column count">
             <SettingSelect
-              value={String(field.columnCount ?? 2)}
+              value={String(field.columnCount ?? field.columns?.length ?? 2)}
               onChange={(value) => {
-                const count = Number(value) as 2 | 3;
-                const columns = field.columns ?? [[], []];
-                const next =
-                  count === 3 && columns.length < 3
-                    ? [...columns, []]
-                    : count === 2
-                      ? columns.slice(0, 2)
-                      : columns;
-                onUpdate({ columnCount: count, columns: next });
+                const count = Number(value) as ColumnCount;
+                onUpdate({
+                  columnCount: count,
+                  columns: resizeFormFieldColumns(field.columns, count),
+                });
               }}
-              options={[
-                { value: "2", label: "2 columns" },
-                { value: "3", label: "3 columns" },
-              ]}
+              options={COLUMN_COUNT_OPTIONS.map((option) => ({
+                value: String(option.value),
+                label: option.label,
+              }))}
             />
           </SettingRow>
         ) : null}
@@ -536,7 +536,7 @@ function FieldEditor({
             value={widthValue}
             onChange={(value) =>
               updateStyle(field, onUpdate, {
-                width: Number(value) as FieldStyle["width"],
+                width: parseFieldWidth(value),
               })
             }
             options={WIDTH_OPTIONS}

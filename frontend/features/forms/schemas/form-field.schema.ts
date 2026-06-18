@@ -102,7 +102,8 @@ export const formFieldSchema: z.ZodType<{
   level?: 1 | 2 | 3 | 4;
   spacerHeight?: number;
   src?: string;
-  columnCount?: 2 | 3;
+  fileAssetId?: string;
+  columnCount?: 1 | 2 | 3 | 4;
   showFirstName?: boolean;
   showMiddleName?: boolean;
   showLastName?: boolean;
@@ -135,7 +136,8 @@ export const formFieldSchema: z.ZodType<{
     level: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4)]).optional(),
     spacerHeight: z.number().optional(),
     src: z.string().optional(),
-    columnCount: z.union([z.literal(2), z.literal(3)]).optional(),
+    fileAssetId: z.string().optional(),
+    columnCount: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4)]).optional(),
     showFirstName: z.boolean().optional(),
     showMiddleName: z.boolean().optional(),
     showLastName: z.boolean().optional(),

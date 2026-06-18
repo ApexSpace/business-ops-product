@@ -1,4 +1,5 @@
 import type {
+  ColumnCount,
   FieldStyle,
   FieldType,
   FormDefinition,
@@ -11,39 +12,11 @@ import {
   createDefaultFormSettings,
   DEFAULT_FIELD_STYLE,
   getFieldTypeLabel,
+  resizeFormFieldColumns,
 } from "@/features/forms/utils/field-defaults.util";
+import { FORM_FIELD_TYPE_SET } from "@/features/forms/constants/form-field-type-keys.constant";
 
-const FIELD_TYPES = new Set<FieldType>([
-  "text",
-  "email",
-  "phone",
-  "number",
-  "password",
-  "textarea",
-  "select",
-  "multiselect",
-  "radio",
-  "checkbox",
-  "toggle",
-  "date",
-  "time",
-  "datetime",
-  "file",
-  "signature",
-  "rating",
-  "range",
-  "hidden",
-  "captcha",
-  "heading",
-  "paragraph",
-  "divider",
-  "spacer",
-  "image",
-  "columns",
-  "name",
-  "address",
-  "website",
-]);
+const FIELD_TYPES = FORM_FIELD_TYPE_SET;
 
 function isFormFieldLike(value: unknown): value is FormField {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -88,6 +61,17 @@ function normalizeFieldStyle(style?: FieldStyle): FieldStyle {
   const merged = { ...DEFAULT_FIELD_STYLE, ...style };
   if (style?.width === "half") merged.width = 50;
   if (style?.width === "full") merged.width = 100;
+  const numericWidth = Number(merged.width);
+  if (
+    numericWidth === 25 ||
+    numericWidth === 33 ||
+    numericWidth === 50 ||
+    numericWidth === 67 ||
+    numericWidth === 75 ||
+    numericWidth === 100
+  ) {
+    merged.width = numericWidth as FieldStyle["width"];
+  }
   return merged;
 }
 
@@ -126,10 +110,12 @@ function normalizeField(field: FormField): FormField {
   });
 
   if (type === "columns" && field.columns) {
-    normalized.columns = field.columns.map((column) =>
-      coerceRawFields(column).map(normalizeField),
+    const count = (field.columnCount ?? field.columns.length ?? 2) as ColumnCount;
+    normalized.columnCount = count;
+    normalized.columns = resizeFormFieldColumns(
+      field.columns.map((column) => coerceRawFields(column).map(normalizeField)),
+      count,
     );
-    if (field.columnCount) normalized.columnCount = field.columnCount;
   }
 
   return normalized;
