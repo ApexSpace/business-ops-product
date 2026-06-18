@@ -214,11 +214,21 @@ const AUDIT_SUBJECT_RESOLVERS: Record<
     };
   },
   'contact.tag_created': (audit) => {
-    // Tag definition CRUD — not contact tag assignment.
     if (audit.entityType === 'Tag') {
       return null;
     }
     return resolveByEntityType(audit);
+  },
+  'contact.tag_added': (audit) => {
+    if (!isUuid(audit.entityId)) return null;
+    const tagId = asString(audit.metadata?.tagId);
+    return {
+      subjectId: audit.entityId,
+      metadata: {
+        tagId,
+        tagName: audit.metadata?.tagName,
+      },
+    };
   },
 };
 

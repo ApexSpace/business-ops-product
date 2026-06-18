@@ -78,6 +78,8 @@ const unmapped = discovered.filter(
     !route.startsWith("/business/settings/financial") &&
     !route.startsWith("/business/settings/templates") &&
     !route.startsWith("/business/settings/automations") &&
+    !route.startsWith("/business/settings/automation-workflows") &&
+    !route.startsWith("/business/settings/automation-registry") &&
     !route.startsWith("/business/settings/services"),
 );
 

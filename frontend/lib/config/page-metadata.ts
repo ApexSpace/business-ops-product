@@ -136,6 +136,22 @@ const businessRoutes: Record<string, RouteEntry> = {
       { label: "Automations" },
     ],
   },
+  "/business/settings/automation-workflows/new": {
+    title: "Create workflow",
+    breadcrumbs: [
+      { label: "Settings", href: "/business/settings/profile" },
+      { label: "Automations", href: "/business/settings/automations" },
+      { label: "Create workflow" },
+    ],
+  },
+  "/business/settings/automation-registry": {
+    title: "Automation registry",
+    breadcrumbs: [
+      { label: "Settings", href: "/business/settings/profile" },
+      { label: "Automations", href: "/business/settings/automations" },
+      { label: "Registry" },
+    ],
+  },
   "/business/settings/chatbots": {
     title: "Chatbots",
     description:
@@ -416,6 +432,18 @@ export function resolvePageMetadata(
         { label: "Settings", href: "/business/settings/profile" },
         { label: "Pipelines", href: "/business/settings/pipelines" },
         { label: "Edit" },
+      ],
+    };
+  }
+
+  if (pathname.match(/^\/business\/settings\/automation-workflows\/[^/]+$/)) {
+    return {
+      title: "Edit workflow",
+      description: "Configure trigger, filters, and linear steps.",
+      breadcrumbs: [
+        { label: "Settings", href: "/business/settings/profile" },
+        { label: "Automations", href: "/business/settings/automations" },
+        { label: "Edit workflow" },
       ],
     };
   }

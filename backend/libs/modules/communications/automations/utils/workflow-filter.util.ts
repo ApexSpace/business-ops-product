@@ -4,7 +4,7 @@ function asString(value: unknown): string | undefined {
   return typeof value === 'string' ? value : undefined;
 }
 
-function compareValues(
+export function compareValues(
   operator: string,
   actual: unknown,
   expected: unknown,

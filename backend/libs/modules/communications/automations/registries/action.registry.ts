@@ -225,7 +225,7 @@ export const ACTION_REGISTRY: ActionDefinition[] = [
     label: 'If / else',
     description: 'Branch the workflow based on a condition.',
     icon: 'git-branch',
-    implementationStatus: 'planned',
+    implementationStatus: 'implemented',
     configSchema: conditionActionConfigSchema,
   }),
   act({

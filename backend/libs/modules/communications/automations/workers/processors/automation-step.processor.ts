@@ -3,6 +3,7 @@ import {
   AutomationWorkflowRunStatus,
   AutomationWorkflowRunStepStatus,
 } from '@prisma/client';
+import { parseWorkflowSettings } from '../../mappers/automation-workflow.mapper';
 import type { AutomationStepJobPayload } from '../../types/workflow.types';
 import { AutomationWorkflowRunRepository } from '../../repositories/automation-workflow.repository';
 import { AutomationActionExecutorService } from '../../services/automation-action-executor.service';
@@ -53,6 +54,9 @@ export class AutomationStepProcessor {
       run.id,
       payload.stepIndex,
       AutomationWorkflowRunStepStatus.RUNNING,
+      {
+        input: ((step.config ?? {}) as Record<string, unknown>),
+      },
     );
 
     await this.runRepository.updateRun(run.id, {
@@ -80,6 +84,22 @@ export class AutomationStepProcessor {
         return;
       }
 
+      if (result.type === 'delay_current') {
+        const scheduledFor = new Date(Date.now() + result.delayMs);
+        await this.engineService.updateStepStatus(
+          run.id,
+          payload.stepIndex,
+          AutomationWorkflowRunStepStatus.WAITING,
+          { output: result.output, scheduledFor },
+        );
+        await this.engineService.reEnqueueStep(
+          run.id,
+          payload.stepIndex,
+          result.delayMs,
+        );
+        return;
+      }
+
       if (result.type === 'delay') {
         const scheduledFor = new Date(Date.now() + result.delayMs);
         await this.engineService.updateStepStatus(
@@ -92,6 +112,22 @@ export class AutomationStepProcessor {
           run.id,
           payload.stepIndex,
           result.delayMs,
+        );
+        return;
+      }
+
+      if (result.type === 'branch') {
+        await this.engineService.updateStepStatus(
+          run.id,
+          payload.stepIndex,
+          AutomationWorkflowRunStepStatus.COMPLETED,
+          { output: result.output },
+        );
+        await this.engineService.advanceToStepById(
+          run.id,
+          result.nextStepId,
+          payload.stepIndex,
+          result.delayMs ?? 0,
         );
         return;
       }

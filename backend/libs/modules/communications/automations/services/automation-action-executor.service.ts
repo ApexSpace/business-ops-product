@@ -1,7 +1,9 @@
 import { HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { htmlToPlainText } from '@app/common/utils/html-text.util';
 import { PrismaService } from '@app/core/database/prisma.service';
+import { resolveEmailConfig } from '@app/core/config/email/email.config';
 import { EmailNotificationService } from '@app/modules/communications/email/services/email-notification.service';
+import { resolveTransactionalEmailSender } from '@app/modules/communications/email/utils/email-sender.util';
 import { ContactRepository } from '@app/modules/crm/contacts/repositories/contact.repository';
 import { TagRepository } from '@app/modules/crm/contacts/repositories/tag.repository';
 import { LeadRepository } from '@app/modules/crm/leads/repositories/lead.repository';
@@ -15,6 +17,7 @@ import { ErrorCode } from '@app/common/exceptions/error-code.enum';
 import { ACTION_BY_KEY } from '../registries/action.registry';
 import type { AutomationRunContext } from '../types/workflow.types';
 import { CustomValueResolverService } from './custom-value-resolver.service';
+import { ConditionEvaluatorService } from './condition-evaluator.service';
 import {
   automationAuditMetadata,
   resolveAutomationActorUserId,
@@ -24,10 +27,22 @@ import {
   interpolateMergeTags,
 } from '../utils/merge-tag-interpolate.util';
 import { parseWorkflowSettings } from '../mappers/automation-workflow.mapper';
+import { msUntilAllowedTimeWindow } from '../utils/workflow-time-window.util';
 
 export type ActionExecutionResult =
   | { type: 'continue'; output?: Record<string, unknown> }
   | { type: 'delay'; delayMs: number; output?: Record<string, unknown> }
+  | {
+      type: 'delay_current';
+      delayMs: number;
+      output?: Record<string, unknown>;
+    }
+  | {
+      type: 'branch';
+      nextStepId: string;
+      output?: Record<string, unknown>;
+      delayMs?: number;
+    }
   | { type: 'end'; output?: Record<string, unknown> };
 
 @Injectable()
@@ -37,6 +52,7 @@ export class AutomationActionExecutorService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly customValueResolver: CustomValueResolverService,
+    private readonly conditionEvaluator: ConditionEvaluatorService,
     private readonly emailNotificationService: EmailNotificationService,
     private readonly contactRepository: ContactRepository,
     private readonly tagRepository: TagRepository,
@@ -78,6 +94,7 @@ export class AutomationActionExecutorService {
             subject: string;
             htmlBody: string;
             textBody?: string;
+            fromName?: string;
             to?: 'contact' | 'custom';
             customTo?: string;
           },
@@ -91,6 +108,7 @@ export class AutomationActionExecutorService {
             subject: string;
             htmlBody: string;
             textBody?: string;
+            fromName?: string;
             to?: 'contact' | 'custom';
             customTo?: string;
           },
@@ -141,6 +159,17 @@ export class AutomationActionExecutorService {
             amount?: number;
           },
         );
+      case 'workflow.condition':
+        return this.evaluateCondition(
+          parsed.data as {
+            conditionKey: string;
+            operator: string;
+            value: unknown;
+            trueBranchStepId?: string;
+            falseBranchStepId?: string;
+          },
+          context,
+        );
       case 'workflow.end':
         return { type: 'end' };
       default:
@@ -184,6 +213,7 @@ export class AutomationActionExecutorService {
       subject: string;
       htmlBody: string;
       textBody?: string;
+      fromName?: string;
       to?: 'contact' | 'custom';
       customTo?: string;
     },
@@ -195,6 +225,7 @@ export class AutomationActionExecutorService {
       config.subject,
       config.htmlBody,
       config.textBody ?? '',
+      config.fromName ?? '',
     ]);
 
     const subject = interpolateMergeTags(config.subject, mergeValues);
@@ -202,6 +233,9 @@ export class AutomationActionExecutorService {
     const textBody = config.textBody
       ? interpolateMergeTags(config.textBody, mergeValues)
       : htmlToPlainText(htmlBody);
+    const stepFromName = config.fromName
+      ? interpolateMergeTags(config.fromName, mergeValues).trim() || undefined
+      : undefined;
 
     const settings = parseWorkflowSettings(
       (
@@ -211,6 +245,15 @@ export class AutomationActionExecutorService {
         })
       )?.settings,
     );
+
+    const windowDelay = msUntilAllowedTimeWindow(settings);
+    if (windowDelay > 0) {
+      return {
+        type: 'delay_current',
+        delayMs: windowDelay,
+        output: { waitingForTimeWindow: true },
+      };
+    }
 
     const recipients: string[] = [];
     if (internal) {
@@ -239,6 +282,13 @@ export class AutomationActionExecutorService {
       return { type: 'continue', output: { skipped: true } };
     }
 
+    const sender = resolveTransactionalEmailSender({
+      fromEmail: settings.senderFromEmail,
+      fromName: settings.senderFromName,
+      stepFromName,
+      defaultFrom: resolveEmailConfig().defaultFrom,
+    });
+
     for (const toEmail of recipients) {
       await this.emailNotificationService.enqueueTransactionalEmail({
         businessId: context.businessId,
@@ -250,6 +300,8 @@ export class AutomationActionExecutorService {
         entityId: context.runId,
         idempotencyKey: `automation-${context.runId}-${toEmail}-${subject.slice(0, 40)}`,
         metadata: automationAuditMetadata(context.runId, context.workflowId),
+        fromEmail: sender.email ?? undefined,
+        fromName: sender.name ?? undefined,
         templateOverride: {
           subject,
           htmlBody,
@@ -260,8 +312,58 @@ export class AutomationActionExecutorService {
 
     return {
       type: 'continue',
-      output: { recipientCount: recipients.length, fromName: settings.senderFromName },
+      output: {
+        recipientCount: recipients.length,
+        fromEmail: sender.email,
+        fromName: sender.name,
+        usedDefaultSender: sender.usedDefaultSender,
+        usedStepFromName: sender.usedStepFromName,
+      },
     };
+  }
+
+  private async evaluateCondition(
+    config: {
+      conditionKey: string;
+      operator: string;
+      value: unknown;
+      trueBranchStepId?: string;
+      falseBranchStepId?: string;
+    },
+    context: AutomationRunContext,
+  ): Promise<ActionExecutionResult> {
+    const passed = await this.conditionEvaluator.evaluate(
+      context,
+      config.conditionKey,
+      config.operator,
+      config.value,
+    );
+
+    const output = {
+      conditionKey: config.conditionKey,
+      passed,
+    };
+
+    if (passed) {
+      if (config.trueBranchStepId) {
+        return {
+          type: 'branch',
+          nextStepId: config.trueBranchStepId,
+          output,
+        };
+      }
+      return { type: 'continue', output };
+    }
+
+    if (config.falseBranchStepId) {
+      return {
+        type: 'branch',
+        nextStepId: config.falseBranchStepId,
+        output,
+      };
+    }
+
+    return { type: 'continue', output: { ...output, skipped: true } };
   }
 
   private async addTag(
@@ -296,12 +398,14 @@ export class AutomationActionExecutorService {
       await this.auditService.log({
           actorUserId: SYSTEM_AUDIT_ACTOR_SENTINEL,
           businessId: context.businessId,
-          action: 'contact.updated',
+          action: 'contact.tag_added',
           entityType: 'Contact',
           entityId: context.contactId,
           metadata: {
             ...automationAuditMetadata(context.runId, context.workflowId),
-            tagIds: [config.tagId],
+            tagId: config.tagId,
+            tagName: tag.name,
+            source: 'automation',
           },
         });
     }

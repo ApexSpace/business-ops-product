@@ -49,7 +49,7 @@ export function WorkflowCreateDialog({
     });
     reset();
     onOpenChange(false);
-    router.push(`/business/settings/automations/${workflow.id}`);
+    router.push(`/business/settings/automation-workflows/${workflow.id}`);
   };
 
   return (

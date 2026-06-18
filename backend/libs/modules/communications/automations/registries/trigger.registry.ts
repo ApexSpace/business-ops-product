@@ -82,6 +82,10 @@ export const TRIGGER_REGISTRY: TriggerDefinition[] = [
     implementationStatus: 'implemented',
     auditAction: 'contact.created',
     subjectType: 'contact',
+    filterFields: [
+      { key: 'contact.has_email', label: 'Has email', type: 'boolean' },
+      { key: 'contact.has_phone', label: 'Has phone', type: 'boolean' },
+    ],
     availableCustomValueCategories: ['contact', 'business'],
   }),
   trig({
@@ -112,7 +116,7 @@ export const TRIGGER_REGISTRY: TriggerDefinition[] = [
     description: 'Fires when a tag is added to a contact.',
     icon: 'tag',
     implementationStatus: 'implemented',
-    auditAction: 'contact.tag_created',
+    auditAction: 'contact.tag_added',
     subjectType: 'contact',
     filterFields: [
       { key: 'tagId', label: 'Tag', type: 'uuid' },
@@ -335,7 +339,8 @@ export const TRIGGER_REGISTRY: TriggerDefinition[] = [
     label: 'Before appointment starts',
     description: 'Fires on a schedule before the appointment start time.',
     icon: 'alarm-clock',
-    implementationStatus: 'planned',
+    implementationStatus: 'implemented',
+    auditAction: 'scheduler.appointment.before_start',
     subjectType: 'appointment',
     contextEntityTypes: ['appointment', 'contact'],
     filterFields: [

@@ -28,11 +28,16 @@ import {
   AutomationWorkflowRunRepository,
 } from '../repositories/automation-workflow.repository';
 import {
+  assertActivatableWorkflow,
   assertValidTriggerKey,
   normalizeWorkflowSettings,
   validateTriggerFilters,
   validateWorkflowSteps,
 } from '../utils/workflow-validation.util';
+import {
+  MEDSPA_WORKFLOW_TEMPLATES,
+  medSpaTemplateToCreateInput,
+} from '../constants/medspa-workflow-templates.constant';
 
 @Injectable()
 export class AutomationWorkflowsService {
@@ -43,6 +48,8 @@ export class AutomationWorkflowsService {
   ) {}
 
   async list(businessId: string, query: ListAutomationWorkflowsQueryDto) {
+    await this.ensureMedSpaSystemTemplates(businessId);
+
     const { page, limit, skip, take } = getPaginationParams(query);
     const [items, total] = await this.workflowRepository.findMany(businessId, {
       skip,
@@ -143,6 +150,7 @@ export class AutomationWorkflowsService {
           HttpStatus.BAD_REQUEST,
         );
       }
+      assertActivatableWorkflow(existing.triggerKey, steps);
     }
 
     const workflow = await this.workflowRepository.update(businessId, id, {
@@ -196,6 +204,13 @@ export class AutomationWorkflowsService {
       workflowId: query.workflowId,
       contactId: query.contactId,
       status: query.status,
+      triggerKey: query.triggerKey,
+      startedAfter: query.startedAfter
+        ? new Date(query.startedAfter)
+        : undefined,
+      startedBefore: query.startedBefore
+        ? new Date(query.startedBefore)
+        : undefined,
     });
 
     return {
@@ -226,5 +241,31 @@ export class AutomationWorkflowsService {
       );
     }
     return workflow;
+  }
+
+  private async ensureMedSpaSystemTemplates(businessId: string) {
+    const existing = await this.workflowRepository.countSystemTemplates(businessId);
+    if (existing > 0) {
+      return;
+    }
+
+    for (const template of MEDSPA_WORKFLOW_TEMPLATES) {
+      const input = medSpaTemplateToCreateInput(template);
+      assertValidTriggerKey(input.triggerKey);
+      validateTriggerFilters(input.triggerFilters ?? undefined);
+      validateWorkflowSteps(input.steps);
+
+      await this.workflowRepository.create({
+        businessId,
+        name: input.name,
+        description: input.description,
+        triggerKey: input.triggerKey,
+        triggerFilters: input.triggerFilters,
+        steps: input.steps,
+        settings: input.settings,
+        isSystemTemplate: true,
+        status: AutomationWorkflowStatus.INACTIVE,
+      });
+    }
   }
 }

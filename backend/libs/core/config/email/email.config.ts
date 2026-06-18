@@ -1,3 +1,5 @@
+import { normalizeTransactionalDefaultFrom } from '@app/modules/communications/email/utils/email-sender.util';
+
 export interface EmailConfig {
   enabled: boolean;
   defaultFrom: string | null;
@@ -27,7 +29,10 @@ export function resolveEmailConfig(
 
   return {
     enabled: (env.EMAIL_ENABLED ?? 'false').toLowerCase() === 'true',
-    defaultFrom: env.EMAIL_DEFAULT_FROM?.trim() || null,
+    defaultFrom: normalizeTransactionalDefaultFrom(
+      env.EMAIL_DEFAULT_FROM,
+      sendingDomain,
+    ),
     defaultReplyTo: env.EMAIL_DEFAULT_REPLY_TO?.trim() || null,
     platform: {
       sendingDomain,

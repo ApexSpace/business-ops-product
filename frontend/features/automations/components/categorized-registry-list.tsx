@@ -37,7 +37,12 @@ type CategorizedRegistryListProps = {
   emptyLabel?: string;
   searchPlaceholder?: string;
   className?: string;
+  /** Max height class for the scrollable list area (search stays fixed above). */
+  listClassName?: string;
 };
+
+export const registryPickerPopoverClassName =
+  "flex w-[min(28rem,calc(100vw-2rem))] max-h-[min(24rem,var(--available-height))] flex-col overflow-hidden p-3";
 
 export function CategorizedRegistryList({
   items,
@@ -49,6 +54,7 @@ export function CategorizedRegistryList({
   emptyLabel = "No items match your search.",
   searchPlaceholder = "Search…",
   className,
+  listClassName,
 }: CategorizedRegistryListProps) {
   const filtered = useMemo(
     () => filterRegistryItems(items, search),
@@ -62,7 +68,7 @@ export function CategorizedRegistryList({
 
   return (
     <div className={cn("flex min-h-0 flex-col gap-3", className)}>
-      <div className="relative">
+      <div className="relative shrink-0">
         <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
         <Input
           value={search}
@@ -77,12 +83,18 @@ export function CategorizedRegistryList({
           {emptyLabel}
         </p>
       ) : (
-        <Accordion
-          key={accordionKey}
-          multiple
-          defaultValue={groups.map((group) => group.category.key)}
-          className="min-h-0 flex-1 overflow-y-auto rounded-md border px-2"
+        <div
+          className={cn(
+            "min-h-0 overflow-y-auto overscroll-contain rounded-md border",
+            listClassName ?? "max-h-72",
+          )}
         >
+          <Accordion
+            key={accordionKey}
+            multiple
+            defaultValue={groups.map((group) => group.category.key)}
+            className="px-2"
+          >
           {groups.map((group) => (
             <AccordionItem key={group.category.key} value={group.category.key}>
               <AccordionTrigger className="px-1">
@@ -99,6 +111,7 @@ export function CategorizedRegistryList({
                 <ul className="space-y-1">
                   {group.items.map((item) => {
                     const selected = selectedKey === item.key;
+                    const disabled = item.activatable === false;
                     const content = (
                       <>
                         <span className="flex min-w-0 items-start justify-between gap-2">
@@ -137,9 +150,15 @@ export function CategorizedRegistryList({
                       <li key={item.key}>
                         <button
                           type="button"
-                          onClick={() => onSelect(item.key)}
+                          disabled={disabled}
+                          onClick={() => {
+                            if (!disabled) onSelect(item.key);
+                          }}
                           className={cn(
-                            "w-full rounded-md border px-2 py-2 text-left transition-colors hover:bg-accent",
+                            "w-full rounded-md border px-2 py-2 text-left transition-colors",
+                            disabled
+                              ? "cursor-not-allowed opacity-60"
+                              : "hover:bg-accent",
                             selected
                               ? "border-primary bg-accent/70"
                               : "border-transparent",
@@ -155,6 +174,7 @@ export function CategorizedRegistryList({
             </AccordionItem>
           ))}
         </Accordion>
+        </div>
       )}
     </div>
   );

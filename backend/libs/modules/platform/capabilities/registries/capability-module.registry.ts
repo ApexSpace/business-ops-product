@@ -209,7 +209,6 @@ function integrationProviderOptions(): RegistryModuleOption[] {
  * Platform module catalog — primary admin-facing unit.
  *
  * Removed modules (no shipped business UI as of 2026-06-08):
- * - automation — /business/settings/automations is a placeholder only
  * - email_marketing — no campaigns, templates, or automations UI
  */
 export const REGISTRY_MODULES: RegistryModuleDefinition[] = [
@@ -662,7 +661,7 @@ export const REGISTRY_MODULES: RegistryModuleDefinition[] = [
         'workflow automations',
         'settings.automations.read',
         'settings.automations.write',
-        ['/business/settings/automations'],
+        ['/business/settings/automations', '/business/settings/automation-workflows', '/business/settings/automation-registry'],
         'zap',
         true,
         'Automation',

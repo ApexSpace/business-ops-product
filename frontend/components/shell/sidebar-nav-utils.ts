@@ -5,9 +5,20 @@ export function flattenNavSections(sections: ShellNavSection[]): ShellNavItem[] 
   return sections.flatMap((section) => section.items);
 }
 
+const automationSettingsPrefixes = [
+  "/business/settings/automations",
+  "/business/settings/automation-workflows",
+  "/business/settings/automation-registry",
+];
+
 export function isNavItemActive(pathname: string, item: ShellNavItem): boolean {
   if (item.matchPrefix && item.href.startsWith("/business/settings")) {
     return isBusinessSettingsPath(pathname);
+  }
+  if (item.href === "/business/settings/automations") {
+    return automationSettingsPrefixes.some(
+      (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+    );
   }
   if (item.href.startsWith("/business/settings")) {
     if (pathname === "/business/settings") {

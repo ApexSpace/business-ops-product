@@ -76,10 +76,30 @@ export const ACTION_CONFIG_FIXTURES: Record<string, unknown> = {
   'communication.send_email': {
     subject: 'Hello {{contact.first_name}}',
     htmlBody: '<p>Welcome!</p>',
+    fromName: '{{business.name}}',
     to: 'contact',
+  },
+  'communication.send_internal_email': {
+    subject: 'Internal alert',
+    htmlBody: '<p>New enrollment</p>',
+    fromName: '{{business.name}}',
   },
   'contact.add_tag': {
     tagId: '33333333-3333-4333-8333-333333333333',
+  },
+  'lead.create': {
+    stageId: '55555555-5555-4555-8555-555555555555',
+    pipelineId: '66666666-6666-4666-8666-666666666666',
+  },
+  'lead.move_stage': {
+    stageId: '55555555-5555-4555-8555-555555555555',
+  },
+  'task.create': {
+    title: 'Follow up with {{contact.first_name}}',
+    description: 'Automation task',
+  },
+  'note.create': {
+    body: 'Note for {{contact.first_name}}',
   },
   'workflow.delay': {
     durationMs: 86400000,
@@ -90,6 +110,8 @@ export const ACTION_CONFIG_FIXTURES: Record<string, unknown> = {
     conditionKey: 'contact.has_email',
     operator: 'eq',
     value: true,
+    trueBranchStepId: '70707070-7070-4070-8070-707070707070',
+    falseBranchStepId: '80808080-8080-4080-8080-808080808080',
   },
   'workflow.end': {},
 };

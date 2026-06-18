@@ -25,6 +25,7 @@ describe('AutomationWorkflowsService', () => {
     create: jest.fn(),
     update: jest.fn(),
     softDelete: jest.fn(),
+    countSystemTemplates: jest.fn(),
   };
   const runRepository = { findMany: jest.fn(), findById: jest.fn() };
   const auditService = { log: jest.fn() };
@@ -80,5 +81,43 @@ describe('AutomationWorkflowsService', () => {
         actor as never,
       ),
     ).rejects.toThrow('at least one step');
+  });
+
+  it('provisions inactive MedSpa system templates on first list', async () => {
+    workflowRepository.countSystemTemplates.mockResolvedValue(0);
+    workflowRepository.findMany.mockResolvedValue([[], 0]);
+    workflowRepository.create.mockResolvedValue(workflow);
+    const service = new AutomationWorkflowsService(
+      workflowRepository as never,
+      runRepository as never,
+      auditService as never,
+    );
+
+    await service.list('biz-1', {});
+
+    expect(workflowRepository.countSystemTemplates).toHaveBeenCalledWith('biz-1');
+    expect(workflowRepository.create).toHaveBeenCalledTimes(3);
+    expect(workflowRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        businessId: 'biz-1',
+        isSystemTemplate: true,
+        status: AutomationWorkflowStatus.INACTIVE,
+        triggerKey: 'appointment.booked',
+      }),
+    );
+  });
+
+  it('skips MedSpa template provisioning when templates already exist', async () => {
+    workflowRepository.countSystemTemplates.mockResolvedValue(2);
+    workflowRepository.findMany.mockResolvedValue([[], 0]);
+    const service = new AutomationWorkflowsService(
+      workflowRepository as never,
+      runRepository as never,
+      auditService as never,
+    );
+
+    await service.list('biz-1', {});
+
+    expect(workflowRepository.create).not.toHaveBeenCalled();
   });
 });

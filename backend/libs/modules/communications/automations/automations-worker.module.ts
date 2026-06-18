@@ -9,6 +9,9 @@ import { EmailModule } from '../email/email.module';
 import { AutomationStepProcessor } from './workers/processors/automation-step.processor';
 import { AutomationActionExecutorService } from './services/automation-action-executor.service';
 import { AutomationEngineService } from './services/automation-engine.service';
+import { AutomationAppointmentTriggerService } from './services/automation-appointment-trigger.service';
+import { ConditionEvaluatorService } from './services/condition-evaluator.service';
+import { EnrollmentFilterService } from './services/enrollment-filter.service';
 import { CustomValueResolverService } from './services/custom-value-resolver.service';
 import {
   AutomationWorkflowRepository,
@@ -29,14 +32,18 @@ import {
     AutomationWorkflowRepository,
     AutomationWorkflowRunRepository,
     CustomValueResolverService,
+    ConditionEvaluatorService,
+    EnrollmentFilterService,
     AutomationEngineService,
     AutomationActionExecutorService,
+    AutomationAppointmentTriggerService,
     AutomationStepProcessor,
   ],
   exports: [
     AutomationWorkflowRepository,
     AutomationWorkflowRunRepository,
     AutomationEngineService,
+    AutomationAppointmentTriggerService,
     AutomationStepProcessor,
   ],
 })

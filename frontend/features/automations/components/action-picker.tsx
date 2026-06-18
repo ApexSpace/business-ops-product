@@ -9,7 +9,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
-import { CategorizedRegistryList } from "@/features/automations/components/categorized-registry-list";
+import { CategorizedRegistryList, registryPickerPopoverClassName } from "@/features/automations/components/categorized-registry-list";
 import {
   useAutomationActions,
   useAutomationCategories,
@@ -60,11 +60,10 @@ export function ActionPicker({
           </Button>
         }
       />
-      <PopoverContent
-        align="start"
-        className="flex w-[min(28rem,calc(100vw-2rem))] flex-col p-3"
-      >
+      <PopoverContent align="start" className={registryPickerPopoverClassName}>
         <CategorizedRegistryList
+          className="min-h-0 flex-1"
+          listClassName="min-h-0 flex-1"
           items={actionsQuery.data ?? []}
           categories={categoriesQuery.data ?? []}
           search={search}

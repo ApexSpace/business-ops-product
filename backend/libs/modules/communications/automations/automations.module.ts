@@ -5,6 +5,7 @@ import { AutomationMetadataController } from './controllers/automation-metadata.
 import { AutomationWorkflowsController } from './controllers/automation-workflows.controller';
 import { AutomationAuditListener } from './listeners/automation-audit.listener';
 import { AutomationEngineListener } from './listeners/automation-engine.listener';
+import { AutomationStopOnResponseListener } from './listeners/automation-stop-on-response.listener';
 import { AutomationMetadataService } from './services/automation-metadata.service';
 import { AutomationWorkflowsService } from './services/automation-workflows.service';
 import { DomainEventBusService } from './services/domain-event-bus.service';
@@ -18,6 +19,7 @@ import { AutomationsWorkerModule } from './automations-worker.module';
     DomainEventBusService,
     AutomationAuditListener,
     AutomationEngineListener,
+    AutomationStopOnResponseListener,
     AutomationWorkflowsService,
   ],
   exports: [

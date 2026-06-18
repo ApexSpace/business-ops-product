@@ -29,6 +29,8 @@ export interface EnqueueTransactionalEmailParams {
     htmlBody: string;
     textBody?: string | null;
   };
+  fromEmail?: string;
+  fromName?: string;
 }
 
 @Injectable()
@@ -136,7 +138,12 @@ export class EmailNotificationService {
       variables: params.variables,
     });
 
-    const fromEmail = emailConfig.defaultFrom!;
+    const fromEmail = params.fromEmail?.trim() || emailConfig.defaultFrom!;
+    const fromName = params.fromName?.trim() || null;
+    const formattedFrom =
+      fromName && fromEmail
+        ? `${fromName} <${fromEmail.replace(/^.*<([^>]+)>.*$/, '$1').trim() || fromEmail}>`
+        : fromEmail;
     const replyTo = emailConfig.defaultReplyTo ?? null;
 
     const message = await this.messageRepository.create({
@@ -145,7 +152,7 @@ export class EmailNotificationService {
       userId: params.userId,
       emailType: params.emailType,
       toEmail,
-      fromEmail,
+      fromEmail: formattedFrom,
       replyTo,
       subject: rendered.subject,
       entityType: params.entityType,

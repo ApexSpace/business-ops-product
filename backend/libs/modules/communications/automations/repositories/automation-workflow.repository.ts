@@ -79,6 +79,15 @@ export class AutomationWorkflowRepository {
     });
   }
 
+  countSystemTemplates(businessId: string) {
+    return this.prisma.automationWorkflow.count({
+      where: {
+        ...this.activeWhere(businessId),
+        isSystemTemplate: true,
+      },
+    });
+  }
+
   findActiveByTrigger(businessId: string, triggerKey: string) {
     return this.prisma.automationWorkflow.findMany({
       where: {
@@ -155,6 +164,9 @@ export class AutomationWorkflowRunRepository {
       workflowId?: string;
       contactId?: string;
       status?: AutomationWorkflowRunStatus;
+      triggerKey?: string;
+      startedAfter?: Date;
+      startedBefore?: Date;
     },
   ) {
     const where: Prisma.AutomationWorkflowRunWhereInput = {
@@ -162,6 +174,15 @@ export class AutomationWorkflowRunRepository {
       ...(params.workflowId ? { workflowId: params.workflowId } : {}),
       ...(params.contactId ? { contactId: params.contactId } : {}),
       ...(params.status ? { status: params.status } : {}),
+      ...(params.triggerKey ? { triggerKey: params.triggerKey } : {}),
+      ...(params.startedAfter || params.startedBefore
+        ? {
+            startedAt: {
+              ...(params.startedAfter ? { gte: params.startedAfter } : {}),
+              ...(params.startedBefore ? { lte: params.startedBefore } : {}),
+            },
+          }
+        : {}),
     };
 
     return this.prisma.$transaction([
@@ -216,6 +237,86 @@ export class AutomationWorkflowRunRepository {
           : {}),
       },
       select: { id: true },
+    });
+  }
+
+  hasCompletedRunSince(params: {
+    businessId: string;
+    workflowId: string;
+    subjectId: string;
+    contextEntityId?: string;
+    since: Date;
+  }) {
+    return this.prisma.automationWorkflowRun.findFirst({
+      where: {
+        businessId: params.businessId,
+        workflowId: params.workflowId,
+        status: AutomationWorkflowRunStatus.COMPLETED,
+        subjectId: params.subjectId,
+        ...(params.contextEntityId
+          ? { contextEntityId: params.contextEntityId }
+          : {}),
+        completedAt: { gte: params.since },
+      },
+      select: { id: true },
+    });
+  }
+
+  hasAnyRun(params: {
+    businessId: string;
+    workflowId: string;
+    subjectId: string;
+    triggerKey?: string;
+  }) {
+    return this.prisma.automationWorkflowRun.findFirst({
+      where: {
+        businessId: params.businessId,
+        workflowId: params.workflowId,
+        subjectId: params.subjectId,
+        ...(params.triggerKey ? { triggerKey: params.triggerKey } : {}),
+      },
+      select: { id: true },
+    });
+  }
+
+  hasActiveRun(params: {
+    businessId: string;
+    workflowId: string;
+    subjectId: string;
+    contextEntityId?: string;
+  }) {
+    return this.prisma.automationWorkflowRun.findFirst({
+      where: {
+        businessId: params.businessId,
+        workflowId: params.workflowId,
+        subjectId: params.subjectId,
+        ...(params.contextEntityId
+          ? { contextEntityId: params.contextEntityId }
+          : {}),
+        status: {
+          in: [
+            AutomationWorkflowRunStatus.RUNNING,
+            AutomationWorkflowRunStatus.WAITING,
+          ],
+        },
+      },
+      select: { id: true },
+    });
+  }
+
+  findActiveRunsForContact(businessId: string, contactId: string) {
+    return this.prisma.automationWorkflowRun.findMany({
+      where: {
+        businessId,
+        contactId,
+        status: {
+          in: [
+            AutomationWorkflowRunStatus.RUNNING,
+            AutomationWorkflowRunStatus.WAITING,
+          ],
+        },
+      },
+      include: { workflow: true },
     });
   }
 

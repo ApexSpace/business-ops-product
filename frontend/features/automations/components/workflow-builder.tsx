@@ -9,12 +9,22 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ActionPicker } from "@/features/automations/components/action-picker";
 import { CustomValuePicker } from "@/features/automations/components/custom-value-picker";
+import { FilterBuilder } from "@/features/automations/components/filter-builder";
 import { TriggerPicker } from "@/features/automations/components/trigger-picker";
+import {
+  useAutomationConditions,
+  useAutomationFilterOperators,
+  useAutomationTriggers,
+} from "@/features/automations/hooks/use-automation-metadata";
 import type {
   AutomationWorkflow,
   WorkflowStep,
   WorkflowTriggerFilter,
 } from "@/features/automations/types/workflow";
+import type {
+  ConditionMetadata,
+  FilterOperatorMetadata,
+} from "@/features/automations/types/metadata";
 import { insertMergeTagAtCursor } from "@/features/automations/utils/insert-merge-tag.util";
 
 type WorkflowBuilderProps = {
@@ -34,10 +44,18 @@ function defaultConfigForAction(actionKey: string): Record<string, unknown> {
     return {
       subject: "Hello {{contact.first_name}}",
       htmlBody: "<p>Hi {{contact.first_name}},</p>",
+      fromName: "{{business.name}}",
     };
   }
   if (actionKey === "workflow.delay") {
     return { amount: 1, unit: "hours" };
+  }
+  if (actionKey === "workflow.condition") {
+    return {
+      conditionKey: "contact.has_email",
+      operator: "eq",
+      value: true,
+    };
   }
   if (actionKey === "note.create") {
     return { body: "Automation note for {{contact.first_name}}" };
@@ -56,15 +74,21 @@ export function WorkflowBuilder({
   const [name, setName] = useState(workflow.name);
   const [description, setDescription] = useState(workflow.description ?? "");
   const [triggerKey, setTriggerKey] = useState(workflow.triggerKey);
-  const [triggerFilters] = useState<WorkflowTriggerFilter[]>(
+  const [triggerFilters, setTriggerFilters] = useState<WorkflowTriggerFilter[]>(
     workflow.triggerFilters ?? [],
   );
   const [steps, setSteps] = useState<WorkflowStep[]>(workflow.steps);
+  const { data: triggers } = useAutomationTriggers();
+  const { data: conditions } = useAutomationConditions();
+  const { data: operators } = useAutomationFilterOperators();
+
+  const selectedTrigger = triggers?.find((trigger) => trigger.key === triggerKey);
 
   useEffect(() => {
     setName(workflow.name);
     setDescription(workflow.description ?? "");
     setTriggerKey(workflow.triggerKey);
+    setTriggerFilters(workflow.triggerFilters ?? []);
     setSteps(workflow.steps);
   }, [workflow]);
 
@@ -98,7 +122,7 @@ export function WorkflowBuilder({
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Workflow settings</CardTitle>
+          <CardTitle className="text-base">Workflow details</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-4 md:grid-cols-2">
           <div className="space-y-2">
@@ -121,14 +145,63 @@ export function WorkflowBuilder({
       </Card>
 
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-base">Enrollment filters</CardTitle>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() =>
+              setTriggerFilters((prev) => [
+                ...prev,
+                { fieldKey: "", operator: "eq", value: "" },
+              ])
+            }
+          >
+            <Plus className="mr-1 size-4" />
+            Add filter
+          </Button>
         </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground">
-            Trigger filters are saved with the workflow. Use the registry
-            browser on the main automations page to prototype filter rules.
-          </p>
+        <CardContent className="space-y-4">
+          {triggerFilters.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              No filters — every matching trigger event will enroll contacts.
+            </p>
+          ) : (
+            triggerFilters.map((filter, index) => (
+              <div
+                key={`${filter.fieldKey}-${index}`}
+                className="space-y-2 rounded-lg border p-4"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-sm font-medium">Filter {index + 1}</p>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() =>
+                      setTriggerFilters((prev) =>
+                        prev.filter((_, i) => i !== index),
+                      )
+                    }
+                  >
+                    <Trash2 className="size-4" />
+                  </Button>
+                </div>
+                <FilterBuilder
+                  fields={selectedTrigger?.filterFields}
+                  conditions={conditions}
+                  operators={operators ?? []}
+                  value={filter}
+                  onChange={(next) =>
+                    setTriggerFilters((prev) =>
+                      prev.map((item, i) => (i === index ? next : item)),
+                    )
+                  }
+                />
+              </div>
+            ))
+          )}
         </CardContent>
       </Card>
 
@@ -233,6 +306,17 @@ export function WorkflowBuilder({
                       />
                     </div>
                   )}
+
+                  {step.actionKey === "workflow.condition" ? (
+                    <ConditionStepConfig
+                      config={step.config}
+                      steps={steps}
+                      currentStepId={step.id}
+                      conditions={conditions ?? []}
+                      operators={operators ?? []}
+                      onChange={(config) => updateStep(index, { config })}
+                    />
+                  ) : null}
                 </div>
               </div>
               {index < steps.length - 1 ? (
@@ -274,13 +358,19 @@ function EmailStepConfig({
 }) {
   const subject = String(config.subject ?? "");
   const htmlBody = String(config.htmlBody ?? "");
+  const fromName = String(config.fromName ?? "");
 
   const insertTag = (
-    field: "subject" | "htmlBody",
+    field: "subject" | "htmlBody" | "fromName",
     mergeTag: string,
     el: HTMLInputElement | HTMLTextAreaElement | null,
   ) => {
-    const value = field === "subject" ? subject : htmlBody;
+    const value =
+      field === "subject"
+        ? subject
+        : field === "htmlBody"
+          ? htmlBody
+          : fromName;
     const { value: next, cursor } = insertMergeTagAtCursor(
       value,
       mergeTag,
@@ -299,6 +389,18 @@ function EmailStepConfig({
       <div className="flex items-center justify-between gap-2">
         <Label>Email content</Label>
         <CustomValuePicker onInsert={(tag) => insertTag("htmlBody", tag, null)} />
+      </div>
+      <div className="space-y-2">
+        <Label>From name</Label>
+        <Input
+          value={fromName}
+          onChange={(e) => onChange({ ...config, fromName: e.target.value })}
+          placeholder="e.g. Acme Dental or {{business.name}}"
+        />
+        <p className="text-xs text-muted-foreground">
+          Shown as the sender name in the recipient&apos;s inbox. Leave blank to
+          use the workflow default.
+        </p>
       </div>
       <div className="space-y-2">
         <Label>Subject</Label>
@@ -382,6 +484,117 @@ function TextStepConfig({
         onChange={(e) => onChange({ ...config, [field]: e.target.value })}
         rows={3}
       />
+    </div>
+  );
+}
+
+function ConditionStepConfig({
+  config,
+  steps,
+  currentStepId,
+  conditions,
+  operators,
+  onChange,
+}: {
+  config: Record<string, unknown>;
+  steps: WorkflowStep[];
+  currentStepId: string;
+  conditions: ConditionMetadata[];
+  operators: FilterOperatorMetadata[];
+  onChange: (config: Record<string, unknown>) => void;
+}) {
+  const implementedConditions = conditions.filter(
+    (item) => item.implementationStatus === "implemented",
+  );
+  const branchTargets = steps.filter(
+    (step) => step.id !== currentStepId && step.actionKey !== "workflow.end",
+  );
+
+  return (
+    <div className="grid gap-3">
+      <div className="space-y-2">
+        <Label>Condition</Label>
+        <select
+          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+          value={String(config.conditionKey ?? "")}
+          onChange={(e) =>
+            onChange({ ...config, conditionKey: e.target.value })
+          }
+        >
+          <option value="">Select condition</option>
+          {implementedConditions.map((condition) => (
+            <option key={condition.key} value={condition.key}>
+              {condition.label}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="space-y-2">
+          <Label>Operator</Label>
+          <select
+            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            value={String(config.operator ?? "eq")}
+            onChange={(e) => onChange({ ...config, operator: e.target.value })}
+          >
+            {operators.map((operator) => (
+              <option key={operator.key} value={operator.key}>
+                {operator.label}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="space-y-2">
+          <Label>Value</Label>
+          <Input
+            value={String(config.value ?? "")}
+            onChange={(e) => onChange({ ...config, value: e.target.value })}
+            placeholder="true, uuid, or text"
+          />
+        </div>
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="space-y-2">
+          <Label>If true, go to step</Label>
+          <select
+            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            value={String(config.trueBranchStepId ?? "")}
+            onChange={(e) =>
+              onChange({
+                ...config,
+                trueBranchStepId: e.target.value || undefined,
+              })
+            }
+          >
+            <option value="">Next step</option>
+            {branchTargets.map((step, index) => (
+              <option key={step.id} value={step.id}>
+                Step {index + 1}: {step.actionKey}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="space-y-2">
+          <Label>If false, go to step</Label>
+          <select
+            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            value={String(config.falseBranchStepId ?? "")}
+            onChange={(e) =>
+              onChange({
+                ...config,
+                falseBranchStepId: e.target.value || undefined,
+              })
+            }
+          >
+            <option value="">Continue / skip</option>
+            {branchTargets.map((step, index) => (
+              <option key={step.id} value={step.id}>
+                Step {index + 1}: {step.actionKey}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
     </div>
   );
 }

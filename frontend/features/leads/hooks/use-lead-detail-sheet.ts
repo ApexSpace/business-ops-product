@@ -30,6 +30,39 @@ function getLeadStageId(lead: Lead): string {
   return lead.pipelineStageId ?? lead.pipelineStage.id;
 }
 
+/** When status is set to WON/LOST without changing stage, move to the matching pipeline column. */
+function resolveTargetStageId(
+  lead: Lead,
+  values: LeadDetailFormValues,
+  pipeline: Pipeline | null,
+): { targetStageId: string; shouldMoveStage: boolean } {
+  const currentStageId = getLeadStageId(lead);
+  const stageFieldChanged = currentStageId !== values.pipelineStageId;
+  if (stageFieldChanged) {
+    return {
+      targetStageId: values.pipelineStageId,
+      shouldMoveStage: true,
+    };
+  }
+
+  const statusChanged = lead.status !== values.status;
+  if (
+    statusChanged &&
+    (values.status === "WON" || values.status === "LOST")
+  ) {
+    const stages = pipeline?.stages ?? [lead.pipelineStage];
+    const matchingStage = stages.find((stage) => stage.type === values.status);
+    if (matchingStage && matchingStage.id !== currentStageId) {
+      return {
+        targetStageId: matchingStage.id,
+        shouldMoveStage: true,
+      };
+    }
+  }
+
+  return { targetStageId: currentStageId, shouldMoveStage: false };
+}
+
 export interface UseLeadDetailSheetOptions {
   open: boolean;
   lead: Lead | null;
@@ -139,7 +172,11 @@ export function useLeadDetailSheet({
     mutationFn: async (values: LeadDetailFormValues) => {
       if (!lead) throw new Error("No lead selected");
 
-      const stageChanged = getLeadStageId(lead) !== values.pipelineStageId;
+      const { targetStageId, shouldMoveStage } = resolveTargetStageId(
+        lead,
+        values,
+        pipeline,
+      );
 
       const updated = await updateLead(lead.id, {
         title: values.title || undefined,
@@ -160,9 +197,9 @@ export function useLeadDetailSheet({
           : {}),
       });
 
-      if (stageChanged) {
+      if (shouldMoveStage) {
         return updateLeadStage(lead.id, {
-          pipelineStageId: values.pipelineStageId,
+          pipelineStageId: targetStageId,
         });
       }
 

@@ -23,10 +23,15 @@ export type WorkflowSettings = {
   allowReentry?: boolean;
   allowMultipleContexts?: boolean;
   stopOnResponse?: boolean;
-  runPolicy?: "every_time" | "once_per_context" | "once_per_subject";
+  runPolicy?: "every_time" | "once_per_context" | "once_per_subject" | "once_per_period";
+  runPolicyPeriodDays?: number;
   timezone?: string | null;
+  timeWindowEnabled?: boolean;
+  timeWindow?: { start: string; end: string } | null;
   senderFromName?: string | null;
   senderFromEmail?: string | null;
+  senderFromNumber?: string | null;
+  markConversationsRead?: boolean;
 };
 
 export type AutomationWorkflow = {
@@ -74,6 +79,8 @@ export type AutomationWorkflowRun = {
     startedAt: string | null;
     completedAt: string | null;
     scheduledFor: string | null;
+    input?: unknown;
+    output?: unknown;
   }>;
 };
 
@@ -102,4 +109,7 @@ export type WorkflowRunListFilters = {
   workflowId?: string;
   contactId?: string;
   status?: WorkflowRunStatus;
+  triggerKey?: string;
+  startedAfter?: string;
+  startedBefore?: string;
 };

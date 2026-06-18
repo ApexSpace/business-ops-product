@@ -22,7 +22,7 @@ describe('email env validation', () => {
       validateEnv({
         ...baseValidEnv,
         EMAIL_ENABLED: 'true',
-        EMAIL_DEFAULT_FROM: 'no-reply@example.com',
+        EMAIL_DEFAULT_FROM: 'notifications@example.com',
       }),
     ).toThrow(/RESEND_API_KEY/);
   });
@@ -44,7 +44,7 @@ describe('email env validation', () => {
         EMAIL_ENABLED: 'true',
         RESEND_API_KEY: 're_test_key',
         EMAIL_DEFAULT_FROM:
-          'CodeSol Technologies <no-reply@notify.codesoltech.com>',
+          'CodeSol Technologies <notifications@notify.codesoltech.com>',
         EMAIL_DEFAULT_REPLY_TO: 'support@codesoltech.com',
       }),
     ).not.toThrow();
@@ -65,7 +65,7 @@ describe('email env validation', () => {
         ...baseValidEnv,
         EMAIL_ENABLED: 'true',
         RESEND_API_KEY: 're_test_key',
-        EMAIL_DEFAULT_FROM: 'no-reply@example.com',
+        EMAIL_DEFAULT_FROM: 'notifications@example.com',
       }),
     ).not.toThrow();
   });

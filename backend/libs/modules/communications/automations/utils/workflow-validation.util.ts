@@ -30,6 +30,31 @@ export function assertValidTriggerKey(triggerKey: string): void {
   }
 }
 
+export function assertActivatableWorkflow(
+  triggerKey: string,
+  steps: WorkflowStepDefinition[],
+): void {
+  const trigger = TRIGGER_BY_KEY[triggerKey];
+  if (!trigger || trigger.implementationStatus !== 'implemented') {
+    throw new AppException(
+      ErrorCode.BAD_REQUEST,
+      `Trigger is not available for activation: ${triggerKey}`,
+      HttpStatus.BAD_REQUEST,
+    );
+  }
+
+  for (const step of steps) {
+    const action = ACTION_BY_KEY[step.actionKey];
+    if (!action || action.implementationStatus !== 'implemented') {
+      throw new AppException(
+        ErrorCode.BAD_REQUEST,
+        `Action is not available for activation: ${step.actionKey}`,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+  }
+}
+
 export function validateWorkflowSteps(steps: WorkflowStepDefinition[]): void {
   const seenIds = new Set<string>();
   for (const step of steps) {

@@ -19,17 +19,24 @@ export function triggerPayloadSchema(subjectType: SubjectType) {
 
 export const emptyActionConfigSchema = z.object({});
 
-export const delayActionConfigSchema = z.object({
-  durationMs: z.number().int().positive(),
-  unit: z.enum(['minutes', 'hours', 'days']).optional(),
-  amount: z.number().int().positive().optional(),
-});
+export const delayActionConfigSchema = z
+  .object({
+    durationMs: z.number().int().positive().optional(),
+    unit: z.enum(['minutes', 'hours', 'days']).optional(),
+    amount: z.number().int().positive().optional(),
+  })
+  .refine(
+    (data) =>
+      data.durationMs != null || (data.amount != null && data.unit != null),
+    { message: 'Provide durationMs or amount with unit' },
+  );
 
 export const sendEmailActionConfigSchema = z.object({
   templateKey: z.string().optional(),
   subject: z.string().min(1),
   htmlBody: z.string().min(1),
   textBody: z.string().optional(),
+  fromName: z.string().max(200).optional(),
   to: z.enum(['contact', 'custom']).optional(),
   customTo: z.string().email().optional(),
 });

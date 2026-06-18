@@ -1,13 +1,16 @@
 export type WorkflowRunPolicy =
   | 'every_time'
   | 'once_per_context'
-  | 'once_per_subject';
+  | 'once_per_subject'
+  | 'once_per_period';
 
 export interface WorkflowSettings {
   allowReentry: boolean;
   allowMultipleContexts: boolean;
   stopOnResponse: boolean;
   runPolicy: WorkflowRunPolicy;
+  /** Days to look back when runPolicy is once_per_period. */
+  runPolicyPeriodDays: number;
   timezone: string | null;
   timeWindowEnabled: boolean;
   timeWindow: { start: string; end: string } | null;
@@ -34,6 +37,7 @@ export const DEFAULT_WORKFLOW_SETTINGS: WorkflowSettings = {
   allowMultipleContexts: true,
   stopOnResponse: false,
   runPolicy: 'once_per_context',
+  runPolicyPeriodDays: 30,
   timezone: null,
   timeWindowEnabled: false,
   timeWindow: null,

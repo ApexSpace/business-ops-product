@@ -97,4 +97,26 @@ describe('buildAutomationDomainEventPayload', () => {
 
     expect(payload).toBeNull();
   });
+
+  it('builds contact.tag_added payload when a tag is assigned to a contact', () => {
+    const tagId = '77777777-7777-4777-8777-777777777777';
+    const payload = buildAutomationDomainEventPayload('contact.tag_added', {
+      actorUserId: 'user-1',
+      businessId: BUSINESS_ID,
+      action: 'contact.tag_added',
+      entityType: 'Contact',
+      entityId: CONTACT_ID,
+      metadata: { tagId, tagName: 'VIP' },
+      occurredAt,
+    });
+
+    expect(payload).toEqual(
+      expect.objectContaining({
+        triggerKey: 'contact.tag_added',
+        subjectId: CONTACT_ID,
+        subjectType: 'contact',
+        metadata: expect.objectContaining({ tagId, tagName: 'VIP' }),
+      }),
+    );
+  });
 });

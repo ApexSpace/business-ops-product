@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { FinancialDueStatusService } from '@app/modules/finance/shared/services/financial-due-status.service';
 import { AppointmentReminderService } from '@app/modules/operations/appointments/services/appointment-reminder.service';
+import { AutomationAppointmentTriggerService } from '@app/modules/communications/automations/services/automation-appointment-trigger.service';
 import {
   JOB_CLEANUP_ASYNC_JOBS,
   JOB_CLEANUP_ORPHAN_FILES,
@@ -17,6 +18,7 @@ export class SchedulerTasksService {
     private readonly queueService: QueueService,
     private readonly appointmentReminderService: AppointmentReminderService,
     private readonly financialDueStatusService: FinancialDueStatusService,
+    private readonly automationAppointmentTriggerService: AutomationAppointmentTriggerService,
   ) {}
 
   @Cron(CronExpression.EVERY_DAY_AT_3AM)
@@ -64,6 +66,19 @@ export class SchedulerTasksService {
     } catch (error) {
       this.logger.error(
         `Appointment reminder cron failed: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+    }
+  }
+
+  @Cron(CronExpression.EVERY_MINUTE)
+  async processAutomationAppointmentTriggers(): Promise<void> {
+    try {
+      await this.automationAppointmentTriggerService.processBeforeStartTriggers();
+    } catch (error) {
+      this.logger.error(
+        `Automation appointment trigger cron failed: ${
           error instanceof Error ? error.message : String(error)
         }`,
       );

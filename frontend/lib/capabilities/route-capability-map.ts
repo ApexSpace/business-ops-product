@@ -49,6 +49,14 @@ const ROUTE_CAPABILITY_MAP = new Map<string, RouteCapabilityEntry>([
     { moduleKey: "settings", capabilityKeys: ["settings.automations.list"] },
   ],
   [
+    "/business/settings/automation-workflows",
+    { moduleKey: "settings", capabilityKeys: ["settings.automations.list"] },
+  ],
+  [
+    "/business/settings/automation-registry",
+    { moduleKey: "settings", capabilityKeys: ["settings.automations.list"] },
+  ],
+  [
     "/business/settings/integrations",
     { moduleKey: "settings", capabilityKeys: ["settings.integrations"] },
   ],

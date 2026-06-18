@@ -1,16 +1,14 @@
 import dynamic from "next/dynamic";
-import { Skeleton } from "@/components/ui/skeleton";
+import { ListPageSkeleton } from "@/components/layout/list-page";
 
-const AutomationsSettingsPage = dynamic(
+const AutomationsListPage = dynamic(
   () =>
-    import("@/features/automations/components/automations-settings-page").then(
-      (m) => m.AutomationsSettingsPage,
+    import("@/features/automations/pages/automations-list-page").then(
+      (m) => m.AutomationsListPage,
     ),
-  {
-    loading: () => <Skeleton className="min-h-[24rem] w-full" />,
-  },
+  { loading: () => <ListPageSkeleton /> },
 );
 
 export default function Page() {
-  return <AutomationsSettingsPage />;
+  return <AutomationsListPage />;
 }

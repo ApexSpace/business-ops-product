@@ -5,15 +5,19 @@ import {
 } from '@prisma/client';
 import { Type } from 'class-transformer';
 import {
+  Allow,
   ArrayMinSize,
   IsArray,
   IsBoolean,
+  IsDateString,
   IsEnum,
   IsIn,
+  IsObject,
   IsOptional,
   IsString,
   IsUUID,
   MaxLength,
+  ValidateIf,
   ValidateNested,
 } from 'class-validator';
 import { PaginationQueryDto } from '@app/common/dto/pagination-query.dto';
@@ -30,6 +34,8 @@ export class WorkflowTriggerFilterDto {
   operator!: string;
 
   @ApiPropertyOptional()
+  @IsOptional()
+  @Allow()
   value?: unknown;
 }
 
@@ -44,7 +50,20 @@ export class WorkflowStepDto {
   actionKey!: string;
 
   @ApiProperty({ type: 'object', additionalProperties: true })
+  @IsObject()
   config!: Record<string, unknown>;
+}
+
+export class WorkflowTimeWindowDto {
+  @ApiProperty()
+  @IsString()
+  @MaxLength(8)
+  start!: string;
+
+  @ApiProperty()
+  @IsString()
+  @MaxLength(8)
+  end!: string;
 }
 
 export class WorkflowSettingsDto {
@@ -63,16 +82,33 @@ export class WorkflowSettingsDto {
   @IsBoolean()
   stopOnResponse?: boolean;
 
-  @ApiPropertyOptional({ enum: ['every_time', 'once_per_context', 'once_per_subject'] })
+  @ApiPropertyOptional({ enum: ['every_time', 'once_per_context', 'once_per_subject', 'once_per_period'] })
   @IsOptional()
-  @IsIn(['every_time', 'once_per_context', 'once_per_subject'])
-  runPolicy?: 'every_time' | 'once_per_context' | 'once_per_subject';
+  @IsIn(['every_time', 'once_per_context', 'once_per_subject', 'once_per_period'])
+  runPolicy?: 'every_time' | 'once_per_context' | 'once_per_subject' | 'once_per_period';
+
+  @ApiPropertyOptional({ description: 'Lookback days when runPolicy is once_per_period' })
+  @IsOptional()
+  @Type(() => Number)
+  runPolicyPeriodDays?: number;
 
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
   @MaxLength(80)
   timezone?: string | null;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  timeWindowEnabled?: boolean;
+
+  @ApiPropertyOptional({ type: WorkflowTimeWindowDto, nullable: true })
+  @IsOptional()
+  @ValidateIf((_, value) => value != null)
+  @ValidateNested()
+  @Type(() => WorkflowTimeWindowDto)
+  timeWindow?: WorkflowTimeWindowDto | null;
 
   @ApiPropertyOptional()
   @IsOptional()
@@ -85,6 +121,17 @@ export class WorkflowSettingsDto {
   @IsString()
   @MaxLength(200)
   senderFromEmail?: string | null;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
+  senderFromNumber?: string | null;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  markConversationsRead?: boolean;
 }
 
 export class CreateAutomationWorkflowDto {
@@ -166,6 +213,22 @@ export class ListAutomationWorkflowRunsQueryDto extends PaginationQueryDto {
   @IsOptional()
   @IsEnum(AutomationWorkflowRunStatus)
   status?: AutomationWorkflowRunStatus;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  triggerKey?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsDateString()
+  startedAfter?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsDateString()
+  startedBefore?: string;
 }
 
 export class PublishAutomationWorkflowDto {

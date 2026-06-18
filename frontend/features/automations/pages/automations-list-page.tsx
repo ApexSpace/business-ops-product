@@ -1,7 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import dynamic from "next/dynamic";
+import { Suspense, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Plus } from "lucide-react";
 import {
@@ -9,24 +8,17 @@ import {
   type DataTableColumn,
 } from "@/components/data-display/data-table";
 import { DataTableRowActions } from "@/components/data-display/data-table-row-actions";
-import { Badge } from "@/components/ui/badge";
 import { ConfirmDeleteDialog } from "@/components/forms/confirm-delete-dialog";
-import { PageHeader } from "@/components/layout/page-header";
+import { ListPage, ListPageSkeleton } from "@/components/layout/list-page";
 import { ActionButton } from "@/components/ui/action-button";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { workflowStatusLabel } from "@/features/automations/api/workflows.api";
 import {
   useAutomationWorkflowMutations,
   useAutomationWorkflowsList,
 } from "@/features/automations/hooks/use-automation-workflows";
 import type { AutomationWorkflow } from "@/features/automations/types/workflow";
-
-const WorkflowCreateDialog = dynamic(
-  () =>
-    import("@/features/automations/components/workflow-create-dialog").then(
-      (m) => m.WorkflowCreateDialog,
-    ),
-  { ssr: false },
-);
 
 function statusVariant(
   status: AutomationWorkflow["status"],
@@ -36,9 +28,8 @@ function statusVariant(
   return "outline";
 }
 
-export function AutomationWorkflowsList() {
+function AutomationsListPageContent() {
   const router = useRouter();
-  const [createOpen, setCreateOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const { data, isLoading } = useAutomationWorkflowsList({ limit: 50 });
   const { statusMutation, deleteMutation } = useAutomationWorkflowMutations();
@@ -75,9 +66,14 @@ export function AutomationWorkflowsList() {
         id: "status",
         header: "Status",
         cell: (row) => (
-          <Badge variant={statusVariant(row.status)}>
-            {workflowStatusLabel(row.status)}
-          </Badge>
+          <div className="flex flex-wrap items-center gap-1.5">
+            <Badge variant={statusVariant(row.status)}>
+              {workflowStatusLabel(row.status)}
+            </Badge>
+            {row.isSystemTemplate ? (
+              <Badge variant="outline">Template</Badge>
+            ) : null}
+          </div>
         ),
       },
       {
@@ -89,11 +85,12 @@ export function AutomationWorkflowsList() {
               {
                 label: "Edit",
                 onClick: () =>
-                  router.push(`/business/settings/automations/${row.id}`),
+                  router.push(
+                    `/business/settings/automation-workflows/${row.id}`,
+                  ),
               },
               {
-                label:
-                  row.status === "ACTIVE" ? "Deactivate" : "Activate",
+                label: row.status === "ACTIVE" ? "Deactivate" : "Activate",
                 onClick: () =>
                   statusMutation.mutate({
                     id: row.id,
@@ -114,18 +111,31 @@ export function AutomationWorkflowsList() {
   );
 
   return (
-    <div className="space-y-4">
-      <PageHeader
-        title="Workflows"
-        description="Linear automations that run when triggers fire."
-        actions={
-          <ActionButton onClick={() => setCreateOpen(true)}>
+    <ListPage
+      title="Automations"
+      description="Linear workflows that run when triggers fire."
+      actions={
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() =>
+              router.push("/business/settings/automation-registry")
+            }
+          >
+            Registry
+          </Button>
+          <ActionButton
+            onClick={() =>
+              router.push("/business/settings/automation-workflows/new")
+            }
+          >
             <Plus className="size-4" />
             Create workflow
           </ActionButton>
-        }
-      />
-
+        </div>
+      }
+    >
       <DataTable
         columns={columns}
         data={data?.items ?? []}
@@ -134,10 +144,6 @@ export function AutomationWorkflowsList() {
         emptyTitle="No workflows yet"
         emptyDescription="Create one to get started."
       />
-
-      {createOpen ? (
-        <WorkflowCreateDialog open={createOpen} onOpenChange={setCreateOpen} />
-      ) : null}
 
       <ConfirmDeleteDialog
         open={!!deleteId}
@@ -149,6 +155,14 @@ export function AutomationWorkflowsList() {
           setDeleteId(null);
         }}
       />
-    </div>
+    </ListPage>
+  );
+}
+
+export function AutomationsListPage() {
+  return (
+    <Suspense fallback={<ListPageSkeleton />}>
+      <AutomationsListPageContent />
+    </Suspense>
   );
 }

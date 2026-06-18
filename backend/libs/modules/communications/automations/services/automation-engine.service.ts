@@ -20,7 +20,11 @@ import {
   buildAutomationRunContext,
   resolveContactIdForEvent,
 } from '../utils/automation-run-context.util';
-import { evaluateWorkflowTriggerFilters } from '../utils/workflow-filter.util';
+import { msUntilAllowedTimeWindow } from '../utils/workflow-time-window.util';
+import { EnrollmentFilterService } from './enrollment-filter.service';
+
+const QUEUE_UNAVAILABLE_MESSAGE =
+  'Automation step queue is unavailable (Redis not connected)';
 
 @Injectable()
 export class AutomationEngineService {
@@ -31,6 +35,7 @@ export class AutomationEngineService {
     private readonly workflowRepository: AutomationWorkflowRepository,
     private readonly runRepository: AutomationWorkflowRunRepository,
     private readonly queueService: QueueService,
+    private readonly enrollmentFilterService: EnrollmentFilterService,
   ) {}
 
   async handleDomainEvent(event: AutomationDomainEventPayload): Promise<void> {
@@ -46,7 +51,15 @@ export class AutomationEngineService {
 
     for (const workflow of workflows) {
       const filters = parseWorkflowTriggerFilters(workflow.triggerFilters);
-      if (!evaluateWorkflowTriggerFilters(filters, event.metadata)) {
+      const passesFilters = await this.enrollmentFilterService.evaluate(
+        filters,
+        event,
+        contactId ?? undefined,
+      );
+      if (!passesFilters) {
+        this.logger.debug(
+          `Skipped workflow ${workflow.id}: enrollment filters not met for ${event.triggerKey}`,
+        );
         continue;
       }
 
@@ -89,11 +102,37 @@ export class AutomationEngineService {
         `Enrolled workflow ${workflow.id} run ${run.id} for ${event.triggerKey}`,
       );
 
-      await this.queueService.enqueueAutomationStep({
-        businessId: event.businessId,
-        runId: run.id,
-        stepIndex: 0,
+      const enqueued = await this.enqueueStepOrFail(run.id, run.businessId, 0);
+      if (!enqueued) {
+        await this.markRunFailed(run.id, QUEUE_UNAVAILABLE_MESSAGE);
+      }
+    }
+  }
+
+  async cancelRunsOnContactResponse(
+    event: AutomationDomainEventPayload,
+  ): Promise<void> {
+    const contactId = await resolveContactIdForEvent(this.prisma, event);
+    if (!contactId) {
+      return;
+    }
+
+    const runs = await this.runRepository.findActiveRunsForContact(
+      event.businessId,
+      contactId,
+    );
+
+    for (const run of runs) {
+      const settings = parseWorkflowSettings(run.workflow.settings);
+      if (!settings.stopOnResponse) {
+        continue;
+      }
+      await this.runRepository.updateRun(run.id, {
+        status: AutomationWorkflowRunStatus.CANCELLED,
+        completedAt: new Date(),
+        errorMessage: 'Cancelled: contact responded',
       });
+      this.logger.debug(`Cancelled run ${run.id} due to contact response`);
     }
   }
 
@@ -146,6 +185,32 @@ export class AutomationEngineService {
       params;
 
     if (settings.runPolicy === 'every_time') {
+      const active = await this.runRepository.hasActiveRun({
+        businessId,
+        workflowId,
+        subjectId,
+        contextEntityId: contextEntityId ?? subjectId,
+      });
+      return !active;
+    }
+
+    const dedupeContextId = settings.allowMultipleContexts
+      ? (contextEntityId ?? subjectId)
+      : subjectId;
+
+    if (settings.runPolicy === 'once_per_period') {
+      const existing = await this.runRepository.hasCompletedRunSince({
+        businessId,
+        workflowId,
+        subjectId,
+        contextEntityId: dedupeContextId,
+        since: new Date(
+          Date.now() - settings.runPolicyPeriodDays * 24 * 60 * 60 * 1000,
+        ),
+      });
+      if (existing && !settings.allowReentry) {
+        return false;
+      }
       return true;
     }
 
@@ -154,10 +219,20 @@ export class AutomationEngineService {
       workflowId,
       ...(settings.runPolicy === 'once_per_subject'
         ? { subjectId }
-        : { contextEntityId: contextEntityId ?? subjectId }),
+        : { contextEntityId: dedupeContextId }),
     });
 
     if (existing && !settings.allowReentry) {
+      return false;
+    }
+
+    const active = await this.runRepository.hasActiveRun({
+      businessId,
+      workflowId,
+      subjectId,
+      contextEntityId: dedupeContextId,
+    });
+    if (active) {
       return false;
     }
 
@@ -205,14 +280,95 @@ export class AutomationEngineService {
           : AutomationWorkflowRunStatus.RUNNING,
     });
 
-    await this.queueService.enqueueAutomationStep(
-      {
-        businessId: run.businessId,
-        runId,
-        stepIndex: nextIndex,
-      },
-      delayMs > 0 ? { delay: delayMs } : undefined,
+    const enqueued = await this.enqueueStepOrFail(
+      runId,
+      run.businessId,
+      nextIndex,
+      delayMs,
     );
+    if (!enqueued) {
+      await this.markRunFailed(runId, QUEUE_UNAVAILABLE_MESSAGE);
+    }
+  }
+
+  async advanceToStepById(
+    runId: string,
+    stepId: string,
+    completedStepIndex: number,
+    delayMs = 0,
+  ): Promise<void> {
+    const run = await this.runRepository.findRunById(runId);
+    if (!run) {
+      return;
+    }
+
+    const workflowSteps = parseWorkflowSteps(run.workflow.steps);
+    const nextIndex = workflowSteps.findIndex((step) => step.id === stepId);
+    if (nextIndex < 0) {
+      await this.markRunFailed(runId, `Branch target step not found: ${stepId}`);
+      return;
+    }
+
+    if (nextIndex <= completedStepIndex) {
+      await this.markRunFailed(
+        runId,
+        `Branch target must be after step ${completedStepIndex}`,
+      );
+      return;
+    }
+
+    await this.runRepository.updateRun(runId, {
+      currentStepIndex: nextIndex,
+      status:
+        delayMs > 0
+          ? AutomationWorkflowRunStatus.WAITING
+          : AutomationWorkflowRunStatus.RUNNING,
+    });
+
+    const enqueued = await this.enqueueStepOrFail(
+      runId,
+      run.businessId,
+      nextIndex,
+      delayMs,
+    );
+    if (!enqueued) {
+      await this.markRunFailed(runId, QUEUE_UNAVAILABLE_MESSAGE);
+    }
+  }
+
+  async reEnqueueStep(
+    runId: string,
+    stepIndex: number,
+    delayMs = 0,
+  ): Promise<void> {
+    const run = await this.runRepository.findRunById(runId);
+    if (!run) {
+      return;
+    }
+
+    await this.runRepository.updateRun(runId, {
+      currentStepIndex: stepIndex,
+      status:
+        delayMs > 0
+          ? AutomationWorkflowRunStatus.WAITING
+          : AutomationWorkflowRunStatus.RUNNING,
+    });
+
+    const enqueued = await this.enqueueStepOrFail(
+      runId,
+      run.businessId,
+      stepIndex,
+      delayMs,
+    );
+    if (!enqueued) {
+      await this.markRunFailed(runId, QUEUE_UNAVAILABLE_MESSAGE);
+    }
+  }
+
+  resolveTimeWindowDelay(
+    settings: ReturnType<typeof parseWorkflowSettings>,
+  ): number {
+    return msUntilAllowedTimeWindow(settings);
   }
 
   async updateStepStatus(
@@ -222,6 +378,7 @@ export class AutomationEngineService {
     data?: {
       errorMessage?: string;
       output?: Record<string, unknown>;
+      input?: Record<string, unknown>;
       scheduledFor?: Date;
     },
   ): Promise<void> {
@@ -238,8 +395,30 @@ export class AutomationEngineService {
     }
     if (data?.errorMessage) patch.errorMessage = data.errorMessage;
     if (data?.output) patch.output = data.output;
+    if (data?.input) patch.input = data.input;
     if (data?.scheduledFor) patch.scheduledFor = data.scheduledFor;
 
     await this.runRepository.updateStep(runId, stepIndex, patch);
+  }
+
+  private async enqueueStepOrFail(
+    runId: string,
+    businessId: string,
+    stepIndex: number,
+    delayMs = 0,
+  ): Promise<boolean> {
+    try {
+      const jobId = await this.queueService.enqueueAutomationStep(
+        { businessId, runId, stepIndex },
+        delayMs > 0 ? { delay: delayMs } : undefined,
+      );
+      return jobId != null;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.error(
+        `Failed to enqueue automation step run=${runId} step=${stepIndex}: ${message}`,
+      );
+      return false;
+    }
   }
 }

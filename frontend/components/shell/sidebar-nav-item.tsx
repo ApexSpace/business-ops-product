@@ -18,11 +18,17 @@ export function SidebarNavItem({ item, tooltip }: SidebarNavItemProps) {
   const hydrated = useHydrated();
   const active = hydrated && isNavItemActive(pathname, item);
   const Icon = item.icon;
+  const isAutomationsNav = item.href === "/business/settings/automations";
 
   return (
     <SidebarMenuItem>
       <SidebarMenuButton
-        render={<Link href={item.href} />}
+        render={
+          <Link
+            href={item.href}
+            prefetch={isAutomationsNav ? false : undefined}
+          />
+        }
         isActive={active}
         tooltip={tooltip ?? item.title}
         className={cn(

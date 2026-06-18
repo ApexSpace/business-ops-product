@@ -64,6 +64,18 @@ export class ContactsService {
 
     if (tagIds.length > 0) {
       await this.contactRepository.setTags(contact.id, tagIds);
+      const tags = await this.tagRepository.findByIds(businessId, tagIds);
+      for (const tagId of tagIds) {
+        const tag = tags.find((t) => t.id === tagId);
+        await this.auditService.log({
+          actorUserId: actor.id,
+          businessId,
+          action: 'contact.tag_added',
+          entityType: 'Contact',
+          entityId: contact.id,
+          metadata: { tagId, tagName: tag?.name },
+        });
+      }
     }
 
     await this.auditService.log({
@@ -72,6 +84,10 @@ export class ContactsService {
       action: 'contact.created',
       entityType: 'Contact',
       entityId: contact.id,
+      metadata: {
+        hasEmail: Boolean(email),
+        hasPhone: Boolean(phoneKey),
+      },
     });
 
     const withTags = await this.contactRepository.findById(
@@ -187,7 +203,26 @@ export class ContactsService {
     }
 
     if (dto.tagIds !== undefined) {
+      const beforeTags = await this.contactRepository.findById(businessId, id);
+      const previousTagIds = new Set(
+        beforeTags?.tags?.map((entry) => entry.tag.id) ?? [],
+      );
       await this.contactRepository.setTags(id, dto.tagIds);
+      const addedTagIds = dto.tagIds.filter((tagId) => !previousTagIds.has(tagId));
+      if (addedTagIds.length > 0) {
+        const tags = await this.tagRepository.findByIds(businessId, addedTagIds);
+        for (const tagId of addedTagIds) {
+          const tag = tags.find((t) => t.id === tagId);
+          await this.auditService.log({
+            actorUserId: actor.id,
+            businessId,
+            action: 'contact.tag_added',
+            entityType: 'Contact',
+            entityId: id,
+            metadata: { tagId, tagName: tag?.name },
+          });
+        }
+      }
     }
 
     await this.auditService.log({
