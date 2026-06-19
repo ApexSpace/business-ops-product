@@ -32,6 +32,7 @@ interface FormBuilderEditorProps {
 function FormBuilderEditor({ mode, initialRecord }: FormBuilderEditorProps) {
   const router = useRouter();
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
 
   const builder = useFormBuilderState({
     mode,
@@ -104,9 +105,16 @@ function FormBuilderEditor({ mode, initialRecord }: FormBuilderEditorProps) {
   };
 
   const handlePublish = () => {
+    const openShareWhenPublished = () => setShareOpen(true);
+
     const runPublish = (id: string) => {
       publishMutation.mutate(id, {
-        onSuccess: (record) => builder.setStatus(record.status),
+        onSuccess: (record) => {
+          builder.setStatus(record.status);
+          if (record.status === "published") {
+            openShareWhenPublished();
+          }
+        },
       });
     };
 
@@ -186,6 +194,8 @@ function FormBuilderEditor({ mode, initialRecord }: FormBuilderEditorProps) {
     <>
       <FormBuilderShell
         builder={builder}
+        shareOpen={shareOpen}
+        onShareOpenChange={setShareOpen}
         onSave={handleSave}
         onPublish={handlePublish}
         onMoveToDraft={handleMoveToDraft}

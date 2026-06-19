@@ -17,6 +17,7 @@ import { ActionButton } from "@/components/ui/action-button";
 import { Badge } from "@/components/ui/badge";
 import { SearchableSelect } from "@/components/forms/searchable-select";
 import { FormCreateDialog } from "@/features/forms/components/form-create-dialog";
+import { FormShareDialog } from "@/features/forms/components/form-share-dialog";
 import { FormsListHeaderActions } from "@/features/forms/components/forms-list-header-actions";
 import { useFormMutations } from "@/features/forms/hooks/use-form-mutations";
 import { useFormsList } from "@/features/forms/hooks/use-forms-list";
@@ -51,6 +52,7 @@ function FormsListPageContent() {
   const debouncedSearch = useDebouncedValue(params.search);
   const [createOpen, setCreateOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [shareForm, setShareForm] = useState<FormListItem | null>(null);
 
   const filters = {
     search: debouncedSearch || undefined,
@@ -213,6 +215,14 @@ function FormsListPageContent() {
                   label: "Duplicate",
                   onClick: () => duplicateMutation.mutate(form.id),
                 },
+                ...(form.status === "published"
+                  ? [
+                      {
+                        label: "Share link",
+                        onClick: () => setShareForm(form),
+                      },
+                    ]
+                  : []),
                 form.status === "published"
                   ? {
                       label: "Move to draft",
@@ -267,6 +277,14 @@ function FormsListPageContent() {
         }
         isPending={deleteMutation.isPending}
         onConfirm={() => deleteId && deleteMutation.mutate(deleteId)}
+      />
+
+      <FormShareDialog
+        open={!!shareForm}
+        onOpenChange={(open) => !open && setShareForm(null)}
+        formId={shareForm?.id ?? null}
+        status={shareForm?.status ?? "draft"}
+        formName={shareForm?.name}
       />
     </>
   );

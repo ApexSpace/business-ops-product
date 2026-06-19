@@ -1,11 +1,12 @@
-import { use } from "react";
 import { FormBuilderPage } from "@/features/forms/pages/form-builder-page";
 
-export default function BusinessFormEditPage({
-  params,
-}: {
+interface BusinessFormEditPageProps {
   params: Promise<{ id: string }>;
-}) {
-  const { id } = use(params);
+}
+
+export default async function BusinessFormEditPage({
+  params,
+}: BusinessFormEditPageProps) {
+  const { id } = await params;
   return <FormBuilderPage mode="edit" formId={id} />;
 }

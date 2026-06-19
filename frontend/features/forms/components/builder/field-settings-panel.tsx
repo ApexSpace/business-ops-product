@@ -9,7 +9,7 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
-import type { FieldStyle, FieldType, FormField, FormSettings } from "@/features/forms/types";
+import type { FieldStyle, FieldType, FormField, FormSettings, FormStatus } from "@/features/forms/types";
 import { useFormFieldTypeMap } from "@/features/forms/hooks/use-form-metadata";
 import {
   COLUMN_COUNT_OPTIONS,
@@ -29,6 +29,7 @@ import { SubmitButtonSection } from "@/features/forms/components/builder/form-se
 import { AfterSubmitSection } from "@/features/forms/components/builder/form-settings/after-submit-section";
 import { FormStylingSection } from "@/features/forms/components/builder/form-settings/form-styling-section";
 import { MultiStepSection } from "@/features/forms/components/builder/form-settings/multi-step-section";
+import { ShareFormSection } from "@/features/forms/components/builder/form-settings/share-form-section";
 import { FormFileUploadControl } from "@/features/forms/components/form-file-upload-control";
 import { FORM_IMAGE_ACCEPT } from "@/features/forms/utils/form-upload.util";
 import { parseFieldWidth } from "@/features/forms/utils/field-style.util";
@@ -37,6 +38,10 @@ interface FieldSettingsPanelProps {
   selectedField: FormField | null;
   fields: FormField[];
   settings: FormSettings;
+  formId?: string | null;
+  formStatus?: FormStatus;
+  formName?: string;
+  onOpenShareDialog?: () => void;
   onUpdateField: (fieldId: string, patch: Partial<FormField>) => void;
   onUpdateSettings: (patch: Partial<FormSettings>) => void;
   className?: string;
@@ -574,6 +579,9 @@ export function FieldSettingsPanel({
   selectedField,
   fields,
   settings,
+  formId = null,
+  formStatus = "draft",
+  onOpenShareDialog,
   onUpdateField,
   onUpdateSettings,
   className,
@@ -636,7 +644,12 @@ export function FieldSettingsPanel({
           </TabsContent>
 
           <TabsContent value="form" className="mt-0">
-            <Accordion defaultValue={["Form Info"]}>
+            <Accordion defaultValue={["Share & Embed", "Form Info"]}>
+              <ShareFormSection
+                formId={formId}
+                status={formStatus}
+                onOpenShareDialog={onOpenShareDialog ?? (() => undefined)}
+              />
               <FormInfoSection settings={settings} onUpdate={onUpdateSettings} />
               <SubmitButtonSection settings={settings} onUpdate={onUpdateSettings} />
               <AfterSubmitSection settings={settings} onUpdate={onUpdateSettings} />

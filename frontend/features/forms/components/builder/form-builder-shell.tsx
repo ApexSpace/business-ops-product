@@ -24,11 +24,13 @@ import {
   FormCanvas,
 } from "@/features/forms/components/builder/form-canvas";
 import { FieldSettingsPanel } from "@/features/forms/components/builder/field-settings-panel";
-import { FormEmbedDialog } from "@/features/forms/components/form-embed-dialog";
+import { FormShareDialog } from "@/features/forms/components/form-share-dialog";
 import { FormPreviewModal } from "@/features/forms/components/builder/form-preview-modal";
 
 interface FormBuilderShellProps {
   builder: FormBuilderStateApi;
+  shareOpen: boolean;
+  onShareOpenChange: (open: boolean) => void;
   onSave: () => void;
   onPublish: () => void;
   onMoveToDraft: () => void;
@@ -40,6 +42,8 @@ interface FormBuilderShellProps {
 
 export function FormBuilderShell({
   builder,
+  shareOpen,
+  onShareOpenChange,
   onSave,
   onPublish,
   onMoveToDraft,
@@ -49,7 +53,6 @@ export function FormBuilderShell({
   onDelete,
 }: FormBuilderShellProps) {
   const [activePaletteType, setActivePaletteType] = useState<FieldType | null>(null);
-  const [embedOpen, setEmbedOpen] = useState(false);
   const canvasColumnRef = useRef<HTMLDivElement>(null);
   const settingsPanelRef = useRef<HTMLDivElement>(null);
 
@@ -158,7 +161,7 @@ export function FormBuilderShell({
           onDuplicate={onDuplicate}
           onArchive={onArchive}
           onExport={onExport}
-          onEmbed={() => setEmbedOpen(true)}
+          onShare={() => onShareOpenChange(true)}
           onDelete={onDelete}
         />
       </div>
@@ -191,6 +194,10 @@ export function FormBuilderShell({
                 selectedField={builder.selectedField}
                 fields={builder.definition.fields}
                 settings={builder.definition.settings}
+                formId={builder.formId}
+                formStatus={builder.status}
+                formName={builder.name}
+                onOpenShareDialog={() => onShareOpenChange(true)}
                 onUpdateField={builder.updateField}
                 onUpdateSettings={builder.updateSettings}
                 className="hidden min-h-0 lg:flex"
@@ -216,11 +223,12 @@ export function FormBuilderShell({
         onPreviewDeviceChange={builder.setPreviewDevice}
       />
 
-      <FormEmbedDialog
-        open={embedOpen}
-        onOpenChange={setEmbedOpen}
+      <FormShareDialog
+        open={shareOpen}
+        onOpenChange={onShareOpenChange}
         formId={builder.formId}
         status={builder.status}
+        formName={builder.name}
       />
     </div>
   );

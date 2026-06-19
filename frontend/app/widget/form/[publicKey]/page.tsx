@@ -1,14 +1,11 @@
-"use client";
-
-import { use } from "react";
 import { PublicFormWidget } from "@/features/public-forms/components/public-form-widget";
 
-export default function FormWidgetPage({
-  params,
-}: {
+interface FormWidgetPageProps {
   params: Promise<{ publicKey: string }>;
-}) {
-  const { publicKey } = use(params);
+}
+
+export default async function FormWidgetPage({ params }: FormWidgetPageProps) {
+  const { publicKey } = await params;
 
   return (
     <div className="min-h-svh bg-transparent p-0">

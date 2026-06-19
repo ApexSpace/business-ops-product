@@ -1,11 +1,12 @@
-import { use } from "react";
 import { FormSubmissionsPage } from "@/features/forms/pages/form-submissions-page";
 
-export default function BusinessFormSubmissionsPage({
-  params,
-}: {
+interface BusinessFormSubmissionsPageProps {
   params: Promise<{ id: string }>;
-}) {
-  const { id } = use(params);
+}
+
+export default async function BusinessFormSubmissionsPage({
+  params,
+}: BusinessFormSubmissionsPageProps) {
+  const { id } = await params;
   return <FormSubmissionsPage formId={id} />;
 }

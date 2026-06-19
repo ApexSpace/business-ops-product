@@ -18,7 +18,10 @@ import { useFormSubmissionMutations } from "@/features/forms/hooks/use-form-subm
 import { useFormSubmissionsList } from "@/features/forms/hooks/use-form-submissions-list";
 import type { FormSubmissionListItem } from "@/features/forms/types";
 import { formatFormTableDate } from "@/features/forms/utils/form-display.util";
-import { formatSubmissionSummary } from "@/features/forms/utils/form-submission-display.util";
+import {
+  buildFormFieldLabelMap,
+  formatSubmissionSummary,
+} from "@/features/forms/utils/form-submission-display.util";
 
 interface FormSubmissionsPageProps {
   formId: string;
@@ -34,6 +37,11 @@ function FormSubmissionsPageContent({ formId }: FormSubmissionsPageProps) {
   const { data: form, isLoading: isFormLoading } = useFormDetail(formId);
   const { data, isLoading } = useFormSubmissionsList(formId, { page, limit });
   const { deleteMutation } = useFormSubmissionMutations(formId);
+
+  const labelMap = useMemo(
+    () => buildFormFieldLabelMap(form?.definition.fields ?? []),
+    [form?.definition.fields],
+  );
 
   const columns = useMemo<DataTableColumn<FormSubmissionListItem>[]>(
     () => [
@@ -54,12 +62,12 @@ function FormSubmissionsPageContent({ formId }: FormSubmissionsPageProps) {
         header: "Responses",
         cell: (row) => (
           <p className="line-clamp-2 min-w-[240px] text-sm">
-            {formatSubmissionSummary(row.data)}
+            {formatSubmissionSummary(row.data, { labelMap })}
           </p>
         ),
       },
     ],
-    [],
+    [labelMap],
   );
 
   const deleteTarget = data?.items.find((item) => item.id === deleteId);
@@ -125,6 +133,7 @@ function FormSubmissionsPageContent({ formId }: FormSubmissionsPageProps) {
         submission={viewSubmission}
         open={!!viewSubmission}
         onOpenChange={(open) => !open && setViewSubmission(null)}
+        fields={form?.definition.fields ?? []}
       />
 
       <ConfirmDeleteDialog

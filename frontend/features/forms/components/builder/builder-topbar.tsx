@@ -5,7 +5,6 @@ import Link from "next/link";
 import {
   Archive,
   ArrowLeft,
-  Code2,
   ClipboardList,
   Copy,
   Download,
@@ -15,6 +14,7 @@ import {
   Redo2,
   Save,
   Send,
+  Share2,
   Undo2,
 } from "lucide-react";
 import { ActionButton } from "@/components/ui/action-button";
@@ -50,7 +50,7 @@ interface BuilderTopbarProps {
   onDuplicate: () => void;
   onArchive: () => void;
   onExport: () => void;
-  onEmbed: () => void;
+  onShare: () => void;
   onDelete: () => void;
 }
 
@@ -147,7 +147,7 @@ export function BuilderTopbar({
   onDuplicate,
   onArchive,
   onExport,
-  onEmbed,
+  onShare,
   onDelete,
 }: BuilderTopbarProps) {
   return (
@@ -215,6 +215,13 @@ export function BuilderTopbar({
           {isSaving ? "Saving…" : "Save"}
         </ActionButton>
 
+        {status === "published" ? (
+          <ActionButton size="sm" variant="secondary" onClick={onShare}>
+            <Share2 className="mr-2 size-4" />
+            Share
+          </ActionButton>
+        ) : null}
+
         {status !== "published" ? (
           <ActionButton size="sm" variant="secondary" onClick={onPublish}>
             <Send className="mr-2 size-4" />
@@ -243,9 +250,9 @@ export function BuilderTopbar({
               <Download className="mr-2 size-4" />
               Export JSON
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={onEmbed}>
-              <Code2 className="mr-2 size-4" />
-              Embed
+            <DropdownMenuItem onClick={onShare}>
+              <Share2 className="mr-2 size-4" />
+              Share & embed
             </DropdownMenuItem>
             {status !== "archived" ? (
               <DropdownMenuItem onClick={onArchive}>
