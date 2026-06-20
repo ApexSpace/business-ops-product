@@ -18,8 +18,7 @@ import { PaginationQueryDto } from '@app/common/dto/pagination-query.dto';
 
 const LIST_SORT_FIELDS = ['name', 'updatedAt', 'createdAt', 'status'] as const;
 
-export type WhatsAppTemplateListSortField =
-  (typeof LIST_SORT_FIELDS)[number];
+export type WhatsAppTemplateListSortField = (typeof LIST_SORT_FIELDS)[number];
 
 export class ListWhatsAppTemplatesQueryDto extends PaginationQueryDto {
   @ApiPropertyOptional()

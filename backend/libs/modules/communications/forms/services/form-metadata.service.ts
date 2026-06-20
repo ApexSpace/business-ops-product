@@ -4,9 +4,7 @@ import type {
   FormFieldDefinition,
   FormFieldImplementationStatus,
 } from '../types/form-registry.types';
-import {
-  listFormFieldCategories,
-} from '../registries/form-field-category.registry';
+import { listFormFieldCategories } from '../registries/form-field-category.registry';
 import { listFormFields } from '../registries/form-field.registry';
 import type {
   FormFieldCategoryResponseDto,
@@ -58,9 +56,7 @@ export class FormMetadataService {
     };
   }
 
-  private toFieldTypeDto(
-    field: FormFieldDefinition,
-  ): FormFieldTypeResponseDto {
+  private toFieldTypeDto(field: FormFieldDefinition): FormFieldTypeResponseDto {
     return {
       key: field.key,
       category: field.category,

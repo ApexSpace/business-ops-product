@@ -1,4 +1,7 @@
-import type { ContextEntityType, SubjectType } from '../types/automation-registry.types';
+import type {
+  ContextEntityType,
+  SubjectType,
+} from '../types/automation-registry.types';
 
 export interface AutomationDomainEventPayload {
   triggerKey: string;

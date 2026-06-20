@@ -107,7 +107,9 @@ describe('PlanEmbedService', () => {
 
   it('renders embed HTML with parseable JSON (not HTML entities)', () => {
     const html = service.renderEmbedHtml(minimalPricingDto());
-    expect(html).toContain('<script type="application/json" id="pricing-data">');
+    expect(html).toContain(
+      '<script type="application/json" id="pricing-data">',
+    );
     expect(html).toContain(
       'JSON.parse(document.getElementById("pricing-data").textContent)',
     );

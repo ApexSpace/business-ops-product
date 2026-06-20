@@ -1,7 +1,4 @@
-import {
-  FORM_FIELD_BY_KEY,
-  FORM_FIELD_REGISTRY,
-} from './form-field.registry';
+import { FORM_FIELD_BY_KEY, FORM_FIELD_REGISTRY } from './form-field.registry';
 
 /** Field types that collect submission values (excludes pure layout blocks). */
 export const FORM_SUBMISSION_INPUT_KEYS = new Set(

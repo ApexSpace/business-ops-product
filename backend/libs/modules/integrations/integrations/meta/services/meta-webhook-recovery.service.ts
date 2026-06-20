@@ -71,14 +71,16 @@ export class MetaWebhookRecoveryService implements OnModuleInit {
         if (event.status === WebhookEventStatus.IGNORED) {
           await this.webhookEventsRepository.resetForReprocessing(
             event.id,
-            (event.payload ?? {}) as Prisma.InputJsonValue,
+            event.payload ?? {},
           );
         }
         await this.metaWebhookDispatch.dispatch(event.id);
       } catch (error) {
         const message =
           error instanceof Error ? error.message : 'Recovery failed';
-        this.logger.warn(`Meta webhook recovery failed for ${event.id}: ${message}`);
+        this.logger.warn(
+          `Meta webhook recovery failed for ${event.id}: ${message}`,
+        );
       }
     }
   }

@@ -37,7 +37,9 @@ const SUBJECT_ENTITY_ID: Record<string, string> = {
 };
 
 /** Triggers fired by scheduler/cron rather than audit ingestion. */
-export const SCHEDULER_ONLY_TRIGGER_KEYS = new Set(['appointment.before_start']);
+export const SCHEDULER_ONLY_TRIGGER_KEYS = new Set([
+  'appointment.before_start',
+]);
 
 const AUDIT_OVERRIDES: Record<
   string,

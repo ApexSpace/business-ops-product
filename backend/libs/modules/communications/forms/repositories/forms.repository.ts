@@ -47,20 +47,17 @@ export class FormsRepository {
     total: number;
   }> {
     const search = params.search?.trim();
-    const where = this.activeWhere(
-      businessId,
-      {
-        ...(params.status ? { status: params.status } : {}),
-        ...(search
-          ? {
-              OR: [
-                { name: { contains: search, mode: 'insensitive' } },
-                { slug: { contains: search, mode: 'insensitive' } },
-              ],
-            }
-          : {}),
-      },
-    );
+    const where = this.activeWhere(businessId, {
+      ...(params.status ? { status: params.status } : {}),
+      ...(search
+        ? {
+            OR: [
+              { name: { contains: search, mode: 'insensitive' } },
+              { slug: { contains: search, mode: 'insensitive' } },
+            ],
+          }
+        : {}),
+    });
 
     const sortBy = params.sortBy ?? 'updatedAt';
     const sortDir = params.sortDir ?? 'desc';

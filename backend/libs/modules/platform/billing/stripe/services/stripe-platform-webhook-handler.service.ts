@@ -39,7 +39,9 @@ const WEBHOOK_ACTOR: RequestUser = {
 
 @Injectable()
 export class StripePlatformWebhookHandlerService {
-  private readonly logger = new Logger(StripePlatformWebhookHandlerService.name);
+  private readonly logger = new Logger(
+    StripePlatformWebhookHandlerService.name,
+  );
 
   constructor(
     private readonly prisma: PrismaService,
@@ -172,7 +174,8 @@ export class StripePlatformWebhookHandlerService {
     });
 
     let planTierId = subscription.metadata?.planTierId ?? local?.planTierId;
-    let planGroupId = subscription.metadata?.planGroupId ?? local?.planGroupId;
+    const planGroupId =
+      subscription.metadata?.planGroupId ?? local?.planGroupId;
     let billingCycle =
       (subscription.metadata?.billingCycle as
         | BusinessSubscriptionBillingCycle
@@ -266,8 +269,8 @@ export class StripePlatformWebhookHandlerService {
       actionKey: 'STRIPE_WEBHOOK',
       correlationId: randomUUID(),
       source: BusinessSubscriptionEventSource.WEBHOOK,
-      fromState: before as unknown as Prisma.InputJsonValue,
-      toState: after as unknown as Prisma.InputJsonValue,
+      fromState: before,
+      toState: after,
       metadata: { stripeEventId: event.id, stripeEventType: event.type },
     });
 
@@ -335,8 +338,8 @@ export class StripePlatformWebhookHandlerService {
       actionKey: 'STRIPE_WEBHOOK',
       correlationId: randomUUID(),
       source: BusinessSubscriptionEventSource.WEBHOOK,
-      fromState: before as unknown as Prisma.InputJsonValue,
-      toState: after as unknown as Prisma.InputJsonValue,
+      fromState: before,
+      toState: after,
       metadata: { stripeEventId: event.id },
     });
 
@@ -393,7 +396,7 @@ export class StripePlatformWebhookHandlerService {
       paidAt: new Date(),
       externalProvider: 'stripe',
       externalPaymentId: invoice.id ?? event.id,
-      metadata: { stripeEventId: event.id } as Prisma.InputJsonValue,
+      metadata: { stripeEventId: event.id },
     });
 
     await this.accessService.updateAccessInternal(
@@ -486,7 +489,9 @@ export class StripePlatformWebhookHandlerService {
     });
 
     for (const tier of tiers) {
-      const stripeMeta = this.planMapping.parseTierStripeMetadata(tier.metadata);
+      const stripeMeta = this.planMapping.parseTierStripeMetadata(
+        tier.metadata,
+      );
       if (stripeMeta?.monthlyPriceId === priceId) {
         return {
           planTierId: tier.id,

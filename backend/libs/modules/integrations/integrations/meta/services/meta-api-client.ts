@@ -685,8 +685,7 @@ export class MetaApiClient {
         throw new Error(`Meta list message templates failed: ${detail}`);
       }
 
-      const data =
-        (await response.json()) as MetaMessageTemplateListResponse;
+      const data = (await response.json()) as MetaMessageTemplateListResponse;
       templates.push(...(data.data ?? []));
       nextUrl = data.paging?.next ?? null;
     }

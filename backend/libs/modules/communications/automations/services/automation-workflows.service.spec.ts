@@ -95,7 +95,9 @@ describe('AutomationWorkflowsService', () => {
 
     await service.list('biz-1', {});
 
-    expect(workflowRepository.countSystemTemplates).toHaveBeenCalledWith('biz-1');
+    expect(workflowRepository.countSystemTemplates).toHaveBeenCalledWith(
+      'biz-1',
+    );
     expect(workflowRepository.create).toHaveBeenCalledTimes(3);
     expect(workflowRepository.create).toHaveBeenCalledWith(
       expect.objectContaining({

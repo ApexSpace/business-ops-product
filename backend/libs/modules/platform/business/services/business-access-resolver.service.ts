@@ -52,7 +52,8 @@ const NEEDS_ATTENTION_LABELS: Record<NeedsAttentionFlag, string> = {
   TRIAL_EXPIRED: 'Trial expired',
   PENDING_PAYMENT: 'Pending payment',
   ACTIVE_WITH_EXPIRED_SUBSCRIPTION: 'Active business with expired subscription',
-  ACTIVE_WITH_CANCELED_SUBSCRIPTION: 'Active business with canceled subscription',
+  ACTIVE_WITH_CANCELED_SUBSCRIPTION:
+    'Active business with canceled subscription',
   NO_PLAN_TIER: 'No plan tier assigned',
   NO_CAPABILITIES: 'No capabilities assigned',
   SNAPSHOT_NOT_APPLIED: 'Snapshot not applied',
@@ -148,7 +149,9 @@ export class BusinessAccessResolverService {
     };
   }
 
-  async resolveForBusiness(businessId: string): Promise<BusinessAccessResolution> {
+  async resolveForBusiness(
+    businessId: string,
+  ): Promise<BusinessAccessResolution> {
     const business = await this.prisma.business.findFirst({
       where: { id: businessId, deletedAt: null },
       include: {
@@ -171,7 +174,9 @@ export class BusinessAccessResolverService {
 
     const [hasPendingOwnerInvite, effectiveCapabilities] = await Promise.all([
       this.hasPendingOwnerInvite(businessId),
-      this.effectiveCapabilitiesService.resolveEffectiveCapabilities(businessId),
+      this.effectiveCapabilitiesService.resolveEffectiveCapabilities(
+        businessId,
+      ),
     ]);
 
     return this.resolve({
@@ -254,20 +259,35 @@ export class BusinessAccessResolverService {
         return { canAccessWorkspace: false, reasonCode: 'TRIAL_EXPIRED' };
       }
       case SubscriptionStatus.INTERNAL:
-        return { canAccessWorkspace: true, reasonCode: 'SUBSCRIPTION_INTERNAL' };
+        return {
+          canAccessWorkspace: true,
+          reasonCode: 'SUBSCRIPTION_INTERNAL',
+        };
       case SubscriptionStatus.PENDING_PAYMENT:
         return {
           canAccessWorkspace: false,
           reasonCode: 'SUBSCRIPTION_PENDING_PAYMENT',
         };
       case SubscriptionStatus.EXPIRED:
-        return { canAccessWorkspace: false, reasonCode: 'SUBSCRIPTION_EXPIRED' };
+        return {
+          canAccessWorkspace: false,
+          reasonCode: 'SUBSCRIPTION_EXPIRED',
+        };
       case SubscriptionStatus.CANCELED:
-        return { canAccessWorkspace: false, reasonCode: 'SUBSCRIPTION_CANCELED' };
+        return {
+          canAccessWorkspace: false,
+          reasonCode: 'SUBSCRIPTION_CANCELED',
+        };
       case SubscriptionStatus.PAST_DUE:
-        return { canAccessWorkspace: false, reasonCode: 'SUBSCRIPTION_PAST_DUE' };
+        return {
+          canAccessWorkspace: false,
+          reasonCode: 'SUBSCRIPTION_PAST_DUE',
+        };
       default:
-        return { canAccessWorkspace: false, reasonCode: 'SUBSCRIPTION_UNKNOWN' };
+        return {
+          canAccessWorkspace: false,
+          reasonCode: 'SUBSCRIPTION_UNKNOWN',
+        };
     }
   }
 }

@@ -5,6 +5,7 @@ import {
   Headers,
   Ip,
   Param,
+  Patch,
   Post,
   Query,
 } from '@nestjs/common';
@@ -14,6 +15,7 @@ import { Public } from '@app/common/decorators/public.decorator';
 import {
   SendChatbotMessageDto,
   StartChatbotSessionDto,
+  UpdateChatbotSessionProfileDto,
 } from '../dto/chatbot.dto';
 import { PublicChatbotSessionService } from '../services/public-chatbot-session.service';
 
@@ -66,5 +68,22 @@ export class PublicChatbotController {
     @Query('since') since?: string,
   ) {
     return this.publicSessionService.listMessages(sessionId, since);
+  }
+
+  @Post('sessions/:sessionId/end')
+  @Public()
+  @Throttle({ default: { limit: 30, ttl: 60000 } })
+  endSession(@Param('sessionId') sessionId: string) {
+    return this.publicSessionService.endSession(sessionId);
+  }
+
+  @Patch('sessions/:sessionId/profile')
+  @Public()
+  @Throttle({ default: { limit: 30, ttl: 60000 } })
+  updateSessionProfile(
+    @Param('sessionId') sessionId: string,
+    @Body() dto: UpdateChatbotSessionProfileDto,
+  ) {
+    return this.publicSessionService.updateSessionProfile(sessionId, dto);
   }
 }

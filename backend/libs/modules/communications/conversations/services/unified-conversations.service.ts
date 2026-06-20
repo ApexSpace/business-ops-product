@@ -23,9 +23,8 @@ export class UnifiedConversationsService {
   }> {
     const { page, limit, skip, take } = getPaginationParams(query);
 
-    const { items: conversations } = await this.conversationsRepository.findMany(
-      businessId,
-      {
+    const { items: conversations } =
+      await this.conversationsRepository.findMany(businessId, {
         skip: 0,
         take: UNIFIED_FETCH_CAP,
         channel: query.channel,
@@ -35,8 +34,7 @@ export class UnifiedConversationsService {
         contactId: query.contactId,
         resourceId: query.resourceId,
         search: query.search?.trim() || undefined,
-      },
-    );
+      });
 
     const threads = groupConversationsIntoUnifiedThreads(conversations, {
       channel: query.channel,

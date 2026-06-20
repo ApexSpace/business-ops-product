@@ -220,7 +220,8 @@ export class BusinessService {
         : SubscriptionPaymentMethod.MANUAL_INVOICE;
 
     const correlationId = randomUUID();
-    const beforeState = await this.subscriptionEventService.captureState(businessId);
+    const beforeState =
+      await this.subscriptionEventService.captureState(businessId);
 
     await this.prisma.$transaction(async (tx) => {
       const payment = await this.subscriptionPaymentService.recordPayment(
@@ -261,8 +262,8 @@ export class BusinessService {
           actionKey: 'CREATE_BUSINESS',
           paymentId: payment.id,
           correlationId,
-          fromState: beforeState as unknown as Prisma.InputJsonValue,
-          toState: afterState as unknown as Prisma.InputJsonValue,
+          fromState: beforeState,
+          toState: afterState,
           source: BusinessSubscriptionEventSource.ADMIN,
         },
         actor,
@@ -325,7 +326,7 @@ export class BusinessService {
 
     const { items, total } = await this.businessRepository.findMany({
       skip: hasResolverFilter ? 0 : params.skip,
-      take: hasResolverFilter ? businessIds?.length ?? 0 : params.limit,
+      take: hasResolverFilter ? (businessIds?.length ?? 0) : params.limit,
       status: params.status,
       subscriptionStatus: params.subscriptionStatus,
       paymentStatus: params.paymentStatus,
@@ -356,7 +357,7 @@ export class BusinessService {
     return {
       items: resolvedItems,
       meta: {
-        total: hasResolverFilter ? businessIds?.length ?? 0 : total,
+        total: hasResolverFilter ? (businessIds?.length ?? 0) : total,
         page: params.page,
         limit: params.limit,
       },
@@ -511,8 +512,7 @@ export class BusinessService {
         HttpStatus.NOT_FOUND,
       );
     }
-    const resolution =
-      await this.accessResolver.resolveForBusiness(businessId);
+    const resolution = await this.accessResolver.resolveForBusiness(businessId);
     return toBusinessResponse(business, resolution);
   }
 

@@ -114,4 +114,27 @@ export class ChatbotsRepository {
     });
     return row?.lastMessageAt ?? null;
   }
+
+  async getSessionStats(
+    businessId: string,
+    chatbotId: string,
+  ): Promise<{
+    sessionsCount: number;
+    activeSessionsCount: number;
+    convertedSessionsCount: number;
+  }> {
+    const [sessionsCount, activeSessionsCount, convertedSessionsCount] =
+      await Promise.all([
+        this.prisma.chatbotSession.count({
+          where: { businessId, chatbotId },
+        }),
+        this.prisma.chatbotSession.count({
+          where: { businessId, chatbotId, status: 'ACTIVE' },
+        }),
+        this.prisma.chatbotSession.count({
+          where: { businessId, chatbotId, status: 'CONVERTED' },
+        }),
+      ]);
+    return { sessionsCount, activeSessionsCount, convertedSessionsCount };
+  }
 }

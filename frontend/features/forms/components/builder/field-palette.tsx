@@ -41,6 +41,7 @@ import { SearchInput } from "@/components/forms/search-input";
 import { cn } from "@/lib/utils";
 import type { FieldType } from "@/features/forms/types";
 import { useFormFieldPalette } from "@/features/forms/hooks/use-form-metadata";
+import type { ColumnAddContext } from "@/features/forms/utils/column-fields.util";
 
 const FIELD_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   type: Type,
@@ -71,28 +72,34 @@ const FIELD_ICONS: Record<string, React.ComponentType<{ className?: string }>> =
   "columns-2": Columns2,
 };
 
+const DISALLOWED_IN_COLUMN_TYPES = new Set<FieldType>(["columns", "hidden", "captcha"]);
+
 interface PaletteItemProps {
   type: FieldType;
   label: string;
   icon?: string;
+  disabled?: boolean;
   onAddField: (type: FieldType) => void;
 }
 
-function PaletteItem({ type, label, icon, onAddField }: PaletteItemProps) {
+function PaletteItem({ type, label, icon, disabled, onAddField }: PaletteItemProps) {
   const Icon = (icon && FIELD_ICONS[icon]) ?? Type;
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: `palette-${type}`,
     data: { type, source: "palette" as const },
+    disabled,
   });
 
   return (
     <button
       ref={setNodeRef}
       type="button"
+      disabled={disabled}
       onClick={() => onAddField(type)}
       className={cn(
         "flex w-full min-w-0 flex-row items-center gap-2 rounded-md border border-border p-2 text-xs transition-colors hover:bg-accent",
         isDragging && "opacity-50",
+        disabled && "cursor-not-allowed opacity-50 hover:bg-transparent",
       )}
       {...listeners}
       {...attributes}
@@ -105,10 +112,17 @@ function PaletteItem({ type, label, icon, onAddField }: PaletteItemProps) {
 
 interface FieldPaletteProps {
   onAddField: (type: FieldType) => void;
+  columnAddContext?: ColumnAddContext | null;
+  onTargetColumnChange?: (columnIndex: number) => void;
   className?: string;
 }
 
-export function FieldPalette({ onAddField, className }: FieldPaletteProps) {
+export function FieldPalette({
+  onAddField,
+  columnAddContext = null,
+  onTargetColumnChange,
+  className,
+}: FieldPaletteProps) {
   const [search, setSearch] = useState("");
   const [openCategory, setOpenCategory] = useState<string | null>("basic");
   const { data: palette = [], isLoading } = useFormFieldPalette({
@@ -137,6 +151,11 @@ export function FieldPalette({ onAddField, className }: FieldPaletteProps) {
     return openCategory;
   }, [search, categories, openCategory]);
 
+  const handleAddField = (type: FieldType) => {
+    if (columnAddContext && DISALLOWED_IN_COLUMN_TYPES.has(type)) return;
+    onAddField(type);
+  };
+
   return (
     <aside
       className={cn(
@@ -147,8 +166,36 @@ export function FieldPalette({ onAddField, className }: FieldPaletteProps) {
       <div className="shrink-0 border-b py-2 pl-[var(--page-padding-x)] pr-2">
         <h2 className="text-sm font-semibold">Field palette</h2>
         <p className="mt-1 text-xs text-muted-foreground">
-          Drag or click to add fields.
+          {columnAddContext
+            ? "Click or drag a field to add it to the selected column."
+            : "Drag or click to add fields."}
         </p>
+
+        {columnAddContext ? (
+          <div className="mt-3 space-y-2 rounded-md border border-primary/20 bg-primary/5 p-2">
+            <p className="text-[11px] font-medium uppercase tracking-wide text-primary">
+              Add to column
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {Array.from({ length: columnAddContext.columnCount }, (_, index) => (
+                <button
+                  key={index}
+                  type="button"
+                  onClick={() => onTargetColumnChange?.(index)}
+                  className={cn(
+                    "rounded-md border px-2 py-1 text-xs transition-colors",
+                    columnAddContext.targetColumnIndex === index
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "border-border bg-background hover:bg-accent",
+                  )}
+                >
+                  Column {index + 1}
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : null}
+
         <div className="mt-2">
           <SearchInput
             value={search}
@@ -176,15 +223,21 @@ export function FieldPalette({ onAddField, className }: FieldPaletteProps) {
                 </AccordionTrigger>
                 <AccordionContent className="px-0 pb-1.5">
                   <div className="grid grid-cols-2 gap-2">
-                    {category.fields.map((field) => (
-                      <PaletteItem
-                        key={field.key}
-                        type={field.key as FieldType}
-                        label={field.label}
-                        icon={field.icon}
-                        onAddField={onAddField}
-                      />
-                    ))}
+                    {category.fields.map((field) => {
+                      const type = field.key as FieldType;
+                      const disabled =
+                        !!columnAddContext && DISALLOWED_IN_COLUMN_TYPES.has(type);
+                      return (
+                        <PaletteItem
+                          key={field.key}
+                          type={type}
+                          label={field.label}
+                          icon={field.icon}
+                          disabled={disabled}
+                          onAddField={handleAddField}
+                        />
+                      );
+                    })}
                   </div>
                 </AccordionContent>
               </AccordionItem>

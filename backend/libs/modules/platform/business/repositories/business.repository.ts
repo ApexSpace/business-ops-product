@@ -90,9 +90,7 @@ export class BusinessRepository {
               ...(params.planGroupId
                 ? { planGroupId: params.planGroupId }
                 : {}),
-              ...(params.planTierId
-                ? { planTierId: params.planTierId }
-                : {}),
+              ...(params.planTierId ? { planTierId: params.planTierId } : {}),
             },
           }
         : {}),

@@ -213,3 +213,19 @@ export function invalidateFormSubmissions(
     queryKey: ["forms", formId, "submissions"],
   });
 }
+
+export function invalidateChatbotLists(queryClient: QueryClient) {
+  return queryClient.invalidateQueries({
+    queryKey: queryKeys.chatbots.all(),
+    predicate: (query) => {
+      const key = query.queryKey;
+      return key[1] === "list" || key.length === 1;
+    },
+  });
+}
+
+export function invalidateChatbotDetail(queryClient: QueryClient, id: string) {
+  return queryClient.invalidateQueries({
+    queryKey: queryKeys.chatbots.detail(id),
+  });
+}

@@ -1,4 +1,5 @@
 import type { InfiniteData, QueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import type { RealtimeEventPayload } from "@/features/realtime/sse-client";
 import type {
   Conversation,
@@ -95,6 +96,21 @@ function handleMessageReceivedEvent(
   const contactId = resolveContactIdForConversation(queryClient, conversationId);
   const message = parseConversationMessage(record.message);
   if (message) {
+    if (
+      message.channel === "WEBCHAT" &&
+      message.direction === "INBOUND" &&
+      message.senderType === "CONTACT"
+    ) {
+      const preview = message.text?.trim().slice(0, 120) || "New website chat message";
+      toast.info("New website chat", { description: preview });
+      if (
+        typeof window !== "undefined" &&
+        typeof Notification !== "undefined" &&
+        Notification.permission === "granted"
+      ) {
+        new Notification("New website chat", { body: preview });
+      }
+    }
     upsertMessageInCache(queryClient, conversationId, message, contactId);
     if (contactId) {
       void queryClient.invalidateQueries({

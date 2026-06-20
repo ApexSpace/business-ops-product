@@ -1,4 +1,5 @@
 import { api } from "@/lib/api/client";
+import type { ChatbotBusinessHoursSettings } from "@/features/chatbots/utils/chatbot-business-hours.util";
 
 export type ChatbotStatus = "DRAFT" | "ACTIVE" | "DISABLED" | "ARCHIVED";
 export type ChatbotPosition = "BOTTOM_RIGHT" | "BOTTOM_LEFT";
@@ -7,6 +8,12 @@ export type ChatbotRuleTriggerType =
   | "CONTAINS"
   | "STARTS_WITH"
   | "FALLBACK";
+
+export interface ChatbotWelcomeVariant {
+  matchType: "page_url" | "referrer";
+  pattern: string;
+  message: string;
+}
 
 export interface Chatbot {
   id: string;
@@ -33,12 +40,25 @@ export interface Chatbot {
   autoReplyEnabled: boolean;
   aiEnabled: boolean;
   businessHoursOnly: boolean;
+  businessHoursSettings?: ChatbotBusinessHoursSettings;
   showBranding: boolean;
   embedEnabled: boolean;
+  collectPhoneWhenOffline?: boolean;
+  allowedDomains?: string[];
+  consentEnabled?: boolean;
+  consentText?: string | null;
+  launcherIcon?: "message" | "chat" | "help";
+  welcomeVariants?: ChatbotWelcomeVariant[];
+  progressiveProfilingEnabled?: boolean;
+  progressiveProfilingAskAfterMessages?: number;
+  progressiveProfilingPromptMessage?: string | null;
   createdAt: string;
   updatedAt: string;
   conversationsCount?: number;
   lastMessageAt?: string | null;
+  sessionsCount?: number;
+  activeSessionsCount?: number;
+  convertedSessionsCount?: number;
 }
 
 export interface ChatbotRule {
@@ -79,6 +99,11 @@ export type CreateChatbotBody = {
   autoReplyEnabled?: boolean;
   showBranding?: boolean;
   embedEnabled?: boolean;
+  consentEnabled?: boolean;
+  consentText?: string;
+  launcherIcon?: "message" | "chat" | "help";
+  collectPhoneWhenOffline?: boolean;
+  allowedDomains?: string[];
 };
 
 export function listChatbots(params?: { page?: number; limit?: number }) {
@@ -97,12 +122,17 @@ export function updateChatbot(id: string, body: Partial<CreateChatbotBody> & {
   status?: ChatbotStatus;
   aiEnabled?: boolean;
   businessHoursOnly?: boolean;
+  businessHoursSettings?: ChatbotBusinessHoursSettings;
+  welcomeVariants?: ChatbotWelcomeVariant[];
+  progressiveProfilingEnabled?: boolean;
+  progressiveProfilingAskAfterMessages?: number;
+  progressiveProfilingPromptMessage?: string;
 }) {
   return api.patch<Chatbot>(`chatbots/${id}`, body);
 }
 
 export function deleteChatbot(id: string) {
-  return api.delete<void>(`chatbots/${id}`);
+  return api.delete<void>(`chatbots/${id}?confirm=true`);
 }
 
 export function duplicateChatbot(id: string) {
@@ -153,7 +183,51 @@ export function updateChatbotRule(
 }
 
 export function deleteChatbotRule(chatbotId: string, ruleId: string) {
-  return api.delete<void>(`chatbots/${chatbotId}/rules/${ruleId}`);
+  return api.delete<void>(
+    `chatbots/${chatbotId}/rules/${ruleId}?confirm=true`,
+  );
+}
+
+export function reorderChatbotRules(chatbotId: string, ruleIds: string[]) {
+  return api.patch<ChatbotRule[]>(`chatbots/${chatbotId}/rules/reorder`, {
+    ruleIds,
+  });
+}
+
+export function previewChatbotRule(chatbotId: string, text: string) {
+  return api.post<{ type: "reply" | "handoff" | null; text: string | null }>(
+    `chatbots/${chatbotId}/rules/preview`,
+    { text },
+  );
+}
+
+export function exportChatbotRules(chatbotId: string) {
+  return api.get<
+    Array<{
+      triggerType: ChatbotRuleTriggerType;
+      triggerText: string;
+      responseText: string;
+      sortOrder: number;
+      isActive: boolean;
+    }>
+  >(`chatbots/${chatbotId}/rules/export`);
+}
+
+export function importChatbotRules(
+  chatbotId: string,
+  rules: Array<{
+    triggerType: ChatbotRuleTriggerType;
+    triggerText: string;
+    responseText: string;
+    sortOrder?: number;
+    isActive?: boolean;
+  }>,
+  replace = true,
+) {
+  return api.post<ChatbotRule[]>(`chatbots/${chatbotId}/rules/import`, {
+    rules,
+    replace,
+  });
 }
 
 export function chatbotStatusLabel(status: ChatbotStatus): string {

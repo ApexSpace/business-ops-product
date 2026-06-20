@@ -70,4 +70,29 @@ describe('buildReplyChannelCandidates', () => {
     expect(candidates[0]?.channel).toBe(ConversationChannel.EMAIL);
     expect(candidates[0]?.conversation?.id).toBe('email-conv');
   });
+
+  it('includes webchat when a webchat conversation exists', () => {
+    const candidates = buildReplyChannelCandidates(
+      {
+        id: 'contact-4',
+        email: null,
+        phoneNumber: null,
+        phoneCountryCode: null,
+        metadata: {},
+      } as never,
+      [
+        {
+          id: 'webchat-conv',
+          channel: ConversationChannel.WEBCHAT,
+          providerKey: 'webchat',
+          status: ConversationStatus.OPEN,
+        } as never,
+      ],
+    );
+
+    expect(candidates).toHaveLength(1);
+    expect(candidates[0]?.channel).toBe(ConversationChannel.WEBCHAT);
+    expect(candidates[0]?.providerKey).toBe('webchat');
+    expect(candidates[0]?.conversation?.id).toBe('webchat-conv');
+  });
 });

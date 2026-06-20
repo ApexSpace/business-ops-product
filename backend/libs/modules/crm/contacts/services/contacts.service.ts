@@ -208,9 +208,14 @@ export class ContactsService {
         beforeTags?.tags?.map((entry) => entry.tag.id) ?? [],
       );
       await this.contactRepository.setTags(id, dto.tagIds);
-      const addedTagIds = dto.tagIds.filter((tagId) => !previousTagIds.has(tagId));
+      const addedTagIds = dto.tagIds.filter(
+        (tagId) => !previousTagIds.has(tagId),
+      );
       if (addedTagIds.length > 0) {
-        const tags = await this.tagRepository.findByIds(businessId, addedTagIds);
+        const tags = await this.tagRepository.findByIds(
+          businessId,
+          addedTagIds,
+        );
         for (const tagId of addedTagIds) {
           const tag = tags.find((t) => t.id === tagId);
           await this.auditService.log({

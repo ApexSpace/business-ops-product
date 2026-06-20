@@ -34,6 +34,13 @@ export function toConversationContactSummary(
   };
 }
 
+function readChatbotBotPaused(metadata: unknown): boolean {
+  if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) {
+    return false;
+  }
+  return (metadata as Record<string, unknown>).chatbotBotPaused === true;
+}
+
 export function toConversationResponse(
   row: ConversationWithRelations,
 ): ConversationResponseDto {
@@ -55,6 +62,8 @@ export function toConversationResponse(
     unreadCount: row.unreadCount,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
+    chatbotBotPaused:
+      row.channel === 'WEBCHAT' ? readChatbotBotPaused(row.metadata) : undefined,
     contact: row.contact ? toConversationContactSummary(row.contact) : null,
     assignedTo: row.assignedTo
       ? {

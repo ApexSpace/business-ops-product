@@ -24,10 +24,7 @@ import { resolvePlatformBusinessRole } from '../utils/platform-business-access.u
 
 function isTenantAccessEndpoint(req: Request): boolean {
   const url = req.originalUrl ?? req.url ?? '';
-  return (
-    req.method === 'GET' &&
-    url.includes('businesses/current/access')
-  );
+  return req.method === 'GET' && url.includes('businesses/current/access');
 }
 
 @Injectable()
@@ -48,7 +45,10 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
   }
 
-  async validate(req: Request, payload: JwtAccessPayload): Promise<RequestUser> {
+  async validate(
+    req: Request,
+    payload: JwtAccessPayload,
+  ): Promise<RequestUser> {
     const user = await this.userRepository.findById(payload.sub);
     if (!user || user.status !== UserStatus.ACTIVE) {
       throw new AppException(

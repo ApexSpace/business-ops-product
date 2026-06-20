@@ -23,6 +23,7 @@ import { ConversationMessageResponseDto } from '../dto/conversation-response.dto
 import { toConversationMessageResponse } from '../mappers/conversation.mapper';
 import { ConversationMessagesRepository } from '../repositories/conversation-messages.repository';
 import { ConversationsRepository } from '../repositories/conversations.repository';
+import { ConversationRealtimeService } from './conversation-realtime.service';
 import { WhatsAppSessionWindowService } from './whatsapp-session-window.service';
 import type { SendWhatsAppTemplateDto } from '../dto/send-message.dto';
 import { buildWhatsAppTemplateDisplayText } from '@app/modules/integrations/whatsapp/utils/whatsapp-template-display.util';
@@ -45,6 +46,7 @@ export class ConversationMessagesService {
     private readonly platformEmailProvisioning: PlatformEmailProvisioningService,
     private readonly outboundMessageDispatch: OutboundMessageDispatchService,
     private readonly whatsAppSessionWindowService: WhatsAppSessionWindowService,
+    private readonly realtime: ConversationRealtimeService,
   ) {}
 
   async list(
@@ -130,7 +132,9 @@ export class ConversationMessagesService {
 
     if (isPlatformEmail) {
       const provisioned =
-        await this.platformEmailProvisioning.ensurePlatformDefaultEmail(businessId);
+        await this.platformEmailProvisioning.ensurePlatformDefaultEmail(
+          businessId,
+        );
       if (!provisioned) {
         throw new AppException(
           ErrorCode.CONVERSATION_CHANNEL_NOT_READY,
@@ -225,6 +229,19 @@ export class ConversationMessagesService {
         lastMessageAt: now,
         lastMessagePreview: preview,
         unreadCount: 0,
+      });
+
+      const response = toConversationMessageResponse(message);
+      await this.realtime.publishMessageReceived(businessId, {
+        conversationId: conversation.id,
+        messageId: message.id,
+        status: message.status,
+        channel: message.channel,
+        message: response,
+      });
+      await this.realtime.publishConversationUpdated(businessId, {
+        conversationId: conversation.id,
+        channel: message.channel,
       });
 
       return {

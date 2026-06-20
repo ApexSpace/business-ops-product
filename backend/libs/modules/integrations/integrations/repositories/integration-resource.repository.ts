@@ -59,7 +59,9 @@ export class IntegrationResourceRepository {
       where: {
         providerKey,
         type: IntegrationResourceType.EMAIL_ACCOUNT,
-        ...(excludeBusinessId ? { businessId: { not: excludeBusinessId } } : {}),
+        ...(excludeBusinessId
+          ? { businessId: { not: excludeBusinessId } }
+          : {}),
         metadata: {
           path: ['slug'],
           equals: slug,

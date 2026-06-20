@@ -24,6 +24,8 @@ import {
   MessageComposer,
   type PendingMessageAttachment,
 } from "@/features/conversations/components/inbox/message-composer";
+import { ConversationInternalNotesPanel } from "@/features/conversations/components/inbox/conversation-internal-notes-panel";
+import { ChatbotSessionActions } from "@/features/conversations/components/inbox/chatbot-session-actions";
 import { cn } from "@/lib/utils";
 
 const INBOX_THREAD_PANEL_CLASS =
@@ -178,6 +180,12 @@ export function ConversationThreadPanel({
                 </p>
               </div>
               <div className="flex shrink-0 items-center gap-2">
+                {selected.channel === "WEBCHAT" ? (
+                  <ChatbotSessionActions
+                    conversationId={selectedId}
+                    botPaused={selected.chatbotBotPaused}
+                  />
+                ) : null}
                 {onThreadChannelFilterChange ? (
                   <ThreadChannelFilter
                     channels={threadChannels}
@@ -223,6 +231,8 @@ export function ConversationThreadPanel({
               )}
             </div>
 
+            <ConversationInternalNotesPanel conversationId={selectedId} />
+
             <MessageComposer
               variant="thread"
               composer={composer}
@@ -256,6 +266,7 @@ export function ConversationThreadPanel({
               onTemplateVariableValueChange={onTemplateVariableValueChange}
               templateHeaderMediaUrl={templateHeaderMediaUrl}
               onTemplateHeaderMediaUrlChange={onTemplateHeaderMediaUrlChange}
+              showCannedResponses={selectedReplyChannel === "WEBCHAT"}
               onSend={() => {
                 const template = whatsAppRequiresTemplate
                   ? buildTemplatePayload?.()

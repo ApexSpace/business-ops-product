@@ -56,11 +56,15 @@ export class MetaWebhookController {
     if (!rawBody) {
       throw new Error('Raw body is required for Meta webhook verification');
     }
-    void this.metaWebhookService.handleEvent(rawBody, signature).catch((error) => {
-      const message =
-        error instanceof Error ? error.message : 'Meta webhook processing failed';
-      this.logger.error(message);
-    });
+    void this.metaWebhookService
+      .handleEvent(rawBody, signature)
+      .catch((error) => {
+        const message =
+          error instanceof Error
+            ? error.message
+            : 'Meta webhook processing failed';
+        this.logger.error(message);
+      });
     return { success: true };
   }
 }

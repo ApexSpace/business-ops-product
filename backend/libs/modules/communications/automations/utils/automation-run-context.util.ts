@@ -44,10 +44,7 @@ export async function resolveContactIdForEvent(
     return conversation?.contactId ?? undefined;
   }
 
-  if (
-    event.contextEntityType === 'form_submission' &&
-    event.contextEntityId
-  ) {
+  if (event.contextEntityType === 'form_submission' && event.contextEntityId) {
     const submission = await prisma.formSubmission.findFirst({
       where: { id: event.contextEntityId, businessId },
       select: { metadata: true },

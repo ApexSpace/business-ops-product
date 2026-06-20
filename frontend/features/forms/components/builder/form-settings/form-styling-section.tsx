@@ -1,6 +1,12 @@
 "use client";
 
-import type { FormSettings } from "@/features/forms/types";
+import type { FormLayoutPreset, FormSettings } from "@/features/forms/types";
+import { FORM_LAYOUT_SELECT_OPTIONS } from "@/features/forms/constants/form-layout-presets.constant";
+import {
+  applyFormLayoutPreset,
+  getFormLayoutDescription,
+  resolveFormLayout,
+} from "@/features/forms/utils/form-layout.util";
 import { SectionHeader } from "@/features/forms/components/builder/settings-controls/section-header";
 import { ColorInput } from "@/features/forms/components/builder/settings-controls/color-input";
 import { SettingInput } from "@/features/forms/components/builder/settings-controls/setting-input";
@@ -28,15 +34,22 @@ const FONT_OPTIONS = [
 ];
 
 export function FormStylingSection({ settings, onUpdate }: FormStylingSectionProps) {
+  const layout = resolveFormLayout(settings);
+
   return (
     <SectionHeader title="Form Styling">
-      <SettingRow label="Max width (px)">
-        <SettingInput
-          type="number"
-          value={settings.maxWidth ?? 640}
-          onChange={(value) => onUpdate({ maxWidth: Number(value) || 640 })}
+      <SettingRow label="Form width">
+        <SettingSelect
+          value={layout}
+          onChange={(value) =>
+            onUpdate(applyFormLayoutPreset(value as FormLayoutPreset))
+          }
+          options={FORM_LAYOUT_SELECT_OPTIONS}
         />
       </SettingRow>
+      <p className="-mt-1 mb-2 text-xs text-muted-foreground">
+        {getFormLayoutDescription(layout)}
+      </p>
       <SettingRow label="Padding (px)">
         <SettingInput
           type="number"

@@ -1,7 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import {
-  listCategories,
-} from '../registries/category.registry';
+import { listCategories } from '../registries/category.registry';
 import { TRIGGER_REGISTRY } from '../registries/trigger.registry';
 import { ACTION_REGISTRY } from '../registries/action.registry';
 import { CUSTOM_VALUE_REGISTRY } from '../registries/custom-value.registry';
@@ -53,7 +51,9 @@ function isActivatable(status: ImplementationStatus): boolean {
 
 @Injectable()
 export class AutomationMetadataService {
-  listCategories(scope?: AutomationCategoryScope): AutomationCategoryResponseDto[] {
+  listCategories(
+    scope?: AutomationCategoryScope,
+  ): AutomationCategoryResponseDto[] {
     const categories = listCategories(scope);
     return categories.map((category) => this.toCategoryDto(category));
   }
@@ -93,13 +93,20 @@ export class AutomationMetadataService {
     return [...grouped.entries()]
       .map(([categoryKey, items]) => ({
         category: categoryKey,
-        label: AUTOMATION_CATEGORY_BY_KEY[categoryKey as keyof typeof AUTOMATION_CATEGORY_BY_KEY]?.label ?? categoryKey,
+        label:
+          AUTOMATION_CATEGORY_BY_KEY[
+            categoryKey as keyof typeof AUTOMATION_CATEGORY_BY_KEY
+          ]?.label ?? categoryKey,
         items,
       }))
       .sort(
         (a, b) =>
-          (AUTOMATION_CATEGORY_BY_KEY[a.category as keyof typeof AUTOMATION_CATEGORY_BY_KEY]?.sortOrder ?? 999) -
-          (AUTOMATION_CATEGORY_BY_KEY[b.category as keyof typeof AUTOMATION_CATEGORY_BY_KEY]?.sortOrder ?? 999),
+          (AUTOMATION_CATEGORY_BY_KEY[
+            a.category as keyof typeof AUTOMATION_CATEGORY_BY_KEY
+          ]?.sortOrder ?? 999) -
+          (AUTOMATION_CATEGORY_BY_KEY[
+            b.category as keyof typeof AUTOMATION_CATEGORY_BY_KEY
+          ]?.sortOrder ?? 999),
       );
   }
 
@@ -133,7 +140,10 @@ export class AutomationMetadataService {
     trigger: TriggerDefinition,
     filter: MetadataFilter,
   ): boolean {
-    if (filter.categoryKeys?.length && !filter.categoryKeys.includes(trigger.category)) {
+    if (
+      filter.categoryKeys?.length &&
+      !filter.categoryKeys.includes(trigger.category)
+    ) {
       return false;
     }
     if (filter.status && trigger.implementationStatus !== filter.status) {
@@ -146,7 +156,10 @@ export class AutomationMetadataService {
     action: ActionDefinition,
     filter: MetadataFilter,
   ): boolean {
-    if (filter.categoryKeys?.length && !filter.categoryKeys.includes(action.category)) {
+    if (
+      filter.categoryKeys?.length &&
+      !filter.categoryKeys.includes(action.category)
+    ) {
       return false;
     }
     if (filter.status && action.implementationStatus !== filter.status) {
@@ -159,7 +172,10 @@ export class AutomationMetadataService {
     value: CustomValueDefinition,
     filter: MetadataFilter,
   ): boolean {
-    if (filter.categoryKeys?.length && !filter.categoryKeys.includes(value.category)) {
+    if (
+      filter.categoryKeys?.length &&
+      !filter.categoryKeys.includes(value.category)
+    ) {
       return false;
     }
     if (filter.status && value.implementationStatus !== filter.status) {
@@ -172,7 +188,10 @@ export class AutomationMetadataService {
     condition: ConditionDefinition,
     filter: MetadataFilter,
   ): boolean {
-    if (filter.categoryKeys?.length && !filter.categoryKeys.includes(condition.category)) {
+    if (
+      filter.categoryKeys?.length &&
+      !filter.categoryKeys.includes(condition.category)
+    ) {
       return false;
     }
     if (filter.status && condition.implementationStatus !== filter.status) {

@@ -120,7 +120,9 @@ export class AutomationWorkflowsService {
       triggerKey: dto.triggerKey,
       triggerFilters: dto.triggerFilters as unknown as Prisma.InputJsonValue,
       steps: dto.steps as unknown as Prisma.InputJsonValue,
-      settings: normalizeWorkflowSettings(dto.settings) as unknown as Prisma.InputJsonValue,
+      settings: normalizeWorkflowSettings(
+        dto.settings,
+      ) as unknown as Prisma.InputJsonValue,
     });
 
     await this.auditService.log({
@@ -196,7 +198,10 @@ export class AutomationWorkflowsService {
     return { success: true };
   }
 
-  async listRuns(businessId: string, query: ListAutomationWorkflowRunsQueryDto) {
+  async listRuns(
+    businessId: string,
+    query: ListAutomationWorkflowRunsQueryDto,
+  ) {
     const { page, limit, skip, take } = getPaginationParams(query);
     const [items, total] = await this.runRepository.findMany(businessId, {
       skip,
@@ -244,7 +249,8 @@ export class AutomationWorkflowsService {
   }
 
   private async ensureMedSpaSystemTemplates(businessId: string) {
-    const existing = await this.workflowRepository.countSystemTemplates(businessId);
+    const existing =
+      await this.workflowRepository.countSystemTemplates(businessId);
     if (existing > 0) {
       return;
     }

@@ -192,12 +192,11 @@ export const AUTOMATION_CATEGORY_REGISTRY: AutomationCategoryDefinition[] = [
 
 export const AUTOMATION_CATEGORY_BY_KEY = Object.fromEntries(
   AUTOMATION_CATEGORY_REGISTRY.map((c) => [c.key, c]),
-) as Record<
-  AutomationCategoryDefinition['key'],
-  AutomationCategoryDefinition
->;
+) as Record<AutomationCategoryDefinition['key'], AutomationCategoryDefinition>;
 
-export function listCategories(scope?: AutomationCategoryDefinition['scopes'][number]) {
+export function listCategories(
+  scope?: AutomationCategoryDefinition['scopes'][number],
+) {
   if (!scope) return [...AUTOMATION_CATEGORY_REGISTRY];
   return AUTOMATION_CATEGORY_REGISTRY.filter((c) => c.scopes.includes(scope));
 }

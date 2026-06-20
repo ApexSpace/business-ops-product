@@ -112,7 +112,10 @@ describe('ConversationContactResolverService', () => {
   });
 
   it('links email inbound to an existing contact by email before metadata', async () => {
-    const contact = baseContact({ email: 'user@example.com', phoneNumber: null });
+    const contact = baseContact({
+      email: 'user@example.com',
+      phoneNumber: null,
+    });
     contactRepository.findByEmail.mockResolvedValue(contact as never);
     contactRepository.update.mockResolvedValue({
       ...contact,
@@ -175,7 +178,9 @@ describe('ConversationContactResolverService', () => {
     });
     contactRepository.findByEmail.mockResolvedValue(null);
     contactRepository.findByPhoneKey.mockResolvedValue(null);
-    contactRepository.findByMetadataExternalId.mockResolvedValue(contact as never);
+    contactRepository.findByMetadataExternalId.mockResolvedValue(
+      contact as never,
+    );
 
     const inbound = baseInbound({
       channel: ConversationChannel.INSTAGRAM,

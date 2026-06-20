@@ -8,9 +8,7 @@ import { ConditionEvaluatorService } from './condition-evaluator.service';
 
 @Injectable()
 export class EnrollmentFilterService {
-  constructor(
-    private readonly conditionEvaluator: ConditionEvaluatorService,
-  ) {}
+  constructor(private readonly conditionEvaluator: ConditionEvaluatorService) {}
 
   async evaluate(
     filters: WorkflowTriggerFilter[] | null | undefined,

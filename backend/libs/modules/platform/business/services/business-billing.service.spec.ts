@@ -66,11 +66,9 @@ describe('BusinessBillingService', () => {
     });
     subscriptionActionService.changePackage.mockResolvedValue({ ok: true });
 
-    await service.changeCurrentPlanTier(
-      'biz-1',
-      { planTierId: 'tier-2' },
-      { userId: 'user-1' } as never,
-    );
+    await service.changeCurrentPlanTier('biz-1', { planTierId: 'tier-2' }, {
+      userId: 'user-1',
+    } as never);
 
     expect(subscriptionActionService.changePackage).toHaveBeenCalledWith(
       'biz-1',
@@ -87,7 +85,9 @@ describe('BusinessBillingService', () => {
   it('cancels the current subscription', async () => {
     const { service, prisma, subscriptionActionService } = buildService();
     prisma.businessSubscription.findUnique.mockResolvedValue({ id: 'sub-1' });
-    subscriptionActionService.cancelSubscription.mockResolvedValue({ ok: true });
+    subscriptionActionService.cancelSubscription.mockResolvedValue({
+      ok: true,
+    });
 
     await service.cancelCurrentSubscription(
       'biz-1',
@@ -110,11 +110,9 @@ describe('BusinessBillingService', () => {
     });
 
     await expect(
-      service.changeCurrentPlanTier(
-        'biz-1',
-        { planTierId: 'tier-1' },
-        { userId: 'user-1' } as never,
-      ),
+      service.changeCurrentPlanTier('biz-1', { planTierId: 'tier-1' }, {
+        userId: 'user-1',
+      } as never),
     ).rejects.toMatchObject({
       code: ErrorCode.BAD_REQUEST,
       status: HttpStatus.BAD_REQUEST,

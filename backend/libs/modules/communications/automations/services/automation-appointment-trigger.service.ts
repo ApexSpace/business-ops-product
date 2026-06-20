@@ -11,7 +11,9 @@ const CRON_WINDOW_MS = 60_000;
 
 @Injectable()
 export class AutomationAppointmentTriggerService {
-  private readonly logger = new Logger(AutomationAppointmentTriggerService.name);
+  private readonly logger = new Logger(
+    AutomationAppointmentTriggerService.name,
+  );
 
   constructor(
     private readonly prisma: PrismaService,
@@ -51,14 +53,18 @@ export class AutomationAppointmentTriggerService {
       const minOffset = Math.min(
         ...businessWorkflows.map((workflow) => {
           const filters = parseWorkflowTriggerFilters(workflow.triggerFilters);
-          const offsetFilter = filters.find((f) => f.fieldKey === 'offsetMinutes');
+          const offsetFilter = filters.find(
+            (f) => f.fieldKey === 'offsetMinutes',
+          );
           return Math.max(1, Number(offsetFilter?.value ?? 60));
         }),
       );
       const maxOffset = Math.max(
         ...businessWorkflows.map((workflow) => {
           const filters = parseWorkflowTriggerFilters(workflow.triggerFilters);
-          const offsetFilter = filters.find((f) => f.fieldKey === 'offsetMinutes');
+          const offsetFilter = filters.find(
+            (f) => f.fieldKey === 'offsetMinutes',
+          );
           return Math.max(1, Number(offsetFilter?.value ?? 60));
         }),
       );
@@ -93,7 +99,9 @@ export class AutomationAppointmentTriggerService {
       for (const appointment of appointments) {
         const matchingWorkflows = businessWorkflows.filter((workflow) => {
           const filters = parseWorkflowTriggerFilters(workflow.triggerFilters);
-          const offsetFilter = filters.find((f) => f.fieldKey === 'offsetMinutes');
+          const offsetFilter = filters.find(
+            (f) => f.fieldKey === 'offsetMinutes',
+          );
           const offsetMinutes = Math.max(1, Number(offsetFilter?.value ?? 60));
           const targetStart = new Date(now.getTime() + offsetMinutes * 60_000);
           const windowEnd = new Date(targetStart.getTime() + CRON_WINDOW_MS);
@@ -134,9 +142,13 @@ export class AutomationAppointmentTriggerService {
           continue;
         }
 
-        const primaryWorkflow = pendingWorkflows[0]!;
-        const filters = parseWorkflowTriggerFilters(primaryWorkflow.triggerFilters);
-        const offsetFilter = filters.find((f) => f.fieldKey === 'offsetMinutes');
+        const primaryWorkflow = pendingWorkflows[0];
+        const filters = parseWorkflowTriggerFilters(
+          primaryWorkflow.triggerFilters,
+        );
+        const offsetFilter = filters.find(
+          (f) => f.fieldKey === 'offsetMinutes',
+        );
         const offsetMinutes = Math.max(1, Number(offsetFilter?.value ?? 60));
 
         const event: AutomationDomainEventPayload = {

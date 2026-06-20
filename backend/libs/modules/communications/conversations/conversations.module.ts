@@ -33,6 +33,12 @@ import { MetaConversationsService } from './services/meta-conversations.service'
 import { UnifiedConversationsService } from './services/unified-conversations.service';
 import { WhatsAppParticipantSyncService } from './services/whatsapp-participant-sync.service';
 import { WhatsAppSessionWindowService } from './services/whatsapp-session-window.service';
+import { ConversationNotesRepository } from './repositories/conversation-notes.repository';
+import { ConversationNotesService } from './services/conversation-notes.service';
+import { CannedResponsesRepository } from './repositories/canned-responses.repository';
+import { CannedResponsesService } from './services/canned-responses.service';
+import { CannedResponsesController } from './controllers/canned-responses.controller';
+import { ChatbotsModule } from '../chatbots/chatbots.module';
 
 @Module({
   imports: [
@@ -43,8 +49,13 @@ import { WhatsAppSessionWindowService } from './services/whatsapp-session-window
     forwardRef(() => EmailModule),
     forwardRef(() => IntegrationsModule),
     forwardRef(() => SendMessageProcessorModule),
+    forwardRef(() => ChatbotsModule),
   ],
-  controllers: [ConversationsController, ContactConversationsController],
+  controllers: [
+    ConversationsController,
+    ContactConversationsController,
+    CannedResponsesController,
+  ],
   providers: [
     ConversationsRepository,
     ConversationMessagesRepository,
@@ -71,6 +82,10 @@ import { WhatsAppSessionWindowService } from './services/whatsapp-session-window
     ConversationChannelAdapterRegistry,
     OutboundMessageDispatchService,
     OutboundMessageRecoveryService,
+    ConversationNotesRepository,
+    ConversationNotesService,
+    CannedResponsesRepository,
+    CannedResponsesService,
   ],
   exports: [
     ConversationWebhookIngestionService,
@@ -83,7 +98,8 @@ import { WhatsAppSessionWindowService } from './services/whatsapp-session-window
     WhatsAppSessionWindowService,
     WhatsAppParticipantSyncService,
     ConversationRealtimeService,
+    ConversationNotesService,
+    CannedResponsesService,
   ],
 })
 export class ConversationsModule {}
-

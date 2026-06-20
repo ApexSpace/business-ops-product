@@ -67,7 +67,7 @@ export class BusinessBillingService {
 
     return {
       pricing,
-      tiers: tiers as BusinessPlanTierOptionDto[],
+      tiers: tiers,
       currentPlanTierId,
       currentPlanTierSlug,
       currentPlanTierIndex,
@@ -121,8 +121,7 @@ export class BusinessBillingService {
         businessId,
         planGroupId: subscription.planGroupId,
         planTierId: dto.planTierId,
-        billingCycle:
-          subscription.billingCycle ?? ('MONTHLY' as const),
+        billingCycle: subscription.billingCycle ?? ('MONTHLY' as const),
       });
     }
 
@@ -162,7 +161,7 @@ export class BusinessBillingService {
         businessId,
         dto.reason?.trim() || 'Self-service cancellation',
       );
-      return { businessId, ...result } as { businessId: string; cancelAtPeriodEnd: boolean };
+      return { businessId, ...result };
     }
 
     return this.subscriptionActionService.cancelSubscription(

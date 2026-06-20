@@ -15,10 +15,7 @@ import { FormEmbedResponseDto } from '../dto/form-embed.dto';
 import { FormResponseDto } from '../dto/form-response.dto';
 import { UpdateFormDto } from '../dto/update-form.dto';
 import { FormEmbedService } from './form-embed.service';
-import {
-  toFormListItemResponse,
-  toFormResponse,
-} from '../mappers/form.mapper';
+import { toFormListItemResponse, toFormResponse } from '../mappers/form.mapper';
 import { FormsRepository } from '../repositories/forms.repository';
 import {
   defaultFormDefinition,

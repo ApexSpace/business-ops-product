@@ -37,11 +37,15 @@ describe('RealtimeSocketAuthService', () => {
     };
 
     const businessRepository = {
-      findById: jest.fn().mockResolvedValue({ id: businessId, deletedAt: null }),
+      findById: jest
+        .fn()
+        .mockResolvedValue({ id: businessId, deletedAt: null }),
     };
 
     const accessResolver = {
-      resolveForBusiness: jest.fn().mockResolvedValue({ canAccessWorkspace: true }),
+      resolveForBusiness: jest
+        .fn()
+        .mockResolvedValue({ canAccessWorkspace: true }),
     };
 
     const platformMembershipRepository = {

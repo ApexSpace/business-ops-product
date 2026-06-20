@@ -18,6 +18,7 @@ import { CurrentUser } from '@app/common/decorators/current-user.decorator';
 import type { RequestUser } from '@app/common/decorators/current-user.decorator';
 import { BusinessRoles } from '@app/common/decorators/business-roles.decorator';
 import { RequireModule } from '@app/common/decorators/require-module.decorator';
+import { RequireCapability } from '@app/common/decorators/require-capability.decorator';
 import { BusinessCapabilityGuard } from '@app/common/guards/business-capability.guard';
 import { BusinessRolesGuard } from '@app/common/guards/business-roles.guard';
 import { AssignConversationDto } from '../dto/assign-conversation.dto';
@@ -33,6 +34,10 @@ import { EmailConversationsService } from '../services/email-conversations.servi
 import { BackfillContactIdentityQueryDto } from '../dto/backfill-contact-identity-query.dto';
 import { ContactIdentityBackfillService } from '../services/contact-identity-backfill.service';
 import { UnifiedConversationsService } from '../services/unified-conversations.service';
+import { ConversationNotesService } from '../services/conversation-notes.service';
+import { CreateConversationNoteDto } from '../dto/conversation-note.dto';
+import { ChatbotSessionService } from '@app/modules/communications/chatbots/services/chatbot-session.service';
+import { ChatbotSessionStatus } from '@prisma/client';
 
 @ApiTags('conversations')
 @ApiBearerAuth()
@@ -47,6 +52,8 @@ export class ConversationsController {
     private readonly assignmentService: ConversationAssignmentService,
     private readonly emailConversationsService: EmailConversationsService,
     private readonly contactIdentityBackfillService: ContactIdentityBackfillService,
+    private readonly notesService: ConversationNotesService,
+    private readonly chatbotSessionService: ChatbotSessionService,
   ) {}
 
   @Post('email/start')
@@ -158,6 +165,7 @@ export class ConversationsController {
     BusinessMemberRole.ADMIN,
     BusinessMemberRole.MEMBER,
   )
+  @RequireCapability('conversations.send')
   sendMessage(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -239,5 +247,102 @@ export class ConversationsController {
     @Param('id', ParseUUIDPipe) id: string,
   ) {
     return this.assignmentService.markRead(user.businessId!, id, user);
+  }
+
+  @Get(':id/notes')
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
+  listNotes(
+    @CurrentUser() user: RequestUser,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.notesService.list(user.businessId!, id);
+  }
+
+  @Post(':id/notes')
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
+  createNote(
+    @CurrentUser() user: RequestUser,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: CreateConversationNoteDto,
+  ) {
+    return this.notesService.create(user.businessId!, id, dto, user);
+  }
+
+  @Post(':id/end-chatbot-session')
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
+  endChatbotSession(
+    @CurrentUser() user: RequestUser,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.chatbotSessionService.endActiveSessionForConversation(
+      user.businessId!,
+      id,
+      ChatbotSessionStatus.ENDED,
+      user,
+    );
+  }
+
+  @Post(':id/convert-chatbot-session')
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
+  convertChatbotSession(
+    @CurrentUser() user: RequestUser,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.chatbotSessionService.endActiveSessionForConversation(
+      user.businessId!,
+      id,
+      ChatbotSessionStatus.CONVERTED,
+      user,
+    );
+  }
+
+  @Post(':id/pause-chatbot')
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
+  pauseChatbot(
+    @CurrentUser() user: RequestUser,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.chatbotSessionService.pauseBotForConversation(
+      user.businessId!,
+      id,
+      user,
+    );
+  }
+
+  @Post(':id/resume-chatbot')
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
+  resumeChatbot(
+    @CurrentUser() user: RequestUser,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.chatbotSessionService.resumeBotForConversation(
+      user.businessId!,
+      id,
+      user,
+    );
   }
 }

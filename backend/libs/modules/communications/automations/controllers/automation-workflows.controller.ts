@@ -121,12 +121,7 @@ export class AutomationWorkflowsController {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateAutomationWorkflowStatusDto,
   ) {
-    return this.workflowsService.updateStatus(
-      user.businessId!,
-      id,
-      dto,
-      user,
-    );
+    return this.workflowsService.updateStatus(user.businessId!, id, dto, user);
   }
 
   @Delete(':id')

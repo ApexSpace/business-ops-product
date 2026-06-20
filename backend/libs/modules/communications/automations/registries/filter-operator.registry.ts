@@ -53,7 +53,4 @@ export const FILTER_OPERATOR_REGISTRY: FilterOperatorDefinition[] = [
 
 export const FILTER_OPERATOR_BY_KEY = Object.fromEntries(
   FILTER_OPERATOR_REGISTRY.map((o) => [o.key, o]),
-) as Record<
-  FilterOperatorDefinition['key'],
-  FilterOperatorDefinition
->;
+) as Record<FilterOperatorDefinition['key'], FilterOperatorDefinition>;

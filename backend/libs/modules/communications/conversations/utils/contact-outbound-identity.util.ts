@@ -62,7 +62,10 @@ export function resolveWhatsAppParticipantId(contact: Contact): string | null {
   const fromPhone = contactPhoneDigits(contact);
   const waId = readMetadataString(contact.metadata, 'whatsappWaId');
   if (waId) {
-    const normalized = normalizeWhatsAppWaIdDigits(waId, contact.phoneCountryCode);
+    const normalized = normalizeWhatsAppWaIdDigits(
+      waId,
+      contact.phoneCountryCode,
+    );
     return normalized || fromPhone;
   }
   return fromPhone;

@@ -19,6 +19,11 @@ import { FormFileUploadControl } from "@/features/forms/components/form-file-upl
 import { FormImageDisplay } from "@/features/forms/components/form-image-display";
 import { resizeFormFieldColumns } from "@/features/forms/utils/field-defaults.util";
 import {
+  columnsContainTallContent,
+  getColumnLayoutClasses,
+} from "@/features/forms/utils/column-fields.util";
+import { ColumnDropZone } from "@/features/forms/components/builder/column-drop-zone";
+import {
   getBorderRadiusClass,
   getColumnGridClass,
   getFieldLayoutClassName,
@@ -44,6 +49,11 @@ interface FieldRendererProps {
   fieldErrors?: Record<string, string>;
   publicKey?: string;
   className?: string;
+  selectedFieldId?: string | null;
+  onSelectField?: (fieldId: string) => void;
+  inColumnLayout?: boolean;
+  isDraggingFromPalette?: boolean;
+  activeColumnTargetIndex?: number | null;
 }
 
 function fieldLayoutProps(
@@ -233,6 +243,11 @@ export function FieldRenderer({
   fieldErrors,
   publicKey,
   className,
+  selectedFieldId,
+  onSelectField,
+  inColumnLayout = false,
+  isDraggingFromPalette = false,
+  activeColumnTargetIndex = null,
 }: FieldRendererProps) {
   const disabled = !interactive;
   const required = field.validation?.required;
@@ -310,6 +325,8 @@ export function FieldRenderer({
           src={field.src}
           alt={field.label}
           publicKey={publicKey}
+          className={inColumnLayout ? "max-h-80 object-contain" : undefined}
+          tall={inColumnLayout}
         />
       </div>
     );
@@ -339,27 +356,82 @@ export function FieldRenderer({
   if (field.type === "columns" && field.columns) {
     const cols = field.columnCount ?? field.columns.length;
     const columnsToRender = resizeFormFieldColumns(field.columns, cols);
+    const hasTallColumn = columnsContainTallContent(columnsToRender);
+    const columnLayout = getColumnLayoutClasses(field);
     return (
       <div
-        className={cn("grid gap-4", getColumnGridClass(cols), layout.className, className)}
+        className={cn(
+          "grid gap-4",
+          getColumnGridClass(cols),
+          columnLayout.grid,
+          layout.className,
+          className,
+        )}
         style={layout.style}
       >
         {columnsToRender.map((column, columnIndex) => (
-          <div key={columnIndex} className="min-w-0 space-y-4">
+          <ColumnDropZone
+            key={columnIndex}
+            columnsFieldId={field.id}
+            columnIndex={columnIndex}
+            isDraggingFromPalette={isDraggingFromPalette && mode === "builder"}
+            isTargetColumn={
+              mode === "builder" && activeColumnTargetIndex === columnIndex
+            }
+            className={cn(columnLayout.column, hasTallColumn ? "gap-3" : "gap-4")}
+          >
             {column.map((nested) => (
-              <FieldRenderer
+              <div
                 key={nested.id}
-                field={nested}
-                settings={settings}
-                showRequiredIndicator={showRequiredIndicator}
-                mode={mode}
-                interactive={interactive}
-                fieldError={fieldError}
-                fieldErrors={fieldErrors}
-                publicKey={publicKey}
-              />
+                className={cn(
+                  mode === "builder" &&
+                    onSelectField &&
+                    "w-full rounded-md transition-colors",
+                  mode === "builder" &&
+                    onSelectField &&
+                    selectedFieldId === nested.id &&
+                    "bg-primary/5 ring-2 ring-primary/30",
+                )}
+                onClick={
+                  mode === "builder" && onSelectField
+                    ? (event) => {
+                        event.stopPropagation();
+                        onSelectField(nested.id);
+                      }
+                    : undefined
+                }
+                onKeyDown={
+                  mode === "builder" && onSelectField
+                    ? (event) => {
+                        if (event.key === "Enter" || event.key === " ") {
+                          event.preventDefault();
+                          event.stopPropagation();
+                          onSelectField(nested.id);
+                        }
+                      }
+                    : undefined
+                }
+                role={mode === "builder" && onSelectField ? "button" : undefined}
+                tabIndex={mode === "builder" && onSelectField ? 0 : undefined}
+              >
+                <FieldRenderer
+                  field={nested}
+                  settings={settings}
+                  showRequiredIndicator={showRequiredIndicator}
+                  mode={mode}
+                  interactive={interactive}
+                  fieldError={fieldError}
+                  fieldErrors={fieldErrors}
+                  publicKey={publicKey}
+                  selectedFieldId={selectedFieldId}
+                  onSelectField={onSelectField}
+                  inColumnLayout
+                  isDraggingFromPalette={isDraggingFromPalette}
+                  activeColumnTargetIndex={activeColumnTargetIndex}
+                />
+              </div>
             ))}
-          </div>
+          </ColumnDropZone>
         ))}
       </div>
     );

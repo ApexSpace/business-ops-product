@@ -18,12 +18,7 @@ type MetaWebhookAttachment = {
   };
 };
 
-const SUPPORTED_OUTBOUND_TYPES = new Set([
-  'image',
-  'file',
-  'video',
-  'audio',
-]);
+const SUPPORTED_OUTBOUND_TYPES = new Set(['image', 'file', 'video', 'audio']);
 
 type WhatsAppMediaPayload = {
   id?: string;

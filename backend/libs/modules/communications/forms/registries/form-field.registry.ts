@@ -8,7 +8,9 @@ type FieldOverrides = Partial<
   Omit<FormFieldDefinition, 'key' | 'category' | 'label'>
 >;
 
-function defaultsForRole(role: FormFieldRole): Omit<
+function defaultsForRole(
+  role: FormFieldRole,
+): Omit<
   FormFieldDefinition,
   'key' | 'category' | 'label' | 'description' | 'icon'
 > {
@@ -192,7 +194,8 @@ export function listFormFields(filter?: {
     }
     if (filter?.search?.trim()) {
       const needle = filter.search.trim().toLowerCase();
-      const haystack = `${definition.label} ${definition.description}`.toLowerCase();
+      const haystack =
+        `${definition.label} ${definition.description}`.toLowerCase();
       if (!haystack.includes(needle)) return false;
     }
     return true;

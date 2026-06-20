@@ -322,6 +322,15 @@ function MessageAvatar({
   );
 }
 
+function outboundSenderLabel(
+  message: ConversationMessage,
+  businessName?: string | null,
+): string {
+  if (message.senderType === "SYSTEM") return "Bot";
+  if (message.senderType === "AI_AGENT") return "AI Assistant";
+  return businessName?.trim() || "You";
+}
+
 function ThreadMessageBubble({
   message,
   threadContext,
@@ -335,7 +344,7 @@ function ThreadMessageBubble({
   const displayText = messageDisplayText(message);
   const templateDisplay = parseTemplateDisplay(message);
   const senderName = outbound
-    ? threadContext.businessName?.trim() || "You"
+    ? outboundSenderLabel(message, threadContext.businessName)
     : threadContext.contactName;
   const avatarUrl = outbound ? null : threadContext.contactAvatarUrl;
 

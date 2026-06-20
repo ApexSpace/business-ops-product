@@ -49,7 +49,10 @@ export function buildContactMessageScopeWhere(
     });
   }
 
-  const instagramUserId = readMetadataString(contact.metadata, 'instagramUserId');
+  const instagramUserId = readMetadataString(
+    contact.metadata,
+    'instagramUserId',
+  );
   if (instagramUserId) {
     conversationFilters.push({
       channel: ConversationChannel.INSTAGRAM,

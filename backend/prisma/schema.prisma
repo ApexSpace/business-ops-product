@@ -579,6 +579,7 @@ model User {
   createdCalendars     Calendar[]            @relation("CalendarCreatedBy")
   createdAppointments  Appointment[]         @relation("AppointmentCreatedBy")
   assignedConversations Conversation[]       @relation("ConversationAssignedTo")
+  conversationNotesAuthored ConversationNote[] @relation("ConversationNoteAuthor")
   uploadedFileAssets    FileAsset[]
   asyncJobs             AsyncJob[]             @relation("AsyncJobActor")
   emailTemplatesCreated EmailTemplate[]        @relation("EmailTemplateCreatedBy")
@@ -720,6 +721,8 @@ model Business {
   conversations        Conversation[]
   conversationMessages ConversationMessage[]
   conversationParticipants ConversationParticipant[]
+  conversationNotes        ConversationNote[]
+  cannedResponses          CannedResponse[]
   chatbots             Chatbot[]
   forms                Form[]
   formSubmissions      FormSubmission[]
@@ -1998,6 +2001,7 @@ model Conversation {
   assignedTo User?     @relation("ConversationAssignedTo", fields: [assignedToUserId], references: [id], onDelete: SetNull)
   messages   ConversationMessage[]
   participants ConversationParticipant[]
+  notes      ConversationNote[]
 
   @@unique([businessId, channel, externalConversationId])
   @@index([businessId])
@@ -2066,6 +2070,42 @@ model ConversationParticipant {
   @@index([businessId])
   @@index([conversationId])
   @@map("conversation_participants")
+}
+
+model CannedResponse {
+  id         String    @id @default(uuid())
+  businessId String
+  title      String
+  body       String    @default("")
+  sortOrder  Int       @default(0)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  deletedAt  DateTime?
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([businessId])
+  @@map("canned_responses")
+}
+
+model ConversationNote {
+  id             String    @id @default(uuid())
+  businessId     String
+  conversationId String
+  authorUserId   String
+  body           String    @default("")
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+
+  business     Business     @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  author       User         @relation("ConversationNoteAuthor", fields: [authorUserId], references: [id], onDelete: Cascade)
+
+  @@index([businessId])
+  @@index([conversationId])
+  @@index([conversationId, createdAt])
+  @@map("conversation_notes")
 }
 
 model Chatbot {

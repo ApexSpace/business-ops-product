@@ -48,7 +48,9 @@ export class RealtimeBridgeService implements OnModuleDestroy {
         this.server?.to(room).emit(REALTIME_SOCKET_EVENT, payload);
       } catch (error) {
         const detail = error instanceof Error ? error.message : String(error);
-        this.logger.warn(`Invalid realtime payload for ${businessId}: ${detail}`);
+        this.logger.warn(
+          `Invalid realtime payload for ${businessId}: ${detail}`,
+        );
       }
     });
 
@@ -63,7 +65,9 @@ export class RealtimeBridgeService implements OnModuleDestroy {
       const unsubscribe = this.roomUnsubscribers.get(businessId);
       unsubscribe?.();
       this.roomUnsubscribers.delete(businessId);
-      this.logger.log(`Realtime bridge unsubscribed for business ${businessId}`);
+      this.logger.log(
+        `Realtime bridge unsubscribed for business ${businessId}`,
+      );
       return;
     }
 

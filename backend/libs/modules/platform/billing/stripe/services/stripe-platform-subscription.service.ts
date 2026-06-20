@@ -117,12 +117,15 @@ export class StripePlatformSubscriptionService {
     }
 
     const stripe = this.stripeApi.getClient();
-    const updated = await stripe.subscriptions.update(stripeMeta.subscriptionId, {
-      cancel_at_period_end: true,
-      metadata: {
-        ...(reason ? { cancelReason: reason.slice(0, 500) } : {}),
+    const updated = await stripe.subscriptions.update(
+      stripeMeta.subscriptionId,
+      {
+        cancel_at_period_end: true,
+        metadata: {
+          ...(reason ? { cancelReason: reason.slice(0, 500) } : {}),
+        },
       },
-    });
+    );
 
     await this.prisma.businessSubscription.update({
       where: { businessId },
@@ -154,6 +157,8 @@ export class StripePlatformSubscriptionService {
 
     const stripe = this.stripeApi.getClient();
     await stripe.subscriptions.cancel(stripeMeta.subscriptionId);
-    this.logger.log(`Canceled Stripe subscription immediately for ${businessId}`);
+    this.logger.log(
+      `Canceled Stripe subscription immediately for ${businessId}`,
+    );
   }
 }

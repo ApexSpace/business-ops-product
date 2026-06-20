@@ -11,9 +11,7 @@ describe('email-sender.util', () => {
         'CodeSol Technologies <no-reply@notify.codesoltech.com>',
         'notify.codesoltech.com',
       ),
-    ).toBe(
-      'CodeSol Technologies <notifications@notify.codesoltech.com>',
-    );
+    ).toBe('CodeSol Technologies <notifications@notify.codesoltech.com>');
     expect(
       normalizeTransactionalDefaultFrom('no-reply@example.com', 'example.com'),
     ).toBe('notifications@example.com');
@@ -29,7 +27,8 @@ describe('email-sender.util', () => {
     const sender = resolveTransactionalEmailSender({
       fromName: 'Workflow Sender',
       stepFromName: 'Acme Dental',
-      defaultFrom: 'CodeSol Technologies <notifications@notify.codesoltech.com>',
+      defaultFrom:
+        'CodeSol Technologies <notifications@notify.codesoltech.com>',
     });
 
     expect(sender).toEqual({
@@ -42,7 +41,9 @@ describe('email-sender.util', () => {
 
   it('parses display name and email pairs', () => {
     expect(
-      parseEmailFromAddress('Acme Dental <notifications@notify.codesoltech.com>'),
+      parseEmailFromAddress(
+        'Acme Dental <notifications@notify.codesoltech.com>',
+      ),
     ).toEqual({
       name: 'Acme Dental',
       email: 'notifications@notify.codesoltech.com',

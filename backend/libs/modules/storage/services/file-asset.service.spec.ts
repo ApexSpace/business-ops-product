@@ -1,8 +1,4 @@
-import {
-  FileAssetStatus,
-  FileCategory,
-  FileVisibility,
-} from '@prisma/client';
+import { FileAssetStatus, FileCategory, FileVisibility } from '@prisma/client';
 import { AppException } from '@app/common/exceptions/app.exception';
 import { FileAssetService } from './file-asset.service';
 import { StoragePathService } from './storage-path.service';
@@ -78,9 +74,9 @@ describe('FileAssetService', () => {
     const { service, fileAssetRepository } = buildService();
     fileAssetRepository.findById.mockResolvedValue(null);
 
-    await expect(service.getActiveAsset('biz-1', 'missing')).rejects.toBeInstanceOf(
-      AppException,
-    );
+    await expect(
+      service.getActiveAsset('biz-1', 'missing'),
+    ).rejects.toBeInstanceOf(AppException);
   });
 
   it('rejects download when status is not READY', () => {

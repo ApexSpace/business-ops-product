@@ -11,13 +11,7 @@ function cat(
 }
 
 export const FORM_FIELD_CATEGORY_REGISTRY: FormFieldCategoryDefinition[] = [
-  cat(
-    'basic',
-    'Basic',
-    'Common text and number inputs.',
-    10,
-    'type',
-  ),
+  cat('basic', 'Basic', 'Common text and number inputs.', 10, 'type'),
   cat(
     'choice',
     'Choice',

@@ -31,7 +31,11 @@ export class WhatsAppParticipantSyncService {
     }
 
     await this.persistContactWaId(contact, participantId);
-    await this.syncConversationsForContact(businessId, contact.id, participantId);
+    await this.syncConversationsForContact(
+      businessId,
+      contact.id,
+      participantId,
+    );
   }
 
   async resolveSendRecipient(
@@ -85,7 +89,7 @@ export class WhatsAppParticipantSyncService {
         ...metadata,
         whatsappWaId: participantId,
         channel: ConversationChannel.WHATSAPP,
-      } as Prisma.InputJsonValue,
+      },
     });
   }
 
@@ -139,9 +143,7 @@ export class WhatsAppParticipantSyncService {
 
     await this.conversationsRepository.update(conversation.id, {
       externalParticipantId: participantId,
-      ...(externalConversationId
-        ? { externalConversationId }
-        : {}),
+      ...(externalConversationId ? { externalConversationId } : {}),
     });
 
     await this.prisma.conversationParticipant.updateMany({

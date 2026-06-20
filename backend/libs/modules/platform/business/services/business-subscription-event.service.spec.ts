@@ -34,9 +34,9 @@ describe('BusinessSubscriptionEventService', () => {
   } as never;
 
   const effectiveCapabilitiesService = {
-    resolveEffectiveCapabilities: jest.fn().mockResolvedValue([
-      { key: 'crm', name: 'CRM' },
-    ]),
+    resolveEffectiveCapabilities: jest
+      .fn()
+      .mockResolvedValue([{ key: 'crm', name: 'CRM' }]),
   } as never;
 
   const service = new BusinessSubscriptionEventService(
@@ -52,7 +52,9 @@ describe('BusinessSubscriptionEventService', () => {
   });
 
   it('captureState includes access resolution', async () => {
-    (prisma as { business: { findFirst: jest.Mock } }).business.findFirst.mockResolvedValue({
+    (
+      prisma as { business: { findFirst: jest.Mock } }
+    ).business.findFirst.mockResolvedValue({
       id: 'b1',
       status: 'ACTIVE',
       snapshotId: null,

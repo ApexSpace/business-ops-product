@@ -69,6 +69,7 @@ export interface Conversation {
   unreadCount: number;
   createdAt: string;
   updatedAt: string;
+  chatbotBotPaused?: boolean;
   contact?: ConversationContactSummary | null;
   assignedTo?: ConversationAssignee | null;
 }

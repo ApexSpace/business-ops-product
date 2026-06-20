@@ -55,7 +55,7 @@ export class AutomationStepProcessor {
       payload.stepIndex,
       AutomationWorkflowRunStepStatus.RUNNING,
       {
-        input: ((step.config ?? {}) as Record<string, unknown>),
+        input: (step.config ?? {}) as Record<string, unknown>,
       },
     );
 

@@ -31,7 +31,7 @@ export function toContactCreateData(
     zip: emptyToUndefined(dto.zip) ?? null,
     avatarUrl: dto.avatarAssetId?.trim()
       ? null
-      : emptyToUndefined(dto.avatarUrl) ?? null,
+      : (emptyToUndefined(dto.avatarUrl) ?? null),
     avatarAssetId: emptyToUndefined(dto.avatarAssetId) ?? null,
     source: emptyToUndefined(dto.source) ?? null,
   };

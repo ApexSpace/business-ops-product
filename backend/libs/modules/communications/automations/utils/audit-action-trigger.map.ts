@@ -7,7 +7,10 @@ export function buildAuditActionTriggerMap(): AuditActionTriggerMap {
   const map: AuditActionTriggerMap = {};
 
   for (const trigger of TRIGGER_REGISTRY) {
-    if (trigger.implementationStatus !== 'implemented' || !trigger.auditAction) {
+    if (
+      trigger.implementationStatus !== 'implemented' ||
+      !trigger.auditAction
+    ) {
       continue;
     }
     const bucket = map[trigger.auditAction] ?? [];

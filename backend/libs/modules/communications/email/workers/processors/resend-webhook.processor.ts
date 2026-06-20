@@ -30,10 +30,11 @@ export class ResendWebhookProcessor {
     }
 
     if (event.externalEventId) {
-      const existing = await this.webhookEventsRepository.findByProviderAndExternalId(
-        WebhookEventProvider.RESEND,
-        event.externalEventId,
-      );
+      const existing =
+        await this.webhookEventsRepository.findByProviderAndExternalId(
+          WebhookEventProvider.RESEND,
+          event.externalEventId,
+        );
       if (
         existing &&
         existing.id !== event.id &&
@@ -61,7 +62,10 @@ export class ResendWebhookProcessor {
       await this.resendWebhookService.processQueuedEvent(payload);
     } catch (error) {
       if (event.externalEventId) {
-        await this.idempotencyService.release('resend-webhook', event.externalEventId);
+        await this.idempotencyService.release(
+          'resend-webhook',
+          event.externalEventId,
+        );
       }
       throw error;
     }

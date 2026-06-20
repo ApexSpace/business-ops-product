@@ -42,13 +42,23 @@ describe('PublicFormsService', () => {
       failBusinessUpload: jest.fn(),
       getDownloadUrl: jest.fn(),
     };
+    const conversationBridge = {
+      maybeCreateConversationFromSubmission: jest.fn(),
+    };
     const service = new PublicFormsService(
       formsRepository as never,
       submissionsRepository as never,
       auditService as never,
       storageService as never,
+      conversationBridge as never,
     );
-    return { service, formsRepository, submissionsRepository, storageService };
+    return {
+      service,
+      formsRepository,
+      submissionsRepository,
+      storageService,
+      conversationBridge,
+    };
   }
 
   it('returns public config for a published form', async () => {

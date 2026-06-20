@@ -179,6 +179,10 @@ export const queryKeys = {
     rules: (id: string) => ["chatbots", id, "rules"] as const,
     embed: (id: string) => ["chatbots", id, "embed"] as const,
   },
+  cannedResponses: {
+    all: () => ["canned-responses"] as const,
+    list: () => ["canned-responses", "list"] as const,
+  },
   forms: {
     all: () => ["forms"] as const,
     list: (filters?: {
@@ -246,6 +250,8 @@ export const queryKeys = {
       ["conversations", "contacts", contactId, "reply-channels"] as const,
     byContact: (contactId: string) =>
       ["conversations", "by-contact", contactId] as const,
+    notes: (conversationId: string) =>
+      ["conversations", conversationId, "notes"] as const,
   },
   appointments: {
     all: () => ["appointments"] as const,

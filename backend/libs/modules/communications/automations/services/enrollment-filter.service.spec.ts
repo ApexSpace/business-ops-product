@@ -7,9 +7,7 @@ describe('EnrollmentFilterService', () => {
     evaluate: jest.fn(),
   };
 
-  const service = new EnrollmentFilterService(
-    conditionEvaluator as never,
-  );
+  const service = new EnrollmentFilterService(conditionEvaluator as never);
 
   const event: AutomationDomainEventPayload = {
     triggerKey: 'contact.created',

@@ -21,6 +21,7 @@ interface FormCanvasProps {
   definition: FormDefinition;
   selectedFieldId: string | null;
   isDraggingFromPalette?: boolean;
+  activeColumnTargetIndex?: number | null;
   onSelectField: (fieldId: string) => void;
   onDeselectField?: () => void;
   onDuplicateField: (fieldId: string) => void;
@@ -56,6 +57,7 @@ export function FormCanvas({
   definition,
   selectedFieldId,
   isDraggingFromPalette,
+  activeColumnTargetIndex = null,
   onSelectField,
   onDeselectField,
   onDuplicateField,
@@ -111,15 +113,20 @@ export function FormCanvas({
                     field={field}
                     settings={settings}
                     selected={selectedFieldId === field.id}
+                    selectedFieldId={selectedFieldId}
                     isFirst={index === 0}
                     isLast={index === fields.length - 1}
                     showRequiredIndicator={settings.showRequiredIndicator}
+                    isDraggingFromPalette={isDraggingFromPalette}
+                    activeColumnTargetIndex={activeColumnTargetIndex}
                     onSelect={() => onSelectField(field.id)}
+                    onSelectNestedField={onSelectField}
                     onDuplicate={() => onDuplicateField(field.id)}
-                    onRemove={() => onRemoveField(field.id)}
+                    onRemoveField={onRemoveField}
                     onMoveUp={() => onMoveField(field.id, "up")}
                     onMoveDown={() => onMoveField(field.id, "down")}
                     onOpenSettings={() => onSelectField(field.id)}
+                    allFields={fields}
                   />
                 ))}
               </div>

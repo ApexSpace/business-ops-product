@@ -183,6 +183,8 @@ export function createDefaultField(type: FieldType, index?: number): FormField {
       return {
         ...base,
         columnCount: 2,
+        columnVerticalAlign: "top",
+        columnHorizontalAlign: "left",
         columns: resizeFormFieldColumns(
           [
             [createDefaultField("text", 0)],
@@ -285,6 +287,7 @@ export function createDefaultFormSettings(): FormSettings {
     submitButtonAlign: "left",
     submitButtonBgColor: "",
     submitButtonTextColor: "",
+    layoutWidth: "container",
     maxWidth: 640,
     padding: 24,
     borderRadius: "lg",

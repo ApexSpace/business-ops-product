@@ -64,10 +64,22 @@ export class ChatbotResponseDto {
   businessHoursOnly!: boolean;
   showBranding!: boolean;
   embedEnabled!: boolean;
+  collectPhoneWhenOffline?: boolean;
+  allowedDomains?: string[];
+  consentEnabled?: boolean;
+  consentText?: string | null;
+  launcherIcon?: 'message' | 'chat' | 'help';
+  welcomeVariants?: import('../types/chatbot-settings.types').ChatbotWelcomeVariant[];
+  progressiveProfilingEnabled?: boolean;
+  progressiveProfilingAskAfterMessages?: number;
+  progressiveProfilingPromptMessage?: string;
   createdAt!: string;
   updatedAt!: string;
   conversationsCount?: number;
   lastMessageAt?: string | null;
+  sessionsCount?: number;
+  activeSessionsCount?: number;
+  convertedSessionsCount?: number;
 }
 
 export class ChatbotEmbedResponseDto {
@@ -97,6 +109,13 @@ export class PublicChatbotConfigDto {
   showBranding!: boolean;
   acknowledgementMessage!: string;
   businessName!: string;
+  isOnline!: boolean;
+  requiresPhoneCapture!: boolean;
+  consentEnabled!: boolean;
+  consentText!: string | null;
+  launcherIcon!: 'message' | 'chat' | 'help';
+  offsetX!: number;
+  offsetY!: number;
 }
 
 export class PublicChatbotSessionDto {
@@ -110,4 +129,5 @@ export class PublicChatbotMessageDto {
   senderType!: string;
   text!: string | null;
   createdAt!: string;
+  requiresProfile?: 'email' | 'name' | 'phone' | null;
 }

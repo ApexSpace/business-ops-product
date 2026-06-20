@@ -44,8 +44,7 @@ export function mapAccessBlockToAuthError(
     case 'NO_SUBSCRIPTION':
       return {
         code: ErrorCode.NO_SUBSCRIPTION,
-        message:
-          'This workspace does not have an active subscription yet.',
+        message: 'This workspace does not have an active subscription yet.',
       };
     case 'BUSINESS_SUSPENDED':
       return {

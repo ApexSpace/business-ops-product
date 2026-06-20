@@ -27,6 +27,8 @@ export interface FormSubmissionMetadata {
   referer?: string;
 }
 
+import { FormSubmissionConversationBridgeService } from './form-submission-conversation-bridge.service';
+
 @Injectable()
 export class PublicFormsService {
   constructor(
@@ -34,6 +36,7 @@ export class PublicFormsService {
     private readonly submissionsRepository: FormSubmissionsRepository,
     private readonly auditService: AuditService,
     private readonly storageService: StorageService,
+    private readonly conversationBridge: FormSubmissionConversationBridgeService,
   ) {}
 
   async getConfig(publicKey: string): Promise<PublicFormConfigDto> {
@@ -47,9 +50,7 @@ export class PublicFormsService {
     metadata: FormSubmissionMetadata = {},
   ): Promise<FormSubmissionResponseDto> {
     const form = await this.requirePublishedForm(publicKey);
-    const definition = sanitizeFormDefinition(
-      parseFormDefinition(form) as { fields: unknown[]; settings: Record<string, unknown> },
-    );
+    const definition = sanitizeFormDefinition(parseFormDefinition(form));
     const data =
       dto.data && typeof dto.data === 'object' && !Array.isArray(dto.data)
         ? dto.data
@@ -61,7 +62,9 @@ export class PublicFormsService {
         ErrorCode.VALIDATION_ERROR,
         'Please fix the highlighted fields',
         HttpStatus.BAD_REQUEST,
-        Object.fromEntries(errors.map((error) => [error.field, [error.message]])),
+        Object.fromEntries(
+          errors.map((error) => [error.field, [error.message]]),
+        ),
       );
     }
 
@@ -75,7 +78,7 @@ export class PublicFormsService {
         ip: metadata.ip ?? null,
         userAgent: metadata.userAgent ?? null,
         referer: metadata.referer ?? null,
-      } as Prisma.InputJsonValue,
+      },
     });
 
     await this.auditService.log({
@@ -90,6 +93,18 @@ export class PublicFormsService {
         submittedAt: submission.createdAt.toISOString(),
         formName: form.name,
       },
+    });
+
+    const createConversationOnSubmit =
+      definition.settings.createConversationOnSubmit === true;
+    await this.conversationBridge.maybeCreateConversationFromSubmission({
+      businessId: form.businessId,
+      formId: form.id,
+      formName: form.name,
+      submissionId: submission.id,
+      fields: definition.fields as Array<{ type?: string; name?: string }>,
+      data: sanitized,
+      enabled: createConversationOnSubmit,
     });
 
     const redirectUrl =

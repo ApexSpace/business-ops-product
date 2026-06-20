@@ -170,6 +170,38 @@ export function BusinessChatbotsSettings() {
         ),
       },
       {
+        id: "sessions",
+        header: "Sessions",
+        sortable: true,
+        sortValue: (row) => row.sessionsCount ?? 0,
+        className: "text-right tabular-nums",
+        cell: (row) => (
+          <span className="tabular-nums text-sm">{row.sessionsCount ?? 0}</span>
+        ),
+      },
+      {
+        id: "activeSessions",
+        header: "Active",
+        sortable: true,
+        sortValue: (row) => row.activeSessionsCount ?? 0,
+        className: "text-right tabular-nums",
+        cell: (row) => (
+          <span className="tabular-nums text-sm">{row.activeSessionsCount ?? 0}</span>
+        ),
+      },
+      {
+        id: "converted",
+        header: "Converted",
+        sortable: true,
+        sortValue: (row) => row.convertedSessionsCount ?? 0,
+        className: "text-right tabular-nums",
+        cell: (row) => (
+          <span className="tabular-nums text-sm">
+            {row.convertedSessionsCount ?? 0}
+          </span>
+        ),
+      },
+      {
         id: "lastActivity",
         header: "Last activity",
         sortable: true,

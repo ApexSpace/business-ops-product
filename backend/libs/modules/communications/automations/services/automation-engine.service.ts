@@ -158,7 +158,8 @@ export class AutomationEngineService {
         triggerKey: run.triggerKey,
         businessId: run.businessId,
         subjectId: run.subjectId,
-        subjectType: run.subjectType as AutomationDomainEventPayload['subjectType'],
+        subjectType:
+          run.subjectType as AutomationDomainEventPayload['subjectType'],
         contextEntityId: run.contextEntityId ?? undefined,
         contextEntityType:
           run.contextEntityType as AutomationDomainEventPayload['contextEntityType'],
@@ -305,7 +306,10 @@ export class AutomationEngineService {
     const workflowSteps = parseWorkflowSteps(run.workflow.steps);
     const nextIndex = workflowSteps.findIndex((step) => step.id === stepId);
     if (nextIndex < 0) {
-      await this.markRunFailed(runId, `Branch target step not found: ${stepId}`);
+      await this.markRunFailed(
+        runId,
+        `Branch target step not found: ${stepId}`,
+      );
       return;
     }
 

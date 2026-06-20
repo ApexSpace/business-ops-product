@@ -56,6 +56,7 @@ import {
   replyChannelSendDisabledReason,
 } from "@/features/conversations/utils/reply-channel.utils";
 import { useWhatsAppTemplateComposerState } from "@/features/conversations/hooks/use-whatsapp-template-composer-state";
+import { useBusinessAccess } from "@/lib/business-access/use-business-access";
 import { useConversationsInboxFilters } from "@/features/conversations/hooks/use-conversations-inbox-filters";
 import { RealtimeOfflineBanner } from "@/features/realtime/components/realtime-offline-banner";
 import { createOptimisticOutboundMessage } from "@/features/conversations/utils/optimistic-message";
@@ -112,6 +113,8 @@ export function ConversationsInbox() {
   const [threadChannelFilter, setThreadChannelFilter] =
     useState<ThreadChannelFilterValue>("ALL");
   const [mobilePane, setMobilePane] = useState<InboxMobilePane>("list");
+  const { hasCapability } = useBusinessAccess();
+  const canSendMessages = hasCapability("conversations.send");
 
   useQuery({
     queryKey: queryKeys.integrations.platformEmail(),
@@ -296,8 +299,18 @@ export function ConversationsInbox() {
     [replyChannels, effectiveReplyChannel],
   );
 
+  const webchatConversationId = useMemo(
+    () =>
+      activeThread?.conversations.find((conversation) => conversation.channel === "WEBCHAT")
+        ?.id ?? null,
+    [activeThread?.conversations],
+  );
+
   const replyConversationId = mergedTimeline
-    ? activeReplyChannel?.conversationId ?? null
+    ? activeReplyChannel?.conversationId ??
+      (effectiveReplyChannel === "WEBCHAT" || threadChannelFilter === "WEBCHAT"
+        ? webchatConversationId
+        : null)
     : orphanConversationId;
 
   const { data: selected } = useQuery({
@@ -550,24 +563,29 @@ export function ConversationsInbox() {
   const hasComposerContent =
     composer.trim().length > 0 || Boolean(pendingAttachment);
 
-  const canSend = mergedTimeline
-    ? canSendViaReplyChannel(
-        activeReplyChannel,
-        threadConversation,
-        hasComposerContent,
-        whatsAppMode,
-        hasTemplateContent,
-      ) ||
-      (activeReplyChannel?.channel === "EMAIL" &&
+  const canSend =
+    canSendMessages &&
+    (mergedTimeline
+      ? canSendViaReplyChannel(
+          activeReplyChannel,
+          threadConversation,
+          hasComposerContent,
+          whatsAppMode,
+          hasTemplateContent,
+        ) ||
+        (activeReplyChannel?.channel === "EMAIL" &&
+          hasComposerContent &&
+          Boolean(contactId) &&
+          (activeReplyChannel.readyForMessaging ||
+            activeReplyChannel.messagingStatus.readyForMessaging))
+      : Boolean(orphanConversationId) &&
         hasComposerContent &&
-        Boolean(contactId) &&
-        (activeReplyChannel.readyForMessaging ||
-          activeReplyChannel.messagingStatus.readyForMessaging))
-    : Boolean(orphanConversationId) &&
-      hasComposerContent &&
-      (isWebchat || Boolean(messagingStatusQuery.data?.readyForMessaging));
+        (isWebchat || Boolean(messagingStatusQuery.data?.readyForMessaging)));
 
   const sendDisabledReason = useMemo(() => {
+    if (!canSendMessages) {
+      return "You do not have permission to send messages.";
+    }
     if (mergedTimeline) {
       return replyChannelSendDisabledReason(
         activeReplyChannel,
@@ -608,6 +626,7 @@ export function ConversationsInbox() {
     return "Messaging is not ready for this channel.";
   }, [
     activeReplyChannel,
+    canSendMessages,
     isWebchat,
     mergedTimeline,
     messagingStatusQuery.data?.readyForMessaging,

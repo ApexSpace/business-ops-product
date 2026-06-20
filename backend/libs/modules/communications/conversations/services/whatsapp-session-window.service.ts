@@ -40,7 +40,10 @@ export class WhatsAppSessionWindowService {
     contactId: string,
     now: Date = new Date(),
   ): Promise<WhatsAppSessionState> {
-    const contact = await this.contactRepository.findById(businessId, contactId);
+    const contact = await this.contactRepository.findById(
+      businessId,
+      contactId,
+    );
     if (!contact) {
       return this.toSessionState(null, now);
     }

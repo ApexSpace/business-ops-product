@@ -98,7 +98,8 @@ export function mapMetaTemplateToUpsert(input: {
     parameterFormat: input.meta.parameter_format ?? 'POSITIONAL',
     metaTemplateId: input.meta.id ?? null,
     components: componentArray,
-    bodyPreview: extractBodyPreview(componentArray as Record<string, unknown>[]) || null,
+    bodyPreview:
+      extractBodyPreview(componentArray as Record<string, unknown>[]) || null,
     rejectionReason: input.meta.rejected_reason ?? null,
     qualityScore: input.meta.quality_score ?? null,
   };

@@ -43,7 +43,9 @@ export class ConversationRealtimeGateway
 
   afterInit(server: Server): void {
     this.bridge.bindServer(server);
-    this.logger.log(`Socket.io gateway ready on namespace ${REALTIME_SOCKET_NAMESPACE}`);
+    this.logger.log(
+      `Socket.io gateway ready on namespace ${REALTIME_SOCKET_NAMESPACE}`,
+    );
   }
 
   async handleConnection(client: Socket): Promise<void> {

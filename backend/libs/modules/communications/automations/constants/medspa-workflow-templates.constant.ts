@@ -91,9 +91,7 @@ export const MEDSPA_WORKFLOW_TEMPLATES: MedSpaWorkflowTemplate[] = [
   },
 ];
 
-export function medSpaTemplateToCreateInput(
-  template: MedSpaWorkflowTemplate,
-): {
+export function medSpaTemplateToCreateInput(template: MedSpaWorkflowTemplate): {
   name: string;
   description: string;
   triggerKey: string;

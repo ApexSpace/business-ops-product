@@ -1,4 +1,7 @@
-import type { ContextEntityType, SubjectType } from '../types/automation-registry.types';
+import type {
+  ContextEntityType,
+  SubjectType,
+} from '../types/automation-registry.types';
 import type { AuditLoggedEventPayload } from '../types/domain-event.types';
 import { TRIGGER_BY_KEY } from '../registries/trigger.registry';
 
@@ -47,7 +50,9 @@ function defaultMetadata(
   return { ...audit.metadata };
 }
 
-function resolveByEntityType(audit: AuditLoggedEventPayload): ResolvedSubject | null {
+function resolveByEntityType(
+  audit: AuditLoggedEventPayload,
+): ResolvedSubject | null {
   const subjectType = ENTITY_TYPE_TO_SUBJECT_TYPE[audit.entityType];
   if (!subjectType || !isUuid(audit.entityId)) {
     return null;
@@ -76,7 +81,8 @@ const AUDIT_SUBJECT_RESOLVERS: Record<
   },
   'form.submitted': (audit) => {
     const formId = asString(audit.metadata?.formId);
-    const submissionId = asString(audit.metadata?.submissionId) ?? audit.entityId;
+    const submissionId =
+      asString(audit.metadata?.submissionId) ?? audit.entityId;
     if (!formId || !isUuid(formId) || !isUuid(submissionId)) return null;
     return {
       subjectId: formId,
@@ -95,8 +101,7 @@ const AUDIT_SUBJECT_RESOLVERS: Record<
     return {
       subjectId: audit.entityId,
       contextEntityId: contactId && isUuid(contactId) ? contactId : undefined,
-      contextEntityType:
-        contactId && isUuid(contactId) ? 'contact' : undefined,
+      contextEntityType: contactId && isUuid(contactId) ? 'contact' : undefined,
       metadata: defaultMetadata(audit),
     };
   },
@@ -106,8 +111,7 @@ const AUDIT_SUBJECT_RESOLVERS: Record<
     return {
       subjectId: audit.entityId,
       contextEntityId: contactId && isUuid(contactId) ? contactId : undefined,
-      contextEntityType:
-        contactId && isUuid(contactId) ? 'contact' : undefined,
+      contextEntityType: contactId && isUuid(contactId) ? 'contact' : undefined,
       metadata: defaultMetadata(audit),
     };
   },
@@ -266,8 +270,7 @@ export function buildAutomationDomainEventPayload(
   }
   if (!audit.businessId) return null;
 
-  const resolver =
-    AUDIT_SUBJECT_RESOLVERS[audit.action] ?? resolveByEntityType;
+  const resolver = AUDIT_SUBJECT_RESOLVERS[audit.action] ?? resolveByEntityType;
   const resolved = resolver(audit);
   if (!resolved || !isUuid(resolved.subjectId)) {
     return null;

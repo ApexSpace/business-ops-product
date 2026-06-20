@@ -12,7 +12,13 @@ describe('UpdateAutomationWorkflowDto triggerFilters', () => {
     const dto = plainToInstance(UpdateAutomationWorkflowDto, {
       name: 'new_contact',
       triggerKey: 'contact.created',
-      steps: [{ id: '11111111-1111-4111-8111-111111111111', actionKey: 'workflow.end', config: {} }],
+      steps: [
+        {
+          id: '11111111-1111-4111-8111-111111111111',
+          actionKey: 'workflow.end',
+          config: {},
+        },
+      ],
       triggerFilters: [
         {
           fieldKey: 'contact.has_email',

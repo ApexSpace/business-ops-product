@@ -14,9 +14,7 @@ import {
   webhookOutboundActionConfigSchema,
 } from '../utils/automation-schema.util';
 
-function act(
-  input: ActionDefinition,
-): ActionDefinition {
+function act(input: ActionDefinition): ActionDefinition {
   return input;
 }
 

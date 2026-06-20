@@ -90,7 +90,7 @@ export function replyChannelSendDisabledReason(
     return "Select a reply channel.";
   }
 
-  if (isWebchatConversation(conversation)) {
+  if (channel.channel === "WEBCHAT" || isWebchatConversation(conversation)) {
     return null;
   }
 
@@ -137,8 +137,13 @@ export function canSendViaReplyChannel(
   whatsAppMode?: WhatsAppComposerMode | null,
   hasTemplateContent = false,
 ): boolean {
-  if (!channel) return false;
-  if (isWebchatConversation(conversation)) return hasContent;
+  if (!channel) {
+    if (isWebchatConversation(conversation)) return hasContent;
+    return false;
+  }
+  if (channel.channel === "WEBCHAT" || isWebchatConversation(conversation)) {
+    return hasContent;
+  }
 
   if (!channel.readyForMessaging) {
     return false;

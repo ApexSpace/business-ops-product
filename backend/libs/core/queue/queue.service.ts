@@ -226,7 +226,9 @@ export class QueueService {
   ): Promise<string | null> {
     const queue = this.syncQueue();
     const jobId = `automation-${payload.runId}-${payload.stepIndex}`;
-    if (!this.guardQueueAvailable(queue, `enqueue automation step (${jobId})`)) {
+    if (
+      !this.guardQueueAvailable(queue, `enqueue automation step (${jobId})`)
+    ) {
       return null;
     }
     try {

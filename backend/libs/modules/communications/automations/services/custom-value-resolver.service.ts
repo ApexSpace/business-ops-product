@@ -128,7 +128,9 @@ export class CustomValueResolverService {
     const result: CustomValueResolveResult = {};
 
     for (const key of requested) {
-      const definition = CUSTOM_VALUE_REGISTRY.find((entry) => entry.key === key);
+      const definition = CUSTOM_VALUE_REGISTRY.find(
+        (entry) => entry.key === key,
+      );
       if (!definition || definition.implementationStatus !== 'implemented') {
         continue;
       }
@@ -146,58 +148,74 @@ export class CustomValueResolverService {
   ): Promise<LoadedEntities> {
     const loaded: LoadedEntities = {};
 
-    loaded.business = await this.prisma.business.findFirst({
-      where: { id: input.businessId, deletedAt: null },
-      select: {
-        name: true,
-        email: true,
-        phoneCountryCode: true,
-        phoneNumber: true,
-        timezone: true,
-        address: true,
-        settings: true,
-      },
-    }).then((row) =>
-      row
-        ? {
-            name: row.name,
-            email: row.email,
-            phone: [row.phoneCountryCode, row.phoneNumber]
-              .filter(Boolean)
-              .join(' ')
-              .trim() || null,
-            timezone: row.timezone,
-            currency:
-              typeof row.settings === 'object' &&
-              row.settings !== null &&
-              'financial' in row.settings &&
-              typeof (row.settings as { financial?: { taxesAndCurrency?: { currencyCode?: string } } }).financial?.taxesAndCurrency?.currencyCode === 'string'
-                ? (row.settings as { financial: { taxesAndCurrency: { currencyCode: string } } }).financial.taxesAndCurrency.currencyCode
-                : 'USD',
-            address: row.address,
-          }
-        : undefined,
-    );
-
-    if (input.contactId) {
-      loaded.contact = await this.prisma.contact.findFirst({
-        where: {
-          id: input.contactId,
-          businessId: input.businessId,
-          deletedAt: null,
-        },
+    loaded.business = await this.prisma.business
+      .findFirst({
+        where: { id: input.businessId, deletedAt: null },
         select: {
-          displayName: true,
-          firstName: true,
-          lastName: true,
-          companyName: true,
+          name: true,
           email: true,
           phoneCountryCode: true,
           phoneNumber: true,
-          source: true,
-          tags: { select: { tag: { select: { name: true } } } },
+          timezone: true,
+          address: true,
+          settings: true,
         },
-      }) ?? undefined;
+      })
+      .then((row) =>
+        row
+          ? {
+              name: row.name,
+              email: row.email,
+              phone:
+                [row.phoneCountryCode, row.phoneNumber]
+                  .filter(Boolean)
+                  .join(' ')
+                  .trim() || null,
+              timezone: row.timezone,
+              currency:
+                typeof row.settings === 'object' &&
+                row.settings !== null &&
+                'financial' in row.settings &&
+                typeof (
+                  row.settings as {
+                    financial?: {
+                      taxesAndCurrency?: { currencyCode?: string };
+                    };
+                  }
+                ).financial?.taxesAndCurrency?.currencyCode === 'string'
+                  ? (
+                      row.settings as {
+                        financial: {
+                          taxesAndCurrency: { currencyCode: string };
+                        };
+                      }
+                    ).financial.taxesAndCurrency.currencyCode
+                  : 'USD',
+              address: row.address,
+            }
+          : undefined,
+      );
+
+    if (input.contactId) {
+      loaded.contact =
+        (await this.prisma.contact.findFirst({
+          where: {
+            id: input.contactId,
+            businessId: input.businessId,
+            deletedAt: null,
+          },
+          select: {
+            displayName: true,
+            firstName: true,
+            lastName: true,
+            companyName: true,
+            email: true,
+            phoneCountryCode: true,
+            phoneNumber: true,
+            source: true,
+            tags: { select: { tag: { select: { name: true } } } },
+          },
+        })) ?? undefined;
     }
 
     if (input.userId) {
@@ -225,185 +243,196 @@ export class CustomValueResolverService {
     }
 
     if (input.appointmentId) {
-      loaded.appointment = await this.prisma.appointment.findFirst({
-        where: {
-          id: input.appointmentId,
-          businessId: input.businessId,
-          deletedAt: null,
-        },
-        select: {
-          title: true,
-          startAt: true,
-          endAt: true,
-          status: true,
-          notes: true,
-          locationType: true,
-          locationValue: true,
-          calendar: { select: { name: true, timezone: true } },
-          service: { select: { name: true } },
-          assignedTo: {
-            select: { firstName: true, lastName: true, email: true },
+      loaded.appointment =
+        (await this.prisma.appointment.findFirst({
+          where: {
+            id: input.appointmentId,
+            businessId: input.businessId,
+            deletedAt: null,
           },
-        },
-      }) ?? undefined;
+          select: {
+            title: true,
+            startAt: true,
+            endAt: true,
+            status: true,
+            notes: true,
+            locationType: true,
+            locationValue: true,
+            calendar: { select: { name: true, timezone: true } },
+            service: { select: { name: true } },
+            assignedTo: {
+              select: { firstName: true, lastName: true, email: true },
+            },
+          },
+        })) ?? undefined;
     }
 
     if (input.leadId) {
-      loaded.lead = await this.prisma.lead.findFirst({
-        where: {
-          id: input.leadId,
-          businessId: input.businessId,
-          deletedAt: null,
-        },
-        select: {
-          title: true,
-          value: true,
-          source: true,
-          pipelineStage: {
-            select: {
-              name: true,
-              pipeline: { select: { name: true } },
+      loaded.lead =
+        (await this.prisma.lead.findFirst({
+          where: {
+            id: input.leadId,
+            businessId: input.businessId,
+            deletedAt: null,
+          },
+          select: {
+            title: true,
+            value: true,
+            source: true,
+            pipelineStage: {
+              select: {
+                name: true,
+                pipeline: { select: { name: true } },
+              },
             },
           },
-        },
-      }) ?? undefined;
+        })) ?? undefined;
     }
 
     if (input.invoiceId) {
-      loaded.invoice = await this.prisma.invoice.findFirst({
-        where: {
-          id: input.invoiceId,
-          businessId: input.businessId,
-          deletedAt: null,
-        },
-        select: {
-          invoiceNumber: true,
-          totalAmount: true,
-          balanceDue: true,
-          dueDate: true,
-          status: true,
-          publicToken: true,
-          stripeCheckoutUrl: true,
-        },
-      }) ?? undefined;
+      loaded.invoice =
+        (await this.prisma.invoice.findFirst({
+          where: {
+            id: input.invoiceId,
+            businessId: input.businessId,
+            deletedAt: null,
+          },
+          select: {
+            invoiceNumber: true,
+            totalAmount: true,
+            balanceDue: true,
+            dueDate: true,
+            status: true,
+            publicToken: true,
+            stripeCheckoutUrl: true,
+          },
+        })) ?? undefined;
     }
 
     if (input.estimateId) {
-      loaded.estimate = await this.prisma.estimate.findFirst({
-        where: {
-          id: input.estimateId,
-          businessId: input.businessId,
-          deletedAt: null,
-        },
-        select: {
-          estimateNumber: true,
-          totalAmount: true,
-          expiryDate: true,
-          status: true,
-        },
-      }) ?? undefined;
+      loaded.estimate =
+        (await this.prisma.estimate.findFirst({
+          where: {
+            id: input.estimateId,
+            businessId: input.businessId,
+            deletedAt: null,
+          },
+          select: {
+            estimateNumber: true,
+            totalAmount: true,
+            expiryDate: true,
+            status: true,
+          },
+        })) ?? undefined;
     }
 
     if (input.paymentId) {
-      loaded.payment = await this.prisma.payment.findFirst({
-        where: {
-          id: input.paymentId,
-          businessId: input.businessId,
-          deletedAt: null,
-        },
-        select: {
-          amount: true,
-          paidAt: true,
-          method: true,
-          reference: true,
-        },
-      }) ?? undefined;
+      loaded.payment =
+        (await this.prisma.payment.findFirst({
+          where: {
+            id: input.paymentId,
+            businessId: input.businessId,
+            deletedAt: null,
+          },
+          select: {
+            amount: true,
+            paidAt: true,
+            method: true,
+            reference: true,
+          },
+        })) ?? undefined;
     }
 
     if (input.taskId) {
-      loaded.task = await this.prisma.task.findFirst({
-        where: {
-          id: input.taskId,
-          businessId: input.businessId,
-          deletedAt: null,
-        },
-        select: {
-          title: true,
-          dueAt: true,
-          status: true,
-        },
-      }) ?? undefined;
+      loaded.task =
+        (await this.prisma.task.findFirst({
+          where: {
+            id: input.taskId,
+            businessId: input.businessId,
+            deletedAt: null,
+          },
+          select: {
+            title: true,
+            dueAt: true,
+            status: true,
+          },
+        })) ?? undefined;
     }
 
     if (input.workItemId) {
-      loaded.workItem = await this.prisma.workItem.findFirst({
-        where: {
-          id: input.workItemId,
-          businessId: input.businessId,
-          deletedAt: null,
-        },
-        select: {
-          title: true,
-          status: true,
-        },
-      }) ?? undefined;
+      loaded.workItem =
+        (await this.prisma.workItem.findFirst({
+          where: {
+            id: input.workItemId,
+            businessId: input.businessId,
+            deletedAt: null,
+          },
+          select: {
+            title: true,
+            status: true,
+          },
+        })) ?? undefined;
     }
 
     if (input.conversationId) {
-      loaded.conversation = await this.prisma.conversation.findFirst({
-        where: {
-          id: input.conversationId,
-          businessId: input.businessId,
-          deletedAt: null,
-        },
-        select: {
-          channel: true,
-          messages: {
-            orderBy: { createdAt: 'desc' },
-            take: 1,
-            select: { text: true },
+      loaded.conversation =
+        (await this.prisma.conversation.findFirst({
+          where: {
+            id: input.conversationId,
+            businessId: input.businessId,
+            deletedAt: null,
           },
-        },
-      }) ?? undefined;
+          select: {
+            channel: true,
+            messages: {
+              orderBy: { createdAt: 'desc' },
+              take: 1,
+              select: { text: true },
+            },
+          },
+        })) ?? undefined;
     }
 
     if (input.calendarId) {
-      loaded.calendar = await this.prisma.calendar.findFirst({
-        where: {
-          id: input.calendarId,
-          businessId: input.businessId,
-          deletedAt: null,
-        },
-        select: {
-          name: true,
-          timezone: true,
-        },
-      }) ?? undefined;
+      loaded.calendar =
+        (await this.prisma.calendar.findFirst({
+          where: {
+            id: input.calendarId,
+            businessId: input.businessId,
+            deletedAt: null,
+          },
+          select: {
+            name: true,
+            timezone: true,
+          },
+        })) ?? undefined;
     }
 
     if (input.serviceId) {
-      loaded.service = await this.prisma.service.findFirst({
-        where: {
-          id: input.serviceId,
-          businessId: input.businessId,
-          deletedAt: null,
-        },
-        select: {
-          name: true,
-          price: true,
-        },
-      }) ?? undefined;
+      loaded.service =
+        (await this.prisma.service.findFirst({
+          where: {
+            id: input.serviceId,
+            businessId: input.businessId,
+            deletedAt: null,
+          },
+          select: {
+            name: true,
+            price: true,
+          },
+        })) ?? undefined;
     }
 
     if (input.formId) {
-      loaded.form = await this.prisma.form.findFirst({
-        where: {
-          id: input.formId,
-          businessId: input.businessId,
-          deletedAt: null,
-        },
-        select: { name: true },
-      }) ?? undefined;
+      loaded.form =
+        (await this.prisma.form.findFirst({
+          where: {
+            id: input.formId,
+            businessId: input.businessId,
+            deletedAt: null,
+          },
+          select: { name: true },
+        })) ?? undefined;
     }
 
     return loaded;

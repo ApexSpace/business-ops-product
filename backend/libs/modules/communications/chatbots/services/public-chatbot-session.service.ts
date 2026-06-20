@@ -2,21 +2,30 @@ import { createHash, randomUUID } from 'crypto';
 import { HttpStatus, Injectable } from '@nestjs/common';
 import {
   Chatbot,
+  ChatbotSessionStatus,
   ChatbotStatus,
+  Conversation,
   ConversationChannel,
   ConversationDirection,
+  ConversationMessage,
   ConversationStatus,
   MessageSenderType,
   MessageStatus,
+  Prisma,
 } from '@prisma/client';
 import { AppException } from '@app/common/exceptions/app.exception';
 import { ErrorCode } from '@app/common/exceptions/error-code.enum';
 import { PrismaService } from '@app/core/database/prisma.service';
+import { SYSTEM_AUDIT_ACTOR_SENTINEL } from '@app/modules/platform/audit/constants/audit.constants';
+import { AuditService } from '@app/modules/platform/audit/services/audit.service';
 import { ConversationMessagesRepository } from '@app/modules/communications/conversations/repositories/conversation-messages.repository';
 import { ConversationsRepository } from '@app/modules/communications/conversations/repositories/conversations.repository';
+import { ConversationRealtimeService } from '@app/modules/communications/conversations/services/conversation-realtime.service';
+import { toConversationMessageResponse } from '@app/modules/communications/conversations/mappers/conversation.mapper';
 import {
   SendChatbotMessageDto,
   StartChatbotSessionDto,
+  UpdateChatbotSessionProfileDto,
 } from '../dto/chatbot.dto';
 import {
   PublicChatbotConfigDto,
@@ -28,6 +37,10 @@ import {
   toPublicChatbotMessage,
 } from '../mappers/chatbot.mapper';
 import { parseChatbotSettings } from '../utils/chatbot-settings.util';
+import { isChatbotOnline } from '../utils/chatbot-business-hours.util';
+import { isChatbotDomainAllowed } from '../utils/chatbot-domain-allowlist.util';
+import { parseChatbotSessionMetadata } from '../utils/chatbot-session-metadata.util';
+import { resolveWelcomeMessage } from '../utils/chatbot-welcome-variant.util';
 import { ChatbotRulesRepository } from '../repositories/chatbot-rules.repository';
 import { ChatbotSessionsRepository } from '../repositories/chatbot-sessions.repository';
 import { ChatbotsRepository } from '../repositories/chatbots.repository';
@@ -49,6 +62,8 @@ export class PublicChatbotSessionService {
     private readonly messagesRepository: ConversationMessagesRepository,
     private readonly contactResolver: ChatbotContactResolverService,
     private readonly autoReply: ChatbotAutoReplyService,
+    private readonly auditService: AuditService,
+    private readonly realtime: ConversationRealtimeService,
   ) {}
 
   async getConfig(publicKey: string): Promise<PublicChatbotConfigDto> {
@@ -70,6 +85,37 @@ export class PublicChatbotSessionService {
     const chatbot = await this.requirePublicChatbot(publicKey);
     const settings = parseChatbotSettings(chatbot);
     const businessId = chatbot.businessId;
+    const isOnline = isChatbotOnline(
+      settings.businessHours,
+      settings.messaging,
+    );
+
+    if (
+      !isChatbotDomainAllowed(
+        settings.bot.allowedDomains,
+        dto.pageUrl,
+        dto.referrer ?? context.referer,
+      )
+    ) {
+      throw new AppException(
+        ErrorCode.CHATBOT_NOT_AVAILABLE,
+        'Chat widget is not available on this website',
+        HttpStatus.FORBIDDEN,
+      );
+    }
+
+    const requiresPhoneCapture =
+      !isOnline &&
+      settings.form.collectPhoneWhenOffline &&
+      settings.form.collectContactInfo;
+
+    if (requiresPhoneCapture && !dto.visitorPhone?.trim()) {
+      throw new AppException(
+        ErrorCode.VALIDATION_ERROR,
+        'Phone number is required while we are offline',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
 
     if (
       settings.form.collectContactInfo &&
@@ -119,6 +165,8 @@ export class PublicChatbotSessionService {
         dto.visitorId,
       );
 
+    const isNewConversation = !conversation;
+
     if (!conversation) {
       conversation = await this.conversationsRepository.create({
         business: { connect: { id: businessId } },
@@ -138,6 +186,20 @@ export class PublicChatbotSessionService {
           referrer: dto.referrer ?? context.referer ?? null,
           visitorId: dto.visitorId,
         },
+      });
+
+      await this.auditService.log({
+        actorUserId: SYSTEM_AUDIT_ACTOR_SENTINEL,
+        businessId,
+        action: 'conversation.created',
+        entityType: 'Conversation',
+        entityId: conversation.id,
+        metadata: { channel: ConversationChannel.WEBCHAT },
+      });
+
+      await this.realtime.publishConversationUpdated(businessId, {
+        conversationId: conversation.id,
+        channel: ConversationChannel.WEBCHAT,
       });
     } else if (contact && !conversation.contactId) {
       conversation = await this.conversationsRepository.update(
@@ -164,16 +226,53 @@ export class PublicChatbotSessionService {
       ipHash: context.ip ? this.hashIp(context.ip) : null,
     });
 
+    const existingMessageCount = await this.prisma.conversationMessage.count({
+      where: {
+        businessId,
+        conversationId: conversation.id,
+      },
+    });
+
+    if (existingMessageCount === 0) {
+      const baseGreeting = isOnline
+        ? settings.messaging.welcomeMessage
+        : settings.messaging.offlineMessage ||
+          settings.chatWindow.offlineMessage;
+      const greeting = resolveWelcomeMessage(
+        baseGreeting,
+        settings.bot.welcomeVariants,
+        {
+          pageUrl: dto.pageUrl,
+          referrer: dto.referrer ?? context.referer,
+        },
+      );
+      if (greeting?.trim()) {
+        await this.sendBotReply(
+          businessId,
+          conversation.id,
+          contact?.id ?? null,
+          dto.visitorId,
+          greeting.trim(),
+        );
+      }
+    }
+
     if (dto.initialMessage?.trim()) {
       await this.appendInboundAndMaybeReply(
         chatbot,
-        session.id,
-        conversation.id,
-        businessId,
+        session,
+        conversation,
         contact?.id ?? null,
         dto.visitorId,
         dto.initialMessage.trim(),
+        {
+          isOnline,
+          contactId: contact?.id ?? null,
+          visitorEmail: dto.visitorEmail ?? null,
+        },
       );
+    } else if (isNewConversation && existingMessageCount === 0) {
+      // Welcome already published via sendBotReply.
     }
 
     return { sessionId: session.id, conversationId: conversation.id };
@@ -207,16 +306,100 @@ export class PublicChatbotSessionService {
       );
     }
 
-    const inbound = await this.appendInboundAndMaybeReply(
-      chatbot,
-      sessionId,
-      conversationId,
+    const conversation = await this.conversationsRepository.findById(
       session.businessId,
+      conversationId,
+    );
+    if (!conversation) {
+      throw new AppException(
+        ErrorCode.CHATBOT_SESSION_NOT_FOUND,
+        'Conversation not found',
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    const settings = parseChatbotSettings(chatbot);
+    const isOnline = isChatbotOnline(
+      settings.businessHours,
+      settings.messaging,
+    );
+
+    return this.appendInboundAndMaybeReply(
+      chatbot,
+      session,
+      conversation,
       session.contactId,
       session.visitorId,
       text,
+      {
+        isOnline,
+        contactId: session.contactId,
+        visitorEmail: session.visitorEmail,
+      },
     );
-    return inbound;
+  }
+
+  async updateSessionProfile(
+    sessionId: string,
+    dto: UpdateChatbotSessionProfileDto,
+  ): Promise<{ contactId: string | null }> {
+    const session = await this.requireSession(sessionId);
+    const chatbot = await this.chatbotsRepository.findById(
+      session.businessId,
+      session.chatbotId,
+    );
+    if (!chatbot) {
+      throw new AppException(
+        ErrorCode.CHATBOT_NOT_AVAILABLE,
+        'Chat widget is unavailable',
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    const conversationId = session.conversationId;
+    if (!conversationId) {
+      throw new AppException(
+        ErrorCode.CHATBOT_SESSION_NOT_FOUND,
+        'Session not ready',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const contact = await this.contactResolver.resolveOrCreate(
+      session.businessId,
+      {
+        visitorId: session.visitorId,
+        visitorName: dto.visitorName ?? session.visitorName ?? undefined,
+        visitorEmail: dto.visitorEmail ?? session.visitorEmail ?? undefined,
+        visitorPhone: dto.visitorPhone ?? session.visitorPhone ?? undefined,
+        chatbotId: chatbot.id,
+        pageUrl: session.pageUrl ?? undefined,
+      },
+    );
+
+    if (!contact) {
+      throw new AppException(
+        ErrorCode.VALIDATION_ERROR,
+        'Could not save visitor profile',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    await this.sessionsRepository.update(session.id, {
+      visitorName: dto.visitorName?.trim() ?? session.visitorName,
+      visitorEmail:
+        dto.visitorEmail?.trim().toLowerCase() ?? session.visitorEmail,
+      visitorPhone: dto.visitorPhone?.trim() ?? session.visitorPhone,
+      contactId: contact.id,
+    });
+
+    await this.conversationsRepository.update(conversationId, {
+      contact: { connect: { id: contact.id } },
+      title:
+        contact.displayName?.trim() || session.visitorName || 'Website Visitor',
+    });
+
+    return { contactId: contact.id };
   }
 
   async listMessages(
@@ -260,15 +443,39 @@ export class PublicChatbotSessionService {
     );
   }
 
+  async endSession(
+    sessionId: string,
+  ): Promise<{ sessionId: string; status: string }> {
+    const session = await this.requireSession(sessionId);
+    if (session.status !== 'ACTIVE') {
+      return { sessionId: session.id, status: session.status };
+    }
+    const updated = await this.sessionsRepository.endSession(
+      session.id,
+      ChatbotSessionStatus.ENDED,
+    );
+    return { sessionId: updated.id, status: updated.status };
+  }
+
   private async appendInboundAndMaybeReply(
     chatbot: Chatbot,
-    sessionId: string,
-    conversationId: string,
-    businessId: string,
+    session: {
+      id: string;
+      businessId: string;
+      metadata: Prisma.JsonValue | null;
+    },
+    conversation: Conversation,
     contactId: string | null,
     visitorId: string,
     text: string,
+    context: {
+      isOnline: boolean;
+      contactId: string | null;
+      visitorEmail?: string | null;
+    },
   ): Promise<PublicChatbotMessageDto> {
+    const businessId = session.businessId;
+    const conversationId = conversation.id;
     const now = new Date();
     const externalMessageId = `webchat-in-${randomUUID()}`;
     const preview = text.slice(0, 500);
@@ -295,18 +502,43 @@ export class PublicChatbotSessionService {
       status: ConversationStatus.OPEN,
     });
 
+    await this.publishMessageEvents(
+      businessId,
+      conversationId,
+      inbound,
+      'conversation.message.received',
+    );
+
+    const sessionMetadata = parseChatbotSessionMetadata(session.metadata);
+    const botPaused =
+      sessionMetadata.botPaused ||
+      this.isConversationBotPaused(conversation.metadata);
+
     const rules = await this.rulesRepository.findActiveByChatbot(
       businessId,
       chatbot.id,
     );
-    const replyText = this.autoReply.resolveReply(chatbot, rules, text);
-    if (replyText) {
+    const reply = this.autoReply.resolveReply(chatbot, rules, text, {
+      botPaused,
+      isOnline: context.isOnline,
+    });
+
+    if (reply?.type === 'handoff') {
+      await this.pauseBotForHandoff(
+        session.id,
+        conversation,
+        businessId,
+        contactId,
+        visitorId,
+        reply.text,
+      );
+    } else if (reply?.type === 'reply') {
       await this.sendBotReply(
         businessId,
         conversationId,
         contactId,
         visitorId,
-        replyText,
+        reply.text,
       );
     }
 
@@ -316,6 +548,97 @@ export class PublicChatbotSessionService {
       senderType: inbound.senderType,
       text: inbound.text,
       createdAt: inbound.createdAt,
+      requiresProfile: await this.resolveRequiresProfile(
+        businessId,
+        conversationId,
+        {
+          contactId: context.contactId,
+          visitorEmail: context.visitorEmail ?? null,
+        },
+        parseChatbotSettings(chatbot),
+      ),
+    });
+  }
+
+  private async resolveRequiresProfile(
+    businessId: string,
+    conversationId: string,
+    session: { contactId: string | null; visitorEmail: string | null },
+    settings: ReturnType<typeof parseChatbotSettings>,
+  ): Promise<'email' | null> {
+    const profiling = settings.form.progressiveProfiling;
+    if (!profiling?.enabled) {
+      return null;
+    }
+
+    if (session.visitorEmail?.trim()) {
+      return null;
+    }
+
+    if (session.contactId) {
+      const contact = await this.prisma.contact.findFirst({
+        where: { id: session.contactId, businessId, deletedAt: null },
+        select: { email: true },
+      });
+      if (contact?.email?.trim()) {
+        return null;
+      }
+    }
+
+    const inboundCount = await this.prisma.conversationMessage.count({
+      where: {
+        businessId,
+        conversationId,
+        direction: ConversationDirection.INBOUND,
+        senderType: MessageSenderType.CONTACT,
+      },
+    });
+
+    if (inboundCount >= (profiling.askEmailAfterMessages ?? 2)) {
+      return 'email';
+    }
+
+    return null;
+  }
+
+  private async pauseBotForHandoff(
+    sessionId: string,
+    conversation: Conversation,
+    businessId: string,
+    contactId: string | null,
+    visitorId: string,
+    handoffMessage: string,
+  ): Promise<void> {
+    const now = new Date();
+    const handoffAt = now.toISOString();
+
+    await this.sessionsRepository.update(sessionId, {
+      metadata: {
+        botPaused: true,
+        handoffAt,
+      },
+    });
+
+    const existingMetadata = this.asMetadataObject(conversation.metadata);
+    await this.conversationsRepository.update(conversation.id, {
+      metadata: {
+        ...existingMetadata,
+        chatbotBotPaused: true,
+        chatbotHandoffAt: handoffAt,
+      },
+    });
+
+    await this.sendBotReply(
+      businessId,
+      conversation.id,
+      contactId,
+      visitorId,
+      handoffMessage,
+    );
+
+    await this.realtime.publishConversationUpdated(businessId, {
+      conversationId: conversation.id,
+      channel: ConversationChannel.WEBCHAT,
     });
   }
 
@@ -327,7 +650,7 @@ export class PublicChatbotSessionService {
     text: string,
   ): Promise<void> {
     const now = new Date();
-    await this.messagesRepository.create({
+    const message = await this.messagesRepository.create({
       business: { connect: { id: businessId } },
       conversation: { connect: { id: conversationId } },
       contact: contactId ? { connect: { id: contactId } } : undefined,
@@ -341,10 +664,66 @@ export class PublicChatbotSessionService {
       externalRecipientId: visitorId,
       sentAt: now,
     });
+
     await this.conversationsRepository.update(conversationId, {
       lastMessageAt: now,
       lastMessagePreview: text.slice(0, 500),
     });
+
+    await this.publishMessageEvents(
+      businessId,
+      conversationId,
+      message,
+      'conversation.message.received',
+    );
+  }
+
+  private async publishMessageEvents(
+    businessId: string,
+    conversationId: string,
+    message: ConversationMessage,
+    auditAction: 'conversation.message.received',
+  ): Promise<void> {
+    const response = toConversationMessageResponse(message);
+
+    await this.realtime.publishMessageReceived(businessId, {
+      conversationId,
+      messageId: message.id,
+      status: message.status,
+      channel: message.channel,
+      message: response,
+    });
+
+    await this.realtime.publishConversationUpdated(businessId, {
+      conversationId,
+      channel: message.channel,
+    });
+
+    await this.auditService.log({
+      actorUserId: SYSTEM_AUDIT_ACTOR_SENTINEL,
+      businessId,
+      action: auditAction,
+      entityType: 'ConversationMessage',
+      entityId: message.id,
+      metadata: {
+        conversationId,
+        channel: message.channel,
+      },
+    });
+  }
+
+  private isConversationBotPaused(metadata: Prisma.JsonValue | null): boolean {
+    const value = this.asMetadataObject(metadata);
+    return value.chatbotBotPaused === true;
+  }
+
+  private asMetadataObject(
+    metadata: Prisma.JsonValue | null,
+  ): Record<string, unknown> {
+    if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) {
+      return {};
+    }
+    return metadata;
   }
 
   private async requirePublicChatbot(publicKey: string) {

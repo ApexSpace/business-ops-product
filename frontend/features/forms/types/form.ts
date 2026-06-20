@@ -38,6 +38,8 @@ export type BorderRadius = "none" | "sm" | "md" | "lg" | "full";
 export type FieldWidth = 25 | 33 | 50 | 67 | 75 | 100;
 export type TextAlign = "left" | "center" | "right";
 export type ColumnCount = 1 | 2 | 3 | 4;
+export type ColumnVerticalAlign = "top" | "center" | "bottom" | "stretch";
+export type ColumnHorizontalAlign = "left" | "center" | "right";
 export type RatingStyle = "stars" | "hearts" | "thumbs" | "numbers";
 export type FontPreset = "system" | "serif" | "sans" | "mono";
 export type SubmitButtonAlign = "left" | "center" | "right";
@@ -103,6 +105,8 @@ export interface FormField {
   src?: string;
   fileAssetId?: string;
   columnCount?: ColumnCount;
+  columnVerticalAlign?: ColumnVerticalAlign;
+  columnHorizontalAlign?: ColumnHorizontalAlign;
   showFirstName?: boolean;
   showMiddleName?: boolean;
   showLastName?: boolean;
@@ -113,6 +117,13 @@ export interface FormStep {
   title: string;
   fieldIds: string[];
 }
+
+export type FormLayoutPreset =
+  | "full"
+  | "compact"
+  | "container"
+  | "wide"
+  | "spacious";
 
 export interface FormSettings {
   title: string;
@@ -127,6 +138,7 @@ export interface FormSettings {
   submitButtonAlign?: SubmitButtonAlign;
   submitButtonBgColor?: string;
   submitButtonTextColor?: string;
+  layoutWidth?: FormLayoutPreset;
   maxWidth?: number;
   padding?: number;
   borderRadius?: BorderRadius;
@@ -138,6 +150,7 @@ export interface FormSettings {
   multiStep?: boolean;
   showProgressBar?: boolean;
   steps?: FormStep[];
+  createConversationOnSubmit?: boolean;
 }
 
 export interface FormDefinition {

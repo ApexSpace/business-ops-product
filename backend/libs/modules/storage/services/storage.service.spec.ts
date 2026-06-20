@@ -1,9 +1,5 @@
 import { HttpStatus } from '@nestjs/common';
-import {
-  FileAssetStatus,
-  FileCategory,
-  FileVisibility,
-} from '@prisma/client';
+import { FileAssetStatus, FileCategory, FileVisibility } from '@prisma/client';
 import { AppException } from '@app/common/exceptions/app.exception';
 import { StorageService } from './storage.service';
 
@@ -108,7 +104,9 @@ describe('StorageService', () => {
 
     const result = await service.createUpload('biz-1', uploadDto, actor);
 
-    expect(fileAssetService.validateUploadInput).toHaveBeenCalledWith(uploadDto);
+    expect(fileAssetService.validateUploadInput).toHaveBeenCalledWith(
+      uploadDto,
+    );
     expect(fileAssetRepository.create).toHaveBeenCalled();
     expect(result).toEqual({
       fileAssetId: 'file-1',
@@ -152,7 +150,10 @@ describe('StorageService', () => {
       actor,
     );
 
-    expect(fileAssetService.markFailed).toHaveBeenCalledWith('file-1', 'timeout');
+    expect(fileAssetService.markFailed).toHaveBeenCalledWith(
+      'file-1',
+      'timeout',
+    );
     expect(result.status).toBe(FileAssetStatus.FAILED);
   });
 
@@ -173,7 +174,11 @@ describe('StorageService', () => {
   it('rejects cross-business access via NOT_FOUND', async () => {
     const { service, fileAssetService } = buildService();
     fileAssetService.getActiveAsset.mockRejectedValue(
-      new AppException('NOT_FOUND' as never, 'File not found', HttpStatus.NOT_FOUND),
+      new AppException(
+        'NOT_FOUND' as never,
+        'File not found',
+        HttpStatus.NOT_FOUND,
+      ),
     );
 
     await expect(service.getFile('biz-2', 'file-1')).rejects.toBeInstanceOf(
@@ -192,7 +197,9 @@ describe('StorageService', () => {
 
     const result = await service.getDownloadUrl('biz-1', 'file-1');
 
-    expect(fileAssetService.assertDownloadable).toHaveBeenCalledWith(readyAsset);
+    expect(fileAssetService.assertDownloadable).toHaveBeenCalledWith(
+      readyAsset,
+    );
     expect(result).toEqual({
       downloadUrl: 'https://r2.example/download',
       expiresIn: 300,
@@ -210,9 +217,9 @@ describe('StorageService', () => {
       );
     });
 
-    await expect(service.getDownloadUrl('biz-1', 'file-1')).rejects.toBeInstanceOf(
-      AppException,
-    );
+    await expect(
+      service.getDownloadUrl('biz-1', 'file-1'),
+    ).rejects.toBeInstanceOf(AppException);
   });
 
   it('delete soft deletes asset', async () => {

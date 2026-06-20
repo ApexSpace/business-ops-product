@@ -19,20 +19,27 @@ import {
   getFieldSizeStyle,
 } from "@/features/forms/utils/field-style.util";
 import { FieldRenderer } from "@/features/forms/components/builder/field-renderer";
+import { formFieldContainsId } from "@/features/forms/utils/form-field-contains-id.util";
+import { getColumnFieldRemovalContext } from "@/features/forms/utils/column-fields.util";
 
 interface SortableFieldRowProps {
   field: FormField;
+  allFields: FormField[];
   settings: FormSettings;
   selected: boolean;
+  selectedFieldId: string | null;
   isFirst: boolean;
   isLast: boolean;
   showRequiredIndicator: boolean;
+  isDraggingFromPalette?: boolean;
+  activeColumnTargetIndex?: number | null;
   onSelect: () => void;
   onDuplicate: () => void;
-  onRemove: () => void;
+  onRemoveField: (fieldId: string) => void;
   onMoveUp: () => void;
   onMoveDown: () => void;
   onOpenSettings: () => void;
+  onSelectNestedField?: (fieldId: string) => void;
 }
 
 const chromeVisibilityClass =
@@ -40,18 +47,36 @@ const chromeVisibilityClass =
 
 export function SortableFieldRow({
   field,
+  allFields,
   settings,
   selected,
+  selectedFieldId,
   isFirst,
   isLast,
   showRequiredIndicator,
+  isDraggingFromPalette = false,
+  activeColumnTargetIndex = null,
   onSelect,
   onDuplicate,
-  onRemove,
+  onRemoveField,
   onMoveUp,
   onMoveDown,
   onOpenSettings,
+  onSelectNestedField,
 }: SortableFieldRowProps) {
+  const isRowSelected = selected || formFieldContainsId(field, selectedFieldId);
+  const nestedSelectionActive =
+    selectedFieldId != null &&
+    selectedFieldId !== field.id &&
+    formFieldContainsId(field, selectedFieldId);
+  const deleteTargetId = nestedSelectionActive ? selectedFieldId : field.id;
+  const columnRemovalContext = nestedSelectionActive
+    ? getColumnFieldRemovalContext(allFields, selectedFieldId)
+    : null;
+  const canDelete = nestedSelectionActive
+    ? (columnRemovalContext?.canRemove ?? false)
+    : true;
+
   const {
     attributes,
     listeners,
@@ -70,7 +95,7 @@ export function SortableFieldRow({
         ...getFieldMarginStyle(field.style),
       }}
       className={cn("group relative w-full pt-8", isDragging && "z-10")}
-      data-selected={selected ? "true" : undefined}
+      data-selected={isRowSelected ? "true" : undefined}
       onPointerDown={(event) => event.stopPropagation()}
     >
       <div
@@ -124,11 +149,12 @@ export function SortableFieldRow({
           <Settings2 className="size-3.5" />
         </IconButton>
         <IconButton
-          aria-label="Remove field"
+          aria-label={nestedSelectionActive ? "Delete selected field" : "Remove field"}
           className="size-7 text-destructive hover:text-destructive"
+          disabled={!canDelete}
           onClick={(event) => {
             event.stopPropagation();
-            onRemove();
+            onRemoveField(deleteTargetId);
           }}
         >
           <Trash2 className="size-3.5" />
@@ -140,7 +166,7 @@ export function SortableFieldRow({
         className={cn(
           "flex items-center gap-2 rounded-lg border bg-card p-5 transition-colors",
           getFieldLayoutClassName(field.style),
-          selected ? "border-primary ring-2 ring-primary/30" : "border-border",
+          isRowSelected ? "border-primary ring-2 ring-primary/30" : "border-border",
           isDragging && "opacity-80 shadow-md",
         )}
         onClick={onSelect}
@@ -175,6 +201,10 @@ export function SortableFieldRow({
             showRequiredIndicator={showRequiredIndicator}
             mode="builder"
             embedInBuilderRow
+            selectedFieldId={selectedFieldId}
+            onSelectField={onSelectNestedField}
+            isDraggingFromPalette={isDraggingFromPalette}
+            activeColumnTargetIndex={activeColumnTargetIndex}
           />
         </div>
       </div>

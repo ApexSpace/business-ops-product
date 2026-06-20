@@ -16,7 +16,9 @@ export function assertValidTemplateName(name: string): void {
   }
 }
 
-export function extractBodyPreview(components: TemplateComponentInput[]): string {
+export function extractBodyPreview(
+  components: TemplateComponentInput[],
+): string {
   const body = components.find(
     (component) =>
       typeof component.type === 'string' &&
@@ -113,7 +115,9 @@ function normalizeComponent(
   return component;
 }
 
-function readHeaderHandle(component: TemplateComponentInput): string | undefined {
+function readHeaderHandle(
+  component: TemplateComponentInput,
+): string | undefined {
   const example = component.example;
   if (example && typeof example === 'object' && !Array.isArray(example)) {
     const handles = (example as Record<string, unknown>).header_handle;

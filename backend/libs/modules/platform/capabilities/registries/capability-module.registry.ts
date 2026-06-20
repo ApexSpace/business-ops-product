@@ -419,7 +419,8 @@ export const REGISTRY_MODULES: RegistryModuleDefinition[] = [
       }),
       option('conversations', 'whatsapp_templates_manage', {
         name: 'WhatsApp templates (manage)',
-        description: 'Create, edit, sync, and delete WhatsApp message templates.',
+        description:
+          'Create, edit, sync, and delete WhatsApp message templates.',
         permissionKey: 'whatsapp.templates.manage',
         routeKeys: ['/business/settings/whatsapp'],
         icon: 'file-text',
@@ -661,7 +662,11 @@ export const REGISTRY_MODULES: RegistryModuleDefinition[] = [
         'workflow automations',
         'settings.automations.read',
         'settings.automations.write',
-        ['/business/settings/automations', '/business/settings/automation-workflows', '/business/settings/automation-registry'],
+        [
+          '/business/settings/automations',
+          '/business/settings/automation-workflows',
+          '/business/settings/automation-registry',
+        ],
         'zap',
         true,
         'Automation',

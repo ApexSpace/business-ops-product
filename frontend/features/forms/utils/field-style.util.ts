@@ -9,6 +9,7 @@ import type {
   LabelPosition,
   LabelSize,
 } from "@/features/forms/types";
+import { resolveFormLayout, resolveFormMaxWidthPx } from "@/features/forms/utils/form-layout.util";
 import { cn } from "@/lib/utils";
 
 const WIDTH_CLASS: Record<FieldWidth, string> = {
@@ -64,9 +65,9 @@ export function getFieldWidthClass(width?: FieldStyle["width"]): string {
 
 const COLUMN_GRID_CLASS: Record<1 | 2 | 3 | 4, string> = {
   1: "grid-cols-1",
-  2: "grid-cols-2",
-  3: "grid-cols-3",
-  4: "grid-cols-4",
+  2: "grid-cols-1 sm:grid-cols-2",
+  3: "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3",
+  4: "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4",
 };
 
 export function getColumnGridClass(columnCount?: number): string {
@@ -161,7 +162,16 @@ export function getFormContainerStyle(settings: FormSettings): CSSProperties {
   if (settings.backgroundColor) result.backgroundColor = settings.backgroundColor;
   if (settings.textColor) result.color = settings.textColor;
   if (settings.padding != null) result.padding = `${settings.padding}px`;
-  if (settings.maxWidth != null) result.maxWidth = `${settings.maxWidth}px`;
+
+  const layout = resolveFormLayout(settings);
+  const maxWidth = resolveFormMaxWidthPx(layout) ?? settings.maxWidth;
+  if (layout === "full") {
+    result.maxWidth = "100%";
+    result.width = "100%";
+  } else if (maxWidth != null) {
+    result.maxWidth = `${maxWidth}px`;
+  }
+
   return result;
 }
 

@@ -50,8 +50,7 @@ export class SendWhatsAppTemplateDto {
 export class SendMessageDto {
   @ApiPropertyOptional()
   @ValidateIf(
-    (dto: SendMessageDto) =>
-      !dto.attachments?.length && !dto.template,
+    (dto: SendMessageDto) => !dto.attachments?.length && !dto.template,
   )
   @IsString()
   @MinLength(1)
@@ -69,7 +68,9 @@ export class SendMessageDto {
   @MaxLength(500)
   subject?: string;
 
-  @ApiPropertyOptional({ description: 'WhatsApp template (required outside 24h window)' })
+  @ApiPropertyOptional({
+    description: 'WhatsApp template (required outside 24h window)',
+  })
   @IsOptional()
   @ValidateNested()
   @Type(() => SendWhatsAppTemplateDto)

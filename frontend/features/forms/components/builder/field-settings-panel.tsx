@@ -9,14 +9,22 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
-import type { FieldStyle, FieldType, FormField, FormSettings, FormStatus } from "@/features/forms/types";
+import type {
+  ColumnCount,
+  ColumnHorizontalAlign,
+  ColumnVerticalAlign,
+  FieldStyle,
+  FieldType,
+  FormField,
+  FormSettings,
+  FormStatus,
+} from "@/features/forms/types";
 import { useFormFieldTypeMap } from "@/features/forms/hooks/use-form-metadata";
 import {
   COLUMN_COUNT_OPTIONS,
   getFieldTypeLabel,
   resizeFormFieldColumns,
 } from "@/features/forms/utils/field-defaults.util";
-import type { ColumnCount } from "@/features/forms/types";
 import { SectionHeader } from "@/features/forms/components/builder/settings-controls/section-header";
 import { SettingInput } from "@/features/forms/components/builder/settings-controls/setting-input";
 import { SettingRow } from "@/features/forms/components/builder/settings-controls/setting-row";
@@ -24,6 +32,7 @@ import { SettingSelect } from "@/features/forms/components/builder/settings-cont
 import { SettingToggle } from "@/features/forms/components/builder/settings-controls/setting-toggle";
 import { ColorInput } from "@/features/forms/components/builder/settings-controls/color-input";
 import { OptionsEditor } from "@/features/forms/components/builder/settings-controls/options-editor";
+import { ColumnsFieldEditor } from "@/features/forms/components/builder/settings-controls/columns-field-editor";
 import { FormInfoSection } from "@/features/forms/components/builder/form-settings/form-info-section";
 import { SubmitButtonSection } from "@/features/forms/components/builder/form-settings/submit-button-section";
 import { AfterSubmitSection } from "@/features/forms/components/builder/form-settings/after-submit-section";
@@ -33,6 +42,9 @@ import { ShareFormSection } from "@/features/forms/components/builder/form-setti
 import { FormFileUploadControl } from "@/features/forms/components/form-file-upload-control";
 import { FORM_IMAGE_ACCEPT } from "@/features/forms/utils/form-upload.util";
 import { parseFieldWidth } from "@/features/forms/utils/field-style.util";
+import { getColumnFieldRemovalContext } from "@/features/forms/utils/column-fields.util";
+import { Button } from "@/components/ui/button";
+import { Trash2 } from "lucide-react";
 
 interface FieldSettingsPanelProps {
   selectedField: FormField | null;
@@ -43,6 +55,7 @@ interface FieldSettingsPanelProps {
   formName?: string;
   onOpenShareDialog?: () => void;
   onUpdateField: (fieldId: string, patch: Partial<FormField>) => void;
+  onRemoveField?: (fieldId: string) => void;
   onUpdateSettings: (patch: Partial<FormSettings>) => void;
   className?: string;
 }
@@ -101,6 +114,19 @@ const HEADING_LEVEL_OPTIONS = [
   { value: "2", label: "H2" },
   { value: "3", label: "H3" },
   { value: "4", label: "H4" },
+];
+
+const COLUMN_VERTICAL_ALIGN_OPTIONS = [
+  { value: "top", label: "Top" },
+  { value: "center", label: "Center" },
+  { value: "bottom", label: "Bottom" },
+  { value: "stretch", label: "Stretch" },
+];
+
+const COLUMN_HORIZONTAL_ALIGN_OPTIONS = [
+  { value: "left", label: "Left" },
+  { value: "center", label: "Center" },
+  { value: "right", label: "Right" },
 ];
 
 function updateStyle(
@@ -302,22 +328,46 @@ function FieldEditor({
         ) : null}
 
         {field.type === "columns" ? (
-          <SettingRow label="Column count">
-            <SettingSelect
-              value={String(field.columnCount ?? field.columns?.length ?? 2)}
-              onChange={(value) => {
-                const count = Number(value) as ColumnCount;
-                onUpdate({
-                  columnCount: count,
-                  columns: resizeFormFieldColumns(field.columns, count),
-                });
-              }}
-              options={COLUMN_COUNT_OPTIONS.map((option) => ({
-                value: String(option.value),
-                label: option.label,
-              }))}
+          <>
+            <SettingRow label="Column count">
+              <SettingSelect
+                value={String(field.columnCount ?? field.columns?.length ?? 2)}
+                onChange={(value) => {
+                  const count = Number(value) as ColumnCount;
+                  onUpdate({
+                    columnCount: count,
+                    columns: resizeFormFieldColumns(field.columns, count),
+                  });
+                }}
+                options={COLUMN_COUNT_OPTIONS.map((option) => ({
+                  value: String(option.value),
+                  label: option.label,
+                }))}
+              />
+            </SettingRow>
+            <SettingRow label="Vertical align">
+              <SettingSelect
+                value={field.columnVerticalAlign ?? "top"}
+                onChange={(value) =>
+                  onUpdate({ columnVerticalAlign: value as ColumnVerticalAlign })
+                }
+                options={COLUMN_VERTICAL_ALIGN_OPTIONS}
+              />
+            </SettingRow>
+            <SettingRow label="Horizontal align">
+              <SettingSelect
+                value={field.columnHorizontalAlign ?? "left"}
+                onChange={(value) =>
+                  onUpdate({ columnHorizontalAlign: value as ColumnHorizontalAlign })
+                }
+                options={COLUMN_HORIZONTAL_ALIGN_OPTIONS}
+              />
+            </SettingRow>
+            <ColumnsFieldEditor
+              columns={field.columns ?? []}
+              onChange={(columns) => onUpdate({ columns })}
             />
-          </SettingRow>
+          </>
         ) : null}
 
         {field.type === "hidden" ? (
@@ -583,10 +633,15 @@ export function FieldSettingsPanel({
   formStatus = "draft",
   onOpenShareDialog,
   onUpdateField,
+  onRemoveField,
   onUpdateSettings,
   className,
 }: FieldSettingsPanelProps) {
   const selectedFieldId = selectedField?.id ?? null;
+  const columnRemovalContext = selectedFieldId
+    ? getColumnFieldRemovalContext(fields, selectedFieldId)
+    : null;
+  const isNestedColumnField = columnRemovalContext != null;
   const [tabOverride, setTabOverride] = useState<{
     fieldId: string | null;
     tab: SettingsTab;
@@ -632,10 +687,33 @@ export function FieldSettingsPanel({
         <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden py-2 pl-2 pr-[var(--page-padding-x)]">
           <TabsContent value="field" className="mt-0">
             {selectedField ? (
-              <FieldEditor
-                field={selectedField}
-                onUpdate={(patch) => onUpdateField(selectedField.id, patch)}
-              />
+              <div className="space-y-4">
+                {onRemoveField ? (
+                  <div className="space-y-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="w-full text-destructive hover:text-destructive"
+                      disabled={isNestedColumnField && !columnRemovalContext.canRemove}
+                      onClick={() => onRemoveField(selectedField.id)}
+                    >
+                      <Trash2 className="mr-2 size-4" />
+                      Delete field
+                    </Button>
+                    {isNestedColumnField && !columnRemovalContext.canRemove ? (
+                      <p className="text-xs text-muted-foreground">
+                        Each column must keep at least one field. Add another field
+                        before deleting this one.
+                      </p>
+                    ) : null}
+                  </div>
+                ) : null}
+                <FieldEditor
+                  field={selectedField}
+                  onUpdate={(patch) => onUpdateField(selectedField.id, patch)}
+                />
+              </div>
             ) : (
               <p className="text-sm text-muted-foreground">
                 Select a field on the canvas to edit its settings.

@@ -37,6 +37,7 @@ export class ConversationResponseDto {
   unreadCount!: number;
   createdAt!: Date;
   updatedAt!: Date;
+  chatbotBotPaused?: boolean;
   contact?: ConversationContactSummaryDto | null;
   assignedTo?: ConversationAssigneeDto | null;
 }

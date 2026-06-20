@@ -113,7 +113,12 @@ describe('AutomationActionExecutorService (implemented actions)', () => {
         actionKey,
         config,
         actionKey === 'lead.move_stage'
-          ? { ...context, subjectType: 'lead', subjectId: ID.lead, leadId: ID.lead }
+          ? {
+              ...context,
+              subjectType: 'lead',
+              subjectId: ID.lead,
+              leadId: ID.lead,
+            }
           : context,
         ID.user,
       );

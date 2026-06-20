@@ -12,6 +12,7 @@ import type {
   ConversationChannel,
 } from "@/features/conversations/api/conversations.api";
 import { cn } from "@/lib/utils";
+import { CannedResponsesPicker } from "@/features/conversations/components/inbox/canned-responses-picker";
 
 export interface PendingMessageAttachment {
   type: string;
@@ -46,6 +47,7 @@ interface MessageComposerProps {
   onTemplateHeaderMediaUrlChange?: (value: string) => void;
   onSend: () => void;
   variant?: "default" | "thread";
+  showCannedResponses?: boolean;
 }
 
 function ComposerStatusBanner({ message }: { message: string }) {
@@ -142,6 +144,7 @@ export function MessageComposer({
   onTemplateHeaderMediaUrlChange,
   onSend,
   variant = "default",
+  showCannedResponses = false,
 }: MessageComposerProps) {
   const [attachmentOpen, setAttachmentOpen] = useState(false);
 
@@ -326,6 +329,13 @@ export function MessageComposer({
           messageInput
         )}
       </div>
+      {showCannedResponses ? (
+        <CannedResponsesPicker
+          onSelect={(text) =>
+            onComposerChange(composer.trim() ? `${composer}\n${text}` : text)
+          }
+        />
+      ) : null}
       {sendButton}
     </ComposerInputCard>
   );
@@ -459,6 +469,13 @@ export function MessageComposer({
               />
             ) : null}
             {composerBody}
+            {showCannedResponses ? (
+              <CannedResponsesPicker
+                onSelect={(text) =>
+                  onComposerChange(composer.trim() ? `${composer}\n${text}` : text)
+                }
+              />
+            ) : null}
             {sendButton}
           </ComposerInputCard>
         </div>

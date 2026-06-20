@@ -11,6 +11,7 @@ interface FormImageDisplayProps {
   alt: string;
   publicKey?: string;
   className?: string;
+  tall?: boolean;
 }
 
 export function FormImageDisplay({
@@ -19,6 +20,7 @@ export function FormImageDisplay({
   alt,
   publicKey,
   className,
+  tall = false,
 }: FormImageDisplayProps) {
   const authDownload = useFileDownloadUrl(fileAssetId ?? "", {
     enabled: !!fileAssetId && !publicKey,
@@ -36,7 +38,8 @@ export function FormImageDisplay({
     return (
       <div
         className={cn(
-          "flex h-32 items-center justify-center rounded-md border border-dashed bg-muted/30",
+          "flex items-center justify-center rounded-md border border-dashed bg-muted/30",
+          tall ? "min-h-48" : "h-32",
           className,
         )}
       >
@@ -50,7 +53,11 @@ export function FormImageDisplay({
     <img
       src={resolvedSrc}
       alt={alt}
-      className={cn("max-h-48 w-full rounded-md object-cover", className)}
+      className={cn(
+        "w-full rounded-md object-cover",
+        tall ? "max-h-80 object-contain" : "max-h-48",
+        className,
+      )}
     />
   );
 }

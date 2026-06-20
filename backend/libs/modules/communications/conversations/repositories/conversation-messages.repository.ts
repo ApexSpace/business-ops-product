@@ -370,5 +370,4 @@ export class ConversationMessagesRepository {
       orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
     });
   }
-
 }

@@ -28,7 +28,7 @@ function pickPrimaryConversation(
     const bTime = b.lastMessageAt?.getTime() ?? 0;
     if (bTime !== aTime) return bTime - aTime;
     return b.updatedAt.getTime() - a.updatedAt.getTime();
-  })[0]!;
+  })[0];
 }
 
 function pickThreadStatus(

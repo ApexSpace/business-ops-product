@@ -42,7 +42,9 @@ export function parseWorkflowTriggerFilters(
   );
 }
 
-export function toAutomationWorkflowResponse(workflow: AutomationWorkflowRecord) {
+export function toAutomationWorkflowResponse(
+  workflow: AutomationWorkflowRecord,
+) {
   return {
     id: workflow.id,
     businessId: workflow.businessId,

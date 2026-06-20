@@ -58,7 +58,9 @@ export class ConditionEvaluatorService {
       case 'appointment.calendar_is': {
         const appointmentId =
           context.appointmentId ??
-          (context.subjectType === 'appointment' ? context.subjectId : undefined);
+          (context.subjectType === 'appointment'
+            ? context.subjectId
+            : undefined);
         if (!appointmentId) return null;
         const appointment = await this.prisma.appointment.findFirst({
           where: {
@@ -73,7 +75,9 @@ export class ConditionEvaluatorService {
       case 'appointment.status_is': {
         const appointmentId =
           context.appointmentId ??
-          (context.subjectType === 'appointment' ? context.subjectId : undefined);
+          (context.subjectType === 'appointment'
+            ? context.subjectId
+            : undefined);
         if (!appointmentId) return null;
         const appointment = await this.prisma.appointment.findFirst({
           where: {

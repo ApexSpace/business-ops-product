@@ -8,8 +8,7 @@ describe('RealtimeBridgeService', () => {
   }) {
     const unsubscribe = jest.fn();
     const subscribe =
-      overrides?.subscribe ??
-      jest.fn().mockResolvedValue(unsubscribe);
+      overrides?.subscribe ?? jest.fn().mockResolvedValue(unsubscribe);
     const pubSub = {
       isAvailable: jest.fn().mockReturnValue(overrides?.available ?? true),
       subscribe,

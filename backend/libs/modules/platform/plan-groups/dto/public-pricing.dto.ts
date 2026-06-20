@@ -92,7 +92,8 @@ export class PublicPricingTierDto {
   ctaUrl?: string | null;
 
   @ApiPropertyOptional({
-    description: 'True when tier metadata includes Stripe price IDs for checkout.',
+    description:
+      'True when tier metadata includes Stripe price IDs for checkout.',
   })
   stripeCheckoutEnabled?: boolean;
 

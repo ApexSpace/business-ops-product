@@ -1,4 +1,5 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
+import { AuditModule } from '@app/modules/platform/audit/audit.module';
 import { BusinessModule } from '@app/modules/platform/business/business.module';
 import { ContactsModule } from '@app/modules/crm/contacts/contacts.module';
 import { ConversationsModule } from '../conversations/conversations.module';
@@ -15,9 +16,15 @@ import { ChatbotWidgetPageService } from './services/chatbot-widget-page.service
 import { ChatbotRulesService } from './services/chatbot-rules.service';
 import { ChatbotsService } from './services/chatbots.service';
 import { PublicChatbotSessionService } from './services/public-chatbot-session.service';
+import { ChatbotSessionService } from './services/chatbot-session.service';
 
 @Module({
-  imports: [BusinessModule, ContactsModule, ConversationsModule],
+  imports: [
+    AuditModule,
+    forwardRef(() => BusinessModule),
+    forwardRef(() => ContactsModule),
+    forwardRef(() => ConversationsModule),
+  ],
   controllers: [
     ChatbotsController,
     PublicChatbotController,
@@ -33,8 +40,14 @@ import { PublicChatbotSessionService } from './services/public-chatbot-session.s
     ChatbotWidgetPageService,
     ChatbotAutoReplyService,
     ChatbotContactResolverService,
+    ChatbotSessionService,
     PublicChatbotSessionService,
   ],
-  exports: [ChatbotsRepository, PublicChatbotSessionService],
+  exports: [
+    ChatbotsRepository,
+    PublicChatbotSessionService,
+    ChatbotSessionService,
+    ChatbotSessionsRepository,
+  ],
 })
 export class ChatbotsModule {}

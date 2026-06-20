@@ -82,12 +82,30 @@ export class WorkflowSettingsDto {
   @IsBoolean()
   stopOnResponse?: boolean;
 
-  @ApiPropertyOptional({ enum: ['every_time', 'once_per_context', 'once_per_subject', 'once_per_period'] })
+  @ApiPropertyOptional({
+    enum: [
+      'every_time',
+      'once_per_context',
+      'once_per_subject',
+      'once_per_period',
+    ],
+  })
   @IsOptional()
-  @IsIn(['every_time', 'once_per_context', 'once_per_subject', 'once_per_period'])
-  runPolicy?: 'every_time' | 'once_per_context' | 'once_per_subject' | 'once_per_period';
+  @IsIn([
+    'every_time',
+    'once_per_context',
+    'once_per_subject',
+    'once_per_period',
+  ])
+  runPolicy?:
+    | 'every_time'
+    | 'once_per_context'
+    | 'once_per_subject'
+    | 'once_per_period';
 
-  @ApiPropertyOptional({ description: 'Lookback days when runPolicy is once_per_period' })
+  @ApiPropertyOptional({
+    description: 'Lookback days when runPolicy is once_per_period',
+  })
   @IsOptional()
   @Type(() => Number)
   runPolicyPeriodDays?: number;

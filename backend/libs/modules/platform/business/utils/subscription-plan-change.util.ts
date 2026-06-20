@@ -19,7 +19,8 @@ export function normalizeMonthlyPrice(
   }
   if (fallbackAmount != null) return Number(fallbackAmount.toString());
   if (tier?.priceMonthly != null) return Number(tier.priceMonthly.toString());
-  if (tier?.priceYearly != null) return Number(tier.priceYearly.toString()) / 12;
+  if (tier?.priceYearly != null)
+    return Number(tier.priceYearly.toString()) / 12;
   return null;
 }
 
@@ -29,16 +30,16 @@ export function resolvePlanChangeEventType(
   tierChanged: boolean,
 ): BusinessSubscriptionEventType {
   if (!tierChanged) {
-    return 'PLAN_CHANGED' as BusinessSubscriptionEventType;
+    return 'PLAN_CHANGED';
   }
   if (oldPrice == null || newPrice == null) {
-    return 'PLAN_CHANGED' as BusinessSubscriptionEventType;
+    return 'PLAN_CHANGED';
   }
   if (newPrice > oldPrice) {
-    return 'UPGRADED' as BusinessSubscriptionEventType;
+    return 'UPGRADED';
   }
   if (newPrice < oldPrice) {
-    return 'DOWNGRADED' as BusinessSubscriptionEventType;
+    return 'DOWNGRADED';
   }
-  return 'PLAN_CHANGED' as BusinessSubscriptionEventType;
+  return 'PLAN_CHANGED';
 }

@@ -15,6 +15,7 @@ import {
   resizeFormFieldColumns,
 } from "@/features/forms/utils/field-defaults.util";
 import { FORM_FIELD_TYPE_SET } from "@/features/forms/constants/form-field-type-keys.constant";
+import { syncFormLayoutSettings } from "@/features/forms/utils/form-layout.util";
 
 const FIELD_TYPES = FORM_FIELD_TYPE_SET;
 
@@ -126,7 +127,11 @@ export function normalizeFormField(field: FormField): FormField {
 }
 
 export function normalizeFormSettings(settings: Partial<FormSettings>): FormSettings {
-  return { ...createDefaultFormSettings(), ...settings };
+  const merged = { ...createDefaultFormSettings(), ...settings };
+  return {
+    ...merged,
+    ...syncFormLayoutSettings(merged),
+  };
 }
 
 export function normalizeFormDefinition(definition: FormDefinition): FormDefinition {

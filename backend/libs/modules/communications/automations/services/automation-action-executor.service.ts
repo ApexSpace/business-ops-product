@@ -200,7 +200,9 @@ export class AutomationActionExecutorService {
         appointmentId: context.appointmentId,
         invoiceId: context.invoiceId,
         conversationId:
-          context.subjectType === 'conversation' ? context.subjectId : undefined,
+          context.subjectType === 'conversation'
+            ? context.subjectId
+            : undefined,
         formId: context.subjectType === 'form' ? context.subjectId : undefined,
         submissionId: context.contextEntityId,
       },
@@ -278,7 +280,9 @@ export class AutomationActionExecutorService {
     }
 
     if (recipients.length === 0) {
-      this.logger.warn(`No email recipients for automation run ${context.runId}`);
+      this.logger.warn(
+        `No email recipients for automation run ${context.runId}`,
+      );
       return { type: 'continue', output: { skipped: true } };
     }
 
@@ -372,7 +376,10 @@ export class AutomationActionExecutorService {
     workflowCreatedById?: string | null,
   ): Promise<ActionExecutionResult> {
     if (!context.contactId) {
-      return { type: 'continue', output: { skipped: true, reason: 'no_contact' } };
+      return {
+        type: 'continue',
+        output: { skipped: true, reason: 'no_contact' },
+      };
     }
 
     const tag = await this.tagRepository.findById(
@@ -396,18 +403,18 @@ export class AutomationActionExecutorService {
       });
 
       await this.auditService.log({
-          actorUserId: SYSTEM_AUDIT_ACTOR_SENTINEL,
-          businessId: context.businessId,
-          action: 'contact.tag_added',
-          entityType: 'Contact',
-          entityId: context.contactId,
-          metadata: {
-            ...automationAuditMetadata(context.runId, context.workflowId),
-            tagId: config.tagId,
-            tagName: tag.name,
-            source: 'automation',
-          },
-        });
+        actorUserId: SYSTEM_AUDIT_ACTOR_SENTINEL,
+        businessId: context.businessId,
+        action: 'contact.tag_added',
+        entityType: 'Contact',
+        entityId: context.contactId,
+        metadata: {
+          ...automationAuditMetadata(context.runId, context.workflowId),
+          tagId: config.tagId,
+          tagName: tag.name,
+          source: 'automation',
+        },
+      });
     }
 
     return { type: 'continue', output: { tagId: config.tagId } };
@@ -419,7 +426,10 @@ export class AutomationActionExecutorService {
     workflowCreatedById?: string | null,
   ): Promise<ActionExecutionResult> {
     if (!context.contactId) {
-      return { type: 'continue', output: { skipped: true, reason: 'no_contact' } };
+      return {
+        type: 'continue',
+        output: { skipped: true, reason: 'no_contact' },
+      };
     }
 
     const stage = await this.prisma.pipelineStage.findFirst({
@@ -450,7 +460,10 @@ export class AutomationActionExecutorService {
       context.contactId,
     );
     if (existing && !existing.deletedAt) {
-      return { type: 'continue', output: { leadId: existing.id, skipped: true } };
+      return {
+        type: 'continue',
+        output: { leadId: existing.id, skipped: true },
+      };
     }
 
     const lead = await this.leadRepository.create(
@@ -536,7 +549,10 @@ export class AutomationActionExecutorService {
       },
     });
 
-    return { type: 'continue', output: { leadId: lead?.id, stageId: config.stageId } };
+    return {
+      type: 'continue',
+      output: { leadId: lead?.id, stageId: config.stageId },
+    };
   }
 
   private async createTask(
@@ -656,7 +672,11 @@ export class AutomationActionExecutorService {
   }): ActionExecutionResult {
     let delayMs = config.durationMs ?? 0;
     if (!delayMs && config.amount && config.unit) {
-      const multipliers = { minutes: 60_000, hours: 3_600_000, days: 86_400_000 };
+      const multipliers = {
+        minutes: 60_000,
+        hours: 3_600_000,
+        days: 86_400_000,
+      };
       delayMs = config.amount * multipliers[config.unit];
     }
     if (delayMs <= 0) {

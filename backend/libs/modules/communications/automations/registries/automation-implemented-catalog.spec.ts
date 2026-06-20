@@ -48,7 +48,9 @@ describe('implemented automation catalog', () => {
         }
         const payload = buildAutomationDomainEventPayload(trigger.key, audit);
         if (!payload) {
-          failures.push(`${trigger.key}: buildAutomationDomainEventPayload returned null`);
+          failures.push(
+            `${trigger.key}: buildAutomationDomainEventPayload returned null`,
+          );
           continue;
         }
         const parsed = trigger.payloadSchema.safeParse({

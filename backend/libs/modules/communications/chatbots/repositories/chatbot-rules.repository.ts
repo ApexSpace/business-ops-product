@@ -52,4 +52,34 @@ export class ChatbotRulesRepository {
       .deleteMany({ where: { id, businessId, chatbotId } })
       .then(() => undefined);
   }
+
+  async getNextSortOrder(
+    businessId: string,
+    chatbotId: string,
+  ): Promise<number> {
+    const max = await this.prisma.chatbotRule.aggregate({
+      where: { businessId, chatbotId },
+      _max: { sortOrder: true },
+    });
+    return (max._max.sortOrder ?? -1) + 1;
+  }
+
+  async reorder(
+    businessId: string,
+    chatbotId: string,
+    ruleIds: string[],
+  ): Promise<ChatbotRule[]> {
+    return this.prisma.$transaction(async (tx) => {
+      for (let index = 0; index < ruleIds.length; index += 1) {
+        await tx.chatbotRule.updateMany({
+          where: { id: ruleIds[index], businessId, chatbotId },
+          data: { sortOrder: index },
+        });
+      }
+      return tx.chatbotRule.findMany({
+        where: { businessId, chatbotId },
+        orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
+      });
+    });
+  }
 }
