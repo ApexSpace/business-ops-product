@@ -143,6 +143,8 @@ export const DEFAULT_TERMINOLOGY: Record<string, string> = {
   'nav.invoices': 'Invoices',
   'nav.estimates': 'Estimates',
   'nav.payments': 'Payments',
+  'nav.sales': 'Sales',
+  'nav.products': 'Products',
   'entities.contact.plural': 'Contacts',
   'entities.contact.singular': 'Contact',
   'entities.contact.allItems': 'All Contacts',

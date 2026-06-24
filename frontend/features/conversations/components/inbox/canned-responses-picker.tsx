@@ -27,12 +27,19 @@ export function CannedResponsesPicker({ onSelect }: CannedResponsesPickerProps) 
   return (
     <>
       <Popover>
-        <PopoverTrigger asChild>
-          <Button type="button" size="icon" variant="ghost" className="size-8 shrink-0">
-            <Zap className="size-4" />
-            <span className="sr-only">Quick replies</span>
-          </Button>
-        </PopoverTrigger>
+        <PopoverTrigger
+          render={
+            <Button
+              type="button"
+              size="icon"
+              variant="ghost"
+              className="size-8 shrink-0"
+            >
+              <Zap className="size-4" />
+              <span className="sr-only">Quick replies</span>
+            </Button>
+          }
+        />
         <PopoverContent align="start" className="w-72 p-2">
           <div className="flex items-center justify-between px-2 py-1">
             <p className="text-xs font-medium text-muted-foreground">

@@ -9,6 +9,7 @@ import {
 import { DateTime } from 'luxon';
 import { normalizeTimezone } from '@app/common/utils/timezone.util';
 import { AppointmentRepository } from '@app/modules/operations/appointments/repositories/appointment.repository';
+import type { PublicBookingTimingContext } from '@app/modules/crm/services/services/service-booking-timing.service';
 import {
   PublicBookingDayAvailabilityDto,
   PublicBookingSlotDto,
@@ -61,6 +62,7 @@ export class BookingAvailabilityService {
     to: Date;
     viewerTimezone: string;
     staffId?: string;
+    timing?: PublicBookingTimingContext | null;
   }): Promise<PublicBookingDayAvailabilityDto[]> {
     const calendarTz = normalizeTimezone(params.calendar.timezone);
     const viewerTz = normalizeTimezone(params.viewerTimezone);
@@ -84,13 +86,21 @@ export class BookingAvailabilityService {
     if (cursor > maxEnd) return [];
 
     const effectiveEnd = rangeEnd < maxEnd ? rangeEnd : maxEnd;
-    const duration = params.calendar.defaultDurationMinutes;
+    const duration =
+      params.timing?.slotDurationMinutes ??
+      params.calendar.defaultDurationMinutes;
     const interval = resolvePublicBookingSlotStep(
       duration,
       params.calendar.slotIntervalMinutes,
     );
-    const bufferBefore = params.calendar.bufferBeforeMinutes;
-    const bufferAfter = params.calendar.bufferAfterMinutes;
+    const bufferBefore =
+      params.timing?.hasBufferTime
+        ? params.timing.bufferBeforeMinutes
+        : params.calendar.bufferBeforeMinutes;
+    const bufferAfter =
+      params.timing?.hasBufferTime
+        ? params.timing.bufferAfterMinutes
+        : params.calendar.bufferAfterMinutes;
     const capacity = params.calendar.capacity;
 
     const appointments = await this.appointmentRepository.findBlockingInRange(
@@ -130,9 +140,12 @@ export class BookingAvailabilityService {
           windowEnd,
         );
 
+        const clientOccupancy =
+          params.timing?.clientOccupancyMinutes ?? duration;
+
         for (
           let startMin = windowStart;
-          startMin + duration <= windowEnd;
+          startMin + clientOccupancy <= windowEnd;
           startMin += interval
         ) {
           const slotStart = cursor.set({
@@ -141,11 +154,17 @@ export class BookingAvailabilityService {
             second: 0,
             millisecond: 0,
           });
-          const slotEnd = slotStart.plus({ minutes: duration });
+          const slotEnd = slotStart.plus({
+            minutes: params.timing?.clientOccupancyMinutes ?? duration,
+          });
 
           if (slotStart < minStart) continue;
           if (
-            this.isMinutesBlocked(startMin, startMin + duration, blockedRanges)
+            this.isMinutesBlocked(
+              startMin,
+              startMin + clientOccupancy,
+              blockedRanges,
+            )
           ) {
             continue;
           }
@@ -187,6 +206,7 @@ export class BookingAvailabilityService {
     startAt: Date;
     endAt: Date;
     staffId?: string;
+    timing?: PublicBookingTimingContext | null;
   }): Promise<boolean> {
     const calendarTz = normalizeTimezone(params.calendar.timezone);
     const start = DateTime.fromJSDate(params.startAt, { zone: 'utc' }).setZone(
@@ -208,7 +228,10 @@ export class BookingAvailabilityService {
     }
 
     const durationMinutes = Math.round(end.diff(start, 'minutes').minutes);
-    if (durationMinutes !== params.calendar.defaultDurationMinutes) {
+    const expectedDuration =
+      params.timing?.clientOccupancyMinutes ??
+      params.calendar.defaultDurationMinutes;
+    if (durationMinutes !== expectedDuration) {
       return false;
     }
 
@@ -228,11 +251,22 @@ export class BookingAvailabilityService {
     const windowEnd = parseTimeToMinutes(weekly.endTime);
     const startMin = start.hour * 60 + start.minute;
     const endMin = end.hour * 60 + end.minute;
+    const slotStep =
+      params.timing?.slotDurationMinutes ??
+      params.calendar.defaultDurationMinutes;
     const interval = resolvePublicBookingSlotStep(
-      params.calendar.defaultDurationMinutes,
+      slotStep,
       params.calendar.slotIntervalMinutes,
     );
 
+    const bufferBefore =
+      params.timing?.hasBufferTime
+        ? params.timing.bufferBeforeMinutes
+        : params.calendar.bufferBeforeMinutes;
+    const bufferAfter =
+      params.timing?.hasBufferTime
+        ? params.timing.bufferAfterMinutes
+        : params.calendar.bufferAfterMinutes;
     if (startMin < windowStart || endMin > windowEnd) return false;
     if ((startMin - windowStart) % interval !== 0) return false;
 
@@ -246,14 +280,8 @@ export class BookingAvailabilityService {
     const appointments = await this.appointmentRepository.findBlockingInRange(
       params.calendar.businessId,
       params.calendar.id,
-      start
-        .minus({ minutes: params.calendar.bufferBeforeMinutes })
-        .toUTC()
-        .toJSDate(),
-      end
-        .plus({ minutes: params.calendar.bufferAfterMinutes })
-        .toUTC()
-        .toJSDate(),
+      start.minus({ minutes: bufferBefore }).toUTC().toJSDate(),
+      end.plus({ minutes: bufferAfter }).toUTC().toJSDate(),
       params.staffId,
     );
 
@@ -261,8 +289,8 @@ export class BookingAvailabilityService {
       appointments,
       params.startAt,
       params.endAt,
-      params.calendar.bufferBeforeMinutes,
-      params.calendar.bufferAfterMinutes,
+      bufferBefore,
+      bufferAfter,
     );
 
     return occupied < params.calendar.capacity;

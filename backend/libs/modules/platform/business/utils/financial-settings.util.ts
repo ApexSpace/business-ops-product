@@ -169,6 +169,16 @@ export function extractFinancialSettings(
     Math.floor(Number(estimate.defaultExpiryDays) || 30),
   );
 
+  const checkout = mergeSection(
+    DEFAULT_FINANCIAL_SETTINGS.checkout,
+    stored.checkout,
+  );
+  checkout.prefix = (checkout.prefix || DEFAULT_FINANCIAL_SETTINGS.checkout.prefix)
+    .trim()
+    .toUpperCase()
+    .slice(0, 10);
+  checkout.nextNumber = Math.max(1, Math.floor(Number(checkout.nextNumber) || 1));
+
   const taxesAndCurrency = mergeSection(
     DEFAULT_FINANCIAL_SETTINGS.taxesAndCurrency,
     stored.taxesAndCurrency,
@@ -188,6 +198,7 @@ export function extractFinancialSettings(
     businessInformation,
     invoice,
     estimate,
+    checkout,
     taxesAndCurrency,
   };
 }
@@ -206,6 +217,9 @@ export function mergeFinancialSettings(
     estimate: patch.estimate
       ? { ...current.estimate, ...patch.estimate }
       : current.estimate,
+    checkout: patch.checkout
+      ? { ...current.checkout, ...patch.checkout }
+      : current.checkout,
     taxesAndCurrency: patch.taxesAndCurrency
       ? { ...current.taxesAndCurrency, ...patch.taxesAndCurrency }
       : current.taxesAndCurrency,

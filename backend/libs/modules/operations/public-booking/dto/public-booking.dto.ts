@@ -107,6 +107,11 @@ export class CreatePublicBookingDto {
   @IsString()
   @MaxLength(500)
   referrer?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsUUID()
+  secondaryStaffId?: string;
 }
 
 export class PublicBookingSlotDto {

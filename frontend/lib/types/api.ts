@@ -189,10 +189,31 @@ export type ServiceStatus = "ACTIVE" | "ARCHIVED";
 export interface Service {
   id: string;
   businessId: string;
+  categoryId: string;
+  categoryName: string;
+  /** @deprecated use categoryName */
+  category?: string | null;
   name: string;
-  category: string | null;
   description: string | null;
   price: string | null;
+  durationMinutes: number;
+  sortOrder: number;
+  isDemo: boolean;
+  hasProcessingTime: boolean;
+  processingDurationMinutes: number;
+  finishDurationMinutes: number | null;
+  hasBufferTime: boolean;
+  bufferBeforeMinutes: number;
+  bufferAfterMinutes: number;
+  usesProducts: boolean;
+  requiresNoStaff: boolean;
+  requiresTwoStaff: boolean;
+  hasCommissionDeduction: boolean;
+  commissionDeductionType: "FLAT" | "PERCENT" | null;
+  commissionDeductionValue: string | null;
+  staffingMode: "SINGLE_STAFF" | "TWO_STAFF" | "RESOURCE_ONLY";
+  clientOccupancyMinutes: number;
+  staffBlockedMinutes: number;
   status: ServiceStatus;
   createdAt: string;
   updatedAt: string;
@@ -495,8 +516,16 @@ export type PaymentMethod =
   | "CASH"
   | "CARD"
   | "BANK_TRANSFER"
+  | "WALLET"
   | "STRIPE"
   | "OTHER";
+
+export type PaymentStatus =
+  | "PENDING"
+  | "SUCCEEDED"
+  | "FAILED"
+  | "CANCELLED"
+  | "REFUNDED";
 
 export interface PaymentInvoiceSummary {
   id: string;
@@ -531,8 +560,11 @@ export interface Payment {
   businessId: string;
   invoiceId: string;
   contactId: string;
+  payableType?: string;
+  payableId?: string;
   amount: string;
   method: PaymentMethod;
+  status?: PaymentStatus;
   provider: PaymentProvider;
   stripePaymentIntentId: string | null;
   stripeCheckoutSessionId: string | null;
@@ -541,7 +573,7 @@ export interface Payment {
   providerMetadata: Record<string, unknown> | null;
   reference: string | null;
   notes: string | null;
-  paidAt: string;
+  paidAt: string | null;
   createdById: string | null;
   createdAt: string;
   updatedAt: string;

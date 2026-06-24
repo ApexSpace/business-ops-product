@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { PaymentMethod, PaymentProvider } from '@prisma/client';
+import { PaymentMethod, PaymentProvider, PaymentStatus, PayableType } from '@prisma/client';
 
 export class PaymentUserSummaryDto {
   @ApiProperty()
@@ -53,11 +53,20 @@ export class PaymentResponseDto {
   @ApiProperty()
   contactId!: string;
 
+  @ApiProperty({ enum: PayableType })
+  payableType!: PayableType;
+
+  @ApiProperty()
+  payableId!: string;
+
   @ApiProperty()
   amount!: string;
 
   @ApiProperty({ enum: PaymentMethod })
   method!: PaymentMethod;
+
+  @ApiProperty({ enum: PaymentStatus })
+  status!: PaymentStatus;
 
   @ApiProperty({ enum: PaymentProvider })
   provider!: PaymentProvider;
@@ -83,8 +92,8 @@ export class PaymentResponseDto {
   @ApiPropertyOptional()
   notes?: string | null;
 
-  @ApiProperty()
-  paidAt!: Date;
+  @ApiPropertyOptional()
+  paidAt?: Date | null;
 
   @ApiPropertyOptional()
   createdById?: string | null;

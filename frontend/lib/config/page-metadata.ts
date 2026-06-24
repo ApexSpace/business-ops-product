@@ -72,6 +72,14 @@ const businessRoutes: Record<string, RouteEntry> = {
     title: "Appointments",
     description: "Booking calendar.",
   },
+  "/business/sales": {
+    title: "Sales",
+    description: "Point-of-sale checkouts — open sales, add items, and collect payment.",
+  },
+  "/business/products": {
+    title: "Products",
+    description: "Product catalog, inventory, variants, and bundles.",
+  },
   "/business/settings/profile": {
     title: "Business Profile",
     description:

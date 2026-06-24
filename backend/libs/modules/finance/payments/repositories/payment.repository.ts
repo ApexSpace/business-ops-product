@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { PaymentMethod, Prisma } from '@prisma/client';
+import { PaymentMethod, PayableType, PaymentStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '@app/core/database/prisma.service';
 
 const paymentInclude = {
@@ -149,8 +149,11 @@ export class PaymentRepository {
         business: { connect: { id: businessId } },
         invoice: { connect: { id: data.invoiceId } },
         contact: { connect: { id: data.contactId } },
+        payableType: PayableType.INVOICE,
+        payableId: data.invoiceId,
         amount: data.amount,
         method: data.method,
+        status: PaymentStatus.SUCCEEDED,
         reference: data.reference,
         notes: data.notes,
         paidAt: data.paidAt,

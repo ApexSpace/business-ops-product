@@ -1,16 +1,11 @@
 import type { LucideIcon } from "lucide-react";
 import {
   Activity,
-  Bot,
-  Calendar,
-  CheckSquare,
-  ClipboardList,
-  Receipt,
-  StickyNote,
-  Target,
+  Clock,
+  Package,
+  ShoppingBag,
   UserRound,
   Wallet,
-  Wrench,
 } from "lucide-react";
 import type { Contact, IndustryLabels, Lead, Note, Task, WorkItem } from "@/features/contacts/types";
 import { getLeadDisplayTitle } from "@/features/leads/utils/leads";
@@ -25,6 +20,11 @@ import { formatDateTimeInTimezone } from "@/features/calendars/utils/timezone";
 
 export type ContactRecordsSectionId =
   | "profile"
+  | "timeline"
+  | "wallet"
+  | "memberships"
+  | "adjustments"
+  | "sales"
   | "leads"
   | "work-items"
   | "appointments"
@@ -37,7 +37,7 @@ export type ContactRecordsSectionId =
   | "automations";
 
 export const DEFAULT_CONTACT_RECORDS_SECTION: ContactRecordsSectionId =
-  "profile";
+  "timeline";
 
 export type ContactMobilePanel =
   | "details"
@@ -53,74 +53,43 @@ export interface ContactRailItem {
   placeholder?: boolean;
 }
 
-/** Rail order: profile first, then activity and operational sections */
+/** Rail order: Mangomint-aligned primary tabs */
 export const CONTACT_RAIL_ITEMS: ContactRailItem[] = [
+  {
+    id: "timeline",
+    label: "Timeline",
+    icon: Activity,
+    sectionId: "timeline",
+  },
+  {
+    id: "wallet",
+    label: "Wallet",
+    icon: Wallet,
+    sectionId: "wallet",
+  },
+  {
+    id: "memberships",
+    label: "Memberships",
+    icon: Package,
+    sectionId: "memberships",
+  },
+  {
+    id: "adjustments",
+    label: "Adjustments",
+    icon: Clock,
+    sectionId: "adjustments",
+  },
+  {
+    id: "sales",
+    label: "Sales",
+    icon: ShoppingBag,
+    sectionId: "sales",
+  },
   {
     id: "profile",
     label: "Profile",
     icon: UserRound,
     sectionId: "profile",
-  },
-  {
-    id: "activity",
-    label: "Activity",
-    icon: Activity,
-    sectionId: "activity",
-  },
-  {
-    id: "leads",
-    label: "Opportunities",
-    icon: Target,
-    sectionId: "leads",
-  },
-  {
-    id: "work-items",
-    label: "Work items",
-    icon: Wrench,
-    sectionId: "work-items",
-  },
-  {
-    id: "appointments",
-    label: "Appointments",
-    icon: Calendar,
-    sectionId: "appointments",
-  },
-  {
-    id: "notes",
-    label: "Notes",
-    icon: StickyNote,
-    sectionId: "notes",
-  },
-  {
-    id: "tasks",
-    label: "Tasks",
-    icon: CheckSquare,
-    sectionId: "tasks",
-  },
-  {
-    id: "invoices",
-    label: "Invoices",
-    icon: Receipt,
-    sectionId: "invoices",
-  },
-  {
-    id: "estimates",
-    label: "Estimates",
-    icon: ClipboardList,
-    sectionId: "estimates",
-  },
-  {
-    id: "payments",
-    label: "Received Payments",
-    icon: Wallet,
-    sectionId: "payments",
-  },
-  {
-    id: "automations",
-    label: "Automations",
-    icon: Bot,
-    sectionId: "automations",
-    placeholder: true,
   },
 ];
 
@@ -131,6 +100,16 @@ export function getRecordsSectionTitle(
   switch (section) {
     case "profile":
       return "Contact details";
+    case "timeline":
+      return "Timeline";
+    case "wallet":
+      return "Wallet";
+    case "memberships":
+      return "Memberships & packages";
+    case "adjustments":
+      return "Custom service durations";
+    case "sales":
+      return "Sales";
     case "leads":
       return labels.leads;
     case "work-items":

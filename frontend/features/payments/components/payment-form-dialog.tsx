@@ -32,10 +32,10 @@ import {
   toDatetimeLocalValue,
   type PaymentFormValues,
 } from "@/features/payments/schemas/payment-profile";
+import { InvoiceCollectPaymentPanel } from "@/features/payments/payments-kit/invoice-collect-payment-panel";
 import { queryKeys } from "@/lib/query/keys";
 import type { Invoice } from "@/features/invoices/types";
 import type { PaginatedResult, Payment } from "@/features/payments/types";
-import { Badge } from "@/components/ui/badge";
 import { listInvoices } from "@/features/invoices/api/invoices.api";
 import { createPayment, updatePayment } from "@/features/payments/api/payments.api";
 
@@ -101,16 +101,18 @@ export function PaymentFormDialog({
     if (!open) return;
     if (payment) {
       form.reset(paymentToForm(payment));
-    } else {
-      const preset = payableInvoices.find((i) => i.id === defaultInvoiceId);
-      form.reset({
-        ...paymentFormDefaults,
-        invoiceId: defaultInvoiceId ?? "",
-        amount: preset ? invoiceOutstandingAmount(preset) : 0,
-        paidAt: toDatetimeLocalValue(new Date().toISOString()),
-      });
+      return;
     }
-  }, [open, payment, defaultInvoiceId, form, payableInvoices]);
+    const preset = payableInvoices.find((i) => i.id === defaultInvoiceId);
+    form.reset({
+      ...paymentFormDefaults,
+      invoiceId: defaultInvoiceId ?? "",
+      amount: preset ? invoiceOutstandingAmount(preset) : 0,
+      paidAt: toDatetimeLocalValue(new Date().toISOString()),
+    });
+    // Only reset when the dialog opens — not when the invoice list loads or the user picks an invoice.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- payableInvoices intentionally omitted
+  }, [open, payment, defaultInvoiceId, form]);
 
   useEffect(() => {
     if (!open || isEdit || !selectedInvoice) return;
@@ -136,21 +138,30 @@ export function PaymentFormDialog({
     onError: (err: Error) => toast.error(err.message),
   });
 
-  const methodItems = PAYMENT_METHOD_OPTIONS.map((o) => ({
+  const methodItems = PAYMENT_METHOD_OPTIONS.filter(
+    (o) => o.value !== "STRIPE" && o.value !== "WALLET",
+  ).map((o) => ({
     value: o.value,
     label: o.label,
   }));
+
+  const useCollectFlow = !isEdit && selectedInvoice;
 
   return (
     <FormDialog
       open={open}
       onOpenChange={onOpenChange}
       title={isEdit ? "Edit payment" : "Record payment"}
-      description="Track money received against an invoice — simple operational payment logging."
+      description={
+        useCollectFlow
+          ? "Collect payment with cash, wallet, or embedded card (Stripe Connect)."
+          : "Track money received against an invoice — simple operational payment logging."
+      }
       form={form}
       schema={paymentFormSchema}
       onSubmit={(values) => mutation.mutate(values)}
       isPending={mutation.isPending}
+      hideFooter={!!useCollectFlow}
     >
       <FormField
         control={form.control}
@@ -170,6 +181,7 @@ export function PaymentFormDialog({
                 />
               ) : (
                 <SearchableSelect
+                  inDialog
                   items={invoiceItems}
                   value={field.value}
                   onValueChange={field.onChange}
@@ -194,6 +206,18 @@ export function PaymentFormDialog({
         )}
       />
 
+      {useCollectFlow ? (
+        <InvoiceCollectPaymentPanel
+          invoiceId={selectedInvoice.id}
+          contactId={selectedInvoice.contactId}
+          balanceDue={invoiceOutstandingAmount(selectedInvoice)}
+          onComplete={() => {
+            onSuccess();
+            onOpenChange(false);
+          }}
+        />
+      ) : (
+        <>
       <div className="grid gap-4 sm:grid-cols-2">
         <FormField
           control={form.control}
@@ -225,6 +249,7 @@ export function PaymentFormDialog({
               <FormLabel>Payment method</FormLabel>
               <FormControl>
                 <SearchableSelect
+                  inDialog
                   items={methodItems}
                   value={field.value}
                   onValueChange={field.onChange}
@@ -281,6 +306,8 @@ export function PaymentFormDialog({
           </FormItem>
         )}
       />
+        </>
+      )}
     </FormDialog>
   );
 }

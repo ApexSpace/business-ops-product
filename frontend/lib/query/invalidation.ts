@@ -2,13 +2,36 @@ import type { QueryClient } from "@tanstack/react-query";
 import { queryKeys } from "./keys";
 
 export function invalidateServiceLists(queryClient: QueryClient) {
-  return queryClient.invalidateQueries({
-    queryKey: queryKeys.services.all(),
-    predicate: (query) => {
-      const key = query.queryKey;
-      return key[1] === "list" || key.length === 1;
-    },
-  });
+  return Promise.all([
+    queryClient.invalidateQueries({
+      queryKey: queryKeys.services.all(),
+      predicate: (query) => {
+        const key = query.queryKey;
+        return key[1] === "list" || key.length === 1;
+      },
+    }),
+    queryClient.invalidateQueries({ queryKey: queryKeys.services.tree() }),
+  ]);
+}
+
+export function invalidateServiceWorkspace(
+  queryClient: QueryClient,
+  serviceId: string,
+) {
+  return Promise.all([
+    queryClient.invalidateQueries({
+      queryKey: queryKeys.services.workspace(serviceId),
+    }),
+    invalidateServiceLists(queryClient),
+    invalidateServicePicker(queryClient),
+  ]);
+}
+
+export function invalidateServiceCategories(queryClient: QueryClient) {
+  return Promise.all([
+    queryClient.invalidateQueries({ queryKey: queryKeys.serviceCategories.all() }),
+    queryClient.invalidateQueries({ queryKey: queryKeys.services.tree() }),
+  ]);
 }
 
 export function invalidateServicePicker(queryClient: QueryClient) {
@@ -47,6 +70,26 @@ export function invalidateContactDetail(
   return queryClient.invalidateQueries({
     queryKey: queryKeys.contacts.detail(id),
   });
+}
+
+export function invalidateContactWorkspace(
+  queryClient: QueryClient,
+  contactId: string,
+) {
+  return Promise.all([
+    queryClient.invalidateQueries({
+      queryKey: queryKeys.contacts.timeline(contactId),
+    }),
+    queryClient.invalidateQueries({
+      queryKey: queryKeys.contacts.wallet(contactId),
+    }),
+    queryClient.invalidateQueries({
+      queryKey: queryKeys.contacts.adjustments(contactId),
+    }),
+    queryClient.invalidateQueries({
+      queryKey: queryKeys.contacts.memberships(contactId),
+    }),
+  ]);
 }
 
 export function invalidateWorkItemLists(queryClient: QueryClient) {
@@ -124,6 +167,69 @@ export function invalidatePaymentLists(queryClient: QueryClient) {
       return key[1] === "list" || key.length === 1;
     },
   });
+}
+
+export function invalidateProductLists(queryClient: QueryClient) {
+  return queryClient.invalidateQueries({
+    queryKey: queryKeys.products.all(),
+    predicate: (query) => {
+      const key = query.queryKey;
+      return key[1] === "list" || key[1] === "picker" || key.length === 1;
+    },
+  });
+}
+
+export function invalidateProductDetail(
+  queryClient: QueryClient,
+  id: string,
+) {
+  return Promise.all([
+    queryClient.invalidateQueries({ queryKey: queryKeys.products.detail(id) }),
+    queryClient.invalidateQueries({
+      queryKey: queryKeys.products.variants(id),
+    }),
+    queryClient.invalidateQueries({
+      queryKey: queryKeys.products.options(id),
+    }),
+    queryClient.invalidateQueries({
+      predicate: (query) =>
+        query.queryKey[0] === "products" &&
+        query.queryKey[1] === id &&
+        query.queryKey[2] === "inventory",
+    }),
+  ]);
+}
+
+export function invalidateProductCategories(queryClient: QueryClient) {
+  return queryClient.invalidateQueries({
+    queryKey: queryKeys.products.categories(),
+  });
+}
+
+export function invalidateProductPicker(queryClient: QueryClient) {
+  return queryClient.invalidateQueries({
+    predicate: (query) =>
+      query.queryKey[0] === "products" && query.queryKey[1] === "picker",
+  });
+}
+
+export function invalidateCheckouts(
+  queryClient: QueryClient,
+  id?: string,
+) {
+  const tasks = [
+    queryClient.invalidateQueries({ queryKey: queryKeys.checkouts.all() }),
+    invalidatePaymentLists(queryClient),
+    queryClient.invalidateQueries({ queryKey: queryKeys.invoices.all() }),
+  ];
+  if (id) {
+    tasks.push(
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.checkouts.detail(id),
+      }),
+    );
+  }
+  return Promise.all(tasks);
 }
 
 export function invalidateEstimateLists(queryClient: QueryClient) {

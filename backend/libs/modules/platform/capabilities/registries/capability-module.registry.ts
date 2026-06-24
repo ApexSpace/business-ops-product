@@ -545,6 +545,23 @@ export const REGISTRY_MODULES: RegistryModuleDefinition[] = [
     ],
   },
   {
+    moduleKey: 'products',
+    name: 'Products',
+    description: 'Product catalog, inventory, variants, and bundles.',
+    icon: 'package',
+    sortOrder: 85,
+    options: crudOptions(
+      'products',
+      'Products',
+      'products',
+      'products.read',
+      'products.write',
+      ['/business/products'],
+      'package',
+      true,
+    ),
+  },
+  {
     moduleKey: 'ai_agents',
     name: 'AI Agents',
     description: 'Chatbots for customer engagement on your website.',

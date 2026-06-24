@@ -1,0 +1,36 @@
+import { resolveServiceTiming } from '../utils/service-timing.util';
+
+describe('resolveServiceTiming', () => {
+  it('computes client occupancy and staff blocked minutes', () => {
+    const result = resolveServiceTiming({
+      durationMinutes: 60,
+      hasProcessingTime: true,
+      processingDurationMinutes: 30,
+      finishDurationMinutes: 15,
+      hasBufferTime: true,
+      bufferBeforeMinutes: 10,
+      bufferAfterMinutes: 5,
+    });
+
+    expect(result.clientOccupancyMinutes).toBe(105);
+    expect(result.staffBlockedMinutes).toBe(90);
+    expect(result.segments).toHaveLength(3);
+  });
+
+  it('falls back to calendar buffers when service buffer disabled', () => {
+    const result = resolveServiceTiming(
+      {
+        durationMinutes: 45,
+        hasProcessingTime: false,
+        processingDurationMinutes: 0,
+        finishDurationMinutes: null,
+        hasBufferTime: false,
+        bufferBeforeMinutes: 0,
+        bufferAfterMinutes: 0,
+      },
+      { bufferBeforeMinutes: 5, bufferAfterMinutes: 10 },
+    );
+
+    expect(result.staffBlockedMinutes).toBe(60);
+  });
+});

@@ -1,10 +1,10 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import {
-  Prisma,
   WebhookEventProvider,
   WebhookEventStatus,
 } from '@prisma/client';
 import { PrismaService } from '@app/core/database/prisma.service';
+import { runStartupRecovery } from '@app/common/utils/startup-recovery.util';
 import { normalizeMetaWebhookPayload } from '@app/modules/communications/conversations/adapters/meta/meta-inbound-normalizer';
 import { WebhookEventsRepository } from '@app/modules/communications/conversations/repositories/webhook-events.repository';
 import { MetaWebhookDispatchService } from './meta-webhook-dispatch.service';
@@ -31,57 +31,59 @@ export class MetaWebhookRecoveryService implements OnModuleInit {
       return;
     }
 
-    const stuck = await this.prisma.webhookEvent.findMany({
-      where: {
-        provider: WebhookEventProvider.META,
-        status: {
-          in: [
-            WebhookEventStatus.RECEIVED,
-            WebhookEventStatus.FAILED,
-            WebhookEventStatus.IGNORED,
-          ],
+    await runStartupRecovery(this.logger, 'Meta webhook recovery', async () => {
+      const stuck = await this.prisma.webhookEvent.findMany({
+        where: {
+          provider: WebhookEventProvider.META,
+          status: {
+            in: [
+              WebhookEventStatus.RECEIVED,
+              WebhookEventStatus.FAILED,
+              WebhookEventStatus.IGNORED,
+            ],
+          },
         },
-      },
-      orderBy: { receivedAt: 'asc' },
-      take: 50,
-      select: { id: true, status: true, payload: true },
-    });
+        orderBy: { receivedAt: 'asc' },
+        take: 50,
+        select: { id: true, status: true, payload: true },
+      });
 
-    const toRecover = stuck.filter((event) => {
-      if (
-        event.status === WebhookEventStatus.RECEIVED ||
-        event.status === WebhookEventStatus.FAILED
-      ) {
-        return true;
+      const toRecover = stuck.filter((event) => {
+        if (
+          event.status === WebhookEventStatus.RECEIVED ||
+          event.status === WebhookEventStatus.FAILED
+        ) {
+          return true;
+        }
+        const body = (event.payload ?? {}) as Record<string, unknown>;
+        return normalizeMetaWebhookPayload(body).messages.length > 0;
+      });
+
+      if (toRecover.length === 0) {
+        return;
       }
-      const body = (event.payload ?? {}) as Record<string, unknown>;
-      return normalizeMetaWebhookPayload(body).messages.length > 0;
-    });
 
-    if (toRecover.length === 0) {
-      return;
-    }
+      this.logger.log(
+        `Recovering ${toRecover.length} Meta webhook(s) stuck or mis-marked IGNORED`,
+      );
 
-    this.logger.log(
-      `Recovering ${toRecover.length} Meta webhook(s) stuck or mis-marked IGNORED`,
-    );
-
-    for (const event of toRecover) {
-      try {
-        if (event.status === WebhookEventStatus.IGNORED) {
-          await this.webhookEventsRepository.resetForReprocessing(
-            event.id,
-            event.payload ?? {},
+      for (const event of toRecover) {
+        try {
+          if (event.status === WebhookEventStatus.IGNORED) {
+            await this.webhookEventsRepository.resetForReprocessing(
+              event.id,
+              event.payload ?? {},
+            );
+          }
+          await this.metaWebhookDispatch.dispatch(event.id);
+        } catch (error) {
+          const message =
+            error instanceof Error ? error.message : 'Recovery failed';
+          this.logger.warn(
+            `Meta webhook recovery failed for ${event.id}: ${message}`,
           );
         }
-        await this.metaWebhookDispatch.dispatch(event.id);
-      } catch (error) {
-        const message =
-          error instanceof Error ? error.message : 'Recovery failed';
-        this.logger.warn(
-          `Meta webhook recovery failed for ${event.id}: ${message}`,
-        );
       }
-    }
+    });
   }
 }

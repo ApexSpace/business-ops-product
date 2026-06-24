@@ -51,6 +51,20 @@ export const DEFAULT_SNAPSHOT_NAVIGATION = [
     labelKey: "nav.payments",
     order: 60,
   },
+  {
+    key: "sales",
+    route: "/business/sales",
+    icon: "shopping-bag",
+    labelKey: "nav.sales",
+    order: 65,
+  },
+  {
+    key: "products",
+    route: "/business/products",
+    icon: "package",
+    labelKey: "nav.products",
+    order: 67,
+  },
 ] as const;
 
 export const DEFAULT_SNAPSHOT_QUICK_LINKS = [

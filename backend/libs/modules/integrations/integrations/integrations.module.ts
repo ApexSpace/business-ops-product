@@ -19,6 +19,9 @@ import { StripeWebhookController } from './stripe/controllers/stripe-webhook.con
 import { StripeAccountService } from './stripe/services/stripe-account.service';
 import { StripeApiService } from './stripe/services/stripe-api.service';
 import { StripeCheckoutService } from './stripe/services/stripe-checkout.service';
+import { StripeConnectContextService } from './stripe/services/stripe-connect-context.service';
+import { StripeCustomerService } from './stripe/services/stripe-customer.service';
+import { StripePaymentIntentService } from './stripe/services/stripe-payment-intent.service';
 import { StripeOAuthService } from './stripe/services/stripe-oauth.service';
 import { StripeWebhookDispatchService } from './stripe/services/stripe-webhook-dispatch.service';
 import { StripeWebhookService } from './stripe/services/stripe-webhook.service';
@@ -94,6 +97,9 @@ import { WhatsAppTemplatesController } from '../whatsapp/controllers/whatsapp-te
     StripeWebhookService,
     StripeWebhookDispatchService,
     StripeCheckoutService,
+    StripeConnectContextService,
+    StripeCustomerService,
+    StripePaymentIntentService,
     GoogleTokenService,
     IntegrationResourcesService,
     GoogleCalendarResourceSyncHandler,
@@ -126,6 +132,9 @@ import { WhatsAppTemplatesController } from '../whatsapp/controllers/whatsapp-te
     StripeApiService,
     StripeAccountService,
     StripeCheckoutService,
+    StripeConnectContextService,
+    StripeCustomerService,
+    StripePaymentIntentService,
     StripeWebhookDispatchService,
     BusinessIntegrationRepository,
     IntegrationResourceRepository,

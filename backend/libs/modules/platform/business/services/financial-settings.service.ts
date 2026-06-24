@@ -144,6 +144,29 @@ export class FinancialSettingsService {
     return estimateNumber;
   }
 
+  async allocateCheckoutNumber(
+    businessId: string,
+  ): Promise<{ invoiceNumber: string; displaySequence: number }> {
+    const business = await this.requireBusiness(businessId);
+    const settings = extractFinancialSettings(business);
+    const maxExisting = await this.findMaxCheckoutSequence(
+      businessId,
+      settings.checkout.prefix,
+    );
+    const sequence = Math.max(settings.checkout.nextNumber, maxExisting + 1);
+    const invoiceNumber = formatDocumentNumber(
+      settings.checkout.prefix,
+      sequence,
+    );
+
+    settings.checkout.nextNumber = sequence + 1;
+    await this.businessRepository.update(businessId, {
+      settings: wrapFinancialSettings(business.settings, settings),
+    });
+
+    return { invoiceNumber, displaySequence: sequence };
+  }
+
   private async requireBusiness(businessId: string): Promise<Business> {
     const business = await this.businessRepository.findById(businessId);
     if (!business) {
@@ -209,5 +232,22 @@ export class FinancialSettingsService {
         Math.max(max, parseDocumentSequence(row.estimateNumber, prefix)),
       0,
     );
+  }
+
+  private async findMaxCheckoutSequence(
+    businessId: string,
+    prefix: string,
+  ): Promise<number> {
+    const checkouts = await this.prisma.invoice.findMany({
+      where: { businessId, kind: 'CHECKOUT', deletedAt: null },
+      select: { invoiceNumber: true, displaySequence: true },
+      orderBy: { createdAt: 'desc' },
+      take: 100,
+    });
+    return checkouts.reduce((max, row) => {
+      const fromDisplay = row.displaySequence ?? 0;
+      const fromNumber = parseDocumentSequence(row.invoiceNumber, prefix);
+      return Math.max(max, fromDisplay, fromNumber);
+    }, 0);
   }
 }

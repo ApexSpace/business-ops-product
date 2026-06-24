@@ -1,9 +1,10 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger, forwardRef } from '@nestjs/common';
 import {
   InvoicePaymentStatus,
   InvoiceStatus,
   PaymentMethod,
   PaymentProvider,
+  PaymentStatus,
   Prisma,
 } from '@prisma/client';
 import { SYSTEM_AUDIT_ACTOR_SENTINEL } from '@app/modules/platform/audit/constants/audit.constants';
@@ -13,6 +14,9 @@ import type {
   StripeWebhookEvent,
   StripeWebhookMetadata,
 } from '@app/modules/integrations/integrations/stripe/stripe.types';
+import { PaymentOrchestratorService } from '@app/modules/finance/payments/orchestration/payment-orchestrator.service';
+import { STRIPE_PAYMENT_PURPOSE } from '@app/modules/finance/payments/constants/stripe-payment-purpose.constants';
+import { StripeContactPaymentMethodService } from '@app/modules/finance/payments/services/stripe-contact-payment-method.service';
 import { computeInvoicePaymentSyncFields } from '@app/modules/finance/payments/utils/invoice-payment-sync.util';
 import { EmailNotificationService } from '@app/modules/communications/email/services/email-notification.service';
 import {
@@ -59,12 +63,42 @@ export class StripeInvoicePaymentService {
     private readonly auditService: AuditService,
     private readonly emailNotificationService: EmailNotificationService,
     private readonly businessRepository: BusinessRepository,
+    @Inject(forwardRef(() => PaymentOrchestratorService))
+    private readonly paymentOrchestrator: PaymentOrchestratorService,
+    private readonly stripeContactPaymentMethod: StripeContactPaymentMethodService,
   ) {}
+
+  async handleSetupIntentSucceeded(event: StripeWebhookEvent): Promise<void> {
+    const setupIntent = event.data.object as {
+      id?: string;
+      customer?: string | { id?: string } | null;
+      payment_method?: string | { id?: string } | null;
+      metadata?: Record<string, string>;
+    };
+    await this.stripeContactPaymentMethod.syncFromSetupIntent(setupIntent);
+  }
 
   async handleCheckoutSessionCompleted(
     event: StripeWebhookEvent,
   ): Promise<void> {
     const session = event.data.object as CheckoutSessionObject;
+    const paymentId =
+      typeof session.metadata?.paymentId === 'string'
+        ? session.metadata.paymentId
+        : null;
+
+    if (paymentId) {
+      const paymentIntentId = this.resolveId(session.payment_intent);
+      if (paymentIntentId) {
+        await this.paymentOrchestrator.finalizeStripePaymentIntent(
+          paymentIntentId,
+          null,
+          paymentId,
+        );
+        return;
+      }
+    }
+
     await this.recordStripePaymentFromSession(
       session,
       event.id,
@@ -75,6 +109,25 @@ export class StripeInvoicePaymentService {
   async handlePaymentIntentSucceeded(event: StripeWebhookEvent): Promise<void> {
     const intent = event.data.object as PaymentIntentObject;
     const metadata = intent.metadata ?? null;
+    const embeddedPaymentId =
+      typeof metadata?.paymentId === 'string' ? metadata.paymentId : null;
+    const purpose =
+      typeof metadata?.purpose === 'string' ? metadata.purpose : null;
+
+    if (purpose === STRIPE_PAYMENT_PURPOSE.SAVE_CARD) {
+      return;
+    }
+
+    if (embeddedPaymentId && intent.id) {
+      const chargeId = this.resolveId(intent.latest_charge);
+      await this.paymentOrchestrator.finalizeStripePaymentIntent(
+        intent.id,
+        chargeId,
+        embeddedPaymentId,
+      );
+      return;
+    }
+
     const sessionId =
       typeof metadata?.checkoutSessionId === 'string'
         ? metadata.checkoutSessionId
@@ -311,8 +364,11 @@ export class StripeInvoicePaymentService {
           business: { connect: { id: params.businessId } },
           invoice: { connect: { id: params.invoiceId } },
           contact: { connect: { id: contactId } },
+          payableType: 'INVOICE',
+          payableId: params.invoiceId,
           amount: params.amount,
           method: PaymentMethod.STRIPE,
+          status: PaymentStatus.SUCCEEDED,
           provider: PaymentProvider.STRIPE,
           reference: params.paymentIntentId,
           paidAt,
@@ -433,11 +489,20 @@ export class StripeInvoicePaymentService {
     if (!invoice) return;
 
     const payments = await tx.payment.findMany({
-      where: { businessId, invoiceId, deletedAt: null },
+      where: {
+        businessId,
+        invoiceId,
+        deletedAt: null,
+        status: PaymentStatus.SUCCEEDED,
+        paidAt: { not: null },
+      },
       select: { amount: true, paidAt: true },
     });
 
-    const sync = computeInvoicePaymentSyncFields(invoice, payments);
+    const sync = computeInvoicePaymentSyncFields(
+      invoice,
+      payments.map((p) => ({ amount: p.amount, paidAt: p.paidAt! })),
+    );
 
     await tx.invoice.update({
       where: { id: invoiceId },

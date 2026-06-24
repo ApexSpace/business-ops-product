@@ -6,7 +6,9 @@ import {
   GitBranch,
   LayoutDashboard,
   MessageSquare,
+  Package,
   Settings,
+  ShoppingBag,
 } from "lucide-react";
 import type { IndustryLabels } from "@/lib/types/shared";
 import type { ShellNavItem, ShellNavSection } from "@/lib/types/shell-nav";
@@ -55,6 +57,16 @@ export const businessOperationalMenuItems: BusinessMenuItem[] = [
     title: "Payments",
     href: "/business/payments",
     icon: CreditCard,
+  },
+  {
+    title: "Sales",
+    href: "/business/sales",
+    icon: ShoppingBag,
+  },
+  {
+    title: "Products",
+    href: "/business/products",
+    icon: Package,
   },
 ];
 

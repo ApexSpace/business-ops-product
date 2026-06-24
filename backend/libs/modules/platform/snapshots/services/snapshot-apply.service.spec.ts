@@ -26,6 +26,14 @@ describe('SnapshotApplyService', () => {
       },
       pipelineStage: { create: jest.fn() },
       service: { create: jest.fn().mockResolvedValue({ id: 'svc-1' }) },
+      serviceCategory: {
+        findFirst: jest.fn().mockResolvedValue(null),
+        aggregate: jest.fn().mockResolvedValue({ _max: { sortOrder: 0 } }),
+        create: jest.fn().mockResolvedValue({ id: 'cat-1' }),
+      },
+      serviceOnlineBookingSettings: {
+        create: jest.fn().mockResolvedValue({ id: 'obs-1' }),
+      },
       tag: { create: jest.fn().mockResolvedValue({ id: 'tag-1' }) },
       calendar: { create: jest.fn().mockResolvedValue({ id: 'cal-1' }) },
       calendarAvailability: { create: jest.fn() },

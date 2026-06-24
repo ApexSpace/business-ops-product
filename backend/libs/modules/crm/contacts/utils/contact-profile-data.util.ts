@@ -38,12 +38,16 @@ export function toContactCreateData(
 }
 
 export function toContactUpdateData(
-  dto: ContactProfileDto & { source?: string },
+  dto: ContactProfileDto & { source?: string; clientNotes?: string },
 ): Prisma.ContactUpdateInput {
   const data: Prisma.ContactUpdateInput = {};
 
   if (dto.source !== undefined) {
     data.source = emptyToUndefined(dto.source) ?? null;
+  }
+
+  if (dto.clientNotes !== undefined) {
+    data.clientNotes = emptyToUndefined(dto.clientNotes) ?? null;
   }
 
   const fields = [

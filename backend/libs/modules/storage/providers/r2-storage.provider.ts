@@ -107,4 +107,21 @@ export class R2StorageProvider {
       return false;
     }
   }
+
+  async getObjectBytes(objectKey: string): Promise<Buffer> {
+    const { client, config } = this.requireClient();
+    const response = await client.send(
+      new GetObjectCommand({ Bucket: config.bucket, Key: objectKey }),
+    );
+    const body = response.Body;
+    if (!body) {
+      throw new AppException(
+        ErrorCode.NOT_FOUND,
+        'Object body not found',
+        HttpStatus.NOT_FOUND,
+      );
+    }
+    const bytes = await body.transformToByteArray();
+    return Buffer.from(bytes);
+  }
 }

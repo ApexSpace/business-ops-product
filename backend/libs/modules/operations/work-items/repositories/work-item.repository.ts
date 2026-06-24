@@ -16,7 +16,12 @@ const workItemInclude = {
     },
   },
   service: {
-    select: { id: true, name: true, category: true, price: true },
+    select: {
+      id: true,
+      name: true,
+      price: true,
+      category: { select: { name: true } },
+    },
   },
   assignedTo: {
     select: { id: true, email: true, firstName: true, lastName: true },

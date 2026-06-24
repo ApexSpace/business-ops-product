@@ -75,6 +75,9 @@ export class StripeWebhookDispatchService {
       case 'payment_intent.succeeded':
         await this.handlePaymentIntentSucceeded(event);
         break;
+      case 'setup_intent.succeeded':
+        await this.handleSetupIntentSucceeded(event);
+        break;
       case 'payment_intent.payment_failed':
         await this.handlePaymentIntentFailed(event);
         break;
@@ -255,6 +258,12 @@ export class StripeWebhookDispatchService {
     event: StripeWebhookEvent,
   ): Promise<void> {
     await this.stripeInvoicePaymentService.handlePaymentIntentSucceeded(event);
+  }
+
+  private async handleSetupIntentSucceeded(
+    event: StripeWebhookEvent,
+  ): Promise<void> {
+    await this.stripeInvoicePaymentService.handleSetupIntentSucceeded(event);
   }
 
   private async handlePaymentIntentFailed(

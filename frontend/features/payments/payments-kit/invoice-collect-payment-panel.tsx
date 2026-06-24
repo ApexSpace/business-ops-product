@@ -1,0 +1,396 @@
+"use client";
+
+import { useMemo, useState } from "react";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { SearchableSelect } from "@/components/forms/searchable-select";
+import {
+  collectPayment,
+  type CollectPaymentResult,
+  type PaymentMethod,
+} from "@/features/payments/api/payment-collection.api";
+import { getContactWallet } from "@/features/contacts/api/contact-workspace.api";
+import {
+  COLLECT_PAYMENT_METHOD_OPTIONS,
+  formatMoney,
+} from "@/features/payments/schemas/payment-profile";
+import { EmbeddedStripePayment } from "@/features/payments/payments-kit/embedded-stripe-payment";
+import {
+  formatSavedCardLabel,
+  useContactPaymentMethods,
+} from "@/features/payments/hooks/use-contact-payment-methods";
+import { useStripeConnectStatus } from "@/features/payments/hooks/use-stripe-connect-status";
+import { queryKeys } from "@/lib/query/keys";
+
+export interface CollectTenderInput {
+  method: PaymentMethod;
+  amount: number;
+  contactPaymentMethodId?: string;
+}
+
+export interface InvoiceCollectPaymentPanelProps {
+  invoiceId: string;
+  contactId: string;
+  balanceDue: number;
+  onComplete: () => void;
+  /** When set (e.g. sales close), replaces POST /payments/collect */
+  collectOverride?: (tenders: CollectTenderInput[]) => Promise<{
+    completed: boolean;
+    stripeTenders: CollectPaymentResult["stripeTenders"];
+    redirectTenders?: CollectPaymentResult["redirectTenders"];
+  }>;
+  /** After Stripe confirms on the client, wait for async settlement (webhook). */
+  awaitSettlement?: () => Promise<void>;
+  successMessage?: string;
+}
+
+export function InvoiceCollectPaymentPanel({
+  invoiceId,
+  contactId,
+  balanceDue,
+  onComplete,
+  collectOverride,
+  awaitSettlement,
+  successMessage = "Payment recorded",
+}: InvoiceCollectPaymentPanelProps) {
+  type PendingStripe = CollectPaymentResult["stripeTenders"][number];
+
+  const [primaryMethod, setPrimaryMethod] = useState<PaymentMethod>("CASH");
+  const [primaryAmount, setPrimaryAmount] = useState(balanceDue);
+  const [splitEnabled, setSplitEnabled] = useState(false);
+  const [secondaryMethod, setSecondaryMethod] = useState<PaymentMethod>("STRIPE");
+  const [secondaryAmount, setSecondaryAmount] = useState(0);
+  const [pendingStripe, setPendingStripe] = useState<PendingStripe | null>(
+    null,
+  );
+  const [savedCardId, setSavedCardId] = useState<string | null>(null);
+
+  const { ready: stripeReady, publishableKey, stripeAccountId } =
+    useStripeConnectStatus();
+  const { methods: savedCards } = useContactPaymentMethods(
+    stripeReady ? contactId : undefined,
+  );
+
+  const savedCardItems = useMemo(
+    () => [
+      { value: "new", label: "Enter new card" },
+      ...savedCards.map((card) => ({
+        value: card.id,
+        label: formatSavedCardLabel(card),
+      })),
+    ],
+    [savedCards],
+  );
+
+  const normalizeMethod = (method: PaymentMethod): PaymentMethod =>
+    stripeReady && method === "CARD" ? "STRIPE" : method;
+
+  const { data: wallet } = useQuery({
+    queryKey: queryKeys.contacts.wallet(contactId),
+    queryFn: () => getContactWallet(contactId),
+    enabled: primaryMethod === "WALLET" || secondaryMethod === "WALLET",
+  });
+
+  const methodItems = useMemo(() => {
+    return COLLECT_PAYMENT_METHOD_OPTIONS.filter((o) => {
+      if (o.value === "STRIPE") return stripeReady;
+      if (o.value === "CARD") return !stripeReady;
+      return true;
+    }).map((o) => ({
+      value: o.value,
+      label:
+        o.value === "STRIPE" && stripeReady
+          ? "Card"
+          : o.value === "CARD"
+            ? "Card (manual entry)"
+            : o.label,
+    }));
+  }, [stripeReady]);
+
+  const collectMutation = useMutation({
+    mutationFn: collectPayment,
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  const tenders = useMemo(() => {
+    const rows: CollectTenderInput[] = [];
+    const primary = Math.round(primaryAmount * 100) / 100;
+    const resolvedPrimary = normalizeMethod(primaryMethod);
+    if (primary > 0) {
+      rows.push({
+        method: resolvedPrimary,
+        amount: primary,
+        ...(resolvedPrimary === "STRIPE" && savedCardId && savedCardId !== "new"
+          ? { contactPaymentMethodId: savedCardId }
+          : {}),
+      });
+    }
+    if (splitEnabled) {
+      const secondary = Math.round(secondaryAmount * 100) / 100;
+      const resolvedSecondary = normalizeMethod(secondaryMethod);
+      if (secondary > 0) {
+        rows.push({
+          method: resolvedSecondary,
+          amount: secondary,
+          ...(resolvedSecondary === "STRIPE" &&
+          savedCardId &&
+          savedCardId !== "new"
+            ? { contactPaymentMethodId: savedCardId }
+            : {}),
+        });
+      }
+    }
+    return rows;
+  }, [
+    primaryMethod,
+    primaryAmount,
+    splitEnabled,
+    secondaryMethod,
+    secondaryAmount,
+    savedCardId,
+    stripeReady,
+  ]);
+
+  const tenderTotal = tenders.reduce((sum, t) => sum + t.amount, 0);
+  const hasStripeTender = tenders.some((t) => t.method === "STRIPE");
+  const walletBalance = wallet ? parseFloat(wallet.balance.amount) : null;
+
+  async function handleCollect() {
+    if (tenderTotal <= 0) {
+      toast.error("Enter at least one positive amount");
+      return;
+    }
+    if (tenderTotal > balanceDue + 0.001) {
+      toast.error("Tender total exceeds balance due");
+      return;
+    }
+
+    const result = collectOverride
+      ? await collectOverride(tenders)
+      : await collectMutation.mutateAsync({
+          payableType: "INVOICE",
+          payableId: invoiceId,
+          tenders,
+          channel: "STAFF_POS",
+          stripeMode: "EMBEDDED",
+        });
+
+    if (result.redirectTenders && result.redirectTenders.length > 0) {
+      window.location.href = result.redirectTenders[0].checkoutUrl;
+      return;
+    }
+
+    if (result.stripeTenders.length > 0) {
+      setPendingStripe(result.stripeTenders[0]);
+      return;
+    }
+
+    if (result.completed) {
+      if (awaitSettlement) {
+        try {
+          await awaitSettlement();
+        } catch (err) {
+          toast.error(
+            err instanceof Error ? err.message : "Payment is still processing",
+          );
+          return;
+        }
+      }
+      toast.success(successMessage);
+      onComplete();
+      return;
+    }
+
+    toast.success(successMessage);
+    onComplete();
+  }
+
+  if (pendingStripe && publishableKey) {
+    const stripeAmount = tenders.find((t) => t.method === "STRIPE")?.amount ?? 0;
+    return (
+      <div className="space-y-3">
+        <p className="text-sm text-muted-foreground">
+          Complete card payment for {formatMoney(stripeAmount)}
+        </p>
+        <EmbeddedStripePayment
+          publishableKey={publishableKey}
+          clientSecret={pendingStripe.clientSecret}
+          stripeAccountId={stripeAccountId}
+          onSuccess={() => {
+            void (async () => {
+              try {
+                if (awaitSettlement) {
+                  await awaitSettlement();
+                }
+                toast.success(successMessage);
+                onComplete();
+              } catch (err) {
+                toast.error(
+                  err instanceof Error
+                    ? err.message
+                    : "Payment is still processing",
+                );
+              }
+            })();
+          }}
+          onError={(message) => toast.error(message)}
+        />
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => setPendingStripe(null)}
+        >
+          Back
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="space-y-2">
+          <Label>Payment method</Label>
+          <SearchableSelect
+            inDialog
+            items={methodItems}
+            value={primaryMethod}
+            onValueChange={(v) => setPrimaryMethod(v as PaymentMethod)}
+            placeholder="Method"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label>Amount</Label>
+          <Input
+            type="number"
+            step="0.01"
+            min={0.01}
+            max={balanceDue}
+            value={primaryAmount || ""}
+            onChange={(e) =>
+              setPrimaryAmount(parseFloat(e.target.value) || 0)
+            }
+          />
+        </div>
+      </div>
+
+      {primaryMethod === "STRIPE" && stripeReady ? (
+        <div className="space-y-2">
+          {savedCards.length > 0 ? (
+            <>
+              <Label>Saved card</Label>
+              <SearchableSelect
+                inDialog
+                items={savedCardItems}
+                value={savedCardId ?? "new"}
+                onValueChange={(v) =>
+                  setSavedCardId(v === "new" ? null : v)
+                }
+                placeholder="Card"
+              />
+            </>
+          ) : null}
+          {(!savedCardId || savedCardId === "new") && savedCards.length > 0 ? (
+            <p className="text-xs text-muted-foreground">
+              Or enter a new card on the next step.
+            </p>
+          ) : (
+            <p className="text-xs text-muted-foreground">
+              Card details are collected on the next step via Stripe (test card{" "}
+              <span className="font-mono">4242 4242 4242 4242</span>).
+            </p>
+          )}
+        </div>
+      ) : null}
+
+      {primaryMethod === "WALLET" && walletBalance != null ? (
+        <p className="text-xs text-muted-foreground">
+          Wallet balance: {formatMoney(walletBalance)}
+        </p>
+      ) : null}
+
+      <div className="flex items-center gap-2">
+        <Checkbox
+          id="split-payment"
+          checked={splitEnabled}
+          onCheckedChange={(checked) => {
+            setSplitEnabled(checked === true);
+            if (checked === true && secondaryAmount <= 0) {
+              const remainder = Math.max(
+                0,
+                Math.round((balanceDue - primaryAmount) * 100) / 100,
+              );
+              setSecondaryAmount(remainder);
+            }
+          }}
+        />
+        <Label htmlFor="split-payment" className="font-normal">
+          Split payment (e.g. wallet + card)
+        </Label>
+      </div>
+
+      {splitEnabled ? (
+        <div className="grid gap-4 rounded-md border p-3 sm:grid-cols-2">
+          <div className="space-y-2">
+            <Label>Second method</Label>
+            <SearchableSelect
+              inDialog
+              items={methodItems.filter((m) => m.value !== primaryMethod)}
+              value={secondaryMethod}
+              onValueChange={(v) => setSecondaryMethod(v as PaymentMethod)}
+              placeholder="Method"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Second amount</Label>
+            <Input
+              type="number"
+              step="0.01"
+              min={0.01}
+              value={secondaryAmount || ""}
+              onChange={(e) =>
+                setSecondaryAmount(parseFloat(e.target.value) || 0)
+              }
+            />
+          </div>
+          {secondaryMethod === "WALLET" && walletBalance != null ? (
+            <p className="text-xs text-muted-foreground sm:col-span-2">
+              Wallet balance: {formatMoney(walletBalance)}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
+
+      <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-muted-foreground">
+        <span>
+          Collecting {formatMoney(tenderTotal)} of {formatMoney(balanceDue)}
+        </span>
+        {hasStripeTender && !stripeReady ? (
+          <span className="text-destructive">Connect Stripe to accept cards</span>
+        ) : null}
+      </div>
+
+      <Button
+        type="button"
+        className="w-full"
+        disabled={
+          collectMutation.isPending ||
+          tenderTotal <= 0 ||
+          (hasStripeTender && !stripeReady)
+        }
+        onClick={() => void handleCollect()}
+      >
+        {hasStripeTender && savedCardId && savedCardId !== "new"
+          ? "Charge saved card"
+          : hasStripeTender
+            ? "Continue to card"
+            : "Record payment"}
+      </Button>
+    </div>
+  );
+}

@@ -1,11 +1,14 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { ServiceStatus } from '@prisma/client';
+import { ServiceCommissionType, ServiceStatus } from '@prisma/client';
 import { Type } from 'class-transformer';
 import {
+  IsBoolean,
   IsEnum,
+  IsInt,
   IsNumber,
   IsOptional,
   IsString,
+  IsUUID,
   MaxLength,
   Min,
   MinLength,
@@ -21,15 +24,14 @@ export class UpdateServiceDto {
 
   @ApiPropertyOptional()
   @IsOptional()
-  @IsString()
-  @MaxLength(100)
-  category?: string | null;
+  @IsUUID()
+  categoryId?: string;
 
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
   @MaxLength(5000)
-  description?: string | null;
+  description?: string;
 
   @ApiPropertyOptional()
   @IsOptional()
@@ -38,8 +40,62 @@ export class UpdateServiceDto {
   @Min(0)
   price?: number | null;
 
+  @ApiPropertyOptional()
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  durationMinutes?: number;
+
   @ApiPropertyOptional({ enum: ServiceStatus })
   @IsOptional()
   @IsEnum(ServiceStatus)
   status?: ServiceStatus;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  hasProcessingTime?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  hasBufferTime?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  usesProducts?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  requiresNoStaff?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  requiresTwoStaff?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  hasCommissionDeduction?: boolean;
+
+  @ApiPropertyOptional({ enum: ServiceCommissionType })
+  @IsOptional()
+  @IsEnum(ServiceCommissionType)
+  commissionDeductionType?: ServiceCommissionType | null;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
+  commissionDeductionValue?: number | null;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  isDemo?: boolean;
 }

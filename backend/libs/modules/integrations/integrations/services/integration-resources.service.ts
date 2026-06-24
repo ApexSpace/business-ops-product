@@ -78,7 +78,18 @@ export class IntegrationResourcesService {
     idempotencyKey?: string,
   ) {
     await this.assertSyncEligible(businessId, providerKey);
-    assertSyncAllowed(businessId, providerKey);
+    try {
+      assertSyncAllowed(businessId, providerKey);
+    } catch (error) {
+      if (error instanceof SyncCooldownError) {
+        throw new AppException(
+          ErrorCode.BAD_REQUEST,
+          error.message,
+          HttpStatus.TOO_MANY_REQUESTS,
+        );
+      }
+      throw error;
+    }
     recordSyncAttempt(businessId, providerKey);
 
     const asyncJob =

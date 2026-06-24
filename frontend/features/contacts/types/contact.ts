@@ -23,6 +23,7 @@ export interface Contact {
   avatarAssetId: string | null;
   avatarUrl: string | null;
   source: string | null;
+  clientNotes: string | null;
   createdById: string | null;
   createdAt: string;
   updatedAt: string;

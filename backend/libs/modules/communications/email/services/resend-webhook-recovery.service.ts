@@ -1,10 +1,10 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import {
-  Prisma,
   WebhookEventProvider,
   WebhookEventStatus,
 } from '@prisma/client';
 import { PrismaService } from '@app/core/database/prisma.service';
+import { runStartupRecovery } from '@app/common/utils/startup-recovery.util';
 import { WebhookEventsRepository } from '@app/modules/communications/conversations/repositories/webhook-events.repository';
 import { ResendWebhookDispatchService } from './resend-webhook-dispatch.service';
 
@@ -40,56 +40,62 @@ export class ResendWebhookRecoveryService implements OnModuleInit {
       return;
     }
 
-    const stuck = await this.prisma.webhookEvent.findMany({
-      where: {
-        provider: WebhookEventProvider.RESEND,
-        status: {
-          in: [
-            WebhookEventStatus.RECEIVED,
-            WebhookEventStatus.FAILED,
-            WebhookEventStatus.IGNORED,
-          ],
-        },
-      },
-      orderBy: { receivedAt: 'asc' },
-      take: 50,
-      select: { id: true, status: true, payload: true },
-    });
+    await runStartupRecovery(
+      this.logger,
+      'Resend webhook recovery',
+      async () => {
+        const stuck = await this.prisma.webhookEvent.findMany({
+          where: {
+            provider: WebhookEventProvider.RESEND,
+            status: {
+              in: [
+                WebhookEventStatus.RECEIVED,
+                WebhookEventStatus.FAILED,
+                WebhookEventStatus.IGNORED,
+              ],
+            },
+          },
+          orderBy: { receivedAt: 'asc' },
+          take: 50,
+          select: { id: true, status: true, payload: true },
+        });
 
-    const toRecover = stuck.filter((event) => {
-      if (
-        event.status === WebhookEventStatus.RECEIVED ||
-        event.status === WebhookEventStatus.FAILED
-      ) {
-        return true;
-      }
-      return isResendInboundEmailPayload(event.payload);
-    });
+        const toRecover = stuck.filter((event) => {
+          if (
+            event.status === WebhookEventStatus.RECEIVED ||
+            event.status === WebhookEventStatus.FAILED
+          ) {
+            return true;
+          }
+          return isResendInboundEmailPayload(event.payload);
+        });
 
-    if (toRecover.length === 0) {
-      return;
-    }
-
-    this.logger.log(
-      `Recovering ${toRecover.length} Resend webhook(s) stuck or mis-marked IGNORED`,
-    );
-
-    for (const event of toRecover) {
-      try {
-        if (event.status === WebhookEventStatus.IGNORED) {
-          await this.webhookEventsRepository.resetForReprocessing(
-            event.id,
-            event.payload ?? {},
-          );
+        if (toRecover.length === 0) {
+          return;
         }
-        await this.resendWebhookDispatch.dispatch(event.id);
-      } catch (error) {
-        const message =
-          error instanceof Error ? error.message : 'Recovery failed';
-        this.logger.warn(
-          `Resend webhook recovery failed for ${event.id}: ${message}`,
+
+        this.logger.log(
+          `Recovering ${toRecover.length} Resend webhook(s) stuck or mis-marked IGNORED`,
         );
-      }
-    }
+
+        for (const event of toRecover) {
+          try {
+            if (event.status === WebhookEventStatus.IGNORED) {
+              await this.webhookEventsRepository.resetForReprocessing(
+                event.id,
+                event.payload ?? {},
+              );
+            }
+            await this.resendWebhookDispatch.dispatch(event.id);
+          } catch (error) {
+            const message =
+              error instanceof Error ? error.message : 'Recovery failed';
+            this.logger.warn(
+              `Resend webhook recovery failed for ${event.id}: ${message}`,
+            );
+          }
+        }
+      },
+    );
   }
 }

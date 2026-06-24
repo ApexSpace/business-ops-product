@@ -22,7 +22,7 @@ export const serviceProfileDefaultValues: ServiceProfileFormValues = {
 export function serviceToProfileForm(service: Service): ServiceProfileFormValues {
   return {
     name: service.name,
-    category: service.category ?? "",
+    category: service.categoryName ?? service.category ?? "",
     description: service.description ?? "",
     price: service.price ?? "",
     status: service.status,
@@ -37,7 +37,6 @@ export function profileFormToServiceApiBody(values: ServiceProfileFormValues) {
 
   return {
     name: values.name.trim(),
-    category: values.category?.trim() || undefined,
     description: values.description?.trim() || undefined,
     price: price !== undefined && !Number.isNaN(price) ? price : undefined,
     status: values.status as ServiceStatus,

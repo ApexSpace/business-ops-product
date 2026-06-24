@@ -155,17 +155,18 @@ export function ContactSidebarPanel({
           {activeSection === "profile" ? null : headerAction}
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
-          {activeSection === "profile" ? (
-            <ContactSidebarDetailsFields contact={contact} leads={leads} />
-          ) : (
-            <ContactRecordsSectionBody
-              activeSection={activeSection}
-              labels={labels}
-              contact={contact}
-              leads={leads}
-              {...sectionProps}
-            />
-          )}
+          <ContactSidebarDetailsFields contact={contact} />
+          {activeSection !== "profile" ? (
+            <div className="mt-4 border-t border-border/60 pt-4">
+              <ContactRecordsSectionBody
+                activeSection={activeSection}
+                labels={labels}
+                contact={contact}
+                leads={leads}
+                {...sectionProps}
+              />
+            </div>
+          ) : null}
         </div>
       </div>
     </aside>

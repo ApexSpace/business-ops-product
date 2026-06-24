@@ -66,6 +66,20 @@ function baseNavigation(): SnapshotAssets['navigation'] {
       labelKey: 'nav.payments',
       order: 8,
     },
+    {
+      key: 'sales',
+      route: '/business/sales',
+      icon: 'shopping-bag',
+      labelKey: 'nav.sales',
+      order: 9,
+    },
+    {
+      key: 'products',
+      route: '/business/products',
+      icon: 'package',
+      labelKey: 'nav.products',
+      order: 10,
+    },
   ];
 }
 

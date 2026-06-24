@@ -7,6 +7,8 @@ export const BUSINESS_ICON_REGISTRY = new Set<string>([
   'clipboard-list',
   'calendar',
   'credit-card',
+  'shopping-bag',
+  'package',
   'settings',
   'users',
   'briefcase',

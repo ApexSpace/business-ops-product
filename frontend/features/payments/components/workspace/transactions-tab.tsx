@@ -123,10 +123,13 @@ export function PaymentsTransactionsTab() {
         id: "transactionDate",
         header: "Transaction Date",
         sortable: true,
-        sortValue: (row) => new Date(row.paidAt).getTime(),
+        sortValue: (row) =>
+          new Date(row.paidAt ?? row.createdAt).getTime(),
         className: "whitespace-nowrap",
         cell: (row) => (
-          <span className="tabular-nums">{formatTransactionDate(row.paidAt)}</span>
+          <span className="tabular-nums">
+            {formatTransactionDate(row.paidAt ?? row.createdAt)}
+          </span>
         ),
       },
       {

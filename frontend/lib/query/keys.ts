@@ -48,9 +48,16 @@ export const queryKeys = {
       limit?: number;
       search?: string;
       status?: string;
+      categoryId?: string;
     }) => listKey(["services", "list"], filters),
     picker: () => ["services", "picker"] as const,
     detail: (id: string) => ["services", "detail", id] as const,
+    tree: () => ["services", "tree"] as const,
+    workspace: (id: string) => ["services", "workspace", id] as const,
+  },
+  serviceCategories: {
+    all: () => ["service-categories"] as const,
+    list: () => ["service-categories", "list"] as const,
   },
   contacts: {
     all: () => ["contacts"] as const,
@@ -59,6 +66,15 @@ export const queryKeys = {
     search: (term: string) => ["contacts", "search", term] as const,
     picker: () => ["contacts", "picker"] as const,
     detail: (id: string) => ["contacts", "detail", id] as const,
+    timeline: (
+      id: string,
+      filters?: { types?: string[]; page?: number; limit?: number },
+    ) => listKey(["contacts", id, "timeline"], filters),
+    wallet: (id: string) => ["contacts", id, "wallet"] as const,
+    adjustments: (id: string) => ["contacts", id, "adjustments"] as const,
+    memberships: (id: string) => ["contacts", id, "memberships"] as const,
+    printAppointments: (id: string) =>
+      ["contacts", id, "print-appointments"] as const,
   },
   workItems: {
     all: () => ["work-items"] as const,
@@ -116,6 +132,9 @@ export const queryKeys = {
   payments: {
     all: () => ["payments"] as const,
     overview: () => ["payments", "overview"] as const,
+    stripeContext: () => ["payments", "stripe-context"] as const,
+    contactMethods: (contactId: string) =>
+      ["payments", "contact-methods", contactId] as const,
     list: (filters: {
       page?: number;
       limit?: number;
@@ -127,6 +146,51 @@ export const queryKeys = {
       paidTo?: string;
     }) => listKey(["payments", "list"], filters),
     detail: (id: string) => ["payments", "detail", id] as const,
+  },
+  checkouts: {
+    all: () => ["checkouts"] as const,
+    list: (filters: {
+      page?: number;
+      limit?: number;
+      search?: string;
+      contactId?: string;
+      status?: string;
+    }) => listKey(["checkouts", "list"], filters),
+    detail: (id: string) => ["checkouts", "detail", id] as const,
+    services: () => ["checkouts", "picker", "services"] as const,
+    serviceStaff: (serviceId: string) =>
+      ["checkouts", "picker", "services", serviceId, "staff"] as const,
+    products: (search?: string) =>
+      ["checkouts", "picker", "products", search ?? ""] as const,
+  },
+  products: {
+    all: () => ["products"] as const,
+    list: (filters: {
+      page?: number;
+      limit?: number;
+      search?: string;
+      status?: string;
+      categoryId?: string;
+      productType?: string;
+    }) => listKey(["products", "list"], filters),
+    detail: (id: string) => ["products", "detail", id] as const,
+    picker: (search?: string) =>
+      ["products", "picker", search ?? ""] as const,
+    categories: () => ["products", "categories"] as const,
+    variants: (productId: string) =>
+      ["products", productId, "variants"] as const,
+    options: (productId: string) =>
+      ["products", productId, "options"] as const,
+    inventory: (productId: string, variantId?: string) =>
+      ["products", productId, "inventory", variantId ?? ""] as const,
+    featuredImageDownload: (productId: string) =>
+      ["products", productId, "images", "featured", "download-url"] as const,
+    featuredImage: (productId: string) =>
+      ["products", productId, "images", "featured"] as const,
+    gallery: (productId: string) =>
+      ["products", productId, "images", "gallery"] as const,
+    galleryImageDownload: (productId: string, imageId: string) =>
+      ["products", productId, "images", imageId, "download-url"] as const,
   },
   estimates: {
     all: () => ["estimates"] as const,

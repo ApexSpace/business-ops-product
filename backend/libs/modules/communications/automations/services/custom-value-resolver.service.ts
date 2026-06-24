@@ -80,7 +80,7 @@ type LoadedEntities = {
   };
   payment?: {
     amount: { toString(): string };
-    paidAt: Date;
+    paidAt: Date | null;
     method: string;
     reference: string | null;
   };
@@ -587,7 +587,7 @@ export class CustomValueResolverService {
           ? formatMoney(entities.payment.amount, currency)
           : undefined;
       case 'payment.date':
-        return entities.payment?.paidAt.toISOString();
+        return entities.payment?.paidAt?.toISOString();
       case 'payment.method':
         return entities.payment?.method;
       case 'payment.reference':

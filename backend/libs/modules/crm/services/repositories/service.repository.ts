@@ -2,6 +2,14 @@ import { Injectable } from '@nestjs/common';
 import { Prisma, Service, ServiceStatus } from '@prisma/client';
 import { PrismaService } from '@app/core/database/prisma.service';
 
+const listInclude = {
+  category: { select: { id: true, name: true } },
+} satisfies Prisma.ServiceInclude;
+
+export type ServiceWithCategory = Prisma.ServiceGetPayload<{
+  include: typeof listInclude;
+}>;
+
 @Injectable()
 export class ServiceRepository {
   constructor(private readonly prisma: PrismaService) {}
@@ -23,6 +31,16 @@ export class ServiceRepository {
     });
   }
 
+  findByIdWithCategory(
+    businessId: string,
+    id: string,
+  ): Promise<ServiceWithCategory | null> {
+    return this.prisma.service.findFirst({
+      where: this.activeWhere(businessId, { id }),
+      include: listInclude,
+    });
+  }
+
   findMany(
     businessId: string,
     params: {
@@ -30,15 +48,21 @@ export class ServiceRepository {
       take: number;
       search?: string;
       status?: ServiceStatus;
+      categoryId?: string;
     },
-  ): Promise<{ items: Service[]; total: number }> {
+  ): Promise<{ items: ServiceWithCategory[]; total: number }> {
     const where = this.activeWhere(businessId, {
       ...(params.status ? { status: params.status } : {}),
+      ...(params.categoryId ? { categoryId: params.categoryId } : {}),
       ...(params.search
         ? {
             OR: [
               { name: { contains: params.search, mode: 'insensitive' } },
-              { category: { contains: params.search, mode: 'insensitive' } },
+              {
+                category: {
+                  name: { contains: params.search, mode: 'insensitive' },
+                },
+              },
               {
                 description: { contains: params.search, mode: 'insensitive' },
               },
@@ -53,6 +77,7 @@ export class ServiceRepository {
         skip: params.skip,
         take: params.take,
         orderBy: { createdAt: 'desc' },
+        include: listInclude,
       }),
       this.prisma.service.count({ where }),
     ]).then(([items, total]) => ({ items, total }));
@@ -60,22 +85,14 @@ export class ServiceRepository {
 
   create(
     businessId: string,
-    data: {
-      name: string;
-      category?: string | null;
-      description?: string | null;
-      price?: Prisma.Decimal | null;
-      status?: ServiceStatus;
+    data: Prisma.ServiceCreateWithoutBusinessInput & {
+      category: { connect: { id: string } };
     },
   ): Promise<Service> {
     return this.prisma.service.create({
       data: {
         business: { connect: { id: businessId } },
-        name: data.name,
-        category: data.category,
-        description: data.description,
-        price: data.price,
-        status: data.status ?? ServiceStatus.ACTIVE,
+        ...data,
       },
     });
   }
@@ -84,7 +101,7 @@ export class ServiceRepository {
     businessId: string,
     id: string,
     data: Prisma.ServiceUpdateInput,
-  ): Promise<Service | null> {
+  ): Promise<ServiceWithCategory | null> {
     const existing = await this.findById(businessId, id);
     if (!existing) {
       return null;
@@ -92,6 +109,7 @@ export class ServiceRepository {
     return this.prisma.service.update({
       where: { id },
       data,
+      include: listInclude,
     });
   }
 

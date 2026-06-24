@@ -41,11 +41,29 @@ export function Providers({ children }: { children: React.ReactNode }) {
                 typeof (error as { status: unknown }).status === "number"
                   ? (error as { status: number }).status
                   : 0;
-              if (status >= 500 || status === 0) {
+              const code =
+                typeof error === "object" &&
+                error !== null &&
+                "code" in error &&
+                typeof (error as { code: unknown }).code === "string"
+                  ? (error as { code: string }).code
+                  : undefined;
+              const isTransient =
+                status === 0 ||
+                status === 502 ||
+                status === 503 ||
+                status === 504 ||
+                code === "BACKEND_UNAVAILABLE" ||
+                code === "SERVICE_TIMEOUT";
+              if (isTransient) {
+                return failureCount < 4;
+              }
+              if (status >= 500) {
                 return failureCount < 1;
               }
               return false;
             },
+            retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 8_000),
           },
         },
       }),

@@ -94,6 +94,8 @@ export const NAV_LABEL_KEYS = [
   "nav.invoices",
   "nav.estimates",
   "nav.payments",
+  "nav.sales",
+  "nav.products",
 ] as const;
 
 const ENTITY_NAV_KEY_SET = new Set<string>(Object.values(ENTITY_NAV_KEYS));

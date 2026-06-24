@@ -183,6 +183,19 @@ export class StorageService {
     return { downloadUrl, expiresIn };
   }
 
+  async getDownloadUrlForObjectKey(
+    objectKey: string,
+  ): Promise<SignedDownloadResponseDto> {
+    const { downloadUrl, expiresIn } =
+      await this.r2StorageProvider.createSignedDownloadUrl(objectKey);
+
+    return { downloadUrl, expiresIn };
+  }
+
+  async getObjectBytes(objectKey: string): Promise<Buffer> {
+    return this.r2StorageProvider.getObjectBytes(objectKey);
+  }
+
   async deleteFile(
     businessId: string,
     fileAssetId: string,

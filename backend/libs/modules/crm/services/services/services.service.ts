@@ -11,11 +11,16 @@ import { ServiceResponseDto } from '../dto/service-response.dto';
 import { UpdateServiceDto } from '../dto/update-service.dto';
 import { toServiceResponse } from '../mappers/service.mapper';
 import { ServiceRepository } from '../repositories/service.repository';
+import { ServiceWorkspaceRepository } from '../repositories/service-workspace.repository';
+import { ServiceCategoriesService } from './service-categories.service';
+import { normalizeServiceDetailsPatch } from '../utils/service-details.util';
 
 @Injectable()
 export class ServicesService {
   constructor(
     private readonly serviceRepository: ServiceRepository,
+    private readonly workspaceRepository: ServiceWorkspaceRepository,
+    private readonly categoriesService: ServiceCategoriesService,
     private readonly auditService: AuditService,
   ) {}
 
@@ -24,13 +29,94 @@ export class ServicesService {
     dto: CreateServiceDto,
     actor: RequestUser,
   ): Promise<ServiceResponseDto> {
+    const categoryId =
+      dto.categoryId ??
+      (await this.categoriesService.getOrCreateDefaultCategory(businessId));
+
+    const category = await this.categoriesService.list(businessId);
+    if (!category.some((c) => c.id === categoryId)) {
+      throw new AppException(
+        ErrorCode.SERVICE_CATEGORY_NOT_FOUND,
+        'Service category not found',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const sortOrder = await this.workspaceRepository.nextServiceSortOrder(
+      businessId,
+      categoryId,
+    );
+
+    const base = {
+      durationMinutes: dto.durationMinutes ?? 60,
+      hasProcessingTime: dto.hasProcessingTime ?? false,
+      processingDurationMinutes: dto.processingDurationMinutes ?? 0,
+      finishDurationMinutes: dto.finishDurationMinutes ?? null,
+      hasBufferTime: dto.hasBufferTime ?? false,
+      bufferBeforeMinutes: dto.bufferBeforeMinutes ?? 0,
+      bufferAfterMinutes: dto.bufferAfterMinutes ?? 0,
+      usesProducts: dto.usesProducts ?? false,
+      requiresNoStaff: dto.requiresNoStaff ?? false,
+      requiresTwoStaff: dto.requiresTwoStaff ?? false,
+      hasCommissionDeduction: dto.hasCommissionDeduction ?? false,
+      commissionDeductionType: dto.commissionDeductionType ?? null,
+      commissionDeductionValue:
+        dto.commissionDeductionValue !== undefined
+          ? new Prisma.Decimal(dto.commissionDeductionValue)
+          : null,
+    };
+
+    let normalized: Prisma.ServiceUpdateInput;
+    try {
+      normalized = normalizeServiceDetailsPatch(
+        {
+          ...base,
+          commissionDeductionType: base.commissionDeductionType,
+          commissionDeductionValue: base.commissionDeductionValue,
+        },
+        {},
+      );
+    } catch {
+      throw new AppException(
+        ErrorCode.VALIDATION_ERROR,
+        'requiresNoStaff and requiresTwoStaff cannot both be enabled',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
     const service = await this.serviceRepository.create(businessId, {
+      category: { connect: { id: categoryId } },
       name: dto.name.trim(),
-      category: dto.category?.trim() || null,
       description: dto.description?.trim() || null,
       price: dto.price !== undefined ? new Prisma.Decimal(dto.price) : null,
-      status: dto.status,
+      status: dto.status ?? ServiceStatus.ACTIVE,
+      sortOrder,
+      isDemo: dto.isDemo ?? false,
+      durationMinutes: (normalized.durationMinutes as number) ?? 60,
+      hasProcessingTime: (normalized.hasProcessingTime as boolean) ?? false,
+      processingDurationMinutes:
+        (normalized.processingDurationMinutes as number) ?? 0,
+      finishDurationMinutes:
+        (normalized.finishDurationMinutes as number | null) ?? null,
+      hasBufferTime: (normalized.hasBufferTime as boolean) ?? false,
+      bufferBeforeMinutes: (normalized.bufferBeforeMinutes as number) ?? 0,
+      bufferAfterMinutes: (normalized.bufferAfterMinutes as number) ?? 0,
+      usesProducts: (normalized.usesProducts as boolean) ?? false,
+      requiresNoStaff: (normalized.requiresNoStaff as boolean) ?? false,
+      requiresTwoStaff: (normalized.requiresTwoStaff as boolean) ?? false,
+      hasCommissionDeduction:
+        (normalized.hasCommissionDeduction as boolean) ?? false,
+      commissionDeductionType:
+        (normalized.commissionDeductionType as typeof dto.commissionDeductionType) ??
+        null,
+      commissionDeductionValue:
+        (normalized.commissionDeductionValue as Prisma.Decimal | null) ?? null,
     });
+
+    await this.workspaceRepository.createOnlineBookingSettings(
+      businessId,
+      service.id,
+    );
 
     await this.auditService.log({
       actorUserId: actor.id,
@@ -40,7 +126,11 @@ export class ServicesService {
       entityId: service.id,
     });
 
-    return toServiceResponse(service);
+    const withCategory = await this.serviceRepository.findByIdWithCategory(
+      businessId,
+      service.id,
+    );
+    return toServiceResponse(withCategory!);
   }
 
   async list(
@@ -56,6 +146,7 @@ export class ServicesService {
       take,
       search: query.search?.trim() || undefined,
       status: query.status,
+      categoryId: query.categoryId,
     });
 
     return {
@@ -65,7 +156,10 @@ export class ServicesService {
   }
 
   async getById(businessId: string, id: string): Promise<ServiceResponseDto> {
-    const service = await this.serviceRepository.findById(businessId, id);
+    const service = await this.serviceRepository.findByIdWithCategory(
+      businessId,
+      id,
+    );
     if (!service) {
       throw new AppException(
         ErrorCode.SERVICE_NOT_FOUND,
@@ -82,7 +176,10 @@ export class ServicesService {
     dto: UpdateServiceDto,
     actor: RequestUser,
   ): Promise<ServiceResponseDto> {
-    const existing = await this.serviceRepository.findById(businessId, id);
+    const existing = await this.serviceRepository.findByIdWithCategory(
+      businessId,
+      id,
+    );
     if (!existing) {
       throw new AppException(
         ErrorCode.SERVICE_NOT_FOUND,
@@ -95,8 +192,8 @@ export class ServicesService {
     if (dto.name !== undefined) {
       data.name = dto.name.trim();
     }
-    if (dto.category !== undefined) {
-      data.category = dto.category?.trim() || null;
+    if (dto.categoryId !== undefined) {
+      data.category = { connect: { id: dto.categoryId } };
     }
     if (dto.description !== undefined) {
       data.description = dto.description?.trim() || null;
@@ -106,6 +203,43 @@ export class ServicesService {
     }
     if (dto.status !== undefined) {
       data.status = dto.status;
+    }
+    if (dto.isDemo !== undefined) {
+      data.isDemo = dto.isDemo;
+    }
+    if (
+      dto.durationMinutes !== undefined ||
+      dto.hasProcessingTime !== undefined ||
+      dto.hasBufferTime !== undefined ||
+      dto.usesProducts !== undefined ||
+      dto.requiresNoStaff !== undefined ||
+      dto.requiresTwoStaff !== undefined ||
+      dto.hasCommissionDeduction !== undefined ||
+      dto.commissionDeductionType !== undefined ||
+      dto.commissionDeductionValue !== undefined
+    ) {
+      try {
+        Object.assign(
+          data,
+          normalizeServiceDetailsPatch(existing, {
+            durationMinutes: dto.durationMinutes,
+            hasProcessingTime: dto.hasProcessingTime,
+            hasBufferTime: dto.hasBufferTime,
+            usesProducts: dto.usesProducts,
+            requiresNoStaff: dto.requiresNoStaff,
+            requiresTwoStaff: dto.requiresTwoStaff,
+            hasCommissionDeduction: dto.hasCommissionDeduction,
+            commissionDeductionType: dto.commissionDeductionType,
+            commissionDeductionValue: dto.commissionDeductionValue,
+          }),
+        );
+      } catch {
+        throw new AppException(
+          ErrorCode.VALIDATION_ERROR,
+          'requiresNoStaff and requiresTwoStaff cannot both be enabled',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
     }
 
     const service = await this.serviceRepository.update(businessId, id, data);
@@ -134,7 +268,10 @@ export class ServicesService {
     id: string,
     actor: RequestUser,
   ): Promise<ServiceResponseDto> {
-    const existing = await this.serviceRepository.findById(businessId, id);
+    const existing = await this.serviceRepository.findByIdWithCategory(
+      businessId,
+      id,
+    );
     if (!existing) {
       throw new AppException(
         ErrorCode.SERVICE_NOT_FOUND,

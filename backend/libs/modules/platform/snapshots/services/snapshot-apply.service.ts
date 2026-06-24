@@ -189,15 +189,37 @@ export class SnapshotApplyService {
     );
     if (existing) return;
 
+    const categoryName = service.category?.trim() || 'General';
+    let category = await tx.serviceCategory.findFirst({
+      where: { businessId, name: categoryName, deletedAt: null },
+    });
+    if (!category) {
+      const max = await tx.serviceCategory.aggregate({
+        where: { businessId, deletedAt: null },
+        _max: { sortOrder: true },
+      });
+      category = await tx.serviceCategory.create({
+        data: {
+          businessId,
+          name: categoryName,
+          sortOrder: (max._max.sortOrder ?? -1) + 1,
+        },
+      });
+    }
+
     const created = await tx.service.create({
       data: {
         businessId,
+        categoryId: category.id,
         name: service.name,
-        category: service.category,
         description: service.description,
         price: service.price,
         status: ServiceStatus.ACTIVE,
       },
+    });
+
+    await tx.serviceOnlineBookingSettings.create({
+      data: { businessId, serviceId: created.id },
     });
 
     await tx.snapshotProvision.create({

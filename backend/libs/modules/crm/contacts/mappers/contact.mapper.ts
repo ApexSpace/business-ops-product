@@ -57,6 +57,7 @@ export function toContactResponse(
     avatarUrl: contact.avatarUrl,
     avatarAssetId: contact.avatarAssetId,
     source: contact.source,
+    clientNotes: contact.clientNotes,
     createdById: contact.createdById,
     createdAt: contact.createdAt,
     updatedAt: contact.updatedAt,

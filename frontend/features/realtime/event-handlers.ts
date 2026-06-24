@@ -9,6 +9,7 @@ import type {
 } from "@/features/conversations/api/conversations.api";
 import { messagesMatchForOptimisticReconcile } from "@/features/conversations/utils/optimistic-message";
 import { queryKeys } from "@/lib/query/keys";
+import { invalidateCheckouts, invalidatePaymentLists } from "@/lib/query/invalidation";
 
 export const REALTIME_EVENTS = {
   disabled: "realtime.disabled",
@@ -17,6 +18,8 @@ export const REALTIME_EVENTS = {
   conversationUpdated: "conversation.updated",
   jobCompleted: "job.completed",
   integrationStatusChanged: "integration.status_changed",
+  paymentCollected: "payment.collected",
+  checkoutClosed: "checkout.closed",
 } as const;
 
 type MessagePage = { items: ConversationMessage[] };
@@ -67,6 +70,19 @@ export function handleRealtimeEvent(
         queryKey: queryKeys.integrations.all(),
       });
       break;
+    case matchesEvent(event, REALTIME_EVENTS.paymentCollected):
+    case matchesEvent(event, "payment.collected"):
+      void invalidatePaymentLists(queryClient);
+      void queryClient.invalidateQueries({ queryKey: queryKeys.invoices.all() });
+      break;
+    case matchesEvent(event, REALTIME_EVENTS.checkoutClosed):
+    case matchesEvent(event, "checkout.closed"): {
+      const data = payload.data as Record<string, unknown> | undefined;
+      const checkoutId =
+        typeof data?.checkoutId === "string" ? data.checkoutId : undefined;
+      void invalidateCheckouts(queryClient, checkoutId);
+      break;
+    }
     default:
       break;
   }

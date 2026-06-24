@@ -38,6 +38,8 @@ export interface FormDialogProps<T extends FieldValues> {
   reconnectLabel?: string;
   /** Hides Cancel; use with `footerVariant="actions"` for manage-only dialogs. */
   hideCancel?: boolean;
+  /** Hides the entire dialog footer (e.g. when children provide their own actions). */
+  hideFooter?: boolean;
   /** Single-row footer: reconnect, disconnect, primary action (no cancel). */
   footerVariant?: "default" | "actions";
   children: React.ReactNode;
@@ -66,6 +68,7 @@ export function FormDialog<T extends FieldValues>({
   onReconnect,
   reconnectLabel = "Reconnect",
   hideCancel = false,
+  hideFooter = false,
   footerVariant = "default",
   children,
   className,
@@ -86,6 +89,7 @@ export function FormDialog<T extends FieldValues>({
             const body = (
               <form onSubmit={form.handleSubmit(onSubmit)} className="contents">
                 <DialogBody className="space-y-4">{children}</DialogBody>
+                {hideFooter ? null : (
                 <DialogFooter
                   className={
                     useActionsFooter
@@ -174,6 +178,7 @@ export function FormDialog<T extends FieldValues>({
                     </>
                   )}
                 </DialogFooter>
+                )}
               </form>
             );
             return schema ? (

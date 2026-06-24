@@ -7,9 +7,15 @@ import { ServicesModule } from '@app/modules/crm/services/services.module';
 import { WorkItemsModule } from '@app/modules/operations/work-items/work-items.module';
 import { IntegrationsModule } from '@app/modules/integrations/integrations/integrations.module';
 import { EmailModule } from '@app/modules/communications/email/email.module';
+import { PaymentsModule } from '@app/modules/finance/payments/payments.module';
+import { ProductsModule } from '@app/modules/finance/products/products.module';
+import { CheckoutsController } from './controllers/checkouts.controller';
 import { InvoicesController } from './controllers/invoices.controller';
 import { PublicInvoicesController } from './controllers/public-invoices.controller';
+import { CheckoutRepository } from './repositories/checkout.repository';
 import { InvoiceRepository } from './repositories/invoice.repository';
+import { CheckoutCompletionService } from './services/checkout-completion.service';
+import { CheckoutsService } from './services/checkouts.service';
 import { InvoicePaymentService } from './services/invoice-payment.service';
 import { InvoicesService } from './services/invoices.service';
 import { StripeInvoicePaymentService } from './services/stripe-invoice-payment.service';
@@ -24,17 +30,29 @@ import { StripeInvoicePaymentService } from './services/stripe-invoice-payment.s
     WorkItemsModule,
     forwardRef(() => IntegrationsModule),
     forwardRef(() => EmailModule),
+    forwardRef(() => PaymentsModule),
+    ProductsModule,
   ],
-  controllers: [InvoicesController, PublicInvoicesController],
+  controllers: [
+    InvoicesController,
+    PublicInvoicesController,
+    CheckoutsController,
+  ],
   providers: [
     InvoiceRepository,
+    CheckoutRepository,
     InvoicesService,
+    CheckoutsService,
+    CheckoutCompletionService,
     InvoicePaymentService,
     StripeInvoicePaymentService,
   ],
   exports: [
     InvoiceRepository,
+    CheckoutRepository,
     InvoicesService,
+    CheckoutsService,
+    CheckoutCompletionService,
     InvoicePaymentService,
     StripeInvoicePaymentService,
   ],

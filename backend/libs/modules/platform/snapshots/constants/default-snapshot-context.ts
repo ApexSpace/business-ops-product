@@ -68,6 +68,20 @@ export const DEFAULT_SNAPSHOT_CONTEXT: SnapshotContextResponse = {
       labelKey: 'nav.payments',
       order: 7,
     },
+    {
+      key: 'sales',
+      route: '/business/sales',
+      icon: 'shopping-bag',
+      labelKey: 'nav.sales',
+      order: 8,
+    },
+    {
+      key: 'products',
+      route: '/business/products',
+      icon: 'package',
+      labelKey: 'nav.products',
+      order: 9,
+    },
   ],
   dashboard: {
     widgets: [

@@ -9,6 +9,8 @@ import { JobEnqueueService } from '@app/core/jobs/job-enqueue.service';
 import { AppointmentRepository } from '@app/modules/operations/appointments/repositories/appointment.repository';
 import { CalendarRepository } from '@app/modules/operations/calendars/repositories/calendar.repository';
 import { ServiceRepository } from '@app/modules/crm/services/repositories/service.repository';
+import { ServiceBookingTimingService } from '@app/modules/crm/services/services/service-booking-timing.service';
+import { ServiceWorkspaceRepository } from '@app/modules/crm/services/repositories/service-workspace.repository';
 import { BusinessMembershipRepository } from '@app/modules/platform/membership/repositories/business-membership.repository';
 import {
   CreatePublicBookingDto,
@@ -40,6 +42,8 @@ export class PublicBookingService {
     private readonly bookingAvailabilityService: BookingAvailabilityService,
     private readonly publicBookingContactService: PublicBookingContactService,
     private readonly serviceRepository: ServiceRepository,
+    private readonly workspaceRepository: ServiceWorkspaceRepository,
+    private readonly bookingTimingService: ServiceBookingTimingService,
     private readonly membershipRepository: BusinessMembershipRepository,
     private readonly auditService: AuditService,
     private readonly jobEnqueueService: JobEnqueueService,
@@ -74,6 +78,13 @@ export class PublicBookingService {
       query.timezone ?? calendar.timezone,
     );
 
+    const timing = await this.bookingTimingService.resolveForBooking({
+      businessId: calendar.businessId,
+      serviceId: query.serviceId,
+      staffId: query.staffId,
+      calendar,
+    });
+
     return this.bookingAvailabilityService.getAvailability({
       calendar,
       availability: calendar.availability,
@@ -82,6 +93,7 @@ export class PublicBookingService {
       to,
       viewerTimezone,
       staffId: query.staffId,
+      timing,
     });
   }
 
@@ -105,6 +117,13 @@ export class PublicBookingService {
       );
     }
 
+    const timing = await this.bookingTimingService.resolveForBooking({
+      businessId: calendar.businessId,
+      serviceId: dto.serviceId,
+      staffId: dto.staffId,
+      calendar,
+    });
+
     const available = await this.bookingAvailabilityService.isSlotAvailable({
       calendar,
       availability: calendar.availability,
@@ -112,6 +131,7 @@ export class PublicBookingService {
       startAt,
       endAt,
       staffId: dto.staffId,
+      timing,
     });
 
     if (!available) {
@@ -122,37 +142,110 @@ export class PublicBookingService {
       );
     }
 
+    let serviceRecord: Awaited<
+      ReturnType<ServiceRepository['findById']>
+    > = null;
     if (dto.serviceId) {
-      const service = await this.serviceRepository.findById(
+      serviceRecord = await this.serviceRepository.findById(
         calendar.businessId,
         dto.serviceId,
       );
-      if (!service) {
+      if (!serviceRecord) {
         throw new AppException(
           ErrorCode.SERVICE_NOT_FOUND,
           'Service not found',
           HttpStatus.BAD_REQUEST,
         );
       }
-    }
 
-    let assignedToId: string | null = dto.staffId ?? null;
-    if (assignedToId) {
-      const membership =
-        await this.membershipRepository.findActiveByUserAndBusiness(
-          assignedToId,
+      const bookingSettings =
+        await this.workspaceRepository.findOnlineBookingSettings(
           calendar.businessId,
+          dto.serviceId,
         );
-      if (!membership) {
+      if (bookingSettings && !bookingSettings.onlineBookingEnabled) {
         throw new AppException(
-          ErrorCode.ASSIGNEE_NOT_MEMBER,
-          'Staff member not found',
+          ErrorCode.BAD_REQUEST,
+          'This service is not available for online booking',
           HttpStatus.BAD_REQUEST,
         );
       }
+
+      if (serviceRecord.requiresNoStaff) {
+        const resourceCount =
+          await this.workspaceRepository.countResourceRequirements(
+            calendar.businessId,
+            dto.serviceId,
+          );
+        if (resourceCount < 1) {
+          throw new AppException(
+            ErrorCode.BAD_REQUEST,
+            'This service is not configured for booking',
+            HttpStatus.BAD_REQUEST,
+          );
+        }
+      } else if (serviceRecord.requiresTwoStaff) {
+        if (!dto.staffId || !dto.secondaryStaffId) {
+          throw new AppException(
+            ErrorCode.BAD_REQUEST,
+            'Two staff members are required for this service',
+            HttpStatus.BAD_REQUEST,
+          );
+        }
+        for (const staffUserId of [dto.staffId, dto.secondaryStaffId]) {
+          const assignment = await this.workspaceRepository.findStaffAssignment(
+            calendar.businessId,
+            dto.serviceId,
+            staffUserId,
+          );
+          if (!assignment?.isEnabled || !assignment.onlineBookingEnabled) {
+            throw new AppException(
+              ErrorCode.BAD_REQUEST,
+              'Selected staff cannot perform this service online',
+              HttpStatus.BAD_REQUEST,
+            );
+          }
+        }
+      } else if (dto.staffId) {
+        const assignment = await this.workspaceRepository.findStaffAssignment(
+          calendar.businessId,
+          dto.serviceId,
+          dto.staffId,
+        );
+        if (
+          assignment &&
+          (!assignment.isEnabled || !assignment.onlineBookingEnabled)
+        ) {
+          throw new AppException(
+            ErrorCode.BAD_REQUEST,
+            'Selected staff cannot perform this service online',
+            HttpStatus.BAD_REQUEST,
+          );
+        }
+      }
+    }
+
+    let assignedToId: string | null = dto.staffId ?? null;
+    if (!serviceRecord?.requiresNoStaff) {
+      if (assignedToId) {
+        const membership =
+          await this.membershipRepository.findActiveByUserAndBusiness(
+            assignedToId,
+            calendar.businessId,
+          );
+        if (!membership) {
+          throw new AppException(
+            ErrorCode.ASSIGNEE_NOT_MEMBER,
+            'Staff member not found',
+            HttpStatus.BAD_REQUEST,
+          );
+        }
+      } else {
+        const primary = calendar.staff.find((s) => s.isPrimary);
+        assignedToId = primary?.userId ?? calendar.staff[0]?.userId ?? null;
+      }
     } else {
-      const primary = calendar.staff.find((s) => s.isPrimary);
-      assignedToId = primary?.userId ?? calendar.staff[0]?.userId ?? null;
+      assignedToId = null;
     }
 
     const contactSource = context?.isEmbed
@@ -185,6 +278,25 @@ export class PublicBookingService {
 
     const title = `${dto.customerName.trim()} - ${calendar.name}`;
 
+    const productUsages = dto.serviceId
+      ? (
+          await this.workspaceRepository.findWorkspace(
+            calendar.businessId,
+            dto.serviceId,
+          )
+        )?.productUsages.map((p) => p.id) ?? []
+      : [];
+
+    const serviceMetadata =
+      serviceRecord && timing
+        ? this.bookingTimingService.buildAppointmentMetadata({
+            timing,
+            service: serviceRecord,
+            productUsageIds: productUsages,
+            secondaryStaffId: dto.secondaryStaffId ?? null,
+          })
+        : null;
+
     const appointment = await this.appointmentRepository.create(
       calendar.businessId,
       {
@@ -206,6 +318,7 @@ export class PublicBookingService {
           customerTimezone: dto.timezone,
           userAgent: context?.userAgent ?? null,
           referrer: dto.referrer ?? null,
+          ...(serviceMetadata ?? {}),
         } as Prisma.InputJsonValue,
       },
     );

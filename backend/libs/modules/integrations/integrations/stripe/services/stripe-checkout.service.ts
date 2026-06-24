@@ -2,6 +2,7 @@ import { HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { AppException } from '@app/common/exceptions/app.exception';
 import { ErrorCode } from '@app/common/exceptions/error-code.enum';
 import { buildInvoicePublicPath } from '@app/modules/finance/invoices/utils/invoice-public-token.util';
+import { STRIPE_PAYMENT_PURPOSE } from '@app/modules/finance/payments/constants/stripe-payment-purpose.constants';
 import { BusinessIntegrationRepository } from '../../repositories/business-integration.repository';
 import { assertStripeReadyForPayments } from '../utils/stripe-readiness.util';
 import { StripeApiService } from './stripe-api.service';
@@ -32,6 +33,9 @@ export class StripeCheckoutService {
       contactId?: string | null;
       description?: string;
       publicToken: string;
+      paymentId?: string;
+      successUrl?: string;
+      cancelUrl?: string;
     },
   ): Promise<CreateInvoiceCheckoutSessionResult> {
     const integration =
@@ -51,14 +55,18 @@ export class StripeCheckoutService {
     }
 
     const publicPath = buildInvoicePublicPath(options.publicToken);
-    const successUrl = `${frontendUrl}${publicPath}?payment=success`;
-    const cancelUrl = `${frontendUrl}${publicPath}?payment=cancelled`;
+    const successUrl =
+      options.successUrl ?? `${frontendUrl}${publicPath}?payment=success`;
+    const cancelUrl =
+      options.cancelUrl ?? `${frontendUrl}${publicPath}?payment=cancelled`;
 
     const metadata = {
       businessId,
       invoiceId,
       contactId: options.contactId ?? '',
       provider: 'stripe',
+      purpose: STRIPE_PAYMENT_PURPOSE.INVOICE,
+      ...(options.paymentId ? { paymentId: options.paymentId } : {}),
     };
 
     const stripe = this.stripeApiService.getClient();
