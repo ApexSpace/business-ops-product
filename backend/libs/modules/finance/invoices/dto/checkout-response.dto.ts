@@ -58,6 +58,17 @@ export class CheckoutContactSummaryDto {
   label!: string;
 }
 
+export class AppliedCheckoutOfferDto {
+  @ApiProperty()
+  offerId!: string;
+
+  @ApiProperty()
+  offerName!: string;
+
+  @ApiProperty()
+  totalDiscount!: string;
+}
+
 export class CheckoutResponseDto {
   @ApiProperty()
   id!: string;
@@ -118,4 +129,7 @@ export class CheckoutResponseDto {
 
   @ApiProperty({ type: [CheckoutItemResponseDto] })
   items!: CheckoutItemResponseDto[];
+
+  @ApiPropertyOptional({ type: [AppliedCheckoutOfferDto] })
+  appliedOffers?: AppliedCheckoutOfferDto[];
 }

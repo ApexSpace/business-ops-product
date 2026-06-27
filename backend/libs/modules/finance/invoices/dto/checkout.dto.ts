@@ -134,6 +134,20 @@ export class AddCheckoutServiceDto {
   @IsNumber({ maxDecimalPlaces: 4 })
   @Min(0.0001)
   quantity?: number;
+
+  @ApiPropertyOptional({
+    description: 'Redeem a covered service from this client membership',
+  })
+  @IsOptional()
+  @IsUUID('4')
+  clientMembershipId?: string;
+
+  @ApiPropertyOptional({
+    description: 'Service group within the membership plan to redeem against',
+  })
+  @IsOptional()
+  @IsUUID('4')
+  membershipServiceGroupId?: string;
 }
 
 export class AddCheckoutProductDto {

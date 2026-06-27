@@ -318,6 +318,7 @@ export class PublicBookingService {
           customerTimezone: dto.timezone,
           userAgent: context?.userAgent ?? null,
           referrer: dto.referrer ?? null,
+          offerCode: dto.offerCode?.trim().toUpperCase() || null,
           ...(serviceMetadata ?? {}),
         } as Prisma.InputJsonValue,
       },

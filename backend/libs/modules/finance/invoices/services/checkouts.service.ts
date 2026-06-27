@@ -14,6 +14,7 @@ import { ServiceWorkspaceRepository } from '@app/modules/crm/services/repositori
 import { PaymentOrchestratorService } from '@app/modules/finance/payments/orchestration/payment-orchestrator.service';
 import { ProductPickerService } from '@app/modules/finance/products/services/product-picker.service';
 import { ProductRepository } from '@app/modules/finance/products/repositories/product.repository';
+import { ClientMembershipsService } from '@app/modules/finance/memberships/services/client-memberships.service';
 import { PackageTemplateRepository } from '@app/modules/finance/packages/repositories/package-template.repository';
 import { ProductVariantRepository } from '@app/modules/finance/products/repositories/product-variant.repository';
 import { resolveProductPrice } from '@app/modules/finance/products/utils/product-price-resolver.util';
@@ -39,6 +40,8 @@ import {
 } from '../repositories/checkout.repository';
 import { calculateInvoiceTotals } from '../utils/invoice-calculations.util';
 import { CheckoutCompletionService } from './checkout-completion.service';
+import { CheckoutOffersService } from './checkout-offers.service';
+import { OfferRepository } from '@app/modules/finance/offers/repositories/offer.repository';
 
 @Injectable()
 export class CheckoutsService {
@@ -55,7 +58,10 @@ export class CheckoutsService {
     private readonly financialSettingsService: FinancialSettingsService,
     private readonly paymentOrchestrator: PaymentOrchestratorService,
     private readonly checkoutCompletion: CheckoutCompletionService,
+    private readonly clientMembershipsService: ClientMembershipsService,
     private readonly auditService: AuditService,
+    private readonly checkoutOffersService: CheckoutOffersService,
+    private readonly offerRepository: OfferRepository,
   ) {}
 
   async list(
@@ -212,17 +218,56 @@ export class CheckoutsService {
     }
 
     const quantity = dto.quantity ?? 1;
-    const unitPrice = Number(service.price?.toString() ?? '0');
+    let unitPrice = Number(service.price?.toString() ?? '0');
+    let metadata: Prisma.InputJsonValue | undefined;
+
+    if (dto.clientMembershipId || dto.membershipServiceGroupId) {
+      if (!dto.clientMembershipId || !dto.membershipServiceGroupId) {
+        throw new AppException(
+          ErrorCode.BAD_REQUEST,
+          'clientMembershipId and membershipServiceGroupId must both be set to redeem a membership service',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+      if (!checkout.contactId) {
+        throw new AppException(
+          ErrorCode.BAD_REQUEST,
+          'Assign a client to the sale before redeeming a membership service',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+      await this.assertMembershipRedemptionAvailable(
+        businessId,
+        checkout.contactId,
+        dto.serviceId,
+        dto.clientMembershipId,
+        dto.membershipServiceGroupId,
+      );
+      unitPrice = 0;
+      metadata = {
+        membershipRedemption: true,
+        clientMembershipId: dto.clientMembershipId,
+        membershipServiceGroupId: dto.membershipServiceGroupId,
+      };
+    } else if (checkout.contactId) {
+      unitPrice = await this.applyServiceMemberDiscount(
+        businessId,
+        checkout.contactId,
+        unitPrice,
+      );
+    }
+
     const newItem: CheckoutItemInput = {
       lineType: InvoiceLineType.SERVICE,
       serviceId: service.id,
       staffUserId: dto.staffUserId ?? null,
-      title: service.name,
+      title: metadata ? `${service.name} (Membership)` : service.name,
       description: service.description,
       quantity: new Prisma.Decimal(quantity),
       unitPrice: new Prisma.Decimal(unitPrice.toFixed(2)),
       totalPrice: new Prisma.Decimal((quantity * unitPrice).toFixed(2)),
       sortOrder: checkout.items.length,
+      metadata,
     };
 
     const items = [
@@ -297,7 +342,14 @@ export class CheckoutsService {
     }
 
     const quantity = dto.quantity ?? 1;
-    const unitPrice = Number(resolveProductPrice(product, variant));
+    let unitPrice = Number(resolveProductPrice(product, variant));
+    if (checkout.contactId) {
+      unitPrice = await this.applyProductMemberDiscount(
+        businessId,
+        checkout.contactId,
+        unitPrice,
+      );
+    }
     const variantLabel = variant
       ? variant.optionValues
           .sort(
@@ -540,6 +592,30 @@ export class CheckoutsService {
         HttpStatus.BAD_REQUEST,
       );
     }
+
+    const balanceDue = checkout.balanceDue;
+    if (balanceDue.lessThanOrEqualTo(0)) {
+      await this.checkoutCompletion.finalizeCheckoutIfPaid(
+        businessId,
+        checkout.id,
+        actor.id,
+      );
+      await this.auditService.log({
+        actorUserId: actor.id,
+        businessId,
+        action: 'checkout.closed',
+        entityType: 'Invoice',
+        entityId: checkout.id,
+      });
+      const refreshed = await this.checkoutRepository.findById(businessId, id);
+      return {
+        checkout: toCheckoutResponse(refreshed!),
+        completed: true,
+        paymentIds: [],
+        stripeTenders: [],
+      };
+    }
+
     if (checkout.totalAmount.lessThanOrEqualTo(0)) {
       throw new AppException(
         ErrorCode.BAD_REQUEST,
@@ -748,6 +824,81 @@ export class CheckoutsService {
     return this.recalculateAndReturn(businessId, checkoutId, actor.id);
   }
 
+  async applyOffer(
+    businessId: string,
+    checkoutId: string,
+    offerId: string,
+    actor: RequestUser,
+  ): Promise<CheckoutResponseDto> {
+    await this.requireEditableCheckout(businessId, checkoutId);
+    const checkout = await this.checkoutRepository.findById(
+      businessId,
+      checkoutId,
+    );
+    if (!checkout) {
+      throw new AppException(
+        ErrorCode.INVOICE_NOT_FOUND,
+        'Checkout not found',
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    const offerResult = await this.checkoutOffersService.applyManualOffer(
+      businessId,
+      checkout,
+      offerId,
+    );
+
+    await this.checkoutRepository.update(businessId, checkoutId, {
+      metadata: offerResult.metadata as Prisma.InputJsonValue,
+    });
+
+    return this.recalculateAndReturn(businessId, checkoutId, actor.id);
+  }
+
+  async removeAppliedOffer(
+    businessId: string,
+    checkoutId: string,
+    offerId: string,
+    actor: RequestUser,
+  ): Promise<CheckoutResponseDto> {
+    await this.requireEditableCheckout(businessId, checkoutId);
+    const checkout = await this.checkoutRepository.findById(
+      businessId,
+      checkoutId,
+    );
+    if (!checkout) {
+      throw new AppException(
+        ErrorCode.INVOICE_NOT_FOUND,
+        'Checkout not found',
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    const offerResult = await this.checkoutOffersService.removeOffer(
+      businessId,
+      checkout,
+      offerId,
+    );
+
+    await this.checkoutRepository.update(businessId, checkoutId, {
+      metadata: offerResult.metadata as Prisma.InputJsonValue,
+    });
+
+    return this.recalculateAndReturn(businessId, checkoutId, actor.id);
+  }
+
+  async listStaffOffersForPicker(businessId: string) {
+    const offers = await this.offerRepository.findEnabledWithDiscounts(businessId);
+    return offers
+      .filter((offer) => offer.applicationMode === 'STAFF_ONLY')
+      .map((offer) => ({
+        id: offer.id,
+        name: offer.name,
+        description: offer.description,
+      }));
+  }
+
   private async recalculateAndReturn(
     businessId: string,
     checkoutId: string,
@@ -769,11 +920,16 @@ export class CheckoutsService {
       this.mapExistingCheckoutItem(item),
     );
 
+    const offerResult = await this.checkoutOffersService.evaluateForCheckout(
+      businessId,
+      checkout,
+    );
+
     const totals = await this.computeTotals(
       businessId,
       mappedItems,
       Number(checkout.taxAmount.toString()),
-      Number(checkout.discountAmount.toString()),
+      offerResult.totalOfferDiscount,
     );
 
     await this.checkoutRepository.update(businessId, checkoutId, {
@@ -783,6 +939,7 @@ export class CheckoutsService {
       totalAmount: totals.totalAmount,
       balanceDue: totals.balanceDue,
       remainingAmount: totals.balanceDue,
+      metadata: offerResult.metadata as Prisma.InputJsonValue,
     });
 
     const refreshed = await this.checkoutRepository.findById(
@@ -911,7 +1068,69 @@ export class CheckoutsService {
       unitPrice: item.unitPrice,
       totalPrice: item.totalPrice,
       sortOrder: item.sortOrder,
+      metadata: item.metadata ?? undefined,
     };
+  }
+
+  private async assertMembershipRedemptionAvailable(
+    businessId: string,
+    contactId: string,
+    serviceId: string,
+    clientMembershipId: string,
+    membershipServiceGroupId: string,
+  ): Promise<void> {
+    const available = await this.clientMembershipsService.findAvailableForService(
+      businessId,
+      contactId,
+      serviceId,
+    );
+    const membership = available.find(
+      (entry) => entry?.membershipId === clientMembershipId,
+    );
+    const usageRecord = membership?.usageRecords.find(
+      (record) => record.serviceGroupId === membershipServiceGroupId,
+    );
+    if (!usageRecord || usageRecord.remaining <= 0) {
+      throw new AppException(
+        ErrorCode.MEMBERSHIP_SLOTS_EXHAUSTED,
+        'No remaining membership slots for this service',
+        HttpStatus.CONFLICT,
+      );
+    }
+  }
+
+  private async applyServiceMemberDiscount(
+    businessId: string,
+    contactId: string,
+    unitPrice: number,
+  ): Promise<number> {
+    const discount =
+      await this.clientMembershipsService.applyMemberDiscountAtCheckout(
+        businessId,
+        contactId,
+      );
+    if (!discount?.hasActiveMembership) {
+      return unitPrice;
+    }
+    const pct = Number(discount.serviceDiscountPercent) / 100;
+    return unitPrice * (1 - pct);
+  }
+
+  private async applyProductMemberDiscount(
+    businessId: string,
+    contactId: string,
+    unitPrice: number,
+  ): Promise<number> {
+    const discount =
+      await this.clientMembershipsService.applyMemberDiscountAtCheckout(
+        businessId,
+        contactId,
+      );
+    if (!discount?.hasActiveMembership) {
+      return unitPrice;
+    }
+    const pct = Number(discount.productDiscountPercent) / 100;
+    return unitPrice * (1 - pct);
   }
 
   private async requireEditableCheckout(businessId: string, id: string) {

@@ -4,6 +4,7 @@ import { FinancialDueStatusService } from '@app/modules/finance/shared/services/
 import { AppointmentReminderService } from '@app/modules/operations/appointments/services/appointment-reminder.service';
 import { AutomationAppointmentTriggerService } from '@app/modules/communications/automations/services/automation-appointment-trigger.service';
 import { ClientPackagesService } from '@app/modules/finance/packages/services/client-packages.service';
+import { ClientMembershipsService } from '@app/modules/finance/memberships/services/client-memberships.service';
 import {
   JOB_CLEANUP_ASYNC_JOBS,
   JOB_CLEANUP_ORPHAN_FILES,
@@ -21,6 +22,7 @@ export class SchedulerTasksService {
     private readonly financialDueStatusService: FinancialDueStatusService,
     private readonly automationAppointmentTriggerService: AutomationAppointmentTriggerService,
     private readonly clientPackagesService: ClientPackagesService,
+    private readonly clientMembershipsService: ClientMembershipsService,
   ) {}
 
   @Cron(CronExpression.EVERY_DAY_AT_3AM)
@@ -97,6 +99,24 @@ export class SchedulerTasksService {
     } catch (error) {
       this.logger.error(
         `Package expiration cron failed: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+    }
+  }
+
+  @Cron(CronExpression.EVERY_DAY_AT_2AM)
+  async checkMembershipServiceExpiry(): Promise<void> {
+    try {
+      const count = await this.clientMembershipsService.expireUsageRecords();
+      if (count > 0) {
+        this.logger.log(
+          `Processed ${count} expiring membership usage record(s)`,
+        );
+      }
+    } catch (error) {
+      this.logger.error(
+        `Membership expiry cron failed: ${
           error instanceof Error ? error.message : String(error)
         }`,
       );

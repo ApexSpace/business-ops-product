@@ -7,6 +7,7 @@ import { StripePlatformWebhookHandlerService } from '@app/modules/platform/billi
 import { BusinessIntegrationRepository } from '../../repositories/business-integration.repository';
 import type { StripeConnectAccount, StripeWebhookEvent } from '../stripe.types';
 import { StripeInvoicePaymentService } from '@app/modules/finance/invoices/services/stripe-invoice-payment.service';
+import { MembershipWebhookService } from '@app/modules/finance/memberships/services/membership-webhook.service';
 import { StripeAccountService } from './stripe-account.service';
 import { StripeApiService } from './stripe-api.service';
 import { PLATFORM_SUBSCRIPTION_PURPOSE } from '@app/modules/platform/billing/stripe/types/stripe-platform-billing.types';
@@ -22,6 +23,7 @@ export class StripeWebhookDispatchService {
     private readonly auditService: AuditService,
     private readonly webhookEventsRepository: WebhookEventsRepository,
     private readonly stripeInvoicePaymentService: StripeInvoicePaymentService,
+    private readonly membershipWebhookService: MembershipWebhookService,
     private readonly platformWebhookHandler: StripePlatformWebhookHandlerService,
   ) {}
 
@@ -85,10 +87,16 @@ export class StripeWebhookDispatchService {
         await this.handleChargeRefunded(event);
         break;
       case 'invoice.payment_succeeded':
+        await this.handleInvoicePaymentSucceeded(event);
+        break;
       case 'invoice.payment_failed':
-        this.logger.log(
-          `Stripe ${event.type} received (invoice handler pending)`,
-        );
+        await this.handleInvoicePaymentFailed(event);
+        break;
+      case 'customer.subscription.updated':
+        await this.handleSubscriptionUpdated(event);
+        break;
+      case 'customer.subscription.deleted':
+        await this.handleSubscriptionDeleted(event);
         break;
       default:
         this.logger.debug(`Unhandled Stripe event type: ${event.type}`);
@@ -270,6 +278,36 @@ export class StripeWebhookDispatchService {
     event: StripeWebhookEvent,
   ): Promise<void> {
     await this.stripeInvoicePaymentService.handlePaymentIntentFailed(event);
+  }
+
+  private async handleInvoicePaymentSucceeded(
+    event: StripeWebhookEvent,
+  ): Promise<void> {
+    const handled =
+      await this.membershipWebhookService.handleInvoicePaymentSucceeded(event);
+    if (handled) return;
+    this.logger.debug(`invoice.payment_succeeded not handled for ${event.id}`);
+  }
+
+  private async handleInvoicePaymentFailed(
+    event: StripeWebhookEvent,
+  ): Promise<void> {
+    const handled =
+      await this.membershipWebhookService.handleInvoicePaymentFailed(event);
+    if (handled) return;
+    this.logger.debug(`invoice.payment_failed not handled for ${event.id}`);
+  }
+
+  private async handleSubscriptionUpdated(
+    event: StripeWebhookEvent,
+  ): Promise<void> {
+    await this.membershipWebhookService.handleSubscriptionUpdated(event);
+  }
+
+  private async handleSubscriptionDeleted(
+    event: StripeWebhookEvent,
+  ): Promise<void> {
+    await this.membershipWebhookService.handleSubscriptionDeleted(event);
   }
 
   private async handleChargeRefunded(event: StripeWebhookEvent): Promise<void> {

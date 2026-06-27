@@ -9,8 +9,10 @@ import {
   LayoutDashboard,
   MessageSquare,
   Package,
+  Repeat,
   Settings,
   ShoppingBag,
+  Tag,
 } from "lucide-react";
 import type { IndustryLabels } from "@/lib/types/shared";
 import type { ShellNavItem, ShellNavSection } from "@/lib/types/shell-nav";
@@ -74,6 +76,16 @@ export const businessOperationalMenuItems: BusinessMenuItem[] = [
     title: "Packages",
     href: "/business/packages",
     icon: Boxes,
+  },
+  {
+    title: "Memberships",
+    href: "/business/memberships",
+    icon: Repeat,
+  },
+  {
+    title: "Offers",
+    href: "/business/offers",
+    icon: Tag,
   },
   {
     title: "Products",

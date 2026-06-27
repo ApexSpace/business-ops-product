@@ -11,12 +11,15 @@ import { PaymentsModule } from '@app/modules/finance/payments/payments.module';
 import { ProductsModule } from '@app/modules/finance/products/products.module';
 import { GiftCardsModule } from '@app/modules/finance/gift-cards/gift-cards.module';
 import { PackagesModule } from '@app/modules/finance/packages/packages.module';
+import { MembershipsModule } from '@app/modules/finance/memberships/memberships.module';
+import { OffersModule } from '@app/modules/finance/offers/offers.module';
 import { CheckoutsController } from './controllers/checkouts.controller';
 import { InvoicesController } from './controllers/invoices.controller';
 import { PublicInvoicesController } from './controllers/public-invoices.controller';
 import { CheckoutRepository } from './repositories/checkout.repository';
 import { InvoiceRepository } from './repositories/invoice.repository';
 import { CheckoutCompletionService } from './services/checkout-completion.service';
+import { CheckoutOffersService } from './services/checkout-offers.service';
 import { CheckoutsService } from './services/checkouts.service';
 import { InvoicePaymentService } from './services/invoice-payment.service';
 import { InvoicesService } from './services/invoices.service';
@@ -36,6 +39,8 @@ import { StripeInvoicePaymentService } from './services/stripe-invoice-payment.s
     ProductsModule,
     forwardRef(() => GiftCardsModule),
     forwardRef(() => PackagesModule),
+    forwardRef(() => MembershipsModule),
+    forwardRef(() => OffersModule),
   ],
   controllers: [
     InvoicesController,
@@ -47,6 +52,7 @@ import { StripeInvoicePaymentService } from './services/stripe-invoice-payment.s
     CheckoutRepository,
     InvoicesService,
     CheckoutsService,
+    CheckoutOffersService,
     CheckoutCompletionService,
     InvoicePaymentService,
     StripeInvoicePaymentService,
@@ -56,6 +62,7 @@ import { StripeInvoicePaymentService } from './services/stripe-invoice-payment.s
     CheckoutRepository,
     InvoicesService,
     CheckoutsService,
+    CheckoutOffersService,
     CheckoutCompletionService,
     InvoicePaymentService,
     StripeInvoicePaymentService,

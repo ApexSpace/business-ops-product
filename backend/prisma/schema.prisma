@@ -856,6 +856,11 @@ model Business {
   packageTemplates         PackageTemplate[]
   clientPackages           ClientPackage[]
   packageSettings          PackageSettings?
+  membershipPlans          MembershipPlan[]
+  clientMemberships        ClientMembership[]
+  membershipSettings       MembershipSettings?
+  offers                   Offer[]
+  offerUsageLogs           OfferUsageLog[]
 
   @@index([createdById])
   @@index([industryId])
@@ -870,6 +875,7 @@ enum ContactWalletTransactionType {
   REFUND
   SALE_PAYMENT
   SALE_DEPOSIT
+  MEMBERSHIP_CREDIT
 }
 
 model ContactWalletBalance {
@@ -1078,6 +1084,8 @@ model Contact {
   ownedGiftCards        GiftCard[] @relation("GiftCardOwner")
   purchasedGiftCards    GiftCard[] @relation("GiftCardPurchaser")
   clientPackages        ClientPackage[]
+  clientMemberships     ClientMembership[]
+  offerUsageLogs        OfferUsageLog[]
 
   @@index([businessId])
   @@index([businessId, createdAt])
@@ -1210,6 +1218,7 @@ model Service {
   optionGroups ServiceOptionGroup[]
   packageServiceGroupItems PackageServiceGroupItem[]
   packageServiceAllocations PackageServiceAllocation[]
+  membershipServiceGroupItems MembershipServiceGroupItem[]
 
   @@index([businessId])
   @@index([businessId, categoryId])
@@ -1912,6 +1921,7 @@ model Invoice {
   notes              String?
   paymentTerms       String?
   termsAndConditions String?
+  metadata           Json?
   closedAt           DateTime?
   closedById         String?
   createdById        String?
@@ -3565,5 +3575,318 @@ model PackageSettings {
   business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 
   @@map("package_settings")
+}
+
+// ─── MEMBERSHIPS ─────────────────────────────────────────────────────────────
+
+enum MembershipPlanType {
+  SERVICES
+  ACCOUNT_CREDIT
+}
+
+enum MembershipBillingIntervalUnit {
+  WEEK
+  MONTH
+  YEAR
+}
+
+enum MembershipCommissionBasis {
+  REGULAR_PRICE
+  DISCOUNTED_PRICE
+}
+
+enum ClientMembershipStatus {
+  SCHEDULED
+  ACTIVE
+  PAST_DUE
+  UNPAID
+  PAUSED
+  CANCELED
+}
+
+enum MembershipBillingEventType {
+  PAYMENT_SUCCEEDED
+  PAYMENT_FAILED
+  PAYMENT_RETRYING
+  SUBSCRIPTION_CREATED
+  SUBSCRIPTION_CANCELED
+  SUBSCRIPTION_PAUSED
+  SUBSCRIPTION_RESUMED
+  SUBSCRIPTION_RENEWED
+}
+
+model MembershipPlan {
+  id                     String                      @id @default(uuid())
+  businessId             String
+  name                   String
+  emoji                  String?
+  planType               MembershipPlanType          @default(SERVICES)
+  billingIntervalCount   Int                         @default(1)
+  billingIntervalUnit    MembershipBillingIntervalUnit @default(MONTH)
+  price                  Decimal                     @db.Decimal(10, 2)
+  chargeServiceTax       Boolean                     @default(false)
+  servicesExpireAfter    Int?
+  creditAmount           Decimal?                    @db.Decimal(10, 2)
+  productDiscountPercent Decimal                     @default(0) @db.Decimal(5, 2)
+  serviceDiscountPercent Decimal                     @default(0) @db.Decimal(5, 2)
+  requireAgreement       Boolean                     @default(false)
+  agreementText          String?                     @db.Text
+  availableOnline        Boolean                     @default(false)
+  shortDescription       String?
+  description            String?                     @db.Text
+  stripeProductId        String?
+  stripePriceId          String?
+  commissionBasis        MembershipCommissionBasis   @default(REGULAR_PRICE)
+  isArchived             Boolean                     @default(false)
+  sortOrder              Int                         @default(0)
+  createdAt              DateTime                    @default(now())
+  updatedAt              DateTime                    @updatedAt
+
+  business          Business                 @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  serviceGroups     MembershipServiceGroup[]
+  clientMemberships ClientMembership[]
+
+  @@index([businessId])
+  @@index([businessId, isArchived])
+  @@map("membership_plans")
+}
+
+model MembershipServiceGroup {
+  id         String   @id @default(uuid())
+  planId     String
+  quantity   Int
+  groupPrice Decimal? @db.Decimal(10, 2)
+  sortOrder  Int      @default(0)
+
+  plan         MembershipPlan               @relation(fields: [planId], references: [id], onDelete: Cascade)
+  services     MembershipServiceGroupItem[]
+  usageRecords MembershipUsageRecord[]
+
+  @@index([planId])
+  @@map("membership_service_groups")
+}
+
+model MembershipServiceGroupItem {
+  id        String @id @default(uuid())
+  groupId   String
+  serviceId String
+
+  group   MembershipServiceGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  service Service                @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+
+  @@unique([groupId, serviceId])
+  @@index([groupId])
+  @@map("membership_service_group_items")
+}
+
+model ClientMembership {
+  id                     String                 @id @default(uuid())
+  businessId             String
+  contactId              String
+  planId                 String
+  status                 ClientMembershipStatus @default(SCHEDULED)
+  price                  Decimal                @db.Decimal(10, 2)
+  productDiscountPercent Decimal                @default(0) @db.Decimal(5, 2)
+  serviceDiscountPercent Decimal                @default(0) @db.Decimal(5, 2)
+  startDate              DateTime
+  currentPeriodStart     DateTime?
+  currentPeriodEnd       DateTime?
+  nextBillingDate        DateTime?
+  pausedAt               DateTime?
+  canceledAt             DateTime?
+  cancelAtPeriodEnd      Boolean                @default(false)
+  stripeSubscriptionId   String?                @unique
+  stripeCustomerId       String?
+  agreementAcceptedAt    DateTime?
+  planVersion            Int                    @default(1)
+  createdAt              DateTime               @default(now())
+  updatedAt              DateTime               @updatedAt
+
+  business       Business                 @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  contact        Contact                  @relation(fields: [contactId], references: [id], onDelete: Restrict)
+  plan           MembershipPlan           @relation(fields: [planId], references: [id], onDelete: Restrict)
+  usageRecords   MembershipUsageRecord[]
+  billingHistory MembershipBillingEvent[]
+
+  @@index([businessId])
+  @@index([contactId])
+  @@index([planId])
+  @@index([businessId, status])
+  @@map("client_memberships")
+}
+
+model MembershipUsageRecord {
+  id                 String    @id @default(uuid())
+  clientMembershipId String
+  serviceGroupId     String
+  periodStart        DateTime
+  periodEnd          DateTime?
+  totalSlots         Int
+  usedSlots          Int       @default(0)
+  expiresAt          DateTime?
+  saleLineItemId     String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  clientMembership ClientMembership       @relation(fields: [clientMembershipId], references: [id], onDelete: Cascade)
+  serviceGroup     MembershipServiceGroup @relation(fields: [serviceGroupId], references: [id], onDelete: Restrict)
+
+  @@index([clientMembershipId])
+  @@index([serviceGroupId])
+  @@index([expiresAt])
+  @@map("membership_usage_records")
+}
+
+model MembershipBillingEvent {
+  id                    String                   @id @default(uuid())
+  clientMembershipId    String
+  eventType             MembershipBillingEventType
+  amount                Decimal?                 @db.Decimal(10, 2)
+  stripeInvoiceId       String?
+  stripePaymentIntentId String?
+  occurredAt            DateTime                 @default(now())
+  metadata              Json?
+
+  clientMembership ClientMembership @relation(fields: [clientMembershipId], references: [id], onDelete: Cascade)
+
+  @@index([clientMembershipId])
+  @@index([stripeInvoiceId])
+  @@map("membership_billing_events")
+}
+
+model MembershipSettings {
+  id                 String   @id @default(uuid())
+  businessId         String   @unique
+  allowClientCancel  Boolean  @default(true)
+  onlineSalesEnabled Boolean  @default(false)
+  publicSlug         String?  @unique
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@map("membership_settings")
+}
+
+// ─── OFFERS ──────────────────────────────────────────────────────────────────
+
+enum OfferApplicationMode {
+  STAFF_ONLY
+  OFFER_CODE
+  AUTOMATICALLY
+}
+
+enum OfferMembershipScope {
+  ANY
+  SPECIFIC
+}
+
+enum DiscountAppliesTo {
+  SERVICES
+  PRODUCTS
+  ENTIRE_SALE
+}
+
+enum DiscountAmountType {
+  PERCENTAGE
+  FIXED
+}
+
+enum DiscountScope {
+  ALL
+  SPECIFIC
+}
+
+model Offer {
+  id          String   @id @default(uuid())
+  businessId  String
+  name        String
+  description String?
+  isEnabled   Boolean  @default(false)
+  sortOrder   Int      @default(0)
+
+  applicationMode OfferApplicationMode @default(STAFF_ONLY)
+  offerCode       String?
+
+  autoApptDateEnabled    Boolean @default(false)
+  autoApptDateRules      Json?
+  autoBookingDateEnabled Boolean @default(false)
+  autoBookingDateRules   Json?
+  autoSaleDateEnabled    Boolean @default(false)
+  autoSaleDateRules      Json?
+
+  minAmountEnabled Boolean  @default(false)
+  minAmount        Decimal? @db.Decimal(10, 2)
+
+  oncePerClient  Boolean @default(false)
+  newClientsOnly Boolean @default(false)
+
+  membershipRequired        Boolean              @default(false)
+  membershipScope           OfferMembershipScope?
+  specificMembershipPlanIds Json?
+
+  specificProvidersEnabled Boolean @default(false)
+  specificProviderIds      Json?
+
+  commissionBasis MembershipCommissionBasis @default(REGULAR_PRICE)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  business   Business        @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  discounts  OfferDiscount[]
+  usageLog   OfferUsageLog[]
+
+  @@index([businessId])
+  @@index([businessId, isEnabled])
+  @@index([businessId, offerCode])
+  @@map("offers")
+}
+
+model OfferDiscount {
+  id      String @id @default(uuid())
+  offerId String
+
+  appliesTo  DiscountAppliesTo
+  amountType DiscountAmountType
+  amount     Decimal @db.Decimal(10, 2)
+
+  serviceScope DiscountScope @default(ALL)
+  productScope DiscountScope @default(ALL)
+
+  specificServiceCategoryIds Json?
+  specificServiceIds         Json?
+  specificProductCategoryIds Json?
+  specificProductIds         Json?
+
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  offer Offer @relation(fields: [offerId], references: [id], onDelete: Cascade)
+
+  @@index([offerId])
+  @@map("offer_discounts")
+}
+
+model OfferUsageLog {
+  id              String   @id @default(uuid())
+  offerId         String
+  businessId      String
+  contactId       String?
+  saleId          String?
+  discountAmount  Decimal? @db.Decimal(10, 2)
+  offerCodeUsed   String?
+  usedAt          DateTime @default(now())
+
+  offer    Offer    @relation(fields: [offerId], references: [id], onDelete: Cascade)
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  contact  Contact? @relation(fields: [contactId], references: [id], onDelete: SetNull)
+
+  @@index([offerId])
+  @@index([businessId])
+  @@index([contactId])
+  @@index([saleId])
+  @@index([businessId, usedAt])
+  @@map("offer_usage_logs")
 }
 

@@ -42,18 +42,25 @@ import {
   addGiftCardLine,
   addPackageLine,
   addWalletDepositLine,
+  applyCheckoutOffer,
   createCheckout,
   getCheckout,
   listCheckoutProducts,
   listCheckoutServiceStaff,
   listCheckoutServices,
+  listCheckoutStaffOffers,
   listCheckouts,
   removeCheckoutLineItem,
+  removeCheckoutOffer,
   updateCheckout,
   updateCheckoutLineItem,
   voidCheckout,
 } from "@/features/sales/api/checkouts.api";
 import { SaleClosePanel } from "@/features/sales/components/sale-close-panel";
+import {
+  CheckoutMembershipField,
+  parseMembershipRedemptionSelection,
+} from "@/features/sales/components/checkout-membership-field";
 import { GiftCardSaleDialog } from "@/features/sales/components/gift-card-sale-dialog";
 import { PackageSaleDialog } from "@/features/sales/components/package-sale-dialog";
 import type {
@@ -84,6 +91,8 @@ export function SalesWorkspace() {
   const [addProductOpen, setAddProductOpen] = useState(false);
   const [addGiftCardOpen, setAddGiftCardOpen] = useState(false);
   const [addPackageOpen, setAddPackageOpen] = useState(false);
+  const [applyOfferOpen, setApplyOfferOpen] = useState(false);
+  const [selectedOfferId, setSelectedOfferId] = useState<string | null>(null);
   const [selectedServiceId, setSelectedServiceId] = useState<string | null>(
     null,
   );
@@ -95,6 +104,7 @@ export function SalesWorkspace() {
     string | null
   >(null);
   const [selectedStaffId, setSelectedStaffId] = useState<string | null>(null);
+  const [selectedMembershipKey, setSelectedMembershipKey] = useState("");
   const [editNotes, setEditNotes] = useState("");
   const [editContactId, setEditContactId] = useState<string | null>(null);
   const [editingLine, setEditingLine] = useState<CheckoutItem | null>(null);
@@ -277,16 +287,22 @@ export function SalesWorkspace() {
   });
 
   const addServiceMutation = useMutation({
-    mutationFn: () =>
-      addCheckoutService(selectedId!, {
+    mutationFn: () => {
+      const membership = parseMembershipRedemptionSelection(
+        selectedMembershipKey,
+      );
+      return addCheckoutService(selectedId!, {
         serviceId: selectedServiceId!,
         staffUserId: selectedStaffId ?? undefined,
-      }),
+        ...membership,
+      });
+    },
     onSuccess: () => {
       toast.success("Service added");
       setAddServiceOpen(false);
       setSelectedServiceId(null);
       setSelectedStaffId(null);
+      setSelectedMembershipKey("");
       refreshSale();
     },
     onError: (err: Error) => toast.error(err.message),
@@ -345,6 +361,32 @@ export function SalesWorkspace() {
     onSuccess: () => {
       toast.success("Package added to sale");
       setAddPackageOpen(false);
+      refreshSale();
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  const staffOffersQuery = useQuery({
+    queryKey: queryKeys.checkouts.staffOffers(),
+    queryFn: listCheckoutStaffOffers,
+    enabled: applyOfferOpen,
+  });
+
+  const applyOfferMutation = useMutation({
+    mutationFn: (offerId: string) => applyCheckoutOffer(selectedId!, offerId),
+    onSuccess: () => {
+      toast.success("Offer applied");
+      setApplyOfferOpen(false);
+      setSelectedOfferId(null);
+      refreshSale();
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  const removeOfferMutation = useMutation({
+    mutationFn: (offerId: string) => removeCheckoutOffer(selectedId!, offerId),
+    onSuccess: () => {
+      toast.success("Offer removed");
       refreshSale();
     },
     onError: (err: Error) => toast.error(err.message),
@@ -491,6 +533,9 @@ export function SalesWorkspace() {
               onAddProduct={() => setAddProductOpen(true)}
               onAddGiftCard={() => setAddGiftCardOpen(true)}
               onAddPackage={() => setAddPackageOpen(true)}
+              onApplyOffer={() => setApplyOfferOpen(true)}
+              onRemoveOffer={(offerId) => removeOfferMutation.mutate(offerId)}
+              removeOfferPending={removeOfferMutation.isPending}
               onAddDeposit={(amount) => depositMutation.mutate(amount)}
               onClose={() => setCloseOpen(true)}
               onEdit={openEditSale}
@@ -583,7 +628,17 @@ export function SalesWorkspace() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={addServiceOpen} onOpenChange={setAddServiceOpen}>
+      <Dialog
+        open={addServiceOpen}
+        onOpenChange={(open) => {
+          setAddServiceOpen(open);
+          if (!open) {
+            setSelectedServiceId(null);
+            setSelectedStaffId(null);
+            setSelectedMembershipKey("");
+          }
+        }}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Add service</DialogTitle>
@@ -596,6 +651,7 @@ export function SalesWorkspace() {
               onValueChange={(id) => {
                 setSelectedServiceId(id);
                 setSelectedStaffId(null);
+                setSelectedMembershipKey("");
               }}
               placeholder="Select service…"
             />
@@ -608,6 +664,12 @@ export function SalesWorkspace() {
                 placeholder="Staff (optional)"
               />
             ) : null}
+            <CheckoutMembershipField
+              contactId={sale?.contactId ?? null}
+              serviceId={selectedServiceId}
+              value={selectedMembershipKey}
+              onValueChange={setSelectedMembershipKey}
+            />
             <Button
               className="w-full"
               disabled={!selectedServiceId || addServiceMutation.isPending}
@@ -731,6 +793,35 @@ export function SalesWorkspace() {
         isPending={packageMutation.isPending}
       />
 
+      <Dialog open={applyOfferOpen} onOpenChange={setApplyOfferOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Apply offer</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <SearchableSelect
+              inDialog
+              items={(staffOffersQuery.data ?? []).map((offer) => ({
+                value: offer.id,
+                label: offer.name,
+              }))}
+              value={selectedOfferId}
+              onValueChange={setSelectedOfferId}
+              placeholder="Select a staff offer…"
+            />
+            <Button
+              className="w-full"
+              disabled={!selectedOfferId || applyOfferMutation.isPending}
+              onClick={() =>
+                selectedOfferId && applyOfferMutation.mutate(selectedOfferId)
+              }
+            >
+              Apply offer
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={closeOpen} onOpenChange={setCloseOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
@@ -819,6 +910,9 @@ function SaleDetail({
   onAddProduct,
   onAddGiftCard,
   onAddPackage,
+  onApplyOffer,
+  onRemoveOffer,
+  removeOfferPending,
   onAddDeposit,
   onClose,
   onEdit,
@@ -832,6 +926,9 @@ function SaleDetail({
   onAddProduct: () => void;
   onAddGiftCard: () => void;
   onAddPackage: () => void;
+  onApplyOffer: () => void;
+  onRemoveOffer: (offerId: string) => void;
+  removeOfferPending: boolean;
   onAddDeposit: (amount: number) => void;
   onClose: () => void;
   onEdit: () => void;
@@ -874,6 +971,9 @@ function SaleDetail({
             </Button>
             <Button variant="outline" size="sm" onClick={onAddPackage}>
               Add package
+            </Button>
+            <Button variant="outline" size="sm" onClick={onApplyOffer}>
+              Apply offer
             </Button>
             <Button
               variant="outline"
@@ -949,6 +1049,36 @@ function SaleDetail({
           <span>Subtotal</span>
           <span>{formatMoney(parseFloat(sale.subtotal))}</span>
         </div>
+        {(sale.appliedOffers ?? []).map((offer) => (
+          <div
+            key={offer.offerId}
+            className="flex items-center justify-between text-emerald-700"
+          >
+            <span className="flex items-center gap-2">
+              Offer: {offer.offerName}
+              {sale.isOpen ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-auto px-1 py-0 text-xs"
+                  disabled={removeOfferPending}
+                  onClick={() => onRemoveOffer(offer.offerId)}
+                >
+                  Remove
+                </Button>
+              ) : null}
+            </span>
+            <span>-{formatMoney(parseFloat(offer.totalDiscount))}</span>
+          </div>
+        ))}
+        {parseFloat(sale.discountAmount) > 0 &&
+        !(sale.appliedOffers?.length) ? (
+          <div className="flex justify-between text-emerald-700">
+            <span>Discount</span>
+            <span>-{formatMoney(parseFloat(sale.discountAmount))}</span>
+          </div>
+        ) : null}
         <div className="flex justify-between font-semibold">
           <span>Total</span>
           <span>{formatMoney(parseFloat(sale.totalAmount))}</span>

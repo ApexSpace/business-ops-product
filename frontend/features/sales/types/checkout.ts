@@ -50,6 +50,11 @@ export interface Checkout {
   closedAt?: string | null;
   contact?: { id: string; label: string };
   items: CheckoutItem[];
+  appliedOffers?: Array<{
+    offerId: string;
+    offerName: string;
+    totalDiscount: string;
+  }>;
 }
 
 export interface CheckoutServicePickerItem {

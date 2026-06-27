@@ -6,6 +6,7 @@ export const STRIPE_PAYMENT_PURPOSE = {
   SAVE_CARD: 'save_card',
   GIFT_CARD: 'gift_card',
   PACKAGE: 'package',
+  MEMBERSHIP: 'membership',
 } as const;
 
 export type StripePaymentPurpose =

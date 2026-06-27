@@ -162,6 +162,7 @@ export const queryKeys = {
       ["checkouts", "picker", "services", serviceId, "staff"] as const,
     products: (search?: string) =>
       ["checkouts", "picker", "products", search ?? ""] as const,
+    staffOffers: () => ["checkouts", "picker", "offers"] as const,
   },
   products: {
     all: () => ["products"] as const,
@@ -225,6 +226,33 @@ export const queryKeys = {
     settings: () => ["packages", "settings"] as const,
     contact: (contactId: string) =>
       ["packages", "contact", contactId] as const,
+  },
+  offers: {
+    all: () => ["offers"] as const,
+    list: (search?: string) =>
+      listKey(["offers", "list"], search ? { search } : undefined),
+    detail: (id: string) => ["offers", "detail", id] as const,
+  },
+  memberships: {
+    all: () => ["memberships"] as const,
+    plans: (includeArchived?: boolean) =>
+      includeArchived
+        ? (["memberships", "plans", "archived"] as const)
+        : (["memberships", "plans"] as const),
+    plan: (id: string) => ["memberships", "plan", id] as const,
+    clientList: (filters?: {
+      contactId?: string;
+      search?: string;
+      status?: string;
+      planId?: string;
+      showDifferentVersionsOnly?: boolean;
+      showOlderUnpaid?: boolean;
+    }) => listKey(["memberships", "client-list"], filters),
+    clientDetail: (id: string) =>
+      ["memberships", "client-detail", id] as const,
+    settings: () => ["memberships", "settings"] as const,
+    contact: (contactId: string) =>
+      ["memberships", "contact", contactId] as const,
   },
   estimates: {
     all: () => ["estimates"] as const,

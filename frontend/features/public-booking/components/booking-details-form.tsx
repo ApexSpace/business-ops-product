@@ -18,10 +18,14 @@ interface BookingDetailsFormProps {
   customerEmail: string;
   customerPhone: string;
   notes: string;
+  showOfferCode?: boolean;
+  offerCode?: string;
+  validatedOfferName?: string | null;
   submitting: boolean;
   submitError: boolean;
   onBack: () => void;
   onChange: (field: string, value: string) => void;
+  onValidateOfferCode?: () => void;
   onSubmit: () => void;
   compact?: boolean;
 }
@@ -34,10 +38,14 @@ export function BookingDetailsForm({
   customerEmail,
   customerPhone,
   notes,
+  showOfferCode = false,
+  offerCode = "",
+  validatedOfferName = null,
   submitting,
   submitError,
   onBack,
   onChange,
+  onValidateOfferCode,
   onSubmit,
   compact = false,
 }: BookingDetailsFormProps) {
@@ -149,6 +157,37 @@ export function BookingDetailsForm({
                 className="min-h-[80px] text-base sm:text-sm"
                 placeholder="Anything we should know?"
               />
+            </div>
+          ) : null}
+
+          {showOfferCode ? (
+            <div className="space-y-2">
+              <Label htmlFor="offer-code">Have an offer code?</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="offer-code"
+                  value={offerCode}
+                  onChange={(e) =>
+                    onChange("offerCode", e.target.value.toUpperCase())
+                  }
+                  placeholder="Enter code"
+                  className="uppercase"
+                />
+                {onValidateOfferCode ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={onValidateOfferCode}
+                  >
+                    Apply
+                  </Button>
+                ) : null}
+              </div>
+              {validatedOfferName ? (
+                <p className="text-sm text-emerald-700">
+                  Offer applied: {validatedOfferName}
+                </p>
+              ) : null}
             </div>
           ) : null}
 

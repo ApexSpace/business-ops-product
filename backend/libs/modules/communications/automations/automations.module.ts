@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { AuditModule } from '@app/modules/platform/audit/audit.module';
 import { BusinessModule } from '@app/modules/platform/business/business.module';
 import { AutomationMetadataController } from './controllers/automation-metadata.controller';
@@ -12,7 +12,11 @@ import { DomainEventBusService } from './services/domain-event-bus.service';
 import { AutomationsWorkerModule } from './automations-worker.module';
 
 @Module({
-  imports: [AuditModule, BusinessModule, AutomationsWorkerModule],
+  imports: [
+    AuditModule,
+    forwardRef(() => BusinessModule),
+    AutomationsWorkerModule,
+  ],
   controllers: [AutomationMetadataController, AutomationWorkflowsController],
   providers: [
     AutomationMetadataService,

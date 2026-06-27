@@ -28,6 +28,11 @@ import { BookingTimeSlots } from "@/features/public-booking/components/booking-t
 import { BookingDetailsForm } from "@/features/public-booking/components/booking-details-form";
 import { BookingSuccessView } from "@/features/public-booking/components/booking-success-view";
 import { BookingTimezoneSelect } from "@/features/public-booking/components/booking-timezone-select";
+import {
+  publicHasOfferCodes,
+  validatePublicOfferCode,
+} from "@/features/offers/api/offers.api";
+import { toast } from "sonner";
 
 type Phase = "schedule" | "details" | "success";
 type ScheduleStep = "date" | "time";
@@ -61,6 +66,10 @@ export function PublicBookingPage({ slug, embed = false }: PublicBookingPageProp
   const [customerEmail, setCustomerEmail] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
   const [notes, setNotes] = useState("");
+  const [offerCode, setOfferCode] = useState("");
+  const [validatedOfferName, setValidatedOfferName] = useState<string | null>(
+    null,
+  );
   const [confirmation, setConfirmation] =
     useState<PublicBookingConfirmation | null>(null);
 
@@ -73,6 +82,12 @@ export function PublicBookingPage({ slug, embed = false }: PublicBookingPageProp
     queryFn: () => getPublicBookingCalendar(slug),
     enabled: !!slug,
     retry: false,
+  });
+
+  const offerCodesQuery = useQuery({
+    queryKey: ["public-offer-codes", slug],
+    queryFn: () => publicHasOfferCodes(slug),
+    enabled: !!slug,
   });
 
   const availabilityRange = useMemo(() => {
@@ -136,6 +151,18 @@ export function PublicBookingPage({ slug, embed = false }: PublicBookingPageProp
     }
   };
 
+  const validateOfferMutation = useMutation({
+    mutationFn: () => validatePublicOfferCode(slug, offerCode.trim()),
+    onSuccess: (offer) => {
+      setValidatedOfferName(offer.name);
+      toast.success(`Offer "${offer.name}" applied`);
+    },
+    onError: (err: Error) => {
+      setValidatedOfferName(null);
+      toast.error(err.message);
+    },
+  });
+
   const bookMutation = useMutation({
     mutationFn: () => {
       const slot = confirmedSlot;
@@ -150,6 +177,7 @@ export function PublicBookingPage({ slug, embed = false }: PublicBookingPageProp
         phoneCountryCode: phoneFields.phoneCountryCode ?? undefined,
         phoneNumber: phoneFields.phoneNumber ?? undefined,
         notes: notes.trim() || undefined,
+        offerCode: offerCode.trim() || undefined,
         source: embed ? "BOOKING_WIDGET" : "PUBLIC_LINK",
       });
     },
@@ -308,6 +336,9 @@ export function PublicBookingPage({ slug, embed = false }: PublicBookingPageProp
               customerEmail={customerEmail}
               customerPhone={customerPhone}
               notes={notes}
+              showOfferCode={offerCodesQuery.data?.hasOfferCodes}
+              offerCode={offerCode}
+              validatedOfferName={validatedOfferName}
               submitting={bookMutation.isPending}
               submitError={!!bookMutation.error}
               onBack={() => {
@@ -320,6 +351,13 @@ export function PublicBookingPage({ slug, embed = false }: PublicBookingPageProp
                 if (field === "customerEmail") setCustomerEmail(value);
                 if (field === "customerPhone") setCustomerPhone(value);
                 if (field === "notes") setNotes(value);
+                if (field === "offerCode") {
+                  setOfferCode(value);
+                  setValidatedOfferName(null);
+                }
+              }}
+              onValidateOfferCode={() => {
+                if (offerCode.trim()) validateOfferMutation.mutate();
               }}
               onSubmit={() => bookMutation.mutate()}
               compact
@@ -414,6 +452,9 @@ export function PublicBookingPage({ slug, embed = false }: PublicBookingPageProp
                 customerEmail={customerEmail}
                 customerPhone={customerPhone}
                 notes={notes}
+                showOfferCode={offerCodesQuery.data?.hasOfferCodes}
+                offerCode={offerCode}
+                validatedOfferName={validatedOfferName}
                 submitting={bookMutation.isPending}
                 submitError={!!bookMutation.error}
                 onBack={() => {
@@ -425,6 +466,13 @@ export function PublicBookingPage({ slug, embed = false }: PublicBookingPageProp
                   if (field === "customerEmail") setCustomerEmail(value);
                   if (field === "customerPhone") setCustomerPhone(value);
                   if (field === "notes") setNotes(value);
+                  if (field === "offerCode") {
+                    setOfferCode(value);
+                    setValidatedOfferName(null);
+                  }
+                }}
+                onValidateOfferCode={() => {
+                  if (offerCode.trim()) validateOfferMutation.mutate();
                 }}
                 onSubmit={() => bookMutation.mutate()}
               />

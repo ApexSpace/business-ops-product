@@ -224,6 +224,18 @@ export function invalidatePackages(queryClient: QueryClient) {
   });
 }
 
+export function invalidateOffers(queryClient: QueryClient) {
+  return queryClient.invalidateQueries({
+    queryKey: queryKeys.offers.all(),
+  });
+}
+
+export function invalidateMemberships(queryClient: QueryClient) {
+  return queryClient.invalidateQueries({
+    queryKey: queryKeys.memberships.all(),
+  });
+}
+
 export function invalidateResourceGroups(queryClient: QueryClient) {
   return Promise.all([
     queryClient.invalidateQueries({ queryKey: queryKeys.resources.groups() }),

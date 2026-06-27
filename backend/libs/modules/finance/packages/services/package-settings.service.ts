@@ -7,7 +7,6 @@ import { PrismaService } from '@app/core/database/prisma.service';
 import { BusinessIntegrationRepository } from '@app/modules/integrations/integrations/repositories/business-integration.repository';
 import {
   assertStripeReadyForPayments,
-  parseStripeIntegrationConfig,
 } from '@app/modules/integrations/integrations/stripe/utils/stripe-readiness.util';
 import { UpdatePackageSettingsDto } from '../dto/package.dto';
 import { PackageSettingsRepository } from '../repositories/package-settings.repository';
@@ -116,7 +115,6 @@ export class PackageSettingsService {
       );
     try {
       assertStripeReadyForPayments(integration);
-      parseStripeIntegrationConfig(integration);
       return true;
     } catch {
       return false;

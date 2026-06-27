@@ -9,6 +9,8 @@ import {
 import { PrismaService } from '@app/core/database/prisma.service';
 import { GiftCardsService } from '@app/modules/finance/gift-cards/services/gift-cards.service';
 import { ClientPackagesService } from '@app/modules/finance/packages/services/client-packages.service';
+import { ClientMembershipsService } from '@app/modules/finance/memberships/services/client-memberships.service';
+import { CheckoutOffersService } from './checkout-offers.service';
 import { ProductInventoryService } from '@app/modules/finance/products/services/product-inventory.service';
 import { WalletLedgerService } from '@app/modules/finance/payments/services/wallet-ledger.service';
 
@@ -20,6 +22,8 @@ export class CheckoutCompletionService {
     private readonly productInventory: ProductInventoryService,
     private readonly giftCardsService: GiftCardsService,
     private readonly clientPackagesService: ClientPackagesService,
+    private readonly clientMembershipsService: ClientMembershipsService,
+    private readonly checkoutOffersService: CheckoutOffersService,
   ) {}
 
   /** Credit wallet deposit lines and mark checkout closed when fully paid. */
@@ -51,6 +55,8 @@ export class CheckoutCompletionService {
     await this.applyProductSales(checkout, actorUserId);
     await this.applyGiftCardSales(checkout);
     await this.applyPackageSales(checkout);
+    await this.applyMembershipRedemptions(checkout);
+    await this.applyOfferUsage(checkout);
 
     await this.prisma.invoice.update({
       where: { id: checkout.id },
@@ -226,5 +232,69 @@ export class CheckoutCompletionService {
         },
       );
     }
+  }
+
+  private async applyMembershipRedemptions(checkout: {
+    id: string;
+    businessId: string;
+    items: {
+      id: string;
+      lineType: InvoiceLineType;
+      metadata: Prisma.JsonValue;
+    }[];
+  }): Promise<void> {
+    const serviceLines = checkout.items.filter(
+      (item) => item.lineType === InvoiceLineType.SERVICE,
+    );
+    for (const item of serviceLines) {
+      const meta = (item.metadata ?? {}) as Record<string, unknown>;
+      if (meta.membershipRedemption !== true) continue;
+
+      const clientMembershipId =
+        typeof meta.clientMembershipId === 'string'
+          ? meta.clientMembershipId
+          : null;
+      const membershipServiceGroupId =
+        typeof meta.membershipServiceGroupId === 'string'
+          ? meta.membershipServiceGroupId
+          : null;
+      if (!clientMembershipId || !membershipServiceGroupId) continue;
+
+      const existing = await this.prisma.membershipUsageRecord.findFirst({
+        where: { saleLineItemId: item.id },
+      });
+      if (existing) continue;
+
+      await this.clientMembershipsService.redeemServiceAtCheckout(
+        checkout.businessId,
+        clientMembershipId,
+        {
+          serviceGroupId: membershipServiceGroupId,
+          saleLineItemId: item.id,
+        },
+      );
+    }
+  }
+
+  private async applyOfferUsage(checkout: {
+    id: string;
+    businessId: string;
+    contactId: string;
+    metadata: Prisma.JsonValue;
+  }): Promise<void> {
+    const metadata = this.checkoutOffersService.parseMetadata(checkout.metadata);
+    if (!metadata.appliedOffers?.length) return;
+
+    const existing = await this.prisma.offerUsageLog.count({
+      where: { saleId: checkout.id },
+    });
+    if (existing > 0) return;
+
+    await this.checkoutOffersService.recordAppliedOffersOnClose(
+      checkout.businessId,
+      checkout.id,
+      checkout.contactId,
+      metadata,
+    );
   }
 }

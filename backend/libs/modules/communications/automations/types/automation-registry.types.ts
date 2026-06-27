@@ -56,7 +56,8 @@ export type SubjectType =
   | 'note'
   | 'integration'
   | 'schedule'
-  | 'business';
+  | 'business'
+  | 'client_membership';
 
 export type ContextEntityType =
   | 'contact'

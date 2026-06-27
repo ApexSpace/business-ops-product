@@ -26,6 +26,8 @@ import {
 import { BusinessRepository } from '@app/modules/platform/business/repositories/business.repository';
 import { GiftCardOnlineCheckoutService } from '@app/modules/finance/gift-cards/services/gift-card-online-checkout.service';
 import { PackageOnlineCheckoutService } from '@app/modules/finance/packages/services/package-online-checkout.service';
+import { MembershipOnlineCheckoutService } from '@app/modules/finance/memberships/services/membership-online-checkout.service';
+import { MembershipWebhookService } from '@app/modules/finance/memberships/services/membership-webhook.service';
 import { DateTime } from 'luxon';
 
 type CheckoutSessionObject = {
@@ -72,6 +74,10 @@ export class StripeInvoicePaymentService {
     private readonly giftCardOnlineCheckoutService: GiftCardOnlineCheckoutService,
     @Inject(forwardRef(() => PackageOnlineCheckoutService))
     private readonly packageOnlineCheckoutService: PackageOnlineCheckoutService,
+    @Inject(forwardRef(() => MembershipOnlineCheckoutService))
+    private readonly membershipOnlineCheckoutService: MembershipOnlineCheckoutService,
+    @Inject(forwardRef(() => MembershipWebhookService))
+    private readonly membershipWebhookService: MembershipWebhookService,
   ) {}
 
   async handleSetupIntentSucceeded(event: StripeWebhookEvent): Promise<void> {
@@ -113,6 +119,15 @@ export class StripeInvoicePaymentService {
           ...metadata,
           stripeSessionId: session.id ?? '',
         });
+      if (handled) return;
+    }
+
+    if (
+      metadata.type === 'membership' ||
+      metadata.purpose === STRIPE_PAYMENT_PURPOSE.MEMBERSHIP
+    ) {
+      const handled =
+        await this.membershipWebhookService.handleCheckoutSessionCompleted(event);
       if (handled) return;
     }
 

@@ -70,6 +70,7 @@ export function createPublicBooking(
     phoneCountryCode?: string;
     phoneNumber?: string;
     notes?: string;
+    offerCode?: string;
     formAnswers?: Record<string, unknown>;
     source?: "BOOKING_WIDGET" | "PUBLIC_LINK";
     staffId?: string;

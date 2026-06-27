@@ -97,6 +97,7 @@ export const NAV_LABEL_KEYS = [
   "nav.sales",
   "nav.giftCards",
   "nav.packages",
+  "nav.memberships",
   "nav.products",
 ] as const;
 

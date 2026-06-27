@@ -73,11 +73,18 @@ export const DEFAULT_SNAPSHOT_NAVIGATION = [
     order: 67,
   },
   {
+    key: "memberships",
+    route: "/business/memberships",
+    icon: "repeat",
+    labelKey: "nav.memberships",
+    order: 68,
+  },
+  {
     key: "products",
     route: "/business/products",
     icon: "package",
     labelKey: "nav.products",
-    order: 68,
+    order: 69,
   },
 ] as const;
 

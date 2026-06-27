@@ -987,6 +987,58 @@ export const TRIGGER_REGISTRY: TriggerDefinition[] = [
       metadata: z.object({ provider: z.string() }).optional(),
     }),
   }),
+
+  // Memberships (5)
+  trig({
+    key: 'membership.started',
+    category: 'finance',
+    label: 'Membership started',
+    description: 'Fires when a client membership becomes active.',
+    icon: 'badge-check',
+    implementationStatus: 'implemented',
+    subjectType: 'client_membership',
+    payloadSchema: triggerPayloadSchema('client_membership'),
+  }),
+  trig({
+    key: 'membership.canceled',
+    category: 'finance',
+    label: 'Membership canceled',
+    description: 'Fires when a client membership is canceled.',
+    icon: 'badge-x',
+    implementationStatus: 'implemented',
+    subjectType: 'client_membership',
+    payloadSchema: triggerPayloadSchema('client_membership'),
+  }),
+  trig({
+    key: 'membership.payment_failed',
+    category: 'finance',
+    label: 'Membership payment failed',
+    description: 'Fires when a membership payment fails.',
+    icon: 'credit-card',
+    implementationStatus: 'implemented',
+    subjectType: 'client_membership',
+    payloadSchema: triggerPayloadSchema('client_membership'),
+  }),
+  trig({
+    key: 'membership.services_expiring_soon',
+    category: 'finance',
+    label: 'Membership services expiring',
+    description: 'Fires when unused membership service slots are expiring.',
+    icon: 'clock',
+    implementationStatus: 'implemented',
+    subjectType: 'client_membership',
+    payloadSchema: triggerPayloadSchema('client_membership'),
+  }),
+  trig({
+    key: 'membership.renewed',
+    category: 'finance',
+    label: 'Membership renewed',
+    description: 'Fires when a membership billing cycle renews.',
+    icon: 'refresh-cw',
+    implementationStatus: 'implemented',
+    subjectType: 'client_membership',
+    payloadSchema: triggerPayloadSchema('client_membership'),
+  }),
 ];
 
 export const TRIGGER_BY_KEY = Object.fromEntries(

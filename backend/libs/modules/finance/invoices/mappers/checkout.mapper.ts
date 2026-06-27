@@ -6,6 +6,19 @@ import {
 } from '../dto/checkout-response.dto';
 import { CheckoutWithRelations } from '../repositories/checkout.repository';
 
+const checkoutOffersParser = {
+  parseMetadata(raw: unknown) {
+    if (!raw || typeof raw !== 'object') return {};
+    return raw as {
+      appliedOffers?: Array<{
+        offerId: string;
+        offerName: string;
+        totalDiscount: number;
+      }>;
+    };
+  },
+};
+
 function staffLabel(
   user: { firstName: string | null; lastName: string | null } | null | undefined,
 ): string | null {
@@ -42,6 +55,7 @@ export function toCheckoutResponse(
   checkout: CheckoutWithRelations,
 ): CheckoutResponseDto {
   const displaySequence = checkout.displaySequence ?? 0;
+  const offerMeta = checkoutOffersParser.parseMetadata(checkout.metadata);
   return {
     id: checkout.id,
     contactId: checkout.contactId,
@@ -68,5 +82,10 @@ export function toCheckoutResponse(
         }
       : undefined,
     items: checkout.items.map(toCheckoutItemResponse),
+    appliedOffers: offerMeta.appliedOffers?.map((offer) => ({
+      offerId: offer.offerId,
+      offerName: offer.offerName,
+      totalDiscount: offer.totalDiscount.toFixed(2),
+    })),
   };
 }

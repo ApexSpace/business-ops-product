@@ -39,7 +39,13 @@ export function createCheckout(body: {
 
 export function addCheckoutService(
   checkoutId: string,
-  body: { serviceId: string; staffUserId?: string; quantity?: number },
+  body: {
+    serviceId: string;
+    staffUserId?: string;
+    quantity?: number;
+    clientMembershipId?: string;
+    membershipServiceGroupId?: string;
+  },
 ) {
   return api.post<Checkout>(`checkouts/${checkoutId}/items/service`, body);
 }
@@ -141,6 +147,20 @@ export function updateCheckoutLineItem(
 
 export function removeCheckoutLineItem(checkoutId: string, lineId: string) {
   return api.delete<Checkout>(`checkouts/${checkoutId}/items/${lineId}`);
+}
+
+export function listCheckoutStaffOffers() {
+  return api.get<Array<{ id: string; name: string; description?: string | null }>>(
+    "checkouts/picker/offers",
+  );
+}
+
+export function applyCheckoutOffer(checkoutId: string, offerId: string) {
+  return api.post<Checkout>(`checkouts/${checkoutId}/apply-offer`, { offerId });
+}
+
+export function removeCheckoutOffer(checkoutId: string, offerId: string) {
+  return api.post<Checkout>(`checkouts/${checkoutId}/remove-offer`, { offerId });
 }
 
 function sleep(ms: number): Promise<void> {

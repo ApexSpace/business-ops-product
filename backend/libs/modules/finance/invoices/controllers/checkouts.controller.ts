@@ -265,6 +265,54 @@ export class CheckoutsController {
     );
   }
 
+  @Post(':id/apply-offer')
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
+  applyOffer(
+    @CurrentUser() user: RequestUser,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: { offerId: string },
+  ) {
+    return this.checkoutsService.applyOffer(
+      user.businessId!,
+      id,
+      dto.offerId,
+      user,
+    );
+  }
+
+  @Post(':id/remove-offer')
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
+  removeOffer(
+    @CurrentUser() user: RequestUser,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: { offerId: string },
+  ) {
+    return this.checkoutsService.removeAppliedOffer(
+      user.businessId!,
+      id,
+      dto.offerId,
+      user,
+    );
+  }
+
+  @Get('picker/offers')
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
+  listStaffOffers(@CurrentUser() user: RequestUser) {
+    return this.checkoutsService.listStaffOffersForPicker(user.businessId!);
+  }
+
   @Post(':id/close')
   @BusinessRoles(
     BusinessMemberRole.OWNER,
