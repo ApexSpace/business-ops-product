@@ -66,12 +66,67 @@ export class MetaResourceSyncService {
 
     await this.ensureDefaultResources(integration.id, resources);
 
+    if (providerKey === 'whatsapp') {
+      await this.ensureWhatsAppWebhookSubscriptions(businessId, items);
+    }
+
     await this.businessIntegrationRepository.update(businessId, providerKey, {
       lastSyncAt: new Date(),
       errorMessage: null,
     });
 
     return items.length;
+  }
+
+  private async ensureWhatsAppWebhookSubscriptions(
+    businessId: string,
+    items: UpsertIntegrationResourceInput[],
+  ): Promise<void> {
+    const wabaIds = new Set<string>();
+    for (const item of items) {
+      const wabaId = readMetadataString(item.metadata, 'wabaId');
+      if (wabaId) {
+        wabaIds.add(wabaId);
+      }
+    }
+
+    if (wabaIds.size === 0) {
+      return;
+    }
+
+    let accessToken: string;
+    try {
+      accessToken = await this.metaTokenService.getAccessToken(
+        businessId,
+        'whatsapp',
+      );
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Missing WhatsApp token';
+      this.logger.warn(
+        `WhatsApp webhook subscription skipped for business ${businessId}: ${message}`,
+      );
+      return;
+    }
+
+    for (const wabaId of wabaIds) {
+      try {
+        const subscribed =
+          await this.metaApiClient.subscribeWhatsAppBusinessAccountToApp(
+            wabaId,
+            accessToken,
+          );
+        this.logger.log(
+          `WhatsApp webhook subscription wabaId=${wabaId} businessId=${businessId} success=${subscribed}`,
+        );
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : 'Subscription failed';
+        this.logger.warn(
+          `WhatsApp webhook subscription failed wabaId=${wabaId} businessId=${businessId}: ${message}`,
+        );
+      }
+    }
   }
 
   private async ensureDefaultResources(
@@ -212,4 +267,12 @@ export class MetaResourceSyncService {
 
     return filtered;
   }
+}
+
+function readMetadataString(metadata: unknown, key: string): string | null {
+  if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) {
+    return null;
+  }
+  const value = (metadata as Record<string, unknown>)[key];
+  return typeof value === 'string' && value.trim() ? value.trim() : null;
 }

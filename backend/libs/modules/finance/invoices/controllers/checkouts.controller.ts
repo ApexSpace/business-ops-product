@@ -21,6 +21,8 @@ import { BusinessRolesGuard } from '@app/common/guards/business-roles.guard';
 import {
   AddCheckoutProductDto,
   AddCheckoutServiceDto,
+  AddGiftCardLineDto,
+  AddPackageLineDto,
   AddWalletDepositDto,
   CreateCheckoutDto,
   UpdateCheckoutDto,
@@ -178,6 +180,44 @@ export class CheckoutsController {
     @Body() dto: AddWalletDepositDto,
   ) {
     return this.checkoutsService.addWalletDeposit(
+      user.businessId!,
+      id,
+      dto,
+      user,
+    );
+  }
+
+  @Post(':id/gift-card')
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
+  addGiftCardLine(
+    @CurrentUser() user: RequestUser,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: AddGiftCardLineDto,
+  ) {
+    return this.checkoutsService.addGiftCardLine(
+      user.businessId!,
+      id,
+      dto,
+      user,
+    );
+  }
+
+  @Post(':id/package')
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
+  addPackageLine(
+    @CurrentUser() user: RequestUser,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: AddPackageLineDto,
+  ) {
+    return this.checkoutsService.addPackageLine(
       user.businessId!,
       id,
       dto,

@@ -562,6 +562,23 @@ export const REGISTRY_MODULES: RegistryModuleDefinition[] = [
     ),
   },
   {
+    moduleKey: 'resources',
+    name: 'Resources',
+    description: 'Rooms, equipment, and consumables for services.',
+    icon: 'warehouse',
+    sortOrder: 86,
+    options: crudOptions(
+      'resources',
+      'Resources',
+      'resources',
+      'resources.read',
+      'resources.write',
+      ['/business/settings/resources'],
+      'warehouse',
+      true,
+    ),
+  },
+  {
     moduleKey: 'ai_agents',
     name: 'AI Agents',
     description: 'Chatbots for customer engagement on your website.',

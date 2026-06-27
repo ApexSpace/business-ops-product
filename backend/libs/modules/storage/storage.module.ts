@@ -17,6 +17,6 @@ import { StorageService } from './services/storage.service';
     R2StorageProvider,
     StorageService,
   ],
-  exports: [StorageService, FileAssetRepository],
+  exports: [StorageService, FileAssetRepository, R2StorageProvider],
 })
 export class StorageModule {}

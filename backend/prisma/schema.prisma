@@ -84,6 +84,11 @@ enum ServiceResourceType {
   CONSUMABLE
 }
 
+enum ResourceStatus {
+  ACTIVE
+  INACTIVE
+}
+
 enum ServicePaymentRequirement {
   NO
   OPTIONAL
@@ -348,6 +353,7 @@ enum PaymentMethod {
   CARD
   BANK_TRANSFER
   WALLET
+  GIFT_CARD
   STRIPE
   OTHER
 }
@@ -791,6 +797,12 @@ model Business {
   serviceResourceRequirements ServiceResourceRequirement[]
   serviceProductUsages ServiceProductUsage[]
   serviceOptionGroups ServiceOptionGroup[]
+  resourceGroups ResourceGroup[]
+  resources Resource[]
+  resourceAvailability ResourceAvailability[]
+  resourceScheduleExceptions ResourceScheduleException[]
+  serviceOptionResourceRequirements ServiceOptionResourceRequirement[]
+  appointmentResourceAssignments AppointmentResourceAssignment[]
   productCategories ProductCategory[]
   products Product[]
   productOptions ProductOption[]
@@ -838,6 +850,12 @@ model Business {
   contactStripeCustomers   ContactStripeCustomer[]
   contactPaymentMethods    ContactPaymentMethod[]
   contactServiceAdjustments ContactServiceAdjustment[]
+  giftCards                GiftCard[]
+  giftCardPromotions       GiftCardPromotion[]
+  giftCardSettings         GiftCardSettings?
+  packageTemplates         PackageTemplate[]
+  clientPackages           ClientPackage[]
+  packageSettings          PackageSettings?
 
   @@index([createdById])
   @@index([industryId])
@@ -1057,6 +1075,9 @@ model Contact {
   contactStripeCustomers ContactStripeCustomer[]
   paymentMethods        ContactPaymentMethod[]
   serviceAdjustments    ContactServiceAdjustment[]
+  ownedGiftCards        GiftCard[] @relation("GiftCardOwner")
+  purchasedGiftCards    GiftCard[] @relation("GiftCardPurchaser")
+  clientPackages        ClientPackage[]
 
   @@index([businessId])
   @@index([businessId, createdAt])
@@ -1187,6 +1208,8 @@ model Service {
   resourceRequirements ServiceResourceRequirement[]
   productUsages ServiceProductUsage[]
   optionGroups ServiceOptionGroup[]
+  packageServiceGroupItems PackageServiceGroupItem[]
+  packageServiceAllocations PackageServiceAllocation[]
 
   @@index([businessId])
   @@index([businessId, categoryId])
@@ -1260,8 +1283,10 @@ model ServiceResourceRequirement {
 
   business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
   service  Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  resource Resource? @relation(fields: [resourceId], references: [id], onDelete: SetNull)
 
   @@index([businessId, serviceId])
+  @@index([businessId, resourceId])
   @@map("service_resource_requirements")
 }
 
@@ -1321,9 +1346,131 @@ model ServiceOption {
   updatedAt                 DateTime @updatedAt
 
   group ServiceOptionGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  resourceRequirements ServiceOptionResourceRequirement[]
 
   @@index([groupId])
   @@map("service_options")
+}
+
+model ResourceGroup {
+  id         String    @id @default(uuid())
+  businessId String
+  name       String
+  sortOrder  Int       @default(0)
+  deletedAt  DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  business  Business   @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  resources Resource[]
+
+  @@index([businessId, sortOrder])
+  @@map("resource_groups")
+}
+
+model Resource {
+  id           String              @id @default(uuid())
+  businessId   String
+  groupId      String?
+  name         String
+  resourceType ServiceResourceType
+  description  String?
+  status       ResourceStatus      @default(ACTIVE)
+  sortOrder    Int                 @default(0)
+  deletedAt    DateTime?
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+
+  business                 Business                         @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  group                    ResourceGroup?                   @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  availability             ResourceAvailability[]
+  scheduleExceptions       ResourceScheduleException[]
+  serviceRequirements      ServiceResourceRequirement[]
+  optionRequirements       ServiceOptionResourceRequirement[]
+  appointmentAssignments   AppointmentResourceAssignment[]
+
+  @@index([businessId, groupId])
+  @@index([businessId, resourceType])
+  @@index([businessId, name])
+  @@map("resources")
+}
+
+model ResourceAvailability {
+  id         String    @id @default(uuid())
+  businessId String
+  resourceId String
+  dayOfWeek  DayOfWeek
+  startTime  String
+  endTime    String
+  isEnabled  Boolean   @default(true)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  resource Resource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+
+  @@unique([resourceId, dayOfWeek])
+  @@index([businessId])
+  @@map("resource_availability")
+}
+
+model ResourceScheduleException {
+  id            String   @id @default(uuid())
+  businessId    String
+  resourceId    String
+  date          DateTime @db.Date
+  startTime     String?
+  endTime       String?
+  isUnavailable Boolean  @default(true)
+  reason        String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  resource Resource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+
+  @@index([businessId])
+  @@index([resourceId, date])
+  @@map("resource_schedule_exceptions")
+}
+
+model ServiceOptionResourceRequirement {
+  id              String   @id @default(uuid())
+  businessId      String
+  serviceOptionId String
+  resourceId      String
+  quantity        Int      @default(1)
+  notes           String?
+  sortOrder       Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  business      Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  serviceOption ServiceOption @relation(fields: [serviceOptionId], references: [id], onDelete: Cascade)
+  resource      Resource      @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+
+  @@index([businessId, serviceOptionId])
+  @@index([businessId, resourceId])
+  @@map("service_option_resource_requirements")
+}
+
+model AppointmentResourceAssignment {
+  id            String   @id @default(uuid())
+  businessId    String
+  appointmentId String
+  resourceId    String
+  quantity      Int      @default(1)
+  notes         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  business    Business    @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  appointment Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  resource    Resource    @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+
+  @@unique([appointmentId, resourceId])
+  @@index([businessId])
+  @@map("appointment_resource_assignments")
 }
 
 model ProductCategory {
@@ -1781,6 +1928,8 @@ model Invoice {
   items     InvoiceItem[]
   payments  Payment[]
   walletTransactions ContactWalletTransaction[]
+  giftCards          GiftCard[]
+  clientPackages     ClientPackage[]
 
   @@unique([businessId, invoiceNumber])
   @@index([businessId])
@@ -1840,6 +1989,7 @@ model Payment {
   stripeChargeId        String?
   stripeRefundId        String?
   walletTransactionId   String?
+  giftCardId            String?
   contactPaymentMethodId String?
   reference   String?
   notes       String?
@@ -1854,6 +2004,7 @@ model Payment {
   contact   Contact  @relation(fields: [contactId], references: [id], onDelete: Restrict)
   contactPaymentMethod ContactPaymentMethod? @relation(fields: [contactPaymentMethodId], references: [id], onDelete: SetNull)
   walletTransactions ContactWalletTransaction[]
+  giftCard           GiftCard? @relation(fields: [giftCardId], references: [id], onDelete: SetNull)
   createdBy User?    @relation("PaymentCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
 
   @@index([businessId])
@@ -1862,6 +2013,7 @@ model Payment {
   @@index([businessId, method])
   @@index([businessId, paidAt])
   @@index([businessId, payableType, payableId])
+  @@index([businessId, giftCardId])
   @@index([stripePaymentIntentId])
   @@map("payments")
 }
@@ -2603,6 +2755,7 @@ model Appointment {
   workItem   WorkItem? @relation(fields: [workItemId], references: [id], onDelete: SetNull)
   assignedTo User?     @relation("AppointmentAssignedTo", fields: [assignedToId], references: [id], onDelete: SetNull)
   createdBy  User?     @relation("AppointmentCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  resourceAssignments AppointmentResourceAssignment[]
 
   @@index([businessId])
   @@index([businessId, calendarId])
@@ -3138,5 +3291,279 @@ model AutomationWorkflowRunStep {
   @@index([runId])
   @@index([businessId])
   @@map("automation_workflow_run_steps")
+}
+
+enum GiftCardStatus {
+  ACTIVE
+  DEPLETED
+  VOIDED
+}
+
+enum GiftCardSource {
+  MANUAL
+  POS_SALE
+  ONLINE_PURCHASE
+}
+
+enum GiftCardTransactionType {
+  INITIAL_VALUE
+  REDEMPTION
+  REFUND
+  ADJUSTMENT
+  VOID
+}
+
+model GiftCard {
+  id                   String           @id @default(uuid())
+  businessId           String
+  number               String
+  initialValue         Decimal          @db.Decimal(10, 2)
+  currentBalance       Decimal          @db.Decimal(10, 2)
+  status               GiftCardStatus   @default(ACTIVE)
+  source               GiftCardSource
+  notes                String?
+  purchasingContactId  String?
+  ownerContactId       String
+  promotionId          String?
+  invoiceId            String?
+  artworkUrl           String?
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+
+  business          Business              @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  purchasingContact Contact?              @relation("GiftCardPurchaser", fields: [purchasingContactId], references: [id], onDelete: SetNull)
+  ownerContact      Contact               @relation("GiftCardOwner", fields: [ownerContactId], references: [id], onDelete: Restrict)
+  promotion         GiftCardPromotion?    @relation(fields: [promotionId], references: [id], onDelete: SetNull)
+  invoice           Invoice?              @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
+  transactions      GiftCardTransaction[]
+  payments          Payment[]
+
+  @@unique([businessId, number])
+  @@index([businessId])
+  @@index([ownerContactId])
+  @@index([businessId, status])
+  @@map("gift_cards")
+}
+
+model GiftCardTransaction {
+  id          String                  @id @default(uuid())
+  businessId  String
+  giftCardId  String
+  type        GiftCardTransactionType
+  amount      Decimal                 @db.Decimal(10, 2)
+  invoiceId   String?
+  note        String?
+  createdAt   DateTime                @default(now())
+
+  giftCard GiftCard @relation(fields: [giftCardId], references: [id], onDelete: Cascade)
+
+  @@index([giftCardId])
+  @@index([businessId, giftCardId])
+  @@map("gift_card_transactions")
+}
+
+model GiftCardPromotion {
+  id          String    @id @default(uuid())
+  businessId  String
+  name        String
+  description String?
+  cardValue   Decimal   @db.Decimal(10, 2)
+  salePrice   Decimal   @db.Decimal(10, 2)
+  startDate   DateTime
+  endDate     DateTime?
+  sortOrder   Int       @default(0)
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  business   Business   @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  giftCards  GiftCard[]
+
+  @@index([businessId])
+  @@index([businessId, isActive])
+  @@map("gift_card_promotions")
+}
+
+model GiftCardSettings {
+  id                  String   @id @default(uuid())
+  businessId          String   @unique
+  publicSlug          String?  @unique
+  onlineSalesEnabled  Boolean  @default(false)
+  purchaseDisclaimer  String?
+  selectedArtworkKey  String?
+  autoGenerateNumber  Boolean  @default(false)
+  internalNotifyEmail String?
+  updatedAt           DateTime @updatedAt
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@map("gift_card_settings")
+}
+
+enum PackageExpirationPolicy {
+  NEVER
+  AFTER_PURCHASE
+}
+
+enum PackageCommissionBasis {
+  REGULAR_PRICE
+  DISCOUNTED_PRICE
+}
+
+enum PackageServiceGroupQuantityType {
+  ONE
+  MULTIPLE
+}
+
+enum ClientPackageSource {
+  STAFF
+  ONLINE
+}
+
+enum ClientPackageStatus {
+  ACTIVE
+  EXPIRED
+  DEPLETED
+  TRANSFERRED
+  DELETED
+}
+
+enum PackageHistoryEventType {
+  PURCHASED
+  REDEEMED
+  ADJUSTED
+  TRANSFERRED_IN
+  TRANSFERRED_OUT
+  EXPIRED
+  DELETED
+}
+
+model PackageTemplate {
+  id                 String                   @id @default(uuid())
+  businessId         String
+  name               String
+  emoji              String?
+  totalPrice         Decimal                  @db.Decimal(10, 2)
+  chargeTax          Boolean                  @default(false)
+  expirationPolicy   PackageExpirationPolicy  @default(NEVER)
+  expirationDays     Int?
+  onlineSalesEnabled Boolean                  @default(false)
+  shortDescription   String?
+  description        String?                  @db.Text
+  requireAgreement   Boolean                  @default(false)
+  agreementText      String?                  @db.Text
+  commissionBasis    PackageCommissionBasis   @default(REGULAR_PRICE)
+  sortOrder          Int                      @default(0)
+  createdAt          DateTime                 @default(now())
+  updatedAt          DateTime                 @updatedAt
+
+  business       Business              @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  serviceGroups  PackageServiceGroup[]
+  clientPackages ClientPackage[]
+
+  @@index([businessId])
+  @@map("package_templates")
+}
+
+model PackageServiceGroup {
+  id                String                          @id @default(uuid())
+  packageTemplateId String
+  quantity          Int
+  quantityType      PackageServiceGroupQuantityType @default(ONE)
+  groupPrice        Decimal                         @db.Decimal(10, 2)
+  sortOrder         Int                             @default(0)
+
+  packageTemplate   PackageTemplate           @relation(fields: [packageTemplateId], references: [id], onDelete: Cascade)
+  serviceGroupItems PackageServiceGroupItem[]
+
+  @@index([packageTemplateId])
+  @@map("package_service_groups")
+}
+
+model PackageServiceGroupItem {
+  id             String @id @default(uuid())
+  serviceGroupId String
+  serviceId      String
+
+  serviceGroup PackageServiceGroup @relation(fields: [serviceGroupId], references: [id], onDelete: Cascade)
+  service      Service             @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+
+  @@unique([serviceGroupId, serviceId])
+  @@index([serviceGroupId])
+  @@map("package_service_group_items")
+}
+
+model ClientPackage {
+  id                    String              @id @default(uuid())
+  businessId            String
+  contactId             String
+  packageTemplateId     String
+  purchaseDate          DateTime            @default(now())
+  expirationDate        DateTime?
+  source                ClientPackageSource @default(STAFF)
+  stripePaymentIntentId String?
+  invoiceId             String?
+  status                ClientPackageStatus @default(ACTIVE)
+  isDemo                Boolean             @default(false)
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+
+  business            Business                   @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  contact             Contact                    @relation(fields: [contactId], references: [id], onDelete: Restrict)
+  packageTemplate     PackageTemplate            @relation(fields: [packageTemplateId], references: [id], onDelete: Restrict)
+  invoice             Invoice?                   @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
+  serviceAllocations  PackageServiceAllocation[]
+  history             PackageHistoryEvent[]
+
+  @@index([businessId])
+  @@index([contactId])
+  @@index([packageTemplateId])
+  @@index([businessId, status])
+  @@index([invoiceId])
+  @@map("client_packages")
+}
+
+model PackageServiceAllocation {
+  id              String @id @default(uuid())
+  clientPackageId String
+  serviceId       String
+  remaining       Int
+  initialQty      Int
+
+  clientPackage ClientPackage @relation(fields: [clientPackageId], references: [id], onDelete: Cascade)
+  service       Service       @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+
+  @@unique([clientPackageId, serviceId])
+  @@index([clientPackageId])
+  @@map("package_service_allocations")
+}
+
+model PackageHistoryEvent {
+  id              String                  @id @default(uuid())
+  clientPackageId String
+  eventType       PackageHistoryEventType
+  description     String?
+  staffUserId     String?
+  quantityChange  Int?
+  serviceId       String?
+  createdAt       DateTime                @default(now())
+
+  clientPackage ClientPackage @relation(fields: [clientPackageId], references: [id], onDelete: Cascade)
+
+  @@index([clientPackageId])
+  @@map("package_history_events")
+}
+
+model PackageSettings {
+  id                 String   @id @default(uuid())
+  businessId         String   @unique
+  publicSlug         String?  @unique
+  onlineSalesEnabled Boolean  @default(false)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@map("package_settings")
 }
 

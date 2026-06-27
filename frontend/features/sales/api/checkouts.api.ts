@@ -73,6 +73,29 @@ export function addWalletDepositLine(
   );
 }
 
+export function addGiftCardLine(
+  checkoutId: string,
+  body: {
+    number?: string;
+    amount: number;
+    ownerContactId: string;
+    sendDigital?: boolean;
+  },
+) {
+  return api.post<Checkout>(`checkouts/${checkoutId}/gift-card`, body);
+}
+
+export function addPackageLine(
+  checkoutId: string,
+  body: {
+    packageTemplateId: string;
+    ownerContactId: string;
+    isDemo?: boolean;
+  },
+) {
+  return api.post<Checkout>(`checkouts/${checkoutId}/package`, body);
+}
+
 export function voidCheckout(checkoutId: string) {
   return api.delete<Checkout>(`checkouts/${checkoutId}`);
 }

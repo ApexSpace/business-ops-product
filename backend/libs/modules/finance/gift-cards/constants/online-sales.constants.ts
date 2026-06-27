@@ -1,0 +1,2 @@
+export const GIFT_CARD_ONLINE_MIN_AMOUNT = 25;
+export const GIFT_CARD_ONLINE_MAX_AMOUNT = 1000;

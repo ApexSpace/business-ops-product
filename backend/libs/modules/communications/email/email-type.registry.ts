@@ -2,6 +2,8 @@ export type EmailTypeCategory =
   | 'membership'
   | 'appointments'
   | 'invoices'
+  | 'gift_cards'
+  | 'packages'
   | 'auth'
   | 'automation';
 
@@ -249,6 +251,137 @@ export const EMAIL_TYPE_REGISTRY: Record<string, EmailTypeDefinition> = {
       'payment.date',
     ],
   },
+  'gift_card.delivery': {
+    key: 'gift_card.delivery',
+    category: 'gift_cards',
+    label: 'Gift card delivery',
+    description: 'Sent to the recipient when a gift card is purchased or sent digitally.',
+    defaultEnabled: true,
+    businessConfigurable: true,
+    defaultSubject: 'You received a gift card from {{business.name}}',
+    defaultHtmlBody: WRAPPER(`
+      <p>Hi {{contact.name}},</p>
+      <p>You received a gift card from <strong>{{business.name}}</strong>.</p>
+      <p><strong>Card number:</strong> {{gift_card.number}}</p>
+      <p><strong>Balance:</strong> {{gift_card.balance}}</p>
+    `),
+    defaultTextBody:
+      'Hi {{contact.name}},\n\nYou received a gift card from {{business.name}}.\nCard number: {{gift_card.number}}\nBalance: {{gift_card.balance}}',
+    variables: [
+      'business.name',
+      'contact.name',
+      'gift_card.number',
+      'gift_card.balance',
+      'gift_card.promotion_name',
+      'gift_card.promotion_description',
+      'gift_card.disclaimer',
+    ],
+  },
+  'gift_card.purchase_confirmation': {
+    key: 'gift_card.purchase_confirmation',
+    category: 'gift_cards',
+    label: 'Gift card purchase confirmation',
+    description: 'Sent to the purchaser after an online gift card sale.',
+    defaultEnabled: true,
+    businessConfigurable: true,
+    defaultSubject: 'Your gift card purchase from {{business.name}}',
+    defaultHtmlBody: WRAPPER(`
+      <p>Hi {{contact.name}},</p>
+      <p>Thank you for your gift card purchase from <strong>{{business.name}}</strong>.</p>
+      <p><strong>Amount paid:</strong> {{gift_card.amount_paid}}</p>
+      <p><strong>Gift card value:</strong> {{gift_card.balance}}</p>
+      <p><strong>Card number:</strong> {{gift_card.number}}</p>
+      <p>The gift card will be sent to {{gift_card.recipient_email}}.</p>
+    `),
+    defaultTextBody:
+      'Hi {{contact.name}},\n\nThank you for your gift card purchase from {{business.name}}.\nAmount paid: {{gift_card.amount_paid}}\nGift card value: {{gift_card.balance}}\nCard number: {{gift_card.number}}\nRecipient: {{gift_card.recipient_email}}',
+    variables: [
+      'business.name',
+      'contact.name',
+      'gift_card.number',
+      'gift_card.balance',
+      'gift_card.amount_paid',
+      'gift_card.recipient_email',
+    ],
+  },
+  'gift_card.internal_notification': {
+    key: 'gift_card.internal_notification',
+    category: 'gift_cards',
+    label: 'Gift card sale notification',
+    description: 'Sent to the business when an online gift card is sold.',
+    defaultEnabled: true,
+    businessConfigurable: true,
+    defaultSubject: 'New online gift card sold — {{business.name}}',
+    defaultHtmlBody: WRAPPER(`
+      <p>A new online gift card was sold for <strong>{{business.name}}</strong>.</p>
+      <p><strong>Card number:</strong> {{gift_card.number}}</p>
+      <p><strong>Value:</strong> {{gift_card.balance}}</p>
+      <p><strong>Purchaser:</strong> {{gift_card.purchaser_name}}</p>
+      <p><strong>Recipient:</strong> {{gift_card.recipient_name}}</p>
+    `),
+    defaultTextBody:
+      'New gift card sold for {{business.name}}.\nNumber: {{gift_card.number}}\nValue: {{gift_card.balance}}\nPurchaser: {{gift_card.purchaser_name}}\nRecipient: {{gift_card.recipient_name}}',
+    variables: [
+      'business.name',
+      'gift_card.number',
+      'gift_card.balance',
+      'gift_card.purchaser_name',
+      'gift_card.recipient_name',
+    ],
+  },
+  'package.purchase_confirmation': {
+    key: 'package.purchase_confirmation',
+    category: 'packages',
+    label: 'Package purchase confirmation',
+    description: 'Sent to the purchaser after an online package sale.',
+    defaultEnabled: true,
+    businessConfigurable: true,
+    defaultSubject: 'Your package purchase from {{business.name}}',
+    defaultHtmlBody: WRAPPER(`
+      <p>Hi {{contact.name}},</p>
+      <p>Thank you for your package purchase from <strong>{{business.name}}</strong>.</p>
+      <p><strong>Package:</strong> {{package.name}}</p>
+      <p><strong>Amount paid:</strong> {{package.amount_paid}}</p>
+      <p><strong>Includes:</strong> {{package.includes}}</p>
+      <p><strong>Expires:</strong> {{package.expiration_date}}</p>
+    `),
+    defaultTextBody:
+      'Hi {{contact.name}},\n\nThank you for your package purchase from {{business.name}}.\nPackage: {{package.name}}\nAmount paid: {{package.amount_paid}}\nIncludes: {{package.includes}}\nExpires: {{package.expiration_date}}',
+    variables: [
+      'business.name',
+      'contact.name',
+      'package.name',
+      'package.amount_paid',
+      'package.total_qty',
+      'package.includes',
+      'package.expiration_date',
+    ],
+  },
+  'package.internal_notification': {
+    key: 'package.internal_notification',
+    category: 'packages',
+    label: 'Package sale notification',
+    description: 'Sent to the business when an online package is sold.',
+    defaultEnabled: true,
+    businessConfigurable: true,
+    defaultSubject: 'New online package sold — {{business.name}}',
+    defaultHtmlBody: WRAPPER(`
+      <p>A new online package was sold for <strong>{{business.name}}</strong>.</p>
+      <p><strong>Package:</strong> {{package.name}}</p>
+      <p><strong>Amount paid:</strong> {{package.amount_paid}}</p>
+      <p><strong>Client:</strong> {{package.client_name}}</p>
+      <p><strong>Purchaser:</strong> {{package.purchaser_name}}</p>
+    `),
+    defaultTextBody:
+      'New package sold for {{business.name}}.\nPackage: {{package.name}}\nAmount paid: {{package.amount_paid}}\nClient: {{package.client_name}}\nPurchaser: {{package.purchaser_name}}',
+    variables: [
+      'business.name',
+      'package.name',
+      'package.amount_paid',
+      'package.client_name',
+      'package.purchaser_name',
+    ],
+  },
   'automation.workflow': {
     key: 'automation.workflow',
     category: 'automation',
@@ -333,6 +466,8 @@ export function listEmailTypesByCategory(): Record<
     membership: [],
     appointments: [],
     invoices: [],
+    gift_cards: [],
+    packages: [],
     auth: [],
     automation: [],
   };

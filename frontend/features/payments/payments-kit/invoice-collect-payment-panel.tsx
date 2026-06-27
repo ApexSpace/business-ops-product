@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useEffect, useMemo, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,12 +24,16 @@ import {
   useContactPaymentMethods,
 } from "@/features/payments/hooks/use-contact-payment-methods";
 import { useStripeConnectStatus } from "@/features/payments/hooks/use-stripe-connect-status";
+import { GiftCardPaymentPicker } from "@/features/gift-cards/components/gift-card-payment-picker";
+import type { GiftCardListItem } from "@/features/gift-cards/types";
 import { queryKeys } from "@/lib/query/keys";
+import { invalidateGiftCards } from "@/lib/query/invalidation";
 
 export interface CollectTenderInput {
   method: PaymentMethod;
   amount: number;
   contactPaymentMethodId?: string;
+  giftCardId?: string;
 }
 
 export interface InvoiceCollectPaymentPanelProps {
@@ -68,6 +72,24 @@ export function InvoiceCollectPaymentPanel({
     null,
   );
   const [savedCardId, setSavedCardId] = useState<string | null>(null);
+  const [primaryGiftCardId, setPrimaryGiftCardId] = useState<string | null>(
+    null,
+  );
+  const [secondaryGiftCardId, setSecondaryGiftCardId] = useState<string | null>(
+    null,
+  );
+  const [primaryGiftCard, setPrimaryGiftCard] =
+    useState<GiftCardListItem | null>(null);
+  const [secondaryGiftCard, setSecondaryGiftCard] =
+    useState<GiftCardListItem | null>(null);
+
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    setPrimaryAmount((current) =>
+      balanceDue > 0 ? Math.min(current, balanceDue) : balanceDue,
+    );
+  }, [balanceDue]);
 
   const { ready: stripeReady, publishableKey, stripeAccountId } =
     useStripeConnectStatus();
@@ -92,8 +114,17 @@ export function InvoiceCollectPaymentPanel({
   const { data: wallet } = useQuery({
     queryKey: queryKeys.contacts.wallet(contactId),
     queryFn: () => getContactWallet(contactId),
-    enabled: primaryMethod === "WALLET" || secondaryMethod === "WALLET",
+    enabled:
+      primaryMethod === "WALLET" ||
+      secondaryMethod === "WALLET" ||
+      primaryMethod === "GIFT_CARD" ||
+      secondaryMethod === "GIFT_CARD",
   });
+
+  const contactGiftCardCount =
+    wallet?.giftCards?.filter(
+      (c) => c.status === "ACTIVE" && parseFloat(c.balance) > 0,
+    ).length ?? 0;
 
   const methodItems = useMemo(() => {
     return COLLECT_PAYMENT_METHOD_OPTIONS.filter((o) => {
@@ -117,15 +148,28 @@ export function InvoiceCollectPaymentPanel({
   });
 
   const tenders = useMemo(() => {
+    const capGiftCardAmount = (
+      method: PaymentMethod,
+      amount: number,
+      card: GiftCardListItem | null,
+    ) => {
+      if (method !== "GIFT_CARD" || !card) return amount;
+      const balance = parseFloat(card.currentBalance);
+      return Math.min(amount, balance);
+    };
+
     const rows: CollectTenderInput[] = [];
     const primary = Math.round(primaryAmount * 100) / 100;
     const resolvedPrimary = normalizeMethod(primaryMethod);
     if (primary > 0) {
       rows.push({
         method: resolvedPrimary,
-        amount: primary,
+        amount: capGiftCardAmount(resolvedPrimary, primary, primaryGiftCard),
         ...(resolvedPrimary === "STRIPE" && savedCardId && savedCardId !== "new"
           ? { contactPaymentMethodId: savedCardId }
+          : {}),
+        ...(resolvedPrimary === "GIFT_CARD" && primaryGiftCardId
+          ? { giftCardId: primaryGiftCardId }
           : {}),
       });
     }
@@ -135,11 +179,18 @@ export function InvoiceCollectPaymentPanel({
       if (secondary > 0) {
         rows.push({
           method: resolvedSecondary,
-          amount: secondary,
+          amount: capGiftCardAmount(
+            resolvedSecondary,
+            secondary,
+            secondaryGiftCard,
+          ),
           ...(resolvedSecondary === "STRIPE" &&
           savedCardId &&
           savedCardId !== "new"
             ? { contactPaymentMethodId: savedCardId }
+            : {}),
+          ...(resolvedSecondary === "GIFT_CARD" && secondaryGiftCardId
+            ? { giftCardId: secondaryGiftCardId }
             : {}),
         });
       }
@@ -152,6 +203,10 @@ export function InvoiceCollectPaymentPanel({
     secondaryMethod,
     secondaryAmount,
     savedCardId,
+    primaryGiftCardId,
+    secondaryGiftCardId,
+    primaryGiftCard,
+    secondaryGiftCard,
     stripeReady,
   ]);
 
@@ -169,44 +224,60 @@ export function InvoiceCollectPaymentPanel({
       return;
     }
 
-    const result = collectOverride
-      ? await collectOverride(tenders)
-      : await collectMutation.mutateAsync({
-          payableType: "INVOICE",
-          payableId: invoiceId,
-          tenders,
-          channel: "STAFF_POS",
-          stripeMode: "EMBEDDED",
-        });
-
-    if (result.redirectTenders && result.redirectTenders.length > 0) {
-      window.location.href = result.redirectTenders[0].checkoutUrl;
+    const missingGiftCard = tenders.some(
+      (t) => t.method === "GIFT_CARD" && !t.giftCardId,
+    );
+    if (missingGiftCard) {
+      toast.error("Select a gift card for each gift card payment");
       return;
     }
 
-    if (result.stripeTenders.length > 0) {
-      setPendingStripe(result.stripeTenders[0]);
-      return;
-    }
+    try {
+      const result = collectOverride
+        ? await collectOverride(tenders)
+        : await collectMutation.mutateAsync({
+            payableType: "INVOICE",
+            payableId: invoiceId,
+            tenders,
+            channel: "STAFF_POS",
+            stripeMode: "EMBEDDED",
+          });
 
-    if (result.completed) {
-      if (awaitSettlement) {
-        try {
-          await awaitSettlement();
-        } catch (err) {
-          toast.error(
-            err instanceof Error ? err.message : "Payment is still processing",
-          );
-          return;
-        }
+      if (result.redirectTenders && result.redirectTenders.length > 0) {
+        window.location.href = result.redirectTenders[0].checkoutUrl;
+        return;
       }
+
+      if (result.stripeTenders.length > 0) {
+        setPendingStripe(result.stripeTenders[0]);
+        return;
+      }
+
+      if (result.completed) {
+        if (awaitSettlement) {
+          try {
+            await awaitSettlement();
+          } catch (err) {
+            toast.error(
+              err instanceof Error ? err.message : "Payment is still processing",
+            );
+            return;
+          }
+        }
+        await invalidateGiftCards(queryClient);
+        await queryClient.invalidateQueries({
+          queryKey: queryKeys.contacts.wallet(contactId),
+        });
+        toast.success(successMessage);
+        onComplete();
+        return;
+      }
+
       toast.success(successMessage);
       onComplete();
-      return;
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Payment failed");
     }
-
-    toast.success(successMessage);
-    onComplete();
   }
 
   if (pendingStripe && publishableKey) {
@@ -258,9 +329,22 @@ export function InvoiceCollectPaymentPanel({
           <Label>Payment method</Label>
           <SearchableSelect
             inDialog
-            items={methodItems}
+            items={methodItems.map((item) =>
+              item.value === "GIFT_CARD" && contactGiftCardCount > 0
+                ? {
+                    ...item,
+                    label: `${item.label} (${contactGiftCardCount})`,
+                  }
+                : item,
+            )}
             value={primaryMethod}
-            onValueChange={(v) => setPrimaryMethod(v as PaymentMethod)}
+            onValueChange={(v) => {
+              setPrimaryMethod(v as PaymentMethod);
+              if (v !== "GIFT_CARD") {
+                setPrimaryGiftCardId(null);
+                setPrimaryGiftCard(null);
+              }
+            }}
             placeholder="Method"
           />
         </div>
@@ -314,6 +398,24 @@ export function InvoiceCollectPaymentPanel({
         </p>
       ) : null}
 
+      {primaryMethod === "GIFT_CARD" ? (
+        <GiftCardPaymentPicker
+          contactId={contactId}
+          balanceDue={balanceDue}
+          selectedCardId={primaryGiftCardId}
+          onSelectCard={(id, card: GiftCardListItem | null) => {
+            setPrimaryGiftCardId(id);
+            setPrimaryGiftCard(card);
+            if (card) {
+              const bal = parseFloat(card.currentBalance);
+              setPrimaryAmount(Math.min(balanceDue, bal));
+            }
+          }}
+          amount={primaryAmount}
+          onAmountChange={setPrimaryAmount}
+        />
+      ) : null}
+
       <div className="flex items-center gap-2">
         <Checkbox
           id="split-payment"
@@ -342,7 +444,13 @@ export function InvoiceCollectPaymentPanel({
               inDialog
               items={methodItems.filter((m) => m.value !== primaryMethod)}
               value={secondaryMethod}
-              onValueChange={(v) => setSecondaryMethod(v as PaymentMethod)}
+              onValueChange={(v) => {
+                setSecondaryMethod(v as PaymentMethod);
+                if (v !== "GIFT_CARD") {
+                  setSecondaryGiftCardId(null);
+                  setSecondaryGiftCard(null);
+                }
+              }}
               placeholder="Method"
             />
           </div>
@@ -362,6 +470,32 @@ export function InvoiceCollectPaymentPanel({
             <p className="text-xs text-muted-foreground sm:col-span-2">
               Wallet balance: {formatMoney(walletBalance)}
             </p>
+          ) : null}
+          {secondaryMethod === "GIFT_CARD" ? (
+            <div className="sm:col-span-2">
+              <GiftCardPaymentPicker
+                contactId={contactId}
+                balanceDue={Math.max(
+                  0,
+                  Math.round((balanceDue - primaryAmount) * 100) / 100,
+                )}
+                selectedCardId={secondaryGiftCardId}
+                onSelectCard={(id, card) => {
+                  setSecondaryGiftCardId(id);
+                  setSecondaryGiftCard(card);
+                  if (card) {
+                    const remainder = Math.max(
+                      0,
+                      Math.round((balanceDue - primaryAmount) * 100) / 100,
+                    );
+                    const bal = parseFloat(card.currentBalance);
+                    setSecondaryAmount(Math.min(remainder, bal));
+                  }
+                }}
+                amount={secondaryAmount}
+                onAmountChange={setSecondaryAmount}
+              />
+            </div>
           ) : null}
         </div>
       ) : null}

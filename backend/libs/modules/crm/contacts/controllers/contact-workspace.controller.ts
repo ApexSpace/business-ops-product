@@ -27,6 +27,8 @@ import { ContactMembershipsService } from '../services/contact-memberships.servi
 import { ContactPrintAppointmentsService } from '../services/contact-print-appointments.service';
 import { ContactTimelineService } from '../services/contact-timeline.service';
 import { ContactWalletService } from '../services/contact-wallet.service';
+import { GiftCardsService } from '@app/modules/finance/gift-cards/services/gift-cards.service';
+import { ClientPackagesService } from '@app/modules/finance/packages/services/client-packages.service';
 
 const MEMBER_ROLES = [
   BusinessMemberRole.OWNER,
@@ -45,6 +47,8 @@ export class ContactWorkspaceController {
     private readonly adjustmentsService: ContactAdjustmentsService,
     private readonly membershipsService: ContactMembershipsService,
     private readonly printAppointmentsService: ContactPrintAppointmentsService,
+    private readonly giftCardsService: GiftCardsService,
+    private readonly clientPackagesService: ClientPackagesService,
   ) {}
 
   @Get(':id/timeline')
@@ -74,6 +78,24 @@ export class ContactWorkspaceController {
     @Body() dto: AdjustContactWalletDto,
   ) {
     return this.walletService.adjustBalance(user.businessId!, id, dto, user);
+  }
+
+  @Get(':id/gift-cards')
+  @BusinessRoles(...MEMBER_ROLES)
+  listGiftCards(
+    @CurrentUser() user: RequestUser,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.giftCardsService.findByContact(user.businessId!, id);
+  }
+
+  @Get(':id/packages')
+  @BusinessRoles(...MEMBER_ROLES)
+  listPackages(
+    @CurrentUser() user: RequestUser,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.clientPackagesService.findForContact(user.businessId!, id);
   }
 
   @Get(':id/adjustments')
@@ -129,8 +151,11 @@ export class ContactWorkspaceController {
 
   @Get(':id/memberships')
   @BusinessRoles(...MEMBER_ROLES)
-  getMemberships() {
-    return this.membershipsService.getMemberships();
+  getMemberships(
+    @CurrentUser() user: RequestUser,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.membershipsService.getMemberships(user.businessId!, id);
   }
 
   @Get(':id/appointments/print')

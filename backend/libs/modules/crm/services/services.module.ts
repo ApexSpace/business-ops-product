@@ -1,6 +1,7 @@
 import { Module, forwardRef } from '@nestjs/common';
 import { AuditModule } from '@app/modules/platform/audit/audit.module';
 import { MembershipModule } from '@app/modules/platform/membership/membership.module';
+import { ResourcesModule } from '@app/modules/operations/resources/resources.module';
 import { ServiceCategoriesController } from './controllers/service-categories.controller';
 import { ServiceWorkspaceController } from './controllers/service-workspace.controller';
 import { ServicesController } from './controllers/services.controller';
@@ -13,7 +14,7 @@ import { ServiceWorkspaceService } from './services/service-workspace.service';
 import { ServicesService } from './services/services.service';
 
 @Module({
-  imports: [AuditModule, forwardRef(() => MembershipModule)],
+  imports: [AuditModule, forwardRef(() => MembershipModule), ResourcesModule],
   controllers: [
     ServiceCategoriesController,
     ServiceWorkspaceController,

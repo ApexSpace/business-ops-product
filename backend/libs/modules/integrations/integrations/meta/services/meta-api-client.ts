@@ -108,14 +108,20 @@ export class MetaApiClient {
   async exchangeCodeForToken(
     code: string,
     providerKey?: string,
+    options?: { includeRedirectUri?: boolean },
   ): Promise<MetaTokenResponse> {
     const { appId, appSecret } = this.metaConfigService.getMetaAppConfig();
-    const redirectUri = this.metaConfigService.getMetaRedirectUri(providerKey);
+    const includeRedirectUri = options?.includeRedirectUri ?? true;
 
     const url = new URL(`${getMetaGraphBaseUrl()}/oauth/access_token`);
     url.searchParams.set('client_id', appId);
     url.searchParams.set('client_secret', appSecret);
-    url.searchParams.set('redirect_uri', redirectUri);
+    if (includeRedirectUri) {
+      url.searchParams.set(
+        'redirect_uri',
+        this.metaConfigService.getMetaRedirectUri(providerKey),
+      );
+    }
     url.searchParams.set('code', code);
 
     const response = await fetch(url.toString());
@@ -870,5 +876,24 @@ export class MetaApiClient {
     };
 
     return { messageId: data.messages?.[0]?.id ?? '' };
+  }
+
+  /** Subscribe the Meta app to receive WhatsApp webhooks for this WABA. */
+  async subscribeWhatsAppBusinessAccountToApp(
+    wabaId: string,
+    accessToken: string,
+  ): Promise<boolean> {
+    const url = this.buildGraphUrl(`/${wabaId}/subscribed_apps`, {
+      access_token: accessToken,
+    });
+
+    const response = await fetch(url, { method: 'POST' });
+    if (!response.ok) {
+      const detail = this.sanitizeGraphError(await response.text());
+      throw new Error(`Meta subscribe WABA to app failed: ${detail}`);
+    }
+
+    const data = (await response.json()) as { success?: boolean };
+    return data.success === true;
   }
 }

@@ -1,14 +1,24 @@
 import { Injectable } from '@nestjs/common';
+import { ClientPackagesService } from '@app/modules/finance/packages/services/client-packages.service';
 import { ContactMembershipsResponseDto } from '../dto/contact-memberships-response.dto';
 
 @Injectable()
 export class ContactMembershipsService {
-  getMemberships(): ContactMembershipsResponseDto {
+  constructor(private readonly clientPackagesService: ClientPackagesService) {}
+
+  async getMemberships(
+    businessId: string,
+    contactId: string,
+  ): Promise<ContactMembershipsResponseDto> {
+    const packages = await this.clientPackagesService.findForContact(
+      businessId,
+      contactId,
+    );
     return {
-      available: false,
+      available: true,
       memberships: [],
-      packages: [],
-      message: 'Memberships and packages coming soon',
+      packages,
+      message: null,
     };
   }
 }

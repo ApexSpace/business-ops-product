@@ -9,6 +9,8 @@ import { IntegrationsModule } from '@app/modules/integrations/integrations/integ
 import { EmailModule } from '@app/modules/communications/email/email.module';
 import { PaymentsModule } from '@app/modules/finance/payments/payments.module';
 import { ProductsModule } from '@app/modules/finance/products/products.module';
+import { GiftCardsModule } from '@app/modules/finance/gift-cards/gift-cards.module';
+import { PackagesModule } from '@app/modules/finance/packages/packages.module';
 import { CheckoutsController } from './controllers/checkouts.controller';
 import { InvoicesController } from './controllers/invoices.controller';
 import { PublicInvoicesController } from './controllers/public-invoices.controller';
@@ -32,6 +34,8 @@ import { StripeInvoicePaymentService } from './services/stripe-invoice-payment.s
     forwardRef(() => EmailModule),
     forwardRef(() => PaymentsModule),
     ProductsModule,
+    forwardRef(() => GiftCardsModule),
+    forwardRef(() => PackagesModule),
   ],
   controllers: [
     InvoicesController,

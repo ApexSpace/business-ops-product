@@ -18,9 +18,14 @@ const MAPPED_ROUTES = [
   "/business/conversations",
   "/business/appointments",
   "/business/payments",
+  "/business/sales",
+  "/business/gift-cards",
+  "/business/packages",
+  "/business/products",
   "/business/invoices",
   "/business/estimates",
   "/business/settings/calendars",
+  "/business/settings/resources",
   "/business/settings/pipelines",
   "/business/settings/chatbots",
   "/business/settings/integrations",
@@ -80,7 +85,8 @@ const unmapped = discovered.filter(
     !route.startsWith("/business/settings/automations") &&
     !route.startsWith("/business/settings/automation-workflows") &&
     !route.startsWith("/business/settings/automation-registry") &&
-    !route.startsWith("/business/settings/services"),
+    !route.startsWith("/business/settings/services") &&
+    !route.startsWith("/business/settings/resources"),
 );
 
 console.log("Route capability audit\n");

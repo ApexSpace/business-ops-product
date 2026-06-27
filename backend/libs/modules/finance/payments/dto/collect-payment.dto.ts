@@ -42,6 +42,11 @@ export class CollectPaymentTenderDto {
   @IsOptional()
   @IsUUID('4')
   contactPaymentMethodId?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsUUID('4')
+  giftCardId?: string;
 }
 
 export class CollectPaymentDto {

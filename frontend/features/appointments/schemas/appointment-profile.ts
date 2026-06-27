@@ -120,6 +120,7 @@ export const appointmentFormSchema = z
       .optional(),
     locationValue: z.string().max(500).optional(),
     notes: z.string().max(5000).optional(),
+    clientPackageId: z.string().uuid().optional().or(z.literal("")),
   })
   .refine(
     (data) => new Date(data.endAt) > new Date(data.startAt),
@@ -142,6 +143,7 @@ export const appointmentFormDefaults: AppointmentFormValues = {
   locationType: "PHYSICAL",
   locationValue: "",
   notes: "",
+  clientPackageId: "",
 };
 
 export function appointmentToForm(
@@ -164,6 +166,7 @@ export function appointmentToForm(
     locationType: a.locationType ?? "PHYSICAL",
     locationValue: a.locationValue ?? "",
     notes: a.notes ?? "",
+    clientPackageId: "",
   };
 }
 
@@ -189,6 +192,7 @@ export function appointmentFormToApiBody(
     locationType: values.locationType,
     locationValue: values.locationValue?.trim() || undefined,
     notes: values.notes?.trim() || undefined,
+    clientPackageId: values.clientPackageId?.trim() || undefined,
   };
 }
 

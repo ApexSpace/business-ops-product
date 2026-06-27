@@ -7,6 +7,7 @@ export type PaymentMethod =
   | "CARD"
   | "BANK_TRANSFER"
   | "WALLET"
+  | "GIFT_CARD"
   | "STRIPE"
   | "OTHER";
 
@@ -16,6 +17,7 @@ export interface CollectPaymentTender {
   reference?: string;
   notes?: string;
   contactPaymentMethodId?: string;
+  giftCardId?: string;
 }
 
 export interface CollectPaymentBody {

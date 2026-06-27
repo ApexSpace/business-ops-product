@@ -25,6 +25,14 @@ const ROUTE_CAPABILITY_MAP = new Map<string, RouteCapabilityEntry>([
     { moduleKey: "payments", capabilityKeys: ["payments.invoices.list"] },
   ],
   [
+    "/business/gift-cards",
+    { moduleKey: "payments", capabilityKeys: ["payments.invoices.list"] },
+  ],
+  [
+    "/business/packages",
+    { moduleKey: "payments", capabilityKeys: ["payments.invoices.list"] },
+  ],
+  [
     "/business/products",
     { moduleKey: "products", capabilityKeys: ["products.list"] },
   ],

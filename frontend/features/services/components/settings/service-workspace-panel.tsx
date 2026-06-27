@@ -23,6 +23,9 @@ import { invalidateServiceWorkspace } from "@/lib/query/invalidation";
 import { SearchableSelect } from "@/components/forms/searchable-select";
 import { listProductPicker } from "@/features/products/api/products.api";
 import type { ProductPickerItem } from "@/features/products/types";
+import { listResourcePicker } from "@/features/resources/api/resources.api";
+import type { ResourcePickerItem } from "@/features/resources/types";
+import { resourceTypeLabel } from "@/features/resources/utils/resource-schedule.util";
 import { listBusinessMembers } from "@/features/settings/api/business.api";
 import { listCalendars } from "@/features/calendars/api/calendars.api";
 import type { Service } from "@/features/services/types";
@@ -40,6 +43,7 @@ import {
   patchServiceOnlineBooking,
   replaceServiceProducts,
   replaceServiceStaff,
+  updateResourceRequirement,
 } from "@/features/services/api/service-workspace.api";
 
 type Props = {
@@ -178,6 +182,12 @@ export function ServiceWorkspacePanel({
             onAdd={(body) =>
               createResourceRequirement(serviceId, body).then(() => {
                 toast.success("Resource requirement added");
+                invalidate();
+              })
+            }
+            onUpdate={(id, body) =>
+              updateResourceRequirement(serviceId, id, body).then(() => {
+                toast.success("Resource requirement updated");
                 invalidate();
               })
             }
@@ -559,44 +569,97 @@ function ResourcesTab({
   items,
   emphasize,
   onAdd,
+  onUpdate,
   onDelete,
 }: {
-  items: Array<Record<string, unknown>>;
+  items: ServiceWorkspace["resourceRequirements"];
   emphasize: boolean;
   onAdd: (body: Record<string, unknown>) => Promise<void>;
+  onUpdate: (id: string, body: Record<string, unknown>) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
 }) {
   const [label, setLabel] = useState("");
+  const [resourceType, setResourceType] = useState("ROOM");
+  const [selectedPickerKey, setSelectedPickerKey] = useState<string | null>(
+    null,
+  );
+
+  const { data: resourcePicker = [] } = useQuery({
+    queryKey: queryKeys.resources.picker(),
+    queryFn: () => listResourcePicker(),
+  });
+
+  const pickerItems = resourcePicker.map((r) => ({
+    value: r.id,
+    label: resourcePickerLabel(r),
+  }));
+
+  const selectedResource = resourcePicker.find((r) => r.id === selectedPickerKey);
+
   return (
     <div className="space-y-4">
       {emphasize ? (
         <p className="text-sm text-amber-600">Required for resource-only services.</p>
       ) : null}
-      <p className="text-sm text-muted-foreground">
-        Resources module coming soon — add requirements by label until equipment and rooms can be linked.
-      </p>
-      <ul className="space-y-2">
+      <Card className="bg-muted/30">
+        <CardContent className="pt-4 text-sm text-muted-foreground">
+          Link rooms, equipment, or consumables required to perform this service.
+          Manage the catalog under{" "}
+          <a
+            href="/business/settings/resources"
+            className="text-primary underline-offset-4 hover:underline"
+          >
+            Settings → Resources
+          </a>
+          .
+        </CardContent>
+      </Card>
+      <ul className="space-y-3">
         {items.map((item) => (
-          <li key={String(item.id)} className="flex items-center justify-between rounded border p-2 text-sm">
-            <span>
-              {String(item.label)}{" "}
-              {!item.linked ? (
-                <Badge variant="outline" className="ml-1">Not linked</Badge>
-              ) : null}
-            </span>
-            <Button variant="ghost" size="sm" onClick={() => void onDelete(String(item.id))}>
-              Remove
-            </Button>
-          </li>
+          <ResourceRequirementRow
+            key={item.id}
+            item={item}
+            resourcePicker={resourcePicker}
+            onUpdate={(body) => onUpdate(item.id, body)}
+            onDelete={() => onDelete(item.id)}
+          />
         ))}
       </ul>
-      <div className="flex gap-2">
-        <Input placeholder="e.g. Treatment room" value={label} onChange={(e) => setLabel(e.target.value)} />
+      <div className="space-y-2 rounded-lg border p-3">
+        <p className="text-sm font-medium">Add requirement</p>
+        <div className="grid gap-2 sm:grid-cols-2">
+          <Input
+            placeholder="Label (e.g. Treatment room)"
+            value={label}
+            onChange={(e) => setLabel(e.target.value)}
+          />
+          <Select value={resourceType} onValueChange={setResourceType}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ROOM">Room</SelectItem>
+              <SelectItem value="EQUIPMENT">Equipment</SelectItem>
+              <SelectItem value="CONSUMABLE">Consumable</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <SearchableSelect
+          items={pickerItems}
+          value={selectedPickerKey}
+          onValueChange={setSelectedPickerKey}
+          placeholder="Link resource (optional)…"
+        />
         <Button
           onClick={() => {
             if (!label.trim()) return;
-            void onAdd({ label: label.trim(), resourceType: "ROOM" });
+            void onAdd({
+              label: label.trim(),
+              resourceType,
+              resourceId: selectedResource?.id ?? null,
+            });
             setLabel("");
+            setSelectedPickerKey(null);
           }}
         >
           Add requirement
@@ -604,6 +667,100 @@ function ResourcesTab({
       </div>
     </div>
   );
+}
+
+function ResourceRequirementRow({
+  item,
+  resourcePicker,
+  onUpdate,
+  onDelete,
+}: {
+  item: ServiceWorkspace["resourceRequirements"][number];
+  resourcePicker: ResourcePickerItem[];
+  onUpdate: (body: Record<string, unknown>) => Promise<void>;
+  onDelete: () => Promise<void>;
+}) {
+  const [quantity, setQuantity] = useState(String(item.quantity));
+  const [resourceId, setResourceId] = useState(item.resourceId ?? "");
+
+  useEffect(() => {
+    setQuantity(String(item.quantity));
+    setResourceId(item.resourceId ?? "");
+  }, [item]);
+
+  const filteredPicker = resourcePicker.filter(
+    (r) => r.resourceType === item.resourceType,
+  );
+
+  return (
+    <li className="space-y-2 rounded border p-3 text-sm">
+      <div className="flex items-start justify-between gap-2">
+        <div>
+          <p className="font-medium">{item.label}</p>
+          <p className="text-xs text-muted-foreground">
+            {resourceTypeLabel(item.resourceType)}
+            {item.resourceName ? ` · ${item.resourceName}` : ""}
+          </p>
+        </div>
+        <Button variant="ghost" size="sm" onClick={() => void onDelete()}>
+          Remove
+        </Button>
+      </div>
+      <div className="grid gap-2 sm:grid-cols-3">
+        <div className="space-y-1">
+          <Label className="text-xs">Linked resource</Label>
+          <Select
+            value={resourceId || "__none__"}
+            onValueChange={(v) => setResourceId(v === "__none__" ? "" : v)}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Not linked" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__none__">Not linked</SelectItem>
+              {filteredPicker.map((r) => (
+                <SelectItem key={r.id} value={r.id}>
+                  {resourcePickerLabel(r)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs">Quantity</Label>
+          <Input
+            type="number"
+            min={1}
+            value={quantity}
+            onChange={(e) => setQuantity(e.target.value)}
+          />
+        </div>
+        <div className="flex items-end">
+          <Button
+            size="sm"
+            variant="secondary"
+            className="w-full"
+            onClick={() =>
+              void onUpdate({
+                resourceId: resourceId || null,
+                quantity: Math.max(1, Number(quantity) || 1),
+              })
+            }
+          >
+            Save
+          </Button>
+        </div>
+      </div>
+      {!item.linked ? (
+        <Badge variant="outline">Not linked to catalog</Badge>
+      ) : null}
+    </li>
+  );
+}
+
+function resourcePickerLabel(item: ResourcePickerItem): string {
+  const group = item.groupName ? ` (${item.groupName})` : "";
+  return `${item.name}${group} · ${resourceTypeLabel(item.resourceType)}`;
 }
 
 function CustomizationsTab({

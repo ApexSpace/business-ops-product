@@ -24,6 +24,8 @@ import {
   formatMoney,
 } from '@app/modules/communications/email/utils/email-variables.util';
 import { BusinessRepository } from '@app/modules/platform/business/repositories/business.repository';
+import { GiftCardOnlineCheckoutService } from '@app/modules/finance/gift-cards/services/gift-card-online-checkout.service';
+import { PackageOnlineCheckoutService } from '@app/modules/finance/packages/services/package-online-checkout.service';
 import { DateTime } from 'luxon';
 
 type CheckoutSessionObject = {
@@ -66,6 +68,10 @@ export class StripeInvoicePaymentService {
     @Inject(forwardRef(() => PaymentOrchestratorService))
     private readonly paymentOrchestrator: PaymentOrchestratorService,
     private readonly stripeContactPaymentMethod: StripeContactPaymentMethodService,
+    @Inject(forwardRef(() => GiftCardOnlineCheckoutService))
+    private readonly giftCardOnlineCheckoutService: GiftCardOnlineCheckoutService,
+    @Inject(forwardRef(() => PackageOnlineCheckoutService))
+    private readonly packageOnlineCheckoutService: PackageOnlineCheckoutService,
   ) {}
 
   async handleSetupIntentSucceeded(event: StripeWebhookEvent): Promise<void> {
@@ -82,6 +88,34 @@ export class StripeInvoicePaymentService {
     event: StripeWebhookEvent,
   ): Promise<void> {
     const session = event.data.object as CheckoutSessionObject;
+    const metadata = session.metadata ?? {};
+
+    if (
+      metadata.type === 'gift_card' ||
+      metadata.purpose === STRIPE_PAYMENT_PURPOSE.GIFT_CARD
+    ) {
+      const handled =
+        await this.giftCardOnlineCheckoutService.handleCheckoutSessionCompleted(
+          {
+            ...metadata,
+            stripeSessionId: session.id ?? '',
+          },
+        );
+      if (handled) return;
+    }
+
+    if (
+      metadata.type === 'package' ||
+      metadata.purpose === STRIPE_PAYMENT_PURPOSE.PACKAGE
+    ) {
+      const handled =
+        await this.packageOnlineCheckoutService.handleCheckoutSessionCompleted({
+          ...metadata,
+          stripeSessionId: session.id ?? '',
+        });
+      if (handled) return;
+    }
+
     const paymentId =
       typeof session.metadata?.paymentId === 'string'
         ? session.metadata.paymentId
@@ -116,6 +150,24 @@ export class StripeInvoicePaymentService {
 
     if (purpose === STRIPE_PAYMENT_PURPOSE.SAVE_CARD) {
       return;
+    }
+
+    if (purpose === STRIPE_PAYMENT_PURPOSE.GIFT_CARD) {
+      const handled =
+        await this.giftCardOnlineCheckoutService.handlePaymentIntentCompleted({
+          ...(metadata ?? {}),
+          stripePaymentIntentId: intent.id ?? '',
+        });
+      if (handled) return;
+    }
+
+    if (purpose === STRIPE_PAYMENT_PURPOSE.PACKAGE) {
+      const handled =
+        await this.packageOnlineCheckoutService.handlePaymentIntentCompleted({
+          ...(metadata ?? {}),
+          stripePaymentIntentId: intent.id ?? '',
+        });
+      if (handled) return;
     }
 
     if (embeddedPaymentId && intent.id) {

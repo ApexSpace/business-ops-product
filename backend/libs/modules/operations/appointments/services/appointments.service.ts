@@ -19,6 +19,7 @@ import {
 } from '../dto/appointment.dto';
 import { toAppointmentResponse } from '../mappers/appointment.mapper';
 import { JobEnqueueService } from '@app/core/jobs/job-enqueue.service';
+import { ClientPackagesService } from '@app/modules/finance/packages/services/client-packages.service';
 import { AppointmentRepository } from '../repositories/appointment.repository';
 import { AppointmentNotificationService } from './appointment-notification.service';
 
@@ -36,6 +37,7 @@ export class AppointmentsService {
     private readonly auditService: AuditService,
     private readonly jobEnqueueService: JobEnqueueService,
     private readonly appointmentNotificationService: AppointmentNotificationService,
+    private readonly clientPackagesService: ClientPackagesService,
   ) {}
 
   private scheduleGoogleCalendarSync(
@@ -118,6 +120,26 @@ export class AppointmentsService {
     void this.appointmentNotificationService
       .sendOwnerNotifications(businessId, appointment)
       .catch(() => undefined);
+
+    if (dto.clientPackageId && dto.serviceId) {
+      const pkg = await this.clientPackagesService.findOne(
+        businessId,
+        dto.clientPackageId,
+      );
+      if (pkg.contact.id !== dto.contactId) {
+        throw new AppException(
+          ErrorCode.BAD_REQUEST,
+          'Package does not belong to this contact',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+      await this.clientPackagesService.redeemService(
+        businessId,
+        dto.clientPackageId,
+        dto.serviceId,
+        actor.id,
+      );
+    }
 
     return toAppointmentResponse(appointment);
   }

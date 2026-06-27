@@ -304,15 +304,21 @@ export class SendMessageProcessor {
       return undefined;
     }
 
+    const context =
+      await this.whatsAppBusinessContextService.requireConnectedContext(
+        businessId,
+      );
+
     const stored = await this.whatsAppTemplateRepository.findByNameLanguage(
       businessId,
+      context.wabaId,
       template.name,
       template.language,
     );
     if (!stored) {
       throw new AppException(
         ErrorCode.WHATSAPP_TEMPLATE_NOT_FOUND,
-        `WhatsApp template "${template.name}" (${template.language}) was not found for this business.`,
+        `WhatsApp template "${template.name}" (${template.language}) was not found for the connected WhatsApp Business Account.`,
         HttpStatus.UNPROCESSABLE_ENTITY,
       );
     }
@@ -322,18 +328,6 @@ export class SendMessageProcessor {
       throw new AppException(
         ErrorCode.WHATSAPP_TEMPLATE_NOT_SENDABLE,
         `WhatsApp template "${template.name}" is ${stored.status.toLowerCase()} and cannot be sent. Only approved templates are allowed.`,
-        HttpStatus.UNPROCESSABLE_ENTITY,
-      );
-    }
-
-    const context =
-      await this.whatsAppBusinessContextService.requireConnectedContext(
-        businessId,
-      );
-    if (stored.wabaId !== context.wabaId) {
-      throw new AppException(
-        ErrorCode.WHATSAPP_TEMPLATE_NOT_SENDABLE,
-        `WhatsApp template "${template.name}" does not belong to the connected WhatsApp Business Account.`,
         HttpStatus.UNPROCESSABLE_ENTITY,
       );
     }

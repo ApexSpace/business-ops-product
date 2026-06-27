@@ -4,6 +4,7 @@ import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ContactPicker } from "@/features/contacts/components/contact-picker";
 import { AppointmentMeetingLocationFields } from "@/features/appointments/components/appointment-meeting-location-fields";
+import { AppointmentPackageField } from "@/features/appointments/components/appointment-package-field";
 import { AppointmentScheduleFields } from "@/features/appointments/components/appointment-schedule-fields";
 import { SearchableSelect } from "@/components/forms/searchable-select";
 import {
@@ -97,6 +98,8 @@ export function AppointmentFormFields({
         timezone={displayTimezone}
         disabled={mutation.isPending}
       />
+
+      <AppointmentPackageField />
 
       {isEdit ? (
         <FormField

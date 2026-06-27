@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+const META_RESERVED_TEMPLATE_NAMES = ["hello_world"] as const;
+
 export const whatsappTemplateButtonSchema = z.object({
   type: z.enum(["QUICK_REPLY", "URL", "PHONE_NUMBER", "COPY_CODE"]),
   text: z.string().trim().min(1, "Button label is required").max(25),
@@ -17,6 +19,13 @@ export const whatsappTemplateFormSchema = z
       .regex(
         /^[a-z][a-z0-9_]*$/,
         "Use lowercase letters, numbers, and underscores. Must start with a letter.",
+      )
+      .refine(
+        (value) =>
+          !META_RESERVED_TEMPLATE_NAMES.includes(
+            value as (typeof META_RESERVED_TEMPLATE_NAMES)[number],
+          ),
+        "This name is reserved by Meta. Choose a unique name such as your_business_welcome.",
       ),
     language: z.string().trim().min(2, "Language is required"),
     category: z.enum(["MARKETING", "UTILITY", "AUTHENTICATION"]),

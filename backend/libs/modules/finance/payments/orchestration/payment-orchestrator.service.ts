@@ -24,6 +24,7 @@ import { PayableHandlerRegistry } from '../registry/payable-handler.registry';
 import { ContactPaymentMethodsService } from '../services/contact-payment-methods.service';
 import { PaymentRealtimeService } from '../services/payment-realtime.service';
 import { WalletLedgerService } from '../services/wallet-ledger.service';
+import { GiftCardRedemptionService } from '@app/modules/finance/gift-cards/services/gift-card-redemption.service';
 import type {
   CollectPaymentInput,
   CollectPaymentResult,
@@ -44,6 +45,7 @@ export class PaymentOrchestratorService {
     private readonly paymentRealtime: PaymentRealtimeService,
     private readonly auditService: AuditService,
     private readonly invoicePayableHandler: InvoicePayableHandler,
+    private readonly giftCardRedemption: GiftCardRedemptionService,
   ) {
     this.registry.register(this.invoicePayableHandler);
   }
@@ -106,6 +108,17 @@ export class PaymentOrchestratorService {
 
       if (tender.method === PaymentMethod.WALLET) {
         const payment = await this.createWalletPayment({
+          input,
+          snapshot,
+          tender,
+          amount,
+        });
+        paymentIds.push(payment.id);
+        continue;
+      }
+
+      if (tender.method === PaymentMethod.GIFT_CARD) {
+        const payment = await this.createGiftCardPayment({
           input,
           snapshot,
           tender,
@@ -374,6 +387,55 @@ export class PaymentOrchestratorService {
         status: PaymentStatus.SUCCEEDED,
         paidAt: new Date(),
         walletTransactionId: walletTxId,
+      },
+    });
+  }
+
+  private async createGiftCardPayment(params: {
+    input: CollectPaymentInput;
+    snapshot: { contactId: string; invoiceId?: string };
+    tender: CollectPaymentInput['tenders'][number];
+    amount: Prisma.Decimal;
+  }) {
+    if (!params.tender.giftCardId) {
+      throw new AppException(
+        ErrorCode.BAD_REQUEST,
+        'giftCardId is required for gift card payments',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const invoiceId = this.resolveInvoiceId(
+      params.input.payableType,
+      params.input.payableId,
+      params.snapshot.invoiceId,
+    );
+
+    const redemption = await this.giftCardRedemption.redeem(
+      params.input.businessId,
+      params.tender.giftCardId,
+      Number(params.amount.toString()),
+      invoiceId,
+    );
+
+    return this.prisma.payment.create({
+      data: {
+        business: { connect: { id: params.input.businessId } },
+        invoice: { connect: { id: invoiceId } },
+        contact: { connect: { id: params.snapshot.contactId } },
+        payableType: params.input.payableType,
+        payableId: params.input.payableId,
+        amount: new Prisma.Decimal(redemption.amountApplied),
+        method: PaymentMethod.GIFT_CARD,
+        status: PaymentStatus.SUCCEEDED,
+        provider: PaymentProvider.MANUAL,
+        giftCard: { connect: { id: params.tender.giftCardId } },
+        reference: params.tender.reference?.trim() || null,
+        notes: params.tender.notes?.trim() || null,
+        paidAt: new Date(),
+        createdBy: params.input.actorUserId
+          ? { connect: { id: params.input.actorUserId } }
+          : undefined,
       },
     });
   }

@@ -7,6 +7,8 @@ import {
   Prisma,
 } from '@prisma/client';
 import { PrismaService } from '@app/core/database/prisma.service';
+import { GiftCardsService } from '@app/modules/finance/gift-cards/services/gift-cards.service';
+import { ClientPackagesService } from '@app/modules/finance/packages/services/client-packages.service';
 import { ProductInventoryService } from '@app/modules/finance/products/services/product-inventory.service';
 import { WalletLedgerService } from '@app/modules/finance/payments/services/wallet-ledger.service';
 
@@ -16,6 +18,8 @@ export class CheckoutCompletionService {
     private readonly prisma: PrismaService,
     private readonly walletLedger: WalletLedgerService,
     private readonly productInventory: ProductInventoryService,
+    private readonly giftCardsService: GiftCardsService,
+    private readonly clientPackagesService: ClientPackagesService,
   ) {}
 
   /** Credit wallet deposit lines and mark checkout closed when fully paid. */
@@ -45,6 +49,8 @@ export class CheckoutCompletionService {
 
     await this.applyDepositLines(checkout, actorUserId);
     await this.applyProductSales(checkout, actorUserId);
+    await this.applyGiftCardSales(checkout);
+    await this.applyPackageSales(checkout);
 
     await this.prisma.invoice.update({
       where: { id: checkout.id },
@@ -125,6 +131,100 @@ export class CheckoutCompletionService {
         invoiceId: checkout.id,
         createdById: actorUserId,
       });
+    }
+  }
+
+  private async applyGiftCardSales(checkout: {
+    id: string;
+    businessId: string;
+    contactId: string;
+    items: {
+      id: string;
+      lineType: InvoiceLineType;
+      totalPrice: Prisma.Decimal;
+      metadata: Prisma.JsonValue;
+    }[];
+  }): Promise<void> {
+    const giftCardLines = checkout.items.filter(
+      (item) => item.lineType === InvoiceLineType.GIFT_CARD,
+    );
+    for (const item of giftCardLines) {
+      const meta = (item.metadata ?? {}) as Record<string, unknown>;
+      const ownerContactId =
+        typeof meta.ownerContactId === 'string' ? meta.ownerContactId : null;
+      if (!ownerContactId) continue;
+
+      const lineMarker = `checkoutItem:${item.id}`;
+      const existing = await this.prisma.giftCard.findFirst({
+        where: {
+          businessId: checkout.businessId,
+          notes: { contains: lineMarker },
+        },
+      });
+      if (existing) continue;
+
+      const card = await this.giftCardsService.createFromPosSale(
+        checkout.businessId,
+        checkout.id,
+        {
+          number:
+            typeof meta.giftCardNumber === 'string' ? meta.giftCardNumber : null,
+          initialValue: Number(
+            (typeof meta.cardValue === 'number'
+              ? meta.cardValue
+              : item.totalPrice
+            ).toString(),
+          ),
+          ownerContactId,
+          purchasingContactId: checkout.contactId,
+          sendDigital: meta.sendDigital === true,
+        },
+      );
+
+      if (card) {
+        await this.prisma.giftCard.updateMany({
+          where: { id: card.id, businessId: checkout.businessId },
+          data: {
+            notes: [card.notes, lineMarker].filter(Boolean).join(' · '),
+          },
+        });
+      }
+    }
+  }
+
+  private async applyPackageSales(checkout: {
+    id: string;
+    businessId: string;
+    contactId: string;
+    items: {
+      id: string;
+      lineType: InvoiceLineType;
+      metadata: Prisma.JsonValue;
+    }[];
+  }): Promise<void> {
+    const packageLines = checkout.items.filter(
+      (item) => item.lineType === InvoiceLineType.PACKAGE,
+    );
+    for (const item of packageLines) {
+      const meta = (item.metadata ?? {}) as Record<string, unknown>;
+      const packageTemplateId =
+        typeof meta.packageTemplateId === 'string'
+          ? meta.packageTemplateId
+          : null;
+      const ownerContactId =
+        typeof meta.ownerContactId === 'string' ? meta.ownerContactId : null;
+      if (!packageTemplateId || !ownerContactId) continue;
+
+      await this.clientPackagesService.createFromPosSale(
+        checkout.businessId,
+        checkout.id,
+        {
+          packageTemplateId,
+          ownerContactId,
+          isDemo: meta.isDemo === true,
+          checkoutItemId: item.id,
+        },
+      );
     }
   }
 }

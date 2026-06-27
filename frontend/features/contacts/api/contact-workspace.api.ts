@@ -33,7 +33,13 @@ export interface ContactWallet {
   balance: { amount: string; currency: string };
   transactions: ContactWalletTransaction[];
   paymentMethods: unknown[];
-  giftCards: unknown[];
+  giftCards: {
+    id: string;
+    number: string;
+    balance: string;
+    status: string;
+    createdAt: string;
+  }[];
   capabilities: { paymentMethods: boolean; giftCards: boolean };
 }
 
@@ -50,8 +56,8 @@ export interface ContactAdjustment {
 export interface ContactMemberships {
   available: boolean;
   memberships: unknown[];
-  packages: unknown[];
-  message: string;
+  packages: import("@/features/packages/types").ClientPackageListItem[];
+  message: string | null;
 }
 
 export interface ContactPrintAppointment {

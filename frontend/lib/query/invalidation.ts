@@ -206,6 +206,50 @@ export function invalidateProductCategories(queryClient: QueryClient) {
   });
 }
 
+export function invalidateResources(queryClient: QueryClient) {
+  return queryClient.invalidateQueries({
+    queryKey: queryKeys.resources.all(),
+  });
+}
+
+export function invalidateGiftCards(queryClient: QueryClient) {
+  return queryClient.invalidateQueries({
+    queryKey: queryKeys.giftCards.all(),
+  });
+}
+
+export function invalidatePackages(queryClient: QueryClient) {
+  return queryClient.invalidateQueries({
+    queryKey: queryKeys.packages.all(),
+  });
+}
+
+export function invalidateResourceGroups(queryClient: QueryClient) {
+  return Promise.all([
+    queryClient.invalidateQueries({ queryKey: queryKeys.resources.groups() }),
+    invalidateResources(queryClient),
+  ]);
+}
+
+export function invalidateResourceWorkspace(
+  queryClient: QueryClient,
+  resourceId: string,
+) {
+  return Promise.all([
+    queryClient.invalidateQueries({
+      queryKey: queryKeys.resources.workspace(resourceId),
+    }),
+    invalidateResources(queryClient),
+  ]);
+}
+
+export function invalidateResourcePicker(queryClient: QueryClient) {
+  return queryClient.invalidateQueries({
+    predicate: (query) =>
+      query.queryKey[0] === "resources" && query.queryKey[1] === "picker",
+  });
+}
+
 export function invalidateProductPicker(queryClient: QueryClient) {
   return queryClient.invalidateQueries({
     predicate: (query) =>

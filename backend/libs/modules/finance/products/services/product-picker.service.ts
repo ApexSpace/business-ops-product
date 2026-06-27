@@ -68,6 +68,7 @@ export class ProductPickerService {
           stockQuantity: product.stockQuantity,
           trackInventory: product.trackInventory,
           status: product.status,
+          assignStaffToSale: product.assignStaffToSale,
         });
         continue;
       }
@@ -95,6 +96,7 @@ export class ProductPickerService {
           stockQuantity: variant.stockQuantity,
           trackInventory: product.trackInventory,
           status: product.status,
+          assignStaffToSale: product.assignStaffToSale,
         });
       }
     }

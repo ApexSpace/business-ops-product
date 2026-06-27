@@ -59,11 +59,25 @@ export const DEFAULT_SNAPSHOT_NAVIGATION = [
     order: 65,
   },
   {
+    key: "gift-cards",
+    route: "/business/gift-cards",
+    icon: "gift",
+    labelKey: "nav.giftCards",
+    order: 66,
+  },
+  {
+    key: "packages",
+    route: "/business/packages",
+    icon: "boxes",
+    labelKey: "nav.packages",
+    order: 67,
+  },
+  {
     key: "products",
     route: "/business/products",
     icon: "package",
     labelKey: "nav.products",
-    order: 67,
+    order: 68,
   },
 ] as const;
 

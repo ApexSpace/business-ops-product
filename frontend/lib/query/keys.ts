@@ -192,6 +192,40 @@ export const queryKeys = {
     galleryImageDownload: (productId: string, imageId: string) =>
       ["products", productId, "images", imageId, "download-url"] as const,
   },
+  resources: {
+    all: () => ["resources"] as const,
+    groups: () => ["resources", "groups"] as const,
+    list: (filters: {
+      groupId?: string;
+      resourceType?: string;
+      search?: string;
+    }) => listKey(["resources", "list"], filters),
+    workspace: (id: string) => ["resources", "workspace", id] as const,
+    picker: (search?: string) =>
+      ["resources", "picker", search ?? ""] as const,
+  },
+  giftCards: {
+    all: () => ["gift-cards"] as const,
+    list: (filters?: { page?: number; limit?: number; search?: string }) =>
+      listKey(["gift-cards", "list"], filters),
+    detail: (id: string) => ["gift-cards", "detail", id] as const,
+    settings: () => ["gift-cards", "settings"] as const,
+    onlineSalesShare: () => ["gift-cards", "online-sales-share"] as const,
+    promotions: () => ["gift-cards", "promotions"] as const,
+    contact: (contactId: string) =>
+      ["gift-cards", "contact", contactId] as const,
+  },
+  packages: {
+    all: () => ["packages"] as const,
+    templates: () => ["packages", "templates"] as const,
+    template: (id: string) => ["packages", "template", id] as const,
+    clientList: (filters?: { contactId?: string; search?: string }) =>
+      listKey(["packages", "client-list"], filters),
+    clientDetail: (id: string) => ["packages", "client-detail", id] as const,
+    settings: () => ["packages", "settings"] as const,
+    contact: (contactId: string) =>
+      ["packages", "contact", contactId] as const,
+  },
   estimates: {
     all: () => ["estimates"] as const,
     list: (filters: {

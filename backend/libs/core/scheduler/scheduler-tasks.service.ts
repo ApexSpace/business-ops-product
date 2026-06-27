@@ -3,6 +3,7 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { FinancialDueStatusService } from '@app/modules/finance/shared/services/financial-due-status.service';
 import { AppointmentReminderService } from '@app/modules/operations/appointments/services/appointment-reminder.service';
 import { AutomationAppointmentTriggerService } from '@app/modules/communications/automations/services/automation-appointment-trigger.service';
+import { ClientPackagesService } from '@app/modules/finance/packages/services/client-packages.service';
 import {
   JOB_CLEANUP_ASYNC_JOBS,
   JOB_CLEANUP_ORPHAN_FILES,
@@ -19,6 +20,7 @@ export class SchedulerTasksService {
     private readonly appointmentReminderService: AppointmentReminderService,
     private readonly financialDueStatusService: FinancialDueStatusService,
     private readonly automationAppointmentTriggerService: AutomationAppointmentTriggerService,
+    private readonly clientPackagesService: ClientPackagesService,
   ) {}
 
   @Cron(CronExpression.EVERY_DAY_AT_3AM)
@@ -79,6 +81,22 @@ export class SchedulerTasksService {
     } catch (error) {
       this.logger.error(
         `Automation appointment trigger cron failed: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+    }
+  }
+
+  @Cron(CronExpression.EVERY_DAY_AT_2AM)
+  async expireClientPackages(): Promise<void> {
+    try {
+      const count = await this.clientPackagesService.expirePackages();
+      if (count > 0) {
+        this.logger.log(`Expired ${count} client package(s)`);
+      }
+    } catch (error) {
+      this.logger.error(
+        `Package expiration cron failed: ${
           error instanceof Error ? error.message : String(error)
         }`,
       );

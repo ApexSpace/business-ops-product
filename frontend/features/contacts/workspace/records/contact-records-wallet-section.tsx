@@ -1,9 +1,11 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/data-display/empty-state";
 import { ActionButton } from "@/components/ui/action-button";
 import { Button } from "@/components/ui/button";
@@ -85,10 +87,66 @@ export function ContactRecordsWalletSection({ contact, businessTimezone }: Conta
         description="Saved payment methods coming soon. Cards on file will appear here when Stripe card storage is enabled."
       />
 
-      <ContactRecordsSectionPlaceholder
-        title="Gift cards"
-        description="Gift card balances coming soon. Purchased and redeemed gift cards will appear here."
-      />
+      <div>
+        <div className="mb-2 flex items-center justify-between">
+          <h4 className="text-sm font-semibold">
+            Gift cards
+            {wallet?.giftCards?.length ? (
+              <Badge variant="secondary" className="ml-2">
+                {wallet.giftCards.length}
+              </Badge>
+            ) : null}
+          </h4>
+          {wallet?.capabilities.giftCards ? (
+            <Button
+              size="sm"
+              variant="outline"
+              nativeButton={false}
+              render={
+                <Link href={`/business/gift-cards?owner=${contact.id}`} />
+              }
+            >
+              Add Gift Card
+            </Button>
+          ) : null}
+        </div>
+        {!wallet?.giftCards?.length ? (
+          <EmptyState compact title="No gift cards" className="py-6" />
+        ) : (
+          <ul className="space-y-2">
+            {wallet.giftCards.map((card) => (
+              <li key={card.id}>
+                <Link
+                  href={`/business/gift-cards?selected=${card.id}`}
+                  className="flex items-center justify-between rounded-md border border-border/60 px-3 py-2 text-sm hover:bg-muted/40"
+                >
+                  <div>
+                    <p className="font-medium">#{card.number}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {formatContactCreatedAt(card.createdAt, businessTimezone)}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-semibold">{card.balance}</p>
+                    <Badge
+                      variant={
+                        card.status === "ACTIVE"
+                          ? "default"
+                          : card.status === "VOIDED"
+                            ? "destructive"
+                            : "secondary"
+                      }
+                      className="text-[10px]"
+                    >
+                      {card.status}
+                    </Badge>
+                  </div>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
 
       <div>
         <h4 className="mb-2 text-sm font-semibold">Recent transactions</h4>

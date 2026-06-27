@@ -50,4 +50,10 @@ describe('template-builder.util', () => {
   it('rejects invalid template names', () => {
     expect(() => assertValidTemplateName('1bad')).toThrow();
   });
+
+  it('rejects Meta reserved sample template names', () => {
+    expect(() => assertValidTemplateName('hello_world')).toThrow(
+      /reserved by Meta/i,
+    );
+  });
 });

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 import {
   ArrowDown,
   ArrowUp,
@@ -72,6 +73,8 @@ import type {
   ProductListItem,
   ProductType,
 } from "@/features/products/types";
+import { listBusinessMembers } from "@/features/settings/api/business.api";
+import { queryKeys } from "@/lib/query/keys";
 
 const ADJUSTMENT_TYPES: {
   value: ProductInventoryAdjustmentType;
@@ -838,6 +841,18 @@ function ProductFormSheet({
   const isBundle = form.productType === "BUNDLE";
   const pending = createPending || updatePending;
 
+  const { data: teamData, isLoading: teamLoading } = useQuery({
+    queryKey: queryKeys.business.members({ limit: 100 }),
+    queryFn: () => listBusinessMembers({ page: 1, limit: 100 }),
+    enabled: open && form.assignStaffToSale,
+  });
+
+  const activeTeamMembers = useMemo(
+    () =>
+      (teamData?.items ?? []).filter((member) => member.status === "ACTIVE"),
+    [teamData?.items],
+  );
+
   const handleSubmit = () => {
     if (!form.name.trim()) return;
     if (isEdit && productId) {
@@ -1018,6 +1033,37 @@ function ProductFormSheet({
               setForm({ ...form, assignStaffToSale: v })
             }
           />
+          {form.assignStaffToSale ? (
+            <div className="space-y-2 rounded-md border bg-muted/30 p-3">
+              <p className="text-sm text-muted-foreground">
+                Staff are not assigned on this screen. When this product is
+                added to a sale, you will choose who gets credit from your
+                active team members:
+              </p>
+              {teamLoading ? (
+                <p className="text-xs text-muted-foreground">Loading team…</p>
+              ) : activeTeamMembers.length > 0 ? (
+                <ul className="space-y-1 text-sm">
+                  {activeTeamMembers.map((member) => {
+                    const name =
+                      [member.user.firstName, member.user.lastName]
+                        .filter(Boolean)
+                        .join(" ") || member.user.email;
+                    return (
+                      <li key={member.userId} className="text-foreground">
+                        {name}
+                      </li>
+                    );
+                  })}
+                </ul>
+              ) : (
+                <p className="text-sm text-amber-600">
+                  No active team members. Add staff under Settings → Team before
+                  selling this product.
+                </p>
+              )}
+            </div>
+          ) : null}
           <ToggleRow
             label="Consider as sales revenue"
             checked={form.considerAsSalesRevenue}

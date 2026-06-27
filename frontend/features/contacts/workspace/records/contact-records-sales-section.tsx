@@ -39,6 +39,7 @@ export function ContactRecordsSalesSection({
         <Button
           size="sm"
           variant="outline"
+          nativeButton={false}
           render={
             <Link href={`/business/sales?contact=${contact.id}`} />
           }
@@ -56,6 +57,7 @@ export function ContactRecordsSalesSection({
         <Button
           size="sm"
           variant="outline"
+          nativeButton={false}
           render={
             <Link href={`/business/sales?contact=${contact.id}`} />
           }

@@ -67,6 +67,7 @@ export interface CheckoutProductPickerItem {
   unitPrice: string;
   stockQuantity: number;
   trackInventory: boolean;
+  assignStaffToSale?: boolean;
 }
 
 export interface CloseCheckoutResult {

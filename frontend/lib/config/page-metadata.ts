@@ -76,6 +76,38 @@ const businessRoutes: Record<string, RouteEntry> = {
     title: "Sales",
     description: "Point-of-sale checkouts — open sales, add items, and collect payment.",
   },
+  "/business/gift-cards": {
+    title: "Gift Cards",
+    description: "Manage prepaid gift cards, balances, and online sales.",
+  },
+  "/business/gift-cards/settings": {
+    title: "Gift Card Settings",
+    description: "Online sales, artwork, numbering preferences, and promotions.",
+    breadcrumbs: [
+      { label: "Gift Cards", href: "/business/gift-cards" },
+      { label: "Settings" },
+    ],
+  },
+  "/business/packages": {
+    title: "Packages",
+    description: "Manage prepaid service packages assigned to clients.",
+  },
+  "/business/packages/setup": {
+    title: "Package Setup",
+    description: "Configure package templates, services, and online sales.",
+    breadcrumbs: [
+      { label: "Packages", href: "/business/packages" },
+      { label: "Setup" },
+    ],
+  },
+  "/business/packages/settings": {
+    title: "Package Settings",
+    description: "Online sales, shareable links, and embed options.",
+    breadcrumbs: [
+      { label: "Packages", href: "/business/packages" },
+      { label: "Settings" },
+    ],
+  },
   "/business/products": {
     title: "Products",
     description: "Product catalog, inventory, variants, and bundles.",
@@ -110,6 +142,15 @@ const businessRoutes: Record<string, RouteEntry> = {
     breadcrumbs: [
       { label: "Settings", href: "/business/settings/profile" },
       { label: "Services" },
+    ],
+  },
+  "/business/settings/resources": {
+    title: "Resources",
+    description:
+      "Manage rooms, equipment, and consumables. Configure schedules and see which services use each resource.",
+    breadcrumbs: [
+      { label: "Settings", href: "/business/settings/profile" },
+      { label: "Resources" },
     ],
   },
   "/business/settings/pipelines": {

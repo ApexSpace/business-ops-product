@@ -42,7 +42,17 @@ export type ServiceWorkspace = {
     sortOrder: number;
   }>;
   onlineBooking: Record<string, unknown> | null;
-  resourceRequirements: Array<Record<string, unknown>>;
+  resourceRequirements: Array<{
+    id: string;
+    label: string;
+    resourceType: string;
+    resourceId: string | null;
+    resourceName: string | null;
+    quantity: number;
+    notes: string | null;
+    sortOrder: number;
+    linked: boolean;
+  }>;
   products: Array<Record<string, unknown>>;
   productsCostTotal: string;
   optionGroups: Array<{
@@ -106,6 +116,17 @@ export function createResourceRequirement(
   body: Record<string, unknown>,
 ) {
   return api.post(`services/${serviceId}/resource-requirements`, body);
+}
+
+export function updateResourceRequirement(
+  serviceId: string,
+  reqId: string,
+  body: Record<string, unknown>,
+) {
+  return api.patch(
+    `services/${serviceId}/resource-requirements/${reqId}`,
+    body,
+  );
 }
 
 export function deleteResourceRequirement(serviceId: string, reqId: string) {

@@ -1,8 +1,10 @@
 import {
+  Boxes,
   Calendar,
   ClipboardList,
   Contact,
   CreditCard,
+  Gift,
   GitBranch,
   LayoutDashboard,
   MessageSquare,
@@ -62,6 +64,16 @@ export const businessOperationalMenuItems: BusinessMenuItem[] = [
     title: "Sales",
     href: "/business/sales",
     icon: ShoppingBag,
+  },
+  {
+    title: "Gift Cards",
+    href: "/business/gift-cards",
+    icon: Gift,
+  },
+  {
+    title: "Packages",
+    href: "/business/packages",
+    icon: Boxes,
   },
   {
     title: "Products",

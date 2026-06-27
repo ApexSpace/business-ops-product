@@ -14,11 +14,14 @@ import { ServiceWorkspaceRepository } from '@app/modules/crm/services/repositori
 import { PaymentOrchestratorService } from '@app/modules/finance/payments/orchestration/payment-orchestrator.service';
 import { ProductPickerService } from '@app/modules/finance/products/services/product-picker.service';
 import { ProductRepository } from '@app/modules/finance/products/repositories/product.repository';
+import { PackageTemplateRepository } from '@app/modules/finance/packages/repositories/package-template.repository';
 import { ProductVariantRepository } from '@app/modules/finance/products/repositories/product-variant.repository';
 import { resolveProductPrice } from '@app/modules/finance/products/utils/product-price-resolver.util';
 import {
   AddCheckoutProductDto,
   AddCheckoutServiceDto,
+  AddGiftCardLineDto,
+  AddPackageLineDto,
   AddWalletDepositDto,
   CheckoutItemInputDto,
   CreateCheckoutDto,
@@ -47,6 +50,7 @@ export class CheckoutsService {
     private readonly productRepository: ProductRepository,
     private readonly productVariantRepository: ProductVariantRepository,
     private readonly productPickerService: ProductPickerService,
+    private readonly packageTemplateRepository: PackageTemplateRepository,
     private readonly prisma: PrismaService,
     private readonly financialSettingsService: FinancialSettingsService,
     private readonly paymentOrchestrator: PaymentOrchestratorService,
@@ -376,6 +380,131 @@ export class CheckoutsService {
     return this.recalculateAndReturn(businessId, checkoutId, actor.id);
   }
 
+  async addGiftCardLine(
+    businessId: string,
+    checkoutId: string,
+    dto: AddGiftCardLineDto,
+    actor: RequestUser,
+  ): Promise<CheckoutResponseDto> {
+    await this.requireEditableCheckout(businessId, checkoutId);
+    const checkout = await this.checkoutRepository.findById(
+      businessId,
+      checkoutId,
+    );
+    if (!checkout) {
+      throw new AppException(
+        ErrorCode.INVOICE_NOT_FOUND,
+        'Checkout not found',
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    const owner = await this.contactRepository.findById(
+      businessId,
+      dto.ownerContactId,
+    );
+    if (!owner) {
+      throw new AppException(
+        ErrorCode.CONTACT_NOT_FOUND,
+        'Owner contact not found',
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    const amount = new Prisma.Decimal(dto.amount.toFixed(2));
+    const numberLabel = dto.number?.trim() || 'Auto';
+    const newItem: CheckoutItemInput = {
+      lineType: InvoiceLineType.GIFT_CARD,
+      title: `Gift Card #${numberLabel}`,
+      quantity: new Prisma.Decimal(1),
+      unitPrice: amount,
+      totalPrice: amount,
+      sortOrder: checkout.items.length,
+      metadata: {
+        giftCardNumber: dto.number?.trim() || null,
+        cardValue: dto.amount,
+        ownerContactId: dto.ownerContactId,
+        sendDigital: dto.sendDigital ?? false,
+      },
+    };
+
+    const items = [
+      ...checkout.items.map((item) => this.mapExistingCheckoutItem(item)),
+      newItem,
+    ];
+
+    await this.checkoutRepository.replaceItems(checkoutId, items);
+    return this.recalculateAndReturn(businessId, checkoutId, actor.id);
+  }
+
+  async addPackageLine(
+    businessId: string,
+    checkoutId: string,
+    dto: AddPackageLineDto,
+    actor: RequestUser,
+  ): Promise<CheckoutResponseDto> {
+    await this.requireEditableCheckout(businessId, checkoutId);
+    const checkout = await this.checkoutRepository.findById(
+      businessId,
+      checkoutId,
+    );
+    if (!checkout) {
+      throw new AppException(
+        ErrorCode.INVOICE_NOT_FOUND,
+        'Checkout not found',
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    const owner = await this.contactRepository.findById(
+      businessId,
+      dto.ownerContactId,
+    );
+    if (!owner) {
+      throw new AppException(
+        ErrorCode.CONTACT_NOT_FOUND,
+        'Owner contact not found',
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    const template = await this.packageTemplateRepository.findById(
+      businessId,
+      dto.packageTemplateId,
+    );
+    if (!template) {
+      throw new AppException(
+        ErrorCode.PACKAGE_TEMPLATE_NOT_FOUND,
+        'Package template not found',
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    const amount = template.totalPrice;
+    const emoji = template.emoji ? `${template.emoji} ` : '';
+    const newItem: CheckoutItemInput = {
+      lineType: InvoiceLineType.PACKAGE,
+      title: `${emoji}${template.name}`.trim(),
+      quantity: new Prisma.Decimal(1),
+      unitPrice: amount,
+      totalPrice: amount,
+      sortOrder: checkout.items.length,
+      metadata: {
+        packageTemplateId: dto.packageTemplateId,
+        ownerContactId: dto.ownerContactId,
+        isDemo: dto.isDemo ?? false,
+      },
+    };
+
+    const items = [
+      ...checkout.items.map((item) => this.mapExistingCheckoutItem(item)),
+      newItem,
+    ];
+
+    await this.checkoutRepository.replaceItems(checkoutId, items);
+    return this.recalculateAndReturn(businessId, checkoutId, actor.id);
+  }
+
   async voidCheckout(
     businessId: string,
     id: string,
@@ -429,6 +558,7 @@ export class CheckoutsService {
         reference: t.reference,
         notes: t.notes,
         contactPaymentMethodId: t.contactPaymentMethodId,
+        giftCardId: t.giftCardId,
       })),
       channel: 'STAFF_POS',
       stripeMode: 'EMBEDDED',

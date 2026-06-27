@@ -17,6 +17,9 @@ describe('ServiceWorkspaceService', () => {
     findActiveByUserAndBusiness: jest.fn(),
   };
   const auditService = { log: jest.fn() };
+  const resourcesService = {
+    assertResourceExists: jest.fn(),
+  };
 
   const service = new ServiceWorkspaceService(
     serviceRepository as never,
@@ -24,6 +27,7 @@ describe('ServiceWorkspaceService', () => {
     workspaceRepository as never,
     membershipRepository as never,
     auditService as never,
+    resourcesService as never,
   );
 
   beforeEach(() => {

@@ -211,6 +211,8 @@ export const EMAIL_TYPE_CATEGORY_ORDER: EmailTypeCategory[] = [
   "membership",
   "appointments",
   "invoices",
+  "gift_cards",
+  "packages",
 ];
 
 export function getConfigurableEmailTypeDefinition(

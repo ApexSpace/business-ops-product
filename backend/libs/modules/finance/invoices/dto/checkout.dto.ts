@@ -3,6 +3,7 @@ import { InvoiceLineType } from '@prisma/client';
 import { Type } from 'class-transformer';
 import {
   IsArray,
+  IsBoolean,
   IsEnum,
   IsNumber,
   IsOptional,
@@ -170,6 +171,44 @@ export class AddWalletDepositDto {
   @IsString()
   @MaxLength(500)
   title?: string;
+}
+
+export class AddGiftCardLineDto {
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(64)
+  number?: string;
+
+  @ApiProperty({ example: 100 })
+  @Type(() => Number)
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0.01)
+  amount!: number;
+
+  @ApiProperty()
+  @IsUUID('4')
+  ownerContactId!: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  sendDigital?: boolean;
+}
+
+export class AddPackageLineDto {
+  @ApiProperty()
+  @IsUUID('4')
+  packageTemplateId!: string;
+
+  @ApiProperty()
+  @IsUUID('4')
+  ownerContactId!: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  isDemo?: boolean;
 }
 
 export class UpdateCheckoutLineItemDto {

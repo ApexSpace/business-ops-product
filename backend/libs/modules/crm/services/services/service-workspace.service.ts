@@ -27,12 +27,11 @@ import {
   UpdateServiceOptionDto,
 } from '../dto/service-workspace.dto';
 import { toServiceResponse } from '../mappers/service.mapper';
+import { ResourcesService } from '@app/modules/operations/resources/services/resources.service';
 import { normalizeServiceDetailsPatch } from '../utils/service-details.util';
 import { resolveStaffingMode } from '../utils/service-staffing.util';
 import { resolveServiceTiming } from '../utils/service-timing.util';
 
-const STUB_RESOURCE_MESSAGE =
-  'Resources module coming soon — link equipment or rooms when available.';
 const STUB_PRODUCT_MESSAGE =
   'Products / inventory module coming soon — link catalog items when available.';
 
@@ -44,6 +43,7 @@ export class ServiceWorkspaceService {
     private readonly workspaceRepository: ServiceWorkspaceRepository,
     private readonly membershipRepository: BusinessMembershipRepository,
     private readonly auditService: AuditService,
+    private readonly resourcesService: ResourcesService,
   ) {}
 
   private getFrontendUrl(): string {
@@ -134,11 +134,11 @@ export class ServiceWorkspaceService {
         label: r.label,
         resourceType: r.resourceType,
         resourceId: r.resourceId,
+        resourceName: r.resource?.name ?? null,
         quantity: r.quantity,
         notes: r.notes,
         sortOrder: r.sortOrder,
         linked: r.resourceId != null,
-        stubMessage: r.resourceId == null ? STUB_RESOURCE_MESSAGE : null,
       })),
       products: workspace.productUsages.map((p) => ({
         id: p.id,
@@ -535,6 +535,11 @@ export class ServiceWorkspaceService {
     actor: RequestUser,
   ) {
     await this.requireService(businessId, serviceId);
+    const resourceId = await this.resolveResourceId(
+      businessId,
+      dto.resourceId,
+      dto.resourceType,
+    );
     const count = await this.workspaceRepository.countResourceRequirements(
       businessId,
       serviceId,
@@ -544,7 +549,9 @@ export class ServiceWorkspaceService {
       service: { connect: { id: serviceId } },
       label: dto.label.trim(),
       resourceType: dto.resourceType,
-      resourceId: dto.resourceId ?? null,
+      ...(resourceId
+        ? { resource: { connect: { id: resourceId } } }
+        : {}),
       quantity: dto.quantity ?? 1,
       notes: dto.notes?.trim() || null,
       sortOrder: count,
@@ -558,11 +565,7 @@ export class ServiceWorkspaceService {
       entityId: serviceId,
     });
 
-    return {
-      ...row,
-      linked: row.resourceId != null,
-      stubMessage: row.resourceId == null ? STUB_RESOURCE_MESSAGE : null,
-    };
+    return this.mapResourceRequirement(row);
   }
 
   async updateResourceRequirement(
@@ -573,6 +576,25 @@ export class ServiceWorkspaceService {
     actor: RequestUser,
   ) {
     await this.requireService(businessId, serviceId);
+    const existing = await this.workspaceRepository.findResourceRequirement(
+      businessId,
+      serviceId,
+      reqId,
+    );
+    if (!existing) {
+      throw new AppException(
+        ErrorCode.NOT_FOUND,
+        'Resource requirement not found',
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    const resourceType = dto.resourceType ?? existing.resourceType;
+    const resourceId =
+      dto.resourceId !== undefined
+        ? await this.resolveResourceId(businessId, dto.resourceId, resourceType)
+        : existing.resourceId;
+
     const row = await this.workspaceRepository.updateResourceRequirement(
       businessId,
       serviceId,
@@ -582,7 +604,7 @@ export class ServiceWorkspaceService {
         ...(dto.resourceType !== undefined
           ? { resourceType: dto.resourceType }
           : {}),
-        ...(dto.resourceId !== undefined ? { resourceId: dto.resourceId } : {}),
+        ...(dto.resourceId !== undefined ? { resourceId } : {}),
         ...(dto.quantity !== undefined ? { quantity: dto.quantity } : {}),
         ...(dto.notes !== undefined ? { notes: dto.notes?.trim() || null } : {}),
       },
@@ -603,11 +625,7 @@ export class ServiceWorkspaceService {
       entityId: serviceId,
     });
 
-    return {
-      ...row,
-      linked: row.resourceId != null,
-      stubMessage: row.resourceId == null ? STUB_RESOURCE_MESSAGE : null,
-    };
+    return this.mapResourceRequirement(row);
   }
 
   async deleteResourceRequirement(
@@ -1005,6 +1023,47 @@ export class ServiceWorkspaceService {
         HttpStatus.BAD_REQUEST,
       );
     }
+  }
+
+  private async resolveResourceId(
+    businessId: string,
+    resourceId: string | null | undefined,
+    resourceType: string,
+  ): Promise<string | null> {
+    if (resourceId == null) {
+      return null;
+    }
+    await this.resourcesService.assertResourceExists(
+      businessId,
+      resourceId,
+      resourceType,
+    );
+    return resourceId;
+  }
+
+  private mapResourceRequirement(
+    row: {
+      id: string;
+      label: string;
+      resourceType: string;
+      resourceId: string | null;
+      quantity: number;
+      notes: string | null;
+      sortOrder: number;
+      resource?: { name: string } | null;
+    },
+  ) {
+    return {
+      id: row.id,
+      label: row.label,
+      resourceType: row.resourceType,
+      resourceId: row.resourceId,
+      resourceName: row.resource?.name ?? null,
+      quantity: row.quantity,
+      notes: row.notes,
+      sortOrder: row.sortOrder,
+      linked: row.resourceId != null,
+    };
   }
 
   private async assertMember(businessId: string, userId: string) {

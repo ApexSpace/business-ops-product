@@ -10,6 +10,8 @@ export const DEFAULT_TERMINOLOGY: Record<string, string> = {
   "nav.estimates": "Estimates",
   "nav.payments": "Payments",
   "nav.sales": "Sales",
+  "nav.giftCards": "Gift Cards",
+  "nav.packages": "Packages",
   "nav.products": "Products",
 
   "entities.contact.plural": "Contacts",

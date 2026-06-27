@@ -1,4 +1,4 @@
-import { IsOptional, IsString } from 'class-validator';
+import { IsIn, IsOptional, IsString } from 'class-validator';
 
 export class WhatsAppEmbeddedSignupCompleteDto {
   @IsOptional()
@@ -20,4 +20,9 @@ export class WhatsAppEmbeddedSignupCompleteDto {
   @IsOptional()
   @IsString()
   verifiedName?: string;
+
+  /** `business_app` = WhatsApp Business mobile app coexistence onboarding */
+  @IsOptional()
+  @IsIn(['business_app', 'cloud_api'])
+  onboardingType?: 'business_app' | 'cloud_api';
 }

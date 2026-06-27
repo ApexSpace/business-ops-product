@@ -27,7 +27,14 @@ const workspaceInclude = {
       },
     },
   },
-  resourceRequirements: { orderBy: { sortOrder: 'asc' as const } },
+  resourceRequirements: {
+    orderBy: { sortOrder: 'asc' as const },
+    include: {
+      resource: {
+        select: { id: true, name: true, resourceType: true, status: true },
+      },
+    },
+  },
   productUsages: { orderBy: { sortOrder: 'asc' as const } },
   optionGroups: {
     orderBy: { sortOrder: 'asc' as const },
@@ -217,23 +224,45 @@ export class ServiceWorkspaceRepository {
   createResourceRequirement(
     data: Prisma.ServiceResourceRequirementCreateInput,
   ): Promise<ServiceResourceRequirement> {
-    return this.prisma.serviceResourceRequirement.create({ data });
+    return this.prisma.serviceResourceRequirement.create({
+      data,
+      include: {
+        resource: {
+          select: { id: true, name: true, resourceType: true, status: true },
+        },
+      },
+    });
+  }
+
+  findResourceRequirement(
+    businessId: string,
+    serviceId: string,
+    id: string,
+  ): Promise<ServiceResourceRequirement | null> {
+    return this.prisma.serviceResourceRequirement.findFirst({
+      where: { id, businessId, serviceId },
+    });
   }
 
   updateResourceRequirement(
     businessId: string,
     serviceId: string,
     id: string,
-    data: Prisma.ServiceResourceRequirementUpdateInput,
+    data: Prisma.ServiceResourceRequirementUpdateManyMutationInput,
   ): Promise<ServiceResourceRequirement | null> {
     return this.prisma.serviceResourceRequirement
-      .updateMany({ where: { id, businessId, serviceId }, data: data as never })
+      .updateMany({ where: { id, businessId, serviceId }, data })
       .then(async (r) => {
         if (r.count === 0) {
           return null;
         }
         return this.prisma.serviceResourceRequirement.findFirst({
           where: { id, businessId, serviceId },
+          include: {
+            resource: {
+              select: { id: true, name: true, resourceType: true, status: true },
+            },
+          },
         });
       });
   }

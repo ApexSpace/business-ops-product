@@ -10,6 +10,6 @@ export class ContactMembershipsResponseDto {
   @ApiProperty({ type: [Object] })
   packages!: unknown[];
 
-  @ApiProperty()
-  message!: string;
+  @ApiProperty({ nullable: true })
+  message!: string | null;
 }

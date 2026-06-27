@@ -130,6 +130,13 @@ export class CreateAppointmentDto {
   @IsString()
   @MaxLength(5000)
   notes?: string;
+
+  @ApiPropertyOptional({
+    description: 'Redeem one service from this client package on booking',
+  })
+  @IsOptional()
+  @IsUUID()
+  clientPackageId?: string;
 }
 
 export class UpdateAppointmentDto extends CreateAppointmentDto {}

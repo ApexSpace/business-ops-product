@@ -12,6 +12,7 @@ export const PAYMENT_METHOD_OPTIONS: {
   { value: "CARD", label: "Card" },
   { value: "BANK_TRANSFER", label: "Bank transfer" },
   { value: "WALLET", label: "Wallet" },
+  { value: "GIFT_CARD", label: "Gift card" },
   { value: "STRIPE", label: "Card (Stripe)" },
   { value: "OTHER", label: "Other" },
 ];

@@ -443,4 +443,7 @@ export class ProductPickerItemResponseDto {
 
   @ApiProperty({ enum: ProductStatus })
   status!: ProductStatus;
+
+  @ApiProperty()
+  assignStaffToSale!: boolean;
 }

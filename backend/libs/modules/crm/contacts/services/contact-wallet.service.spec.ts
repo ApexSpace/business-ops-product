@@ -26,6 +26,9 @@ describe('ContactWalletService', () => {
       listTransactions: jest.fn().mockResolvedValue([]),
     };
     prisma = {
+      giftCard: {
+        findMany: jest.fn().mockResolvedValue([]),
+      },
       $transaction: jest.fn(async (fn) =>
         fn({
           contactWalletBalance: {
@@ -89,6 +92,6 @@ describe('ContactWalletService', () => {
     expect(auditService.log).toHaveBeenCalledWith(
       expect.objectContaining({ action: 'contact.wallet.adjusted' }),
     );
-    expect(result.capabilities.giftCards).toBe(false);
+    expect(result.capabilities.giftCards).toBe(true);
   });
 });

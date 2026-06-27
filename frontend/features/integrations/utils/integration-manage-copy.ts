@@ -89,7 +89,7 @@ const COPY_BY_PROVIDER: Record<string, IntegrationManageCopy> = {
   whatsapp: {
     connectionTitle: "WhatsApp connection",
     description:
-      "Connect one WhatsApp Business number so your team can send and receive customer messages.",
+      "Connect your existing WhatsApp Business app number. You will sign in with Meta, choose to connect your mobile app account, enter your number, and confirm in the WhatsApp Business app on your phone.",
     messagingComposerHint:
       "Free-form replies are allowed within 24 hours of the customer's last message. Outside that window, use an approved WhatsApp message template to start or continue the conversation.",
     resourcesSectionLabel: "WhatsApp numbers",

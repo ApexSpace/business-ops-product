@@ -31,6 +31,7 @@ export interface CollectPaymentTender {
   reference?: string;
   notes?: string;
   contactPaymentMethodId?: string;
+  giftCardId?: string;
 }
 
 export interface CollectPaymentInput {

@@ -12,6 +12,7 @@ import {
   Receipt,
   Settings,
   Users,
+  Warehouse,
   Zap,
   FileText,
 } from "lucide-react";
@@ -42,6 +43,11 @@ const operationsItems: BusinessSettingsNavItem[] = [
     title: "Services",
     href: "/business/settings/services",
     icon: Briefcase,
+  },
+  {
+    title: "Resources",
+    href: "/business/settings/resources",
+    icon: Warehouse,
   },
   {
     title: "Pipelines",

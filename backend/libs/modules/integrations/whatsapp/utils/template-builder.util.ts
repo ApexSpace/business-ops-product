@@ -1,4 +1,7 @@
-import { WHATSAPP_TEMPLATE_NAME_PATTERN } from '../constants/template.constants';
+import {
+  META_RESERVED_TEMPLATE_NAMES,
+  WHATSAPP_TEMPLATE_NAME_PATTERN,
+} from '../constants/template.constants';
 import { buildHeaderComponent } from './template-header.util';
 
 export type TemplateComponentInput = Record<string, unknown>;
@@ -12,6 +15,16 @@ export function assertValidTemplateName(name: string): void {
   if (!WHATSAPP_TEMPLATE_NAME_PATTERN.test(normalized)) {
     throw new Error(
       'Template name must start with a letter and contain only lowercase letters, numbers, and underscores.',
+    );
+  }
+
+  if (
+    META_RESERVED_TEMPLATE_NAMES.includes(
+      normalized as (typeof META_RESERVED_TEMPLATE_NAMES)[number],
+    )
+  ) {
+    throw new Error(
+      'This template name is reserved by Meta. Choose a unique name such as your_business_welcome.',
     );
   }
 }

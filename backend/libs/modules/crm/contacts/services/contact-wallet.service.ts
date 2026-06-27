@@ -30,6 +30,16 @@ export class ContactWalletService {
       contactId,
       50,
     );
+    const giftCards = await this.prisma.giftCard.findMany({
+      where: {
+        businessId,
+        ownerContactId: contactId,
+        status: 'ACTIVE',
+        currentBalance: { gt: 0 },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 20,
+    });
 
     return {
       balance: {
@@ -44,10 +54,16 @@ export class ContactWalletService {
         createdAt: row.createdAt,
       })),
       paymentMethods: [],
-      giftCards: [],
+      giftCards: giftCards.map((card) => ({
+        id: card.id,
+        number: card.number,
+        balance: card.currentBalance.toFixed(2),
+        status: card.status,
+        createdAt: card.createdAt,
+      })),
       capabilities: {
         paymentMethods: false,
-        giftCards: false,
+        giftCards: true,
       },
     };
   }

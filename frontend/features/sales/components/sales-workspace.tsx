@@ -34,10 +34,13 @@ import { cn } from "@/lib/utils";
 import { queryKeys } from "@/lib/query/keys";
 import { invalidateCheckouts } from "@/lib/query/invalidation";
 import { listContacts } from "@/features/contacts/api/contacts.api";
+import { listBusinessMembers } from "@/features/settings/api/business.api";
 import { formatMoney } from "@/features/payments/schemas/payment-profile";
 import {
   addCheckoutProduct,
   addCheckoutService,
+  addGiftCardLine,
+  addPackageLine,
   addWalletDepositLine,
   createCheckout,
   getCheckout,
@@ -51,6 +54,8 @@ import {
   voidCheckout,
 } from "@/features/sales/api/checkouts.api";
 import { SaleClosePanel } from "@/features/sales/components/sale-close-panel";
+import { GiftCardSaleDialog } from "@/features/sales/components/gift-card-sale-dialog";
+import { PackageSaleDialog } from "@/features/sales/components/package-sale-dialog";
 import type {
   Checkout,
   CheckoutItem,
@@ -77,6 +82,8 @@ export function SalesWorkspace() {
   const [voidOpen, setVoidOpen] = useState(false);
   const [addServiceOpen, setAddServiceOpen] = useState(false);
   const [addProductOpen, setAddProductOpen] = useState(false);
+  const [addGiftCardOpen, setAddGiftCardOpen] = useState(false);
+  const [addPackageOpen, setAddPackageOpen] = useState(false);
   const [selectedServiceId, setSelectedServiceId] = useState<string | null>(
     null,
   );
@@ -84,6 +91,9 @@ export function SalesWorkspace() {
     null,
   );
   const [productQty, setProductQty] = useState(1);
+  const [selectedProductStaffId, setSelectedProductStaffId] = useState<
+    string | null
+  >(null);
   const [selectedStaffId, setSelectedStaffId] = useState<string | null>(null);
   const [editNotes, setEditNotes] = useState("");
   const [editContactId, setEditContactId] = useState<string | null>(null);
@@ -132,6 +142,21 @@ export function SalesWorkspace() {
     enabled: addProductOpen && !!selectedId,
   });
 
+  const selectedProduct = useMemo(
+    () =>
+      (productsData?.items ?? []).find(
+        (p) => pickerProductKey(p) === selectedProductKey,
+      ) ?? null,
+    [productsData?.items, selectedProductKey],
+  );
+
+  const { data: productStaffData } = useQuery({
+    queryKey: queryKeys.business.members({ limit: 100 }),
+    queryFn: () => listBusinessMembers({ page: 1, limit: 100 }),
+    enabled:
+      addProductOpen && !!selectedProduct?.assignStaffToSale && !!selectedId,
+  });
+
   const { data: staffData } = useQuery({
     queryKey: queryKeys.checkouts.serviceStaff(selectedServiceId ?? ""),
     queryFn: () => listCheckoutServiceStaff(selectedServiceId!),
@@ -175,12 +200,18 @@ export function SalesWorkspace() {
     [productsData?.items],
   );
 
-  const selectedProduct = useMemo(
+  const productStaffItems = useMemo(
     () =>
-      (productsData?.items ?? []).find(
-        (p) => pickerProductKey(p) === selectedProductKey,
-      ) ?? null,
-    [productsData?.items, selectedProductKey],
+      (productStaffData?.items ?? []).map((member) => ({
+        value: member.userId,
+        label:
+          [member.user.firstName, member.user.lastName]
+            .filter(Boolean)
+            .join(" ") ||
+          member.user.email ||
+          "Staff",
+      })),
+    [productStaffData?.items],
   );
 
   const staffItems = useMemo(
@@ -267,11 +298,13 @@ export function SalesWorkspace() {
         productId: selectedProduct!.productId,
         variantId: selectedProduct!.variantId ?? undefined,
         quantity: productQty,
+        staffUserId: selectedProductStaffId ?? undefined,
       }),
     onSuccess: () => {
       toast.success("Product added");
       setAddProductOpen(false);
       setSelectedProductKey(null);
+      setSelectedProductStaffId(null);
       setProductQty(1);
       refreshSale();
     },
@@ -283,6 +316,35 @@ export function SalesWorkspace() {
       addWalletDepositLine(selectedId!, { amount }),
     onSuccess: () => {
       toast.success("Wallet deposit line added");
+      refreshSale();
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  const giftCardMutation = useMutation({
+    mutationFn: (body: {
+      number?: string;
+      amount: number;
+      ownerContactId: string;
+      sendDigital: boolean;
+    }) => addGiftCardLine(selectedId!, body),
+    onSuccess: () => {
+      toast.success("Gift card added to sale");
+      setAddGiftCardOpen(false);
+      refreshSale();
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  const packageMutation = useMutation({
+    mutationFn: (body: {
+      packageTemplateId: string;
+      ownerContactId: string;
+      isDemo: boolean;
+    }) => addPackageLine(selectedId!, body),
+    onSuccess: () => {
+      toast.success("Package added to sale");
+      setAddPackageOpen(false);
       refreshSale();
     },
     onError: (err: Error) => toast.error(err.message),
@@ -427,6 +489,8 @@ export function SalesWorkspace() {
               sale={sale}
               onAddService={() => setAddServiceOpen(true)}
               onAddProduct={() => setAddProductOpen(true)}
+              onAddGiftCard={() => setAddGiftCardOpen(true)}
+              onAddPackage={() => setAddPackageOpen(true)}
               onAddDeposit={(amount) => depositMutation.mutate(amount)}
               onClose={() => setCloseOpen(true)}
               onEdit={openEditSale}
@@ -473,9 +537,24 @@ export function SalesWorkspace() {
               inDialog
               items={productItems}
               value={selectedProductKey}
-              onValueChange={setSelectedProductKey}
+              onValueChange={(key) => {
+                setSelectedProductKey(key);
+                setSelectedProductStaffId(null);
+              }}
               placeholder="Select product…"
             />
+            {selectedProduct?.assignStaffToSale ? (
+              <div className="space-y-2">
+                <Label>Staff</Label>
+                <SearchableSelect
+                  inDialog
+                  items={productStaffItems}
+                  value={selectedProductStaffId}
+                  onValueChange={setSelectedProductStaffId}
+                  placeholder="Select staff…"
+                />
+              </div>
+            ) : null}
             <div className="space-y-2">
               <Label>Quantity</Label>
               <Input
@@ -493,7 +572,8 @@ export function SalesWorkspace() {
               disabled={
                 !selectedProductKey ||
                 productQty <= 0 ||
-                addProductMutation.isPending
+                addProductMutation.isPending ||
+                (selectedProduct?.assignStaffToSale && !selectedProductStaffId)
               }
               onClick={() => addProductMutation.mutate()}
             >
@@ -635,6 +715,22 @@ export function SalesWorkspace() {
         </DialogContent>
       </Dialog>
 
+      <GiftCardSaleDialog
+        open={addGiftCardOpen}
+        onOpenChange={setAddGiftCardOpen}
+        defaultOwnerContactId={sale?.contactId ?? null}
+        onSubmit={(values) => giftCardMutation.mutate(values)}
+        isPending={giftCardMutation.isPending}
+      />
+
+      <PackageSaleDialog
+        open={addPackageOpen}
+        onOpenChange={setAddPackageOpen}
+        defaultOwnerContactId={sale?.contactId ?? null}
+        onSubmit={(values) => packageMutation.mutate(values)}
+        isPending={packageMutation.isPending}
+      />
+
       <Dialog open={closeOpen} onOpenChange={setCloseOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
@@ -721,6 +817,8 @@ function SaleDetail({
   sale,
   onAddService,
   onAddProduct,
+  onAddGiftCard,
+  onAddPackage,
   onAddDeposit,
   onClose,
   onEdit,
@@ -732,6 +830,8 @@ function SaleDetail({
   sale: Checkout;
   onAddService: () => void;
   onAddProduct: () => void;
+  onAddGiftCard: () => void;
+  onAddPackage: () => void;
   onAddDeposit: (amount: number) => void;
   onClose: () => void;
   onEdit: () => void;
@@ -769,6 +869,12 @@ function SaleDetail({
             <Button variant="outline" size="sm" onClick={onAddProduct}>
               Add product
             </Button>
+            <Button variant="outline" size="sm" onClick={onAddGiftCard}>
+              Add gift card
+            </Button>
+            <Button variant="outline" size="sm" onClick={onAddPackage}>
+              Add package
+            </Button>
             <Button
               variant="outline"
               size="sm"
@@ -789,7 +895,7 @@ function SaleDetail({
       <div className="min-h-0 flex-1 overflow-y-auto p-4">
         {sale.items.length === 0 ? (
           <p className="text-sm text-muted-foreground">
-            No line items yet. Add a service, product, or wallet deposit.
+            No line items yet. Add a service, product, gift card, package, or wallet deposit.
           </p>
         ) : (
           <ul className="divide-y">

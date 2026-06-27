@@ -18,6 +18,7 @@ import { PaymentsOverviewService } from './services/payments-overview.service';
 import { PaymentsService } from './services/payments.service';
 import { StripeContactPaymentMethodService } from './services/stripe-contact-payment-method.service';
 import { WalletLedgerService } from './services/wallet-ledger.service';
+import { GiftCardsModule } from '@app/modules/finance/gift-cards/gift-cards.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { WalletLedgerService } from './services/wallet-ledger.service';
     forwardRef(() => InvoicesModule),
     forwardRef(() => IntegrationsModule),
     forwardRef(() => EmailModule),
+    forwardRef(() => GiftCardsModule),
   ],
   controllers: [PaymentsController],
   providers: [
