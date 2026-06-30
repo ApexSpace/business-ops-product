@@ -13,6 +13,14 @@ import {
 import { getPageAccessTokenFromResource } from '../../utils/conversation-resource-token.util';
 import { toMetaOutboundAttachments } from './meta-attachment.util';
 
+function readMetadataString(metadata: unknown, key: string): string | null {
+  if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) {
+    return null;
+  }
+  const value = (metadata as Record<string, unknown>)[key];
+  return typeof value === 'string' && value.trim() ? value.trim() : null;
+}
+
 @Injectable()
 export class InstagramMessagingAdapter implements ConversationChannelAdapter {
   constructor(
@@ -59,10 +67,19 @@ export class InstagramMessagingAdapter implements ConversationChannelAdapter {
       );
     }
 
+    const linkedPageId = readMetadataString(resource.metadata, 'linkedPageId');
+    if (!linkedPageId) {
+      throw new AppException(
+        ErrorCode.CONVERSATION_CHANNEL_NOT_READY,
+        'Linked Facebook Page ID is missing for this Instagram account. Sync your Instagram accounts and try again.',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
     const attachments = toMetaOutboundAttachments(params.attachments);
 
     const result = await this.metaApiClient.sendInstagramMessage(
-      resource.externalId,
+      linkedPageId,
       accessToken,
       params.externalRecipientId,
       params.text,
@@ -71,7 +88,10 @@ export class InstagramMessagingAdapter implements ConversationChannelAdapter {
 
     return {
       externalMessageId: result.messageId || null,
-      metadata: { instagramAccountId: resource.externalId },
+      metadata: {
+        instagramAccountId: resource.externalId,
+        linkedPageId,
+      },
     };
   }
 }

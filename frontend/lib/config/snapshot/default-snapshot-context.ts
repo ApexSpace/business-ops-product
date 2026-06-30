@@ -45,6 +45,13 @@ export const DEFAULT_SNAPSHOT_NAVIGATION = [
     order: 50,
   },
   {
+    key: "time-clock",
+    route: "/business/time-clock",
+    icon: "clock",
+    labelKey: "nav.timeClock",
+    order: 55,
+  },
+  {
     key: "payments",
     route: "/business/payments",
     icon: "credit-card",
@@ -80,11 +87,18 @@ export const DEFAULT_SNAPSHOT_NAVIGATION = [
     order: 68,
   },
   {
+    key: "offers",
+    route: "/business/offers",
+    icon: "tag",
+    labelKey: "nav.offers",
+    order: 69,
+  },
+  {
     key: "products",
     route: "/business/products",
     icon: "package",
     labelKey: "nav.products",
-    order: 69,
+    order: 70,
   },
 ] as const;
 

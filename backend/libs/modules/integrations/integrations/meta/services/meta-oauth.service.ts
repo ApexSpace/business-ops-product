@@ -225,7 +225,7 @@ export class MetaOAuthService {
       const asyncJob = await this.jobEnqueueService.enqueueMetaResourceSync({
         businessId: payload.businessId,
         providerKey: oauthProviderKey,
-        idempotencyKey: `meta-oauth-sync-${payload.businessId}-${oauthProviderKey}`,
+        idempotencyKey: `meta-oauth-sync-${payload.businessId}-${oauthProviderKey}-${payload.nonce}`,
       });
 
       this.logger.log(

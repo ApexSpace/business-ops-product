@@ -391,3 +391,16 @@ export function invalidateChatbotDetail(queryClient: QueryClient, id: string) {
     queryKey: queryKeys.chatbots.detail(id),
   });
 }
+
+export function invalidateTimeCardLists(queryClient: QueryClient) {
+  return queryClient.invalidateQueries({
+    queryKey: queryKeys.timeClock.all(),
+    predicate: (query) => query.queryKey[2] === "list",
+  });
+}
+
+export function invalidateTimeCardDetail(queryClient: QueryClient, id: string) {
+  return queryClient.invalidateQueries({
+    queryKey: queryKeys.timeClock.cards.detail(id),
+  });
+}

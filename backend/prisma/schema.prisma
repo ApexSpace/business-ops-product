@@ -39,6 +39,13 @@ enum MembershipStatus {
   REMOVED
 }
 
+enum StaffGender {
+  FEMALE
+  MALE
+  NON_BINARY
+  PREFER_NOT_TO_SAY
+}
+
 enum AuthContextType {
   platform
   business
@@ -654,6 +661,7 @@ model User {
   createdNotes         Note[]                @relation("NoteCreatedBy")
   assignedTasks        Task[]                @relation("TaskAssignedTo")
   createdTasks         Task[]                @relation("TaskCreatedBy")
+  timeCards            TimeCard[]
   createdEstimates     Estimate[]            @relation("EstimateCreatedBy")
   createdInvoices      Invoice[]             @relation("InvoiceCreatedBy")
   closedCheckouts      Invoice[]             @relation("InvoiceClosedBy")
@@ -861,6 +869,7 @@ model Business {
   membershipSettings       MembershipSettings?
   offers                   Offer[]
   offerUsageLogs           OfferUsageLog[]
+  timeCards                TimeCard[]
 
   @@index([createdById])
   @@index([industryId])
@@ -980,9 +989,14 @@ model BusinessMembership {
   id          String             @id @default(uuid())
   userId      String
   businessId  String
-  role        BusinessMemberRole
-  status      MembershipStatus   @default(INVITED)
-  invitedById String?
+  role         BusinessMemberRole
+  status       MembershipStatus   @default(INVITED)
+  timeclockPin String?
+  phoneNumber  String?
+  gender       StaffGender?
+  isServiceProvider       Boolean @default(false)
+  canAssignProductSales   Boolean @default(false)
+  invitedById  String?
   inviteToken String?            @unique
   joinedAt    DateTime?
   deletedAt   DateTime?
@@ -1799,6 +1813,25 @@ model Task {
   @@index([businessId, assignedToId])
   @@index([businessId, dueAt])
   @@map("tasks")
+}
+
+model TimeCard {
+  id           String    @id @default(uuid())
+  businessId   String
+  userId       String
+  clockInTime  DateTime
+  clockOutTime DateTime?
+  paidMinutes  Int?
+  notes        String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([businessId, userId])
+  @@index([businessId, clockInTime(sort: Desc)])
+  @@map("time_cards")
 }
 
 model WorkItem {

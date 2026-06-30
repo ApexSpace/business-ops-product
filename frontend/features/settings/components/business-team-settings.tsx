@@ -1,9 +1,6 @@
 "use client";
 
 import { Suspense, useMemo, useState } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
@@ -11,15 +8,23 @@ import {
   DataTable,
   type DataTableColumn,
 } from "@/components/data-display/data-table";
+import { DataTableRowActions } from "@/components/data-display/data-table-row-actions";
 import { StatusBadge } from "@/components/data-display/status-badge";
-import { FormDialog } from "@/components/forms/form-dialog";
 import { SearchInput } from "@/components/forms/search-input";
-import { SelectField } from "@/components/forms/select-field";
-import { TextField } from "@/components/forms/text-field";
 import { FilterBar } from "@/components/layout/filter-bar";
 import { ListPage, ListPageSkeleton } from "@/components/layout/list-page";
-import { ActionButton } from "@/components/ui/action-button";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { ActionButton } from "@/components/ui/action-button";
 import { ListPagination } from "@/components/ui/list-pagination";
 import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
 import { useListSearchParams } from "@/lib/hooks/use-list-search-params";
@@ -27,18 +32,13 @@ import { useAuth } from "@/lib/auth/provider";
 import { invalidateBusinessMembers } from "@/lib/query/invalidation";
 import { queryKeys } from "@/lib/query/keys";
 import { PERMISSIONS, useCan } from "@/features/auth/permissions";
-import { memberRoleOptions } from "@/features/settings/utils/select-options";
-import type { BusinessMember, PaginatedResult } from "@/features/settings/types";
-import { inviteBusinessMember, listBusinessMembers } from "@/features/settings/api/business.api";
-
-const inviteSchema = z.object({
-  email: z.string().email(),
-  role: z.enum(["OWNER", "ADMIN", "MEMBER"]),
-  firstName: z.string().optional(),
-  lastName: z.string().optional(),
-});
-
-type InviteForm = z.infer<typeof inviteSchema>;
+import { AddStaffMemberDialog } from "@/features/settings/components/add-staff-member-dialog";
+import { MemberTimeClockPinDialog } from "@/features/settings/components/member-time-clock-pin-dialog";
+import type { BusinessMember } from "@/features/settings/types";
+import {
+  archiveStaffMember,
+  listBusinessMembers,
+} from "@/features/settings/api/business.api";
 
 const LIST_SCHEMA = {
   page: { default: "1" },
@@ -47,11 +47,22 @@ const LIST_SCHEMA = {
 
 const PAGE_LIMIT = 20;
 
+function memberName(row: BusinessMember) {
+  const name = [row.user.firstName, row.user.lastName]
+    .filter(Boolean)
+    .join(" ");
+  return name || row.user.email;
+}
+
 function BusinessTeamSettingsContent() {
-  const { jwt, contexts } = useAuth();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
-  const canInvite = useCan(PERMISSIONS["members.invite"]);
+  const [pinMember, setPinMember] = useState<BusinessMember | null>(null);
+  const [archiveTarget, setArchiveTarget] = useState<BusinessMember | null>(
+    null,
+  );
+  const canManage = useCan(PERMISSIONS["members.invite"]);
   const { params, page, setParams } = useListSearchParams(LIST_SCHEMA);
   const debouncedSearch = useDebouncedValue(params.search);
 
@@ -71,25 +82,26 @@ function BusinessTeamSettingsContent() {
       }),
   });
 
-  const form = useForm<InviteForm>({
-    resolver: zodResolver(inviteSchema),
-    defaultValues: { email: "", role: "MEMBER", firstName: "", lastName: "" },
-  });
-
-  const inviteMutation = useMutation({
-    mutationFn: (values: InviteForm) =>
-      inviteBusinessMember(values),
+  const archiveMutation = useMutation({
+    mutationFn: (member: BusinessMember) =>
+      archiveStaffMember(member.userId),
     onSuccess: () => {
-      toast.success("Invitation sent");
+      toast.success("Staff member archived");
       void invalidateBusinessMembers(queryClient);
-      setOpen(false);
-      form.reset();
+      setArchiveTarget(null);
     },
     onError: (err: Error) => toast.error(err.message),
   });
 
   const columns = useMemo<DataTableColumn<BusinessMember>[]>(
     () => [
+      {
+        id: "name",
+        header: "Name",
+        sortable: true,
+        sortValue: (row) => memberName(row),
+        cell: (row) => memberName(row),
+      },
       {
         id: "email",
         header: "Email",
@@ -98,21 +110,18 @@ function BusinessTeamSettingsContent() {
         cell: (row) => row.user.email,
       },
       {
-        id: "name",
-        header: "Name",
+        id: "phone",
+        header: "Phone",
         sortable: true,
-        sortValue: (row) =>
-          [row.user.firstName, row.user.lastName].filter(Boolean).join(" "),
-        cell: (row) =>
-          [row.user.firstName, row.user.lastName].filter(Boolean).join(" ") ||
-          "—",
+        sortValue: (row) => row.phoneNumber ?? "",
+        cell: (row) => row.phoneNumber || "—",
       },
       {
         id: "role",
-        header: "Role",
+        header: "User type",
         sortable: true,
         sortValue: (row) => row.role,
-        cell: (row) => row.role,
+        cell: (row) => (row.role === "ADMIN" ? "Admin" : "Normal"),
       },
       {
         id: "status",
@@ -123,6 +132,19 @@ function BusinessTeamSettingsContent() {
           <StatusBadge status={row.status} domain="membership" />
         ),
       },
+      {
+        id: "timeclockPin",
+        header: "Time Clock PIN",
+        cell: (row) => (
+          <Button
+            variant="link"
+            className="h-auto px-0"
+            onClick={() => setPinMember(row)}
+          >
+            {row.hasTimeclockPin ? "••••" : "Set PIN"}
+          </Button>
+        ),
+      },
     ],
     [],
   );
@@ -131,12 +153,12 @@ function BusinessTeamSettingsContent() {
     <div className="w-full min-w-0">
       <ListPage
         title="Team"
-        description="People who can access this business workspace."
+        description="Staff who work at your business."
         actions={
-          canInvite ? (
+          canManage ? (
             <ActionButton type="button" onClick={() => setOpen(true)}>
               <Plus className="mr-2 size-4" />
-              Invite member
+              Add staff member
             </ActionButton>
           ) : null
         }
@@ -147,7 +169,7 @@ function BusinessTeamSettingsContent() {
               onChange={(value) =>
                 setParams({ search: value, page: "1" }, { resetPage: true })
               }
-              placeholder="Search members…"
+              placeholder="Search staff…"
             />
           </FilterBar>
         }
@@ -157,7 +179,7 @@ function BusinessTeamSettingsContent() {
               meta={data.meta}
               page={page}
               onPageChange={(p) => setParams({ page: String(p) })}
-              label="members"
+              label="staff"
             />
           ) : null
         }
@@ -167,39 +189,84 @@ function BusinessTeamSettingsContent() {
           data={data?.items ?? []}
           getRowId={(row) => row.id}
           isLoading={isLoading}
-          emptyTitle="No members found"
+          rowActions={
+            canManage
+              ? (row) => {
+                  const isSelf = row.userId === user?.id;
+                  const canArchive =
+                    !isSelf &&
+                    row.status !== "REMOVED" &&
+                    row.role !== "OWNER";
+                  if (!canArchive) return null;
+                  return (
+                    <DataTableRowActions
+                      menuLabel="Staff actions"
+                      actions={[
+                        {
+                          label: "Archive",
+                          destructive: true,
+                          onClick: () => setArchiveTarget(row),
+                        },
+                      ]}
+                    />
+                  );
+                }
+              : undefined
+          }
+          emptyTitle="No staff yet"
           emptyDescription={
-            canInvite ? "Invite your first team member." : undefined
+            canManage ? "Add your first staff member to get started." : undefined
           }
           emptyAction={
-            canInvite ? (
+            canManage ? (
               <ActionButton onClick={() => setOpen(true)}>
                 <Plus className="mr-2 size-4" />
-                Invite member
+                Add staff member
               </ActionButton>
             ) : undefined
           }
         />
       </ListPage>
 
-      <FormDialog
-        open={open}
-        onOpenChange={setOpen}
-        title="Invite team member"
-        form={form}
-        schema={inviteSchema}
-        onSubmit={(v) => inviteMutation.mutate(v)}
-        isPending={inviteMutation.isPending}
-        submitLabel="Send invite"
+      <AddStaffMemberDialog open={open} onOpenChange={setOpen} />
+
+      <MemberTimeClockPinDialog
+        member={pinMember}
+        open={Boolean(pinMember)}
+        onOpenChange={(next) => {
+          if (!next) setPinMember(null);
+        }}
+      />
+
+      <AlertDialog
+        open={Boolean(archiveTarget)}
+        onOpenChange={(next) => {
+          if (!next) setArchiveTarget(null);
+        }}
       >
-        <TextField control={form.control} name="email" label="Email" type="email" />
-        <SelectField
-          control={form.control}
-          name="role"
-          label="Role"
-          items={memberRoleOptions}
-        />
-      </FormDialog>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Archive staff member?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {archiveTarget
+                ? `${memberName(archiveTarget)} will be removed from your active staff list. You can add them again later with the same email.`
+                : null}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={archiveMutation.isPending}
+              onClick={() =>
+                archiveTarget && archiveMutation.mutate(archiveTarget)
+              }
+            >
+              Archive
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

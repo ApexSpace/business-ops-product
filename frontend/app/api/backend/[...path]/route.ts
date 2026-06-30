@@ -112,6 +112,14 @@ async function proxy(
     }
   }
 
+  if (res.status === 204 || res.status === 205) {
+    const response = new NextResponse(null, { status: res.status });
+    if (refreshedTokens) {
+      setAuthCookies(response, refreshedTokens);
+    }
+    return response;
+  }
+
   const json = await res.json().catch(() => ({}));
 
   if (res.status === 401) {

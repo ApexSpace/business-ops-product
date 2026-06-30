@@ -2,6 +2,7 @@ import { HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AppException } from '@app/common/exceptions/app.exception';
 import { ErrorCode } from '@app/common/exceptions/error-code.enum';
+import { resolveBackendPublicUrl } from '@app/core/config/backend-public-url.util';
 import { RootConfig } from '@app/core/config/configuration';
 import {
   isMetaBusinessOAuthProviderKey,
@@ -78,6 +79,53 @@ export class MetaConfigService {
       embeddedSignupConfigId:
         process.env.META_EMBEDDED_SIGNUP_CONFIG_ID?.trim() ?? null,
       graphApiVersion: process.env.META_GRAPH_API_VERSION?.trim() ?? 'v20.0',
+    };
+  }
+
+  /** Public callback URL Meta POSTs webhook events to. */
+  getMetaWebhookCallbackUrl(): string | null {
+    const explicit = process.env.META_WEBHOOK_CALLBACK_URL?.trim();
+    if (explicit) {
+      return explicit.replace(/\/$/, '');
+    }
+
+    const { webhookVerifyToken } = this.getMetaAppConfig();
+    if (!webhookVerifyToken) {
+      return null;
+    }
+
+    const base = resolveBackendPublicUrl(process.env);
+    const prefix = (process.env.API_PREFIX ?? 'api/v1')
+      .replace(/^\//, '')
+      .replace(/\/$/, '');
+    return `${base}/${prefix}/webhooks/meta`;
+  }
+
+  /** Instagram app-level webhook registration requires an HTTPS callback URL. */
+  isMetaWebhookCallbackSecure(): boolean {
+    const callbackUrl = this.getMetaWebhookCallbackUrl();
+    return callbackUrl?.startsWith('https://') ?? false;
+  }
+
+  describeMetaWebhookCallbackConfig(): {
+    callbackUrl: string | null;
+    secure: boolean;
+    explicitCallbackConfigured: boolean;
+    verifyTokenConfigured: boolean;
+  } {
+    const explicitCallbackConfigured = Boolean(
+      process.env.META_WEBHOOK_CALLBACK_URL?.trim(),
+    );
+    const verifyTokenConfigured = Boolean(
+      process.env.META_WEBHOOK_VERIFY_TOKEN?.trim(),
+    );
+    const callbackUrl = this.getMetaWebhookCallbackUrl();
+
+    return {
+      callbackUrl,
+      secure: callbackUrl?.startsWith('https://') ?? false,
+      explicitCallbackConfigured,
+      verifyTokenConfigured,
     };
   }
 

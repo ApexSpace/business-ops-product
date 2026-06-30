@@ -46,6 +46,21 @@ export class MemberResponseDto {
 
   @ApiProperty()
   createdAt!: Date;
+
+  @ApiProperty()
+  hasTimeclockPin!: boolean;
+
+  @ApiPropertyOptional()
+  phoneNumber?: string | null;
+
+  @ApiPropertyOptional({ enum: ['FEMALE', 'MALE', 'NON_BINARY', 'PREFER_NOT_TO_SAY'] })
+  gender?: string | null;
+
+  @ApiProperty()
+  isServiceProvider!: boolean;
+
+  @ApiProperty()
+  canAssignProductSales!: boolean;
 }
 
 export class InviteMemberResponseDto extends MemberResponseDto {

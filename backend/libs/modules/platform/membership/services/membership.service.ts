@@ -17,7 +17,9 @@ import { UserRepository } from '@app/modules/platform/auth/repositories/user.rep
 import { BusinessRepository } from '@app/modules/platform/business/repositories/business.repository';
 import { getPaginationParams } from '@app/common/utils/pagination.util';
 import { InviteMemberDto } from '../dto/invite-member.dto';
+import { CreateStaffMemberDto } from '../dto/create-staff-member.dto';
 import { ListMembersQueryDto } from '../dto/list-members-query.dto';
+import { SetTimeClockPinDto } from '../dto/set-time-clock-pin.dto';
 import { UpdateMemberDto } from '../dto/update-member.dto';
 import { SetBusinessOwnerDto } from '../dto/set-owner.dto';
 import {
@@ -290,6 +292,114 @@ export class MembershipService {
     };
   }
 
+  async createStaffMember(
+    businessId: string,
+    dto: CreateStaffMemberDto,
+    actor: RequestUser,
+  ): Promise<MemberResponseDto> {
+    if (dto.role === BusinessMemberRole.OWNER) {
+      throw new AppException(
+        ErrorCode.BAD_REQUEST,
+        'Cannot add staff as OWNER',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const business = await this.businessRepository.findById(businessId);
+    if (!business) {
+      throw new AppException(
+        ErrorCode.BUSINESS_NOT_FOUND,
+        'Business not found',
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    const email = dto.email.trim().toLowerCase();
+    let user = await this.userRepository.findByEmail(email);
+
+    if (!user) {
+      const rounds = this.configService.get('auth.bcryptRounds', {
+        infer: true,
+      });
+      const passwordHash = await bcrypt.hash(randomUUID(), rounds);
+      user = await this.userRepository.create({
+        email,
+        passwordHash,
+        firstName: dto.firstName.trim(),
+        lastName: dto.lastName.trim(),
+        status: UserStatus.ACTIVE,
+      });
+    } else {
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: {
+          firstName: dto.firstName.trim(),
+          lastName: dto.lastName.trim(),
+          ...(user.status === UserStatus.INVITED
+            ? { status: UserStatus.ACTIVE }
+            : {}),
+        },
+      });
+    }
+
+    const existing = await this.membershipRepository.findByUserAndBusinessAny(
+      user.id,
+      businessId,
+    );
+    if (
+      existing &&
+      existing.status !== MembershipStatus.REMOVED &&
+      !existing.deletedAt
+    ) {
+      throw new AppException(
+        ErrorCode.BAD_REQUEST,
+        'A staff member with this email already exists',
+        HttpStatus.CONFLICT,
+      );
+    }
+
+    let timeclockPin: string | undefined;
+    if (dto.timeClockPin) {
+      await this.assertPinUnique(businessId, dto.timeClockPin, user.id);
+      const rounds = this.configService.get('auth.bcryptRounds', { infer: true });
+      timeclockPin = await bcrypt.hash(dto.timeClockPin, rounds);
+    }
+
+    const membershipData = {
+      role: dto.role,
+      status: MembershipStatus.ACTIVE,
+      joinedAt: new Date(),
+      inviteToken: null,
+      deletedAt: null,
+      phoneNumber: dto.phoneNumber?.trim() || null,
+      gender: dto.gender ?? null,
+      isServiceProvider: dto.isServiceProvider ?? false,
+      canAssignProductSales: dto.canAssignProductSales ?? false,
+      ...(timeclockPin ? { timeclockPin } : {}),
+      invitedBy: { connect: { id: actor.id } },
+    };
+
+    const membership = existing
+      ? await this.membershipRepository.update(existing.id, membershipData)
+      : await this.membershipRepository.create({
+          user: { connect: { id: user.id } },
+          business: { connect: { id: businessId } },
+          ...membershipData,
+        });
+
+    await this.auditService.log({
+      actorUserId: actor.id,
+      businessId,
+      action: 'membership.created',
+      entityType: 'BusinessMembership',
+      entityId: membership.id,
+      metadata: { email, role: dto.role },
+    });
+
+    const withUser = await this.membershipRepository.findById(membership.id);
+    return this.toMemberResponse(withUser!);
+  }
+
   async updateMember(
     businessId: string,
     targetUserId: string,
@@ -358,6 +468,71 @@ export class MembershipService {
     return this.toMemberResponse(withUser!);
   }
 
+  async archiveMember(
+    businessId: string,
+    targetUserId: string,
+    actor: RequestUser,
+  ): Promise<MemberResponseDto> {
+    if (actor.id === targetUserId) {
+      throw new AppException(
+        ErrorCode.BAD_REQUEST,
+        'You cannot archive your own account',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const membership =
+      await this.membershipRepository.findByUserAndBusinessWithUser(
+        targetUserId,
+        businessId,
+      );
+    if (!membership || membership.status === MembershipStatus.REMOVED) {
+      throw new AppException(
+        ErrorCode.MEMBERSHIP_NOT_FOUND,
+        'Staff member not found',
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    if (membership.role === BusinessMemberRole.OWNER) {
+      const ownerCount =
+        await this.membershipRepository.countOwners(businessId);
+      if (ownerCount <= 1) {
+        throw new AppException(
+          ErrorCode.BAD_REQUEST,
+          'Cannot archive the only owner',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+    }
+
+    const updated = await this.membershipRepository.update(membership.id, {
+      status: MembershipStatus.REMOVED,
+      deletedAt: new Date(),
+      inviteToken: null,
+    });
+
+    await this.auditService.log({
+      actorUserId: actor.id,
+      businessId,
+      action: 'membership.archived',
+      entityType: 'BusinessMembership',
+      entityId: updated.id,
+    });
+
+    const withUser = await this.membershipRepository.findByIdWithUser(
+      updated.id,
+    );
+    if (!withUser) {
+      throw new AppException(
+        ErrorCode.INTERNAL_ERROR,
+        'Failed to load archived member',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+    return this.toMemberResponse(withUser);
+  }
+
   async removeMember(
     businessId: string,
     targetUserId: string,
@@ -401,8 +576,135 @@ export class MembershipService {
       entityId: updated.id,
     });
 
-    const withUser = await this.membershipRepository.findById(updated.id);
-    return this.toMemberResponse(withUser!);
+    const withUser = await this.membershipRepository.findByIdWithUser(
+      updated.id,
+    );
+    if (!withUser) {
+      throw new AppException(
+        ErrorCode.INTERNAL_ERROR,
+        'Failed to load removed member',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+    return this.toMemberResponse(withUser);
+  }
+
+  async setTimeClockPin(
+    businessId: string,
+    targetUserId: string,
+    dto: SetTimeClockPinDto,
+    actor: RequestUser,
+  ): Promise<{ success: true }> {
+    await this.assertCanManagePin(businessId, targetUserId, actor);
+    const membership =
+      await this.membershipRepository.findByUserAndBusinessWithUser(
+        targetUserId,
+        businessId,
+      );
+    if (!membership || membership.status !== MembershipStatus.ACTIVE) {
+      throw new AppException(
+        ErrorCode.MEMBERSHIP_NOT_FOUND,
+        'Membership not found',
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    await this.assertPinUnique(businessId, dto.pin, targetUserId);
+    const rounds = this.configService.get('auth.bcryptRounds', { infer: true });
+    const timeclockPin = await bcrypt.hash(dto.pin, rounds);
+
+    await this.membershipRepository.update(membership.id, { timeclockPin });
+
+    await this.auditService.log({
+      actorUserId: actor.id,
+      businessId,
+      action: 'membership.timeclock_pin.set',
+      entityType: 'BusinessMembership',
+      entityId: membership.id,
+    });
+
+    return { success: true };
+  }
+
+  async removeTimeClockPin(
+    businessId: string,
+    targetUserId: string,
+    actor: RequestUser,
+  ): Promise<{ success: true }> {
+    await this.assertCanManagePin(businessId, targetUserId, actor);
+    const membership =
+      await this.membershipRepository.findByUserAndBusinessWithUser(
+        targetUserId,
+        businessId,
+      );
+    if (!membership || membership.status !== MembershipStatus.ACTIVE) {
+      throw new AppException(
+        ErrorCode.MEMBERSHIP_NOT_FOUND,
+        'Membership not found',
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    await this.membershipRepository.update(membership.id, { timeclockPin: null });
+
+    await this.auditService.log({
+      actorUserId: actor.id,
+      businessId,
+      action: 'membership.timeclock_pin.removed',
+      entityType: 'BusinessMembership',
+      entityId: membership.id,
+    });
+
+    return { success: true };
+  }
+
+  private async assertCanManagePin(
+    businessId: string,
+    targetUserId: string,
+    actor: RequestUser,
+  ): Promise<void> {
+    if (actor.id === targetUserId) return;
+
+    const actorMembership =
+      await this.membershipRepository.findByUserAndBusiness(
+        actor.id,
+        businessId,
+      );
+    if (
+      actorMembership?.role === BusinessMemberRole.OWNER ||
+      actorMembership?.role === BusinessMemberRole.ADMIN
+    ) {
+      return;
+    }
+
+    throw new AppException(
+      ErrorCode.FORBIDDEN,
+      'Not allowed to manage this staff member PIN',
+      HttpStatus.FORBIDDEN,
+    );
+  }
+
+  private async assertPinUnique(
+    businessId: string,
+    pin: string,
+    excludeUserId: string,
+  ): Promise<void> {
+    const memberships =
+      await this.membershipRepository.findActiveWithPins(businessId);
+
+    for (const membership of memberships) {
+      if (membership.userId === excludeUserId || !membership.timeclockPin) {
+        continue;
+      }
+      const matches = await bcrypt.compare(pin, membership.timeclockPin);
+      if (matches) {
+        throw new AppException(
+          ErrorCode.TIMECLOCK_PIN_IN_USE,
+          'This PIN is already in use by another staff member. Please choose a different one.',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+    }
   }
 
   private toMemberResponse(
@@ -425,6 +727,11 @@ export class MembershipService {
         lastName: membership.user.lastName,
         status: membership.user.status,
       },
+      hasTimeclockPin: Boolean(membership.timeclockPin),
+      phoneNumber: membership.phoneNumber,
+      gender: membership.gender,
+      isServiceProvider: membership.isServiceProvider,
+      canAssignProductSales: membership.canAssignProductSales,
     };
   }
 }

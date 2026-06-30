@@ -456,6 +456,33 @@ export const REGISTRY_MODULES: RegistryModuleDefinition[] = [
     ],
   },
   {
+    moduleKey: 'time_clock',
+    name: 'Time Clock',
+    description: 'Staff clock-in/out and time card management.',
+    icon: 'clock',
+    sortOrder: 65,
+    options: [
+      option('time_clock', 'kiosk', {
+        name: 'Time clock kiosk',
+        description: 'Allow staff to clock in and out with a PIN.',
+        permissionKey: 'operations.time-clock.view',
+        routeKeys: ['/business/time-clock'],
+        icon: 'clock',
+        group: 'Scheduling',
+        defaultEnabled: true,
+      }),
+      option('time_clock', 'cards.manage', {
+        name: 'Manage time cards',
+        description: 'Add, edit, and delete time card records.',
+        permissionKey: 'operations.time-cards.manage',
+        routeKeys: ['/business/time-cards'],
+        icon: 'clock',
+        group: 'Scheduling',
+        defaultEnabled: true,
+      }),
+    ],
+  },
+  {
     moduleKey: 'calendar',
     name: 'Calendar',
     description: 'Business calendars and availability.',

@@ -17,6 +17,14 @@ const ROUTE_CAPABILITY_MAP = new Map<string, RouteCapabilityEntry>([
     { moduleKey: "appointments", capabilityKeys: ["appointments.list"] },
   ],
   [
+    "/business/time-clock",
+    { moduleKey: "time_clock", capabilityKeys: ["time_clock.kiosk"] },
+  ],
+  [
+    "/business/time-cards",
+    { moduleKey: "time_clock", capabilityKeys: ["time_clock.cards.manage"] },
+  ],
+  [
     "/business/payments",
     { moduleKey: "payments", capabilityKeys: ["payments.estimates.list"] },
   ],
@@ -34,6 +42,10 @@ const ROUTE_CAPABILITY_MAP = new Map<string, RouteCapabilityEntry>([
   ],
   [
     "/business/memberships",
+    { moduleKey: "payments", capabilityKeys: ["payments.invoices.list"] },
+  ],
+  [
+    "/business/offers",
     { moduleKey: "payments", capabilityKeys: ["payments.invoices.list"] },
   ],
   [

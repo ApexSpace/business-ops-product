@@ -2,6 +2,7 @@ import {
   Boxes,
   Calendar,
   ClipboardList,
+  Clock,
   Contact,
   CreditCard,
   Gift,
@@ -56,6 +57,11 @@ export const businessOperationalMenuItems: BusinessMenuItem[] = [
     href: "/business/appointments",
     icon: Calendar,
     labelKey: "appointments",
+  },
+  {
+    title: "Time Clock",
+    href: "/business/time-clock",
+    icon: Clock,
   },
   {
     title: "Payments",

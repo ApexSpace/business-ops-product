@@ -19,6 +19,11 @@ export class InstagramResourceSyncHandler implements IntegrationResourceSyncHand
       context.businessId,
       context.providerKey,
     );
+    await this.metaResourceSyncService.ensureMessagingWebhookSubscriptions(
+      context.businessId,
+      'instagram',
+      items,
+    );
     return { items, synced: true };
   }
 }

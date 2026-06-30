@@ -22,6 +22,7 @@ const MAPPED_ROUTES = [
   "/business/gift-cards",
   "/business/packages",
   "/business/memberships",
+  "/business/offers",
   "/business/products",
   "/business/invoices",
   "/business/estimates",

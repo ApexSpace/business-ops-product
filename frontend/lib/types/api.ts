@@ -147,6 +147,11 @@ export interface BusinessMember {
   user: MemberUser;
   joinedAt: string | null;
   createdAt: string;
+  hasTimeclockPin?: boolean;
+  phoneNumber?: string | null;
+  gender?: string | null;
+  isServiceProvider?: boolean;
+  canAssignProductSales?: boolean;
 }
 
 export interface AuditLog {

@@ -107,6 +107,10 @@ async function handleAuthFailure(): Promise<never> {
 }
 
 async function parseResponse<T>(res: Response): Promise<T> {
+  if (res.status === 204 || res.status === 205) {
+    return undefined as T;
+  }
+
   const body = await res.json().catch(() => ({}));
 
   if (res.status === 401) {

@@ -80,6 +80,8 @@ const baseSchema = Joi.object({
     otherwise: Joi.string().uri().optional(),
   }),
   META_WEBHOOK_VERIFY_TOKEN: Joi.string().optional(),
+  /** HTTPS webhook URL registered in Meta App Dashboard (overrides BACKEND_PUBLIC_URL for subscriptions). */
+  META_WEBHOOK_CALLBACK_URL: Joi.string().uri().optional(),
   META_GRAPH_API_VERSION: Joi.string().default('v20.0'),
   /** Facebook Login for Business — Facebook connect (Page-oriented variation) */
   META_FACEBOOK_LOGIN_CONFIG_ID: Joi.string().optional(),

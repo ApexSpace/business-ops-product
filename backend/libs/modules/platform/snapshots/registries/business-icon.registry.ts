@@ -6,6 +6,7 @@ export const BUSINESS_ICON_REGISTRY = new Set<string>([
   'git-branch',
   'clipboard-list',
   'calendar',
+  'clock',
   'credit-card',
   'shopping-bag',
   'package',

@@ -6,6 +6,7 @@ export const DEFAULT_TERMINOLOGY: Record<string, string> = {
   "nav.pipelines": "CRM Pipeline",
   "nav.workItems": "Work Items",
   "nav.appointments": "Appointments",
+  "nav.timeClock": "Time Clock",
   "nav.invoices": "Invoices",
   "nav.estimates": "Estimates",
   "nav.payments": "Payments",
@@ -13,6 +14,7 @@ export const DEFAULT_TERMINOLOGY: Record<string, string> = {
   "nav.giftCards": "Gift Cards",
   "nav.packages": "Packages",
   "nav.memberships": "Memberships",
+  "nav.offers": "Offers",
   "nav.products": "Products",
 
   "entities.contact.plural": "Contacts",

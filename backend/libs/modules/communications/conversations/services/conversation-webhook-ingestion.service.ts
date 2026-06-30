@@ -122,7 +122,8 @@ export class ConversationWebhookIngestionService {
     const resource = await this.resolveResource(inbound, objectType);
     if (!resource) {
       this.logger.warn(
-        `No integration resource for ${inbound.channel} externalId=${inbound.externalResourceId}`,
+        `No integration resource for ${inbound.channel} externalId=${inbound.externalResourceId}. ` +
+          `Sync Instagram/Facebook resources in Settings → Integrations after connecting or reconnecting.`,
       );
       return;
     }

@@ -37,14 +37,27 @@ export class JobEnqueueService {
     idempotencyKey?: string;
     bullJobId?: string | null;
     createdById?: string;
-  }) {
+  }): Promise<AsyncJob> {
     if (params.idempotencyKey) {
       const existing = await this.asyncJobRepository.findByIdempotencyKey(
         params.businessId,
         params.idempotencyKey,
       );
       if (existing) {
-        return existing;
+        if (
+          existing.status === AsyncJobStatus.QUEUED ||
+          existing.status === AsyncJobStatus.ACTIVE
+        ) {
+          return existing;
+        }
+
+        return this.asyncJobRepository.update(existing.id, {
+          status: AsyncJobStatus.QUEUED,
+          completedAt: null,
+          errorMessage: null,
+          result: Prisma.DbNull,
+          bullJobId: null,
+        });
       }
     }
 
@@ -90,7 +103,7 @@ export class JobEnqueueService {
     const bullJobId = await this.queueService.addSyncJob(
       params.jobName,
       fullPayload,
-      params.bullJobId ?? `async-${asyncJob.id}`,
+      params.bullJobId ?? `async-${asyncJob.id}-${Date.now()}`,
     );
 
     if (bullJobId) {
@@ -215,9 +228,7 @@ export class JobEnqueueService {
       entityType: 'BusinessIntegration',
       entityId: params.providerKey,
       actorUserId: params.actorUserId,
-      idempotencyKey:
-        params.idempotencyKey ??
-        `integration-sync-${params.businessId}-${params.providerKey}`,
+      idempotencyKey: params.idempotencyKey,
       payload: {
         businessId: params.businessId,
         providerKey: params.providerKey,
@@ -237,9 +248,7 @@ export class JobEnqueueService {
       jobName: JOB_META_RESOURCE_SYNC,
       entityType: 'BusinessIntegration',
       entityId: params.providerKey,
-      idempotencyKey:
-        params.idempotencyKey ??
-        `meta-sync-${params.businessId}-${params.providerKey}`,
+      idempotencyKey: params.idempotencyKey,
       payload: {
         businessId: params.businessId,
         providerKey: params.providerKey,

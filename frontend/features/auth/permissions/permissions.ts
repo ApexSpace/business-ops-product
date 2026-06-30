@@ -4,6 +4,8 @@ import {
   canInviteMember,
   canManageBilling,
   canManageBusinessSettings,
+  canManageTimeCards,
+  canViewTimeClock,
   canManageIndustries,
   canManageSnapshots,
   canManageCapabilities,
@@ -29,6 +31,8 @@ export const PERMISSIONS = {
   "integrations.manage": "integrations.manage",
   "pipelines.manage": "pipelines.manage",
   "members.invite": "members.invite",
+  "time-clock.view": "time-clock.view",
+  "time-cards.manage": "time-cards.manage",
   "settings.business": "settings.business",
   "platform.businesses.create": "platform.businesses.create",
   "platform.businesses.update": "platform.businesses.update",
@@ -67,6 +71,10 @@ export function evaluatePermission(
       return canManagePipelines(jwt, contexts);
     case PERMISSIONS["members.invite"]:
       return canInviteMember(jwt, contexts);
+    case PERMISSIONS["time-clock.view"]:
+      return canViewTimeClock(jwt);
+    case PERMISSIONS["time-cards.manage"]:
+      return canManageTimeCards(jwt, contexts);
     case PERMISSIONS["platform.businesses.create"]:
       return canCreateBusiness(jwt.platformRole);
     case PERMISSIONS["platform.businesses.update"]:

@@ -72,6 +72,14 @@ const businessRoutes: Record<string, RouteEntry> = {
     title: "Appointments",
     description: "Booking calendar.",
   },
+  "/business/time-clock": {
+    title: "Time Clock",
+    description: "Clock in and out with your PIN.",
+  },
+  "/business/time-cards": {
+    title: "Time Cards",
+    description: "Manage staff time card records.",
+  },
   "/business/sales": {
     title: "Sales",
     description: "Point-of-sale checkouts — open sales, add items, and collect payment.",
@@ -107,6 +115,10 @@ const businessRoutes: Record<string, RouteEntry> = {
       { label: "Packages", href: "/business/packages" },
       { label: "Settings" },
     ],
+  },
+  "/business/offers": {
+    title: "Offers",
+    description: "Create and manage promotional offers, discount rules, and eligibility.",
   },
   "/business/products": {
     title: "Products",
@@ -323,6 +335,7 @@ const businessTerminologyKeys: Partial<Record<string, string>> = {
   "/business/pipelines": "nav.pipelines",
   "/business/conversations": "nav.conversations",
   "/business/appointments": "nav.appointments",
+  "/business/time-clock": "nav.timeClock",
 };
 
 function applyRouteTerminology(

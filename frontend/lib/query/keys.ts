@@ -205,6 +205,14 @@ export const queryKeys = {
     picker: (search?: string) =>
       ["resources", "picker", search ?? ""] as const,
   },
+  timeClock: {
+    all: () => ["time-clock"] as const,
+    cards: {
+      list: (filters?: ListFilters) =>
+        listKey(["time-clock", "cards", "list"], filters),
+      detail: (id: string) => ["time-clock", "cards", "detail", id] as const,
+    },
+  },
   giftCards: {
     all: () => ["gift-cards"] as const,
     list: (filters?: { page?: number; limit?: number; search?: string }) =>

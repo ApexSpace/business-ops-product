@@ -5,6 +5,7 @@ import type { RootConfig } from '@app/core/config/configuration';
 import { EMAIL_PROVIDER_KEY } from '@app/modules/communications/email/constants/email-platform.constants';
 import { PlatformEmailProvisioningService } from '../email/services/platform-email-provisioning.service';
 import { getMetaScopesForProvider } from '../meta/constants/meta-provider.config';
+import { MetaConfigService } from '../meta/services/meta-config.service';
 import { BusinessIntegrationRepository } from '../repositories/business-integration.repository';
 import { IntegrationResourceRepository } from '../repositories/integration-resource.repository';
 
@@ -24,6 +25,7 @@ const WEBCHAT_PROVIDER_KEY = 'webchat';
 export class MessagingStatusService {
   constructor(
     private readonly configService: ConfigService<RootConfig, true>,
+    private readonly metaConfigService: MetaConfigService,
     private readonly businessIntegrationRepository: BusinessIntegrationRepository,
     private readonly integrationResourceRepository: IntegrationResourceRepository,
     private readonly platformEmailProvisioning: PlatformEmailProvisioningService,
@@ -124,6 +126,14 @@ export class MessagingStatusService {
 
     if (connected && defaultResourceSelected && !tokenReady) {
       warnings.push(this.tokenWarning(providerKey));
+    }
+
+    if (providerKey === 'instagram' && connected && webhookEndpointConfigured) {
+      if (!this.metaConfigService.isMetaWebhookCallbackSecure()) {
+        warnings.push(
+          'Instagram DMs need META_WEBHOOK_CALLBACK_URL set to your HTTPS webhook URL (same as Meta App Dashboard → Webhooks). Restart the backend API and worker after changing .env, then sync Instagram resources.',
+        );
+      }
     }
 
     const readyForMessaging =

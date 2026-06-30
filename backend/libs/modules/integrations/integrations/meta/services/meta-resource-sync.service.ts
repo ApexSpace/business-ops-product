@@ -3,7 +3,10 @@ import {
   IntegrationResourceType,
   type IntegrationResource,
 } from '@prisma/client';
-import { encryptIntegrationCredentials } from '@app/common/utils/integration-encryption.util';
+import {
+  decryptIntegrationCredentials,
+  encryptIntegrationCredentials,
+} from '@app/common/utils/integration-encryption.util';
 import { UpsertIntegrationResourceInput } from '../../repositories/integration-resource.repository';
 import { BusinessIntegrationRepository } from '../../repositories/business-integration.repository';
 import { IntegrationResourceRepository } from '../../repositories/integration-resource.repository';
@@ -11,6 +14,7 @@ import {
   getMetaProviderConfig,
   META_INSTAGRAM_NO_ACCOUNTS_MESSAGE,
 } from '../constants/meta-provider.config';
+import { META_INSTAGRAM_APP_WEBHOOK_FIELDS } from '../constants/meta-messaging-webhook.constants';
 import { MetaApiClient } from './meta-api-client';
 import { MetaConfigService } from './meta-config.service';
 import { MetaTokenService } from './meta-token.service';
@@ -68,6 +72,12 @@ export class MetaResourceSyncService {
 
     if (providerKey === 'whatsapp') {
       await this.ensureWhatsAppWebhookSubscriptions(businessId, items);
+    } else if (providerKey === 'facebook' || providerKey === 'instagram') {
+      await this.ensureMessagingWebhookSubscriptions(
+        businessId,
+        providerKey,
+        items,
+      );
     }
 
     await this.businessIntegrationRepository.update(businessId, providerKey, {
@@ -267,6 +277,100 @@ export class MetaResourceSyncService {
 
     return filtered;
   }
+
+  /**
+   * Subscribes linked Facebook Pages (and the app for Instagram) to Meta messaging webhooks.
+   * WhatsApp uses WABA subscription instead; see ensureWhatsAppWebhookSubscriptions.
+   */
+  async ensureMessagingWebhookSubscriptions(
+    businessId: string,
+    providerKey: 'facebook' | 'instagram',
+    items: UpsertIntegrationResourceInput[],
+  ): Promise<void> {
+    if (items.length === 0) {
+      return;
+    }
+
+    const encryptionKey = this.metaConfigService.getEncryptionKey();
+    const pageSubscriptions = new Map<string, string>();
+
+    for (const item of items) {
+      const pageId =
+        providerKey === 'facebook'
+          ? item.externalId
+          : readMetadataString(item.metadata, 'linkedPageId');
+      const pageAccessToken = readPageAccessTokenFromItemMetadata(
+        encryptionKey,
+        item.metadata,
+      );
+
+      if (pageId && pageAccessToken) {
+        pageSubscriptions.set(pageId, pageAccessToken);
+      }
+    }
+
+    for (const [pageId, pageAccessToken] of pageSubscriptions) {
+      try {
+        const subscribed =
+          await this.metaApiClient.subscribePageToMessagingWebhooks(
+            pageId,
+            pageAccessToken,
+          );
+        this.logger.log(
+          `Page messaging webhook subscription pageId=${pageId} businessId=${businessId} providerKey=${providerKey} success=${subscribed}`,
+        );
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : 'Subscription failed';
+        this.logger.warn(
+          `Page messaging webhook subscription failed pageId=${pageId} businessId=${businessId} providerKey=${providerKey}: ${message}`,
+        );
+      }
+    }
+
+    await this.ensureInstagramAppWebhookSubscription(businessId);
+  }
+
+  /** Registers Instagram object webhooks on the Meta app (same callback URL as Messenger). */
+  private async ensureInstagramAppWebhookSubscription(
+    businessId: string,
+  ): Promise<void> {
+    const config = this.metaConfigService.describeMetaWebhookCallbackConfig();
+
+    if (!config.secure || !config.callbackUrl) {
+      this.logger.warn(
+        `Instagram app webhook subscription skipped businessId=${businessId}: ` +
+          `callbackUrl=${config.callbackUrl ?? 'unset'} ` +
+          `explicitCallback=${config.explicitCallbackConfigured} ` +
+          `verifyToken=${config.verifyTokenConfigured}. ` +
+          `Set META_WEBHOOK_CALLBACK_URL=https://fb-login.codesoltech.com/api/v1/webhooks/meta and restart the API and worker processes.`,
+      );
+      return;
+    }
+
+    if (!config.verifyTokenConfigured) {
+      this.logger.warn(
+        `Instagram app webhook subscription skipped businessId=${businessId}: META_WEBHOOK_VERIFY_TOKEN is not set.`,
+      );
+      return;
+    }
+
+    try {
+      const subscribed = await this.metaApiClient.ensureAppWebhookSubscription(
+        'instagram',
+        META_INSTAGRAM_APP_WEBHOOK_FIELDS,
+      );
+      this.logger.log(
+        `Instagram app webhook subscription businessId=${businessId} callback=${config.callbackUrl} success=${subscribed}`,
+      );
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Subscription failed';
+      this.logger.warn(
+        `Instagram app webhook subscription failed businessId=${businessId}: ${message}`,
+      );
+    }
+  }
 }
 
 function readMetadataString(metadata: unknown, key: string): string | null {
@@ -275,4 +379,19 @@ function readMetadataString(metadata: unknown, key: string): string | null {
   }
   const value = (metadata as Record<string, unknown>)[key];
   return typeof value === 'string' && value.trim() ? value.trim() : null;
+}
+
+function readPageAccessTokenFromItemMetadata(
+  encryptionKey: string,
+  metadata: unknown,
+): string | null {
+  const encrypted = readMetadataString(metadata, 'pageAccessTokenEncrypted');
+  if (!encrypted) {
+    return null;
+  }
+
+  const decrypted = decryptIntegrationCredentials(encryptionKey, encrypted) as {
+    pageAccessToken?: string;
+  };
+  return decrypted.pageAccessToken?.trim() || null;
 }

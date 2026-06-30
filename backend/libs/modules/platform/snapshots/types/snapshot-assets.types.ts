@@ -140,6 +140,7 @@ export const DEFAULT_TERMINOLOGY: Record<string, string> = {
   'nav.pipelines': 'CRM Pipeline',
   'nav.workItems': 'Work Items',
   'nav.appointments': 'Appointments',
+  'nav.timeClock': 'Time Clock',
   'nav.invoices': 'Invoices',
   'nav.estimates': 'Estimates',
   'nav.payments': 'Payments',

@@ -1,4 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
+import {
+  META_INSTAGRAM_APP_WEBHOOK_FIELDS,
+  META_MESSAGING_PAGE_WEBHOOK_FIELDS,
+} from '../constants/meta-messaging-webhook.constants';
 import { getMetaGraphBaseUrl } from '../constants/meta-oauth.constants';
 import { MetaConfigService } from './meta-config.service';
 
@@ -421,20 +425,24 @@ export class MetaApiClient {
     );
   }
 
+  /**
+   * Send an Instagram DM via the Facebook Login / Messenger Platform integration.
+   * Uses the linked Facebook Page ID (not the Instagram account ID) per Meta docs.
+   */
   async sendInstagramMessage(
-    instagramUserId: string,
-    accessToken: string,
-    recipientId: string,
+    linkedPageId: string,
+    pageAccessToken: string,
+    recipientIgsid: string,
     text: string,
     attachments?: Array<{ type: string; url: string }>,
   ): Promise<{ messageId: string }> {
     return this.sendGraphMessages(
-      instagramUserId,
-      accessToken,
-      recipientId,
+      linkedPageId,
+      pageAccessToken,
+      recipientIgsid,
       text,
       attachments,
-      {},
+      { messagingType: 'RESPONSE' },
       'Instagram send message failed',
     );
   }
@@ -891,6 +899,71 @@ export class MetaApiClient {
     if (!response.ok) {
       const detail = this.sanitizeGraphError(await response.text());
       throw new Error(`Meta subscribe WABA to app failed: ${detail}`);
+    }
+
+    const data = (await response.json()) as { success?: boolean };
+    return data.success === true;
+  }
+
+  /** Subscribe a Facebook Page to receive messaging webhooks for this app. */
+  async subscribePageToMessagingWebhooks(
+    pageId: string,
+    pageAccessToken: string,
+    subscribedFields: readonly string[] = META_MESSAGING_PAGE_WEBHOOK_FIELDS,
+  ): Promise<boolean> {
+    const url = this.buildGraphUrl(`/${pageId}/subscribed_apps`, {
+      access_token: pageAccessToken,
+      subscribed_fields: subscribedFields.join(','),
+    });
+
+    const response = await fetch(url, { method: 'POST' });
+    if (!response.ok) {
+      const detail = this.sanitizeGraphError(await response.text());
+      throw new Error(`Meta subscribe Page to messaging webhooks failed: ${detail}`);
+    }
+
+    const data = (await response.json()) as { success?: boolean | string };
+    return data.success === true || data.success === 'true';
+  }
+
+  /**
+   * Ensure the Meta app is subscribed to webhook fields for a given object type.
+   * Required for Instagram messaging (`object: instagram`) in addition to page subscriptions.
+   */
+  async ensureAppWebhookSubscription(
+    object: 'instagram' | 'page',
+    fields: readonly string[] = object === 'instagram'
+      ? META_INSTAGRAM_APP_WEBHOOK_FIELDS
+      : META_MESSAGING_PAGE_WEBHOOK_FIELDS,
+  ): Promise<boolean> {
+    const callbackUrl = this.metaConfigService.getMetaWebhookCallbackUrl();
+    const { appId, appSecret, webhookVerifyToken } =
+      this.metaConfigService.getMetaAppConfig();
+
+    if (!callbackUrl || !webhookVerifyToken) {
+      throw new Error(
+        'Meta webhook callback URL or verify token is not configured',
+      );
+    }
+
+    if (!callbackUrl.startsWith('https://')) {
+      throw new Error(
+        'Meta app webhook subscription requires an HTTPS callback URL (set BACKEND_PUBLIC_URL to your HTTPS tunnel, e.g. ngrok)',
+      );
+    }
+
+    const url = this.buildGraphUrl(`/${appId}/subscriptions`, {
+      access_token: `${appId}|${appSecret}`,
+      object,
+      callback_url: callbackUrl,
+      verify_token: webhookVerifyToken,
+      fields: fields.join(','),
+    });
+
+    const response = await fetch(url, { method: 'POST' });
+    if (!response.ok) {
+      const detail = this.sanitizeGraphError(await response.text());
+      throw new Error(`Meta app webhook subscription failed: ${detail}`);
     }
 
     const data = (await response.json()) as { success?: boolean };

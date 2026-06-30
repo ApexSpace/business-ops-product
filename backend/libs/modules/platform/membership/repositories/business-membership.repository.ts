@@ -171,6 +171,13 @@ export class BusinessMembershipRepository {
     });
   }
 
+  findByIdWithUser(id: string): Promise<BusinessMembershipWithUser | null> {
+    return this.prisma.businessMembership.findFirst({
+      where: { id },
+      ...membershipWithUser,
+    });
+  }
+
   findByUserAndBusinessWithUser(
     userId: string,
     businessId: string,
@@ -184,6 +191,17 @@ export class BusinessMembershipRepository {
   findByInviteToken(token: string): Promise<BusinessMembership | null> {
     return this.prisma.businessMembership.findFirst({
       where: { inviteToken: token, deletedAt: null },
+    });
+  }
+
+  findActiveWithPins(businessId: string): Promise<BusinessMembership[]> {
+    return this.prisma.businessMembership.findMany({
+      where: {
+        businessId,
+        deletedAt: null,
+        status: MembershipStatus.ACTIVE,
+        timeclockPin: { not: null },
+      },
     });
   }
 }
