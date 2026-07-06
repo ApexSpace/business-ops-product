@@ -62,8 +62,7 @@ export class GiftCardNumberService {
     if (forceGenerate) {
       return this.generate(businessId);
     }
-    const settings =
-      await this.settingsRepository.findByBusinessId(businessId);
+    const settings = await this.settingsRepository.findByBusinessId(businessId);
     if (settings?.autoGenerateNumber) {
       return this.generate(businessId);
     }

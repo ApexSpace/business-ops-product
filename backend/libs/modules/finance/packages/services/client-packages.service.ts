@@ -258,7 +258,7 @@ export class ClientPackagesService {
     }
 
     return toClientPackageDetail(
-      (await this.assertClientPackage(businessId, row.id))!,
+      await this.assertClientPackage(businessId, row.id),
     );
   }
 
@@ -382,7 +382,7 @@ export class ClientPackagesService {
     });
 
     return toClientPackageDetail(
-      (await this.assertClientPackage(businessId, id))!,
+      await this.assertClientPackage(businessId, id),
     );
   }
 
@@ -412,7 +412,7 @@ export class ClientPackagesService {
     });
 
     return toClientPackageDetail(
-      (await this.assertClientPackage(businessId, id))!,
+      await this.assertClientPackage(businessId, id),
     );
   }
 
@@ -582,7 +582,10 @@ export class ClientPackagesService {
   }
 
   private async assertContact(businessId: string, contactId: string) {
-    const contact = await this.contactRepository.findById(businessId, contactId);
+    const contact = await this.contactRepository.findById(
+      businessId,
+      contactId,
+    );
     if (!contact) {
       throw new AppException(
         ErrorCode.CONTACT_NOT_FOUND,

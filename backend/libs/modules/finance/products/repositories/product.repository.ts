@@ -1,10 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import {
-  Prisma,
-  Product,
-  ProductStatus,
-  ProductType,
-} from '@prisma/client';
+import { Prisma, Product, ProductStatus, ProductType } from '@prisma/client';
 import { PrismaService } from '@app/core/database/prisma.service';
 
 const listInclude = {
@@ -149,7 +144,10 @@ export class ProductRepository {
     });
   }
 
-  async nextSortOrder(businessId: string, categoryId?: string | null): Promise<number> {
+  async nextSortOrder(
+    businessId: string,
+    categoryId?: string | null,
+  ): Promise<number> {
     const max = await this.prisma.product.aggregate({
       where: this.activeWhere(businessId, {
         ...(categoryId ? { categoryId } : {}),

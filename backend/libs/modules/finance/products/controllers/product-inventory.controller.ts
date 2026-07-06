@@ -53,11 +53,6 @@ export class ProductInventoryController {
     @Param('productId', ParseUUIDPipe) productId: string,
     @Body() dto: CreateProductInventoryAdjustmentDto,
   ) {
-    return this.inventoryService.adjust(
-      user.businessId!,
-      productId,
-      dto,
-      user,
-    );
+    return this.inventoryService.adjust(user.businessId!, productId, dto, user);
   }
 }

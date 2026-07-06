@@ -92,12 +92,16 @@ export function ContactRecordsAdjustmentsSection({ contact }: ContactRecordsSect
 
   return (
     <div className="space-y-4">
-      <p className="text-xs text-muted-foreground">
+      <p className="text-[13px] leading-5 text-muted-foreground">
         Set client-specific service durations applied when staff book appointments.
         These do not apply to online booking yet.
       </p>
 
-      <ActionButton size="sm" onClick={() => setCreateOpen(true)}>
+      <ActionButton
+        size="sm"
+        className="h-9 rounded-[10px] px-3 text-[12.5px] font-semibold"
+        onClick={() => setCreateOpen(true)}
+      >
         <Plus className="mr-1 size-3.5" />
         Add custom duration
       </ActionButton>
@@ -114,11 +118,11 @@ export function ContactRecordsAdjustmentsSection({ contact }: ContactRecordsSect
           {adjustments.map((row) => (
             <li
               key={row.id}
-              className="flex items-center justify-between rounded-lg border border-border/70 px-3 py-2.5"
+              className="flex items-center justify-between rounded-[12px] border border-border/70 bg-background/80 px-4 py-3"
             >
               <div>
                 <p className="text-sm font-medium">{row.serviceName}</p>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-[12.5px] text-muted-foreground">
                   Duration: {formatDuration(row.durationMinutes)}
                 </p>
               </div>

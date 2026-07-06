@@ -67,19 +67,13 @@ export class OffersController {
 
   @Post('reorder')
   @BusinessRoles(...MEMBER_ROLES)
-  reorder(
-    @CurrentUser() user: RequestUser,
-    @Body() dto: ReorderOffersDto,
-  ) {
+  reorder(@CurrentUser() user: RequestUser, @Body() dto: ReorderOffersDto) {
     return this.offersService.reorderOffers(user.businessId!, dto, user);
   }
 
   @Post()
   @BusinessRoles(...MEMBER_ROLES)
-  createOffer(
-    @CurrentUser() user: RequestUser,
-    @Body() dto: CreateOfferDto,
-  ) {
+  createOffer(@CurrentUser() user: RequestUser, @Body() dto: CreateOfferDto) {
     return this.offersService.createOffer(user.businessId!, dto, user);
   }
 
@@ -168,12 +162,7 @@ export class OffersController {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: ReorderOfferDiscountsDto,
   ) {
-    return this.offersService.reorderDiscounts(
-      user.businessId!,
-      id,
-      dto,
-      user,
-    );
+    return this.offersService.reorderDiscounts(user.businessId!, id, dto, user);
   }
 
   @Patch(':id/discounts/:discountId')

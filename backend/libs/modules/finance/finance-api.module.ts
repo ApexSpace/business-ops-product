@@ -7,6 +7,13 @@ import { OffersModule } from './offers/offers.module';
 import { ProductsModule } from './products/products.module';
 
 @Module({
-  imports: [FinanceModule, ProductsModule, GiftCardsModule, PackagesModule, MembershipsModule, OffersModule],
+  imports: [
+    FinanceModule,
+    ProductsModule,
+    GiftCardsModule,
+    PackagesModule,
+    MembershipsModule,
+    OffersModule,
+  ],
 })
 export class FinanceApiModule {}

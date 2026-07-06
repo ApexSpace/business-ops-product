@@ -57,7 +57,8 @@ export class GiftCardEmailService {
         'gift_card.number': giftCard.number,
         'gift_card.balance': `$${giftCard.currentBalance.toFixed(2)}`,
         'gift_card.promotion_name': giftCard.promotion?.name ?? '',
-        'gift_card.promotion_description': giftCard.promotion?.description ?? '',
+        'gift_card.promotion_description':
+          giftCard.promotion?.description ?? '',
         'gift_card.disclaimer': settings?.purchaseDisclaimer?.trim() ?? '',
       },
       entityType: 'GiftCard',

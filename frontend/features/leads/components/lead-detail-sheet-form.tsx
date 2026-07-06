@@ -1,7 +1,12 @@
 "use client";
 
 import { SearchableSelect } from "@/components/forms/searchable-select";
-import { Button } from "@/components/ui/button";
+import {
+  DRAWER_FOOTER_ACTIONS_CLASS,
+  DRAWER_FOOTER_BUTTON_CLASS,
+  DRAWER_SHEET_FOOTER_CLASS,
+} from "@/components/forms/drawer-sheet";
+import { ActionButton } from "@/components/ui/action-button";
 import {
   FormControl,
   FormField,
@@ -15,6 +20,7 @@ import { SheetFooter } from "@/components/ui/sheet";
 import { leadStatusOptions } from "@/features/leads/utils/select-options";
 import type { UseFormReturn } from "react-hook-form";
 import { Trash2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export interface LeadDetailFormValues {
   title?: string;
@@ -189,23 +195,34 @@ export function LeadDetailSheetForm({
         )}
       />
 
-      <SheetFooter className="flex-col items-end gap-2 px-0 sm:flex-row sm:items-center sm:justify-between">
-        <Button
-          type="button"
-          variant="outline"
-          className="text-destructive hover:text-destructive"
-          onClick={onDelete}
-        >
-          <Trash2 className="mr-2 size-4" />
-          Delete
-        </Button>
-        <div className="flex gap-2">
-          <Button type="button" variant="outline" onClick={onCancel}>
-            Cancel
-          </Button>
-          <Button type="submit" disabled={isPending}>
-            {isPending ? "Saving…" : "Save"}
-          </Button>
+      <SheetFooter className={DRAWER_SHEET_FOOTER_CLASS}>
+        <div className="flex w-full flex-wrap items-center justify-end gap-2.5">
+          <ActionButton
+            type="button"
+            variant="destructive"
+            onClick={onDelete}
+            className={cn(DRAWER_FOOTER_BUTTON_CLASS, "mr-auto")}
+          >
+            <Trash2 className="size-4" />
+            Delete
+          </ActionButton>
+          <div className={DRAWER_FOOTER_ACTIONS_CLASS}>
+            <ActionButton
+              type="button"
+              variant="outline"
+              onClick={onCancel}
+              className={DRAWER_FOOTER_BUTTON_CLASS}
+            >
+              Cancel
+            </ActionButton>
+            <ActionButton
+              type="submit"
+              disabled={isPending}
+              className={DRAWER_FOOTER_BUTTON_CLASS}
+            >
+              {isPending ? "Saving…" : "Save"}
+            </ActionButton>
+          </div>
         </div>
       </SheetFooter>
     </form>

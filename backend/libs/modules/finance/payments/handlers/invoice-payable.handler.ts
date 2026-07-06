@@ -1,5 +1,10 @@
 import { HttpStatus, Injectable, Inject, forwardRef } from '@nestjs/common';
-import { InvoiceKind, InvoiceStatus, PayableType, Prisma } from '@prisma/client';
+import {
+  InvoiceKind,
+  InvoiceStatus,
+  PayableType,
+  Prisma,
+} from '@prisma/client';
 import { AppException } from '@app/common/exceptions/app.exception';
 import { ErrorCode } from '@app/common/exceptions/error-code.enum';
 import { PrismaService } from '@app/core/database/prisma.service';
@@ -63,9 +68,16 @@ export class InvoicePayableHandler implements PayableHandler {
       );
     }
 
-    const settings = invoice.business.settings as Record<string, unknown> | null;
-    const financial = settings?.financial as Record<string, unknown> | undefined;
-    const taxes = financial?.taxesAndCurrency as { currencyCode?: string } | undefined;
+    const settings = invoice.business.settings as Record<
+      string,
+      unknown
+    > | null;
+    const financial = settings?.financial as
+      | Record<string, unknown>
+      | undefined;
+    const taxes = financial?.taxesAndCurrency as
+      | { currencyCode?: string }
+      | undefined;
     const currency = (taxes?.currencyCode ?? 'USD').toUpperCase();
 
     return {
@@ -100,7 +112,11 @@ export class InvoicePayableHandler implements PayableHandler {
         ctx.actorUserId,
       );
       const closed = await this.prisma.invoice.findFirst({
-        where: { id: ctx.payableId, businessId: ctx.businessId, deletedAt: null },
+        where: {
+          id: ctx.payableId,
+          businessId: ctx.businessId,
+          deletedAt: null,
+        },
         select: { closedAt: true, contactId: true },
       });
       if (closed?.closedAt) {

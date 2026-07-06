@@ -1,12 +1,9 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
 import {
-  formatAppointmentStatus,
-  getAppointmentSyncIndicator,
   getContactDisplayName,
+  getAppointmentSyncIndicator,
   type Appointment,
 } from "@/features/appointments/schemas/appointment-profile";
 import {
@@ -14,18 +11,21 @@ import {
   getAppointmentEventStyle,
 } from "@/features/appointments/utils/appointment-calendar-styles";
 import { formatTime } from "@/features/calendars/utils/calendar-dates";
+import { cn } from "@/lib/utils";
+
+export type AppointmentEventCardVariant = "grid" | "month";
 
 interface AppointmentEventCardProps {
   appointment: Appointment;
   timeZone?: string;
-  compact?: boolean;
-  /** Smaller padding/text; still stacks lines when space is tight */
-  ultraCompact?: boolean;
+  variant?: AppointmentEventCardVariant;
+  /** Pixel height of the grid block — controls secondary lines in day/week views. */
+  eventHeight?: number;
   className?: string;
   onClick?: () => void;
 }
 
-function StackedLine({
+function CardLine({
   children,
   className,
 }: {
@@ -33,15 +33,15 @@ function StackedLine({
   className?: string;
 }) {
   return (
-    <p className={cn("min-w-0 break-words leading-tight", className)}>{children}</p>
+    <p className={cn("min-w-0 truncate leading-tight", className)}>{children}</p>
   );
 }
 
 export function AppointmentEventCard({
   appointment,
   timeZone,
-  compact = false,
-  ultraCompact = false,
+  variant = "grid",
+  eventHeight,
   className,
   onClick,
 }: AppointmentEventCardProps) {
@@ -51,9 +51,11 @@ export function AppointmentEventCard({
   const end = formatTime(appointment.endAt, timeZone);
   const contactName = getContactDisplayName(appointment.contact);
   const syncIndicator = getAppointmentSyncIndicator(appointment);
-
   const interactive = Boolean(onClick);
-  const narrow = compact || ultraCompact;
+
+  const showDetails =
+    variant === "grid" && (eventHeight === undefined || eventHeight >= 72);
+  const showSecondaryLine = variant === "grid";
 
   return (
     <div
@@ -62,31 +64,30 @@ export function AppointmentEventCard({
       tabIndex={interactive ? 0 : undefined}
       onClick={
         interactive
-          ? (e) => {
-              e.stopPropagation();
+          ? (event) => {
+              event.stopPropagation();
               onClick?.();
             }
           : undefined
       }
       onKeyDown={
         interactive
-          ? (e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                e.stopPropagation();
+          ? (event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                event.stopPropagation();
                 onClick?.();
               }
             }
           : undefined
       }
       className={cn(
-        "flex w-full min-w-0 flex-col overflow-hidden rounded-md border text-left shadow-elevation-xs",
-        ultraCompact ? "gap-0.5 px-1 py-0.5 text-[10px]" : "gap-0.5 px-2 py-1.5 text-xs",
-        compact && !ultraCompact && "min-h-[2.125rem] gap-1",
-        ultraCompact && "min-h-[1.375rem]",
-        !narrow && "gap-1",
+        "flex h-full min-h-0 w-full min-w-0 flex-col overflow-hidden rounded-md border text-left",
+        variant === "month"
+          ? "gap-0.5 px-1.5 py-1 text-[10px]"
+          : "gap-0.5 px-2 py-1.5 text-xs",
         interactive &&
-          "cursor-pointer transition-[box-shadow,opacity] hover:opacity-95 hover:shadow-md",
+          "cursor-pointer transition-[box-shadow,transform] hover:shadow-md active:scale-[0.995]",
         eventClass,
         statusColors.text,
         className,
@@ -94,15 +95,14 @@ export function AppointmentEventCard({
       style={style}
     >
       <div className="flex min-w-0 items-start gap-1">
-        <StackedLine
+        <CardLine
           className={cn(
-            "min-w-0 flex-1 font-medium",
-            ultraCompact && "text-[10px]",
-            compact && !ultraCompact && "text-[11px]",
+            "flex-1 font-semibold",
+            variant === "month" ? "text-[10px]" : "text-xs",
           )}
         >
           {appointment.title}
-        </StackedLine>
+        </CardLine>
         {syncIndicator ? (
           <span
             className={cn(
@@ -114,47 +114,37 @@ export function AppointmentEventCard({
               syncIndicator.variant === "google-sync" &&
                 "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400",
             )}
-            title={
-              appointment.googleSyncWarning ?? syncIndicator.label
-            }
+            title={appointment.googleSyncWarning ?? syncIndicator.label}
           >
             {syncIndicator.label}
           </span>
         ) : null}
       </div>
 
-      {ultraCompact ? (
-        <StackedLine className="text-[10px] opacity-80">{start}</StackedLine>
-      ) : narrow ? (
-        <>
-          <StackedLine className="text-[10px] opacity-80">
-            {start} – {end}
-          </StackedLine>
-          {contactName ? (
-            <StackedLine className="text-[10px] opacity-75">{contactName}</StackedLine>
-          ) : null}
-        </>
-      ) : (
-        <>
-          <StackedLine className="text-[11px] opacity-80">
-            {start} – {end}
-          </StackedLine>
-          {contactName ? (
-            <StackedLine className="text-[11px] opacity-75">{contactName}</StackedLine>
-          ) : null}
-          {appointment.service ? (
-            <StackedLine className="text-[11px] opacity-70">
-              {appointment.service.name}
-            </StackedLine>
-          ) : null}
-          <Badge
-            variant="outline"
-            className="mt-0.5 h-4 w-fit max-w-full shrink-0 px-1 text-[10px] font-normal"
-          >
-            {formatAppointmentStatus(appointment.status)}
-          </Badge>
-        </>
-      )}
+      {showSecondaryLine ? (
+        <CardLine className="text-[10px] opacity-80">
+          {start} – {end}
+        </CardLine>
+      ) : null}
+
+      {showDetails && contactName ? (
+        <CardLine className="text-[10px] opacity-75">{contactName}</CardLine>
+      ) : null}
+
+      {showDetails && appointment.assignedTo ? (
+        <CardLine className="text-[10px] opacity-70">
+          {[
+            appointment.assignedTo.firstName,
+            appointment.assignedTo.lastName,
+          ]
+            .filter(Boolean)
+            .join(" ") || appointment.assignedTo.email}
+        </CardLine>
+      ) : null}
+
+      {variant === "month" ? (
+        <CardLine className="text-[10px] opacity-75">{start}</CardLine>
+      ) : null}
     </div>
   );
 }

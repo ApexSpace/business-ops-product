@@ -60,10 +60,9 @@ export class GiftCardRedemptionService {
     }
     const amountToApply = requested;
     const newBalance = card.currentBalance.sub(amountToApply);
-    const nextStatus =
-      newBalance.lessThanOrEqualTo(0)
-        ? GiftCardStatus.DEPLETED
-        : GiftCardStatus.ACTIVE;
+    const nextStatus = newBalance.lessThanOrEqualTo(0)
+      ? GiftCardStatus.DEPLETED
+      : GiftCardStatus.ACTIVE;
 
     await this.giftCardRepository.applyTransaction(
       businessId,

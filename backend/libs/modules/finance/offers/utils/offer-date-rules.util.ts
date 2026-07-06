@@ -26,7 +26,6 @@ export function matchesOfferDateRules(
   return rules.some((rule) => matchesSingleRule(dt, rule));
 }
 
-
 function luxonWeekdayToUserDay(weekday: number): number {
   return weekday === 7 ? 0 : weekday;
 }

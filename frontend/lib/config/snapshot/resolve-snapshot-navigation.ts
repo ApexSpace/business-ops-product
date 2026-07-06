@@ -8,6 +8,7 @@ import {
 } from "@/lib/capabilities/route-capability-map";
 import { resolveSnapshotIcon } from "./icon-registry";
 import { isKnownSnapshotRoute } from "./route-registry";
+import { groupShellNavItemsIntoSections } from "@/lib/config/navigation/group-shell-nav-sections";
 
 export type TerminologyResolver = (key: string, fallback: string) => string;
 
@@ -73,7 +74,8 @@ export function resolveSnapshotNavigation(
       title: resolveLabel(item.labelKey, item.key),
       href: item.route,
       icon: resolveSnapshotIcon(item.icon),
+      navKey: item.key,
     }));
 
-  return [{ id: "main", label: "", items }];
+  return groupShellNavItemsIntoSections(items);
 }

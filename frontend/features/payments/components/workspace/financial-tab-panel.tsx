@@ -1,10 +1,11 @@
 "use client";
 
-import { DataToolbar } from "@/components/layout/data-toolbar";
+import { ListToolbar } from "@/components/layout/list-toolbar";
 import { cn } from "@/lib/utils";
 
 export interface FinancialTabPanelProps {
   actions?: React.ReactNode;
+  search?: React.ReactNode;
   filters?: React.ReactNode;
   pagination?: React.ReactNode;
   children: React.ReactNode;
@@ -14,6 +15,7 @@ export interface FinancialTabPanelProps {
 /** Compact list layout for tabs inside the Payments workspace (no page title). */
 export function FinancialTabPanel({
   actions,
+  search,
   filters,
   pagination,
   children,
@@ -21,9 +23,7 @@ export function FinancialTabPanel({
 }: FinancialTabPanelProps) {
   return (
     <div className={cn("flex flex-col gap-[var(--page-stack-gap)]", className)}>
-      {filters || actions ? (
-        <DataToolbar filters={filters} actions={actions} />
-      ) : null}
+      <ListToolbar search={search} filters={filters} actions={actions} />
       {children}
       {pagination}
     </div>

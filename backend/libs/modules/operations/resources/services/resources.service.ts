@@ -76,16 +76,14 @@ export class ResourcesService {
       businessId,
       dto.groupId,
     );
-    const resource = await this.resourceRepository.createWithDefaultAvailability(
-      businessId,
-      {
+    const resource =
+      await this.resourceRepository.createWithDefaultAvailability(businessId, {
         name: dto.name.trim(),
         resourceType: dto.resourceType,
         groupId: dto.groupId ?? null,
         description: dto.description?.trim() || null,
         sortOrder,
-      },
-    );
+      });
 
     await this.auditService.log({
       actorUserId: actor.id,
@@ -180,11 +178,12 @@ export class ResourcesService {
     resourceId: string,
   ): Promise<ResourceWorkspaceResponseDto> {
     const resource = await this.assertResource(businessId, resourceId);
-    const [availability, scheduleExceptions, linkedServices] = await Promise.all([
-      this.resourceRepository.listAvailability(businessId, resourceId),
-      this.resourceRepository.listScheduleExceptions(businessId, resourceId),
-      this.listLinkedServices(businessId, resourceId),
-    ]);
+    const [availability, scheduleExceptions, linkedServices] =
+      await Promise.all([
+        this.resourceRepository.listAvailability(businessId, resourceId),
+        this.resourceRepository.listScheduleExceptions(businessId, resourceId),
+        this.listLinkedServices(businessId, resourceId),
+      ]);
 
     return {
       resource: toResourceListItemResponse(resource),

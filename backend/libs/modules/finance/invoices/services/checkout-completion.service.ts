@@ -106,7 +106,12 @@ export class CheckoutCompletionService {
       id: string;
       businessId: string;
       contactId: string;
-      items: { id: string; lineType: InvoiceLineType; totalPrice: Prisma.Decimal; title: string }[];
+      items: {
+        id: string;
+        lineType: InvoiceLineType;
+        totalPrice: Prisma.Decimal;
+        title: string;
+      }[];
     },
     actorUserId?: string,
   ): Promise<void> {
@@ -174,7 +179,9 @@ export class CheckoutCompletionService {
         checkout.id,
         {
           number:
-            typeof meta.giftCardNumber === 'string' ? meta.giftCardNumber : null,
+            typeof meta.giftCardNumber === 'string'
+              ? meta.giftCardNumber
+              : null,
           initialValue: Number(
             (typeof meta.cardValue === 'number'
               ? meta.cardValue
@@ -282,7 +289,9 @@ export class CheckoutCompletionService {
     contactId: string;
     metadata: Prisma.JsonValue;
   }): Promise<void> {
-    const metadata = this.checkoutOffersService.parseMetadata(checkout.metadata);
+    const metadata = this.checkoutOffersService.parseMetadata(
+      checkout.metadata,
+    );
     if (!metadata.appliedOffers?.length) return;
 
     const existing = await this.prisma.offerUsageLog.count({

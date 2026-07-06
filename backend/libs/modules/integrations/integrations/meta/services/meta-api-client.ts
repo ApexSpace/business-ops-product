@@ -919,7 +919,9 @@ export class MetaApiClient {
     const response = await fetch(url, { method: 'POST' });
     if (!response.ok) {
       const detail = this.sanitizeGraphError(await response.text());
-      throw new Error(`Meta subscribe Page to messaging webhooks failed: ${detail}`);
+      throw new Error(
+        `Meta subscribe Page to messaging webhooks failed: ${detail}`,
+      );
     }
 
     const data = (await response.json()) as { success?: boolean | string };

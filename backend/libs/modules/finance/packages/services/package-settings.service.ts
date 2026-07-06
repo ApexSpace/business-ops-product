@@ -5,9 +5,7 @@ import { AppException } from '@app/common/exceptions/app.exception';
 import { ErrorCode } from '@app/common/exceptions/error-code.enum';
 import { PrismaService } from '@app/core/database/prisma.service';
 import { BusinessIntegrationRepository } from '@app/modules/integrations/integrations/repositories/business-integration.repository';
-import {
-  assertStripeReadyForPayments,
-} from '@app/modules/integrations/integrations/stripe/utils/stripe-readiness.util';
+import { assertStripeReadyForPayments } from '@app/modules/integrations/integrations/stripe/utils/stripe-readiness.util';
 import { UpdatePackageSettingsDto } from '../dto/package.dto';
 import { PackageSettingsRepository } from '../repositories/package-settings.repository';
 import {
@@ -83,7 +81,9 @@ export class PackageSettingsService {
     businessId: string,
     settings: { onlineSalesEnabled: boolean; publicSlug: string | null },
   ) {
-    const frontendUrl = this.configService.get('app', { infer: true }).frontendUrl;
+    const frontendUrl = this.configService.get('app', {
+      infer: true,
+    }).frontendUrl;
     const appDomain = new URL(frontendUrl).host;
     const slug =
       settings.onlineSalesEnabled && settings.publicSlug

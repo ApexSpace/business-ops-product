@@ -8,8 +8,55 @@ import { LeadFormDialog } from "@/features/leads/components/lead-form-dialog";
 import { NoteFormDialog } from "@/features/notes/components/note-form-dialog";
 import { TaskFormDialog } from "@/features/tasks/components/task-form-dialog";
 import { WorkItemFormDialog } from "@/features/work-items/components/work-item-form-dialog";
+import type { Appointment } from "@/features/appointments/schemas/appointment-profile";
 import type { Contact } from "@/features/contacts/types";
-import type { ContactWorkspaceState } from "@/features/contacts/workspace/use-contact-workspace";
+import type { Lead, Note, Task, WorkItem } from "@/features/contacts/types";
+
+export interface ContactWorkspaceDialogState {
+  contactId: string;
+  business?: { timezone?: string | null } | null;
+  editOpen: boolean;
+  setEditOpen: (open: boolean) => void;
+  deleteContactOpen: boolean;
+  setDeleteContactOpen: (open: boolean) => void;
+  createLeadOpen: boolean;
+  setCreateLeadOpen: (open: boolean) => void;
+  createWorkItemOpen: boolean;
+  setCreateWorkItemOpen: (open: boolean) => void;
+  editingLead: Lead | null;
+  setEditingLead: (lead: Lead | null) => void;
+  editingWorkItem: WorkItem | null;
+  setEditingWorkItem: (item: WorkItem | null) => void;
+  deleteLeadId: string | null;
+  setDeleteLeadId: (id: string | null) => void;
+  deleteWorkItemId: string | null;
+  setDeleteWorkItemId: (id: string | null) => void;
+  createNoteOpen: boolean;
+  setCreateNoteOpen: (open: boolean) => void;
+  createTaskOpen: boolean;
+  setCreateTaskOpen: (open: boolean) => void;
+  editingNote: Note | null;
+  setEditingNote: (note: Note | null) => void;
+  editingTask: Task | null;
+  setEditingTask: (task: Task | null) => void;
+  deleteNoteId: string | null;
+  setDeleteNoteId: (id: string | null) => void;
+  deleteTaskId: string | null;
+  setDeleteTaskId: (id: string | null) => void;
+  createAppointmentOpen: boolean;
+  setCreateAppointmentOpen: (open: boolean) => void;
+  editingAppointment: Appointment | null;
+  setEditingAppointment: (appointment: Appointment | null) => void;
+  deleteAppointmentId: string | null;
+  setDeleteAppointmentId: (id: string | null) => void;
+  refreshContactData: () => void;
+  deleteContactMutation: { isPending: boolean; mutate: (value: undefined, options?: { onSuccess?: () => void }) => void };
+  deleteLeadMutation: { isPending: boolean; mutate: (id: string) => void };
+  deleteWorkItemMutation: { isPending: boolean; mutate: (id: string) => void };
+  deleteNoteMutation: { isPending: boolean; mutate: (id: string) => void };
+  deleteTaskMutation: { isPending: boolean; mutate: (id: string) => void };
+  deleteAppointmentMutation: { isPending: boolean; mutate: (id: string) => void };
+}
 
 const AppointmentFormDialog = dynamic(
   () =>
@@ -20,7 +67,7 @@ const AppointmentFormDialog = dynamic(
 );
 
 interface ContactWorkspaceDialogsProps {
-  state: ContactWorkspaceState;
+  state: ContactWorkspaceDialogState;
   contact: Contact;
   lockedContact: { id: string; label: string };
   onContactDeleted: () => void;
@@ -35,7 +82,6 @@ export function ContactWorkspaceDialogs({
   onContactEditSuccess,
 }: ContactWorkspaceDialogsProps) {
   const {
-    contactId,
     business,
     editOpen,
     setEditOpen,

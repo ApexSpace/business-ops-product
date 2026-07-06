@@ -18,10 +18,7 @@ export class MembershipsPublicController {
   }
 
   @Get(':slug/plans/:planId')
-  getPlan(
-    @Param('slug') slug: string,
-    @Param('planId') planId: string,
-  ) {
+  getPlan(@Param('slug') slug: string, @Param('planId') planId: string) {
     return this.onlineCheckoutService.getPlanForCheckout(slug, planId);
   }
 

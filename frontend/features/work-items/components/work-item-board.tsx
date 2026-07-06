@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   DndContext,
   DragOverlay,
@@ -14,13 +14,11 @@ import {
 } from "@dnd-kit/core";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { BoardScrollArea } from "@/components/board";
 import { updateWorkItem } from "@/features/work-items/api/work-items.api";
 import { WorkItemBoardCard } from "@/features/work-items/components/work-item-board-card";
 import { WorkItemBoardColumn } from "@/features/work-items/components/work-item-board-column";
-import {
-  groupWorkItemsByStatus,
-} from "@/features/work-items/components/work-item-board-utils";
+import { groupWorkItemsByStatus } from "@/features/work-items/components/work-item-board-utils";
+import { getWorkItemStatusAccent } from "@/features/work-items/utils/work-item-status-colors";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   invalidateBusinessDashboardStats,
@@ -42,7 +40,8 @@ export interface WorkItemBoardProps {
   countSingular?: string;
   countPlural?: string;
   onEdit: (item: WorkItem) => void;
-  onDelete: (id: string) => void;
+  onDelete: (item: WorkItem) => void;
+  onAddItem?: (status: WorkItemStatus) => void;
 }
 
 export function WorkItemBoard({
@@ -51,9 +50,11 @@ export function WorkItemBoard({
   statusFilter = "",
   listQueryKey,
   truncatedTotal,
-  countSingular = "Item",
-  countPlural,
+  countSingular = "item",
+  countPlural = "items",
   onEdit,
+  onDelete,
+  onAddItem,
 }: WorkItemBoardProps) {
   const queryClient = useQueryClient();
   const columns = useMemo(
@@ -64,7 +65,9 @@ export function WorkItemBoard({
     [statusFilter],
   );
 
-  const [boardItems, setBoardItems] = useState(itemsProp);
+  const [statusOverrides, setStatusOverrides] = useState<
+    Record<string, WorkItemStatus>
+  >({});
   const [activeItem, setActiveItem] = useState<WorkItem | null>(null);
   const [overStatus, setOverStatus] = useState<WorkItemStatus | null>(null);
   const [movingId, setMovingId] = useState<string | null>(null);
@@ -72,9 +75,14 @@ export function WorkItemBoard({
     Partial<Record<WorkItemStatus, boolean>>
   >({});
 
-  useEffect(() => {
-    setBoardItems(itemsProp);
-  }, [itemsProp]);
+  const boardItems = useMemo(() => {
+    const withOverrides = itemsProp.map((item) => {
+      const override = statusOverrides[item.id];
+      return override ? { ...item, status: override } : item;
+    });
+    if (!statusFilter) return withOverrides;
+    return withOverrides.filter((item) => item.status === statusFilter);
+  }, [itemsProp, statusOverrides, statusFilter]);
 
   const itemsByStatus = useMemo(
     () => groupWorkItemsByStatus(boardItems),
@@ -87,13 +95,9 @@ export function WorkItemBoard({
     }),
   );
 
-  const applyStatusChange = useCallback(
+  const applyStatusOverride = useCallback(
     (itemId: string, newStatus: WorkItemStatus) => {
-      setBoardItems((prev) =>
-        prev.map((item) =>
-          item.id === itemId ? { ...item, status: newStatus } : item,
-        ),
-      );
+      setStatusOverrides((prev) => ({ ...prev, [itemId]: newStatus }));
     },
     [],
   );
@@ -105,8 +109,7 @@ export function WorkItemBoard({
     }: {
       itemId: string;
       status: WorkItemStatus;
-    }) =>
-      updateWorkItem(itemId, { status }),
+    }) => updateWorkItem(itemId, { status }),
     onSuccess: (updated, { status }) => {
       queryClient.setQueryData<PaginatedResult<WorkItem>>(
         listQueryKey,
@@ -133,10 +136,15 @@ export function WorkItemBoard({
       void invalidateWorkItemLists(queryClient);
       void invalidateBusinessDashboardStats(queryClient);
       toast.success(`Moved to ${formatWorkItemStatus(status)}`);
+      setStatusOverrides((prev) => {
+        const next = { ...prev };
+        delete next[updated.id];
+        return next;
+      });
       setMovingId(null);
     },
     onError: (err: Error) => {
-      setBoardItems(itemsProp);
+      setStatusOverrides({});
       setMovingId(null);
       toast.error(err.message);
     },
@@ -146,24 +154,23 @@ export function WorkItemBoard({
     (item: WorkItem, newStatus: WorkItemStatus) => {
       if (item.status === newStatus) return;
 
-      const previousItems = boardItems;
       setMovingId(item.id);
-      applyStatusChange(item.id, newStatus);
-
-      if (statusFilter && newStatus !== statusFilter) {
-        setBoardItems((prev) => prev.filter((i) => i.id !== item.id));
-      }
+      applyStatusOverride(item.id, newStatus);
 
       statusMutation.mutate(
         { itemId: item.id, status: newStatus },
         {
           onError: () => {
-            setBoardItems(previousItems);
+            setStatusOverrides((prev) => {
+              const next = { ...prev };
+              delete next[item.id];
+              return next;
+            });
           },
         },
       );
     },
-    [applyStatusChange, boardItems, statusFilter, statusMutation],
+    [applyStatusOverride, statusMutation],
   );
 
   const handleDragStart = (event: DragStartEvent) => {
@@ -223,16 +230,20 @@ export function WorkItemBoard({
     }));
   };
 
+  const activeAccent = activeItem
+    ? getWorkItemStatusAccent(activeItem.status)
+    : null;
+
   if (isLoading) {
     return (
-      <BoardScrollArea>
+      <div className="scrollbar-thin flex min-h-0 gap-4 overflow-x-auto overflow-y-hidden pb-2">
         {columns.map((col) => (
           <Skeleton
             key={col.value}
-            className="h-[420px] w-[340px] shrink-0 rounded-xl"
+            className="h-[420px] w-[312px] shrink-0 rounded-2xl"
           />
         ))}
-      </BoardScrollArea>
+      </div>
     );
   }
 
@@ -240,8 +251,8 @@ export function WorkItemBoard({
     <div className="flex min-h-0 flex-1 flex-col gap-3">
       {truncatedTotal !== undefined && truncatedTotal > boardItems.length ? (
         <p className="text-xs text-muted-foreground">
-          Showing {boardItems.length} of {truncatedTotal} items. Use filters or
-          switch to table view to see more.
+          Showing {boardItems.length} of {truncatedTotal} {countPlural}. Switch
+          to table view to see more.
         </p>
       ) : null}
 
@@ -253,12 +264,13 @@ export function WorkItemBoard({
         onDragEnd={handleDragEnd}
         onDragCancel={handleDragCancel}
       >
-        <BoardScrollArea className="min-h-[calc(100vh-14rem)]">
+        <div className="scrollbar-thin flex min-h-[calc(100vh-14rem)] items-start gap-[18px] overflow-x-auto overflow-y-hidden pb-3">
           {columns.map((column) => (
             <WorkItemBoardColumn
               key={column.value}
               column={column}
               columnItems={itemsByStatus.get(column.value) ?? []}
+              accent={getWorkItemStatusAccent(column.value)}
               countSingular={countSingular}
               countPlural={countPlural}
               overStatus={overStatus}
@@ -267,13 +279,19 @@ export function WorkItemBoard({
               collapsed={collapsedColumns[column.value]}
               onToggleCollapse={() => toggleColumn(column.value)}
               onEdit={onEdit}
+              onDelete={onDelete}
+              onAddItem={onAddItem}
             />
           ))}
-        </BoardScrollArea>
+        </div>
 
         <DragOverlay dropAnimation={{ duration: 180, easing: "ease-out" }}>
-          {activeItem ? (
-            <WorkItemBoardCard item={activeItem} isOverlay onEdit={onEdit} />
+          {activeItem && activeAccent ? (
+            <WorkItemBoardCard
+              item={activeItem}
+              accentColor={activeAccent.accentColor}
+              isOverlay
+            />
           ) : null}
         </DragOverlay>
       </DndContext>

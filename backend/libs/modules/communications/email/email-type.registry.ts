@@ -255,7 +255,8 @@ export const EMAIL_TYPE_REGISTRY: Record<string, EmailTypeDefinition> = {
     key: 'gift_card.delivery',
     category: 'gift_cards',
     label: 'Gift card delivery',
-    description: 'Sent to the recipient when a gift card is purchased or sent digitally.',
+    description:
+      'Sent to the recipient when a gift card is purchased or sent digitally.',
     defaultEnabled: true,
     businessConfigurable: true,
     defaultSubject: 'You received a gift card from {{business.name}}',

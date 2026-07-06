@@ -65,13 +65,13 @@ export function CalendarFilters({
 
   const triggerClassName = cn(
     FILTER_SELECT_TRIGGER_CLASS,
-    "w-[min(9.5rem,28vw)] min-w-[7rem]",
+    "w-[7.25rem] shrink-0",
   );
 
   return (
     <div
       className={cn(
-        "flex min-w-0 flex-nowrap items-center gap-2",
+        "flex shrink-0 items-center gap-2",
         className,
       )}
     >
@@ -80,7 +80,7 @@ export function CalendarFilters({
           value={search}
           onChange={onSearchChange}
           placeholder="Search…"
-          className={cn(FILTER_SEARCH_CLASS, "min-w-[7rem] max-w-[12rem]")}
+          className={cn(FILTER_SEARCH_CLASS, "w-[8.5rem] shrink-0")}
         />
       ) : null}
       <SearchableSelect

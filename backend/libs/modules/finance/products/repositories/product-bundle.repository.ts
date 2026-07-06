@@ -11,9 +11,10 @@ const bundleItemInclude = {
   },
 } satisfies Prisma.ProductBundleItemInclude;
 
-export type ProductBundleItemWithRelations = Prisma.ProductBundleItemGetPayload<{
-  include: typeof bundleItemInclude;
-}>;
+export type ProductBundleItemWithRelations =
+  Prisma.ProductBundleItemGetPayload<{
+    include: typeof bundleItemInclude;
+  }>;
 
 @Injectable()
 export class ProductBundleRepository {

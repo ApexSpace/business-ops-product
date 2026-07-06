@@ -100,12 +100,7 @@ export class ClientPackagesController {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: TransferPackageDto,
   ) {
-    return this.clientPackagesService.transfer(
-      user.businessId!,
-      id,
-      dto,
-      user,
-    );
+    return this.clientPackagesService.transfer(user.businessId!, id, dto, user);
   }
 
   @Patch(':id/quantities')

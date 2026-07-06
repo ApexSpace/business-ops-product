@@ -142,9 +142,8 @@ export class PublicBookingService {
       );
     }
 
-    let serviceRecord: Awaited<
-      ReturnType<ServiceRepository['findById']>
-    > = null;
+    let serviceRecord: Awaited<ReturnType<ServiceRepository['findById']>> =
+      null;
     if (dto.serviceId) {
       serviceRecord = await this.serviceRepository.findById(
         calendar.businessId,
@@ -279,12 +278,12 @@ export class PublicBookingService {
     const title = `${dto.customerName.trim()} - ${calendar.name}`;
 
     const productUsages = dto.serviceId
-      ? (
+      ? ((
           await this.workspaceRepository.findWorkspace(
             calendar.businessId,
             dto.serviceId,
           )
-        )?.productUsages.map((p) => p.id) ?? []
+        )?.productUsages.map((p) => p.id) ?? [])
       : [];
 
     const serviceMetadata =

@@ -32,7 +32,8 @@ export class OfferCacheService {
       }
     }
 
-    const offers = await this.offerRepository.findEnabledWithDiscounts(businessId);
+    const offers =
+      await this.offerRepository.findEnabledWithDiscounts(businessId);
 
     if (client) {
       try {

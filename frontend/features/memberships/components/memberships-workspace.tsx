@@ -1,17 +1,24 @@
 "use client";
 
-import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Download, Plus, Search, Settings, SlidersHorizontal } from "lucide-react";
+import {
+  Crown,
+  Download,
+  LayoutTemplate,
+  Plus,
+  Settings,
+  SlidersHorizontal,
+} from "lucide-react";
 import { toast } from "sonner";
 import { DateTime } from "luxon";
-import { Badge } from "@/components/ui/badge";
+import { ApiErrorState } from "@/components/data-display/api-error-state";
+import { DataTable } from "@/components/data-display/data-table";
+import { EmptyState } from "@/components/data-display/empty-state";
+import { SearchableSelect } from "@/components/forms/searchable-select";
+import { ListToolbar } from "@/components/layout/list-toolbar";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import {
   Dialog,
   DialogContent,
@@ -19,6 +26,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -26,9 +35,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { SearchableSelect } from "@/components/forms/searchable-select";
-import { ApiErrorState } from "@/components/data-display/api-error-state";
-import { cn } from "@/lib/utils";
+import {
+  Sheet,
+  SheetBody,
+  SheetContent,
+} from "@/components/ui/sheet";
+import { Switch } from "@/components/ui/switch";
+import { useIsMobile } from "@/lib/hooks/use-mobile";
 import { queryKeys } from "@/lib/query/keys";
 import { invalidateMemberships } from "@/lib/query/invalidation";
 import { listContacts } from "@/features/contacts/api/contacts.api";
@@ -40,29 +53,16 @@ import {
   listMembershipPlans,
   updateClientMembership,
 } from "@/features/memberships/api/memberships.api";
+import {
+  MembershipDetailPanel,
+  MembershipStatusBadge,
+  formatMembershipPrice,
+  membershipPlanLabel,
+} from "@/features/memberships/components/membership-detail-panel";
 import type {
   ClientMembershipListItem,
   ClientMembershipStatus,
 } from "@/features/memberships/types";
-
-function planLabel(item: ClientMembershipListItem) {
-  return `${item.plan.emoji ?? ""} ${item.plan.name}`.trim();
-}
-
-function statusColor(status: ClientMembershipStatus) {
-  switch (status) {
-    case "ACTIVE":
-    case "SCHEDULED":
-      return "bg-emerald-500";
-    case "PAST_DUE":
-      return "bg-amber-500";
-    case "UNPAID":
-    case "CANCELED":
-      return "bg-red-500";
-    default:
-      return "bg-slate-400";
-  }
-}
 
 function formatListDate(value: string) {
   return DateTime.fromISO(value).toFormat("MMMM d");
@@ -71,9 +71,10 @@ function formatListDate(value: string) {
 export function MembershipsWorkspace() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const selectedId = searchParams.get("selected");
   const queryClient = useQueryClient();
+  const isMobile = useIsMobile();
 
+  const selectedId = searchParams.get("selected");
   const [search, setSearch] = useState("");
   const [addOpen, setAddOpen] = useState(false);
   const [optionsOpen, setOptionsOpen] = useState(false);
@@ -93,10 +94,33 @@ export function MembershipsWorkspace() {
     ...(showOlderUnpaid ? { showOlderUnpaid: true } : {}),
   };
 
+  const setSelectedId = (id: string | null) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (id) {
+      params.set("selected", id);
+    } else {
+      params.delete("selected");
+    }
+    const qs = params.toString();
+    router.replace(
+      qs ? `/business/memberships?${qs}` : "/business/memberships",
+      { scroll: false },
+    );
+  };
+
   const listQuery = useQuery({
     queryKey: queryKeys.memberships.clientList(filters),
     queryFn: () => listClientMemberships(filters),
   });
+
+  const memberships = listQuery.data ?? [];
+
+  useEffect(() => {
+    if (!selectedId && memberships.length > 0 && !isMobile) {
+      setSelectedId(memberships[0]!.id);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only auto-select on first load
+  }, [memberships, selectedId, isMobile]);
 
   const detailQuery = useQuery({
     queryKey: queryKeys.memberships.clientDetail(selectedId ?? ""),
@@ -146,7 +170,7 @@ export function MembershipsWorkspace() {
       toast.success("Membership started");
       setAddOpen(false);
       await invalidateMemberships(queryClient);
-      router.push(`/business/memberships?selected=${row.id}`);
+      setSelectedId(row.id);
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -180,166 +204,253 @@ export function MembershipsWorkspace() {
     }
   }
 
-  if (listQuery.isError) {
-    return <ApiErrorState error={listQuery.error} onRetry={listQuery.refetch} />;
-  }
+  const columns = useMemo(
+    () => [
+      {
+        id: "client",
+        header: "Client",
+        cell: (row: ClientMembershipListItem) => (
+          <button
+            type="button"
+            className="text-primary hover:underline"
+            onClick={(e) => {
+              e.stopPropagation();
+              router.push(`/business/contacts?contact=${row.contact.id}`);
+            }}
+          >
+            {row.contact.name}
+          </button>
+        ),
+      },
+      {
+        id: "plan",
+        header: "Plan",
+        cell: (row: ClientMembershipListItem) => membershipPlanLabel(row),
+      },
+      {
+        id: "startDate",
+        header: "Start date",
+        cell: (row: ClientMembershipListItem) => (
+          <span className="text-muted-foreground">
+            {formatListDate(row.startDate)}
+          </span>
+        ),
+      },
+      {
+        id: "price",
+        header: "Price",
+        cell: (row: ClientMembershipListItem) => (
+          <span className="tabular-nums">
+            {formatMembershipPrice(row.price, row.billingIntervalUnit)}
+          </span>
+        ),
+      },
+      {
+        id: "status",
+        header: "Status",
+        cell: (row: ClientMembershipListItem) => (
+          <MembershipStatusBadge status={row.status} />
+        ),
+      },
+    ],
+    [router],
+  );
 
   const detail = detailQuery.data;
 
-  return (
-    <div className="flex gap-6">
-      <div className={cn("min-w-0 flex-1", selectedId && "lg:max-w-[60%]")}>
-        <div className="mb-4 flex flex-wrap items-center gap-2">
-          <Button onClick={() => setAddOpen(true)}>
-            <Plus className="mr-2 size-4" />
-            New Membership
-          </Button>
-          <div className="relative min-w-[200px] flex-1">
-            <Search className="text-muted-foreground absolute top-2.5 left-2.5 size-4" />
-            <Input
-              className="pl-9"
-              placeholder="Search by client or plan"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </div>
-          <Button variant="ghost" nativeButton={false} render={<Link href="/business/memberships/plans" />}>
-            Manage plans
-          </Button>
-          <Button variant="ghost" size="icon" nativeButton={false} render={<Link href="/business/memberships/settings" />}>
-            <Settings className="size-4" />
-          </Button>
-          <Button variant="ghost" onClick={() => setOptionsOpen(true)}>
-            <SlidersHorizontal className="mr-2 size-4" />
-            Options
-          </Button>
-        </div>
+  const detailPanelProps = {
+    selectedId,
+    detail,
+    isLoading: detailQuery.isLoading,
+    isError: detailQuery.isError,
+    error: detailQuery.error,
+    onRetry: () => void detailQuery.refetch(),
+    onPause: () => {
+      if (!detail) return;
+      actionMutation.mutate({ id: detail.id, action: "pause" });
+    },
+    onResume: () => {
+      if (!detail) return;
+      actionMutation.mutate({ id: detail.id, action: "resume" });
+    },
+    onCancel: () => {
+      if (!detail) return;
+      actionMutation.mutate({ id: detail.id, action: "cancel" });
+    },
+    actionPending: actionMutation.isPending,
+    onOpenContact: (contactId: string) => {
+      router.push(`/business/contacts?contact=${contactId}`);
+    },
+  };
 
-        <div className="rounded-lg border">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b text-left">
-                <th className="p-3 font-medium">Client</th>
-                <th className="p-3 font-medium">Plan</th>
-                <th className="p-3 font-medium">Start Date</th>
-                <th className="p-3 font-medium">Price</th>
-                <th className="p-3 font-medium">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {(listQuery.data ?? []).map((row) => (
-                <tr
-                  key={row.id}
-                  className={cn(
-                    "hover:bg-muted/50 cursor-pointer border-b",
-                    selectedId === row.id && "bg-muted/50",
-                  )}
-                  onClick={() =>
-                    router.push(`/business/memberships?selected=${row.id}`)
-                  }
+  return (
+    <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
+      <div className="grid min-h-0 flex-1 gap-4 overflow-hidden px-[var(--page-padding-x)] pb-[var(--page-padding-y)] pt-[var(--page-content-top-gap)] lg:grid-cols-[minmax(0,1fr)_minmax(280px,380px)] lg:grid-rows-1">
+        <section className="flex min-h-0 flex-col overflow-hidden rounded-xl border border-border bg-card shadow-elevation-xs">
+          <ListToolbar
+            className="rounded-none border-0 border-b bg-transparent p-3 shadow-none sm:px-4"
+            search={
+              <Input
+                placeholder="Search by client or plan…"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="min-w-0 flex-1"
+              />
+            }
+            actions={
+              <>
+                <Button
+                  variant="outline"
+                  size="icon-sm"
+                  className="sm:hidden"
+                  aria-label="Manage plans"
+                  onClick={() => router.push("/business/memberships/plans")}
                 >
-                  <td className="p-3">{row.contact.name}</td>
-                  <td className="p-3">{planLabel(row)}</td>
-                  <td className="p-3">{formatListDate(row.startDate)}</td>
-                  <td className="p-3">
-                    ${row.price} / {row.billingIntervalUnit.toLowerCase().slice(0, 1)}
-                  </td>
-                  <td className="p-3">
-                    <Badge variant="outline" className="gap-1.5">
-                      <span
-                        className={cn("size-2 rounded-full", statusColor(row.status))}
-                      />
-                      {row.status.replace("_", " ")}
-                    </Badge>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {listQuery.data?.length === 0 ? (
-            <p className="text-muted-foreground p-8 text-center">
-              No memberships found.
+                  <LayoutTemplate className="size-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="hidden shrink-0 sm:inline-flex"
+                  onClick={() => router.push("/business/memberships/plans")}
+                >
+                  <LayoutTemplate className="mr-1.5 size-4" />
+                  Manage plans
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon-sm"
+                  className="sm:hidden"
+                  aria-label="Settings"
+                  onClick={() => router.push("/business/memberships/settings")}
+                >
+                  <Settings className="size-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="hidden shrink-0 sm:inline-flex"
+                  onClick={() => router.push("/business/memberships/settings")}
+                >
+                  <Settings className="mr-1.5 size-4" />
+                  Settings
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon-sm"
+                  aria-label="Options"
+                  onClick={() => setOptionsOpen(true)}
+                >
+                  <SlidersHorizontal className="size-4" />
+                </Button>
+                <Button
+                  size="icon-sm"
+                  className="sm:hidden"
+                  aria-label="New membership"
+                  onClick={() => setAddOpen(true)}
+                >
+                  <Plus className="size-4" />
+                </Button>
+                <Button
+                  size="sm"
+                  className="hidden shrink-0 sm:inline-flex"
+                  onClick={() => setAddOpen(true)}
+                >
+                  <Plus className="mr-1.5 size-4" />
+                  New membership
+                </Button>
+              </>
+            }
+          />
+
+          {listQuery.isError ? (
+            <ApiErrorState
+              error={listQuery.error}
+              onRetry={() => void listQuery.refetch()}
+            />
+          ) : listQuery.isLoading ? (
+            <p className="p-6 text-sm text-muted-foreground">
+              Loading memberships…
             </p>
-          ) : null}
-        </div>
+          ) : memberships.length === 0 ? (
+            <div className="flex flex-1 items-center justify-center p-8">
+              <EmptyState
+                icon={
+                  <Crown className="size-5 text-muted-foreground/70" aria-hidden />
+                }
+                title="No memberships found"
+                description="Start a membership for a client or adjust your filters."
+                action={
+                  <Button size="sm" onClick={() => setAddOpen(true)}>
+                    <Plus className="mr-1.5 size-4" />
+                    New membership
+                  </Button>
+                }
+              />
+            </div>
+          ) : (
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+              <div className="min-h-0 flex-1 overflow-y-auto">
+                <DataTable
+                  columns={columns}
+                  data={memberships}
+                  getRowId={(row) => row.id}
+                  activeRowId={selectedId}
+                  onRowClick={(row) => setSelectedId(row.id)}
+                  getRowClassName={(row) =>
+                    selectedId === row.id
+                      ? "shadow-[inset_3px_0_0_0_var(--color-primary)]"
+                      : undefined
+                  }
+                  className="rounded-none border-0 shadow-none"
+                />
+              </div>
+              <div className="shrink-0 border-t border-border px-4 py-3 text-sm text-muted-foreground">
+                {memberships.length} membership
+                {memberships.length === 1 ? "" : "s"}
+              </div>
+            </div>
+          )}
+        </section>
+
+        {!isMobile ? (
+          <MembershipDetailPanel
+            {...detailPanelProps}
+            className="min-h-0 max-lg:hidden"
+          />
+        ) : null}
       </div>
 
-      {selectedId && detail ? (
-        <aside className="w-full max-w-md shrink-0 space-y-4 rounded-lg border p-4">
-          <div>
-            <h2 className="text-lg font-semibold">{planLabel(detail)}</h2>
-            <p className="text-muted-foreground text-sm">{detail.contact.name}</p>
-          </div>
-          <div className="space-y-2 text-sm">
-            <p>
-              <span className="text-muted-foreground">Status:</span>{" "}
-              {detail.status}
-            </p>
-            <p>
-              <span className="text-muted-foreground">Price:</span> ${detail.price}
-              / month
-            </p>
-            {detail.nextBillingDate ? (
-              <p>
-                <span className="text-muted-foreground">Next billing:</span>{" "}
-                {formatListDate(detail.nextBillingDate)}
-              </p>
-            ) : null}
-          </div>
-          {detail.usageRecords.map((record) => (
-            <div key={record.id} className="rounded-md border p-3 text-sm">
-              <p className="font-medium">
-                {record.totalSlots - record.usedSlots} / {record.totalSlots}{" "}
-                remaining
-              </p>
-              <p className="text-muted-foreground">{record.services.join(", ")}</p>
-            </div>
-          ))}
-          <div className="flex flex-wrap gap-2">
-            {detail.status === "ACTIVE" ? (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() =>
-                  actionMutation.mutate({ id: detail.id, action: "pause" })
-                }
-              >
-                Pause
-              </Button>
-            ) : null}
-            {detail.status === "PAUSED" ? (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() =>
-                  actionMutation.mutate({ id: detail.id, action: "resume" })
-                }
-              >
-                Resume
-              </Button>
-            ) : null}
-            {detail.status !== "CANCELED" ? (
-              <Button
-                size="sm"
-                variant="destructive"
-                onClick={() =>
-                  actionMutation.mutate({ id: detail.id, action: "cancel" })
-                }
-              >
-                Cancel
-              </Button>
-            ) : null}
-          </div>
-        </aside>
+      {isMobile ? (
+        <Sheet
+          open={!!selectedId}
+          onOpenChange={(open) => {
+            if (!open) setSelectedId(null);
+          }}
+        >
+          <SheetContent
+            side="right"
+            className="flex h-[100dvh] max-h-[100dvh] w-full max-w-none flex-col border-l-0 bg-background p-0 shadow-none"
+            showCloseButton
+          >
+            <SheetBody className="flex min-h-0 flex-1 flex-col overflow-hidden p-0">
+              <MembershipDetailPanel
+                {...detailPanelProps}
+                variant="drawer"
+                className="min-h-0 flex-1 rounded-none border-0 shadow-none"
+              />
+            </SheetBody>
+          </SheetContent>
+        </Sheet>
       ) : null}
 
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>New Membership</DialogTitle>
+            <DialogTitle>New membership</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label>Client</Label>
               <SearchableSelect
                 items={contactOptions}
@@ -349,7 +460,7 @@ export function MembershipsWorkspace() {
                 inDialog
               />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label>Membership plan</Label>
               <SearchableSelect
                 items={planOptions}
@@ -373,7 +484,7 @@ export function MembershipsWorkspace() {
                 })
               }
             >
-              Start Membership
+              Start membership
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -385,7 +496,7 @@ export function MembershipsWorkspace() {
             <DialogTitle>Options</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label>Status</Label>
               <Select
                 value={statusFilter}
@@ -398,18 +509,18 @@ export function MembershipsWorkspace() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all_except_canceled">
-                    All (except Canceled)
+                    All (except canceled)
                   </SelectItem>
                   <SelectItem value="ACTIVE">Active</SelectItem>
                   <SelectItem value="SCHEDULED">Scheduled</SelectItem>
-                  <SelectItem value="PAST_DUE">Past Due</SelectItem>
+                  <SelectItem value="PAST_DUE">Past due</SelectItem>
                   <SelectItem value="UNPAID">Unpaid</SelectItem>
                   <SelectItem value="PAUSED">Paused</SelectItem>
                   <SelectItem value="CANCELED">Canceled</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label>Membership plan</Label>
               <Select
                 value={planFilter}
@@ -428,23 +539,23 @@ export function MembershipsWorkspace() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex items-center justify-between">
-              <Label>Show different versions only</Label>
+            <div className="flex items-center justify-between gap-4">
+              <Label className="font-normal">Show different versions only</Label>
               <Switch
                 checked={showDifferentVersionsOnly}
                 onCheckedChange={setShowDifferentVersionsOnly}
               />
             </div>
-            <div className="flex items-center justify-between">
-              <Label>Show older unpaid (over 1 month)</Label>
+            <div className="flex items-center justify-between gap-4">
+              <Label className="font-normal">Show older unpaid (over 1 month)</Label>
               <Switch
                 checked={showOlderUnpaid}
                 onCheckedChange={setShowOlderUnpaid}
               />
             </div>
-            <Button variant="outline" onClick={handleExport}>
-              <Download className="mr-2 size-4" />
-              Download
+            <Button variant="outline" className="w-full" onClick={handleExport}>
+              <Download className="mr-1.5 size-4" />
+              Download CSV
             </Button>
           </div>
         </DialogContent>

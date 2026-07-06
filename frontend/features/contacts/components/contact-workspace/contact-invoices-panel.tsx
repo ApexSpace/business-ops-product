@@ -8,7 +8,7 @@ import { ContactFinancialRecordRow } from "@/features/contacts/components/contac
 import { RecordListEmpty } from "@/features/contacts/components/contact-workspace/contact-record-section";
 import { EmptyState } from "@/components/data-display/empty-state";
 import { InvoiceFormDialog } from "@/features/invoices/components/invoice-form-dialog";
-import { PaymentFormDialog } from "@/features/payments/components/payment-form-dialog";
+import { PaymentFormDrawer } from "@/features/payments/components/payment-form-drawer";
 import { InvoiceTableRowActions } from "@/features/payments/components/workspace/invoice-table-row-actions";
 import { ActionButton } from "@/components/ui/action-button";
 import {
@@ -188,7 +188,7 @@ export function ContactInvoicesPanel({
         onSuccess={refresh}
       />
 
-      <PaymentFormDialog
+      <PaymentFormDrawer
         open={paymentDialogOpen}
         onOpenChange={(open) => {
           setPaymentDialogOpen(open);

@@ -271,7 +271,7 @@ export function buildDefaultBusinessSnapshot(): SnapshotSeedDefinition {
         templates: baseEmailTemplates(),
       },
       branding: {
-        productName: 'Business Hub',
+        productName: 'CodeSol',
         accentColor: '#2563eb',
       },
       integrations: {

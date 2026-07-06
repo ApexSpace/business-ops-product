@@ -36,9 +36,7 @@ const MEMBER_ROLES = [
 @Controller('service-categories')
 @UseGuards(BusinessRolesGuard)
 export class ServiceCategoriesController {
-  constructor(
-    private readonly categoriesService: ServiceCategoriesService,
-  ) {}
+  constructor(private readonly categoriesService: ServiceCategoriesService) {}
 
   @Get()
   @BusinessRoles(...MEMBER_ROLES)

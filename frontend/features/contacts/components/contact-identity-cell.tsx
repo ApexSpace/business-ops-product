@@ -9,6 +9,9 @@ export interface ContactIdentityCellProps {
   label: string;
   avatarUrl?: string | null;
   className?: string;
+  href?: string;
+  onSelect?: () => void;
+  isActive?: boolean;
 }
 
 export function ContactIdentityCell({
@@ -16,6 +19,9 @@ export function ContactIdentityCell({
   label,
   avatarUrl,
   className,
+  href = `/business/contacts/${contactId}`,
+  onSelect,
+  isActive = false,
 }: ContactIdentityCellProps) {
   return (
     <div
@@ -29,8 +35,25 @@ export function ContactIdentityCell({
         fallbackClassName="size-full rounded-full bg-muted/80 text-[10px] font-medium leading-none text-muted-foreground"
       />
       <Link
-        href={`/business/contacts/${contactId}`}
-        className="truncate text-sm font-normal leading-snug text-foreground transition-colors hover:text-primary hover:underline"
+        href={href}
+        onClick={(event) => {
+          if (!onSelect) return;
+          if (
+            event.metaKey ||
+            event.ctrlKey ||
+            event.shiftKey ||
+            event.altKey ||
+            event.button !== 0
+          ) {
+            return;
+          }
+          event.preventDefault();
+          onSelect();
+        }}
+        className={cn(
+          "truncate text-sm font-normal leading-snug transition-colors hover:text-primary hover:underline",
+          isActive ? "text-primary" : "text-foreground",
+        )}
       >
         {label}
       </Link>

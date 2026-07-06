@@ -117,7 +117,10 @@ export class ProductBundlesService {
   }
 
   private async assertBundleProduct(businessId: string, productId: string) {
-    const product = await this.productRepository.findById(businessId, productId);
+    const product = await this.productRepository.findById(
+      businessId,
+      productId,
+    );
     if (!product) {
       throw new AppException(
         ErrorCode.PRODUCT_NOT_FOUND,

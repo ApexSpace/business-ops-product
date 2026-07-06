@@ -77,8 +77,7 @@ export class PackageTemplatesService {
       emoji: dto.emoji?.trim() || null,
       totalPrice: new Prisma.Decimal(dto.totalPrice.toFixed(2)),
       chargeTax: dto.chargeTax ?? false,
-      expirationPolicy:
-        dto.expirationPolicy ?? PackageExpirationPolicy.NEVER,
+      expirationPolicy: dto.expirationPolicy ?? PackageExpirationPolicy.NEVER,
       expirationDays: dto.expirationDays ?? null,
       onlineSalesEnabled: dto.onlineSalesEnabled ?? false,
       shortDescription: dto.shortDescription?.trim() || null,
@@ -153,8 +152,10 @@ export class PackageTemplatesService {
     actor: RequestUser,
   ): Promise<void> {
     await this.assertTemplate(businessId, id);
-    const activeCount =
-      await this.templateRepository.countActiveClientPackages(businessId, id);
+    const activeCount = await this.templateRepository.countActiveClientPackages(
+      businessId,
+      id,
+    );
     if (activeCount > 0) {
       throw new AppException(
         ErrorCode.PACKAGE_TEMPLATE_HAS_ACTIVE_CLIENTS,
@@ -202,8 +203,7 @@ export class PackageTemplatesService {
       data: {
         packageTemplateId: templateId,
         quantity: dto.quantity,
-        quantityType:
-          dto.quantityType ?? PackageServiceGroupQuantityType.ONE,
+        quantityType: dto.quantityType ?? PackageServiceGroupQuantityType.ONE,
         groupPrice: new Prisma.Decimal(dto.groupPrice.toFixed(2)),
         sortOrder,
         serviceGroupItems: {
@@ -212,7 +212,9 @@ export class PackageTemplatesService {
       },
       include: {
         serviceGroupItems: {
-          include: { service: { select: { id: true, name: true, price: true } } },
+          include: {
+            service: { select: { id: true, name: true, price: true } },
+          },
         },
       },
     });
@@ -290,20 +292,24 @@ export class PackageTemplatesService {
     });
   }
 
-  getDirectLink(businessId: string, templateId: string): Promise<string | null> {
+  getDirectLink(
+    businessId: string,
+    templateId: string,
+  ): Promise<string | null> {
     return this.resolveSlug(businessId).then((slug) =>
       slug ? this.buildDirectLink(slug, templateId) : null,
     );
   }
 
   private buildDirectLink(slug: string, templateId: string): string {
-    const frontendUrl = this.configService.get('app', { infer: true }).frontendUrl;
+    const frontendUrl = this.configService.get('app', {
+      infer: true,
+    }).frontendUrl;
     return `${frontendUrl}/packages/${slug}/${templateId}`;
   }
 
   private async resolveSlug(businessId: string): Promise<string | null> {
-    const settings =
-      await this.settingsRepository.findByBusinessId(businessId);
+    const settings = await this.settingsRepository.findByBusinessId(businessId);
     if (!settings?.publicSlug) {
       return this.settingsService.ensurePublicSlug(businessId);
     }

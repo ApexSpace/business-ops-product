@@ -12,10 +12,7 @@ import { ConfirmDeleteDialog } from "@/components/forms/confirm-delete-dialog";
 import { ListPage } from "@/components/layout/list-page";
 import { WorkItemBoard } from "@/features/work-items/components/work-item-board";
 import { WorkItemFormDialog } from "@/features/work-items/components/work-item-form-dialog";
-import { WorkItemsPageFilters } from "@/features/work-items/components/work-items-page-filters";
-import {
-  WorkItemsViewSwitcher,
-} from "@/features/work-items/components/work-items-view-switcher";
+import { WorkItemsPageToolbar } from "@/features/work-items/components/work-items-page-toolbar";
 import { useWorkItemsPageToolbar } from "@/features/work-items/hooks/use-work-items-page-toolbar";
 import { ActionButton } from "@/components/ui/action-button";
 import { ListPagination } from "@/components/ui/list-pagination";
@@ -31,6 +28,9 @@ export function WorkItemsPageContent() {
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<WorkItem | null>(null);
+  const [createDefaultStatus, setCreateDefaultStatus] = useState<
+    WorkItemStatus | undefined
+  >();
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const {
@@ -61,8 +61,9 @@ export function WorkItemsPageContent() {
     onError: (err: Error) => toast.error(err.message),
   });
 
-  const openCreate = () => {
+  const openCreate = (status?: WorkItemStatus) => {
     setEditing(null);
+    setCreateDefaultStatus(status);
     setDialogOpen(true);
   };
 
@@ -78,27 +79,15 @@ export function WorkItemsPageContent() {
       <ListPage
         title={workItemsLabel}
         description="Record customer, service, and work done — without a CRM pipeline."
-        actions={
-          <>
-            <WorkItemsViewSwitcher
-              value={view}
-              onChange={(next) =>
-                setParams({ view: next, page: "1" }, resetPage)
-              }
-            />
-            <ActionButton onClick={openCreate}>
-              <Plus className="mr-2 size-4" />
-              Add {countSingular}
-            </ActionButton>
-          </>
-        }
-        filters={
-          <WorkItemsPageFilters
+        toolbar={
+          <WorkItemsPageToolbar
             workItemsLabel={workItemsLabel}
+            countSingular={countSingular}
             search={params.search}
             status={params.status}
             serviceId={params.serviceId}
             assignedToId={params.assignedToId}
+            view={view}
             serviceFilterItems={serviceFilterItems}
             assigneeFilterItems={assigneeFilterItems}
             onSearchChange={(value) =>
@@ -113,6 +102,10 @@ export function WorkItemsPageContent() {
             onAssignedToIdChange={(value) =>
               setParams({ assignedToId: value ?? "", page: "1" }, resetPage)
             }
+            onViewChange={(next) =>
+              setParams({ view: next, page: "1" }, resetPage)
+            }
+            onAddClick={() => openCreate()}
           />
         }
         pagination={
@@ -137,7 +130,8 @@ export function WorkItemsPageContent() {
             countSingular={countSingular}
             countPlural={countPlural}
             onEdit={openEdit}
-            onDelete={setDeleteId}
+            onDelete={(item) => setDeleteId(item.id)}
+            onAddItem={openCreate}
           />
         ) : (
           <DataTable
@@ -148,7 +142,7 @@ export function WorkItemsPageContent() {
             emptyTitle={`No ${countPlural} yet`}
             emptyDescription="Add your first record: pick a customer, service, and status."
             emptyAction={
-              <ActionButton onClick={openCreate}>
+              <ActionButton onClick={() => openCreate()}>
                 <Plus className="mr-2 size-4" />
                 Add {countSingular}
               </ActionButton>
@@ -173,6 +167,7 @@ export function WorkItemsPageContent() {
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         workItem={editing}
+        defaultStatus={editing ? undefined : createDefaultStatus}
         onSuccess={() => {
           void invalidateWorkItemLists(queryClient);
           void invalidateBusinessDashboardStats(queryClient);

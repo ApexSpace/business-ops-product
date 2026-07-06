@@ -32,9 +32,7 @@ export async function runStartupRecovery(
     await run();
   } catch (error) {
     if (isTransientDatabaseError(error)) {
-      logger.warn(
-        `${label}: database unavailable, skipping startup recovery`,
-      );
+      logger.warn(`${label}: database unavailable, skipping startup recovery`);
       return;
     }
     throw error;

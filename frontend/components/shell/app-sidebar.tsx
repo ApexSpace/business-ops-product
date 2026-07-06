@@ -13,7 +13,6 @@ import {
   SidebarSeparator,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { cn } from "@/lib/utils";
 import type {
   ShellBrand,
   ShellNavItem,
@@ -21,12 +20,12 @@ import type {
   SidebarNavMode,
 } from "@/lib/types/shell-nav";
 import { useHydrated } from "@/lib/hooks/use-hydrated";
-import { SHELL_HEADER_HEIGHT } from "./shell-constants";
+import { ShellBrandHeader } from "./shell-brand-header";
+import { SidebarSection } from "./sidebar-section";
 import { SidebarFooterCollapseTrigger } from "./sidebar-toggle";
 import { SidebarNavItem } from "./sidebar-nav-item";
-import { flattenNavSections } from "./sidebar-nav-utils";
 
-const NAV_SKELETON_COUNT = 10;
+const NAV_SKELETON_COUNT = 8;
 
 function SidebarNavSkeleton() {
   return (
@@ -51,6 +50,9 @@ interface AppSidebarProps {
   sections: ShellNavSection[];
   navMode?: SidebarNavMode;
   footerItems?: ShellNavItem[];
+  workspaceName?: string;
+  productName?: string;
+  logoUrl?: string | null;
 }
 
 export function AppSidebar({
@@ -58,42 +60,41 @@ export function AppSidebar({
   sections,
   navMode = "main",
   footerItems,
+  productName = "CodeSol",
+  logoUrl,
 }: AppSidebarProps) {
   const { isMobile } = useSidebar();
   const hydrated = useHydrated();
   const BrandIcon = brand.icon;
   const isSettingsMode = navMode === "settings";
-  const navItems = flattenNavSections(sections);
   const showNavFooter = !isSettingsMode && footerItems && footerItems.length > 0;
-  const showFooter = showNavFooter || !isMobile;
 
   return (
     <ShadcnSidebar
       collapsible="icon"
-      className="overflow-visible border-r border-sidebar-border"
+      className="overflow-hidden border-r border-transparent"
     >
-      <SidebarHeader
-        className={cn(
-          SHELL_HEADER_HEIGHT,
-          "flex-row gap-2 border-b border-sidebar-border px-3 py-0 group-data-[collapsible=icon]:px-2",
+      <SidebarHeader className="gap-2 border-b border-transparent px-4 py-4 group-data-[collapsible=icon]:px-2">
+        {isSettingsMode ? (
+          <div className="flex min-w-0 flex-1 items-center gap-2.5 px-1 group-data-[collapsible=icon]:justify-center">
+            <div className="flex size-7 shrink-0 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground shadow-elevation-xs">
+              <BrandIcon className="size-3.5" />
+            </div>
+            <div className="min-w-0 group-data-[collapsible=icon]:hidden">
+              <p className="truncate text-[14px] font-semibold leading-tight text-sidebar-foreground">
+                {brand.title}
+              </p>
+              <p className="truncate text-xs text-sidebar-foreground/55">
+                {brand.subtitle}
+              </p>
+            </div>
+          </div>
+        ) : (
+          <ShellBrandHeader productName={productName} logoUrl={logoUrl} />
         )}
-      >
-        <div className="flex min-w-0 flex-1 items-center gap-2.5 group-data-[collapsible=icon]:justify-center">
-          <div className="flex size-7 shrink-0 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground shadow-elevation-xs">
-            <BrandIcon className="size-3.5" />
-          </div>
-          <div className="min-w-0 group-data-[collapsible=icon]:hidden">
-            <p className="truncate text-[14px] font-semibold leading-tight tracking-tight">
-              {brand.title}
-            </p>
-            <p className="truncate text-xs text-sidebar-foreground/55">
-              {brand.subtitle}
-            </p>
-          </div>
-        </div>
       </SidebarHeader>
 
-      <SidebarContent className="gap-0.5 overflow-y-auto py-2">
+      <SidebarContent className="gap-0 overflow-y-auto py-1">
         {isSettingsMode ? (
           <>
             <SidebarMenu className="px-2">
@@ -101,7 +102,7 @@ export function AppSidebar({
                 <SidebarMenuButton
                   render={<Link href="/business/dashboard" />}
                   tooltip="Back to Main Menu"
-                  className="h-9 gap-2 rounded-md px-2 text-[14px] text-muted-foreground hover:text-foreground"
+                  className="h-9 gap-2 rounded-md px-2 text-[14px] text-sidebar-foreground/70 hover:text-sidebar-foreground"
                 >
                   <ArrowLeft className="size-4" />
                   <span>Back to Main Menu</span>
@@ -109,35 +110,47 @@ export function AppSidebar({
               </SidebarMenuItem>
             </SidebarMenu>
             <SidebarSeparator className="mx-3 my-1" />
+            <SidebarMenu className="gap-px px-2">
+              {hydrated ? (
+                sections.flatMap((section) =>
+                  section.items.map((item) => (
+                    <SidebarNavItem key={item.href} item={item} />
+                  )),
+                )
+              ) : (
+                <SidebarNavSkeleton />
+              )}
+            </SidebarMenu>
           </>
-        ) : null}
-        <SidebarMenu className="gap-px px-2">
-          {hydrated ? (
-            navItems.map((item) => (
-              <SidebarNavItem key={item.href} item={item} />
-            ))
-          ) : (
+        ) : hydrated ? (
+          sections.map((section) => (
+            <SidebarSection key={section.id} section={section} />
+          ))
+        ) : (
+          <SidebarMenu className="gap-px px-2">
             <SidebarNavSkeleton />
-          )}
-        </SidebarMenu>
+          </SidebarMenu>
+        )}
       </SidebarContent>
 
-      {showFooter ? (
-        <SidebarFooter className="relative overflow-visible border-t border-sidebar-border p-2">
-          {showNavFooter ? (
-            <div className="min-w-0 pr-3.5 group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:pr-0">
-              {hydrated
-                ? footerItems.map((item) => (
-                    <SidebarMenu key={item.href} className="gap-px">
-                      <SidebarNavItem item={item} />
-                    </SidebarMenu>
-                  ))
-                : null}
-            </div>
-          ) : null}
-          <SidebarFooterCollapseTrigger />
-        </SidebarFooter>
-      ) : null}
+      <SidebarFooter className="relative gap-0 overflow-hidden p-0">
+        {showNavFooter ? (
+          <div className="border-t border-transparent px-3 py-3 group-data-[collapsible=icon]:px-2">
+            {hydrated
+              ? footerItems.map((item) => (
+                  <SidebarMenu key={item.href} className="gap-px">
+                    <SidebarNavItem item={item} />
+                  </SidebarMenu>
+                ))
+              : null}
+          </div>
+        ) : null}
+        {!isMobile ? (
+          <div className="border-t border-transparent p-3">
+            <SidebarFooterCollapseTrigger />
+          </div>
+        ) : null}
+      </SidebarFooter>
     </ShadcnSidebar>
   );
 }

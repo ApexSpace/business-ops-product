@@ -64,7 +64,10 @@ export class GiftCardSettingsService {
   ): Promise<GiftCardSettingsResponseDto> {
     const key = dto.artworkKey.trim();
     const isPreset = GIFT_CARD_ARTWORK_PRESETS.some((p) => p.key === key);
-    if (!isPreset && !key.startsWith(`businesses/${businessId}/gift-card-artwork/`)) {
+    if (
+      !isPreset &&
+      !key.startsWith(`businesses/${businessId}/gift-card-artwork/`)
+    ) {
       throw new AppException(
         ErrorCode.BAD_REQUEST,
         'Invalid artwork key',
@@ -148,7 +151,7 @@ export class GiftCardSettingsService {
     base: string,
     businessId: string,
   ): Promise<string> {
-    let candidate = isValidBookingSlug(base) ? base : 'gift-cards';
+    const candidate = isValidBookingSlug(base) ? base : 'gift-cards';
 
     for (let i = 0; i < 100; i++) {
       const suffix = i === 0 ? '' : `-${i}`;

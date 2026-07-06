@@ -100,7 +100,10 @@ export class ProductInventoryRepository {
       checkoutId?: string | null;
       invoiceItemId?: string | null;
     },
-  ): Promise<{ adjustment: ProductInventoryAdjustment; stockQuantity: number }> {
+  ): Promise<{
+    adjustment: ProductInventoryAdjustment;
+    stockQuantity: number;
+  }> {
     return this.prisma.$transaction(async (tx) => {
       let stockQuantity = 0;
 

@@ -1,23 +1,18 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  Boxes,
-  MoreHorizontal,
-  Pencil,
-  Plus,
-  Search,
-  Settings,
-} from "lucide-react";
+import { Boxes, LayoutTemplate, Plus, Settings } from "lucide-react";
 import { toast } from "sonner";
 import { DateTime } from "luxon";
+import { ApiErrorState } from "@/components/data-display/api-error-state";
+import { DataTable } from "@/components/data-display/data-table";
+import { EmptyState } from "@/components/data-display/empty-state";
+import { SearchableSelect } from "@/components/forms/searchable-select";
+import { ListToolbar } from "@/components/layout/list-toolbar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
@@ -26,15 +21,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { SearchableSelect } from "@/components/forms/searchable-select";
-import { ApiErrorState } from "@/components/data-display/api-error-state";
-import { cn } from "@/lib/utils";
+  Sheet,
+  SheetBody,
+  SheetContent,
+} from "@/components/ui/sheet";
+import { useIsMobile } from "@/lib/hooks/use-mobile";
 import { queryKeys } from "@/lib/query/keys";
 import { invalidatePackages } from "@/lib/query/invalidation";
 import { listContacts } from "@/features/contacts/api/contacts.api";
@@ -48,29 +42,25 @@ import {
   transferClientPackage,
   updateClientPackageExpiration,
 } from "@/features/packages/api/packages.api";
+import {
+  PackageDetailPanel,
+  packageDisplayName,
+} from "@/features/packages/components/package-detail-panel";
 import type { ClientPackageListItem } from "@/features/packages/types";
-
-function packageLabel(item: ClientPackageListItem) {
-  const emoji = item.packageTemplate.emoji ?? "";
-  return `${emoji} ${item.packageTemplate.name}`.trim();
-}
 
 function formatListDate(value: string) {
   return DateTime.fromISO(value).toFormat("MMMM d");
 }
 
-function formatDetailDate(value: string) {
-  return DateTime.fromISO(value).toFormat("MMMM d, yyyy");
-}
-
 export function PackagesWorkspace() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const selectedId = searchParams.get("selected");
   const queryClient = useQueryClient();
+  const isMobile = useIsMobile();
 
-  const [search, setSearch] = useState("");
+  const selectedId = searchParams.get("selected");
   const contactFilter = searchParams.get("contact");
+  const [search, setSearch] = useState("");
   const [addOpen, setAddOpen] = useState(false);
   const [transferOpen, setTransferOpen] = useState(false);
   const [adjustMode, setAdjustMode] = useState(false);
@@ -89,6 +79,19 @@ export function PackagesWorkspace() {
   );
   const [expirationDraft, setExpirationDraft] = useState("");
 
+  const setSelectedId = (id: string | null) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (id) {
+      params.set("selected", id);
+    } else {
+      params.delete("selected");
+    }
+    const qs = params.toString();
+    router.replace(qs ? `/business/packages?${qs}` : "/business/packages", {
+      scroll: false,
+    });
+  };
+
   useEffect(() => {
     if (contactFilter) {
       setContactId(contactFilter);
@@ -100,6 +103,15 @@ export function PackagesWorkspace() {
     queryKey: queryKeys.packages.clientList({ search }),
     queryFn: () => listClientPackages({ search: search || undefined }),
   });
+
+  const packages = listQuery.data ?? [];
+
+  useEffect(() => {
+    if (!selectedId && packages.length > 0 && !isMobile) {
+      setSelectedId(packages[0]!.id);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only auto-select on first load
+  }, [packages, selectedId, isMobile]);
 
   const detailQuery = useQuery({
     queryKey: queryKeys.packages.clientDetail(selectedId ?? ""),
@@ -147,7 +159,7 @@ export function PackagesWorkspace() {
       toast.success("Package added");
       setAddOpen(false);
       await invalidatePackages(queryClient);
-      router.push(`/business/packages?selected=${pkg.id}`);
+      setSelectedId(pkg.id);
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -156,7 +168,7 @@ export function PackagesWorkspace() {
     mutationFn: deleteClientPackage,
     onSuccess: async () => {
       toast.success("Package deleted");
-      router.push("/business/packages");
+      setSelectedId(null);
       await invalidatePackages(queryClient);
     },
     onError: (e: Error) => toast.error(e.message),
@@ -214,278 +226,272 @@ export function PackagesWorkspace() {
   function startAdjust() {
     if (!detail) return;
     const draft: Record<string, number> = {};
-    for (const a of detail.serviceAllocations) {
-      draft[a.serviceId] = a.remaining;
+    for (const allocation of detail.serviceAllocations) {
+      draft[allocation.serviceId] = allocation.remaining;
     }
     setAllocationDraft(draft);
     setAdjustMode(true);
   }
 
-  if (listQuery.isError) {
-    return <ApiErrorState error={listQuery.error} onRetry={() => listQuery.refetch()} />;
-  }
+  const columns = useMemo(
+    () => [
+      {
+        id: "client",
+        header: "Client",
+        cell: (row: ClientPackageListItem) => (
+          <button
+            type="button"
+            className="text-primary hover:underline"
+            onClick={(e) => {
+              e.stopPropagation();
+              router.push(`/business/contacts?contact=${row.contact.id}`);
+            }}
+          >
+            {row.contact.name}
+          </button>
+        ),
+      },
+      {
+        id: "name",
+        header: "Name",
+        cell: (row: ClientPackageListItem) => (
+          <span className="inline-flex items-center gap-2">
+            {packageDisplayName(row)}
+            {row.isDemo ? <Badge variant="secondary">Demo</Badge> : null}
+          </span>
+        ),
+      },
+      {
+        id: "qty",
+        header: "Qty",
+        className: "text-right",
+        cell: (row: ClientPackageListItem) => (
+          <span className="tabular-nums">{row.totalQty}</span>
+        ),
+      },
+      {
+        id: "purchaseDate",
+        header: "Purchase date",
+        cell: (row: ClientPackageListItem) => (
+          <span className="text-muted-foreground">
+            {formatListDate(row.purchaseDate)}
+          </span>
+        ),
+      },
+    ],
+    [router],
+  );
+
+  const detailPanelProps = {
+    selectedId,
+    detail,
+    isLoading: detailQuery.isLoading,
+    isError: detailQuery.isError,
+    error: detailQuery.error,
+    onRetry: () => void detailQuery.refetch(),
+    onDelete: () => {
+      if (!detail) return;
+      deleteMutation.mutate(detail.id);
+    },
+    onTransfer: () => setTransferOpen(true),
+    onStartAdjust: startAdjust,
+    adjustMode,
+    allocationDraft,
+    onAllocationChange: (serviceId: string, remaining: number) => {
+      setAllocationDraft((prev) => ({ ...prev, [serviceId]: remaining }));
+    },
+    onCancelAdjust: () => setAdjustMode(false),
+    onSaveAdjust: () => {
+      if (!detail) return;
+      adjustMutation.mutate({
+        id: detail.id,
+        allocations: detail.serviceAllocations.map((allocation) => ({
+          serviceId: allocation.serviceId,
+          remaining:
+            allocationDraft[allocation.serviceId] ?? allocation.remaining,
+        })),
+      });
+    },
+    adjustPending: adjustMutation.isPending,
+    onEditExpiration: () => {
+      if (!detail) return;
+      setExpirationDraft(
+        detail.expirationDate ? detail.expirationDate.slice(0, 10) : "",
+      );
+      const next = prompt(
+        "Expiration date (YYYY-MM-DD) or leave empty for none:",
+        expirationDraft,
+      );
+      if (next === null) return;
+      expirationMutation.mutate({
+        id: detail.id,
+        expirationDate: next.trim() ? next.trim() : null,
+      });
+    },
+    onOpenContact: (contactId: string) => {
+      router.push(`/business/contacts?contact=${contactId}`);
+    },
+  };
 
   return (
-    <div className="flex min-h-[calc(100vh-12rem)] flex-col gap-4 lg:flex-row">
-      <div className="flex min-w-0 flex-1 flex-col gap-3">
-        <div className="flex flex-wrap items-center gap-2">
-          <Button onClick={() => setAddOpen(true)}>
-            <Plus className="mr-2 size-4" />
-            Add Package
-          </Button>
-          <div className="relative min-w-[200px] flex-1">
-            <Search className="text-muted-foreground absolute top-2.5 left-2.5 size-4" />
-            <Input
-              className="pl-9"
-              placeholder="Search by name or client"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </div>
-          <Button
-            variant="ghost"
-            nativeButton={false}
-            render={<Link href="/business/packages/setup" />}
-          >
-            Package setup
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            nativeButton={false}
-            render={
-              <Link href="/business/packages/settings" aria-label="Settings" />
+    <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
+      <div className="grid min-h-0 flex-1 gap-4 overflow-hidden px-[var(--page-padding-x)] pb-[var(--page-padding-y)] pt-[var(--page-content-top-gap)] lg:grid-cols-[minmax(0,1fr)_minmax(280px,380px)] lg:grid-rows-1">
+        <section className="flex min-h-0 flex-col overflow-hidden rounded-xl border border-border bg-card shadow-elevation-xs">
+          <ListToolbar
+            className="rounded-none border-0 border-b bg-transparent p-3 shadow-none sm:px-4"
+            search={
+              <Input
+                placeholder="Search by name or client…"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="min-w-0 flex-1 sm:max-w-md"
+              />
             }
-          >
-            <Settings className="size-4" />
-          </Button>
-        </div>
-
-        <div className="overflow-hidden rounded-lg border">
-          <table className="w-full text-sm">
-            <thead className="bg-muted/50 text-muted-foreground">
-              <tr>
-                <th className="px-3 py-2 text-left font-medium">Client</th>
-                <th className="px-3 py-2 text-left font-medium">Name</th>
-                <th className="px-3 py-2 text-left font-medium">Qty</th>
-                <th className="px-3 py-2 text-left font-medium">Purchase Date</th>
-              </tr>
-            </thead>
-            <tbody>
-              {(listQuery.data ?? []).map((row) => (
-                <tr
-                  key={row.id}
-                  className={cn(
-                    "cursor-pointer border-t hover:bg-muted/30",
-                    selectedId === row.id && "bg-primary/5",
-                  )}
-                  onClick={() =>
-                    router.push(`/business/packages?selected=${row.id}`)
-                  }
+            actions={
+              <>
+                <Button
+                  variant="outline"
+                  size="icon-sm"
+                  className="sm:hidden"
+                  aria-label="Package setup"
+                  onClick={() => router.push("/business/packages/setup")}
                 >
-                  <td className="px-3 py-2">{row.contact.name}</td>
-                  <td className="px-3 py-2">
-                    <span className="inline-flex items-center gap-2">
-                      {packageLabel(row)}
-                      {row.isDemo ? (
-                        <Badge variant="secondary">Demo</Badge>
-                      ) : null}
-                    </span>
-                  </td>
-                  <td className="px-3 py-2">{row.totalQty}</td>
-                  <td className="px-3 py-2">{formatListDate(row.purchaseDate)}</td>
-                </tr>
-              ))}
-              {!listQuery.isLoading && (listQuery.data ?? []).length === 0 ? (
-                <tr>
-                  <td
-                    colSpan={4}
-                    className="text-muted-foreground px-3 py-8 text-center"
-                  >
-                    No client packages yet.
-                  </td>
-                </tr>
-              ) : null}
-            </tbody>
-          </table>
-        </div>
+                  <LayoutTemplate className="size-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="hidden shrink-0 sm:inline-flex"
+                  onClick={() => router.push("/business/packages/setup")}
+                >
+                  <LayoutTemplate className="mr-1.5 size-4" />
+                  Package setup
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon-sm"
+                  className="sm:hidden"
+                  aria-label="Settings"
+                  onClick={() => router.push("/business/packages/settings")}
+                >
+                  <Settings className="size-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="hidden shrink-0 sm:inline-flex"
+                  onClick={() => router.push("/business/packages/settings")}
+                >
+                  <Settings className="mr-1.5 size-4" />
+                  Settings
+                </Button>
+                <Button
+                  size="icon-sm"
+                  className="sm:hidden"
+                  aria-label="Add package"
+                  onClick={() => setAddOpen(true)}
+                >
+                  <Plus className="size-4" />
+                </Button>
+                <Button
+                  size="sm"
+                  className="hidden shrink-0 sm:inline-flex"
+                  onClick={() => setAddOpen(true)}
+                >
+                  <Plus className="mr-1.5 size-4" />
+                  Add package
+                </Button>
+              </>
+            }
+          />
+
+          {listQuery.isError ? (
+            <ApiErrorState
+              error={listQuery.error}
+              onRetry={() => void listQuery.refetch()}
+            />
+          ) : listQuery.isLoading ? (
+            <p className="p-6 text-sm text-muted-foreground">
+              Loading packages…
+            </p>
+          ) : packages.length === 0 ? (
+            <div className="flex flex-1 items-center justify-center p-8">
+              <EmptyState
+                icon={
+                  <Boxes className="size-5 text-muted-foreground/70" aria-hidden />
+                }
+                title="No client packages yet"
+                description="Add a package to assign prepaid services to a client."
+                action={
+                  <Button size="sm" onClick={() => setAddOpen(true)}>
+                    <Plus className="mr-1.5 size-4" />
+                    Add package
+                  </Button>
+                }
+              />
+            </div>
+          ) : (
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+              <div className="min-h-0 flex-1 overflow-y-auto">
+                <DataTable
+                  columns={columns}
+                  data={packages}
+                  getRowId={(row) => row.id}
+                  activeRowId={selectedId}
+                  onRowClick={(row) => setSelectedId(row.id)}
+                  getRowClassName={(row) =>
+                    selectedId === row.id
+                      ? "shadow-[inset_3px_0_0_0_var(--color-primary)]"
+                      : undefined
+                  }
+                  className="rounded-none border-0 shadow-none"
+                />
+              </div>
+              <div className="shrink-0 border-t border-border px-4 py-3 text-sm text-muted-foreground">
+                {packages.length} package{packages.length === 1 ? "" : "s"}
+              </div>
+            </div>
+          )}
+        </section>
+
+        {!isMobile ? (
+          <PackageDetailPanel
+            {...detailPanelProps}
+            className="min-h-0 max-lg:hidden"
+          />
+        ) : null}
       </div>
 
-      <aside className="w-full shrink-0 lg:w-[380px]">
-        {!selectedId || !detail ? (
-          <div className="flex h-full min-h-[320px] flex-col items-center justify-center rounded-lg border border-dashed p-8 text-center">
-            <Boxes className="text-muted-foreground mb-3 size-10" />
-            <p className="text-muted-foreground text-sm">
-              Add a new client package or select one from the list to view
-              details.
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-4 rounded-lg border p-4">
-            <div className="flex items-center justify-between">
-              <h3 className="font-semibold">Package</h3>
-              <DropdownMenu>
-                <DropdownMenuTrigger
-                  render={
-                    <Button variant="ghost" size="icon">
-                      <MoreHorizontal className="size-4" />
-                    </Button>
-                  }
-                />
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem
-                    onClick={() => deleteMutation.mutate(detail.id)}
-                  >
-                    Delete
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setTransferOpen(true)}>
-                    Transfer
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={startAdjust}>
-                    Adjust Quantities
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-
-            <div className="space-y-3 text-sm">
-              <div>
-                <p className="text-muted-foreground text-xs">Name</p>
-                <p className="font-medium">{packageLabel(detail)}</p>
-              </div>
-              <div>
-                <p className="text-muted-foreground text-xs">Client</p>
-                <p>{detail.contact.name}</p>
-              </div>
-              <div>
-                <p className="text-muted-foreground text-xs">Purchase date</p>
-                <p>{formatDetailDate(detail.purchaseDate)}</p>
-              </div>
-              <div>
-                <p className="text-muted-foreground text-xs">Expiration date</p>
-                <div className="flex items-center gap-2">
-                  <p>
-                    {detail.expirationDate
-                      ? formatDetailDate(detail.expirationDate)
-                      : "No expiration date"}
-                  </p>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="size-7"
-                    onClick={() => {
-                      setExpirationDraft(
-                        detail.expirationDate
-                          ? detail.expirationDate.slice(0, 10)
-                          : "",
-                      );
-                      const next = prompt(
-                        "Expiration date (YYYY-MM-DD) or leave empty for none:",
-                        expirationDraft,
-                      );
-                      if (next === null) return;
-                      expirationMutation.mutate({
-                        id: detail.id,
-                        expirationDate: next.trim() ? next.trim() : null,
-                      });
-                    }}
-                  >
-                    <Pencil className="size-3.5" />
-                  </Button>
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <p className="mb-2 text-sm font-medium">Services remaining</p>
-              <table className="w-full text-sm">
-                <thead className="text-muted-foreground text-xs uppercase">
-                  <tr>
-                    <th className="py-1 text-left">Service</th>
-                    <th className="py-1 text-right"># Remaining</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {detail.serviceAllocations.map((a) => (
-                    <tr key={a.serviceId} className="border-t">
-                      <td className="py-2">{a.serviceName}</td>
-                      <td className="py-2 text-right">
-                        {adjustMode ? (
-                          <Input
-                            type="number"
-                            min={0}
-                            className="ml-auto h-8 w-20 text-right"
-                            value={allocationDraft[a.serviceId] ?? a.remaining}
-                            onChange={(e) =>
-                              setAllocationDraft((prev) => ({
-                                ...prev,
-                                [a.serviceId]: Number(e.target.value),
-                              }))
-                            }
-                          />
-                        ) : (
-                          a.remaining
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              {adjustMode ? (
-                <div className="mt-3 flex justify-end gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setAdjustMode(false)}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    size="sm"
-                    onClick={() =>
-                      adjustMutation.mutate({
-                        id: detail.id,
-                        allocations: detail.serviceAllocations.map((a) => ({
-                          serviceId: a.serviceId,
-                          remaining:
-                            allocationDraft[a.serviceId] ?? a.remaining,
-                        })),
-                      })
-                    }
-                  >
-                    Save
-                  </Button>
-                </div>
-              ) : null}
-            </div>
-
-            <div>
-              <p className="mb-2 text-sm font-medium">History</p>
-              <ul className="text-muted-foreground max-h-40 space-y-2 overflow-y-auto text-xs">
-                {detail.history.map((event) => (
-                  <li key={event.id}>
-                    <span className="text-foreground font-medium">
-                      {event.eventType}
-                    </span>
-                    {event.description ? ` — ${event.description}` : ""}
-                    <span className="block">
-                      {formatDetailDate(event.createdAt)}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        )}
-      </aside>
+      {isMobile ? (
+        <Sheet
+          open={!!selectedId}
+          onOpenChange={(open) => {
+            if (!open) setSelectedId(null);
+          }}
+        >
+          <SheetContent
+            side="right"
+            className="flex h-[100dvh] max-h-[100dvh] w-full max-w-none flex-col border-l-0 bg-background p-0 shadow-none"
+            showCloseButton
+          >
+            <SheetBody className="flex min-h-0 flex-1 flex-col overflow-hidden p-0">
+              <PackageDetailPanel
+                {...detailPanelProps}
+                variant="drawer"
+                className="min-h-0 flex-1 rounded-none border-0 shadow-none"
+              />
+            </SheetBody>
+          </SheetContent>
+        </Sheet>
+      ) : null}
 
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Add Package</DialogTitle>
+            <DialogTitle>Add package</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label>Client</Label>
               <SearchableSelect
                 items={contactOptions}
@@ -495,7 +501,7 @@ export function PackagesWorkspace() {
                 inDialog
               />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label>Package template</Label>
               <SearchableSelect
                 items={templateOptions}
@@ -505,7 +511,7 @@ export function PackagesWorkspace() {
                 inDialog
               />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label>Purchase date</Label>
               <Input
                 type="date"
@@ -527,7 +533,7 @@ export function PackagesWorkspace() {
               Cancel
             </Button>
             <Button
-              disabled={!contactId || !templateId}
+              disabled={!contactId || !templateId || createMutation.isPending}
               onClick={() =>
                 createMutation.mutate({
                   contactId: contactId!,
@@ -537,7 +543,7 @@ export function PackagesWorkspace() {
                 })
               }
             >
-              Add Package
+              Add package
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -546,9 +552,9 @@ export function PackagesWorkspace() {
       <Dialog open={transferOpen} onOpenChange={setTransferOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Transfer Package</DialogTitle>
+            <DialogTitle>Transfer package</DialogTitle>
           </DialogHeader>
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <Label>Transfer to</Label>
             <SearchableSelect
               items={contactOptions}

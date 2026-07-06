@@ -36,7 +36,7 @@ export class CheckoutOffersService {
 
   parseMetadata(raw: unknown): CheckoutOfferMetadata {
     if (!raw || typeof raw !== 'object') return {};
-    return raw as CheckoutOfferMetadata;
+    return raw;
   }
 
   async evaluateForCheckout(
@@ -209,10 +209,10 @@ export class CheckoutOffersService {
       serviceId: item.serviceId,
       productId: item.productId,
       serviceCategoryId: item.serviceId
-        ? serviceCategoryById.get(item.serviceId) ?? null
+        ? (serviceCategoryById.get(item.serviceId) ?? null)
         : null,
       productCategoryId: item.productId
-        ? productCategoryById.get(item.productId) ?? null
+        ? (productCategoryById.get(item.productId) ?? null)
         : null,
       unitPrice: Number(item.unitPrice.toString()),
       quantity: Number(item.quantity.toString()),

@@ -136,10 +136,7 @@ export class ServiceWorkspaceController {
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
   ) {
-    return this.workspaceService.listResourceRequirements(
-      user.businessId!,
-      id,
-    );
+    return this.workspaceService.listResourceRequirements(user.businessId!, id);
   }
 
   @Post(':id/resource-requirements')

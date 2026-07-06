@@ -1,5 +1,13 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
-import { InvoiceLineType, InvoiceStatus, MembershipStatus, PayableType, Prisma, ProductType, ServiceStatus } from '@prisma/client';
+import {
+  InvoiceLineType,
+  InvoiceStatus,
+  MembershipStatus,
+  PayableType,
+  Prisma,
+  ProductType,
+  ServiceStatus,
+} from '@prisma/client';
 import { RequestUser } from '@app/common/decorators/current-user.decorator';
 import { AppException } from '@app/common/exceptions/app.exception';
 import { ErrorCode } from '@app/common/exceptions/error-code.enum';
@@ -90,10 +98,7 @@ export class CheckoutsService {
     };
   }
 
-  async getById(
-    businessId: string,
-    id: string,
-  ): Promise<CheckoutResponseDto> {
+  async getById(businessId: string, id: string): Promise<CheckoutResponseDto> {
     const checkout = await this.requireOpenOrClosedCheckout(businessId, id);
     return toCheckoutResponse(checkout);
   }
@@ -175,9 +180,7 @@ export class CheckoutsService {
     );
 
     const updated = await this.checkoutRepository.update(businessId, id, {
-      contact: dto.contactId
-        ? { connect: { id: dto.contactId } }
-        : undefined,
+      contact: dto.contactId ? { connect: { id: dto.contactId } } : undefined,
       notes: dto.notes !== undefined ? dto.notes?.trim() || null : undefined,
       subtotal: totals.subtotal,
       taxAmount: totals.taxAmount,
@@ -803,7 +806,10 @@ export class CheckoutsService {
     actor: RequestUser,
   ): Promise<CheckoutResponseDto> {
     await this.requireEditableCheckout(businessId, checkoutId);
-    const removed = await this.checkoutRepository.deleteItem(checkoutId, lineId);
+    const removed = await this.checkoutRepository.deleteItem(
+      checkoutId,
+      lineId,
+    );
     if (!removed) {
       throw new AppException(
         ErrorCode.BAD_REQUEST,
@@ -850,7 +856,7 @@ export class CheckoutsService {
     );
 
     await this.checkoutRepository.update(businessId, checkoutId, {
-      metadata: offerResult.metadata as Prisma.InputJsonValue,
+      metadata: offerResult.metadata,
     });
 
     return this.recalculateAndReturn(businessId, checkoutId, actor.id);
@@ -882,14 +888,15 @@ export class CheckoutsService {
     );
 
     await this.checkoutRepository.update(businessId, checkoutId, {
-      metadata: offerResult.metadata as Prisma.InputJsonValue,
+      metadata: offerResult.metadata,
     });
 
     return this.recalculateAndReturn(businessId, checkoutId, actor.id);
   }
 
   async listStaffOffersForPicker(businessId: string) {
-    const offers = await this.offerRepository.findEnabledWithDiscounts(businessId);
+    const offers =
+      await this.offerRepository.findEnabledWithDiscounts(businessId);
     return offers
       .filter((offer) => offer.applicationMode === 'STAFF_ONLY')
       .map((offer) => ({
@@ -939,7 +946,7 @@ export class CheckoutsService {
       totalAmount: totals.totalAmount,
       balanceDue: totals.balanceDue,
       remainingAmount: totals.balanceDue,
-      metadata: offerResult.metadata as Prisma.InputJsonValue,
+      metadata: offerResult.metadata,
     });
 
     const refreshed = await this.checkoutRepository.findById(
@@ -1079,11 +1086,12 @@ export class CheckoutsService {
     clientMembershipId: string,
     membershipServiceGroupId: string,
   ): Promise<void> {
-    const available = await this.clientMembershipsService.findAvailableForService(
-      businessId,
-      contactId,
-      serviceId,
-    );
+    const available =
+      await this.clientMembershipsService.findAvailableForService(
+        businessId,
+        contactId,
+        serviceId,
+      );
     const membership = available.find(
       (entry) => entry?.membershipId === clientMembershipId,
     );

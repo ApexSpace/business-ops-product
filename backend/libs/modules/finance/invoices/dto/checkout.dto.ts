@@ -16,7 +16,10 @@ import {
 } from 'class-validator';
 
 export class CheckoutItemInputDto {
-  @ApiPropertyOptional({ enum: InvoiceLineType, default: InvoiceLineType.SERVICE })
+  @ApiPropertyOptional({
+    enum: InvoiceLineType,
+    default: InvoiceLineType.SERVICE,
+  })
   @IsOptional()
   @IsEnum(InvoiceLineType)
   lineType?: InvoiceLineType;

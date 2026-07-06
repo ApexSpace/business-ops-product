@@ -93,14 +93,12 @@ export class BookingAvailabilityService {
       duration,
       params.calendar.slotIntervalMinutes,
     );
-    const bufferBefore =
-      params.timing?.hasBufferTime
-        ? params.timing.bufferBeforeMinutes
-        : params.calendar.bufferBeforeMinutes;
-    const bufferAfter =
-      params.timing?.hasBufferTime
-        ? params.timing.bufferAfterMinutes
-        : params.calendar.bufferAfterMinutes;
+    const bufferBefore = params.timing?.hasBufferTime
+      ? params.timing.bufferBeforeMinutes
+      : params.calendar.bufferBeforeMinutes;
+    const bufferAfter = params.timing?.hasBufferTime
+      ? params.timing.bufferAfterMinutes
+      : params.calendar.bufferAfterMinutes;
     const capacity = params.calendar.capacity;
 
     const appointments = await this.appointmentRepository.findBlockingInRange(
@@ -259,14 +257,12 @@ export class BookingAvailabilityService {
       params.calendar.slotIntervalMinutes,
     );
 
-    const bufferBefore =
-      params.timing?.hasBufferTime
-        ? params.timing.bufferBeforeMinutes
-        : params.calendar.bufferBeforeMinutes;
-    const bufferAfter =
-      params.timing?.hasBufferTime
-        ? params.timing.bufferAfterMinutes
-        : params.calendar.bufferAfterMinutes;
+    const bufferBefore = params.timing?.hasBufferTime
+      ? params.timing.bufferBeforeMinutes
+      : params.calendar.bufferBeforeMinutes;
+    const bufferAfter = params.timing?.hasBufferTime
+      ? params.timing.bufferAfterMinutes
+      : params.calendar.bufferAfterMinutes;
     if (startMin < windowStart || endMin > windowEnd) return false;
     if ((startMin - windowStart) % interval !== 0) return false;
 

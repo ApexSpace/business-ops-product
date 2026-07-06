@@ -12,7 +12,7 @@ import { LeadsService } from './services/leads.service';
   imports: [
     AuditModule,
     PipelinesModule,
-    ContactsModule,
+    forwardRef(() => ContactsModule),
     ServicesModule,
     forwardRef(() => MembershipModule),
   ],

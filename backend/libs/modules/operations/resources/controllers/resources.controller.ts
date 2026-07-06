@@ -44,10 +44,7 @@ export class ResourcesController {
 
   @Get('picker')
   @BusinessRoles(...MEMBER_ROLES)
-  picker(
-    @CurrentUser() user: RequestUser,
-    @Query('search') search?: string,
-  ) {
+  picker(@CurrentUser() user: RequestUser, @Query('search') search?: string) {
     return this.resourcesService.picker(user.businessId!, search);
   }
 

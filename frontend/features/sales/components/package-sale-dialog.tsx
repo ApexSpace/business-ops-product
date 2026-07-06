@@ -87,18 +87,20 @@ export function PackageSaleDialog({
           <div className="space-y-2">
             <Label>Package</Label>
             <SearchableSelect
-              options={templateOptions}
+              inDialog
+              items={templateOptions}
               value={templateId}
-              onChange={setTemplateId}
+              onValueChange={setTemplateId}
               placeholder="Select package template"
             />
           </div>
           <div className="space-y-2">
             <Label>Client</Label>
             <SearchableSelect
-              options={contactOptions}
+              inDialog
+              items={contactOptions}
               value={ownerContactId}
-              onChange={setOwnerContactId}
+              onValueChange={setOwnerContactId}
               placeholder="Select client"
             />
           </div>

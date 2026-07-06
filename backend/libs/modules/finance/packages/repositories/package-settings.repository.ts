@@ -37,11 +37,16 @@ export class PackageSettingsRepository {
     });
   }
 
-  async isSlugTaken(slug: string, excludeBusinessId?: string): Promise<boolean> {
+  async isSlugTaken(
+    slug: string,
+    excludeBusinessId?: string,
+  ): Promise<boolean> {
     const existing = await this.prisma.packageSettings.findFirst({
       where: {
         publicSlug: slug,
-        ...(excludeBusinessId ? { businessId: { not: excludeBusinessId } } : {}),
+        ...(excludeBusinessId
+          ? { businessId: { not: excludeBusinessId } }
+          : {}),
       },
     });
     return !!existing;

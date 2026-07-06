@@ -272,7 +272,10 @@ export class ProductOptionsService {
     actor: RequestUser,
   ) {
     await this.assertVariableProduct(businessId, productId);
-    const value = await this.optionRepository.findValueById(businessId, valueId);
+    const value = await this.optionRepository.findValueById(
+      businessId,
+      valueId,
+    );
     if (!value || value.optionId !== optionId) {
       throw new AppException(
         ErrorCode.PRODUCT_OPTION_NOT_FOUND,
@@ -333,7 +336,10 @@ export class ProductOptionsService {
     businessId: string,
     productId: string,
   ): Promise<void> {
-    const product = await this.productRepository.findById(businessId, productId);
+    const product = await this.productRepository.findById(
+      businessId,
+      productId,
+    );
     if (!product) {
       throw new AppException(
         ErrorCode.PRODUCT_NOT_FOUND,

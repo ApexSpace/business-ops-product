@@ -101,7 +101,10 @@ export class PaymentsService {
       await this.syncInvoicePaymentsStandalone(businessId, dto.invoiceId);
     }
 
-    const payment = await this.paymentRepository.findById(businessId, paymentId);
+    const payment = await this.paymentRepository.findById(
+      businessId,
+      paymentId,
+    );
     if (payment) {
       void this.sendPaidReceiptEmail(
         businessId,

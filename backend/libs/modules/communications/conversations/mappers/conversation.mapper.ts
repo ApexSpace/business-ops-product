@@ -63,7 +63,9 @@ export function toConversationResponse(
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
     chatbotBotPaused:
-      row.channel === 'WEBCHAT' ? readChatbotBotPaused(row.metadata) : undefined,
+      row.channel === 'WEBCHAT'
+        ? readChatbotBotPaused(row.metadata)
+        : undefined,
     contact: row.contact ? toConversationContactSummary(row.contact) : null,
     assignedTo: row.assignedTo
       ? {

@@ -3,12 +3,34 @@
 import { useCallback, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Pencil, Plus, ShoppingBag, Trash2 } from "lucide-react";
+import {
+  Check,
+  ChevronDown,
+  CreditCard,
+  Gift,
+  MoreHorizontal,
+  Package,
+  Pencil,
+  Plus,
+  ShoppingBag,
+  Tag,
+  Trash2,
+  Wrench,
+} from "lucide-react";
 import { toast } from "sonner";
-import { PageContainer } from "@/components/layout/page-container";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { IconButton } from "@/components/ui/icon-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -453,35 +475,43 @@ export function SalesWorkspace() {
   ];
 
   return (
-    <PageContainer className="flex min-h-0 flex-1 flex-col">
-      <PageHeader
-        title="Sales"
-        description="Point-of-sale checkouts — open sales, add services, and collect payment."
-        actions={
-          <Button onClick={openNewSale}>
-            <Plus className="mr-2 size-4" />
-            New sale
-          </Button>
-        }
-      />
+    <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
+      <div className="shrink-0 px-[var(--page-padding-x)] pt-[var(--page-content-top-gap)]">
+        <PageHeader
+          title="Sales"
+          description="Point-of-sale checkouts — open sales, add services, and collect payment."
+        />
+      </div>
 
-      <div className="grid min-h-0 flex-1 gap-4 lg:grid-cols-[320px_minmax(0,1fr)]">
-        <div className="flex min-h-0 flex-col rounded-lg border bg-card">
-          <div className="space-y-2 border-b p-3">
-            <p className="text-sm font-medium">Sales</p>
-            <Input
-              placeholder="Search client or sale…"
-              value={listSearch}
-              onChange={(e) => setListSearch(e.target.value)}
-            />
-            <SearchableSelect
-              items={statusFilterItems}
-              value={statusFilter}
-              onValueChange={(v) => setStatusFilter(v as StatusFilter)}
-              placeholder="Status"
-            />
-          </div>
-          <div className="min-h-0 flex-1 overflow-y-auto p-2">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-[var(--page-padding-x)] pb-[var(--page-padding-y)]">
+        <div className="grid min-h-0 flex-1 gap-4 overflow-hidden max-lg:grid-rows-[minmax(0,1fr)_minmax(0,1fr)] lg:grid-cols-[320px_minmax(0,1fr)] lg:items-stretch">
+          <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-xl border border-border bg-card shadow-elevation-xs">
+            <div className="shrink-0 space-y-2 border-b border-border p-3">
+              <div className="flex items-center gap-2">
+                <Input
+                  className="min-w-0 flex-1"
+                  placeholder="Search client or sale…"
+                  value={listSearch}
+                  onChange={(e) => setListSearch(e.target.value)}
+                />
+                <Button
+                  type="button"
+                  size="icon"
+                  className="size-[var(--control-height)] shrink-0 rounded-[var(--radius-control)]"
+                  onClick={openNewSale}
+                  aria-label="New sale"
+                >
+                  <Plus className="size-4" />
+                </Button>
+              </div>
+              <SearchableSelect
+                items={statusFilterItems}
+                value={statusFilter}
+                onValueChange={(v) => setStatusFilter(v as StatusFilter)}
+                placeholder="Status"
+              />
+            </div>
+            <div className="min-h-0 flex-1 overflow-y-auto p-2">
             {listLoading ? (
               <p className="p-3 text-sm text-muted-foreground">Loading…</p>
             ) : sales.length === 0 ? (
@@ -507,12 +537,12 @@ export function SalesWorkspace() {
                 ))}
               </ul>
             )}
+            </div>
           </div>
-        </div>
 
-        <div className="flex min-h-0 flex-col rounded-lg border bg-card">
+          <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-xl border border-border bg-card shadow-elevation-xs">
           {!selectedId ? (
-            <div className="flex flex-1 items-center justify-center p-8">
+            <div className="flex min-h-0 flex-1 items-center justify-center overflow-hidden p-8">
               <EmptyState
                 icon={
                   <ShoppingBag
@@ -545,6 +575,7 @@ export function SalesWorkspace() {
               lineRemovePending={removeLineMutation.isPending}
             />
           )}
+        </div>
         </div>
       </div>
 
@@ -862,7 +893,7 @@ export function SalesWorkspace() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </PageContainer>
+    </div>
   );
 }
 
@@ -887,7 +918,15 @@ function SaleListItem({
       >
         <div className="flex items-center justify-between gap-2">
           <span className="font-medium">{sale.saleNumber}</span>
-          <Badge variant={sale.isOpen ? "default" : "secondary"}>
+          <Badge
+            variant={
+              sale.status === "VOID"
+                ? "destructive"
+                : sale.isOpen
+                  ? "default"
+                  : "secondary"
+            }
+          >
             {sale.status === "VOID"
               ? "Void"
               : sale.isOpen
@@ -901,6 +940,141 @@ function SaleListItem({
         </div>
       </button>
     </li>
+  );
+}
+
+function SaleStatusPill({
+  status,
+  isOpen,
+}: {
+  status: Checkout["status"];
+  isOpen: boolean;
+}) {
+  if (status === "VOID") {
+    return <Badge variant="destructive">Void</Badge>;
+  }
+  if (isOpen) {
+    return <Badge>Open</Badge>;
+  }
+  return <Badge variant="secondary">Closed</Badge>;
+}
+
+function SaleDetailToolbar({
+  onEdit,
+  onAddDeposit,
+  onAddService,
+  onAddProduct,
+  onAddGiftCard,
+  onAddPackage,
+  onApplyOffer,
+  onVoid,
+  onClose,
+}: {
+  onEdit: () => void;
+  onAddDeposit: (amount: number) => void;
+  onAddService: () => void;
+  onAddProduct: () => void;
+  onAddGiftCard: () => void;
+  onAddPackage: () => void;
+  onApplyOffer: () => void;
+  onVoid: () => void;
+  onClose: () => void;
+}) {
+  return (
+    <div className="flex flex-wrap items-center justify-start gap-2">
+      <IconButton
+        variant="outline"
+        size="icon"
+        className="size-[38px] shrink-0 rounded-[var(--radius-control)] shadow-elevation-xs"
+        aria-label="Edit sale"
+        onClick={onEdit}
+      >
+        <Pencil className="size-3.5" />
+      </IconButton>
+      <IconButton
+        variant="outline"
+        size="icon"
+        className="size-[38px] shrink-0 rounded-[var(--radius-control)] shadow-elevation-xs"
+        aria-label="Add wallet deposit"
+        onClick={() => onAddDeposit(25)}
+      >
+        <CreditCard className="size-3.5" />
+      </IconButton>
+
+      <div className="mx-0.5 hidden h-[22px] w-px shrink-0 bg-border sm:block" aria-hidden />
+
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          render={
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-[var(--control-height)] gap-1.5 px-3 shadow-elevation-xs"
+            >
+              <Plus className="size-3.5" />
+              Add to sale
+              <ChevronDown className="size-2.5 opacity-70" />
+            </Button>
+          }
+        />
+        <DropdownMenuContent align="start" className="min-w-[11.5rem]">
+          <DropdownMenuGroup>
+            <DropdownMenuLabel>Line items</DropdownMenuLabel>
+            <DropdownMenuItem onClick={onAddService}>
+              <Wrench className="size-3.5" />
+              Service
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={onAddProduct}>
+              <Package className="size-3.5" />
+              Product
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={onAddGiftCard}>
+              <Gift className="size-3.5" />
+              Gift card
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={onAddPackage}>
+              <ShoppingBag className="size-3.5" />
+              Package
+            </DropdownMenuItem>
+          </DropdownMenuGroup>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={onApplyOffer}>
+            <Tag className="size-3.5" />
+            Apply offer
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          render={
+            <IconButton
+              variant="outline"
+              size="icon"
+              className="size-[38px] shrink-0 rounded-[var(--radius-control)] shadow-elevation-xs"
+              aria-label="More actions"
+            >
+              <MoreHorizontal className="size-4" />
+            </IconButton>
+          }
+        />
+        <DropdownMenuContent align="end" className="min-w-[10rem]">
+          <DropdownMenuItem variant="destructive" onClick={onVoid}>
+            <Trash2 className="size-3.5" />
+            Void sale
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <Button
+        size="sm"
+        className="h-[var(--control-height)] gap-1.5 px-4"
+        onClick={onClose}
+      >
+        Close &amp; collect
+        <Check className="size-4" />
+      </Button>
+    </div>
   );
 }
 
@@ -937,89 +1111,73 @@ function SaleDetail({
   onRemoveLine: (lineId: string) => void;
   lineRemovePending: boolean;
 }) {
+  const statusLabel =
+    sale.status === "VOID" ? "Void" : sale.isOpen ? "Open" : "Closed";
+
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
-      <div className="flex flex-wrap items-start justify-between gap-3 border-b p-4">
-        <div>
-          <h2 className="text-lg font-semibold">{sale.saleNumber}</h2>
-          <p className="text-sm text-muted-foreground">
-            {sale.contact?.label} ·{" "}
-            {sale.status === "VOID"
-              ? "Void"
-              : sale.isOpen
-                ? "Open"
-                : "Closed"}
-          </p>
+    <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 py-3">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div className="min-w-0">
+          <h2 className="text-base font-semibold">{sale.saleNumber}</h2>
+          <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+            <span>{sale.contact?.label}</span>
+            <SaleStatusPill status={sale.status} isOpen={sale.isOpen} />
+          </div>
           {sale.notes ? (
-            <p className="mt-1 text-xs text-muted-foreground">{sale.notes}</p>
+            <p className="mt-2 text-xs text-muted-foreground">{sale.notes}</p>
           ) : null}
         </div>
+
         {sale.isOpen ? (
-          <div className="flex flex-wrap gap-2">
-            <Button variant="outline" size="sm" onClick={onEdit}>
-              <Pencil className="mr-1 size-3.5" />
-              Edit
-            </Button>
-            <Button variant="outline" size="sm" onClick={onAddService}>
-              Add service
-            </Button>
-            <Button variant="outline" size="sm" onClick={onAddProduct}>
-              Add product
-            </Button>
-            <Button variant="outline" size="sm" onClick={onAddGiftCard}>
-              Add gift card
-            </Button>
-            <Button variant="outline" size="sm" onClick={onAddPackage}>
-              Add package
-            </Button>
-            <Button variant="outline" size="sm" onClick={onApplyOffer}>
-              Apply offer
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onAddDeposit(25)}
-            >
-              + $25 wallet deposit
-            </Button>
-            <Button variant="destructive" size="sm" onClick={onVoid}>
-              Void
-            </Button>
-            <Button size="sm" onClick={onClose}>
-              Close &amp; collect
-            </Button>
-          </div>
-        ) : null}
+          <SaleDetailToolbar
+            onEdit={onEdit}
+            onAddDeposit={onAddDeposit}
+            onAddService={onAddService}
+            onAddProduct={onAddProduct}
+            onAddGiftCard={onAddGiftCard}
+            onAddPackage={onAddPackage}
+            onApplyOffer={onApplyOffer}
+            onVoid={onVoid}
+            onClose={onClose}
+          />
+        ) : (
+          <span className="text-sm text-muted-foreground">{statusLabel}</span>
+        )}
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto p-4">
+      <div className="mt-5 border-t border-border">
         {sale.items.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            No line items yet. Add a service, product, gift card, package, or wallet deposit.
+          <p className="py-8 text-sm text-muted-foreground">
+            No line items yet. Use{" "}
+            <span className="font-medium text-foreground">Add to sale</span> to
+            add a service, product, gift card, or package.
           </p>
         ) : (
-          <ul className="divide-y">
+          <ul>
             {sale.items.map((item) => (
               <li
                 key={item.id}
-                className="flex items-start justify-between gap-4 py-3 text-sm"
+                className="flex items-center justify-between gap-4 border-b border-border py-4 last:border-b-0"
               >
                 <div className="min-w-0 flex-1">
                   <p className="font-medium">{item.title}</p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="mt-0.5 text-xs text-muted-foreground">
                     {item.lineType.replaceAll("_", " ").toLowerCase()}
                     {item.staff ? ` · ${item.staff.label}` : ""}
                     {` · qty ${item.quantity}`}
                   </p>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span>{formatMoney(parseFloat(item.totalPrice))}</span>
+                <div className="flex shrink-0 items-center gap-3">
+                  <span className="text-sm font-medium tabular-nums">
+                    {formatMoney(parseFloat(item.totalPrice))}
+                  </span>
                   {sale.isOpen ? (
-                    <>
+                    <div className="flex items-center gap-1.5">
                       <Button
                         type="button"
-                        variant="ghost"
+                        variant="outline"
                         size="icon-sm"
+                        className="size-8 rounded-lg"
                         onClick={() => onEditLine(item)}
                         aria-label="Edit line"
                       >
@@ -1027,15 +1185,16 @@ function SaleDetail({
                       </Button>
                       <Button
                         type="button"
-                        variant="ghost"
+                        variant="outline"
                         size="icon-sm"
+                        className="size-8 rounded-lg hover:border-destructive/30 hover:bg-destructive/5 hover:text-destructive"
                         disabled={lineRemovePending}
                         onClick={() => onRemoveLine(item.id)}
                         aria-label="Remove line"
                       >
                         <Trash2 className="size-3.5" />
                       </Button>
-                    </>
+                    </div>
                   ) : null}
                 </div>
               </li>
@@ -1044,24 +1203,26 @@ function SaleDetail({
         )}
       </div>
 
-      <div className="border-t p-4 text-sm">
-        <div className="flex justify-between">
-          <span>Subtotal</span>
-          <span>{formatMoney(parseFloat(sale.subtotal))}</span>
+      <div className="shrink-0 space-y-1 border-t border-border bg-muted/20 px-0.5 pt-4 text-sm">
+        <div className="flex justify-between gap-4">
+          <span className="text-muted-foreground">Subtotal</span>
+          <span className="tabular-nums">
+            {formatMoney(parseFloat(sale.subtotal))}
+          </span>
         </div>
         {(sale.appliedOffers ?? []).map((offer) => (
           <div
             key={offer.offerId}
-            className="flex items-center justify-between text-emerald-700"
+            className="flex items-center justify-between gap-4 text-emerald-700"
           >
-            <span className="flex items-center gap-2">
-              Offer: {offer.offerName}
+            <span className="flex min-w-0 items-center gap-2">
+              <span className="truncate">Offer: {offer.offerName}</span>
               {sale.isOpen ? (
                 <Button
                   type="button"
                   variant="ghost"
                   size="sm"
-                  className="h-auto px-1 py-0 text-xs"
+                  className="h-auto shrink-0 px-1 py-0 text-xs"
                   disabled={removeOfferPending}
                   onClick={() => onRemoveOffer(offer.offerId)}
                 >
@@ -1069,23 +1230,31 @@ function SaleDetail({
                 </Button>
               ) : null}
             </span>
-            <span>-{formatMoney(parseFloat(offer.totalDiscount))}</span>
+            <span className="shrink-0 tabular-nums">
+              -{formatMoney(parseFloat(offer.totalDiscount))}
+            </span>
           </div>
         ))}
         {parseFloat(sale.discountAmount) > 0 &&
         !(sale.appliedOffers?.length) ? (
-          <div className="flex justify-between text-emerald-700">
+          <div className="flex justify-between gap-4 text-emerald-700">
             <span>Discount</span>
-            <span>-{formatMoney(parseFloat(sale.discountAmount))}</span>
+            <span className="tabular-nums">
+              -{formatMoney(parseFloat(sale.discountAmount))}
+            </span>
           </div>
         ) : null}
-        <div className="flex justify-between font-semibold">
+        <div className="flex justify-between gap-4 border-t border-border/60 pt-1 font-semibold">
           <span>Total</span>
-          <span>{formatMoney(parseFloat(sale.totalAmount))}</span>
+          <span className="tabular-nums">
+            {formatMoney(parseFloat(sale.totalAmount))}
+          </span>
         </div>
-        <div className="flex justify-between text-muted-foreground">
+        <div className="flex justify-between gap-4 text-muted-foreground">
           <span>Balance due</span>
-          <span>{formatMoney(parseFloat(sale.balanceDue))}</span>
+          <span className="tabular-nums">
+            {formatMoney(parseFloat(sale.balanceDue))}
+          </span>
         </div>
       </div>
     </div>

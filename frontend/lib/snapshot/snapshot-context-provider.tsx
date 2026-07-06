@@ -18,6 +18,7 @@ import {
   storedToSnapshotContext,
   writeStoredSnapshotContext,
 } from "./snapshot-context-storage";
+import { ClientThemeApplier } from "@/lib/theme/client-theme-applier";
 import { createTerminologyResolver } from "./resolve-terminology";
 
 const EMPTY_TENANT_DASHBOARD: SnapshotContext["dashboard"] = {
@@ -95,7 +96,10 @@ export function SnapshotContextProvider({ children }: { children: ReactNode }) {
   );
 
   return (
-    <SnapshotCtx.Provider value={value}>{children}</SnapshotCtx.Provider>
+    <SnapshotCtx.Provider value={value}>
+      <ClientThemeApplier branding={context.branding} />
+      {children}
+    </SnapshotCtx.Provider>
   );
 }
 

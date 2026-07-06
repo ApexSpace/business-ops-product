@@ -2,6 +2,7 @@ import { Module, forwardRef } from '@nestjs/common';
 import { AuditModule } from '@app/modules/platform/audit/audit.module';
 import { ConversationsModule } from '@app/modules/communications/conversations/conversations.module';
 import { GiftCardsModule } from '@app/modules/finance/gift-cards/gift-cards.module';
+import { MembershipsModule } from '@app/modules/finance/memberships/memberships.module';
 import { PackagesModule } from '@app/modules/finance/packages/packages.module';
 import { StorageModule } from '@app/modules/storage/storage.module';
 import { ContactTagsController } from './controllers/contact-tags.controller';
@@ -20,7 +21,14 @@ import { ContactWalletService } from './services/contact-wallet.service';
 import { ContactsService } from './services/contacts.service';
 
 @Module({
-  imports: [AuditModule, StorageModule, forwardRef(() => ConversationsModule), forwardRef(() => GiftCardsModule), forwardRef(() => PackagesModule)],
+  imports: [
+    AuditModule,
+    StorageModule,
+    forwardRef(() => ConversationsModule),
+    forwardRef(() => GiftCardsModule),
+    forwardRef(() => MembershipsModule),
+    forwardRef(() => PackagesModule),
+  ],
   controllers: [
     ContactWorkspaceController,
     ContactsController,

@@ -42,7 +42,10 @@ export class OffersService {
     return rows.map(toOfferListItem);
   }
 
-  async getOffer(businessId: string, offerId: string): Promise<OfferResponseDto> {
+  async getOffer(
+    businessId: string,
+    offerId: string,
+  ): Promise<OfferResponseDto> {
     const row = await this.assertOffer(businessId, offerId);
     return toOfferResponse(row);
   }
@@ -85,7 +88,7 @@ export class OffersService {
       data.description = dto.description?.trim() || null;
     }
 
-    let applicationMode = dto.applicationMode;
+    const applicationMode = dto.applicationMode;
     if (applicationMode !== undefined) {
       data.applicationMode = applicationMode;
     }
@@ -95,7 +98,9 @@ export class OffersService {
       const mode = applicationMode ?? existing.applicationMode;
 
       if (mode === OfferApplicationMode.OFFER_CODE) {
-        const code = (dto.offerCode ?? existing.offerCode ?? '').trim().toUpperCase();
+        const code = (dto.offerCode ?? existing.offerCode ?? '')
+          .trim()
+          .toUpperCase();
         if (!code) {
           throw new AppException(
             ErrorCode.BAD_REQUEST,
@@ -150,7 +155,8 @@ export class OffersService {
       data.minAmount = new Prisma.Decimal(dto.minAmount.toFixed(2));
     }
     if (dto.oncePerClient !== undefined) data.oncePerClient = dto.oncePerClient;
-    if (dto.newClientsOnly !== undefined) data.newClientsOnly = dto.newClientsOnly;
+    if (dto.newClientsOnly !== undefined)
+      data.newClientsOnly = dto.newClientsOnly;
     if (dto.membershipRequired !== undefined) {
       data.membershipRequired = dto.membershipRequired;
     }
@@ -277,7 +283,8 @@ export class OffersService {
       newClientsOnly: source.newClientsOnly,
       membershipRequired: source.membershipRequired,
       membershipScope: source.membershipScope,
-      specificMembershipPlanIds: source.specificMembershipPlanIds ?? Prisma.JsonNull,
+      specificMembershipPlanIds:
+        source.specificMembershipPlanIds ?? Prisma.JsonNull,
       specificProvidersEnabled: source.specificProvidersEnabled,
       specificProviderIds: source.specificProviderIds ?? Prisma.JsonNull,
       commissionBasis: source.commissionBasis,
@@ -363,9 +370,11 @@ export class OffersService {
       amount: new Prisma.Decimal(dto.amount.toFixed(2)),
       serviceScope: dto.serviceScope ?? 'ALL',
       productScope: dto.productScope ?? 'ALL',
-      specificServiceCategoryIds: dto.specificServiceCategoryIds ?? Prisma.JsonNull,
+      specificServiceCategoryIds:
+        dto.specificServiceCategoryIds ?? Prisma.JsonNull,
       specificServiceIds: dto.specificServiceIds ?? Prisma.JsonNull,
-      specificProductCategoryIds: dto.specificProductCategoryIds ?? Prisma.JsonNull,
+      specificProductCategoryIds:
+        dto.specificProductCategoryIds ?? Prisma.JsonNull,
       specificProductIds: dto.specificProductIds ?? Prisma.JsonNull,
       sortOrder,
     });
@@ -398,9 +407,11 @@ export class OffersService {
       amount: new Prisma.Decimal(dto.amount.toFixed(2)),
       serviceScope: dto.serviceScope ?? 'ALL',
       productScope: dto.productScope ?? 'ALL',
-      specificServiceCategoryIds: dto.specificServiceCategoryIds ?? Prisma.JsonNull,
+      specificServiceCategoryIds:
+        dto.specificServiceCategoryIds ?? Prisma.JsonNull,
       specificServiceIds: dto.specificServiceIds ?? Prisma.JsonNull,
-      specificProductCategoryIds: dto.specificProductCategoryIds ?? Prisma.JsonNull,
+      specificProductCategoryIds:
+        dto.specificProductCategoryIds ?? Prisma.JsonNull,
       specificProductIds: dto.specificProductIds ?? Prisma.JsonNull,
     });
 

@@ -43,6 +43,28 @@ const eslintConfig = defineConfig([
     },
   },
   {
+    files: [
+      "components/ui/**/*.{ts,tsx}",
+      "components/forms/**/*.{ts,tsx}",
+      "components/data-display/**/*.{ts,tsx}",
+    ],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          paths: apiClientRestriction.paths,
+          patterns: [
+            {
+              group: ["@/features/*", "@/features/**"],
+              message:
+                "Tier 1 components must not import from features/. Pass data via props or use lib/ utilities.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     files: ["features/**/components/**/*.{ts,tsx}"],
     rules: {
       "no-restricted-imports": ["error", apiClientRestriction],

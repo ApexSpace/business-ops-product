@@ -57,11 +57,7 @@ export class PaymentRealtimeService {
     }
 
     try {
-      await this.pubSub.publish(
-        businessId,
-        event,
-        payload as unknown as Record<string, unknown>,
-      );
+      await this.pubSub.publish(businessId, event, payload);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error';
       this.logger.warn(

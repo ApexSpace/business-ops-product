@@ -1,9 +1,6 @@
 import { HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import {
-  MembershipPlanType,
-  Prisma,
-} from '@prisma/client';
+import { MembershipPlanType, Prisma } from '@prisma/client';
 import { AppException } from '@app/common/exceptions/app.exception';
 import { ErrorCode } from '@app/common/exceptions/error-code.enum';
 import type { RequestUser } from '@app/common/decorators/current-user.decorator';
@@ -45,7 +42,10 @@ export class MembershipPlansService {
     businessId: string,
     includeArchived = false,
   ): Promise<MembershipPlanResponseDto[]> {
-    const rows = await this.planRepository.findMany(businessId, includeArchived);
+    const rows = await this.planRepository.findMany(
+      businessId,
+      includeArchived,
+    );
     const slug = await this.resolveSlug(businessId);
     return Promise.all(
       rows.map(async (row) =>
@@ -77,7 +77,8 @@ export class MembershipPlansService {
     actor: RequestUser,
   ): Promise<MembershipPlanResponseDto> {
     const sortOrder = await this.planRepository.nextSortOrder(businessId);
-    const defaultPrice = dto.planType === MembershipPlanType.ACCOUNT_CREDIT ? 0 : 0;
+    const defaultPrice =
+      dto.planType === MembershipPlanType.ACCOUNT_CREDIT ? 0 : 0;
 
     let row = await this.planRepository.create(businessId, {
       name: dto.name.trim(),
@@ -148,8 +149,10 @@ export class MembershipPlansService {
       const newPrice = new Prisma.Decimal(dto.price.toFixed(2));
       data.price = newPrice;
 
-      const activeCount =
-        await this.planRepository.countActiveMemberships(businessId, planId);
+      const activeCount = await this.planRepository.countActiveMemberships(
+        businessId,
+        planId,
+      );
       if (
         activeCount > 0 &&
         !newPrice.equals(existing.price) &&
@@ -440,8 +443,10 @@ export class MembershipPlansService {
     actor: RequestUser,
   ): Promise<void> {
     await this.assertPlan(businessId, planId);
-    const activeCount =
-      await this.planRepository.countActiveMemberships(businessId, planId);
+    const activeCount = await this.planRepository.countActiveMemberships(
+      businessId,
+      planId,
+    );
     if (activeCount > 0) {
       throw new AppException(
         ErrorCode.MEMBERSHIP_PLAN_HAS_ACTIVE_CLIENTS,
@@ -527,7 +532,9 @@ export class MembershipPlansService {
   }
 
   private buildDirectLink(slug: string, planId: string): string {
-    const frontendUrl = this.configService.get('app', { infer: true }).frontendUrl;
+    const frontendUrl = this.configService.get('app', {
+      infer: true,
+    }).frontendUrl;
     return `${frontendUrl}/memberships/${slug}/${planId}`;
   }
 }

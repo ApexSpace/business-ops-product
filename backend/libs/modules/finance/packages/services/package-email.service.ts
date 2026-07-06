@@ -34,7 +34,9 @@ export class PackageEmailService {
       params.purchaserName.trim() || params.clientPackage.contact.name;
     const packageName = this.formatPackageName(params.clientPackage);
     const includes = this.formatIncludes(params.clientPackage);
-    const expiration = this.formatExpiration(params.clientPackage.expirationDate);
+    const expiration = this.formatExpiration(
+      params.clientPackage.expirationDate,
+    );
 
     await this.emailNotification.enqueueTransactionalEmail({
       businessId: params.business.id,
@@ -119,13 +121,17 @@ export class PackageEmailService {
     return business.displayName?.trim() || business.name;
   }
 
-  private formatPackageName(clientPackage: ClientPackageDetailResponseDto): string {
+  private formatPackageName(
+    clientPackage: ClientPackageDetailResponseDto,
+  ): string {
     const emoji = clientPackage.packageTemplate.emoji?.trim();
     const name = clientPackage.packageTemplate.name;
     return emoji ? `${emoji} ${name}` : name;
   }
 
-  private formatIncludes(clientPackage: ClientPackageDetailResponseDto): string {
+  private formatIncludes(
+    clientPackage: ClientPackageDetailResponseDto,
+  ): string {
     if (clientPackage.serviceAllocations.length === 0) {
       return `${clientPackage.totalQty} services`;
     }

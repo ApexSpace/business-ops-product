@@ -150,7 +150,10 @@ export class ResourceGroupsService {
       );
     }
 
-    const groups = await this.groupRepository.reorder(businessId, dto.orderedIds);
+    const groups = await this.groupRepository.reorder(
+      businessId,
+      dto.orderedIds,
+    );
 
     await this.auditService.log({
       actorUserId: actor.id,

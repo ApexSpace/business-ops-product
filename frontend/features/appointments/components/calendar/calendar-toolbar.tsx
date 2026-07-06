@@ -56,19 +56,11 @@ export function CalendarToolbar({
   return (
     <div
       className={cn(
-        "flex min-w-0 flex-nowrap items-center gap-2 overflow-x-auto pb-0.5",
+        "min-w-0 overflow-x-auto scrollbar-thin",
         className,
       )}
     >
-      <Button
-        type="button"
-        variant="outline"
-        className={cn(CONTROL_HEIGHT_CLASS, "shrink-0 px-3")}
-        onClick={onToday}
-      >
-        Today
-      </Button>
-
+      <div className="flex w-max min-w-full flex-nowrap items-center gap-2 pb-0.5">
       <div
         className="inline-flex shrink-0 items-stretch overflow-hidden rounded-md border border-border bg-background"
         role="group"
@@ -78,11 +70,11 @@ export function CalendarToolbar({
           type="button"
           variant="ghost"
           size="icon-sm"
-            className={cn(
-              CONTROL_HEIGHT_CLASS,
-              "w-[var(--control-height)] shrink-0 rounded-none border-0 px-0 shadow-none hover:bg-muted/80",
-            )}
-            onClick={onPrevious}
+          className={cn(
+            CONTROL_HEIGHT_CLASS,
+            "w-[var(--control-height)] shrink-0 rounded-none border-0 px-0 shadow-none hover:bg-muted/80",
+          )}
+          onClick={onPrevious}
           aria-label="Previous"
         >
           <ChevronLeft className="size-4" />
@@ -100,9 +92,9 @@ export function CalendarToolbar({
             <button
               type="button"
               className={cn(
-                "flex min-w-[9.5rem] max-w-[14rem] cursor-pointer items-center justify-center gap-1 border-x border-border px-2 py-1.5 text-sm font-medium transition-colors",
+                "flex w-[10.5rem] shrink-0 cursor-pointer items-center justify-center gap-1 border-x border-border px-2 py-1.5 text-sm font-medium transition-colors",
                 "hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset",
-                "sm:min-w-[11rem] sm:max-w-[18rem]",
+                "sm:w-[12rem]",
               )}
               aria-label={`${rangeLabel}. Open date picker`}
               aria-expanded={pickerOpen}
@@ -123,11 +115,11 @@ export function CalendarToolbar({
           type="button"
           variant="ghost"
           size="icon-sm"
-            className={cn(
-              CONTROL_HEIGHT_CLASS,
-              "w-[var(--control-height)] shrink-0 rounded-none border-0 px-0 shadow-none hover:bg-muted/80",
-            )}
-            onClick={onNext}
+          className={cn(
+            CONTROL_HEIGHT_CLASS,
+            "w-[var(--control-height)] shrink-0 rounded-none border-0 px-0 shadow-none hover:bg-muted/80",
+          )}
+          onClick={onNext}
           aria-label="Next"
         >
           <ChevronRight className="size-4" />
@@ -135,18 +127,17 @@ export function CalendarToolbar({
       </div>
 
       {filters ? (
-        <div className="flex min-w-0 flex-1 flex-nowrap items-center gap-2">
-          {filters}
-        </div>
+        <div className="flex shrink-0 items-center gap-2">{filters}</div>
       ) : null}
 
-      <div className="ml-auto flex shrink-0 items-center gap-2">
+      <div className="flex shrink-0 items-center gap-2">
         <CalendarViewSwitcher value={view} onChange={onViewChange} />
         <ActionButton className="shrink-0" onClick={onNewAppointment}>
           <Plus className="size-4" />
-          <span className="hidden sm:inline">Create appointment</span>
-          <span className="sm:hidden">Create</span>
+          <span className="hidden lg:inline">Create appointment</span>
+          <span className="hidden sm:inline lg:hidden">Create</span>
         </ActionButton>
+      </div>
       </div>
     </div>
   );

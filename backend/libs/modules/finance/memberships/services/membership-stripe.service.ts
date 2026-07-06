@@ -7,9 +7,7 @@ import {
 import { AppException } from '@app/common/exceptions/app.exception';
 import { ErrorCode } from '@app/common/exceptions/error-code.enum';
 import { BusinessIntegrationRepository } from '@app/modules/integrations/integrations/repositories/business-integration.repository';
-import {
-  assertStripeReadyForPayments,
-} from '@app/modules/integrations/integrations/stripe/utils/stripe-readiness.util';
+import { assertStripeReadyForPayments } from '@app/modules/integrations/integrations/stripe/utils/stripe-readiness.util';
 import { StripeApiService } from '@app/modules/integrations/integrations/stripe/services/stripe-api.service';
 import type { MembershipPlanRow } from '../repositories/membership-plan.repository';
 

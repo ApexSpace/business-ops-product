@@ -154,7 +154,9 @@ export class MembershipOnlineCheckoutService {
         contact.id,
       );
 
-    const frontendUrl = this.configService.get('app', { infer: true }).frontendUrl;
+    const frontendUrl = this.configService.get('app', {
+      infer: true,
+    }).frontendUrl;
     const stripe = this.stripeApiService.getClient();
 
     const session = await stripe.checkout.sessions.create(
@@ -287,7 +289,10 @@ export class MembershipOnlineCheckoutService {
     dto: InitiateMembershipCheckoutDto,
   ) {
     const email = dto.email.trim().toLowerCase();
-    const existing = await this.contactRepository.findByEmail(businessId, email);
+    const existing = await this.contactRepository.findByEmail(
+      businessId,
+      email,
+    );
     if (existing) return existing;
 
     return this.contactRepository.createPublic(businessId, {

@@ -3,7 +3,10 @@ import type {
   OfferListRow,
 } from '../repositories/offer.repository';
 import type { OfferDateRule } from '../types/offer.types';
-import type { OfferDiscountResponseDto, OfferResponseDto } from '../dto/offer.dto';
+import type {
+  OfferDiscountResponseDto,
+  OfferResponseDto,
+} from '../dto/offer.dto';
 import { buildDiscountSummary } from '../utils/discount-summary.util';
 import { parseOfferDateRules } from '../utils/offer-date-rules.util';
 
@@ -25,7 +28,8 @@ function toDiscountResponse(
     productScope: discount.productScope,
     specificServiceCategoryIds:
       parseStringArray(discount.specificServiceCategoryIds) ?? undefined,
-    specificServiceIds: parseStringArray(discount.specificServiceIds) ?? undefined,
+    specificServiceIds:
+      parseStringArray(discount.specificServiceIds) ?? undefined,
     specificProductCategoryIds:
       parseStringArray(discount.specificProductCategoryIds) ?? undefined,
     specificProductIds:

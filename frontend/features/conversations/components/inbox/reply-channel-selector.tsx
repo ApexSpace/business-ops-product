@@ -11,6 +11,7 @@ import {
   type ContactReplyChannel,
   type ConversationChannel,
 } from "@/features/conversations/api/conversations.api";
+import { ConversationChannelBadge } from "@/features/conversations/components/inbox/conversation-channel-display";
 import { cn } from "@/lib/utils";
 
 interface ReplyChannelSelectorProps {
@@ -83,7 +84,9 @@ export function ReplyChannelSelector({
 
   if (channels.length <= 1) {
     if (variant === "compact") {
-      return null;
+      return controlledValue ? (
+        <ConversationChannelBadge channel={controlledValue} size="sm" />
+      ) : null;
     }
 
     return (

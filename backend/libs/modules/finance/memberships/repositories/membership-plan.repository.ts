@@ -57,18 +57,13 @@ export class MembershipPlanRepository {
     includeArchived = false,
   ): Promise<MembershipPlanRow[]> {
     return this.prisma.membershipPlan.findMany({
-      where: includeArchived
-        ? { businessId }
-        : this.activeWhere(businessId),
+      where: includeArchived ? { businessId } : this.activeWhere(businessId),
       include: planInclude,
       orderBy: { sortOrder: 'asc' },
     });
   }
 
-  findById(
-    businessId: string,
-    id: string,
-  ): Promise<MembershipPlanRow | null> {
+  findById(businessId: string, id: string): Promise<MembershipPlanRow | null> {
     return this.prisma.membershipPlan.findFirst({
       where: { businessId, id },
       include: planInclude,

@@ -47,10 +47,7 @@ export type ServiceWorkspaceEntity = Prisma.ServiceGetPayload<{
 }>;
 
 export type ServiceTreeCategory = ServiceCategory & {
-  services: Pick<
-    Service,
-    'id' | 'name' | 'status' | 'isDemo' | 'sortOrder'
-  >[];
+  services: Pick<Service, 'id' | 'name' | 'status' | 'isDemo' | 'sortOrder'>[];
 };
 
 @Injectable()
@@ -159,7 +156,7 @@ export class ServiceWorkspaceRepository {
     return this.prisma.serviceStaff
       .updateMany({
         where: { businessId, serviceId, userId },
-        data: data as Prisma.ServiceStaffUpdateManyMutationInput,
+        data: data,
       })
       .then(async (result) => {
         if (result.count === 0) {
@@ -260,7 +257,12 @@ export class ServiceWorkspaceRepository {
           where: { id, businessId, serviceId },
           include: {
             resource: {
-              select: { id: true, name: true, resourceType: true, status: true },
+              select: {
+                id: true,
+                name: true,
+                resourceType: true,
+                status: true,
+              },
             },
           },
         });
@@ -322,7 +324,11 @@ export class ServiceWorkspaceRepository {
     return this.prisma.serviceOption.create({ data });
   }
 
-  updateOption(groupId: string, optionId: string, data: Prisma.ServiceOptionUpdateInput) {
+  updateOption(
+    groupId: string,
+    optionId: string,
+    data: Prisma.ServiceOptionUpdateInput,
+  ) {
     return this.prisma.serviceOption
       .updateMany({
         where: { id: optionId, groupId },
@@ -384,9 +390,10 @@ export class ServiceWorkspaceRepository {
     businessId: string,
     serviceId: string,
   ): Promise<
-    (ServiceOnlineBookingSettings & {
-      calendar: { publicSlug: string | null } | null;
-    }) | null
+    | (ServiceOnlineBookingSettings & {
+        calendar: { publicSlug: string | null } | null;
+      })
+    | null
   > {
     return this.prisma.serviceOnlineBookingSettings.findFirst({
       where: { businessId, serviceId },

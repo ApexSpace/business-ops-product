@@ -45,17 +45,20 @@ export class ResourceRepository {
     return this.prisma.resource.findMany({
       where: this.activeWhere(businessId, {
         ...(filters?.groupId ? { groupId: filters.groupId } : {}),
-        ...(filters?.resourceType ? { resourceType: filters.resourceType } : {}),
-        ...(search
-          ? { name: { contains: search, mode: 'insensitive' } }
+        ...(filters?.resourceType
+          ? { resourceType: filters.resourceType }
           : {}),
+        ...(search ? { name: { contains: search, mode: 'insensitive' } } : {}),
       }),
       include: resourceInclude,
       orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
     });
   }
 
-  async nextSortOrder(businessId: string, groupId?: string | null): Promise<number> {
+  async nextSortOrder(
+    businessId: string,
+    groupId?: string | null,
+  ): Promise<number> {
     const max = await this.prisma.resource.aggregate({
       where: this.activeWhere(businessId, {
         ...(groupId ? { groupId } : { groupId: null }),
@@ -79,9 +82,7 @@ export class ResourceRepository {
       const resource = await tx.resource.create({
         data: {
           business: { connect: { id: businessId } },
-          ...(data.groupId
-            ? { group: { connect: { id: data.groupId } } }
-            : {}),
+          ...(data.groupId ? { group: { connect: { id: data.groupId } } } : {}),
           name: data.name,
           resourceType: data.resourceType,
           description: data.description ?? null,
@@ -216,7 +217,10 @@ export class ResourceRepository {
     return result.count > 0;
   }
 
-  countServiceRequirements(businessId: string, resourceId: string): Promise<number> {
+  countServiceRequirements(
+    businessId: string,
+    resourceId: string,
+  ): Promise<number> {
     return this.prisma.serviceResourceRequirement.count({
       where: { businessId, resourceId },
     });

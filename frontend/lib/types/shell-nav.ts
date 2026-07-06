@@ -4,6 +4,8 @@ export interface ShellNavItem {
   title: string;
   href: string;
   icon: LucideIcon;
+  /** Snapshot navigation key for section grouping. */
+  navKey?: string;
   /** Highlight when pathname is under this href's section (e.g. Settings footer). */
   matchPrefix?: boolean;
 }

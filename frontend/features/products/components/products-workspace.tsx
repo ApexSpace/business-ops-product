@@ -6,17 +6,25 @@ import { useQuery } from "@tanstack/react-query";
 import {
   ArrowDown,
   ArrowUp,
+  FolderTree,
   MoreHorizontal,
   Package,
   Pencil,
   Plus,
-  Search,
+  SlidersHorizontal,
   Trash2,
 } from "lucide-react";
-import { PageContainer } from "@/components/layout/page-container";
-import { PageHeader } from "@/components/layout/page-header";
+import { EmptyState } from "@/components/data-display/empty-state";
+import { ListToolbar } from "@/components/layout/list-toolbar";
+import { SearchInput } from "@/components/forms/search-input";
 import { DataTable, type DataTableColumn } from "@/components/data-display/data-table";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -29,9 +37,31 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { FormSheet } from "@/components/forms/form-sheet";
+import { FormSheetSection } from "@/components/forms/form-sheet-section";
+import {
+  DRAWER_FOOTER_ACTIONS_CLASS,
+  DRAWER_FOOTER_BUTTON_CLASS,
+  DRAWER_SHEET_CLASS,
+  DRAWER_SHEET_CONTENT_CLASS,
+  DRAWER_SHEET_DESCRIPTION_CLASS,
+  DRAWER_SHEET_HEADER_CLASS,
+  DRAWER_SHEET_TITLE_CLASS,
+} from "@/components/forms/drawer-sheet";
+import {
+  FINANCIAL_DRAWER_CONTENT_CLASS,
+  FINANCIAL_DRAWER_DESCRIPTION_CLASS,
+  FINANCIAL_DRAWER_FOOTER_CLASS,
+  FINANCIAL_DRAWER_HEADER_CLASS,
+  FINANCIAL_DRAWER_SHEET_CLASS,
+  FINANCIAL_DRAWER_TITLE_CLASS,
+} from "@/features/payments/components/financial-form-drawer-shell";
+import { ActionButton } from "@/components/ui/action-button";
 import {
   Sheet,
+  SheetBody,
   SheetContent,
+  SheetDescription,
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
@@ -54,6 +84,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
+import { useIsMobile } from "@/lib/hooks/use-mobile";
 import { formatMoney } from "@/features/payments/schemas/payment-profile";
 import { useProductsList } from "@/features/products/hooks/use-products-list";
 import { useProductDetail } from "@/features/products/hooks/use-product-detail";
@@ -157,6 +188,7 @@ function formatAdjustmentSummary(adj: {
 export function ProductsWorkspace() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const isMobile = useIsMobile();
   const selectedId = searchParams.get("product");
 
   const [search, setSearch] = useState("");
@@ -182,6 +214,7 @@ export function ProductsWorkspace() {
   const mutations = useProductMutations();
 
   const products = listData?.items ?? [];
+  const total = listData?.meta?.total ?? products.length;
 
   const selectProduct = useCallback(
     (id: string) => {
@@ -193,6 +226,12 @@ export function ProductsWorkspace() {
     },
     [router, searchParams],
   );
+
+  useEffect(() => {
+    if (!selectedId && products.length > 0 && !isMobile) {
+      selectProduct(products[0]!.id);
+    }
+  }, [products, selectedId, isMobile, selectProduct]);
 
   const openCreate = () => {
     setEditingProductId(null);
@@ -225,15 +264,7 @@ export function ProductsWorkspace() {
         header: "Name",
         sortable: true,
         sortValue: (row) => row.name,
-        cell: (row) => (
-          <button
-            type="button"
-            className="font-medium text-left hover:underline"
-            onClick={() => selectProduct(row.id)}
-          >
-            {row.name}
-          </button>
-        ),
+        cell: (row) => <span className="font-medium">{row.name}</span>,
       },
       {
         id: "price",
@@ -253,113 +284,141 @@ export function ProductsWorkspace() {
           row.trackInventory ? String(row.stockQuantity) : "—",
       },
     ],
-    [selectProduct],
+    [],
   );
 
-  return (
-    <PageContainer className="flex min-h-0 flex-1 flex-col">
-      <PageHeader
-        title="Products"
-        description="Manage your product catalog, inventory, and variants."
-        actions={
-          <Button onClick={openCreate}>
-            <Plus className="mr-2 size-4" />
-            Add product
-          </Button>
-        }
-      />
+  const detailPanelProps = {
+    productId: selectedId ?? "",
+    detail,
+    isLoading: detailLoading,
+    onEdit: () => selectedId && openEdit(selectedId),
+    onDelete: () => selectedId && setDeleteId(selectedId),
+    onAdjust: (body: {
+      variantId?: string;
+      type: ProductInventoryAdjustmentType;
+      quantityChange: number;
+      note?: string;
+    }) => {
+      if (!selectedId) return;
+      mutations.adjustInventory.mutate({ productId: selectedId, body });
+    },
+    adjustPending: mutations.adjustInventory.isPending,
+  };
 
-      <div
-        className={cn(
-          "grid min-h-0 flex-1 gap-4",
-          selectedId ? "lg:grid-cols-[minmax(0,1fr)_340px]" : "grid-cols-1",
-        )}
-      >
-        <div className="flex min-h-0 flex-col gap-3">
-          <DataTable
-            columns={columns}
-            data={products}
-            getRowId={(row) => row.id}
-            isLoading={isLoading}
-            emptyTitle="No products yet"
-            emptyDescription="Add your first product to get started."
-            emptyAction={
-              <Button size="sm" onClick={openCreate}>
-                <Plus className="mr-1.5 size-4" />
-                Add product
-              </Button>
+  return (
+    <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
+      <div className="grid min-h-0 flex-1 gap-4 overflow-hidden px-[var(--page-padding-x)] pb-[var(--page-padding-y)] pt-[var(--page-content-top-gap)] lg:grid-cols-[minmax(0,1fr)_minmax(280px,380px)] lg:grid-rows-1">
+        <section className="flex min-h-0 flex-col overflow-hidden rounded-xl border border-border bg-card shadow-elevation-xs">
+          <ListToolbar
+            className="rounded-none border-0 border-b bg-transparent p-3 shadow-none sm:px-4"
+            search={
+              <SearchInput
+                value={search}
+                onChange={setSearch}
+                placeholder="Search products…"
+                className="min-w-0 flex-1"
+              />
             }
-            toolbar={
-              <div className="flex flex-wrap items-center gap-2">
-                <div className="relative min-w-[12rem] flex-1">
-                  <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
-                  <Input
-                    className="pl-8"
-                    placeholder="Search products…"
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                  />
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setOptionsOpen(true)}
-                >
-                  <MoreHorizontal className="mr-1.5 size-4" />
-                  Options
-                </Button>
-              </div>
-            }
-            rowActions={(row) => (
+            actions={
               <>
                 <Button
-                  type="button"
-                  variant="ghost"
+                  variant="outline"
                   size="icon-sm"
-                  onClick={() => selectProduct(row.id)}
-                  aria-label="View product"
+                  aria-label="Options"
+                  onClick={() => setOptionsOpen(true)}
                 >
-                  <Package className="size-3.5" />
+                  <SlidersHorizontal className="size-4" />
                 </Button>
                 <Button
-                  type="button"
-                  variant="ghost"
                   size="icon-sm"
-                  onClick={() => openEdit(row.id)}
-                  aria-label="Edit product"
+                  className="sm:hidden"
+                  aria-label="Add product"
+                  onClick={openCreate}
                 >
-                  <Pencil className="size-3.5" />
+                  <Plus className="size-4" />
                 </Button>
                 <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon-sm"
-                  onClick={() => setDeleteId(row.id)}
-                  aria-label="Delete product"
+                  size="sm"
+                  className="hidden shrink-0 sm:inline-flex"
+                  onClick={openCreate}
                 >
-                  <Trash2 className="size-3.5" />
+                  <Plus className="mr-1.5 size-4" />
+                  Add product
                 </Button>
               </>
-            )}
-          />
-        </div>
-
-        {selectedId ? (
-          <ProductDetailSidebar
-            productId={selectedId}
-            detail={detail}
-            isLoading={detailLoading}
-            onEdit={() => openEdit(selectedId)}
-            onAdjust={(body) =>
-              mutations.adjustInventory.mutate({
-                productId: selectedId,
-                body,
-              })
             }
-            adjustPending={mutations.adjustInventory.isPending}
+          />
+          <div className="min-h-0 flex-1 overflow-y-auto">
+            <DataTable
+              columns={columns}
+              data={products}
+              getRowId={(row) => row.id}
+              isLoading={isLoading}
+              activeRowId={selectedId}
+              onRowClick={(row) => selectProduct(row.id)}
+              getRowClassName={(row) =>
+                selectedId === row.id
+                  ? "shadow-[inset_3px_0_0_0_var(--color-primary)]"
+                  : undefined
+              }
+              emptyTitle="No products yet"
+              emptyDescription="Add your first product to get started."
+              emptyAction={
+                <Button size="sm" onClick={openCreate}>
+                  <Plus className="mr-1.5 size-4" />
+                  Add product
+                </Button>
+              }
+              className="rounded-none border-0 shadow-none"
+            />
+          </div>
+          {products.length > 0 ? (
+            <div className="shrink-0 border-t border-border px-4 py-3 text-sm text-muted-foreground">
+              {products.length} of {total} product{total === 1 ? "" : "s"}
+            </div>
+          ) : null}
+        </section>
+
+        {!isMobile ? (
+          <ProductDetailSidebar
+            {...detailPanelProps}
+            selectedId={selectedId}
+            className="min-h-0 max-lg:hidden"
           />
         ) : null}
       </div>
+
+      {isMobile ? (
+        <Sheet
+          open={!!selectedId}
+          onOpenChange={(open) => {
+            if (!open) {
+              const params = new URLSearchParams(searchParams.toString());
+              params.delete("product");
+              const qs = params.toString();
+              router.replace(
+                qs ? `/business/products?${qs}` : "/business/products",
+                { scroll: false },
+              );
+            }
+          }}
+        >
+          <SheetContent
+            side="right"
+            className="flex h-[100dvh] max-h-[100dvh] w-full max-w-none flex-col border-l-0 bg-background p-0 shadow-none"
+            showCloseButton
+          >
+            <SheetBody className="flex min-h-0 flex-1 flex-col overflow-hidden p-0">
+              <ProductDetailSidebar
+                {...detailPanelProps}
+                selectedId={selectedId}
+                variant="drawer"
+                className="min-h-0 flex-1 rounded-none border-0 shadow-none"
+              />
+            </SheetBody>
+          </SheetContent>
+        </Sheet>
+      ) : null}
 
       <ProductFormSheet
         open={formOpen}
@@ -385,115 +444,157 @@ export function ProductsWorkspace() {
       />
 
       <Sheet open={optionsOpen} onOpenChange={setOptionsOpen}>
-        <SheetContent side="right" className="w-full sm:max-w-md">
-          <SheetHeader>
-            <SheetTitle>Product options</SheetTitle>
+        <SheetContent
+          side="right"
+          className={cn(
+            "flex h-[100dvh] max-h-[100dvh] flex-col gap-0 p-0",
+            DRAWER_SHEET_CLASS,
+          )}
+        >
+          <SheetHeader className={DRAWER_SHEET_HEADER_CLASS}>
+            <SheetTitle className={DRAWER_SHEET_TITLE_CLASS}>
+              Product options
+            </SheetTitle>
+            <SheetDescription className={DRAWER_SHEET_DESCRIPTION_CLASS}>
+              Manage categories and export your catalog.
+            </SheetDescription>
           </SheetHeader>
-          <div className="mt-6 space-y-4">
-            <Button
-              variant="outline"
-              className="w-full justify-start"
-              onClick={() => {
-                setOptionsOpen(false);
-                setCategoriesOpen(true);
-              }}
-            >
-              Manage categories
-            </Button>
-            <Button
-              variant="outline"
-              className="w-full justify-start"
-              disabled={mutations.exportCsv.isPending}
-              onClick={() => mutations.exportCsv.mutate()}
-            >
-              Export products (CSV)
-            </Button>
-            <p className="text-xs text-muted-foreground">
-              Use column headers in the table to sort the current list.
-            </p>
-          </div>
+          <SheetBody
+            className={cn("min-h-0 flex-1 overflow-y-auto", DRAWER_SHEET_CONTENT_CLASS)}
+          >
+            <div className="space-y-3">
+              <Button
+                variant="outline"
+                className="h-auto w-full justify-start gap-3 px-4 py-3"
+                onClick={() => {
+                  setOptionsOpen(false);
+                  setCategoriesOpen(true);
+                }}
+              >
+                <FolderTree className="size-4 shrink-0 text-muted-foreground" />
+                <span className="text-left">
+                  <span className="block font-medium">Manage categories</span>
+                  <span className="block text-xs font-normal text-muted-foreground">
+                    Organize products into categories
+                  </span>
+                </span>
+              </Button>
+              <Button
+                variant="outline"
+                className="h-auto w-full justify-start gap-3 px-4 py-3"
+                disabled={mutations.exportCsv.isPending}
+                onClick={() => mutations.exportCsv.mutate()}
+              >
+                <Package className="size-4 shrink-0 text-muted-foreground" />
+                <span className="text-left">
+                  <span className="block font-medium">Export products (CSV)</span>
+                  <span className="block text-xs font-normal text-muted-foreground">
+                    Download the current product list
+                  </span>
+                </span>
+              </Button>
+              <p className="text-xs text-muted-foreground">
+                Use column headers in the table to sort the current list.
+              </p>
+            </div>
+          </SheetBody>
         </SheetContent>
       </Sheet>
 
       <Sheet open={categoriesOpen} onOpenChange={setCategoriesOpen}>
-        <SheetContent side="right" className="w-full overflow-y-auto sm:max-w-md">
-          <SheetHeader>
-            <SheetTitle>Product categories</SheetTitle>
+        <SheetContent
+          side="right"
+          className={cn(
+            "flex h-[100dvh] max-h-[100dvh] flex-col gap-0 p-0",
+            DRAWER_SHEET_CLASS,
+          )}
+        >
+          <SheetHeader className={DRAWER_SHEET_HEADER_CLASS}>
+            <SheetTitle className={DRAWER_SHEET_TITLE_CLASS}>
+              Product categories
+            </SheetTitle>
+            <SheetDescription className={DRAWER_SHEET_DESCRIPTION_CLASS}>
+              Add, reorder, or remove product categories.
+            </SheetDescription>
           </SheetHeader>
-          <div className="mt-6 space-y-4">
-            <div className="flex gap-2">
-              <Input
-                placeholder="New category name"
-                value={newCategoryName}
-                onChange={(e) => setNewCategoryName(e.target.value)}
-              />
-              <Button
-                disabled={
-                  !newCategoryName.trim() || mutations.createCategory.isPending
-                }
-                onClick={() => {
-                  mutations.createCategory.mutate(
-                    { name: newCategoryName.trim() },
-                    { onSuccess: () => setNewCategoryName("") },
-                  );
-                }}
-              >
-                Add
-              </Button>
-            </div>
-            <ul className="divide-y rounded-lg border">
-              {categories.map((cat, index) => (
-                <li
-                  key={cat.id}
-                  className="flex items-center justify-between gap-2 px-3 py-2 text-sm"
+          <SheetBody
+            className={cn("min-h-0 flex-1 overflow-y-auto", DRAWER_SHEET_CONTENT_CLASS)}
+          >
+            <div className="space-y-4">
+              <div className="flex gap-2">
+                <Input
+                  placeholder="New category name"
+                  value={newCategoryName}
+                  onChange={(e) => setNewCategoryName(e.target.value)}
+                />
+                <Button
+                  disabled={
+                    !newCategoryName.trim() || mutations.createCategory.isPending
+                  }
+                  onClick={() => {
+                    mutations.createCategory.mutate(
+                      { name: newCategoryName.trim() },
+                      { onSuccess: () => setNewCategoryName("") },
+                    );
+                  }}
                 >
-                  <span>{cat.name}</span>
-                  <div className="flex items-center gap-1">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon-sm"
-                      disabled={index === 0 || mutations.reorderCategories.isPending}
-                      onClick={() => {
-                        const ids = categories.map((c) => c.id);
-                        [ids[index - 1], ids[index]] = [ids[index], ids[index - 1]];
-                        mutations.reorderCategories.mutate(ids);
-                      }}
-                      aria-label="Move up"
-                    >
-                      <ArrowUp className="size-3.5" />
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon-sm"
-                      disabled={
-                        index === categories.length - 1 ||
-                        mutations.reorderCategories.isPending
-                      }
-                      onClick={() => {
-                        const ids = categories.map((c) => c.id);
-                        [ids[index], ids[index + 1]] = [ids[index + 1], ids[index]];
-                        mutations.reorderCategories.mutate(ids);
-                      }}
-                      aria-label="Move down"
-                    >
-                      <ArrowDown className="size-3.5" />
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon-sm"
-                      onClick={() => setDeleteId(cat.id)}
-                      aria-label="Delete category"
-                    >
-                      <Trash2 className="size-3.5" />
-                    </Button>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </div>
+                  Add
+                </Button>
+              </div>
+              <ul className="divide-y divide-border overflow-hidden rounded-lg border border-border">
+                {categories.map((cat, index) => (
+                  <li
+                    key={cat.id}
+                    className="flex items-center justify-between gap-2 bg-card px-3 py-2.5 text-sm"
+                  >
+                    <span>{cat.name}</span>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-sm"
+                        disabled={index === 0 || mutations.reorderCategories.isPending}
+                        onClick={() => {
+                          const ids = categories.map((c) => c.id);
+                          [ids[index - 1], ids[index]] = [ids[index], ids[index - 1]];
+                          mutations.reorderCategories.mutate(ids);
+                        }}
+                        aria-label="Move up"
+                      >
+                        <ArrowUp className="size-3.5" />
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-sm"
+                        disabled={
+                          index === categories.length - 1 ||
+                          mutations.reorderCategories.isPending
+                        }
+                        onClick={() => {
+                          const ids = categories.map((c) => c.id);
+                          [ids[index], ids[index + 1]] = [ids[index + 1], ids[index]];
+                          mutations.reorderCategories.mutate(ids);
+                        }}
+                        aria-label="Move down"
+                      >
+                        <ArrowDown className="size-3.5" />
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-sm"
+                        onClick={() => setDeleteId(cat.id)}
+                        aria-label="Delete category"
+                      >
+                        <Trash2 className="size-3.5" />
+                      </Button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </SheetBody>
         </SheetContent>
       </Sheet>
 
@@ -542,22 +643,28 @@ export function ProductsWorkspace() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </PageContainer>
+    </div>
   );
 }
 
 function ProductDetailSidebar({
+  selectedId,
   productId,
   detail,
   isLoading,
   onEdit,
+  onDelete,
   onAdjust,
   adjustPending,
+  className,
+  variant = "panel",
 }: {
+  selectedId: string | null;
   productId: string;
   detail: ReturnType<typeof useProductDetail>["data"];
   isLoading: boolean;
   onEdit: () => void;
+  onDelete: () => void;
   onAdjust: (body: {
     variantId?: string;
     type: ProductInventoryAdjustmentType;
@@ -565,7 +672,10 @@ function ProductDetailSidebar({
     note?: string;
   }) => void;
   adjustPending: boolean;
+  className?: string;
+  variant?: "panel" | "drawer";
 }) {
+  const isDrawer = variant === "drawer";
   const [adjType, setAdjType] =
     useState<ProductInventoryAdjustmentType>("RECEIVED");
   const [adjQty, setAdjQty] = useState("1");
@@ -579,9 +689,35 @@ function ProductDetailSidebar({
     setAdjType("RECEIVED");
   }, [productId]);
 
+  if (!selectedId) {
+    return (
+      <aside
+        className={cn(
+          "flex h-full min-h-0 flex-col overflow-hidden rounded-xl border border-border bg-card shadow-elevation-xs",
+          className,
+        )}
+      >
+        <div className="flex min-h-0 flex-1 items-center justify-center p-8">
+          <EmptyState
+            icon={
+              <Package className="size-5 text-muted-foreground/70" aria-hidden />
+            }
+            title="Select a product"
+            description="Choose a product from the list to view inventory and details."
+          />
+        </div>
+      </aside>
+    );
+  }
+
   if (isLoading || !detail) {
     return (
-      <aside className="rounded-lg border bg-card p-4 text-sm text-muted-foreground">
+      <aside
+        className={cn(
+          "flex h-full min-h-0 flex-col overflow-hidden rounded-xl border border-border bg-card shadow-elevation-xs p-6 text-sm text-muted-foreground",
+          className,
+        )}
+      >
         Loading product…
       </aside>
     );
@@ -592,49 +728,103 @@ function ProductDetailSidebar({
     ADJUSTMENT_TYPES.find((t) => t.value === adjType)?.hint ?? "";
 
   return (
-    <aside className="flex min-h-0 flex-col rounded-lg border bg-card">
-      <div className="border-b p-4">
-        <div className="flex items-start justify-between gap-2">
-          <div>
-            <p className="text-xs text-muted-foreground">
+    <aside
+      className={cn(
+        "flex h-full min-h-0 flex-col overflow-hidden rounded-xl border border-border bg-card shadow-elevation-xs",
+        className,
+      )}
+    >
+      <div
+        className={cn(
+          "shrink-0 border-b border-border/70 px-4 py-4",
+          "bg-[radial-gradient(120%_140%_at_0%_0%,color-mix(in_oklch,var(--primary)_10%,transparent),transparent_55%),linear-gradient(135deg,var(--background)_0%,color-mix(in_oklch,var(--primary)_4%,var(--background))_100%)]",
+          isDrawer && "pr-14",
+        )}
+      >
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h2 className="text-drawer-section">Product detail</h2>
+            <p className="mt-1 truncate text-lg font-semibold tracking-tight">
+              {detail.name}
+            </p>
+            <p className="text-sm text-muted-foreground">
               {detail.categoryName ?? "Uncategorized"}
             </p>
-            <h2 className="text-lg font-semibold">{detail.name}</h2>
-            <div className="mt-1 flex flex-wrap gap-1">
-              <Badge variant="secondary">{detail.productType}</Badge>
-              <Badge variant="outline">{detail.status}</Badge>
-            </div>
           </div>
-          <Button variant="outline" size="sm" onClick={onEdit}>
-            <Pencil className="mr-1 size-3.5" />
-            Edit
-          </Button>
+          <div className="flex shrink-0 items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className={cn(isDrawer && "shrink-0")}
+              onClick={onEdit}
+            >
+              <Pencil className="mr-1 size-3.5" />
+              Edit
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                render={
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className={cn(isDrawer && "shrink-0")}
+                  >
+                    <MoreHorizontal className="size-4" />
+                    <span className="sr-only">Product actions</span>
+                  </Button>
+                }
+              />
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem
+                  variant="destructive"
+                  onClick={onDelete}
+                >
+                  <Trash2 className="mr-2 size-4" />
+                  Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
-        <dl className="mt-4 grid grid-cols-2 gap-2 text-sm">
-          <div>
-            <dt className="text-muted-foreground">Price</dt>
-            <dd>{formatMoney(parseFloat(detail.unitPrice))}</dd>
-          </div>
-          <div>
-            <dt className="text-muted-foreground">Stock</dt>
-            <dd>
-              {detail.trackInventory ? detail.stockQuantity : "Not tracked"}
-            </dd>
-          </div>
-          {detail.brand ? (
-            <div>
-              <dt className="text-muted-foreground">Brand</dt>
-              <dd>{detail.brand}</dd>
-            </div>
-          ) : null}
-          {detail.sku ? (
-            <div>
-              <dt className="text-muted-foreground">SKU</dt>
-              <dd>{detail.sku}</dd>
-            </div>
-          ) : null}
-        </dl>
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          <Badge variant="neutral">{detail.productType}</Badge>
+          <Badge
+            variant={detail.status === "ACTIVE" ? "success" : "secondary"}
+          >
+            {detail.status}
+          </Badge>
+        </div>
       </div>
+
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        <div className="p-4">
+          <div className="grid grid-cols-2 gap-4 rounded-xl border border-border bg-muted/15 p-4 shadow-elevation-xs">
+            <div className="space-y-1">
+              <p className="text-drawer-section">Price</p>
+              <p className="text-lg font-semibold tabular-nums">
+                {formatMoney(parseFloat(detail.unitPrice))}
+              </p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-drawer-section">Stock</p>
+              <p className="text-lg font-semibold tabular-nums">
+                {detail.trackInventory ? detail.stockQuantity : "—"}
+              </p>
+            </div>
+            {detail.brand ? (
+              <div className="space-y-1">
+                <p className="text-drawer-section">Brand</p>
+                <p className="text-sm">{detail.brand}</p>
+              </div>
+            ) : null}
+            {detail.sku ? (
+              <div className="space-y-1">
+                <p className="text-drawer-section">SKU</p>
+                <p className="text-sm tabular-nums">{detail.sku}</p>
+              </div>
+            ) : null}
+          </div>
+        </div>
 
       <ProductImagesPanel
         productId={productId}
@@ -642,18 +832,18 @@ function ProductDetailSidebar({
       />
 
       {isVariable ? (
-        <div className="border-b p-4">
+        <div className="border-b border-border p-4">
           <ProductOptionsEditor productId={productId} options={detail.options} />
         </div>
       ) : null}
 
       {isVariable && detail.variants.length > 0 ? (
-        <div className="border-b p-4">
-          <p className="mb-2 text-sm font-medium">Variants</p>
-          <div className="max-h-40 overflow-y-auto rounded border">
+        <div className="border-b border-border p-4">
+          <p className="mb-2 text-drawer-section">Variants</p>
+          <div className="overflow-hidden rounded-lg border border-border">
             <Table>
               <TableHeader>
-                <TableRow>
+                <TableRow className="hover:bg-transparent">
                   <TableHead>Variant</TableHead>
                   <TableHead className="text-right">Stock</TableHead>
                 </TableRow>
@@ -665,8 +855,8 @@ function ProductDetailSidebar({
                     v.variantKey;
                   return (
                     <TableRow key={v.id}>
-                      <TableCell className="text-xs">{label}</TableCell>
-                      <TableCell className="text-right text-xs">
+                      <TableCell className="text-sm">{label}</TableCell>
+                      <TableCell className="text-right text-sm tabular-nums">
                         {v.stockQuantity}
                       </TableCell>
                     </TableRow>
@@ -679,9 +869,9 @@ function ProductDetailSidebar({
       ) : null}
 
       {detail.trackInventory ? (
-        <div className="border-b p-4">
-          <p className="mb-3 text-sm font-medium">Inventory adjustment</p>
-          <div className="space-y-3">
+        <div className="border-b border-border p-4">
+          <p className="mb-3 text-drawer-section">Inventory adjustment</p>
+          <div className="space-y-3 rounded-lg border border-border bg-muted/20 p-3">
             {isVariable ? (
               <div className="space-y-1">
                 <Label>Variant</Label>
@@ -786,9 +976,9 @@ function ProductDetailSidebar({
       ) : null}
 
       {detail.recentAdjustments.length > 0 ? (
-        <div className="min-h-0 flex-1 overflow-y-auto p-4">
-          <p className="mb-2 text-sm font-medium">Recent adjustments</p>
-          <ul className="space-y-2 text-xs text-muted-foreground">
+        <div className="p-4">
+          <p className="mb-2 text-drawer-section">Recent adjustments</p>
+          <ul className="space-y-2 rounded-lg border border-border bg-muted/20 p-3 text-xs text-muted-foreground">
             {detail.recentAdjustments.slice(0, 8).map((adj) => (
               <li key={adj.id}>
                 {formatAdjustmentSummary(adj)}
@@ -799,6 +989,7 @@ function ProductDetailSidebar({
           </ul>
         </div>
       ) : null}
+      </div>
     </aside>
   );
 }
@@ -863,18 +1054,46 @@ function ProductFormSheet({
   };
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent
-        side="right"
-        className="w-full overflow-y-auto sm:max-w-lg"
-      >
-        <SheetHeader>
-          <SheetTitle>{isEdit ? "Edit product" : "Add product"}</SheetTitle>
-        </SheetHeader>
-
-        <div className="mt-6 space-y-4">
+    <FormSheet
+      open={open}
+      onOpenChange={onOpenChange}
+      title={isEdit ? "Edit product" : "Add product"}
+      description={
+        isEdit
+          ? "Update product details, pricing, and inventory settings."
+          : "Create a new product for your catalog."
+      }
+      className={FINANCIAL_DRAWER_SHEET_CLASS}
+      headerClassName={FINANCIAL_DRAWER_HEADER_CLASS}
+      titleClassName={FINANCIAL_DRAWER_TITLE_CLASS}
+      descriptionClassName={FINANCIAL_DRAWER_DESCRIPTION_CLASS}
+      bodyClassName={FINANCIAL_DRAWER_CONTENT_CLASS}
+      footerClassName={FINANCIAL_DRAWER_FOOTER_CLASS}
+      footer={
+        <div className={DRAWER_FOOTER_ACTIONS_CLASS}>
+          <ActionButton
+            type="button"
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={pending}
+            className={DRAWER_FOOTER_BUTTON_CLASS}
+          >
+            Cancel
+          </ActionButton>
+          <ActionButton
+            type="button"
+            disabled={pending || !form.name.trim()}
+            onClick={handleSubmit}
+            className={DRAWER_FOOTER_BUTTON_CLASS}
+          >
+            {isEdit ? "Save changes" : "Create product"}
+          </ActionButton>
+        </div>
+      }
+    >
+      <FormSheetSection title="Basic info" card>
           {!isEdit ? (
-            <div className="space-y-1">
+            <div className="space-y-1.5">
               <Label>Product type</Label>
               <Select
                 value={form.productType}
@@ -909,7 +1128,7 @@ function ProductFormSheet({
             required
           />
 
-          <div className="space-y-1">
+          <div className="space-y-1.5">
             <Label>Category</Label>
             <Select
               value={form.categoryId || "__none__"}
@@ -934,6 +1153,19 @@ function ProductFormSheet({
             </Select>
           </div>
 
+          <div className="space-y-1.5">
+            <Label>Description</Label>
+            <Textarea
+              rows={3}
+              value={form.description ?? ""}
+              onChange={(e) =>
+                setForm({ ...form, description: e.target.value })
+              }
+            />
+          </div>
+      </FormSheetSection>
+
+      <FormSheetSection title="Pricing & inventory" card>
           <div className="grid gap-4 sm:grid-cols-2">
             <FormField
               label="Brand"
@@ -945,17 +1177,6 @@ function ProductFormSheet({
               value={form.unitPrice ?? ""}
               onChange={(v) => setForm({ ...form, unitPrice: v })}
               type="number"
-            />
-          </div>
-
-          <div className="space-y-1">
-            <Label>Description</Label>
-            <Textarea
-              rows={3}
-              value={form.description ?? ""}
-              onChange={(e) =>
-                setForm({ ...form, description: e.target.value })
-              }
             />
           </div>
 
@@ -1008,7 +1229,9 @@ function ProductFormSheet({
               type="number"
             />
           ) : null}
+      </FormSheetSection>
 
+      <FormSheetSection title="Sales settings" card>
           <ToggleRow
             label="Charge tax"
             checked={form.chargeTax}
@@ -1057,7 +1280,7 @@ function ProductFormSheet({
                   })}
                 </ul>
               ) : (
-                <p className="text-sm text-amber-600">
+                <p className="text-sm text-warning">
                   No active team members. Add staff under Settings → Team before
                   selling this product.
                 </p>
@@ -1145,17 +1368,8 @@ function ProductFormSheet({
               </SelectContent>
             </Select>
           </div>
-
-          <Button
-            className="w-full"
-            disabled={pending || !form.name.trim()}
-            onClick={handleSubmit}
-          >
-            {isEdit ? "Save changes" : "Create product"}
-          </Button>
-        </div>
-      </SheetContent>
-    </Sheet>
+      </FormSheetSection>
+    </FormSheet>
   );
 }
 

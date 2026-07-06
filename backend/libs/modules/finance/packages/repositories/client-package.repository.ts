@@ -128,7 +128,9 @@ export class ClientPackageRepository {
     });
   }
 
-  findExpiredActive(before: Date): Promise<{ id: string; businessId: string }[]> {
+  findExpiredActive(
+    before: Date,
+  ): Promise<{ id: string; businessId: string }[]> {
     return this.prisma.clientPackage.findMany({
       where: {
         status: ClientPackageStatus.ACTIVE,

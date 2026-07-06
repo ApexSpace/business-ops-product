@@ -20,7 +20,9 @@ const offerDetailInclude = {
   },
 } satisfies Prisma.OfferInclude;
 
-export type OfferListRow = Prisma.OfferGetPayload<{ include: typeof offerInclude }>;
+export type OfferListRow = Prisma.OfferGetPayload<{
+  include: typeof offerInclude;
+}>;
 export type OfferDetailRow = Prisma.OfferGetPayload<{
   include: typeof offerDetailInclude;
 }>;
@@ -140,14 +142,16 @@ export class OfferRepository {
   }
 
   reorder(businessId: string, ids: string[]): Promise<void> {
-    return this.prisma.$transaction(
-      ids.map((id, index) =>
-        this.prisma.offer.updateMany({
-          where: { businessId, id },
-          data: { sortOrder: index },
-        }),
-      ),
-    ).then(() => undefined);
+    return this.prisma
+      .$transaction(
+        ids.map((id, index) =>
+          this.prisma.offer.updateMany({
+            where: { businessId, id },
+            data: { sortOrder: index },
+          }),
+        ),
+      )
+      .then(() => undefined);
   }
 
   createDiscount(

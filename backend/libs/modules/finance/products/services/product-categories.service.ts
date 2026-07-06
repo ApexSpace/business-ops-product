@@ -65,7 +65,9 @@ export class ProductCategoriesService {
 
     const category = await this.categoryRepository.update(businessId, id, {
       ...(dto.name !== undefined ? { name: dto.name.trim() } : {}),
-      ...(dto.isNonRetail !== undefined ? { isNonRetail: dto.isNonRetail } : {}),
+      ...(dto.isNonRetail !== undefined
+        ? { isNonRetail: dto.isNonRetail }
+        : {}),
       ...(dto.status !== undefined ? { status: dto.status } : {}),
     });
 

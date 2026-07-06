@@ -77,7 +77,10 @@ export class ProductOptionRepository {
     return this.prisma.productOption.update({ where: { id }, data });
   }
 
-  async softDelete(businessId: string, id: string): Promise<ProductOption | null> {
+  async softDelete(
+    businessId: string,
+    id: string,
+  ): Promise<ProductOption | null> {
     const existing = await this.findById(businessId, id);
     if (!existing) {
       return null;
@@ -129,7 +132,10 @@ export class ProductOptionRepository {
     });
   }
 
-  async nextValueSortOrder(businessId: string, optionId: string): Promise<number> {
+  async nextValueSortOrder(
+    businessId: string,
+    optionId: string,
+  ): Promise<number> {
     const max = await this.prisma.productOptionValue.aggregate({
       where: { businessId, optionId, deletedAt: null },
       _max: { sortOrder: true },

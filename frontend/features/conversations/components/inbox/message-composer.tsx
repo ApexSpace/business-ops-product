@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { ReplyChannelSelector } from "@/features/conversations/components/inbox/reply-channel-selector";
+import { ConversationChannelBar } from "@/features/conversations/components/inbox/conversation-channel-bar";
 import { WhatsAppTemplateComposer } from "@/features/conversations/components/inbox/whatsapp-template-composer";
 import type {
   ContactReplyChannel,
@@ -38,6 +39,10 @@ interface MessageComposerProps {
   selectedReplyChannel?: ConversationChannel | null;
   onReplyChannelChange?: (channel: ConversationChannel) => void;
   hideReplyChannelSelector?: boolean;
+  channelBarChannels?: ContactReplyChannel[];
+  channelBarValue?: ConversationChannel | null;
+  onChannelBarChange?: (channel: ConversationChannel) => void;
+  channelBarReadOnly?: boolean;
   whatsAppRequiresTemplate?: boolean;
   selectedTemplateId?: string | null;
   onTemplateIdChange?: (templateId: string | null) => void;
@@ -135,6 +140,10 @@ export function MessageComposer({
   selectedReplyChannel,
   onReplyChannelChange,
   hideReplyChannelSelector = false,
+  channelBarChannels,
+  channelBarValue,
+  onChannelBarChange,
+  channelBarReadOnly = false,
   whatsAppRequiresTemplate = false,
   selectedTemplateId = null,
   onTemplateIdChange,
@@ -153,9 +162,13 @@ export function MessageComposer({
   const isEmailComposer = showSubject && selectedReplyChannel === "EMAIL";
   const showReplyChannelSelector =
     !hideReplyChannelSelector &&
+    !channelBarChannels?.length &&
     replyChannels &&
     replyChannels.length > 0 &&
     onReplyChannelChange;
+  const showChannelBar = Boolean(
+    channelBarChannels?.length && (channelBarValue ?? channelBarChannels[0]?.channel),
+  );
   const inlineStatusHint = sendDisabledReason ?? channelHint;
 
   const showWhatsAppTemplateComposer =
@@ -383,22 +396,32 @@ export function MessageComposer({
 
   if (variant === "thread") {
     return (
-      <footer className="shrink-0 border-t border-border/60 bg-background px-3 py-2.5">
-        {isEmailComposer ? emailThreadComposer : threadComposeRow}
-        {showWhatsAppTemplateComposer ? (
-          <div className="mt-2">
-            <WhatsAppTemplateComposer
-              selectedTemplateId={selectedTemplateId}
-              onTemplateIdChange={onTemplateIdChange}
-              variableValues={templateVariableValues}
-              onVariableValueChange={onTemplateVariableValueChange}
-              headerMediaUrl={templateHeaderMediaUrl}
-              onHeaderMediaUrlChange={onTemplateHeaderMediaUrlChange}
-              disabled={!canSend && Boolean(sendDisabledReason)}
-              variant="extras"
-            />
-          </div>
+      <footer className="shrink-0 border-t border-border/60 bg-background">
+        {showChannelBar ? (
+          <ConversationChannelBar
+            channels={channelBarChannels!}
+            value={channelBarValue ?? channelBarChannels![0]?.channel ?? null}
+            onChange={onChannelBarChange}
+            readOnly={channelBarReadOnly || !onChannelBarChange}
+          />
         ) : null}
+        <div className="px-3 py-2.5">
+          {isEmailComposer ? emailThreadComposer : threadComposeRow}
+          {showWhatsAppTemplateComposer ? (
+            <div className="mt-2">
+              <WhatsAppTemplateComposer
+                selectedTemplateId={selectedTemplateId}
+                onTemplateIdChange={onTemplateIdChange}
+                variableValues={templateVariableValues}
+                onVariableValueChange={onTemplateVariableValueChange}
+                headerMediaUrl={templateHeaderMediaUrl}
+                onHeaderMediaUrlChange={onTemplateHeaderMediaUrlChange}
+                disabled={!canSend && Boolean(sendDisabledReason)}
+                variant="extras"
+              />
+            </div>
+          ) : null}
+        </div>
       </footer>
     );
   }

@@ -6,6 +6,14 @@ import {
 } from "@/lib/query/invalidation";
 import { queryKeys } from "@/lib/query/keys";
 
+import type { LucideIcon } from "lucide-react";
+import {
+  ArrowLeftRight,
+  FileCheck,
+  FileText,
+  LayoutGrid,
+} from "lucide-react";
+
 export const PAYMENTS_WORKSPACE_TABS = [
   "overview",
   "estimates",
@@ -20,6 +28,13 @@ export const PAYMENTS_TAB_LABELS: Record<PaymentsWorkspaceTab, string> = {
   estimates: "Estimates",
   invoices: "Invoices",
   transactions: "Transactions",
+};
+
+export const PAYMENTS_TAB_ICONS: Record<PaymentsWorkspaceTab, LucideIcon> = {
+  overview: LayoutGrid,
+  estimates: FileText,
+  invoices: FileCheck,
+  transactions: ArrowLeftRight,
 };
 
 export function parsePaymentsWorkspaceTab(
@@ -43,17 +58,30 @@ export function invalidateFinancialLists(queryClient: QueryClient) {
   ]);
 }
 
+export interface PaymentsWorkspaceHrefOptions {
+  action?: "create";
+  status?: string;
+}
+
 export function buildPaymentsWorkspaceHref(
   pathname: string,
   tab: PaymentsWorkspaceTab,
-  action?: "create",
+  options?: PaymentsWorkspaceHrefOptions | "create",
 ): string {
+  const resolved =
+    options === "create"
+      ? { action: "create" as const }
+      : (options ?? {});
+
   const next = new URLSearchParams();
   if (tab !== "overview") {
     next.set("tab", tab);
   }
-  if (action) {
-    next.set("action", action);
+  if (resolved.action) {
+    next.set("action", resolved.action);
+  }
+  if (resolved.status) {
+    next.set("status", resolved.status);
   }
   const qs = next.toString();
   return qs ? `${pathname}?${qs}` : pathname;

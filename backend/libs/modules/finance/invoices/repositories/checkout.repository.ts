@@ -122,13 +122,30 @@ export class CheckoutRepository {
       ...(params.search
         ? {
             OR: [
-              { invoiceNumber: { contains: params.search, mode: 'insensitive' } },
+              {
+                invoiceNumber: { contains: params.search, mode: 'insensitive' },
+              },
               {
                 contact: {
                   OR: [
-                    { firstName: { contains: params.search, mode: 'insensitive' } },
-                    { lastName: { contains: params.search, mode: 'insensitive' } },
-                    { displayName: { contains: params.search, mode: 'insensitive' } },
+                    {
+                      firstName: {
+                        contains: params.search,
+                        mode: 'insensitive',
+                      },
+                    },
+                    {
+                      lastName: {
+                        contains: params.search,
+                        mode: 'insensitive',
+                      },
+                    },
+                    {
+                      displayName: {
+                        contains: params.search,
+                        mode: 'insensitive',
+                      },
+                    },
                   ],
                 },
               },

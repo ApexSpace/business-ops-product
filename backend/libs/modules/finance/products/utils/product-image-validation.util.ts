@@ -50,7 +50,10 @@ export async function validateProductImage(
   const width = metadata.width ?? 0;
   const height = metadata.height ?? 0;
 
-  if (width < PRODUCT_MIN_IMAGE_DIMENSION || height < PRODUCT_MIN_IMAGE_DIMENSION) {
+  if (
+    width < PRODUCT_MIN_IMAGE_DIMENSION ||
+    height < PRODUCT_MIN_IMAGE_DIMENSION
+  ) {
     throw new AppException(
       ErrorCode.BAD_REQUEST,
       `Product image must be at least ${PRODUCT_MIN_IMAGE_DIMENSION}x${PRODUCT_MIN_IMAGE_DIMENSION} pixels`,

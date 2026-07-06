@@ -173,11 +173,16 @@ export function extractFinancialSettings(
     DEFAULT_FINANCIAL_SETTINGS.checkout,
     stored.checkout,
   );
-  checkout.prefix = (checkout.prefix || DEFAULT_FINANCIAL_SETTINGS.checkout.prefix)
+  checkout.prefix = (
+    checkout.prefix || DEFAULT_FINANCIAL_SETTINGS.checkout.prefix
+  )
     .trim()
     .toUpperCase()
     .slice(0, 10);
-  checkout.nextNumber = Math.max(1, Math.floor(Number(checkout.nextNumber) || 1));
+  checkout.nextNumber = Math.max(
+    1,
+    Math.floor(Number(checkout.nextNumber) || 1),
+  );
 
   const taxesAndCurrency = mergeSection(
     DEFAULT_FINANCIAL_SETTINGS.taxesAndCurrency,

@@ -1,8 +1,5 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
-import {
-  ContactWalletTransactionType,
-  Prisma,
-} from '@prisma/client';
+import { ContactWalletTransactionType, Prisma } from '@prisma/client';
 import { AppException } from '@app/common/exceptions/app.exception';
 import { ErrorCode } from '@app/common/exceptions/error-code.enum';
 import { PrismaService } from '@app/core/database/prisma.service';
@@ -30,7 +27,9 @@ export class WalletLedgerService {
   }
 
   async credit(input: WalletDeltaInput): Promise<string> {
-    const amount = input.amount.lessThan(0) ? input.amount.negated() : input.amount;
+    const amount = input.amount.lessThan(0)
+      ? input.amount.negated()
+      : input.amount;
     return this.applyDelta(amount, { ...input, amount });
   }
 

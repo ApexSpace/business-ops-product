@@ -24,7 +24,10 @@ export class ProductVariantRegenerationService {
     private readonly inventoryRepository: ProductInventoryRepository,
   ) {}
 
-  async regenerateVariants(businessId: string, productId: string): Promise<void> {
+  async regenerateVariants(
+    businessId: string,
+    productId: string,
+  ): Promise<void> {
     const product = await this.prisma.product.findFirst({
       where: { id: productId, businessId, deletedAt: null },
     });
@@ -99,6 +102,9 @@ export class ProductVariantRegenerationService {
       keepKeys,
     );
 
-    await this.inventoryRepository.syncVariableProductStock(businessId, productId);
+    await this.inventoryRepository.syncVariableProductStock(
+      businessId,
+      productId,
+    );
   }
 }

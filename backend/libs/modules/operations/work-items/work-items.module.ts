@@ -11,7 +11,7 @@ import { WorkItemsService } from './services/work-items.service';
 @Module({
   imports: [
     AuditModule,
-    ContactsModule,
+    forwardRef(() => ContactsModule),
     ServicesModule,
     forwardRef(() => LeadsModule),
     forwardRef(() => MembershipModule),

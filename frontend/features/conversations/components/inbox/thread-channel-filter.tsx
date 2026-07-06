@@ -48,7 +48,7 @@ export function ThreadChannelFilter({
     >
       <SelectTrigger
         className={cn(
-          "h-8 w-[7.5rem] shrink-0 border-border/60 bg-muted/30 px-2 text-xs shadow-none",
+          "h-7 w-[4.75rem] shrink-0 border-border/60 bg-muted/30 px-1.5 text-[10px] shadow-none sm:w-[5.5rem] sm:text-[11px]",
           className,
         )}
         aria-label="Filter messages by channel"

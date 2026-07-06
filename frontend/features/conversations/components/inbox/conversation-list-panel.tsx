@@ -55,7 +55,7 @@ export function ConversationListPanel({
             <Button
               type="button"
               size="icon"
-              className="size-9 shrink-0"
+              className="shrink-0"
               onClick={onNewEmail}
               aria-label="New email"
             >

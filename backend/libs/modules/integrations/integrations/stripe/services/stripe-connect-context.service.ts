@@ -25,7 +25,9 @@ export class StripeConnectContextService {
     return process.env.STRIPE_PUBLISHABLE_KEY?.trim() || null;
   }
 
-  async getContextForBusiness(businessId: string): Promise<StripeConnectContext> {
+  async getContextForBusiness(
+    businessId: string,
+  ): Promise<StripeConnectContext> {
     const publishableKey = this.getPublishableKey();
     const integration =
       await this.businessIntegrationRepository.findByBusinessAndKey(

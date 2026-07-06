@@ -70,7 +70,7 @@ const businessRoutes: Record<string, RouteEntry> = {
   },
   "/business/appointments": {
     title: "Appointments",
-    description: "Booking calendar.",
+    description: "Schedule and manage appointments across your business calendars.",
   },
   "/business/time-clock": {
     title: "Time Clock",
@@ -113,6 +113,26 @@ const businessRoutes: Record<string, RouteEntry> = {
     description: "Online sales, shareable links, and embed options.",
     breadcrumbs: [
       { label: "Packages", href: "/business/packages" },
+      { label: "Settings" },
+    ],
+  },
+  "/business/memberships": {
+    title: "Memberships",
+    description: "Manage client memberships and subscriptions.",
+  },
+  "/business/memberships/plans": {
+    title: "Membership Plans",
+    description: "Configure plans, pricing, services, and online sales.",
+    breadcrumbs: [
+      { label: "Memberships", href: "/business/memberships" },
+      { label: "Plans" },
+    ],
+  },
+  "/business/memberships/settings": {
+    title: "Membership Settings",
+    description: "Online sales, shareable links, and embed options.",
+    breadcrumbs: [
+      { label: "Memberships", href: "/business/memberships" },
       { label: "Settings" },
     ],
   },

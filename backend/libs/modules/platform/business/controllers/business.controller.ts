@@ -6,11 +6,13 @@ import type { RequestUser } from '@app/common/decorators/current-user.decorator'
 import { BusinessRoles } from '@app/common/decorators/business-roles.decorator';
 import { BusinessRolesGuard } from '@app/common/guards/business-roles.guard';
 import { BusinessDashboardStatsDto } from '../dto/business-dashboard-stats.dto';
+import { BusinessDashboardFeedDto } from '../dto/business-dashboard-feed.dto';
 import { UpdateFinancialSettingsDto } from '../dto/financial-settings.dto';
 import { UpdateBusinessDto } from '../dto/update-business.dto';
 import { BusinessAccessService } from '@app/modules/platform/business/services/business-access.service';
 import { BusinessService } from '@app/modules/platform/business/services/business.service';
 import { DashboardStatsService } from '@app/modules/platform/business/services/dashboard-stats.service';
+import { DashboardFeedService } from '@app/modules/platform/business/services/dashboard-feed.service';
 import { FinancialSettingsService } from '@app/modules/platform/business/services/financial-settings.service';
 import { BusinessBillingService } from '@app/modules/platform/business/services/business-billing.service';
 import { CancelBusinessSubscriptionDto } from '../dto/cancel-business-subscription.dto';
@@ -25,6 +27,7 @@ export class BusinessController {
     private readonly businessService: BusinessService,
     private readonly businessAccessService: BusinessAccessService,
     private readonly dashboardStatsService: DashboardStatsService,
+    private readonly dashboardFeedService: DashboardFeedService,
     private readonly financialSettingsService: FinancialSettingsService,
     private readonly businessBillingService: BusinessBillingService,
   ) {}
@@ -59,6 +62,18 @@ export class BusinessController {
     @CurrentUser() user: RequestUser,
   ): Promise<BusinessDashboardStatsDto> {
     return this.dashboardStatsService.getStats(user.businessId!);
+  }
+
+  @Get('current/dashboard-feed')
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
+  getDashboardFeed(
+    @CurrentUser() user: RequestUser,
+  ): Promise<BusinessDashboardFeedDto> {
+    return this.dashboardFeedService.getFeed(user.businessId!);
   }
 
   @Patch('current')

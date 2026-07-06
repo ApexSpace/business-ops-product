@@ -19,7 +19,10 @@ export class ContactPrintAppointmentsService {
     businessId: string,
     contactId: string,
   ): Promise<ContactPrintAppointmentsResponseDto> {
-    const contact = await this.contactRepository.findById(businessId, contactId);
+    const contact = await this.contactRepository.findById(
+      businessId,
+      contactId,
+    );
     if (!contact) {
       throw new AppException(
         ErrorCode.CONTACT_NOT_FOUND,

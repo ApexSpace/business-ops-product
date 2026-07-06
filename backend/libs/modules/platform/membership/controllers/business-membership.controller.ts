@@ -76,11 +76,7 @@ export class BusinessMembershipController {
     @CurrentUser() user: RequestUser,
     @Param('userId', ParseUUIDPipe) userId: string,
   ) {
-    return this.membershipService.archiveMember(
-      user.businessId!,
-      userId,
-      user,
-    );
+    return this.membershipService.archiveMember(user.businessId!, userId, user);
   }
 
   @Delete(':userId')

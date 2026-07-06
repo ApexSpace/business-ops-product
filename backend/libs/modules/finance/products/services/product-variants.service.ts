@@ -39,7 +39,10 @@ export class ProductVariantsService {
     productId: string,
     variantId: string,
   ): Promise<ProductVariantResponseDto> {
-    const variant = await this.variantRepository.findById(businessId, variantId);
+    const variant = await this.variantRepository.findById(
+      businessId,
+      variantId,
+    );
     if (!variant || variant.productId !== productId) {
       throw new AppException(
         ErrorCode.PRODUCT_VARIANT_NOT_FOUND,
@@ -65,8 +68,7 @@ export class ProductVariantsService {
         : {}),
       ...(dto.price !== undefined
         ? {
-            price:
-              dto.price != null ? new Prisma.Decimal(dto.price) : null,
+            price: dto.price != null ? new Prisma.Decimal(dto.price) : null,
           }
         : {}),
       ...(dto.compareAtPrice !== undefined
@@ -108,7 +110,10 @@ export class ProductVariantsService {
       );
     }
 
-    await this.inventoryRepository.syncVariableProductStock(businessId, productId);
+    await this.inventoryRepository.syncVariableProductStock(
+      businessId,
+      productId,
+    );
 
     await this.auditService.log({
       actorUserId: actor.id,
@@ -125,7 +130,10 @@ export class ProductVariantsService {
     businessId: string,
     productId: string,
   ): Promise<void> {
-    const product = await this.productRepository.findById(businessId, productId);
+    const product = await this.productRepository.findById(
+      businessId,
+      productId,
+    );
     if (!product) {
       throw new AppException(
         ErrorCode.PRODUCT_NOT_FOUND,

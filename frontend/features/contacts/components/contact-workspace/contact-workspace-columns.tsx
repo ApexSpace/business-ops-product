@@ -8,32 +8,26 @@ import {
   WORKSPACE_PADDING_CLASS,
   WORKSPACE_TABLET_CONVERSATION_COL_CLASS,
   WORKSPACE_TABLET_MAIN_ROW_CLASS,
-  WORKSPACE_TABLET_RAIL_COL_CLASS,
   WORKSPACE_TABLET_SIDEBAR_COL_CLASS,
 } from "@/features/contacts/workspace/contact-workspace";
 
 interface ContactWorkspaceColumnsProps {
   conversation: React.ReactNode;
   sidebar: React.ReactNode;
-  rail?: React.ReactNode;
   className?: string;
 }
 
 export function ContactWorkspaceColumns({
   conversation,
   sidebar,
-  rail,
   className,
 }: ContactWorkspaceColumnsProps) {
   return (
     <>
-      {/* Desktop xl+: conversation (left, wide) + sidebar + rail */}
+      {/* Desktop xl+: conversation (left, wide) + sidebar */}
       <div className={cn(WORKSPACE_DESKTOP_ROW_CLASS, className)}>
         <div className={WORKSPACE_COLUMN_CELL_CLASS}>{conversation}</div>
         <div className={WORKSPACE_COLUMN_CELL_CLASS}>{sidebar}</div>
-        {rail ? (
-          <div className={WORKSPACE_COLUMN_CELL_CLASS}>{rail}</div>
-        ) : null}
       </div>
 
       {/* Tablet md–xl */}
@@ -50,9 +44,6 @@ export function ContactWorkspaceColumns({
             {conversation}
           </div>
           <div className={WORKSPACE_TABLET_SIDEBAR_COL_CLASS}>{sidebar}</div>
-          {rail ? (
-            <div className={WORKSPACE_TABLET_RAIL_COL_CLASS}>{rail}</div>
-          ) : null}
         </div>
       </div>
     </>

@@ -119,6 +119,18 @@ export interface AppointmentStats {
   cancelledOrNoShow: number;
 }
 
+export interface RevenueDayStats {
+  amount: string;
+  paymentCount: number;
+}
+
+export interface DashboardAttentionStats {
+  overdueInvoices: number;
+  overdueInvoiceBalance: string;
+  lowStockProducts: number;
+  unreadConversations: number;
+}
+
 export interface BusinessDashboardStats {
   contacts: number;
   leads: LeadStats;
@@ -128,6 +140,120 @@ export interface BusinessDashboardStats {
   conversations: number;
   members: number;
   workItems: WorkItemStats;
+  revenueToday: RevenueDayStats;
+  revenueYesterday?: RevenueDayStats;
+  attention: DashboardAttentionStats;
+}
+
+export interface DashboardAttentionItem {
+  id: string;
+  title: string;
+  description?: string;
+  href: string;
+}
+
+export type AppointmentSource =
+  | "INTERNAL"
+  | "BOOKING_WIDGET"
+  | "PUBLIC_LINK"
+  | "GOOGLE_SYNC"
+  | "IMPORTED";
+
+export interface DashboardFeedAppointment {
+  id: string;
+  title: string;
+  startAt: string;
+  endAt: string;
+  status: string;
+  source: AppointmentSource;
+  notes?: string | null;
+  serviceName?: string | null;
+  assignedTo?: {
+    id: string;
+    firstName?: string | null;
+    lastName?: string | null;
+    displayName?: string | null;
+  } | null;
+  contact: {
+    id: string;
+    firstName?: string | null;
+    lastName?: string | null;
+    displayName?: string | null;
+  };
+}
+
+export interface DashboardRecentConversation {
+  id: string;
+  channel:
+    | "FACEBOOK"
+    | "INSTAGRAM"
+    | "WHATSAPP"
+    | "EMAIL"
+    | "SMS"
+    | "WEBCHAT"
+    | "LINKEDIN";
+  preview?: string | null;
+  lastMessageAt: string;
+  unreadCount: number;
+  href: string;
+  contact?: {
+    id: string;
+    firstName?: string | null;
+    lastName?: string | null;
+    displayName?: string | null;
+  } | null;
+}
+
+export interface DashboardTaskItem {
+  id: string;
+  title: string;
+  dueAt: string;
+  priority?: "LOW" | "MEDIUM" | "HIGH" | null;
+  assignedTo?: {
+    id: string;
+    firstName?: string | null;
+    lastName?: string | null;
+    displayName?: string | null;
+  } | null;
+}
+
+export interface DashboardRevenueCategory {
+  id: string;
+  label: string;
+  amount: string;
+  sharePercent: number;
+}
+
+export interface DashboardBookingSource {
+  source: AppointmentSource;
+  label: string;
+  count: number;
+  deltaPercent: number;
+}
+
+export interface DashboardOverview {
+  waitingClientsToday: number;
+}
+
+export interface DashboardTrendMetric {
+  value: number;
+  deltaPercent: number;
+  points: number[];
+}
+
+export interface BusinessDashboardFeed {
+  stats: BusinessDashboardStats;
+  overview: DashboardOverview;
+  todayAppointmentsMetric: DashboardTrendMetric;
+  newLeadsMetric: DashboardTrendMetric;
+  todayAppointments: DashboardFeedAppointment[];
+  attentionItems: DashboardAttentionItem[];
+  appointmentsToConfirm: DashboardFeedAppointment[];
+  recentConversations: DashboardRecentConversation[];
+  followUpTasks: DashboardTaskItem[];
+  staffAssignments: DashboardTaskItem[];
+  revenueByCategory: DashboardRevenueCategory[];
+  bookingsBySource: DashboardBookingSource[];
 }
 
 export interface MemberUser {

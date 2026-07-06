@@ -19,7 +19,10 @@ export class ProductImageRepository {
     });
   }
 
-  findManyByProduct(businessId: string, productId: string): Promise<ProductImage[]> {
+  findManyByProduct(
+    businessId: string,
+    productId: string,
+  ): Promise<ProductImage[]> {
     return this.prisma.productImage.findMany({
       where: this.activeWhere(businessId, { productId }),
       orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
@@ -64,7 +67,10 @@ export class ProductImageRepository {
     return this.prisma.productImage.update({ where: { id }, data });
   }
 
-  async softDelete(businessId: string, id: string): Promise<ProductImage | null> {
+  async softDelete(
+    businessId: string,
+    id: string,
+  ): Promise<ProductImage | null> {
     const existing = await this.findById(businessId, id);
     if (!existing) {
       return null;

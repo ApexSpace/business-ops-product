@@ -29,10 +29,10 @@ import { StripeInvoicePaymentService } from './services/stripe-invoice-payment.s
   imports: [
     AuditModule,
     forwardRef(() => BusinessModule),
-    ContactsModule,
-    EstimatesModule,
+    forwardRef(() => ContactsModule),
+    forwardRef(() => EstimatesModule),
     ServicesModule,
-    WorkItemsModule,
+    forwardRef(() => WorkItemsModule),
     forwardRef(() => IntegrationsModule),
     forwardRef(() => EmailModule),
     forwardRef(() => PaymentsModule),

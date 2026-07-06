@@ -30,7 +30,10 @@ export class ContactTimelineService {
     items: ContactTimelineEventDto[];
     meta: { total: number; page: number; limit: number };
   }> {
-    const contact = await this.contactRepository.findById(businessId, contactId);
+    const contact = await this.contactRepository.findById(
+      businessId,
+      contactId,
+    );
     if (!contact) {
       throw new AppException(
         ErrorCode.CONTACT_NOT_FOUND,
@@ -299,9 +302,7 @@ export class ContactTimelineService {
 
     await Promise.all(fetches);
 
-    events.sort(
-      (a, b) => b.occurredAt.getTime() - a.occurredAt.getTime(),
-    );
+    events.sort((a, b) => b.occurredAt.getTime() - a.occurredAt.getTime());
 
     const { page, limit, skip, take } = getPaginationParams(query);
     const total = events.length;

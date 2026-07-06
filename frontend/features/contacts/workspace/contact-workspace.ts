@@ -39,11 +39,7 @@ export type ContactRecordsSectionId =
 export const DEFAULT_CONTACT_RECORDS_SECTION: ContactRecordsSectionId =
   "timeline";
 
-export type ContactMobilePanel =
-  | "details"
-  | "conversation"
-  | "records"
-  | "actions";
+export type ContactMobilePanel = "details" | "conversation" | "records";
 
 export interface ContactRailItem {
   id: string;
@@ -143,21 +139,22 @@ export function isPlaceholderSection(section: ContactRecordsSectionId): boolean 
 export const WORKSPACE_PANEL_CLASS =
   "flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-border/70 bg-card shadow-elevation-xs";
 
-/** Workspace inset from shell edges */
-export const WORKSPACE_PADDING_CLASS = "p-2 sm:p-2.5 lg:p-3";
+/** Workspace inset from shell edges (tighter top gap below page heading) */
+export const WORKSPACE_PADDING_CLASS =
+  "px-2 pb-2 pt-[var(--page-content-top-gap)] sm:px-2.5 sm:pb-2.5 lg:px-3 lg:pb-3";
 
 /** Tight gap between columns (all breakpoints) */
 export const WORKSPACE_GAP_CLASS = "gap-1.5 sm:gap-2";
 
 /**
- * Desktop xl+ — conversation fills left; contact sidebar + icon rail on the right.
+ * Desktop xl+ — conversation fills left; contact sidebar on the right.
  */
 export const WORKSPACE_DESKTOP_ROW_CLASS = [
   "hidden h-full min-h-0 w-full max-w-full flex-1 items-stretch overflow-x-auto overflow-y-hidden xl:grid",
   WORKSPACE_GAP_CLASS,
   WORKSPACE_PADDING_CLASS,
-  "xl:grid-cols-[minmax(360px,1fr)_minmax(280px,340px)_3rem]",
-  "2xl:grid-cols-[minmax(420px,1fr)_360px_3.5rem]",
+  "xl:grid-cols-[minmax(360px,1fr)_minmax(280px,340px)]",
+  "2xl:grid-cols-[minmax(420px,1fr)_360px]",
 ].join(" ");
 
 /** Grid/flex cell wrapper — track size comes from parent layout */
@@ -168,9 +165,7 @@ export const WORKSPACE_COLUMN_CELL_CLASS =
 export const WORKSPACE_DETAILS_COL_CLASS = WORKSPACE_COLUMN_CELL_CLASS;
 export const WORKSPACE_CONVERSATION_COL_CLASS = WORKSPACE_COLUMN_CELL_CLASS;
 export const WORKSPACE_RECORDS_COL_CLASS = WORKSPACE_COLUMN_CELL_CLASS;
-export const WORKSPACE_RAIL_COL_CLASS = WORKSPACE_COLUMN_CELL_CLASS;
-
-/** Tablet md–xl: conversation + sidebar + rail in one row */
+/** Tablet md–xl: conversation + sidebar in one row */
 export const WORKSPACE_TABLET_MAIN_ROW_CLASS = [
   "flex h-full min-h-0 w-full flex-1 overflow-hidden",
   WORKSPACE_GAP_CLASS,
@@ -181,8 +176,6 @@ export const WORKSPACE_TABLET_CONVERSATION_COL_CLASS =
 
 export const WORKSPACE_TABLET_SIDEBAR_COL_CLASS =
   "flex h-full min-h-0 w-[min(34%,300px)] min-w-[240px] max-w-[320px] shrink-0 overflow-hidden";
-
-export const WORKSPACE_TABLET_RAIL_COL_CLASS = "flex w-11 shrink-0 overflow-hidden";
 
 /** @deprecated tablet bottom row removed — records live in sidebar */
 export const WORKSPACE_TABLET_DETAILS_COL_CLASS =
@@ -196,9 +189,12 @@ export const WORKSPACE_TABLET_BOTTOM_ROW_CLASS =
 export const WORKSPACE_TABLET_RECORDS_COL_CLASS =
   WORKSPACE_COLUMN_CELL_CLASS;
 
-/** Contact detail workspace route (full-bleed below topbar, no shell content padding). */
+/** Contact list + detail workspace (full-bleed below topbar, no shell content padding). */
 export function isContactWorkspacePath(pathname: string): boolean {
-  return /^\/business\/contacts\/[^/]+$/.test(pathname);
+  return (
+    pathname === "/business/contacts" ||
+    /^\/business\/contacts\/[^/]+$/.test(pathname)
+  );
 }
 
 /** Conversations inbox — same full-bleed shell treatment as contact workspace. */
@@ -207,27 +203,27 @@ export function isConversationsInboxPath(pathname: string): boolean {
 }
 
 /**
- * Desktop xl+ — list, thread, contact sidebar, icon rail (matches contact workspace spacing).
+ * Desktop xl+ — list, thread, and contact sidebar (matches contact workspace spacing).
  */
 export const INBOX_DESKTOP_ROW_CLASS = [
   "hidden h-full min-h-0 w-full max-w-full flex-1 items-stretch overflow-x-auto overflow-y-hidden xl:grid",
   WORKSPACE_GAP_CLASS,
   WORKSPACE_PADDING_CLASS,
-  "xl:grid-cols-[minmax(220px,260px)_minmax(400px,2fr)_minmax(240px,280px)_3rem]",
-  "2xl:grid-cols-[240px_minmax(480px,2fr)_280px_3.5rem]",
+  "xl:grid-cols-[minmax(240px,280px)_minmax(420px,2.2fr)_minmax(260px,300px)]",
+  "2xl:grid-cols-[260px_minmax(520px,2.4fr)_300px]",
 ].join(" ");
 
-/** Tablet md–xl: list + thread + sidebar + rail in one row */
+/** Tablet md–xl: list + thread + sidebar in one row */
 export const INBOX_TABLET_MAIN_ROW_CLASS = [
   "flex h-full min-h-0 w-full flex-1 overflow-hidden",
   WORKSPACE_GAP_CLASS,
 ].join(" ");
 
 export const INBOX_TABLET_LIST_COL_CLASS =
-  "flex h-full min-h-0 w-[min(30%,240px)] min-w-[200px] max-w-[260px] shrink-0 overflow-hidden";
+  "flex h-full min-h-0 w-[min(32%,260px)] min-w-[220px] max-w-[280px] shrink-0 overflow-hidden";
 
 export const INBOX_TABLET_THREAD_COL_CLASS =
-  "flex h-full min-h-0 min-w-[280px] flex-[1.4] basis-0 overflow-hidden";
+  "flex h-full min-h-0 min-w-[300px] flex-[1.6] basis-0 overflow-hidden";
 
 export type TimelineEventType =
   | "contact_created"

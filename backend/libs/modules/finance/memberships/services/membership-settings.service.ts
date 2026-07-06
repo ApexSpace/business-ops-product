@@ -5,9 +5,7 @@ import { AppException } from '@app/common/exceptions/app.exception';
 import { ErrorCode } from '@app/common/exceptions/error-code.enum';
 import { PrismaService } from '@app/core/database/prisma.service';
 import { BusinessIntegrationRepository } from '@app/modules/integrations/integrations/repositories/business-integration.repository';
-import {
-  assertStripeReadyForPayments,
-} from '@app/modules/integrations/integrations/stripe/utils/stripe-readiness.util';
+import { assertStripeReadyForPayments } from '@app/modules/integrations/integrations/stripe/utils/stripe-readiness.util';
 import {
   UpdateMembershipPreferencesDto,
   UpdateMembershipSettingsOnlineSalesDto,
@@ -78,9 +76,7 @@ export class MembershipSettingsService {
     let candidate = base || 'memberships';
     let suffix = 0;
 
-    while (
-      await this.settingsRepository.isSlugTaken(candidate, businessId)
-    ) {
+    while (await this.settingsRepository.isSlugTaken(candidate, businessId)) {
       suffix += 1;
       candidate = `${base}-${suffix}`;
     }
@@ -103,13 +99,13 @@ export class MembershipSettingsService {
       publicSlug: string | null;
     },
   ) {
-    const frontendUrl = this.configService.get('app', { infer: true }).frontendUrl;
+    const frontendUrl = this.configService.get('app', {
+      infer: true,
+    }).frontendUrl;
     const appDomain = new URL(frontendUrl).host;
     const slug = settings.publicSlug;
 
-    const shareableLink = slug
-      ? `${frontendUrl}/memberships/${slug}`
-      : null;
+    const shareableLink = slug ? `${frontendUrl}/memberships/${slug}` : null;
     const overlayLink = shareableLink;
     const embedScript = slug
       ? `<script>window.CodeSol = window.CodeSol || {}; window.CodeSol.CompanyId = "${businessId}";</script><script src="https://booking.${appDomain}/app.js" async></script>`

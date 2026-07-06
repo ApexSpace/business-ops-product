@@ -30,7 +30,8 @@ export function toProductVariantResponse(
     stockQuantity: variant.stockQuantity,
     desiredQuantity: variant.desiredQuantity,
     status: variant.status,
-    customAttributes: (variant.customAttributes as Record<string, unknown> | null) ?? null,
+    customAttributes:
+      (variant.customAttributes as Record<string, unknown> | null) ?? null,
     featuredImageKey: variant.featuredImageKey,
     featuredImageMimeType: variant.featuredImageMimeType,
     featuredImageWidth: variant.featuredImageWidth,

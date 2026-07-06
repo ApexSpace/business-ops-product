@@ -1,6 +1,5 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
 import { usePathname } from "next/navigation";
 import { Building2, Settings } from "lucide-react";
 import { AppShell } from "@/components/shell";
@@ -25,13 +24,12 @@ import { BusinessAccessBanner } from "@/components/business-access/business-acce
 import { BusinessAccessGate } from "@/components/business-access/business-access-gate";
 import { ServiceUnavailableBanner } from "@/components/layout/service-unavailable-banner";
 import { useOptionalBusinessAccess } from "@/lib/business-access/use-business-access";
-import { shouldShowAccountSwitcher } from "@/lib/auth";
-import { getCurrentBusiness } from "@/features/settings/api/business.api";
-import { queryKeys } from "@/lib/query/keys";
+import { useShellCurrentBusiness } from "@/lib/hooks/use-shell-current-business";
 import { useAuth } from "@/lib/auth/provider";
 import { useSnapshotContext } from "@/lib/snapshot/use-snapshot-context";
 import { hasPlatformBusinessAdminAccess } from "@/features/auth/permissions/permissions-legacy";
 import type { ShellNavSection } from "@/lib/types/shell-nav";
+import { resolveBusinessNicheProfile } from "@/lib/config/niche";
 
 interface ShellLayoutProps {
   mode: "platform" | "business";
@@ -44,9 +42,7 @@ export function AppShellLayout({ mode, children }: ShellLayoutProps) {
   const { context: snapshotContext, t } = useSnapshotContext();
   const businessAccess = useOptionalBusinessAccess();
 
-  const { data: currentBusiness } = useQuery({
-    queryKey: queryKeys.business.current(),
-    queryFn: getCurrentBusiness,
+  const { data: currentBusiness } = useShellCurrentBusiness({
     enabled: mode === "business",
   });
 
@@ -115,13 +111,11 @@ export function AppShellLayout({ mode, children }: ShellLayoutProps) {
             icon: Building2,
           };
 
-  const showAccountSwitcher = shouldShowAccountSwitcher(
-    contexts,
-    jwt,
-    user?.contexts,
-  );
-
   const fullScreenEditor = isFullScreenEditorRoute(pathname);
+  const nicheProfile = resolveBusinessNicheProfile({
+    business: currentBusiness,
+    snapshotContext,
+  });
 
   if (fullScreenEditor) {
     return (
@@ -159,7 +153,12 @@ export function AppShellLayout({ mode, children }: ShellLayoutProps) {
             ? [platformSettingsEntry]
             : undefined
       }
-      showAccountSwitcher={showAccountSwitcher}
+      workspaceName={currentBusiness?.name}
+      productName="CodeSol"
+      shellMode={mode}
+      searchPlaceholder={
+        mode === "business" ? nicheProfile.shell.searchPlaceholder : undefined
+      }
       topbarNotice={mode === "business" ? <BusinessAccessBanner /> : undefined}
       pageMetadataContext={{
         mode,

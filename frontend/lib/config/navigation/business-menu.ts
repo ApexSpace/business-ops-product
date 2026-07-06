@@ -20,6 +20,7 @@ import type { ShellNavItem, ShellNavSection } from "@/lib/types/shell-nav";
 
 export interface BusinessMenuItem extends ShellNavItem {
   labelKey?: keyof IndustryLabels;
+  navKey: string;
 }
 
 export const businessOperationalMenuItems: BusinessMenuItem[] = [
@@ -27,76 +28,90 @@ export const businessOperationalMenuItems: BusinessMenuItem[] = [
     title: "Dashboard",
     href: "/business/dashboard",
     icon: LayoutDashboard,
+    navKey: "dashboard",
   },
   {
     title: "Contacts",
     href: "/business/contacts",
     icon: Contact,
     labelKey: "contacts",
+    navKey: "contacts",
   },
   {
     title: "Conversations",
     href: "/business/conversations",
     icon: MessageSquare,
     labelKey: "conversations",
+    navKey: "conversations",
   },
   {
     title: "CRM Pipeline",
     href: "/business/pipelines",
     icon: GitBranch,
     labelKey: "pipelines",
+    navKey: "pipelines",
   },
   {
     title: "Work Items",
     href: "/business/work-items",
     icon: ClipboardList,
     labelKey: "workItems",
+    navKey: "work-items",
   },
   {
     title: "Appointments",
     href: "/business/appointments",
     icon: Calendar,
     labelKey: "appointments",
+    navKey: "appointments",
   },
   {
     title: "Time Clock",
     href: "/business/time-clock",
     icon: Clock,
+    navKey: "time-clock",
   },
   {
     title: "Payments",
     href: "/business/payments",
     icon: CreditCard,
+    navKey: "payments",
   },
   {
     title: "Sales",
     href: "/business/sales",
     icon: ShoppingBag,
+    navKey: "sales",
   },
   {
     title: "Gift Cards",
     href: "/business/gift-cards",
     icon: Gift,
+    navKey: "gift-cards",
   },
   {
     title: "Packages",
     href: "/business/packages",
     icon: Boxes,
+    navKey: "packages",
   },
   {
     title: "Memberships",
     href: "/business/memberships",
     icon: Repeat,
+    navKey: "memberships",
   },
   {
     title: "Offers",
     href: "/business/offers",
     icon: Tag,
+    navKey: "offers",
   },
   {
     title: "Products",
     href: "/business/products",
     icon: Package,
+    navKey: "products",
   },
 ];
 
@@ -105,7 +120,41 @@ export const businessOperationalSections: Array<{
   label: string;
   items: BusinessMenuItem[];
 }> = [
-  { id: "main", label: "", items: businessOperationalMenuItems },
+  {
+    id: "general",
+    label: "General",
+    items: businessOperationalMenuItems.filter((item) =>
+      ["/business/dashboard", "/business/contacts", "/business/conversations", "/business/pipelines"].includes(
+        item.href,
+      ),
+    ),
+  },
+  {
+    id: "operations",
+    label: "Operations",
+    items: businessOperationalMenuItems.filter((item) =>
+      [
+        "/business/appointments",
+        "/business/time-clock",
+        "/business/payments",
+        "/business/work-items",
+        "/business/sales",
+      ].includes(item.href),
+    ),
+  },
+  {
+    id: "catalog",
+    label: "Catalog",
+    items: businessOperationalMenuItems.filter((item) =>
+      [
+        "/business/gift-cards",
+        "/business/packages",
+        "/business/memberships",
+        "/business/products",
+        "/business/offers",
+      ].includes(item.href),
+    ),
+  },
 ];
 
 export const businessSettingsEntry = {

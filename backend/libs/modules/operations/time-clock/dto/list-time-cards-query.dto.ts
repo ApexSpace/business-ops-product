@@ -26,12 +26,16 @@ export class ListTimeCardsQueryDto extends PaginationQueryDto {
   @IsEnum(TimeCardTimePeriod)
   timePeriod?: TimeCardTimePeriod;
 
-  @ApiPropertyOptional({ description: 'ISO date (YYYY-MM-DD), used with custom period' })
+  @ApiPropertyOptional({
+    description: 'ISO date (YYYY-MM-DD), used with custom period',
+  })
   @IsOptional()
   @IsDateString()
   startDate?: string;
 
-  @ApiPropertyOptional({ description: 'ISO date (YYYY-MM-DD), used with custom period' })
+  @ApiPropertyOptional({
+    description: 'ISO date (YYYY-MM-DD), used with custom period',
+  })
   @IsOptional()
   @IsDateString()
   endDate?: string;

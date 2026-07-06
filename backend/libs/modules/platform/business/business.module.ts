@@ -6,6 +6,7 @@ import { MembershipModule } from '@app/modules/platform/membership/membership.mo
 import { PlanGroupsModule } from '@app/modules/platform/plan-groups/plan-groups.module';
 import { StripePlatformBillingModule } from '@app/modules/platform/billing/stripe/stripe-platform-billing.module';
 import { BusinessController } from './controllers/business.controller';
+import { BusinessSearchController } from './controllers/business-search.controller';
 import { PlatformBusinessAccessController } from './controllers/platform-business-access.controller';
 import { PlatformBusinessController } from './controllers/platform-business.controller';
 import { BusinessCapabilityRepository } from './repositories/business-capability.repository';
@@ -20,6 +21,8 @@ import { BusinessCapabilitySyncService } from './services/business-capability-sy
 import { BusinessEffectiveCapabilitiesService } from './services/business-effective-capabilities.service';
 import { BusinessService } from './services/business.service';
 import { DashboardStatsService } from './services/dashboard-stats.service';
+import { DashboardFeedService } from './services/dashboard-feed.service';
+import { BusinessGlobalSearchService } from './services/business-global-search.service';
 import { FinancialSettingsService } from './services/financial-settings.service';
 import { PlatformBusinessUtilizationService } from './services/platform-business-utilization.service';
 import { BusinessSubscriptionActionAvailabilityService } from './services/business-subscription-action-availability.service';
@@ -41,6 +44,7 @@ import { BusinessBillingService } from './services/business-billing.service';
     PlatformBusinessController,
     PlatformBusinessAccessController,
     BusinessController,
+    BusinessSearchController,
   ],
   providers: [
     BusinessRepository,
@@ -55,6 +59,8 @@ import { BusinessBillingService } from './services/business-billing.service';
     BusinessCapabilitySyncService,
     BusinessEffectiveCapabilitiesService,
     DashboardStatsService,
+    DashboardFeedService,
+    BusinessGlobalSearchService,
     FinancialSettingsService,
     PlatformBusinessUtilizationService,
     BusinessSubscriptionEventService,

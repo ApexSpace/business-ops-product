@@ -47,13 +47,12 @@ export function normalizeServiceDetailsPatch(
   }
 
   const processingDurationMinutes = hasProcessingTime
-    ? (patch.processingDurationMinutes ??
-      existing.processingDurationMinutes)
+    ? (patch.processingDurationMinutes ?? existing.processingDurationMinutes)
     : 0;
   const finishDurationMinutes = hasProcessingTime
-    ? (patch.finishDurationMinutes !== undefined
-        ? patch.finishDurationMinutes
-        : existing.finishDurationMinutes)
+    ? patch.finishDurationMinutes !== undefined
+      ? patch.finishDurationMinutes
+      : existing.finishDurationMinutes
     : null;
   const bufferBeforeMinutes = hasBufferTime
     ? (patch.bufferBeforeMinutes ?? existing.bufferBeforeMinutes)

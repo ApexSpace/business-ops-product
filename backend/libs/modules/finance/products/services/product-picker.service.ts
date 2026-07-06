@@ -6,7 +6,10 @@ import {
 } from '@prisma/client';
 import { PrismaService } from '@app/core/database/prisma.service';
 import { ProductPickerItemResponseDto } from '../dto/product.dto';
-import { resolveProductPrice, resolveProductSku } from '../utils/product-price-resolver.util';
+import {
+  resolveProductPrice,
+  resolveProductSku,
+} from '../utils/product-price-resolver.util';
 
 @Injectable()
 export class ProductPickerService {

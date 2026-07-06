@@ -117,10 +117,7 @@ export class TimeClockKioskService {
     };
   }
 
-  private async resolvePin(
-    businessId: string,
-    pin: string,
-  ): Promise<PinMatch> {
+  private async resolvePin(businessId: string, pin: string): Promise<PinMatch> {
     const memberships =
       await this.timeCardRepository.findMembershipsWithPins(businessId);
     const rounds = this.configService.get('auth.bcryptRounds', { infer: true });

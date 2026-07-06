@@ -17,7 +17,7 @@ import {
   IsNumber,
   IsOptional,
   IsString,
-   IsUUID,
+  IsUUID,
   MaxLength,
   Min,
   ValidateNested,

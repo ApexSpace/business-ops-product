@@ -1,5 +1,9 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
-import { GiftCardSource, GiftCardTransactionType, Prisma } from '@prisma/client';
+import {
+  GiftCardSource,
+  GiftCardTransactionType,
+  Prisma,
+} from '@prisma/client';
 import { AppException } from '@app/common/exceptions/app.exception';
 import { ErrorCode } from '@app/common/exceptions/error-code.enum';
 import { PrismaService } from '@app/core/database/prisma.service';
@@ -74,7 +78,9 @@ export class GiftCardReportsService {
     const cards = await this.prisma.giftCard.findMany({
       where: {
         businessId,
-        source: { in: [GiftCardSource.POS_SALE, GiftCardSource.ONLINE_PURCHASE] },
+        source: {
+          in: [GiftCardSource.POS_SALE, GiftCardSource.ONLINE_PURCHASE],
+        },
         ...(where.createdAt ? { createdAt: where.createdAt } : {}),
       },
       include: { promotion: true },
@@ -105,7 +111,13 @@ export class GiftCardReportsService {
     const cards = await this.prisma.giftCard.findMany({
       where: {
         businessId,
-        source: { in: [GiftCardSource.POS_SALE, GiftCardSource.ONLINE_PURCHASE, GiftCardSource.MANUAL] },
+        source: {
+          in: [
+            GiftCardSource.POS_SALE,
+            GiftCardSource.ONLINE_PURCHASE,
+            GiftCardSource.MANUAL,
+          ],
+        },
         ...(where.createdAt ? { createdAt: where.createdAt } : {}),
       },
       include: {
@@ -155,6 +167,9 @@ export class GiftCardReportsService {
     displayName: string | null;
   }): string {
     if (contact.displayName?.trim()) return contact.displayName.trim();
-    return [contact.firstName, contact.lastName].filter(Boolean).join(' ').trim();
+    return [contact.firstName, contact.lastName]
+      .filter(Boolean)
+      .join(' ')
+      .trim();
   }
 }

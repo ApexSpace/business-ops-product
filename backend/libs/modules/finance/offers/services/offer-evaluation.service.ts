@@ -155,7 +155,9 @@ export class OfferEvaluationService {
     if (offer.autoApptDateEnabled) {
       if (!context.appointmentDateTime) return false;
       const rules = parseOfferDateRules(offer.autoApptDateRules);
-      if (!matchesOfferDateRules(context.appointmentDateTime, rules, timezone)) {
+      if (
+        !matchesOfferDateRules(context.appointmentDateTime, rules, timezone)
+      ) {
         return false;
       }
     }
@@ -258,7 +260,10 @@ export class OfferEvaluationService {
         breakdowns.push(breakdown);
         totalDiscount +=
           breakdown.entireSaleDiscount ??
-          breakdown.lineDiscounts.reduce((sum, line) => sum + line.discountAmount, 0);
+          breakdown.lineDiscounts.reduce(
+            (sum, line) => sum + line.discountAmount,
+            0,
+          );
       }
     }
 
@@ -294,7 +299,9 @@ export class OfferEvaluationService {
       if (discount.amountType === DiscountAmountType.PERCENTAGE) {
         discountAmount = roundMoney(lineTotal * (amount / 100));
       } else {
-        discountAmount = roundMoney(Math.min(amount * item.quantity, lineTotal));
+        discountAmount = roundMoney(
+          Math.min(amount * item.quantity, lineTotal),
+        );
       }
 
       if (discountAmount <= 0) continue;

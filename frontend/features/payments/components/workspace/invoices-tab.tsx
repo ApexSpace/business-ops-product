@@ -9,9 +9,8 @@ import {
 } from "@/components/data-display/data-table";
 import { SearchInput } from "@/components/forms/search-input";
 import { SearchableSelect } from "@/components/forms/searchable-select";
-import { FilterBar } from "@/components/layout/filter-bar";
 import { InvoiceFormDialog } from "@/features/invoices/components/invoice-form-dialog";
-import { PaymentFormDialog } from "@/features/payments/components/payment-form-dialog";
+import { PaymentFormDrawer } from "@/features/payments/components/payment-form-drawer";
 import { InvoiceTableRowActions } from "@/features/payments/components/workspace/invoice-table-row-actions";
 import { FinancialTabPanel } from "@/features/payments/components/workspace/financial-tab-panel";
 import { Button } from "@/components/ui/button";
@@ -28,7 +27,6 @@ import {
 import { invalidateFinancialLists } from "@/features/payments/workspace/payments-workspace";
 import { queryKeys } from "@/lib/query/keys";
 import type { Invoice, InvoiceStatus } from "@/features/invoices/types";
-import type { PaginatedResult } from "@/lib/types/shared";
 import {
   duplicateInvoice,
   listInvoices,
@@ -133,16 +131,18 @@ export function PaymentsInvoicesTab() {
             New invoice
           </Button>
         }
+        search={
+          <SearchInput
+            className="min-w-[12rem] flex-1 shrink-0"
+            value={params.search}
+            onChange={(search) =>
+              setParams({ search, page: "1" }, { resetPage: true })
+            }
+            placeholder="Search invoices…"
+          />
+        }
         filters={
-          <FilterBar className="w-full flex-nowrap items-stretch gap-2 overflow-x-auto">
-            <SearchInput
-              className="min-w-[12rem] flex-1 shrink-0"
-              value={params.search}
-              onChange={(search) =>
-                setParams({ search, page: "1" }, { resetPage: true })
-              }
-              placeholder="Search invoices…"
-            />
+          <>
             <SearchableSelect
               items={statusFilterItems}
               value={params.status}
@@ -170,7 +170,7 @@ export function PaymentsInvoicesTab() {
               }
               aria-label="Issue to"
             />
-          </FilterBar>
+          </>
         }
         pagination={
           data?.meta ? (
@@ -183,15 +183,21 @@ export function PaymentsInvoicesTab() {
           ) : null
         }
       >
-        <div className="-mx-1 overflow-x-auto px-1">
-          <DataTable
-            className="min-w-[60rem]"
-            density="compact"
-            columns={columns}
-            data={data?.items ?? []}
-            getRowId={(row) => row.id}
-            isLoading={isLoading}
-            actionsColumnHeader="Actions"
+        <DataTable
+          className="min-w-[60rem]"
+          density="compact"
+          columns={columns}
+          data={data?.items ?? []}
+          getRowId={(row) => row.id}
+          isLoading={isLoading}
+          actionsColumnHeader="Actions"
+          onRowClick={(row) => {
+            if (row.status !== "PAID") {
+              openInvoiceEditor(row);
+              return;
+            }
+            viewInvoicePublic(row);
+          }}
             emptyTitle="No invoices yet"
             emptyDescription="Create your first invoice for a customer."
             emptyAction={
@@ -234,7 +240,6 @@ export function PaymentsInvoicesTab() {
               />
             )}
           />
-        </div>
       </FinancialTabPanel>
 
       <InvoiceFormDialog
@@ -247,7 +252,7 @@ export function PaymentsInvoicesTab() {
         onSuccess={() => void invalidateFinancialLists(queryClient)}
       />
 
-      <PaymentFormDialog
+      <PaymentFormDrawer
         open={paymentDialogOpen}
         onOpenChange={(open) => {
           setPaymentDialogOpen(open);

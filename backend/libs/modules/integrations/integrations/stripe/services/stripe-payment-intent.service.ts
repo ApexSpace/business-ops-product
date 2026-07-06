@@ -43,10 +43,11 @@ export class StripePaymentIntentService {
     const stripeAccountId = await this.connectContext.requireStripeAccountId(
       input.businessId,
     );
-    const { stripeCustomerId } = await this.customerService.getOrCreateForContact(
-      input.businessId,
-      input.contactId,
-    );
+    const { stripeCustomerId } =
+      await this.customerService.getOrCreateForContact(
+        input.businessId,
+        input.contactId,
+      );
 
     const stripe = this.stripeApi.getClient();
     const cardOnly = input.channel !== 'CUSTOMER_SELF_CHECKOUT';

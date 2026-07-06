@@ -361,7 +361,9 @@ export class MembershipService {
     let timeclockPin: string | undefined;
     if (dto.timeClockPin) {
       await this.assertPinUnique(businessId, dto.timeClockPin, user.id);
-      const rounds = this.configService.get('auth.bcryptRounds', { infer: true });
+      const rounds = this.configService.get('auth.bcryptRounds', {
+        infer: true,
+      });
       timeclockPin = await bcrypt.hash(dto.timeClockPin, rounds);
     }
 
@@ -645,7 +647,9 @@ export class MembershipService {
       );
     }
 
-    await this.membershipRepository.update(membership.id, { timeclockPin: null });
+    await this.membershipRepository.update(membership.id, {
+      timeclockPin: null,
+    });
 
     await this.auditService.log({
       actorUserId: actor.id,

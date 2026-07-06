@@ -15,12 +15,12 @@ interface SidebarSectionProps {
 
 export function SidebarSection({ section }: SidebarSectionProps) {
   return (
-    <SidebarGroup className="px-2 py-0.5">
-      <SidebarGroupLabel className="mb-0.5 h-6 px-2 text-[10px] font-semibold tracking-widest text-sidebar-foreground/45 uppercase">
+    <SidebarGroup className="px-3 py-1 group-data-[collapsible=icon]:px-2">
+      <SidebarGroupLabel className="mb-1 h-6 px-3 text-[10.5px] font-semibold tracking-[0.08em] text-[#98a1b5] uppercase group-data-[collapsible=icon]:px-1">
         {section.label}
       </SidebarGroupLabel>
       <SidebarGroupContent>
-        <SidebarMenu className="gap-px">
+        <SidebarMenu className="gap-0.5">
           {section.items.map((item) => (
             <SidebarNavItem key={item.href} item={item} />
           ))}

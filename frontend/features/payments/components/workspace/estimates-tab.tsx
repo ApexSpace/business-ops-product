@@ -10,7 +10,6 @@ import {
 import { ConfirmDeleteDialog } from "@/components/forms/confirm-delete-dialog";
 import { SearchInput } from "@/components/forms/search-input";
 import { SearchableSelect } from "@/components/forms/searchable-select";
-import { FilterBar } from "@/components/layout/filter-bar";
 import { EstimateFormDialog } from "@/features/estimates/components/estimate-form-dialog";
 import { InvoiceFormDialog } from "@/features/invoices/components/invoice-form-dialog";
 import { FinancialRowActionsMenu } from "@/features/payments/components/workspace/financial-row-actions-menu";
@@ -30,7 +29,6 @@ import {
 import { invalidateFinancialLists } from "@/features/payments/workspace/payments-workspace";
 import { queryKeys } from "@/lib/query/keys";
 import type { Estimate, EstimateStatus } from "@/features/estimates/types";
-import type { PaginatedResult } from "@/lib/types/shared";
 import { deleteEstimate, duplicateEstimate, listEstimates, updateEstimateStatus } from "@/features/estimates/api/estimates.api";
 
 const LIST_SCHEMA = {
@@ -131,16 +129,18 @@ export function PaymentsEstimatesTab() {
             New estimate
           </Button>
         }
+        search={
+          <SearchInput
+            className="min-w-[12rem] flex-1 shrink-0"
+            value={params.search}
+            onChange={(search) =>
+              setParams({ search, page: "1" }, { resetPage: true })
+            }
+            placeholder="Search estimates…"
+          />
+        }
         filters={
-          <FilterBar className="w-full flex-nowrap items-stretch gap-2 overflow-x-auto">
-            <SearchInput
-              className="min-w-[12rem] flex-1 shrink-0"
-              value={params.search}
-              onChange={(search) =>
-                setParams({ search, page: "1" }, { resetPage: true })
-              }
-              placeholder="Search estimates…"
-            />
+          <>
             <SearchableSelect
               items={statusFilterItems}
               value={params.status}
@@ -168,7 +168,7 @@ export function PaymentsEstimatesTab() {
               }
               aria-label="Issue to"
             />
-          </FilterBar>
+          </>
         }
         pagination={
           data?.meta ? (
@@ -181,15 +181,15 @@ export function PaymentsEstimatesTab() {
           ) : null
         }
       >
-        <div className="-mx-1 overflow-x-auto px-1">
-          <DataTable
-            className="min-w-[56rem]"
-            density="compact"
-            columns={columns}
-            data={data?.items ?? []}
-            getRowId={(row) => row.id}
-            isLoading={isLoading}
-            actionsColumnHeader="Actions"
+        <DataTable
+          className="min-w-[56rem]"
+          density="compact"
+          columns={columns}
+          data={data?.items ?? []}
+          getRowId={(row) => row.id}
+          isLoading={isLoading}
+          actionsColumnHeader="Actions"
+          onRowClick={openEstimate}
             emptyTitle="No estimates yet"
             emptyDescription="Create your first quote for a customer."
             emptyAction={
@@ -227,7 +227,6 @@ export function PaymentsEstimatesTab() {
               />
             )}
           />
-        </div>
       </FinancialTabPanel>
 
       <EstimateFormDialog

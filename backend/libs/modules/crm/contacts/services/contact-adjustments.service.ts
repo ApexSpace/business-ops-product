@@ -29,7 +29,10 @@ export class ContactAdjustmentsService {
     contactId: string,
   ): Promise<ContactAdjustmentResponseDto[]> {
     await this.assertContact(businessId, contactId);
-    const rows = await this.adjustmentRepository.findMany(businessId, contactId);
+    const rows = await this.adjustmentRepository.findMany(
+      businessId,
+      contactId,
+    );
     return rows.map((row) => this.toResponse(row));
   }
 
@@ -151,7 +154,10 @@ export class ContactAdjustmentsService {
   }
 
   private async assertContact(businessId: string, contactId: string) {
-    const contact = await this.contactRepository.findById(businessId, contactId);
+    const contact = await this.contactRepository.findById(
+      businessId,
+      contactId,
+    );
     if (!contact) {
       throw new AppException(
         ErrorCode.CONTACT_NOT_FOUND,

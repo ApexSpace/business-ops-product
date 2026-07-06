@@ -45,10 +45,7 @@ export class PackageTemplateRepository {
     });
   }
 
-  findById(
-    businessId: string,
-    id: string,
-  ): Promise<PackageTemplateRow | null> {
+  findById(businessId: string, id: string): Promise<PackageTemplateRow | null> {
     return this.prisma.packageTemplate.findFirst({
       where: this.activeWhere(businessId, { id }),
       include: templateInclude,

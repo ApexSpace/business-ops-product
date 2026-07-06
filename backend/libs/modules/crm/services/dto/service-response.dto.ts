@@ -1,8 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import {
-  ServiceCommissionType,
-  ServiceStatus,
-} from '@prisma/client';
+import { ServiceCommissionType, ServiceStatus } from '@prisma/client';
 import type { ServiceStaffingMode } from '../utils/service-staffing.util';
 
 export class ServiceResponseDto {

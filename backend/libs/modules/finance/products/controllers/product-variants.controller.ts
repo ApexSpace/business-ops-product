@@ -48,11 +48,7 @@ export class ProductVariantsController {
     @Param('productId', ParseUUIDPipe) productId: string,
     @Param('variantId', ParseUUIDPipe) variantId: string,
   ) {
-    return this.variantsService.getById(
-      user.businessId!,
-      productId,
-      variantId,
-    );
+    return this.variantsService.getById(user.businessId!, productId, variantId);
   }
 
   @Patch(':variantId')

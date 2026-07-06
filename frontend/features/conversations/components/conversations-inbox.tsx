@@ -17,14 +17,8 @@ import { ConversationThreadPanel } from "@/features/conversations/components/inb
 import type { ThreadChannelFilterValue } from "@/features/conversations/components/inbox/thread-channel-filter";
 import { filterMessagesByThreadChannel } from "@/features/conversations/components/inbox/thread-channel-filter";
 import { ContactWorkspaceShell } from "@/features/contacts/components/contact-workspace/contact-workspace-shell";
-import { ContactFormDialog } from "@/features/contacts/components/contact-form-dialog";
 import { useConversationInboxContactSidebar } from "@/features/conversations/hooks/use-conversation-inbox-contact-sidebar";
 import { WORKSPACE_PADDING_CLASS } from "@/features/contacts/workspace/contact-workspace";
-import {
-  invalidateContactDetail,
-  invalidateContactLists,
-  invalidateContactPicker,
-} from "@/lib/query/invalidation";
 import { NewEmailDialog } from "@/features/conversations/components/inbox/new-email-dialog";
 import { Button } from "@/components/ui/button";
 import { getPlatformDefaultEmail } from "@/features/integrations/api/integrations.api";
@@ -373,6 +367,44 @@ export function ConversationsInbox() {
       Boolean(threadConversation?.providerKey) && !isWebchat && !mergedTimeline,
   });
 
+  const composerReplyChannels = useMemo((): ContactReplyChannel[] => {
+    if (mergedTimeline) {
+      return replyChannels;
+    }
+    if (!threadConversation?.channel) {
+      return [];
+    }
+    const ready =
+      isWebchat || (messagingStatusQuery.data?.readyForMessaging ?? false);
+    return [
+      {
+        channel: threadConversation.channel,
+        providerKey: threadConversation.providerKey ?? "",
+        conversationId: threadConversation.id,
+        readyForMessaging: ready,
+        messagingStatus: messagingStatusQuery.data ?? {
+          connected: false,
+          defaultResourceSelected: false,
+          webhookEndpointConfigured: false,
+          requiredPermissionsPresent: false,
+          readyForMessaging: isWebchat,
+          warnings: [],
+        },
+        unavailableReason: null,
+      },
+    ];
+  }, [
+    mergedTimeline,
+    replyChannels,
+    threadConversation,
+    isWebchat,
+    messagingStatusQuery.data,
+  ]);
+
+  const composerReplyChannel = mergedTimeline
+    ? effectiveReplyChannel
+    : (threadConversation?.channel ?? null);
+
   const invalidateAll = async () => {
     await queryClient.invalidateQueries({ queryKey: queryKeys.conversations.all() });
   };
@@ -665,18 +697,17 @@ export function ConversationsInbox() {
       isFetchingNextPage={isFetchingNextPage}
       fetchNextPage={() => void fetchNextPage()}
       messageScrollKey={messageScrollKey}
-      mergedTimeline={mergedTimeline}
       threadChannels={threadChannels}
       threadChannelFilter={threadChannelFilter}
       onThreadChannelFilterChange={
         threadChannels.length > 1 ? handleThreadChannelFilterChange : undefined
       }
-      replyChannels={mergedTimeline ? replyChannels : undefined}
-      selectedReplyChannel={mergedTimeline ? effectiveReplyChannel : undefined}
+      replyChannels={composerReplyChannels}
+      selectedReplyChannel={composerReplyChannel}
       onReplyChannelChange={
         mergedTimeline ? handleReplyChannelChange : undefined
       }
-      hideReplyChannelSelector={mergedTimeline && threadChannelFilter !== "ALL"}
+      channelBarReadOnly={mergedTimeline && threadChannelFilter !== "ALL"}
       composer={composer}
       onComposerChange={setComposer}
       attachmentUrl={attachmentUrl}
@@ -723,17 +754,6 @@ export function ConversationsInbox() {
 
   const contactSidebarPanel = (
     <ConversationInboxContactSidebar
-      part="sidebar"
-      sidebarState={contactSidebar}
-      selected={threadConversation}
-      selectedThread={activeThread}
-      className="h-full w-full"
-    />
-  );
-
-  const contactRailPanel = (
-    <ConversationInboxContactSidebar
-      part="rail"
       sidebarState={contactSidebar}
       selected={threadConversation}
       selectedThread={activeThread}
@@ -750,7 +770,6 @@ export function ConversationsInbox() {
           list={listPanel}
           thread={threadPanel}
           sidebar={contactSidebarPanel}
-          rail={contactRailPanel}
         />
       </div>
 
@@ -799,7 +818,6 @@ export function ConversationsInbox() {
             )}
           >
             <ConversationInboxContactSidebar
-              part="both"
               sidebarState={contactSidebar}
               selected={threadConversation}
               selectedThread={activeThread}
@@ -825,21 +843,6 @@ export function ConversationsInbox() {
         }}
       />
 
-      <ContactFormDialog
-        open={contactSidebar.editOpen}
-        onOpenChange={contactSidebar.setEditOpen}
-        contact={contactSidebar.contact}
-        onSuccess={() => {
-          if (sidebarContactId) {
-            void invalidateContactDetail(queryClient, sidebarContactId);
-            void invalidateContactLists(queryClient);
-            void invalidateContactPicker(queryClient);
-          }
-          void queryClient.invalidateQueries({
-            queryKey: queryKeys.conversations.all(),
-          });
-        }}
-      />
     </ContactWorkspaceShell>
   );
 }

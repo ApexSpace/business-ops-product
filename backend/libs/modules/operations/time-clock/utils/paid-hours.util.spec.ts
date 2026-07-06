@@ -1,7 +1,4 @@
-import {
-  computePaidMinutes,
-  formatPaidHoursDisplay,
-} from './paid-hours.util';
+import { computePaidMinutes, formatPaidHoursDisplay } from './paid-hours.util';
 
 describe('paid-hours.util', () => {
   describe('formatPaidHoursDisplay', () => {

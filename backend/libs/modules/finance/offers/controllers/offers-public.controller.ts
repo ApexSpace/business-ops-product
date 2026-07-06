@@ -55,7 +55,10 @@ export class OffersPublicController {
         deletedAt: null,
         publicBookingEnabled: true,
       },
-      select: { businessId: true, business: { select: { id: true, name: true } } },
+      select: {
+        businessId: true,
+        business: { select: { id: true, name: true } },
+      },
     });
     if (!calendar) {
       throw new AppException(

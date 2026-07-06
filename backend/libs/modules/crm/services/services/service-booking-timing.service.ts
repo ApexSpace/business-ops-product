@@ -110,7 +110,7 @@ export class ServiceBookingTimingService {
   }) {
     return {
       serviceTiming: {
-        segments: params.timing.segments as ServiceTimingSegment[],
+        segments: params.timing.segments,
         staffBlockedMinutes: params.timing.staffBlockedMinutes,
         clientOccupancyMinutes: params.timing.clientOccupancyMinutes,
         bufferBeforeMinutes: params.timing.hasBufferTime

@@ -20,7 +20,10 @@ const checkoutOffersParser = {
 };
 
 function staffLabel(
-  user: { firstName: string | null; lastName: string | null } | null | undefined,
+  user:
+    | { firstName: string | null; lastName: string | null }
+    | null
+    | undefined,
 ): string | null {
   if (!user) return null;
   const name = [user.firstName, user.lastName].filter(Boolean).join(' ').trim();
@@ -44,10 +47,7 @@ export function toCheckoutItemResponse(
     unitPrice: item.unitPrice.toString(),
     totalPrice: item.totalPrice.toString(),
     sortOrder: item.sortOrder,
-    staff:
-      item.staffUser && label
-        ? { id: item.staffUser.id, label }
-        : null,
+    staff: item.staffUser && label ? { id: item.staffUser.id, label } : null,
   };
 }
 

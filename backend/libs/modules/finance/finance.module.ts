@@ -19,6 +19,12 @@ import { ProductsModule } from './products/products.module';
     MembershipsModule,
     OffersModule,
   ],
-  exports: [ProductsModule, GiftCardsModule, PackagesModule, MembershipsModule, OffersModule],
+  exports: [
+    ProductsModule,
+    GiftCardsModule,
+    PackagesModule,
+    MembershipsModule,
+    OffersModule,
+  ],
 })
 export class FinanceModule {}

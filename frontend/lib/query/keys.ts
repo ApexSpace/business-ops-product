@@ -30,6 +30,9 @@ export const queryKeys = {
   auth: {
     session: () => ["auth", "session"] as const,
   },
+  search: {
+    global: (q: string) => ["search", "global", q] as const,
+  },
   business: {
     current: () => ["business", "current"] as const,
     access: () => ["business", "access"] as const,
@@ -39,6 +42,7 @@ export const queryKeys = {
     members: (filters?: { page?: number; limit?: number; search?: string }) =>
       listKey(["business", "members"], filters),
     dashboardStats: () => ["business", "dashboard-stats"] as const,
+    dashboardFeed: () => ["business", "dashboard-feed"] as const,
     planOptions: () => ["business", "plan-options"] as const,
   },
   services: {

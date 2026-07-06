@@ -6,6 +6,12 @@ import {
   SidebarProvider,
 } from "@/components/ui/sidebar";
 import { isContactWorkspacePath, isConversationsInboxPath } from "@/features/contacts/workspace/contact-workspace";
+import { isSalesWorkspacePath } from "@/features/sales/workspace/sales-workspace-path";
+import { isGiftCardsWorkspacePath } from "@/features/gift-cards/workspace/gift-cards-workspace-path";
+import { isPackagesWorkspacePath } from "@/features/packages/workspace/packages-workspace-path";
+import { isMembershipsWorkspacePath } from "@/features/memberships/workspace/memberships-workspace-path";
+import { isOffersWorkspacePath } from "@/features/offers/workspace/offers-workspace-path";
+import { isProductsWorkspacePath } from "@/features/products/workspace/products-workspace-path";
 import { PageMetadataProvider } from "@/lib/runtime/page-metadata-context";
 import { cn } from "@/lib/utils";
 import type { PageMetadataContext } from "@/lib/config/page-metadata";
@@ -15,8 +21,8 @@ import type {
   ShellNavSection,
   SidebarNavMode,
 } from "@/lib/types/shell-nav";
-import { PageBreadcrumbs } from "@/components/layout/page-breadcrumbs";
 import { AppSidebar } from "./app-sidebar";
+import { CommandPaletteProvider } from "./command-palette-provider";
 import { MobileSidebarCloseOnNavigate } from "./mobile-sidebar-close";
 import { Topbar } from "./topbar";
 
@@ -26,7 +32,11 @@ interface AppShellProps {
   navMode?: SidebarNavMode;
   footerItems?: ShellNavItem[];
   pageMetadataContext: PageMetadataContext;
-  showAccountSwitcher?: boolean;
+  workspaceName?: string;
+  productName?: string;
+  logoUrl?: string | null;
+  shellMode?: "platform" | "business";
+  searchPlaceholder?: string;
   topbarActions?: React.ReactNode;
   topbarNotice?: React.ReactNode;
   children: React.ReactNode;
@@ -38,7 +48,11 @@ export function AppShell({
   navMode = "main",
   footerItems,
   pageMetadataContext,
-  showAccountSwitcher = false,
+  workspaceName,
+  productName,
+  logoUrl,
+  shellMode = "business",
+  searchPlaceholder,
   topbarActions,
   topbarNotice,
   children,
@@ -46,52 +60,65 @@ export function AppShell({
   const pathname = usePathname();
   const contactWorkspace = isContactWorkspacePath(pathname);
   const conversationsInbox = isConversationsInboxPath(pathname);
-  const fullBleedContent = contactWorkspace || conversationsInbox;
+  const salesWorkspace = isSalesWorkspacePath(pathname);
+  const giftCardsWorkspace = isGiftCardsWorkspacePath(pathname);
+  const packagesWorkspace = isPackagesWorkspacePath(pathname);
+  const membershipsWorkspace = isMembershipsWorkspacePath(pathname);
+  const offersWorkspace = isOffersWorkspacePath(pathname);
+  const productsWorkspace = isProductsWorkspacePath(pathname);
+  const fullBleedContent =
+    contactWorkspace ||
+    conversationsInbox ||
+    salesWorkspace ||
+    giftCardsWorkspace ||
+    packagesWorkspace ||
+    membershipsWorkspace ||
+    offersWorkspace ||
+    productsWorkspace;
+
+  const showSearch = shellMode === "business";
 
   return (
     <SidebarProvider
-      className="h-svh min-h-0 overflow-hidden bg-background"
+      className="app-shell-canvas h-svh min-h-0 overflow-hidden bg-transparent"
       style={
         {
-          "--sidebar-width": "14.5rem",
+          "--sidebar-width": "11.25rem",
         } as React.CSSProperties
       }
     >
-      <PageMetadataProvider context={pageMetadataContext}>
-        <MobileSidebarCloseOnNavigate />
-        <AppSidebar
-          brand={brand}
-          sections={sections}
-          navMode={navMode}
-          footerItems={footerItems}
-        />
-        <SidebarInset className="flex min-h-0 flex-1 flex-col overflow-hidden bg-background">
-          <Topbar
-            showAccountSwitcher={showAccountSwitcher}
-            actions={topbarActions}
-            notice={topbarNotice}
-            flushWithContent={contactWorkspace}
+      <CommandPaletteProvider enabled={showSearch} searchPlaceholder={searchPlaceholder}>
+        <PageMetadataProvider context={pageMetadataContext}>
+          <MobileSidebarCloseOnNavigate />
+          <AppSidebar
+            brand={brand}
+            sections={sections}
+            navMode={navMode}
+            footerItems={footerItems}
+            workspaceName={workspaceName}
+            productName={productName}
+            logoUrl={logoUrl}
           />
-          <div
-            className={cn(
-              "min-h-0 flex-1",
-              fullBleedContent
-                ? "flex flex-col overflow-hidden p-0"
-                : "overflow-y-auto overflow-x-hidden px-[var(--page-padding-x)] py-[var(--page-padding-y)]",
-            )}
-          >
-            <PageBreadcrumbs
-              className={cn(
-                "shrink-0 md:hidden",
-                contactWorkspace
-                  ? "border-b border-border/80 bg-background px-3 py-2.5"
-                  : "mb-[var(--page-stack-gap)]",
-              )}
+          <SidebarInset className="flex min-h-0 flex-1 flex-col overflow-hidden bg-transparent">
+            <Topbar
+              actions={topbarActions}
+              notice={topbarNotice}
+              showSearch={showSearch}
+              businessName={workspaceName}
             />
-            {children}
-          </div>
-        </SidebarInset>
-      </PageMetadataProvider>
+            <div
+              className={cn(
+                "min-h-0 flex-1",
+                fullBleedContent
+                  ? "flex flex-col overflow-hidden p-0 [&>*]:min-h-0 [&>*]:flex-1"
+                  : "overflow-y-auto overflow-x-hidden px-[var(--page-padding-x)] pb-[var(--page-padding-y)] pt-[var(--page-content-top-gap)]",
+              )}
+            >
+              {children}
+            </div>
+          </SidebarInset>
+        </PageMetadataProvider>
+      </CommandPaletteProvider>
     </SidebarProvider>
   );
 }

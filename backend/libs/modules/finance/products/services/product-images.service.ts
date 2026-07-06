@@ -40,7 +40,9 @@ export class ProductImagesService {
       productId,
     );
     return Promise.all(
-      images.map((image) => this.toImageResponseWithDownloadUrl(businessId, image)),
+      images.map((image) =>
+        this.toImageResponseWithDownloadUrl(businessId, image),
+      ),
     );
   }
 
@@ -251,7 +253,9 @@ export class ProductImagesService {
   ): Promise<ProductImageResponseDto> {
     await this.assertProduct(businessId, productId);
     const image = await this.imageRepository.update(businessId, imageId, {
-      ...(dto.altText !== undefined ? { altText: dto.altText?.trim() || null } : {}),
+      ...(dto.altText !== undefined
+        ? { altText: dto.altText?.trim() || null }
+        : {}),
       ...(dto.sortOrder !== undefined ? { sortOrder: dto.sortOrder } : {}),
     });
     if (!image || image.productId !== productId) {
@@ -343,7 +347,10 @@ export class ProductImagesService {
     fileAssetId: string,
     actor: RequestUser,
   ) {
-    let asset = await this.fileAssetRepository.findById(businessId, fileAssetId);
+    let asset = await this.fileAssetRepository.findById(
+      businessId,
+      fileAssetId,
+    );
     if (!asset) {
       throw new AppException(
         ErrorCode.NOT_FOUND,
@@ -385,7 +392,10 @@ export class ProductImagesService {
   }
 
   private async assertProduct(businessId: string, productId: string) {
-    const product = await this.productRepository.findById(businessId, productId);
+    const product = await this.productRepository.findById(
+      businessId,
+      productId,
+    );
     if (!product) {
       throw new AppException(
         ErrorCode.PRODUCT_NOT_FOUND,

@@ -1,5 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import { PaymentMethod, PayableType, PaymentStatus, Prisma } from '@prisma/client';
+import {
+  PaymentMethod,
+  PayableType,
+  PaymentStatus,
+  Prisma,
+} from '@prisma/client';
 import { PrismaService } from '@app/core/database/prisma.service';
 
 const paymentInclude = {

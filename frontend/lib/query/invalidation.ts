@@ -103,9 +103,14 @@ export function invalidateWorkItemLists(queryClient: QueryClient) {
 }
 
 export function invalidateBusinessDashboardStats(queryClient: QueryClient) {
-  return queryClient.invalidateQueries({
-    queryKey: queryKeys.business.dashboardStats(),
-  });
+  return Promise.all([
+    queryClient.invalidateQueries({
+      queryKey: queryKeys.business.dashboardStats(),
+    }),
+    queryClient.invalidateQueries({
+      queryKey: queryKeys.business.dashboardFeed(),
+    }),
+  ]);
 }
 
 export function invalidateNoteLists(queryClient: QueryClient) {

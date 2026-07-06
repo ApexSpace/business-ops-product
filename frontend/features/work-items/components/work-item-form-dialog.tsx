@@ -4,10 +4,24 @@ import { useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { Check, Clock } from "lucide-react";
 import { toast } from "sonner";
 import { ContactPicker } from "@/features/contacts/components/contact-picker";
-import { FormDialog } from "@/components/forms/form-dialog";
+import { FormSheet } from "@/components/forms/form-sheet";
+import {
+  DRAWER_FOOTER_ACTIONS_CLASS,
+  DRAWER_FOOTER_BUTTON_CLASS,
+  DRAWER_SHEET_CLASS,
+  DRAWER_SHEET_CONTENT_CLASS,
+  DRAWER_SHEET_DESCRIPTION_CLASS,
+  DRAWER_SHEET_HEADER_CLASS,
+  DRAWER_SHEET_TITLE_CLASS,
+} from "@/components/forms/drawer-sheet";
+import {
+  WORK_ITEM_DRAWER_FOOTER_CLASS,
+} from "@/features/work-items/components/work-item-form-drawer-shell";
 import { SearchableSelect } from "@/components/forms/searchable-select";
+import { ActionButton } from "@/components/ui/action-button";
 import {
   FormControl,
   FormField,
@@ -21,6 +35,8 @@ import { createWorkItem, updateWorkItem } from "@/features/work-items/api/work-i
 import { PERMISSIONS, useCan } from "@/features/auth/permissions";
 import { listBusinessMembers } from "@/features/settings/api/business.api";
 import { listServices } from "@/features/settings/api/services.api";
+import { mapApiFieldErrorsToForm } from "@/lib/forms/map-api-field-errors";
+import { ApiClientError } from "@/lib/api/errors";
 import { queryKeys } from "@/lib/query/keys";
 import {
   WORK_ITEM_STATUS_OPTIONS,
@@ -31,8 +47,6 @@ import {
   type WorkItemFormValues,
 } from "@/features/work-items/schemas/work-item-profile";
 import type { WorkItem } from "@/features/work-items/types";
-import type { Service } from "@/features/settings/types";
-import type { BusinessMember } from "@/lib/types/shared";
 
 interface WorkItemFormDialogProps {
   open: boolean;
@@ -40,6 +54,7 @@ interface WorkItemFormDialogProps {
   workItem?: WorkItem | null;
   defaultContactId?: string;
   defaultContactLabel?: string;
+  defaultStatus?: WorkItem["status"];
   onSuccess: () => void;
 }
 
@@ -49,6 +64,7 @@ export function WorkItemFormDialog({
   workItem,
   defaultContactId,
   defaultContactLabel,
+  defaultStatus,
   onSuccess,
 }: WorkItemFormDialogProps) {
   const isEdit = !!workItem;
@@ -68,8 +84,7 @@ export function WorkItemFormDialog({
 
   const { data: members } = useQuery({
     queryKey: queryKeys.business.members({ page: 1, limit: 100 }),
-    queryFn: () =>
-      listBusinessMembers({ page: 1, limit: 100 }),
+    queryFn: () => listBusinessMembers({ page: 1, limit: 100 }),
     enabled: open && canAssign,
   });
 
@@ -105,9 +120,10 @@ export function WorkItemFormDialog({
       form.reset({
         ...workItemFormDefaults,
         contactId: defaultContactId ?? "",
+        status: defaultStatus ?? workItemFormDefaults.status,
       });
     }
-  }, [workItem, form, open, defaultContactId]);
+  }, [workItem, form, open, defaultContactId, defaultStatus]);
 
   const mutation = useMutation({
     mutationFn: (values: WorkItemFormValues) => {
@@ -122,24 +138,80 @@ export function WorkItemFormDialog({
       return createWorkItem(body);
     },
     onSuccess: () => {
-      toast.success(isEdit ? "Updated" : "Created");
+      toast.success(isEdit ? "Work item updated" : "Work item created");
       onSuccess();
       onOpenChange(false);
     },
-    onError: (err: Error) => toast.error(err.message),
+    onError: (err: Error) => {
+      if (!mapApiFieldErrorsToForm(err, form.setError)) {
+        const hint =
+          err instanceof ApiClientError && err.requestId
+            ? `${err.message} (${err.requestId})`
+            : err.message;
+        toast.error(hint);
+      }
+    },
   });
 
+  const submit = form.handleSubmit((values) => mutation.mutate(values));
+
   return (
-    <FormDialog
+    <FormSheet
       open={open}
       onOpenChange={onOpenChange}
-      title={isEdit ? "Edit" : "New"}
+      title={isEdit ? "Edit work item" : "New work item"}
+      description={
+        isEdit
+          ? "Update customer, service, and work details."
+          : "Record customer, service, and work details."
+      }
+      className={DRAWER_SHEET_CLASS}
+      headerClassName={DRAWER_SHEET_HEADER_CLASS}
+      titleClassName={DRAWER_SHEET_TITLE_CLASS}
+      descriptionClassName={DRAWER_SHEET_DESCRIPTION_CLASS}
+      contentClassName={DRAWER_SHEET_CONTENT_CLASS}
+      footerClassName={WORK_ITEM_DRAWER_FOOTER_CLASS}
       form={form}
       schema={workItemFormSchema}
       onSubmit={(v) => mutation.mutate(v)}
       isPending={mutation.isPending}
-      submitLabel={isEdit ? "Save changes" : "Create"}
-      className="sm:max-w-lg"
+      submitLabel={isEdit ? "Save changes" : "Create work item"}
+      footer={
+        <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
+          <p className="flex items-center gap-2 text-xs text-muted-foreground sm:mr-auto">
+            <Clock className="size-3.5 shrink-0" aria-hidden />
+            {isEdit
+              ? "Changes apply when you save this work item"
+              : "New work items appear on the board right away"}
+          </p>
+          <div className={DRAWER_FOOTER_ACTIONS_CLASS}>
+            <ActionButton
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              disabled={mutation.isPending}
+              className={DRAWER_FOOTER_BUTTON_CLASS}
+            >
+              Cancel
+            </ActionButton>
+            <ActionButton
+              type="button"
+              disabled={mutation.isPending}
+              onClick={() => void submit()}
+              className={DRAWER_FOOTER_BUTTON_CLASS}
+            >
+              {mutation.isPending ? (
+                "Saving…"
+              ) : (
+                <>
+                  <Check className="size-4" />
+                  {isEdit ? "Save changes" : "Create work item"}
+                </>
+              )}
+            </ActionButton>
+          </div>
+        </div>
+      }
     >
       <FormField
         control={form.control}
@@ -273,6 +345,6 @@ export function WorkItemFormDialog({
           </FormItem>
         )}
       />
-    </FormDialog>
+    </FormSheet>
   );
 }

@@ -142,7 +142,10 @@ export class WhatsAppTemplateService {
 
       return mapTemplateDetail(template);
     } catch (err) {
-      this.rethrowMetaTemplateRequestError(err, 'Failed to create WhatsApp template.');
+      this.rethrowMetaTemplateRequestError(
+        err,
+        'Failed to create WhatsApp template.',
+      );
     }
   }
 
@@ -258,7 +261,10 @@ export class WhatsAppTemplateService {
 
       return mapTemplateDetail(updated);
     } catch (err) {
-      this.rethrowMetaTemplateRequestError(err, 'Failed to update WhatsApp template.');
+      this.rethrowMetaTemplateRequestError(
+        err,
+        'Failed to update WhatsApp template.',
+      );
     }
   }
 

@@ -50,7 +50,7 @@ function optionKey(value: string | null): string {
 }
 
 export function SearchableSelect({
-  items,
+  items = [],
   value,
   onValueChange,
   placeholder,

@@ -9,29 +9,29 @@ export const APPOINTMENT_STATUS_COLORS: Record<
   { bg: string; border: string; text: string }
 > = {
   SCHEDULED: {
-    bg: "bg-slate-500/10",
-    border: "border-slate-400/50",
-    text: "text-slate-700 dark:text-slate-300",
+    bg: "bg-slate-500/[0.08]",
+    border: "border-slate-400/40",
+    text: "text-slate-800 dark:text-slate-200",
   },
   CONFIRMED: {
-    bg: "bg-primary/12",
-    border: "border-primary/40",
-    text: "text-primary",
+    bg: "bg-primary/[0.08]",
+    border: "border-primary/35",
+    text: "text-foreground",
   },
   COMPLETED: {
-    bg: "bg-emerald-500/10",
-    border: "border-emerald-500/40",
-    text: "text-emerald-700 dark:text-emerald-400",
+    bg: "bg-emerald-500/[0.08]",
+    border: "border-emerald-500/35",
+    text: "text-emerald-800 dark:text-emerald-300",
   },
   CANCELLED: {
-    bg: "bg-destructive/8",
-    border: "border-destructive/35",
+    bg: "bg-destructive/[0.06]",
+    border: "border-destructive/30",
     text: "text-destructive/80 line-through",
   },
   NO_SHOW: {
-    bg: "bg-amber-500/10",
-    border: "border-amber-500/40",
-    text: "text-amber-800 dark:text-amber-400",
+    bg: "bg-amber-500/[0.08]",
+    border: "border-amber-500/35",
+    text: "text-amber-900 dark:text-amber-300",
   },
 };
 
@@ -47,12 +47,15 @@ export function getAppointmentEventStyle(appointment: Appointment): {
       className: `${statusStyle.bg} border-l-[3px]`,
       style: {
         borderLeftColor: calendarColor,
-        backgroundColor: `${calendarColor}18`,
+        backgroundColor: `${calendarColor}14`,
       },
     };
   }
 
   return {
     className: `${statusStyle.bg} ${statusStyle.border} border-l-[3px]`,
+    style: calendarColor
+      ? { borderLeftColor: calendarColor }
+      : undefined,
   };
 }

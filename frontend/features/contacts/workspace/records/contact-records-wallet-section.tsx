@@ -67,15 +67,21 @@ export function ContactRecordsWalletSection({ contact, businessTimezone }: Conta
 
   return (
     <div className="space-y-5">
-      <div className="rounded-lg border border-border/70 p-4">
+      <div className="rounded-[14px] border border-border/70 bg-background/90 p-5 shadow-[0_12px_28px_-24px_rgba(15,23,42,0.22)]">
         <div className="flex items-start justify-between gap-2">
           <div>
-            <p className="text-xs font-medium text-muted-foreground">Current balance</p>
+            <p className="text-xs font-medium uppercase tracking-[0.08em] text-muted-foreground">
+              Current balance
+            </p>
             <p className="mt-1 text-2xl font-semibold">
               {currency} {balance}
             </p>
           </div>
-          <ActionButton size="sm" onClick={() => setAdjustOpen(true)}>
+          <ActionButton
+            size="sm"
+            className="h-9 rounded-[10px] px-3 text-[12.5px] font-semibold"
+            onClick={() => setAdjustOpen(true)}
+          >
             <Plus className="mr-1 size-3.5" />
             Add to balance
           </ActionButton>
@@ -89,7 +95,7 @@ export function ContactRecordsWalletSection({ contact, businessTimezone }: Conta
 
       <div>
         <div className="mb-2 flex items-center justify-between">
-          <h4 className="text-sm font-semibold">
+          <h4 className="text-[15px] font-semibold">
             Gift cards
             {wallet?.giftCards?.length ? (
               <Badge variant="secondary" className="ml-2">
@@ -101,6 +107,7 @@ export function ContactRecordsWalletSection({ contact, businessTimezone }: Conta
             <Button
               size="sm"
               variant="outline"
+              className="rounded-[10px] border-border/70"
               nativeButton={false}
               render={
                 <Link href={`/business/gift-cards?owner=${contact.id}`} />
@@ -118,7 +125,7 @@ export function ContactRecordsWalletSection({ contact, businessTimezone }: Conta
               <li key={card.id}>
                 <Link
                   href={`/business/gift-cards?selected=${card.id}`}
-                  className="flex items-center justify-between rounded-md border border-border/60 px-3 py-2 text-sm hover:bg-muted/40"
+                  className="flex items-center justify-between rounded-[12px] border border-border/70 bg-background/80 px-4 py-3 text-sm transition-colors hover:bg-muted/25"
                 >
                   <div>
                     <p className="font-medium">#{card.number}</p>
@@ -149,7 +156,7 @@ export function ContactRecordsWalletSection({ contact, businessTimezone }: Conta
       </div>
 
       <div>
-        <h4 className="mb-2 text-sm font-semibold">Recent transactions</h4>
+        <h4 className="mb-2 text-[15px] font-semibold">Recent transactions</h4>
         {!wallet?.transactions.length ? (
           <EmptyState compact title="No transactions yet" className="py-6" />
         ) : (
@@ -157,7 +164,7 @@ export function ContactRecordsWalletSection({ contact, businessTimezone }: Conta
             {wallet.transactions.map((tx) => (
               <li
                 key={tx.id}
-                className="flex items-center justify-between rounded-md border border-border/60 px-3 py-2 text-sm"
+                className="flex items-center justify-between rounded-[12px] border border-border/70 bg-background/80 px-4 py-3 text-sm"
               >
                 <div>
                   <p className="font-medium">

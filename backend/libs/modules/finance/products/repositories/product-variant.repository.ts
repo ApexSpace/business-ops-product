@@ -82,7 +82,10 @@ export class ProductVariantRepository {
     return this.prisma.productVariant.update({ where: { id }, data });
   }
 
-  async softDelete(businessId: string, id: string): Promise<ProductVariant | null> {
+  async softDelete(
+    businessId: string,
+    id: string,
+  ): Promise<ProductVariant | null> {
     const existing = await this.findById(businessId, id);
     if (!existing) {
       return null;

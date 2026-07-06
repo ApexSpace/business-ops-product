@@ -211,7 +211,11 @@ export function useAppointmentForm({
   });
 
   const calendarOptions =
-    calendars?.items.map((c) => ({ value: c.id, label: c.name })) ?? [];
+    calendars?.items.map((c) => ({
+      value: c.id,
+      label: c.name,
+      color: c.color,
+    })) ?? [];
   const memberOptions =
     members?.items.map((m) => ({
       value: m.user.id,

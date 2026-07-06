@@ -1,7 +1,11 @@
 "use client";
 
+import { useEffect } from "react";
 import { DataToolbar } from "@/components/layout/data-toolbar";
-import { usePageMetadata } from "@/lib/runtime/page-metadata-context";
+import {
+  usePageMetadata,
+  useSetPageMetadata,
+} from "@/lib/runtime/page-metadata-context";
 import { cn } from "@/lib/utils";
 
 interface PageHeaderProps {
@@ -9,7 +13,10 @@ interface PageHeaderProps {
   description?: string;
   filters?: React.ReactNode;
   actions?: React.ReactNode;
-  /** When false, hide the in-page h1 (e.g. nested sections). Defaults to true. */
+  /**
+   * When false, title/description render only in the shell topbar (default).
+   * Set true for standalone layouts outside AppShell.
+   */
   showTitle?: boolean;
   className?: string;
 }
@@ -50,7 +57,7 @@ function PageHeaderTitleBlock({
   displayTitle: boolean;
 }) {
   const hasHeading = displayTitle && Boolean(title);
-  const hasDescription = Boolean(description);
+  const hasDescription = displayTitle && Boolean(description);
 
   if (!hasHeading && !hasDescription) {
     return null;
@@ -81,15 +88,28 @@ export function PageHeader({
   description: descriptionProp,
   filters,
   actions,
-  showTitle = true,
+  showTitle = false,
   className,
 }: PageHeaderProps) {
   const metadata = usePageMetadata();
+  const setPageMetadata = useSetPageMetadata();
   const title = titleProp ?? metadata?.title;
   const description = descriptionProp ?? metadata?.description;
   const displayTitle = showTitle && Boolean(title);
   const hasHeading = displayTitle && Boolean(title);
-  const hasDescription = Boolean(description);
+  const hasDescription = showTitle && Boolean(description);
+
+  useEffect(() => {
+    if (titleProp === undefined && descriptionProp === undefined) {
+      return;
+    }
+    setPageMetadata({
+      ...(titleProp !== undefined && typeof titleProp === "string"
+        ? { title: titleProp }
+        : {}),
+      ...(descriptionProp !== undefined ? { description: descriptionProp } : {}),
+    });
+  }, [titleProp, descriptionProp, setPageMetadata]);
 
   if (!hasHeading && !hasDescription && !filters && !actions) {
     return null;
@@ -107,7 +127,9 @@ export function PageHeader({
           ) : null}
           <PageHeaderActions actions={actions} />
         </div>
-        <PageHeaderDescription description={description} />
+        {showTitle ? (
+          <PageHeaderDescription description={description} />
+        ) : null}
       </div>
     );
   }

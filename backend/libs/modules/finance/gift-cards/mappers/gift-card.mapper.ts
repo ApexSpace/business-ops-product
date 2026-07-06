@@ -1,4 +1,7 @@
-import type { GiftCardDetailRow, GiftCardListRow } from '../repositories/gift-card.repository';
+import type {
+  GiftCardDetailRow,
+  GiftCardListRow,
+} from '../repositories/gift-card.repository';
 import type {
   GiftCardContactSummaryDto,
   GiftCardDetailResponseDto,
@@ -15,7 +18,10 @@ function contactName(contact: {
   displayName: string | null;
 }): string {
   if (contact.displayName?.trim()) return contact.displayName.trim();
-  return [contact.firstName, contact.lastName].filter(Boolean).join(' ').trim() || 'Unknown';
+  return (
+    [contact.firstName, contact.lastName].filter(Boolean).join(' ').trim() ||
+    'Unknown'
+  );
 }
 
 function toContactSummary(contact: {
@@ -32,7 +38,9 @@ function toContactSummary(contact: {
   };
 }
 
-export function toGiftCardListItem(row: GiftCardListRow): GiftCardListItemResponseDto {
+export function toGiftCardListItem(
+  row: GiftCardListRow,
+): GiftCardListItemResponseDto {
   return {
     id: row.id,
     number: row.number,
@@ -48,7 +56,9 @@ export function toGiftCardListItem(row: GiftCardListRow): GiftCardListItemRespon
   };
 }
 
-export function toGiftCardDetail(row: GiftCardDetailRow): GiftCardDetailResponseDto {
+export function toGiftCardDetail(
+  row: GiftCardDetailRow,
+): GiftCardDetailResponseDto {
   return {
     ...toGiftCardListItem(row),
     notes: row.notes,
@@ -78,7 +88,9 @@ export function toGiftCardTransaction(row: {
   };
 }
 
-export function toGiftCardPromotion(row: GiftCardPromotion): GiftCardPromotionResponseDto {
+export function toGiftCardPromotion(
+  row: GiftCardPromotion,
+): GiftCardPromotionResponseDto {
   return {
     id: row.id,
     name: row.name,

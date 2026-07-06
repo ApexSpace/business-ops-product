@@ -14,9 +14,7 @@ import { AuditService } from '@app/modules/platform/audit/services/audit.service
 import { ContactRepository } from '@app/modules/crm/contacts/repositories/contact.repository';
 import { DomainEventBusService } from '@app/modules/communications/automations/services/domain-event-bus.service';
 import { BusinessIntegrationRepository } from '@app/modules/integrations/integrations/repositories/business-integration.repository';
-import {
-  assertStripeReadyForPayments,
-} from '@app/modules/integrations/integrations/stripe/utils/stripe-readiness.util';
+import { assertStripeReadyForPayments } from '@app/modules/integrations/integrations/stripe/utils/stripe-readiness.util';
 import { StripeApiService } from '@app/modules/integrations/integrations/stripe/services/stripe-api.service';
 import { StripeCustomerService } from '@app/modules/integrations/integrations/stripe/services/stripe-customer.service';
 import { WalletLedgerService } from '@app/modules/finance/payments/services/wallet-ledger.service';
@@ -138,7 +136,10 @@ export class ClientMembershipsService {
 
     if (!isScheduled) {
       await this.createUsageRecordsForPeriod(membership.id, plan, startDate);
-      if (plan.planType === MembershipPlanType.ACCOUNT_CREDIT && plan.creditAmount) {
+      if (
+        plan.planType === MembershipPlanType.ACCOUNT_CREDIT &&
+        plan.creditAmount
+      ) {
         await this.creditAccountBalance(
           businessId,
           dto.contactId,
@@ -146,10 +147,15 @@ export class ClientMembershipsService {
           membership.id,
         );
       }
-      this.emitMembershipEvent('membership.started', businessId, membership.id, {
-        contactId: dto.contactId,
-        planId: plan.id,
-      });
+      this.emitMembershipEvent(
+        'membership.started',
+        businessId,
+        membership.id,
+        {
+          contactId: dto.contactId,
+          planId: plan.id,
+        },
+      );
     }
 
     if (actor) {
@@ -687,7 +693,10 @@ export class ClientMembershipsService {
   }
 
   private async assertContact(businessId: string, contactId: string) {
-    const contact = await this.contactRepository.findById(businessId, contactId);
+    const contact = await this.contactRepository.findById(
+      businessId,
+      contactId,
+    );
     if (!contact) {
       throw new AppException(
         ErrorCode.CONTACT_NOT_FOUND,

@@ -1,6 +1,4 @@
-import {
-  buildPublicServiceBookingUrl,
-} from '@app/modules/operations/public-booking/utils/public-booking-url.util';
+import { buildPublicServiceBookingUrl } from '@app/modules/operations/public-booking/utils/public-booking-url.util';
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { Prisma, ServiceStatus } from '@prisma/client';
 import { RequestUser } from '@app/common/decorators/current-user.decorator';
@@ -194,18 +192,13 @@ export class ServiceWorkspaceService {
       dto.status === ServiceStatus.ACTIVE ||
       (dto.status === undefined && existing.status === ServiceStatus.ACTIVE)
     ) {
-      await this.assertActivationRules(
-        businessId,
-        serviceId,
-        {
-          requiresNoStaff:
-            (normalized.requiresNoStaff as boolean) ?? existing.requiresNoStaff,
-          requiresTwoStaff:
-            (normalized.requiresTwoStaff as boolean) ??
-            existing.requiresTwoStaff,
-          status: dto.status ?? existing.status,
-        },
-      );
+      await this.assertActivationRules(businessId, serviceId, {
+        requiresNoStaff:
+          (normalized.requiresNoStaff as boolean) ?? existing.requiresNoStaff,
+        requiresTwoStaff:
+          (normalized.requiresTwoStaff as boolean) ?? existing.requiresTwoStaff,
+        status: dto.status ?? existing.status,
+      });
     }
 
     const usesProducts =
@@ -222,8 +215,7 @@ export class ServiceWorkspaceService {
         : {}),
       ...(dto.price !== undefined
         ? {
-            price:
-              dto.price === null ? null : new Prisma.Decimal(dto.price),
+            price: dto.price === null ? null : new Prisma.Decimal(dto.price),
           }
         : {}),
       ...(dto.categoryId !== undefined
@@ -389,8 +381,7 @@ export class ServiceWorkspaceService {
           : {}),
         ...(dto.price !== undefined
           ? {
-              price:
-                dto.price === null ? null : new Prisma.Decimal(dto.price),
+              price: dto.price === null ? null : new Prisma.Decimal(dto.price),
             }
           : {}),
         ...(dto.commissionType !== undefined
@@ -549,9 +540,7 @@ export class ServiceWorkspaceService {
       service: { connect: { id: serviceId } },
       label: dto.label.trim(),
       resourceType: dto.resourceType,
-      ...(resourceId
-        ? { resource: { connect: { id: resourceId } } }
-        : {}),
+      ...(resourceId ? { resource: { connect: { id: resourceId } } } : {}),
       quantity: dto.quantity ?? 1,
       notes: dto.notes?.trim() || null,
       sortOrder: count,
@@ -606,7 +595,9 @@ export class ServiceWorkspaceService {
           : {}),
         ...(dto.resourceId !== undefined ? { resourceId } : {}),
         ...(dto.quantity !== undefined ? { quantity: dto.quantity } : {}),
-        ...(dto.notes !== undefined ? { notes: dto.notes?.trim() || null } : {}),
+        ...(dto.notes !== undefined
+          ? { notes: dto.notes?.trim() || null }
+          : {}),
       },
     );
     if (!row) {
@@ -1041,18 +1032,16 @@ export class ServiceWorkspaceService {
     return resourceId;
   }
 
-  private mapResourceRequirement(
-    row: {
-      id: string;
-      label: string;
-      resourceType: string;
-      resourceId: string | null;
-      quantity: number;
-      notes: string | null;
-      sortOrder: number;
-      resource?: { name: string } | null;
-    },
-  ) {
+  private mapResourceRequirement(row: {
+    id: string;
+    label: string;
+    resourceType: string;
+    resourceId: string | null;
+    quantity: number;
+    notes: string | null;
+    sortOrder: number;
+    resource?: { name: string } | null;
+  }) {
     return {
       id: row.id,
       label: row.label,

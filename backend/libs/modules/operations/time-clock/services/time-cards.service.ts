@@ -6,7 +6,10 @@ import { getPaginationParams } from '@app/common/utils/pagination.util';
 import { AuditService } from '@app/modules/platform/audit/services/audit.service';
 import { BusinessRepository } from '@app/modules/platform/business/repositories/business.repository';
 import { BusinessMembershipRepository } from '@app/modules/platform/membership/repositories/business-membership.repository';
-import { ListTimeCardsQueryDto, TimeCardSortBy } from '../dto/list-time-cards-query.dto';
+import {
+  ListTimeCardsQueryDto,
+  TimeCardSortBy,
+} from '../dto/list-time-cards-query.dto';
 import {
   TimeCardDetailDto,
   TimeCardListItemDto,
@@ -57,14 +60,17 @@ export class TimeCardsService {
         ? TimeCardSortBy.STAFF
         : TimeCardSortBy.DAY;
 
-    const { items, total } = await this.timeCardRepository.findMany(businessId, {
-      skip,
-      take,
-      userId: query.staffId,
-      clockInFrom: range.from,
-      clockInTo: range.to,
-      sortBy,
-    });
+    const { items, total } = await this.timeCardRepository.findMany(
+      businessId,
+      {
+        skip,
+        take,
+        userId: query.staffId,
+        clockInFrom: range.from,
+        clockInTo: range.to,
+        sortBy,
+      },
+    );
 
     return {
       items: items.map((card) => toTimeCardListItem(card, timezone)),
@@ -92,11 +98,7 @@ export class TimeCardsService {
   ): Promise<TimeCardDetailDto> {
     await this.assertMember(businessId, dto.staffId);
     const timezone = await this.resolveTimezone(businessId);
-    const clockInTime = combineDateAndTime(
-      dto.date,
-      dto.clockInTime,
-      timezone,
-    );
+    const clockInTime = combineDateAndTime(dto.date, dto.clockInTime, timezone);
     let clockOutTime: Date | null = null;
     let paidMinutes: number | null = null;
 
@@ -153,12 +155,9 @@ export class TimeCardsService {
     }
 
     const timezone = await this.resolveTimezone(businessId);
-    const dateKey =
-      dto.date ??
-      toTimeCardListItem(existing, timezone).day;
+    const dateKey = dto.date ?? toTimeCardListItem(existing, timezone).day;
     const clockInHm =
-      dto.clockInTime ??
-      this.toHm(existing.clockInTime, timezone);
+      dto.clockInTime ?? this.toHm(existing.clockInTime, timezone);
     const clockInTime = combineDateAndTime(dateKey, clockInHm, timezone);
 
     let clockOutTime: Date | null = existing.clockOutTime;
@@ -228,11 +227,15 @@ export class TimeCardsService {
     return business?.timezone ?? 'UTC';
   }
 
-  private async assertMember(businessId: string, userId: string): Promise<void> {
-    const membership = await this.membershipRepository.findActiveByUserAndBusiness(
-      userId,
-      businessId,
-    );
+  private async assertMember(
+    businessId: string,
+    userId: string,
+  ): Promise<void> {
+    const membership =
+      await this.membershipRepository.findActiveByUserAndBusiness(
+        userId,
+        businessId,
+      );
     if (!membership) {
       throw new AppException(
         ErrorCode.ASSIGNEE_NOT_MEMBER,

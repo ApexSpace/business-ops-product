@@ -70,7 +70,10 @@ export class ServiceCategoryRepository {
     return this.prisma.serviceCategory.update({ where: { id }, data });
   }
 
-  async softDelete(businessId: string, id: string): Promise<ServiceCategory | null> {
+  async softDelete(
+    businessId: string,
+    id: string,
+  ): Promise<ServiceCategory | null> {
     const existing = await this.findById(businessId, id);
     if (!existing) {
       return null;
@@ -81,7 +84,10 @@ export class ServiceCategoryRepository {
     });
   }
 
-  async reorder(businessId: string, orderedIds: string[]): Promise<ServiceCategory[]> {
+  async reorder(
+    businessId: string,
+    orderedIds: string[],
+  ): Promise<ServiceCategory[]> {
     await this.prisma.$transaction(
       orderedIds.map((id, index) =>
         this.prisma.serviceCategory.updateMany({

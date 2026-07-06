@@ -1,7 +1,6 @@
 "use client";
 
 import { EmptyState } from "@/components/data-display/empty-state";
-import { ContactActionRail } from "@/features/contacts/components/contact-workspace/contact-action-rail";
 import { ContactConversationPanel } from "@/features/contacts/components/contact-workspace/contact-conversation-panel";
 import { ContactSidebarPanel } from "@/features/contacts/components/contact-workspace/contact-sidebar-panel";
 import { ContactRecordsPanel } from "@/features/contacts/components/contact-workspace/contact-records-panel";
@@ -39,7 +38,6 @@ export function ContactWorkspaceView(state: ContactWorkspaceState) {
     setMobilePanel,
     activeSection,
     setActiveSection,
-    handleRailSelect,
     leads,
     workItems,
     notes,
@@ -182,21 +180,12 @@ export function ContactWorkspaceView(state: ContactWorkspaceState) {
         <ContactWorkspaceColumns
           conversation={conversationPanel}
           sidebar={sidebarPanel}
-          rail={
-            <ContactActionRail
-              activeSection={activeSection}
-              onSelect={handleRailSelect}
-              className="h-full w-full min-w-0"
-            />
-          }
         />
 
         <ContactWorkspaceMobileTabs
           mobilePanel={mobilePanel}
           onMobilePanelChange={setMobilePanel}
-          activeSection={activeSection}
           onSectionChange={setActiveSection}
-          onRailSelect={handleRailSelect}
           sidebarPanel={sidebarPanel}
           conversationPanel={conversationPanel}
           recordsPanelProps={recordsPanelProps}

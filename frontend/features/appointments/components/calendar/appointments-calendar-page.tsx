@@ -4,13 +4,14 @@ import { Suspense } from "react";
 import { AppointmentFormDialog } from "@/features/appointments/components/appointment-form-dialog";
 import { AppointmentListView } from "@/features/appointments/components/calendar/appointment-list-view";
 import { CalendarFilters } from "@/features/appointments/components/calendar/calendar-filters";
+import { CalendarLegend } from "@/features/appointments/components/calendar/calendar-legend";
 import { CalendarToolbar } from "@/features/appointments/components/calendar/calendar-toolbar";
 import { DayCalendarView } from "@/features/appointments/components/calendar/day-calendar-view";
 import { MonthCalendarView } from "@/features/appointments/components/calendar/month-calendar-view";
 import { WeekCalendarView } from "@/features/appointments/components/calendar/week-calendar-view";
 import { ConfirmDeleteDialog } from "@/components/forms/confirm-delete-dialog";
 import { ListPageSkeleton } from "@/components/layout/list-page";
-import { PageHeader } from "@/components/layout/page-header";
+import { useAppointmentsCreateAction } from "@/features/appointments/hooks/use-appointments-create-action";
 import { useAppointmentsCalendarPage } from "@/features/appointments/hooks/use-appointments-calendar-page";
 
 export function AppointmentsCalendarPage() {
@@ -24,43 +25,45 @@ export function AppointmentsCalendarPage() {
 function AppointmentsCalendarPageContent() {
   const cal = useAppointmentsCalendarPage();
 
+  useAppointmentsCreateAction(cal.openNewAppointment);
+
   return (
     <div className="space-y-[var(--page-stack-gap)]">
-      <PageHeader
-        title="Appointments"
-        description="Schedule and manage appointments across your business calendars."
-      />
-
-      <CalendarToolbar
-        view={cal.view}
-        onViewChange={cal.handleViewChange}
-        anchorDateKey={cal.anchorDateKey}
-        timezone={cal.displayTimezone}
-        onPrevious={() => cal.handleDateNavigate(-1)}
-        onToday={() => cal.handleDateNavigate(0)}
-        onNext={() => cal.handleDateNavigate(1)}
-        onDateSelect={cal.handleDateSelect}
-        onNewAppointment={cal.openNewAppointment}
-        filters={
-          <CalendarFilters
-            showSearch={cal.view === "list"}
-            search={cal.params.search}
-            onSearchChange={(search) => cal.setParams({ search, page: "1" })}
-            calendarId={cal.params.calendarId}
-            onCalendarIdChange={(calendarId) =>
-              cal.setParams({ calendarId, page: "1" })
-            }
-            assignedToId={cal.params.assignedToId}
-            onAssignedToIdChange={(assignedToId) =>
-              cal.setParams({ assignedToId, page: "1" })
-            }
-            status={cal.params.status}
-            onStatusChange={(status) => cal.setParams({ status, page: "1" })}
-            calendars={cal.calendars?.items}
-            members={cal.members?.items}
-          />
-        }
-      />
+      <div className="overflow-hidden rounded-xl border border-border bg-card p-3 shadow-elevation-xs sm:p-4">
+        <CalendarToolbar
+          view={cal.view}
+          onViewChange={cal.handleViewChange}
+          anchorDateKey={cal.anchorDateKey}
+          timezone={cal.displayTimezone}
+          onPrevious={() => cal.handleDateNavigate(-1)}
+          onToday={() => cal.handleDateNavigate(0)}
+          onNext={() => cal.handleDateNavigate(1)}
+          onDateSelect={cal.handleDateSelect}
+          onNewAppointment={cal.openNewAppointment}
+          filters={
+            <CalendarFilters
+              showSearch={cal.view === "list"}
+              search={cal.params.search}
+              onSearchChange={(search) => cal.setParams({ search, page: "1" })}
+              calendarId={cal.params.calendarId}
+              onCalendarIdChange={(calendarId) =>
+                cal.setParams({ calendarId, page: "1" })
+              }
+              assignedToId={cal.params.assignedToId}
+              onAssignedToIdChange={(assignedToId) =>
+                cal.setParams({ assignedToId, page: "1" })
+              }
+              status={cal.params.status}
+              onStatusChange={(status) => cal.setParams({ status, page: "1" })}
+              calendars={cal.calendars?.items}
+              members={cal.members?.items}
+            />
+          }
+        />
+        {cal.view !== "list" && cal.calendars?.items?.length ? (
+          <CalendarLegend calendars={cal.calendars.items} />
+        ) : null}
+      </div>
 
       {cal.view === "day" ? (
         <DayCalendarView

@@ -1,15 +1,16 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Gift, Plus, Search, Settings } from "lucide-react";
+import { Gift, Plus, Settings } from "lucide-react";
 import { toast } from "sonner";
-import { Badge } from "@/components/ui/badge";
+import { ApiErrorState } from "@/components/data-display/api-error-state";
+import { DataTable } from "@/components/data-display/data-table";
+import { EmptyState } from "@/components/data-display/empty-state";
+import { SearchableSelect } from "@/components/forms/searchable-select";
+import { ListToolbar } from "@/components/layout/list-toolbar";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
@@ -17,9 +18,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { SearchableSelect } from "@/components/forms/searchable-select";
-import { ApiErrorState } from "@/components/data-display/api-error-state";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Sheet,
+  SheetBody,
+  SheetContent,
+} from "@/components/ui/sheet";
+import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
+import { useIsMobile } from "@/lib/hooks/use-mobile";
 import { queryKeys } from "@/lib/query/keys";
 import { invalidateGiftCards } from "@/lib/query/invalidation";
 import { listContacts } from "@/features/contacts/api/contacts.api";
@@ -34,37 +42,22 @@ import {
   updateGiftCard,
   voidGiftCard,
 } from "@/features/gift-cards/api/gift-cards.api";
+import { GiftCardDetailPanel } from "@/features/gift-cards/components/gift-card-detail-panel";
+import {
+  GiftCardMiniIcon,
+  GiftCardStatusBadge,
+} from "@/features/gift-cards/components/gift-card-visual";
+import { useCurrentBusiness } from "@/features/settings/hooks/use-current-business";
 import type { GiftCardListItem } from "@/features/gift-cards/types";
-
-function statusBadge(status: GiftCardListItem["status"]) {
-  if (status === "VOIDED") return <Badge variant="destructive">Voided</Badge>;
-  if (status === "DEPLETED") return <Badge variant="secondary">Depleted</Badge>;
-  return null;
-}
-
-function transactionLabel(type: string) {
-  switch (type) {
-    case "INITIAL_VALUE":
-      return "Initial value";
-    case "REDEMPTION":
-      return "Redemption";
-    case "REFUND":
-      return "Refund";
-    case "ADJUSTMENT":
-      return "Adjustment";
-    case "VOID":
-      return "Voided";
-    default:
-      return type;
-  }
-}
 
 export function GiftCardsWorkspace() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const selectedId = searchParams.get("selected");
   const queryClient = useQueryClient();
+  const isMobile = useIsMobile();
+  const { data: business } = useCurrentBusiness();
 
+  const selectedId = searchParams.get("selected");
   const [search, setSearch] = useState("");
   const [addOpen, setAddOpen] = useState(false);
   const [editNotes, setEditNotes] = useState(false);
@@ -78,10 +71,34 @@ export function GiftCardsWorkspace() {
   );
   const [newNotes, setNewNotes] = useState("");
 
+  const setSelectedId = (id: string | null) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (id) {
+      params.set("selected", id);
+    } else {
+      params.delete("selected");
+    }
+    const qs = params.toString();
+    router.replace(qs ? `/business/gift-cards?${qs}` : "/business/gift-cards", {
+      scroll: false,
+    });
+  };
+
   const listQuery = useQuery({
     queryKey: queryKeys.giftCards.list({ search: search.trim() || undefined }),
-    queryFn: () => listGiftCards({ search: search.trim() || undefined, limit: 100 }),
+    queryFn: () =>
+      listGiftCards({ search: search.trim() || undefined, limit: 100 }),
   });
+
+  const cards = listQuery.data?.items ?? [];
+  const total = listQuery.data?.meta?.total ?? cards.length;
+
+  useEffect(() => {
+    if (!selectedId && cards.length > 0 && !isMobile) {
+      setSelectedId(cards[0]!.id);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only auto-select on first load
+  }, [cards, selectedId, isMobile]);
 
   const detailQuery = useQuery({
     queryKey: queryKeys.giftCards.detail(selectedId ?? ""),
@@ -103,7 +120,11 @@ export function GiftCardsWorkspace() {
     () =>
       (contactsQuery.data?.items ?? []).map((c) => ({
         value: c.id,
-        label: c.displayName || [c.firstName, c.lastName].filter(Boolean).join(" ") || c.email || c.id,
+        label:
+          c.displayName ||
+          [c.firstName, c.lastName].filter(Boolean).join(" ") ||
+          c.email ||
+          c.id,
       })),
     [contactsQuery.data],
   );
@@ -114,7 +135,7 @@ export function GiftCardsWorkspace() {
       toast.success("Gift card created");
       setAddOpen(false);
       await invalidateGiftCards(queryClient);
-      router.push(`/business/gift-cards?selected=${card.id}`);
+      setSelectedId(card.id);
     },
     onError: (err: Error) => toast.error(err.message),
   });
@@ -159,209 +180,224 @@ export function GiftCardsWorkspace() {
     }
   };
 
-  const cards = listQuery.data?.items ?? [];
+  const columns = useMemo(
+    () => [
+      {
+        id: "giftCard",
+        header: "Gift card",
+        cell: (card: GiftCardListItem) => (
+          <div className="flex items-center gap-2.5">
+            <GiftCardMiniIcon />
+            <span className="font-medium tabular-nums">{card.number}</span>
+          </div>
+        ),
+      },
+      {
+        id: "status",
+        header: "Status",
+        cell: (card: GiftCardListItem) => (
+          <GiftCardStatusBadge status={card.status} />
+        ),
+      },
+      {
+        id: "balance",
+        header: "Balance",
+        className: "text-right",
+        cell: (card: GiftCardListItem) => {
+          const zero = Number(card.currentBalance) === 0;
+          return (
+            <span
+              className={cn(
+                "tabular-nums font-semibold",
+                zero && "font-normal text-muted-foreground",
+              )}
+            >
+              {formatMoney(card.currentBalance)}
+            </span>
+          );
+        },
+      },
+      {
+        id: "purchasedBy",
+        header: "Purchased by",
+        cell: (card: GiftCardListItem) =>
+          card.purchasingContact ? (
+            <button
+              type="button"
+              className="text-primary hover:underline"
+              onClick={(e) => {
+                e.stopPropagation();
+                router.push(
+                  `/business/contacts?contact=${card.purchasingContact!.id}`,
+                );
+              }}
+            >
+              {card.purchasingContact.name}
+            </button>
+          ) : (
+            <span className="text-muted-foreground">—</span>
+          ),
+      },
+      {
+        id: "owner",
+        header: "Owner",
+        cell: (card: GiftCardListItem) => (
+          <span className="text-muted-foreground">{card.ownerContact.name}</span>
+        ),
+      },
+    ],
+    [router],
+  );
+
   const detail = detailQuery.data;
 
-  return (
-    <div className="flex h-[calc(100vh-8rem)] min-h-[520px] w-full overflow-hidden rounded-lg border bg-card">
-      <div className="flex min-w-0 flex-1 flex-col border-r">
-        <div className="flex flex-wrap items-center gap-2 border-b p-3">
-          <Button onClick={() => void openAdd()}>
-            <Plus className="mr-2 size-4" />
-            Add Gift Card
-          </Button>
-          <div className="relative min-w-[200px] flex-1">
-            <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
-            <Input
-              className="pl-8"
-              placeholder="Search by number or client"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </div>
-          <Button
-            variant="outline"
-            onClick={() => router.push("/business/gift-cards/settings")}
-          >
-            <Settings className="mr-2 size-4" />
-            Settings
-          </Button>
-        </div>
+  const detailPanelProps = {
+    selectedId,
+    detail,
+    businessName: business?.name,
+    isLoading: detailQuery.isLoading,
+    isError: detailQuery.isError,
+    error: detailQuery.error,
+    onRetry: () => void detailQuery.refetch(),
+    onEditNotes: () => {
+      if (!detail) return;
+      setEditNotes(true);
+      setNotesDraft(detail.notes ?? "");
+    },
+    onSend: () => {
+      if (!selectedId) return;
+      sendMutation.mutate(selectedId);
+    },
+    sendPending: sendMutation.isPending,
+    onVoid: () => {
+      if (!selectedId) return;
+      voidMutation.mutate(selectedId);
+    },
+    voidPending: voidMutation.isPending,
+    onOpenContact: (contactId: string) => {
+      router.push(`/business/contacts?contact=${contactId}`);
+    },
+  };
 
-        {listQuery.isError ? (
-          <ApiErrorState error={listQuery.error} onRetry={() => listQuery.refetch()} />
-        ) : (
-          <div className="overflow-auto">
-            <table className="w-full text-sm">
-              <thead className="sticky top-0 bg-muted/50 text-left">
-                <tr>
-                  <th className="px-3 py-2 font-medium">Number</th>
-                  <th className="px-3 py-2 font-medium">Balance</th>
-                  <th className="px-3 py-2 font-medium">Purchasing Client</th>
-                  <th className="px-3 py-2 font-medium">Owner Client</th>
-                </tr>
-              </thead>
-              <tbody>
-                {cards.map((card) => (
-                  <tr
-                    key={card.id}
-                    className={cn(
-                      "cursor-pointer border-t hover:bg-muted/30",
-                      selectedId === card.id && "bg-muted/40",
-                    )}
-                    onClick={() =>
-                      router.push(`/business/gift-cards?selected=${card.id}`)
-                    }
-                  >
-                    <td className="px-3 py-2 font-medium">
-                      {card.number}
-                      <span className="ml-2">{statusBadge(card.status)}</span>
-                    </td>
-                    <td className="px-3 py-2">{formatMoney(card.currentBalance)}</td>
-                    <td className="px-3 py-2 text-muted-foreground">
-                      {card.purchasingContact?.name ?? "—"}
-                    </td>
-                    <td className="px-3 py-2">{card.ownerContact.name}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            {!listQuery.isLoading && cards.length === 0 && (
-              <div className="p-8 text-center text-muted-foreground">
-                No gift cards yet.
+  return (
+    <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
+      <div className="grid min-h-0 flex-1 gap-4 overflow-hidden px-[var(--page-padding-x)] pb-[var(--page-padding-y)] pt-[var(--page-content-top-gap)] lg:grid-cols-[minmax(0,1fr)_minmax(280px,380px)] lg:grid-rows-1">
+        <section className="flex min-h-0 flex-col overflow-hidden rounded-xl border border-border bg-card shadow-elevation-xs">
+          <ListToolbar
+            className="rounded-none border-0 border-b bg-transparent p-3 shadow-none sm:px-4"
+            search={
+              <Input
+                placeholder="Search by number or client…"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="max-w-md"
+              />
+            }
+            actions={
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => router.push("/business/gift-cards/settings")}
+                >
+                  <Settings className="mr-1.5 size-4" />
+                  Settings
+                </Button>
+                <Button size="sm" onClick={() => void openAdd()}>
+                  <Plus className="mr-1.5 size-4" />
+                  Add gift card
+                </Button>
+              </>
+            }
+          />
+
+          {listQuery.isError ? (
+            <ApiErrorState
+              error={listQuery.error}
+              onRetry={() => void listQuery.refetch()}
+            />
+          ) : listQuery.isLoading ? (
+            <p className="p-6 text-sm text-muted-foreground">
+              Loading gift cards…
+            </p>
+          ) : cards.length === 0 ? (
+            <div className="flex flex-1 items-center justify-center p-8">
+              <EmptyState
+                icon={
+                  <Gift className="size-5 text-muted-foreground/70" aria-hidden />
+                }
+                title="No gift cards yet"
+                description="Create a gift card to get started."
+                action={
+                  <Button size="sm" onClick={() => void openAdd()}>
+                    <Plus className="mr-1.5 size-4" />
+                    Add gift card
+                  </Button>
+                }
+              />
+            </div>
+          ) : (
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+              <div className="min-h-0 flex-1 overflow-y-auto">
+                <DataTable
+                  columns={columns}
+                  data={cards}
+                  getRowId={(card) => card.id}
+                  activeRowId={selectedId}
+                  onRowClick={(card) => setSelectedId(card.id)}
+                  getRowClassName={(card) =>
+                    selectedId === card.id
+                      ? "shadow-[inset_3px_0_0_0_var(--color-primary)]"
+                      : undefined
+                  }
+                  className="rounded-none border-0 shadow-none"
+                />
               </div>
-            )}
-          </div>
-        )}
+              <div className="shrink-0 border-t border-border px-4 py-3 text-sm text-muted-foreground">
+                {cards.length} of {total} gift cards
+              </div>
+            </div>
+          )}
+        </section>
+
+        {!isMobile ? (
+          <GiftCardDetailPanel
+            {...detailPanelProps}
+            className="min-h-0 max-lg:hidden"
+          />
+        ) : null}
       </div>
 
-      <aside className="w-[360px] shrink-0 overflow-auto p-4">
-        {!selectedId || !detail ? (
-          <div className="flex h-full flex-col items-center justify-center text-center text-muted-foreground">
-            <Gift className="mb-3 size-10 opacity-40" />
-            <p>Select a gift card to view details</p>
-          </div>
-        ) : detailQuery.isLoading ? (
-          <p className="text-muted-foreground">Loading…</p>
-        ) : detailQuery.isError ? (
-          <ApiErrorState error={detailQuery.error} onRetry={() => detailQuery.refetch()} />
-        ) : (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold">Gift Card</h2>
-              <div className="flex gap-1">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => {
-                    setEditNotes(true);
-                    setNotesDraft(detail.notes ?? "");
-                  }}
-                >
-                  Edit
-                </Button>
-              </div>
-            </div>
-
-            <div>
-              <p className="text-xs text-muted-foreground">Number</p>
-              <p className="font-medium">{detail.number}</p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Balance</p>
-              <p className="text-lg font-semibold">
-                {formatMoney(detail.currentBalance)}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Owned by</p>
-              <button
-                type="button"
-                className="text-primary hover:underline"
-                onClick={() =>
-                  router.push(`/business/contacts/${detail.ownerContact.id}`)
-                }
-              >
-                {detail.ownerContact.name}
-              </button>
-            </div>
-            {detail.notes ? (
-              <div>
-                <p className="text-xs text-muted-foreground">Notes</p>
-                <p className="text-sm">{detail.notes}</p>
-              </div>
-            ) : null}
-
-            <div className="space-y-2">
-              <p className="text-sm font-medium">History</p>
-              <table className="w-full text-xs">
-                <thead>
-                  <tr className="text-muted-foreground">
-                    <th className="py-1 text-left">Date</th>
-                    <th className="py-1 text-left">Type</th>
-                    <th className="py-1 text-right">Change</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {detail.transactions.map((tx) => {
-                    const amount = Number(tx.amount);
-                    return (
-                      <tr key={tx.id} className="border-t">
-                        <td className="py-1">
-                          {new Date(tx.createdAt).toLocaleDateString()}
-                        </td>
-                        <td className="py-1">{transactionLabel(tx.type)}</td>
-                        <td className="py-1 text-right">
-                          {amount >= 0 ? "+" : ""}
-                          {formatMoney(tx.amount)}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-
-            <div className="flex flex-col gap-2 border-t pt-3">
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={detail.status !== "ACTIVE"}
-                onClick={() => sendMutation.mutate(detail.id)}
-              >
-                Send Digital Gift Card
-              </Button>
-              <Button
-                variant="destructive"
-                size="sm"
-                disabled={detail.status === "VOIDED"}
-                onClick={() => voidMutation.mutate(detail.id)}
-              >
-                Void Gift Card
-              </Button>
-            </div>
-
-            <p className="text-xs text-muted-foreground">
-              Created on{" "}
-              {new Date(detail.createdAt).toLocaleString(undefined, {
-                weekday: "short",
-                month: "short",
-                day: "numeric",
-                hour: "numeric",
-                minute: "2-digit",
-              })}
-            </p>
-          </div>
-        )}
-      </aside>
+      {isMobile ? (
+        <Sheet
+          open={!!selectedId}
+          onOpenChange={(open) => {
+            if (!open) setSelectedId(null);
+          }}
+        >
+          <SheetContent
+            side="right"
+            className="flex h-[100dvh] max-h-[100dvh] w-full max-w-none flex-col border-l-0 bg-background p-0 shadow-none"
+            showCloseButton
+          >
+            <SheetBody className="flex min-h-0 flex-1 flex-col overflow-hidden p-0">
+              <GiftCardDetailPanel
+                {...detailPanelProps}
+                variant="drawer"
+                className="min-h-0 flex-1 rounded-none border-0 shadow-none"
+              />
+            </SheetBody>
+          </SheetContent>
+        </Sheet>
+      ) : null}
 
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>New Gift Card</DialogTitle>
           </DialogHeader>
-          <div className="space-y-3">
-            <div>
+          <div className="space-y-4">
+            <div className="space-y-1.5">
               <Label>Number</Label>
               <Input
                 value={newNumber}
@@ -370,10 +406,10 @@ export function GiftCardsWorkspace() {
                 readOnly={settingsQuery.data?.autoGenerateNumber}
               />
               {settingsQuery.data?.autoGenerateNumber ? (
-                <p className="mt-1 text-xs text-muted-foreground">Auto-generated</p>
+                <p className="text-xs text-muted-foreground">Auto-generated</p>
               ) : null}
             </div>
-            <div>
+            <div className="space-y-1.5">
               <Label>Amount</Label>
               <Input
                 type="number"
@@ -383,7 +419,7 @@ export function GiftCardsWorkspace() {
                 onChange={(e) => setNewAmount(e.target.value)}
               />
             </div>
-            <div>
+            <div className="space-y-1.5">
               <Label>Owner client</Label>
               <SearchableSelect
                 inDialog
@@ -393,7 +429,7 @@ export function GiftCardsWorkspace() {
                 placeholder="Search or create client"
               />
             </div>
-            <div>
+            <div className="space-y-1.5">
               <Label>Purchasing client (optional)</Label>
               <SearchableSelect
                 inDialog
@@ -403,9 +439,12 @@ export function GiftCardsWorkspace() {
                 placeholder="Who paid for this card"
               />
             </div>
-            <div>
+            <div className="space-y-1.5">
               <Label>Notes</Label>
-              <Textarea value={newNotes} onChange={(e) => setNewNotes(e.target.value)} />
+              <Textarea
+                value={newNotes}
+                onChange={(e) => setNewNotes(e.target.value)}
+              />
             </div>
           </div>
           <DialogFooter>
@@ -435,12 +474,16 @@ export function GiftCardsWorkspace() {
           <DialogHeader>
             <DialogTitle>Edit gift card</DialogTitle>
           </DialogHeader>
-          <Textarea value={notesDraft} onChange={(e) => setNotesDraft(e.target.value)} />
+          <Textarea
+            value={notesDraft}
+            onChange={(e) => setNotesDraft(e.target.value)}
+          />
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditNotes(false)}>
               Cancel
             </Button>
             <Button
+              disabled={updateMutation.isPending}
               onClick={() =>
                 detail &&
                 updateMutation.mutate({ id: detail.id, notes: notesDraft })

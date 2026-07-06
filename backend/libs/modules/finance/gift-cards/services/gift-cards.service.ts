@@ -205,9 +205,12 @@ export class GiftCardsService {
     });
 
     const salePrice = metadata.promotionId
-      ? (
-          await this.promotionRepository.findById(businessId, metadata.promotionId)
-        )?.salePrice.toFixed(2) ?? initialValue.toFixed(2)
+      ? ((
+          await this.promotionRepository.findById(
+            businessId,
+            metadata.promotionId,
+          )
+        )?.salePrice.toFixed(2) ?? initialValue.toFixed(2))
       : initialValue.toFixed(2);
 
     await this.emailService.sendGiftCardEmail(row, business, settings);
@@ -476,8 +479,9 @@ export class GiftCardsService {
 
     const credit = new Prisma.Decimal(refundAmount.toFixed(2));
     const newBalance = existing.currentBalance.add(credit);
-    const nextStatus =
-      newBalance.greaterThan(0) ? GiftCardStatus.ACTIVE : existing.status;
+    const nextStatus = newBalance.greaterThan(0)
+      ? GiftCardStatus.ACTIVE
+      : existing.status;
 
     await this.giftCardRepository.applyTransaction(
       businessId,
@@ -503,7 +507,10 @@ export class GiftCardsService {
     businessId: string,
     contactId: string,
   ): Promise<void> {
-    const contact = await this.contactRepository.findById(businessId, contactId);
+    const contact = await this.contactRepository.findById(
+      businessId,
+      contactId,
+    );
     if (!contact) {
       throw new AppException(
         ErrorCode.CONTACT_NOT_FOUND,
@@ -541,7 +548,9 @@ export class GiftCardsService {
     });
   }
 
-  private buildOnlinePurchaseNotes(metadata: OnlinePurchaseMetadata): string | null {
+  private buildOnlinePurchaseNotes(
+    metadata: OnlinePurchaseMetadata,
+  ): string | null {
     const parts: string[] = [];
     if (metadata.stripePaymentIntentId) {
       parts.push(metadata.stripePaymentIntentId);

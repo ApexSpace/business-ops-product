@@ -36,11 +36,9 @@ describe('ServiceCategoriesService', () => {
       updatedAt: new Date(),
     });
 
-    const result = await service.create(
-      'biz',
-      { name: 'Haircuts' },
-      { id: 'user-1' } as never,
-    );
+    const result = await service.create('biz', { name: 'Haircuts' }, {
+      id: 'user-1',
+    } as never);
 
     expect(result.name).toBe('Haircuts');
     expect(categoryRepository.create).toHaveBeenCalled();

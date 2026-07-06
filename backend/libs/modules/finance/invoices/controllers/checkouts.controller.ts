@@ -48,7 +48,10 @@ export class CheckoutsController {
     BusinessMemberRole.ADMIN,
     BusinessMemberRole.MEMBER,
   )
-  list(@CurrentUser() user: RequestUser, @Query() query: ListCheckoutsQueryDto) {
+  list(
+    @CurrentUser() user: RequestUser,
+    @Query() query: ListCheckoutsQueryDto,
+  ) {
     return this.checkoutsService.list(user.businessId!, query);
   }
 

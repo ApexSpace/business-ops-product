@@ -7,14 +7,14 @@ import {
   MoreHorizontal,
   Pencil,
   Plus,
-  Search,
+  Tag,
   Trash2,
   X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { ConfirmDeleteDialog } from "@/components/forms/confirm-delete-dialog";
-import { PageContainer } from "@/components/layout/page-container";
-import { PageHeader } from "@/components/layout/page-header";
+import { EmptyState } from "@/components/data-display/empty-state";
+import { ListToolbar } from "@/components/layout/list-toolbar";
 import { SettingsCard } from "@/components/layout/settings-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -845,8 +845,8 @@ export function OffersScreen() {
         </div>
 
         <div className="flex justify-end">
-          <Button onClick={() => setDetailsEditing(true)}>
-            <Pencil className="mr-2 size-4" />
+          <Button variant="outline" size="sm" onClick={() => setDetailsEditing(true)}>
+            <Pencil className="mr-1.5 size-4" />
             Edit
           </Button>
         </div>
@@ -1196,278 +1196,334 @@ export function OffersScreen() {
   }
 
   return (
-    <PageContainer>
-      <PageHeader
-        title="Offers"
-        description="Create and manage promotional offers, discount rules, and eligibility."
-      />
-
-      <div className="grid min-h-[600px] gap-4 lg:grid-cols-[280px_minmax(0,1fr)]">
-        <div className="space-y-3 rounded-lg border p-3">
-          <Button className="w-full" onClick={() => setCreateOpen(true)}>
-            <Plus className="mr-2 size-4" />
-            Create Offer
-          </Button>
-          <div className="relative">
-            <Search className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
-            <Input
-              className="pl-9"
-              placeholder="Search offers"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </div>
-          <ul className="space-y-1">
-            {offers.map((offer) => (
-              <li key={offer.id}>
-                <button
-                  type="button"
-                  className={cn(
-                    "flex w-full items-center justify-between gap-2 rounded-md px-2 py-2 text-left text-sm hover:bg-muted",
-                    activeSelectedId === offer.id && "bg-muted font-medium",
-                  )}
-                  onClick={() => setSelectedId(offer.id)}
+    <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
+      <div className="grid min-h-0 flex-1 gap-4 overflow-hidden px-[var(--page-padding-x)] pb-[var(--page-padding-y)] pt-[var(--page-content-top-gap)] max-lg:grid-rows-[minmax(0,auto)_minmax(0,1fr)] lg:grid-cols-[minmax(240px,280px)_minmax(0,1fr)] lg:grid-rows-1">
+        <section className="flex max-h-[40vh] min-h-0 flex-col overflow-hidden rounded-xl border border-border bg-card shadow-elevation-xs lg:max-h-none">
+          <ListToolbar
+            className="rounded-none border-0 border-b bg-transparent p-3 shadow-none sm:px-4"
+            search={
+              <Input
+                placeholder="Search offers…"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="min-w-0 flex-1"
+              />
+            }
+            actions={
+              <>
+                <Button
+                  size="icon-sm"
+                  className="sm:hidden"
+                  aria-label="Create offer"
+                  onClick={() => setCreateOpen(true)}
                 >
-                  <span className="truncate">{offer.name}</span>
-                  <Badge
-                    variant={offer.isEnabled ? "default" : "secondary"}
+                  <Plus className="size-4" />
+                </Button>
+                <Button
+                  size="sm"
+                  className="hidden shrink-0 sm:inline-flex"
+                  onClick={() => setCreateOpen(true)}
+                >
+                  <Plus className="mr-1.5 size-4" />
+                  Create offer
+                </Button>
+              </>
+            }
+          />
+          <div className="min-h-0 flex-1 overflow-y-auto p-2">
+            <ul className="space-y-0.5">
+              {offers.map((offer) => (
+                <li key={offer.id}>
+                  <button
+                    type="button"
                     className={cn(
-                      "shrink-0",
-                      offer.isEnabled &&
-                        "border-green-600/20 bg-green-600/10 text-green-700 dark:text-green-400",
+                      "flex w-full items-center justify-between gap-2 rounded-md px-3 py-2.5 text-left text-sm transition-colors hover:bg-primary/5",
+                      activeSelectedId === offer.id &&
+                        "bg-primary-tint/40 font-medium shadow-[inset_3px_0_0_0_var(--color-primary)]",
                     )}
+                    onClick={() => setSelectedId(offer.id)}
                   >
-                    {offer.isEnabled ? "Enabled" : "Disabled"}
-                  </Badge>
-                </button>
-              </li>
-            ))}
+                    <span className="truncate">{offer.name}</span>
+                    <Badge
+                      variant={offer.isEnabled ? "success" : "neutral"}
+                      className="shrink-0"
+                    >
+                      {offer.isEnabled ? "Enabled" : "Disabled"}
+                    </Badge>
+                  </button>
+                </li>
+              ))}
+            </ul>
             {!offersQuery.isLoading && offers.length === 0 ? (
-              <li className="text-muted-foreground px-2 py-4 text-center text-sm">
-                No offers yet.
-              </li>
+              <div className="px-2 py-6">
+                <EmptyState
+                  icon={
+                    <Tag className="size-5 text-muted-foreground/70" aria-hidden />
+                  }
+                  title="No offers yet"
+                  description="Create your first promotional offer to get started."
+                  action={
+                    <Button size="sm" onClick={() => setCreateOpen(true)}>
+                      <Plus className="mr-1.5 size-4" />
+                      Create offer
+                    </Button>
+                  }
+                />
+              </div>
             ) : null}
-          </ul>
-        </div>
+          </div>
+          {offers.length > 0 ? (
+            <div className="shrink-0 border-t border-border px-4 py-3 text-sm text-muted-foreground">
+              {offers.length} offer{offers.length === 1 ? "" : "s"}
+            </div>
+          ) : null}
+        </section>
 
-        <div className="min-w-0 space-y-4">
+        <section className="flex min-h-0 flex-col overflow-hidden rounded-xl border border-border bg-card shadow-elevation-xs">
           {!selected || !editForm ? (
-            <div className="text-muted-foreground flex h-full min-h-[320px] items-center justify-center rounded-lg border border-dashed p-8 text-sm">
-              Select or create an offer.
+            <div className="flex min-h-0 flex-1 items-center justify-center p-8">
+              <EmptyState
+                icon={
+                  <Tag className="size-5 text-muted-foreground/70" aria-hidden />
+                }
+                title="Select an offer"
+                description="Choose an offer from the list or create a new one."
+                action={
+                  <Button size="sm" onClick={() => setCreateOpen(true)}>
+                    <Plus className="mr-1.5 size-4" />
+                    Create offer
+                  </Button>
+                }
+              />
             </div>
           ) : (
             <>
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <h2 className="text-xl font-semibold">{selected.name}</h2>
-                  <p className="text-muted-foreground text-sm">
-                    {applicationModeLabel(
-                      selected.applicationMode,
-                      selected.offerCode,
-                    )}
-                    {selected.discountCount != null
-                      ? ` · ${selected.discountCount} discount${selected.discountCount === 1 ? "" : "s"}`
-                      : selected.discounts.length
-                        ? ` · ${selected.discounts.length} discount${selected.discounts.length === 1 ? "" : "s"}`
-                        : ""}
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="link"
-                    className="h-auto px-0"
-                    disabled={toggleEnabled.isPending}
-                    onClick={() =>
-                      toggleEnabled.mutate({
-                        id: selected.id,
-                        enabled: !selected.isEnabled,
-                      })
-                    }
-                  >
-                    {selected.isEnabled ? "Disable" : "Enable"}
-                  </Button>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger
-                      render={
-                        <Button variant="ghost" size="icon">
-                          <MoreHorizontal className="size-4" />
-                        </Button>
+              <div className="shrink-0 border-b border-border px-4 py-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <h2 className="truncate text-lg font-semibold tracking-tight">
+                      {selected.name}
+                    </h2>
+                    <p className="text-sm text-muted-foreground">
+                      {applicationModeLabel(
+                        selected.applicationMode,
+                        selected.offerCode,
+                      )}
+                      {selected.discountCount != null
+                        ? ` · ${selected.discountCount} discount${selected.discountCount === 1 ? "" : "s"}`
+                        : selected.discounts.length
+                          ? ` · ${selected.discounts.length} discount${selected.discounts.length === 1 ? "" : "s"}`
+                          : ""}
+                    </p>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={toggleEnabled.isPending}
+                      className={cn(
+                        selected.isEnabled &&
+                          "border-destructive/30 text-destructive hover:bg-destructive-subtle",
+                      )}
+                      onClick={() =>
+                        toggleEnabled.mutate({
+                          id: selected.id,
+                          enabled: !selected.isEnabled,
+                        })
                       }
-                    />
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem
-                        onClick={() =>
-                          duplicateOfferMutation.mutate(selected.id)
+                    >
+                      {selected.isEnabled ? "Disable" : "Enable"}
+                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger
+                        render={
+                          <Button variant="outline" size="sm">
+                            <MoreHorizontal className="size-4" />
+                            <span className="sr-only">Offer actions</span>
+                          </Button>
                         }
-                      >
-                        <Copy className="mr-2 size-4" />
-                        Duplicate
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        variant="destructive"
-                        onClick={() => setDeleteOpen(true)}
-                      >
-                        <Trash2 className="mr-2 size-4" />
-                        Delete
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                      />
+                      <DropdownMenuContent align="end" className="w-48">
+                        <DropdownMenuItem
+                          onClick={() =>
+                            duplicateOfferMutation.mutate(selected.id)
+                          }
+                        >
+                          <Copy className="mr-2 size-4" />
+                          Duplicate
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          variant="destructive"
+                          onClick={() => setDeleteOpen(true)}
+                        >
+                          <Trash2 className="mr-2 size-4" />
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
                 </div>
               </div>
 
-              <nav className="flex gap-1 border-b">
-                {TABS.map((item) => (
-                  <button
-                    key={item.id}
-                    type="button"
-                    className={cn(
-                      "border-b-2 px-4 py-2 text-sm transition-colors",
-                      tab === item.id
-                        ? "border-primary font-semibold text-primary"
-                        : "text-muted-foreground hover:text-foreground border-transparent",
-                    )}
-                    onClick={() => setTab(item.id)}
-                  >
-                    {item.label}
-                  </button>
-                ))}
-              </nav>
+              <div className="min-h-0 flex-1 overflow-y-auto">
+                <nav className="flex gap-1 border-b border-border px-4">
+                  {TABS.map((item) => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      className={cn(
+                        "border-b-2 px-3 py-2.5 text-sm transition-colors sm:px-4",
+                        tab === item.id
+                          ? "border-primary font-medium text-primary"
+                          : "border-transparent text-muted-foreground hover:text-foreground",
+                      )}
+                      onClick={() => setTab(item.id)}
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+                </nav>
 
-              {tab === "details" ? (
-                <SettingsCard title="Details">
-                  {detailsEditing
-                    ? renderDetailsEditForm()
-                    : renderDetailsReadOnly()}
-                </SettingsCard>
-              ) : null}
+                <div className="p-4">
+                  {tab === "details" ? (
+                    <SettingsCard title="Details">
+                      {detailsEditing
+                        ? renderDetailsEditForm()
+                        : renderDetailsReadOnly()}
+                    </SettingsCard>
+                  ) : null}
 
-              {tab === "discounts" ? (
-                <SettingsCard title="Discounts">
-                  <div className="space-y-3">
-                    {selected.discounts.map((discount) => (
-                      <div
-                        key={discount.id}
-                        className="flex items-start justify-between gap-3 rounded-lg border p-3"
+                  {tab === "discounts" ? (
+                    <SettingsCard title="Discounts">
+                      <div className="space-y-3">
+                        {selected.discounts.map((discount) => (
+                          <div
+                            key={discount.id}
+                            className="flex items-start justify-between gap-3 rounded-lg border border-border bg-muted/20 p-3"
+                          >
+                            <div>
+                              <p className="font-medium">{discount.summary}</p>
+                              {discount.subtext ? (
+                                <p className="mt-1 text-sm text-muted-foreground">
+                                  {discount.subtext}
+                                </p>
+                              ) : null}
+                            </div>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger
+                                render={
+                                  <Button variant="ghost" size="icon-sm">
+                                    <MoreHorizontal className="size-4" />
+                                  </Button>
+                                }
+                              />
+                              <DropdownMenuContent align="end" className="w-40">
+                                <DropdownMenuItem
+                                  onClick={() => startEditDiscount(discount)}
+                                >
+                                  Edit
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  variant="destructive"
+                                  onClick={() =>
+                                    deleteDiscountMutation.mutate({
+                                      offerId: selected.id,
+                                      discountId: discount.id,
+                                    })
+                                  }
+                                >
+                                  Delete
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
+                        ))}
+
+                        {showDiscountForm ? (
+                          renderDiscountForm()
+                        ) : (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={startAddDiscount}
+                          >
+                            <Plus className="mr-1.5 size-4" />
+                            Add discount
+                          </Button>
+                        )}
+                      </div>
+                    </SettingsCard>
+                  ) : null}
+
+                  {tab === "advanced" ? (
+                    <SettingsCard title="How is service commission calculated?">
+                      <RadioGroup
+                        value={editForm.commissionBasis}
+                        onValueChange={(value) => {
+                          const commissionBasis =
+                            value as MembershipCommissionBasis;
+                          setEditForm({ ...editForm, commissionBasis });
+                          saveAdvanced.mutate({
+                            id: editForm.id,
+                            commissionBasis,
+                          });
+                        }}
                       >
-                        <div>
-                          <p className="font-medium">{discount.summary}</p>
-                          {discount.subtext ? (
-                            <p className="text-muted-foreground mt-1 text-sm">
-                              {discount.subtext}
-                            </p>
-                          ) : null}
+                        <div className="space-y-2 rounded-lg border border-border bg-muted/20 p-3">
+                          <div className="flex items-center gap-2">
+                            <RadioGroupItem
+                              value="REGULAR_PRICE"
+                              id="comm-regular"
+                            />
+                            <Label htmlFor="comm-regular">
+                              Based on regular price
+                            </Label>
+                          </div>
+                          <p className="text-sm text-muted-foreground">
+                            Commission will be calculated based on the regular
+                            service price.
+                          </p>
                         </div>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger
-                            render={
-                              <Button variant="ghost" size="icon-sm">
-                                <MoreHorizontal className="size-4" />
-                              </Button>
-                            }
-                          />
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem
-                              onClick={() => startEditDiscount(discount)}
-                            >
-                              Edit
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              variant="destructive"
-                              onClick={() =>
-                                deleteDiscountMutation.mutate({
-                                  offerId: selected.id,
-                                  discountId: discount.id,
-                                })
-                              }
-                            >
-                              Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                    ))}
-
-                    {showDiscountForm ? (
-                      renderDiscountForm()
-                    ) : (
-                      <Button
-                        type="button"
-                        variant="link"
-                        className="px-0"
-                        onClick={startAddDiscount}
-                      >
-                        + Add discount
-                      </Button>
-                    )}
-                  </div>
-                </SettingsCard>
-              ) : null}
-
-              {tab === "advanced" ? (
-                <SettingsCard title="How is service commission calculated?">
-                  <RadioGroup
-                    value={editForm.commissionBasis}
-                    onValueChange={(value) => {
-                      const commissionBasis = value as MembershipCommissionBasis;
-                      setEditForm({ ...editForm, commissionBasis });
-                      saveAdvanced.mutate({
-                        id: editForm.id,
-                        commissionBasis,
-                      });
-                    }}
-                  >
-                    <div className="space-y-2 rounded-lg border p-3">
-                      <div className="flex items-center gap-2">
-                        <RadioGroupItem
-                          value="REGULAR_PRICE"
-                          id="comm-regular"
-                        />
-                        <Label htmlFor="comm-regular">
-                          Based on regular price
-                        </Label>
-                      </div>
-                      <p className="text-muted-foreground text-sm">
-                        Commission will be calculated based on the regular
-                        service price.
-                      </p>
-                    </div>
-                    <div className="space-y-2 rounded-lg border p-3">
-                      <div className="flex items-center gap-2">
-                        <RadioGroupItem
-                          value="DISCOUNTED_PRICE"
-                          id="comm-discounted"
-                        />
-                        <Label htmlFor="comm-discounted">
-                          Based on discounted price
-                        </Label>
-                      </div>
-                      <p className="text-muted-foreground text-sm">
-                        Commission will be calculated based on the discounted
-                        service price.
-                      </p>
-                    </div>
-                  </RadioGroup>
-                </SettingsCard>
-              ) : null}
+                        <div className="space-y-2 rounded-lg border border-border bg-muted/20 p-3">
+                          <div className="flex items-center gap-2">
+                            <RadioGroupItem
+                              value="DISCOUNTED_PRICE"
+                              id="comm-discounted"
+                            />
+                            <Label htmlFor="comm-discounted">
+                              Based on discounted price
+                            </Label>
+                          </div>
+                          <p className="text-sm text-muted-foreground">
+                            Commission will be calculated based on the discounted
+                            service price.
+                          </p>
+                        </div>
+                      </RadioGroup>
+                    </SettingsCard>
+                  ) : null}
+                </div>
+              </div>
             </>
           )}
-        </div>
+        </section>
       </div>
 
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Create Offer</DialogTitle>
+            <DialogTitle>Create offer</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label>Name</Label>
               <Input
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
               />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label>Description</Label>
               <Textarea
                 rows={3}
@@ -1498,6 +1554,6 @@ export function OffersScreen() {
         isPending={deleteOfferMutation.isPending}
         onConfirm={() => selected && deleteOfferMutation.mutate(selected.id)}
       />
-    </PageContainer>
+    </div>
   );
 }

@@ -127,7 +127,9 @@ export class StripeInvoicePaymentService {
       metadata.purpose === STRIPE_PAYMENT_PURPOSE.MEMBERSHIP
     ) {
       const handled =
-        await this.membershipWebhookService.handleCheckoutSessionCompleted(event);
+        await this.membershipWebhookService.handleCheckoutSessionCompleted(
+          event,
+        );
       if (handled) return;
     }
 

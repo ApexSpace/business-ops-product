@@ -173,7 +173,9 @@ export class WhatsAppTemplateRepository {
     wabaId: string,
     keep: Array<{ name: string; language: string }>,
   ): Promise<number> {
-    const keepKeys = new Set(keep.map((item) => `${item.name}:${item.language}`));
+    const keepKeys = new Set(
+      keep.map((item) => `${item.name}:${item.language}`),
+    );
 
     return this.prisma.whatsAppMessageTemplate
       .findMany({

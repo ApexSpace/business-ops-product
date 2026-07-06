@@ -62,9 +62,6 @@ export function getMetaGraphErrorMessage(error: unknown): string | null {
 
   const parsed = parseMetaGraphErrorPayload(raw);
   return (
-    parsed?.errorUserMsg ??
-    parsed?.errorUserTitle ??
-    parsed?.message ??
-    null
+    parsed?.errorUserMsg ?? parsed?.errorUserTitle ?? parsed?.message ?? null
   );
 }

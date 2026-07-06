@@ -34,24 +34,24 @@ type StatusTone = "neutral" | "info" | "success" | "warning" | "danger";
 
 const toneStyles: Record<StatusTone, { pill: string; dot: string }> = {
   neutral: {
-    pill: "bg-muted/70 text-muted-foreground ring-1 ring-border/50",
+    pill: "bg-muted text-muted-foreground",
     dot: "bg-muted-foreground/55",
   },
   info: {
-    pill: "bg-sky-500/10 text-sky-800 ring-1 ring-sky-500/20 dark:text-sky-300",
-    dot: "bg-sky-500",
+    pill: "bg-primary-tint text-primary-text",
+    dot: "bg-primary",
   },
   success: {
-    pill: "bg-emerald-500/10 text-emerald-800 ring-1 ring-emerald-500/20 dark:text-emerald-300",
-    dot: "bg-emerald-500",
+    pill: "bg-success-subtle text-success",
+    dot: "bg-success",
   },
   warning: {
-    pill: "bg-amber-500/10 text-amber-900 ring-1 ring-amber-500/25 dark:text-amber-300",
-    dot: "bg-amber-500",
+    pill: "bg-warning-subtle text-warning",
+    dot: "bg-warning",
   },
   danger: {
-    pill: "bg-red-500/10 text-red-800 ring-1 ring-red-500/20 dark:text-red-300",
-    dot: "bg-red-500",
+    pill: "bg-destructive-subtle text-destructive",
+    dot: "bg-destructive",
   },
 };
 
@@ -316,7 +316,7 @@ export function StatusBadge({
   return (
     <span
       className={cn(
-        "inline-flex h-6 max-w-full items-center gap-1.5 rounded-full px-2.5 text-[11px] font-medium tracking-wide",
+        "inline-flex h-auto max-w-full items-center gap-1.5 rounded-[5px] px-2 py-0.5 text-[11px] font-medium",
         styles.pill,
         className,
       )}

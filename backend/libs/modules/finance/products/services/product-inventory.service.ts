@@ -1,8 +1,5 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
-import {
-  ProductInventoryAdjustmentType,
-  ProductType,
-} from '@prisma/client';
+import { ProductInventoryAdjustmentType, ProductType } from '@prisma/client';
 import { RequestUser } from '@app/common/decorators/current-user.decorator';
 import { AppException } from '@app/common/exceptions/app.exception';
 import { ErrorCode } from '@app/common/exceptions/error-code.enum';
@@ -35,7 +32,10 @@ export class ProductInventoryService {
     productId: string,
     query: ListProductInventoryQueryDto,
   ): Promise<ProductInventoryStateResponseDto> {
-    const product = await this.productRepository.findById(businessId, productId);
+    const product = await this.productRepository.findById(
+      businessId,
+      productId,
+    );
     if (!product) {
       throw new AppException(
         ErrorCode.PRODUCT_NOT_FOUND,
@@ -97,7 +97,10 @@ export class ProductInventoryService {
     dto: CreateProductInventoryAdjustmentDto,
     actor: RequestUser,
   ): Promise<ProductInventoryStateResponseDto> {
-    const product = await this.productRepository.findById(businessId, productId);
+    const product = await this.productRepository.findById(
+      businessId,
+      productId,
+    );
     if (!product) {
       throw new AppException(
         ErrorCode.PRODUCT_NOT_FOUND,

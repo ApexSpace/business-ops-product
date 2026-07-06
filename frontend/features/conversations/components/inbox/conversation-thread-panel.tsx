@@ -15,6 +15,7 @@ import {
   type ConversationMessage,
   type UnifiedConversationThread,
 } from "@/features/conversations/api/conversations.api";
+import { ConversationChannelBadge } from "@/features/conversations/components/inbox/conversation-channel-display";
 import {
   channelComposerHint,
   contactDisplayName,
@@ -42,14 +43,13 @@ interface ConversationThreadPanelProps {
   isFetchingNextPage: boolean;
   fetchNextPage: () => void;
   messageScrollKey?: string | null;
-  mergedTimeline?: boolean;
   threadChannels?: ConversationChannel[];
   threadChannelFilter?: ThreadChannelFilterValue;
   onThreadChannelFilterChange?: (value: ThreadChannelFilterValue) => void;
   replyChannels?: ContactReplyChannel[];
   selectedReplyChannel?: ConversationChannel | null;
   onReplyChannelChange?: (channel: ConversationChannel) => void;
-  hideReplyChannelSelector?: boolean;
+  channelBarReadOnly?: boolean;
   composer: string;
   onComposerChange: (value: string) => void;
   attachmentUrl: string;
@@ -108,14 +108,13 @@ export function ConversationThreadPanel({
   isFetchingNextPage,
   fetchNextPage,
   messageScrollKey = null,
-  mergedTimeline = false,
   threadChannels = [],
   threadChannelFilter = "ALL",
   onThreadChannelFilterChange,
   replyChannels,
   selectedReplyChannel,
   onReplyChannelChange,
-  hideReplyChannelSelector = false,
+  channelBarReadOnly = false,
   composer,
   onComposerChange,
   attachmentUrl,
@@ -148,6 +147,9 @@ export function ConversationThreadPanel({
     : "";
   const threadAvatarUrl =
     selectedThread?.contact?.avatarUrl ?? selected?.contact?.avatarUrl ?? null;
+  const headerChannel =
+    selectedReplyChannel ??
+    (threadChannels.length === 1 ? threadChannels[0] : null);
 
   return (
     <section className={cn(INBOX_THREAD_PANEL_CLASS, className)}>
@@ -158,28 +160,38 @@ export function ConversationThreadPanel({
           </div>
         ) : (
           <>
-            <header className="flex shrink-0 items-center justify-between gap-3 border-b border-border/60 px-4 py-2.5">
-              <div className="flex min-w-0 flex-1 items-center gap-3">
-                {onBackToList ? (
-                  <IconButton
-                    aria-label="Back to conversations"
-                    className="size-8 shrink-0 md:hidden"
-                    onClick={onBackToList}
-                  >
-                    <ArrowLeft className="size-4" />
-                  </IconButton>
-                ) : null}
-                <ProfileAvatar
-                  name={threadDisplayName}
-                  avatarUrl={threadAvatarUrl}
-                  className="size-9 shrink-0"
-                  fallbackClassName="bg-primary/10 text-xs font-semibold text-primary"
-                />
-                <p className="min-w-0 flex-1 truncate text-base font-semibold leading-none">
+            <header className="flex shrink-0 items-center gap-2 border-b border-border/60 px-3 py-2 sm:px-4">
+              {onBackToList ? (
+                <IconButton
+                  aria-label="Back to conversations"
+                  className="size-7 shrink-0 md:hidden"
+                  onClick={onBackToList}
+                >
+                  <ArrowLeft className="size-4" />
+                </IconButton>
+              ) : null}
+
+              <ProfileAvatar
+                name={threadDisplayName}
+                avatarUrl={threadAvatarUrl}
+                className="size-8 shrink-0"
+                fallbackClassName="bg-primary/10 text-[10px] font-semibold text-primary"
+              />
+
+              <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-hidden">
+                <p className="truncate text-sm font-semibold leading-none">
                   {threadDisplayName}
                 </p>
+                {headerChannel ? (
+                  <ConversationChannelBadge
+                    channel={headerChannel}
+                    size="sm"
+                    className="hidden shrink-0 sm:inline-flex"
+                  />
+                ) : null}
               </div>
-              <div className="flex shrink-0 items-center gap-2">
+
+              <div className="flex max-w-[58%] shrink-0 items-center gap-1 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] sm:max-w-none sm:overflow-visible [&::-webkit-scrollbar]:hidden">
                 {selected.channel === "WEBCHAT" ? (
                   <ChatbotSessionActions
                     conversationId={selectedId}
@@ -196,18 +208,20 @@ export function ConversationThreadPanel({
                 {onOpenContactDetails ? (
                   <IconButton
                     aria-label="Contact details"
-                    className="size-8 shrink-0 md:hidden"
+                    className="size-7 shrink-0 md:hidden"
                     onClick={onOpenContactDetails}
                   >
-                    <UserRound className="size-4" />
+                    <UserRound className="size-3.5" />
                   </IconButton>
                 ) : null}
               </div>
             </header>
 
-            <div className="min-h-0 flex-1 overflow-hidden bg-muted/15">
+            <div className="min-h-0 flex-1 overflow-hidden bg-muted/10">
               {messagesLoading ? (
-                <p className="px-2 text-sm text-muted-foreground">Loading messages…</p>
+                <p className="px-4 py-3 text-sm text-muted-foreground">
+                  Loading messages…
+                </p>
               ) : messages.length === 0 ? (
                 <p className="px-4 py-3 text-sm text-muted-foreground">
                   {totalMessageCount > 0 && threadChannelFilter !== "ALL"
@@ -231,61 +245,63 @@ export function ConversationThreadPanel({
               )}
             </div>
 
-            <ConversationInternalNotesPanel conversationId={selectedId} />
+            <div className="shrink-0 border-t border-border/60 bg-background">
+              <ConversationInternalNotesPanel conversationId={selectedId} />
 
-            <MessageComposer
-              variant="thread"
-              composer={composer}
-              onComposerChange={onComposerChange}
-              attachmentUrl={attachmentUrl}
-              onAttachmentUrlChange={onAttachmentUrlChange}
-              pendingAttachment={pendingAttachment}
-              onAddAttachment={onAddAttachment}
-              onRemoveAttachment={onRemoveAttachment}
-              canSend={canSend}
-              sendDisabledReason={sendDisabledReason}
-              channelHint={
-                selectedReplyChannel
-                  ? channelComposerHint(selectedReplyChannel, {
-                      requiresTemplate: whatsAppRequiresTemplate,
-                    })
-                  : null
-              }
-              showSubject={selectedReplyChannel === "EMAIL"}
-              subject={emailSubject}
-              onSubjectChange={onEmailSubjectChange}
-              recipientEmail={recipientEmail}
-              replyChannels={replyChannels}
-              selectedReplyChannel={selectedReplyChannel}
-              onReplyChannelChange={onReplyChannelChange}
-              hideReplyChannelSelector={hideReplyChannelSelector}
-              whatsAppRequiresTemplate={whatsAppRequiresTemplate}
-              selectedTemplateId={selectedTemplateId}
-              onTemplateIdChange={onTemplateIdChange}
-              templateVariableValues={templateVariableValues}
-              onTemplateVariableValueChange={onTemplateVariableValueChange}
-              templateHeaderMediaUrl={templateHeaderMediaUrl}
-              onTemplateHeaderMediaUrlChange={onTemplateHeaderMediaUrlChange}
-              showCannedResponses={selectedReplyChannel === "WEBCHAT"}
-              onSend={() => {
-                const template = whatsAppRequiresTemplate
-                  ? buildTemplatePayload?.()
-                  : undefined;
-                sendMutation.mutate({
-                  text: template ? "" : composer.trim(),
-                  subject:
-                    selectedReplyChannel === "EMAIL"
-                      ? emailSubject.trim() || undefined
-                      : undefined,
-                  attachments: template
-                    ? undefined
-                    : pendingAttachment
-                      ? [pendingAttachment]
-                      : undefined,
-                  template,
-                });
-              }}
-            />
+              <MessageComposer
+                variant="thread"
+                composer={composer}
+                onComposerChange={onComposerChange}
+                attachmentUrl={attachmentUrl}
+                onAttachmentUrlChange={onAttachmentUrlChange}
+                pendingAttachment={pendingAttachment}
+                onAddAttachment={onAddAttachment}
+                onRemoveAttachment={onRemoveAttachment}
+                canSend={canSend}
+                sendDisabledReason={sendDisabledReason}
+                channelHint={
+                  selectedReplyChannel
+                    ? channelComposerHint(selectedReplyChannel, {
+                        requiresTemplate: whatsAppRequiresTemplate,
+                      })
+                    : null
+                }
+                showSubject={selectedReplyChannel === "EMAIL"}
+                subject={emailSubject}
+                onSubjectChange={onEmailSubjectChange}
+                recipientEmail={recipientEmail}
+                channelBarChannels={replyChannels}
+                channelBarValue={selectedReplyChannel}
+                onChannelBarChange={onReplyChannelChange}
+                channelBarReadOnly={channelBarReadOnly}
+                whatsAppRequiresTemplate={whatsAppRequiresTemplate}
+                selectedTemplateId={selectedTemplateId}
+                onTemplateIdChange={onTemplateIdChange}
+                templateVariableValues={templateVariableValues}
+                onTemplateVariableValueChange={onTemplateVariableValueChange}
+                templateHeaderMediaUrl={templateHeaderMediaUrl}
+                onTemplateHeaderMediaUrlChange={onTemplateHeaderMediaUrlChange}
+                showCannedResponses={selectedReplyChannel === "WEBCHAT"}
+                onSend={() => {
+                  const template = whatsAppRequiresTemplate
+                    ? buildTemplatePayload?.()
+                    : undefined;
+                  sendMutation.mutate({
+                    text: template ? "" : composer.trim(),
+                    subject:
+                      selectedReplyChannel === "EMAIL"
+                        ? emailSubject.trim() || undefined
+                        : undefined,
+                    attachments: template
+                      ? undefined
+                      : pendingAttachment
+                        ? [pendingAttachment]
+                        : undefined,
+                    template,
+                  });
+                }}
+              />
+            </div>
           </>
         )}
     </section>

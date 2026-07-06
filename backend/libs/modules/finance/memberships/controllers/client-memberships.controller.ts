@@ -45,7 +45,10 @@ export class ClientMembershipsController {
   @Get('export')
   @BusinessRoles(...MEMBER_ROLES)
   @Header('Content-Type', 'text/csv')
-  @Header('Content-Disposition', 'attachment; filename="client-memberships.csv"')
+  @Header(
+    'Content-Disposition',
+    'attachment; filename="client-memberships.csv"',
+  )
   exportMemberships(
     @CurrentUser() user: RequestUser,
     @Query() query: ListClientMembershipsQueryDto,

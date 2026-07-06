@@ -113,7 +113,9 @@ export class CreatePublicBookingDto {
   @IsUUID()
   secondaryStaffId?: string;
 
-  @ApiPropertyOptional({ description: 'Promotional offer code entered by client' })
+  @ApiPropertyOptional({
+    description: 'Promotional offer code entered by client',
+  })
   @IsOptional()
   @IsString()
   @MaxLength(50)

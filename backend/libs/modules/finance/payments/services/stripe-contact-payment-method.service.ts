@@ -31,10 +31,8 @@ export class StripeContactPaymentMethodService {
   ): Promise<{ clientSecret: string }> {
     const stripeAccountId =
       await this.connectContext.requireStripeAccountId(businessId);
-    const { stripeCustomerId } = await this.customerService.getOrCreateForContact(
-      businessId,
-      contactId,
-    );
+    const { stripeCustomerId } =
+      await this.customerService.getOrCreateForContact(businessId, contactId);
 
     const stripe = this.stripeApi.getClient();
     const setupIntent = await stripe.setupIntents.create(

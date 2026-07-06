@@ -1,7 +1,13 @@
 "use client";
 
 import { useMemo } from "react";
+import { CalendarDays } from "lucide-react";
 import { useFormContext, useWatch } from "react-hook-form";
+import {
+  APPOINTMENT_FIELD_CONTROL_CLASS,
+  APPOINTMENT_FIELD_LABEL_CLASS,
+  APPOINTMENT_FORM_ITEM_CLASS,
+} from "@/features/appointments/components/appointment-form-drawer-shell";
 import { FormItem } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -105,25 +111,40 @@ export function AppointmentScheduleFields({
         )
       : null;
 
+  const fieldControlClass = APPOINTMENT_FIELD_CONTROL_CLASS;
+  const fieldLabelClass = APPOINTMENT_FIELD_LABEL_CLASS;
+  const formItemClass = APPOINTMENT_FORM_ITEM_CLASS;
+
   return (
-    <div className="space-y-2">
-      <div className="grid grid-cols-2 gap-3">
-        <FormItem>
-          <Label>Date</Label>
-          <Input
-            type="date"
-            value={schedule.dateKey}
-            disabled={disabled || !calendarSelected}
-            onChange={(e) => {
-              const dateKey = e.target.value;
-              if (!dateKey) return;
-              applySlot(dateKey, schedule.startMinutes);
-            }}
-          />
+    <div className="mb-4">
+      <div className="grid grid-cols-2 gap-3.5">
+        <FormItem className={cn(formItemClass, "mb-0")}>
+          <Label className={fieldLabelClass} required>
+            Date
+          </Label>
+          <div className="relative">
+            <Input
+              type="date"
+              value={schedule.dateKey}
+              disabled={disabled || !calendarSelected}
+              className={cn(fieldControlClass, "pr-10")}
+              onChange={(event) => {
+                const dateKey = event.target.value;
+                if (!dateKey) return;
+                applySlot(dateKey, schedule.startMinutes);
+              }}
+            />
+            <CalendarDays
+              className="pointer-events-none absolute top-1/2 right-3.5 size-4 -translate-y-1/2 text-muted-foreground"
+              aria-hidden
+            />
+          </div>
         </FormItem>
 
-        <FormItem>
-          <Label>Time slot</Label>
+        <FormItem className={cn(formItemClass, "mb-0")}>
+          <Label className={fieldLabelClass} required>
+            Time slot
+          </Label>
           <Select
             value={slotValue}
             onValueChange={(value) => {
@@ -131,13 +152,12 @@ export function AppointmentScheduleFields({
             }}
             disabled={disabled || !calendarSelected}
           >
-            <SelectTrigger className="w-full">
+            <SelectTrigger className={cn("w-full", fieldControlClass)}>
               <span
-                className={
-                  selectedSlotLabel
-                    ? "truncate"
-                    : "truncate text-muted-foreground"
-                }
+                className={cn(
+                  "truncate font-medium",
+                  !selectedSlotLabel && "font-normal text-muted-foreground",
+                )}
               >
                 {selectedSlotLabel ?? "Select slot"}
               </span>
@@ -157,13 +177,13 @@ export function AppointmentScheduleFields({
       </div>
 
       {!calendarSelected ? (
-        <p className="text-xs text-muted-foreground">
+        <p className="mt-2 text-xs text-muted-foreground">
           Select a calendar to pick a date and time slot.
         </p>
       ) : null}
 
       {scheduleError ? (
-        <p className={cn("text-sm text-destructive")}>{scheduleError}</p>
+        <p className="mt-2 text-sm text-destructive">{scheduleError}</p>
       ) : null}
     </div>
   );

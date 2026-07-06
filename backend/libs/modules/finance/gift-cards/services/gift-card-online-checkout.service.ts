@@ -42,8 +42,10 @@ export class GiftCardOnlineCheckoutService {
     const settings = await this.settingsRepository.findByBusinessId(businessId);
     const slug = settings?.onlineSalesEnabled
       ? await this.settingsService.ensurePublicSlug(businessId)
-      : settings?.publicSlug ?? null;
-    const frontendUrl = this.configService.get('app', { infer: true }).frontendUrl;
+      : (settings?.publicSlug ?? null);
+    const frontendUrl = this.configService.get('app', {
+      infer: true,
+    }).frontendUrl;
     const stripeReady = await this.isStripeReady(businessId);
 
     const hostedPageUrl = slug ? `${frontendUrl}/gift-cards/${slug}` : null;

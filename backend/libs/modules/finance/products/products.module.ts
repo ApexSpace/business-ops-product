@@ -57,6 +57,11 @@ import { ProductsService } from './services/products.service';
     ProductPickerService,
     ProductVariantRegenerationService,
   ],
-  exports: [ProductRepository, ProductVariantRepository, ProductInventoryService, ProductPickerService],
+  exports: [
+    ProductRepository,
+    ProductVariantRepository,
+    ProductInventoryService,
+    ProductPickerService,
+  ],
 })
 export class ProductsModule {}

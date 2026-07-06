@@ -150,7 +150,9 @@ export class MembershipWebhookService {
     return true;
   }
 
-  async handleInvoicePaymentFailed(event: StripeWebhookEvent): Promise<boolean> {
+  async handleInvoicePaymentFailed(
+    event: StripeWebhookEvent,
+  ): Promise<boolean> {
     const invoice = event.data.object as {
       id?: string;
       subscription?: string | { id?: string } | null;
@@ -256,9 +258,7 @@ export class MembershipWebhookService {
     return true;
   }
 
-  private mapStripeStatus(
-    stripeStatus?: string,
-  ): ClientMembershipStatus {
+  private mapStripeStatus(stripeStatus?: string): ClientMembershipStatus {
     switch (stripeStatus) {
       case 'active':
         return ClientMembershipStatus.ACTIVE;

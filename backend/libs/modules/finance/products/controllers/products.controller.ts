@@ -49,10 +49,7 @@ export class ProductsController {
 
   @Get('picker')
   @BusinessRoles(...MEMBER_ROLES)
-  picker(
-    @CurrentUser() user: RequestUser,
-    @Query('search') search?: string,
-  ) {
+  picker(@CurrentUser() user: RequestUser, @Query('search') search?: string) {
     return this.pickerService.listSellable(user.businessId!, search);
   }
 

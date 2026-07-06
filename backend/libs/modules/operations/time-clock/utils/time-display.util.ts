@@ -11,27 +11,27 @@ export function normalizeTimezone(timezone?: string | null): string {
   }
 }
 
-export function formatTimeDisplay(iso: Date | string, timezone: string): string {
-  const dt = DateTime.fromJSDate(
-    iso instanceof Date ? iso : new Date(iso),
-    { zone: 'utc' },
-  ).setZone(normalizeTimezone(timezone));
+export function formatTimeDisplay(
+  iso: Date | string,
+  timezone: string,
+): string {
+  const dt = DateTime.fromJSDate(iso instanceof Date ? iso : new Date(iso), {
+    zone: 'utc',
+  }).setZone(normalizeTimezone(timezone));
   return dt.toFormat('h:mm a').toLowerCase();
 }
 
 export function formatDayDisplay(iso: Date | string, timezone: string): string {
-  const dt = DateTime.fromJSDate(
-    iso instanceof Date ? iso : new Date(iso),
-    { zone: 'utc' },
-  ).setZone(normalizeTimezone(timezone));
+  const dt = DateTime.fromJSDate(iso instanceof Date ? iso : new Date(iso), {
+    zone: 'utc',
+  }).setZone(normalizeTimezone(timezone));
   return dt.toFormat('ccc, LLL d');
 }
 
 export function formatDayKey(iso: Date | string, timezone: string): string {
-  const dt = DateTime.fromJSDate(
-    iso instanceof Date ? iso : new Date(iso),
-    { zone: 'utc' },
-  ).setZone(normalizeTimezone(timezone));
+  const dt = DateTime.fromJSDate(iso instanceof Date ? iso : new Date(iso), {
+    zone: 'utc',
+  }).setZone(normalizeTimezone(timezone));
   return dt.toFormat('yyyy-MM-dd');
 }
 
@@ -49,8 +49,9 @@ export function combineDateAndTime(
   timezone: string,
 ): Date {
   const [hours, minutes] = timeHm.split(':').map((v) => Number(v));
-  const dt = DateTime.fromISO(dateKey, { zone: normalizeTimezone(timezone) })
-    .set({ hour: hours, minute: minutes, second: 0, millisecond: 0 });
+  const dt = DateTime.fromISO(dateKey, {
+    zone: normalizeTimezone(timezone),
+  }).set({ hour: hours, minute: minutes, second: 0, millisecond: 0 });
   return dt.toUTC().toJSDate();
 }
 
@@ -71,7 +72,8 @@ export function resolveTimePeriodRange(
     }
     case 'this_week': {
       const start = now.startOf('week').minus({ days: 1 });
-      const weekStart = start.weekday === 7 ? start : start.minus({ days: start.weekday });
+      const weekStart =
+        start.weekday === 7 ? start : start.minus({ days: start.weekday });
       const end = weekStart.plus({ days: 6 }).endOf('day');
       return {
         from: weekStart.startOf('day').toUTC().toJSDate(),
@@ -86,7 +88,10 @@ export function resolveTimePeriodRange(
     case 'custom': {
       if (!startDate && !endDate) return {};
       const from = startDate
-        ? DateTime.fromISO(startDate, { zone }).startOf('day').toUTC().toJSDate()
+        ? DateTime.fromISO(startDate, { zone })
+            .startOf('day')
+            .toUTC()
+            .toJSDate()
         : undefined;
       const to = endDate
         ? DateTime.fromISO(endDate, { zone }).endOf('day').toUTC().toJSDate()

@@ -8,9 +8,9 @@ import type { SidebarContextProps } from "@/components/ui/use-sidebar"
 
 export const SIDEBAR_COOKIE_NAME = "sidebar_state"
 export const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7
-export const SIDEBAR_WIDTH = "15rem"
+export const SIDEBAR_WIDTH = "10.75rem"
 /** Narrower drawer so backdrop remains tappable to dismiss on small screens. */
-export const SIDEBAR_WIDTH_MOBILE = "min(15.5rem, 80vw)"
+export const SIDEBAR_WIDTH_MOBILE = "min(11rem, 80vw)"
 export const SIDEBAR_WIDTH_ICON = "3rem"
 const SIDEBAR_KEYBOARD_SHORTCUT = "b"
 

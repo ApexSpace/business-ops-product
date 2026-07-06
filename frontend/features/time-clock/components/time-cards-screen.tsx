@@ -7,6 +7,12 @@ import { Filter, MoreHorizontal, Pencil, Plus, Timer } from "lucide-react";
 import { toast } from "sonner";
 import { ApiErrorState } from "@/components/data-display/api-error-state";
 import {
+  DataTable,
+  type DataTableColumn,
+} from "@/components/data-display/data-table";
+import { ListToolbar } from "@/components/layout/list-toolbar";
+import { SearchableSelect } from "@/components/forms/searchable-select";
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -116,9 +122,66 @@ export function TimeCardsScreen() {
   });
 
   const members = membersData?.items ?? [];
+
+  const staffOptions = useMemo(
+    () =>
+      members.map((member) => ({
+        value: member.userId,
+        label: memberLabel(member),
+      })),
+    [members],
+  );
+
+  const staffFilterOptions = useMemo(
+    () => [
+      { value: "all", label: "All Staff" },
+      ...staffOptions,
+    ],
+    [staffOptions],
+  );
+
   const selected = useMemo(
     () => data?.items.find((item) => item.id === selectedId) ?? null,
     [data?.items, selectedId],
+  );
+
+  const columns = useMemo<DataTableColumn<TimeCardListItem>[]>(
+    () => [
+      {
+        id: "day",
+        header: "Day",
+        className: "min-w-[7rem]",
+        cell: (row) => <span className="font-medium">{row.dayDisplay}</span>,
+      },
+      {
+        id: "staff",
+        header: "Staff",
+        className: "min-w-[8rem]",
+        cell: (row) => row.staff.name,
+      },
+      {
+        id: "clockIn",
+        header: "Clock-in",
+        className: "whitespace-nowrap text-muted-foreground",
+        cell: (row) => row.clockInTime,
+      },
+      {
+        id: "clockOut",
+        header: "Clock-out",
+        className: "whitespace-nowrap text-muted-foreground",
+        cell: (row) => row.clockOutTime ?? "—",
+      },
+      {
+        id: "paidHours",
+        header: "Paid Hours",
+        className: "whitespace-nowrap text-right font-medium tabular-nums",
+        cell: (row) =>
+          row.paidHoursDisplay ??
+          formatPaidHoursDisplay(row.paidMinutes) ??
+          "—",
+      },
+    ],
+    [],
   );
 
   const { data: detail } = useQuery({
@@ -219,73 +282,50 @@ export function TimeCardsScreen() {
   const showSidePanel = panelMode !== "empty" && panelMode !== "options";
 
   return (
-    <div className="flex h-[calc(100vh-8rem)] min-h-[520px] overflow-hidden rounded-lg border bg-card">
-      <div className={cn("flex min-w-0 flex-1 flex-col", showSidePanel && "border-r")}>
-        <div className="flex items-center justify-between border-b px-4 py-3">
-          <Button onClick={openAdd}>
-            <Plus className="mr-2 size-4" />
-            Add Time Card
-          </Button>
-          <Button
-            variant="ghost"
-            onClick={() => setPanelMode("options")}
-          >
-            <Filter className="mr-2 size-4" />
-            Options
-          </Button>
-        </div>
+    <div className="flex h-[calc(100vh-8rem)] min-h-[520px] overflow-hidden rounded-xl border border-border bg-card shadow-elevation-xs">
+      <div className={cn("flex min-w-0 flex-1 flex-col", showSidePanel && "border-r border-border")}>
+        <ListToolbar
+          className="rounded-none border-0 border-b bg-transparent shadow-none"
+          filters={
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPanelMode("options")}
+            >
+              <Filter className="mr-1.5 size-4" />
+              Options
+            </Button>
+          }
+          actions={
+            <Button size="sm" onClick={openAdd}>
+              <Plus className="mr-1.5 size-4" />
+              Add Time Card
+            </Button>
+          }
+        />
 
         {isError ? (
           <ApiErrorState error={error} onRetry={() => void refetch()} />
         ) : (
           <div className="min-h-0 flex-1 overflow-auto">
-            <table className="w-full text-sm">
-              <thead className="sticky top-0 bg-muted/50 text-left text-xs text-muted-foreground">
-                <tr className="border-b">
-                  <th className="px-4 py-2 font-medium">Day</th>
-                  <th className="px-4 py-2 font-medium">Staff</th>
-                  <th className="px-4 py-2 font-medium">Clock-in</th>
-                  <th className="px-4 py-2 font-medium">Clock-out</th>
-                  <th className="px-4 py-2 font-medium">Paid Hours</th>
-                </tr>
-              </thead>
-              <tbody>
-                {isLoading ? (
-                  <tr>
-                    <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">
-                      Loading…
-                    </td>
-                  </tr>
-                ) : null}
-                {!isLoading && (data?.items.length ?? 0) === 0 ? (
-                  <tr>
-                    <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">
-                      No time cards yet.
-                    </td>
-                  </tr>
-                ) : null}
-                {data?.items.map((item) => (
-                  <tr
-                    key={item.id}
-                    className={cn(
-                      "cursor-pointer border-b hover:bg-muted/30",
-                      selectedId === item.id && "bg-primary/5",
-                    )}
-                    onClick={() => openView(item)}
-                  >
-                    <td className="px-4 py-3">{item.dayDisplay}</td>
-                    <td className="px-4 py-3">{item.staff.name}</td>
-                    <td className="px-4 py-3">{item.clockInTime}</td>
-                    <td className="px-4 py-3">{item.clockOutTime ?? ""}</td>
-                    <td className="px-4 py-3">
-                      {item.paidHoursDisplay ??
-                        formatPaidHoursDisplay(item.paidMinutes) ??
-                        ""}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <DataTable
+              className="rounded-none border-0 shadow-none"
+              density="compact"
+              columns={columns}
+              data={data?.items ?? []}
+              getRowId={(row) => row.id}
+              isLoading={isLoading}
+              activeRowId={selectedId}
+              onRowClick={openView}
+              emptyTitle="No time cards yet"
+              emptyDescription="Add a time card or adjust your filters."
+              emptyAction={
+                <Button size="sm" onClick={openAdd}>
+                  <Plus className="mr-2 size-4" />
+                  Add Time Card
+                </Button>
+              }
+            />
           </div>
         )}
       </div>
@@ -397,18 +437,13 @@ export function TimeCardsScreen() {
               <>
                 <div className="space-y-1.5">
                   <Label>Staff</Label>
-                  <Select value={addStaffId} onValueChange={setAddStaffId}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select staff" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {members.map((member) => (
-                        <SelectItem key={member.userId} value={member.userId}>
-                          {memberLabel(member)}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <SearchableSelect
+                    items={staffOptions}
+                    value={addStaffId || null}
+                    onValueChange={(value) => setAddStaffId(value ?? "")}
+                    placeholder="Select staff"
+                    searchPlaceholder="Search staff…"
+                  />
                 </div>
                 <div className="space-y-1.5">
                   <Label>Date</Label>
@@ -479,28 +514,21 @@ export function TimeCardsScreen() {
               </p>
               <div className="space-y-1.5">
                 <Label>Staff</Label>
-                <Select
+                <SearchableSelect
+                  items={staffFilterOptions}
                   value={filters.staffId ?? "all"}
                   onValueChange={(value) =>
                     setFilters((prev) => ({
                       ...prev,
-                      staffId: value === "all" ? undefined : value,
+                      staffId:
+                        value === "all" || value == null ? undefined : value,
                       page: 1,
                     }))
                   }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Staff</SelectItem>
-                    {members.map((member) => (
-                      <SelectItem key={member.userId} value={member.userId}>
-                        {memberLabel(member)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  placeholder="All Staff"
+                  searchable
+                  searchPlaceholder="Search staff…"
+                />
               </div>
               <div className="space-y-1.5">
                 <Label>Time period</Label>

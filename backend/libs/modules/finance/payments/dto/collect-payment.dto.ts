@@ -13,7 +13,10 @@ import {
   Min,
   ValidateNested,
 } from 'class-validator';
-import type { PaymentChannel, StripeCollectionMode } from '../types/payable.types';
+import type {
+  PaymentChannel,
+  StripeCollectionMode,
+} from '../types/payable.types';
 
 export class CollectPaymentTenderDto {
   @ApiProperty({ enum: PaymentMethod })

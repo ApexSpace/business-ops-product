@@ -5,9 +5,7 @@ import { ErrorCode } from '@app/common/exceptions/error-code.enum';
 import { PrismaService } from '@app/core/database/prisma.service';
 import { ContactRepository } from '@app/modules/crm/contacts/repositories/contact.repository';
 import { BusinessIntegrationRepository } from '@app/modules/integrations/integrations/repositories/business-integration.repository';
-import {
-  assertStripeReadyForPayments,
-} from '@app/modules/integrations/integrations/stripe/utils/stripe-readiness.util';
+import { assertStripeReadyForPayments } from '@app/modules/integrations/integrations/stripe/utils/stripe-readiness.util';
 import { StripeApiService } from '@app/modules/integrations/integrations/stripe/services/stripe-api.service';
 import { StripeConnectContextService } from '@app/modules/integrations/integrations/stripe/services/stripe-connect-context.service';
 import { STRIPE_PAYMENT_PURPOSE } from '@app/modules/finance/payments/constants/stripe-payment-purpose.constants';
@@ -39,8 +37,7 @@ export class PackageOnlineCheckoutService {
   ) {}
 
   async getPublicCatalog(slug: string) {
-    const { business, settings } =
-      await this.resolveBusinessBySlug(slug);
+    const { business, settings } = await this.resolveBusinessBySlug(slug);
 
     if (!settings.onlineSalesEnabled) {
       throw new AppException(
@@ -72,8 +69,7 @@ export class PackageOnlineCheckoutService {
   }
 
   async getPackageForCheckout(tenantSlug: string, templateId: string) {
-    const { business, settings } =
-      await this.resolveBusinessBySlug(tenantSlug);
+    const { business, settings } = await this.resolveBusinessBySlug(tenantSlug);
 
     if (!settings.onlineSalesEnabled) {
       throw new AppException(
@@ -122,8 +118,7 @@ export class PackageOnlineCheckoutService {
     templateId: string,
     dto: InitiatePackageCheckoutDto,
   ) {
-    const { business, settings } =
-      await this.resolveBusinessBySlug(tenantSlug);
+    const { business, settings } = await this.resolveBusinessBySlug(tenantSlug);
 
     if (!settings.onlineSalesEnabled) {
       throw new AppException(
@@ -363,7 +358,11 @@ export class PackageOnlineCheckoutService {
   ) {
     const email = dto.email.trim().toLowerCase();
     const existing = await this.prisma.contact.findFirst({
-      where: { businessId, email: { equals: email, mode: 'insensitive' }, deletedAt: null },
+      where: {
+        businessId,
+        email: { equals: email, mode: 'insensitive' },
+        deletedAt: null,
+      },
     });
     if (existing) return existing;
 

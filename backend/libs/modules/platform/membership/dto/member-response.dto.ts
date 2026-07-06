@@ -53,7 +53,9 @@ export class MemberResponseDto {
   @ApiPropertyOptional()
   phoneNumber?: string | null;
 
-  @ApiPropertyOptional({ enum: ['FEMALE', 'MALE', 'NON_BINARY', 'PREFER_NOT_TO_SAY'] })
+  @ApiPropertyOptional({
+    enum: ['FEMALE', 'MALE', 'NON_BINARY', 'PREFER_NOT_TO_SAY'],
+  })
   gender?: string | null;
 
   @ApiProperty()

@@ -12,8 +12,7 @@ import { StatusBadge } from "@/components/data-display/status-badge";
 import { ConfirmDeleteDialog } from "@/components/forms/confirm-delete-dialog";
 import { SearchInput } from "@/components/forms/search-input";
 import { SearchableSelect } from "@/components/forms/searchable-select";
-import { FilterBar } from "@/components/layout/filter-bar";
-import { PaymentFormDialog } from "@/features/payments/components/payment-form-dialog";
+import { PaymentFormDrawer } from "@/features/payments/components/payment-form-drawer";
 import { FinancialTabPanel } from "@/features/payments/components/workspace/financial-tab-panel";
 import { TransactionTableRowActions } from "@/features/payments/components/workspace/transaction-table-row-actions";
 import { Button } from "@/components/ui/button";
@@ -171,16 +170,18 @@ export function PaymentsTransactionsTab() {
             Record payment
           </Button>
         }
+        search={
+          <SearchInput
+            className="min-w-[12rem] flex-1 shrink-0"
+            value={params.search}
+            onChange={(search) =>
+              setParams({ search, page: "1" }, { resetPage: true })
+            }
+            placeholder="Search transactions…"
+          />
+        }
         filters={
-          <FilterBar className="w-full flex-nowrap items-stretch gap-2 overflow-x-auto">
-            <SearchInput
-              className="min-w-[12rem] flex-1 shrink-0"
-              value={params.search}
-              onChange={(search) =>
-                setParams({ search, page: "1" }, { resetPage: true })
-              }
-              placeholder="Search transactions…"
-            />
+          <>
             <SearchableSelect
               items={methodFilterItems}
               value={params.method}
@@ -208,7 +209,7 @@ export function PaymentsTransactionsTab() {
               }
               aria-label="Transaction to"
             />
-          </FilterBar>
+          </>
         }
         pagination={
           data?.meta ? (
@@ -221,15 +222,15 @@ export function PaymentsTransactionsTab() {
           ) : null
         }
       >
-        <div className="-mx-1 overflow-x-auto px-1">
-          <DataTable
-            className="min-w-[48rem]"
-            density="compact"
-            columns={columns}
-            data={data?.items ?? []}
-            getRowId={(row) => row.id}
-            isLoading={isLoading}
-            actionsColumnHeader="Actions"
+        <DataTable
+          className="min-w-[48rem]"
+          density="compact"
+          columns={columns}
+          data={data?.items ?? []}
+          getRowId={(row) => row.id}
+          isLoading={isLoading}
+          actionsColumnHeader="Actions"
+          onRowClick={(row) => void viewTransactionInvoicePublic(row)}
             emptyTitle="No transactions yet"
             emptyDescription="Transactions are usually recorded from an invoice. Use this list to review history or make corrections."
             emptyAction={
@@ -249,10 +250,9 @@ export function PaymentsTransactionsTab() {
               />
             )}
           />
-        </div>
       </FinancialTabPanel>
 
-      <PaymentFormDialog
+      <PaymentFormDrawer
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         onSuccess={() => void invalidateFinancialLists(queryClient)}

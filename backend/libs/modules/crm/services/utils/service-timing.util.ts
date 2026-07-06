@@ -81,7 +81,6 @@ export function mergeStaffTimingOverrides(
     hasBufferTime: staff.hasBufferTime ?? service.hasBufferTime,
     bufferBeforeMinutes:
       staff.bufferBeforeMinutes ?? service.bufferBeforeMinutes,
-    bufferAfterMinutes:
-      staff.bufferAfterMinutes ?? service.bufferAfterMinutes,
+    bufferAfterMinutes: staff.bufferAfterMinutes ?? service.bufferAfterMinutes,
   };
 }

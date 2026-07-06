@@ -44,7 +44,9 @@ export class GiftCardPromotionsService {
     return rows.map(toGiftCardPromotion);
   }
 
-  async findActive(businessId: string): Promise<GiftCardPromotionResponseDto[]> {
+  async findActive(
+    businessId: string,
+  ): Promise<GiftCardPromotionResponseDto[]> {
     const rows = await this.promotionRepository.findActive(businessId);
     return rows.map(toGiftCardPromotion);
   }

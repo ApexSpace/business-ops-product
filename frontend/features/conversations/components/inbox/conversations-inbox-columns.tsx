@@ -9,7 +9,6 @@ import {
   WORKSPACE_COLUMN_CELL_CLASS,
   WORKSPACE_GAP_CLASS,
   WORKSPACE_PADDING_CLASS,
-  WORKSPACE_TABLET_RAIL_COL_CLASS,
   WORKSPACE_TABLET_SIDEBAR_COL_CLASS,
 } from "@/features/contacts/workspace/contact-workspace";
 
@@ -17,7 +16,6 @@ interface ConversationsInboxColumnsProps {
   list: React.ReactNode;
   thread: React.ReactNode;
   sidebar: React.ReactNode;
-  rail: React.ReactNode;
   className?: string;
 }
 
@@ -25,17 +23,15 @@ export function ConversationsInboxColumns({
   list,
   thread,
   sidebar,
-  rail,
   className,
 }: ConversationsInboxColumnsProps) {
   return (
     <>
-      {/* Desktop xl+: four equal-height workspace columns */}
+      {/* Desktop xl+: three equal-height workspace columns */}
       <div className={cn(INBOX_DESKTOP_ROW_CLASS, className)}>
         <div className={WORKSPACE_COLUMN_CELL_CLASS}>{list}</div>
         <div className={WORKSPACE_COLUMN_CELL_CLASS}>{thread}</div>
         <div className={WORKSPACE_COLUMN_CELL_CLASS}>{sidebar}</div>
-        <div className={WORKSPACE_COLUMN_CELL_CLASS}>{rail}</div>
       </div>
 
       {/* Tablet md–xl */}
@@ -51,7 +47,6 @@ export function ConversationsInboxColumns({
           <div className={INBOX_TABLET_LIST_COL_CLASS}>{list}</div>
           <div className={INBOX_TABLET_THREAD_COL_CLASS}>{thread}</div>
           <div className={WORKSPACE_TABLET_SIDEBAR_COL_CLASS}>{sidebar}</div>
-          <div className={WORKSPACE_TABLET_RAIL_COL_CLASS}>{rail}</div>
         </div>
       </div>
     </>

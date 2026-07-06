@@ -13,7 +13,10 @@ export class GiftCardPromotionRepository {
     });
   }
 
-  findActive(businessId: string, now = new Date()): Promise<GiftCardPromotion[]> {
+  findActive(
+    businessId: string,
+    now = new Date(),
+  ): Promise<GiftCardPromotion[]> {
     return this.prisma.giftCardPromotion.findMany({
       where: {
         businessId,
@@ -25,16 +28,15 @@ export class GiftCardPromotionRepository {
     });
   }
 
-  findById(
-    businessId: string,
-    id: string,
-  ): Promise<GiftCardPromotion | null> {
+  findById(businessId: string, id: string): Promise<GiftCardPromotion | null> {
     return this.prisma.giftCardPromotion.findFirst({
       where: { id, businessId },
     });
   }
 
-  create(data: Prisma.GiftCardPromotionCreateInput): Promise<GiftCardPromotion> {
+  create(
+    data: Prisma.GiftCardPromotionCreateInput,
+  ): Promise<GiftCardPromotion> {
     return this.prisma.giftCardPromotion.create({ data });
   }
 

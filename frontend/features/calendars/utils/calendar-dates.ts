@@ -12,9 +12,9 @@ export const CALENDAR_SLOT_MINUTES = 30;
 export const CALENDAR_DAY_START_HOUR = 0;
 /** End of day — last slot 11:00–11:30 PM (exclusive 24:00 bound) */
 export const CALENDAR_DAY_END_HOUR = 24;
-export const CALENDAR_SLOT_HEIGHT_PX = 40;
+export const CALENDAR_SLOT_HEIGHT_PX = 56;
 /** Minimum rendered height for an appointment block in day/week views. */
-export const CALENDAR_EVENT_MIN_HEIGHT_PX = 36;
+export const CALENDAR_EVENT_MIN_HEIGHT_PX = 56;
 export const MONTH_MAX_VISIBLE_EVENTS = 3;
 
 export interface DateRange {

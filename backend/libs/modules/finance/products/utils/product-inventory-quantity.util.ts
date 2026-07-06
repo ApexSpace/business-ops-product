@@ -22,10 +22,7 @@ export function normalizeProductInventoryQuantityChange(
     throw new ProductInventoryQuantityError('ZERO');
   }
 
-  if (
-    type === ProductInventoryAdjustmentType.SALE &&
-    quantityChange > 0
-  ) {
+  if (type === ProductInventoryAdjustmentType.SALE && quantityChange > 0) {
     return -Math.abs(quantityChange);
   }
   if (
@@ -34,16 +31,10 @@ export function normalizeProductInventoryQuantityChange(
   ) {
     return -Math.abs(quantityChange);
   }
-  if (
-    type === ProductInventoryAdjustmentType.RECEIVED &&
-    quantityChange < 0
-  ) {
+  if (type === ProductInventoryAdjustmentType.RECEIVED && quantityChange < 0) {
     return Math.abs(quantityChange);
   }
-  if (
-    type === ProductInventoryAdjustmentType.RETURNED &&
-    quantityChange < 0
-  ) {
+  if (type === ProductInventoryAdjustmentType.RETURNED && quantityChange < 0) {
     return Math.abs(quantityChange);
   }
   return quantityChange;

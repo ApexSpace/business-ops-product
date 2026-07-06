@@ -1,8 +1,5 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import {
-  WebhookEventProvider,
-  WebhookEventStatus,
-} from '@prisma/client';
+import { WebhookEventProvider, WebhookEventStatus } from '@prisma/client';
 import { PrismaService } from '@app/core/database/prisma.service';
 import { JobEnqueueService } from '@app/core/jobs/job-enqueue.service';
 import { runStartupRecovery } from '@app/common/utils/startup-recovery.util';

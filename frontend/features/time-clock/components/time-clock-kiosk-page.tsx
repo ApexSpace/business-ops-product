@@ -4,9 +4,19 @@ import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import Link from "next/link";
 import { ApiClientError } from "@/lib/api/errors";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ActionButton } from "@/components/ui/action-button";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import {
+  DRAWER_FOOTER_ACTIONS_CLASS,
+  DRAWER_FOOTER_BUTTON_CLASS,
+} from "@/components/forms/drawer-sheet";
 import { formatTimeInTimezone } from "@/features/calendars/utils/timezone";
 import { useCurrentBusiness } from "@/features/settings/hooks/use-current-business";
 import {
@@ -16,6 +26,7 @@ import {
 } from "@/features/time-clock/api/time-clock.api";
 import type { VerifyPinResult } from "@/features/time-clock/types";
 import { PERMISSIONS, useCan } from "@/features/auth/permissions";
+import { cn } from "@/lib/utils";
 
 type Screen = "pin" | "action" | "confirmation";
 
@@ -24,6 +35,19 @@ type ConfirmationState = {
   staffName: string;
   timeIso: string;
 };
+
+const KIOSK_CARD_CLASS =
+  "w-full max-w-sm overflow-hidden border-border shadow-elevation-xs";
+
+const KIOSK_HEADER_CLASS = "border-b border-border/60 px-6 pb-4 pt-6 text-center";
+
+const KIOSK_CONTENT_CLASS = "space-y-4 px-6 py-6";
+
+const KIOSK_FOOTER_CLASS =
+  "justify-end gap-2.5 border-t border-border/70 bg-background px-6 py-4";
+
+const KIOSK_PIN_INPUT_CLASS =
+  "h-11 text-center text-lg tracking-[0.35em] tabular-nums";
 
 export function TimeClockKioskPage() {
   const canManageTimeCards = useCan(PERMISSIONS["time-cards.manage"]);
@@ -97,30 +121,31 @@ export function TimeClockKioskPage() {
 
   return (
     <div className="flex min-h-[calc(100vh-8rem)] flex-col items-center justify-center px-4 py-10">
-      <div className="w-full max-w-md space-y-4">
-        <Card className="shadow-sm">
-          <CardHeader className="text-center">
+      <div className="flex w-full max-w-sm flex-col items-stretch gap-4">
+        <Card className={KIOSK_CARD_CLASS}>
+          <CardHeader className={KIOSK_HEADER_CLASS}>
             {screen === "pin" && (
-              <CardTitle className="text-xl font-semibold">
+              <CardTitle className="text-base font-semibold tracking-tight sm:text-lg">
                 Clock In / Clock Out
               </CardTitle>
             )}
             {screen === "action" && verified && (
-              <CardTitle className="text-xl font-semibold">
+              <CardTitle className="text-base font-semibold tracking-tight sm:text-lg">
                 Hello, {verified.staffName}!
               </CardTitle>
             )}
             {screen === "confirmation" && confirmation && (
-              <CardTitle className="text-xl font-semibold">
+              <CardTitle className="text-base font-semibold tracking-tight sm:text-lg">
                 {confirmation.kind === "out"
                   ? `Thank you, ${confirmation.staffName}!`
                   : `Welcome, ${confirmation.staffName}!`}
               </CardTitle>
             )}
           </CardHeader>
-          <CardContent className="space-y-4">
+
+          <CardContent className={KIOSK_CONTENT_CLASS}>
             {screen === "pin" && (
-              <>
+              <div className="space-y-2">
                 <Input
                   value={pin}
                   onChange={(e) => {
@@ -128,85 +153,120 @@ export function TimeClockKioskPage() {
                     setPin(next);
                     setPinError(null);
                   }}
+                  onKeyDown={(e) => {
+                    if (
+                      e.key === "Enter" &&
+                      pin.length === 4 &&
+                      !verifyMutation.isPending
+                    ) {
+                      verifyMutation.mutate();
+                    }
+                  }}
                   placeholder="Enter your PIN"
                   inputMode="numeric"
                   maxLength={4}
-                  className="text-center text-lg tracking-widest"
+                  className={KIOSK_PIN_INPUT_CLASS}
                   autoComplete="off"
+                  aria-invalid={!!pinError}
                 />
                 {pinError ? (
                   <p className="text-center text-sm text-destructive">{pinError}</p>
                 ) : null}
-                <Button
-                  className="w-full"
-                  disabled={pin.length !== 4 || verifyMutation.isPending}
-                  onClick={() => verifyMutation.mutate()}
-                >
-                  Next
-                </Button>
-              </>
+              </div>
             )}
 
             {screen === "action" && verified && (
-              <>
-                <p className="text-center text-muted-foreground">
+              <div className="space-y-2 text-center">
+                <p className="text-sm leading-relaxed text-muted-foreground">
                   {verified.isCurrentlyClockedIn && verified.clockedInSince
                     ? `You're clocked in since ${formatTime(verified.clockedInSince)}.`
                     : "You're not clocked in."}
                 </p>
                 {pinError ? (
-                  <p className="text-center text-sm text-destructive">{pinError}</p>
+                  <p className="text-sm text-destructive">{pinError}</p>
                 ) : null}
-                <div className="flex gap-2">
-                  <Button variant="outline" className="flex-1" onClick={reset}>
-                    Back
-                  </Button>
-                  {verified.isCurrentlyClockedIn ? (
-                    <Button
-                      className="flex-1"
-                      disabled={clockOutMutation.isPending}
-                      onClick={() => {
-                        setPinError(null);
-                        clockOutMutation.mutate();
-                      }}
-                    >
-                      Clock Out
-                    </Button>
-                  ) : (
-                    <Button
-                      className="flex-1"
-                      disabled={clockInMutation.isPending}
-                      onClick={() => {
-                        setPinError(null);
-                        clockInMutation.mutate();
-                      }}
-                    >
-                      Clock In
-                    </Button>
-                  )}
-                </div>
-              </>
+              </div>
             )}
 
             {screen === "confirmation" && confirmation && (
-              <>
-                <p className="text-center text-muted-foreground">
-                  {confirmation.kind === "out"
-                    ? `You're clocked out since ${formatTime(confirmation.timeIso)}.`
-                    : `You're clocked in since ${formatTime(confirmation.timeIso)}.`}
-                </p>
-                <Button className="w-full" onClick={reset}>
-                  Okay
-                </Button>
-              </>
+              <p className="text-center text-sm leading-relaxed text-muted-foreground">
+                {confirmation.kind === "out"
+                  ? `You're clocked out since ${formatTime(confirmation.timeIso)}.`
+                  : `You're clocked in since ${formatTime(confirmation.timeIso)}.`}
+              </p>
             )}
           </CardContent>
+
+          <CardFooter className={KIOSK_FOOTER_CLASS}>
+            {screen === "pin" && (
+              <div className={cn(DRAWER_FOOTER_ACTIONS_CLASS, "sm:ml-0")}>
+                <ActionButton
+                  type="button"
+                  disabled={pin.length !== 4 || verifyMutation.isPending}
+                  onClick={() => verifyMutation.mutate()}
+                  className={DRAWER_FOOTER_BUTTON_CLASS}
+                >
+                  {verifyMutation.isPending ? "Checking…" : "Next"}
+                </ActionButton>
+              </div>
+            )}
+
+            {screen === "action" && verified && (
+              <div className="flex w-full flex-wrap items-center justify-end gap-2.5">
+                <ActionButton
+                  type="button"
+                  variant="outline"
+                  onClick={reset}
+                  className={cn(DRAWER_FOOTER_BUTTON_CLASS, "mr-auto")}
+                >
+                  Back
+                </ActionButton>
+                {verified.isCurrentlyClockedIn ? (
+                  <ActionButton
+                    type="button"
+                    disabled={clockOutMutation.isPending}
+                    onClick={() => {
+                      setPinError(null);
+                      clockOutMutation.mutate();
+                    }}
+                    className={DRAWER_FOOTER_BUTTON_CLASS}
+                  >
+                    {clockOutMutation.isPending ? "Clocking out…" : "Clock Out"}
+                  </ActionButton>
+                ) : (
+                  <ActionButton
+                    type="button"
+                    disabled={clockInMutation.isPending}
+                    onClick={() => {
+                      setPinError(null);
+                      clockInMutation.mutate();
+                    }}
+                    className={DRAWER_FOOTER_BUTTON_CLASS}
+                  >
+                    {clockInMutation.isPending ? "Clocking in…" : "Clock In"}
+                  </ActionButton>
+                )}
+              </div>
+            )}
+
+            {screen === "confirmation" && (
+              <div className={cn(DRAWER_FOOTER_ACTIONS_CLASS, "sm:ml-0")}>
+                <ActionButton
+                  type="button"
+                  onClick={reset}
+                  className={DRAWER_FOOTER_BUTTON_CLASS}
+                >
+                  Okay
+                </ActionButton>
+              </div>
+            )}
+          </CardFooter>
         </Card>
 
         {canManageTimeCards ? (
           <Link
             href="/business/time-cards"
-            className="text-sm text-primary underline-offset-4 hover:underline"
+            className="text-center text-sm font-medium text-primary underline-offset-4 hover:underline"
           >
             Manage Time Cards
           </Link>

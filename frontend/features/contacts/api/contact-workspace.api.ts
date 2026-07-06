@@ -1,4 +1,5 @@
 import { api } from "@/lib/api/client";
+import type { ClientMembershipListItem } from "@/features/memberships/types";
 import type { PaginatedResult } from "@/features/contacts/types";
 
 export type ContactTimelineType =
@@ -55,7 +56,7 @@ export interface ContactAdjustment {
 
 export interface ContactMemberships {
   available: boolean;
-  memberships: unknown[];
+  memberships: ClientMembershipListItem[];
   packages: import("@/features/packages/types").ClientPackageListItem[];
   message: string | null;
 }

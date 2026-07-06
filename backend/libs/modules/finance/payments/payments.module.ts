@@ -24,7 +24,7 @@ import { GiftCardsModule } from '@app/modules/finance/gift-cards/gift-cards.modu
   imports: [
     AuditModule,
     RealtimeModule,
-    ContactsModule,
+    forwardRef(() => ContactsModule),
     forwardRef(() => BusinessModule),
     forwardRef(() => InvoicesModule),
     forwardRef(() => IntegrationsModule),
