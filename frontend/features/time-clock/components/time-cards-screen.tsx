@@ -12,6 +12,7 @@ import {
   type DataTableColumn,
 } from "@/components/data-display/data-table";
 import { EntityDetailDrawer } from "@/components/layout/entity-detail-drawer";
+import { EntityDetailFooter } from "@/components/layout/entity-detail-footer";
 import { EntityWorkspaceLayout } from "@/components/layout/entity-workspace-layout";
 import {
   EntityDetailField,
@@ -358,6 +359,7 @@ export function TimeCardsScreen() {
             setDrawerMode("view");
           }
         }}
+        width="standard"
         title={
           drawerMode === "edit"
             ? "Update time card"
@@ -392,13 +394,15 @@ export function TimeCardsScreen() {
         }
         footer={
           drawerMode === "edit" ? (
-            <Button
-              className="w-full"
-              disabled={saveMutation.isPending}
-              onClick={() => saveMutation.mutate()}
-            >
-              Save changes
-            </Button>
+            <EntityDetailFooter>
+              <Button
+                className="min-h-[2.75rem] w-full sm:w-auto sm:min-w-[10rem]"
+                disabled={saveMutation.isPending}
+                onClick={() => saveMutation.mutate()}
+              >
+                Save changes
+              </Button>
+            </EntityDetailFooter>
           ) : null
         }
       >

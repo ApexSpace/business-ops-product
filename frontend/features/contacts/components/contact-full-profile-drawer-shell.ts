@@ -13,4 +13,4 @@ export const CONTACT_PROFILE_DRAWER_DESCRIPTION_CLASS =
 
 /** Flex column body — child panels manage their own scroll regions. */
 export const CONTACT_PROFILE_DRAWER_BODY_CLASS =
-  "flex min-h-0 flex-1 flex-col space-y-0 overflow-hidden !px-[30px] py-5";
+  "flex min-h-0 flex-1 flex-col space-y-0 overflow-hidden !px-[30px] !py-5";

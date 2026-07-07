@@ -163,6 +163,7 @@ function FormSubmissionsPageContent({ formId }: FormSubmissionsPageProps) {
         onOpenChange={(open) => {
           if (!open) clearSelection();
         }}
+        width="compact"
         title="Submission details"
         subtitle={
           selectedSubmission

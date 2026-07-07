@@ -70,6 +70,59 @@ const { selectedId, isOpen, setSelectedId, clearSelection } = useEntitySelection
 - Tokens: `frontend/lib/design/workspace-tokens.ts`
 - Secondary nav: flat primary sidebar + **Apps** launcher (`AppsLauncher`)
 
+### Entity detail drawer content (standard anatomy)
+
+Row-click drawers use a **5-slot anatomy**. Do not mix navigation levels.
+
+| Slot | Component | Purpose |
+|------|-----------|---------|
+| Header | `EntityDetailHeader` | Identity, status, max 2 inline actions, overflow for destructive |
+| Tabs | `EntityDetailTabs` | L1 **sections** only (underline). Max 5. URL `?tab=` |
+| Summary | `EntityDetailSummaryStrip` | Optional collapsible metadata (phone, email) — not duplicate of header |
+| Toolbar | `EntityDetailToolbar` | L2 **in-tab** filters + actions. Fixed below tabs (not in scroll body). Use `EntityDetailLinkFilter` for timeline-style filters |
+| Body | `EntityDetailSection` / `EntityDetailTimeline` | Scrollable content only |
+| Footer | `EntityDetailFooter` | Primary workflow CTA (Save, Go to payments) |
+
+**Width tiers** (`width` on `EntityDetailDrawer`):
+
+| Tier | Width | Recipe | Examples |
+|------|-------|--------|----------|
+| `compact` | 480px | A Inspect | transactions, form submissions, products |
+| `standard` | 560px | B Operate | packages, memberships, time cards |
+| `wide` | 640px | B/C | contacts timeline, sales, offers, invoices, estimates |
+
+**Recipes:**
+
+- **A Inspect** — read-only fields, optional footer CTA
+- **B Operate** — tabs + link filters in toolbar slot + scrollable feed (contacts timeline is the reference)
+- **C Transact** — toolbar add-line actions + editable body + dominant footer CTA
+
+**Anti-patterns:**
+
+- Do not use filled pill buttons for in-tab filters (prefer `EntityDetailLinkFilter`; `EntityDetailSegmentedFilter` only when pills are required)
+- Do not repeat entity name/contact info in body when header already shows it
+- Do not put destructive actions in both header and footer
+- Do not add a third nested tab row inside body
+
+```tsx
+<EntityDetailDrawer
+  open={isOpen}
+  onOpenChange={(open) => !open && clearSelection()}
+  title="Contact details"
+  width="split"
+  bodyClassName="!gap-0 !overflow-hidden !p-0"
+  overflowActions={[/* print, delete */]}
+>
+  <ContactDetailPanel
+    embedded
+    noteComposerOpen={noteComposerOpen}
+    onNoteComposerOpenChange={setNoteComposerOpen}
+  />
+</EntityDetailDrawer>
+```
+
+Contacts use a **split drawer** (`width="split"`, 900px): left profile panel (avatar, phone, email, notes) + right panel (tabs, filters, timeline).
+
 ### Dashboard
 
 Use `GET businesses/current/dashboard-feed` via `features/dashboard/api/dashboard.api.ts` for a single round-trip (stats + pulse + attention).

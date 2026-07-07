@@ -1,6 +1,12 @@
 /** Shared slide-in shell styling for entity edit/create drawers. */
+import { ENTITY_DRAWER_CONTENT_INSET_CLASS } from "@/lib/design/workspace-tokens";
+
 export const DRAWER_SHEET_CLASS =
   "[--sheet-width:min(92vw,480px)] shadow-elevation-lg";
+
+/** Matches `EntityDetailDrawer` `width="wide"` for stacked edit-over-detail flows. */
+export const DRAWER_SHEET_WIDE_CLASS =
+  "[--sheet-width:min(92vw,640px)] shadow-elevation-lg";
 
 export const DRAWER_SHEET_HEADER_CLASS =
   "border-b border-border/70 px-6 py-5 pr-14";
@@ -11,7 +17,7 @@ export const DRAWER_SHEET_TITLE_CLASS =
 export const DRAWER_SHEET_DESCRIPTION_CLASS =
   "mt-1 text-[13px] leading-relaxed text-muted-foreground";
 
-export const DRAWER_SHEET_CONTENT_CLASS = "space-y-4 px-6 py-5";
+export const DRAWER_SHEET_CONTENT_CLASS = `space-y-4 scrollbar-thin ${ENTITY_DRAWER_CONTENT_INSET_CLASS}`;
 
 /** Standard action button sizing for all drawer footers. */
 export const DRAWER_FOOTER_BUTTON_CLASS =

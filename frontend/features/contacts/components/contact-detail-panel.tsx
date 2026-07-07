@@ -7,10 +7,13 @@ import { ApiErrorState } from "@/components/data-display/api-error-state";
 import { Button } from "@/components/ui/button";
 import { ProfileAvatar } from "@/components/ui/profile-avatar";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ContactDrawerProfilePanel } from "@/features/contacts/components/contact-drawer-profile-panel";
+import { ContactProfileEditForm } from "@/features/contacts/components/contact-profile-edit-form";
 import { ContactSidebarDetailsFields } from "@/features/contacts/components/contact-workspace/contact-sidebar-details-fields";
 import { ContactRecordsSectionBody } from "@/features/contacts/components/contact-workspace/contact-records-section-body";
 import { useContactDetailPanel } from "@/features/contacts/hooks/use-contact-detail-panel";
 import { ContactWorkspaceDialogs } from "@/features/contacts/workspace/contact-workspace-dialogs";
+import { openContactPrintAppointments } from "@/features/contacts/utils/contact-print";
 import { formatContactCreatedAt } from "@/features/contacts/workspace/contact-workspace";
 import type { ContactRecordsSectionId } from "@/features/contacts/workspace/contact-workspace";
 import {
@@ -33,7 +36,8 @@ const CONTACT_DETAIL_TABS = [
 
 export const CONTACT_DETAIL_DRAWER_TABS = CONTACT_DETAIL_TABS.map((tab) => ({
   value: tab.id,
-  label: tab.label,
+  label:
+    tab.id === "memberships" ? "Memberships" : tab.label,
 }));
 
 type ContactDetailTabId = (typeof CONTACT_DETAIL_TABS)[number]["id"];
@@ -47,6 +51,8 @@ export function isContactDetailTab(
 export interface ContactDetailPanelActions {
   openEdit: () => void;
   openDelete: () => void;
+  openCreateNote: () => void;
+  printAppointments: () => void;
 }
 
 interface ContactDetailPanelProps {
@@ -59,6 +65,8 @@ interface ContactDetailPanelProps {
   /** Body only for EntityDetailDrawer (no aside chrome or tab bar). */
   embedded?: boolean;
   onActionsReady?: (actions: ContactDetailPanelActions) => void;
+  noteComposerOpen?: boolean;
+  onNoteComposerOpenChange?: (open: boolean) => void;
   className?: string;
 }
 
@@ -105,6 +113,8 @@ export function ContactDetailPanel({
   variant = "page",
   embedded = false,
   onActionsReady,
+  noteComposerOpen = false,
+  onNoteComposerOpenChange,
   className,
 }: ContactDetailPanelProps) {
   const queryClient = useQueryClient();
@@ -149,6 +159,7 @@ export function ContactDetailPanel({
     reopenTaskMutation,
     setEditOpen,
     setDeleteContactOpen,
+    editOpen,
   } = state;
 
   useEffect(() => {
@@ -156,8 +167,19 @@ export function ContactDetailPanel({
     onActionsReady({
       openEdit: () => setEditOpen(true),
       openDelete: () => setDeleteContactOpen(true),
+      openCreateNote: () => {
+        onNoteComposerOpenChange?.(true);
+      },
+      printAppointments: () => openContactPrintAppointments(contact.id),
     });
-  }, [contact, embedded, onActionsReady, setDeleteContactOpen, setEditOpen]);
+  }, [
+    contact,
+    embedded,
+    onActionsReady,
+    onNoteComposerOpenChange,
+    setDeleteContactOpen,
+    setEditOpen,
+  ]);
 
   if (contactLoading) {
     if (embedded) return null;
@@ -193,6 +215,12 @@ export function ContactDetailPanel({
   const lockedContact = { id: contact.id, label: contact.label };
   const createdAt = formatContactCreatedAt(contact.createdAt, business?.timezone ?? undefined);
   const isDrawer = variant === "drawer";
+  const onContactEditSuccess = () => {
+    setEditOpen(false);
+    void invalidateContactDetail(queryClient, contact.id);
+    void invalidateContactLists(queryClient);
+    void invalidateContactPicker(queryClient);
+  };
   const rootClassName = cn(
     isDrawer
       ? "contacts-detail-card contacts-detail-card--drawer"
@@ -216,7 +244,9 @@ export function ContactDetailPanel({
     canDeleteLead,
     onCreateLead: () => setCreateLeadOpen(true),
     onCreateWorkItem: () => setCreateWorkItemOpen(true),
-    onCreateNote: () => setCreateNoteOpen(true),
+    onCreateNote: embedded
+      ? () => onNoteComposerOpenChange?.(true)
+      : () => setCreateNoteOpen(true),
     onCreateTask: () => setCreateTaskOpen(true),
     onCreateAppointment: () => setCreateAppointmentOpen(true),
     onEditAppointment: setEditingAppointment,
@@ -240,29 +270,69 @@ export function ContactDetailPanel({
   if (embedded) {
     return (
       <>
-        <div className={cn("space-y-4", className)}>
-          <div className="space-y-3 rounded-lg border border-border bg-muted/20 p-4">
-            <ContactSidebarDetailsFields
+        <div className="contacts-detail-card contacts-detail-card--drawer-split">
+          {editOpen ? (
+            <ContactProfileEditForm
               contact={contact}
-              showNotes={false}
-              showCreated
-              createdAt={createdAt}
-              onRequestEdit={() => setEditOpen(true)}
+              onCancel={() => setEditOpen(false)}
+              onSuccess={onContactEditSuccess}
+              className="contacts-drawer-profile-panel"
             />
-            <ContactSidebarDetailsFields
+          ) : (
+            <ContactDrawerProfilePanel
               contact={contact}
-              showPhone={false}
-              showEmail={false}
-              showCreated={false}
-              onRequestEdit={() => setEditOpen(true)}
-              notesTextareaClassName="!min-h-[72px] max-h-40 resize-y focus:!min-h-[96px]"
+              contactId={contact.id}
+              onEdit={() => setEditOpen(true)}
+              noteComposerOpen={noteComposerOpen}
+              onNoteComposerOpenChange={onNoteComposerOpenChange}
             />
+          )}
+          <div className="contacts-drawer-records-panel">
+            <div className="contacts-d2-tabbar-wrap">
+              <div
+                className="contacts-d2-tabbar"
+                role="tablist"
+                aria-label="Contact records"
+              >
+                {CONTACT_DETAIL_TABS.map((tab) => (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    role="tab"
+                    aria-selected={activeSection === tab.id}
+                    className={cn(
+                      "contacts-d2-tab",
+                      activeSection === tab.id && "active",
+                    )}
+                    onClick={() => onSectionChange(tab.id)}
+                  >
+                    {tab.id === "memberships" ? "Memberships" : tab.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div
+              className={cn(
+                "contacts-d2-tabpanel",
+                activeSection === "timeline" &&
+                  "contacts-drawer-tabpanel-inner--timeline",
+              )}
+            >
+              {activeSection === "timeline" ? (
+                <ContactRecordsSectionBody
+                  activeSection={activeSection}
+                  {...recordsPanelProps}
+                />
+              ) : (
+                <div className="contacts-drawer-tab-scroll">
+                  <ContactRecordsSectionBody
+                    activeSection={activeSection}
+                    {...recordsPanelProps}
+                  />
+                </div>
+              )}
+            </div>
           </div>
-
-          <ContactRecordsSectionBody
-            activeSection={activeSection}
-            {...recordsPanelProps}
-          />
         </div>
 
         <ContactWorkspaceDialogs
@@ -270,11 +340,9 @@ export function ContactDetailPanel({
           contact={contact}
           lockedContact={lockedContact}
           onContactDeleted={onContactDeleted}
-          onContactEditSuccess={() => {
-            void invalidateContactDetail(queryClient, contact.id);
-            void invalidateContactLists(queryClient);
-            void invalidateContactPicker(queryClient);
-          }}
+          useInlineNoteCreate
+          useInlineContactEdit
+          onContactEditSuccess={onContactEditSuccess}
         />
       </>
     );
@@ -283,6 +351,14 @@ export function ContactDetailPanel({
   return (
     <>
       <div className={rootClassName}>
+        {editOpen ? (
+          <ContactProfileEditForm
+            contact={contact}
+            onCancel={() => setEditOpen(false)}
+            onSuccess={onContactEditSuccess}
+            className="contacts-profile-card"
+          />
+        ) : (
         <aside className="contacts-profile-card">
           <div className="contacts-profile-identity">
             <div className="flex items-center gap-3">
@@ -346,6 +422,7 @@ export function ContactDetailPanel({
             />
           </div>
         </aside>
+        )}
 
         <div className="contacts-records-card">
           <div className="contacts-d2-tabbar-wrap">
@@ -382,11 +459,8 @@ export function ContactDetailPanel({
         contact={contact}
         lockedContact={lockedContact}
         onContactDeleted={onContactDeleted}
-        onContactEditSuccess={() => {
-          void invalidateContactDetail(queryClient, contact.id);
-          void invalidateContactLists(queryClient);
-          void invalidateContactPicker(queryClient);
-        }}
+        useInlineContactEdit
+        onContactEditSuccess={onContactEditSuccess}
       />
     </>
   );

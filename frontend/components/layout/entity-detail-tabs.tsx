@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { cn } from "@/lib/utils";
 
 export interface EntityDetailTabItem {
@@ -20,6 +21,44 @@ export function EntityDetailTabs({
   tabs,
   className,
 }: EntityDetailTabsProps) {
+  useEffect(() => {
+    if (tabs.length <= 1) {
+      return;
+    }
+
+    function onKeyDown(event: KeyboardEvent) {
+      if (!event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) {
+        return;
+      }
+      const target = event.target;
+      if (
+        target instanceof HTMLInputElement ||
+        target instanceof HTMLTextAreaElement ||
+        target instanceof HTMLSelectElement ||
+        (target instanceof HTMLElement && target.isContentEditable)
+      ) {
+        return;
+      }
+      const digitMatch = event.code.match(/^Digit([1-9])$/);
+      if (!digitMatch) {
+        return;
+      }
+      const index = Number.parseInt(digitMatch[1]!, 10) - 1;
+      if (index < 0 || index >= tabs.length) {
+        return;
+      }
+      const tab = tabs[index];
+      if (!tab) {
+        return;
+      }
+      event.preventDefault();
+      onValueChange(tab.value);
+    }
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [onValueChange, tabs]);
+
   if (tabs.length <= 1) {
     return null;
   }
@@ -32,7 +71,7 @@ export function EntityDetailTabs({
       )}
       role="tablist"
     >
-      {tabs.map((tab) => {
+      {tabs.map((tab, index) => {
         const active = tab.value === value;
         return (
           <button
@@ -40,6 +79,7 @@ export function EntityDetailTabs({
             type="button"
             role="tab"
             aria-selected={active}
+            aria-keyshortcuts={`Alt+${index + 1}`}
             onClick={() => onValueChange(tab.value)}
             className={cn(
               "relative shrink-0 px-3 py-3 text-[13px] font-medium transition-colors",

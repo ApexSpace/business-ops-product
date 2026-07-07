@@ -5,10 +5,8 @@ import { useSearchParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Check,
-  ChevronDown,
   CreditCard,
   Gift,
-  MoreHorizontal,
   Package,
   Pencil,
   Plus,
@@ -20,20 +18,11 @@ import {
 import { toast } from "sonner";
 import { DataTable, type DataTableColumn } from "@/components/data-display/data-table";
 import { EntityDetailDrawer } from "@/components/layout/entity-detail-drawer";
+import { EntityDetailFooter } from "@/components/layout/entity-detail-footer";
 import { EntityWorkspaceLayout } from "@/components/layout/entity-workspace-layout";
 import { SearchInput } from "@/components/forms/search-input";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { IconButton } from "@/components/ui/icon-button";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -118,7 +107,7 @@ export function SalesWorkspace() {
     contactFilter,
   );
   const [closeOpen, setCloseOpen] = useState(false);
-  const [editOpen, setEditOpen] = useState(false);
+  const [saleEditMode, setSaleEditMode] = useState(false);
   const [voidOpen, setVoidOpen] = useState(false);
   const [addServiceOpen, setAddServiceOpen] = useState(false);
   const [addProductOpen, setAddProductOpen] = useState(false);
@@ -170,7 +159,7 @@ export function SalesWorkspace() {
   const { data: contactsData } = useQuery({
     queryKey: queryKeys.contacts.list({ limit: 100 }),
     queryFn: () => listContacts({ page: 1, limit: 100 }),
-    enabled: newSaleOpen || editOpen,
+    enabled: newSaleOpen || saleEditMode,
   });
 
   const { data: servicesData } = useQuery({
@@ -279,7 +268,11 @@ export function SalesWorkspace() {
     if (!sale) return;
     setEditNotes(sale.notes ?? "");
     setEditContactId(sale.contactId);
-    setEditOpen(true);
+    setSaleEditMode(true);
+  };
+
+  const cancelEditSale = () => {
+    setSaleEditMode(false);
   };
 
   const openEditLine = (item: CheckoutItem) => {
@@ -424,7 +417,7 @@ export function SalesWorkspace() {
       }),
     onSuccess: () => {
       toast.success("Sale updated");
-      setEditOpen(false);
+      setSaleEditMode(false);
       refreshSale();
       void invalidateCheckouts(queryClient);
     },
@@ -605,7 +598,11 @@ export function SalesWorkspace() {
           isLoading={listLoading}
           density="compact"
           activeRowId={selectedId}
-          onRowClick={(row) => setSelectedId(row.id)}
+          onRowClick={(row) => {
+            setSaleEditMode(false);
+            setEditingLine(null);
+            setSelectedId(row.id);
+          }}
           getRowClassName={(row) =>
             selectedId === row.id ? WORKSPACE_ACTIVE_ROW_CLASS : undefined
           }
@@ -624,35 +621,130 @@ export function SalesWorkspace() {
       <EntityDetailDrawer
         open={isOpen}
         onOpenChange={(open) => {
-          if (!open) clearSelection();
+          if (!open) {
+            clearSelection();
+            setSaleEditMode(false);
+            setEditingLine(null);
+          }
         }}
         width="wide"
-        title={sale?.saleNumber ?? "Sale"}
-        subtitle={sale?.contact?.label}
+        title={
+          saleEditMode ? "Edit sale" : sale?.saleNumber ?? "Sale"
+        }
+        subtitle={saleEditMode ? undefined : sale?.contact?.label}
         isLoading={detailLoading}
         badges={
-          sale ? (
+          !saleEditMode && sale ? (
             <SaleStatusPill status={sale.status} isOpen={sale.isOpen} />
           ) : null
         }
         headerActions={
           sale?.isOpen && saleDetailProps ? (
-            <SaleDetailToolbar
-              onEdit={saleDetailProps.onEdit}
+            saleEditMode ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={cancelEditSale}
+              >
+                Cancel
+              </Button>
+            ) : (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={saleDetailProps.onEdit}
+              >
+                <Pencil className="mr-1 size-3.5" />
+                Edit
+              </Button>
+            )
+          ) : null
+        }
+        overflowActions={
+          sale?.isOpen && saleDetailProps && !saleEditMode
+            ? [
+                {
+                  id: "void",
+                  label: "Void sale",
+                  icon: <Trash2 className="size-3.5" />,
+                  destructive: true,
+                  onSelect: saleDetailProps.onVoid,
+                },
+              ]
+            : undefined
+        }
+        toolbar={
+          sale?.isOpen && saleDetailProps && !saleEditMode ? (
+            <SaleAddItemsToolbar
               onAddDeposit={saleDetailProps.onAddDeposit}
               onAddService={saleDetailProps.onAddService}
               onAddProduct={saleDetailProps.onAddProduct}
               onAddGiftCard={saleDetailProps.onAddGiftCard}
               onAddPackage={saleDetailProps.onAddPackage}
               onApplyOffer={saleDetailProps.onApplyOffer}
-              onVoid={saleDetailProps.onVoid}
-              onClose={saleDetailProps.onClose}
             />
+          ) : null
+        }
+        footer={
+          sale?.isOpen && saleDetailProps ? (
+            saleEditMode ? (
+              <EntityDetailFooter>
+                <Button
+                  variant="outline"
+                  className="min-h-[2.75rem] w-full sm:w-auto sm:min-w-[10rem]"
+                  disabled={updateSaleMutation.isPending}
+                  onClick={cancelEditSale}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  className="min-h-[2.75rem] w-full sm:w-auto sm:min-w-[10rem]"
+                  disabled={
+                    !editContactId || updateSaleMutation.isPending
+                  }
+                  onClick={() => updateSaleMutation.mutate()}
+                >
+                  {updateSaleMutation.isPending ? "Saving…" : "Save changes"}
+                </Button>
+              </EntityDetailFooter>
+            ) : (
+              <EntityDetailFooter>
+                <Button
+                  className="min-h-[2.75rem] flex-1 sm:flex-none sm:min-w-[12rem]"
+                  onClick={saleDetailProps.onClose}
+                >
+                  Go to payments
+                  <Check className="ml-1.5 size-4" />
+                </Button>
+              </EntityDetailFooter>
+            )
           ) : null
         }
       >
         {selectedId && sale && saleDetailProps ? (
-          <SaleDetail embedded {...saleDetailProps} />
+          <SaleDetail
+            embedded
+            {...saleDetailProps}
+            saleEditMode={saleEditMode}
+            editContactId={editContactId}
+            editNotes={editNotes}
+            contactItems={contactItems}
+            onEditContactIdChange={setEditContactId}
+            onEditNotesChange={setEditNotes}
+            editingLine={editingLine}
+            lineQty={lineQty}
+            lineUnitPrice={lineUnitPrice}
+            lineStaffId={lineStaffId}
+            lineStaffItems={lineStaffItems}
+            onLineQtyChange={setLineQty}
+            onLineUnitPriceChange={setLineUnitPrice}
+            onLineStaffIdChange={setLineStaffId}
+            onCancelLineEdit={() => setEditingLine(null)}
+            onSaveLineEdit={() => updateLineMutation.mutate()}
+            lineSavePending={updateLineMutation.isPending}
+          />
         ) : null}
       </EntityDetailDrawer>
 
@@ -789,102 +881,6 @@ export function SalesWorkspace() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={editOpen} onOpenChange={setEditOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit sale</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>Client</Label>
-              <SearchableSelect
-                inDialog
-                items={contactItems}
-                value={editContactId}
-                onValueChange={setEditContactId}
-                placeholder="Select client…"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Notes</Label>
-              <Textarea
-                value={editNotes}
-                onChange={(e) => setEditNotes(e.target.value)}
-                rows={3}
-              />
-            </div>
-            <Button
-              className="w-full"
-              disabled={!editContactId || updateSaleMutation.isPending}
-              onClick={() => updateSaleMutation.mutate()}
-            >
-              Save changes
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog
-        open={!!editingLine}
-        onOpenChange={(open) => !open && setEditingLine(null)}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit line</DialogTitle>
-          </DialogHeader>
-          {editingLine ? (
-            <div className="space-y-4">
-              <p className="text-sm font-medium">{editingLine.title}</p>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label>Quantity</Label>
-                  <Input
-                    type="number"
-                    min={0.0001}
-                    step="0.01"
-                    value={lineQty || ""}
-                    onChange={(e) =>
-                      setLineQty(parseFloat(e.target.value) || 0)
-                    }
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Unit price</Label>
-                  <Input
-                    type="number"
-                    min={0}
-                    step="0.01"
-                    value={lineUnitPrice || ""}
-                    onChange={(e) =>
-                      setLineUnitPrice(parseFloat(e.target.value) || 0)
-                    }
-                  />
-                </div>
-              </div>
-              {editingLine.serviceId && lineStaffItems.length > 0 ? (
-                <div className="space-y-2">
-                  <Label>Staff</Label>
-                  <SearchableSelect
-                    inDialog
-                    items={lineStaffItems}
-                    value={lineStaffId}
-                    onValueChange={setLineStaffId}
-                    placeholder="Staff (optional)"
-                  />
-                </div>
-              ) : null}
-              <Button
-                className="w-full"
-                disabled={updateLineMutation.isPending || lineQty <= 0}
-                onClick={() => updateLineMutation.mutate()}
-              >
-                Save line
-              </Button>
-            </div>
-          ) : null}
-        </DialogContent>
-      </Dialog>
-
       <GiftCardSaleDialog
         open={addGiftCardOpen}
         onOpenChange={setAddGiftCardOpen}
@@ -990,121 +986,62 @@ function SaleStatusPill({
   return <Badge variant="secondary">Closed</Badge>;
 }
 
-function SaleDetailToolbar({
-  onEdit,
+function SaleAddItemsToolbar({
   onAddDeposit,
   onAddService,
   onAddProduct,
   onAddGiftCard,
   onAddPackage,
   onApplyOffer,
-  onVoid,
-  onClose,
 }: {
-  onEdit: () => void;
   onAddDeposit: (amount: number) => void;
   onAddService: () => void;
   onAddProduct: () => void;
   onAddGiftCard: () => void;
   onAddPackage: () => void;
   onApplyOffer: () => void;
-  onVoid: () => void;
-  onClose: () => void;
 }) {
+  const actions = [
+    { id: "service", label: "Service", icon: Wrench, onClick: onAddService },
+    { id: "product", label: "Product", icon: Package, onClick: onAddProduct },
+    {
+      id: "gift-card",
+      label: "Gift card",
+      icon: Gift,
+      onClick: onAddGiftCard,
+    },
+    {
+      id: "package",
+      label: "Package",
+      icon: ShoppingBag,
+      onClick: onAddPackage,
+    },
+    { id: "offer", label: "Offer", icon: Tag, onClick: onApplyOffer },
+    {
+      id: "deposit",
+      label: "Deposit",
+      icon: CreditCard,
+      onClick: () => onAddDeposit(25),
+    },
+  ] as const;
+
   return (
-    <div className="flex flex-wrap items-center justify-start gap-2">
-      <IconButton
-        variant="outline"
-        size="icon"
-        className="size-[38px] shrink-0 rounded-[var(--radius-control)] shadow-elevation-xs"
-        aria-label="Edit sale"
-        onClick={onEdit}
-      >
-        <Pencil className="size-3.5" />
-      </IconButton>
-      <IconButton
-        variant="outline"
-        size="icon"
-        className="size-[38px] shrink-0 rounded-[var(--radius-control)] shadow-elevation-xs"
-        aria-label="Add wallet deposit"
-        onClick={() => onAddDeposit(25)}
-      >
-        <CreditCard className="size-3.5" />
-      </IconButton>
-
-      <div className="mx-0.5 hidden h-[22px] w-px shrink-0 bg-border sm:block" aria-hidden />
-
-      <DropdownMenu>
-        <DropdownMenuTrigger
-          render={
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-[var(--control-height)] gap-1.5 px-3 shadow-elevation-xs"
-            >
-              <Plus className="size-3.5" />
-              Add to sale
-              <ChevronDown className="size-2.5 opacity-70" />
-            </Button>
-          }
-        />
-        <DropdownMenuContent align="start" className="min-w-[11.5rem]">
-          <DropdownMenuGroup>
-            <DropdownMenuLabel>Line items</DropdownMenuLabel>
-            <DropdownMenuItem onClick={onAddService}>
-              <Wrench className="size-3.5" />
-              Service
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={onAddProduct}>
-              <Package className="size-3.5" />
-              Product
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={onAddGiftCard}>
-              <Gift className="size-3.5" />
-              Gift card
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={onAddPackage}>
-              <ShoppingBag className="size-3.5" />
-              Package
-            </DropdownMenuItem>
-          </DropdownMenuGroup>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={onApplyOffer}>
-            <Tag className="size-3.5" />
-            Apply offer
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-
-      <DropdownMenu>
-        <DropdownMenuTrigger
-          render={
-            <IconButton
-              variant="outline"
-              size="icon"
-              className="size-[38px] shrink-0 rounded-[var(--radius-control)] shadow-elevation-xs"
-              aria-label="More actions"
-            >
-              <MoreHorizontal className="size-4" />
-            </IconButton>
-          }
-        />
-        <DropdownMenuContent align="end" className="min-w-[10rem]">
-          <DropdownMenuItem variant="destructive" onClick={onVoid}>
-            <Trash2 className="size-3.5" />
-            Void sale
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-
-      <Button
-        size="sm"
-        className="h-[var(--control-height)] gap-1.5 px-4"
-        onClick={onClose}
-      >
-        Close &amp; collect
-        <Check className="size-4" />
-      </Button>
+    <div className="w-full space-y-2">
+      <p className="text-xs font-medium text-muted-foreground">Add to sale</p>
+      <div className="grid grid-cols-3 gap-1.5">
+        {actions.map((action) => (
+          <Button
+            key={action.id}
+            type="button"
+            variant="outline"
+            className="h-auto min-h-[3.25rem] flex-col gap-1 rounded-lg px-2 py-2 text-[11px] font-medium leading-tight shadow-elevation-xs"
+            onClick={action.onClick}
+          >
+            <action.icon className="size-4 shrink-0 text-muted-foreground" />
+            {action.label}
+          </Button>
+        ))}
+      </div>
     </div>
   );
 }
@@ -1112,20 +1049,29 @@ function SaleDetailToolbar({
 function SaleDetail({
   sale,
   embedded = false,
-  onAddService,
-  onAddProduct,
-  onAddGiftCard,
-  onAddPackage,
   onApplyOffer,
   onRemoveOffer,
   removeOfferPending,
-  onAddDeposit,
-  onClose,
-  onEdit,
-  onVoid,
   onEditLine,
   onRemoveLine,
   lineRemovePending,
+  saleEditMode = false,
+  editContactId = null,
+  editNotes = "",
+  contactItems = [],
+  onEditContactIdChange,
+  onEditNotesChange,
+  editingLine = null,
+  lineQty = 1,
+  lineUnitPrice = 0,
+  lineStaffId = null,
+  lineStaffItems = [],
+  onLineQtyChange,
+  onLineUnitPriceChange,
+  onLineStaffIdChange,
+  onCancelLineEdit,
+  onSaveLineEdit,
+  lineSavePending = false,
 }: {
   sale: Checkout;
   embedded?: boolean;
@@ -1143,10 +1089,24 @@ function SaleDetail({
   onEditLine: (item: CheckoutItem) => void;
   onRemoveLine: (lineId: string) => void;
   lineRemovePending: boolean;
+  saleEditMode?: boolean;
+  editContactId?: string | null;
+  editNotes?: string;
+  contactItems?: Array<{ value: string; label: string }>;
+  onEditContactIdChange?: (id: string | null) => void;
+  onEditNotesChange?: (notes: string) => void;
+  editingLine?: CheckoutItem | null;
+  lineQty?: number;
+  lineUnitPrice?: number;
+  lineStaffId?: string | null;
+  lineStaffItems?: Array<{ value: string; label: string }>;
+  onLineQtyChange?: (qty: number) => void;
+  onLineUnitPriceChange?: (price: number) => void;
+  onLineStaffIdChange?: (id: string | null) => void;
+  onCancelLineEdit?: () => void;
+  onSaveLineEdit?: () => void;
+  lineSavePending?: boolean;
 }) {
-  const statusLabel =
-    sale.status === "VOID" ? "Void" : sale.isOpen ? "Open" : "Closed";
-
   return (
     <div
       className={cn(
@@ -1155,66 +1115,75 @@ function SaleDetail({
       )}
     >
       {!embedded ? (
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-          <div className="min-w-0">
-            <h2 className="text-base font-semibold">{sale.saleNumber}</h2>
-            <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-              <span>{sale.contact?.label}</span>
-              <SaleStatusPill status={sale.status} isOpen={sale.isOpen} />
-            </div>
-            {sale.notes ? (
-              <p className="mt-2 text-xs text-muted-foreground">{sale.notes}</p>
-            ) : null}
+        <div className="min-w-0">
+          <h2 className="text-base font-semibold">{sale.saleNumber}</h2>
+          <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+            <span>{sale.contact?.label}</span>
+            <SaleStatusPill status={sale.status} isOpen={sale.isOpen} />
           </div>
-
-          {sale.isOpen ? (
-            <SaleDetailToolbar
-              onEdit={onEdit}
-              onAddDeposit={onAddDeposit}
-              onAddService={onAddService}
-              onAddProduct={onAddProduct}
-              onAddGiftCard={onAddGiftCard}
-              onAddPackage={onAddPackage}
-              onApplyOffer={onApplyOffer}
-              onVoid={onVoid}
-              onClose={onClose}
+          {sale.notes ? (
+            <p className="mt-2 text-xs text-muted-foreground">{sale.notes}</p>
+          ) : null}
+        </div>
+      ) : saleEditMode ? (
+        <div className="space-y-4 border-b border-border pb-4">
+          <div className="space-y-2">
+            <Label>Client</Label>
+            <SearchableSelect
+              items={contactItems}
+              value={editContactId}
+              onValueChange={onEditContactIdChange}
+              placeholder="Select client…"
             />
-          ) : (
-            <span className="text-sm text-muted-foreground">{statusLabel}</span>
-          )}
+          </div>
+          <div className="space-y-2">
+            <Label>Notes</Label>
+            <Textarea
+              value={editNotes}
+              onChange={(e) => onEditNotesChange?.(e.target.value)}
+              rows={3}
+            />
+          </div>
         </div>
       ) : sale.notes ? (
         <p className="text-xs text-muted-foreground">{sale.notes}</p>
       ) : null}
 
-      <div className={cn(!embedded && "mt-5", "border-t border-border")}>
+      <div className={cn(!embedded && !saleEditMode && "mt-5", "border-t border-border")}>
         {sale.items.length === 0 ? (
           <p className="py-8 text-sm text-muted-foreground">
-            No line items yet. Use{" "}
-            <span className="font-medium text-foreground">Add to sale</span> to
-            add a service, product, gift card, or package.
+            No line items yet. Use the buttons above to add a service,
+            product, gift card, package, or offer.
           </p>
         ) : (
           <ul>
-            {sale.items.map((item) => (
+            {sale.items.map((item) => {
+              const isLineEditing = editingLine?.id === item.id;
+              return (
               <li
                 key={item.id}
-                className="flex items-center justify-between gap-4 border-b border-border py-4 last:border-b-0"
+                className="border-b border-border py-4 last:border-b-0"
               >
+                <div className="flex items-center justify-between gap-4">
                 <div className="min-w-0 flex-1">
                   <p className="font-medium">{item.title}</p>
+                  {!isLineEditing ? (
                   <p className="mt-0.5 text-xs text-muted-foreground">
                     {item.lineType.replaceAll("_", " ").toLowerCase()}
                     {item.staff ? ` · ${item.staff.label}` : ""}
                     {` · qty ${item.quantity}`}
                   </p>
+                  ) : null}
                 </div>
                 <div className="flex shrink-0 items-center gap-3">
+                  {!isLineEditing ? (
                   <span className="text-sm font-medium tabular-nums">
                     {formatMoney(parseFloat(item.totalPrice))}
                   </span>
-                  {sale.isOpen ? (
+                  ) : null}
+                  {sale.isOpen && !saleEditMode ? (
                     <div className="flex items-center gap-1.5">
+                      {!isLineEditing ? (
                       <Button
                         type="button"
                         variant="outline"
@@ -1225,12 +1194,13 @@ function SaleDetail({
                       >
                         <Pencil className="size-3.5" />
                       </Button>
+                      ) : null}
                       <Button
                         type="button"
                         variant="outline"
                         size="icon-sm"
                         className="size-8 rounded-lg hover:border-destructive/30 hover:bg-destructive/5 hover:text-destructive"
-                        disabled={lineRemovePending}
+                        disabled={lineRemovePending || isLineEditing}
                         onClick={() => onRemoveLine(item.id)}
                         aria-label="Remove line"
                       >
@@ -1239,8 +1209,71 @@ function SaleDetail({
                     </div>
                   ) : null}
                 </div>
+                </div>
+                {isLineEditing ? (
+                  <div className="mt-3 space-y-3 rounded-lg border border-border bg-muted/20 p-3">
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label>Quantity</Label>
+                        <Input
+                          type="number"
+                          min={0.0001}
+                          step="0.01"
+                          value={lineQty || ""}
+                          onChange={(e) =>
+                            onLineQtyChange?.(parseFloat(e.target.value) || 0)
+                          }
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Unit price</Label>
+                        <Input
+                          type="number"
+                          min={0}
+                          step="0.01"
+                          value={lineUnitPrice || ""}
+                          onChange={(e) =>
+                            onLineUnitPriceChange?.(
+                              parseFloat(e.target.value) || 0,
+                            )
+                          }
+                        />
+                      </div>
+                    </div>
+                    {item.serviceId && lineStaffItems.length > 0 ? (
+                      <div className="space-y-2">
+                        <Label>Staff</Label>
+                        <SearchableSelect
+                          items={lineStaffItems}
+                          value={lineStaffId}
+                          onValueChange={onLineStaffIdChange}
+                          placeholder="Staff (optional)"
+                        />
+                      </div>
+                    ) : null}
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={onCancelLineEdit}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        disabled={lineSavePending || lineQty <= 0}
+                        onClick={onSaveLineEdit}
+                      >
+                        {lineSavePending ? "Saving…" : "Save line"}
+                      </Button>
+                    </div>
+                  </div>
+                ) : null}
               </li>
-            ))}
+            );
+            })}
           </ul>
         )}
       </div>

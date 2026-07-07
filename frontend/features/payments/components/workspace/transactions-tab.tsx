@@ -13,6 +13,7 @@ import { ConfirmDeleteDialog } from "@/components/forms/confirm-delete-dialog";
 import { SearchInput } from "@/components/forms/search-input";
 import { SearchableSelect } from "@/components/forms/searchable-select";
 import { EntityDetailDrawer } from "@/components/layout/entity-detail-drawer";
+import { EntityDetailFooter } from "@/components/layout/entity-detail-footer";
 import { PaymentFormDrawer } from "@/features/payments/components/payment-form-drawer";
 import { FinancialTabPanel } from "@/features/payments/components/workspace/financial-tab-panel";
 import { TransactionDetailPanel } from "@/features/payments/components/workspace/transaction-detail-panel";
@@ -321,13 +322,15 @@ export function PaymentsTransactionsTab() {
         }
         footer={
           drawerPayment && canRefundPayment(drawerPayment) ? (
-            <Button
-              variant="destructive"
-              className="w-full"
-              onClick={() => setRefundId(drawerPayment.id)}
-            >
-              Refund transaction
-            </Button>
+            <EntityDetailFooter>
+              <Button
+                variant="destructive"
+                className="min-h-[2.75rem] w-full sm:w-auto sm:min-w-[12rem]"
+                onClick={() => setRefundId(drawerPayment.id)}
+              >
+                Refund transaction
+              </Button>
+            </EntityDetailFooter>
           ) : null
         }
       >

@@ -22,7 +22,7 @@ export interface EntityDetailOverflowAction {
 
 interface EntityDetailHeaderProps {
   title: string;
-  subtitle?: string;
+  subtitle?: React.ReactNode;
   badges?: React.ReactNode;
   actions?: React.ReactNode;
   overflowActions?: EntityDetailOverflowAction[];
@@ -56,9 +56,13 @@ export function EntityDetailHeader({
             {title}
           </h2>
           {subtitle ? (
-            <p className="mt-0.5 truncate text-sm text-muted-foreground">
-              {subtitle}
-            </p>
+            <div className="mt-0.5 min-w-0 text-sm text-muted-foreground">
+              {typeof subtitle === "string" ? (
+                <p className="truncate">{subtitle}</p>
+              ) : (
+                subtitle
+              )}
+            </div>
           ) : null}
         </div>
         <div className="flex shrink-0 items-center gap-2">

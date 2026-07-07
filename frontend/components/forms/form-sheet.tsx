@@ -19,6 +19,7 @@ import {
   DRAWER_SHEET_FOOTER_CLASS,
 } from "@/components/forms/drawer-sheet";
 import { cn } from "@/lib/utils";
+import { ENTITY_DRAWER_CONTENT_INSET_CLASS } from "@/lib/design/workspace-tokens";
 
 export interface FormSheetProps<T extends FieldValues> {
   open: boolean;
@@ -142,14 +143,17 @@ export function FormSheet<T extends FieldValues>({
 
   const body = (
     <>
-      <SheetBody
-        className={cn(
-          "min-h-0 flex-1 space-y-4 overflow-y-auto px-4 py-4",
-          bodyClassName,
-          contentClassName,
-        )}
-      >
-        {children}
+      <SheetBody className="min-h-0 flex-1 overflow-y-auto !p-0">
+        <div
+          className={cn(
+            "space-y-4",
+            ENTITY_DRAWER_CONTENT_INSET_CLASS,
+            bodyClassName,
+            contentClassName,
+          )}
+        >
+          {children}
+        </div>
       </SheetBody>
       {hideFooter ? null : footer ? (
         <SheetFooter className={resolvedFooterClassName}>{footer}</SheetFooter>

@@ -21,6 +21,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { EntityDetailField } from "@/components/layout/entity-detail-section";
 import { cn } from "@/lib/utils";
 import type {
   ClientPackageDetail,
@@ -76,6 +77,12 @@ export interface PackageDetailPanelProps {
   onSaveAdjust: () => void;
   adjustPending: boolean;
   onEditExpiration: () => void;
+  expirationEditMode?: boolean;
+  expirationDraft?: string;
+  onExpirationDraftChange?: (value: string) => void;
+  onCancelExpirationEdit?: () => void;
+  onSaveExpiration?: () => void;
+  expirationSavePending?: boolean;
   onOpenContact: (contactId: string) => void;
   className?: string;
   /** Drawer = mobile sheet; reserves space for the sheet close button. */
@@ -101,6 +108,12 @@ export function PackageDetailPanel({
   onSaveAdjust,
   adjustPending,
   onEditExpiration,
+  expirationEditMode = false,
+  expirationDraft = "",
+  onExpirationDraftChange,
+  onCancelExpirationEdit,
+  onSaveExpiration,
+  expirationSavePending = false,
   onOpenContact,
   className,
   variant = "panel",
@@ -182,21 +195,52 @@ export function PackageDetailPanel({
           </div>
 
           <InfoBlock label="Expiration date">
-            <div className="flex items-center gap-2">
-              <p className="text-sm">
-                {detail.expirationDate
-                  ? formatDetailDate(detail.expirationDate)
-                  : "No expiration date"}
-              </p>
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                onClick={onEditExpiration}
-                aria-label="Edit expiration date"
-              >
-                <Pencil className="size-3.5" />
-              </Button>
-            </div>
+            {expirationEditMode ? (
+              <div className="space-y-2">
+                <Input
+                  type="date"
+                  value={expirationDraft}
+                  onChange={(e) => onExpirationDraftChange?.(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Leave empty for no expiration date.
+                </p>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={onCancelExpirationEdit}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    disabled={expirationSavePending}
+                    onClick={onSaveExpiration}
+                  >
+                    {expirationSavePending ? "Saving…" : "Save"}
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <p className="text-sm">
+                  {detail.expirationDate
+                    ? formatDetailDate(detail.expirationDate)
+                    : "No expiration date"}
+                </p>
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  onClick={onEditExpiration}
+                  aria-label="Edit expiration date"
+                >
+                  <Pencil className="size-3.5" />
+                </Button>
+              </div>
+            )}
           </InfoBlock>
 
           <div className="space-y-2">
@@ -339,10 +383,5 @@ function InfoBlock({
   label: string;
   children: React.ReactNode;
 }) {
-  return (
-    <div className="space-y-1.5">
-      <p className="text-drawer-section">{label}</p>
-      <div>{children}</div>
-    </div>
-  );
+  return <EntityDetailField label={label}>{children}</EntityDetailField>;
 }

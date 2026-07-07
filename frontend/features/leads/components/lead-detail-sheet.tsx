@@ -4,6 +4,7 @@ import { Trash2 } from "lucide-react";
 import { ConfirmDeleteDialog } from "@/components/forms/confirm-delete-dialog";
 import { StatusBadge } from "@/components/data-display/status-badge";
 import { EntityDetailDrawer } from "@/components/layout/entity-detail-drawer";
+import { EntityDetailFooter } from "@/components/layout/entity-detail-footer";
 import { LeadRelatedRecords } from "@/features/leads/components/lead-related-records";
 import { LeadDetailSheetForm } from "@/features/leads/components/lead-detail-sheet-form";
 import { useLeadDetailSheet } from "@/features/leads/hooks/use-lead-detail-sheet";
@@ -54,6 +55,7 @@ export function LeadDetailSheet({
       <EntityDetailDrawer
         open={open}
         onOpenChange={onOpenChange}
+        width="standard"
         title={lead ? getLeadDisplayTitle(lead) : "Lead"}
         subtitle={
           lead
@@ -79,7 +81,7 @@ export function LeadDetailSheet({
         }
         footer={
           lead ? (
-            <div className="flex w-full flex-wrap items-center justify-end gap-2">
+            <EntityDetailFooter>
               <Button
                 type="button"
                 variant="outline"
@@ -96,7 +98,7 @@ export function LeadDetailSheet({
               >
                 {sheet.saveMutation.isPending ? "Saving…" : "Save"}
               </Button>
-            </div>
+            </EntityDetailFooter>
           ) : null
         }
       >

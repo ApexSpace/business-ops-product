@@ -84,6 +84,7 @@ export function PackagesWorkspace() {
     null,
   );
   const [expirationDraft, setExpirationDraft] = useState("");
+  const [expirationEditMode, setExpirationEditMode] = useState(false);
 
   useEffect(() => {
     if (contactFilter && selectedId === contactFilter) {
@@ -201,6 +202,7 @@ export function PackagesWorkspace() {
     }) => updateClientPackageExpiration(id, expirationDate),
     onSuccess: async () => {
       toast.success("Expiration updated");
+      setExpirationEditMode(false);
       await invalidatePackages(queryClient);
     },
     onError: (e: Error) => toast.error(e.message),
@@ -303,16 +305,20 @@ export function PackagesWorkspace() {
       setExpirationDraft(
         detail.expirationDate ? detail.expirationDate.slice(0, 10) : "",
       );
-      const next = prompt(
-        "Expiration date (YYYY-MM-DD) or leave empty for none:",
-        expirationDraft,
-      );
-      if (next === null) return;
+      setExpirationEditMode(true);
+    },
+    expirationEditMode,
+    expirationDraft,
+    onExpirationDraftChange: setExpirationDraft,
+    onCancelExpirationEdit: () => setExpirationEditMode(false),
+    onSaveExpiration: () => {
+      if (!detail) return;
       expirationMutation.mutate({
         id: detail.id,
-        expirationDate: next.trim() ? next.trim() : null,
+        expirationDate: expirationDraft.trim() ? expirationDraft.trim() : null,
       });
     },
+    expirationSavePending: expirationMutation.isPending,
     onOpenContact: (contactId: string) => {
       router.push(`/business/contacts?contact=${contactId}`);
     },
@@ -394,8 +400,12 @@ export function PackagesWorkspace() {
       <EntityDetailDrawer
         open={isOpen}
         onOpenChange={(open) => {
-          if (!open) clearSelection();
+          if (!open) {
+            clearSelection();
+            setExpirationEditMode(false);
+          }
         }}
+        width="standard"
         title={detail ? packageDisplayName(detail) : "Package"}
         subtitle={detail?.contact.name}
         isLoading={detailQuery.isLoading}

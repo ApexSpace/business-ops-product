@@ -14,6 +14,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { EntityDetailField } from "@/components/layout/entity-detail-section";
 import { cn } from "@/lib/utils";
 import { formatMoney } from "@/features/payments/schemas/payment-profile";
 import type {
@@ -301,10 +302,5 @@ function InfoBlock({
   label: string;
   children: React.ReactNode;
 }) {
-  return (
-    <div className="space-y-1.5">
-      <p className="text-drawer-section">{label}</p>
-      <div>{children}</div>
-    </div>
-  );
+  return <EntityDetailField label={label}>{children}</EntityDetailField>;
 }

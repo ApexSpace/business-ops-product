@@ -9,6 +9,7 @@ import { StatusBadge } from "@/components/data-display/status-badge";
 import { SearchInput } from "@/components/forms/search-input";
 import { SearchableSelect } from "@/components/forms/searchable-select";
 import { EntityDetailDrawer } from "@/components/layout/entity-detail-drawer";
+import { EntityDetailFooter } from "@/components/layout/entity-detail-footer";
 import { getInvoice } from "@/features/invoices/api/invoices.api";
 import { InvoiceFormDialog } from "@/features/invoices/components/invoice-form-dialog";
 import { InvoiceDetailPanel } from "@/features/payments/components/workspace/invoice-detail-panel";
@@ -295,15 +296,17 @@ export function PaymentsInvoicesTab() {
         }
         footer={
           detail && canRecordPayment(detail) ? (
-            <Button
-              className="w-full"
-              onClick={() => {
-                setPaymentInvoiceId(detail.id);
-                setPaymentDialogOpen(true);
-              }}
-            >
-              Record payment
-            </Button>
+            <EntityDetailFooter>
+              <Button
+                className="min-h-[2.75rem] w-full sm:w-auto sm:min-w-[12rem]"
+                onClick={() => {
+                  setPaymentInvoiceId(detail.id);
+                  setPaymentDialogOpen(true);
+                }}
+              >
+                Record payment
+              </Button>
+            </EntityDetailFooter>
           ) : null
         }
       >

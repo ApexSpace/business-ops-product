@@ -1,16 +1,15 @@
 "use client";
 
-import { Suspense, useCallback, useMemo, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { Plus, Printer, Trash2 } from "lucide-react";
 import { DataTable, type DataTableColumn } from "@/components/data-display/data-table";
 import { EntityDetailDrawer } from "@/components/layout/entity-detail-drawer";
 import { EntityWorkspaceLayout } from "@/components/layout/entity-workspace-layout";
 import { ContactFormDialog } from "@/features/contacts/components/contact-form-dialog";
 import {
   ContactDetailPanel,
-  CONTACT_DETAIL_DRAWER_TABS,
   isContactDetailTab,
   type ContactDetailPanelActions,
   type ContactDetailTabId,
@@ -62,6 +61,7 @@ function BusinessContactsPageContent() {
   const { params, page, setParams } = useListSearchParams(LIST_SCHEMA);
   const debouncedSearch = useDebouncedValue(params.search);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [noteComposerOpen, setNoteComposerOpen] = useState(false);
   const createFromQuery = searchParams.get("action") === "create";
   const panelActionsRef = useRef<ContactDetailPanelActions | null>(null);
 
@@ -80,6 +80,22 @@ function BusinessContactsPageContent() {
   const activeTab: ContactDetailTabId =
     tab && isContactDetailTab(tab) ? tab : "timeline";
 
+  useEffect(() => {
+    if (!isOpen) {
+      setNoteComposerOpen(false);
+    }
+  }, [isOpen, selectedId]);
+
+  const handleNoteComposerOpenChange = useCallback(
+    (open: boolean) => {
+      if (open) {
+        setTab("timeline");
+      }
+      setNoteComposerOpen(open);
+    },
+    [setTab],
+  );
+
   const listFilters = {
     page,
     limit: PAGE_LIMIT,
@@ -87,9 +103,7 @@ function BusinessContactsPageContent() {
   };
 
   const { data, isLoading } = useContactsList(listFilters);
-  const { data: selectedContact, isLoading: detailLoading } = useContactDetail(
-    selectedId ?? "",
-  );
+  const { isLoading: detailLoading } = useContactDetail(selectedId ?? "");
 
   const contacts = data?.items ?? [];
   const total = data?.meta?.total ?? contacts.length;
@@ -234,39 +248,27 @@ function BusinessContactsPageContent() {
         onOpenChange={(open) => {
           if (!open) {
             clearSelection();
+            setNoteComposerOpen(false);
           }
         }}
-        title={selectedContact?.label ?? "Contact"}
-        subtitle={
-          selectedContact ? contactSubline(selectedContact) : undefined
-        }
+        width="split"
+        title="Contact details"
         isLoading={detailLoading}
-        tabs={CONTACT_DETAIL_DRAWER_TABS}
-        activeTab={activeTab}
-        onTabChange={(value) => {
-          if (isContactDetailTab(value)) {
-            setTab(value);
-          }
-        }}
-        headerActions={
-          selectedId ? (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => panelActionsRef.current?.openEdit()}
-            >
-              <Pencil className="mr-1 size-3.5" />
-              Edit
-            </Button>
-          ) : null
-        }
+        fullBleed
+        bodyClassName="!overflow-hidden"
         overflowActions={
           selectedId
             ? [
                 {
+                  id: "print",
+                  label: "Print upcoming appointments",
+                  icon: <Printer className="size-3.5" />,
+                  onSelect: () => panelActionsRef.current?.printAppointments(),
+                },
+                {
                   id: "delete",
                   label: "Delete",
-                  icon: <Trash2 className="mr-2 size-4" />,
+                  icon: <Trash2 className="size-3.5" />,
                   destructive: true,
                   onSelect: () => panelActionsRef.current?.openDelete(),
                 },
@@ -281,8 +283,11 @@ function BusinessContactsPageContent() {
             activeSection={activeTab}
             onSectionChange={(section) => setTab(section)}
             onActionsReady={handleActionsReady}
+            noteComposerOpen={noteComposerOpen}
+            onNoteComposerOpenChange={handleNoteComposerOpenChange}
             onContactDeleted={() => {
               clearSelection();
+              setNoteComposerOpen(false);
             }}
           />
         ) : null}

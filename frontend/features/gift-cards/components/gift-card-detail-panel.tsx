@@ -3,7 +3,10 @@
 import { CreditCard, Gift, MessageSquare, Pencil } from "lucide-react";
 import { ApiErrorState } from "@/components/data-display/api-error-state";
 import { EmptyState } from "@/components/data-display/empty-state";
+import { EntityDetailField } from "@/components/layout/entity-detail-section";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Table,
   TableBody,
@@ -51,6 +54,10 @@ export interface GiftCardDetailPanelProps {
   voidPending: boolean;
   onOpenContact: (contactId: string) => void;
   className?: string;
+  /** In-place edit mode for notes (embedded drawer). */
+  editing?: boolean;
+  notesDraft?: string;
+  onNotesDraftChange?: (value: string) => void;
   /** Drawer = mobile sheet; reserves space for the sheet close button. */
   variant?: "panel" | "drawer";
   /** Renders body only for EntityDetailDrawer (no aside chrome). */
@@ -74,6 +81,9 @@ export function GiftCardDetailPanel({
   className,
   variant = "panel",
   embedded = false,
+  editing = false,
+  notesDraft = "",
+  onNotesDraftChange,
 }: GiftCardDetailPanelProps) {
   const isDrawer = variant === "drawer";
 
@@ -145,7 +155,17 @@ export function GiftCardDetailPanel({
             </div>
 
             <InfoBlock label="Note">
-              {detail.notes?.trim() ? (
+              {editing ? (
+                <div className="space-y-1.5">
+                  <Label className="sr-only">Note</Label>
+                  <Textarea
+                    value={notesDraft}
+                    onChange={(e) => onNotesDraftChange?.(e.target.value)}
+                    rows={4}
+                    placeholder="Add a note about this gift card…"
+                  />
+                </div>
+              ) : detail.notes?.trim() ? (
                 <p className="text-sm">{detail.notes}</p>
               ) : (
                 <p className="rounded-lg border border-dashed border-border px-3 py-2.5 text-sm italic text-muted-foreground">
@@ -286,10 +306,5 @@ function InfoBlock({
   label: string;
   children: React.ReactNode;
 }) {
-  return (
-    <div className="space-y-1.5">
-      <p className="text-drawer-section">{label}</p>
-      <div>{children}</div>
-    </div>
-  );
+  return <EntityDetailField label={label}>{children}</EntityDetailField>;
 }

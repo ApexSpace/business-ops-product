@@ -305,152 +305,6 @@
 
 
 
-.contacts-d2-toolbar {
-
-  display: flex;
-
-  flex-wrap: wrap;
-
-  align-items: center;
-
-  justify-content: space-between;
-
-  gap: 12px;
-
-  margin-bottom: 18px;
-
-}
-
-
-
-.contacts-pillbar {
-
-  display: flex;
-
-  flex-wrap: wrap;
-
-  gap: 8px;
-
-}
-
-
-
-.contacts-toolbar-actions {
-
-  display: flex;
-
-  flex-wrap: wrap;
-
-  gap: 8px;
-
-}
-
-
-
-.contacts-timeline {
-
-  position: relative;
-
-  padding-left: 26px;
-
-}
-
-
-
-.contacts-timeline::before {
-
-  content: "";
-
-  position: absolute;
-
-  top: 6px;
-
-  bottom: 6px;
-
-  left: 6px;
-
-  width: 2px;
-
-  background: var(--cs-line);
-
-}
-
-
-
-.contacts-t-item {
-
-  position: relative;
-
-  padding-bottom: 22px;
-
-}
-
-
-
-.contacts-t-item:last-child {
-
-  padding-bottom: 0;
-
-}
-
-
-
-.contacts-t-dot {
-
-  position: absolute;
-
-  top: 3px;
-
-  left: -26px;
-
-  width: 14px;
-
-  height: 14px;
-
-  border: 3px solid var(--cs-surface);
-
-  border-radius: 50%;
-
-  background: var(--muted-foreground);
-
-  box-shadow: 0 0 0 1px var(--cs-line);
-
-}
-
-
-
-.contacts-t-dot.appointment {
-
-  background: var(--cs-brand);
-
-}
-
-
-
-.contacts-t-dot.note {
-
-  background: var(--cs-amber);
-
-}
-
-
-
-.contacts-t-dot.confirmed {
-
-  background: var(--cs-green);
-
-}
-
-
-
-.contacts-t-dot.system {
-
-  background: var(--muted-foreground);
-
-}
-
-
-
 @media (max-width: 900px) {
 
   .contacts-detail-card {
@@ -481,6 +335,100 @@
 }
 
 
+
+/* Drawer split — profile left, records right (Mangomint-style) */
+.contacts-detail-card--drawer-split {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: row;
+  overflow: hidden;
+  background: transparent;
+}
+
+.contacts-drawer-profile-panel {
+  display: flex;
+  width: 260px;
+  min-width: 240px;
+  flex-shrink: 0;
+  flex-direction: column;
+  overflow-x: hidden;
+  overflow-y: auto;
+  border-right: 1px solid var(--cs-line);
+  background: var(--background);
+  padding: 20px 18px 24px;
+  scrollbar-width: thin;
+}
+
+.contacts-drawer-records-panel {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  overflow: hidden;
+  background: color-mix(in oklch, var(--muted) 28%, var(--background));
+}
+
+.contacts-drawer-records-panel .contacts-d2-tabbar-wrap {
+  flex-shrink: 0;
+  margin: 0;
+  padding: 16px 20px 0;
+  background: color-mix(in oklch, var(--muted) 28%, var(--background));
+}
+
+.contacts-drawer-records-panel .contacts-d2-tabpanel {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0;
+}
+
+.contacts-drawer-tabpanel-inner--timeline {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+}
+
+.contacts-drawer-records-filter {
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--cs-line);
+  background: color-mix(in oklch, var(--muted) 28%, var(--background));
+  padding: 10px 20px 14px;
+}
+
+.contacts-drawer-tab-scroll {
+  min-height: 0;
+  flex: 1;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 12px 20px 24px;
+  scrollbar-width: thin;
+}
+
+.contacts-drawer-timeline {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+}
+
+@media (max-width: 720px) {
+  .contacts-detail-card--drawer-split {
+    flex-direction: column;
+  }
+
+  .contacts-drawer-profile-panel {
+    width: 100%;
+    min-width: 0;
+    max-height: min(40vh, 360px);
+    border-right: none;
+    border-bottom: 1px solid var(--cs-line);
+  }
+}
 
 /* Drawer variant — single-column layout inside FormSheet */
 .contacts-detail-card--drawer {
@@ -541,18 +489,5 @@
   overflow-y: auto;
   padding-bottom: 28px;
   scrollbar-width: thin;
-}
-
-.contacts-detail-card--drawer .contacts-d2-toolbar {
-  position: sticky;
-  top: 0;
-  z-index: 1;
-  margin-bottom: 14px;
-  padding-bottom: 4px;
-  background: var(--background);
-}
-
-.contacts-detail-card--drawer .contacts-timeline {
-  padding-bottom: 8px;
 }
 

@@ -13,6 +13,8 @@ import {
   Trash2,
 } from "lucide-react";
 import { EntityDetailDrawer } from "@/components/layout/entity-detail-drawer";
+import { EntityDetailFooter } from "@/components/layout/entity-detail-footer";
+import { EntityDetailSection } from "@/components/layout/entity-detail-section";
 import { EntityWorkspaceLayout } from "@/components/layout/entity-workspace-layout";
 import { SearchInput } from "@/components/forms/search-input";
 import { DataTable, type DataTableColumn } from "@/components/data-display/data-table";
@@ -96,6 +98,7 @@ import {
   type ProductProfileFormValues,
 } from "@/features/products/schemas/product-profile";
 import type {
+  ProductDetail,
   ProductInventoryAdjustmentType,
   ProductListItem,
   ProductType,
@@ -181,6 +184,8 @@ function formatAdjustmentSummary(adj: {
   }
 }
 
+type DrawerMode = "view" | "edit";
+
 export function ProductsWorkspace() {
   const {
     selectedId,
@@ -190,12 +195,15 @@ export function ProductsWorkspace() {
   } = useEntitySelection({ legacyIdParams: ["product"] });
 
   const [search, setSearch] = useState("");
-  const [formOpen, setFormOpen] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [drawerMode, setDrawerMode] = useState<DrawerMode>("view");
+  const [editForm, setEditForm] = useState<ProductProfileFormValues>(
+    productProfileDefaultValues,
+  );
   const [optionsOpen, setOptionsOpen] = useState(false);
-  const [categoriesOpen, setCategoriesOpen] = useState(false);
-  const [editingProductId, setEditingProductId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [newCategoryName, setNewCategoryName] = useState("");
+  const [categoriesOpen, setCategoriesOpen] = useState(false);
 
   const listFilters = useMemo(
     () => ({
@@ -215,13 +223,25 @@ export function ProductsWorkspace() {
   const total = listData?.meta?.total ?? products.length;
 
   const openCreate = () => {
-    setEditingProductId(null);
-    setFormOpen(true);
+    setCreateOpen(true);
   };
 
-  const openEdit = (id: string) => {
-    setEditingProductId(id);
-    setFormOpen(true);
+  const startEdit = () => {
+    if (!detail) return;
+    setEditForm(productToProfileForm(detail));
+    setDrawerMode("edit");
+  };
+
+  const cancelEdit = () => {
+    setDrawerMode("view");
+  };
+
+  const saveEdit = () => {
+    if (!selectedId || !editForm.name.trim()) return;
+    mutations.update.mutate(
+      { id: selectedId, body: profileFormToUpdateApiBody(editForm) },
+      { onSuccess: () => setDrawerMode("view") },
+    );
   };
 
   const columns = useMemo<DataTableColumn<ProductListItem>[]>(
@@ -272,7 +292,7 @@ export function ProductsWorkspace() {
     productId: selectedId ?? "",
     detail,
     isLoading: detailLoading,
-    onEdit: () => selectedId && openEdit(selectedId),
+    onEdit: () => selectedId && startEdit(),
     onDelete: () => selectedId && setDeleteId(selectedId),
     onAdjust: (body: {
       variantId?: string;
@@ -340,7 +360,10 @@ export function ProductsWorkspace() {
           isLoading={isLoading}
           density="compact"
           activeRowId={selectedId}
-          onRowClick={(row) => setSelectedId(row.id)}
+          onRowClick={(row) => {
+            setDrawerMode("view");
+            setSelectedId(row.id);
+          }}
           getRowClassName={(row) =>
             selectedId === row.id ? WORKSPACE_ACTIVE_ROW_CLASS : undefined
           }
@@ -359,13 +382,22 @@ export function ProductsWorkspace() {
       <EntityDetailDrawer
         open={isOpen}
         onOpenChange={(open) => {
-          if (!open) clearSelection();
+          if (!open) {
+            clearSelection();
+            setDrawerMode("view");
+          }
         }}
-        title={detail?.name ?? "Product"}
-        subtitle={detail?.categoryName ?? "Uncategorized"}
+        title={
+          drawerMode === "edit"
+            ? "Update product"
+            : detail?.name ?? "Product"
+        }
+        subtitle={
+          drawerMode === "edit" ? undefined : detail?.categoryName ?? "Uncategorized"
+        }
         isLoading={detailLoading}
         badges={
-          detail ? (
+          drawerMode === "view" && detail ? (
             <>
               <Badge variant="neutral">{detail.productType}</Badge>
               <Badge
@@ -377,19 +409,21 @@ export function ProductsWorkspace() {
           ) : null
         }
         headerActions={
-          selectedId ? (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => openEdit(selectedId)}
-            >
-              <Pencil className="mr-1 size-3.5" />
-              Edit
-            </Button>
+          selectedId && detail ? (
+            drawerMode === "view" ? (
+              <Button variant="outline" size="sm" onClick={startEdit}>
+                <Pencil className="mr-1 size-3.5" />
+                Edit
+              </Button>
+            ) : (
+              <Button variant="ghost" size="sm" onClick={cancelEdit}>
+                Cancel
+              </Button>
+            )
           ) : null
         }
         overflowActions={
-          selectedId
+          drawerMode === "view" && selectedId
             ? [
                 {
                   id: "delete",
@@ -401,8 +435,31 @@ export function ProductsWorkspace() {
               ]
             : undefined
         }
+        footer={
+          drawerMode === "edit" ? (
+            <EntityDetailFooter>
+              <Button
+                variant="outline"
+                className="min-h-[2.75rem] w-full sm:w-auto sm:min-w-[10rem]"
+                disabled={mutations.update.isPending}
+                onClick={cancelEdit}
+              >
+                Cancel
+              </Button>
+              <Button
+                className="min-h-[2.75rem] w-full sm:w-auto sm:min-w-[10rem]"
+                disabled={
+                  mutations.update.isPending || !editForm.name.trim()
+                }
+                onClick={saveEdit}
+              >
+                {mutations.update.isPending ? "Saving…" : "Save changes"}
+              </Button>
+            </EntityDetailFooter>
+          ) : null
+        }
       >
-        {selectedId && detail ? (
+        {selectedId && detail && drawerMode === "view" ? (
           <ProductDetailBody
             productId={selectedId}
             detail={detail}
@@ -410,29 +467,34 @@ export function ProductsWorkspace() {
             adjustPending={detailPanelProps.adjustPending}
           />
         ) : null}
+        {selectedId && detail && drawerMode === "edit" ? (
+          <div className="min-h-0 overflow-y-auto">
+            <ProductProfileFormFields
+              form={editForm}
+              setForm={setEditForm}
+              isEdit
+              productId={selectedId}
+              existing={detail}
+              categories={categories}
+              formActive
+            />
+          </div>
+        ) : null}
       </EntityDetailDrawer>
 
       <ProductFormSheet
-        open={formOpen}
-        onOpenChange={setFormOpen}
-        productId={editingProductId}
+        open={createOpen}
+        onOpenChange={setCreateOpen}
         categories={categories}
         onCreate={(body) =>
           mutations.create.mutate(body, {
             onSuccess: (product) => {
-              setFormOpen(false);
+              setCreateOpen(false);
               setSelectedId(product.id);
             },
           })
         }
-        onUpdate={(id, body) =>
-          mutations.update.mutate(
-            { id, body },
-            { onSuccess: () => setFormOpen(false) },
-          )
-        }
         createPending={mutations.create.isPending}
-        updatePending={mutations.update.isPending}
       />
 
       <Sheet open={optionsOpen} onOpenChange={setOptionsOpen}>
@@ -451,9 +513,8 @@ export function ProductsWorkspace() {
               Manage categories and export your catalog.
             </SheetDescription>
           </SheetHeader>
-          <SheetBody
-            className={cn("min-h-0 flex-1 overflow-y-auto", DRAWER_SHEET_CONTENT_CLASS)}
-          >
+          <SheetBody className="min-h-0 flex-1 overflow-y-auto !p-0">
+            <div className={DRAWER_SHEET_CONTENT_CLASS}>
             <div className="space-y-3">
               <Button
                 variant="outline"
@@ -489,6 +550,7 @@ export function ProductsWorkspace() {
                 Use column headers in the table to sort the current list.
               </p>
             </div>
+            </div>
           </SheetBody>
         </SheetContent>
       </Sheet>
@@ -509,9 +571,8 @@ export function ProductsWorkspace() {
               Add, reorder, or remove product categories.
             </SheetDescription>
           </SheetHeader>
-          <SheetBody
-            className={cn("min-h-0 flex-1 overflow-y-auto", DRAWER_SHEET_CONTENT_CLASS)}
-          >
+          <SheetBody className="min-h-0 flex-1 overflow-y-auto !p-0">
+            <div className={DRAWER_SHEET_CONTENT_CLASS}>
             <div className="space-y-4">
               <div className="flex gap-2">
                 <Input
@@ -585,6 +646,7 @@ export function ProductsWorkspace() {
                   </li>
                 ))}
               </ul>
+            </div>
             </div>
           </SheetBody>
         </SheetContent>
@@ -706,8 +768,7 @@ function ProductDetailBody({
       ) : null}
 
       {isVariable && detail.variants.length > 0 ? (
-        <div className="border-b border-border p-4">
-          <p className="mb-2 text-drawer-section">Variants</p>
+        <EntityDetailSection title="Variants" className="border-b border-border p-4">
           <div className="overflow-hidden rounded-lg border border-border">
             <Table>
               <TableHeader>
@@ -733,12 +794,11 @@ function ProductDetailBody({
               </TableBody>
             </Table>
           </div>
-        </div>
+        </EntityDetailSection>
       ) : null}
 
       {detail.trackInventory ? (
-        <div className="border-b border-border p-4">
-          <p className="mb-3 text-drawer-section">Inventory adjustment</p>
+        <EntityDetailSection title="Inventory adjustment" className="border-b border-border p-4">
           <div className="space-y-3 rounded-lg border border-border bg-muted/20 p-3">
             {isVariable ? (
               <div className="space-y-1">
@@ -840,12 +900,11 @@ function ProductDetailBody({
               Apply adjustment
             </Button>
           </div>
-        </div>
+        </EntityDetailSection>
       ) : null}
 
       {detail.recentAdjustments.length > 0 ? (
-        <div className="p-4">
-          <p className="mb-2 text-drawer-section">Recent adjustments</p>
+        <EntityDetailSection title="Recent adjustments" className="p-4">
           <ul className="space-y-2 rounded-lg border border-border bg-muted/20 p-3 text-xs text-muted-foreground">
             {detail.recentAdjustments.slice(0, 8).map((adj) => (
               <li key={adj.id}>
@@ -855,54 +914,36 @@ function ProductDetailBody({
               </li>
             ))}
           </ul>
-        </div>
+        </EntityDetailSection>
       ) : null}
     </>
   );
 }
 
-function ProductFormSheet({
-  open,
-  onOpenChange,
+function ProductProfileFormFields({
+  form,
+  setForm,
+  isEdit,
   productId,
+  existing,
   categories,
-  onCreate,
-  onUpdate,
-  createPending,
-  updatePending,
+  formActive,
 }: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  productId: string | null;
+  form: ProductProfileFormValues;
+  setForm: (form: ProductProfileFormValues) => void;
+  isEdit: boolean;
+  productId?: string | null;
+  existing?: ProductDetail | null;
   categories: Array<{ id: string; name: string }>;
-  onCreate: (body: Record<string, unknown>) => void;
-  onUpdate: (id: string, body: Record<string, unknown>) => void;
-  createPending: boolean;
-  updatePending: boolean;
+  formActive: boolean;
 }) {
-  const isEdit = !!productId;
-  const { data: existing } = useProductDetail(productId);
-  const [form, setForm] = useState<ProductProfileFormValues>(
-    productProfileDefaultValues,
-  );
-
-  useEffect(() => {
-    if (!open) return;
-    if (isEdit && existing) {
-      setForm(productToProfileForm(existing));
-    } else if (!isEdit) {
-      setForm(productProfileDefaultValues);
-    }
-  }, [open, isEdit, existing]);
-
   const isVariable = form.productType === "VARIABLE";
   const isBundle = form.productType === "BUNDLE";
-  const pending = createPending || updatePending;
 
   const { data: teamData, isLoading: teamLoading } = useQuery({
     queryKey: queryKeys.business.members({ limit: 100 }),
     queryFn: () => listBusinessMembers({ page: 1, limit: 100 }),
-    enabled: open && form.assignStaffToSale,
+    enabled: formActive && form.assignStaffToSale,
   });
 
   const activeTeamMembers = useMemo(
@@ -911,25 +952,314 @@ function ProductFormSheet({
     [teamData?.items],
   );
 
+  return (
+    <div className="space-y-4">
+      <FormSheetSection title="Basic info" card>
+        {!isEdit ? (
+          <div className="space-y-1.5">
+            <Label>Product type</Label>
+            <Select
+              value={form.productType}
+              onValueChange={(v) =>
+                v &&
+                setForm({
+                  ...form,
+                  productType: v as ProductType,
+                })
+              }
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="SIMPLE">Simple</SelectItem>
+                <SelectItem value="VARIABLE">Variable</SelectItem>
+                <SelectItem value="BUNDLE">Bundle</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            Type: {form.productType}
+          </p>
+        )}
+
+        <FormField
+          label="Name"
+          value={form.name}
+          onChange={(v) => setForm({ ...form, name: v })}
+          required
+        />
+
+        <div className="space-y-1.5">
+          <Label>Category</Label>
+          <Select
+            value={form.categoryId || "__none__"}
+            onValueChange={(v) =>
+              setForm({
+                ...form,
+                categoryId: v === "__none__" ? "" : v,
+              })
+            }
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select category" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__none__">None</SelectItem>
+              {categories.map((c) => (
+                <SelectItem key={c.id} value={c.id}>
+                  {c.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-1.5">
+          <Label>Description</Label>
+          <Textarea
+            rows={3}
+            value={form.description ?? ""}
+            onChange={(e) => setForm({ ...form, description: e.target.value })}
+          />
+        </div>
+      </FormSheetSection>
+
+      <FormSheetSection title="Pricing & inventory" card>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <FormField
+            label="Brand"
+            value={form.brand ?? ""}
+            onChange={(v) => setForm({ ...form, brand: v })}
+          />
+          <FormField
+            label="Unit price"
+            value={form.unitPrice ?? ""}
+            onChange={(v) => setForm({ ...form, unitPrice: v })}
+            type="number"
+          />
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <FormField
+            label="Supplier"
+            value={form.supplier ?? ""}
+            onChange={(v) => setForm({ ...form, supplier: v })}
+          />
+          <FormField
+            label="Unit label"
+            value={form.unitLabel ?? ""}
+            onChange={(v) => setForm({ ...form, unitLabel: v })}
+          />
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <FormField
+            label="Purchase cost"
+            value={form.purchaseCost ?? ""}
+            onChange={(v) => setForm({ ...form, purchaseCost: v })}
+            type="number"
+          />
+          <FormField
+            label="Desired quantity"
+            value={form.desiredQuantity ?? ""}
+            onChange={(v) => setForm({ ...form, desiredQuantity: v })}
+            type="number"
+          />
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <FormField
+            label="SKU"
+            value={form.sku ?? ""}
+            onChange={(v) => setForm({ ...form, sku: v })}
+          />
+          <FormField
+            label="Barcode"
+            value={form.barcode ?? ""}
+            onChange={(v) => setForm({ ...form, barcode: v })}
+          />
+        </div>
+
+        {!isEdit && form.productType === "SIMPLE" ? (
+          <FormField
+            label="Initial stock"
+            value={form.stockQuantity ?? ""}
+            onChange={(v) => setForm({ ...form, stockQuantity: v })}
+            type="number"
+          />
+        ) : null}
+      </FormSheetSection>
+
+      <FormSheetSection title="Sales settings" card>
+        <ToggleRow
+          label="Charge tax"
+          checked={form.chargeTax}
+          onCheckedChange={(v) => setForm({ ...form, chargeTax: v })}
+        />
+        <ToggleRow
+          label="Track inventory"
+          checked={form.trackInventory}
+          onCheckedChange={(v) => setForm({ ...form, trackInventory: v })}
+        />
+        <ToggleRow
+          label="Commission enabled"
+          checked={form.commissionEnabled}
+          onCheckedChange={(v) => setForm({ ...form, commissionEnabled: v })}
+        />
+        <ToggleRow
+          label="Assign staff to sale"
+          checked={form.assignStaffToSale}
+          onCheckedChange={(v) => setForm({ ...form, assignStaffToSale: v })}
+        />
+        {form.assignStaffToSale ? (
+          <div className="space-y-2 rounded-md border bg-muted/30 p-3">
+            <p className="text-sm text-muted-foreground">
+              Staff are not assigned on this screen. When this product is added
+              to a sale, you will choose who gets credit from your active team
+              members:
+            </p>
+            {teamLoading ? (
+              <p className="text-xs text-muted-foreground">Loading team…</p>
+            ) : activeTeamMembers.length > 0 ? (
+              <ul className="space-y-1 text-sm">
+                {activeTeamMembers.map((member) => {
+                  const name =
+                    [member.user.firstName, member.user.lastName]
+                      .filter(Boolean)
+                      .join(" ") || member.user.email;
+                  return (
+                    <li key={member.userId} className="text-foreground">
+                      {name}
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : (
+              <p className="text-sm text-warning">
+                No active team members. Add staff under Settings → Team before
+                selling this product.
+              </p>
+            )}
+          </div>
+        ) : null}
+        <ToggleRow
+          label="Consider as sales revenue"
+          checked={form.considerAsSalesRevenue}
+          onCheckedChange={(v) =>
+            setForm({ ...form, considerAsSalesRevenue: v })
+          }
+        />
+        <ToggleRow
+          label="Auto-add to new sales"
+          checked={form.autoAddToNewSales}
+          onCheckedChange={(v) => setForm({ ...form, autoAddToNewSales: v })}
+        />
+
+        {isEdit && isVariable && existing && productId ? (
+          <div className="rounded-lg border p-3">
+            <ProductOptionsEditor
+              productId={existing.id}
+              options={existing.options}
+            />
+            {existing.variants.length > 0 ? (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Variant</TableHead>
+                    <TableHead className="text-right">Price</TableHead>
+                    <TableHead className="text-right">Stock</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {existing.variants.map((v) => (
+                    <TableRow key={v.id}>
+                      <TableCell className="text-xs">
+                        {v.optionValues.map((ov) => ov.value).join(" / ") ||
+                          v.variantKey}
+                      </TableCell>
+                      <TableCell className="text-right text-xs">
+                        {v.price ? formatMoney(parseFloat(v.price)) : "—"}
+                      </TableCell>
+                      <TableCell className="text-right text-xs">
+                        {v.stockQuantity}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            ) : null}
+          </div>
+        ) : null}
+
+        {isBundle ? (
+          <p className="text-xs text-muted-foreground">
+            Bundle item configuration is available after the product is created.
+          </p>
+        ) : null}
+
+        <div className="space-y-1">
+          <Label>Status</Label>
+          <Select
+            value={form.status}
+            onValueChange={(v) =>
+              v &&
+              setForm({
+                ...form,
+                status: v as ProductProfileFormValues["status"],
+              })
+            }
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ACTIVE">Active</SelectItem>
+              <SelectItem value="ARCHIVED">Archived</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </FormSheetSection>
+    </div>
+  );
+}
+
+function ProductFormSheet({
+  open,
+  onOpenChange,
+  categories,
+  onCreate,
+  createPending,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  categories: Array<{ id: string; name: string }>;
+  onCreate: (body: Record<string, unknown>) => void;
+  createPending: boolean;
+}) {
+  const [form, setForm] = useState<ProductProfileFormValues>(
+    productProfileDefaultValues,
+  );
+
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (nextOpen) {
+      setForm(productProfileDefaultValues);
+    }
+    onOpenChange(nextOpen);
+  };
+
   const handleSubmit = () => {
     if (!form.name.trim()) return;
-    if (isEdit && productId) {
-      onUpdate(productId, profileFormToUpdateApiBody(form));
-    } else {
-      onCreate(profileFormToCreateApiBody(form));
-    }
+    onCreate(profileFormToCreateApiBody(form));
   };
 
   return (
     <FormSheet
       open={open}
-      onOpenChange={onOpenChange}
-      title={isEdit ? "Edit product" : "Add product"}
-      description={
-        isEdit
-          ? "Update product details, pricing, and inventory settings."
-          : "Create a new product for your catalog."
-      }
+      onOpenChange={handleOpenChange}
+      title="Add product"
+      description="Create a new product for your catalog."
       className={FINANCIAL_DRAWER_SHEET_CLASS}
       headerClassName={FINANCIAL_DRAWER_HEADER_CLASS}
       titleClassName={FINANCIAL_DRAWER_TITLE_CLASS}
@@ -941,301 +1271,30 @@ function ProductFormSheet({
           <ActionButton
             type="button"
             variant="outline"
-            onClick={() => onOpenChange(false)}
-            disabled={pending}
+            onClick={() => handleOpenChange(false)}
+            disabled={createPending}
             className={DRAWER_FOOTER_BUTTON_CLASS}
           >
             Cancel
           </ActionButton>
           <ActionButton
             type="button"
-            disabled={pending || !form.name.trim()}
+            disabled={createPending || !form.name.trim()}
             onClick={handleSubmit}
             className={DRAWER_FOOTER_BUTTON_CLASS}
           >
-            {isEdit ? "Save changes" : "Create product"}
+            Create product
           </ActionButton>
         </div>
       }
     >
-      <FormSheetSection title="Basic info" card>
-          {!isEdit ? (
-            <div className="space-y-1.5">
-              <Label>Product type</Label>
-              <Select
-                value={form.productType}
-                onValueChange={(v) =>
-                  v &&
-                  setForm({
-                    ...form,
-                    productType: v as ProductType,
-                  })
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="SIMPLE">Simple</SelectItem>
-                  <SelectItem value="VARIABLE">Variable</SelectItem>
-                  <SelectItem value="BUNDLE">Bundle</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          ) : (
-            <p className="text-sm text-muted-foreground">
-              Type: {form.productType}
-            </p>
-          )}
-
-          <FormField
-            label="Name"
-            value={form.name}
-            onChange={(v) => setForm({ ...form, name: v })}
-            required
-          />
-
-          <div className="space-y-1.5">
-            <Label>Category</Label>
-            <Select
-              value={form.categoryId || "__none__"}
-              onValueChange={(v) =>
-                setForm({
-                  ...form,
-                  categoryId: v === "__none__" ? "" : v,
-                })
-              }
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select category" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="__none__">None</SelectItem>
-                {categories.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>
-                    {c.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-1.5">
-            <Label>Description</Label>
-            <Textarea
-              rows={3}
-              value={form.description ?? ""}
-              onChange={(e) =>
-                setForm({ ...form, description: e.target.value })
-              }
-            />
-          </div>
-      </FormSheetSection>
-
-      <FormSheetSection title="Pricing & inventory" card>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <FormField
-              label="Brand"
-              value={form.brand ?? ""}
-              onChange={(v) => setForm({ ...form, brand: v })}
-            />
-            <FormField
-              label="Unit price"
-              value={form.unitPrice ?? ""}
-              onChange={(v) => setForm({ ...form, unitPrice: v })}
-              type="number"
-            />
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <FormField
-              label="Supplier"
-              value={form.supplier ?? ""}
-              onChange={(v) => setForm({ ...form, supplier: v })}
-            />
-            <FormField
-              label="Unit label"
-              value={form.unitLabel ?? ""}
-              onChange={(v) => setForm({ ...form, unitLabel: v })}
-            />
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <FormField
-              label="Purchase cost"
-              value={form.purchaseCost ?? ""}
-              onChange={(v) => setForm({ ...form, purchaseCost: v })}
-              type="number"
-            />
-            <FormField
-              label="Desired quantity"
-              value={form.desiredQuantity ?? ""}
-              onChange={(v) => setForm({ ...form, desiredQuantity: v })}
-              type="number"
-            />
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <FormField
-              label="SKU"
-              value={form.sku ?? ""}
-              onChange={(v) => setForm({ ...form, sku: v })}
-            />
-            <FormField
-              label="Barcode"
-              value={form.barcode ?? ""}
-              onChange={(v) => setForm({ ...form, barcode: v })}
-            />
-          </div>
-
-          {!isEdit && form.productType === "SIMPLE" ? (
-            <FormField
-              label="Initial stock"
-              value={form.stockQuantity ?? ""}
-              onChange={(v) => setForm({ ...form, stockQuantity: v })}
-              type="number"
-            />
-          ) : null}
-      </FormSheetSection>
-
-      <FormSheetSection title="Sales settings" card>
-          <ToggleRow
-            label="Charge tax"
-            checked={form.chargeTax}
-            onCheckedChange={(v) => setForm({ ...form, chargeTax: v })}
-          />
-          <ToggleRow
-            label="Track inventory"
-            checked={form.trackInventory}
-            onCheckedChange={(v) => setForm({ ...form, trackInventory: v })}
-          />
-          <ToggleRow
-            label="Commission enabled"
-            checked={form.commissionEnabled}
-            onCheckedChange={(v) =>
-              setForm({ ...form, commissionEnabled: v })
-            }
-          />
-          <ToggleRow
-            label="Assign staff to sale"
-            checked={form.assignStaffToSale}
-            onCheckedChange={(v) =>
-              setForm({ ...form, assignStaffToSale: v })
-            }
-          />
-          {form.assignStaffToSale ? (
-            <div className="space-y-2 rounded-md border bg-muted/30 p-3">
-              <p className="text-sm text-muted-foreground">
-                Staff are not assigned on this screen. When this product is
-                added to a sale, you will choose who gets credit from your
-                active team members:
-              </p>
-              {teamLoading ? (
-                <p className="text-xs text-muted-foreground">Loading team…</p>
-              ) : activeTeamMembers.length > 0 ? (
-                <ul className="space-y-1 text-sm">
-                  {activeTeamMembers.map((member) => {
-                    const name =
-                      [member.user.firstName, member.user.lastName]
-                        .filter(Boolean)
-                        .join(" ") || member.user.email;
-                    return (
-                      <li key={member.userId} className="text-foreground">
-                        {name}
-                      </li>
-                    );
-                  })}
-                </ul>
-              ) : (
-                <p className="text-sm text-warning">
-                  No active team members. Add staff under Settings → Team before
-                  selling this product.
-                </p>
-              )}
-            </div>
-          ) : null}
-          <ToggleRow
-            label="Consider as sales revenue"
-            checked={form.considerAsSalesRevenue}
-            onCheckedChange={(v) =>
-              setForm({ ...form, considerAsSalesRevenue: v })
-            }
-          />
-          <ToggleRow
-            label="Auto-add to new sales"
-            checked={form.autoAddToNewSales}
-            onCheckedChange={(v) =>
-              setForm({ ...form, autoAddToNewSales: v })
-            }
-          />
-
-          {isEdit && isVariable && existing ? (
-            <div className="rounded-lg border p-3">
-              <ProductOptionsEditor
-                productId={existing.id}
-                options={existing.options}
-              />
-              {existing.variants.length > 0 ? (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Variant</TableHead>
-                      <TableHead className="text-right">Price</TableHead>
-                      <TableHead className="text-right">Stock</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {existing.variants.map((v) => (
-                      <TableRow key={v.id}>
-                        <TableCell className="text-xs">
-                          {v.optionValues.map((ov) => ov.value).join(" / ") ||
-                            v.variantKey}
-                        </TableCell>
-                        <TableCell className="text-right text-xs">
-                          {v.price
-                            ? formatMoney(parseFloat(v.price))
-                            : "—"}
-                        </TableCell>
-                        <TableCell className="text-right text-xs">
-                          {v.stockQuantity}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              ) : null}
-            </div>
-          ) : null}
-
-          {isBundle ? (
-            <p className="text-xs text-muted-foreground">
-              Bundle item configuration is available after the product is
-              created.
-            </p>
-          ) : null}
-
-          <div className="space-y-1">
-            <Label>Status</Label>
-            <Select
-              value={form.status}
-              onValueChange={(v) =>
-                v &&
-                setForm({
-                  ...form,
-                  status: v as ProductProfileFormValues["status"],
-                })
-              }
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ACTIVE">Active</SelectItem>
-                <SelectItem value="ARCHIVED">Archived</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-      </FormSheetSection>
+      <ProductProfileFormFields
+        form={form}
+        setForm={setForm}
+        isEdit={false}
+        categories={categories}
+        formActive={open}
+      />
     </FormSheet>
   );
 }

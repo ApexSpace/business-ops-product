@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { ApiErrorState } from "@/components/data-display/api-error-state";
 import { DataTable } from "@/components/data-display/data-table";
 import { EntityDetailDrawer } from "@/components/layout/entity-detail-drawer";
+import { EntityDetailFooter } from "@/components/layout/entity-detail-footer";
 import { EntityWorkspaceLayout } from "@/components/layout/entity-workspace-layout";
 import { SearchInput } from "@/components/forms/search-input";
 import { Button } from "@/components/ui/button";
@@ -63,7 +64,7 @@ export function GiftCardsWorkspace() {
 
   const [search, setSearch] = useState("");
   const [addOpen, setAddOpen] = useState(false);
-  const [editNotes, setEditNotes] = useState(false);
+  const [drawerMode, setDrawerMode] = useState<"view" | "edit">("view");
   const [notesDraft, setNotesDraft] = useState("");
 
   const [newNumber, setNewNumber] = useState("");
@@ -128,7 +129,7 @@ export function GiftCardsWorkspace() {
       updateGiftCard(id, { notes }),
     onSuccess: async () => {
       toast.success("Gift card updated");
-      setEditNotes(false);
+      setDrawerMode("view");
       await invalidateGiftCards(queryClient);
     },
     onError: (err: Error) => toast.error(err.message),
@@ -244,8 +245,8 @@ export function GiftCardsWorkspace() {
     onRetry: () => void detailQuery.refetch(),
     onEditNotes: () => {
       if (!detail) return;
-      setEditNotes(true);
       setNotesDraft(detail.notes ?? "");
+      setDrawerMode("edit");
     },
     onSend: () => {
       if (!selectedId) return;
@@ -310,7 +311,10 @@ export function GiftCardsWorkspace() {
             isLoading={listQuery.isLoading}
             density="compact"
             activeRowId={selectedId}
-            onRowClick={(card) => setSelectedId(card.id)}
+            onRowClick={(card) => {
+              setDrawerMode("view");
+              setSelectedId(card.id);
+            }}
             getRowClassName={(card) =>
               selectedId === card.id ? WORKSPACE_ACTIVE_ROW_CLASS : undefined
             }
@@ -330,44 +334,92 @@ export function GiftCardsWorkspace() {
       <EntityDetailDrawer
         open={isOpen}
         onOpenChange={(open) => {
-          if (!open) clearSelection();
+          if (!open) {
+            clearSelection();
+            setDrawerMode("view");
+          }
         }}
-        title={detail ? `#${detail.number}` : "Gift card"}
-        subtitle={detail?.ownerContact.name}
+        width="standard"
+        title={
+          drawerMode === "edit"
+            ? "Edit gift card"
+            : detail
+              ? `#${detail.number}`
+              : "Gift card"
+        }
+        subtitle={drawerMode === "edit" ? undefined : detail?.ownerContact.name}
         isLoading={detailQuery.isLoading}
         badges={
-          detail ? <GiftCardStatusBadge status={detail.status} /> : null
+          drawerMode === "view" && detail ? (
+            <GiftCardStatusBadge status={detail.status} />
+          ) : null
         }
         headerActions={
           detail ? (
-            <Button variant="outline" size="sm" onClick={detailPanelProps.onEditNotes}>
-              <Pencil className="mr-1 size-3.5" />
-              Edit
-            </Button>
+            drawerMode === "view" ? (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={detailPanelProps.onEditNotes}
+              >
+                <Pencil className="mr-1 size-3.5" />
+                Edit
+              </Button>
+            ) : (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setDrawerMode("view")}
+              >
+                Cancel
+              </Button>
+            )
           ) : null
         }
         footer={
           detail ? (
-            <div className="flex w-full flex-col gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full"
-                disabled={detail.status !== "ACTIVE" || sendMutation.isPending}
-                onClick={detailPanelProps.onSend}
-              >
-                Send digital gift card
-              </Button>
-              <Button
-                variant="destructive"
-                size="sm"
-                className="w-full"
-                disabled={detail.status === "VOIDED" || voidMutation.isPending}
-                onClick={detailPanelProps.onVoid}
-              >
-                Void gift card
-              </Button>
-            </div>
+            drawerMode === "edit" ? (
+              <EntityDetailFooter>
+                <Button
+                  variant="outline"
+                  className="min-h-[2.75rem] w-full sm:w-auto sm:min-w-[10rem]"
+                  disabled={updateMutation.isPending}
+                  onClick={() => setDrawerMode("view")}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  className="min-h-[2.75rem] w-full sm:w-auto sm:min-w-[10rem]"
+                  disabled={updateMutation.isPending}
+                  onClick={() =>
+                    updateMutation.mutate({ id: detail.id, notes: notesDraft })
+                  }
+                >
+                  {updateMutation.isPending ? "Saving…" : "Save changes"}
+                </Button>
+              </EntityDetailFooter>
+            ) : (
+              <EntityDetailFooter className="flex-col sm:flex-row">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full sm:w-auto"
+                  disabled={detail.status !== "ACTIVE" || sendMutation.isPending}
+                  onClick={detailPanelProps.onSend}
+                >
+                  Send digital gift card
+                </Button>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  className="w-full sm:w-auto"
+                  disabled={detail.status === "VOIDED" || voidMutation.isPending}
+                  onClick={detailPanelProps.onVoid}
+                >
+                  Void gift card
+                </Button>
+              </EntityDetailFooter>
+            )
           ) : null
         }
       >
@@ -375,6 +427,9 @@ export function GiftCardsWorkspace() {
           <GiftCardDetailPanel
             {...detailPanelProps}
             embedded
+            editing={drawerMode === "edit"}
+            notesDraft={notesDraft}
+            onNotesDraftChange={setNotesDraft}
           />
         ) : null}
       </EntityDetailDrawer>
@@ -452,32 +507,6 @@ export function GiftCardsWorkspace() {
               }
             >
               Create Gift Card
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={editNotes} onOpenChange={setEditNotes}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit gift card</DialogTitle>
-          </DialogHeader>
-          <Textarea
-            value={notesDraft}
-            onChange={(e) => setNotesDraft(e.target.value)}
-          />
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setEditNotes(false)}>
-              Cancel
-            </Button>
-            <Button
-              disabled={updateMutation.isPending}
-              onClick={() =>
-                detail &&
-                updateMutation.mutate({ id: detail.id, notes: notesDraft })
-              }
-            >
-              Save
             </Button>
           </DialogFooter>
         </DialogContent>

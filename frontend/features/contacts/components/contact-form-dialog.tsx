@@ -16,6 +16,7 @@ import {
   DRAWER_SHEET_FOOTER_CLASS,
   DRAWER_SHEET_HEADER_CLASS,
   DRAWER_SHEET_TITLE_CLASS,
+  DRAWER_SHEET_WIDE_CLASS,
 } from "@/components/forms/drawer-sheet";
 import { queryKeys } from "@/lib/query/keys";
 import { FormSheet } from "@/components/forms/form-sheet";
@@ -108,7 +109,7 @@ export function ContactFormDialog({
           ? "Update contact details and profile information."
           : "Add a new contact to your workspace."
       }
-      className={DRAWER_SHEET_CLASS}
+      className={isEdit ? DRAWER_SHEET_WIDE_CLASS : DRAWER_SHEET_CLASS}
       headerClassName={DRAWER_SHEET_HEADER_CLASS}
       titleClassName={DRAWER_SHEET_TITLE_CLASS}
       descriptionClassName={DRAWER_SHEET_DESCRIPTION_CLASS}

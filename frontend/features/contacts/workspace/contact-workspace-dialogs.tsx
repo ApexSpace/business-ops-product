@@ -72,6 +72,10 @@ interface ContactWorkspaceDialogsProps {
   lockedContact: { id: string; label: string };
   onContactDeleted: () => void;
   onContactEditSuccess: () => void;
+  /** Drawer embed: create notes inline instead of NoteFormDialog. */
+  useInlineNoteCreate?: boolean;
+  /** Edit profile in the detail panel instead of ContactFormDialog. */
+  useInlineContactEdit?: boolean;
 }
 
 export function ContactWorkspaceDialogs({
@@ -80,6 +84,8 @@ export function ContactWorkspaceDialogs({
   lockedContact,
   onContactDeleted,
   onContactEditSuccess,
+  useInlineNoteCreate = false,
+  useInlineContactEdit = false,
 }: ContactWorkspaceDialogsProps) {
   const {
     business,
@@ -128,12 +134,14 @@ export function ContactWorkspaceDialogs({
 
   return (
     <>
-      <ContactFormDialog
-        open={editOpen}
-        onOpenChange={setEditOpen}
-        contact={contact}
-        onSuccess={onContactEditSuccess}
-      />
+      {!useInlineContactEdit ? (
+        <ContactFormDialog
+          open={editOpen}
+          onOpenChange={setEditOpen}
+          contact={contact}
+          onSuccess={onContactEditSuccess}
+        />
+      ) : null}
 
       <CreateLeadDialog
         open={createLeadOpen}
@@ -172,7 +180,7 @@ export function ContactWorkspaceDialogs({
       />
 
       <NoteFormDialog
-        open={createNoteOpen || !!editingNote}
+        open={(!useInlineNoteCreate && createNoteOpen) || !!editingNote}
         onOpenChange={(open) => {
           if (!open) {
             setCreateNoteOpen(false);

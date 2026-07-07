@@ -18,12 +18,28 @@ export const WORKSPACE_TABLE_CARD_CLASS =
 export const ENTITY_DRAWER_WIDTH_DEFAULT =
   "[--sheet-width:min(92vw,480px)]";
 
+export const ENTITY_DRAWER_WIDTH_STANDARD =
+  "[--sheet-width:min(92vw,560px)]";
+
 export const ENTITY_DRAWER_WIDTH_WIDE = "[--sheet-width:min(92vw,640px)]";
 
-export const ENTITY_DRAWER_HEADER_CLASS =
-  "shrink-0 border-b border-border/70 px-6 py-5 pr-14";
+/** Two-column entity drawers (e.g. contacts profile + records). */
+export const ENTITY_DRAWER_WIDTH_SPLIT = "[--sheet-width:min(94vw,900px)]";
 
-export const ENTITY_DRAWER_BODY_CLASS = "min-h-0 flex-1 overflow-y-auto px-6 py-5";
+export const ENTITY_DRAWER_TOOLBAR_CLASS =
+  "shrink-0 border-b border-border/70 bg-background px-6 py-3";
+
+export const ENTITY_DRAWER_SUMMARY_CLASS =
+  "shrink-0 border-b border-border/70 bg-background px-6 py-3";
+
+export const ENTITY_DRAWER_HEADER_CLASS =
+  "shrink-0 border-b border-border/70 px-6 py-4 pr-14";
+
+/** Inner inset for drawer body content — matches header/footer horizontal rhythm. */
+export const ENTITY_DRAWER_CONTENT_INSET_CLASS = "px-6 py-5";
+
+/** Scrollable drawer body shell (padding on inner content wrapper). */
+export const ENTITY_DRAWER_BODY_CLASS = "min-h-0 flex-1 overflow-y-auto";
 
 export const ENTITY_DRAWER_FOOTER_CLASS =
   "shrink-0 border-t border-border/70 bg-background px-6 py-4";
@@ -32,5 +48,25 @@ export const ENTITY_DRAWER_FOOTER_CLASS =
 export const WORKSPACE_CSS_VARS = {
   "--workspace-toolbar-height": "3rem",
   "--drawer-width-default": "480px",
+  "--drawer-width-standard": "560px",
   "--drawer-width-wide": "640px",
+  "--drawer-width-split": "900px",
+  "--entity-drawer-toolbar-z": "10",
 } as const;
+
+export type EntityDrawerWidthTier = "compact" | "standard" | "wide" | "split";
+
+export function entityDrawerWidthClass(
+  width: EntityDrawerWidthTier = "compact",
+): string {
+  switch (width) {
+    case "split":
+      return ENTITY_DRAWER_WIDTH_SPLIT;
+    case "wide":
+      return ENTITY_DRAWER_WIDTH_WIDE;
+    case "standard":
+      return ENTITY_DRAWER_WIDTH_STANDARD;
+    default:
+      return ENTITY_DRAWER_WIDTH_DEFAULT;
+  }
+}

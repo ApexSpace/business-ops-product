@@ -15,6 +15,7 @@ import { DateTime } from "luxon";
 import { ApiErrorState } from "@/components/data-display/api-error-state";
 import { DataTable } from "@/components/data-display/data-table";
 import { EntityDetailDrawer } from "@/components/layout/entity-detail-drawer";
+import { EntityDetailFooter } from "@/components/layout/entity-detail-footer";
 import { EntityWorkspaceLayout } from "@/components/layout/entity-workspace-layout";
 import { SearchInput } from "@/components/forms/search-input";
 import { SearchableSelect } from "@/components/forms/searchable-select";
@@ -349,6 +350,7 @@ export function MembershipsWorkspace() {
         onOpenChange={(open) => {
           if (!open) clearSelection();
         }}
+        width="standard"
         title={detail ? membershipPlanLabel(detail) : "Membership"}
         subtitle={detail?.contact.name}
         isLoading={detailQuery.isLoading}
@@ -357,12 +359,12 @@ export function MembershipsWorkspace() {
         }
         footer={
           detail ? (
-            <div className="flex w-full flex-col gap-2">
+            <EntityDetailFooter className="flex-col sm:flex-row">
               {detail.status === "ACTIVE" ? (
                 <Button
                   variant="outline"
                   size="sm"
-                  className="w-full"
+                  className="w-full sm:w-auto"
                   disabled={actionMutation.isPending}
                   onClick={detailPanelProps.onPause}
                 >
@@ -373,7 +375,7 @@ export function MembershipsWorkspace() {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="w-full"
+                  className="w-full sm:w-auto"
                   disabled={actionMutation.isPending}
                   onClick={detailPanelProps.onResume}
                 >
@@ -384,14 +386,14 @@ export function MembershipsWorkspace() {
                 <Button
                   variant="destructive"
                   size="sm"
-                  className="w-full"
+                  className="w-full sm:w-auto"
                   disabled={actionMutation.isPending}
                   onClick={detailPanelProps.onCancel}
                 >
                   Cancel membership
                 </Button>
               ) : null}
-            </div>
+            </EntityDetailFooter>
           ) : null
         }
       >
