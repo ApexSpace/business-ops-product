@@ -14,6 +14,20 @@ interface SidebarSectionProps {
 }
 
 export function SidebarSection({ section }: SidebarSectionProps) {
+  if (section.hideLabel) {
+    return (
+      <SidebarGroup className="px-3 py-1 group-data-[collapsible=icon]:px-2">
+        <SidebarGroupContent>
+          <SidebarMenu className="gap-0.5">
+            {section.items.map((item) => (
+              <SidebarNavItem key={item.href} item={item} />
+            ))}
+          </SidebarMenu>
+        </SidebarGroupContent>
+      </SidebarGroup>
+    );
+  }
+
   return (
     <SidebarGroup className="px-3 py-1 group-data-[collapsible=icon]:px-2">
       <SidebarGroupLabel className="mb-1 h-6 px-3 text-[10.5px] font-semibold tracking-[0.08em] text-[#98a1b5] uppercase group-data-[collapsible=icon]:px-1">

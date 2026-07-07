@@ -8,7 +8,10 @@ import {
 } from "@/lib/capabilities/route-capability-map";
 import { resolveSnapshotIcon } from "./icon-registry";
 import { isKnownSnapshotRoute } from "./route-registry";
-import { groupShellNavItemsIntoSections } from "@/lib/config/navigation/group-shell-nav-sections";
+import {
+  groupShellNavItemsIntoSections,
+  resolveAppsNavItems,
+} from "@/lib/config/navigation/group-shell-nav-sections";
 
 export type TerminologyResolver = (key: string, fallback: string) => string;
 
@@ -18,6 +21,11 @@ export interface ResolveSnapshotNavigationOptions {
   businessRole?: BusinessMemberRole;
   isPlatformAdmin?: boolean;
   hasModule?: (moduleKey: string) => boolean;
+}
+
+export interface SnapshotNavigationResult {
+  sections: ShellNavSection[];
+  appsItems: ShellNavItem[];
 }
 
 function canAccessNavItem(
@@ -49,9 +57,9 @@ function canAccessByCapability(
   return hasModule(entry.moduleKey);
 }
 
-export function resolveSnapshotNavigation(
+function resolveNavItems(
   options: ResolveSnapshotNavigationOptions,
-): ShellNavSection[] {
+): ShellNavItem[] {
   const {
     navigation,
     resolveLabel,
@@ -60,7 +68,7 @@ export function resolveSnapshotNavigation(
     hasModule,
   } = options;
 
-  const items: ShellNavItem[] = navigation
+  return navigation
     .filter((item) => item.visible !== false)
     .filter((item) => isKnownSnapshotRoute(item.route))
     .filter((item) =>
@@ -76,6 +84,21 @@ export function resolveSnapshotNavigation(
       icon: resolveSnapshotIcon(item.icon),
       navKey: item.key,
     }));
+}
 
-  return groupShellNavItemsIntoSections(items);
+export function resolveSnapshotNavigation(
+  options: ResolveSnapshotNavigationOptions,
+): SnapshotNavigationResult {
+  const items = resolveNavItems(options);
+  return {
+    sections: groupShellNavItemsIntoSections(items),
+    appsItems: resolveAppsNavItems(items),
+  };
+}
+
+/** @deprecated Use resolveSnapshotNavigation which returns appsItems separately */
+export function resolveSnapshotNavigationSections(
+  options: ResolveSnapshotNavigationOptions,
+): ShellNavSection[] {
+  return resolveSnapshotNavigation(options).sections;
 }

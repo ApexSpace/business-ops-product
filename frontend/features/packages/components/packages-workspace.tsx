@@ -3,14 +3,15 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Boxes, LayoutTemplate, Plus, Settings } from "lucide-react";
+import { LayoutTemplate, Plus, Settings } from "lucide-react";
 import { toast } from "sonner";
 import { DateTime } from "luxon";
 import { ApiErrorState } from "@/components/data-display/api-error-state";
 import { DataTable } from "@/components/data-display/data-table";
-import { EmptyState } from "@/components/data-display/empty-state";
+import { EntityDetailDrawer } from "@/components/layout/entity-detail-drawer";
+import { EntityWorkspaceLayout } from "@/components/layout/entity-workspace-layout";
+import { SearchInput } from "@/components/forms/search-input";
 import { SearchableSelect } from "@/components/forms/searchable-select";
-import { ListToolbar } from "@/components/layout/list-toolbar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -24,11 +25,10 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  Sheet,
-  SheetBody,
-  SheetContent,
-} from "@/components/ui/sheet";
-import { useIsMobile } from "@/lib/hooks/use-mobile";
+  WORKSPACE_ACTIVE_ROW_CLASS,
+  WORKSPACE_TABLE_CLASS,
+} from "@/lib/design/workspace-tokens";
+import { useEntitySelection } from "@/lib/routing/use-entity-selection";
 import { queryKeys } from "@/lib/query/keys";
 import { invalidatePackages } from "@/lib/query/invalidation";
 import { listContacts } from "@/features/contacts/api/contacts.api";
@@ -56,19 +56,25 @@ export function PackagesWorkspace() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
-  const isMobile = useIsMobile();
+  const {
+    selectedId,
+    isOpen,
+    setSelectedId,
+    clearSelection,
+  } = useEntitySelection({ legacyIdParams: ["selected"] });
 
-  const selectedId = searchParams.get("selected");
   const contactFilter = searchParams.get("contact");
   const [search, setSearch] = useState("");
-  const [addOpen, setAddOpen] = useState(false);
+  const [addOpen, setAddOpen] = useState(() => !!contactFilter);
   const [transferOpen, setTransferOpen] = useState(false);
   const [adjustMode, setAdjustMode] = useState(false);
   const [allocationDraft, setAllocationDraft] = useState<
     Record<string, number>
   >({});
 
-  const [contactId, setContactId] = useState<string | null>(contactFilter);
+  const [contactId, setContactId] = useState<string | null>(
+    () => contactFilter,
+  );
   const [templateId, setTemplateId] = useState<string | null>(null);
   const [purchaseDate, setPurchaseDate] = useState(
     new Date().toISOString().slice(0, 10),
@@ -79,25 +85,11 @@ export function PackagesWorkspace() {
   );
   const [expirationDraft, setExpirationDraft] = useState("");
 
-  const setSelectedId = (id: string | null) => {
-    const params = new URLSearchParams(searchParams.toString());
-    if (id) {
-      params.set("selected", id);
-    } else {
-      params.delete("selected");
-    }
-    const qs = params.toString();
-    router.replace(qs ? `/business/packages?${qs}` : "/business/packages", {
-      scroll: false,
-    });
-  };
-
   useEffect(() => {
-    if (contactFilter) {
-      setContactId(contactFilter);
-      setAddOpen(true);
+    if (contactFilter && selectedId === contactFilter) {
+      clearSelection();
     }
-  }, [contactFilter]);
+  }, [contactFilter, selectedId, clearSelection]);
 
   const listQuery = useQuery({
     queryKey: queryKeys.packages.clientList({ search }),
@@ -105,13 +97,6 @@ export function PackagesWorkspace() {
   });
 
   const packages = listQuery.data ?? [];
-
-  useEffect(() => {
-    if (!selectedId && packages.length > 0 && !isMobile) {
-      setSelectedId(packages[0]!.id);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- only auto-select on first load
-  }, [packages, selectedId, isMobile]);
 
   const detailQuery = useQuery({
     queryKey: queryKeys.packages.clientDetail(selectedId ?? ""),
@@ -168,7 +153,7 @@ export function PackagesWorkspace() {
     mutationFn: deleteClientPackage,
     onSuccess: async () => {
       toast.success("Package deleted");
-      setSelectedId(null);
+      clearSelection();
       await invalidatePackages(queryClient);
     },
     onError: (e: Error) => toast.error(e.message),
@@ -334,156 +319,116 @@ export function PackagesWorkspace() {
   };
 
   return (
-    <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
-      <div className="grid min-h-0 flex-1 gap-4 overflow-hidden px-[var(--page-padding-x)] pb-[var(--page-padding-y)] pt-[var(--page-content-top-gap)] lg:grid-cols-[minmax(0,1fr)_minmax(280px,380px)] lg:grid-rows-1">
-        <section className="flex min-h-0 flex-col overflow-hidden rounded-xl border border-border bg-card shadow-elevation-xs">
-          <ListToolbar
-            className="rounded-none border-0 border-b bg-transparent p-3 shadow-none sm:px-4"
-            search={
-              <Input
-                placeholder="Search by name or client…"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="min-w-0 flex-1 sm:max-w-md"
-              />
-            }
-            actions={
-              <>
-                <Button
-                  variant="outline"
-                  size="icon-sm"
-                  className="sm:hidden"
-                  aria-label="Package setup"
-                  onClick={() => router.push("/business/packages/setup")}
-                >
-                  <LayoutTemplate className="size-4" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="hidden shrink-0 sm:inline-flex"
-                  onClick={() => router.push("/business/packages/setup")}
-                >
-                  <LayoutTemplate className="mr-1.5 size-4" />
-                  Package setup
-                </Button>
-                <Button
-                  variant="outline"
-                  size="icon-sm"
-                  className="sm:hidden"
-                  aria-label="Settings"
-                  onClick={() => router.push("/business/packages/settings")}
-                >
-                  <Settings className="size-4" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="hidden shrink-0 sm:inline-flex"
-                  onClick={() => router.push("/business/packages/settings")}
-                >
-                  <Settings className="mr-1.5 size-4" />
-                  Settings
-                </Button>
-                <Button
-                  size="icon-sm"
-                  className="sm:hidden"
-                  aria-label="Add package"
-                  onClick={() => setAddOpen(true)}
-                >
-                  <Plus className="size-4" />
-                </Button>
-                <Button
-                  size="sm"
-                  className="hidden shrink-0 sm:inline-flex"
-                  onClick={() => setAddOpen(true)}
-                >
-                  <Plus className="mr-1.5 size-4" />
-                  Add package
-                </Button>
-              </>
-            }
+    <>
+      <EntityWorkspaceLayout
+        title="Packages"
+        description="Assign prepaid service packages to clients."
+        search={
+          <SearchInput
+            value={search}
+            onChange={setSearch}
+            placeholder="Search by name or client…"
+            className="min-w-0 flex-1 sm:max-w-md"
           />
-
-          {listQuery.isError ? (
-            <ApiErrorState
-              error={listQuery.error}
-              onRetry={() => void listQuery.refetch()}
-            />
-          ) : listQuery.isLoading ? (
-            <p className="p-6 text-sm text-muted-foreground">
-              Loading packages…
-            </p>
-          ) : packages.length === 0 ? (
-            <div className="flex flex-1 items-center justify-center p-8">
-              <EmptyState
-                icon={
-                  <Boxes className="size-5 text-muted-foreground/70" aria-hidden />
-                }
-                title="No client packages yet"
-                description="Add a package to assign prepaid services to a client."
-                action={
-                  <Button size="sm" onClick={() => setAddOpen(true)}>
-                    <Plus className="mr-1.5 size-4" />
-                    Add package
-                  </Button>
-                }
-              />
-            </div>
-          ) : (
-            <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-              <div className="min-h-0 flex-1 overflow-y-auto">
-                <DataTable
-                  columns={columns}
-                  data={packages}
-                  getRowId={(row) => row.id}
-                  activeRowId={selectedId}
-                  onRowClick={(row) => setSelectedId(row.id)}
-                  getRowClassName={(row) =>
-                    selectedId === row.id
-                      ? "shadow-[inset_3px_0_0_0_var(--color-primary)]"
-                      : undefined
-                  }
-                  className="rounded-none border-0 shadow-none"
-                />
-              </div>
-              <div className="shrink-0 border-t border-border px-4 py-3 text-sm text-muted-foreground">
-                {packages.length} package{packages.length === 1 ? "" : "s"}
-              </div>
-            </div>
-          )}
-        </section>
-
-        {!isMobile ? (
-          <PackageDetailPanel
-            {...detailPanelProps}
-            className="min-h-0 max-lg:hidden"
+        }
+        actions={
+          <>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => router.push("/business/packages/setup")}
+            >
+              <LayoutTemplate className="mr-1.5 size-4" />
+              Package setup
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => router.push("/business/packages/settings")}
+            >
+              <Settings className="mr-1.5 size-4" />
+              Settings
+            </Button>
+            <Button size="sm" onClick={() => setAddOpen(true)}>
+              <Plus className="mr-1.5 size-4" />
+              Add package
+            </Button>
+          </>
+        }
+        footer={
+          packages.length > 0
+            ? `${packages.length} package${packages.length === 1 ? "" : "s"}`
+            : undefined
+        }
+      >
+        {listQuery.isError ? (
+          <ApiErrorState
+            error={listQuery.error}
+            onRetry={() => void listQuery.refetch()}
           />
+        ) : (
+          <DataTable
+            columns={columns}
+            data={packages}
+            getRowId={(row) => row.id}
+            isLoading={listQuery.isLoading}
+            density="compact"
+            activeRowId={selectedId}
+            onRowClick={(row) => setSelectedId(row.id)}
+            getRowClassName={(row) =>
+              selectedId === row.id ? WORKSPACE_ACTIVE_ROW_CLASS : undefined
+            }
+            emptyTitle="No client packages yet"
+            emptyDescription="Add a package to assign prepaid services to a client."
+            emptyAction={
+              <Button size="sm" onClick={() => setAddOpen(true)}>
+                <Plus className="mr-1.5 size-4" />
+                Add package
+              </Button>
+            }
+            className={WORKSPACE_TABLE_CLASS}
+          />
+        )}
+      </EntityWorkspaceLayout>
+
+      <EntityDetailDrawer
+        open={isOpen}
+        onOpenChange={(open) => {
+          if (!open) clearSelection();
+        }}
+        title={detail ? packageDisplayName(detail) : "Package"}
+        subtitle={detail?.contact.name}
+        isLoading={detailQuery.isLoading}
+        badges={
+          detail?.isDemo ? <Badge variant="secondary">Demo</Badge> : null
+        }
+        overflowActions={
+          detail
+            ? [
+                {
+                  id: "transfer",
+                  label: "Transfer",
+                  onSelect: detailPanelProps.onTransfer,
+                },
+                {
+                  id: "adjust",
+                  label: "Adjust quantities",
+                  onSelect: detailPanelProps.onStartAdjust,
+                },
+                {
+                  id: "delete",
+                  label: "Delete",
+                  destructive: true,
+                  onSelect: detailPanelProps.onDelete,
+                },
+              ]
+            : undefined
+        }
+      >
+        {selectedId && detail ? (
+          <PackageDetailPanel {...detailPanelProps} embedded />
         ) : null}
-      </div>
-
-      {isMobile ? (
-        <Sheet
-          open={!!selectedId}
-          onOpenChange={(open) => {
-            if (!open) setSelectedId(null);
-          }}
-        >
-          <SheetContent
-            side="right"
-            className="flex h-[100dvh] max-h-[100dvh] w-full max-w-none flex-col border-l-0 bg-background p-0 shadow-none"
-            showCloseButton
-          >
-            <SheetBody className="flex min-h-0 flex-1 flex-col overflow-hidden p-0">
-              <PackageDetailPanel
-                {...detailPanelProps}
-                variant="drawer"
-                className="min-h-0 flex-1 rounded-none border-0 shadow-none"
-              />
-            </SheetBody>
-          </SheetContent>
-        </Sheet>
-      ) : null}
+      </EntityDetailDrawer>
 
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
         <DialogContent>
@@ -582,6 +527,6 @@ export function PackagesWorkspace() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </>
   );
 }

@@ -12,6 +12,8 @@ import { WeekCalendarView } from "@/features/appointments/components/calendar/we
 import { ConfirmDeleteDialog } from "@/components/forms/confirm-delete-dialog";
 import { ListPageSkeleton } from "@/components/layout/list-page";
 import { useAppointmentsCreateAction } from "@/features/appointments/hooks/use-appointments-create-action";
+import { WORKSPACE_TABLE_CARD_CLASS } from "@/lib/design/workspace-tokens";
+import { cn } from "@/lib/utils";
 import { useAppointmentsCalendarPage } from "@/features/appointments/hooks/use-appointments-calendar-page";
 
 export function AppointmentsCalendarPage() {
@@ -29,7 +31,7 @@ function AppointmentsCalendarPageContent() {
 
   return (
     <div className="space-y-[var(--page-stack-gap)]">
-      <div className="overflow-hidden rounded-xl border border-border bg-card p-3 shadow-elevation-xs sm:p-4">
+      <div className={cn(WORKSPACE_TABLE_CARD_CLASS, "p-3 sm:p-4")}>
         <CalendarToolbar
           view={cal.view}
           onViewChange={cal.handleViewChange}

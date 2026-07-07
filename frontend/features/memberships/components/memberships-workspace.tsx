@@ -1,10 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  Crown,
   Download,
   LayoutTemplate,
   Plus,
@@ -15,9 +14,10 @@ import { toast } from "sonner";
 import { DateTime } from "luxon";
 import { ApiErrorState } from "@/components/data-display/api-error-state";
 import { DataTable } from "@/components/data-display/data-table";
-import { EmptyState } from "@/components/data-display/empty-state";
+import { EntityDetailDrawer } from "@/components/layout/entity-detail-drawer";
+import { EntityWorkspaceLayout } from "@/components/layout/entity-workspace-layout";
+import { SearchInput } from "@/components/forms/search-input";
 import { SearchableSelect } from "@/components/forms/searchable-select";
-import { ListToolbar } from "@/components/layout/list-toolbar";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -26,7 +26,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -35,13 +34,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Sheet,
-  SheetBody,
-  SheetContent,
-} from "@/components/ui/sheet";
 import { Switch } from "@/components/ui/switch";
-import { useIsMobile } from "@/lib/hooks/use-mobile";
+import {
+  WORKSPACE_ACTIVE_ROW_CLASS,
+  WORKSPACE_TABLE_CLASS,
+} from "@/lib/design/workspace-tokens";
+import { useEntitySelection } from "@/lib/routing/use-entity-selection";
 import { queryKeys } from "@/lib/query/keys";
 import { invalidateMemberships } from "@/lib/query/invalidation";
 import { listContacts } from "@/features/contacts/api/contacts.api";
@@ -70,11 +68,14 @@ function formatListDate(value: string) {
 
 export function MembershipsWorkspace() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const queryClient = useQueryClient();
-  const isMobile = useIsMobile();
+  const {
+    selectedId,
+    isOpen,
+    setSelectedId,
+    clearSelection,
+  } = useEntitySelection({ legacyIdParams: ["selected"] });
 
-  const selectedId = searchParams.get("selected");
   const [search, setSearch] = useState("");
   const [addOpen, setAddOpen] = useState(false);
   const [optionsOpen, setOptionsOpen] = useState(false);
@@ -94,33 +95,12 @@ export function MembershipsWorkspace() {
     ...(showOlderUnpaid ? { showOlderUnpaid: true } : {}),
   };
 
-  const setSelectedId = (id: string | null) => {
-    const params = new URLSearchParams(searchParams.toString());
-    if (id) {
-      params.set("selected", id);
-    } else {
-      params.delete("selected");
-    }
-    const qs = params.toString();
-    router.replace(
-      qs ? `/business/memberships?${qs}` : "/business/memberships",
-      { scroll: false },
-    );
-  };
-
   const listQuery = useQuery({
     queryKey: queryKeys.memberships.clientList(filters),
     queryFn: () => listClientMemberships(filters),
   });
 
   const memberships = listQuery.data ?? [];
-
-  useEffect(() => {
-    if (!selectedId && memberships.length > 0 && !isMobile) {
-      setSelectedId(memberships[0]!.id);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- only auto-select on first load
-  }, [memberships, selectedId, isMobile]);
 
   const detailQuery = useQuery({
     queryKey: queryKeys.memberships.clientDetail(selectedId ?? ""),
@@ -284,165 +264,141 @@ export function MembershipsWorkspace() {
   };
 
   return (
-    <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
-      <div className="grid min-h-0 flex-1 gap-4 overflow-hidden px-[var(--page-padding-x)] pb-[var(--page-padding-y)] pt-[var(--page-content-top-gap)] lg:grid-cols-[minmax(0,1fr)_minmax(280px,380px)] lg:grid-rows-1">
-        <section className="flex min-h-0 flex-col overflow-hidden rounded-xl border border-border bg-card shadow-elevation-xs">
-          <ListToolbar
-            className="rounded-none border-0 border-b bg-transparent p-3 shadow-none sm:px-4"
-            search={
-              <Input
-                placeholder="Search by client or plan…"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="min-w-0 flex-1"
-              />
-            }
-            actions={
-              <>
-                <Button
-                  variant="outline"
-                  size="icon-sm"
-                  className="sm:hidden"
-                  aria-label="Manage plans"
-                  onClick={() => router.push("/business/memberships/plans")}
-                >
-                  <LayoutTemplate className="size-4" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="hidden shrink-0 sm:inline-flex"
-                  onClick={() => router.push("/business/memberships/plans")}
-                >
-                  <LayoutTemplate className="mr-1.5 size-4" />
-                  Manage plans
-                </Button>
-                <Button
-                  variant="outline"
-                  size="icon-sm"
-                  className="sm:hidden"
-                  aria-label="Settings"
-                  onClick={() => router.push("/business/memberships/settings")}
-                >
-                  <Settings className="size-4" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="hidden shrink-0 sm:inline-flex"
-                  onClick={() => router.push("/business/memberships/settings")}
-                >
-                  <Settings className="mr-1.5 size-4" />
-                  Settings
-                </Button>
-                <Button
-                  variant="outline"
-                  size="icon-sm"
-                  aria-label="Options"
-                  onClick={() => setOptionsOpen(true)}
-                >
-                  <SlidersHorizontal className="size-4" />
-                </Button>
-                <Button
-                  size="icon-sm"
-                  className="sm:hidden"
-                  aria-label="New membership"
-                  onClick={() => setAddOpen(true)}
-                >
-                  <Plus className="size-4" />
-                </Button>
-                <Button
-                  size="sm"
-                  className="hidden shrink-0 sm:inline-flex"
-                  onClick={() => setAddOpen(true)}
-                >
-                  <Plus className="mr-1.5 size-4" />
-                  New membership
-                </Button>
-              </>
-            }
+    <>
+      <EntityWorkspaceLayout
+        title="Memberships"
+        description="Manage client subscriptions and billing."
+        search={
+          <SearchInput
+            value={search}
+            onChange={setSearch}
+            placeholder="Search by client or plan…"
+            className="min-w-0 flex-1"
           />
-
-          {listQuery.isError ? (
-            <ApiErrorState
-              error={listQuery.error}
-              onRetry={() => void listQuery.refetch()}
-            />
-          ) : listQuery.isLoading ? (
-            <p className="p-6 text-sm text-muted-foreground">
-              Loading memberships…
-            </p>
-          ) : memberships.length === 0 ? (
-            <div className="flex flex-1 items-center justify-center p-8">
-              <EmptyState
-                icon={
-                  <Crown className="size-5 text-muted-foreground/70" aria-hidden />
-                }
-                title="No memberships found"
-                description="Start a membership for a client or adjust your filters."
-                action={
-                  <Button size="sm" onClick={() => setAddOpen(true)}>
-                    <Plus className="mr-1.5 size-4" />
-                    New membership
-                  </Button>
-                }
-              />
-            </div>
-          ) : (
-            <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-              <div className="min-h-0 flex-1 overflow-y-auto">
-                <DataTable
-                  columns={columns}
-                  data={memberships}
-                  getRowId={(row) => row.id}
-                  activeRowId={selectedId}
-                  onRowClick={(row) => setSelectedId(row.id)}
-                  getRowClassName={(row) =>
-                    selectedId === row.id
-                      ? "shadow-[inset_3px_0_0_0_var(--color-primary)]"
-                      : undefined
-                  }
-                  className="rounded-none border-0 shadow-none"
-                />
-              </div>
-              <div className="shrink-0 border-t border-border px-4 py-3 text-sm text-muted-foreground">
-                {memberships.length} membership
-                {memberships.length === 1 ? "" : "s"}
-              </div>
-            </div>
-          )}
-        </section>
-
-        {!isMobile ? (
-          <MembershipDetailPanel
-            {...detailPanelProps}
-            className="min-h-0 max-lg:hidden"
+        }
+        actions={
+          <>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => router.push("/business/memberships/plans")}
+            >
+              <LayoutTemplate className="mr-1.5 size-4" />
+              Manage plans
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => router.push("/business/memberships/settings")}
+            >
+              <Settings className="mr-1.5 size-4" />
+              Settings
+            </Button>
+            <Button
+              variant="outline"
+              size="icon-sm"
+              aria-label="Options"
+              onClick={() => setOptionsOpen(true)}
+            >
+              <SlidersHorizontal className="size-4" />
+            </Button>
+            <Button size="sm" onClick={() => setAddOpen(true)}>
+              <Plus className="mr-1.5 size-4" />
+              New membership
+            </Button>
+          </>
+        }
+        footer={
+          memberships.length > 0
+            ? `${memberships.length} membership${memberships.length === 1 ? "" : "s"}`
+            : undefined
+        }
+      >
+        {listQuery.isError ? (
+          <ApiErrorState
+            error={listQuery.error}
+            onRetry={() => void listQuery.refetch()}
           />
+        ) : (
+          <DataTable
+            columns={columns}
+            data={memberships}
+            getRowId={(row) => row.id}
+            isLoading={listQuery.isLoading}
+            density="compact"
+            activeRowId={selectedId}
+            onRowClick={(row) => setSelectedId(row.id)}
+            getRowClassName={(row) =>
+              selectedId === row.id ? WORKSPACE_ACTIVE_ROW_CLASS : undefined
+            }
+            emptyTitle="No memberships found"
+            emptyDescription="Start a membership for a client or adjust your filters."
+            emptyAction={
+              <Button size="sm" onClick={() => setAddOpen(true)}>
+                <Plus className="mr-1.5 size-4" />
+                New membership
+              </Button>
+            }
+            className={WORKSPACE_TABLE_CLASS}
+          />
+        )}
+      </EntityWorkspaceLayout>
+
+      <EntityDetailDrawer
+        open={isOpen}
+        onOpenChange={(open) => {
+          if (!open) clearSelection();
+        }}
+        title={detail ? membershipPlanLabel(detail) : "Membership"}
+        subtitle={detail?.contact.name}
+        isLoading={detailQuery.isLoading}
+        badges={
+          detail ? <MembershipStatusBadge status={detail.status} /> : null
+        }
+        footer={
+          detail ? (
+            <div className="flex w-full flex-col gap-2">
+              {detail.status === "ACTIVE" ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full"
+                  disabled={actionMutation.isPending}
+                  onClick={detailPanelProps.onPause}
+                >
+                  Pause membership
+                </Button>
+              ) : null}
+              {detail.status === "PAUSED" ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full"
+                  disabled={actionMutation.isPending}
+                  onClick={detailPanelProps.onResume}
+                >
+                  Resume membership
+                </Button>
+              ) : null}
+              {detail.status !== "CANCELED" ? (
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  className="w-full"
+                  disabled={actionMutation.isPending}
+                  onClick={detailPanelProps.onCancel}
+                >
+                  Cancel membership
+                </Button>
+              ) : null}
+            </div>
+          ) : null
+        }
+      >
+        {selectedId && detail ? (
+          <MembershipDetailPanel {...detailPanelProps} embedded />
         ) : null}
-      </div>
-
-      {isMobile ? (
-        <Sheet
-          open={!!selectedId}
-          onOpenChange={(open) => {
-            if (!open) setSelectedId(null);
-          }}
-        >
-          <SheetContent
-            side="right"
-            className="flex h-[100dvh] max-h-[100dvh] w-full max-w-none flex-col border-l-0 bg-background p-0 shadow-none"
-            showCloseButton
-          >
-            <SheetBody className="flex min-h-0 flex-1 flex-col overflow-hidden p-0">
-              <MembershipDetailPanel
-                {...detailPanelProps}
-                variant="drawer"
-                className="min-h-0 flex-1 rounded-none border-0 shadow-none"
-              />
-            </SheetBody>
-          </SheetContent>
-        </Sheet>
-      ) : null}
+      </EntityDetailDrawer>
 
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
         <DialogContent>
@@ -560,6 +516,6 @@ export function MembershipsWorkspace() {
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+    </>
   );
 }

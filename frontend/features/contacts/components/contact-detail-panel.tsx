@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Pencil, Trash2 } from "lucide-react";
 import { ApiErrorState } from "@/components/data-display/api-error-state";
@@ -30,7 +31,23 @@ const CONTACT_DETAIL_TABS = [
   label: string;
 }>;
 
+export const CONTACT_DETAIL_DRAWER_TABS = CONTACT_DETAIL_TABS.map((tab) => ({
+  value: tab.id,
+  label: tab.label,
+}));
+
 type ContactDetailTabId = (typeof CONTACT_DETAIL_TABS)[number]["id"];
+
+export function isContactDetailTab(
+  value: string,
+): value is ContactDetailTabId {
+  return CONTACT_DETAIL_TABS.some((tab) => tab.id === value);
+}
+
+export interface ContactDetailPanelActions {
+  openEdit: () => void;
+  openDelete: () => void;
+}
 
 interface ContactDetailPanelProps {
   contactId: string;
@@ -39,6 +56,9 @@ interface ContactDetailPanelProps {
   onContactDeleted: () => void;
   /** Page = split workspace; drawer = narrow slide-in panel. */
   variant?: "page" | "drawer";
+  /** Body only for EntityDetailDrawer (no aside chrome or tab bar). */
+  embedded?: boolean;
+  onActionsReady?: (actions: ContactDetailPanelActions) => void;
   className?: string;
 }
 
@@ -83,6 +103,8 @@ export function ContactDetailPanel({
   onSectionChange,
   onContactDeleted,
   variant = "page",
+  embedded = false,
+  onActionsReady,
   className,
 }: ContactDetailPanelProps) {
   const queryClient = useQueryClient();
@@ -129,11 +151,29 @@ export function ContactDetailPanel({
     setDeleteContactOpen,
   } = state;
 
+  useEffect(() => {
+    if (!embedded || !onActionsReady || !contact) return;
+    onActionsReady({
+      openEdit: () => setEditOpen(true),
+      openDelete: () => setDeleteContactOpen(true),
+    });
+  }, [contact, embedded, onActionsReady, setDeleteContactOpen, setEditOpen]);
+
   if (contactLoading) {
+    if (embedded) return null;
     return <ContactDetailPanelLoading className={className} variant={variant} />;
   }
 
   if (contactError || !contact) {
+    if (embedded) {
+      return (
+        <ApiErrorState
+          compact
+          error={contactError}
+          title="Could not load this contact"
+        />
+      );
+    }
     return (
       <section
         className={cn(
@@ -143,8 +183,8 @@ export function ContactDetailPanel({
       >
         <ApiErrorState
           compact
+          error={contactError}
           title="Could not load this contact"
-          description="Try selecting the contact again or refresh the list."
         />
       </section>
     );
@@ -196,6 +236,49 @@ export function ContactDetailPanel({
     payments,
     financialLoading,
   };
+
+  if (embedded) {
+    return (
+      <>
+        <div className={cn("space-y-4", className)}>
+          <div className="space-y-3 rounded-lg border border-border bg-muted/20 p-4">
+            <ContactSidebarDetailsFields
+              contact={contact}
+              showNotes={false}
+              showCreated
+              createdAt={createdAt}
+              onRequestEdit={() => setEditOpen(true)}
+            />
+            <ContactSidebarDetailsFields
+              contact={contact}
+              showPhone={false}
+              showEmail={false}
+              showCreated={false}
+              onRequestEdit={() => setEditOpen(true)}
+              notesTextareaClassName="!min-h-[72px] max-h-40 resize-y focus:!min-h-[96px]"
+            />
+          </div>
+
+          <ContactRecordsSectionBody
+            activeSection={activeSection}
+            {...recordsPanelProps}
+          />
+        </div>
+
+        <ContactWorkspaceDialogs
+          state={state}
+          contact={contact}
+          lockedContact={lockedContact}
+          onContactDeleted={onContactDeleted}
+          onContactEditSuccess={() => {
+            void invalidateContactDetail(queryClient, contact.id);
+            void invalidateContactLists(queryClient);
+            void invalidateContactPicker(queryClient);
+          }}
+        />
+      </>
+    );
+  }
 
   return (
     <>
@@ -288,7 +371,6 @@ export function ContactDetailPanel({
           <div className="contacts-d2-tabpanel" role="tabpanel">
             <ContactRecordsSectionBody
               activeSection={activeSection}
-              labels={labels}
               {...recordsPanelProps}
             />
           </div>

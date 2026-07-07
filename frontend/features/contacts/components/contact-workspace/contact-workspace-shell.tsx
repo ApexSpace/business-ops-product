@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 
 /**
  * Fills the shell content slot below the topbar (no negative margins).
- * Parent route uses `isContactWorkspacePath` so shell content has p-0.
+ * Parent route uses `isContactWorkspacePath` for legacy `/business/contacts/[id]` only.
  */
 export function ContactWorkspaceShell({
   children,

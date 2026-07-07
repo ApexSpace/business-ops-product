@@ -1,30 +1,22 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   ArrowDown,
   ArrowUp,
   FolderTree,
-  MoreHorizontal,
   Package,
   Pencil,
   Plus,
   SlidersHorizontal,
   Trash2,
 } from "lucide-react";
-import { EmptyState } from "@/components/data-display/empty-state";
-import { ListToolbar } from "@/components/layout/list-toolbar";
+import { EntityDetailDrawer } from "@/components/layout/entity-detail-drawer";
+import { EntityWorkspaceLayout } from "@/components/layout/entity-workspace-layout";
 import { SearchInput } from "@/components/forms/search-input";
 import { DataTable, type DataTableColumn } from "@/components/data-display/data-table";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -84,7 +76,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
-import { useIsMobile } from "@/lib/hooks/use-mobile";
+import { useEntitySelection } from "@/lib/routing/use-entity-selection";
+import {
+  WORKSPACE_ACTIVE_ROW_CLASS,
+  WORKSPACE_TABLE_CLASS,
+} from "@/lib/design/workspace-tokens";
 import { formatMoney } from "@/features/payments/schemas/payment-profile";
 import { useProductsList } from "@/features/products/hooks/use-products-list";
 import { useProductDetail } from "@/features/products/hooks/use-product-detail";
@@ -186,10 +182,12 @@ function formatAdjustmentSummary(adj: {
 }
 
 export function ProductsWorkspace() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const isMobile = useIsMobile();
-  const selectedId = searchParams.get("product");
+  const {
+    selectedId,
+    isOpen,
+    setSelectedId,
+    clearSelection,
+  } = useEntitySelection({ legacyIdParams: ["product"] });
 
   const [search, setSearch] = useState("");
   const [formOpen, setFormOpen] = useState(false);
@@ -215,23 +213,6 @@ export function ProductsWorkspace() {
 
   const products = listData?.items ?? [];
   const total = listData?.meta?.total ?? products.length;
-
-  const selectProduct = useCallback(
-    (id: string) => {
-      const params = new URLSearchParams(searchParams.toString());
-      params.set("product", id);
-      router.replace(`/business/products?${params.toString()}`, {
-        scroll: false,
-      });
-    },
-    [router, searchParams],
-  );
-
-  useEffect(() => {
-    if (!selectedId && products.length > 0 && !isMobile) {
-      selectProduct(products[0]!.id);
-    }
-  }, [products, selectedId, isMobile, selectProduct]);
 
   const openCreate = () => {
     setEditingProductId(null);
@@ -306,119 +287,130 @@ export function ProductsWorkspace() {
   };
 
   return (
-    <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
-      <div className="grid min-h-0 flex-1 gap-4 overflow-hidden px-[var(--page-padding-x)] pb-[var(--page-padding-y)] pt-[var(--page-content-top-gap)] lg:grid-cols-[minmax(0,1fr)_minmax(280px,380px)] lg:grid-rows-1">
-        <section className="flex min-h-0 flex-col overflow-hidden rounded-xl border border-border bg-card shadow-elevation-xs">
-          <ListToolbar
-            className="rounded-none border-0 border-b bg-transparent p-3 shadow-none sm:px-4"
-            search={
-              <SearchInput
-                value={search}
-                onChange={setSearch}
-                placeholder="Search products…"
-                className="min-w-0 flex-1"
-              />
-            }
-            actions={
-              <>
-                <Button
-                  variant="outline"
-                  size="icon-sm"
-                  aria-label="Options"
-                  onClick={() => setOptionsOpen(true)}
-                >
-                  <SlidersHorizontal className="size-4" />
-                </Button>
-                <Button
-                  size="icon-sm"
-                  className="sm:hidden"
-                  aria-label="Add product"
-                  onClick={openCreate}
-                >
-                  <Plus className="size-4" />
-                </Button>
-                <Button
-                  size="sm"
-                  className="hidden shrink-0 sm:inline-flex"
-                  onClick={openCreate}
-                >
-                  <Plus className="mr-1.5 size-4" />
-                  Add product
-                </Button>
-              </>
-            }
+    <>
+      <EntityWorkspaceLayout
+        title="Products"
+        description="Manage catalog products, pricing, and inventory."
+        search={
+          <SearchInput
+            value={search}
+            onChange={setSearch}
+            placeholder="Search products…"
+            className="min-w-0 flex-1"
           />
-          <div className="min-h-0 flex-1 overflow-y-auto">
-            <DataTable
-              columns={columns}
-              data={products}
-              getRowId={(row) => row.id}
-              isLoading={isLoading}
-              activeRowId={selectedId}
-              onRowClick={(row) => selectProduct(row.id)}
-              getRowClassName={(row) =>
-                selectedId === row.id
-                  ? "shadow-[inset_3px_0_0_0_var(--color-primary)]"
-                  : undefined
-              }
-              emptyTitle="No products yet"
-              emptyDescription="Add your first product to get started."
-              emptyAction={
-                <Button size="sm" onClick={openCreate}>
-                  <Plus className="mr-1.5 size-4" />
-                  Add product
-                </Button>
-              }
-              className="rounded-none border-0 shadow-none"
-            />
-          </div>
-          {products.length > 0 ? (
-            <div className="shrink-0 border-t border-border px-4 py-3 text-sm text-muted-foreground">
-              {products.length} of {total} product{total === 1 ? "" : "s"}
-            </div>
-          ) : null}
-        </section>
+        }
+        actions={
+          <>
+            <Button
+              variant="outline"
+              size="icon-sm"
+              aria-label="Options"
+              onClick={() => setOptionsOpen(true)}
+            >
+              <SlidersHorizontal className="size-4" />
+            </Button>
+            <Button
+              size="icon-sm"
+              className="sm:hidden"
+              aria-label="Add product"
+              onClick={openCreate}
+            >
+              <Plus className="size-4" />
+            </Button>
+            <Button
+              size="sm"
+              className="hidden shrink-0 sm:inline-flex"
+              onClick={openCreate}
+            >
+              <Plus className="mr-1.5 size-4" />
+              Add product
+            </Button>
+          </>
+        }
+        footer={
+          products.length > 0
+            ? `${products.length} of ${total} product${total === 1 ? "" : "s"}`
+            : undefined
+        }
+      >
+        <DataTable
+          columns={columns}
+          data={products}
+          getRowId={(row) => row.id}
+          isLoading={isLoading}
+          density="compact"
+          activeRowId={selectedId}
+          onRowClick={(row) => setSelectedId(row.id)}
+          getRowClassName={(row) =>
+            selectedId === row.id ? WORKSPACE_ACTIVE_ROW_CLASS : undefined
+          }
+          emptyTitle="No products yet"
+          emptyDescription="Add your first product to get started."
+          emptyAction={
+            <Button size="sm" onClick={openCreate}>
+              <Plus className="mr-1.5 size-4" />
+              Add product
+            </Button>
+          }
+          className={WORKSPACE_TABLE_CLASS}
+        />
+      </EntityWorkspaceLayout>
 
-        {!isMobile ? (
-          <ProductDetailSidebar
-            {...detailPanelProps}
-            selectedId={selectedId}
-            className="min-h-0 max-lg:hidden"
+      <EntityDetailDrawer
+        open={isOpen}
+        onOpenChange={(open) => {
+          if (!open) clearSelection();
+        }}
+        title={detail?.name ?? "Product"}
+        subtitle={detail?.categoryName ?? "Uncategorized"}
+        isLoading={detailLoading}
+        badges={
+          detail ? (
+            <>
+              <Badge variant="neutral">{detail.productType}</Badge>
+              <Badge
+                variant={detail.status === "ACTIVE" ? "success" : "secondary"}
+              >
+                {detail.status}
+              </Badge>
+            </>
+          ) : null
+        }
+        headerActions={
+          selectedId ? (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => openEdit(selectedId)}
+            >
+              <Pencil className="mr-1 size-3.5" />
+              Edit
+            </Button>
+          ) : null
+        }
+        overflowActions={
+          selectedId
+            ? [
+                {
+                  id: "delete",
+                  label: "Delete",
+                  icon: <Trash2 className="mr-2 size-4" />,
+                  destructive: true,
+                  onSelect: () => setDeleteId(selectedId),
+                },
+              ]
+            : undefined
+        }
+      >
+        {selectedId && detail ? (
+          <ProductDetailBody
+            productId={selectedId}
+            detail={detail}
+            onAdjust={detailPanelProps.onAdjust}
+            adjustPending={detailPanelProps.adjustPending}
           />
         ) : null}
-      </div>
-
-      {isMobile ? (
-        <Sheet
-          open={!!selectedId}
-          onOpenChange={(open) => {
-            if (!open) {
-              const params = new URLSearchParams(searchParams.toString());
-              params.delete("product");
-              const qs = params.toString();
-              router.replace(
-                qs ? `/business/products?${qs}` : "/business/products",
-                { scroll: false },
-              );
-            }
-          }}
-        >
-          <SheetContent
-            side="right"
-            className="flex h-[100dvh] max-h-[100dvh] w-full max-w-none flex-col border-l-0 bg-background p-0 shadow-none"
-            showCloseButton
-          >
-            <SheetBody className="flex min-h-0 flex-1 flex-col overflow-hidden p-0">
-              <ProductDetailSidebar
-                {...detailPanelProps}
-                selectedId={selectedId}
-                variant="drawer"
-                className="min-h-0 flex-1 rounded-none border-0 shadow-none"
-              />
-            </SheetBody>
-          </SheetContent>
-        </Sheet>
-      ) : null}
+      </EntityDetailDrawer>
 
       <ProductFormSheet
         open={formOpen}
@@ -429,7 +421,7 @@ export function ProductsWorkspace() {
           mutations.create.mutate(body, {
             onSuccess: (product) => {
               setFormOpen(false);
-              selectProduct(product.id);
+              setSelectedId(product.id);
             },
           })
         }
@@ -624,14 +616,7 @@ export function ProductsWorkspace() {
                     onSuccess: () => {
                       setDeleteId(null);
                       if (selectedId === deleteId) {
-                        const params = new URLSearchParams(
-                          searchParams.toString(),
-                        );
-                        params.delete("product");
-                        router.replace(
-                          `/business/products?${params.toString()}`,
-                          { scroll: false },
-                        );
+                        clearSelection();
                       }
                     },
                   });
@@ -643,28 +628,18 @@ export function ProductsWorkspace() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </>
   );
 }
 
-function ProductDetailSidebar({
-  selectedId,
+function ProductDetailBody({
   productId,
   detail,
-  isLoading,
-  onEdit,
-  onDelete,
   onAdjust,
   adjustPending,
-  className,
-  variant = "panel",
 }: {
-  selectedId: string | null;
   productId: string;
-  detail: ReturnType<typeof useProductDetail>["data"];
-  isLoading: boolean;
-  onEdit: () => void;
-  onDelete: () => void;
+  detail: NonNullable<ReturnType<typeof useProductDetail>["data"]>;
   onAdjust: (body: {
     variantId?: string;
     type: ProductInventoryAdjustmentType;
@@ -672,10 +647,7 @@ function ProductDetailSidebar({
     note?: string;
   }) => void;
   adjustPending: boolean;
-  className?: string;
-  variant?: "panel" | "drawer";
 }) {
-  const isDrawer = variant === "drawer";
   const [adjType, setAdjType] =
     useState<ProductInventoryAdjustmentType>("RECEIVED");
   const [adjQty, setAdjQty] = useState("1");
@@ -689,116 +661,13 @@ function ProductDetailSidebar({
     setAdjType("RECEIVED");
   }, [productId]);
 
-  if (!selectedId) {
-    return (
-      <aside
-        className={cn(
-          "flex h-full min-h-0 flex-col overflow-hidden rounded-xl border border-border bg-card shadow-elevation-xs",
-          className,
-        )}
-      >
-        <div className="flex min-h-0 flex-1 items-center justify-center p-8">
-          <EmptyState
-            icon={
-              <Package className="size-5 text-muted-foreground/70" aria-hidden />
-            }
-            title="Select a product"
-            description="Choose a product from the list to view inventory and details."
-          />
-        </div>
-      </aside>
-    );
-  }
-
-  if (isLoading || !detail) {
-    return (
-      <aside
-        className={cn(
-          "flex h-full min-h-0 flex-col overflow-hidden rounded-xl border border-border bg-card shadow-elevation-xs p-6 text-sm text-muted-foreground",
-          className,
-        )}
-      >
-        Loading product…
-      </aside>
-    );
-  }
-
   const isVariable = detail.productType === "VARIABLE";
   const adjustmentHint =
     ADJUSTMENT_TYPES.find((t) => t.value === adjType)?.hint ?? "";
 
   return (
-    <aside
-      className={cn(
-        "flex h-full min-h-0 flex-col overflow-hidden rounded-xl border border-border bg-card shadow-elevation-xs",
-        className,
-      )}
-    >
-      <div
-        className={cn(
-          "shrink-0 border-b border-border/70 px-4 py-4",
-          "bg-[radial-gradient(120%_140%_at_0%_0%,color-mix(in_oklch,var(--primary)_10%,transparent),transparent_55%),linear-gradient(135deg,var(--background)_0%,color-mix(in_oklch,var(--primary)_4%,var(--background))_100%)]",
-          isDrawer && "pr-14",
-        )}
-      >
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <h2 className="text-drawer-section">Product detail</h2>
-            <p className="mt-1 truncate text-lg font-semibold tracking-tight">
-              {detail.name}
-            </p>
-            <p className="text-sm text-muted-foreground">
-              {detail.categoryName ?? "Uncategorized"}
-            </p>
-          </div>
-          <div className="flex shrink-0 items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              className={cn(isDrawer && "shrink-0")}
-              onClick={onEdit}
-            >
-              <Pencil className="mr-1 size-3.5" />
-              Edit
-            </Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger
-                render={
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className={cn(isDrawer && "shrink-0")}
-                  >
-                    <MoreHorizontal className="size-4" />
-                    <span className="sr-only">Product actions</span>
-                  </Button>
-                }
-              />
-              <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuItem
-                  variant="destructive"
-                  onClick={onDelete}
-                >
-                  <Trash2 className="mr-2 size-4" />
-                  Delete
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </div>
-        <div className="mt-3 flex flex-wrap gap-1.5">
-          <Badge variant="neutral">{detail.productType}</Badge>
-          <Badge
-            variant={detail.status === "ACTIVE" ? "success" : "secondary"}
-          >
-            {detail.status}
-          </Badge>
-        </div>
-      </div>
-
-      <div className="min-h-0 flex-1 overflow-y-auto">
-        <div className="p-4">
-          <div className="grid grid-cols-2 gap-4 rounded-xl border border-border bg-muted/15 p-4 shadow-elevation-xs">
+    <>
+      <div className="grid grid-cols-2 gap-4 rounded-xl border border-border bg-muted/15 p-4 shadow-elevation-xs">
             <div className="space-y-1">
               <p className="text-drawer-section">Price</p>
               <p className="text-lg font-semibold tabular-nums">
@@ -823,8 +692,7 @@ function ProductDetailSidebar({
                 <p className="text-sm tabular-nums">{detail.sku}</p>
               </div>
             ) : null}
-          </div>
-        </div>
+      </div>
 
       <ProductImagesPanel
         productId={productId}
@@ -989,8 +857,7 @@ function ProductDetailSidebar({
           </ul>
         </div>
       ) : null}
-      </div>
-    </aside>
+    </>
   );
 }
 

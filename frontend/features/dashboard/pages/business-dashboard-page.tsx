@@ -17,6 +17,7 @@ import { useCurrentBusiness } from "@/features/settings/hooks/use-current-busine
 import { formatMoney } from "@/features/payments/utils/currencies";
 import { resolveBusinessNicheProfile } from "@/lib/config/niche";
 import { queryKeys } from "@/lib/query/keys";
+import { WORKSPACE_CSS_VARS } from "@/lib/design/workspace-tokens";
 import { useSnapshotContext } from "@/lib/snapshot/use-snapshot-context";
 
 function parseAmount(value: string): number {
@@ -109,7 +110,10 @@ export function BusinessDashboardPage() {
 
   if (feedQuery.isLoading || contextLoading) {
     return (
-      <div className="grid w-full gap-4 lg:grid-cols-[minmax(0,1fr)_210px]">
+      <div
+        className="grid w-full gap-4 lg:grid-cols-[minmax(0,1fr)_210px]"
+        style={WORKSPACE_CSS_VARS}
+      >
         <div className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_210px_210px]">
             <Skeleton className="h-[126px] rounded-[14px] sm:col-span-2 xl:col-span-1" />
@@ -133,7 +137,10 @@ export function BusinessDashboardPage() {
   }
 
   return (
-    <div className="grid w-full gap-4 lg:grid-cols-[minmax(0,1fr)_210px]">
+    <div
+      className="grid w-full gap-4 lg:grid-cols-[minmax(0,1fr)_210px]"
+      style={WORKSPACE_CSS_VARS}
+    >
       <div className="space-y-4">
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_210px_210px]">
           <DashboardOverviewHero

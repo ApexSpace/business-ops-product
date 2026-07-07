@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus } from "lucide-react";
+import { ExternalLink, Plus } from "lucide-react";
 import { toast } from "sonner";
 import {
   DataTable,
@@ -12,14 +12,20 @@ import { StatusBadge } from "@/components/data-display/status-badge";
 import { ConfirmDeleteDialog } from "@/components/forms/confirm-delete-dialog";
 import { SearchInput } from "@/components/forms/search-input";
 import { SearchableSelect } from "@/components/forms/searchable-select";
+import { EntityDetailDrawer } from "@/components/layout/entity-detail-drawer";
 import { PaymentFormDrawer } from "@/features/payments/components/payment-form-drawer";
 import { FinancialTabPanel } from "@/features/payments/components/workspace/financial-tab-panel";
+import { TransactionDetailPanel } from "@/features/payments/components/workspace/transaction-detail-panel";
 import { TransactionTableRowActions } from "@/features/payments/components/workspace/transaction-table-row-actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ListPagination } from "@/components/ui/list-pagination";
 import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
 import { useListSearchParams } from "@/lib/hooks/use-list-search-params";
+import {
+  WORKSPACE_ACTIVE_ROW_CLASS,
+} from "@/lib/design/workspace-tokens";
+import { useEntitySelection } from "@/lib/routing/use-entity-selection";
 import { usePaymentsTabCreateAction } from "@/features/payments/hooks/use-payments-tab-action";
 import { formatMoney } from "@/features/invoices/schemas/invoice-profile";
 import {
@@ -30,6 +36,7 @@ import {
   formatTransactionSource,
   getTransactionStatusLabel,
 } from "@/features/payments/schemas/payment-profile";
+import { getPayment } from "@/features/payments/api/payments.api";
 import { invalidateFinancialLists } from "@/features/payments/workspace/payments-workspace";
 import { viewTransactionInvoicePublic } from "@/features/payments/utils/transaction-invoice-view";
 import { queryKeys } from "@/lib/query/keys";
@@ -55,11 +62,18 @@ export function PaymentsTransactionsTab() {
   const queryClient = useQueryClient();
   const { params, page, setParams } = useListSearchParams(LIST_SCHEMA);
   const debouncedSearch = useDebouncedValue(params.search);
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const {
+    selectedId,
+    isOpen,
+    setSelectedId,
+    clearSelection,
+  } = useEntitySelection();
+
+  const [createOpen, setCreateOpen] = useState(false);
   const [refundId, setRefundId] = useState<string | null>(null);
 
   usePaymentsTabCreateAction(() => {
-    setDialogOpen(true);
+    setCreateOpen(true);
   });
 
   const listFilters = {
@@ -75,6 +89,14 @@ export function PaymentsTransactionsTab() {
     queryKey: queryKeys.payments.list(listFilters),
     queryFn: () => listPayments(listFilters),
   });
+
+  const { data: detail, isLoading: detailLoading } = useQuery({
+    queryKey: queryKeys.payments.detail(selectedId ?? ""),
+    queryFn: () => getPayment(selectedId!),
+    enabled: Boolean(selectedId),
+  });
+
+  const selectedListItem = data?.items.find((item) => item.id === selectedId);
 
   const refundMutation = useMutation({
     mutationFn: (id: string) => refundPayment(id),
@@ -161,11 +183,13 @@ export function PaymentsTransactionsTab() {
     [],
   );
 
+  const drawerPayment = detail ?? selectedListItem;
+
   return (
     <>
       <FinancialTabPanel
         actions={
-          <Button size="sm" onClick={() => setDialogOpen(true)}>
+          <Button size="sm" onClick={() => setCreateOpen(true)}>
             <Plus className="mr-1.5 size-4" />
             Record payment
           </Button>
@@ -229,32 +253,92 @@ export function PaymentsTransactionsTab() {
           data={data?.items ?? []}
           getRowId={(row) => row.id}
           isLoading={isLoading}
+          activeRowId={selectedId}
+          onRowClick={(row) => setSelectedId(row.id)}
+          getRowClassName={(row) =>
+            selectedId === row.id ? WORKSPACE_ACTIVE_ROW_CLASS : undefined
+          }
           actionsColumnHeader="Actions"
-          onRowClick={(row) => void viewTransactionInvoicePublic(row)}
-            emptyTitle="No transactions yet"
-            emptyDescription="Transactions are usually recorded from an invoice. Use this list to review history or make corrections."
-            emptyAction={
-              <Button size="sm" onClick={() => setDialogOpen(true)}>
-                <Plus className="mr-2 size-4" />
-                Record payment
-              </Button>
-            }
-            rowActions={(row) => (
-              <TransactionTableRowActions
-                onView={() => void viewTransactionInvoicePublic(row)}
-                onRefund={
-                  canRefundPayment(row)
-                    ? () => setRefundId(row.id)
-                    : undefined
-                }
-              />
-            )}
-          />
+          emptyTitle="No transactions yet"
+          emptyDescription="Transactions are usually recorded from an invoice. Use this list to review history or make corrections."
+          emptyAction={
+            <Button size="sm" onClick={() => setCreateOpen(true)}>
+              <Plus className="mr-2 size-4" />
+              Record payment
+            </Button>
+          }
+          rowActions={(row) => (
+            <TransactionTableRowActions
+              onView={() => setSelectedId(row.id)}
+              onRefund={
+                canRefundPayment(row)
+                  ? () => setRefundId(row.id)
+                  : undefined
+              }
+            />
+          )}
+        />
       </FinancialTabPanel>
 
+      <EntityDetailDrawer
+        open={isOpen}
+        onOpenChange={(open) => {
+          if (!open) clearSelection();
+        }}
+        title={
+          drawerPayment
+            ? formatMoney(drawerPayment.amount)
+            : "Transaction"
+        }
+        subtitle={
+          drawerPayment
+            ? formatTransactionSource(drawerPayment)
+            : undefined
+        }
+        isLoading={detailLoading}
+        badges={
+          drawerPayment ? (
+            <StatusBadge
+              status={
+                canRefundPayment(drawerPayment) ? "SUCCEEDED" : "REFUNDED"
+              }
+              domain="transaction"
+              label={getTransactionStatusLabel(drawerPayment)}
+            />
+          ) : null
+        }
+        headerActions={
+          drawerPayment?.invoiceId ? (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => void viewTransactionInvoicePublic(drawerPayment)}
+            >
+              <ExternalLink className="mr-1 size-3.5" />
+              View invoice
+            </Button>
+          ) : null
+        }
+        footer={
+          drawerPayment && canRefundPayment(drawerPayment) ? (
+            <Button
+              variant="destructive"
+              className="w-full"
+              onClick={() => setRefundId(drawerPayment.id)}
+            >
+              Refund transaction
+            </Button>
+          ) : null
+        }
+      >
+        {drawerPayment ? (
+          <TransactionDetailPanel payment={drawerPayment} />
+        ) : null}
+      </EntityDetailDrawer>
+
       <PaymentFormDrawer
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
+        open={createOpen}
+        onOpenChange={setCreateOpen}
         onSuccess={() => void invalidateFinancialLists(queryClient)}
       />
 

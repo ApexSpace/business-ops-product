@@ -1,71 +1,19 @@
-/* Layout-only styles for the contacts split workspace. Colors/typography use global theme tokens. */
+/* Layout styles for contact detail/profile panels. Colors/typography use global theme tokens. */
 
-.contacts-split-layout {
-
+.contacts-panel-card,
+.contacts-detail-card {
   --cs-line: var(--border);
-
   --cs-surface: var(--card);
-
   --cs-canvas: var(--muted);
-
   --cs-brand: var(--primary);
-
   --cs-brand-soft: var(--primary-tint);
-
   --cs-danger: var(--destructive);
-
   --cs-danger-soft: var(--destructive-subtle);
-
   --cs-amber: var(--warning);
-
   --cs-green: var(--success);
-
   --cs-radius: var(--radius-card, 0.75rem);
-
   --cs-shadow: var(--shadow-sm-value);
-
 }
-
-
-
-.contacts-workspace {
-
-  display: flex;
-
-  min-height: 0;
-
-  flex: 1;
-
-  flex-direction: column;
-
-  overflow: hidden;
-
-  background: transparent;
-
-}
-
-
-
-.contacts-split-view {
-
-  display: flex;
-
-  min-height: 0;
-
-  flex: 1;
-
-  gap: 16px;
-
-  overflow: hidden;
-
-  padding: var(--page-content-top-gap) var(--page-padding-x) var(--page-padding-y)
-    var(--page-padding-x);
-
-  width: 100%;
-
-}
-
-
 
 .contacts-panel-card {
 
@@ -83,122 +31,12 @@
 
 
 
-.contacts-master-item [data-slot="avatar"]::after {
-
-  display: none;
-
-}
-
-
-
-.contacts-master-item [data-slot="avatar-fallback"],
-
 .contacts-profile-card [data-slot="avatar-fallback"] {
 
   background: var(--cs-brand-soft);
 
   color: var(--cs-brand);
 
-}
-
-
-
-.contacts-master {
-
-  display: flex;
-
-  width: 300px;
-
-  min-width: 260px;
-
-  max-width: 300px;
-
-  flex-shrink: 0;
-
-  flex-direction: column;
-
-}
-
-
-
-.contacts-master-head {
-
-  flex-shrink: 0;
-
-  border-bottom: 1px solid var(--cs-line);
-
-  padding: 24px 24px 20px;
-
-}
-
-
-
-.contacts-master-list {
-
-  min-height: 0;
-
-  flex: 1;
-
-  overflow-y: auto;
-
-}
-
-
-
-.contacts-master-item {
-
-  display: flex;
-
-  width: 100%;
-
-  cursor: pointer;
-
-  gap: 12px;
-
-  border: none;
-
-  border-bottom: 1px solid var(--cs-line);
-
-  background: transparent;
-
-  padding: 14px 24px;
-
-  text-align: left;
-
-  transition: background 0.15s ease;
-
-}
-
-
-
-.contacts-master-item:hover {
-
-  background: color-mix(in srgb, var(--cs-canvas) 35%, var(--cs-surface));
-
-}
-
-
-
-.contacts-master-item.selected {
-
-  background: var(--cs-brand-soft);
-
-}
-
-
-
-.contacts-master-item.selected .contacts-master-name {
-
-  color: var(--cs-brand);
-
-}
-
-
-
-.contacts-master-footer {
-  flex-shrink: 0;
-  border-top: 1px solid var(--cs-line);
-  padding: 10px 12px;
 }
 
 
@@ -613,79 +451,7 @@
 
 
 
-.contacts-workspace[data-sidebar="expanded"] .contacts-split-view {
-
-  gap: 14px;
-
-  padding: var(--page-content-top-gap) var(--page-padding-x) var(--page-padding-y)
-    var(--page-padding-x);
-
-}
-
-
-
-@media (max-width: 1100px) {
-
-  .contacts-workspace[data-sidebar="expanded"] .contacts-split-view {
-
-    flex-direction: column;
-
-    overflow-y: auto;
-
-  }
-
-
-
-  .contacts-workspace[data-sidebar="expanded"] .contacts-master {
-
-    width: 100%;
-
-    max-width: none;
-
-    min-height: 320px;
-
-    max-height: 420px;
-
-  }
-
-
-
-  .contacts-workspace[data-sidebar="expanded"] .contacts-detail-card {
-    min-height: 560px;
-  }
-
-}
-
-
-
 @media (max-width: 900px) {
-
-  .contacts-split-view {
-
-    flex-direction: column;
-
-    overflow-y: auto;
-
-    padding: var(--page-content-top-gap) var(--page-padding-x) var(--page-padding-y)
-      var(--page-padding-x);
-
-  }
-
-
-
-  .contacts-split-view:not(:has(> .contacts-master:only-child)) .contacts-master {
-
-    width: 100%;
-
-    max-width: none;
-
-    min-height: 280px;
-
-    max-height: 400px;
-
-  }
-
-
 
   .contacts-detail-card {
     flex-direction: column;
@@ -699,63 +465,10 @@
     border-bottom: 1px solid var(--cs-line);
   }
 
-
-
   .contacts-records-card {
-
     min-height: 480px;
-
   }
-
 }
-
-
-
-/* Mobile list-only — master fills viewport below shell topbar */
-.contacts-workspace--list-only,
-.contacts-split-view--list-only,
-.contacts-split-view:has(> .contacts-master:only-child) {
-
-  flex: 1;
-
-  min-height: 0;
-
-}
-
-
-
-.contacts-workspace--list-only .contacts-split-view,
-.contacts-split-view:has(> .contacts-master:only-child) {
-
-  flex-direction: column;
-
-  overflow: hidden;
-
-  padding: var(--page-content-top-gap) var(--page-padding-x) var(--page-padding-y)
-    var(--page-padding-x);
-
-}
-
-
-
-.contacts-workspace--list-only .contacts-master,
-.contacts-split-view:has(> .contacts-master:only-child) .contacts-master {
-
-  width: 100%;
-
-  max-width: none;
-
-  min-height: 0;
-
-  max-height: none;
-
-  flex: 1 1 auto;
-
-  align-self: stretch;
-
-}
-
-
 
 @media (max-width: 640px) {
 

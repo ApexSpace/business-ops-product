@@ -15,6 +15,7 @@ import {
   FILTER_SELECT_TRIGGER_CLASS,
 } from "@/lib/ui/control-styles";
 import { cn } from "@/lib/utils";
+import { WORKSPACE_TOOLBAR_SURFACE_CLASS } from "@/lib/design/workspace-tokens";
 
 interface WorkItemsPageToolbarProps {
   workItemsLabel: string;
@@ -102,7 +103,7 @@ export function WorkItemsPageToolbar({
   const searchPlaceholder = `Search ${workItemsLabel.toLowerCase()}…`;
 
   return (
-    <div className="flex flex-col gap-2 rounded-xl border border-border bg-card p-2">
+    <div className={cn(WORKSPACE_TOOLBAR_SURFACE_CLASS)}>
       <div className="flex flex-col gap-2 md:hidden">
         <SearchInput
           className={cn(FILTER_SEARCH_CLASS, "w-full")}

@@ -1,15 +1,15 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Gift, Plus, Settings } from "lucide-react";
+import { Pencil, Plus, Settings } from "lucide-react";
 import { toast } from "sonner";
 import { ApiErrorState } from "@/components/data-display/api-error-state";
 import { DataTable } from "@/components/data-display/data-table";
-import { EmptyState } from "@/components/data-display/empty-state";
-import { SearchableSelect } from "@/components/forms/searchable-select";
-import { ListToolbar } from "@/components/layout/list-toolbar";
+import { EntityDetailDrawer } from "@/components/layout/entity-detail-drawer";
+import { EntityWorkspaceLayout } from "@/components/layout/entity-workspace-layout";
+import { SearchInput } from "@/components/forms/search-input";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -20,14 +20,14 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Sheet,
-  SheetBody,
-  SheetContent,
-} from "@/components/ui/sheet";
+import { SearchableSelect } from "@/components/forms/searchable-select";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { useIsMobile } from "@/lib/hooks/use-mobile";
+import {
+  WORKSPACE_ACTIVE_ROW_CLASS,
+  WORKSPACE_TABLE_CLASS,
+} from "@/lib/design/workspace-tokens";
+import { useEntitySelection } from "@/lib/routing/use-entity-selection";
 import { queryKeys } from "@/lib/query/keys";
 import { invalidateGiftCards } from "@/lib/query/invalidation";
 import { listContacts } from "@/features/contacts/api/contacts.api";
@@ -52,12 +52,15 @@ import type { GiftCardListItem } from "@/features/gift-cards/types";
 
 export function GiftCardsWorkspace() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const queryClient = useQueryClient();
-  const isMobile = useIsMobile();
   const { data: business } = useCurrentBusiness();
+  const {
+    selectedId,
+    isOpen,
+    setSelectedId,
+    clearSelection,
+  } = useEntitySelection({ legacyIdParams: ["selected"] });
 
-  const selectedId = searchParams.get("selected");
   const [search, setSearch] = useState("");
   const [addOpen, setAddOpen] = useState(false);
   const [editNotes, setEditNotes] = useState(false);
@@ -71,19 +74,6 @@ export function GiftCardsWorkspace() {
   );
   const [newNotes, setNewNotes] = useState("");
 
-  const setSelectedId = (id: string | null) => {
-    const params = new URLSearchParams(searchParams.toString());
-    if (id) {
-      params.set("selected", id);
-    } else {
-      params.delete("selected");
-    }
-    const qs = params.toString();
-    router.replace(qs ? `/business/gift-cards?${qs}` : "/business/gift-cards", {
-      scroll: false,
-    });
-  };
-
   const listQuery = useQuery({
     queryKey: queryKeys.giftCards.list({ search: search.trim() || undefined }),
     queryFn: () =>
@@ -92,13 +82,6 @@ export function GiftCardsWorkspace() {
 
   const cards = listQuery.data?.items ?? [];
   const total = listQuery.data?.meta?.total ?? cards.length;
-
-  useEffect(() => {
-    if (!selectedId && cards.length > 0 && !isMobile) {
-      setSelectedId(cards[0]!.id);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- only auto-select on first load
-  }, [cards, selectedId, isMobile]);
 
   const detailQuery = useQuery({
     queryKey: queryKeys.giftCards.detail(selectedId ?? ""),
@@ -280,116 +263,121 @@ export function GiftCardsWorkspace() {
   };
 
   return (
-    <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
-      <div className="grid min-h-0 flex-1 gap-4 overflow-hidden px-[var(--page-padding-x)] pb-[var(--page-padding-y)] pt-[var(--page-content-top-gap)] lg:grid-cols-[minmax(0,1fr)_minmax(280px,380px)] lg:grid-rows-1">
-        <section className="flex min-h-0 flex-col overflow-hidden rounded-xl border border-border bg-card shadow-elevation-xs">
-          <ListToolbar
-            className="rounded-none border-0 border-b bg-transparent p-3 shadow-none sm:px-4"
-            search={
-              <Input
-                placeholder="Search by number or client…"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="max-w-md"
-              />
-            }
-            actions={
-              <>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => router.push("/business/gift-cards/settings")}
-                >
-                  <Settings className="mr-1.5 size-4" />
-                  Settings
-                </Button>
-                <Button size="sm" onClick={() => void openAdd()}>
-                  <Plus className="mr-1.5 size-4" />
-                  Add gift card
-                </Button>
-              </>
-            }
+    <>
+      <EntityWorkspaceLayout
+        title="Gift cards"
+        description="Issue, track, and redeem gift cards."
+        search={
+          <SearchInput
+            value={search}
+            onChange={setSearch}
+            placeholder="Search by number or client…"
+            className="min-w-0 flex-1 sm:max-w-md"
           />
+        }
+        actions={
+          <>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => router.push("/business/gift-cards/settings")}
+            >
+              <Settings className="mr-1.5 size-4" />
+              Settings
+            </Button>
+            <Button size="sm" onClick={() => void openAdd()}>
+              <Plus className="mr-1.5 size-4" />
+              Add gift card
+            </Button>
+          </>
+        }
+        footer={
+          cards.length > 0
+            ? `${cards.length} of ${total} gift cards`
+            : undefined
+        }
+      >
+        {listQuery.isError ? (
+          <ApiErrorState
+            error={listQuery.error}
+            onRetry={() => void listQuery.refetch()}
+          />
+        ) : (
+          <DataTable
+            columns={columns}
+            data={cards}
+            getRowId={(card) => card.id}
+            isLoading={listQuery.isLoading}
+            density="compact"
+            activeRowId={selectedId}
+            onRowClick={(card) => setSelectedId(card.id)}
+            getRowClassName={(card) =>
+              selectedId === card.id ? WORKSPACE_ACTIVE_ROW_CLASS : undefined
+            }
+            emptyTitle="No gift cards yet"
+            emptyDescription="Create a gift card to get started."
+            emptyAction={
+              <Button size="sm" onClick={() => void openAdd()}>
+                <Plus className="mr-1.5 size-4" />
+                Add gift card
+              </Button>
+            }
+            className={WORKSPACE_TABLE_CLASS}
+          />
+        )}
+      </EntityWorkspaceLayout>
 
-          {listQuery.isError ? (
-            <ApiErrorState
-              error={listQuery.error}
-              onRetry={() => void listQuery.refetch()}
-            />
-          ) : listQuery.isLoading ? (
-            <p className="p-6 text-sm text-muted-foreground">
-              Loading gift cards…
-            </p>
-          ) : cards.length === 0 ? (
-            <div className="flex flex-1 items-center justify-center p-8">
-              <EmptyState
-                icon={
-                  <Gift className="size-5 text-muted-foreground/70" aria-hidden />
-                }
-                title="No gift cards yet"
-                description="Create a gift card to get started."
-                action={
-                  <Button size="sm" onClick={() => void openAdd()}>
-                    <Plus className="mr-1.5 size-4" />
-                    Add gift card
-                  </Button>
-                }
-              />
+      <EntityDetailDrawer
+        open={isOpen}
+        onOpenChange={(open) => {
+          if (!open) clearSelection();
+        }}
+        title={detail ? `#${detail.number}` : "Gift card"}
+        subtitle={detail?.ownerContact.name}
+        isLoading={detailQuery.isLoading}
+        badges={
+          detail ? <GiftCardStatusBadge status={detail.status} /> : null
+        }
+        headerActions={
+          detail ? (
+            <Button variant="outline" size="sm" onClick={detailPanelProps.onEditNotes}>
+              <Pencil className="mr-1 size-3.5" />
+              Edit
+            </Button>
+          ) : null
+        }
+        footer={
+          detail ? (
+            <div className="flex w-full flex-col gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full"
+                disabled={detail.status !== "ACTIVE" || sendMutation.isPending}
+                onClick={detailPanelProps.onSend}
+              >
+                Send digital gift card
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                className="w-full"
+                disabled={detail.status === "VOIDED" || voidMutation.isPending}
+                onClick={detailPanelProps.onVoid}
+              >
+                Void gift card
+              </Button>
             </div>
-          ) : (
-            <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-              <div className="min-h-0 flex-1 overflow-y-auto">
-                <DataTable
-                  columns={columns}
-                  data={cards}
-                  getRowId={(card) => card.id}
-                  activeRowId={selectedId}
-                  onRowClick={(card) => setSelectedId(card.id)}
-                  getRowClassName={(card) =>
-                    selectedId === card.id
-                      ? "shadow-[inset_3px_0_0_0_var(--color-primary)]"
-                      : undefined
-                  }
-                  className="rounded-none border-0 shadow-none"
-                />
-              </div>
-              <div className="shrink-0 border-t border-border px-4 py-3 text-sm text-muted-foreground">
-                {cards.length} of {total} gift cards
-              </div>
-            </div>
-          )}
-        </section>
-
-        {!isMobile ? (
+          ) : null
+        }
+      >
+        {selectedId && detail ? (
           <GiftCardDetailPanel
             {...detailPanelProps}
-            className="min-h-0 max-lg:hidden"
+            embedded
           />
         ) : null}
-      </div>
-
-      {isMobile ? (
-        <Sheet
-          open={!!selectedId}
-          onOpenChange={(open) => {
-            if (!open) setSelectedId(null);
-          }}
-        >
-          <SheetContent
-            side="right"
-            className="flex h-[100dvh] max-h-[100dvh] w-full max-w-none flex-col border-l-0 bg-background p-0 shadow-none"
-            showCloseButton
-          >
-            <SheetBody className="flex min-h-0 flex-1 flex-col overflow-hidden p-0">
-              <GiftCardDetailPanel
-                {...detailPanelProps}
-                variant="drawer"
-                className="min-h-0 flex-1 rounded-none border-0 shadow-none"
-              />
-            </SheetBody>
-          </SheetContent>
-        </Sheet>
-      ) : null}
+      </EntityDetailDrawer>
 
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
         <DialogContent>
@@ -494,6 +482,6 @@ export function GiftCardsWorkspace() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </>
   );
 }

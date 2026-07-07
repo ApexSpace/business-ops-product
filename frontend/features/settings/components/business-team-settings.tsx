@@ -11,8 +11,8 @@ import {
 import { DataTableRowActions } from "@/components/data-display/data-table-row-actions";
 import { StatusBadge } from "@/components/data-display/status-badge";
 import { SearchInput } from "@/components/forms/search-input";
-import { FilterBar } from "@/components/layout/filter-bar";
-import { ListPage, ListPageSkeleton } from "@/components/layout/list-page";
+import { EntityWorkspaceLayout } from "@/components/layout/entity-workspace-layout";
+import { ListPageSkeleton } from "@/components/layout/list-page";
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
@@ -24,10 +24,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { ActionButton } from "@/components/ui/action-button";
 import { ListPagination } from "@/components/ui/list-pagination";
 import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
 import { useListSearchParams } from "@/lib/hooks/use-list-search-params";
+import {
+  WORKSPACE_TABLE_CLASS,
+} from "@/lib/design/workspace-tokens";
 import { useAuth } from "@/lib/auth/provider";
 import { invalidateBusinessMembers } from "@/lib/query/invalidation";
 import { queryKeys } from "@/lib/query/keys";
@@ -150,30 +152,29 @@ function BusinessTeamSettingsContent() {
   );
 
   return (
-    <div className="w-full min-w-0">
-      <ListPage
+  <>
+      <EntityWorkspaceLayout
         title="Team"
         description="Staff who work at your business."
+        search={
+          <SearchInput
+            value={params.search}
+            onChange={(value) =>
+              setParams({ search: value, page: "1" }, { resetPage: true })
+            }
+            placeholder="Search staff…"
+            className="min-w-0 flex-1 sm:max-w-md"
+          />
+        }
         actions={
           canManage ? (
-            <ActionButton type="button" onClick={() => setOpen(true)}>
-              <Plus className="mr-2 size-4" />
+            <Button type="button" size="sm" onClick={() => setOpen(true)}>
+              <Plus className="mr-1.5 size-4" />
               Add staff member
-            </ActionButton>
-          ) : null
+            </Button>
+          ) : undefined
         }
-        filters={
-          <FilterBar>
-            <SearchInput
-              value={params.search}
-              onChange={(value) =>
-                setParams({ search: value, page: "1" }, { resetPage: true })
-              }
-              placeholder="Search staff…"
-            />
-          </FilterBar>
-        }
-        pagination={
+        footer={
           data?.meta ? (
             <ListPagination
               meta={data.meta}
@@ -181,7 +182,7 @@ function BusinessTeamSettingsContent() {
               onPageChange={(p) => setParams({ page: String(p) })}
               label="staff"
             />
-          ) : null
+          ) : undefined
         }
       >
         <DataTable
@@ -189,6 +190,7 @@ function BusinessTeamSettingsContent() {
           data={data?.items ?? []}
           getRowId={(row) => row.id}
           isLoading={isLoading}
+          density="compact"
           rowActions={
             canManage
               ? (row) => {
@@ -219,14 +221,15 @@ function BusinessTeamSettingsContent() {
           }
           emptyAction={
             canManage ? (
-              <ActionButton onClick={() => setOpen(true)}>
-                <Plus className="mr-2 size-4" />
+              <Button size="sm" onClick={() => setOpen(true)}>
+                <Plus className="mr-1.5 size-4" />
                 Add staff member
-              </ActionButton>
+              </Button>
             ) : undefined
           }
+          className={WORKSPACE_TABLE_CLASS}
         />
-      </ListPage>
+      </EntityWorkspaceLayout>
 
       <AddStaffMemberDialog open={open} onOpenChange={setOpen} />
 
@@ -267,7 +270,7 @@ function BusinessTeamSettingsContent() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </>
   );
 }
 

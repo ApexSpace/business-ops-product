@@ -80,7 +80,10 @@ export interface MembershipDetailPanelProps {
   actionPending: boolean;
   onOpenContact: (contactId: string) => void;
   className?: string;
+  /** Drawer = mobile sheet; reserves space for the sheet close button. */
   variant?: "panel" | "drawer";
+  /** Renders body only for EntityDetailDrawer (no aside chrome). */
+  embedded?: boolean;
 }
 
 export function MembershipDetailPanel({
@@ -97,32 +100,16 @@ export function MembershipDetailPanel({
   onOpenContact,
   className,
   variant = "panel",
+  embedded = false,
 }: MembershipDetailPanelProps) {
   const isDrawer = variant === "drawer";
 
-  return (
-    <aside
-      className={cn(
-        "flex h-full min-h-0 flex-col overflow-hidden rounded-xl border border-border bg-card shadow-elevation-xs",
-        className,
-      )}
-    >
-      {!selectedId ? (
-        <div className="flex min-h-0 flex-1 items-center justify-center overflow-hidden p-8">
-          <EmptyState
-            icon={
-              <Crown className="size-5 text-muted-foreground/70" aria-hidden />
-            }
-            title="Select a membership"
-            description="Choose a membership from the list to view plan details and usage."
-          />
-        </div>
-      ) : isLoading || !detail ? (
-        <p className="p-6 text-sm text-muted-foreground">Loading membership…</p>
-      ) : isError ? (
-        <ApiErrorState error={error} onRetry={onRetry} />
-      ) : (
-        <>
+  const body =
+    isError && detail ? (
+      <ApiErrorState error={error} onRetry={onRetry} />
+    ) : !detail ? null : (
+      <>
+        {!embedded ? (
           <div
             className={cn(
               "shrink-0 border-b border-border px-4 py-3",
@@ -131,106 +118,111 @@ export function MembershipDetailPanel({
           >
             <h2 className="text-drawer-section">Membership detail</h2>
           </div>
+        ) : null}
 
-          <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-4 py-4">
-            <div className="relative overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-card via-card to-primary/5 p-5 shadow-sm">
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0 space-y-1">
-                  {detail.plan.emoji ? (
-                    <span className="text-2xl" aria-hidden>
-                      {detail.plan.emoji}
-                    </span>
-                  ) : null}
-                  <p className="text-lg font-semibold tracking-tight">
-                    {detail.plan.name}
-                  </p>
-                  <button
-                    type="button"
-                    className="text-sm font-medium text-primary hover:underline"
-                    onClick={() => onOpenContact(detail.contact.id)}
-                  >
-                    {detail.contact.name}
-                  </button>
-                </div>
-                <MembershipStatusBadge status={detail.status} />
+        <div
+          className={cn(
+            "min-h-0 flex-1 space-y-4 overflow-y-auto",
+            embedded ? "" : "px-4 py-4",
+          )}
+        >
+          <div className="relative overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-card via-card to-primary/5 p-5 shadow-sm">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0 space-y-1">
+                {detail.plan.emoji ? (
+                  <span className="text-2xl" aria-hidden>
+                    {detail.plan.emoji}
+                  </span>
+                ) : null}
+                <p className="text-lg font-semibold tracking-tight">
+                  {detail.plan.name}
+                </p>
+                <button
+                  type="button"
+                  className="text-sm font-medium text-primary hover:underline"
+                  onClick={() => onOpenContact(detail.contact.id)}
+                >
+                  {detail.contact.name}
+                </button>
               </div>
-              <p className="mt-4 text-2xl font-bold tabular-nums">
-                {formatMembershipPrice(detail.price, detail.billingIntervalUnit)}
-              </p>
+              <MembershipStatusBadge status={detail.status} />
             </div>
+            <p className="mt-4 text-2xl font-bold tabular-nums">
+              {formatMembershipPrice(detail.price, detail.billingIntervalUnit)}
+            </p>
+          </div>
 
-            <div className="grid gap-4 sm:grid-cols-2">
-              <InfoBlock label="Start date">
-                <p className="text-sm">{formatDetailDate(detail.startDate)}</p>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <InfoBlock label="Start date">
+              <p className="text-sm">{formatDetailDate(detail.startDate)}</p>
+            </InfoBlock>
+            {detail.nextBillingDate ? (
+              <InfoBlock label="Next billing">
+                <p className="text-sm">
+                  {formatListDate(detail.nextBillingDate)}
+                </p>
               </InfoBlock>
-              {detail.nextBillingDate ? (
-                <InfoBlock label="Next billing">
-                  <p className="text-sm">
-                    {formatListDate(detail.nextBillingDate)}
-                  </p>
-                </InfoBlock>
-              ) : null}
-            </div>
-
-            {detail.usageRecords.length > 0 ? (
-              <div className="space-y-2">
-                <p className="text-drawer-section">Services remaining</p>
-                <div className="grid gap-2">
-                  {detail.usageRecords.map((record) => {
-                    const remaining = record.totalSlots - record.usedSlots;
-                    return (
-                      <div
-                        key={record.id}
-                        className="rounded-lg border border-border bg-muted/20 px-3 py-2.5"
-                      >
-                        <p className="text-sm font-medium tabular-nums">
-                          {remaining} / {record.totalSlots} remaining
-                        </p>
-                        <p className="mt-0.5 text-xs text-muted-foreground">
-                          {record.services.join(", ")}
-                        </p>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            ) : null}
-
-            {detail.billingHistory.length > 0 ? (
-              <div className="space-y-2">
-                <p className="text-drawer-section">Billing history</p>
-                <div className="overflow-hidden rounded-lg border border-border">
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="hover:bg-transparent">
-                        <TableHead>Date</TableHead>
-                        <TableHead>Event</TableHead>
-                        <TableHead className="text-right">Amount</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {detail.billingHistory.map((event) => (
-                        <TableRow key={event.id}>
-                          <TableCell className="whitespace-nowrap text-muted-foreground">
-                            {formatDetailDate(event.occurredAt)}
-                          </TableCell>
-                          <TableCell className="capitalize">
-                            {event.eventType.replace(/_/g, " ").toLowerCase()}
-                          </TableCell>
-                          <TableCell className="text-right tabular-nums">
-                            {event.amount
-                              ? formatMoney(event.amount)
-                              : "—"}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              </div>
             ) : null}
           </div>
 
+          {detail.usageRecords.length > 0 ? (
+            <div className="space-y-2">
+              <p className="text-drawer-section">Services remaining</p>
+              <div className="grid gap-2">
+                {detail.usageRecords.map((record) => {
+                  const remaining = record.totalSlots - record.usedSlots;
+                  return (
+                    <div
+                      key={record.id}
+                      className="rounded-lg border border-border bg-muted/20 px-3 py-2.5"
+                    >
+                      <p className="text-sm font-medium tabular-nums">
+                        {remaining} / {record.totalSlots} remaining
+                      </p>
+                      <p className="mt-0.5 text-xs text-muted-foreground">
+                        {record.services.join(", ")}
+                      </p>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ) : null}
+
+          {detail.billingHistory.length > 0 ? (
+            <div className="space-y-2">
+              <p className="text-drawer-section">Billing history</p>
+              <div className="overflow-hidden rounded-lg border border-border">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="hover:bg-transparent">
+                      <TableHead>Date</TableHead>
+                      <TableHead>Event</TableHead>
+                      <TableHead className="text-right">Amount</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {detail.billingHistory.map((event) => (
+                      <TableRow key={event.id}>
+                        <TableCell className="whitespace-nowrap text-muted-foreground">
+                          {formatDetailDate(event.occurredAt)}
+                        </TableCell>
+                        <TableCell className="capitalize">
+                          {event.eventType.replace(/_/g, " ").toLowerCase()}
+                        </TableCell>
+                        <TableCell className="text-right tabular-nums">
+                          {event.amount ? formatMoney(event.amount) : "—"}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
+          ) : null}
+        </div>
+
+        {!embedded ? (
           <div className="shrink-0 space-y-2 border-t border-border px-4 py-3">
             {detail.status === "ACTIVE" ? (
               <Button
@@ -266,7 +258,37 @@ export function MembershipDetailPanel({
               </Button>
             ) : null}
           </div>
-        </>
+        ) : null}
+      </>
+    );
+
+  if (embedded) {
+    return body;
+  }
+
+  return (
+    <aside
+      className={cn(
+        "flex h-full min-h-0 flex-col overflow-hidden rounded-xl border border-border bg-card shadow-elevation-xs",
+        className,
+      )}
+    >
+      {!selectedId ? (
+        <div className="flex min-h-0 flex-1 items-center justify-center overflow-hidden p-8">
+          <EmptyState
+            icon={
+              <Crown className="size-5 text-muted-foreground/70" aria-hidden />
+            }
+            title="Select a membership"
+            description="Choose a membership from the list to view plan details and usage."
+          />
+        </div>
+      ) : isLoading || !detail ? (
+        <p className="p-6 text-sm text-muted-foreground">Loading membership…</p>
+      ) : isError ? (
+        <ApiErrorState error={error} onRetry={onRetry} />
+      ) : (
+        body
       )}
     </aside>
   );

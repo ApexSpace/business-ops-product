@@ -21,6 +21,7 @@ import type { ShellNavItem, ShellNavSection } from "@/lib/types/shell-nav";
 export interface BusinessMenuItem extends ShellNavItem {
   labelKey?: keyof IndustryLabels;
   navKey: string;
+  navTier: "primary" | "apps";
 }
 
 export const businessOperationalMenuItems: BusinessMenuItem[] = [
@@ -29,34 +30,7 @@ export const businessOperationalMenuItems: BusinessMenuItem[] = [
     href: "/business/dashboard",
     icon: LayoutDashboard,
     navKey: "dashboard",
-  },
-  {
-    title: "Contacts",
-    href: "/business/contacts",
-    icon: Contact,
-    labelKey: "contacts",
-    navKey: "contacts",
-  },
-  {
-    title: "Conversations",
-    href: "/business/conversations",
-    icon: MessageSquare,
-    labelKey: "conversations",
-    navKey: "conversations",
-  },
-  {
-    title: "CRM Pipeline",
-    href: "/business/pipelines",
-    icon: GitBranch,
-    labelKey: "pipelines",
-    navKey: "pipelines",
-  },
-  {
-    title: "Work Items",
-    href: "/business/work-items",
-    icon: ClipboardList,
-    labelKey: "workItems",
-    navKey: "work-items",
+    navTier: "primary",
   },
   {
     title: "Appointments",
@@ -64,98 +38,116 @@ export const businessOperationalMenuItems: BusinessMenuItem[] = [
     icon: Calendar,
     labelKey: "appointments",
     navKey: "appointments",
+    navTier: "primary",
   },
   {
-    title: "Time Clock",
-    href: "/business/time-clock",
-    icon: Clock,
-    navKey: "time-clock",
+    title: "Work Items",
+    href: "/business/work-items",
+    icon: ClipboardList,
+    labelKey: "workItems",
+    navKey: "work-items",
+    navTier: "primary",
   },
   {
-    title: "Payments",
-    href: "/business/payments",
-    icon: CreditCard,
-    navKey: "payments",
+    title: "CRM Pipeline",
+    href: "/business/pipelines",
+    icon: GitBranch,
+    labelKey: "pipelines",
+    navKey: "pipelines",
+    navTier: "primary",
+  },
+  {
+    title: "Conversations",
+    href: "/business/conversations",
+    icon: MessageSquare,
+    labelKey: "conversations",
+    navKey: "conversations",
+    navTier: "primary",
+  },
+  {
+    title: "Contacts",
+    href: "/business/contacts",
+    icon: Contact,
+    labelKey: "contacts",
+    navKey: "contacts",
+    navTier: "primary",
   },
   {
     title: "Sales",
     href: "/business/sales",
     icon: ShoppingBag,
     navKey: "sales",
+    navTier: "primary",
   },
   {
     title: "Gift Cards",
     href: "/business/gift-cards",
     icon: Gift,
     navKey: "gift-cards",
+    navTier: "apps",
   },
   {
     title: "Packages",
     href: "/business/packages",
     icon: Boxes,
     navKey: "packages",
+    navTier: "apps",
   },
   {
     title: "Memberships",
     href: "/business/memberships",
     icon: Repeat,
     navKey: "memberships",
-  },
-  {
-    title: "Offers",
-    href: "/business/offers",
-    icon: Tag,
-    navKey: "offers",
+    navTier: "apps",
   },
   {
     title: "Products",
     href: "/business/products",
     icon: Package,
     navKey: "products",
+    navTier: "apps",
+  },
+  {
+    title: "Offers",
+    href: "/business/offers",
+    icon: Tag,
+    navKey: "offers",
+    navTier: "apps",
+  },
+  {
+    title: "Payments",
+    href: "/business/payments",
+    icon: CreditCard,
+    navKey: "payments",
+    navTier: "apps",
+  },
+  {
+    title: "Time Clock",
+    href: "/business/time-cards",
+    icon: Clock,
+    navKey: "time-clock",
+    navTier: "apps",
   },
 ];
 
 export const businessOperationalSections: Array<{
   id: string;
   label: string;
+  hideLabel?: boolean;
   items: BusinessMenuItem[];
 }> = [
   {
-    id: "general",
-    label: "General",
-    items: businessOperationalMenuItems.filter((item) =>
-      ["/business/dashboard", "/business/contacts", "/business/conversations", "/business/pipelines"].includes(
-        item.href,
-      ),
-    ),
-  },
-  {
-    id: "operations",
-    label: "Operations",
-    items: businessOperationalMenuItems.filter((item) =>
-      [
-        "/business/appointments",
-        "/business/time-clock",
-        "/business/payments",
-        "/business/work-items",
-        "/business/sales",
-      ].includes(item.href),
-    ),
-  },
-  {
-    id: "catalog",
-    label: "Catalog",
-    items: businessOperationalMenuItems.filter((item) =>
-      [
-        "/business/gift-cards",
-        "/business/packages",
-        "/business/memberships",
-        "/business/products",
-        "/business/offers",
-      ].includes(item.href),
+    id: "primary",
+    label: "",
+    hideLabel: true,
+    items: businessOperationalMenuItems.filter(
+      (item) => item.navTier === "primary",
     ),
   },
 ];
+
+export const businessAppsMenuItems: BusinessMenuItem[] =
+  businessOperationalMenuItems.filter((item) => item.navTier === "apps");
 
 export const businessSettingsEntry = {
   title: "Settings",
@@ -180,8 +172,13 @@ export function resolveBusinessOperationalSections(
   return businessOperationalSections.map((section) => ({
     id: section.id,
     label: section.label,
+    hideLabel: section.hideLabel,
     items: resolveItems(section.items, labels),
   }));
+}
+
+export function resolveBusinessAppsMenu(labels: IndustryLabels): ShellNavItem[] {
+  return resolveItems(businessAppsMenuItems, labels);
 }
 
 /** @deprecated Use resolveBusinessOperationalSections */

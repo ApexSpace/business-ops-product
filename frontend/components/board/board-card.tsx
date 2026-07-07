@@ -45,7 +45,7 @@ export function BoardCard({
       ref={isOverlay ? undefined : setNodeRef}
       style={isOverlay ? undefined : style}
       className={cn(
-        "group/card flex flex-col gap-3 rounded-xl border border-border/80 bg-card p-4 shadow-sm",
+        "group/card flex flex-col gap-3 rounded-xl border border-border/80 bg-card p-4 shadow-elevation-xs",
         "transition-[box-shadow,border-color,opacity,transform]",
         "hover:border-border hover:shadow-md",
         isOverlay && "rotate-1 scale-[1.02] border-primary/30 shadow-lg ring-2 ring-primary/15",

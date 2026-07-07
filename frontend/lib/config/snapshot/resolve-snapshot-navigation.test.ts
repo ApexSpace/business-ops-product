@@ -46,7 +46,7 @@ describe("resolveSnapshotNavigation", () => {
   ];
 
   it("sorts visible items by order and drops hidden/unknown routes", () => {
-    const sections = resolveSnapshotNavigation({
+    const { sections } = resolveSnapshotNavigation({
       navigation: baseNav,
       resolveLabel,
       businessRole: "MEMBER",
@@ -60,7 +60,7 @@ describe("resolveSnapshotNavigation", () => {
   });
 
   it("falls back to default icon for unknown icon keys", () => {
-    const sections = resolveSnapshotNavigation({
+    const { sections } = resolveSnapshotNavigation({
       navigation: [
         {
           key: "dashboard",
@@ -78,32 +78,32 @@ describe("resolveSnapshotNavigation", () => {
   });
 
   it("filters items by requiredRoles unless platform admin", () => {
-    const memberSections = resolveSnapshotNavigation({
+    const memberResult = resolveSnapshotNavigation({
       navigation: baseNav,
       resolveLabel,
       businessRole: "MEMBER",
     });
-    expect(memberSections[0].items.some((i) => i.href === "/business/payments")).toBe(
+    expect(memberResult.sections[0].items.some((i) => i.href === "/business/payments")).toBe(
       false,
     );
 
-    const adminSections = resolveSnapshotNavigation({
+    const adminResult = resolveSnapshotNavigation({
       navigation: baseNav,
       resolveLabel,
       businessRole: "ADMIN",
     });
-    expect(adminSections[0].items.some((i) => i.href === "/business/payments")).toBe(
+    expect(adminResult.sections[0].items.some((i) => i.href === "/business/payments")).toBe(
       true,
     );
 
-    const platformSections = resolveSnapshotNavigation({
+    const platformResult = resolveSnapshotNavigation({
       navigation: baseNav,
       resolveLabel,
       businessRole: "MEMBER",
       isPlatformAdmin: true,
     });
     expect(
-      platformSections[0].items.some((i) => i.href === "/business/payments"),
+      platformResult.sections[0].items.some((i) => i.href === "/business/payments"),
     ).toBe(true);
   });
 });

@@ -2,16 +2,18 @@
 
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus } from "lucide-react";
+import { Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import {
-  DataTable,
-} from "@/components/data-display/data-table";
+import { DataTable } from "@/components/data-display/data-table";
+import { StatusBadge } from "@/components/data-display/status-badge";
 import { ConfirmDeleteDialog } from "@/components/forms/confirm-delete-dialog";
 import { SearchInput } from "@/components/forms/search-input";
 import { SearchableSelect } from "@/components/forms/searchable-select";
+import { EntityDetailDrawer } from "@/components/layout/entity-detail-drawer";
 import { EstimateFormDialog } from "@/features/estimates/components/estimate-form-dialog";
+import { getEstimate } from "@/features/estimates/api/estimates.api";
 import { InvoiceFormDialog } from "@/features/invoices/components/invoice-form-dialog";
+import { EstimateDetailPanel } from "@/features/payments/components/workspace/estimate-detail-panel";
 import { FinancialRowActionsMenu } from "@/features/payments/components/workspace/financial-row-actions-menu";
 import { FinancialTabPanel } from "@/features/payments/components/workspace/financial-tab-panel";
 import { Button } from "@/components/ui/button";
@@ -20,6 +22,10 @@ import { Input } from "@/components/ui/input";
 import { ListPagination } from "@/components/ui/list-pagination";
 import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
 import { useListSearchParams } from "@/lib/hooks/use-list-search-params";
+import {
+  WORKSPACE_ACTIVE_ROW_CLASS,
+} from "@/lib/design/workspace-tokens";
+import { useEntitySelection } from "@/lib/routing/use-entity-selection";
 import { useEstimatesTabColumns } from "@/features/payments/hooks/use-estimates-tab-columns";
 import { usePaymentsTabCreateAction } from "@/features/payments/hooks/use-payments-tab-action";
 import {
@@ -27,9 +33,15 @@ import {
   ESTIMATE_STATUS_OPTIONS,
 } from "@/features/estimates/schemas/estimate-profile";
 import { invalidateFinancialLists } from "@/features/payments/workspace/payments-workspace";
+import { getEstimateQuoteName } from "@/features/payments/utils/financial-table-display";
 import { queryKeys } from "@/lib/query/keys";
 import type { Estimate, EstimateStatus } from "@/features/estimates/types";
-import { deleteEstimate, duplicateEstimate, listEstimates, updateEstimateStatus } from "@/features/estimates/api/estimates.api";
+import {
+  deleteEstimate,
+  duplicateEstimate,
+  listEstimates,
+  updateEstimateStatus,
+} from "@/features/estimates/api/estimates.api";
 
 const LIST_SCHEMA = {
   page: { default: "1" },
@@ -50,7 +62,14 @@ export function PaymentsEstimatesTab() {
   const queryClient = useQueryClient();
   const { params, page, setParams } = useListSearchParams(LIST_SCHEMA);
   const debouncedSearch = useDebouncedValue(params.search);
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const {
+    selectedId,
+    isOpen,
+    setSelectedId,
+    clearSelection,
+  } = useEntitySelection();
+
+  const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<Estimate | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [invoiceFromEstimate, setInvoiceFromEstimate] =
@@ -59,7 +78,7 @@ export function PaymentsEstimatesTab() {
 
   usePaymentsTabCreateAction(() => {
     setEditing(null);
-    setDialogOpen(true);
+    setFormOpen(true);
   });
 
   const listFilters = {
@@ -76,20 +95,29 @@ export function PaymentsEstimatesTab() {
     queryFn: () => listEstimates(listFilters),
   });
 
+  const { data: detail, isLoading: detailLoading } = useQuery({
+    queryKey: queryKeys.estimates.detail(selectedId ?? ""),
+    queryFn: () => getEstimate(selectedId!),
+    enabled: Boolean(selectedId),
+  });
+
+  const selectedListItem = data?.items.find((item) => item.id === selectedId);
+
   const deleteMutation = useMutation({
-    mutationFn: (id: string) =>
-      deleteEstimate(id),
+    mutationFn: (id: string) => deleteEstimate(id),
     onSuccess: () => {
       toast.success("Estimate deleted");
       void invalidateFinancialLists(queryClient);
       setDeleteId(null);
+      if (deleteId === selectedId) {
+        clearSelection();
+      }
     },
     onError: (err: Error) => toast.error(err.message),
   });
 
   const duplicateMutation = useMutation({
-    mutationFn: (id: string) =>
-      duplicateEstimate(id),
+    mutationFn: (id: string) => duplicateEstimate(id),
     onSuccess: (created) => {
       toast.success(`Duplicated as ${created.estimateNumber}`);
       void invalidateFinancialLists(queryClient);
@@ -107,9 +135,14 @@ export function PaymentsEstimatesTab() {
     onError: (err: Error) => toast.error(err.message),
   });
 
-  const openEstimate = (estimate: Estimate) => {
+  const openCreate = () => {
+    setEditing(null);
+    setFormOpen(true);
+  };
+
+  const openEdit = (estimate: Estimate) => {
     setEditing(estimate);
-    setDialogOpen(true);
+    setFormOpen(true);
   };
 
   const columns = useEstimatesTabColumns();
@@ -118,13 +151,7 @@ export function PaymentsEstimatesTab() {
     <>
       <FinancialTabPanel
         actions={
-          <Button
-            size="sm"
-            onClick={() => {
-              setEditing(null);
-              setDialogOpen(true);
-            }}
-          >
+          <Button size="sm" onClick={openCreate}>
             <Plus className="mr-1.5 size-4" />
             New estimate
           </Button>
@@ -188,51 +215,94 @@ export function PaymentsEstimatesTab() {
           data={data?.items ?? []}
           getRowId={(row) => row.id}
           isLoading={isLoading}
+          activeRowId={selectedId}
+          onRowClick={(row) => setSelectedId(row.id)}
+          getRowClassName={(row) =>
+            selectedId === row.id ? WORKSPACE_ACTIVE_ROW_CLASS : undefined
+          }
           actionsColumnHeader="Actions"
-          onRowClick={openEstimate}
-            emptyTitle="No estimates yet"
-            emptyDescription="Create your first quote for a customer."
-            emptyAction={
-              <Button
-                size="sm"
-                onClick={() => {
-                  setEditing(null);
-                  setDialogOpen(true);
-                }}
-              >
-                <Plus className="mr-2 size-4" />
-                New estimate
-              </Button>
-            }
-            rowActions={(row) => (
-              <FinancialRowActionsMenu
-                onView={() => openEstimate(row)}
-                onEdit={() => openEstimate(row)}
-                onDuplicate={() => duplicateMutation.mutate(row.id)}
-                onDelete={() => setDeleteId(row.id)}
-                statusOptions={ESTIMATE_MANUAL_STATUS_OPTIONS}
-                onStatusChange={(status) =>
-                  statusMutation.mutate({ id: row.id, status })
-                }
-                extraItems={
-                  <DropdownMenuItem
-                    onClick={() => {
-                      setInvoiceFromEstimate(row);
-                      setInvoiceDialogOpen(true);
-                    }}
-                  >
-                    Create Invoice
-                  </DropdownMenuItem>
-                }
-              />
-            )}
-          />
+          emptyTitle="No estimates yet"
+          emptyDescription="Create your first quote for a customer."
+          emptyAction={
+            <Button size="sm" onClick={openCreate}>
+              <Plus className="mr-2 size-4" />
+              New estimate
+            </Button>
+          }
+          rowActions={(row) => (
+            <FinancialRowActionsMenu
+              onView={() => setSelectedId(row.id)}
+              onEdit={() => openEdit(row)}
+              onDuplicate={() => duplicateMutation.mutate(row.id)}
+              onDelete={() => setDeleteId(row.id)}
+              statusOptions={ESTIMATE_MANUAL_STATUS_OPTIONS}
+              onStatusChange={(status) =>
+                statusMutation.mutate({ id: row.id, status })
+              }
+              extraItems={
+                <DropdownMenuItem
+                  onClick={() => {
+                    setInvoiceFromEstimate(row);
+                    setInvoiceDialogOpen(true);
+                  }}
+                >
+                  Create Invoice
+                </DropdownMenuItem>
+              }
+            />
+          )}
+        />
       </FinancialTabPanel>
 
-      <EstimateFormDialog
-        open={dialogOpen}
+      <EntityDetailDrawer
+        open={isOpen}
         onOpenChange={(open) => {
-          setDialogOpen(open);
+          if (!open) clearSelection();
+        }}
+        title={
+          detail
+            ? getEstimateQuoteName(detail)
+            : selectedListItem
+              ? getEstimateQuoteName(selectedListItem)
+              : "Estimate"
+        }
+        subtitle={detail?.estimateNumber ?? selectedListItem?.estimateNumber}
+        isLoading={detailLoading}
+        width="wide"
+        badges={
+          detail ? (
+            <StatusBadge status={detail.status} domain="estimate" />
+          ) : null
+        }
+        headerActions={
+          detail ? (
+            <Button variant="outline" size="sm" onClick={() => openEdit(detail)}>
+              <Pencil className="mr-1 size-3.5" />
+              Edit
+            </Button>
+          ) : null
+        }
+        overflowActions={
+          selectedId
+            ? [
+                {
+                  id: "delete",
+                  label: "Delete",
+                  icon: <Trash2 className="mr-2 size-4" />,
+                  destructive: true,
+                  onSelect: () => setDeleteId(selectedId),
+                },
+              ]
+            : undefined
+        }
+      >
+        {detail ? <EstimateDetailPanel estimate={detail} /> : null}
+      </EntityDetailDrawer>
+
+      <EstimateFormDialog
+        open={formOpen}
+        onOpenChange={(open) => {
+          setFormOpen(open);
           if (!open) setEditing(null);
         }}
         estimate={editing}

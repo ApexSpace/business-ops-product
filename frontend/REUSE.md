@@ -27,7 +27,48 @@ Keep `FormDialog` / `AlertDialog` for confirms and tiny pickers only.
 
 ### List pages
 
-Use `ListPage` + `ListToolbar` + `DataTable` + `StatusPill` for table views.
+Use `ListPage` + `ListToolbar` + `DataTable` + `StatusPill` for simple table views.
+
+### Entity workspaces (standard list + detail drawer)
+
+For CRM/catalog screens, use the shared workspace pattern:
+
+```tsx
+const { selectedId, isOpen, setSelectedId, clearSelection } = useEntitySelection({
+  legacyIdParams: ["product"], // optional backward-compat query keys
+});
+
+<EntityWorkspaceLayout
+  title="Products"
+  search={<SearchInput ... />}
+  actions={<Button>Add product</Button>} // always top-right
+  footer={`${count} items`}
+>
+  <DataTable
+    density="compact"
+    activeRowId={selectedId}
+    onRowClick={(row) => setSelectedId(row.id)}
+    className={WORKSPACE_TABLE_CLASS}
+    getRowClassName={(row) =>
+      selectedId === row.id ? WORKSPACE_ACTIVE_ROW_CLASS : undefined
+    }
+  />
+</EntityWorkspaceLayout>
+
+<EntityDetailDrawer
+  open={isOpen}
+  onOpenChange={(open) => !open && clearSelection()}
+  title={...}
+  tabs={...} // optional underline tabs via EntityDetailTabs
+>
+  {detailContent}
+</EntityDetailDrawer>
+```
+
+- Selection URL: `?id=` (+ optional `?tab=`) via `useEntitySelection`
+- Drawer chrome: `EntityDetailDrawer`, `EntityDetailHeader`, `EntityDetailSection`
+- Tokens: `frontend/lib/design/workspace-tokens.ts`
+- Secondary nav: flat primary sidebar + **Apps** launcher (`AppsLauncher`)
 
 ### Dashboard
 

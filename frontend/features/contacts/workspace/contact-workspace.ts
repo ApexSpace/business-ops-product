@@ -189,12 +189,9 @@ export const WORKSPACE_TABLET_BOTTOM_ROW_CLASS =
 export const WORKSPACE_TABLET_RECORDS_COL_CLASS =
   WORKSPACE_COLUMN_CELL_CLASS;
 
-/** Contact list + detail workspace (full-bleed below topbar, no shell content padding). */
+/** Legacy per-contact workspace route (`/business/contacts/[id]`). List page uses standard shell padding. */
 export function isContactWorkspacePath(pathname: string): boolean {
-  return (
-    pathname === "/business/contacts" ||
-    /^\/business\/contacts\/[^/]+$/.test(pathname)
-  );
+  return /^\/business\/contacts\/[^/]+$/.test(pathname);
 }
 
 /** Conversations inbox — same full-bleed shell treatment as contact workspace. */

@@ -2,12 +2,6 @@
 
 import { SearchableSelect } from "@/components/forms/searchable-select";
 import {
-  DRAWER_FOOTER_ACTIONS_CLASS,
-  DRAWER_FOOTER_BUTTON_CLASS,
-  DRAWER_SHEET_FOOTER_CLASS,
-} from "@/components/forms/drawer-sheet";
-import { ActionButton } from "@/components/ui/action-button";
-import {
   FormControl,
   FormField,
   FormItem,
@@ -16,11 +10,8 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { SheetFooter } from "@/components/ui/sheet";
 import { leadStatusOptions } from "@/features/leads/utils/select-options";
 import type { UseFormReturn } from "react-hook-form";
-import { Trash2 } from "lucide-react";
-import { cn } from "@/lib/utils";
 
 export interface LeadDetailFormValues {
   title?: string;
@@ -34,32 +25,29 @@ export interface LeadDetailFormValues {
 }
 
 interface LeadDetailSheetFormProps {
+  formId: string;
   form: UseFormReturn<LeadDetailFormValues>;
   canAssign: boolean;
   stageItems: { value: string; label: string }[];
   serviceItems: { value: string; label: string }[];
   assigneeItems: { value: string; label: string }[];
-  isPending: boolean;
-  onCancel: () => void;
-  onDelete: () => void;
   onSubmit: (values: LeadDetailFormValues) => void;
 }
 
 export function LeadDetailSheetForm({
+  formId,
   form,
   canAssign,
   stageItems,
   serviceItems,
   assigneeItems,
-  isPending,
-  onCancel,
-  onDelete,
   onSubmit,
 }: LeadDetailSheetFormProps) {
   return (
     <form
+      id={formId}
       onSubmit={form.handleSubmit(onSubmit)}
-      className="flex flex-1 flex-col gap-4 px-4 pb-4"
+      className="flex flex-col gap-4"
     >
       <FormField
         control={form.control}
@@ -194,37 +182,6 @@ export function LeadDetailSheetForm({
           </FormItem>
         )}
       />
-
-      <SheetFooter className={DRAWER_SHEET_FOOTER_CLASS}>
-        <div className="flex w-full flex-wrap items-center justify-end gap-2.5">
-          <ActionButton
-            type="button"
-            variant="destructive"
-            onClick={onDelete}
-            className={cn(DRAWER_FOOTER_BUTTON_CLASS, "mr-auto")}
-          >
-            <Trash2 className="size-4" />
-            Delete
-          </ActionButton>
-          <div className={DRAWER_FOOTER_ACTIONS_CLASS}>
-            <ActionButton
-              type="button"
-              variant="outline"
-              onClick={onCancel}
-              className={DRAWER_FOOTER_BUTTON_CLASS}
-            >
-              Cancel
-            </ActionButton>
-            <ActionButton
-              type="submit"
-              disabled={isPending}
-              className={DRAWER_FOOTER_BUTTON_CLASS}
-            >
-              {isPending ? "Saving…" : "Save"}
-            </ActionButton>
-          </div>
-        </div>
-      </SheetFooter>
     </form>
   );
 }

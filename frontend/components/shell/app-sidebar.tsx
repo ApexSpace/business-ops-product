@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import {
@@ -24,6 +25,7 @@ import { ShellBrandHeader } from "./shell-brand-header";
 import { SidebarSection } from "./sidebar-section";
 import { SidebarFooterCollapseTrigger } from "./sidebar-toggle";
 import { SidebarNavItem } from "./sidebar-nav-item";
+import { AppsLauncher } from "./apps-launcher";
 
 const NAV_SKELETON_COUNT = 8;
 
@@ -48,6 +50,7 @@ function SidebarNavSkeleton() {
 interface AppSidebarProps {
   brand: ShellBrand;
   sections: ShellNavSection[];
+  appsItems?: ShellNavItem[];
   navMode?: SidebarNavMode;
   footerItems?: ShellNavItem[];
   workspaceName?: string;
@@ -58,6 +61,7 @@ interface AppSidebarProps {
 export function AppSidebar({
   brand,
   sections,
+  appsItems = [],
   navMode = "main",
   footerItems,
   productName = "CodeSol",
@@ -65,6 +69,7 @@ export function AppSidebar({
 }: AppSidebarProps) {
   const { isMobile } = useSidebar();
   const hydrated = useHydrated();
+  const [appsOpen, setAppsOpen] = useState(false);
   const BrandIcon = brand.icon;
   const isSettingsMode = navMode === "settings";
   const showNavFooter = !isSettingsMode && footerItems && footerItems.length > 0;
@@ -123,9 +128,20 @@ export function AppSidebar({
             </SidebarMenu>
           </>
         ) : hydrated ? (
-          sections.map((section) => (
-            <SidebarSection key={section.id} section={section} />
-          ))
+          <>
+            {sections.map((section) => (
+              <SidebarSection key={section.id} section={section} />
+            ))}
+            {appsItems.length > 0 ? (
+              <SidebarMenu className="gap-0.5 px-3 group-data-[collapsible=icon]:px-2">
+                <AppsLauncher
+                  items={appsItems}
+                  open={appsOpen}
+                  onOpenChange={setAppsOpen}
+                />
+              </SidebarMenu>
+            ) : null}
+          </>
         ) : (
           <SidebarMenu className="gap-px px-2">
             <SidebarNavSkeleton />

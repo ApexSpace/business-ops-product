@@ -28,7 +28,7 @@ import { useShellCurrentBusiness } from "@/lib/hooks/use-shell-current-business"
 import { useAuth } from "@/lib/auth/provider";
 import { useSnapshotContext } from "@/lib/snapshot/use-snapshot-context";
 import { hasPlatformBusinessAdminAccess } from "@/features/auth/permissions/permissions-legacy";
-import type { ShellNavSection } from "@/lib/types/shell-nav";
+import type { ShellNavItem, ShellNavSection } from "@/lib/types/shell-nav";
 import { resolveBusinessNicheProfile } from "@/lib/config/niche";
 
 interface ShellLayoutProps {
@@ -75,21 +75,39 @@ export function AppShellLayout({ mode, children }: ShellLayoutProps) {
       .filter((section) => section.items.length > 0);
   };
 
+  const filterAppsByCapability = (items: ShellNavItem[]): ShellNavItem[] => {
+    if (!capabilityKeys) return items;
+    return items.filter((item) => {
+      if (isCoreSafeBusinessRoute(item.href)) return true;
+      return canAccessBusinessRoute(item.href, capabilityKeys);
+    });
+  };
+
+  const snapshotNavigation =
+    mode === "business" && !isSettingsMode
+      ? resolveSnapshotNavigation({
+          navigation: augmentSnapshotNavigationWithCapabilities(
+            snapshotContext.navigation,
+            hasModule,
+          ),
+          resolveLabel: t,
+          businessRole: jwt?.businessRole,
+          isPlatformAdmin,
+          hasModule,
+        })
+      : null;
+
   const sections: ShellNavSection[] =
     mode === "platform"
       ? platformOperationalSections
       : isSettingsMode
         ? filterSectionsByCapability(businessSettingsSections)
-        : resolveSnapshotNavigation({
-            navigation: augmentSnapshotNavigationWithCapabilities(
-              snapshotContext.navigation,
-              hasModule,
-            ),
-            resolveLabel: t,
-            businessRole: jwt?.businessRole,
-            isPlatformAdmin,
-            hasModule,
-          });
+        : filterSectionsByCapability(snapshotNavigation!.sections);
+
+  const appsItems: ShellNavItem[] =
+    mode === "business" && !isSettingsMode && snapshotNavigation
+      ? filterAppsByCapability(snapshotNavigation.appsItems)
+      : [];
 
   const brandSubtitle =
     snapshotContext.branding.productName ??
@@ -145,6 +163,7 @@ export function AppShellLayout({ mode, children }: ShellLayoutProps) {
     <AppShell
       brand={brand}
       sections={sections}
+      appsItems={appsItems}
       navMode={isSettingsMode ? "settings" : "main"}
       footerItems={
         mode === "business" && !isSettingsMode

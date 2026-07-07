@@ -9,10 +9,11 @@ import {
 } from "@/components/data-display/data-table";
 import { DataTableRowActions } from "@/components/data-display/data-table-row-actions";
 import { ConfirmDeleteDialog } from "@/components/forms/confirm-delete-dialog";
-import { ListPage, ListPageSkeleton } from "@/components/layout/list-page";
-import { ActionButton } from "@/components/ui/action-button";
+import { EntityWorkspaceLayout } from "@/components/layout/entity-workspace-layout";
+import { ListPageSkeleton } from "@/components/layout/list-page";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { WORKSPACE_TABLE_CLASS } from "@/lib/design/workspace-tokens";
 import { workflowStatusLabel } from "@/features/automations/api/workflows.api";
 import {
   useAutomationWorkflowMutations,
@@ -33,6 +34,8 @@ function AutomationsListPageContent() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const { data, isLoading } = useAutomationWorkflowsList({ limit: 50 });
   const { statusMutation, deleteMutation } = useAutomationWorkflowMutations();
+
+  const items = data?.items ?? [];
 
   const columns = useMemo<DataTableColumn<AutomationWorkflow>[]>(
     () => [
@@ -76,74 +79,95 @@ function AutomationsListPageContent() {
           </div>
         ),
       },
-      {
-        id: "actions",
-        header: "",
-        cell: (row) => (
-          <DataTableRowActions
-            actions={[
-              {
-                label: "Edit",
-                onClick: () =>
-                  router.push(
-                    `/business/settings/automation-workflows/${row.id}`,
-                  ),
-              },
-              {
-                label: row.status === "ACTIVE" ? "Deactivate" : "Activate",
-                onClick: () =>
-                  statusMutation.mutate({
-                    id: row.id,
-                    status: row.status === "ACTIVE" ? "INACTIVE" : "ACTIVE",
-                  }),
-              },
-              {
-                label: "Delete",
-                destructive: true,
-                onClick: () => setDeleteId(row.id),
-              },
-            ]}
-          />
-        ),
-      },
     ],
-    [router, statusMutation],
+    [],
   );
 
   return (
-    <ListPage
-      title="Automations"
-      description="Linear workflows that run when triggers fire."
-      actions={
-        <div className="flex flex-wrap items-center gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() =>
-              router.push("/business/settings/automation-registry")
-            }
-          >
-            Registry
-          </Button>
-          <ActionButton
-            onClick={() =>
-              router.push("/business/settings/automation-workflows/new")
-            }
-          >
-            <Plus className="size-4" />
-            Create workflow
-          </ActionButton>
-        </div>
-      }
-    >
-      <DataTable
-        columns={columns}
-        data={data?.items ?? []}
-        getRowId={(row) => row.id}
-        isLoading={isLoading}
-        emptyTitle="No workflows yet"
-        emptyDescription="Create one to get started."
-      />
+    <>
+      <EntityWorkspaceLayout
+        title="Automations"
+        description="Linear workflows that run when triggers fire."
+        actions={
+          <>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() =>
+                router.push("/business/settings/automation-registry")
+              }
+            >
+              Registry
+            </Button>
+            <Button
+              size="sm"
+              onClick={() =>
+                router.push("/business/settings/automation-workflows/new")
+              }
+            >
+              <Plus className="mr-1.5 size-4" />
+              Create workflow
+            </Button>
+          </>
+        }
+        footer={
+          items.length > 0
+            ? `${items.length} workflow${items.length === 1 ? "" : "s"}`
+            : undefined
+        }
+      >
+        <DataTable
+          columns={columns}
+          data={items}
+          getRowId={(row) => row.id}
+          isLoading={isLoading}
+          density="compact"
+          onRowClick={(row) =>
+            router.push(`/business/settings/automation-workflows/${row.id}`)
+          }
+          emptyTitle="No workflows yet"
+          emptyDescription="Create one to get started."
+          emptyAction={
+            <Button
+              size="sm"
+              onClick={() =>
+                router.push("/business/settings/automation-workflows/new")
+              }
+            >
+              <Plus className="mr-1.5 size-4" />
+              Create workflow
+            </Button>
+          }
+          rowActions={(row) => (
+            <DataTableRowActions
+              actions={[
+                {
+                  label: "Edit",
+                  onClick: () =>
+                    router.push(
+                      `/business/settings/automation-workflows/${row.id}`,
+                    ),
+                },
+                {
+                  label: row.status === "ACTIVE" ? "Deactivate" : "Activate",
+                  onClick: () =>
+                    statusMutation.mutate({
+                      id: row.id,
+                      status: row.status === "ACTIVE" ? "INACTIVE" : "ACTIVE",
+                    }),
+                },
+                {
+                  label: "Delete",
+                  destructive: true,
+                  onClick: () => setDeleteId(row.id),
+                },
+              ]}
+            />
+          )}
+          className={WORKSPACE_TABLE_CLASS}
+        />
+      </EntityWorkspaceLayout>
 
       <ConfirmDeleteDialog
         open={!!deleteId}
@@ -155,7 +179,7 @@ function AutomationsListPageContent() {
           setDeleteId(null);
         }}
       />
-    </ListPage>
+    </>
   );
 }
 

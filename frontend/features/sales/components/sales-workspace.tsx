@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Check,
@@ -18,7 +18,10 @@ import {
   Wrench,
 } from "lucide-react";
 import { toast } from "sonner";
-import { PageHeader } from "@/components/layout/page-header";
+import { DataTable, type DataTableColumn } from "@/components/data-display/data-table";
+import { EntityDetailDrawer } from "@/components/layout/entity-detail-drawer";
+import { EntityWorkspaceLayout } from "@/components/layout/entity-workspace-layout";
+import { SearchInput } from "@/components/forms/search-input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -51,7 +54,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { SearchableSelect } from "@/components/forms/searchable-select";
-import { EmptyState } from "@/components/data-display/empty-state";
+import {
+  WORKSPACE_ACTIVE_ROW_CLASS,
+  WORKSPACE_TABLE_CLASS,
+} from "@/lib/design/workspace-tokens";
+import { useEntitySelection } from "@/lib/routing/use-entity-selection";
 import { cn } from "@/lib/utils";
 import { queryKeys } from "@/lib/query/keys";
 import { invalidateCheckouts } from "@/lib/query/invalidation";
@@ -94,11 +101,15 @@ import type {
 type StatusFilter = "all" | "OPEN" | "PAID" | "VOID";
 
 export function SalesWorkspace() {
-  const router = useRouter();
   const searchParams = useSearchParams();
-  const selectedId = searchParams.get("sale");
   const contactFilter = searchParams.get("contact");
   const queryClient = useQueryClient();
+  const {
+    selectedId,
+    isOpen,
+    setSelectedId,
+    clearSelection,
+  } = useEntitySelection({ legacyIdParams: ["sale"] });
 
   const [listSearch, setListSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
@@ -283,15 +294,6 @@ export function SalesWorkspace() {
     setNewSaleOpen(true);
   };
 
-  const selectSale = useCallback(
-    (id: string) => {
-      const params = new URLSearchParams(searchParams.toString());
-      params.set("sale", id);
-      router.replace(`/business/sales?${params.toString()}`, { scroll: false });
-    },
-    [router, searchParams],
-  );
-
   const refreshSale = useCallback(() => {
     void invalidateCheckouts(queryClient, selectedId ?? undefined);
   }, [queryClient, selectedId]);
@@ -303,7 +305,7 @@ export function SalesWorkspace() {
       setNewSaleOpen(false);
       setNewContactId(contactFilter);
       void invalidateCheckouts(queryClient);
-      selectSale(created.id);
+      setSelectedId(created.id);
     },
     onError: (err: Error) => toast.error(err.message),
   });
@@ -474,110 +476,185 @@ export function SalesWorkspace() {
     { value: "VOID", label: "Void" },
   ];
 
+  const columns = useMemo<DataTableColumn<Checkout>[]>(
+    () => [
+      {
+        id: "saleNumber",
+        header: "Sale",
+        sortable: true,
+        sortValue: (row) => row.saleNumber,
+        cell: (row) => <span className="font-medium">{row.saleNumber}</span>,
+      },
+      {
+        id: "status",
+        header: "Status",
+        cell: (row) => (
+          <Badge
+            variant={
+              row.status === "VOID"
+                ? "destructive"
+                : row.isOpen
+                  ? "default"
+                  : "secondary"
+            }
+          >
+            {row.status === "VOID"
+              ? "Void"
+              : row.isOpen
+                ? "Open"
+                : "Closed"}
+          </Badge>
+        ),
+      },
+      {
+        id: "client",
+        header: "Client",
+        sortable: true,
+        sortValue: (row) => row.contact?.label ?? "",
+        cell: (row) => row.contact?.label ?? "Client",
+      },
+      {
+        id: "total",
+        header: "Total",
+        sortable: true,
+        sortValue: (row) => parseFloat(row.totalAmount),
+        className: "text-right whitespace-nowrap",
+        cell: (row) => (
+          <span className="tabular-nums">
+            {formatMoney(parseFloat(row.totalAmount))}
+          </span>
+        ),
+      },
+    ],
+    [],
+  );
+
+  const saleDetailProps = sale
+    ? {
+        sale,
+        onAddService: () => setAddServiceOpen(true),
+        onAddProduct: () => setAddProductOpen(true),
+        onAddGiftCard: () => setAddGiftCardOpen(true),
+        onAddPackage: () => setAddPackageOpen(true),
+        onApplyOffer: () => setApplyOfferOpen(true),
+        onRemoveOffer: (offerId: string) => removeOfferMutation.mutate(offerId),
+        removeOfferPending: removeOfferMutation.isPending,
+        onAddDeposit: (amount: number) => depositMutation.mutate(amount),
+        onClose: () => setCloseOpen(true),
+        onEdit: openEditSale,
+        onVoid: () => setVoidOpen(true),
+        onEditLine: openEditLine,
+        onRemoveLine: (lineId: string) => removeLineMutation.mutate(lineId),
+        lineRemovePending: removeLineMutation.isPending,
+      }
+    : null;
+
   return (
-    <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
-      <div className="shrink-0 px-[var(--page-padding-x)] pt-[var(--page-content-top-gap)]">
-        <PageHeader
-          title="Sales"
-          description="Point-of-sale checkouts — open sales, add services, and collect payment."
+  <>
+      <EntityWorkspaceLayout
+        title="Sales"
+        description="Point-of-sale checkouts — open sales, add services, and collect payment."
+        search={
+          <SearchInput
+            value={listSearch}
+            onChange={setListSearch}
+            placeholder="Search client or sale…"
+            className="min-w-0 flex-1"
+          />
+        }
+        filters={
+          <SearchableSelect
+            items={statusFilterItems}
+            value={statusFilter}
+            onValueChange={(v) => setStatusFilter(v as StatusFilter)}
+            placeholder="Status"
+          />
+        }
+        actions={
+          <>
+            <Button
+              type="button"
+              size="icon-sm"
+              className="sm:hidden"
+              onClick={openNewSale}
+              aria-label="New sale"
+            >
+              <Plus className="size-4" />
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              className="hidden shrink-0 sm:inline-flex"
+              onClick={openNewSale}
+            >
+              <Plus className="mr-1.5 size-4" />
+              New sale
+            </Button>
+          </>
+        }
+        footer={
+          sales.length > 0
+            ? `${sales.length} sale${sales.length === 1 ? "" : "s"}`
+            : undefined
+        }
+      >
+        <DataTable
+          columns={columns}
+          data={sales}
+          getRowId={(row) => row.id}
+          isLoading={listLoading}
+          density="compact"
+          activeRowId={selectedId}
+          onRowClick={(row) => setSelectedId(row.id)}
+          getRowClassName={(row) =>
+            selectedId === row.id ? WORKSPACE_ACTIVE_ROW_CLASS : undefined
+          }
+          emptyTitle="No sales yet"
+          emptyDescription="Create a new sale to get started."
+          emptyAction={
+            <Button size="sm" onClick={openNewSale}>
+              <Plus className="mr-1.5 size-4" />
+              New sale
+            </Button>
+          }
+          className={WORKSPACE_TABLE_CLASS}
         />
-      </div>
+      </EntityWorkspaceLayout>
 
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-[var(--page-padding-x)] pb-[var(--page-padding-y)]">
-        <div className="grid min-h-0 flex-1 gap-4 overflow-hidden max-lg:grid-rows-[minmax(0,1fr)_minmax(0,1fr)] lg:grid-cols-[320px_minmax(0,1fr)] lg:items-stretch">
-          <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-xl border border-border bg-card shadow-elevation-xs">
-            <div className="shrink-0 space-y-2 border-b border-border p-3">
-              <div className="flex items-center gap-2">
-                <Input
-                  className="min-w-0 flex-1"
-                  placeholder="Search client or sale…"
-                  value={listSearch}
-                  onChange={(e) => setListSearch(e.target.value)}
-                />
-                <Button
-                  type="button"
-                  size="icon"
-                  className="size-[var(--control-height)] shrink-0 rounded-[var(--radius-control)]"
-                  onClick={openNewSale}
-                  aria-label="New sale"
-                >
-                  <Plus className="size-4" />
-                </Button>
-              </div>
-              <SearchableSelect
-                items={statusFilterItems}
-                value={statusFilter}
-                onValueChange={(v) => setStatusFilter(v as StatusFilter)}
-                placeholder="Status"
-              />
-            </div>
-            <div className="min-h-0 flex-1 overflow-y-auto p-2">
-            {listLoading ? (
-              <p className="p-3 text-sm text-muted-foreground">Loading…</p>
-            ) : sales.length === 0 ? (
-              <EmptyState
-                icon={
-                  <ShoppingBag
-                    className="size-5 text-muted-foreground/70"
-                    aria-hidden
-                  />
-                }
-                title="No sales yet"
-                description="Create a new sale to get started."
-              />
-            ) : (
-              <ul className="space-y-1">
-                {sales.map((row) => (
-                  <SaleListItem
-                    key={row.id}
-                    sale={row}
-                    selected={row.id === selectedId}
-                    onSelect={() => selectSale(row.id)}
-                  />
-                ))}
-              </ul>
-            )}
-            </div>
-          </div>
-
-          <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-xl border border-border bg-card shadow-elevation-xs">
-          {!selectedId ? (
-            <div className="flex min-h-0 flex-1 items-center justify-center overflow-hidden p-8">
-              <EmptyState
-                icon={
-                  <ShoppingBag
-                    className="size-5 text-muted-foreground/70"
-                    aria-hidden
-                  />
-                }
-                title="Select a sale"
-                description="Choose a sale from the list or create a new one."
-              />
-            </div>
-          ) : detailLoading || !sale ? (
-            <p className="p-6 text-sm text-muted-foreground">Loading sale…</p>
-          ) : (
-            <SaleDetail
-              sale={sale}
-              onAddService={() => setAddServiceOpen(true)}
-              onAddProduct={() => setAddProductOpen(true)}
-              onAddGiftCard={() => setAddGiftCardOpen(true)}
-              onAddPackage={() => setAddPackageOpen(true)}
-              onApplyOffer={() => setApplyOfferOpen(true)}
-              onRemoveOffer={(offerId) => removeOfferMutation.mutate(offerId)}
-              removeOfferPending={removeOfferMutation.isPending}
-              onAddDeposit={(amount) => depositMutation.mutate(amount)}
-              onClose={() => setCloseOpen(true)}
-              onEdit={openEditSale}
-              onVoid={() => setVoidOpen(true)}
-              onEditLine={openEditLine}
-              onRemoveLine={(lineId) => removeLineMutation.mutate(lineId)}
-              lineRemovePending={removeLineMutation.isPending}
+      <EntityDetailDrawer
+        open={isOpen}
+        onOpenChange={(open) => {
+          if (!open) clearSelection();
+        }}
+        width="wide"
+        title={sale?.saleNumber ?? "Sale"}
+        subtitle={sale?.contact?.label}
+        isLoading={detailLoading}
+        badges={
+          sale ? (
+            <SaleStatusPill status={sale.status} isOpen={sale.isOpen} />
+          ) : null
+        }
+        headerActions={
+          sale?.isOpen && saleDetailProps ? (
+            <SaleDetailToolbar
+              onEdit={saleDetailProps.onEdit}
+              onAddDeposit={saleDetailProps.onAddDeposit}
+              onAddService={saleDetailProps.onAddService}
+              onAddProduct={saleDetailProps.onAddProduct}
+              onAddGiftCard={saleDetailProps.onAddGiftCard}
+              onAddPackage={saleDetailProps.onAddPackage}
+              onApplyOffer={saleDetailProps.onApplyOffer}
+              onVoid={saleDetailProps.onVoid}
+              onClose={saleDetailProps.onClose}
             />
-          )}
-        </div>
-        </div>
-      </div>
+          ) : null
+        }
+      >
+        {selectedId && sale && saleDetailProps ? (
+          <SaleDetail embedded {...saleDetailProps} />
+        ) : null}
+      </EntityDetailDrawer>
 
       <Dialog open={newSaleOpen} onOpenChange={setNewSaleOpen}>
         <DialogContent>
@@ -893,53 +970,7 @@ export function SalesWorkspace() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
-  );
-}
-
-function SaleListItem({
-  sale,
-  selected,
-  onSelect,
-}: {
-  sale: Checkout;
-  selected: boolean;
-  onSelect: () => void;
-}) {
-  return (
-    <li>
-      <button
-        type="button"
-        onClick={onSelect}
-        className={cn(
-          "w-full rounded-md px-3 py-2 text-left text-sm transition-colors",
-          selected ? "bg-accent" : "hover:bg-muted/60",
-        )}
-      >
-        <div className="flex items-center justify-between gap-2">
-          <span className="font-medium">{sale.saleNumber}</span>
-          <Badge
-            variant={
-              sale.status === "VOID"
-                ? "destructive"
-                : sale.isOpen
-                  ? "default"
-                  : "secondary"
-            }
-          >
-            {sale.status === "VOID"
-              ? "Void"
-              : sale.isOpen
-                ? "Open"
-                : "Closed"}
-          </Badge>
-        </div>
-        <div className="mt-1 text-xs text-muted-foreground">
-          {sale.contact?.label ?? "Client"} ·{" "}
-          {formatMoney(parseFloat(sale.totalAmount))}
-        </div>
-      </button>
-    </li>
+    </>
   );
 }
 
@@ -1080,6 +1111,7 @@ function SaleDetailToolbar({
 
 function SaleDetail({
   sale,
+  embedded = false,
   onAddService,
   onAddProduct,
   onAddGiftCard,
@@ -1096,6 +1128,7 @@ function SaleDetail({
   lineRemovePending,
 }: {
   sale: Checkout;
+  embedded?: boolean;
   onAddService: () => void;
   onAddProduct: () => void;
   onAddGiftCard: () => void;
@@ -1115,37 +1148,46 @@ function SaleDetail({
     sale.status === "VOID" ? "Void" : sale.isOpen ? "Open" : "Closed";
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 py-3">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-        <div className="min-w-0">
-          <h2 className="text-base font-semibold">{sale.saleNumber}</h2>
-          <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-            <span>{sale.contact?.label}</span>
-            <SaleStatusPill status={sale.status} isOpen={sale.isOpen} />
+    <div
+      className={cn(
+        "flex min-h-0 flex-1 flex-col",
+        !embedded && "overflow-y-auto px-4 py-3",
+      )}
+    >
+      {!embedded ? (
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div className="min-w-0">
+            <h2 className="text-base font-semibold">{sale.saleNumber}</h2>
+            <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+              <span>{sale.contact?.label}</span>
+              <SaleStatusPill status={sale.status} isOpen={sale.isOpen} />
+            </div>
+            {sale.notes ? (
+              <p className="mt-2 text-xs text-muted-foreground">{sale.notes}</p>
+            ) : null}
           </div>
-          {sale.notes ? (
-            <p className="mt-2 text-xs text-muted-foreground">{sale.notes}</p>
-          ) : null}
+
+          {sale.isOpen ? (
+            <SaleDetailToolbar
+              onEdit={onEdit}
+              onAddDeposit={onAddDeposit}
+              onAddService={onAddService}
+              onAddProduct={onAddProduct}
+              onAddGiftCard={onAddGiftCard}
+              onAddPackage={onAddPackage}
+              onApplyOffer={onApplyOffer}
+              onVoid={onVoid}
+              onClose={onClose}
+            />
+          ) : (
+            <span className="text-sm text-muted-foreground">{statusLabel}</span>
+          )}
         </div>
+      ) : sale.notes ? (
+        <p className="text-xs text-muted-foreground">{sale.notes}</p>
+      ) : null}
 
-        {sale.isOpen ? (
-          <SaleDetailToolbar
-            onEdit={onEdit}
-            onAddDeposit={onAddDeposit}
-            onAddService={onAddService}
-            onAddProduct={onAddProduct}
-            onAddGiftCard={onAddGiftCard}
-            onAddPackage={onAddPackage}
-            onApplyOffer={onApplyOffer}
-            onVoid={onVoid}
-            onClose={onClose}
-          />
-        ) : (
-          <span className="text-sm text-muted-foreground">{statusLabel}</span>
-        )}
-      </div>
-
-      <div className="mt-5 border-t border-border">
+      <div className={cn(!embedded && "mt-5", "border-t border-border")}>
         {sale.items.length === 0 ? (
           <p className="py-8 text-sm text-muted-foreground">
             No line items yet. Use{" "}

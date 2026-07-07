@@ -53,6 +53,8 @@ export interface GiftCardDetailPanelProps {
   className?: string;
   /** Drawer = mobile sheet; reserves space for the sheet close button. */
   variant?: "panel" | "drawer";
+  /** Renders body only for EntityDetailDrawer (no aside chrome). */
+  embedded?: boolean;
 }
 
 export function GiftCardDetailPanel({
@@ -71,31 +73,16 @@ export function GiftCardDetailPanel({
   onOpenContact,
   className,
   variant = "panel",
+  embedded = false,
 }: GiftCardDetailPanelProps) {
   const isDrawer = variant === "drawer";
-  return (
-    <aside
-      className={cn(
-        "flex h-full min-h-0 flex-col overflow-hidden rounded-xl border border-border bg-card shadow-elevation-xs",
-        className,
-      )}
-    >
-      {!selectedId ? (
-        <div className="flex min-h-0 flex-1 items-center justify-center overflow-hidden p-8">
-          <EmptyState
-            icon={
-              <Gift className="size-5 text-muted-foreground/70" aria-hidden />
-            }
-            title="Select a gift card"
-            description="Choose a gift card from the list to view balance and history."
-          />
-        </div>
-      ) : isLoading || !detail ? (
-        <p className="p-6 text-sm text-muted-foreground">Loading gift card…</p>
-      ) : isError ? (
-        <ApiErrorState error={error} onRetry={onRetry} />
-      ) : (
-        <>
+
+  const body =
+    isError && detail ? (
+      <ApiErrorState error={error} onRetry={onRetry} />
+    ) : !detail ? null : (
+      <>
+        {!embedded ? (
           <div
             className={cn(
               "shrink-0 border-b border-border px-4 py-3",
@@ -115,8 +102,14 @@ export function GiftCardDetailPanel({
               </Button>
             </div>
           </div>
+        ) : null}
 
-          <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-4 py-4">
+        <div
+          className={cn(
+            "min-h-0 flex-1 space-y-4 overflow-y-auto",
+            embedded ? "" : "px-4 py-4",
+          )}
+        >
             <GiftCardVisual
               businessName={businessName}
               number={detail.number}
@@ -220,6 +213,7 @@ export function GiftCardDetailPanel({
             </div>
           </div>
 
+        {!embedded ? (
           <div className="shrink-0 space-y-2 border-t border-border px-4 py-3">
             <Button
               variant="outline"
@@ -251,7 +245,35 @@ export function GiftCardDetailPanel({
               })}
             </p>
           </div>
-        </>
+        ) : null}
+      </>
+    );
+
+  if (embedded) {
+    return body;
+  }
+
+  return (
+    <aside
+      className={cn(
+        "flex h-full min-h-0 flex-col overflow-hidden rounded-xl border border-border bg-card shadow-elevation-xs",
+        className,
+      )}
+    >
+      {!selectedId ? (
+        <div className="flex min-h-0 flex-1 items-center justify-center overflow-hidden p-8">
+          <EmptyState
+            icon={
+              <Gift className="size-5 text-muted-foreground/70" aria-hidden />
+            }
+            title="Select a gift card"
+            description="Choose a gift card from the list to view balance and history."
+          />
+        </div>
+      ) : isLoading || !detail ? (
+        <p className="p-6 text-sm text-muted-foreground">Loading gift card…</p>
+      ) : (
+        body
       )}
     </aside>
   );

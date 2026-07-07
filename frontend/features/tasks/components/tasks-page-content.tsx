@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -11,14 +12,17 @@ import { DataTableRowActions } from "@/components/data-display/data-table-row-ac
 import { ConfirmDeleteDialog } from "@/components/forms/confirm-delete-dialog";
 import { SearchInput } from "@/components/forms/search-input";
 import { SearchableSelect } from "@/components/forms/searchable-select";
-import { FilterBar } from "@/components/layout/filter-bar";
-import { ListPage } from "@/components/layout/list-page";
+import { EntityWorkspaceLayout } from "@/components/layout/entity-workspace-layout";
 import { TaskFormDialog } from "@/features/tasks/components/task-form-dialog";
 import { useTasksPageColumns } from "@/features/tasks/hooks/use-tasks-page-columns";
-import { ActionButton } from "@/components/ui/action-button";
+import { Button } from "@/components/ui/button";
 import { ListPagination } from "@/components/ui/list-pagination";
 import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
 import { useListSearchParams } from "@/lib/hooks/use-list-search-params";
+import {
+  WORKSPACE_ACTIVE_ROW_CLASS,
+  WORKSPACE_TABLE_CLASS,
+} from "@/lib/design/workspace-tokens";
 import { completeTask, deleteTask, reopenTask } from "@/features/tasks/api/tasks.api";
 import { useTasksList } from "@/features/tasks/hooks/use-tasks-list";
 import { listBusinessMembers } from "@/features/settings/api/business.api";
@@ -56,6 +60,11 @@ export function TasksPageContent() {
   const canAssign = useCan(PERMISSIONS["members.invite"]);
   const { params, page, setParams } = useListSearchParams(LIST_SCHEMA);
   const debouncedSearch = useDebouncedValue(params.search);
+  const {
+    selectedId,
+    setSelectedId,
+    clearSelection,
+  } = useEntitySelection();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Task | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -118,30 +127,27 @@ export function TasksPageContent() {
 
   const columns = useTasksPageColumns();
 
+  const openTask = (task: Task) => {
+    setEditing(task);
+    setSelectedId(task.id);
+    setDialogOpen(true);
+  };
+
   return (
     <>
-      <ListPage
+      <EntityWorkspaceLayout
         title="Tasks"
         description="Follow-up actions with due dates, linked to contacts and leads."
-        actions={
-          <ActionButton
-            onClick={() => {
-              setEditing(null);
-              setDialogOpen(true);
-            }}
-          >
-            <Plus className="mr-1.5 size-4" />
-            New task
-          </ActionButton>
+        search={
+          <SearchInput
+            value={params.search}
+            onChange={(search) => setParams({ search, page: "1" })}
+            placeholder="Search tasks…"
+            className="min-w-0 flex-1 sm:max-w-md"
+          />
         }
         filters={
-          <FilterBar>
-            <SearchInput
-              value={params.search}
-              onChange={(search) => setParams({ search, page: "1" })}
-              placeholder="Search tasks…"
-              className="max-w-xs"
-            />
+          <>
             <SearchableSelect
               items={statusFilterItems}
               value={params.status}
@@ -171,9 +177,21 @@ export function TasksPageContent() {
                 triggerClassName="w-[11rem] shrink-0"
               />
             ) : null}
-          </FilterBar>
+          </>
         }
-        pagination={
+        actions={
+          <Button
+            size="sm"
+            onClick={() => {
+              setEditing(null);
+              setDialogOpen(true);
+            }}
+          >
+            <Plus className="mr-1.5 size-4" />
+            New task
+          </Button>
+        }
+        footer={
           data ? (
             <ListPagination
               meta={data.meta}
@@ -181,7 +199,7 @@ export function TasksPageContent() {
               onPageChange={(p) => setParams({ page: String(p) })}
               label="tasks"
             />
-          ) : null
+          ) : undefined
         }
       >
         <DataTable
@@ -189,8 +207,26 @@ export function TasksPageContent() {
           data={data?.items ?? []}
           getRowId={(row) => row.id}
           isLoading={isLoading}
+          density="compact"
+          activeRowId={selectedId}
+          onRowClick={(row) => openTask(row)}
+          getRowClassName={(row) =>
+            selectedId === row.id ? WORKSPACE_ACTIVE_ROW_CLASS : undefined
+          }
           emptyTitle="No tasks yet"
           emptyDescription="Create a task from a contact workspace or here."
+          emptyAction={
+            <Button
+              size="sm"
+              onClick={() => {
+                setEditing(null);
+                setDialogOpen(true);
+              }}
+            >
+              <Plus className="mr-1.5 size-4" />
+              New task
+            </Button>
+          }
           rowActions={(row) => (
             <DataTableRowActions
               actions={[
@@ -205,10 +241,7 @@ export function TasksPageContent() {
                     },
                 {
                   label: "Edit",
-                  onClick: () => {
-                    setEditing(row);
-                    setDialogOpen(true);
-                  },
+                  onClick: () => openTask(row),
                 },
                 {
                   label: "Delete",
@@ -218,14 +251,18 @@ export function TasksPageContent() {
               ]}
             />
           )}
+          className={WORKSPACE_TABLE_CLASS}
         />
-      </ListPage>
+      </EntityWorkspaceLayout>
 
       <TaskFormDialog
         open={dialogOpen}
         onOpenChange={(open) => {
           setDialogOpen(open);
-          if (!open) setEditing(null);
+          if (!open) {
+            setEditing(null);
+            clearSelection();
+          }
         }}
         task={editing}
         onSuccess={() => void invalidateTaskLists(queryClient)}

@@ -21,6 +21,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
+import { WORKSPACE_TABLE_ROW_HOVER_CLASS } from "@/lib/design/workspace-tokens";
 import { DataTableColumnHeader } from "@/components/data-display/data-table-column-header";
 import { EmptyState } from "@/components/data-display/empty-state";
 
@@ -241,8 +242,12 @@ export function DataTable<T>({
                     ? "selected"
                     : undefined
                 }
+                tabIndex={onRowClick ? 0 : undefined}
+                role={onRowClick ? "button" : undefined}
                 className={cn(
-                  onRowClick && "cursor-pointer hover:bg-primary/5",
+                  onRowClick &&
+                    "cursor-pointer hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset",
+                  WORKSPACE_TABLE_ROW_HOVER_CLASS,
                   getRowClassName?.(row.original),
                 )}
                 onClick={(event) => {
@@ -256,6 +261,13 @@ export function DataTable<T>({
                     return;
                   }
                   onRowClick(row.original);
+                }}
+                onKeyDown={(event) => {
+                  if (!onRowClick) return;
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    onRowClick(row.original);
+                  }
                 }}
               >
                 {row.getVisibleCells().map((cell) => (

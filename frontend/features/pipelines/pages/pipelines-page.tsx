@@ -22,6 +22,8 @@ import {
 } from "@/lib/query/invalidation";
 import { queryKeys } from "@/lib/query/keys";
 import { pipelineSelectOptions } from "@/features/pipelines/utils/select-options";
+import { WORKSPACE_TOOLBAR_SURFACE_CLASS } from "@/lib/design/workspace-tokens";
+import { cn } from "@/lib/utils";
 import type { Lead } from "@/features/leads/types";
 import type { Pipeline } from "@/features/pipelines/types";
 
@@ -134,7 +136,12 @@ export function BusinessCrmPipelinePage() {
           <Skeleton className="h-[var(--control-height)] w-56 shrink-0" />
         </div>
       ) : pipelines?.length ? (
-        <div className="flex flex-wrap items-center gap-3">
+        <div
+          className={cn(
+            WORKSPACE_TOOLBAR_SURFACE_CLASS,
+            "flex-row flex-wrap items-center gap-3",
+          )}
+        >
           <SearchableSelect
             items={pipelinePickerItems}
             value={selectedPipeline?.id ?? null}

@@ -78,7 +78,10 @@ export interface PackageDetailPanelProps {
   onEditExpiration: () => void;
   onOpenContact: (contactId: string) => void;
   className?: string;
+  /** Drawer = mobile sheet; reserves space for the sheet close button. */
   variant?: "panel" | "drawer";
+  /** Renders body only for EntityDetailDrawer (no aside chrome). */
+  embedded?: boolean;
 }
 
 export function PackageDetailPanel({
@@ -101,32 +104,16 @@ export function PackageDetailPanel({
   onOpenContact,
   className,
   variant = "panel",
+  embedded = false,
 }: PackageDetailPanelProps) {
   const isDrawer = variant === "drawer";
 
-  return (
-    <aside
-      className={cn(
-        "flex h-full min-h-0 flex-col overflow-hidden rounded-xl border border-border bg-card shadow-elevation-xs",
-        className,
-      )}
-    >
-      {!selectedId ? (
-        <div className="flex min-h-0 flex-1 items-center justify-center overflow-hidden p-8">
-          <EmptyState
-            icon={
-              <Boxes className="size-5 text-muted-foreground/70" aria-hidden />
-            }
-            title="Select a package"
-            description="Add a new client package or choose one from the list to view details."
-          />
-        </div>
-      ) : isLoading || !detail ? (
-        <p className="p-6 text-sm text-muted-foreground">Loading package…</p>
-      ) : isError ? (
-        <ApiErrorState error={error} onRetry={onRetry} />
-      ) : (
-        <>
+  const body =
+    isError && detail ? (
+      <ApiErrorState error={error} onRetry={onRetry} />
+    ) : !detail ? null : (
+      <>
+        {!embedded ? (
           <div
             className={cn(
               "shrink-0 border-b border-border px-4 py-3",
@@ -162,149 +149,184 @@ export function PackageDetailPanel({
               </DropdownMenu>
             </div>
           </div>
+        ) : null}
 
-          <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-4 py-4">
-            <div className="space-y-1">
-              <p className="text-lg font-semibold tracking-tight">
-                {packageDisplayName(detail)}
+        <div
+          className={cn(
+            "min-h-0 flex-1 space-y-4 overflow-y-auto",
+            embedded ? "" : "px-4 py-4",
+          )}
+        >
+          <div className="space-y-1">
+            <p className="text-lg font-semibold tracking-tight">
+              {packageDisplayName(detail)}
+            </p>
+            {detail.isDemo ? (
+              <Badge variant="secondary">Demo</Badge>
+            ) : null}
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <InfoBlock label="Client">
+              <button
+                type="button"
+                className="text-sm font-medium text-primary hover:underline"
+                onClick={() => onOpenContact(detail.contact.id)}
+              >
+                {detail.contact.name}
+              </button>
+            </InfoBlock>
+            <InfoBlock label="Purchase date">
+              <p className="text-sm">{formatDetailDate(detail.purchaseDate)}</p>
+            </InfoBlock>
+          </div>
+
+          <InfoBlock label="Expiration date">
+            <div className="flex items-center gap-2">
+              <p className="text-sm">
+                {detail.expirationDate
+                  ? formatDetailDate(detail.expirationDate)
+                  : "No expiration date"}
               </p>
-              {detail.isDemo ? (
-                <Badge variant="secondary">Demo</Badge>
-              ) : null}
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={onEditExpiration}
+                aria-label="Edit expiration date"
+              >
+                <Pencil className="size-3.5" />
+              </Button>
             </div>
+          </InfoBlock>
 
-            <div className="grid gap-4 sm:grid-cols-2">
-              <InfoBlock label="Client">
-                <button
-                  type="button"
-                  className="text-sm font-medium text-primary hover:underline"
-                  onClick={() => onOpenContact(detail.contact.id)}
-                >
-                  {detail.contact.name}
-                </button>
-              </InfoBlock>
-              <InfoBlock label="Purchase date">
-                <p className="text-sm">{formatDetailDate(detail.purchaseDate)}</p>
-              </InfoBlock>
+          <div className="space-y-2">
+            <p className="text-drawer-section">Services remaining</p>
+            <div className="overflow-hidden rounded-lg border border-border">
+              <Table>
+                <TableHeader>
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead>Service</TableHead>
+                    <TableHead className="text-right"># Remaining</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {detail.serviceAllocations.map((allocation) => (
+                    <TableRow key={allocation.serviceId}>
+                      <TableCell>{allocation.serviceName}</TableCell>
+                      <TableCell className="text-right">
+                        {adjustMode ? (
+                          <Input
+                            type="number"
+                            min={0}
+                            className="ml-auto h-8 w-20 text-right tabular-nums"
+                            value={
+                              allocationDraft[allocation.serviceId] ??
+                              allocation.remaining
+                            }
+                            onChange={(e) =>
+                              onAllocationChange(
+                                allocation.serviceId,
+                                Number(e.target.value),
+                              )
+                            }
+                          />
+                        ) : (
+                          <span className="tabular-nums">
+                            {allocation.remaining}
+                          </span>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </div>
-
-            <InfoBlock label="Expiration date">
-              <div className="flex items-center gap-2">
-                <p className="text-sm">
-                  {detail.expirationDate
-                    ? formatDetailDate(detail.expirationDate)
-                    : "No expiration date"}
-                </p>
+            {adjustMode ? (
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" size="sm" onClick={onCancelAdjust}>
+                  Cancel
+                </Button>
                 <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  onClick={onEditExpiration}
-                  aria-label="Edit expiration date"
+                  size="sm"
+                  disabled={adjustPending}
+                  onClick={onSaveAdjust}
                 >
-                  <Pencil className="size-3.5" />
+                  Save
                 </Button>
               </div>
-            </InfoBlock>
+            ) : null}
+          </div>
 
-            <div className="space-y-2">
-              <p className="text-drawer-section">Services remaining</p>
+          <div className="space-y-2">
+            <p className="text-drawer-section">History</p>
+            {detail.history.length === 0 ? (
+              <p className="rounded-lg border border-dashed border-border px-3 py-6 text-center text-sm text-muted-foreground">
+                No activity yet
+              </p>
+            ) : (
               <div className="overflow-hidden rounded-lg border border-border">
                 <Table>
                   <TableHeader>
                     <TableRow className="hover:bg-transparent">
-                      <TableHead>Service</TableHead>
-                      <TableHead className="text-right"># Remaining</TableHead>
+                      <TableHead>Date</TableHead>
+                      <TableHead>Event</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {detail.serviceAllocations.map((allocation) => (
-                      <TableRow key={allocation.serviceId}>
-                        <TableCell>{allocation.serviceName}</TableCell>
-                        <TableCell className="text-right">
-                          {adjustMode ? (
-                            <Input
-                              type="number"
-                              min={0}
-                              className="ml-auto h-8 w-20 text-right tabular-nums"
-                              value={
-                                allocationDraft[allocation.serviceId] ??
-                                allocation.remaining
-                              }
-                              onChange={(e) =>
-                                onAllocationChange(
-                                  allocation.serviceId,
-                                  Number(e.target.value),
-                                )
-                              }
-                            />
-                          ) : (
-                            <span className="tabular-nums">
-                              {allocation.remaining}
+                    {detail.history.map((event) => (
+                      <TableRow key={event.id}>
+                        <TableCell className="whitespace-nowrap text-muted-foreground">
+                          {formatDetailDate(event.createdAt)}
+                        </TableCell>
+                        <TableCell>
+                          <span className="font-medium">
+                            {historyEventLabel(event.eventType)}
+                          </span>
+                          {event.description ? (
+                            <span className="text-muted-foreground">
+                              {" "}
+                              — {event.description}
                             </span>
-                          )}
+                          ) : null}
                         </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
                 </Table>
               </div>
-              {adjustMode ? (
-                <div className="flex justify-end gap-2">
-                  <Button variant="outline" size="sm" onClick={onCancelAdjust}>
-                    Cancel
-                  </Button>
-                  <Button
-                    size="sm"
-                    disabled={adjustPending}
-                    onClick={onSaveAdjust}
-                  >
-                    Save
-                  </Button>
-                </div>
-              ) : null}
-            </div>
-
-            <div className="space-y-2">
-              <p className="text-drawer-section">History</p>
-              {detail.history.length === 0 ? (
-                <p className="rounded-lg border border-dashed border-border px-3 py-6 text-center text-sm text-muted-foreground">
-                  No activity yet
-                </p>
-              ) : (
-                <div className="overflow-hidden rounded-lg border border-border">
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="hover:bg-transparent">
-                        <TableHead>Date</TableHead>
-                        <TableHead>Event</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {detail.history.map((event) => (
-                        <TableRow key={event.id}>
-                          <TableCell className="whitespace-nowrap text-muted-foreground">
-                            {formatDetailDate(event.createdAt)}
-                          </TableCell>
-                          <TableCell>
-                            <span className="font-medium">
-                              {historyEventLabel(event.eventType)}
-                            </span>
-                            {event.description ? (
-                              <span className="text-muted-foreground">
-                                {" "}
-                                — {event.description}
-                              </span>
-                            ) : null}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-            </div>
+            )}
           </div>
-        </>
+        </div>
+      </>
+    );
+
+  if (embedded) {
+    return body;
+  }
+
+  return (
+    <aside
+      className={cn(
+        "flex h-full min-h-0 flex-col overflow-hidden rounded-xl border border-border bg-card shadow-elevation-xs",
+        className,
+      )}
+    >
+      {!selectedId ? (
+        <div className="flex min-h-0 flex-1 items-center justify-center overflow-hidden p-8">
+          <EmptyState
+            icon={
+              <Boxes className="size-5 text-muted-foreground/70" aria-hidden />
+            }
+            title="Select a package"
+            description="Add a new client package or choose one from the list to view details."
+          />
+        </div>
+      ) : isLoading || !detail ? (
+        <p className="p-6 text-sm text-muted-foreground">Loading package…</p>
+      ) : isError ? (
+        <ApiErrorState error={error} onRetry={onRetry} />
+      ) : (
+        body
       )}
     </aside>
   );

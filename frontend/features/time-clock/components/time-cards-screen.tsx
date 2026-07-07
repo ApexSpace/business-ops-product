@@ -1,16 +1,22 @@
 "use client";
 
+import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { DateTime } from "luxon";
-import { Filter, MoreHorizontal, Pencil, Plus, Timer } from "lucide-react";
+import { Clock, Filter, MoreHorizontal, Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { ApiErrorState } from "@/components/data-display/api-error-state";
 import {
   DataTable,
   type DataTableColumn,
 } from "@/components/data-display/data-table";
-import { ListToolbar } from "@/components/layout/list-toolbar";
+import { EntityDetailDrawer } from "@/components/layout/entity-detail-drawer";
+import { EntityWorkspaceLayout } from "@/components/layout/entity-workspace-layout";
+import {
+  EntityDetailField,
+  EntityDetailFieldGrid,
+} from "@/components/layout/entity-detail-section";
 import { SearchableSelect } from "@/components/forms/searchable-select";
 import {
   AlertDialog,
@@ -23,13 +29,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { IconButton } from "@/components/ui/icon-button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -45,7 +44,11 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { cn } from "@/lib/utils";
+import {
+  WORKSPACE_ACTIVE_ROW_CLASS,
+  WORKSPACE_TABLE_CLASS,
+} from "@/lib/design/workspace-tokens";
+import { useEntitySelection } from "@/lib/routing/use-entity-selection";
 import { queryKeys } from "@/lib/query/keys";
 import { invalidateTimeCardLists } from "@/lib/query/invalidation";
 import { listBusinessMembers } from "@/features/settings/api/business.api";
@@ -70,7 +73,7 @@ import {
   type TimePickerValue,
 } from "@/features/time-clock/utils/time-picker";
 
-type PanelMode = "empty" | "view" | "edit" | "add" | "options";
+type DrawerMode = "view" | "edit";
 
 function memberLabel(member: {
   user: { firstName?: string | null; lastName?: string | null; email: string };
@@ -86,14 +89,22 @@ export function TimeCardsScreen() {
   const { data: business } = useCurrentBusiness();
   const timezone = business?.timezone ?? "UTC";
 
+  const {
+    selectedId,
+    isOpen,
+    setSelectedId,
+    clearSelection,
+  } = useEntitySelection({ legacyIdParams: ["timeCard"] });
+
   const [filters, setFilters] = useState<TimeCardsListFilters>({
     page: 1,
     limit: 50,
     timePeriod: "all",
     sortBy: "day",
   });
-  const [panelMode, setPanelMode] = useState<PanelMode>("empty");
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [optionsOpen, setOptionsOpen] = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
+  const [drawerMode, setDrawerMode] = useState<DrawerMode>("view");
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   const [editClockIn, setEditClockIn] = useState<TimePickerValue>(emptyTimePicker());
@@ -184,7 +195,7 @@ export function TimeCardsScreen() {
     [],
   );
 
-  const { data: detail } = useQuery({
+  const { data: detail, isLoading: detailLoading } = useQuery({
     queryKey: queryKeys.timeClock.cards.detail(selectedId ?? ""),
     queryFn: () => getTimeCard(selectedId!),
     enabled: Boolean(selectedId),
@@ -205,7 +216,7 @@ export function TimeCardsScreen() {
     onSuccess: async () => {
       toast.success("Time card updated");
       await invalidateTimeCardLists(queryClient);
-      setPanelMode("view");
+      setDrawerMode("view");
     },
     onError: (err: Error) => toast.error(err.message),
   });
@@ -228,8 +239,9 @@ export function TimeCardsScreen() {
     onSuccess: async (created) => {
       toast.success("Time card added");
       await invalidateTimeCardLists(queryClient);
+      setAddOpen(false);
       setSelectedId(created.id);
-      setPanelMode("view");
+      setDrawerMode("view");
     },
     onError: (err: Error) => toast.error(err.message),
   });
@@ -239,18 +251,12 @@ export function TimeCardsScreen() {
     onSuccess: async () => {
       toast.success("Time card deleted");
       await invalidateTimeCardLists(queryClient);
-      setSelectedId(null);
-      setPanelMode("empty");
+      clearSelection();
+      setDrawerMode("view");
       setConfirmDelete(false);
     },
     onError: (err: Error) => toast.error(err.message),
   });
-
-  const openView = (item: TimeCardListItem) => {
-    setSelectedId(item.id);
-    setPanelMode("view");
-    setEditNotes(item.notes ?? "");
-  };
 
   const startEdit = () => {
     if (!detail) return;
@@ -261,12 +267,15 @@ export function TimeCardsScreen() {
         ? isoToTimePicker(detail.clockOutTimeIso, timezone)
         : emptyTimePicker(),
     );
-    setPanelMode("edit");
+    setDrawerMode("edit");
+  };
+
+  const cancelEdit = () => {
+    setDrawerMode("view");
   };
 
   const openAdd = () => {
-    setPanelMode("add");
-    setSelectedId(null);
+    setAddOpen(true);
     setAddStaffId(members[0]?.userId ?? "");
     setAddDate(DateTime.now().setZone(timezone).toFormat("yyyy-MM-dd"));
     setAddClockIn({ hour: "09", minute: "00", period: "AM" });
@@ -274,235 +283,230 @@ export function TimeCardsScreen() {
     setAddNotes("");
   };
 
-  const closePanel = () => {
-    if (selected) setPanelMode("view");
-    else setPanelMode("empty");
-  };
-
-  const showSidePanel = panelMode !== "empty" && panelMode !== "options";
+  const total = data?.meta?.total ?? data?.items.length ?? 0;
 
   return (
-    <div className="flex h-[calc(100vh-8rem)] min-h-[520px] overflow-hidden rounded-xl border border-border bg-card shadow-elevation-xs">
-      <div className={cn("flex min-w-0 flex-1 flex-col", showSidePanel && "border-r border-border")}>
-        <ListToolbar
-          className="rounded-none border-0 border-b bg-transparent shadow-none"
-          filters={
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setPanelMode("options")}
-            >
-              <Filter className="mr-1.5 size-4" />
-              Options
+    <>
+      <EntityWorkspaceLayout
+        title="Time cards"
+        description="Review and manage staff clock-in and clock-out records."
+        filters={
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setOptionsOpen(true)}
+          >
+            <Filter className="mr-1.5 size-4" />
+            Options
+          </Button>
+        }
+        actions={
+          <>
+            <Button variant="outline" size="sm" asChild>
+              <Link href="/business/time-clock">
+                <Clock className="mr-1.5 size-4" />
+                Staff kiosk
+              </Link>
             </Button>
-          }
-          actions={
             <Button size="sm" onClick={openAdd}>
               <Plus className="mr-1.5 size-4" />
-              Add Time Card
+              Add time card
             </Button>
-          }
-        />
-
+          </>
+        }
+        footer={
+          data?.items.length
+            ? `${data.items.length} of ${total} time card${total === 1 ? "" : "s"}`
+            : undefined
+        }
+      >
         {isError ? (
           <ApiErrorState error={error} onRetry={() => void refetch()} />
         ) : (
-          <div className="min-h-0 flex-1 overflow-auto">
-            <DataTable
-              className="rounded-none border-0 shadow-none"
-              density="compact"
-              columns={columns}
-              data={data?.items ?? []}
-              getRowId={(row) => row.id}
-              isLoading={isLoading}
-              activeRowId={selectedId}
-              onRowClick={openView}
-              emptyTitle="No time cards yet"
-              emptyDescription="Add a time card or adjust your filters."
-              emptyAction={
-                <Button size="sm" onClick={openAdd}>
-                  <Plus className="mr-2 size-4" />
-                  Add Time Card
-                </Button>
-              }
-            />
-          </div>
+          <DataTable
+            className={WORKSPACE_TABLE_CLASS}
+            density="compact"
+            columns={columns}
+            data={data?.items ?? []}
+            getRowId={(row) => row.id}
+            isLoading={isLoading}
+            activeRowId={selectedId}
+            onRowClick={(row) => {
+              setDrawerMode("view");
+              setSelectedId(row.id);
+            }}
+            getRowClassName={(row) =>
+              selectedId === row.id ? WORKSPACE_ACTIVE_ROW_CLASS : undefined
+            }
+            emptyTitle="No time cards yet"
+            emptyDescription="Add a time card or adjust your filters."
+            emptyAction={
+              <Button size="sm" onClick={openAdd}>
+                <Plus className="mr-2 size-4" />
+                Add time card
+              </Button>
+            }
+          />
         )}
-      </div>
+      </EntityWorkspaceLayout>
 
-      {panelMode === "empty" ? (
-        <aside className="hidden w-80 shrink-0 flex-col items-center justify-center gap-3 p-6 text-center text-muted-foreground lg:flex">
-          <Timer className="size-10 opacity-40" />
-          <p className="text-sm">
-            Click on a time card to see details or add a new one.
-          </p>
-        </aside>
-      ) : null}
+      <EntityDetailDrawer
+        open={isOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            clearSelection();
+            setDrawerMode("view");
+          }
+        }}
+        title={
+          drawerMode === "edit"
+            ? "Update time card"
+            : selected?.staff.name ?? "Time card"
+        }
+        subtitle={selected?.dayDisplay}
+        isLoading={detailLoading}
+        headerActions={
+          drawerMode === "view" && selected ? (
+            <Button variant="outline" size="sm" onClick={startEdit} disabled={!detail}>
+              <Pencil className="mr-1 size-3.5" />
+              Edit
+            </Button>
+          ) : drawerMode === "edit" ? (
+            <Button variant="ghost" size="sm" onClick={cancelEdit}>
+              Cancel
+            </Button>
+          ) : null
+        }
+        overflowActions={
+          drawerMode === "view" && selected
+            ? [
+                {
+                  id: "delete",
+                  label: "Delete",
+                  icon: <Trash2 className="mr-2 size-4" />,
+                  destructive: true,
+                  onSelect: () => setConfirmDelete(true),
+                },
+              ]
+            : undefined
+        }
+        footer={
+          drawerMode === "edit" ? (
+            <Button
+              className="w-full"
+              disabled={saveMutation.isPending}
+              onClick={() => saveMutation.mutate()}
+            >
+              Save changes
+            </Button>
+          ) : null
+        }
+      >
+        {selected && drawerMode === "view" ? (
+          <EntityDetailFieldGrid>
+            <EntityDetailField label="Staff">{selected.staff.name}</EntityDetailField>
+            <EntityDetailField label="Day">{selected.dayDisplay}</EntityDetailField>
+            <EntityDetailField label="Clock-in">{selected.clockInTime}</EntityDetailField>
+            <EntityDetailField label="Clock-out">
+              {selected.clockOutTime ?? "—"}
+            </EntityDetailField>
+            <EntityDetailField label="Hours">
+              {selected.paidHoursDisplay
+                ? `${selected.paidHoursDisplay} (paid)`
+                : "—"}
+            </EntityDetailField>
+            <EntityDetailField label="Notes">
+              {selected.notes || "—"}
+            </EntityDetailField>
+          </EntityDetailFieldGrid>
+        ) : null}
 
-      {showSidePanel ? (
-        <aside className="flex w-full max-w-sm shrink-0 flex-col border-l bg-background lg:w-80">
-          <div className="flex items-center justify-between border-b px-4 py-3">
-            <h2 className="font-semibold">
-              {panelMode === "add"
-                ? "Add Time Card"
-                : panelMode === "edit"
-                  ? "Update Time Card"
-                  : "Time Card"}
-            </h2>
-            {panelMode === "edit" || panelMode === "add" ? (
-              <Button variant="ghost" size="sm" onClick={closePanel}>
-                CANCEL
-              </Button>
-            ) : (
-              <div className="flex items-center gap-1">
-                <DropdownMenu>
-                  <DropdownMenuTrigger
-                    render={
-                      <IconButton aria-label="Time card actions">
-                        <MoreHorizontal className="size-4" />
-                      </IconButton>
-                    }
-                  />
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem
-                      className="text-destructive"
-                      onClick={() => setConfirmDelete(true)}
-                    >
-                      Delete
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={startEdit}
-                  disabled={!detail}
-                >
-                  <Pencil className="size-4" />
-                </Button>
-              </div>
-            )}
-          </div>
-
-          <div className="flex-1 space-y-4 overflow-auto p-4">
-            {panelMode === "view" && selected ? (
-              <>
-                <Field label="Staff" value={selected.staff.name} />
-                <Field label="Day" value={selected.dayDisplay} />
-                <Field label="Clock-in" value={selected.clockInTime} />
-                <Field
-                  label="Clock-out"
-                  value={selected.clockOutTime ?? "—"}
-                />
-                <Field
-                  label="Hours"
-                  value={
-                    selected.paidHoursDisplay
-                      ? `${selected.paidHoursDisplay} (paid)`
-                      : "—"
-                  }
-                />
-                <Field label="Notes" value={selected.notes || "—"} />
-              </>
-            ) : null}
-
-            {panelMode === "edit" && selected ? (
-              <>
-                <Field label="Staff" value={selected.staff.name} />
-                <Field label="Day" value={selected.dayDisplay} />
-                <div className="space-y-1.5">
-                  <Label>Clock-in</Label>
-                  <TimePickerField value={editClockIn} onChange={setEditClockIn} />
-                </div>
-                <div className="space-y-1.5">
-                  <Label>Clock-out</Label>
-                  <TimePickerField
-                    value={editClockOut}
-                    onChange={setEditClockOut}
-                    placeholder="Select Time"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label>Notes</Label>
-                  <Input
-                    value={editNotes}
-                    onChange={(e) => setEditNotes(e.target.value)}
-                    placeholder="Enter notes"
-                  />
-                </div>
-              </>
-            ) : null}
-
-            {panelMode === "add" ? (
-              <>
-                <div className="space-y-1.5">
-                  <Label>Staff</Label>
-                  <SearchableSelect
-                    items={staffOptions}
-                    value={addStaffId || null}
-                    onValueChange={(value) => setAddStaffId(value ?? "")}
-                    placeholder="Select staff"
-                    searchPlaceholder="Search staff…"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label>Date</Label>
-                  <Input
-                    type="date"
-                    value={addDate}
-                    onChange={(e) => setAddDate(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label>Clock-in</Label>
-                  <TimePickerField value={addClockIn} onChange={setAddClockIn} />
-                </div>
-                <div className="space-y-1.5">
-                  <Label>Clock-out</Label>
-                  <TimePickerField
-                    value={addClockOut}
-                    onChange={setAddClockOut}
-                    placeholder="Select Time"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label>Notes</Label>
-                  <Input
-                    value={addNotes}
-                    onChange={(e) => setAddNotes(e.target.value)}
-                    placeholder="Enter notes"
-                  />
-                </div>
-              </>
-            ) : null}
-          </div>
-
-          {panelMode === "edit" ? (
-            <div className="border-t p-4">
-              <Button
-                className="w-full"
-                disabled={saveMutation.isPending}
-                onClick={() => saveMutation.mutate()}
-              >
-                SAVE CHANGES
-              </Button>
+        {selected && drawerMode === "edit" ? (
+          <div className="space-y-4">
+            <EntityDetailFieldGrid>
+              <EntityDetailField label="Staff">{selected.staff.name}</EntityDetailField>
+              <EntityDetailField label="Day">{selected.dayDisplay}</EntityDetailField>
+            </EntityDetailFieldGrid>
+            <div className="space-y-1.5">
+              <Label>Clock-in</Label>
+              <TimePickerField value={editClockIn} onChange={setEditClockIn} />
             </div>
-          ) : null}
-          {panelMode === "add" ? (
-            <div className="border-t p-4">
-              <Button
-                className="w-full"
-                disabled={addMutation.isPending}
-                onClick={() => addMutation.mutate()}
-              >
-                ADD TIME CARD
-              </Button>
+            <div className="space-y-1.5">
+              <Label>Clock-out</Label>
+              <TimePickerField
+                value={editClockOut}
+                onChange={setEditClockOut}
+                placeholder="Select time"
+              />
             </div>
-          ) : null}
-        </aside>
-      ) : null}
+            <div className="space-y-1.5">
+              <Label>Notes</Label>
+              <Input
+                value={editNotes}
+                onChange={(e) => setEditNotes(e.target.value)}
+                placeholder="Enter notes"
+              />
+            </div>
+          </div>
+        ) : null}
+      </EntityDetailDrawer>
 
-      <Sheet open={panelMode === "options"} onOpenChange={(open) => !open && setPanelMode(selected ? "view" : "empty")}>
+      <Sheet open={addOpen} onOpenChange={setAddOpen}>
+        <SheetContent side="right" className="w-full sm:max-w-sm">
+          <SheetHeader>
+            <SheetTitle>Add time card</SheetTitle>
+          </SheetHeader>
+          <div className="space-y-4 px-1 pt-4">
+            <div className="space-y-1.5">
+              <Label>Staff</Label>
+              <SearchableSelect
+                items={staffOptions}
+                value={addStaffId || null}
+                onValueChange={(value) => setAddStaffId(value ?? "")}
+                placeholder="Select staff"
+                searchPlaceholder="Search staff…"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Date</Label>
+              <Input
+                type="date"
+                value={addDate}
+                onChange={(e) => setAddDate(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Clock-in</Label>
+              <TimePickerField value={addClockIn} onChange={setAddClockIn} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Clock-out</Label>
+              <TimePickerField
+                value={addClockOut}
+                onChange={setAddClockOut}
+                placeholder="Select time"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Notes</Label>
+              <Input
+                value={addNotes}
+                onChange={(e) => setAddNotes(e.target.value)}
+                placeholder="Enter notes"
+              />
+            </div>
+            <Button
+              className="w-full"
+              disabled={addMutation.isPending}
+              onClick={() => addMutation.mutate()}
+            >
+              Add time card
+            </Button>
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      <Sheet open={optionsOpen} onOpenChange={setOptionsOpen}>
         <SheetContent side="right" className="w-full sm:max-w-sm">
           <SheetHeader>
             <SheetTitle>Options</SheetTitle>
@@ -603,15 +607,6 @@ export function TimeCardsScreen() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
-  );
-}
-
-function Field({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="space-y-1">
-      <p className="text-xs text-muted-foreground">{label}</p>
-      <p className="text-sm font-medium">{value}</p>
-    </div>
+    </>
   );
 }
