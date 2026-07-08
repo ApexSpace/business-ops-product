@@ -26,7 +26,7 @@ const LUXON_WEEKDAY_TO_DAY: Record<number, DayOfWeek> = {
 };
 
 const BLOCKING_STATUSES: AppointmentStatus[] = [
-  AppointmentStatus.SCHEDULED,
+  AppointmentStatus.UNCONFIRMED,
   AppointmentStatus.CONFIRMED,
 ];
 

@@ -8,21 +8,23 @@ import {
   TimeGridColumn,
   TimeGridGutter,
 } from "@/features/appointments/components/calendar/time-grid-shared";
+import type { StaffMemberOption } from "@/features/appointments/components/calendar/staff-selector";
 import { useCalendarCurrentTimeTop } from "@/features/appointments/hooks/use-calendar-current-time";
 import {
   formatShortWeekdayForDateKey,
-  getWeekDateKeysInTimezone,
   isTodayDateKey,
   parseDateKeyInTimezone,
 } from "@/features/calendars/utils/timezone";
 import { CALENDAR_GRID } from "@/features/calendars/utils/calendar-grid-styles";
+import { ProfileAvatar } from "@/components/ui/profile-avatar";
 import { cn } from "@/lib/utils";
 
-interface WeekCalendarViewProps {
-  anchorDateKey: string;
+interface StaffDayCalendarViewProps {
+  dateKey: string;
   timezone: string;
   calendars?: Calendar[];
   businessTimezone?: string | null;
+  staffMembers: StaffMemberOption[];
   appointments: Appointment[];
   isLoading?: boolean;
   className?: string;
@@ -35,19 +37,23 @@ interface WeekCalendarViewProps {
   ) => void;
 }
 
-export function WeekCalendarView({
-  anchorDateKey,
+export function StaffDayCalendarView({
+  dateKey,
   timezone,
   calendars,
   businessTimezone,
+  staffMembers,
   appointments,
   isLoading,
   className,
   onAppointmentClick,
   onSlotClick,
-}: WeekCalendarViewProps) {
-  const weekDateKeys = getWeekDateKeysInTimezone(anchorDateKey, timezone);
-  const currentTimeTop = useCalendarCurrentTimeTop(timezone, weekDateKeys);
+}: StaffDayCalendarViewProps) {
+  const isToday = isTodayDateKey(dateKey, timezone);
+  const dayNumber = parseDateKeyInTimezone(dateKey, timezone).day;
+  const currentTimeTop = useCalendarCurrentTimeTop(timezone, [dateKey]);
+  const columnCount = Math.max(staffMembers.length, 1);
+  const gridTemplate = `56px repeat(${columnCount}, minmax(120px, 1fr))`;
 
   return (
     <div
@@ -65,39 +71,37 @@ export function WeekCalendarView({
                 "sticky top-0 z-20 grid bg-card",
                 CALENDAR_GRID.headerRow,
               )}
-              style={{ gridTemplateColumns: `56px repeat(7, minmax(0, 1fr))` }}
+              style={{ gridTemplateColumns: gridTemplate }}
             >
               <div />
-              {weekDateKeys.map((dayKey) => {
-                const isToday = isTodayDateKey(dayKey, timezone);
-                const dayNumber = parseDateKeyInTimezone(dayKey, timezone).day;
-
-                return (
-                  <div
-                    key={dayKey}
-                    className={cn(
-                      CALENDAR_GRID.column,
-                      "px-2 py-2.5 text-center",
-                      isToday && "bg-primary/[0.04]",
-                    )}
-                  >
-                    <span className="block text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                      {formatShortWeekdayForDateKey(dayKey, timezone)}
-                    </span>
-                    <span
-                      className={cn(
-                        "mx-auto mt-1 inline-flex size-7 items-center justify-center rounded-full text-sm font-semibold",
-                        isToday
-                          ? "bg-primary text-primary-foreground"
-                          : "text-foreground",
-                      )}
-                    >
+              {staffMembers.map((member) => (
+                <div
+                  key={member.userId}
+                  className={cn(
+                    CALENDAR_GRID.column,
+                    "flex flex-col items-center gap-1 px-2 py-2.5 text-center",
+                    isToday && "bg-primary/[0.04]",
+                  )}
+                >
+                  <ProfileAvatar
+                    name={member.label}
+                    avatarUrl={member.avatarUrl}
+                    className="size-8"
+                    fallbackClassName="text-[10px]"
+                  />
+                  <span className="truncate text-xs font-semibold text-foreground">
+                    {member.label.split(" ")[0]}
+                  </span>
+                  {isToday ? (
+                    <span className="text-[10px] text-muted-foreground">
+                      {formatShortWeekdayForDateKey(dateKey, timezone)}{" "}
                       {dayNumber}
                     </span>
-                  </div>
-                );
-              })}
+                  ) : null}
+                </div>
+              ))}
             </div>
+
             {isLoading ? (
               <div className="flex h-48 items-center justify-center text-sm text-muted-foreground">
                 Loading appointments…
@@ -110,19 +114,21 @@ export function WeekCalendarView({
                 <div
                   className="grid"
                   style={{
-                    gridTemplateColumns: `56px repeat(7, minmax(0, 1fr))`,
+                    gridTemplateColumns: gridTemplate,
                     minHeight: GRID_HEIGHT,
                   }}
                 >
                   <TimeGridGutter />
-                  {weekDateKeys.map((dayKey) => (
+                  {staffMembers.map((member) => (
                     <TimeGridColumn
-                      key={dayKey}
-                      dateKey={dayKey}
+                      key={member.userId}
+                      dateKey={dateKey}
                       appointments={appointments}
                       viewTimezone={timezone}
                       calendars={calendars}
                       businessTimezone={businessTimezone}
+                      staffUserId={member.userId}
+                      highlightToday={isToday}
                       onAppointmentClick={onAppointmentClick}
                       onSlotClick={onSlotClick}
                     />
@@ -140,7 +146,7 @@ export function WeekCalendarView({
             CALENDAR_GRID.footer,
           )}
         >
-          No appointments this week. Click a time slot to create one.
+          No appointments today. Click a time slot to create one.
         </p>
       ) : null}
     </div>

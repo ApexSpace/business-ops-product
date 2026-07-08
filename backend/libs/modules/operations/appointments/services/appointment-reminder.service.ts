@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { AppointmentStatus } from '@prisma/client';
 import { PrismaService } from '@app/core/database/prisma.service';
+import type { AppointmentWithRelations } from '../repositories/appointment.repository';
 import {
   DEFAULT_REMINDER_HOURS_BEFORE,
   parseCalendarNotificationSettings,
@@ -29,7 +30,7 @@ export class AppointmentReminderService {
       where: {
         deletedAt: null,
         status: {
-          in: [AppointmentStatus.SCHEDULED, AppointmentStatus.CONFIRMED],
+          in: [AppointmentStatus.UNCONFIRMED, AppointmentStatus.CONFIRMED],
         },
         startAt: {
           gt: now,
@@ -56,11 +57,43 @@ export class AppointmentReminderService {
             lastName: true,
             displayName: true,
             email: true,
+            phoneNumber: true,
+            createdAt: true,
           },
         },
         service: { select: { id: true, name: true } },
+        serviceLines: {
+          orderBy: { sortOrder: 'asc' },
+          include: {
+            service: {
+              select: {
+                id: true,
+                name: true,
+                durationMinutes: true,
+                price: true,
+              },
+            },
+            assignedTo: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+              },
+            },
+          },
+        },
         assignedTo: {
           select: { id: true, firstName: true, lastName: true, email: true },
+        },
+        createdBy: {
+          select: { id: true, firstName: true, lastName: true, email: true },
+        },
+        invoices: {
+          where: { deletedAt: null, kind: 'CHECKOUT' },
+          select: { id: true, kind: true, status: true },
+          orderBy: { createdAt: 'desc' },
+          take: 1,
         },
       },
     });
@@ -92,7 +125,7 @@ export class AppointmentReminderService {
       try {
         await this.appointmentNotificationService.sendReminder(
           appointment.businessId,
-          appointment,
+          appointment as AppointmentWithRelations,
           reminderHours,
           appointment.calendar.timezone,
         );

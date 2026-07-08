@@ -1,11 +1,35 @@
 import { Injectable } from '@nestjs/common';
 import { Appointment, AppointmentStatus, Prisma } from '@prisma/client';
+import { PrismaService } from '@app/core/database/prisma.service';
 
 const BLOCKING_STATUSES: AppointmentStatus[] = [
-  AppointmentStatus.SCHEDULED,
+  AppointmentStatus.UNCONFIRMED,
   AppointmentStatus.CONFIRMED,
+  AppointmentStatus.WAITING,
+  AppointmentStatus.IN_SERVICE,
 ];
-import { PrismaService } from '@app/core/database/prisma.service';
+
+const userSummarySelect = {
+  id: true,
+  firstName: true,
+  lastName: true,
+  email: true,
+} as const;
+
+export type AppointmentServiceLineWithRelations =
+  Prisma.AppointmentServiceLineGetPayload<{
+    include: {
+      service: {
+        select: {
+          id: true;
+          name: true;
+          durationMinutes: true;
+          price: true;
+        };
+      };
+      assignedTo: { select: typeof userSummarySelect };
+    };
+  }>;
 
 export type AppointmentWithRelations = Appointment & {
   calendar: { id: string; name: string; color: string | null };
@@ -15,14 +39,24 @@ export type AppointmentWithRelations = Appointment & {
     lastName: string | null;
     displayName: string | null;
     email: string | null;
+    phoneNumber: string | null;
+    createdAt: Date;
   };
   service: { id: string; name: string } | null;
+  serviceLines: AppointmentServiceLineWithRelations[];
   assignedTo: {
     id: string;
     firstName: string | null;
     lastName: string | null;
     email: string;
   } | null;
+  createdBy: {
+    id: string;
+    firstName: string | null;
+    lastName: string | null;
+    email: string;
+  } | null;
+  invoices: Array<{ id: string; kind: string; status: string }>;
 };
 
 @Injectable()
@@ -39,9 +73,20 @@ export class AppointmentRepository {
   create(
     businessId: string,
     data: Omit<Prisma.AppointmentUncheckedCreateInput, 'businessId'>,
+    serviceLines?: Prisma.AppointmentServiceLineUncheckedCreateWithoutAppointmentInput[],
   ): Promise<AppointmentWithRelations> {
     return this.prisma.appointment.create({
-      data: { businessId, ...data },
+      data: {
+        businessId,
+        ...data,
+        ...(serviceLines?.length
+          ? {
+              serviceLines: {
+                create: serviceLines,
+              },
+            }
+          : {}),
+      },
       include: this.includeRelations(),
     });
   }
@@ -82,7 +127,7 @@ export class AppointmentRepository {
       serviceId?: string;
       workItemId?: string;
       assignedToId?: string;
-      status?: AppointmentStatus;
+      statuses?: AppointmentStatus[];
       startFrom?: Date;
       startTo?: Date;
       search?: string;
@@ -91,10 +136,21 @@ export class AppointmentRepository {
     const where = this.activeWhere(businessId, {
       ...(options.calendarId ? { calendarId: options.calendarId } : {}),
       ...(options.contactId ? { contactId: options.contactId } : {}),
-      ...(options.serviceId ? { serviceId: options.serviceId } : {}),
+      ...(options.serviceId
+        ? {
+            OR: [
+              { serviceId: options.serviceId },
+              {
+                serviceLines: {
+                  some: { serviceId: options.serviceId },
+                },
+              },
+            ],
+          }
+        : {}),
       ...(options.workItemId ? { workItemId: options.workItemId } : {}),
       ...(options.assignedToId ? { assignedToId: options.assignedToId } : {}),
-      ...(options.status ? { status: options.status } : {}),
+      ...(options.statuses?.length ? { status: { in: options.statuses } } : {}),
       ...(options.startFrom || options.startTo
         ? {
             startAt: {
@@ -133,11 +189,25 @@ export class AppointmentRepository {
   update(
     id: string,
     data: Prisma.AppointmentUpdateInput,
+    serviceLines?: Prisma.AppointmentServiceLineUncheckedCreateWithoutAppointmentInput[],
   ): Promise<AppointmentWithRelations> {
-    return this.prisma.appointment.update({
-      where: { id },
-      data,
-      include: this.includeRelations(),
+    return this.prisma.$transaction(async (tx) => {
+      if (serviceLines !== undefined) {
+        await tx.appointmentServiceLine.deleteMany({ where: { appointmentId: id } });
+        if (serviceLines.length > 0) {
+          await tx.appointmentServiceLine.createMany({
+            data: serviceLines.map((line) => ({
+              appointmentId: id,
+              ...line,
+            })),
+          });
+        }
+      }
+      return tx.appointment.update({
+        where: { id },
+        data,
+        include: this.includeRelations(),
+      });
     });
   }
 
@@ -177,11 +247,32 @@ export class AppointmentRepository {
           lastName: true,
           displayName: true,
           email: true,
+          phoneNumber: true,
+          createdAt: true,
         },
       },
       service: { select: { id: true, name: true } },
-      assignedTo: {
-        select: { id: true, firstName: true, lastName: true, email: true },
+      serviceLines: {
+        orderBy: { sortOrder: 'asc' as const },
+        include: {
+          service: {
+            select: {
+              id: true,
+              name: true,
+              durationMinutes: true,
+              price: true,
+            },
+          },
+          assignedTo: { select: userSummarySelect },
+        },
+      },
+      assignedTo: { select: userSummarySelect },
+      createdBy: { select: userSummarySelect },
+      invoices: {
+        where: { deletedAt: null, kind: 'CHECKOUT' },
+        select: { id: true, kind: true, status: true },
+        orderBy: { createdAt: 'desc' as const },
+        take: 1,
       },
     } satisfies Prisma.AppointmentInclude;
   }

@@ -72,15 +72,6 @@ export function AppointmentFormDialog({
           ) : null}
           <div className={DRAWER_FOOTER_ACTIONS_CLASS}>
             <ActionButton
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-              disabled={isPending || isDeletePending}
-              className={DRAWER_FOOTER_BUTTON_CLASS}
-            >
-              Cancel
-            </ActionButton>
-            <ActionButton
               type="submit"
               disabled={isPending || isDeletePending}
               className={DRAWER_FOOTER_BUTTON_CLASS}

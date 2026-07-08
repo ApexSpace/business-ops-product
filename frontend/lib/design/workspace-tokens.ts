@@ -56,7 +56,18 @@ export const WORKSPACE_CSS_VARS = {
   "--entity-drawer-toolbar-z": "10",
 } as Record<string, string> as CSSProperties;
 
-export type EntityDrawerWidthTier = "compact" | "standard" | "wide" | "split";
+export type EntityDrawerWidthTier =
+  | "compact"
+  | "standard"
+  | "wide"
+  | "split"
+  | "conversation";
+
+export const ENTITY_DRAWER_WIDTH_CONVERSATION =
+  "[--sheet-width:min(70vw,900px)]";
+
+export const ENTITY_DRAWER_WIDTH_APPOINTMENT =
+  "[--sheet-width:min(94vw,600px)]";
 
 export function entityDrawerWidthClass(
   width: EntityDrawerWidthTier = "compact",
@@ -64,6 +75,8 @@ export function entityDrawerWidthClass(
   switch (width) {
     case "split":
       return ENTITY_DRAWER_WIDTH_SPLIT;
+    case "conversation":
+      return ENTITY_DRAWER_WIDTH_CONVERSATION;
     case "wide":
       return ENTITY_DRAWER_WIDTH_WIDE;
     case "standard":

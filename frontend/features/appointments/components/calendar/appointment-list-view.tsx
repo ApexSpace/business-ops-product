@@ -23,8 +23,10 @@ const STATUS_VARIANT: Record<
   AppointmentStatus,
   "default" | "secondary" | "destructive" | "outline"
 > = {
-  SCHEDULED: "outline",
+  UNCONFIRMED: "outline",
   CONFIRMED: "default",
+  WAITING: "default",
+  IN_SERVICE: "default",
   COMPLETED: "secondary",
   CANCELLED: "destructive",
   NO_SHOW: "destructive",

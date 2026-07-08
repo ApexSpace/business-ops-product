@@ -44,7 +44,7 @@ export class ContactPrintAppointmentsService {
         deletedAt: null,
         startAt: { gte: now },
         status: {
-          in: [AppointmentStatus.SCHEDULED, AppointmentStatus.CONFIRMED],
+          in: [AppointmentStatus.UNCONFIRMED, AppointmentStatus.CONFIRMED],
         },
       },
       include: {

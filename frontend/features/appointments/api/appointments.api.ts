@@ -1,5 +1,9 @@
 import { api } from "@/lib/api/client";
-import type { Appointment } from "@/features/appointments/schemas/appointment-profile";
+import type {
+  Appointment,
+  AppointmentActivityItem,
+  AppointmentStatus,
+} from "@/features/appointments/schemas/appointment-profile";
 import type { PaginatedResult } from "@/features/appointments/types";
 
 export type AppointmentsListFilters = {
@@ -37,12 +41,22 @@ export function getAppointment(id: string) {
   return api.get<Appointment>(`appointments/${id}`);
 }
 
+export function getAppointmentActivity(id: string) {
+  return api.get<{ items: AppointmentActivityItem[] }>(
+    `appointments/${id}/activity`,
+  );
+}
+
 export function createAppointment(body: Record<string, unknown>) {
   return api.post<Appointment>("appointments", body);
 }
 
 export function updateAppointment(id: string, body: Record<string, unknown>) {
   return api.patch<Appointment>(`appointments/${id}`, body);
+}
+
+export function updateAppointmentStatus(id: string, status: AppointmentStatus) {
+  return api.patch<Appointment>(`appointments/${id}/status`, { status });
 }
 
 export function deleteAppointment(id: string) {

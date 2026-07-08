@@ -1,17 +1,20 @@
 import { HttpStatus, Injectable, Logger } from '@nestjs/common';
-import { AppointmentStatus } from '@prisma/client';
+import { AppointmentStatus, Prisma } from '@prisma/client';
 import { RequestUser } from '@app/common/decorators/current-user.decorator';
 import { AppException } from '@app/common/exceptions/app.exception';
 import { ErrorCode } from '@app/common/exceptions/error-code.enum';
 import { getPaginationParams } from '@app/common/utils/pagination.util';
 import { AuditService } from '@app/modules/platform/audit/services/audit.service';
+import { AuditLogRepository } from '@app/modules/platform/audit/repositories/audit-log.repository';
 import { CalendarRepository } from '@app/modules/operations/calendars/repositories/calendar.repository';
 import { ContactRepository } from '@app/modules/crm/contacts/repositories/contact.repository';
 import { BusinessMembershipRepository } from '@app/modules/platform/membership/repositories/business-membership.repository';
 import { ServiceRepository } from '@app/modules/crm/services/repositories/service.repository';
 import { WorkItemRepository } from '@app/modules/operations/work-items/repositories/work-item.repository';
 import {
+  AppointmentActivityItemDto,
   AppointmentResponseDto,
+  AppointmentServiceLineInputDto,
   CreateAppointmentDto,
   ListAppointmentsQueryDto,
   UpdateAppointmentDto,
@@ -35,6 +38,7 @@ export class AppointmentsService {
     private readonly workItemRepository: WorkItemRepository,
     private readonly membershipRepository: BusinessMembershipRepository,
     private readonly auditService: AuditService,
+    private readonly auditLogRepository: AuditLogRepository,
     private readonly jobEnqueueService: JobEnqueueService,
     private readonly appointmentNotificationService: AppointmentNotificationService,
     private readonly clientPackagesService: ClientPackagesService,
@@ -70,39 +74,130 @@ export class AppointmentsService {
       });
   }
 
+  private parseStatusFilter(status?: string): AppointmentStatus[] | undefined {
+    if (!status?.trim()) return undefined;
+    const parts = status
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean) as AppointmentStatus[];
+    return parts.length ? parts : undefined;
+  }
+
+  private async buildServiceLines(
+    businessId: string,
+    appointmentStart: Date,
+    appointmentEnd: Date,
+    assignedToId: string | null | undefined,
+    lines: AppointmentServiceLineInputDto[] | undefined,
+    legacyServiceId?: string,
+  ): Promise<{
+    serviceLines: Prisma.AppointmentServiceLineUncheckedCreateWithoutAppointmentInput[];
+    primaryServiceId: string | null;
+    endAt: Date;
+  }> {
+    const inputLines =
+      lines && lines.length > 0
+        ? lines
+        : legacyServiceId
+          ? [{ serviceId: legacyServiceId }]
+          : [];
+
+    if (inputLines.length === 0) {
+      return { serviceLines: [], primaryServiceId: null, endAt: appointmentEnd };
+    }
+
+    let cursor = appointmentStart;
+    const serviceLines: Prisma.AppointmentServiceLineUncheckedCreateWithoutAppointmentInput[] =
+      [];
+
+    for (let i = 0; i < inputLines.length; i++) {
+      const line = inputLines[i]!;
+      const service = await this.serviceRepository.findById(
+        businessId,
+        line.serviceId,
+      );
+      if (!service) {
+        throw new AppException(
+          ErrorCode.SERVICE_NOT_FOUND,
+          'Service not found',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+      if (line.assignedToId) {
+        await this.assertAssignee(businessId, line.assignedToId);
+      } else if (assignedToId) {
+        await this.assertAssignee(businessId, assignedToId);
+      }
+
+      const lineStart = line.startAt ? new Date(line.startAt) : new Date(cursor);
+      const duration =
+        line.durationMinutes ?? service.durationMinutes ?? 60;
+      cursor = new Date(lineStart.getTime() + duration * 60_000);
+
+      serviceLines.push({
+        serviceId: line.serviceId,
+        assignedToId: line.assignedToId ?? assignedToId ?? null,
+        startAt: lineStart,
+        durationMinutes: duration,
+        price: line.price != null ? line.price : service.price,
+        sortOrder: i,
+      });
+    }
+
+    return {
+      serviceLines,
+      primaryServiceId: inputLines[0]!.serviceId,
+      endAt: cursor > appointmentEnd ? cursor : appointmentEnd,
+    };
+  }
+
   async create(
     businessId: string,
     dto: CreateAppointmentDto,
     actor: RequestUser,
   ): Promise<AppointmentResponseDto> {
     const startAt = new Date(dto.startAt);
-    const endAt = new Date(dto.endAt);
-    this.assertValidRange(startAt, endAt);
+    let endAt = new Date(dto.endAt);
 
     await this.assertCalendar(businessId, dto.calendarId);
     await this.assertContact(businessId, dto.contactId);
-    if (dto.serviceId) await this.assertService(businessId, dto.serviceId);
     if (dto.workItemId) await this.assertWorkItem(businessId, dto.workItemId);
     if (dto.assignedToId)
       await this.assertAssignee(businessId, dto.assignedToId);
 
-    const appointment = await this.appointmentRepository.create(businessId, {
-      calendarId: dto.calendarId,
-      contactId: dto.contactId,
-      serviceId: dto.serviceId ?? null,
-      workItemId: dto.workItemId ?? null,
-      assignedToId: dto.assignedToId ?? null,
-      title: dto.title.trim(),
-      description: dto.description?.trim() || null,
-      startAt,
-      endAt,
-      status: dto.status ?? AppointmentStatus.SCHEDULED,
-      source: dto.source,
-      locationType: dto.locationType ?? null,
-      locationValue: dto.locationValue?.trim() || null,
-      notes: dto.notes?.trim() || null,
-      createdById: actor.id,
-    });
+    const { serviceLines, primaryServiceId, endAt: computedEnd } =
+      await this.buildServiceLines(
+        businessId,
+        startAt,
+        endAt,
+        dto.assignedToId,
+        dto.services,
+        dto.serviceId,
+      );
+    endAt = computedEnd;
+    this.assertValidRange(startAt, endAt);
+
+    const appointment = await this.appointmentRepository.create(
+      businessId,
+      {
+        calendarId: dto.calendarId,
+        contactId: dto.contactId,
+        serviceId: primaryServiceId,
+        workItemId: dto.workItemId ?? null,
+        assignedToId: dto.assignedToId ?? null,
+        title: dto.title.trim(),
+        description: dto.description?.trim() || null,
+        startAt,
+        endAt,
+        status: dto.status ?? AppointmentStatus.UNCONFIRMED,
+        source: dto.source,
+        locationType: dto.locationType ?? null,
+        locationValue: dto.locationValue?.trim() || null,
+        notes: dto.notes?.trim() || null,
+        createdById: actor.id,
+      },
+      serviceLines,
+    );
 
     await this.auditService.log({
       actorUserId: actor.id,
@@ -121,7 +216,8 @@ export class AppointmentsService {
       .sendOwnerNotifications(businessId, appointment)
       .catch(() => undefined);
 
-    if (dto.clientPackageId && dto.serviceId) {
+    const redeemServiceId = primaryServiceId ?? dto.serviceId;
+    if (dto.clientPackageId && redeemServiceId) {
       const pkg = await this.clientPackagesService.findOne(
         businessId,
         dto.clientPackageId,
@@ -136,7 +232,7 @@ export class AppointmentsService {
       await this.clientPackagesService.redeemService(
         businessId,
         dto.clientPackageId,
-        dto.serviceId,
+        redeemServiceId,
         actor.id,
       );
     }
@@ -162,7 +258,7 @@ export class AppointmentsService {
         serviceId: query.serviceId,
         workItemId: query.workItemId,
         assignedToId: query.assignedToId,
-        status: query.status,
+        statuses: this.parseStatusFilter(query.status),
         startFrom: query.startFrom ? new Date(query.startFrom) : undefined,
         startTo: query.startTo ? new Date(query.startTo) : undefined,
         search: query.search?.trim(),
@@ -192,6 +288,43 @@ export class AppointmentsService {
     return toAppointmentResponse(appointment);
   }
 
+  async getActivity(
+    businessId: string,
+    id: string,
+  ): Promise<{ items: AppointmentActivityItemDto[] }> {
+    const appointment = await this.appointmentRepository.findById(
+      businessId,
+      id,
+    );
+    if (!appointment) {
+      throw new AppException(
+        ErrorCode.APPOINTMENT_NOT_FOUND,
+        'Appointment not found',
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    const logs = await this.auditLogRepository.findByEntity(
+      businessId,
+      'Appointment',
+      id,
+      50,
+    );
+
+    return {
+      items: logs.map((log) => ({
+        id: log.id,
+        action: log.action,
+        createdAt: log.createdAt,
+        actor: log.actor,
+        metadata:
+          log.metadata && typeof log.metadata === 'object'
+            ? (log.metadata as Record<string, unknown>)
+            : null,
+      })),
+    };
+  }
+
   async update(
     businessId: string,
     id: string,
@@ -208,48 +341,76 @@ export class AppointmentsService {
     }
 
     const startAt = dto.startAt ? new Date(dto.startAt) : existing.startAt;
-    const endAt = dto.endAt ? new Date(dto.endAt) : existing.endAt;
+    let endAt = dto.endAt ? new Date(dto.endAt) : existing.endAt;
     const scheduleChanged =
       startAt.getTime() !== existing.startAt.getTime() ||
       endAt.getTime() !== existing.endAt.getTime();
     const previousStartAt = existing.startAt;
-    this.assertValidRange(startAt, endAt);
 
     if (dto.calendarId) await this.assertCalendar(businessId, dto.calendarId);
     if (dto.contactId) await this.assertContact(businessId, dto.contactId);
-    if (dto.serviceId) await this.assertService(businessId, dto.serviceId);
     if (dto.workItemId) await this.assertWorkItem(businessId, dto.workItemId);
     if (dto.assignedToId)
       await this.assertAssignee(businessId, dto.assignedToId);
 
-    const appointment = await this.appointmentRepository.update(id, {
-      ...(dto.calendarId !== undefined ? { calendarId: dto.calendarId } : {}),
-      ...(dto.contactId !== undefined ? { contactId: dto.contactId } : {}),
-      ...(dto.serviceId !== undefined
-        ? { serviceId: dto.serviceId ?? null }
-        : {}),
-      ...(dto.workItemId !== undefined
-        ? { workItemId: dto.workItemId ?? null }
-        : {}),
-      ...(dto.assignedToId !== undefined
-        ? { assignedToId: dto.assignedToId ?? null }
-        : {}),
-      ...(dto.title !== undefined ? { title: dto.title.trim() } : {}),
-      ...(dto.description !== undefined
-        ? { description: dto.description?.trim() || null }
-        : {}),
-      startAt,
-      endAt,
-      ...(dto.status !== undefined ? { status: dto.status } : {}),
-      ...(dto.source !== undefined ? { source: dto.source } : {}),
-      ...(dto.locationType !== undefined
-        ? { locationType: dto.locationType ?? null }
-        : {}),
-      ...(dto.locationValue !== undefined
-        ? { locationValue: dto.locationValue?.trim() || null }
-        : {}),
-      ...(dto.notes !== undefined ? { notes: dto.notes?.trim() || null } : {}),
-    });
+    const assignedToId =
+      dto.assignedToId !== undefined ? dto.assignedToId : existing.assignedToId;
+
+    let serviceLines:
+      | Prisma.AppointmentServiceLineUncheckedCreateWithoutAppointmentInput[]
+      | undefined;
+    let primaryServiceId: string | null | undefined;
+
+    if (dto.services !== undefined || dto.serviceId !== undefined) {
+      const built = await this.buildServiceLines(
+        businessId,
+        startAt,
+        endAt,
+        assignedToId,
+        dto.services,
+        dto.serviceId ?? existing.serviceId ?? undefined,
+      );
+      serviceLines = built.serviceLines;
+      primaryServiceId = built.primaryServiceId;
+      endAt = built.endAt;
+    }
+
+    this.assertValidRange(startAt, endAt);
+
+    const appointment = await this.appointmentRepository.update(
+      id,
+      {
+        ...(dto.calendarId !== undefined ? { calendarId: dto.calendarId } : {}),
+        ...(dto.contactId !== undefined ? { contactId: dto.contactId } : {}),
+        ...(primaryServiceId !== undefined
+          ? { serviceId: primaryServiceId }
+          : dto.serviceId !== undefined
+            ? { serviceId: dto.serviceId ?? null }
+            : {}),
+        ...(dto.workItemId !== undefined
+          ? { workItemId: dto.workItemId ?? null }
+          : {}),
+        ...(dto.assignedToId !== undefined
+          ? { assignedToId: dto.assignedToId ?? null }
+          : {}),
+        ...(dto.title !== undefined ? { title: dto.title.trim() } : {}),
+        ...(dto.description !== undefined
+          ? { description: dto.description?.trim() || null }
+          : {}),
+        startAt,
+        endAt,
+        ...(dto.status !== undefined ? { status: dto.status } : {}),
+        ...(dto.source !== undefined ? { source: dto.source } : {}),
+        ...(dto.locationType !== undefined
+          ? { locationType: dto.locationType ?? null }
+          : {}),
+        ...(dto.locationValue !== undefined
+          ? { locationValue: dto.locationValue?.trim() || null }
+          : {}),
+        ...(dto.notes !== undefined ? { notes: dto.notes?.trim() || null } : {}),
+      },
+      serviceLines,
+    );
 
     await this.auditService.log({
       actorUserId: actor.id,
@@ -373,20 +534,6 @@ export class AppointmentsService {
       throw new AppException(
         ErrorCode.CONTACT_NOT_FOUND,
         'Contact not found',
-        HttpStatus.BAD_REQUEST,
-      );
-    }
-  }
-
-  private async assertService(businessId: string, serviceId: string) {
-    const service = await this.serviceRepository.findById(
-      businessId,
-      serviceId,
-    );
-    if (!service) {
-      throw new AppException(
-        ErrorCode.SERVICE_NOT_FOUND,
-        'Service not found',
         HttpStatus.BAD_REQUEST,
       );
     }

@@ -9,10 +9,14 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import type { CalendarViewMode } from "@/features/calendars/utils/calendar-dates";
-import { isTodayDateKey, parseDateKeyInTimezone } from "@/features/calendars/utils/timezone";
+import {
+  isTodayDateKey,
+  parseDateKeyInTimezone,
+} from "@/features/calendars/utils/timezone";
 import { cn } from "@/lib/utils";
 
 const WEEKDAY_LABELS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
+const WEEK_JUMP_OPTIONS = [3, 4, 5, 6, 8];
 
 interface CalendarDatePickerProps {
   open: boolean;
@@ -22,6 +26,7 @@ interface CalendarDatePickerProps {
   view: CalendarViewMode;
   onSelectDate: (dateKey: string) => void;
   onToday: () => void;
+  onJumpWeeks?: (weeks: number) => void;
   trigger: React.ReactElement;
 }
 
@@ -33,6 +38,7 @@ export function CalendarDatePicker({
   view,
   onSelectDate,
   onToday,
+  onJumpWeeks,
   trigger,
 }: CalendarDatePickerProps) {
   const [visibleMonthKey, setVisibleMonthKey] = useState(anchorDateKey);
@@ -159,6 +165,26 @@ export function CalendarDatePicker({
             );
           })}
         </div>
+
+        {onJumpWeeks && (view === "week" || view === "list") ? (
+          <div className="mt-3 flex flex-wrap gap-1.5 border-t border-border/60 pt-3">
+            {WEEK_JUMP_OPTIONS.map((weeks) => (
+              <Button
+                key={weeks}
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-7 px-2 text-xs"
+                onClick={() => {
+                  onJumpWeeks(weeks);
+                  onOpenChange(false);
+                }}
+              >
+                +{weeks} weeks
+              </Button>
+            ))}
+          </div>
+        ) : null}
 
         <Button
           type="button"

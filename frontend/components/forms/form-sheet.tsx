@@ -36,6 +36,8 @@ export interface FormSheetProps<T extends FieldValues> {
   onSecondarySubmit?: (values: T) => void;
   showSecondarySubmit?: boolean;
   pendingAction?: "primary" | "secondary" | null;
+  /** @default false — sheets include an X close control; omit redundant footer Cancel */
+  showCancelButton?: boolean;
   cancelLabel?: string;
   onDelete?: () => void;
   deleteLabel?: string;
@@ -67,6 +69,7 @@ export function FormSheet<T extends FieldValues>({
   onSecondarySubmit,
   showSecondarySubmit = false,
   pendingAction = null,
+  showCancelButton = false,
   cancelLabel = "Cancel",
   onDelete,
   deleteLabel = "Delete",
@@ -102,15 +105,17 @@ export function FormSheet<T extends FieldValues>({
           </ActionButton>
         ) : null}
         <div className={DRAWER_FOOTER_ACTIONS_CLASS}>
-          <ActionButton
-            type="button"
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            disabled={isPending || isDeletePending}
-            className={DRAWER_FOOTER_BUTTON_CLASS}
-          >
-            {cancelLabel}
-          </ActionButton>
+          {showCancelButton ? (
+            <ActionButton
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              disabled={isPending || isDeletePending}
+              className={DRAWER_FOOTER_BUTTON_CLASS}
+            >
+              {cancelLabel}
+            </ActionButton>
+          ) : null}
           {showSecondarySubmit && onSecondarySubmit && form ? (
             <ActionButton
               type="button"

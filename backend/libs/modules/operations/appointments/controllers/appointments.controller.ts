@@ -58,6 +58,19 @@ export class AppointmentsController {
     return this.appointmentsService.create(user.businessId!, dto, user);
   }
 
+  @Get(':id/activity')
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
+  getActivity(
+    @CurrentUser() user: RequestUser,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.appointmentsService.getActivity(user.businessId!, id);
+  }
+
   @Get(':id')
   @BusinessRoles(
     BusinessMemberRole.OWNER,

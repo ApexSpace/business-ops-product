@@ -58,6 +58,7 @@ export interface CheckoutItemInput {
 
 export interface CreateCheckoutData {
   contactId: string;
+  appointmentId?: string | null;
   invoiceNumber: string;
   displaySequence: number;
   issueDate: Date;
@@ -175,6 +176,9 @@ export class CheckoutRepository {
       data: {
         business: { connect: { id: businessId } },
         contact: { connect: { id: data.contactId } },
+        ...(data.appointmentId
+          ? { appointment: { connect: { id: data.appointmentId } } }
+          : {}),
         kind: InvoiceKind.CHECKOUT,
         displaySequence: data.displaySequence,
         invoiceNumber: data.invoiceNumber,

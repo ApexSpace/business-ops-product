@@ -32,6 +32,7 @@ export function getCheckout(id: string) {
 
 export function createCheckout(body: {
   contactId: string;
+  appointmentId?: string;
   notes?: string;
 }) {
   return api.post<Checkout>("checkouts", body);

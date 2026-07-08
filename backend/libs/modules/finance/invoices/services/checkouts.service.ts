@@ -120,6 +120,7 @@ export class CheckoutsService {
       businessId,
       {
         contactId: dto.contactId,
+        appointmentId: dto.appointmentId ?? null,
         invoiceNumber,
         displaySequence,
         issueDate: new Date(),

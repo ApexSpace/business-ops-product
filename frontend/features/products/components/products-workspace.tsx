@@ -415,11 +415,7 @@ export function ProductsWorkspace() {
                 <Pencil className="mr-1 size-3.5" />
                 Edit
               </Button>
-            ) : (
-              <Button variant="ghost" size="sm" onClick={cancelEdit}>
-                Cancel
-              </Button>
-            )
+            ) : null
           ) : null
         }
         overflowActions={
@@ -1268,15 +1264,6 @@ function ProductFormSheet({
       footerClassName={FINANCIAL_DRAWER_FOOTER_CLASS}
       footer={
         <div className={DRAWER_FOOTER_ACTIONS_CLASS}>
-          <ActionButton
-            type="button"
-            variant="outline"
-            onClick={() => handleOpenChange(false)}
-            disabled={createPending}
-            className={DRAWER_FOOTER_BUTTON_CLASS}
-          >
-            Cancel
-          </ActionButton>
           <ActionButton
             type="button"
             disabled={createPending || !form.name.trim()}

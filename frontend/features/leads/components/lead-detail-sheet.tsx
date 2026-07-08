@@ -83,14 +83,6 @@ export function LeadDetailSheet({
           lead ? (
             <EntityDetailFooter>
               <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => onOpenChange(false)}
-              >
-                Cancel
-              </Button>
-              <Button
                 type="submit"
                 form={LEAD_DETAIL_FORM_ID}
                 size="sm"

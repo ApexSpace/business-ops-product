@@ -187,15 +187,6 @@ export function WorkItemFormDialog({
           <div className={DRAWER_FOOTER_ACTIONS_CLASS}>
             <ActionButton
               type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-              disabled={mutation.isPending}
-              className={DRAWER_FOOTER_BUTTON_CLASS}
-            >
-              Cancel
-            </ActionButton>
-            <ActionButton
-              type="button"
               disabled={mutation.isPending}
               onClick={() => void submit()}
               className={DRAWER_FOOTER_BUTTON_CLASS}

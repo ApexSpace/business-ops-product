@@ -25,7 +25,12 @@ interface DayCalendarViewProps {
   appointments: Appointment[];
   isLoading?: boolean;
   onAppointmentClick: (appointment: Appointment) => void;
-  onSlotClick: (dateKey: string, hour: number, minute: number) => void;
+  onSlotClick: (
+    dateKey: string,
+    hour: number,
+    minute: number,
+    assignedToId?: string,
+  ) => void;
 }
 
 export function DayCalendarView({

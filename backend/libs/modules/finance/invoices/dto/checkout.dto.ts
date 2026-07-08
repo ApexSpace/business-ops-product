@@ -75,6 +75,11 @@ export class CreateCheckoutDto {
 
   @ApiPropertyOptional()
   @IsOptional()
+  @IsUUID('4')
+  appointmentId?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
   @IsString()
   @MaxLength(5000)
   notes?: string;

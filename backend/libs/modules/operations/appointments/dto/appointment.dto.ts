@@ -4,13 +4,19 @@ import {
   AppointmentStatus,
   CalendarLocationType,
 } from '@prisma/client';
+import { Type } from 'class-transformer';
 import {
+  IsArray,
   IsDateString,
   IsEnum,
+  IsInt,
+  IsNumber,
   IsOptional,
   IsString,
   IsUUID,
   MaxLength,
+  Min,
+  ValidateNested,
 } from 'class-validator';
 import { PaginationQueryDto } from '@app/common/dto/pagination-query.dto';
 
@@ -40,10 +46,13 @@ export class ListAppointmentsQueryDto extends PaginationQueryDto {
   @IsUUID()
   assignedToId?: string;
 
-  @ApiPropertyOptional({ enum: AppointmentStatus })
+  @ApiPropertyOptional({
+    description: 'Single status or comma-separated list',
+    enum: AppointmentStatus,
+  })
   @IsOptional()
-  @IsEnum(AppointmentStatus)
-  status?: AppointmentStatus;
+  @IsString()
+  status?: string;
 
   @ApiPropertyOptional()
   @IsOptional()
@@ -61,6 +70,33 @@ export class ListAppointmentsQueryDto extends PaginationQueryDto {
   search?: string;
 }
 
+export class AppointmentServiceLineInputDto {
+  @ApiProperty()
+  @IsUUID()
+  serviceId!: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsUUID()
+  assignedToId?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsDateString()
+  startAt?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  durationMinutes?: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsNumber()
+  price?: number;
+}
+
 export class CreateAppointmentDto {
   @ApiProperty()
   @IsUUID()
@@ -74,6 +110,13 @@ export class CreateAppointmentDto {
   @IsOptional()
   @IsUUID()
   serviceId?: string;
+
+  @ApiPropertyOptional({ type: [AppointmentServiceLineInputDto] })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => AppointmentServiceLineInputDto)
+  services?: AppointmentServiceLineInputDto[];
 
   @ApiPropertyOptional()
   @IsOptional()
@@ -147,6 +190,38 @@ export class UpdateAppointmentStatusDto {
   status!: AppointmentStatus;
 }
 
+export class AppointmentServiceLineResponseDto {
+  id!: string;
+  serviceId!: string;
+  assignedToId!: string | null;
+  startAt!: Date | null;
+  durationMinutes!: number | null;
+  price!: string | null;
+  sortOrder!: number;
+  service!: { id: string; name: string; durationMinutes: number; price: string | null };
+  assignedTo!: {
+    id: string;
+    firstName: string | null;
+    lastName: string | null;
+    email: string;
+  } | null;
+}
+
+export class AppointmentUserSummaryDto {
+  id!: string;
+  firstName!: string | null;
+  lastName!: string | null;
+  email!: string;
+}
+
+export class AppointmentActivityItemDto {
+  id!: string;
+  action!: string;
+  createdAt!: Date;
+  actor!: AppointmentUserSummaryDto | null;
+  metadata?: Record<string, unknown> | null;
+}
+
 export class AppointmentResponseDto {
   id!: string;
   businessId!: string;
@@ -175,14 +250,14 @@ export class AppointmentResponseDto {
     lastName: string | null;
     displayName: string | null;
     email: string | null;
+    phoneNumber: string | null;
+    createdAt: Date;
   };
   service!: { id: string; name: string } | null;
-  assignedTo!: {
-    id: string;
-    firstName: string | null;
-    lastName: string | null;
-    email: string;
-  } | null;
+  services!: AppointmentServiceLineResponseDto[];
+  assignedTo!: AppointmentUserSummaryDto | null;
+  createdBy!: AppointmentUserSummaryDto | null;
+  relatedCheckoutId!: string | null;
   /** Set when internal save succeeded but Google sync failed */
   googleSyncWarning?: string | null;
 }

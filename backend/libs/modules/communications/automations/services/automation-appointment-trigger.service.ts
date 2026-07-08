@@ -79,7 +79,7 @@ export class AutomationAppointmentTriggerService {
           businessId,
           deletedAt: null,
           status: {
-            in: [AppointmentStatus.SCHEDULED, AppointmentStatus.CONFIRMED],
+            in: [AppointmentStatus.UNCONFIRMED, AppointmentStatus.CONFIRMED],
           },
           startAt: {
             gte: earliestTarget,

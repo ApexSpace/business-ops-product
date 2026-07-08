@@ -270,10 +270,10 @@ export class PublicBookingService {
         : AppointmentSource.PUBLIC_LINK);
 
     const status = calendar.requireApproval
-      ? AppointmentStatus.SCHEDULED
+      ? AppointmentStatus.UNCONFIRMED
       : calendar.autoConfirm
         ? AppointmentStatus.CONFIRMED
-        : AppointmentStatus.SCHEDULED;
+        : AppointmentStatus.UNCONFIRMED;
 
     const title = `${dto.customerName.trim()} - ${calendar.name}`;
 

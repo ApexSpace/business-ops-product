@@ -8,8 +8,10 @@ import {
 } from "@/features/calendars/utils/timezone";
 
 export type AppointmentStatus =
-  | "SCHEDULED"
+  | "UNCONFIRMED"
   | "CONFIRMED"
+  | "WAITING"
+  | "IN_SERVICE"
   | "COMPLETED"
   | "CANCELLED"
   | "NO_SHOW";
@@ -20,6 +22,43 @@ export type AppointmentSource =
   | "PUBLIC_LINK"
   | "GOOGLE_SYNC"
   | "IMPORTED";
+
+export interface AppointmentServiceLine {
+  id: string;
+  serviceId: string;
+  assignedToId: string | null;
+  startAt: string | null;
+  durationMinutes: number | null;
+  price: string | null;
+  sortOrder: number;
+  service: {
+    id: string;
+    name: string;
+    durationMinutes: number;
+    price: string | null;
+  };
+  assignedTo: {
+    id: string;
+    firstName: string | null;
+    lastName: string | null;
+    email: string;
+  } | null;
+}
+
+export interface AppointmentUserSummary {
+  id: string;
+  firstName: string | null;
+  lastName: string | null;
+  email: string;
+}
+
+export interface AppointmentActivityItem {
+  id: string;
+  action: string;
+  createdAt: string;
+  actor: AppointmentUserSummary | null;
+  metadata?: Record<string, unknown> | null;
+}
 
 export interface Appointment {
   id: string;
@@ -49,14 +88,14 @@ export interface Appointment {
     lastName: string | null;
     displayName: string | null;
     email: string | null;
+    phoneNumber: string | null;
+    createdAt: string;
   };
   service: { id: string; name: string } | null;
-  assignedTo: {
-    id: string;
-    firstName: string | null;
-    lastName: string | null;
-    email: string;
-  } | null;
+  services: AppointmentServiceLine[];
+  assignedTo: AppointmentUserSummary | null;
+  createdBy: AppointmentUserSummary | null;
+  relatedCheckoutId: string | null;
   googleSyncWarning?: string | null;
 }
 
@@ -83,18 +122,52 @@ export const APPOINTMENT_STATUS_OPTIONS: {
   value: AppointmentStatus;
   label: string;
 }[] = [
-  { value: "SCHEDULED", label: "Scheduled" },
+  { value: "UNCONFIRMED", label: "Unconfirmed" },
   { value: "CONFIRMED", label: "Confirmed" },
+  { value: "WAITING", label: "Waiting" },
+  { value: "IN_SERVICE", label: "In service" },
   { value: "COMPLETED", label: "Completed" },
   { value: "CANCELLED", label: "Cancelled" },
   { value: "NO_SHOW", label: "No show" },
 ];
+
+export const appointmentServiceLineSchema = z.object({
+  serviceId: z.string().uuid(),
+  assignedToId: z.string().uuid().optional(),
+  startAt: z.string().optional(),
+  durationMinutes: z.number().int().min(1).optional(),
+});
+
+export const appointmentCreateSchema = z.object({
+  calendarId: z.string().uuid(),
+  contactId: z.string().uuid(),
+  assignedToId: z.string().uuid().optional(),
+  title: z.string().min(1).max(255),
+  startAt: z.string().min(1),
+  endAt: z.string().min(1),
+  notes: z.string().max(5000).optional(),
+  status: z
+    .enum([
+      "UNCONFIRMED",
+      "CONFIRMED",
+      "WAITING",
+      "IN_SERVICE",
+      "COMPLETED",
+      "CANCELLED",
+      "NO_SHOW",
+    ])
+    .optional(),
+  services: z.array(appointmentServiceLineSchema).min(1, "Select at least one service"),
+});
+
+export type AppointmentCreateValues = z.infer<typeof appointmentCreateSchema>;
 
 export const appointmentFormSchema = z
   .object({
     calendarId: z.string().uuid(),
     contactId: z.string().uuid(),
     serviceId: z.string().optional(),
+    services: z.array(appointmentServiceLineSchema).optional(),
     workItemId: z.string().optional(),
     assignedToId: z.string().optional(),
     title: z.string().min(1).max(255),
@@ -102,8 +175,10 @@ export const appointmentFormSchema = z
     startAt: z.string().min(1),
     endAt: z.string().min(1),
     status: z.enum([
-      "SCHEDULED",
+      "UNCONFIRMED",
       "CONFIRMED",
+      "WAITING",
+      "IN_SERVICE",
       "COMPLETED",
       "CANCELLED",
       "NO_SHOW",
@@ -122,10 +197,10 @@ export const appointmentFormSchema = z
     notes: z.string().max(5000).optional(),
     clientPackageId: z.string().uuid().optional().or(z.literal("")),
   })
-  .refine(
-    (data) => new Date(data.endAt) > new Date(data.startAt),
-    { message: "End must be after start", path: ["endAt"] },
-  );
+  .refine((data) => new Date(data.endAt) > new Date(data.startAt), {
+    message: "End must be after start",
+    path: ["endAt"],
+  });
 
 export type AppointmentFormValues = z.infer<typeof appointmentFormSchema>;
 
@@ -133,13 +208,14 @@ export const appointmentFormDefaults: AppointmentFormValues = {
   calendarId: "",
   contactId: "",
   serviceId: "",
+  services: [],
   workItemId: "",
   assignedToId: "",
   title: "",
   description: "",
   startAt: "",
   endAt: "",
-  status: "SCHEDULED",
+  status: "UNCONFIRMED",
   locationType: "PHYSICAL",
   locationValue: "",
   notes: "",
@@ -156,6 +232,13 @@ export function appointmentToForm(
     calendarId: a.calendarId,
     contactId: a.contactId,
     serviceId: a.serviceId ?? "",
+    services:
+      a.services?.map((line) => ({
+        serviceId: line.serviceId,
+        assignedToId: line.assignedToId ?? undefined,
+        startAt: line.startAt ?? undefined,
+        durationMinutes: line.durationMinutes ?? undefined,
+      })) ?? [],
     workItemId: a.workItemId ?? "",
     assignedToId: a.assignedToId ?? "",
     title: a.title,
@@ -182,6 +265,7 @@ export function appointmentFormToApiBody(
     calendarId: values.calendarId,
     contactId: values.contactId,
     serviceId: values.serviceId?.trim() || undefined,
+    services: values.services?.length ? values.services : undefined,
     workItemId: values.workItemId?.trim() || undefined,
     assignedToId: values.assignedToId?.trim() || undefined,
     title: values.title.trim(),
@@ -236,6 +320,11 @@ export function getContactDisplayName(contact: Appointment["contact"]): string {
     contact.email ??
     "Contact"
   );
+}
+
+export function getMemberDisplayName(member: AppointmentUserSummary): string {
+  const name = [member.firstName, member.lastName].filter(Boolean).join(" ");
+  return name || member.email;
 }
 
 function toLocalDatetimeInput(iso: string): string {

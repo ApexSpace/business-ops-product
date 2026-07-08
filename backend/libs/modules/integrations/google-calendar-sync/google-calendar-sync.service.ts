@@ -471,7 +471,7 @@ export class GoogleCalendarSyncService {
       description: event.description?.trim() || null,
       startAt,
       endAt,
-      status: AppointmentStatus.SCHEDULED,
+      status: AppointmentStatus.UNCONFIRMED,
       source: AppointmentSource.GOOGLE_SYNC,
       externalEventId: event.id,
       externalProvider: APPOINTMENT_EXTERNAL_PROVIDER,

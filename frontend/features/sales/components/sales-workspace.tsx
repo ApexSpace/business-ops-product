@@ -640,16 +640,7 @@ export function SalesWorkspace() {
         }
         headerActions={
           sale?.isOpen && saleDetailProps ? (
-            saleEditMode ? (
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={cancelEditSale}
-              >
-                Cancel
-              </Button>
-            ) : (
+            saleEditMode ? null : (
               <Button
                 type="button"
                 variant="outline"

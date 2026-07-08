@@ -365,15 +365,7 @@ export function GiftCardsWorkspace() {
                 <Pencil className="mr-1 size-3.5" />
                 Edit
               </Button>
-            ) : (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setDrawerMode("view")}
-              >
-                Cancel
-              </Button>
-            )
+            ) : null
           ) : null
         }
         footer={

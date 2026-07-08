@@ -161,7 +161,7 @@ export class DashboardFeedService {
           lte: endOfToday,
         },
         status: {
-          in: [AppointmentStatus.SCHEDULED, AppointmentStatus.CONFIRMED],
+          in: [AppointmentStatus.UNCONFIRMED, AppointmentStatus.CONFIRMED],
         },
       },
     });
@@ -188,7 +188,7 @@ export class DashboardFeedService {
         },
         status: {
           in: [
-            AppointmentStatus.SCHEDULED,
+            AppointmentStatus.UNCONFIRMED,
             AppointmentStatus.CONFIRMED,
             AppointmentStatus.COMPLETED,
           ],
@@ -278,7 +278,7 @@ export class DashboardFeedService {
         startAt: { gte: startOfToday, lte: endOfToday },
         status: {
           in: [
-            AppointmentStatus.SCHEDULED,
+            AppointmentStatus.UNCONFIRMED,
             AppointmentStatus.CONFIRMED,
             AppointmentStatus.COMPLETED,
           ],
@@ -340,7 +340,7 @@ export class DashboardFeedService {
       where: {
         businessId,
         deletedAt: null,
-        status: AppointmentStatus.SCHEDULED,
+        status: AppointmentStatus.UNCONFIRMED,
         startAt: {
           gte: now,
           lte: confirmWindowEnd,

@@ -121,7 +121,7 @@ export class DashboardStatsService {
           ...appointmentWhere,
           startAt: { gte: startOfToday, lte: endOfToday },
           status: {
-            in: [AppointmentStatus.SCHEDULED, AppointmentStatus.CONFIRMED],
+            in: [AppointmentStatus.UNCONFIRMED, AppointmentStatus.CONFIRMED],
           },
         },
       }),
@@ -130,7 +130,7 @@ export class DashboardStatsService {
           ...appointmentWhere,
           startAt: { gte: now },
           status: {
-            in: [AppointmentStatus.SCHEDULED, AppointmentStatus.CONFIRMED],
+            in: [AppointmentStatus.UNCONFIRMED, AppointmentStatus.CONFIRMED],
           },
         },
       }),

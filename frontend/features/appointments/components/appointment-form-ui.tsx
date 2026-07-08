@@ -3,14 +3,17 @@
 import type { ReactNode } from "react";
 import { Plus } from "lucide-react";
 import type { AppointmentStatus } from "@/features/appointments/schemas/appointment-profile";
+import { getAppointmentStatusDotClass } from "@/features/appointments/utils/appointment-calendar-styles";
 import { cn } from "@/lib/utils";
 
 export const APPOINTMENT_STATUS_DOT_CLASS: Record<AppointmentStatus, string> = {
-  SCHEDULED: "bg-slate-500",
-  CONFIRMED: "bg-primary",
-  COMPLETED: "bg-emerald-500",
-  CANCELLED: "bg-destructive",
-  NO_SHOW: "bg-amber-500",
+  UNCONFIRMED: getAppointmentStatusDotClass("UNCONFIRMED"),
+  CONFIRMED: getAppointmentStatusDotClass("CONFIRMED"),
+  WAITING: getAppointmentStatusDotClass("WAITING"),
+  IN_SERVICE: getAppointmentStatusDotClass("IN_SERVICE"),
+  COMPLETED: getAppointmentStatusDotClass("COMPLETED"),
+  CANCELLED: getAppointmentStatusDotClass("CANCELLED"),
+  NO_SHOW: getAppointmentStatusDotClass("NO_SHOW"),
 };
 
 export function AppointmentColorDot({
