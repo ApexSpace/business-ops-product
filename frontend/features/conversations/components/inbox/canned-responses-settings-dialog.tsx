@@ -147,7 +147,7 @@ export function CannedResponsesSettingsDialog({
         title="Delete quick reply?"
         description="This snippet will be removed for all staff."
         onConfirm={() => deleteId && deleteMutation.mutate(deleteId)}
-        loading={deleteMutation.isPending}
+        isPending={deleteMutation.isPending}
       />
     </>
   );

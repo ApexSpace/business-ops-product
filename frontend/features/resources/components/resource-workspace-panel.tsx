@@ -173,7 +173,7 @@ export function ResourceWorkspacePanel({ resourceId }: { resourceId: string }) {
                 onValueChange={(v) =>
                   setDetails({
                     ...details,
-                    groupId: v === "__none__" ? "" : v,
+                    groupId: !v || v === "__none__" ? "" : v,
                   })
                 }
               >

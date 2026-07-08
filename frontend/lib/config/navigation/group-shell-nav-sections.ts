@@ -11,8 +11,8 @@ export interface PartitionedShellNav {
   overflowItems: ShellNavItem[];
 }
 
-const PRIMARY_ORDER = new Map(
-  BUSINESS_PRIMARY_NAV_KEYS.map((key, index) => [key, index]),
+const PRIMARY_ORDER = new Map<string, number>(
+  BUSINESS_PRIMARY_NAV_KEYS.map((key, index) => [key, index] as const),
 );
 
 function sortPrimaryItems(items: ShellNavItem[]): ShellNavItem[] {

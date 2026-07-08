@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -19,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { ListPagination } from "@/components/ui/list-pagination";
 import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
 import { useListSearchParams } from "@/lib/hooks/use-list-search-params";
+import { useEntitySelection } from "@/lib/routing/use-entity-selection";
 import {
   WORKSPACE_ACTIVE_ROW_CLASS,
   WORKSPACE_TABLE_CLASS,

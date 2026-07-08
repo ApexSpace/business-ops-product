@@ -16,7 +16,7 @@ export type WorkflowStep = {
 export type WorkflowTriggerFilter = {
   fieldKey: string;
   operator: string;
-  value?: unknown;
+  value: string | number | boolean | string[];
 };
 
 export type WorkflowSettings = {

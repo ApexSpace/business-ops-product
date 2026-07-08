@@ -1,4 +1,5 @@
 import type { FileAsset } from "@/lib/storage/types/storage.types";
+import type { FormDefinition } from "@/features/forms/types";
 import { getErrorMessage, parseEnvelope } from "@/lib/api/envelope";
 import { ApiClientError } from "@/lib/api/errors";
 

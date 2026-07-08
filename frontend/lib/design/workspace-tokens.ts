@@ -1,3 +1,5 @@
+import type { CSSProperties } from "react";
+
 /** Shared workspace and entity drawer design tokens. */
 export const WORKSPACE_ACTIVE_ROW_CLASS =
   "shadow-[inset_3px_0_0_0_var(--color-primary)]";
@@ -52,7 +54,7 @@ export const WORKSPACE_CSS_VARS = {
   "--drawer-width-wide": "640px",
   "--drawer-width-split": "900px",
   "--entity-drawer-toolbar-z": "10",
-} as const;
+} as Record<string, string> as CSSProperties;
 
 export type EntityDrawerWidthTier = "compact" | "standard" | "wide" | "split";
 

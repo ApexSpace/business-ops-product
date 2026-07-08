@@ -107,8 +107,9 @@ export function PackagesSettingsScreen() {
                       variant="outline"
                       size="icon"
                       onClick={() =>
-                        copyTextToClipboard(settings.shareableLink!).then(() =>
-                          toast.success("Copied"),
+                        void copyTextToClipboard(
+                          settings.shareableLink,
+                          "Link",
                         )
                       }
                     >
@@ -152,8 +153,9 @@ export function PackagesSettingsScreen() {
                       size="icon"
                       className="absolute top-2 right-2"
                       onClick={() =>
-                        copyTextToClipboard(settings.embedScript!).then(() =>
-                          toast.success("Copied"),
+                        void copyTextToClipboard(
+                          settings.embedScript,
+                          "Embed code",
                         )
                       }
                     >
@@ -177,8 +179,9 @@ export function PackagesSettingsScreen() {
                         variant="outline"
                         size="icon"
                         onClick={() =>
-                          copyTextToClipboard(settings.overlayLink!).then(() =>
-                            toast.success("Copied"),
+                          void copyTextToClipboard(
+                            settings.overlayLink,
+                            "Link",
                           )
                         }
                       >

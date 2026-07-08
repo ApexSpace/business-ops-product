@@ -633,7 +633,10 @@ function ResourcesTab({
             value={label}
             onChange={(e) => setLabel(e.target.value)}
           />
-          <Select value={resourceType} onValueChange={setResourceType}>
+          <Select
+            value={resourceType}
+            onValueChange={(v) => setResourceType(v ?? "")}
+          >
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
@@ -711,7 +714,7 @@ function ResourceRequirementRow({
           <Label className="text-xs">Linked resource</Label>
           <Select
             value={resourceId || "__none__"}
-            onValueChange={(v) => setResourceId(v === "__none__" ? "" : v)}
+            onValueChange={(v) => setResourceId(!v || v === "__none__" ? "" : v)}
           >
             <SelectTrigger>
               <SelectValue placeholder="Not linked" />
@@ -900,7 +903,7 @@ function OnlineBookingTab({
           <Select
             value={form.calendarId || "__none__"}
             onValueChange={(v) =>
-              setForm({ ...form, calendarId: v === "__none__" ? "" : v })
+              setForm({ ...form, calendarId: !v || v === "__none__" ? "" : v })
             }
           >
             <SelectTrigger><SelectValue placeholder="Select calendar" /></SelectTrigger>

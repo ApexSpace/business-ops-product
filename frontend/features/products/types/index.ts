@@ -69,7 +69,7 @@ export interface ProductInventoryAdjustment {
   id: string;
   variantId?: string | null;
   variantKey?: string | null;
-  type: string;
+  type: ProductInventoryAdjustmentType;
   quantityChange: number;
   note?: string | null;
   actorUserId?: string | null;
@@ -142,11 +142,11 @@ export interface ProductPickerItem {
 
 export interface CheckoutProductPickerItem extends ProductPickerItem {}
 
-export interface ListProductsFilters {
+export type ListProductsFilters = {
   page?: number;
   limit?: number;
   search?: string;
   status?: ProductStatus;
   categoryId?: string;
   productType?: ProductType;
-}
+};

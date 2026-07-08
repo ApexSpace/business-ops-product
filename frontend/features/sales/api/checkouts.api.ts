@@ -7,7 +7,7 @@ import type {
 } from "@/features/sales/types/checkout";
 import type { CollectPaymentTender } from "@/features/payments/api/payment-collection.api";
 
-export interface ListCheckoutsFilters {
+export type ListCheckoutsFilters = {
   page?: number;
   limit?: number;
   search?: string;
@@ -15,7 +15,7 @@ export interface ListCheckoutsFilters {
   status?: string;
   issueFrom?: string;
   issueTo?: string;
-}
+};
 
 export interface CheckoutStaffPickerItem {
   id: string;

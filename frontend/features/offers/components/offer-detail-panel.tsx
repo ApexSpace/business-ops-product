@@ -269,7 +269,10 @@ export function OfferDetailPanel({ offer, activeTab }: OfferDetailPanelProps) {
     }
   }
 
-  function memberLabel(member: (typeof teamMembers)[number]) {
+  function memberLabel(member: {
+    id: string;
+    user: { firstName?: string | null; lastName?: string | null; email: string };
+  }) {
     return (
       [member.user.firstName, member.user.lastName].filter(Boolean).join(" ") ||
       member.user.email

@@ -83,7 +83,7 @@ interface PaletteItemProps {
 }
 
 function PaletteItem({ type, label, icon, disabled, onAddField }: PaletteItemProps) {
-  const Icon = (icon && FIELD_ICONS[icon]) ?? Type;
+  const Icon = (icon ? FIELD_ICONS[icon] : undefined) ?? Type;
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: `palette-${type}`,
     data: { type, source: "palette" as const },

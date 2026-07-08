@@ -155,7 +155,7 @@ export function paymentToForm(payment: Payment): PaymentFormValues {
   return {
     invoiceId: payment.invoiceId,
     amount: parseFloat(payment.amount),
-    method: payment.method,
+    method: payment.method === "GIFT_CARD" ? "OTHER" : payment.method,
     paidAt: payment.paidAt
       ? toDatetimeLocalValue(payment.paidAt)
       : toDatetimeLocalValue(new Date().toISOString()),

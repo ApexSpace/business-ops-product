@@ -29,11 +29,16 @@ export interface PaymentCheckoutProps {
  * Generic staff-facing payment shell — wraps collect UI + embedded Stripe.
  * Existing invoice/sales flows pass through unchanged props.
  */
-export function PaymentCheckout(props: PaymentCheckoutProps) {
+export function PaymentCheckout({
+  payableType: _payableType,
+  payableId,
+  footer,
+  ...rest
+}: PaymentCheckoutProps) {
   return (
     <div className="space-y-4">
-      <InvoiceCollectPaymentPanel {...props} />
-      {props.footer}
+      <InvoiceCollectPaymentPanel invoiceId={payableId} {...rest} />
+      {footer}
     </div>
   );
 }

@@ -285,7 +285,6 @@ export function PublicPackagePurchase({
                   stripeAccountId={paymentConfig.stripeAccountId}
                   onSuccess={() => setStep("success")}
                   onError={(message) => toast.error(message)}
-                  submitLabel="Complete purchase"
                 />
               </div>
             )}

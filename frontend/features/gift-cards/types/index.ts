@@ -83,9 +83,9 @@ export interface CreateGiftCardManualInput {
   notes?: string;
 }
 
-export interface GiftCardsListFilters {
+export type GiftCardsListFilters = {
   page?: number;
   limit?: number;
   search?: string;
   redeemableOnly?: boolean;
-}
+};

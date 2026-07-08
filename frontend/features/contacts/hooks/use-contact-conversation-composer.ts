@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import type { PendingMessageAttachment } from "@/features/conversations/components/inbox/message-composer";
-import { channelComposerHint, resolveOutboundEmailSubject } from "@/features/conversations/components/inbox/conversation-inbox-utils";
+import { channelComposerHint } from "@/features/conversations/components/inbox/conversation-inbox-utils";
 import {
   ensureContactConversation,
   listContactReplyChannels,

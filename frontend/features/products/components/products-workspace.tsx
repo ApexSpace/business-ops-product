@@ -998,7 +998,7 @@ function ProductProfileFormFields({
             onValueChange={(v) =>
               setForm({
                 ...form,
-                categoryId: v === "__none__" ? "" : v,
+                categoryId: !v || v === "__none__" ? "" : v,
               })
             }
           >

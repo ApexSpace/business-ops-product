@@ -106,10 +106,10 @@ export interface PackageSettings {
   stripeReady: boolean;
 }
 
-export interface ClientPackagesListFilters {
+export type ClientPackagesListFilters = {
   contactId?: string;
   search?: string;
-}
+};
 
 export interface CreateClientPackageInput {
   contactId: string;

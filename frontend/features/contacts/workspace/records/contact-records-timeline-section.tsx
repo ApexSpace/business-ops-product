@@ -79,7 +79,7 @@ function timelineTypeLabel(type: ContactTimelineType) {
     case "task":
       return "Task";
     default:
-      return type.replace(/_/g, " ");
+      return String(type).replace(/_/g, " ");
   }
 }
 

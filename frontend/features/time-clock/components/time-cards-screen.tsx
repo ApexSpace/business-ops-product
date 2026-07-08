@@ -303,11 +303,13 @@ export function TimeCardsScreen() {
         }
         actions={
           <>
-            <Button variant="outline" size="sm" asChild>
-              <Link href="/business/time-clock">
-                <Clock className="mr-1.5 size-4" />
-                Staff kiosk
-              </Link>
+            <Button
+              variant="outline"
+              size="sm"
+              render={<Link href="/business/time-clock" />}
+            >
+              <Clock className="mr-1.5 size-4" />
+              Staff kiosk
             </Button>
             <Button size="sm" onClick={openAdd}>
               <Plus className="mr-1.5 size-4" />

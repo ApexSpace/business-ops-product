@@ -106,18 +106,19 @@ function FormSubmissionsPageContent({ formId }: FormSubmissionsPageProps) {
         title={`${formName} submissions`}
         description="Review and manage responses collected from this form."
         actions={
-          <Button variant="outline" size="sm" asChild>
-            <Link href={`/business/settings/forms/${formId}/edit`}>
-              Edit form
-            </Link>
+          <Button
+            variant="outline"
+            size="sm"
+            render={<Link href={`/business/settings/forms/${formId}/edit`} />}
+          >
+            Edit form
           </Button>
         }
         footer={
           data && data.meta.total > limit ? (
             <ListPagination
+              meta={data.meta}
               page={page}
-              pageSize={limit}
-              total={data.meta.total}
               onPageChange={setPage}
             />
           ) : data?.items.length

@@ -17,7 +17,7 @@ describe("field-style.util", () => {
   it("normalizes legacy width aliases", () => {
     expect(normalizeFieldWidth("half")).toBe(50);
     expect(normalizeFieldWidth("full")).toBe(100);
-    expect(normalizeFieldWidth("75")).toBe(75);
+    expect(normalizeFieldWidth(75)).toBe(75);
   });
 
   it("returns inline width styles for partial field widths", () => {

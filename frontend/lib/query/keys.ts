@@ -4,7 +4,7 @@
 
 export type ListFilters = Record<
   string,
-  string | number | boolean | undefined | null
+  string | number | boolean | Array<string | number> | undefined | null
 >;
 
 function listKey(
@@ -17,7 +17,9 @@ function listKey(
   for (const key of keys) {
     const value = filters[key];
     if (value === undefined || value === null || value === "") continue;
-    if (typeof value === "boolean") {
+    if (Array.isArray(value)) {
+      if (value.length > 0) parts.push(key, value.join(","));
+    } else if (typeof value === "boolean") {
       parts.push(key, value ? "true" : "false");
     } else {
       parts.push(key, value);
@@ -219,8 +221,12 @@ export const queryKeys = {
   },
   giftCards: {
     all: () => ["gift-cards"] as const,
-    list: (filters?: { page?: number; limit?: number; search?: string }) =>
-      listKey(["gift-cards", "list"], filters),
+    list: (filters?: {
+      page?: number;
+      limit?: number;
+      search?: string;
+      redeemableOnly?: boolean;
+    }) => listKey(["gift-cards", "list"], filters),
     detail: (id: string) => ["gift-cards", "detail", id] as const,
     settings: () => ["gift-cards", "settings"] as const,
     onlineSalesShare: () => ["gift-cards", "online-sales-share"] as const,

@@ -70,7 +70,9 @@ export function SaleClosePanel({
           stripeTenders: result.stripeTenders,
         };
       }}
-      awaitSettlement={() => waitForCheckoutSettled(checkoutId)}
+      awaitSettlement={async () => {
+        await waitForCheckoutSettled(checkoutId);
+      }}
       successMessage="Sale closed"
       onComplete={onComplete}
     />

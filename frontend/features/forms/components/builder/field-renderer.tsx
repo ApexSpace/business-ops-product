@@ -14,7 +14,7 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
-import type { FormField, FormSettings } from "@/features/forms/types";
+import type { ColumnCount, FormField, FormSettings } from "@/features/forms/types";
 import { FormFileUploadControl } from "@/features/forms/components/form-file-upload-control";
 import { FormImageDisplay } from "@/features/forms/components/form-image-display";
 import { resizeFormFieldColumns } from "@/features/forms/utils/field-defaults.util";
@@ -354,7 +354,10 @@ export function FieldRenderer({
   }
 
   if (field.type === "columns" && field.columns) {
-    const cols = field.columnCount ?? field.columns.length;
+    const cols = (Math.min(
+      4,
+      Math.max(1, field.columnCount ?? field.columns.length),
+    ) as ColumnCount);
     const columnsToRender = resizeFormFieldColumns(field.columns, cols);
     const hasTallColumn = columnsContainTallContent(columnsToRender);
     const columnLayout = getColumnLayoutClasses(field);

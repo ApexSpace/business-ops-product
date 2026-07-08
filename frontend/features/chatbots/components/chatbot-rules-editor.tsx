@@ -197,11 +197,9 @@ export function ChatbotRulesEditor({
               e.currentTarget.value = "";
             }}
           />
-          <Button type="button" size="sm" variant="outline" asChild>
-            <span>
-              <Upload className="mr-1 size-4" />
-              Import
-            </span>
+          <Button type="button" size="sm" variant="outline" render={<span />}>
+            <Upload className="mr-1 size-4" />
+            Import
           </Button>
         </label>
       </div>

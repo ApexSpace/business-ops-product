@@ -767,8 +767,9 @@ export function PackageSetupScreen() {
                               size="icon"
                               aria-label="Copy direct link"
                               onClick={() =>
-                                copyTextToClipboard(packageDirectLink).then(() =>
-                                  toast.success("Copied"),
+                                void copyTextToClipboard(
+                                  packageDirectLink,
+                                  "Link",
                                 )
                               }
                             >

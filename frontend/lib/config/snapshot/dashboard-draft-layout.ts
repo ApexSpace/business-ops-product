@@ -8,9 +8,8 @@ export const DASHBOARD_DRAFT_WIDGET_KEYS: DashboardWidgetKey[] = [
   "wonDeals",
 ];
 
-export const DASHBOARD_DRAFT_WIDGET_LABELS: Record<
-  (typeof DASHBOARD_DRAFT_WIDGET_KEYS)[number],
-  string
+export const DASHBOARD_DRAFT_WIDGET_LABELS: Partial<
+  Record<DashboardWidgetKey, string>
 > = {
   appointments: "Appointments",
   contacts: "New contacts",

@@ -21,23 +21,35 @@ import { toSearchParams } from "./pagination";
 
 export { ApiClientError } from "./errors";
 
+export type SearchParamValue =
+  | string
+  | number
+  | boolean
+  | Array<string | number>
+  | undefined
+  | null;
+
 export type ApiClientOptions = {
   method?: string;
   body?: unknown;
-  searchParams?: Record<string, string | number | boolean | undefined | null>;
+  searchParams?: Record<string, SearchParamValue>;
   idempotencyKey?: string;
   featureFlags?: string[];
 };
 
 function buildProxyUrl(
   path: string,
-  searchParams?: Record<string, string | number | boolean | undefined | null>,
+  searchParams?: Record<string, SearchParamValue>,
 ): string {
   const normalized = path.startsWith("/") ? path.slice(1) : path;
   const url = new URL(`/api/backend/${normalized}`, window.location.origin);
   const params = toSearchParams(searchParams);
   for (const [key, value] of Object.entries(params)) {
-    url.searchParams.set(key, value);
+    if (Array.isArray(value)) {
+      for (const item of value) url.searchParams.append(key, item);
+    } else {
+      url.searchParams.set(key, value);
+    }
   }
   return url.toString();
 }
