@@ -86,9 +86,11 @@ export function AppSidebar({
             <p className="truncate text-[14px] font-semibold leading-tight tracking-tight">
               {brand.title}
             </p>
-            <p className="truncate text-xs text-sidebar-foreground/55">
-              {brand.subtitle}
-            </p>
+            {brand.subtitle ? (
+              <p className="truncate text-xs text-sidebar-foreground/55">
+                {brand.subtitle}
+              </p>
+            ) : null}
           </div>
         </div>
       </SidebarHeader>

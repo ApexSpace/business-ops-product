@@ -28,6 +28,8 @@ import type { BusinessTenantAccess } from "./types";
 export type BusinessAccessContextValue = {
   access: BusinessTenantAccess | undefined;
   isLoading: boolean;
+  /** True once access has been fetched for the current business session. */
+  isAccessResolved: boolean;
   isError: boolean;
   canAccessWorkspace: boolean;
   isBillingRecovery: boolean;
@@ -54,7 +56,7 @@ export function BusinessAccessProvider({ children }: { children: ReactNode }) {
     Record<string, { code?: string }>
   >({});
 
-  const { data, isLoading, isError, refetch } = useQuery({
+  const { data, isLoading, isError, isFetched, refetch } = useQuery({
     queryKey: queryKeys.business.access(),
     queryFn: getCurrentBusinessAccess,
     enabled: Boolean(businessId),
@@ -130,6 +132,7 @@ export function BusinessAccessProvider({ children }: { children: ReactNode }) {
     () => ({
       access: data,
       isLoading: Boolean(businessId) && isLoading,
+      isAccessResolved: Boolean(businessId) && (isFetched || isError),
       isError,
       canAccessWorkspace,
       isBillingRecovery,
@@ -155,6 +158,7 @@ export function BusinessAccessProvider({ children }: { children: ReactNode }) {
       data,
       businessId,
       isLoading,
+      isFetched,
       isError,
       canAccessWorkspace,
       isBillingRecovery,

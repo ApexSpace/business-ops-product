@@ -2,11 +2,12 @@
 
 import { useEffect } from "react";
 import { usePathname } from "next/navigation";
-import { Loader2 } from "lucide-react";
 import { useAppRouter } from "@/lib/hooks/use-app-router";
+import { useAuth } from "@/lib/auth/provider";
 import { isBillingRecoverySafeRoute } from "@/lib/business-access/billing-recovery";
 import { useBusinessAccess } from "@/lib/business-access/use-business-access";
 import { BusinessAccessBlockedScreen } from "./business-access-blocked-screen";
+import { BusinessShellBootLoader } from "./business-shell-boot-loader";
 
 function normalizePath(pathname: string): string {
   if (pathname.length > 1 && pathname.endsWith("/")) {
@@ -15,26 +16,44 @@ function normalizePath(pathname: string): string {
   return pathname.split("?")[0] ?? pathname;
 }
 
+function useBusinessShellBootstrap() {
+  const { isLoading: authLoading, jwt, isAuthenticated } = useAuth();
+  const { isAccessResolved } = useBusinessAccess();
+
+  const businessId =
+    jwt?.context === "business" ? jwt.businessId : undefined;
+
+  const awaitingBootstrap =
+    authLoading ||
+    (isAuthenticated &&
+      jwt?.context === "business" &&
+      (!businessId || !isAccessResolved));
+
+  return { isBootstrapping: awaitingBootstrap };
+}
+
 export function BusinessAccessGate({ children }: { children: React.ReactNode }) {
   const router = useAppRouter();
   const pathname = usePathname();
-  const { access, isLoading, isBlocked, isBillingRecovery, blockedReasonCode } =
+  const { access, isBlocked, isBillingRecovery, blockedReasonCode } =
     useBusinessAccess();
+  const { isBootstrapping } = useBusinessShellBootstrap();
+  const billingSafe = isBillingRecoverySafeRoute(normalizePath(pathname));
 
   useEffect(() => {
-    if (!isBillingRecovery || isLoading) return;
+    if (!isBillingRecovery || isBootstrapping) return;
     const path = normalizePath(pathname);
     if (!isBillingRecoverySafeRoute(path)) {
       router.replace("/business/settings/billing");
     }
-  }, [isBillingRecovery, isLoading, pathname, router]);
+  }, [isBillingRecovery, isBootstrapping, pathname, router]);
 
-  if (isLoading) {
-    return (
-      <div className="flex min-h-svh items-center justify-center">
-        <Loader2 className="size-8 animate-spin text-muted-foreground" />
-      </div>
-    );
+  if (isBootstrapping) {
+    return <BusinessShellBootLoader />;
+  }
+
+  if (isBillingRecovery && !billingSafe) {
+    return <BusinessShellBootLoader />;
   }
 
   if (isBlocked) {
@@ -44,17 +63,6 @@ export function BusinessAccessGate({ children }: { children: React.ReactNode }) 
         reasonCode={blockedReasonCode}
       />
     );
-  }
-
-  if (isBillingRecovery) {
-    const path = normalizePath(pathname);
-    if (!isBillingRecoverySafeRoute(path)) {
-      return (
-        <div className="flex min-h-svh items-center justify-center">
-          <Loader2 className="size-8 animate-spin text-muted-foreground" />
-        </div>
-      );
-    }
   }
 
   return <>{children}</>;

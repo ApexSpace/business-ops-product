@@ -26,6 +26,7 @@ export function useBusinessAccess() {
   return {
     access: ctx.access,
     isLoading: ctx.isLoading,
+    isAccessResolved: ctx.isAccessResolved,
     isError: ctx.isError,
     canAccessWorkspace: ctx.canAccessWorkspace,
     isBillingRecovery: ctx.isBillingRecovery,
@@ -49,6 +50,7 @@ export function useOptionalBusinessAccess() {
   return {
     access: ctx.access,
     isLoading: ctx.isLoading,
+    isAccessResolved: ctx.isAccessResolved,
     isError: ctx.isError,
     canAccessWorkspace: ctx.canAccessWorkspace,
     isBillingRecovery: ctx.isBillingRecovery,

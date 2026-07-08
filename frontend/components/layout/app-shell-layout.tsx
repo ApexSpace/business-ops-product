@@ -22,7 +22,6 @@ import {
   isCoreSafeBusinessRoute,
 } from "@/lib/capabilities/route-capability-map";
 import { BusinessAccessBanner } from "@/components/business-access/business-access-banner";
-import { BusinessAccessGate } from "@/components/business-access/business-access-gate";
 import { isBusinessAccessError } from "@/lib/api/error-classifier";
 import { ServiceUnavailableBanner } from "@/components/layout/service-unavailable-banner";
 import { useOptionalBusinessAccess } from "@/lib/business-access/use-business-access";
@@ -100,11 +99,6 @@ export function AppShellLayout({ mode, children }: ShellLayoutProps) {
             hasModule,
           });
 
-  const brandSubtitle =
-    snapshotContext.branding.productName ??
-    snapshotContext.snapshotName ??
-    "";
-
   const brand =
     mode === "platform"
       ? platformBrand
@@ -116,7 +110,7 @@ export function AppShellLayout({ mode, children }: ShellLayoutProps) {
           }
         : {
             title: currentBusiness?.name ?? "Business",
-            subtitle: brandSubtitle,
+            subtitle: "",
             icon: Building2,
           };
 
@@ -143,20 +137,12 @@ export function AppShellLayout({ mode, children }: ShellLayoutProps) {
     return (
       <>
         {mode !== "business" ? sessionErrorBanner : null}
-        {mode === "business" ? (
-          <BusinessAccessGate>
-            <div className="flex h-svh min-h-0 flex-col overflow-hidden bg-background">
-              {sessionErrorBanner ? (
-                <div className="shrink-0 px-4 pt-4">{sessionErrorBanner}</div>
-              ) : null}
-              {children}
-            </div>
-          </BusinessAccessGate>
-        ) : (
-          <div className="flex h-svh min-h-0 flex-col overflow-hidden bg-background">
-            {children}
-          </div>
-        )}
+        <div className="flex h-svh min-h-0 flex-col overflow-hidden bg-background">
+          {mode === "business" && sessionErrorBanner ? (
+            <div className="shrink-0 px-4 pt-4">{sessionErrorBanner}</div>
+          ) : null}
+          {children}
+        </div>
       </>
     );
   }
@@ -192,11 +178,7 @@ export function AppShellLayout({ mode, children }: ShellLayoutProps) {
   return (
     <>
       {mode !== "business" ? sessionErrorBanner : null}
-      {mode === "business" ? (
-        <BusinessAccessGate>{shell}</BusinessAccessGate>
-      ) : (
-        shell
-      )}
+      {shell}
     </>
   );
 }
