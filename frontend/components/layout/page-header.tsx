@@ -99,17 +99,20 @@ export function PageHeader({
   const hasHeading = displayTitle && Boolean(title);
   const hasDescription = showTitle && Boolean(description);
 
+  // Only a string title can be pushed into page metadata. Depend on the derived
+  // string (not the raw `titleProp`) so a fresh ReactNode element on every render
+  // doesn't retrigger the effect → setState → re-render loop.
+  const overrideTitle = typeof titleProp === "string" ? titleProp : undefined;
+
   useEffect(() => {
-    if (titleProp === undefined && descriptionProp === undefined) {
+    if (overrideTitle === undefined && descriptionProp === undefined) {
       return;
     }
     setPageMetadata({
-      ...(titleProp !== undefined && typeof titleProp === "string"
-        ? { title: titleProp }
-        : {}),
+      ...(overrideTitle !== undefined ? { title: overrideTitle } : {}),
       ...(descriptionProp !== undefined ? { description: descriptionProp } : {}),
     });
-  }, [titleProp, descriptionProp, setPageMetadata]);
+  }, [overrideTitle, descriptionProp, setPageMetadata]);
 
   if (!hasHeading && !hasDescription && !filters && !actions) {
     return null;

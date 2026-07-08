@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -61,6 +61,24 @@ export function ContactRecordsAdjustmentsSection({ contact }: ContactRecordsSect
     queryFn: () => listServices({ page: 1, limit: 100, status: "ACTIVE" }),
     enabled: createOpen,
   });
+
+  const serviceItems = useMemo(
+    () =>
+      (servicesData?.items ?? []).map((service) => ({
+        value: service.id,
+        label: service.name,
+      })),
+    [servicesData],
+  );
+
+  const durationItems = useMemo(
+    () =>
+      DURATION_PRESETS.map((preset) => ({
+        value: String(preset.value),
+        label: preset.label,
+      })),
+    [],
+  );
 
   const createMutation = useMutation({
     mutationFn: () =>
@@ -147,10 +165,7 @@ export function ContactRecordsAdjustmentsSection({ contact }: ContactRecordsSect
             <div className="space-y-2">
               <Label>Service</Label>
               <Select
-                items={(servicesData?.items ?? []).map((service) => ({
-                  value: service.id,
-                  label: service.name,
-                }))}
+                items={serviceItems}
                 value={serviceId}
                 onValueChange={(next) => setServiceId(next ?? "")}
               >
@@ -169,10 +184,7 @@ export function ContactRecordsAdjustmentsSection({ contact }: ContactRecordsSect
             <div className="space-y-2">
               <Label>Duration</Label>
               <Select
-                items={DURATION_PRESETS.map((preset) => ({
-                  value: String(preset.value),
-                  label: preset.label,
-                }))}
+                items={durationItems}
                 value={durationMinutes}
                 onValueChange={(next) => setDurationMinutes(next ?? "60")}
               >

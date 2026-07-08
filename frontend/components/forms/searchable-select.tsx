@@ -70,9 +70,20 @@ export function SearchableSelect({
   const [search, setSearch] = useState("");
   const selectValue = normalizeSelectValue(value);
 
+  // Callers frequently pass a freshly-built `items` array on every render
+  // (e.g. `[{ value: null, label }, ...options]`). Deriving from the array
+  // identity would hand Base UI's Select a new `items` reference each render,
+  // which re-triggers its internal sync effect and causes an update loop.
+  // Key on the *contents* so the reference is stable when nothing changed.
+  const itemsKey = items
+    .map((item) => `${item.value ?? "\u0000"}:${item.label}`)
+    .join("|");
+
   const filteredItems = useMemo(
     () => (searchable ? filterSelectItems(items, search) : items),
-    [items, search, searchable],
+    // `items` identity intentionally omitted; `itemsKey` captures content changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [itemsKey, search, searchable],
   );
 
   return (
