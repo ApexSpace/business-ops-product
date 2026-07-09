@@ -64,7 +64,7 @@ export interface Appointment {
   id: string;
   businessId: string;
   calendarId: string;
-  contactId: string;
+  contactId: string | null;
   serviceId: string | null;
   workItemId: string | null;
   assignedToId: string | null;
@@ -90,13 +90,16 @@ export interface Appointment {
     email: string | null;
     phoneNumber: string | null;
     createdAt: string;
-  };
+  } | null;
   service: { id: string; name: string } | null;
   services: AppointmentServiceLine[];
   assignedTo: AppointmentUserSummary | null;
   createdBy: AppointmentUserSummary | null;
   relatedCheckoutId: string | null;
+  relatedCheckoutStatus: string | null;
+  waitingNotifiedAt: string | null;
   googleSyncWarning?: string | null;
+  scheduleWarning?: string | null;
 }
 
 export function getAppointmentSyncIndicator(appointment: Appointment): {
@@ -118,7 +121,7 @@ export function getAppointmentSyncIndicator(appointment: Appointment): {
   return null;
 }
 
-export const APPOINTMENT_STATUS_OPTIONS: {
+export const APPOINTMENT_LIFECYCLE_STATUS_OPTIONS: {
   value: AppointmentStatus;
   label: string;
 }[] = [
@@ -126,7 +129,16 @@ export const APPOINTMENT_STATUS_OPTIONS: {
   { value: "CONFIRMED", label: "Confirmed" },
   { value: "WAITING", label: "Waiting" },
   { value: "IN_SERVICE", label: "In service" },
-  { value: "COMPLETED", label: "Completed" },
+  { value: "COMPLETED", label: "Closed" },
+];
+
+export const APPOINTMENT_STATUS_OPTIONS = APPOINTMENT_LIFECYCLE_STATUS_OPTIONS;
+
+export const APPOINTMENT_FILTER_STATUS_OPTIONS: {
+  value: AppointmentStatus;
+  label: string;
+}[] = [
+  ...APPOINTMENT_LIFECYCLE_STATUS_OPTIONS,
   { value: "CANCELLED", label: "Cancelled" },
   { value: "NO_SHOW", label: "No show" },
 ];
@@ -215,7 +227,7 @@ export const appointmentFormDefaults: AppointmentFormValues = {
   description: "",
   startAt: "",
   endAt: "",
-  status: "UNCONFIRMED",
+  status: "CONFIRMED",
   locationType: "PHYSICAL",
   locationValue: "",
   notes: "",
@@ -309,11 +321,67 @@ export function formatAppointmentRange(
 
 export function formatAppointmentStatus(status: AppointmentStatus): string {
   return (
-    APPOINTMENT_STATUS_OPTIONS.find((o) => o.value === status)?.label ?? status
+    APPOINTMENT_STATUS_OPTIONS.find((o) => o.value === status)?.label ??
+    (status === "CANCELLED"
+      ? "Cancelled"
+      : status === "NO_SHOW"
+        ? "No show"
+        : status)
   );
 }
 
-export function getContactDisplayName(contact: Appointment["contact"]): string {
+export function getAppointmentStatusDisplayLabel(
+  status: AppointmentStatus,
+  relatedCheckoutId: string | null,
+  relatedCheckoutStatus: string | null,
+): string {
+  if (
+    status === "IN_SERVICE" &&
+    relatedCheckoutId &&
+    relatedCheckoutStatus !== "PAID"
+  ) {
+    return "Checking out";
+  }
+
+  return formatAppointmentStatus(status);
+}
+
+export function isCheckoutOpen(relatedCheckoutStatus: string | null): boolean {
+  return Boolean(
+    relatedCheckoutStatus &&
+      relatedCheckoutStatus !== "PAID" &&
+      relatedCheckoutStatus !== "VOID",
+  );
+}
+
+/** Closed appointment with a paid sale — editing schedule won't change the sale. */
+export function requiresClosedSaleEditAcknowledgement(
+  appointment: Pick<
+    Appointment,
+    "status" | "relatedCheckoutId" | "relatedCheckoutStatus"
+  >,
+): boolean {
+  return (
+    appointment.status === "COMPLETED" &&
+    Boolean(appointment.relatedCheckoutId) &&
+    appointment.relatedCheckoutStatus === "PAID"
+  );
+}
+
+export const CLOSED_SALE_EDIT_GUARD_COPY = {
+  title: "Sale closed",
+  acknowledgementLabel:
+    "I understand that this will not modify the existing sale",
+  descriptionParagraphs: [
+    "Changes made to this appointment will not be reflected in the existing sale, which has already been closed.",
+    "If you need to make changes to the sale, please reopen it instead.",
+  ],
+} as const;
+
+export function getContactDisplayName(
+  contact: Appointment["contact"],
+): string {
+  if (!contact) return "Time block";
   return (
     contact.displayName ??
     [contact.firstName, contact.lastName].filter(Boolean).join(" ") ??

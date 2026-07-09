@@ -17,6 +17,8 @@ import {
   DRAWER_SHEET_FOOTER_WIDE_CLASS,
 } from "@/components/forms/drawer-sheet";
 import {
+  DRAWER_COMPACT_CONTENT_CLASS,
+  DRAWER_COMPACT_FOOTER_CLASS,
   DRAWER_SHELL_BODY_CLASS,
   DRAWER_SHELL_CONTENT_INSET_CLASS,
   DRAWER_SHELL_FOOTER_CLASS,
@@ -84,7 +86,11 @@ function DrawerShellInner({
   // require the Dialog root context. The `panel` variant renders outside a
   // Sheet, so fall back to plain elements there.
   const Title = inSheet ? SheetTitle : "h2";
-  const Description = inSheet ? SheetDescription : "p";
+  // A description defaults to a <p>. When rich content is passed (e.g. an
+  // avatar + link), render it as a <div> to avoid invalid <div> in <p> nesting.
+  const isRichDescription =
+    description != null && typeof description !== "string";
+  const Description = inSheet ? SheetDescription : isRichDescription ? "div" : "p";
 
   return (
     <>
@@ -94,7 +100,12 @@ function DrawerShellInner({
             <div className="min-w-0 flex-1">
               <Title className={DRAWER_SHELL_TITLE_CLASS}>{title}</Title>
               {description ? (
-                <Description className={DRAWER_SHELL_DESCRIPTION_CLASS}>
+                <Description
+                  className={DRAWER_SHELL_DESCRIPTION_CLASS}
+                  {...(inSheet && isRichDescription
+                    ? { render: <div /> }
+                    : {})}
+                >
                   {description}
                 </Description>
               ) : null}
@@ -155,6 +166,14 @@ export function DrawerShell({
   const widthClass = drawerShellWidthClass(width);
   const stackZ =
     stackLevel === "overlay" ? "z-[60] [&+[data-slot=sheet-overlay]]:z-[55]" : "";
+  const resolvedContentClassName = cn(
+    width === "compact" ? DRAWER_COMPACT_CONTENT_CLASS : undefined,
+    contentClassName,
+  );
+  const resolvedFooterClassName = cn(
+    width === "compact" ? DRAWER_COMPACT_FOOTER_CLASS : undefined,
+    footerClassName,
+  );
 
   const handleRequestClose = () => onOpenChange?.(false);
 
@@ -174,8 +193,8 @@ export function DrawerShell({
           footer={footer}
           headerClassName={headerClassName}
           bodyClassName={bodyClassName}
-          contentClassName={contentClassName}
-          footerClassName={footerClassName}
+          contentClassName={resolvedContentClassName}
+          footerClassName={resolvedFooterClassName}
           inSheet={false}
         >
           {children}
@@ -203,8 +222,8 @@ export function DrawerShell({
           footer={footer}
           headerClassName={headerClassName}
           bodyClassName={bodyClassName}
-          contentClassName={contentClassName}
-          footerClassName={footerClassName}
+          contentClassName={resolvedContentClassName}
+          footerClassName={resolvedFooterClassName}
           showCloseButton={showCloseButton}
           onRequestClose={handleRequestClose}
         >

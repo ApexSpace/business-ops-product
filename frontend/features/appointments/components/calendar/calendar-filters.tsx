@@ -2,7 +2,7 @@
 
 import { SearchableSelect } from "@/components/forms/searchable-select";
 import { SearchInput } from "@/components/forms/search-input";
-import { APPOINTMENT_STATUS_OPTIONS } from "@/features/appointments/schemas/appointment-profile";
+import { APPOINTMENT_FILTER_STATUS_OPTIONS } from "@/features/appointments/schemas/appointment-profile";
 import type { Calendar } from "@/features/calendars/schemas/calendar-profile";
 import type { BusinessMember } from "@/features/appointments/types";
 import {
@@ -57,7 +57,7 @@ export function CalendarFilters({
 
   const statusItems = [
     { value: "", label: "All statuses" },
-    ...APPOINTMENT_STATUS_OPTIONS.map((o) => ({
+    ...APPOINTMENT_FILTER_STATUS_OPTIONS.map((o) => ({
       value: o.value,
       label: o.label,
     })),

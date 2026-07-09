@@ -1,4 +1,10 @@
-import { HttpStatus, Injectable, Inject, forwardRef } from '@nestjs/common';
+import {
+  HttpStatus,
+  Injectable,
+  Inject,
+  forwardRef,
+  OnModuleInit,
+} from '@nestjs/common';
 import {
   InvoiceKind,
   InvoiceStatus,
@@ -10,6 +16,7 @@ import { ErrorCode } from '@app/common/exceptions/error-code.enum';
 import { PrismaService } from '@app/core/database/prisma.service';
 import { CheckoutCompletionService } from '@app/modules/finance/invoices/services/checkout-completion.service';
 import { PaymentRealtimeService } from '../services/payment-realtime.service';
+import { PayableHandlerRegistry } from '../registry/payable-handler.registry';
 import { computeInvoicePaymentSyncFields } from '../utils/invoice-payment-sync.util';
 import type {
   PayableHandler,
@@ -18,7 +25,7 @@ import type {
 } from '../types/payable.types';
 
 @Injectable()
-export class InvoicePayableHandler implements PayableHandler {
+export class InvoicePayableHandler implements PayableHandler, OnModuleInit {
   readonly payableType = PayableType.INVOICE;
 
   constructor(
@@ -26,7 +33,12 @@ export class InvoicePayableHandler implements PayableHandler {
     @Inject(forwardRef(() => CheckoutCompletionService))
     private readonly checkoutCompletion: CheckoutCompletionService,
     private readonly paymentRealtime: PaymentRealtimeService,
+    private readonly registry: PayableHandlerRegistry,
   ) {}
+
+  onModuleInit(): void {
+    this.registry.register(this);
+  }
 
   async resolvePayable(
     businessId: string,

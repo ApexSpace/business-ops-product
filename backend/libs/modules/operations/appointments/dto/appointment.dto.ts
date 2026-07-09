@@ -7,6 +7,7 @@ import {
 import { Type } from 'class-transformer';
 import {
   IsArray,
+  IsBoolean,
   IsDateString,
   IsEnum,
   IsInt,
@@ -102,9 +103,17 @@ export class CreateAppointmentDto {
   @IsUUID()
   calendarId!: string;
 
-  @ApiProperty()
+  @ApiPropertyOptional()
+  @IsOptional()
   @IsUUID()
-  contactId!: string;
+  contactId?: string;
+
+  @ApiPropertyOptional({
+    description: 'When true, creates a staff time block without a client or services',
+  })
+  @IsOptional()
+  @IsBoolean()
+  isTimeBlock?: boolean;
 
   @ApiPropertyOptional()
   @IsOptional()
@@ -180,6 +189,14 @@ export class CreateAppointmentDto {
   @IsOptional()
   @IsUUID()
   clientPackageId?: string;
+
+  @ApiPropertyOptional({
+    description: 'Send appointment confirmation email to the client (default true)',
+    default: true,
+  })
+  @IsOptional()
+  @IsBoolean()
+  sendConfirmation?: boolean;
 }
 
 export class UpdateAppointmentDto extends CreateAppointmentDto {}
@@ -226,7 +243,7 @@ export class AppointmentResponseDto {
   id!: string;
   businessId!: string;
   calendarId!: string;
-  contactId!: string;
+  contactId!: string | null;
   serviceId!: string | null;
   workItemId!: string | null;
   assignedToId!: string | null;
@@ -252,12 +269,16 @@ export class AppointmentResponseDto {
     email: string | null;
     phoneNumber: string | null;
     createdAt: Date;
-  };
+  } | null;
   service!: { id: string; name: string } | null;
   services!: AppointmentServiceLineResponseDto[];
   assignedTo!: AppointmentUserSummaryDto | null;
   createdBy!: AppointmentUserSummaryDto | null;
   relatedCheckoutId!: string | null;
+  relatedCheckoutStatus!: string | null;
+  waitingNotifiedAt!: string | null;
   /** Set when internal save succeeded but Google sync failed */
   googleSyncWarning?: string | null;
+  /** Soft warning for schedule conflicts (e.g. staff double-booked) */
+  scheduleWarning?: string | null;
 }

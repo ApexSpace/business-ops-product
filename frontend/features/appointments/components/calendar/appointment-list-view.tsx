@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { ListPagination } from "@/components/ui/list-pagination";
 import {
   formatAppointmentRange,
-  formatAppointmentStatus,
+  getAppointmentStatusDisplayLabel,
   getContactDisplayName,
   type Appointment,
   type AppointmentStatus,
@@ -103,7 +103,11 @@ export function AppointmentListView({
         header: "Status",
         cell: (row) => (
           <Badge variant={STATUS_VARIANT[row.status]}>
-            {formatAppointmentStatus(row.status)}
+            {getAppointmentStatusDisplayLabel(
+              row.status,
+              row.relatedCheckoutId ?? null,
+              row.relatedCheckoutStatus ?? null,
+            )}
           </Badge>
         ),
       },

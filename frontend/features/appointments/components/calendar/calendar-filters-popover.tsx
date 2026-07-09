@@ -8,7 +8,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import type { AppointmentStatus } from "@/features/appointments/schemas/appointment-profile";
-import { APPOINTMENT_STATUS_OPTIONS } from "@/features/appointments/schemas/appointment-profile";
+import { APPOINTMENT_LIFECYCLE_STATUS_OPTIONS } from "@/features/appointments/schemas/appointment-profile";
 import { getAppointmentStatusDotClass } from "@/features/appointments/utils/appointment-calendar-styles";
 import { cn } from "@/lib/utils";
 
@@ -55,7 +55,7 @@ export function CalendarFiltersPopover({
             Status
           </p>
           <div className="flex flex-col gap-1">
-            {APPOINTMENT_STATUS_OPTIONS.map((opt) => {
+            {APPOINTMENT_LIFECYCLE_STATUS_OPTIONS.map((opt) => {
               const active = selectedStatuses.includes(opt.value);
               return (
                 <button

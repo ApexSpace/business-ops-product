@@ -23,6 +23,9 @@ interface AppointmentEventCardProps {
   eventHeight?: number;
   className?: string;
   onClick?: () => void;
+  onMoveStart?: (event: React.PointerEvent) => void;
+  onResizeStart?: (event: React.PointerEvent) => void;
+  isDragging?: boolean;
 }
 
 function CardLine({
@@ -44,6 +47,9 @@ export function AppointmentEventCard({
   eventHeight,
   className,
   onClick,
+  onMoveStart,
+  onResizeStart,
+  isDragging = false,
 }: AppointmentEventCardProps) {
   const { className: eventClass, style } = getAppointmentEventStyle(appointment);
   const statusColors = APPOINTMENT_STATUS_COLORS[appointment.status];
@@ -52,6 +58,7 @@ export function AppointmentEventCard({
   const contactName = getContactDisplayName(appointment.contact);
   const syncIndicator = getAppointmentSyncIndicator(appointment);
   const interactive = Boolean(onClick);
+  const draggable = Boolean(onMoveStart);
 
   const showDetails =
     variant === "grid" && (eventHeight === undefined || eventHeight >= 72);
@@ -81,13 +88,25 @@ export function AppointmentEventCard({
             }
           : undefined
       }
+      onPointerDown={
+        draggable
+          ? (event) => {
+              if ((event.target as HTMLElement).closest("[data-resize-handle]")) {
+                return;
+              }
+              onMoveStart?.(event);
+            }
+          : undefined
+      }
       className={cn(
-        "flex h-full min-h-0 w-full min-w-0 flex-col overflow-hidden rounded-md border text-left",
+        "relative flex h-full min-h-0 w-full min-w-0 flex-col overflow-hidden rounded-md border text-left",
         variant === "month"
           ? "gap-0.5 px-1.5 py-1 text-[10px]"
           : "gap-0.5 px-2 py-1.5 text-xs",
         interactive &&
           "cursor-pointer transition-[box-shadow,transform] hover:shadow-md active:scale-[0.995]",
+        draggable && "cursor-grab active:cursor-grabbing",
+        isDragging && "opacity-80 ring-2 ring-primary/40",
         eventClass,
         statusColors.text,
         className,
@@ -144,6 +163,15 @@ export function AppointmentEventCard({
 
       {variant === "month" ? (
         <CardLine className="text-[10px] opacity-75">{start}</CardLine>
+      ) : null}
+
+      {onResizeStart && variant === "grid" ? (
+        <div
+          data-resize-handle=""
+          role="presentation"
+          onPointerDown={(event) => onResizeStart(event)}
+          className="absolute inset-x-1 bottom-0 h-2 cursor-ns-resize rounded-b-md hover:bg-primary/20"
+        />
       ) : null}
     </div>
   );

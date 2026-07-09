@@ -1,12 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
 import { useListSearchParams } from "@/lib/hooks/use-list-search-params";
 import type { Appointment } from "@/features/appointments/schemas/appointment-profile";
+import { isCheckoutOpen } from "@/features/appointments/schemas/appointment-profile";
 import type { CalendarViewMode } from "@/features/calendars/utils/calendar-dates";
 import { queryKeys } from "@/lib/query/keys";
 import {
@@ -81,7 +81,6 @@ function memberLabel(member: {
 }
 
 export function useAppointmentsCalendarPage() {
-  const router = useRouter();
   const queryClient = useQueryClient();
   const urlInitDone = useRef(false);
   const appointmentUrlHandled = useRef(false);
@@ -316,6 +315,18 @@ export function useAppointmentsCalendarPage() {
       if (!appointment) {
         throw new Error("Appointment not found");
       }
+
+      if (!appointment.contactId) {
+        throw new Error("Appointment has no client for checkout");
+      }
+
+      if (
+        appointment.relatedCheckoutId &&
+        isCheckoutOpen(appointment.relatedCheckoutStatus ?? null)
+      ) {
+        return { id: appointment.relatedCheckoutId, continued: true as const };
+      }
+
       const checkout = await createCheckout({
         contactId: appointment.contactId,
         appointmentId,
@@ -332,11 +343,13 @@ export function useAppointmentsCalendarPage() {
           staffUserId: appointment.assignedToId ?? undefined,
         });
       }
-      return checkout;
+      return { ...checkout, continued: false as const };
     },
     onSuccess: (checkout) => {
-      toast.success("Checkout created");
-      router.push(`/business/sales?sale=${checkout.id}`);
+      if (!checkout.continued) {
+        toast.success("Checkout created");
+      }
+      drawer.openCheckout(checkout.id);
     },
     onError: (err: Error) => toast.error(err.message),
   });
@@ -349,6 +362,72 @@ export function useAppointmentsCalendarPage() {
       return cal?.defaultDurationMinutes ?? 30;
     },
     [calendars?.items, params.calendarId],
+  );
+
+  const openRebook = useCallback(
+    (appointment: Appointment) => {
+      drawer.openCreate({
+        startAt: new Date().toISOString(),
+        calendarId: appointment.calendarId,
+        assignedToId: appointment.assignedToId ?? undefined,
+        contactId: appointment.contactId,
+        contactLabel: [
+          appointment.contact.firstName,
+          appointment.contact.lastName,
+          appointment.contact.displayName,
+        ]
+          .filter(Boolean)
+          .join(" ") || undefined,
+        services: (appointment.services ?? []).map((line) => ({
+          serviceId: line.serviceId,
+          name: line.service.name,
+          price: line.price ?? line.service.price,
+          assignedToId: line.assignedToId ?? appointment.assignedToId ?? "",
+          startMinutes: 0,
+          occupancyMinutes:
+            line.durationMinutes ?? line.service.durationMinutes ?? 60,
+          clientOccupancyMinutes:
+            line.durationMinutes ?? line.service.durationMinutes ?? 60,
+          staffBlockedMinutes:
+            line.durationMinutes ?? line.service.durationMinutes ?? 60,
+          bufferBeforeMinutes: 0,
+          bufferAfterMinutes: 0,
+        })),
+        notes: appointment.notes ?? undefined,
+      });
+    },
+    [drawer],
+  );
+
+  const openTimeBlockAtSlot = useCallback(
+    (
+      dateKey: string,
+      hour: number,
+      minute: number,
+      assignedToId?: string,
+    ) => {
+      const startIso = wallTimeInTimezoneToUtcIso(
+        dateKey,
+        hour,
+        minute,
+        displayTimezone,
+      );
+      drawer.openTimeBlock({
+        startAt: startIso,
+        assignedToId:
+          assignedToId ??
+          (view === "week" ? params.assignedToId || undefined : undefined),
+        calendarId: params.calendarId || calendars?.items[0]?.id,
+      });
+    },
+    [
+      displayTimezone,
+      params.calendarId,
+      params.assignedToId,
+      calendars?.items,
+      drawer,
+      view,
+    ],
   );
 
   const openCreateAtSlot = useCallback(
@@ -364,13 +443,8 @@ export function useAppointmentsCalendarPage() {
         minute,
         displayTimezone,
       );
-      const duration = resolveDurationMinutes(params.calendarId || undefined);
-      const endIso = new Date(
-        new Date(startIso).getTime() + duration * 60_000,
-      ).toISOString();
       drawer.openCreate({
         startAt: startIso,
-        endAt: endIso,
         assignedToId:
           assignedToId ??
           (view === "week" ? params.assignedToId || undefined : undefined),
@@ -379,7 +453,6 @@ export function useAppointmentsCalendarPage() {
     },
     [
       displayTimezone,
-      resolveDurationMinutes,
       params.calendarId,
       params.assignedToId,
       calendars?.items,
@@ -467,6 +540,8 @@ export function useAppointmentsCalendarPage() {
     cancelMutation,
     checkoutMutation,
     openCreateAtSlot,
+    openTimeBlockAtSlot,
+    openRebook,
     openAppointmentDetail,
     handleViewChange,
     handleDateNavigate,

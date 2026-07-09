@@ -29,6 +29,15 @@ interface StaffDayCalendarViewProps {
   isLoading?: boolean;
   className?: string;
   onAppointmentClick: (appointment: Appointment) => void;
+  onAppointmentMoveStart?: (
+    appointment: Appointment,
+    event: React.PointerEvent,
+  ) => void;
+  onAppointmentResizeStart?: (
+    appointment: Appointment,
+    event: React.PointerEvent,
+  ) => void;
+  draggingAppointmentId?: string | null;
   onSlotClick: (
     dateKey: string,
     hour: number,
@@ -47,6 +56,9 @@ export function StaffDayCalendarView({
   isLoading,
   className,
   onAppointmentClick,
+  onAppointmentMoveStart,
+  onAppointmentResizeStart,
+  draggingAppointmentId,
   onSlotClick,
 }: StaffDayCalendarViewProps) {
   const isToday = isTodayDateKey(dateKey, timezone);
@@ -130,6 +142,9 @@ export function StaffDayCalendarView({
                       staffUserId={member.userId}
                       highlightToday={isToday}
                       onAppointmentClick={onAppointmentClick}
+                      onAppointmentMoveStart={onAppointmentMoveStart}
+                      onAppointmentResizeStart={onAppointmentResizeStart}
+                      draggingAppointmentId={draggingAppointmentId}
                       onSlotClick={onSlotClick}
                     />
                   ))}

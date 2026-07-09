@@ -8,12 +8,17 @@ import {
   closeCheckout,
   waitForCheckoutSettled,
 } from "@/features/sales/api/checkouts.api";
-
+import { useDrawerFooterSubmitAction } from "@/lib/hooks/use-drawer-footer-submit-action";
 interface SaleClosePanelProps {
   checkoutId: string;
   contactId: string;
   balanceDue: number;
   onComplete: () => void;
+  embedInDrawer?: boolean;
+  hideSubmitButton?: boolean;
+  onSubmitActionChange?: (
+    action: { label: string; disabled: boolean; onClick: () => void } | null,
+  ) => void;
 }
 
 export function SaleClosePanel({
@@ -21,6 +26,9 @@ export function SaleClosePanel({
   contactId,
   balanceDue,
   onComplete,
+  embedInDrawer = false,
+  hideSubmitButton = false,
+  onSubmitActionChange,
 }: SaleClosePanelProps) {
   const zeroCloseMutation = useMutation({
     mutationFn: () => closeCheckout(checkoutId, { tenders: [] }),
@@ -40,20 +48,31 @@ export function SaleClosePanel({
     onError: (err: Error) => toast.error(err.message),
   });
 
-  if (balanceDue <= 0) {
-    return (
+  useDrawerFooterSubmitAction(
+    balanceDue <= 0 && hideSubmitButton && Boolean(onSubmitActionChange),
+    "Complete sale",
+    zeroCloseMutation.isPending,
+    () => {
+      zeroCloseMutation.mutate();
+    },
+    onSubmitActionChange,
+  );
+
+  if (balanceDue <= 0) {    return (
       <div className="space-y-4">
         <p className="text-sm text-muted-foreground">
           Nothing to collect. Complete the sale to finalize membership redemptions
           and inventory updates.
         </p>
-        <Button
-          className="w-full"
-          disabled={zeroCloseMutation.isPending}
-          onClick={() => zeroCloseMutation.mutate()}
-        >
-          Complete sale
-        </Button>
+        {!hideSubmitButton ? (
+          <Button
+            className="w-full"
+            disabled={zeroCloseMutation.isPending}
+            onClick={() => zeroCloseMutation.mutate()}
+          >
+            Complete sale
+          </Button>
+        ) : null}
       </div>
     );
   }
@@ -63,6 +82,9 @@ export function SaleClosePanel({
       invoiceId={checkoutId}
       contactId={contactId}
       balanceDue={balanceDue}
+      embedInDrawer={embedInDrawer}
+      hideSubmitButton={hideSubmitButton}
+      onSubmitActionChange={onSubmitActionChange}
       collectOverride={async (tenders) => {
         const result = await closeCheckout(checkoutId, { tenders });
         return {

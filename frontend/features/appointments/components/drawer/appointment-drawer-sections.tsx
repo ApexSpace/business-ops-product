@@ -1,23 +1,23 @@
 "use client";
 
-import { MessageSquare, Phone, Mail } from "lucide-react";
+import { Clock, MessageSquare, Phone, Mail, User } from "lucide-react";
 import { ProfileAvatar } from "@/components/ui/profile-avatar";
 import { IconButton } from "@/components/ui/icon-button";
+import { DateTime } from "luxon";
 import {
   formatDateInTimezone,
   formatTimeInTimezone,
 } from "@/features/calendars/utils/timezone";
 import type {
   Appointment,
-  AppointmentActivityItem,
   AppointmentServiceLine,
+  AppointmentUserSummary,
 } from "@/features/appointments/schemas/appointment-profile";
 import {
   getContactDisplayName,
   getMemberDisplayName,
 } from "@/features/appointments/schemas/appointment-profile";
 import { formatMoney } from "@/features/payments/utils/currencies";
-import { formatRelativeTime } from "@/lib/ui/relative-time";
 import { cn } from "@/lib/utils";
 
 const SECTION_LABEL_CLASS =
@@ -32,16 +32,6 @@ function formatDurationMinutes(minutes: number | null | undefined): string {
   const hours = Math.floor(minutes / 60);
   const remainder = minutes % 60;
   return remainder > 0 ? `${hours}h ${remainder}m` : `${hours}h`;
-}
-
-function formatActivityAction(action: string): string {
-  const labels: Record<string, string> = {
-    "appointment.created": "Appointment created",
-    "appointment.updated": "Appointment updated",
-    "appointment.status_changed": "Status changed",
-    "appointment.deleted": "Appointment deleted",
-  };
-  return labels[action] ?? action.replace(/\./g, " ").replace(/_/g, " ");
 }
 
 export interface AppointmentDateTimeBarProps {
@@ -127,84 +117,91 @@ export function AppointmentDateTimeBar({
 
 export interface AppointmentClientBlockProps {
   contact: Appointment["contact"];
-  timezone: string;
   onMessageClick?: () => void;
   className?: string;
 }
 
 export function AppointmentClientBlock({
   contact,
-  timezone,
   onMessageClick,
   className,
 }: AppointmentClientBlockProps) {
-  const name = getContactDisplayName(contact);
-  const clientSince = formatDateInTimezone(contact.createdAt, timezone);
-
-  return (
-    <div className={cn("flex items-start gap-3", className)}>
-      <ProfileAvatar
-        name={name}
-        className="size-11"
-        fallbackClassName="bg-primary/10 text-sm font-medium text-primary"
-      />
-      <div className="min-w-0 flex-1">
-        <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0">
-            <p className="truncate text-[15px] font-semibold text-foreground">
-              {name}
-            </p>
-            <p className="mt-0.5 text-[13px] text-muted-foreground">
-              Client since {clientSince}
-            </p>
-          </div>
-          {onMessageClick ? (
-            <IconButton
-              aria-label="Message client"
-              className="size-9 shrink-0 rounded-[9px] border border-border/70"
-              onClick={onMessageClick}
-            >
-              <MessageSquare className="size-4" />
-            </IconButton>
-          ) : null}
-        </div>
+  if (!contact) {
+    return (
+      <div
+        className={cn(
+          "rounded-[10px] border border-border/60 bg-muted/15 px-3.5 py-3",
+          className,
+        )}
+      >
+        <p className="text-[14px] font-semibold text-foreground">Time block</p>
+        <p className="mt-0.5 text-[12px] text-muted-foreground">
+          Staff availability block
+        </p>
       </div>
-    </div>
-  );
-}
+    );
+  }
 
-export function AppointmentContactDetailsRows({
-  contact,
-  className,
-}: {
-  contact: Appointment["contact"];
-  className?: string;
-}) {
+  const name = getContactDisplayName(contact);
   const phone = contact.phoneNumber?.trim();
   const email = contact.email?.trim();
 
-  if (!phone && !email) return null;
-
   return (
-    <div className={cn("space-y-3 border-t border-border/60 pt-5", className)}>
-      {phone ? (
-        <a
-          href={`tel:${phone}`}
-          className="flex items-center gap-3 text-[13.5px] font-medium text-foreground hover:underline"
-        >
-          <Phone className="size-4 shrink-0 text-muted-foreground" />
-          {phone}
-        </a>
-      ) : null}
-      {email ? (
-        <a
-          href={`mailto:${email}`}
-          className="flex items-center gap-3 break-all text-[13.5px] font-medium text-foreground hover:underline"
-        >
-          <Mail className="size-4 shrink-0 text-muted-foreground" />
-          {email}
-        </a>
-      ) : null}
+    <div
+      className={cn(
+        "rounded-[10px] border border-border/60 bg-muted/15 px-3.5 py-3",
+        className,
+      )}
+    >
+      <div className="flex items-start gap-3">
+        <ProfileAvatar
+          name={name}
+          className="size-10 shrink-0"
+          fallbackClassName="bg-primary/10 text-[13px] font-semibold text-primary"
+        />
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start gap-2">
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-[14px] font-semibold leading-tight text-foreground">
+                {name}
+              </p>
+              {email ? (
+                <a
+                  href={`mailto:${email}`}
+                  className="mt-1 flex items-center gap-2 text-[12.5px] font-medium text-foreground/90 hover:text-foreground hover:underline"
+                >
+                  <Mail className="size-3.5 shrink-0 text-muted-foreground" />
+                  <span className="truncate">{email}</span>
+                </a>
+              ) : (
+                <p className="mt-1 flex items-center gap-2 text-[12.5px] text-muted-foreground">
+                  <Mail className="size-3.5 shrink-0" />
+                  <span>no email</span>
+                </p>
+              )}
+            </div>
+            {onMessageClick ? (
+              <IconButton
+                aria-label="Message client"
+                className="size-8 shrink-0 rounded-[8px] border border-border/70 bg-background text-muted-foreground hover:text-foreground"
+                onClick={onMessageClick}
+              >
+                <MessageSquare className="size-3.5" />
+              </IconButton>
+            ) : null}
+          </div>
+
+          {phone ? (
+            <a
+              href={`tel:${phone}`}
+              className="mt-2 flex items-center gap-2 text-[12.5px] font-medium text-foreground/90 hover:text-foreground hover:underline"
+            >
+              <Phone className="size-3.5 shrink-0 text-muted-foreground" />
+              <span className="truncate">{phone}</span>
+            </a>
+          ) : null}
+        </div>
+      </div>
     </div>
   );
 }
@@ -264,52 +261,87 @@ export function AppointmentServicesList({
   );
 }
 
-export interface AppointmentBookingDetailsProps {
-  items: AppointmentActivityItem[];
-  isLoading?: boolean;
+export function resolveAppointmentUpdatedBy(
+  items: { action: string; actor: AppointmentUserSummary | null }[],
+): string | null {
+  for (let index = items.length - 1; index >= 0; index -= 1) {
+    const item = items[index];
+    if (
+      (item.action === "appointment.updated" ||
+        item.action === "appointment.status_changed") &&
+      item.actor
+    ) {
+      return getMemberDisplayName(item.actor);
+    }
+  }
+  return null;
+}
+
+function formatBookingDetailTimestamp(iso: string, timezone: string): string {
+  const dt = DateTime.fromISO(iso, { zone: "utc" }).setZone(timezone);
+  const time = dt.toLocaleString({
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
+  return `${dt.toFormat("ccc")}, ${dt.toFormat("LLL d")} at ${time}`;
+}
+
+export interface AppointmentBookingDetailsSummaryProps {
+  createdAt: string;
+  updatedAt: string;
+  createdBy: Appointment["createdBy"];
+  updatedBy?: string | null;
+  timezone: string;
   className?: string;
 }
 
-export function AppointmentBookingDetails({
-  items,
-  isLoading = false,
+export function AppointmentBookingDetailsSummary({
+  createdAt,
+  updatedAt,
+  createdBy,
+  updatedBy,
+  timezone,
   className,
-}: AppointmentBookingDetailsProps) {
+}: AppointmentBookingDetailsSummaryProps) {
+  const bookedByLabel = createdBy
+    ? getMemberDisplayName(createdBy)
+    : "Unknown";
+  const updatedByLabel = updatedBy ?? bookedByLabel;
+
+  const rows = [
+    {
+      icon: Clock,
+      label: `Booked on ${formatBookingDetailTimestamp(createdAt, timezone)}`,
+    },
+    {
+      icon: User,
+      label: `Booked by ${bookedByLabel}`,
+    },
+    {
+      icon: Clock,
+      label: `Updated on ${formatBookingDetailTimestamp(updatedAt, timezone)}`,
+    },
+    {
+      icon: User,
+      label: `Updated by ${updatedByLabel}`,
+    },
+  ];
+
   return (
     <div className={cn("border-t border-border/60 pt-5", className)}>
       <p className={cn("mb-3", SECTION_LABEL_CLASS)}>Booking details</p>
-      {isLoading ? (
-        <p className="text-[13px] text-muted-foreground">Loading activity…</p>
-      ) : items.length === 0 ? (
-        <p className="text-[13px] text-muted-foreground">No activity yet</p>
-      ) : (
-        <ul className="space-y-3">
-          {items.map((item) => {
-            const actorLabel = item.actor
-              ? getMemberDisplayName(item.actor)
-              : "System";
-            return (
-              <li
-                key={item.id}
-                className="flex items-start justify-between gap-3 text-[13px]"
-              >
-                <div className="min-w-0">
-                  <p className="font-medium text-foreground">
-                    {formatActivityAction(item.action)}
-                  </p>
-                  <p className="mt-0.5 text-muted-foreground">{actorLabel}</p>
-                </div>
-                <time
-                  dateTime={item.createdAt}
-                  className="shrink-0 text-muted-foreground"
-                >
-                  {formatRelativeTime(item.createdAt)}
-                </time>
-              </li>
-            );
-          })}
-        </ul>
-      )}
+      <ul className="space-y-2.5">
+        {rows.map((row) => (
+          <li
+            key={row.label}
+            className="flex items-center gap-3 text-[13px] text-foreground"
+          >
+            <row.icon className="size-4 shrink-0 text-muted-foreground" />
+            <span>{row.label}</span>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

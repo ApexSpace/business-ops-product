@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -28,6 +28,14 @@ import { GiftCardPaymentPicker } from "@/features/gift-cards/components/gift-car
 import type { GiftCardListItem } from "@/features/gift-cards/types";
 import { queryKeys } from "@/lib/query/keys";
 import { invalidateGiftCards } from "@/lib/query/invalidation";
+import {
+  DRAWER_FIELD_CONTROL_CLASS,
+  DRAWER_FIELD_LABEL_CLASS,
+  DRAWER_FORM_FIELD_CLASS,
+  DRAWER_FORM_STACK_CLASS,
+} from "@/lib/design/drawer-shell-tokens";
+import { useDrawerFooterSubmitAction } from "@/lib/hooks/use-drawer-footer-submit-action";
+import { cn } from "@/lib/utils";
 
 export interface CollectTenderInput {
   method: PaymentMethod;
@@ -50,6 +58,12 @@ export interface InvoiceCollectPaymentPanelProps {
   /** After Stripe confirms on the client, wait for async settlement (webhook). */
   awaitSettlement?: () => Promise<void>;
   successMessage?: string;
+  /** Use compact drawer field styles and optional external footer button. */
+  embedInDrawer?: boolean;
+  hideSubmitButton?: boolean;
+  onSubmitActionChange?: (
+    action: { label: string; disabled: boolean; onClick: () => void } | null,
+  ) => void;
 }
 
 export function InvoiceCollectPaymentPanel({
@@ -60,6 +74,9 @@ export function InvoiceCollectPaymentPanel({
   collectOverride,
   awaitSettlement,
   successMessage = "Payment recorded",
+  embedInDrawer = false,
+  hideSubmitButton = false,
+  onSubmitActionChange,
 }: InvoiceCollectPaymentPanelProps) {
   type PendingStripe = CollectPaymentResult["stripeTenders"][number];
 
@@ -214,7 +231,19 @@ export function InvoiceCollectPaymentPanel({
   const hasStripeTender = tenders.some((t) => t.method === "STRIPE");
   const walletBalance = wallet ? parseFloat(wallet.balance.amount) : null;
 
-  async function handleCollect() {
+  const submitLabel =
+    hasStripeTender && savedCardId && savedCardId !== "new"
+      ? "Charge saved card"
+      : hasStripeTender
+        ? "Continue to card"
+        : "Record payment";
+
+  const submitDisabled =
+    collectMutation.isPending ||
+    tenderTotal <= 0 ||
+    (hasStripeTender && !stripeReady);
+
+  const handleCollect = useCallback(async () => {
     if (tenderTotal <= 0) {
       toast.error("Enter at least one positive amount");
       return;
@@ -278,7 +307,34 @@ export function InvoiceCollectPaymentPanel({
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Payment failed");
     }
-  }
+  }, [
+    awaitSettlement,
+    balanceDue,
+    collectMutation,
+    collectOverride,
+    contactId,
+    invoiceId,
+    onComplete,
+    queryClient,
+    successMessage,
+    tenderTotal,
+    tenders,
+  ]);
+
+  useDrawerFooterSubmitAction(
+    Boolean(hideSubmitButton && onSubmitActionChange && !pendingStripe),
+    submitLabel,
+    submitDisabled,
+    () => {
+      void handleCollect();
+    },
+    onSubmitActionChange,
+  );
+
+  const fieldLabelClass = embedInDrawer ? DRAWER_FIELD_LABEL_CLASS : undefined;
+  const fieldControlClass = embedInDrawer ? DRAWER_FIELD_CONTROL_CLASS : undefined;
+  const fieldWrapClass = embedInDrawer ? DRAWER_FORM_FIELD_CLASS : "space-y-2";
+  const rootClass = embedInDrawer ? DRAWER_FORM_STACK_CLASS : "space-y-4";
 
   if (pendingStripe && publishableKey) {
     const stripeAmount = tenders.find((t) => t.method === "STRIPE")?.amount ?? 0;
@@ -323,10 +379,10 @@ export function InvoiceCollectPaymentPanel({
   }
 
   return (
-    <div className="space-y-4">
+    <div className={rootClass}>
       <div className="grid gap-4 sm:grid-cols-2">
-        <div className="space-y-2">
-          <Label>Payment method</Label>
+        <div className={fieldWrapClass}>
+          <Label className={fieldLabelClass}>Payment method</Label>
           <SearchableSelect
             inDialog
             items={methodItems.map((item) =>
@@ -346,10 +402,11 @@ export function InvoiceCollectPaymentPanel({
               }
             }}
             placeholder="Method"
+            triggerClassName={fieldControlClass}
           />
         </div>
-        <div className="space-y-2">
-          <Label>Amount</Label>
+        <div className={fieldWrapClass}>
+          <Label className={fieldLabelClass}>Amount</Label>
           <Input
             type="number"
             step="0.01"
@@ -359,15 +416,16 @@ export function InvoiceCollectPaymentPanel({
             onChange={(e) =>
               setPrimaryAmount(parseFloat(e.target.value) || 0)
             }
+            className={fieldControlClass}
           />
         </div>
       </div>
 
       {primaryMethod === "STRIPE" && stripeReady ? (
-        <div className="space-y-2">
+        <div className={fieldWrapClass}>
           {savedCards.length > 0 ? (
             <>
-              <Label>Saved card</Label>
+              <Label className={fieldLabelClass}>Saved card</Label>
               <SearchableSelect
                 inDialog
                 items={savedCardItems}
@@ -376,6 +434,7 @@ export function InvoiceCollectPaymentPanel({
                   setSavedCardId(v === "new" ? null : v)
                 }
                 placeholder="Card"
+                triggerClassName={fieldControlClass}
               />
             </>
           ) : null}
@@ -438,8 +497,8 @@ export function InvoiceCollectPaymentPanel({
 
       {splitEnabled ? (
         <div className="grid gap-4 rounded-md border p-3 sm:grid-cols-2">
-          <div className="space-y-2">
-            <Label>Second method</Label>
+          <div className={fieldWrapClass}>
+            <Label className={fieldLabelClass}>Second method</Label>
             <SearchableSelect
               inDialog
               items={methodItems.filter((m) => m.value !== primaryMethod)}
@@ -452,10 +511,11 @@ export function InvoiceCollectPaymentPanel({
                 }
               }}
               placeholder="Method"
+              triggerClassName={fieldControlClass}
             />
           </div>
-          <div className="space-y-2">
-            <Label>Second amount</Label>
+          <div className={fieldWrapClass}>
+            <Label className={fieldLabelClass}>Second amount</Label>
             <Input
               type="number"
               step="0.01"
@@ -464,6 +524,7 @@ export function InvoiceCollectPaymentPanel({
               onChange={(e) =>
                 setSecondaryAmount(parseFloat(e.target.value) || 0)
               }
+              className={fieldControlClass}
             />
           </div>
           {secondaryMethod === "WALLET" && walletBalance != null ? (
@@ -509,22 +570,16 @@ export function InvoiceCollectPaymentPanel({
         ) : null}
       </div>
 
-      <Button
-        type="button"
-        className="w-full"
-        disabled={
-          collectMutation.isPending ||
-          tenderTotal <= 0 ||
-          (hasStripeTender && !stripeReady)
-        }
-        onClick={() => void handleCollect()}
-      >
-        {hasStripeTender && savedCardId && savedCardId !== "new"
-          ? "Charge saved card"
-          : hasStripeTender
-            ? "Continue to card"
-            : "Record payment"}
-      </Button>
+      {!hideSubmitButton ? (
+        <Button
+          type="button"
+          className="w-full"
+          disabled={submitDisabled}
+          onClick={() => void handleCollect()}
+        >
+          {submitLabel}
+        </Button>
+      ) : null}
     </div>
   );
 }

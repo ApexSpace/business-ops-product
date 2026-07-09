@@ -1,7 +1,6 @@
 "use client";
 
 import { Suspense } from "react";
-import { useRouter } from "next/navigation";
 import { AppointmentListView } from "@/features/appointments/components/calendar/appointment-list-view";
 import { CalendarToolbar } from "@/features/appointments/components/calendar/calendar-toolbar";
 import { MonthCalendarView } from "@/features/appointments/components/calendar/month-calendar-view";
@@ -10,11 +9,14 @@ import { WeekCalendarView } from "@/features/appointments/components/calendar/we
 import { AppointmentCreateDrawer } from "@/features/appointments/components/drawer/appointment-create-drawer";
 import { AppointmentDetailDrawer } from "@/features/appointments/components/drawer/appointment-detail-drawer";
 import { AppointmentEditDrawer } from "@/features/appointments/components/drawer/appointment-edit-drawer";
+import { AppointmentTimeBlockDrawer } from "@/features/appointments/components/drawer/appointment-time-block-drawer";
 import { ContactConversationDrawer } from "@/features/conversations/components/contact-conversation-drawer";
 import { ConfirmDeleteDialog } from "@/components/forms/confirm-delete-dialog";
 import { ListPageSkeleton } from "@/components/layout/list-page";
 import { useAppointmentsCreateAction } from "@/features/appointments/hooks/use-appointments-create-action";
+import { useAppointmentCalendarDrag } from "@/features/appointments/hooks/use-appointment-calendar-drag";
 import { useAppointmentsCalendarPage } from "@/features/appointments/hooks/use-appointments-calendar-page";
+import { getAppointment } from "@/features/appointments/api/appointments.api";
 
 export function AppointmentsCalendarPage() {
   return (
@@ -27,15 +29,16 @@ export function AppointmentsCalendarPage() {
 const BARE_VIEW_CLASS = "rounded-none border-0 shadow-none";
 
 function AppointmentsCalendarPageContent() {
-  const router = useRouter();
   const cal = useAppointmentsCalendarPage();
+  const drag = useAppointmentCalendarDrag({
+    timezone: cal.displayTimezone,
+    enabled: cal.view === "day" || cal.view === "week",
+  });
 
   useAppointmentsCreateAction(() => {
     const startIso = new Date().toISOString();
-    const endIso = new Date(Date.now() + 30 * 60_000).toISOString();
     cal.drawer.openCreate({
       startAt: startIso,
-      endAt: endIso,
       calendarId: cal.params.calendarId || cal.calendars?.items[0]?.id,
       assignedToId: cal.params.assignedToId || undefined,
     });
@@ -79,6 +82,9 @@ function AppointmentsCalendarPageContent() {
               isLoading={cal.isLoading}
               className={BARE_VIEW_CLASS}
               onAppointmentClick={cal.openAppointmentDetail}
+              onAppointmentMoveStart={drag.startMove}
+              onAppointmentResizeStart={drag.startResize}
+              draggingAppointmentId={drag.draggingId}
               onSlotClick={cal.openCreateAtSlot}
             />
           ) : null}
@@ -93,6 +99,9 @@ function AppointmentsCalendarPageContent() {
               isLoading={cal.isLoading}
               className={BARE_VIEW_CLASS}
               onAppointmentClick={cal.openAppointmentDetail}
+              onAppointmentMoveStart={drag.startMove}
+              onAppointmentResizeStart={drag.startResize}
+              draggingAppointmentId={drag.draggingId}
               onSlotClick={cal.openCreateAtSlot}
             />
           ) : null}
@@ -137,7 +146,23 @@ function AppointmentsCalendarPageContent() {
         }}
         defaults={cal.drawer.createDefaults}
         defaultCalendarId={cal.params.calendarId || cal.calendars?.items[0]?.id}
+        timezone={cal.displayTimezone}
         onSuccess={(id) => cal.drawer.openDetail(id)}
+        onCreateTimeBlock={() => {
+          if (cal.drawer.createDefaults) {
+            cal.drawer.openTimeBlock(cal.drawer.createDefaults);
+          }
+        }}
+      />
+
+      <AppointmentTimeBlockDrawer
+        open={cal.drawer.drawerMode === "timeBlock"}
+        onOpenChange={(open) => {
+          if (!open) cal.drawer.close();
+        }}
+        defaults={cal.drawer.createDefaults}
+        defaultCalendarId={cal.params.calendarId || cal.calendars?.items[0]?.id}
+        timezone={cal.displayTimezone}
       />
 
       <AppointmentEditDrawer
@@ -150,6 +175,7 @@ function AppointmentsCalendarPageContent() {
           }
         }}
         appointmentId={cal.drawer.appointmentId}
+        timezone={cal.displayTimezone}
         onSuccess={() => {
           if (cal.drawer.appointmentId) {
             cal.drawer.openDetail(cal.drawer.appointmentId);
@@ -169,21 +195,34 @@ function AppointmentsCalendarPageContent() {
       <AppointmentDetailDrawer
         variant="sheet"
         open={
-          cal.drawer.drawerMode === "detail" && Boolean(cal.drawer.appointmentId)
+          (cal.drawer.drawerMode === "detail" ||
+            cal.drawer.drawerMode === "checkout") &&
+          Boolean(cal.drawer.appointmentId)
         }
+        drawerView={
+          cal.drawer.drawerMode === "checkout" ? "checkout" : "detail"
+        }
+        checkoutId={cal.drawer.checkoutId}
         onOpenChange={(open) => {
           if (!open) cal.drawer.close();
         }}
         appointmentId={cal.drawer.appointmentId}
         onEdit={cal.drawer.openEdit}
         onClose={cal.drawer.close}
+        onBackFromCheckout={cal.drawer.closeCheckout}
+        onCheckoutComplete={() => {
+          cal.drawer.closeCheckout();
+        }}
         onMessageClick={cal.drawer.openConversation}
         onCheckout={(id) => cal.checkoutMutation.mutate(id)}
-        onViewSale={(checkoutId) =>
-          router.push(`/business/sales?sale=${checkoutId}`)
-        }
+        onOpenCheckoutView={(checkoutId) => cal.drawer.openCheckout(checkoutId)}
         onCancel={(id) => cal.cancelMutation.mutate(id)}
         onDelete={cal.setDeleteId}
+        onRebook={async (appointmentId) => {
+          const appointment = await getAppointment(appointmentId);
+          cal.openRebook(appointment);
+          cal.drawer.close();
+        }}
       />
 
       <ConfirmDeleteDialog

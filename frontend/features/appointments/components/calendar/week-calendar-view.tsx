@@ -27,6 +27,15 @@ interface WeekCalendarViewProps {
   isLoading?: boolean;
   className?: string;
   onAppointmentClick: (appointment: Appointment) => void;
+  onAppointmentMoveStart?: (
+    appointment: Appointment,
+    event: React.PointerEvent,
+  ) => void;
+  onAppointmentResizeStart?: (
+    appointment: Appointment,
+    event: React.PointerEvent,
+  ) => void;
+  draggingAppointmentId?: string | null;
   onSlotClick: (
     dateKey: string,
     hour: number,
@@ -44,6 +53,9 @@ export function WeekCalendarView({
   isLoading,
   className,
   onAppointmentClick,
+  onAppointmentMoveStart,
+  onAppointmentResizeStart,
+  draggingAppointmentId,
   onSlotClick,
 }: WeekCalendarViewProps) {
   const weekDateKeys = getWeekDateKeysInTimezone(anchorDateKey, timezone);
@@ -124,6 +136,9 @@ export function WeekCalendarView({
                       calendars={calendars}
                       businessTimezone={businessTimezone}
                       onAppointmentClick={onAppointmentClick}
+                      onAppointmentMoveStart={onAppointmentMoveStart}
+                      onAppointmentResizeStart={onAppointmentResizeStart}
+                      draggingAppointmentId={draggingAppointmentId}
                       onSlotClick={onSlotClick}
                     />
                   ))}

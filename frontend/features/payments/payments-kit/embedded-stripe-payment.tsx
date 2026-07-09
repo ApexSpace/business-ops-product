@@ -48,29 +48,39 @@ function StaffCardPaymentForm({
 
   async function handlePay() {
     const cardElement = elements?.getElement(CardElement);
-    if (!stripe || !cardElement) return;
+    if (!stripe || !cardElement) {
+      onError("Card field is still loading. Please try again.");
+      return;
+    }
 
     setSubmitting(true);
-    const { error, paymentIntent } = await stripe.confirmCardPayment(
-      clientSecret,
-      { payment_method: { card: cardElement } },
-    );
-    setSubmitting(false);
+    try {
+      const { error, paymentIntent } = await stripe.confirmCardPayment(
+        clientSecret,
+        { payment_method: { card: cardElement } },
+      );
 
-    if (error) {
-      onError(error.message ?? "Card payment failed");
-      return;
+      if (error) {
+        onError(error.message ?? "Card payment failed");
+        return;
+      }
+
+      if (
+        paymentIntent?.status === "succeeded" ||
+        paymentIntent?.status === "processing"
+      ) {
+        onSuccess();
+        return;
+      }
+
+      onError("Payment was not completed. Try again.");
+    } catch (err) {
+      onError(
+        err instanceof Error ? err.message : "Card payment could not be processed",
+      );
+    } finally {
+      setSubmitting(false);
     }
-
-    if (
-      paymentIntent?.status === "succeeded" ||
-      paymentIntent?.status === "processing"
-    ) {
-      onSuccess();
-      return;
-    }
-
-    onError("Payment was not completed. Try again.");
   }
 
   return (
@@ -127,26 +137,33 @@ function CheckoutPaymentForm({
     if (!stripe || !elements) return;
 
     setSubmitting(true);
-    const { error, paymentIntent } = await stripe.confirmPayment({
-      elements,
-      redirect: "if_required",
-    });
-    setSubmitting(false);
+    try {
+      const { error, paymentIntent } = await stripe.confirmPayment({
+        elements,
+        redirect: "if_required",
+      });
 
-    if (error) {
-      onError(error.message ?? "Payment failed");
-      return;
+      if (error) {
+        onError(error.message ?? "Payment failed");
+        return;
+      }
+
+      if (
+        paymentIntent?.status === "succeeded" ||
+        paymentIntent?.status === "processing"
+      ) {
+        onSuccess();
+        return;
+      }
+
+      onError("Payment was not completed. Try again.");
+    } catch (err) {
+      onError(
+        err instanceof Error ? err.message : "Payment could not be processed",
+      );
+    } finally {
+      setSubmitting(false);
     }
-
-    if (
-      paymentIntent?.status === "succeeded" ||
-      paymentIntent?.status === "processing"
-    ) {
-      onSuccess();
-      return;
-    }
-
-    onError("Payment was not completed. Try again.");
   }
 
   return (
@@ -191,14 +208,21 @@ export function EmbeddedStripePayment({
 }: EmbeddedStripePaymentProps) {
   const stripe = getStripePromise(publishableKey, stripeAccountId);
 
+  // The legacy CardElement (staff mode) is confirmed via
+  // `stripe.confirmCardPayment(clientSecret, ...)`, so the Elements group must
+  // be created WITHOUT a clientSecret. Passing one here makes Stripe.js expect
+  // the PaymentElement flow and it fails to resolve the CardElement.
+  // PaymentElement (checkout mode) requires the clientSecret up front.
+  const options =
+    mode === "checkout"
+      ? { clientSecret, appearance: { theme: "stripe" as const } }
+      : { appearance: { theme: "stripe" as const } };
+
   return (
     <Elements
       key={`${clientSecret}-${mode}`}
       stripe={stripe}
-      options={{
-        clientSecret,
-        appearance: { theme: "stripe" },
-      }}
+      options={options}
     >
       {mode === "staff" ? (
         <StaffCardPaymentForm

@@ -115,14 +115,14 @@ export class BusinessGlobalSearchService {
         id: row.id,
         type: 'appointment' as const,
         label: row.title,
-        subtitle: this.contactLabel(row.contact),
+        subtitle: row.contact ? this.contactLabel(row.contact) : undefined,
         href: `/business/appointments?appointmentId=${row.id}`,
       })),
       ...invoices.map((row) => ({
         id: row.id,
         type: 'invoice' as const,
         label: row.invoiceNumber,
-        subtitle: this.contactLabel(row.contact),
+        subtitle: row.contact ? this.contactLabel(row.contact) : undefined,
         href: `/business/payments?tab=invoices&invoiceId=${row.id}`,
       })),
       ...products.map((row) => ({

@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/popover";
 import {
   formatAppointmentRange,
-  formatAppointmentStatus,
+  getAppointmentStatusDisplayLabel,
   getContactDisplayName,
   type Appointment,
 } from "@/features/appointments/schemas/appointment-profile";
@@ -22,6 +22,8 @@ interface AppointmentMorePopoverProps {
   appointments: Appointment[];
   calendars?: Calendar[];
   businessTimezone?: string | null;
+  /** When set, render every time label in this timezone (matches the grid axis). */
+  timezone?: string;
   label: string;
   title?: string;
   onAppointmentClick: (appointment: Appointment) => void;
@@ -34,6 +36,7 @@ export function AppointmentMorePopover({
   appointments,
   calendars,
   businessTimezone,
+  timezone,
   label,
   title = "Appointments",
   onAppointmentClick,
@@ -70,11 +73,13 @@ export function AppointmentMorePopover({
         </PopoverHeader>
         <ul className="divide-y divide-border/60">
           {appointments.map((apt) => {
-            const tz = resolveTimezoneForAppointment(
-              apt.calendarId,
-              calendars,
-              businessTimezone,
-            );
+            const tz =
+              timezone ??
+              resolveTimezoneForAppointment(
+                apt.calendarId,
+                calendars,
+                businessTimezone,
+              );
             return (
               <li key={apt.id}>
                 <button
@@ -92,7 +97,11 @@ export function AppointmentMorePopover({
                   </span>
                   <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
                     <Badge variant="outline" className="h-5 text-[10px] font-normal">
-                      {formatAppointmentStatus(apt.status)}
+                      {getAppointmentStatusDisplayLabel(
+                        apt.status,
+                        apt.relatedCheckoutId ?? null,
+                        apt.relatedCheckoutStatus ?? null,
+                      )}
                     </Badge>
                     <span className="text-[10px] text-muted-foreground">
                       {apt.calendar.name}

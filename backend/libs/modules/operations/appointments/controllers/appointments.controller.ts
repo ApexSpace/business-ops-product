@@ -71,6 +71,19 @@ export class AppointmentsController {
     return this.appointmentsService.getActivity(user.businessId!, id);
   }
 
+  @Post(':id/notify')
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
+  notifyClient(
+    @CurrentUser() user: RequestUser,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.appointmentsService.notifyClient(user.businessId!, id, user);
+  }
+
   @Get(':id')
   @BusinessRoles(
     BusinessMemberRole.OWNER,

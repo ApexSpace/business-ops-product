@@ -41,7 +41,7 @@ export type AppointmentWithRelations = Appointment & {
     email: string | null;
     phoneNumber: string | null;
     createdAt: Date;
-  };
+  } | null;
   service: { id: string; name: string } | null;
   serviceLines: AppointmentServiceLineWithRelations[];
   assignedTo: {
@@ -215,6 +215,36 @@ export class AppointmentRepository {
     return this.prisma.appointment.update({
       where: { id },
       data: { deletedAt: new Date() },
+    });
+  }
+
+  findStaffBlockingInRange(
+    businessId: string,
+    calendarId: string,
+    rangeStart: Date,
+    rangeEnd: Date,
+    staffUserId: string,
+    excludeAppointmentId?: string,
+  ): Promise<Array<{ id: string; startAt: Date; endAt: Date }>> {
+    return this.prisma.appointment.findMany({
+      where: {
+        ...this.activeWhere(businessId, {
+          calendarId,
+          status: { in: BLOCKING_STATUSES },
+          startAt: { lt: rangeEnd },
+          endAt: { gt: rangeStart },
+          ...(excludeAppointmentId ? { id: { not: excludeAppointmentId } } : {}),
+          OR: [
+            { assignedToId: staffUserId },
+            {
+              serviceLines: {
+                some: { assignedToId: staffUserId },
+              },
+            },
+          ],
+        }),
+      },
+      select: { id: true, startAt: true, endAt: true },
     });
   }
 

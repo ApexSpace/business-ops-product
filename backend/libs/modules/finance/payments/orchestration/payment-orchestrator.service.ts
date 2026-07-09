@@ -19,7 +19,6 @@ import {
   generateInvoicePublicToken,
 } from '@app/modules/finance/invoices/utils/invoice-public-token.util';
 import { STRIPE_PAYMENT_PURPOSE } from '../constants/stripe-payment-purpose.constants';
-import { InvoicePayableHandler } from '../handlers/invoice-payable.handler';
 import { PayableHandlerRegistry } from '../registry/payable-handler.registry';
 import { ContactPaymentMethodsService } from '../services/contact-payment-methods.service';
 import { PaymentRealtimeService } from '../services/payment-realtime.service';
@@ -44,11 +43,8 @@ export class PaymentOrchestratorService {
     private readonly contactPaymentMethods: ContactPaymentMethodsService,
     private readonly paymentRealtime: PaymentRealtimeService,
     private readonly auditService: AuditService,
-    private readonly invoicePayableHandler: InvoicePayableHandler,
     private readonly giftCardRedemption: GiftCardRedemptionService,
-  ) {
-    this.registry.register(this.invoicePayableHandler);
-  }
+  ) {}
 
   async collectPayment(
     input: CollectPaymentInput,

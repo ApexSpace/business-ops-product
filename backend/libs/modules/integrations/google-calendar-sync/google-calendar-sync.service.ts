@@ -568,24 +568,25 @@ export class GoogleCalendarSyncService {
         lastName: string | null;
         displayName: string | null;
         email: string | null;
-      };
+      } | null;
       service: { name: string } | null;
     },
     context: SyncContext,
     businessId: string,
   ) {
-    const contactName =
-      appointment.contact.displayName?.trim() ||
-      [appointment.contact.firstName, appointment.contact.lastName]
-        .filter(Boolean)
-        .join(' ')
-        .trim() ||
-      appointment.contact.email ||
-      'Contact';
+    const contactName = appointment.contact
+      ? appointment.contact.displayName?.trim() ||
+        [appointment.contact.firstName, appointment.contact.lastName]
+          .filter(Boolean)
+          .join(' ')
+          .trim() ||
+        appointment.contact.email ||
+        'Contact'
+      : appointment.title;
 
     const descriptionParts = [
       appointment.description,
-      `Contact: ${contactName}`,
+      appointment.contact ? `Contact: ${contactName}` : null,
       appointment.service ? `Service: ${appointment.service.name}` : null,
       appointment.notes ? `Notes: ${appointment.notes}` : null,
       `Internal appointment ID: ${appointment.id}`,

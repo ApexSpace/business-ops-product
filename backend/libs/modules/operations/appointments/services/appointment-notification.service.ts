@@ -39,7 +39,7 @@ export class AppointmentNotificationService {
       businessId,
       emailType: 'appointment.confirmation',
       toEmail: contactEmail,
-      contactId: appointment.contactId,
+      contactId: appointment.contactId ?? undefined,
       entityType: 'Appointment',
       entityId: appointment.id,
       idempotencyKey: `appointment-confirm-${appointment.id}`,
@@ -108,7 +108,7 @@ export class AppointmentNotificationService {
       businessId,
       emailType: 'appointment.cancelled',
       toEmail: contactEmail,
-      contactId: appointment.contactId,
+      contactId: appointment.contactId ?? undefined,
       entityType: 'Appointment',
       entityId: appointment.id,
       idempotencyKey: `appointment-cancelled-${appointment.id}`,
@@ -144,10 +144,39 @@ export class AppointmentNotificationService {
       businessId,
       emailType: 'appointment.rescheduled',
       toEmail: contactEmail,
-      contactId: appointment.contactId,
+      contactId: appointment.contactId ?? undefined,
       entityType: 'Appointment',
       entityId: appointment.id,
       idempotencyKey: `appointment-rescheduled-${appointment.id}-${appointment.startAt.toISOString()}`,
+      variables,
+    });
+  }
+
+  async sendReady(
+    businessId: string,
+    appointment: AppointmentWithRelations,
+    timezone?: string | null,
+  ): Promise<void> {
+    const contactEmail = appointment.contact?.email?.trim();
+    if (!contactEmail) {
+      return;
+    }
+
+    const business = await this.businessRepository.findById(businessId);
+    const variables = this.buildVariables(
+      business?.name ?? 'Business',
+      appointment,
+      timezone,
+    );
+
+    await this.emailNotificationService.enqueueTransactionalEmail({
+      businessId,
+      emailType: 'appointment.ready',
+      toEmail: contactEmail,
+      contactId: appointment.contactId ?? undefined,
+      entityType: 'Appointment',
+      entityId: appointment.id,
+      idempotencyKey: `appointment-ready-${appointment.id}-${Date.now()}`,
       variables,
     });
   }
@@ -174,7 +203,7 @@ export class AppointmentNotificationService {
       businessId,
       emailType: 'appointment.reminder',
       toEmail: contactEmail,
-      contactId: appointment.contactId,
+      contactId: appointment.contactId ?? undefined,
       entityType: 'Appointment',
       entityId: appointment.id,
       idempotencyKey: `appointment-reminder-${appointment.id}-${reminderHoursBefore}h`,
@@ -189,7 +218,9 @@ export class AppointmentNotificationService {
   ): Record<string, string> {
     return {
       'business.name': businessName,
-      'contact.name': formatContactName(appointment.contact),
+      'contact.name': appointment.contact
+        ? formatContactName(appointment.contact)
+        : appointment.title,
       'contact.email': appointment.contact?.email?.trim() ?? '',
       'appointment.start_at': formatAppointmentDateTime(
         appointment.startAt,

@@ -2,13 +2,26 @@
 
 import { useCallback, useState } from "react";
 
-export type DrawerMode = "closed" | "detail" | "create" | "edit" | "conversation";
+import type { AppointmentServiceLineSelection } from "@/features/appointments/utils/appointment-service-lines";
+
+export type DrawerMode =
+  | "closed"
+  | "detail"
+  | "create"
+  | "edit"
+  | "conversation"
+  | "timeBlock"
+  | "checkout";
 
 export interface AppointmentCreateDefaults {
   startAt: string;
-  endAt: string;
+  endAt?: string;
   assignedToId?: string;
   calendarId?: string;
+  contactId?: string;
+  contactLabel?: string;
+  services?: AppointmentServiceLineSelection[];
+  notes?: string;
 }
 
 export function useAppointmentDrawer() {
@@ -19,11 +32,13 @@ export function useAppointmentDrawer() {
   >(null);
   const [createDefaults, setCreateDefaults] =
     useState<AppointmentCreateDefaults | null>(null);
+  const [checkoutId, setCheckoutId] = useState<string | null>(null);
 
   const openDetail = useCallback((id: string) => {
     setAppointmentId(id);
     setConversationContactId(null);
     setCreateDefaults(null);
+    setCheckoutId(null);
     setDrawerMode("detail");
   }, []);
 
@@ -32,6 +47,13 @@ export function useAppointmentDrawer() {
     setConversationContactId(null);
     setCreateDefaults(defaults);
     setDrawerMode("create");
+  }, []);
+
+  const openTimeBlock = useCallback((defaults: AppointmentCreateDefaults) => {
+    setAppointmentId(null);
+    setConversationContactId(null);
+    setCreateDefaults(defaults);
+    setDrawerMode("timeBlock");
   }, []);
 
   const openEdit = useCallback(() => {
@@ -49,10 +71,21 @@ export function useAppointmentDrawer() {
     setAppointmentId(null);
     setConversationContactId(null);
     setCreateDefaults(null);
+    setCheckoutId(null);
   }, []);
 
   const closeConversation = useCallback(() => {
     setConversationContactId(null);
+    setDrawerMode(appointmentId ? "detail" : "closed");
+  }, [appointmentId]);
+
+  const openCheckout = useCallback((id: string) => {
+    setCheckoutId(id);
+    setDrawerMode("checkout");
+  }, []);
+
+  const closeCheckout = useCallback(() => {
+    setCheckoutId(null);
     setDrawerMode(appointmentId ? "detail" : "closed");
   }, [appointmentId]);
 
@@ -61,10 +94,14 @@ export function useAppointmentDrawer() {
     appointmentId,
     conversationContactId,
     createDefaults,
+    checkoutId,
     openDetail,
     openCreate,
+    openTimeBlock,
     openEdit,
     openConversation,
+    openCheckout,
+    closeCheckout,
     close,
     closeConversation,
   };

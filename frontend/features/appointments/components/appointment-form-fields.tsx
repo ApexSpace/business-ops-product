@@ -34,7 +34,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  APPOINTMENT_STATUS_OPTIONS,
+  APPOINTMENT_LIFECYCLE_STATUS_OPTIONS,
   type AppointmentStatus,
 } from "@/features/appointments/schemas/appointment-profile";
 import type { UseAppointmentFormReturn } from "@/features/appointments/hooks/use-appointment-form";
@@ -193,14 +193,14 @@ export function AppointmentFormFields({
                     aria-hidden
                   />
                   <span className="truncate font-medium">
-                    {APPOINTMENT_STATUS_OPTIONS.find(
+                    {APPOINTMENT_LIFECYCLE_STATUS_OPTIONS.find(
                       (option) => option.value === field.value,
                     )?.label ?? "Select status"}
                   </span>
                 </span>
               </SelectTrigger>
               <SelectContent>
-                {APPOINTMENT_STATUS_OPTIONS.map((option) => (
+                {APPOINTMENT_LIFECYCLE_STATUS_OPTIONS.map((option) => (
                   <SelectItem
                     key={option.value}
                     value={option.value}

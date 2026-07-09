@@ -11,7 +11,6 @@ import {
   layoutOverlappingAppointments,
   type TimeGridAppointmentLayout,
 } from "@/features/appointments/utils/appointment-overlap";
-import { resolveTimezoneForAppointment } from "@/features/calendars/utils/timezone";
 
 interface TimeGridAppointmentsProps {
   appointments: Appointment[];
@@ -19,6 +18,15 @@ interface TimeGridAppointmentsProps {
   calendars?: Calendar[];
   businessTimezone?: string | null;
   onAppointmentClick: (appointment: Appointment) => void;
+  onAppointmentMoveStart?: (
+    appointment: Appointment,
+    event: React.PointerEvent,
+  ) => void;
+  onAppointmentResizeStart?: (
+    appointment: Appointment,
+    event: React.PointerEvent,
+  ) => void;
+  draggingAppointmentId?: string | null;
 }
 
 function layoutStyle(item: TimeGridAppointmentLayout): React.CSSProperties {
@@ -41,15 +49,16 @@ export function TimeGridAppointments({
   calendars,
   businessTimezone,
   onAppointmentClick,
+  onAppointmentMoveStart,
+  onAppointmentResizeStart,
+  draggingAppointmentId,
 }: TimeGridAppointmentsProps) {
+  // Position every appointment against the grid's view timezone so cards align
+  // with the hour axis, slot clicks, and drag — regardless of the calendar's own
+  // timezone. Mixing per-calendar timezones on a single axis misplaces events.
   const resolveEventTimezone = useCallback(
-    (appointment: Appointment) =>
-      resolveTimezoneForAppointment(
-        appointment.calendarId,
-        calendars,
-        businessTimezone,
-      ),
-    [calendars, businessTimezone],
+    (_appointment: Appointment) => viewTimezone,
+    [viewTimezone],
   );
 
   const layouts = useMemo(
@@ -76,6 +85,7 @@ export function TimeGridAppointments({
                   appointments={item.appointments}
                   calendars={calendars}
                   businessTimezone={businessTimezone}
+                  timezone={viewTimezone}
                   label={`+${item.appointments.length} more`}
                   title="Overlapping appointments"
                   onAppointmentClick={onAppointmentClick}
@@ -104,6 +114,18 @@ export function TimeGridAppointments({
                 eventHeight={height}
                 className="shadow-elevation-xs"
                 onClick={() => onAppointmentClick(item.appointment)}
+                onMoveStart={
+                  onAppointmentMoveStart
+                    ? (event) => onAppointmentMoveStart(item.appointment, event)
+                    : undefined
+                }
+                onResizeStart={
+                  onAppointmentResizeStart
+                    ? (event) =>
+                        onAppointmentResizeStart(item.appointment, event)
+                    : undefined
+                }
+                isDragging={draggingAppointmentId === item.appointment.id}
               />
             </div>
           </div>

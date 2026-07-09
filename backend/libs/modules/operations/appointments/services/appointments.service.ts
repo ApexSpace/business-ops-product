@@ -25,6 +25,7 @@ import { JobEnqueueService } from '@app/core/jobs/job-enqueue.service';
 import { ClientPackagesService } from '@app/modules/finance/packages/services/client-packages.service';
 import { AppointmentRepository } from '../repositories/appointment.repository';
 import { AppointmentNotificationService } from './appointment-notification.service';
+import { resolveServiceTiming } from '@app/modules/crm/services/utils/service-timing.util';
 
 @Injectable()
 export class AppointmentsService {
@@ -81,6 +82,70 @@ export class AppointmentsService {
       .map((s) => s.trim())
       .filter(Boolean) as AppointmentStatus[];
     return parts.length ? parts : undefined;
+  }
+
+  private async detectScheduleConflicts(
+    businessId: string,
+    calendarId: string,
+    serviceLines: Prisma.AppointmentServiceLineUncheckedCreateWithoutAppointmentInput[],
+    calendarBuffers: { bufferBeforeMinutes: number; bufferAfterMinutes: number },
+    excludeAppointmentId?: string,
+  ): Promise<string | null> {
+    const warnings: string[] = [];
+
+    for (const line of serviceLines) {
+      const staffId = line.assignedToId;
+      if (!staffId || !line.startAt) continue;
+
+      const lineStart =
+        line.startAt instanceof Date ? line.startAt : new Date(line.startAt);
+
+      const service = await this.serviceRepository.findById(
+        businessId,
+        line.serviceId,
+      );
+      if (!service) continue;
+
+      const timing = resolveServiceTiming(
+        {
+          durationMinutes: service.durationMinutes,
+          hasProcessingTime: service.hasProcessingTime,
+          processingDurationMinutes: service.processingDurationMinutes,
+          finishDurationMinutes: service.finishDurationMinutes,
+          hasBufferTime: service.hasBufferTime,
+          bufferBeforeMinutes: service.bufferBeforeMinutes,
+          bufferAfterMinutes: service.bufferAfterMinutes,
+        },
+        calendarBuffers,
+      );
+
+      const occupancyMinutes = line.durationMinutes ?? timing.clientOccupancyMinutes;
+      const bufferBefore = timing.bufferBeforeMinutes;
+      const bufferAfter = timing.bufferAfterMinutes;
+      const blockStart = new Date(
+        lineStart.getTime() - bufferBefore * 60_000,
+      );
+      const blockEnd = new Date(
+        lineStart.getTime() + occupancyMinutes * 60_000 + bufferAfter * 60_000,
+      );
+
+      const conflicts = await this.appointmentRepository.findStaffBlockingInRange(
+        businessId,
+        calendarId,
+        blockStart,
+        blockEnd,
+        staffId,
+        excludeAppointmentId,
+      );
+
+      if (conflicts.length > 0) {
+        warnings.push(
+          `${service.name}: provider has ${conflicts.length} overlapping booking(s)`,
+        );
+      }
+    }
+
+    return warnings.length > 0 ? warnings.join('; ') : null;
   }
 
   private async buildServiceLines(
@@ -158,30 +223,55 @@ export class AppointmentsService {
   ): Promise<AppointmentResponseDto> {
     const startAt = new Date(dto.startAt);
     let endAt = new Date(dto.endAt);
+    const isTimeBlock = dto.isTimeBlock === true;
 
-    await this.assertCalendar(businessId, dto.calendarId);
-    await this.assertContact(businessId, dto.contactId);
+    const calendar = await this.assertCalendar(businessId, dto.calendarId);
+    if (!isTimeBlock) {
+      if (!dto.contactId) {
+        throw new AppException(
+          ErrorCode.BAD_REQUEST,
+          'Contact is required',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+      await this.assertContact(businessId, dto.contactId);
+    }
     if (dto.workItemId) await this.assertWorkItem(businessId, dto.workItemId);
     if (dto.assignedToId)
       await this.assertAssignee(businessId, dto.assignedToId);
 
     const { serviceLines, primaryServiceId, endAt: computedEnd } =
-      await this.buildServiceLines(
-        businessId,
-        startAt,
-        endAt,
-        dto.assignedToId,
-        dto.services,
-        dto.serviceId,
-      );
+      isTimeBlock
+        ? { serviceLines: [], primaryServiceId: null, endAt }
+        : await this.buildServiceLines(
+            businessId,
+            startAt,
+            endAt,
+            dto.assignedToId,
+            dto.services,
+            dto.serviceId,
+          );
     endAt = computedEnd;
     this.assertValidRange(startAt, endAt);
+
+    const scheduleWarning =
+      serviceLines.length > 0
+        ? await this.detectScheduleConflicts(
+            businessId,
+            dto.calendarId,
+            serviceLines,
+            {
+              bufferBeforeMinutes: calendar.bufferBeforeMinutes,
+              bufferAfterMinutes: calendar.bufferAfterMinutes,
+            },
+          )
+        : null;
 
     const appointment = await this.appointmentRepository.create(
       businessId,
       {
         calendarId: dto.calendarId,
-        contactId: dto.contactId,
+        contactId: dto.contactId ?? null,
         serviceId: primaryServiceId,
         workItemId: dto.workItemId ?? null,
         assignedToId: dto.assignedToId ?? null,
@@ -189,11 +279,12 @@ export class AppointmentsService {
         description: dto.description?.trim() || null,
         startAt,
         endAt,
-        status: dto.status ?? AppointmentStatus.UNCONFIRMED,
+        status: dto.status ?? AppointmentStatus.CONFIRMED,
         source: dto.source,
         locationType: dto.locationType ?? null,
         locationValue: dto.locationValue?.trim() || null,
         notes: dto.notes?.trim() || null,
+        metadata: isTimeBlock ? { kind: 'TIME_BLOCK' } : undefined,
         createdById: actor.id,
       },
       serviceLines,
@@ -210,11 +301,14 @@ export class AppointmentsService {
     this.scheduleGoogleCalendarSync(businessId, appointment.id, actor.id);
 
     void this.appointmentNotificationService
-      .sendConfirmation(businessId, appointment)
-      .catch(() => undefined);
-    void this.appointmentNotificationService
       .sendOwnerNotifications(businessId, appointment)
       .catch(() => undefined);
+
+    if (dto.sendConfirmation !== false && !isTimeBlock && dto.contactId) {
+      void this.appointmentNotificationService
+        .sendConfirmation(businessId, appointment)
+        .catch(() => undefined);
+    }
 
     const redeemServiceId = primaryServiceId ?? dto.serviceId;
     if (dto.clientPackageId && redeemServiceId) {
@@ -237,7 +331,7 @@ export class AppointmentsService {
       );
     }
 
-    return toAppointmentResponse(appointment);
+    return toAppointmentResponse(appointment, { scheduleWarning });
   }
 
   async list(
@@ -348,6 +442,11 @@ export class AppointmentsService {
     const previousStartAt = existing.startAt;
 
     if (dto.calendarId) await this.assertCalendar(businessId, dto.calendarId);
+    const calendarId = dto.calendarId ?? existing.calendarId;
+    const calendar = await this.calendarRepository.findById(
+      businessId,
+      calendarId,
+    );
     if (dto.contactId) await this.assertContact(businessId, dto.contactId);
     if (dto.workItemId) await this.assertWorkItem(businessId, dto.workItemId);
     if (dto.assignedToId)
@@ -377,11 +476,38 @@ export class AppointmentsService {
 
     this.assertValidRange(startAt, endAt);
 
+    const linesForConflict =
+      serviceLines ??
+      existing.serviceLines.map((line) => ({
+        serviceId: line.serviceId,
+        assignedToId: line.assignedToId,
+        startAt: line.startAt,
+        durationMinutes: line.durationMinutes,
+        price: line.price,
+        sortOrder: line.sortOrder,
+      }));
+
+    const scheduleWarning =
+      linesForConflict.length > 0 && calendar
+        ? await this.detectScheduleConflicts(
+            businessId,
+            calendarId,
+            linesForConflict,
+            {
+              bufferBeforeMinutes: calendar.bufferBeforeMinutes,
+              bufferAfterMinutes: calendar.bufferAfterMinutes,
+            },
+            id,
+          )
+        : null;
+
     const appointment = await this.appointmentRepository.update(
       id,
       {
         ...(dto.calendarId !== undefined ? { calendarId: dto.calendarId } : {}),
-        ...(dto.contactId !== undefined ? { contactId: dto.contactId } : {}),
+        ...(dto.contactId !== undefined
+          ? { contactId: dto.contactId ?? null }
+          : {}),
         ...(primaryServiceId !== undefined
           ? { serviceId: primaryServiceId }
           : dto.serviceId !== undefined
@@ -422,13 +548,13 @@ export class AppointmentsService {
 
     this.scheduleGoogleCalendarSync(businessId, id, actor.id);
 
-    if (scheduleChanged) {
+    if (scheduleChanged && dto.sendConfirmation !== false) {
       void this.appointmentNotificationService
         .sendRescheduled(businessId, appointment, previousStartAt)
         .catch(() => undefined);
     }
 
-    return toAppointmentResponse(appointment);
+    return toAppointmentResponse(appointment, { scheduleWarning });
   }
 
   async updateStatus(
@@ -469,6 +595,62 @@ export class AppointmentsService {
         .sendCancelled(businessId, appointment)
         .catch(() => undefined);
     }
+
+    return toAppointmentResponse(appointment);
+  }
+
+  async notifyClient(
+    businessId: string,
+    id: string,
+    actor: RequestUser,
+  ): Promise<AppointmentResponseDto> {
+    const existing = await this.appointmentRepository.findById(businessId, id);
+    if (!existing) {
+      throw new AppException(
+        ErrorCode.APPOINTMENT_NOT_FOUND,
+        'Appointment not found',
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    if (existing.status !== AppointmentStatus.WAITING) {
+      throw new AppException(
+        ErrorCode.BAD_REQUEST,
+        'Client can only be notified while appointment is in waiting status',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    if (!existing.contact?.email?.trim()) {
+      throw new AppException(
+        ErrorCode.BAD_REQUEST,
+        'Client has no email address on file',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    await this.appointmentNotificationService.sendReady(businessId, existing);
+
+    const previousMetadata =
+      existing.metadata && typeof existing.metadata === 'object'
+        ? (existing.metadata as Record<string, unknown>)
+        : {};
+    const waitingNotifiedAt = new Date().toISOString();
+
+    const appointment = await this.appointmentRepository.update(id, {
+      metadata: {
+        ...previousMetadata,
+        waitingNotifiedAt,
+      },
+    });
+
+    await this.auditService.log({
+      actorUserId: actor.id,
+      businessId,
+      action: 'appointment.client_notified',
+      entityType: 'Appointment',
+      entityId: id,
+    });
 
     return toAppointmentResponse(appointment);
   }
@@ -523,6 +705,7 @@ export class AppointmentsService {
         HttpStatus.BAD_REQUEST,
       );
     }
+    return calendar;
   }
 
   private async assertContact(businessId: string, contactId: string) {

@@ -54,8 +54,8 @@ export class DashboardFeedAppointmentDto {
   @ApiProperty({ enum: AppointmentSource })
   source!: AppointmentSource;
 
-  @ApiProperty({ type: DashboardFeedContactDto })
-  contact!: DashboardFeedContactDto;
+  @ApiPropertyOptional({ type: DashboardFeedContactDto })
+  contact?: DashboardFeedContactDto | null;
 
   @ApiPropertyOptional()
   serviceName?: string | null;

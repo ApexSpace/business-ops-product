@@ -59,6 +59,10 @@ export function updateAppointmentStatus(id: string, status: AppointmentStatus) {
   return api.patch<Appointment>(`appointments/${id}/status`, { status });
 }
 
+export function notifyAppointmentClient(id: string) {
+  return api.post<Appointment>(`appointments/${id}/notify`);
+}
+
 export function deleteAppointment(id: string) {
   return api.delete<void>(`appointments/${id}?confirm=true`);
 }

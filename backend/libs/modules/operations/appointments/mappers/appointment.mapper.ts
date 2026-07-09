@@ -8,9 +8,21 @@ function decimalToString(value: unknown): string | null {
 
 export function toAppointmentResponse(
   row: AppointmentWithRelations,
-  options?: { googleSyncWarning?: string | null },
+  options?: {
+    googleSyncWarning?: string | null;
+    scheduleWarning?: string | null;
+  },
 ): AppointmentResponseDto {
   const checkout = row.invoices?.[0] ?? null;
+  const metadata =
+    row.metadata && typeof row.metadata === 'object'
+      ? (row.metadata as Record<string, unknown>)
+      : null;
+  const waitingNotifiedAt =
+    typeof metadata?.waitingNotifiedAt === 'string'
+      ? metadata.waitingNotifiedAt
+      : null;
+
   return {
     id: row.id,
     businessId: row.businessId,
@@ -54,8 +66,13 @@ export function toAppointmentResponse(
     assignedTo: row.assignedTo,
     createdBy: row.createdBy,
     relatedCheckoutId: checkout?.id ?? null,
+    relatedCheckoutStatus: checkout?.status ?? null,
+    waitingNotifiedAt,
     ...(options?.googleSyncWarning
       ? { googleSyncWarning: options.googleSyncWarning }
+      : {}),
+    ...(options?.scheduleWarning
+      ? { scheduleWarning: options.scheduleWarning }
       : {}),
   };
 }

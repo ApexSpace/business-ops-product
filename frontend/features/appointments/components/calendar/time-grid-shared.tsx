@@ -15,7 +15,6 @@ import {
 import {
   dateKeyFromUtcIso,
   isTodayDateKey,
-  resolveTimezoneForAppointment,
 } from "@/features/calendars/utils/timezone";
 import { CALENDAR_GRID } from "@/features/calendars/utils/calendar-grid-styles";
 import { cn } from "@/lib/utils";
@@ -33,6 +32,15 @@ interface TimeGridColumnProps {
   staffUserId?: string;
   highlightToday?: boolean;
   onAppointmentClick: (appointment: Appointment) => void;
+  onAppointmentMoveStart?: (
+    appointment: Appointment,
+    event: React.PointerEvent,
+  ) => void;
+  onAppointmentResizeStart?: (
+    appointment: Appointment,
+    event: React.PointerEvent,
+  ) => void;
+  draggingAppointmentId?: string | null;
   onSlotClick: (
     dateKey: string,
     hour: number,
@@ -50,18 +58,17 @@ export function TimeGridColumn({
   staffUserId,
   highlightToday = true,
   onAppointmentClick,
+  onAppointmentMoveStart,
+  onAppointmentResizeStart,
+  draggingAppointmentId,
   onSlotClick,
 }: TimeGridColumnProps) {
   const slotLabels = getTimeSlotLabels();
-  const appointmentTimezone = (appointment: Appointment) =>
-    resolveTimezoneForAppointment(
-      appointment.calendarId,
-      calendars,
-      businessTimezone,
-    );
 
+  // Bucket appointments into day columns using the grid's view timezone so a
+  // day/column matches the axis, slot clicks, and card positions.
   const dayAppointments = appointments.filter((a) => {
-    if (dateKeyFromUtcIso(a.startAt, appointmentTimezone(a)) !== dateKey) {
+    if (dateKeyFromUtcIso(a.startAt, viewTimezone) !== dateKey) {
       return false;
     }
     if (staffUserId && a.assignedToId !== staffUserId) {
@@ -119,6 +126,9 @@ export function TimeGridColumn({
         calendars={calendars}
         businessTimezone={businessTimezone}
         onAppointmentClick={onAppointmentClick}
+        onAppointmentMoveStart={onAppointmentMoveStart}
+        onAppointmentResizeStart={onAppointmentResizeStart}
+        draggingAppointmentId={draggingAppointmentId}
       />
     </div>
   );

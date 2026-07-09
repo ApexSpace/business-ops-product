@@ -26,6 +26,7 @@ describe('PaymentOrchestratorService', () => {
     publishCheckoutClosed: jest.Mock;
   };
   let auditService: { log: jest.Mock };
+  let giftCardRedemption: { redeem: jest.Mock };
 
   beforeEach(() => {
     handler = {
@@ -80,6 +81,9 @@ describe('PaymentOrchestratorService', () => {
       publishCheckoutClosed: jest.fn(),
     };
     auditService = { log: jest.fn() };
+    giftCardRedemption = {
+      redeem: jest.fn().mockResolvedValue({ amountApplied: '0.00' }),
+    };
 
     service = new PaymentOrchestratorService(
       prisma as never,
@@ -91,7 +95,7 @@ describe('PaymentOrchestratorService', () => {
       contactPaymentMethods as never,
       paymentRealtime as never,
       auditService as never,
-      handler as never,
+      giftCardRedemption as never,
     );
   });
 

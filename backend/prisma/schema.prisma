@@ -2777,7 +2777,7 @@ model Appointment {
   id               String             @id @default(uuid())
   businessId       String
   calendarId       String
-  contactId        String
+  contactId        String?
   serviceId        String?
   workItemId       String?
   assignedToId     String?
@@ -2800,7 +2800,7 @@ model Appointment {
 
   business   Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
   calendar   Calendar  @relation(fields: [calendarId], references: [id], onDelete: Restrict)
-  contact    Contact   @relation(fields: [contactId], references: [id], onDelete: Restrict)
+  contact    Contact?  @relation(fields: [contactId], references: [id], onDelete: Restrict)
   service    Service?  @relation(fields: [serviceId], references: [id], onDelete: SetNull)
   workItem   WorkItem? @relation(fields: [workItemId], references: [id], onDelete: SetNull)
   assignedTo User?     @relation("AppointmentAssignedTo", fields: [assignedToId], references: [id], onDelete: SetNull)

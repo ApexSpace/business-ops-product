@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import {
+  AppointmentStatus,
   ContactWalletTransactionType,
   InvoiceKind,
   InvoiceLineType,
@@ -66,6 +67,18 @@ export class CheckoutCompletionService {
         closedById: checkout.closedById ?? actorUserId ?? null,
       },
     });
+
+    if (checkout.appointmentId) {
+      await this.prisma.appointment.updateMany({
+        where: {
+          id: checkout.appointmentId,
+          businessId,
+          deletedAt: null,
+          status: AppointmentStatus.IN_SERVICE,
+        },
+        data: { status: AppointmentStatus.COMPLETED },
+      });
+    }
   }
 
   private async applyProductSales(
