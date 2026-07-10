@@ -390,6 +390,22 @@ export function getContactDisplayName(
   );
 }
 
+/** First service name; appends "+ N more" when multiple service lines exist. */
+export function getAppointmentServiceSummaryLabel(
+  appointment: Pick<Appointment, "service" | "services">,
+): string | null {
+  const lines = [...(appointment.services ?? [])].sort(
+    (a, b) => a.sortOrder - b.sortOrder,
+  );
+  if (lines.length > 1) {
+    return `${lines[0]!.service.name} +${lines.length - 1} more`;
+  }
+  if (lines.length === 1) {
+    return lines[0]!.service.name;
+  }
+  return appointment.service?.name ?? null;
+}
+
 export function getMemberDisplayName(member: AppointmentUserSummary): string {
   const name = [member.firstName, member.lastName].filter(Boolean).join(" ");
   return name || member.email;

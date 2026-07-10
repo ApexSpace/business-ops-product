@@ -66,3 +66,10 @@ export function getAppointmentEventStyle(appointment: Appointment): {
 export function getAppointmentStatusDotClass(status: AppointmentStatus): string {
   return APPOINTMENT_STATUS_COLORS[status].dot;
 }
+
+export function getAppointmentStatusBadgeClass(
+  status: AppointmentStatus,
+): string {
+  const colors = APPOINTMENT_STATUS_COLORS[status];
+  return `${colors.bg} ${colors.border} ${colors.text} border`;
+}

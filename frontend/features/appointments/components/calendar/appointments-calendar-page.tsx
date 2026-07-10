@@ -47,7 +47,7 @@ function AppointmentsCalendarPageContent() {
   return (
     <div className="flex min-h-[calc(100dvh-8rem)] flex-col">
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-border bg-card shadow-elevation-xs">
-        <div className="shrink-0 border-b border-border p-3 sm:p-4">
+        <div className="shrink-0 border-b border-border px-2 py-2 sm:px-3 sm:py-3 md:px-4">
           <CalendarToolbar
             view={cal.view}
             onViewChange={cal.handleViewChange}

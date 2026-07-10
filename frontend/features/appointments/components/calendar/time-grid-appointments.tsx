@@ -53,9 +53,6 @@ export function TimeGridAppointments({
   onAppointmentResizeStart,
   draggingAppointmentId,
 }: TimeGridAppointmentsProps) {
-  // Position every appointment against the grid's view timezone so cards align
-  // with the hour axis, slot clicks, and drag — regardless of the calendar's own
-  // timezone. Mixing per-calendar timezones on a single axis misplaces events.
   const resolveEventTimezone = useCallback(
     (_appointment: Appointment) => viewTimezone,
     [viewTimezone],

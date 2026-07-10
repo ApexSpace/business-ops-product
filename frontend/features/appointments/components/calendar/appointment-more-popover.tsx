@@ -1,6 +1,5 @@
 "use client";
 
-import { Badge } from "@/components/ui/badge";
 import {
   Popover,
   PopoverContent,
@@ -10,12 +9,17 @@ import {
 } from "@/components/ui/popover";
 import {
   formatAppointmentRange,
+  getAppointmentServiceSummaryLabel,
   getAppointmentStatusDisplayLabel,
   getContactDisplayName,
   type Appointment,
 } from "@/features/appointments/schemas/appointment-profile";
 import type { Calendar } from "@/features/calendars/schemas/calendar-profile";
 import { resolveTimezoneForAppointment } from "@/features/calendars/utils/timezone";
+import {
+  getAppointmentStatusBadgeClass,
+  getAppointmentStatusDotClass,
+} from "@/features/appointments/utils/appointment-calendar-styles";
 import { cn } from "@/lib/utils";
 
 interface AppointmentMorePopoverProps {
@@ -80,6 +84,10 @@ export function AppointmentMorePopover({
                 calendars,
                 businessTimezone,
               );
+            const contactName = getContactDisplayName(apt.contact);
+            const clientLabel = contactName || apt.title;
+            const serviceLabel = getAppointmentServiceSummaryLabel(apt);
+
             return (
               <li key={apt.id}>
                 <button
@@ -87,26 +95,40 @@ export function AppointmentMorePopover({
                   className="flex w-full flex-col gap-1 px-3 py-2.5 text-left transition-colors hover:bg-muted/60"
                   onClick={() => onAppointmentClick(apt)}
                 >
-                  <span className="truncate font-medium text-sm">{apt.title}</span>
-                  <span className="text-xs text-muted-foreground">
-                    {formatAppointmentRange(apt.startAt, apt.endAt, tz)}
-                  </span>
-                  <span className="truncate text-xs text-muted-foreground">
-                    {getContactDisplayName(apt.contact)}
-                    {apt.service ? ` · ${apt.service.name}` : ""}
-                  </span>
-                  <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
-                    <Badge variant="outline" className="h-5 text-[10px] font-normal">
+                  <div className="flex min-w-0 items-center justify-between gap-2">
+                    <span className="min-w-0 truncate text-sm font-semibold text-foreground">
+                      {clientLabel}
+                    </span>
+                    <span
+                      className={cn(
+                        "inline-flex h-5 shrink-0 items-center gap-1.5 rounded-full px-2 text-[10px] font-medium",
+                        getAppointmentStatusBadgeClass(apt.status),
+                      )}
+                    >
+                      <span
+                        className={cn(
+                          "size-1.5 shrink-0 rounded-full",
+                          getAppointmentStatusDotClass(apt.status),
+                        )}
+                        aria-hidden
+                      />
                       {getAppointmentStatusDisplayLabel(
                         apt.status,
                         apt.relatedCheckoutId ?? null,
                         apt.relatedCheckoutStatus ?? null,
                       )}
-                    </Badge>
-                    <span className="text-[10px] text-muted-foreground">
-                      {apt.calendar.name}
                     </span>
                   </div>
+
+                  <span className="text-xs text-muted-foreground">
+                    {formatAppointmentRange(apt.startAt, apt.endAt, tz)}
+                  </span>
+
+                  {serviceLabel ? (
+                    <span className="truncate text-xs text-muted-foreground">
+                      {serviceLabel}
+                    </span>
+                  ) : null}
                 </button>
               </li>
             );

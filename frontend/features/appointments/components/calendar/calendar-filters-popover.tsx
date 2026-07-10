@@ -10,6 +10,7 @@ import {
 import type { AppointmentStatus } from "@/features/appointments/schemas/appointment-profile";
 import { APPOINTMENT_LIFECYCLE_STATUS_OPTIONS } from "@/features/appointments/schemas/appointment-profile";
 import { getAppointmentStatusDotClass } from "@/features/appointments/utils/appointment-calendar-styles";
+import { CALENDAR_TOOLBAR_OUTLINE_BUTTON_CLASS } from "@/features/appointments/components/calendar/calendar-toolbar-tokens";
 import { cn } from "@/lib/utils";
 
 interface CalendarFiltersPopoverProps {
@@ -38,11 +39,23 @@ export function CalendarFiltersPopover({
     <Popover>
       <PopoverTrigger
         render={
-          <Button type="button" variant="outline" className="h-9 gap-2">
-            <Filter className="size-4" />
-            Filters
+          <Button
+            type="button"
+            variant="outline"
+            aria-label={
+              activeCount > 0
+                ? `Filters, ${activeCount} active`
+                : "Filters"
+            }
+            className={cn(
+              CALENDAR_TOOLBAR_OUTLINE_BUTTON_CLASS,
+              "relative",
+            )}
+          >
+            <Filter className="size-4 shrink-0" />
+            <span>Filters</span>
             {activeCount > 0 ? (
-              <span className="ml-0.5 inline-flex size-5 items-center justify-center rounded-full bg-primary text-[11px] font-semibold text-primary-foreground">
+              <span className="inline-flex size-5 items-center justify-center rounded-full bg-primary text-[11px] font-semibold text-primary-foreground sm:ml-0.5">
                 {activeCount}
               </span>
             ) : null}
