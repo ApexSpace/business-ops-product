@@ -16,6 +16,7 @@ import { ConfirmDeleteQueryDto } from '@app/common/dto/confirm-delete-query.dto'
 import { CurrentUser } from '@app/common/decorators/current-user.decorator';
 import type { RequestUser } from '@app/common/decorators/current-user.decorator';
 import { BusinessRoles } from '@app/common/decorators/business-roles.decorator';
+import { StaffPermission } from '@app/common/decorators/staff-permission.decorator';
 import { BusinessRolesGuard } from '@app/common/guards/business-roles.guard';
 import { CreatePipelineDto } from '../dto/create-pipeline.dto';
 import { UpdatePipelineDto } from '../dto/update-pipeline.dto';
@@ -26,6 +27,7 @@ import { PipelinesService } from '@app/modules/crm/pipelines/services/pipelines.
 @ApiBearerAuth()
 @Controller('pipelines')
 @UseGuards(BusinessRolesGuard)
+@StaffPermission('pipelines.access')
 export class PipelinesController {
   constructor(private readonly pipelinesService: PipelinesService) {}
 
@@ -41,6 +43,7 @@ export class PipelinesController {
 
   @Post()
   @BusinessRoles(BusinessMemberRole.OWNER, BusinessMemberRole.ADMIN)
+  @StaffPermission('pipelines.manage')
   create(@CurrentUser() user: RequestUser, @Body() dto: CreatePipelineDto) {
     return this.pipelinesService.create(user.businessId!, dto, user);
   }
@@ -60,6 +63,7 @@ export class PipelinesController {
 
   @Patch(':id')
   @BusinessRoles(BusinessMemberRole.OWNER, BusinessMemberRole.ADMIN)
+  @StaffPermission('pipelines.manage')
   update(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -76,6 +80,7 @@ export class PipelinesController {
     type: Boolean,
     description: 'Must be true to confirm deletion',
   })
+  @StaffPermission('pipelines.manage')
   remove(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,

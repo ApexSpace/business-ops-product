@@ -5,6 +5,7 @@ import { Throttle } from '@nestjs/throttler';
 import { CurrentUser } from '@app/common/decorators/current-user.decorator';
 import type { RequestUser } from '@app/common/decorators/current-user.decorator';
 import { BusinessRoles } from '@app/common/decorators/business-roles.decorator';
+import { StaffPermission } from '@app/common/decorators/staff-permission.decorator';
 import { BusinessRolesGuard } from '@app/common/guards/business-roles.guard';
 import { BusinessCapabilityGuard } from '@app/common/guards/business-capability.guard';
 import { RequireModule } from '@app/common/decorators/require-module.decorator';
@@ -21,6 +22,7 @@ import { TimeClockKioskService } from '../services/time-clock-kiosk.service';
 @Controller('time-clock')
 @UseGuards(BusinessRolesGuard, BusinessCapabilityGuard)
 @RequireModule('time_clock')
+@StaffPermission('time_clock.access')
 export class TimeClockController {
   constructor(private readonly timeClockKioskService: TimeClockKioskService) {}
 

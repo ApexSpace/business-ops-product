@@ -16,6 +16,7 @@ import { ConfirmDeleteQueryDto } from '@app/common/dto/confirm-delete-query.dto'
 import { CurrentUser } from '@app/common/decorators/current-user.decorator';
 import type { RequestUser } from '@app/common/decorators/current-user.decorator';
 import { BusinessRoles } from '@app/common/decorators/business-roles.decorator';
+import { StaffPermission } from '@app/common/decorators/staff-permission.decorator';
 import { RequireModule } from '@app/common/decorators/require-module.decorator';
 import { BusinessCapabilityGuard } from '@app/common/guards/business-capability.guard';
 import { BusinessRolesGuard } from '@app/common/guards/business-roles.guard';
@@ -31,6 +32,7 @@ import { InvoicesService } from '@app/modules/finance/invoices/services/invoices
 @Controller('invoices')
 @UseGuards(BusinessRolesGuard, BusinessCapabilityGuard)
 @RequireModule('payments')
+@StaffPermission('payments.access')
 export class InvoicesController {
   constructor(
     private readonly invoicesService: InvoicesService,
@@ -43,6 +45,7 @@ export class InvoicesController {
     BusinessMemberRole.ADMIN,
     BusinessMemberRole.MEMBER,
   )
+  @StaffPermission('payments.manage')
   create(@CurrentUser() user: RequestUser, @Body() dto: CreateInvoiceDto) {
     return this.invoicesService.create(user.businessId!, dto, user);
   }
@@ -76,6 +79,7 @@ export class InvoicesController {
     BusinessMemberRole.ADMIN,
     BusinessMemberRole.MEMBER,
   )
+  @StaffPermission('payments.manage')
   updateStatus(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -90,6 +94,7 @@ export class InvoicesController {
     BusinessMemberRole.ADMIN,
     BusinessMemberRole.MEMBER,
   )
+  @StaffPermission('payments.manage')
   createPaymentLink(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -107,6 +112,7 @@ export class InvoicesController {
     BusinessMemberRole.ADMIN,
     BusinessMemberRole.MEMBER,
   )
+  @StaffPermission('payments.manage')
   duplicate(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -120,6 +126,7 @@ export class InvoicesController {
     BusinessMemberRole.ADMIN,
     BusinessMemberRole.MEMBER,
   )
+  @StaffPermission('payments.manage')
   update(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -140,6 +147,7 @@ export class InvoicesController {
     type: Boolean,
     description: 'Must be true to confirm deletion',
   })
+  @StaffPermission('payments.manage')
   remove(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,

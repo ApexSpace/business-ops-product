@@ -15,6 +15,7 @@ import { BusinessMemberRole } from '@prisma/client';
 import { CurrentUser } from '@app/common/decorators/current-user.decorator';
 import type { RequestUser } from '@app/common/decorators/current-user.decorator';
 import { BusinessRoles } from '@app/common/decorators/business-roles.decorator';
+import { StaffPermission } from '@app/common/decorators/staff-permission.decorator';
 import { RequireModule } from '@app/common/decorators/require-module.decorator';
 import { BusinessCapabilityGuard } from '@app/common/guards/business-capability.guard';
 import { BusinessRolesGuard } from '@app/common/guards/business-roles.guard';
@@ -48,6 +49,7 @@ const MEMBER_ROLES = [
 @Controller('gift-cards')
 @UseGuards(BusinessRolesGuard, BusinessCapabilityGuard)
 @RequireModule('payments')
+@StaffPermission('gift_cards.access')
 export class GiftCardsController {
   constructor(
     private readonly giftCardsService: GiftCardsService,
@@ -71,6 +73,7 @@ export class GiftCardsController {
 
   @Patch('settings/online-sales')
   @BusinessRoles(...MEMBER_ROLES)
+  @StaffPermission('gift_cards.manage')
   updateOnlineSales(
     @CurrentUser() user: RequestUser,
     @Body() dto: UpdateGiftCardSettingsOnlineSalesDto,
@@ -80,6 +83,7 @@ export class GiftCardsController {
 
   @Post('settings/artwork/upload')
   @BusinessRoles(...MEMBER_ROLES)
+  @StaffPermission('gift_cards.manage')
   artworkUpload(
     @CurrentUser() user: RequestUser,
     @Body() body: { contentType: string },
@@ -92,6 +96,7 @@ export class GiftCardsController {
 
   @Patch('settings/artwork')
   @BusinessRoles(...MEMBER_ROLES)
+  @StaffPermission('gift_cards.manage')
   updateArtwork(
     @CurrentUser() user: RequestUser,
     @Body() dto: UpdateGiftCardSettingsArtworkDto,
@@ -101,6 +106,7 @@ export class GiftCardsController {
 
   @Patch('settings/preferences')
   @BusinessRoles(...MEMBER_ROLES)
+  @StaffPermission('gift_cards.manage')
   updatePreferences(
     @CurrentUser() user: RequestUser,
     @Body() dto: UpdateGiftCardSettingsPreferencesDto,
@@ -116,6 +122,7 @@ export class GiftCardsController {
 
   @Post('promotions')
   @BusinessRoles(...MEMBER_ROLES)
+  @StaffPermission('gift_cards.manage')
   createPromotion(
     @CurrentUser() user: RequestUser,
     @Body() dto: CreateGiftCardPromotionDto,
@@ -125,6 +132,7 @@ export class GiftCardsController {
 
   @Patch('promotions/:id')
   @BusinessRoles(...MEMBER_ROLES)
+  @StaffPermission('gift_cards.manage')
   updatePromotion(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -135,6 +143,7 @@ export class GiftCardsController {
 
   @Delete('promotions/:id')
   @BusinessRoles(...MEMBER_ROLES)
+  @StaffPermission('gift_cards.manage')
   deletePromotion(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -144,6 +153,7 @@ export class GiftCardsController {
 
   @Post('promotions/:id/reactivate')
   @BusinessRoles(...MEMBER_ROLES)
+  @StaffPermission('gift_cards.manage')
   reactivatePromotion(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -159,6 +169,7 @@ export class GiftCardsController {
 
   @Post('promotions/reorder')
   @BusinessRoles(...MEMBER_ROLES)
+  @StaffPermission('gift_cards.manage')
   reorderPromotions(
     @CurrentUser() user: RequestUser,
     @Body() dto: ReorderGiftCardPromotionsDto,
@@ -219,6 +230,7 @@ export class GiftCardsController {
 
   @Post()
   @BusinessRoles(...MEMBER_ROLES)
+  @StaffPermission('gift_cards.manage')
   create(
     @CurrentUser() user: RequestUser,
     @Body() dto: CreateGiftCardManualDto,
@@ -237,6 +249,7 @@ export class GiftCardsController {
 
   @Patch(':id')
   @BusinessRoles(...MEMBER_ROLES)
+  @StaffPermission('gift_cards.manage')
   update(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -247,6 +260,7 @@ export class GiftCardsController {
 
   @Post(':id/adjust-balance')
   @BusinessRoles(...MEMBER_ROLES)
+  @StaffPermission('gift_cards.manage')
   adjustBalance(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -257,6 +271,7 @@ export class GiftCardsController {
 
   @Post(':id/void')
   @BusinessRoles(...MEMBER_ROLES)
+  @StaffPermission('gift_cards.manage')
   voidCard(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -266,6 +281,7 @@ export class GiftCardsController {
 
   @Post(':id/send-digital')
   @BusinessRoles(...MEMBER_ROLES)
+  @StaffPermission('gift_cards.manage')
   sendDigital(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,

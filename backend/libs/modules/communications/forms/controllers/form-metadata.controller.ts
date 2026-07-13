@@ -2,6 +2,7 @@ import { Controller, Get, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { BusinessMemberRole } from '@prisma/client';
 import { BusinessRoles } from '@app/common/decorators/business-roles.decorator';
+import { StaffPermission } from '@app/common/decorators/staff-permission.decorator';
 import { RequireCapability } from '@app/common/decorators/require-capability.decorator';
 import { RequireModule } from '@app/common/decorators/require-module.decorator';
 import { BusinessCapabilityGuard } from '@app/common/guards/business-capability.guard';
@@ -19,6 +20,7 @@ import { FormMetadataService } from '../services/form-metadata.service';
 @Controller('forms/metadata')
 @UseGuards(BusinessRolesGuard, BusinessCapabilityGuard)
 @RequireModule('settings')
+@StaffPermission('forms.manage_templates')
 export class FormMetadataController {
   constructor(private readonly metadataService: FormMetadataService) {}
 

@@ -16,6 +16,7 @@ import { ConfirmDeleteQueryDto } from '@app/common/dto/confirm-delete-query.dto'
 import { CurrentUser } from '@app/common/decorators/current-user.decorator';
 import type { RequestUser } from '@app/common/decorators/current-user.decorator';
 import { BusinessRoles } from '@app/common/decorators/business-roles.decorator';
+import { StaffPermission } from '@app/common/decorators/staff-permission.decorator';
 import { RequireModule } from '@app/common/decorators/require-module.decorator';
 import { BusinessCapabilityGuard } from '@app/common/guards/business-capability.guard';
 import { BusinessRolesGuard } from '@app/common/guards/business-roles.guard';
@@ -30,6 +31,7 @@ import { EstimatesService } from '@app/modules/finance/estimates/services/estima
 @Controller('estimates')
 @UseGuards(BusinessRolesGuard, BusinessCapabilityGuard)
 @RequireModule('payments')
+@StaffPermission('payments.access')
 export class EstimatesController {
   constructor(private readonly estimatesService: EstimatesService) {}
 
@@ -39,6 +41,7 @@ export class EstimatesController {
     BusinessMemberRole.ADMIN,
     BusinessMemberRole.MEMBER,
   )
+  @StaffPermission('payments.manage')
   create(@CurrentUser() user: RequestUser, @Body() dto: CreateEstimateDto) {
     return this.estimatesService.create(user.businessId!, dto, user);
   }
@@ -75,6 +78,7 @@ export class EstimatesController {
     BusinessMemberRole.ADMIN,
     BusinessMemberRole.MEMBER,
   )
+  @StaffPermission('payments.manage')
   updateStatus(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -89,6 +93,7 @@ export class EstimatesController {
     BusinessMemberRole.ADMIN,
     BusinessMemberRole.MEMBER,
   )
+  @StaffPermission('payments.manage')
   duplicate(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -102,6 +107,7 @@ export class EstimatesController {
     BusinessMemberRole.ADMIN,
     BusinessMemberRole.MEMBER,
   )
+  @StaffPermission('payments.manage')
   update(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -122,6 +128,7 @@ export class EstimatesController {
     type: Boolean,
     description: 'Must be true to confirm deletion',
   })
+  @StaffPermission('payments.manage')
   remove(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,

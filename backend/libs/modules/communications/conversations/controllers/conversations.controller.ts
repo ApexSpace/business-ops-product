@@ -17,6 +17,7 @@ import { BusinessMemberRole } from '@prisma/client';
 import { CurrentUser } from '@app/common/decorators/current-user.decorator';
 import type { RequestUser } from '@app/common/decorators/current-user.decorator';
 import { BusinessRoles } from '@app/common/decorators/business-roles.decorator';
+import { StaffPermission } from '@app/common/decorators/staff-permission.decorator';
 import { RequireModule } from '@app/common/decorators/require-module.decorator';
 import { RequireCapability } from '@app/common/decorators/require-capability.decorator';
 import { BusinessCapabilityGuard } from '@app/common/guards/business-capability.guard';
@@ -44,6 +45,7 @@ import { ChatbotSessionStatus } from '@prisma/client';
 @Controller('conversations')
 @UseGuards(BusinessRolesGuard, BusinessCapabilityGuard)
 @RequireModule('conversations')
+@StaffPermission('conversations.access')
 export class ConversationsController {
   constructor(
     private readonly conversationsService: ConversationsService,
@@ -63,6 +65,7 @@ export class ConversationsController {
     BusinessMemberRole.ADMIN,
     BusinessMemberRole.MEMBER,
   )
+  @StaffPermission('conversations.send')
   startEmailConversation(
     @CurrentUser() user: RequestUser,
     @Body() dto: StartEmailConversationDto,
@@ -90,6 +93,7 @@ export class ConversationsController {
   @Post('admin/backfill-contact-identity')
   @HttpCode(HttpStatus.OK)
   @BusinessRoles(BusinessMemberRole.OWNER, BusinessMemberRole.ADMIN)
+  @StaffPermission('conversations.access')
   backfillContactIdentity(
     @CurrentUser() user: RequestUser,
     @Query() query: BackfillContactIdentityQueryDto,
@@ -166,6 +170,7 @@ export class ConversationsController {
     BusinessMemberRole.MEMBER,
   )
   @RequireCapability('conversations.send')
+  @StaffPermission('conversations.send')
   sendMessage(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -187,6 +192,7 @@ export class ConversationsController {
     BusinessMemberRole.ADMIN,
     BusinessMemberRole.MEMBER,
   )
+  @StaffPermission('conversations.access')
   update(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -197,6 +203,7 @@ export class ConversationsController {
 
   @Post(':id/assign')
   @BusinessRoles(BusinessMemberRole.OWNER, BusinessMemberRole.ADMIN)
+  @StaffPermission('conversations.access')
   assign(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -216,6 +223,7 @@ export class ConversationsController {
     BusinessMemberRole.ADMIN,
     BusinessMemberRole.MEMBER,
   )
+  @StaffPermission('conversations.access')
   close(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -229,6 +237,7 @@ export class ConversationsController {
     BusinessMemberRole.ADMIN,
     BusinessMemberRole.MEMBER,
   )
+  @StaffPermission('conversations.access')
   reopen(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -242,6 +251,7 @@ export class ConversationsController {
     BusinessMemberRole.ADMIN,
     BusinessMemberRole.MEMBER,
   )
+  @StaffPermission('conversations.access')
   markRead(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -268,6 +278,7 @@ export class ConversationsController {
     BusinessMemberRole.ADMIN,
     BusinessMemberRole.MEMBER,
   )
+  @StaffPermission('conversations.send')
   createNote(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -282,6 +293,7 @@ export class ConversationsController {
     BusinessMemberRole.ADMIN,
     BusinessMemberRole.MEMBER,
   )
+  @StaffPermission('conversations.access')
   endChatbotSession(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -300,6 +312,7 @@ export class ConversationsController {
     BusinessMemberRole.ADMIN,
     BusinessMemberRole.MEMBER,
   )
+  @StaffPermission('conversations.access')
   convertChatbotSession(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -318,6 +331,7 @@ export class ConversationsController {
     BusinessMemberRole.ADMIN,
     BusinessMemberRole.MEMBER,
   )
+  @StaffPermission('conversations.access')
   pauseChatbot(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -335,6 +349,7 @@ export class ConversationsController {
     BusinessMemberRole.ADMIN,
     BusinessMemberRole.MEMBER,
   )
+  @StaffPermission('conversations.access')
   resumeChatbot(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,

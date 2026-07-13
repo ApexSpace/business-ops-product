@@ -3,6 +3,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { TransformInterceptor } from '@app/common/interceptors/transform.interceptor';
 import { JwtAuthGuard } from '@app/common/guards/jwt-auth.guard';
+import { StaffPermissionGuard } from '@app/common/guards/staff-permission.guard';
 import { IdempotencyMiddleware } from '@app/common/middleware/idempotency.middleware';
 import { CoreModule } from '@app/core/core.module';
 import { RealtimeWebSocketModule } from '@app/core/realtime/realtime-websocket.module';
@@ -12,6 +13,7 @@ import { FinanceApiModule } from '@app/modules/finance/finance-api.module';
 import { IntegrationsApiModule } from '@app/modules/integrations/integrations-api.module';
 import { OperationsApiModule } from '@app/modules/operations/operations-api.module';
 import { PlatformApiModule } from '@app/modules/platform/platform-api.module';
+import { MembershipModule } from '@app/modules/platform/membership/membership.module';
 import { QueueBoardModule } from './queue-board.module';
 
 @Module({
@@ -30,11 +32,13 @@ import { QueueBoardModule } from './queue-board.module';
     FinanceApiModule,
     OperationsApiModule,
     PlatformApiModule,
+    MembershipModule,
     QueueBoardModule,
   ],
   providers: [
     TransformInterceptor,
     { provide: APP_GUARD, useClass: JwtAuthGuard },
+    { provide: APP_GUARD, useClass: StaffPermissionGuard },
     { provide: APP_GUARD, useClass: ThrottlerGuard },
   ],
 })

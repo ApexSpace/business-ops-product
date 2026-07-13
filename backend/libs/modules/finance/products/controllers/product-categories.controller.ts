@@ -16,6 +16,7 @@ import { ConfirmDeleteQueryDto } from '@app/common/dto/confirm-delete-query.dto'
 import { CurrentUser } from '@app/common/decorators/current-user.decorator';
 import type { RequestUser } from '@app/common/decorators/current-user.decorator';
 import { BusinessRoles } from '@app/common/decorators/business-roles.decorator';
+import { StaffPermission } from '@app/common/decorators/staff-permission.decorator';
 import { RequireModule } from '@app/common/decorators/require-module.decorator';
 import { BusinessCapabilityGuard } from '@app/common/guards/business-capability.guard';
 import { BusinessRolesGuard } from '@app/common/guards/business-roles.guard';
@@ -37,6 +38,7 @@ const MEMBER_ROLES = [
 @Controller('product-categories')
 @UseGuards(BusinessRolesGuard, BusinessCapabilityGuard)
 @RequireModule('products')
+@StaffPermission('products.access')
 export class ProductCategoriesController {
   constructor(private readonly categoriesService: ProductCategoriesService) {}
 
@@ -48,6 +50,7 @@ export class ProductCategoriesController {
 
   @Post()
   @BusinessRoles(...MEMBER_ROLES)
+  @StaffPermission('products.manage')
   create(
     @CurrentUser() user: RequestUser,
     @Body() dto: CreateProductCategoryDto,
@@ -57,6 +60,7 @@ export class ProductCategoriesController {
 
   @Patch(':id')
   @BusinessRoles(...MEMBER_ROLES)
+  @StaffPermission('products.manage')
   update(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -73,6 +77,7 @@ export class ProductCategoriesController {
     type: Boolean,
     description: 'Must be true to confirm deletion',
   })
+  @StaffPermission('products.manage')
   remove(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -83,6 +88,7 @@ export class ProductCategoriesController {
 
   @Post('reorder')
   @BusinessRoles(...MEMBER_ROLES)
+  @StaffPermission('products.manage')
   reorder(
     @CurrentUser() user: RequestUser,
     @Body() dto: ReorderProductCategoriesDto,

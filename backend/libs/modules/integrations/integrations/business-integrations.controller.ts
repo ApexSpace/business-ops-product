@@ -15,6 +15,7 @@ import { ConfirmDeleteQueryDto } from '@app/common/dto/confirm-delete-query.dto'
 import { CurrentUser } from '@app/common/decorators/current-user.decorator';
 import type { RequestUser } from '@app/common/decorators/current-user.decorator';
 import { BusinessRoles } from '@app/common/decorators/business-roles.decorator';
+import { StaffPermission } from '@app/common/decorators/staff-permission.decorator';
 import { BusinessRolesGuard } from '@app/common/guards/business-roles.guard';
 import {
   BusinessIntegrationResponseDto,
@@ -30,6 +31,7 @@ import { MetaEmbeddedSignupService } from './meta/services/meta-embedded-signup.
 @ApiBearerAuth()
 @Controller('integrations/business')
 @UseGuards(BusinessRolesGuard)
+@StaffPermission('settings.integrations.manage')
 export class BusinessIntegrationsController {
   constructor(
     private readonly integrationsService: IntegrationsService,

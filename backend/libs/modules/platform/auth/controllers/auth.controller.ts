@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Public } from '@app/common/decorators/public.decorator';
 import { CurrentUser } from '@app/common/decorators/current-user.decorator';
@@ -11,6 +11,7 @@ import { RegisterDto } from '../dto/register.dto';
 import { ResetPasswordDto } from '../dto/reset-password.dto';
 import { SwitchContextDto } from '../dto/switch-context.dto';
 import { VerifyEmailDto } from '../dto/verify-email.dto';
+import { AcceptInviteDto } from '../dto/accept-invite.dto';
 import { AuthService } from '@app/modules/platform/auth/services/auth.service';
 
 @ApiTags('auth')
@@ -67,6 +68,18 @@ export class AuthController {
   @Post('verify-email')
   verifyEmail(@Body() dto: VerifyEmailDto) {
     return this.authService.verifyEmail(dto.token);
+  }
+
+  @Public()
+  @Get('invite-preview')
+  invitePreview(@Query('token') token: string) {
+    return this.authService.getInvitePreview(token);
+  }
+
+  @Public()
+  @Post('accept-invite')
+  acceptInvite(@Body() dto: AcceptInviteDto) {
+    return this.authService.acceptInvite(dto.token, dto.password);
   }
 
   @ApiBearerAuth()

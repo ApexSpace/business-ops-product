@@ -28,6 +28,7 @@ import { StripePlatformBillingModule } from './billing/stripe/stripe-platform-bi
   exports: [
     AuthModule,
     BusinessModule,
+    MembershipModule,
     AuditModule,
     JobsModule,
     SnapshotsModule,

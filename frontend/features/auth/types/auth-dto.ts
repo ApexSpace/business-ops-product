@@ -43,4 +43,5 @@ export interface JwtAccessPayload {
   platformRole?: PlatformMemberRole;
   businessId?: string;
   businessRole?: BusinessMemberRole;
+  staffPermissions?: Record<string, boolean>;
 }

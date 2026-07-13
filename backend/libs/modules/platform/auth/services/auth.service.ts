@@ -35,6 +35,10 @@ import { AuthActionTokenService } from './auth-action-token.service';
 import { resolvePlatformBusinessRole } from '../utils/platform-business-access.util';
 import { EmailNotificationService } from '@app/modules/communications/email/services/email-notification.service';
 import { formatUserName } from '@app/modules/communications/email/utils/email-variables.util';
+import {
+  defaultPermissionsForMember,
+  normalizeStaffPermissions,
+} from '@app/modules/platform/membership/permissions/staff-permission.registry';
 
 export interface AuthContextItem {
   type: AuthContext;
@@ -417,6 +421,134 @@ export class AuthService {
     };
   }
 
+  async getInvitePreview(token: string) {
+    const trimmed = token?.trim();
+    if (!trimmed) {
+      throw new AppException(
+        ErrorCode.BAD_REQUEST,
+        'Invite token is required',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const membership =
+      await this.businessMembershipRepository.findByInviteTokenWithRelations(
+        trimmed,
+      );
+    if (!membership || membership.status !== MembershipStatus.INVITED) {
+      throw new AppException(
+        ErrorCode.BAD_REQUEST,
+        'Invalid or expired invite',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    return {
+      businessName: membership.business.name,
+      email: membership.user.email,
+      firstName: membership.user.firstName,
+      lastName: membership.user.lastName,
+      inviterName: membership.invitedBy
+        ? formatUserName(membership.invitedBy)
+        : null,
+      requiresPassword: membership.user.status === UserStatus.INVITED,
+    };
+  }
+
+  async acceptInvite(
+    token: string,
+    password?: string,
+  ): Promise<AuthTokensResponse> {
+    const trimmed = token?.trim();
+    if (!trimmed) {
+      throw new AppException(
+        ErrorCode.BAD_REQUEST,
+        'Invite token is required',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const membership =
+      await this.businessMembershipRepository.findByInviteTokenWithRelations(
+        trimmed,
+      );
+    if (!membership || membership.status !== MembershipStatus.INVITED) {
+      throw new AppException(
+        ErrorCode.BAD_REQUEST,
+        'Invalid or expired invite',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const requiresPassword = membership.user.status === UserStatus.INVITED;
+    if (requiresPassword && (!password || password.length < 8)) {
+      throw new AppException(
+        ErrorCode.BAD_REQUEST,
+        'Password must be at least 8 characters',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const rounds = this.configService.get('auth.bcryptRounds', { infer: true });
+    const userUpdate: {
+      status: UserStatus;
+      passwordHash?: string;
+      emailVerifiedAt?: Date;
+    } = {
+      status: UserStatus.ACTIVE,
+    };
+
+    if (password) {
+      userUpdate.passwordHash = await bcrypt.hash(password, rounds);
+    }
+
+    if (!membership.user.emailVerifiedAt) {
+      userUpdate.emailVerifiedAt = new Date();
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.user.update({
+        where: { id: membership.userId },
+        data: userUpdate,
+      });
+      await tx.businessMembership.update({
+        where: { id: membership.id },
+        data: {
+          status: MembershipStatus.ACTIVE,
+          joinedAt: new Date(),
+          inviteToken: null,
+        },
+      });
+    });
+
+    await this.userRepository.updateLastLogin(membership.userId);
+    const userWithRelations = await this.userRepository.findById(
+      membership.userId,
+    );
+    if (!userWithRelations) {
+      throw new AppException(
+        ErrorCode.NOT_FOUND,
+        'User not found',
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    const payload = await this.buildBusinessPayload(
+      membership.userId,
+      membership.businessId,
+    );
+    const tokens = await this.tokenService.issueTokenPair(
+      payload,
+      'business',
+      membership.businessId,
+    );
+
+    return {
+      ...tokens,
+      contexts: await this.buildContexts(userWithRelations),
+    };
+  }
+
   private async sendPasswordReset(userId: string): Promise<void> {
     const user = await this.userRepository.findById(userId);
     if (!user?.email) {
@@ -617,6 +749,7 @@ export class AuthService {
       context: 'business',
       businessId: selected.businessId,
       businessRole: membership.role,
+      ...this.staffPermissionsClaim(membership.role, membership.permissions),
     };
   }
 
@@ -702,6 +835,22 @@ export class AuthService {
       context: 'business',
       businessId,
       businessRole: membership.role,
+      ...this.staffPermissionsClaim(membership.role, membership.permissions),
     };
+  }
+
+  private staffPermissionsClaim(
+    role: BusinessMemberRole,
+    rawPermissions: unknown,
+  ): Pick<JwtAccessPayload, 'staffPermissions'> {
+    if (role === BusinessMemberRole.OWNER || role === BusinessMemberRole.ADMIN) {
+      return {};
+    }
+    const normalized = normalizeStaffPermissions(rawPermissions);
+    const compact: Record<string, boolean> = {};
+    for (const [key, value] of Object.entries(normalized)) {
+      if (value) compact[key] = true;
+    }
+    return { staffPermissions: compact };
   }
 }

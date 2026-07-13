@@ -45,7 +45,17 @@ function formatTrend(deltaPercent: number): string {
 export function BusinessDashboardPage() {
   const { context, isLoading: contextLoading } = useSnapshotContext();
   const { data: business } = useCurrentBusiness();
-  const { user } = useAuth();
+  const { user, jwt } = useAuth();
+  const isMember = jwt?.businessRole === "MEMBER";
+  const canViewBusinessOps = !isMember;
+  const canViewLeads =
+    !isMember ||
+    Boolean(
+      jwt?.staffPermissions?.["contacts.access"] ||
+        jwt?.staffPermissions?.["pipelines.access"],
+    );
+  const canViewConversations =
+    !isMember || Boolean(jwt?.staffPermissions?.["conversations.access"]);
 
   const feedQuery = useQuery({
     queryKey: queryKeys.business.dashboardFeed(),
@@ -159,16 +169,18 @@ export function BusinessDashboardPage() {
             }
             sparklinePoints={feedQuery.data?.todayAppointmentsMetric.points}
           />
-          <HeroMetricCard
-            className="min-h-[126px]"
-            label="New leads"
-            value={feedQuery.data?.newLeadsMetric.value ?? 0}
-            trendLabel={formatTrend(feedQuery.data?.newLeadsMetric.deltaPercent ?? 0)}
-            trendDirection={
-              (feedQuery.data?.newLeadsMetric.deltaPercent ?? 0) < 0 ? "down" : "up"
-            }
-            sparklinePoints={feedQuery.data?.newLeadsMetric.points}
-          />
+          {canViewLeads ? (
+            <HeroMetricCard
+              className="min-h-[126px]"
+              label="New leads"
+              value={feedQuery.data?.newLeadsMetric.value ?? 0}
+              trendLabel={formatTrend(feedQuery.data?.newLeadsMetric.deltaPercent ?? 0)}
+              trendDirection={
+                (feedQuery.data?.newLeadsMetric.deltaPercent ?? 0) < 0 ? "down" : "up"
+              }
+              sparklinePoints={feedQuery.data?.newLeadsMetric.points}
+            />
+          ) : null}
         </div>
 
         <AppointmentConfirmationsCard
@@ -177,27 +189,31 @@ export function BusinessDashboardPage() {
           timezone={business?.timezone ?? undefined}
         />
 
-        <RecentConversationsCard
-          title="Recent conversations (last 7 days)"
-          conversations={feedQuery.data?.recentConversations ?? []}
-        />
+        {canViewConversations ? (
+          <RecentConversationsCard
+            title="Recent conversations (last 7 days)"
+            conversations={feedQuery.data?.recentConversations ?? []}
+          />
+        ) : null}
 
-        <div className="grid gap-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
-          <DashboardBreakdownCard
-            title={nicheProfile.dashboard.revenueByCategoryTitle}
-            items={revenueBreakdownItems}
-            actionLabel="Full report"
-            actionHref="/business/payments"
-            variant="bars"
-          />
-          <DashboardBreakdownCard
-            title="Bookings by channel"
-            items={bookingsBySourceItems}
-            actionLabel="See all"
-            actionHref="/business/appointments"
-            variant="list"
-          />
-        </div>
+        {canViewBusinessOps ? (
+          <div className="grid gap-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
+            <DashboardBreakdownCard
+              title={nicheProfile.dashboard.revenueByCategoryTitle}
+              items={revenueBreakdownItems}
+              actionLabel="Full report"
+              actionHref="/business/payments"
+              variant="bars"
+            />
+            <DashboardBreakdownCard
+              title="Bookings by channel"
+              items={bookingsBySourceItems}
+              actionLabel="See all"
+              actionHref="/business/appointments"
+              variant="list"
+            />
+          </div>
+        ) : null}
       </div>
 
       <div className="space-y-4">
@@ -206,14 +222,20 @@ export function BusinessDashboardPage() {
           appointments={feedQuery.data?.todayAppointments ?? []}
           timezone={business?.timezone ?? undefined}
         />
+        {canViewBusinessOps || canViewConversations ? (
+          <TaskQueueCard
+            title={nicheProfile.dashboard.followUpsTitle}
+            items={feedQuery.data?.followUpTasks ?? []}
+            emptyMessage="No follow-ups are due right now."
+            bulletClassName="bg-[#4c7cf0]"
+          />
+        ) : null}
         <TaskQueueCard
-          title={nicheProfile.dashboard.followUpsTitle}
-          items={feedQuery.data?.followUpTasks ?? []}
-          emptyMessage="No follow-ups are due right now."
-          bulletClassName="bg-[#4c7cf0]"
-        />
-        <TaskQueueCard
-          title={nicheProfile.dashboard.staffAssignmentsTitle}
+          title={
+            isMember
+              ? "My assignments"
+              : nicheProfile.dashboard.staffAssignmentsTitle
+          }
           items={feedQuery.data?.staffAssignments ?? []}
           emptyMessage="No staff tasks need attention yet."
           bulletClassName="bg-[#c88a12]"

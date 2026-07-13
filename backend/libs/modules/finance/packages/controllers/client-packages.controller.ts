@@ -15,6 +15,7 @@ import { BusinessMemberRole } from '@prisma/client';
 import { CurrentUser } from '@app/common/decorators/current-user.decorator';
 import type { RequestUser } from '@app/common/decorators/current-user.decorator';
 import { BusinessRoles } from '@app/common/decorators/business-roles.decorator';
+import { StaffPermission } from '@app/common/decorators/staff-permission.decorator';
 import { RequireModule } from '@app/common/decorators/require-module.decorator';
 import { BusinessCapabilityGuard } from '@app/common/guards/business-capability.guard';
 import { BusinessRolesGuard } from '@app/common/guards/business-roles.guard';
@@ -39,6 +40,7 @@ const MEMBER_ROLES = [
 @Controller('client-packages')
 @UseGuards(BusinessRolesGuard, BusinessCapabilityGuard)
 @RequireModule('payments')
+@StaffPermission('packages.access')
 export class ClientPackagesController {
   constructor(private readonly clientPackagesService: ClientPackagesService) {}
 
@@ -66,6 +68,7 @@ export class ClientPackagesController {
 
   @Post()
   @BusinessRoles(...MEMBER_ROLES)
+  @StaffPermission('packages.manage')
   create(
     @CurrentUser() user: RequestUser,
     @Body() dto: CreateClientPackageDto,
@@ -86,6 +89,7 @@ export class ClientPackagesController {
 
   @Delete(':id')
   @BusinessRoles(...MEMBER_ROLES)
+  @StaffPermission('packages.manage')
   remove(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -95,6 +99,7 @@ export class ClientPackagesController {
 
   @Post(':id/transfer')
   @BusinessRoles(...MEMBER_ROLES)
+  @StaffPermission('packages.manage')
   transfer(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -105,6 +110,7 @@ export class ClientPackagesController {
 
   @Patch(':id/quantities')
   @BusinessRoles(...MEMBER_ROLES)
+  @StaffPermission('packages.manage')
   adjustQuantities(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -120,6 +126,7 @@ export class ClientPackagesController {
 
   @Patch(':id/expiration')
   @BusinessRoles(...MEMBER_ROLES)
+  @StaffPermission('packages.manage')
   updateExpiration(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,

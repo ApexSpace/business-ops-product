@@ -85,7 +85,9 @@ function memberLabel(member: {
 export function useAppointmentsCalendarPage() {
   const queryClient = useQueryClient();
   const { user, jwt } = useAuth();
-  const isMemberOnlyView = jwt?.businessRole === "MEMBER";
+  const isMemberOnlyView =
+    jwt?.businessRole === "MEMBER" &&
+    !jwt.staffPermissions?.["appointments.view_all_calendars"];
   const urlInitDone = useRef(false);
   const appointmentUrlHandled = useRef(false);
   const [isClient, setIsClient] = useState(false);

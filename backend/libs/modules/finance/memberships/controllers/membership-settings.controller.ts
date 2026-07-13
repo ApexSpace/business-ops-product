@@ -4,6 +4,7 @@ import { BusinessMemberRole } from '@prisma/client';
 import { CurrentUser } from '@app/common/decorators/current-user.decorator';
 import type { RequestUser } from '@app/common/decorators/current-user.decorator';
 import { BusinessRoles } from '@app/common/decorators/business-roles.decorator';
+import { StaffPermission } from '@app/common/decorators/staff-permission.decorator';
 import { RequireModule } from '@app/common/decorators/require-module.decorator';
 import { BusinessCapabilityGuard } from '@app/common/guards/business-capability.guard';
 import { BusinessRolesGuard } from '@app/common/guards/business-roles.guard';
@@ -24,6 +25,7 @@ const MEMBER_ROLES = [
 @Controller('memberships/settings')
 @UseGuards(BusinessRolesGuard, BusinessCapabilityGuard)
 @RequireModule('payments')
+@StaffPermission('memberships.access')
 export class MembershipSettingsController {
   constructor(private readonly settingsService: MembershipSettingsService) {}
 
@@ -35,6 +37,7 @@ export class MembershipSettingsController {
 
   @Patch('preferences')
   @BusinessRoles(...MEMBER_ROLES)
+  @StaffPermission('memberships.manage')
   updatePreferences(
     @CurrentUser() user: RequestUser,
     @Body() dto: UpdateMembershipPreferencesDto,
@@ -44,6 +47,7 @@ export class MembershipSettingsController {
 
   @Patch('online-sales')
   @BusinessRoles(...MEMBER_ROLES)
+  @StaffPermission('memberships.manage')
   updateOnlineSales(
     @CurrentUser() user: RequestUser,
     @Body() dto: UpdateMembershipSettingsOnlineSalesDto,

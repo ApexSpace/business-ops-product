@@ -14,6 +14,7 @@ import { BusinessMemberRole } from '@prisma/client';
 import { CurrentUser } from '@app/common/decorators/current-user.decorator';
 import type { RequestUser } from '@app/common/decorators/current-user.decorator';
 import { BusinessRoles } from '@app/common/decorators/business-roles.decorator';
+import { StaffPermission } from '@app/common/decorators/staff-permission.decorator';
 import { RequireModule } from '@app/common/decorators/require-module.decorator';
 import { BusinessCapabilityGuard } from '@app/common/guards/business-capability.guard';
 import { BusinessRolesGuard } from '@app/common/guards/business-roles.guard';
@@ -36,6 +37,7 @@ const MEMBER_ROLES = [
 @Controller('products/:productId/options')
 @UseGuards(BusinessRolesGuard, BusinessCapabilityGuard)
 @RequireModule('products')
+@StaffPermission('products.access')
 export class ProductOptionsController {
   constructor(private readonly optionsService: ProductOptionsService) {}
 
@@ -50,6 +52,7 @@ export class ProductOptionsController {
 
   @Post()
   @BusinessRoles(...MEMBER_ROLES)
+  @StaffPermission('products.manage')
   create(
     @CurrentUser() user: RequestUser,
     @Param('productId', ParseUUIDPipe) productId: string,
@@ -65,6 +68,7 @@ export class ProductOptionsController {
 
   @Patch(':optionId')
   @BusinessRoles(...MEMBER_ROLES)
+  @StaffPermission('products.manage')
   update(
     @CurrentUser() user: RequestUser,
     @Param('productId', ParseUUIDPipe) productId: string,
@@ -82,6 +86,7 @@ export class ProductOptionsController {
 
   @Delete(':optionId')
   @BusinessRoles(...MEMBER_ROLES)
+  @StaffPermission('products.manage')
   remove(
     @CurrentUser() user: RequestUser,
     @Param('productId', ParseUUIDPipe) productId: string,
@@ -97,6 +102,7 @@ export class ProductOptionsController {
 
   @Post(':optionId/values')
   @BusinessRoles(...MEMBER_ROLES)
+  @StaffPermission('products.manage')
   createValue(
     @CurrentUser() user: RequestUser,
     @Param('productId', ParseUUIDPipe) productId: string,
@@ -114,6 +120,7 @@ export class ProductOptionsController {
 
   @Patch(':optionId/values/:valueId')
   @BusinessRoles(...MEMBER_ROLES)
+  @StaffPermission('products.manage')
   updateValue(
     @CurrentUser() user: RequestUser,
     @Param('productId', ParseUUIDPipe) productId: string,
@@ -133,6 +140,7 @@ export class ProductOptionsController {
 
   @Delete(':optionId/values/:valueId')
   @BusinessRoles(...MEMBER_ROLES)
+  @StaffPermission('products.manage')
   removeValue(
     @CurrentUser() user: RequestUser,
     @Param('productId', ParseUUIDPipe) productId: string,

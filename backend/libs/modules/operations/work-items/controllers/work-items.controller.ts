@@ -16,6 +16,7 @@ import { ConfirmDeleteQueryDto } from '@app/common/dto/confirm-delete-query.dto'
 import { CurrentUser } from '@app/common/decorators/current-user.decorator';
 import type { RequestUser } from '@app/common/decorators/current-user.decorator';
 import { BusinessRoles } from '@app/common/decorators/business-roles.decorator';
+import { StaffPermission } from '@app/common/decorators/staff-permission.decorator';
 import { BusinessRolesGuard } from '@app/common/guards/business-roles.guard';
 import { CreateWorkItemDto } from '../dto/create-work-item.dto';
 import { ListWorkItemsQueryDto } from '../dto/list-work-items-query.dto';
@@ -26,6 +27,7 @@ import { WorkItemsService } from '@app/modules/operations/work-items/services/wo
 @ApiBearerAuth()
 @Controller('work-items')
 @UseGuards(BusinessRolesGuard)
+@StaffPermission('work_items.access')
 export class WorkItemsController {
   constructor(private readonly workItemsService: WorkItemsService) {}
 
@@ -35,6 +37,7 @@ export class WorkItemsController {
     BusinessMemberRole.ADMIN,
     BusinessMemberRole.MEMBER,
   )
+  @StaffPermission('work_items.manage')
   create(@CurrentUser() user: RequestUser, @Body() dto: CreateWorkItemDto) {
     return this.workItemsService.create(user.businessId!, dto, user);
   }
@@ -71,6 +74,7 @@ export class WorkItemsController {
     BusinessMemberRole.ADMIN,
     BusinessMemberRole.MEMBER,
   )
+  @StaffPermission('work_items.manage')
   update(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -91,6 +95,7 @@ export class WorkItemsController {
     type: Boolean,
     description: 'Must be true to confirm deletion',
   })
+  @StaffPermission('work_items.manage')
   remove(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,

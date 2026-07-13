@@ -65,7 +65,11 @@ export const PUBLIC_ROUTE_RESOURCES: PublicRouteResource[] = [
 ];
 
 /** Auth flows that never require a session. */
-export const PUBLIC_AUTH_PATHS = ["/login", "/select-context"] as const;
+export const PUBLIC_AUTH_PATHS = [
+  "/login",
+  "/select-context",
+  "/accept-invite",
+] as const;
 
 /** OAuth and other callback flows that must work logged out. */
 export const PUBLIC_CALLBACK_PATHS = ["/oauth"] as const;
@@ -74,6 +78,8 @@ export const PUBLIC_CALLBACK_PATHS = ["/oauth"] as const;
 export const PUBLIC_API_PATH_PREFIXES = [
   "/api/auth/login",
   "/api/auth/refresh",
+  "/api/auth/accept-invite",
+  "/api/auth/invite-preview",
 ] as const;
 
 function normalizePathname(pathname: string): string {

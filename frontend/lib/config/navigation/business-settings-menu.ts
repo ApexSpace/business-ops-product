@@ -18,8 +18,11 @@ import {
   FileText,
 } from "lucide-react";
 import type { ShellNavItem, ShellNavSection } from "@/lib/types/shell-nav";
+import { canAccessSettingsHref } from "@/features/team/permissions/staff-permissions";
+import type { BusinessMemberRole } from "@/features/auth/types/auth-dto";
 
 export interface BusinessSettingsNavItem extends ShellNavItem {}
+
 
 const generalItems: BusinessSettingsNavItem[] = [
   {
@@ -149,3 +152,25 @@ export function isBusinessSettingsPath(pathname: string): boolean {
     pathname.startsWith(`${BUSINESS_SETTINGS_BASE}/`)
   );
 }
+
+export function filterBusinessSettingsSections(options: {
+  sections?: ShellNavSection[];
+  businessRole?: BusinessMemberRole;
+  staffPermissions?: Record<string, boolean>;
+  isPlatformAdmin?: boolean;
+}): ShellNavSection[] {
+  const sections = options.sections ?? businessSettingsSections;
+  return sections
+    .map((section) => ({
+      ...section,
+      items: section.items.filter((item) =>
+        canAccessSettingsHref(item.href, {
+          businessRole: options.businessRole,
+          staffPermissions: options.staffPermissions,
+          isPlatformAdmin: options.isPlatformAdmin,
+        }),
+      ),
+    }))
+    .filter((section) => section.items.length > 0);
+}
+

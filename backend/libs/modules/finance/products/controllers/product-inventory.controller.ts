@@ -13,6 +13,7 @@ import { BusinessMemberRole } from '@prisma/client';
 import { CurrentUser } from '@app/common/decorators/current-user.decorator';
 import type { RequestUser } from '@app/common/decorators/current-user.decorator';
 import { BusinessRoles } from '@app/common/decorators/business-roles.decorator';
+import { StaffPermission } from '@app/common/decorators/staff-permission.decorator';
 import { RequireModule } from '@app/common/decorators/require-module.decorator';
 import { BusinessCapabilityGuard } from '@app/common/guards/business-capability.guard';
 import { BusinessRolesGuard } from '@app/common/guards/business-roles.guard';
@@ -33,6 +34,7 @@ const MEMBER_ROLES = [
 @Controller('products/:productId/inventory')
 @UseGuards(BusinessRolesGuard, BusinessCapabilityGuard)
 @RequireModule('products')
+@StaffPermission('products.access')
 export class ProductInventoryController {
   constructor(private readonly inventoryService: ProductInventoryService) {}
 
@@ -48,6 +50,7 @@ export class ProductInventoryController {
 
   @Post('adjustments')
   @BusinessRoles(...MEMBER_ROLES)
+  @StaffPermission('products.manage')
   adjust(
     @CurrentUser() user: RequestUser,
     @Param('productId', ParseUUIDPipe) productId: string,

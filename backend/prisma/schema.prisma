@@ -724,6 +724,7 @@ model User {
   subscriptionPaymentsCreated BusinessSubscriptionPayment[] @relation("SubscriptionPaymentCreatedBy")
   staffWorkSchedules          StaffWorkSchedule[]           @relation("StaffWorkScheduleUser")
   staffWorkExceptions         StaffWorkException[]          @relation("StaffWorkExceptionUser")
+  staffCompensationSettings   StaffCompensationSettings[]
   bookingWaitlistEntries      BookingWaitlistEntry[]        @relation("BookingWaitlistStaff")
 
   @@map("users")
@@ -915,6 +916,7 @@ model Business {
   businessHourExceptions   BusinessHourException[]
   staffWorkSchedules       StaffWorkSchedule[]
   staffWorkExceptions      StaffWorkException[]
+  staffCompensationSettings StaffCompensationSettings[]
   bookingWaitlistEntries   BookingWaitlistEntry[]
 
   @@index([createdById])
@@ -1044,6 +1046,8 @@ model BusinessMembership {
   onlineBookingEnabled    Boolean @default(true)
   canAssignProductSales   Boolean @default(false)
   canManageWaitlist       Boolean @default(false)
+  permissions             Json    @default("{}")
+  notificationSettings    Json    @default("{}")
   invitedById  String?
   inviteToken String?            @unique
   joinedAt    DateTime?
@@ -1059,6 +1063,31 @@ model BusinessMembership {
   @@index([businessId])
   @@index([userId])
   @@map("business_memberships")
+}
+
+model StaffCompensationSettings {
+  id                              String   @id @default(uuid())
+  businessId                      String
+  userId                          String
+  serviceCommissionEnabled        Boolean  @default(false)
+  serviceCommissionMode           String?
+  serviceCommissionPercent        Decimal? @db.Decimal(5, 2)
+  productCommissionEnabled        Boolean  @default(false)
+  productCommissionPercent        Decimal? @db.Decimal(5, 2)
+  productCommissionOverridesEnabled Boolean  @default(false)
+  hourlyEnabled                   Boolean  @default(false)
+  hourlyRate                      Decimal? @db.Decimal(12, 2)
+  greaterOfEnabled                Boolean  @default(false)
+  createdAt                       DateTime @default(now())
+  updatedAt                       DateTime @updatedAt
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([businessId, userId])
+  @@index([businessId])
+  @@index([userId])
+  @@map("staff_compensation_settings")
 }
 
 model RefreshToken {

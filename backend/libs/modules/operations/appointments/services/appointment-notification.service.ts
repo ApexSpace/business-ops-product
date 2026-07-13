@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { MembershipStatus } from '@prisma/client';
 import { EmailNotificationService } from '@app/modules/communications/email/services/email-notification.service';
 import {
   formatAppointmentDateTime,
@@ -6,6 +7,7 @@ import {
 } from '@app/modules/communications/email/utils/email-variables.util';
 import { BusinessRepository } from '@app/modules/platform/business/repositories/business.repository';
 import { BusinessMembershipRepository } from '@app/modules/platform/membership/repositories/business-membership.repository';
+import { normalizeNotificationSettings } from '@app/modules/platform/membership/permissions/staff-permission.registry';
 import type { AppointmentWithRelations } from '../repositories/appointment.repository';
 
 @Injectable()
@@ -80,6 +82,81 @@ export class AppointmentNotificationService {
         .catch((err) => {
           this.logger.warn(
             `Owner notification failed for appointment ${appointment.id}: ${
+              err instanceof Error ? err.message : String(err)
+            }`,
+          );
+        });
+    }
+  }
+
+  async sendStaffNotifications(
+    businessId: string,
+    appointment: AppointmentWithRelations,
+    event: 'booked' | 'rescheduled' | 'cancelled',
+    timezone?: string | null,
+    previousStartAt?: Date,
+  ): Promise<void> {
+    const business = await this.businessRepository.findById(businessId);
+    const variables = {
+      ...this.buildVariables(
+        business?.name ?? 'Business',
+        appointment,
+        timezone,
+      ),
+      ...(previousStartAt
+        ? {
+            'appointment.previous_start_at': formatAppointmentDateTime(
+              previousStartAt,
+              timezone,
+            ),
+          }
+        : {}),
+    };
+
+    const settingKey =
+      event === 'booked'
+        ? 'appointment.booked'
+        : event === 'rescheduled'
+          ? 'appointment.rescheduled'
+          : 'appointment.cancelled';
+
+    const staffUserIds = this.collectStaffUserIds(appointment);
+
+    for (const userId of staffUserIds) {
+      const membership =
+        await this.membershipRepository.findByUserAndBusinessWithUser(
+          userId,
+          businessId,
+        );
+      if (
+        !membership?.user.email ||
+        !membership.isServiceProvider ||
+        membership.status !== MembershipStatus.ACTIVE
+      ) {
+        continue;
+      }
+
+      const settings = normalizeNotificationSettings(
+        membership.notificationSettings,
+      );
+      if (!settings[settingKey]) {
+        continue;
+      }
+
+      void this.emailNotificationService
+        .enqueueTransactionalEmail({
+          businessId,
+          emailType: 'appointment.owner_notification',
+          toEmail: membership.user.email,
+          userId: membership.userId,
+          entityType: 'Appointment',
+          entityId: appointment.id,
+          idempotencyKey: `appointment-staff-${event}-${appointment.id}-${membership.userId}`,
+          variables,
+        })
+        .catch((err) => {
+          this.logger.warn(
+            `Staff notification failed for appointment ${appointment.id}: ${
               err instanceof Error ? err.message : String(err)
             }`,
           );
@@ -233,5 +310,20 @@ export class AppointmentNotificationService {
       'appointment.calendar_name': appointment.calendar?.name ?? 'Appointment',
       'appointment.title': appointment.title,
     };
+  }
+
+  private collectStaffUserIds(
+    appointment: AppointmentWithRelations,
+  ): string[] {
+    const ids = new Set<string>();
+    if (appointment.assignedToId) {
+      ids.add(appointment.assignedToId);
+    }
+    for (const line of appointment.serviceLines ?? []) {
+      if (line.assignedToId) {
+        ids.add(line.assignedToId);
+      }
+    }
+    return [...ids];
   }
 }

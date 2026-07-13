@@ -14,6 +14,7 @@ import { BusinessMemberRole } from '@prisma/client';
 import { CurrentUser } from '@app/common/decorators/current-user.decorator';
 import type { RequestUser } from '@app/common/decorators/current-user.decorator';
 import { BusinessRoles } from '@app/common/decorators/business-roles.decorator';
+import { StaffPermission } from '@app/common/decorators/staff-permission.decorator';
 import { RequireModule } from '@app/common/decorators/require-module.decorator';
 import { BusinessCapabilityGuard } from '@app/common/guards/business-capability.guard';
 import { BusinessRolesGuard } from '@app/common/guards/business-roles.guard';
@@ -40,6 +41,7 @@ const MEMBER_ROLES = [
 @Controller('memberships/plans')
 @UseGuards(BusinessRolesGuard, BusinessCapabilityGuard)
 @RequireModule('payments')
+@StaffPermission('memberships.access')
 export class MembershipPlansController {
   constructor(private readonly plansService: MembershipPlansService) {}
 
@@ -57,6 +59,7 @@ export class MembershipPlansController {
 
   @Post('reorder')
   @BusinessRoles(...MEMBER_ROLES)
+  @StaffPermission('memberships.manage')
   reorder(
     @CurrentUser() user: RequestUser,
     @Body() dto: ReorderMembershipPlansDto,
@@ -66,6 +69,7 @@ export class MembershipPlansController {
 
   @Post()
   @BusinessRoles(...MEMBER_ROLES)
+  @StaffPermission('memberships.manage')
   createPlan(
     @CurrentUser() user: RequestUser,
     @Body() dto: CreateMembershipPlanDto,
@@ -84,6 +88,7 @@ export class MembershipPlansController {
 
   @Patch(':id/details')
   @BusinessRoles(...MEMBER_ROLES)
+  @StaffPermission('memberships.manage')
   updateDetails(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -94,6 +99,7 @@ export class MembershipPlansController {
 
   @Patch(':id/service-groups')
   @BusinessRoles(...MEMBER_ROLES)
+  @StaffPermission('memberships.manage')
   updateServiceGroups(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -109,6 +115,7 @@ export class MembershipPlansController {
 
   @Patch(':id/discounts')
   @BusinessRoles(...MEMBER_ROLES)
+  @StaffPermission('memberships.manage')
   updateDiscounts(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -119,6 +126,7 @@ export class MembershipPlansController {
 
   @Patch(':id/agreement')
   @BusinessRoles(...MEMBER_ROLES)
+  @StaffPermission('memberships.manage')
   updateAgreement(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -129,6 +137,7 @@ export class MembershipPlansController {
 
   @Patch(':id/online-sales')
   @BusinessRoles(...MEMBER_ROLES)
+  @StaffPermission('memberships.manage')
   updateOnlineSales(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -139,6 +148,7 @@ export class MembershipPlansController {
 
   @Patch(':id/advanced')
   @BusinessRoles(...MEMBER_ROLES)
+  @StaffPermission('memberships.manage')
   updateAdvanced(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -149,6 +159,7 @@ export class MembershipPlansController {
 
   @Post(':id/duplicate')
   @BusinessRoles(...MEMBER_ROLES)
+  @StaffPermission('memberships.manage')
   duplicatePlan(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -158,6 +169,7 @@ export class MembershipPlansController {
 
   @Post(':id/archive')
   @BusinessRoles(...MEMBER_ROLES)
+  @StaffPermission('memberships.manage')
   archivePlan(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,

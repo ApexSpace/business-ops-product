@@ -151,7 +151,7 @@ export const businessAppsMenuItems: BusinessMenuItem[] =
 
 export const businessSettingsEntry = {
   title: "Settings",
-  href: "/business/settings/profile",
+  href: "/business/settings",
   icon: Settings,
   matchPrefix: true,
 } as const satisfies ShellNavItem;

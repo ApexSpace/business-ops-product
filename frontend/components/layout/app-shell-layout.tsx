@@ -6,8 +6,16 @@ import { AppShell } from "@/components/shell";
 import { businessSettingsEntry } from "@/lib/config/navigation/business-menu";
 import {
   businessSettingsSections,
+  filterBusinessSettingsSections,
   isBusinessSettingsPath,
 } from "@/lib/config/navigation/business-settings-menu";
+import {
+  ADMIN_DEFAULT_SETTINGS_HREF,
+  MEMBER_DEFAULT_SETTINGS_HREF,
+  canAccessSettingsHref,
+} from "@/features/team/permissions/staff-permissions";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { isFullScreenEditorRoute } from "@/lib/config/navigation/full-screen-editor-routes";
 import {
   platformBrand,
@@ -38,7 +46,8 @@ interface ShellLayoutProps {
 
 export function AppShellLayout({ mode, children }: ShellLayoutProps) {
   const pathname = usePathname();
-  const { contexts, jwt, user, sessionError, refreshSession } = useAuth();
+  const router = useRouter();
+  const { contexts, jwt, sessionError, refreshSession } = useAuth();
   const { context: snapshotContext, t } = useSnapshotContext();
   const businessAccess = useOptionalBusinessAccess();
 
@@ -50,6 +59,32 @@ export function AppShellLayout({ mode, children }: ShellLayoutProps) {
     mode === "business" && isBusinessSettingsPath(pathname);
 
   const isPlatformAdmin = hasPlatformBusinessAdminAccess(jwt, contexts);
+
+  const settingsAccess = {
+    businessRole: jwt?.businessRole,
+    staffPermissions: jwt?.staffPermissions,
+    isPlatformAdmin,
+  };
+
+  useEffect(() => {
+    if (mode !== "business" || !isSettingsMode) return;
+    if (canAccessSettingsHref(pathname, settingsAccess)) return;
+    const fallback =
+      jwt?.businessRole === "OWNER" ||
+      jwt?.businessRole === "ADMIN" ||
+      isPlatformAdmin
+        ? ADMIN_DEFAULT_SETTINGS_HREF
+        : MEMBER_DEFAULT_SETTINGS_HREF;
+    router.replace(fallback);
+  }, [
+    mode,
+    isSettingsMode,
+    pathname,
+    router,
+    jwt?.businessRole,
+    jwt?.staffPermissions,
+    isPlatformAdmin,
+  ]);
 
   const hasModule =
     mode === "business" && businessAccess
@@ -94,14 +129,22 @@ export function AppShellLayout({ mode, children }: ShellLayoutProps) {
           businessRole: jwt?.businessRole,
           isPlatformAdmin,
           hasModule,
+          staffPermissions: jwt?.staffPermissions,
         })
       : null;
+
+  const settingsSections = filterSectionsByCapability(
+    filterBusinessSettingsSections({
+      sections: businessSettingsSections,
+      ...settingsAccess,
+    }),
+  );
 
   const sections: ShellNavSection[] =
     mode === "platform"
       ? platformOperationalSections
       : isSettingsMode
-        ? filterSectionsByCapability(businessSettingsSections)
+        ? settingsSections
         : filterSectionsByCapability(snapshotNavigation!.sections);
 
   const appsItems: ShellNavItem[] =

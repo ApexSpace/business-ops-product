@@ -30,9 +30,9 @@ export function defaultBusinessHoursSlots(): BusinessHoursSlot[] {
 }
 
 export function normalizeBusinessHoursSlots(
-  slots: BusinessHoursSlot[],
+  slots: BusinessHoursSlot[] | null | undefined,
 ): BusinessHoursSlot[] {
-  const byDay = new Map(slots.map((s) => [s.dayOfWeek, s]));
+  const byDay = new Map((slots ?? []).map((s) => [s.dayOfWeek, s]));
   return DAYS_OF_WEEK.map((dayOfWeek) => {
     const row = byDay.get(dayOfWeek);
     if (row) return row;

@@ -21,10 +21,30 @@ import { BusinessMembershipRepository } from '@app/modules/platform/membership/r
 import { PlatformMembershipRepository } from '../repositories/platform-membership.repository';
 import { UserRepository } from '../repositories/user.repository';
 import { resolvePlatformBusinessRole } from '../utils/platform-business-access.util';
+import { normalizeStaffPermissions } from '@app/modules/platform/membership/permissions/staff-permission.registry';
 
 function isTenantAccessEndpoint(req: Request): boolean {
   const url = req.originalUrl ?? req.url ?? '';
   return req.method === 'GET' && url.includes('businesses/current/access');
+}
+
+function compactStaffPermissions(
+  role: BusinessMemberRole | undefined,
+  raw: unknown,
+): Record<string, boolean> | undefined {
+  if (
+    !role ||
+    role === BusinessMemberRole.OWNER ||
+    role === BusinessMemberRole.ADMIN
+  ) {
+    return undefined;
+  }
+  const normalized = normalizeStaffPermissions(raw);
+  const compact: Record<string, boolean> = {};
+  for (const [key, value] of Object.entries(normalized)) {
+    if (value) compact[key] = true;
+  }
+  return compact;
 }
 
 @Injectable()
@@ -126,6 +146,12 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         businessId: payload.businessId,
         platformRole: platformMembership.role,
         businessRole,
+        staffPermissions: compactStaffPermissions(
+          membership?.status === MembershipStatus.ACTIVE
+            ? membership.role
+            : undefined,
+          membership?.permissions,
+        ),
       };
     }
 
@@ -143,6 +169,10 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       context: 'business',
       businessId: payload.businessId,
       businessRole: membership.role,
+      staffPermissions: compactStaffPermissions(
+        membership.role,
+        membership.permissions,
+      ),
     };
   }
 }

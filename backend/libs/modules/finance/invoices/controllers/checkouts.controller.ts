@@ -15,6 +15,7 @@ import { BusinessMemberRole } from '@prisma/client';
 import { CurrentUser } from '@app/common/decorators/current-user.decorator';
 import type { RequestUser } from '@app/common/decorators/current-user.decorator';
 import { BusinessRoles } from '@app/common/decorators/business-roles.decorator';
+import { StaffPermission } from '@app/common/decorators/staff-permission.decorator';
 import { RequireModule } from '@app/common/decorators/require-module.decorator';
 import { BusinessCapabilityGuard } from '@app/common/guards/business-capability.guard';
 import { BusinessRolesGuard } from '@app/common/guards/business-roles.guard';
@@ -39,6 +40,7 @@ import { CheckoutsService } from '../services/checkouts.service';
 @Controller('checkouts')
 @UseGuards(BusinessRolesGuard, BusinessCapabilityGuard)
 @RequireModule('payments')
+@StaffPermission('sales.access')
 export class CheckoutsController {
   constructor(private readonly checkoutsService: CheckoutsService) {}
 
@@ -87,6 +89,7 @@ export class CheckoutsController {
     BusinessMemberRole.ADMIN,
     BusinessMemberRole.MEMBER,
   )
+  @StaffPermission('sales.checkout')
   create(@CurrentUser() user: RequestUser, @Body() dto: CreateCheckoutDto) {
     return this.checkoutsService.create(user.businessId!, dto, user);
   }
@@ -110,6 +113,7 @@ export class CheckoutsController {
     BusinessMemberRole.ADMIN,
     BusinessMemberRole.MEMBER,
   )
+  @StaffPermission('sales.checkout')
   update(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -120,6 +124,7 @@ export class CheckoutsController {
 
   @Delete(':id')
   @BusinessRoles(BusinessMemberRole.OWNER, BusinessMemberRole.ADMIN)
+  @StaffPermission('sales.checkout')
   voidCheckout(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -133,6 +138,7 @@ export class CheckoutsController {
     BusinessMemberRole.ADMIN,
     BusinessMemberRole.MEMBER,
   )
+  @StaffPermission('sales.checkout')
   addService(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -147,6 +153,7 @@ export class CheckoutsController {
     BusinessMemberRole.ADMIN,
     BusinessMemberRole.MEMBER,
   )
+  @StaffPermission('sales.checkout')
   addProduct(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -177,6 +184,7 @@ export class CheckoutsController {
     BusinessMemberRole.ADMIN,
     BusinessMemberRole.MEMBER,
   )
+  @StaffPermission('sales.checkout')
   addWalletDeposit(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -196,6 +204,7 @@ export class CheckoutsController {
     BusinessMemberRole.ADMIN,
     BusinessMemberRole.MEMBER,
   )
+  @StaffPermission('sales.checkout')
   addGiftCardLine(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -215,6 +224,7 @@ export class CheckoutsController {
     BusinessMemberRole.ADMIN,
     BusinessMemberRole.MEMBER,
   )
+  @StaffPermission('sales.checkout')
   addPackageLine(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -234,6 +244,7 @@ export class CheckoutsController {
     BusinessMemberRole.ADMIN,
     BusinessMemberRole.MEMBER,
   )
+  @StaffPermission('sales.checkout')
   updateLineItem(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -255,6 +266,7 @@ export class CheckoutsController {
     BusinessMemberRole.ADMIN,
     BusinessMemberRole.MEMBER,
   )
+  @StaffPermission('sales.checkout')
   removeLineItem(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -274,6 +286,7 @@ export class CheckoutsController {
     BusinessMemberRole.ADMIN,
     BusinessMemberRole.MEMBER,
   )
+  @StaffPermission('sales.checkout')
   applyOffer(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -293,6 +306,7 @@ export class CheckoutsController {
     BusinessMemberRole.ADMIN,
     BusinessMemberRole.MEMBER,
   )
+  @StaffPermission('sales.checkout')
   removeOffer(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -322,6 +336,7 @@ export class CheckoutsController {
     BusinessMemberRole.ADMIN,
     BusinessMemberRole.MEMBER,
   )
+  @StaffPermission('sales.checkout')
   close(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,

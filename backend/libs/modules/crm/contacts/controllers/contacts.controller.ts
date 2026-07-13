@@ -16,6 +16,7 @@ import { ConfirmDeleteQueryDto } from '@app/common/dto/confirm-delete-query.dto'
 import { CurrentUser } from '@app/common/decorators/current-user.decorator';
 import type { RequestUser } from '@app/common/decorators/current-user.decorator';
 import { BusinessRoles } from '@app/common/decorators/business-roles.decorator';
+import { StaffPermission } from '@app/common/decorators/staff-permission.decorator';
 import { BusinessRolesGuard } from '@app/common/guards/business-roles.guard';
 import { CreateContactDto } from '../dto/create-contact.dto';
 import { ListContactsQueryDto } from '../dto/list-contacts-query.dto';
@@ -27,6 +28,7 @@ import { ContactsService } from '@app/modules/crm/contacts/services/contacts.ser
 @ApiBearerAuth()
 @Controller('contacts')
 @UseGuards(BusinessRolesGuard)
+@StaffPermission('contacts.access')
 export class ContactsController {
   constructor(private readonly contactsService: ContactsService) {}
 
@@ -36,6 +38,7 @@ export class ContactsController {
     BusinessMemberRole.ADMIN,
     BusinessMemberRole.MEMBER,
   )
+  @StaffPermission('contacts.manage')
   create(@CurrentUser() user: RequestUser, @Body() dto: CreateContactDto) {
     return this.contactsService.create(user.businessId!, dto, user);
   }
@@ -69,6 +72,7 @@ export class ContactsController {
     BusinessMemberRole.ADMIN,
     BusinessMemberRole.MEMBER,
   )
+  @StaffPermission('contacts.manage')
   update(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -89,6 +93,7 @@ export class ContactsController {
     type: Boolean,
     description: 'Must be true to confirm deletion',
   })
+  @StaffPermission('contacts.manage')
   remove(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,

@@ -16,6 +16,7 @@ import { BusinessMemberRole } from '@prisma/client';
 import { CurrentUser } from '@app/common/decorators/current-user.decorator';
 import type { RequestUser } from '@app/common/decorators/current-user.decorator';
 import { BusinessRoles } from '@app/common/decorators/business-roles.decorator';
+import { StaffPermission } from '@app/common/decorators/staff-permission.decorator';
 import { RequireModule } from '@app/common/decorators/require-module.decorator';
 import { ConfirmDeleteQueryDto } from '@app/common/dto/confirm-delete-query.dto';
 import { AppException } from '@app/common/exceptions/app.exception';
@@ -44,6 +45,7 @@ const MEMBER_ROLES = [
 @Controller('offers')
 @UseGuards(BusinessRolesGuard, BusinessCapabilityGuard)
 @RequireModule('payments')
+@StaffPermission('offers.access')
 export class OffersController {
   constructor(private readonly offersService: OffersService) {}
 
@@ -67,12 +69,14 @@ export class OffersController {
 
   @Post('reorder')
   @BusinessRoles(...MEMBER_ROLES)
+  @StaffPermission('offers.manage')
   reorder(@CurrentUser() user: RequestUser, @Body() dto: ReorderOffersDto) {
     return this.offersService.reorderOffers(user.businessId!, dto, user);
   }
 
   @Post()
   @BusinessRoles(...MEMBER_ROLES)
+  @StaffPermission('offers.manage')
   createOffer(@CurrentUser() user: RequestUser, @Body() dto: CreateOfferDto) {
     return this.offersService.createOffer(user.businessId!, dto, user);
   }
@@ -88,6 +92,7 @@ export class OffersController {
 
   @Patch(':id/details')
   @BusinessRoles(...MEMBER_ROLES)
+  @StaffPermission('offers.manage')
   updateDetails(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -103,6 +108,7 @@ export class OffersController {
 
   @Post(':id/enable')
   @BusinessRoles(...MEMBER_ROLES)
+  @StaffPermission('offers.manage')
   enableOffer(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -112,6 +118,7 @@ export class OffersController {
 
   @Post(':id/disable')
   @BusinessRoles(...MEMBER_ROLES)
+  @StaffPermission('offers.manage')
   disableOffer(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -121,6 +128,7 @@ export class OffersController {
 
   @Post(':id/duplicate')
   @BusinessRoles(...MEMBER_ROLES)
+  @StaffPermission('offers.manage')
   duplicateOffer(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -130,6 +138,7 @@ export class OffersController {
 
   @Delete(':id')
   @BusinessRoles(...MEMBER_ROLES)
+  @StaffPermission('offers.manage')
   deleteOffer(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -147,6 +156,7 @@ export class OffersController {
 
   @Post(':id/discounts')
   @BusinessRoles(...MEMBER_ROLES)
+  @StaffPermission('offers.manage')
   addDiscount(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -157,6 +167,7 @@ export class OffersController {
 
   @Patch(':id/discounts/reorder')
   @BusinessRoles(...MEMBER_ROLES)
+  @StaffPermission('offers.manage')
   reorderDiscounts(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -167,6 +178,7 @@ export class OffersController {
 
   @Patch(':id/discounts/:discountId')
   @BusinessRoles(...MEMBER_ROLES)
+  @StaffPermission('offers.manage')
   updateDiscount(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -184,6 +196,7 @@ export class OffersController {
 
   @Delete(':id/discounts/:discountId')
   @BusinessRoles(...MEMBER_ROLES)
+  @StaffPermission('offers.manage')
   deleteDiscount(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,

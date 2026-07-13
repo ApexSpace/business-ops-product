@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import {
   AppointmentSource,
   AppointmentStatus,
+  BusinessMemberRole,
   ConversationStatus,
   InvoiceStatus,
   Prisma,
@@ -9,12 +10,14 @@ import {
   TaskStatus,
 } from '@prisma/client';
 import { DateTime } from 'luxon';
+import { RequestUser } from '@app/common/decorators/current-user.decorator';
 import { PrismaService } from '@app/core/database/prisma.service';
 import {
   getBusinessDayBoundariesUtc,
   normalizeTimezone,
 } from '@app/common/utils/timezone.util';
 import { buildOverdueInvoiceWhere } from '@app/modules/finance/shared/utils/overdue-invoice-where.util';
+import { hasStaffPermission } from '@app/modules/platform/membership/permissions/staff-permission.registry';
 import {
   BusinessDashboardFeedDto,
   DashboardAttentionItemDto,
@@ -29,6 +32,13 @@ import {
 import { BusinessDashboardStatsDto } from '../dto/business-dashboard-stats.dto';
 import { DashboardStatsService } from './dashboard-stats.service';
 
+type FeedScope = {
+  staffUserId: string | null;
+  canViewBusinessOps: boolean;
+  canViewLeads: boolean;
+  canViewConversations: boolean;
+};
+
 @Injectable()
 export class DashboardFeedService {
   constructor(
@@ -36,7 +46,11 @@ export class DashboardFeedService {
     private readonly dashboardStatsService: DashboardStatsService,
   ) {}
 
-  async getFeed(businessId: string): Promise<BusinessDashboardFeedDto> {
+  async getFeed(
+    businessId: string,
+    user?: RequestUser,
+  ): Promise<BusinessDashboardFeedDto> {
+    const scope = this.resolveFeedScope(user);
     const timezone = await this.getBusinessTimezone(businessId);
     const { startOfToday, endOfToday, now } =
       getBusinessDayBoundariesUtc(timezone);
@@ -91,36 +105,58 @@ export class DashboardFeedService {
       revenueByCategory,
       bookingsBySource,
     ] = await Promise.all([
-      this.dashboardStatsService.getStats(businessId),
-      this.getOverview(businessId, now, endOfToday),
+      this.dashboardStatsService.getStats(businessId, {
+        assignedToId: scope.staffUserId ?? undefined,
+        includeBusinessOps: scope.canViewBusinessOps,
+      }),
+      this.getOverview(businessId, now, endOfToday, scope.staffUserId),
       this.getTodayAppointmentsMetric(
         businessId,
         timezone,
         previousSevenDayStart,
         trailingSevenDayStart,
         endOfToday,
+        scope.staffUserId,
       ),
-      this.getNewLeadsMetric(
+      scope.canViewLeads
+        ? this.getNewLeadsMetric(
+            businessId,
+            timezone,
+            trailingSevenDayStart,
+            previousSevenDayStart,
+            previousSevenDayEnd,
+            endOfToday,
+          )
+        : Promise.resolve(this.emptyTrendMetric()),
+      this.listTodayAppointments(
         businessId,
-        timezone,
-        trailingSevenDayStart,
-        previousSevenDayStart,
-        previousSevenDayEnd,
+        startOfToday,
         endOfToday,
+        scope.staffUserId,
       ),
-      this.listTodayAppointments(businessId, startOfToday, endOfToday),
-      this.listAppointmentsToConfirm(businessId, now, confirmWindowEnd),
-      this.listRecentConversations(businessId, recentConversationFloor),
-      this.listFollowUpTasks(businessId, startOfToday, endOfToday),
-      this.listStaffAssignments(businessId, endOfToday),
-      this.listRevenueByCategory(businessId, currentPeriodStart, endOfToday),
-      this.listBookingsBySource(
+      this.listAppointmentsToConfirm(
         businessId,
-        currentPeriodStart,
-        endOfToday,
-        previousPeriodStart,
-        previousPeriodEnd,
+        now,
+        confirmWindowEnd,
+        scope.staffUserId,
       ),
+      scope.canViewConversations
+        ? this.listRecentConversations(businessId, recentConversationFloor)
+        : Promise.resolve([]),
+      this.listFollowUpTasks(businessId, startOfToday, endOfToday, scope),
+      this.listStaffAssignments(businessId, endOfToday, scope.staffUserId),
+      scope.canViewBusinessOps
+        ? this.listRevenueByCategory(businessId, currentPeriodStart, endOfToday)
+        : Promise.resolve([]),
+      scope.canViewBusinessOps
+        ? this.listBookingsBySource(
+            businessId,
+            currentPeriodStart,
+            endOfToday,
+            previousPeriodStart,
+            previousPeriodEnd,
+          )
+        : Promise.resolve([]),
     ]);
 
     return {
@@ -129,13 +165,67 @@ export class DashboardFeedService {
       todayAppointmentsMetric,
       newLeadsMetric,
       todayAppointments,
-      attentionItems: this.buildAttentionItems(stats),
+      attentionItems: this.buildAttentionItems(stats, scope),
       appointmentsToConfirm,
       recentConversations,
       followUpTasks,
       staffAssignments,
       revenueByCategory,
       bookingsBySource,
+    };
+  }
+
+  private resolveFeedScope(user?: RequestUser): FeedScope {
+    const role = user?.businessRole;
+    const isMember = role === BusinessMemberRole.MEMBER;
+    const canViewAllCalendars =
+      !isMember ||
+      hasStaffPermission(
+        user?.staffPermissions,
+        'appointments.view_all_calendars',
+        role,
+      );
+
+    return {
+      staffUserId: canViewAllCalendars ? null : (user?.id ?? null),
+      canViewBusinessOps: !isMember,
+      canViewLeads:
+        !isMember ||
+        hasStaffPermission(user?.staffPermissions, 'contacts.access', role) ||
+        hasStaffPermission(user?.staffPermissions, 'pipelines.access', role),
+      canViewConversations:
+        !isMember ||
+        hasStaffPermission(
+          user?.staffPermissions,
+          'conversations.access',
+          role,
+        ),
+    };
+  }
+
+  private appointmentAssigneeWhere(
+    staffUserId: string | null,
+  ): Prisma.AppointmentWhereInput {
+    if (!staffUserId) {
+      return {};
+    }
+    return {
+      OR: [
+        { assignedToId: staffUserId },
+        {
+          serviceLines: {
+            some: { assignedToId: staffUserId },
+          },
+        },
+      ],
+    };
+  }
+
+  private emptyTrendMetric(): DashboardTrendMetricDto {
+    return {
+      value: 0,
+      deltaPercent: 0,
+      points: [0, 0, 0, 0, 0, 0, 0],
     };
   }
 
@@ -151,6 +241,7 @@ export class DashboardFeedService {
     businessId: string,
     now: Date,
     endOfToday: Date,
+    staffUserId: string | null,
   ): Promise<DashboardOverviewDto> {
     const waitingClientsToday = await this.prisma.appointment.count({
       where: {
@@ -163,6 +254,7 @@ export class DashboardFeedService {
         status: {
           in: [AppointmentStatus.UNCONFIRMED, AppointmentStatus.CONFIRMED],
         },
+        ...this.appointmentAssigneeWhere(staffUserId),
       },
     });
 
@@ -177,6 +269,7 @@ export class DashboardFeedService {
     previousSevenDayStart: Date,
     trailingSevenDayStart: Date,
     endOfToday: Date,
+    staffUserId: string | null,
   ): Promise<DashboardTrendMetricDto> {
     const rows = await this.prisma.appointment.findMany({
       where: {
@@ -193,6 +286,7 @@ export class DashboardFeedService {
             AppointmentStatus.COMPLETED,
           ],
         },
+        ...this.appointmentAssigneeWhere(staffUserId),
       },
       select: {
         startAt: true,
@@ -270,6 +364,7 @@ export class DashboardFeedService {
     businessId: string,
     startOfToday: Date,
     endOfToday: Date,
+    staffUserId: string | null,
   ): Promise<DashboardFeedAppointmentDto[]> {
     const rows = await this.prisma.appointment.findMany({
       where: {
@@ -283,6 +378,7 @@ export class DashboardFeedService {
             AppointmentStatus.COMPLETED,
           ],
         },
+        ...this.appointmentAssigneeWhere(staffUserId),
       },
       orderBy: { startAt: 'asc' },
       take: 12,
@@ -335,6 +431,7 @@ export class DashboardFeedService {
     businessId: string,
     now: Date,
     confirmWindowEnd: Date,
+    staffUserId: string | null,
   ): Promise<DashboardFeedAppointmentDto[]> {
     const rows = await this.prisma.appointment.findMany({
       where: {
@@ -345,6 +442,7 @@ export class DashboardFeedService {
           gte: now,
           lte: confirmWindowEnd,
         },
+        ...this.appointmentAssigneeWhere(staffUserId),
       },
       orderBy: { startAt: 'asc' },
       take: 4,
@@ -447,26 +545,35 @@ export class DashboardFeedService {
     businessId: string,
     startOfToday: Date,
     endOfToday: Date,
+    scope: FeedScope,
   ): Promise<DashboardTaskItemDto[]> {
     const [overdueInvoices, unreadConversations, lowStockProducts, dueTasks] =
       await Promise.all([
-        this.prisma.invoice.aggregate({
-          where: buildOverdueInvoiceWhere(businessId, startOfToday),
-          _count: { _all: true },
-        }),
-        this.prisma.conversation.count({
-          where: {
-            businessId,
-            deletedAt: null,
-            unreadCount: { gt: 0 },
-          },
-        }),
-        this.countLowStockProducts(businessId),
+        scope.canViewBusinessOps
+          ? this.prisma.invoice.aggregate({
+              where: buildOverdueInvoiceWhere(businessId, startOfToday),
+              _count: { _all: true },
+            })
+          : Promise.resolve({ _count: { _all: 0 } }),
+        scope.canViewConversations
+          ? this.prisma.conversation.count({
+              where: {
+                businessId,
+                deletedAt: null,
+                unreadCount: { gt: 0 },
+              },
+            })
+          : Promise.resolve(0),
+        scope.canViewBusinessOps
+          ? this.countLowStockProducts(businessId)
+          : Promise.resolve(0),
         this.prisma.task.findMany({
           where: {
             businessId,
             deletedAt: null,
-            assignedToId: null,
+            ...(scope.staffUserId
+              ? { assignedToId: scope.staffUserId }
+              : { assignedToId: null }),
             dueAt: { lte: endOfToday },
             status: {
               in: [TaskStatus.TODO, TaskStatus.IN_PROGRESS],
@@ -542,12 +649,13 @@ export class DashboardFeedService {
   private async listStaffAssignments(
     businessId: string,
     endOfToday: Date,
+    staffUserId: string | null,
   ): Promise<DashboardTaskItemDto[]> {
     const rows = await this.prisma.task.findMany({
       where: {
         businessId,
         deletedAt: null,
-        assignedToId: { not: null },
+        assignedToId: staffUserId ? staffUserId : { not: null },
         dueAt: { lte: endOfToday },
         status: {
           in: [TaskStatus.TODO, TaskStatus.IN_PROGRESS],
@@ -725,10 +833,11 @@ export class DashboardFeedService {
 
   private buildAttentionItems(
     stats: BusinessDashboardStatsDto,
+    scope: FeedScope,
   ): DashboardAttentionItemDto[] {
     const items: DashboardAttentionItemDto[] = [];
 
-    if (stats.attention.overdueInvoices > 0) {
+    if (scope.canViewBusinessOps && stats.attention.overdueInvoices > 0) {
       items.push({
         id: 'overdue-invoices',
         title: `${stats.attention.overdueInvoices} overdue invoices`,
@@ -737,7 +846,7 @@ export class DashboardFeedService {
       });
     }
 
-    if (stats.attention.lowStockProducts > 0) {
+    if (scope.canViewBusinessOps && stats.attention.lowStockProducts > 0) {
       items.push({
         id: 'low-stock-products',
         title: `${stats.attention.lowStockProducts} products low on stock`,
@@ -745,7 +854,7 @@ export class DashboardFeedService {
       });
     }
 
-    if (stats.attention.unreadConversations > 0) {
+    if (scope.canViewConversations && stats.attention.unreadConversations > 0) {
       items.push({
         id: 'unread-conversations',
         title: `${stats.attention.unreadConversations} unread conversations`,
@@ -762,7 +871,7 @@ export class DashboardFeedService {
       });
     }
 
-    if (stats.workItems.pending > 0) {
+    if (scope.canViewBusinessOps && stats.workItems.pending > 0) {
       items.push({
         id: 'work-items',
         title: `${stats.workItems.pending} work items in progress`,
@@ -771,7 +880,7 @@ export class DashboardFeedService {
       });
     }
 
-    if (stats.leads.active > 0) {
+    if (scope.canViewLeads && stats.leads.active > 0) {
       items.push({
         id: 'pipeline-leads',
         title: `${stats.leads.active} active leads in pipeline`,

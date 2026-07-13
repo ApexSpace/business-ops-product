@@ -20,6 +20,7 @@ import { validateOrReject } from 'class-validator';
 import { CurrentUser } from '@app/common/decorators/current-user.decorator';
 import type { RequestUser } from '@app/common/decorators/current-user.decorator';
 import { BusinessRoles } from '@app/common/decorators/business-roles.decorator';
+import { StaffPermission } from '@app/common/decorators/staff-permission.decorator';
 import { RequireCapability } from '@app/common/decorators/require-capability.decorator';
 import { RequireModule } from '@app/common/decorators/require-module.decorator';
 import { BusinessCapabilityGuard } from '@app/common/guards/business-capability.guard';
@@ -37,6 +38,7 @@ import { WhatsAppTemplateService } from '../services/whatsapp-template.service';
 @Controller('integrations/business/whatsapp/templates')
 @UseGuards(BusinessRolesGuard, BusinessCapabilityGuard)
 @RequireModule('conversations')
+@StaffPermission('settings.integrations.manage')
 export class WhatsAppTemplatesController {
   constructor(private readonly templateService: WhatsAppTemplateService) {}
 

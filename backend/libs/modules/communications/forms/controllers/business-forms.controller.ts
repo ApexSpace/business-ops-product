@@ -15,6 +15,7 @@ import { BusinessMemberRole } from '@prisma/client';
 import { CurrentUser } from '@app/common/decorators/current-user.decorator';
 import type { RequestUser } from '@app/common/decorators/current-user.decorator';
 import { BusinessRoles } from '@app/common/decorators/business-roles.decorator';
+import { StaffPermission } from '@app/common/decorators/staff-permission.decorator';
 import { RequireCapability } from '@app/common/decorators/require-capability.decorator';
 import { RequireModule } from '@app/common/decorators/require-module.decorator';
 import { BusinessCapabilityGuard } from '@app/common/guards/business-capability.guard';
@@ -32,6 +33,7 @@ import { FormsService } from '../services/forms.service';
 @Controller('forms')
 @UseGuards(BusinessRolesGuard, BusinessCapabilityGuard)
 @RequireModule('settings')
+@StaffPermission('forms.view_own_submissions', 'forms.view_all_submissions', 'forms.manage_templates')
 export class BusinessFormsController {
   constructor(
     private readonly formsService: FormsService,

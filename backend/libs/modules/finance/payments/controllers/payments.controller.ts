@@ -16,6 +16,7 @@ import { ConfirmDeleteQueryDto } from '@app/common/dto/confirm-delete-query.dto'
 import { CurrentUser } from '@app/common/decorators/current-user.decorator';
 import type { RequestUser } from '@app/common/decorators/current-user.decorator';
 import { BusinessRoles } from '@app/common/decorators/business-roles.decorator';
+import { StaffPermission } from '@app/common/decorators/staff-permission.decorator';
 import { RequireModule } from '@app/common/decorators/require-module.decorator';
 import { BusinessCapabilityGuard } from '@app/common/guards/business-capability.guard';
 import { BusinessRolesGuard } from '@app/common/guards/business-roles.guard';
@@ -43,6 +44,7 @@ import { PaymentsService } from '@app/modules/finance/payments/services/payments
 @Controller('payments')
 @UseGuards(BusinessRolesGuard, BusinessCapabilityGuard)
 @RequireModule('payments')
+@StaffPermission('payments.access')
 export class PaymentsController {
   constructor(
     private readonly paymentsService: PaymentsService,
@@ -58,6 +60,7 @@ export class PaymentsController {
     BusinessMemberRole.ADMIN,
     BusinessMemberRole.MEMBER,
   )
+  @StaffPermission('payments.manage')
   create(@CurrentUser() user: RequestUser, @Body() dto: CreatePaymentDto) {
     return this.paymentsService.create(user.businessId!, dto, user);
   }
@@ -100,6 +103,7 @@ export class PaymentsController {
     BusinessMemberRole.ADMIN,
     BusinessMemberRole.MEMBER,
   )
+  @StaffPermission('payments.manage')
   async collect(
     @CurrentUser() user: RequestUser,
     @Body() dto: CollectPaymentDto,
@@ -134,6 +138,7 @@ export class PaymentsController {
     BusinessMemberRole.ADMIN,
     BusinessMemberRole.MEMBER,
   )
+  @StaffPermission('payments.manage')
   createContactSetupIntent(
     @CurrentUser() user: RequestUser,
     @Param('contactId', ParseUUIDPipe) contactId: string,
@@ -150,6 +155,7 @@ export class PaymentsController {
     BusinessMemberRole.ADMIN,
     BusinessMemberRole.MEMBER,
   )
+  @StaffPermission('payments.manage')
   detachContactPaymentMethod(
     @CurrentUser() user: RequestUser,
     @Param('contactId', ParseUUIDPipe) contactId: string,
@@ -181,6 +187,7 @@ export class PaymentsController {
     BusinessMemberRole.ADMIN,
     BusinessMemberRole.MEMBER,
   )
+  @StaffPermission('payments.manage')
   update(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -195,6 +202,7 @@ export class PaymentsController {
     BusinessMemberRole.ADMIN,
     BusinessMemberRole.MEMBER,
   )
+  @StaffPermission('sales.refund')
   refund(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -214,6 +222,7 @@ export class PaymentsController {
     type: Boolean,
     description: 'Must be true to confirm deletion',
   })
+  @StaffPermission('payments.manage')
   remove(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,

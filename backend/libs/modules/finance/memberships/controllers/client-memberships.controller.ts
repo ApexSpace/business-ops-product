@@ -15,6 +15,7 @@ import { BusinessMemberRole } from '@prisma/client';
 import { CurrentUser } from '@app/common/decorators/current-user.decorator';
 import type { RequestUser } from '@app/common/decorators/current-user.decorator';
 import { BusinessRoles } from '@app/common/decorators/business-roles.decorator';
+import { StaffPermission } from '@app/common/decorators/staff-permission.decorator';
 import { RequireModule } from '@app/common/decorators/require-module.decorator';
 import { BusinessCapabilityGuard } from '@app/common/guards/business-capability.guard';
 import { BusinessRolesGuard } from '@app/common/guards/business-roles.guard';
@@ -37,6 +38,7 @@ const MEMBER_ROLES = [
 @Controller('memberships/client-memberships')
 @UseGuards(BusinessRolesGuard, BusinessCapabilityGuard)
 @RequireModule('payments')
+@StaffPermission('memberships.access')
 export class ClientMembershipsController {
   constructor(
     private readonly clientMembershipsService: ClientMembershipsService,
@@ -73,6 +75,7 @@ export class ClientMembershipsController {
 
   @Post()
   @BusinessRoles(...MEMBER_ROLES)
+  @StaffPermission('memberships.manage')
   assignMembership(
     @CurrentUser() user: RequestUser,
     @Body() dto: CreateClientMembershipDto,
@@ -124,6 +127,7 @@ export class ClientMembershipsController {
 
   @Patch(':id')
   @BusinessRoles(...MEMBER_ROLES)
+  @StaffPermission('memberships.manage')
   updateClientMembership(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -139,6 +143,7 @@ export class ClientMembershipsController {
 
   @Post(':id/redeem')
   @BusinessRoles(...MEMBER_ROLES)
+  @StaffPermission('memberships.manage')
   redeemService(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,

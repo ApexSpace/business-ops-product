@@ -14,6 +14,7 @@ import { BusinessMemberRole } from '@prisma/client';
 import { CurrentUser } from '@app/common/decorators/current-user.decorator';
 import type { RequestUser } from '@app/common/decorators/current-user.decorator';
 import { BusinessRoles } from '@app/common/decorators/business-roles.decorator';
+import { StaffPermission } from '@app/common/decorators/staff-permission.decorator';
 import { BusinessRolesGuard } from '@app/common/guards/business-roles.guard';
 import {
   BookFromWaitlistDto,
@@ -26,6 +27,7 @@ import { WaitlistService } from '../services/waitlist.service';
 @ApiBearerAuth()
 @Controller('waitlist')
 @UseGuards(BusinessRolesGuard)
+@StaffPermission('appointments.access')
 export class WaitlistController {
   constructor(private readonly waitlistService: WaitlistService) {}
 
@@ -68,6 +70,7 @@ export class WaitlistController {
     BusinessMemberRole.ADMIN,
     BusinessMemberRole.MEMBER,
   )
+  @StaffPermission('appointments.manage_own', 'appointments.manage_all')
   create(
     @CurrentUser() user: RequestUser,
     @Body() dto: CreateWaitlistEntryDto,
@@ -81,6 +84,7 @@ export class WaitlistController {
     BusinessMemberRole.ADMIN,
     BusinessMemberRole.MEMBER,
   )
+  @StaffPermission('appointments.manage_own', 'appointments.manage_all')
   dismiss(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -94,6 +98,7 @@ export class WaitlistController {
     BusinessMemberRole.ADMIN,
     BusinessMemberRole.MEMBER,
   )
+  @StaffPermission('appointments.manage_own', 'appointments.manage_all')
   book(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -113,6 +118,7 @@ export class WaitlistController {
     BusinessMemberRole.ADMIN,
     BusinessMemberRole.MEMBER,
   )
+  @StaffPermission('appointments.manage_own', 'appointments.manage_all')
   cancel(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,

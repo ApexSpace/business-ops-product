@@ -43,6 +43,16 @@ export const queryKeys = {
     financialSettings: () => ["business", "financial-settings"] as const,
     members: (filters?: { page?: number; limit?: number; search?: string }) =>
       listKey(["business", "members"], filters),
+    memberDetail: (userId: string) =>
+      ["business", "members", "detail", userId] as const,
+    memberPermissions: (userId: string) =>
+      ["business", "members", userId, "permissions"] as const,
+    memberNotifications: (userId: string) =>
+      ["business", "members", userId, "notifications"] as const,
+    memberCompensation: (userId: string) =>
+      ["business", "members", userId, "compensation"] as const,
+    memberServices: (userId: string) =>
+      ["business", "members", userId, "services"] as const,
     dashboardStats: () => ["business", "dashboard-stats"] as const,
     dashboardFeed: () => ["business", "dashboard-feed"] as const,
     planOptions: () => ["business", "plan-options"] as const,

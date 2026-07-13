@@ -1,8 +1,10 @@
-import { HttpStatus, Injectable } from '@nestjs/common';
+import { HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
   BusinessMemberRole,
   MembershipStatus,
+  ServiceCommissionType,
+  ServiceStatus,
   UserStatus,
 } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
@@ -22,7 +24,21 @@ import { ListMembersQueryDto } from '../dto/list-members-query.dto';
 import { SetTimeClockPinDto } from '../dto/set-time-clock-pin.dto';
 import { UpdateStaffMemberProfileDto } from '../dto/update-staff-member-profile.dto';
 import { UpdateMemberDto } from '../dto/update-member.dto';
+import {
+  ReplaceStaffMemberServicesDto,
+  UpdateMemberDetailsDto,
+  UpdateMemberNotificationsDto,
+  UpdateMemberPermissionsDto,
+  UpdateStaffCompensationDto,
+} from '../dto/staff-member-settings.dto';
 import { SetBusinessOwnerDto } from '../dto/set-owner.dto';
+import {
+  defaultPermissionsForMember,
+  isStaffPermissionKey,
+  normalizeNotificationSettings,
+  normalizeStaffPermissions,
+  STAFF_PERMISSION_KEYS,
+} from '../permissions/staff-permission.registry';
 import {
   InviteMemberResponseDto,
   MemberResponseDto,
@@ -34,6 +50,8 @@ import { buildPublicStaffBookingUrl } from '@app/modules/operations/public-booki
 
 @Injectable()
 export class MembershipService {
+  private readonly logger = new Logger(MembershipService.name);
+
   constructor(
     private readonly membershipRepository: BusinessMembershipRepository,
     private readonly userRepository: UserRepository,
@@ -351,10 +369,108 @@ export class MembershipService {
           invite_link: inviteLink,
         },
       })
-      .catch(() => undefined);
+      .catch((error) => {
+        this.logger.error(
+          `Failed to enqueue membership invite email for ${dto.email}: ${
+            error instanceof Error ? error.message : String(error)
+          }`,
+        );
+      });
 
     return {
       ...this.toMemberResponse(withUser!),
+      inviteLink,
+    };
+  }
+
+  async resendInvite(
+    businessId: string,
+    targetUserId: string,
+    actor: RequestUser,
+  ): Promise<InviteMemberResponseDto> {
+    const membership =
+      await this.membershipRepository.findByUserAndBusinessWithUser(
+        targetUserId,
+        businessId,
+      );
+    if (!membership) {
+      throw new AppException(
+        ErrorCode.MEMBERSHIP_NOT_FOUND,
+        'Membership not found',
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    if (membership.status !== MembershipStatus.INVITED) {
+      throw new AppException(
+        ErrorCode.BAD_REQUEST,
+        'Only invited members can receive a new invite',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    if (membership.role === BusinessMemberRole.OWNER) {
+      throw new AppException(
+        ErrorCode.BAD_REQUEST,
+        'Cannot resend invite for owner',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const business = await this.businessRepository.findById(businessId);
+    if (!business) {
+      throw new AppException(
+        ErrorCode.BUSINESS_NOT_FOUND,
+        'Business not found',
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    const inviteToken = randomUUID();
+    await this.membershipRepository.update(membership.id, { inviteToken });
+
+    const frontendUrl = this.configService.get('app.frontendUrl', {
+      infer: true,
+    });
+    const inviteLink = `${frontendUrl}/accept-invite?token=${inviteToken}`;
+    const inviter = await this.userRepository.findById(actor.id);
+
+    void this.emailNotificationService
+      .enqueueTransactionalEmail({
+        businessId,
+        emailType: 'membership.invite',
+        toEmail: membership.user.email,
+        userId: membership.userId,
+        entityType: 'BusinessMembership',
+        entityId: membership.id,
+        idempotencyKey: `membership-invite-resend-${membership.id}-${Date.now()}`,
+        variables: {
+          'invitee.email': membership.user.email,
+          'inviter.name': formatUserName(inviter ?? { email: actor.email }),
+          'business.name': business.name,
+          invite_link: inviteLink,
+        },
+      })
+      .catch((error) => {
+        this.logger.error(
+          `Failed to enqueue membership invite resend for ${membership.user.email}: ${
+            error instanceof Error ? error.message : String(error)
+          }`,
+        );
+      });
+
+    await this.auditService.log({
+      actorUserId: actor.id,
+      businessId,
+      action: 'membership.invite_resent',
+      entityType: 'BusinessMembership',
+      entityId: membership.id,
+      metadata: { email: membership.user.email },
+    });
+
+    const refreshed = await this.membershipRepository.findById(membership.id);
+    return {
+      ...this.toMemberResponse(refreshed!),
       inviteLink,
     };
   }
@@ -382,6 +498,7 @@ export class MembershipService {
     }
 
     const email = dto.email.trim().toLowerCase();
+    const sendInvite = dto.sendInvite !== false;
     let user = await this.userRepository.findByEmail(email);
 
     if (!user) {
@@ -394,18 +511,23 @@ export class MembershipService {
         passwordHash,
         firstName: dto.firstName.trim(),
         lastName: dto.lastName.trim(),
-        status: UserStatus.ACTIVE,
+        status: sendInvite ? UserStatus.INVITED : UserStatus.ACTIVE,
       });
     } else {
+      const userUpdate: {
+        firstName: string;
+        lastName: string;
+        status?: UserStatus;
+      } = {
+        firstName: dto.firstName.trim(),
+        lastName: dto.lastName.trim(),
+      };
+      if (!sendInvite && user.status === UserStatus.INVITED) {
+        userUpdate.status = UserStatus.ACTIVE;
+      }
       await this.prisma.user.update({
         where: { id: user.id },
-        data: {
-          firstName: dto.firstName.trim(),
-          lastName: dto.lastName.trim(),
-          ...(user.status === UserStatus.INVITED
-            ? { status: UserStatus.ACTIVE }
-            : {}),
-        },
+        data: userUpdate,
       });
     }
 
@@ -434,16 +556,23 @@ export class MembershipService {
       timeclockPin = await bcrypt.hash(dto.timeClockPin, rounds);
     }
 
+    const inviteToken = sendInvite ? randomUUID() : null;
+    const defaultPermissions = defaultPermissionsForMember({
+      isServiceProvider: dto.isServiceProvider ?? false,
+    });
+
     const membershipData = {
       role: dto.role,
-      status: MembershipStatus.ACTIVE,
-      joinedAt: new Date(),
-      inviteToken: null,
+      status: sendInvite ? MembershipStatus.INVITED : MembershipStatus.ACTIVE,
+      joinedAt: sendInvite ? null : new Date(),
+      inviteToken,
       deletedAt: null,
       phoneNumber: dto.phoneNumber?.trim() || null,
       gender: dto.gender ?? null,
       isServiceProvider: dto.isServiceProvider ?? false,
       canAssignProductSales: dto.canAssignProductSales ?? false,
+      permissions: defaultPermissions,
+      notificationSettings: normalizeNotificationSettings({}),
       ...(timeclockPin ? { timeclockPin } : {}),
       invitedBy: { connect: { id: actor.id } },
     };
@@ -455,6 +584,38 @@ export class MembershipService {
           business: { connect: { id: businessId } },
           ...membershipData,
         });
+
+    if (sendInvite && inviteToken) {
+      const frontendUrl = this.configService.get('app.frontendUrl', {
+        infer: true,
+      });
+      const inviteLink = `${frontendUrl}/accept-invite?token=${inviteToken}`;
+      const inviter = await this.userRepository.findById(actor.id);
+
+      void this.emailNotificationService
+        .enqueueTransactionalEmail({
+          businessId,
+          emailType: 'membership.invite',
+          toEmail: email,
+          userId: user.id,
+          entityType: 'BusinessMembership',
+          entityId: membership.id,
+          idempotencyKey: `membership-invite-${membership.id}-${Date.now()}`,
+          variables: {
+            'invitee.email': email,
+            'inviter.name': formatUserName(inviter ?? { email: actor.email }),
+            'business.name': business.name,
+            invite_link: inviteLink,
+          },
+        })
+        .catch((error) => {
+          this.logger.error(
+            `Failed to enqueue staff invite email for ${email}: ${
+              error instanceof Error ? error.message : String(error)
+            }`,
+          );
+        });
+    }
 
     await this.auditService.log({
       actorUserId: actor.id,
@@ -727,6 +888,546 @@ export class MembershipService {
     });
 
     return { success: true };
+  }
+
+  async getMember(
+    businessId: string,
+    targetUserId: string,
+  ): Promise<MemberResponseDto & {
+    permissions: Record<string, boolean>;
+    notificationSettings: Record<string, boolean>;
+  }> {
+    const membership =
+      await this.membershipRepository.findByUserAndBusinessWithUser(
+        targetUserId,
+        businessId,
+      );
+    if (!membership) {
+      throw new AppException(
+        ErrorCode.MEMBERSHIP_NOT_FOUND,
+        'Membership not found',
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    const bookingContext = await this.resolveBookingLinkContext(businessId);
+    return {
+      ...this.toMemberResponse(membership, bookingContext),
+      permissions: this.resolvePermissionsForResponse(membership),
+      notificationSettings: normalizeNotificationSettings(
+        membership.notificationSettings,
+      ),
+    };
+  }
+
+  async updateMemberDetails(
+    businessId: string,
+    targetUserId: string,
+    dto: UpdateMemberDetailsDto,
+    actor: RequestUser,
+  ): Promise<MemberResponseDto> {
+    const membership =
+      await this.membershipRepository.findByUserAndBusinessWithUser(
+        targetUserId,
+        businessId,
+      );
+    if (!membership) {
+      throw new AppException(
+        ErrorCode.MEMBERSHIP_NOT_FOUND,
+        'Membership not found',
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    if (dto.email && dto.email.trim().toLowerCase() !== membership.user.email) {
+      const existing = await this.userRepository.findByEmail(
+        dto.email.trim().toLowerCase(),
+      );
+      if (existing && existing.id !== membership.userId) {
+        throw new AppException(
+          ErrorCode.EMAIL_ALREADY_EXISTS,
+          'Email already in use',
+          HttpStatus.CONFLICT,
+        );
+      }
+      await this.prisma.user.update({
+        where: { id: membership.userId },
+        data: { email: dto.email.trim().toLowerCase() },
+      });
+    }
+
+    if (dto.firstName !== undefined || dto.lastName !== undefined) {
+      await this.prisma.user.update({
+        where: { id: membership.userId },
+        data: {
+          ...(dto.firstName !== undefined
+            ? { firstName: dto.firstName.trim() }
+            : {}),
+          ...(dto.lastName !== undefined
+            ? { lastName: dto.lastName.trim() }
+            : {}),
+        },
+      });
+    }
+
+    const profilePatch: Record<string, unknown> = {};
+    if (dto.phoneNumber !== undefined) {
+      profilePatch.phoneNumber = dto.phoneNumber.trim() || null;
+    }
+    if (dto.gender !== undefined) profilePatch.gender = dto.gender;
+    if (dto.isServiceProvider !== undefined) {
+      profilePatch.isServiceProvider = dto.isServiceProvider;
+    }
+    if (dto.onlineBookingEnabled !== undefined) {
+      profilePatch.onlineBookingEnabled = dto.onlineBookingEnabled;
+    }
+    if (dto.canAssignProductSales !== undefined) {
+      profilePatch.canAssignProductSales = dto.canAssignProductSales;
+    }
+    if (dto.canManageWaitlist !== undefined) {
+      profilePatch.canManageWaitlist = dto.canManageWaitlist;
+    }
+
+    if (Object.keys(profilePatch).length > 0) {
+      await this.membershipRepository.update(membership.id, profilePatch);
+    }
+
+    await this.auditService.log({
+      actorUserId: actor.id,
+      businessId,
+      action: 'membership.details_updated',
+      entityType: 'BusinessMembership',
+      entityId: membership.id,
+    });
+
+    const refreshed =
+      await this.membershipRepository.findByUserAndBusinessWithUser(
+        targetUserId,
+        businessId,
+      );
+    const bookingContext = await this.resolveBookingLinkContext(businessId);
+    return this.toMemberResponse(refreshed!, bookingContext);
+  }
+
+  async getMemberPermissions(businessId: string, targetUserId: string) {
+    const membership =
+      await this.membershipRepository.findByUserAndBusinessWithUser(
+        targetUserId,
+        businessId,
+      );
+    if (!membership) {
+      throw new AppException(
+        ErrorCode.MEMBERSHIP_NOT_FOUND,
+        'Membership not found',
+        HttpStatus.NOT_FOUND,
+      );
+    }
+    return {
+      role: membership.role,
+      permissions: this.resolvePermissionsForResponse(membership),
+    };
+  }
+
+  async updateMemberPermissions(
+    businessId: string,
+    targetUserId: string,
+    dto: UpdateMemberPermissionsDto,
+    actor: RequestUser,
+  ) {
+    const membership =
+      await this.membershipRepository.findByUserAndBusinessWithUser(
+        targetUserId,
+        businessId,
+      );
+    if (!membership) {
+      throw new AppException(
+        ErrorCode.MEMBERSHIP_NOT_FOUND,
+        'Membership not found',
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    if (
+      membership.role === BusinessMemberRole.OWNER ||
+      membership.role === BusinessMemberRole.ADMIN
+    ) {
+      throw new AppException(
+        ErrorCode.BAD_REQUEST,
+        'Admin users have full access and cannot be edited here',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const sanitized: Record<string, boolean> = {};
+    for (const [key, value] of Object.entries(dto.permissions)) {
+      if (isStaffPermissionKey(key)) {
+        sanitized[key] = value === true;
+      }
+    }
+
+    await this.membershipRepository.update(membership.id, {
+      permissions: normalizeStaffPermissions(sanitized),
+    });
+
+    await this.auditService.log({
+      actorUserId: actor.id,
+      businessId,
+      action: 'membership.permissions_updated',
+      entityType: 'BusinessMembership',
+      entityId: membership.id,
+    });
+
+    return {
+      role: membership.role,
+      permissions: normalizeStaffPermissions(sanitized),
+    };
+  }
+
+  async getMemberNotifications(businessId: string, targetUserId: string) {
+    const membership =
+      await this.membershipRepository.findByUserAndBusinessWithUser(
+        targetUserId,
+        businessId,
+      );
+    if (!membership) {
+      throw new AppException(
+        ErrorCode.MEMBERSHIP_NOT_FOUND,
+        'Membership not found',
+        HttpStatus.NOT_FOUND,
+      );
+    }
+    return {
+      notificationSettings: normalizeNotificationSettings(
+        membership.notificationSettings,
+      ),
+    };
+  }
+
+  async updateMemberNotifications(
+    businessId: string,
+    targetUserId: string,
+    dto: UpdateMemberNotificationsDto,
+    actor: RequestUser,
+  ) {
+    const membership =
+      await this.membershipRepository.findByUserAndBusinessWithUser(
+        targetUserId,
+        businessId,
+      );
+    if (!membership) {
+      throw new AppException(
+        ErrorCode.MEMBERSHIP_NOT_FOUND,
+        'Membership not found',
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    const current = normalizeNotificationSettings(membership.notificationSettings);
+    const next = { ...current };
+    for (const [key, value] of Object.entries(dto.notificationSettings)) {
+      if (key in current && typeof value === 'boolean') {
+        next[key as keyof typeof next] = value;
+      }
+    }
+
+    await this.membershipRepository.update(membership.id, {
+      notificationSettings: next,
+    });
+
+    await this.auditService.log({
+      actorUserId: actor.id,
+      businessId,
+      action: 'membership.notifications_updated',
+      entityType: 'BusinessMembership',
+      entityId: membership.id,
+    });
+
+    return { notificationSettings: next };
+  }
+
+  async getMemberCompensation(businessId: string, targetUserId: string) {
+    await this.requireMembership(businessId, targetUserId);
+    const row = await this.prisma.staffCompensationSettings.findUnique({
+      where: { businessId_userId: { businessId, userId: targetUserId } },
+    });
+    return this.toCompensationResponse(row);
+  }
+
+  async updateMemberCompensation(
+    businessId: string,
+    targetUserId: string,
+    dto: UpdateStaffCompensationDto,
+    actor: RequestUser,
+  ) {
+    const membership = await this.requireMembership(businessId, targetUserId);
+    if (
+      membership.role === BusinessMemberRole.OWNER ||
+      membership.role === BusinessMemberRole.ADMIN
+    ) {
+      throw new AppException(
+        ErrorCode.BAD_REQUEST,
+        'Admin compensation is not configured here',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const row = await this.prisma.staffCompensationSettings.upsert({
+      where: { businessId_userId: { businessId, userId: targetUserId } },
+      create: {
+        businessId,
+        userId: targetUserId,
+        serviceCommissionEnabled: dto.serviceCommissionEnabled ?? false,
+        serviceCommissionMode: dto.serviceCommissionMode ?? null,
+        serviceCommissionPercent: dto.serviceCommissionPercent ?? null,
+        productCommissionEnabled: dto.productCommissionEnabled ?? false,
+        productCommissionPercent: dto.productCommissionPercent ?? null,
+        productCommissionOverridesEnabled:
+          dto.productCommissionOverridesEnabled ?? false,
+        hourlyEnabled: dto.hourlyEnabled ?? false,
+        hourlyRate: dto.hourlyRate ?? null,
+        greaterOfEnabled: dto.greaterOfEnabled ?? false,
+      },
+      update: {
+        ...(dto.serviceCommissionEnabled !== undefined
+          ? { serviceCommissionEnabled: dto.serviceCommissionEnabled }
+          : {}),
+        ...(dto.serviceCommissionMode !== undefined
+          ? { serviceCommissionMode: dto.serviceCommissionMode }
+          : {}),
+        ...(dto.serviceCommissionPercent !== undefined
+          ? { serviceCommissionPercent: dto.serviceCommissionPercent }
+          : {}),
+        ...(dto.productCommissionEnabled !== undefined
+          ? { productCommissionEnabled: dto.productCommissionEnabled }
+          : {}),
+        ...(dto.productCommissionPercent !== undefined
+          ? { productCommissionPercent: dto.productCommissionPercent }
+          : {}),
+        ...(dto.productCommissionOverridesEnabled !== undefined
+          ? {
+              productCommissionOverridesEnabled:
+                dto.productCommissionOverridesEnabled,
+            }
+          : {}),
+        ...(dto.hourlyEnabled !== undefined
+          ? { hourlyEnabled: dto.hourlyEnabled }
+          : {}),
+        ...(dto.hourlyRate !== undefined ? { hourlyRate: dto.hourlyRate } : {}),
+        ...(dto.greaterOfEnabled !== undefined
+          ? { greaterOfEnabled: dto.greaterOfEnabled }
+          : {}),
+      },
+    });
+
+    await this.auditService.log({
+      actorUserId: actor.id,
+      businessId,
+      action: 'membership.compensation_updated',
+      entityType: 'StaffCompensationSettings',
+      entityId: row.id,
+    });
+
+    return this.toCompensationResponse(row);
+  }
+
+  async getMemberServices(businessId: string, targetUserId: string) {
+    await this.requireMembership(businessId, targetUserId);
+    const categories = await this.prisma.serviceCategory.findMany({
+      where: { businessId, deletedAt: null },
+      orderBy: { sortOrder: 'asc' },
+      include: {
+        services: {
+          where: { deletedAt: null, status: ServiceStatus.ACTIVE },
+          orderBy: { sortOrder: 'asc' },
+          include: {
+            staffAssignments: {
+              where: { userId: targetUserId, businessId },
+            },
+            onlineBookingSettings: true,
+          },
+        },
+      },
+    });
+
+    const bookingContext = await this.resolveBookingLinkContext(businessId);
+    const staffBookingBase =
+      bookingContext.enabled && bookingContext.slug
+        ? buildPublicStaffBookingUrl(
+            bookingContext.frontendUrl,
+            bookingContext.slug,
+            targetUserId,
+          )
+        : null;
+
+    return {
+      categories: categories.map((category) => ({
+        id: category.id,
+        name: category.name,
+        services: category.services.map((service) => {
+          const assignment = service.staffAssignments[0];
+          const serviceBookingUrl =
+            staffBookingBase && assignment?.onlineBookingEnabled !== false
+              ? `${staffBookingBase}?serviceId=${service.id}`
+              : null;
+          return {
+            id: service.id,
+            name: service.name,
+            durationMinutes: service.durationMinutes,
+            price: service.price,
+            isEnabled: Boolean(assignment?.isEnabled),
+            durationOverride: assignment?.durationMinutes ?? null,
+            priceOverride: assignment?.price ?? null,
+            commissionType: assignment?.commissionType ?? null,
+            commissionValue: assignment?.commissionValue ?? null,
+            onlineBookingEnabled: assignment?.onlineBookingEnabled ?? true,
+            directBookingUrl: serviceBookingUrl,
+          };
+        }),
+      })),
+    };
+  }
+
+  async replaceMemberServices(
+    businessId: string,
+    targetUserId: string,
+    dto: ReplaceStaffMemberServicesDto,
+    actor: RequestUser,
+  ) {
+    await this.requireMembership(businessId, targetUserId);
+
+    const serviceIds = dto.assignments.map((a) => a.serviceId);
+    const services = await this.prisma.service.findMany({
+      where: {
+        businessId,
+        deletedAt: null,
+        id: { in: serviceIds },
+      },
+      select: { id: true },
+    });
+    if (services.length !== new Set(serviceIds).size) {
+      throw new AppException(
+        ErrorCode.SERVICE_NOT_FOUND,
+        'One or more services were not found',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.serviceStaff.deleteMany({
+        where: { businessId, userId: targetUserId },
+      });
+
+      const enabled = dto.assignments.filter((a) => a.isEnabled);
+      if (enabled.length > 0) {
+        await tx.serviceStaff.createMany({
+          data: enabled.map((assignment, index) => ({
+            businessId,
+            userId: targetUserId,
+            serviceId: assignment.serviceId,
+            isEnabled: true,
+            durationMinutes: assignment.durationMinutes ?? null,
+            price: assignment.price ?? null,
+            commissionType:
+              assignment.commissionType &&
+              (assignment.commissionType === 'FLAT' ||
+                assignment.commissionType === 'PERCENT')
+                ? (assignment.commissionType as ServiceCommissionType)
+                : null,
+            commissionValue: assignment.commissionValue ?? null,
+            onlineBookingEnabled: assignment.onlineBookingEnabled ?? true,
+            sortOrder: index,
+          })),
+        });
+      }
+    });
+
+    await this.auditService.log({
+      actorUserId: actor.id,
+      businessId,
+      action: 'membership.services_updated',
+      entityType: 'BusinessMembership',
+      entityId: targetUserId,
+      metadata: { serviceCount: dto.assignments.length },
+    });
+
+    return this.getMemberServices(businessId, targetUserId);
+  }
+
+  private async requireMembership(businessId: string, targetUserId: string) {
+    const membership =
+      await this.membershipRepository.findByUserAndBusinessWithUser(
+        targetUserId,
+        businessId,
+      );
+    if (!membership) {
+      throw new AppException(
+        ErrorCode.MEMBERSHIP_NOT_FOUND,
+        'Membership not found',
+        HttpStatus.NOT_FOUND,
+      );
+    }
+    return membership;
+  }
+
+  private resolvePermissionsForResponse(
+    membership: Awaited<
+      ReturnType<BusinessMembershipRepository['findByUserAndBusinessWithUser']>
+    >,
+  ): Record<string, boolean> {
+    if (
+      membership!.role === BusinessMemberRole.OWNER ||
+      membership!.role === BusinessMemberRole.ADMIN
+    ) {
+      return Object.fromEntries(
+        STAFF_PERMISSION_KEYS.map((key) => [key, true]),
+      );
+    }
+    return normalizeStaffPermissions(membership!.permissions);
+  }
+
+  private toCompensationResponse(
+    row: {
+      serviceCommissionEnabled: boolean;
+      serviceCommissionMode: string | null;
+      serviceCommissionPercent: unknown;
+      productCommissionEnabled: boolean;
+      productCommissionPercent: unknown;
+      productCommissionOverridesEnabled: boolean;
+      hourlyEnabled: boolean;
+      hourlyRate: unknown;
+      greaterOfEnabled: boolean;
+    } | null,
+  ) {
+    if (!row) {
+      return {
+        serviceCommissionEnabled: false,
+        serviceCommissionMode: null,
+        serviceCommissionPercent: null,
+        productCommissionEnabled: false,
+        productCommissionPercent: null,
+        productCommissionOverridesEnabled: false,
+        hourlyEnabled: false,
+        hourlyRate: null,
+        greaterOfEnabled: false,
+      };
+    }
+    return {
+      serviceCommissionEnabled: row.serviceCommissionEnabled,
+      serviceCommissionMode: row.serviceCommissionMode,
+      serviceCommissionPercent:
+        row.serviceCommissionPercent != null
+          ? Number(row.serviceCommissionPercent)
+          : null,
+      productCommissionEnabled: row.productCommissionEnabled,
+      productCommissionPercent:
+        row.productCommissionPercent != null
+          ? Number(row.productCommissionPercent)
+          : null,
+      productCommissionOverridesEnabled: row.productCommissionOverridesEnabled,
+      hourlyEnabled: row.hourlyEnabled,
+      hourlyRate: row.hourlyRate != null ? Number(row.hourlyRate) : null,
+      greaterOfEnabled: row.greaterOfEnabled,
+    };
   }
 
   private async assertCanManagePin(

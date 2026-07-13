@@ -15,6 +15,7 @@ import { BusinessMemberRole } from '@prisma/client';
 import { CurrentUser } from '@app/common/decorators/current-user.decorator';
 import type { RequestUser } from '@app/common/decorators/current-user.decorator';
 import { BusinessRoles } from '@app/common/decorators/business-roles.decorator';
+import { StaffPermission } from '@app/common/decorators/staff-permission.decorator';
 import { BusinessRolesGuard } from '@app/common/guards/business-roles.guard';
 import { AdjustContactWalletDto } from '../dto/adjust-contact-wallet.dto';
 import {
@@ -40,6 +41,7 @@ const MEMBER_ROLES = [
 @ApiBearerAuth()
 @Controller('contacts')
 @UseGuards(BusinessRolesGuard)
+@StaffPermission('contacts.access')
 export class ContactWorkspaceController {
   constructor(
     private readonly timelineService: ContactTimelineService,
@@ -72,6 +74,7 @@ export class ContactWorkspaceController {
 
   @Post(':id/wallet/adjust')
   @BusinessRoles(...MEMBER_ROLES)
+  @StaffPermission('contacts.manage')
   adjustWallet(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -109,6 +112,7 @@ export class ContactWorkspaceController {
 
   @Post(':id/adjustments')
   @BusinessRoles(...MEMBER_ROLES)
+  @StaffPermission('contacts.manage')
   createAdjustment(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -119,6 +123,7 @@ export class ContactWorkspaceController {
 
   @Patch(':id/adjustments/:adjustmentId')
   @BusinessRoles(...MEMBER_ROLES)
+  @StaffPermission('contacts.manage')
   updateAdjustment(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -136,6 +141,7 @@ export class ContactWorkspaceController {
 
   @Delete(':id/adjustments/:adjustmentId')
   @BusinessRoles(...MEMBER_ROLES)
+  @StaffPermission('contacts.manage')
   removeAdjustment(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,

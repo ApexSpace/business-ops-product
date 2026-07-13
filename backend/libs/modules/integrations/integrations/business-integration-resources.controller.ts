@@ -16,6 +16,7 @@ import { BusinessMemberRole } from '@prisma/client';
 import { CurrentUser } from '@app/common/decorators/current-user.decorator';
 import type { RequestUser } from '@app/common/decorators/current-user.decorator';
 import { BusinessRoles } from '@app/common/decorators/business-roles.decorator';
+import { StaffPermission } from '@app/common/decorators/staff-permission.decorator';
 import { BusinessRolesGuard } from '@app/common/guards/business-roles.guard';
 import {
   IntegrationResourceResponseDto,
@@ -28,6 +29,7 @@ import { IntegrationResourcesService } from './services/integration-resources.se
 @ApiBearerAuth()
 @Controller('integrations/business/:providerKey/resources')
 @UseGuards(BusinessRolesGuard)
+@StaffPermission('settings.integrations.manage')
 export class BusinessIntegrationResourcesController {
   constructor(
     private readonly integrationResourcesService: IntegrationResourcesService,

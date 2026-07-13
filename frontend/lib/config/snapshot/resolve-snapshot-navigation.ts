@@ -1,5 +1,10 @@
 import type { BusinessMemberRole } from "@/features/auth/types/auth-dto";
 import type { SnapshotNavItem } from "@/features/platform/types/snapshot";
+import {
+  hasStaffPermission,
+  NAV_KEY_PERMISSION_MAP,
+  type StaffPermissionKey,
+} from "@/features/team/permissions/staff-permissions";
 import type { ShellNavItem, ShellNavSection } from "@/lib/types/shell-nav";
 import {
   isCoreSafeBusinessRoute,
@@ -21,6 +26,7 @@ export interface ResolveSnapshotNavigationOptions {
   businessRole?: BusinessMemberRole;
   isPlatformAdmin?: boolean;
   hasModule?: (moduleKey: string) => boolean;
+  staffPermissions?: Record<string, boolean>;
 }
 
 export interface SnapshotNavigationResult {
@@ -57,6 +63,22 @@ function canAccessByCapability(
   return hasModule(entry.moduleKey);
 }
 
+function canAccessByStaffPermission(
+  navKey: string | undefined,
+  businessRole: BusinessMemberRole | undefined,
+  isPlatformAdmin: boolean,
+  staffPermissions?: Record<string, boolean>,
+): boolean {
+  if (isPlatformAdmin) return true;
+  if (businessRole === "OWNER" || businessRole === "ADMIN") return true;
+  if (!navKey) return true;
+  const permission = NAV_KEY_PERMISSION_MAP[navKey] as
+    | StaffPermissionKey
+    | undefined;
+  if (!permission) return true;
+  return hasStaffPermission(staffPermissions, permission, businessRole);
+}
+
 function resolveNavItems(
   options: ResolveSnapshotNavigationOptions,
 ): ShellNavItem[] {
@@ -66,6 +88,7 @@ function resolveNavItems(
     businessRole,
     isPlatformAdmin = false,
     hasModule,
+    staffPermissions,
   } = options;
 
   return navigation
@@ -76,6 +99,14 @@ function resolveNavItems(
     )
     .filter((item) =>
       canAccessByCapability(item.route, hasModule, isPlatformAdmin),
+    )
+    .filter((item) =>
+      canAccessByStaffPermission(
+        item.key,
+        businessRole,
+        isPlatformAdmin,
+        staffPermissions,
+      ),
     )
     .sort((a, b) => a.order - b.order)
     .map((item) => ({

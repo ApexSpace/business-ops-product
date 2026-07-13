@@ -15,6 +15,7 @@ import { BusinessMemberRole } from '@prisma/client';
 import { CurrentUser } from '@app/common/decorators/current-user.decorator';
 import type { RequestUser } from '@app/common/decorators/current-user.decorator';
 import { BusinessRoles } from '@app/common/decorators/business-roles.decorator';
+import { StaffPermission } from '@app/common/decorators/staff-permission.decorator';
 import { RequireModule } from '@app/common/decorators/require-module.decorator';
 import { ConfirmDeleteQueryDto } from '@app/common/dto/confirm-delete-query.dto';
 import { BusinessCapabilityGuard } from '@app/common/guards/business-capability.guard';
@@ -30,6 +31,7 @@ import { CannedResponsesService } from '../services/canned-responses.service';
 @Controller('canned-responses')
 @UseGuards(BusinessRolesGuard, BusinessCapabilityGuard)
 @RequireModule('conversations')
+@StaffPermission('conversations.access')
 export class CannedResponsesController {
   constructor(
     private readonly cannedResponsesService: CannedResponsesService,

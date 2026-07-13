@@ -46,10 +46,17 @@ export type CreateStaffMemberBody = {
   timeClockPin?: string;
   isServiceProvider?: boolean;
   canAssignProductSales?: boolean;
+  sendInvite?: boolean;
 };
 
 export function createStaffMember(body: CreateStaffMemberBody) {
   return api.post<BusinessMember>("businesses/current/members", body);
+}
+
+export function resendStaffInvite(userId: string) {
+  return api.post<BusinessMember & { inviteLink: string }>(
+    `businesses/current/members/${userId}/resend-invite`,
+  );
 }
 
 export function archiveStaffMember(userId: string) {

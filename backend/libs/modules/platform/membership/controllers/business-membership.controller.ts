@@ -7,6 +7,7 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Put,
   Query,
   UseGuards,
 } from '@nestjs/common';
@@ -22,6 +23,13 @@ import { ListMembersQueryDto } from '../dto/list-members-query.dto';
 import { SetTimeClockPinDto } from '../dto/set-time-clock-pin.dto';
 import { UpdateStaffMemberProfileDto } from '../dto/update-staff-member-profile.dto';
 import { UpdateMemberDto } from '../dto/update-member.dto';
+import {
+  ReplaceStaffMemberServicesDto,
+  UpdateMemberDetailsDto,
+  UpdateMemberNotificationsDto,
+  UpdateMemberPermissionsDto,
+  UpdateStaffCompensationDto,
+} from '../dto/staff-member-settings.dto';
 import { MembershipService } from '@app/modules/platform/membership/services/membership.service';
 
 @ApiTags('business')
@@ -43,6 +51,15 @@ export class BusinessMembershipController {
     return this.membershipService.invite(user.businessId!, dto, user);
   }
 
+  @Post(':userId/resend-invite')
+  @BusinessRoles(BusinessMemberRole.OWNER, BusinessMemberRole.ADMIN)
+  resendInvite(
+    @CurrentUser() user: RequestUser,
+    @Param('userId', ParseUUIDPipe) userId: string,
+  ) {
+    return this.membershipService.resendInvite(user.businessId!, userId, user);
+  }
+
   @Post()
   @BusinessRoles(BusinessMemberRole.OWNER, BusinessMemberRole.ADMIN)
   createStaff(
@@ -51,6 +68,132 @@ export class BusinessMembershipController {
   ) {
     return this.membershipService.createStaffMember(
       user.businessId!,
+      dto,
+      user,
+    );
+  }
+
+  @Get(':userId')
+  @BusinessRoles(BusinessMemberRole.OWNER, BusinessMemberRole.ADMIN)
+  getMember(
+    @CurrentUser() user: RequestUser,
+    @Param('userId', ParseUUIDPipe) userId: string,
+  ) {
+    return this.membershipService.getMember(user.businessId!, userId);
+  }
+
+  @Patch(':userId/details')
+  @BusinessRoles(BusinessMemberRole.OWNER, BusinessMemberRole.ADMIN)
+  updateDetails(
+    @CurrentUser() user: RequestUser,
+    @Param('userId', ParseUUIDPipe) userId: string,
+    @Body() dto: UpdateMemberDetailsDto,
+  ) {
+    return this.membershipService.updateMemberDetails(
+      user.businessId!,
+      userId,
+      dto,
+      user,
+    );
+  }
+
+  @Get(':userId/permissions')
+  @BusinessRoles(BusinessMemberRole.OWNER, BusinessMemberRole.ADMIN)
+  getPermissions(
+    @CurrentUser() user: RequestUser,
+    @Param('userId', ParseUUIDPipe) userId: string,
+  ) {
+    return this.membershipService.getMemberPermissions(user.businessId!, userId);
+  }
+
+  @Patch(':userId/permissions')
+  @BusinessRoles(BusinessMemberRole.OWNER, BusinessMemberRole.ADMIN)
+  updatePermissions(
+    @CurrentUser() user: RequestUser,
+    @Param('userId', ParseUUIDPipe) userId: string,
+    @Body() dto: UpdateMemberPermissionsDto,
+  ) {
+    return this.membershipService.updateMemberPermissions(
+      user.businessId!,
+      userId,
+      dto,
+      user,
+    );
+  }
+
+  @Get(':userId/notifications')
+  @BusinessRoles(BusinessMemberRole.OWNER, BusinessMemberRole.ADMIN)
+  getNotifications(
+    @CurrentUser() user: RequestUser,
+    @Param('userId', ParseUUIDPipe) userId: string,
+  ) {
+    return this.membershipService.getMemberNotifications(
+      user.businessId!,
+      userId,
+    );
+  }
+
+  @Patch(':userId/notifications')
+  @BusinessRoles(BusinessMemberRole.OWNER, BusinessMemberRole.ADMIN)
+  updateNotifications(
+    @CurrentUser() user: RequestUser,
+    @Param('userId', ParseUUIDPipe) userId: string,
+    @Body() dto: UpdateMemberNotificationsDto,
+  ) {
+    return this.membershipService.updateMemberNotifications(
+      user.businessId!,
+      userId,
+      dto,
+      user,
+    );
+  }
+
+  @Get(':userId/compensation')
+  @BusinessRoles(BusinessMemberRole.OWNER, BusinessMemberRole.ADMIN)
+  getCompensation(
+    @CurrentUser() user: RequestUser,
+    @Param('userId', ParseUUIDPipe) userId: string,
+  ) {
+    return this.membershipService.getMemberCompensation(
+      user.businessId!,
+      userId,
+    );
+  }
+
+  @Patch(':userId/compensation')
+  @BusinessRoles(BusinessMemberRole.OWNER, BusinessMemberRole.ADMIN)
+  updateCompensation(
+    @CurrentUser() user: RequestUser,
+    @Param('userId', ParseUUIDPipe) userId: string,
+    @Body() dto: UpdateStaffCompensationDto,
+  ) {
+    return this.membershipService.updateMemberCompensation(
+      user.businessId!,
+      userId,
+      dto,
+      user,
+    );
+  }
+
+  @Get(':userId/services')
+  @BusinessRoles(BusinessMemberRole.OWNER, BusinessMemberRole.ADMIN)
+  getServices(
+    @CurrentUser() user: RequestUser,
+    @Param('userId', ParseUUIDPipe) userId: string,
+  ) {
+    return this.membershipService.getMemberServices(user.businessId!, userId);
+  }
+
+  @Put(':userId/services')
+  @BusinessRoles(BusinessMemberRole.OWNER, BusinessMemberRole.ADMIN)
+  replaceServices(
+    @CurrentUser() user: RequestUser,
+    @Param('userId', ParseUUIDPipe) userId: string,
+    @Body() dto: ReplaceStaffMemberServicesDto,
+  ) {
+    return this.membershipService.replaceMemberServices(
+      user.businessId!,
+      userId,
       dto,
       user,
     );

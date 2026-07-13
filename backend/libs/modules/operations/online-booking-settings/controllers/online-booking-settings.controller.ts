@@ -12,6 +12,7 @@ import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { BusinessMemberRole } from '@prisma/client';
 import { CurrentUser } from '@app/common/decorators/current-user.decorator';
 import { BusinessRoles } from '@app/common/decorators/business-roles.decorator';
+import { StaffPermission } from '@app/common/decorators/staff-permission.decorator';
 import { BusinessRolesGuard } from '@app/common/guards/business-roles.guard';
 import type { RequestUser } from '@app/common/decorators/current-user.decorator';
 import {
@@ -27,6 +28,7 @@ import { OnlineBookingSettingsService } from '../services/online-booking-setting
 @ApiBearerAuth()
 @Controller('online-booking-settings')
 @UseGuards(BusinessRolesGuard)
+@StaffPermission('settings.online_booking.manage')
 export class OnlineBookingSettingsController {
   constructor(private readonly settingsService: OnlineBookingSettingsService) {}
 

@@ -34,6 +34,7 @@ import { formatStaffScheduleConflictMessage } from '../utils/format-appointment-
 import { WorkingHoursService } from '@app/modules/operations/online-booking-settings/services/working-hours.service';
 import { WaitlistMatchingService } from '@app/modules/operations/waitlist/services/waitlist-matching.service';
 import { StorageService } from '@app/modules/storage/services/storage.service';
+import { hasStaffPermission } from '@app/modules/platform/membership/permissions/staff-permission.registry';
 import { DateTime } from 'luxon';
 
 @Injectable()
@@ -470,6 +471,9 @@ export class AppointmentsService {
     void this.appointmentNotificationService
       .sendOwnerNotifications(businessId, appointment)
       .catch(() => undefined);
+    void this.appointmentNotificationService
+      .sendStaffNotifications(businessId, appointment, 'booked')
+      .catch(() => undefined);
 
     if (
       dto.sendConfirmation !== false &&
@@ -517,8 +521,16 @@ export class AppointmentsService {
     meta: { total: number; page: number; limit: number };
   }> {
     const { page, limit, skip, take } = getPaginationParams(query);
-    const isMemberOnly = user?.businessRole === BusinessMemberRole.MEMBER;
-    const assignedToId = isMemberOnly ? user.id : query.assignedToId;
+    const canViewAllCalendars =
+      user?.businessRole !== BusinessMemberRole.MEMBER ||
+      hasStaffPermission(
+        user.staffPermissions,
+        'appointments.view_all_calendars',
+        user.businessRole,
+      );
+    const assignedToId = canViewAllCalendars
+      ? query.assignedToId
+      : user?.id;
 
     const { items, total } = await this.appointmentRepository.findMany(
       businessId,
@@ -821,6 +833,15 @@ export class AppointmentsService {
       void this.appointmentNotificationService
         .sendRescheduled(businessId, appointment, previousStartAt)
         .catch(() => undefined);
+      void this.appointmentNotificationService
+        .sendStaffNotifications(
+          businessId,
+          appointment,
+          'rescheduled',
+          undefined,
+          previousStartAt,
+        )
+        .catch(() => undefined);
     }
 
     this.scheduleWaitlistRecheck(businessId, existing);
@@ -867,6 +888,9 @@ export class AppointmentsService {
     ) {
       void this.appointmentNotificationService
         .sendCancelled(businessId, appointment)
+        .catch(() => undefined);
+      void this.appointmentNotificationService
+        .sendStaffNotifications(businessId, appointment, 'cancelled')
         .catch(() => undefined);
     }
 

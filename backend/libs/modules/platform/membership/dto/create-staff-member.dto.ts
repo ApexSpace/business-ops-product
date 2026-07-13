@@ -58,4 +58,13 @@ export class CreateStaffMemberDto {
   @IsOptional()
   @IsBoolean()
   canAssignProductSales?: boolean;
+
+  @ApiPropertyOptional({
+    default: true,
+    description:
+      'When true, creates an invited membership and sends an activation email instead of an active account without credentials.',
+  })
+  @IsOptional()
+  @IsBoolean()
+  sendInvite?: boolean;
 }

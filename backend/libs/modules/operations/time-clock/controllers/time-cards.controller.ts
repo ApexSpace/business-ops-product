@@ -17,6 +17,7 @@ import { BusinessMemberRole } from '@prisma/client';
 import { CurrentUser } from '@app/common/decorators/current-user.decorator';
 import type { RequestUser } from '@app/common/decorators/current-user.decorator';
 import { BusinessRoles } from '@app/common/decorators/business-roles.decorator';
+import { StaffPermission } from '@app/common/decorators/staff-permission.decorator';
 import { BusinessRolesGuard } from '@app/common/guards/business-roles.guard';
 import { BusinessCapabilityGuard } from '@app/common/guards/business-capability.guard';
 import { RequireModule } from '@app/common/decorators/require-module.decorator';
@@ -37,7 +38,12 @@ export class TimeCardsController {
   constructor(private readonly timeCardsService: TimeCardsService) {}
 
   @Get()
-  @BusinessRoles(BusinessMemberRole.OWNER, BusinessMemberRole.ADMIN)
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
+  @StaffPermission('time_cards.manage')
   list(
     @CurrentUser() user: RequestUser,
     @Query() query: ListTimeCardsQueryDto,
@@ -46,7 +52,12 @@ export class TimeCardsController {
   }
 
   @Get(':id')
-  @BusinessRoles(BusinessMemberRole.OWNER, BusinessMemberRole.ADMIN)
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
+  @StaffPermission('time_cards.manage')
   get(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -55,7 +66,12 @@ export class TimeCardsController {
   }
 
   @Post()
-  @BusinessRoles(BusinessMemberRole.OWNER, BusinessMemberRole.ADMIN)
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
+  @StaffPermission('time_cards.manage')
   create(
     @CurrentUser() user: RequestUser,
     @Body() dto: CreateTimeCardDto,
@@ -64,7 +80,12 @@ export class TimeCardsController {
   }
 
   @Patch(':id')
-  @BusinessRoles(BusinessMemberRole.OWNER, BusinessMemberRole.ADMIN)
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
+  @StaffPermission('time_cards.manage')
   update(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -75,7 +96,12 @@ export class TimeCardsController {
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  @BusinessRoles(BusinessMemberRole.OWNER, BusinessMemberRole.ADMIN)
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
+  @StaffPermission('time_cards.manage')
   remove(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,

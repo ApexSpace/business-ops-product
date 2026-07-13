@@ -22,12 +22,36 @@ import { BusinessDashboardStatsDto } from '../dto/business-dashboard-stats.dto';
 export class DashboardStatsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async getStats(businessId: string): Promise<BusinessDashboardStatsDto> {
+  async getStats(
+    businessId: string,
+    options?: {
+      assignedToId?: string;
+      includeBusinessOps?: boolean;
+    },
+  ): Promise<BusinessDashboardStatsDto> {
+    const includeBusinessOps = options?.includeBusinessOps !== false;
+    const assigneeWhere: Prisma.AppointmentWhereInput = options?.assignedToId
+      ? {
+          OR: [
+            { assignedToId: options.assignedToId },
+            {
+              serviceLines: {
+                some: { assignedToId: options.assignedToId },
+              },
+            },
+          ],
+        }
+      : {};
+
     const leadWhere = { businessId, deletedAt: null };
 
     const workItemWhere = { businessId, deletedAt: null };
 
-    const appointmentWhere = { businessId, deletedAt: null };
+    const appointmentWhere: Prisma.AppointmentWhereInput = {
+      businessId,
+      deletedAt: null,
+      ...assigneeWhere,
+    };
 
     const business = await this.prisma.business.findUnique({
       where: { id: businessId },
@@ -87,12 +111,16 @@ export class DashboardStatsService {
       this.prisma.contact.count({
         where: { businessId, deletedAt: null },
       }),
-      this.prisma.lead.groupBy({
-        by: ['status'],
-        where: leadWhere,
-        _count: { _all: true },
-      }),
-      this.prisma.pipeline.count({ where: { businessId } }),
+      includeBusinessOps
+        ? this.prisma.lead.groupBy({
+            by: ['status'],
+            where: leadWhere,
+            _count: { _all: true },
+          })
+        : Promise.resolve([] as Array<{ status: LeadStatus; _count: { _all: number } }>),
+      includeBusinessOps
+        ? this.prisma.pipeline.count({ where: { businessId } })
+        : Promise.resolve(0),
       this.prisma.businessMembership.count({
         where: {
           businessId,
@@ -100,21 +128,29 @@ export class DashboardStatsService {
           status: MembershipStatus.ACTIVE,
         },
       }),
-      this.prisma.workItem.count({ where: workItemWhere }),
-      this.prisma.workItem.count({
-        where: { ...workItemWhere, status: WorkItemStatus.SCHEDULED },
-      }),
-      this.prisma.workItem.count({
-        where: { ...workItemWhere, status: WorkItemStatus.COMPLETED },
-      }),
-      this.prisma.workItem.count({
-        where: {
-          ...workItemWhere,
-          status: {
-            in: [WorkItemStatus.DRAFT, WorkItemStatus.IN_PROGRESS],
-          },
-        },
-      }),
+      includeBusinessOps
+        ? this.prisma.workItem.count({ where: workItemWhere })
+        : Promise.resolve(0),
+      includeBusinessOps
+        ? this.prisma.workItem.count({
+            where: { ...workItemWhere, status: WorkItemStatus.SCHEDULED },
+          })
+        : Promise.resolve(0),
+      includeBusinessOps
+        ? this.prisma.workItem.count({
+            where: { ...workItemWhere, status: WorkItemStatus.COMPLETED },
+          })
+        : Promise.resolve(0),
+      includeBusinessOps
+        ? this.prisma.workItem.count({
+            where: {
+              ...workItemWhere,
+              status: {
+                in: [WorkItemStatus.DRAFT, WorkItemStatus.IN_PROGRESS],
+              },
+            },
+          })
+        : Promise.resolve(0),
       this.prisma.appointment.count({ where: appointmentWhere }),
       this.prisma.appointment.count({
         where: {
@@ -142,34 +178,55 @@ export class DashboardStatsService {
           },
         },
       }),
-      this.prisma.conversation.count({
-        where: {
-          ...conversationWhere,
-          status: ConversationStatus.OPEN,
-        },
-      }),
-      this.prisma.conversation.count({
-        where: {
-          ...conversationWhere,
-          unreadCount: { gt: 0 },
-        },
-      }),
-      this.prisma.payment.aggregate({
-        where: paymentInRange(startOfToday, endOfToday),
-        _count: { _all: true },
-        _sum: { amount: true },
-      }),
-      this.prisma.payment.aggregate({
-        where: paymentInRange(startOfYesterday, endOfYesterday),
-        _count: { _all: true },
-        _sum: { amount: true },
-      }),
-      this.prisma.invoice.aggregate({
-        where: buildOverdueInvoiceWhere(businessId, startOfToday),
-        _count: { _all: true },
-        _sum: { balanceDue: true },
-      }),
-      this.countLowStockProducts(businessId),
+      includeBusinessOps
+        ? this.prisma.conversation.count({
+            where: {
+              ...conversationWhere,
+              status: ConversationStatus.OPEN,
+            },
+          })
+        : Promise.resolve(0),
+      includeBusinessOps
+        ? this.prisma.conversation.count({
+            where: {
+              ...conversationWhere,
+              unreadCount: { gt: 0 },
+            },
+          })
+        : Promise.resolve(0),
+      includeBusinessOps
+        ? this.prisma.payment.aggregate({
+            where: paymentInRange(startOfToday, endOfToday),
+            _count: { _all: true },
+            _sum: { amount: true },
+          })
+        : Promise.resolve({
+            _count: { _all: 0 },
+            _sum: { amount: null },
+          }),
+      includeBusinessOps
+        ? this.prisma.payment.aggregate({
+            where: paymentInRange(startOfYesterday, endOfYesterday),
+            _count: { _all: true },
+            _sum: { amount: true },
+          })
+        : Promise.resolve({
+            _count: { _all: 0 },
+            _sum: { amount: null },
+          }),
+      includeBusinessOps
+        ? this.prisma.invoice.aggregate({
+            where: buildOverdueInvoiceWhere(businessId, startOfToday),
+            _count: { _all: true },
+            _sum: { balanceDue: true },
+          })
+        : Promise.resolve({
+            _count: { _all: 0 },
+            _sum: { balanceDue: null },
+          }),
+      includeBusinessOps
+        ? this.countLowStockProducts(businessId)
+        : Promise.resolve(0),
     ]);
 
     const leadCounts: Record<LeadStatus, number> = {

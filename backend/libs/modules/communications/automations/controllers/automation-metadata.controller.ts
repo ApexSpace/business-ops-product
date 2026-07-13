@@ -2,6 +2,7 @@ import { Controller, Get, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { BusinessMemberRole } from '@prisma/client';
 import { BusinessRoles } from '@app/common/decorators/business-roles.decorator';
+import { StaffPermission } from '@app/common/decorators/staff-permission.decorator';
 import { BusinessRolesGuard } from '@app/common/guards/business-roles.guard';
 import {
   ActionMetadataResponseDto,
@@ -21,6 +22,7 @@ import { AutomationMetadataService } from '../services/automation-metadata.servi
 @ApiBearerAuth()
 @Controller('automations/metadata')
 @UseGuards(BusinessRolesGuard)
+@StaffPermission('automations.manage')
 export class AutomationMetadataController {
   constructor(private readonly metadataService: AutomationMetadataService) {}
 

@@ -15,6 +15,7 @@ import { BusinessMemberRole } from '@prisma/client';
 import { CurrentUser } from '@app/common/decorators/current-user.decorator';
 import type { RequestUser } from '@app/common/decorators/current-user.decorator';
 import { BusinessRoles } from '@app/common/decorators/business-roles.decorator';
+import { StaffPermission } from '@app/common/decorators/staff-permission.decorator';
 import { RequireModule } from '@app/common/decorators/require-module.decorator';
 import { BusinessCapabilityGuard } from '@app/common/guards/business-capability.guard';
 import { BusinessRolesGuard } from '@app/common/guards/business-roles.guard';
@@ -27,6 +28,7 @@ import { ContactConversationsService } from '../services/contact-conversations.s
 @Controller('contacts')
 @UseGuards(BusinessRolesGuard, BusinessCapabilityGuard)
 @RequireModule('conversations')
+@StaffPermission('conversations.access')
 export class ContactConversationsController {
   constructor(
     private readonly contactConversationsService: ContactConversationsService,

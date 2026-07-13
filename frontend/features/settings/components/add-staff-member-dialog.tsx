@@ -50,6 +50,7 @@ const addStaffSchema = z.object({
     }),
   isServiceProvider: z.boolean(),
   canAssignProductSales: z.boolean(),
+  sendInvite: z.boolean(),
 });
 
 type AddStaffForm = z.infer<typeof addStaffSchema>;
@@ -77,6 +78,7 @@ export function AddStaffMemberDialog({
       timeClockPin: "",
       isServiceProvider: false,
       canAssignProductSales: false,
+      sendInvite: true,
     },
   });
 
@@ -89,6 +91,7 @@ export function AddStaffMemberDialog({
         role: values.role,
         isServiceProvider: values.isServiceProvider,
         canAssignProductSales: values.canAssignProductSales,
+        sendInvite: values.sendInvite,
       };
       if (values.phoneNumber?.trim()) {
         body.phoneNumber = values.phoneNumber.trim();
@@ -99,8 +102,12 @@ export function AddStaffMemberDialog({
       }
       return createStaffMember(body);
     },
-    onSuccess: () => {
-      toast.success("Staff member added");
+    onSuccess: (_data, variables) => {
+      toast.success(
+        variables.sendInvite
+          ? "Staff member created and invite sent"
+          : "Staff member added",
+      );
       void invalidateBusinessMembers(queryClient);
       form.reset();
       setShowPin(false);
@@ -236,6 +243,23 @@ export function AddStaffMemberDialog({
               </FormControl>
               <Label className="font-normal">
                 Can be assigned to product sales
+              </Label>
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="sendInvite"
+          render={({ field }) => (
+            <FormItem className="flex items-center gap-2 space-y-0">
+              <FormControl>
+                <Checkbox
+                  checked={field.value}
+                  onCheckedChange={field.onChange}
+                />
+              </FormControl>
+              <Label className="font-normal">
+                Send invite email so they can set login credentials
               </Label>
             </FormItem>
           )}

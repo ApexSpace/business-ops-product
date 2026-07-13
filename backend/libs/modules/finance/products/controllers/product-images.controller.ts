@@ -15,6 +15,7 @@ import { BusinessMemberRole } from '@prisma/client';
 import { CurrentUser } from '@app/common/decorators/current-user.decorator';
 import type { RequestUser } from '@app/common/decorators/current-user.decorator';
 import { BusinessRoles } from '@app/common/decorators/business-roles.decorator';
+import { StaffPermission } from '@app/common/decorators/staff-permission.decorator';
 import { RequireModule } from '@app/common/decorators/require-module.decorator';
 import { BusinessCapabilityGuard } from '@app/common/guards/business-capability.guard';
 import { BusinessRolesGuard } from '@app/common/guards/business-roles.guard';
@@ -37,6 +38,7 @@ const MEMBER_ROLES = [
 @Controller('products/:productId/images')
 @UseGuards(BusinessRolesGuard, BusinessCapabilityGuard)
 @RequireModule('products')
+@StaffPermission('products.access')
 export class ProductImagesController {
   constructor(private readonly imagesService: ProductImagesService) {}
 
@@ -63,6 +65,7 @@ export class ProductImagesController {
 
   @Put('featured')
   @BusinessRoles(...MEMBER_ROLES)
+  @StaffPermission('products.manage')
   setFeatured(
     @CurrentUser() user: RequestUser,
     @Param('productId', ParseUUIDPipe) productId: string,
@@ -78,6 +81,7 @@ export class ProductImagesController {
 
   @Delete('featured')
   @BusinessRoles(...MEMBER_ROLES)
+  @StaffPermission('products.manage')
   clearFeatured(
     @CurrentUser() user: RequestUser,
     @Param('productId', ParseUUIDPipe) productId: string,
@@ -96,6 +100,7 @@ export class ProductImagesController {
 
   @Post()
   @BusinessRoles(...MEMBER_ROLES)
+  @StaffPermission('products.manage')
   addGalleryImage(
     @CurrentUser() user: RequestUser,
     @Param('productId', ParseUUIDPipe) productId: string,
@@ -111,6 +116,7 @@ export class ProductImagesController {
 
   @Post('reorder')
   @BusinessRoles(...MEMBER_ROLES)
+  @StaffPermission('products.manage')
   reorderGallery(
     @CurrentUser() user: RequestUser,
     @Param('productId', ParseUUIDPipe) productId: string,
@@ -140,6 +146,7 @@ export class ProductImagesController {
 
   @Patch(':imageId')
   @BusinessRoles(...MEMBER_ROLES)
+  @StaffPermission('products.manage')
   updateGalleryImage(
     @CurrentUser() user: RequestUser,
     @Param('productId', ParseUUIDPipe) productId: string,
@@ -157,6 +164,7 @@ export class ProductImagesController {
 
   @Delete(':imageId')
   @BusinessRoles(...MEMBER_ROLES)
+  @StaffPermission('products.manage')
   removeGalleryImage(
     @CurrentUser() user: RequestUser,
     @Param('productId', ParseUUIDPipe) productId: string,

@@ -15,6 +15,7 @@ import { BusinessMemberRole } from '@prisma/client';
 import { CurrentUser } from '@app/common/decorators/current-user.decorator';
 import type { RequestUser } from '@app/common/decorators/current-user.decorator';
 import { BusinessRoles } from '@app/common/decorators/business-roles.decorator';
+import { StaffPermission } from '@app/common/decorators/staff-permission.decorator';
 import { RequireModule } from '@app/common/decorators/require-module.decorator';
 import { BusinessCapabilityGuard } from '@app/common/guards/business-capability.guard';
 import { BusinessRolesGuard } from '@app/common/guards/business-roles.guard';
@@ -38,6 +39,7 @@ const MEMBER_ROLES = [
 @Controller('package-templates')
 @UseGuards(BusinessRolesGuard, BusinessCapabilityGuard)
 @RequireModule('payments')
+@StaffPermission('packages.access')
 export class PackageTemplatesController {
   constructor(private readonly templatesService: PackageTemplatesService) {}
 
@@ -49,6 +51,7 @@ export class PackageTemplatesController {
 
   @Post('reorder')
   @BusinessRoles(...MEMBER_ROLES)
+  @StaffPermission('packages.manage')
   reorder(
     @CurrentUser() user: RequestUser,
     @Body() dto: ReorderPackageTemplatesDto,
@@ -58,6 +61,7 @@ export class PackageTemplatesController {
 
   @Post()
   @BusinessRoles(...MEMBER_ROLES)
+  @StaffPermission('packages.manage')
   create(
     @CurrentUser() user: RequestUser,
     @Body() dto: CreatePackageTemplateDto,
@@ -76,6 +80,7 @@ export class PackageTemplatesController {
 
   @Patch(':id')
   @BusinessRoles(...MEMBER_ROLES)
+  @StaffPermission('packages.manage')
   update(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -86,6 +91,7 @@ export class PackageTemplatesController {
 
   @Delete(':id')
   @BusinessRoles(...MEMBER_ROLES)
+  @StaffPermission('packages.manage')
   remove(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -95,6 +101,7 @@ export class PackageTemplatesController {
 
   @Post(':id/service-groups')
   @BusinessRoles(...MEMBER_ROLES)
+  @StaffPermission('packages.manage')
   addServiceGroup(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -110,6 +117,7 @@ export class PackageTemplatesController {
 
   @Patch(':id/service-groups/:groupId')
   @BusinessRoles(...MEMBER_ROLES)
+  @StaffPermission('packages.manage')
   updateServiceGroup(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -127,6 +135,7 @@ export class PackageTemplatesController {
 
   @Delete(':id/service-groups/:groupId')
   @BusinessRoles(...MEMBER_ROLES)
+  @StaffPermission('packages.manage')
   removeServiceGroup(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,

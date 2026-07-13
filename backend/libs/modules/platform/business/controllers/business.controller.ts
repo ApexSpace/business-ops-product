@@ -61,7 +61,14 @@ export class BusinessController {
   getDashboardStats(
     @CurrentUser() user: RequestUser,
   ): Promise<BusinessDashboardStatsDto> {
-    return this.dashboardStatsService.getStats(user.businessId!);
+    return this.dashboardStatsService.getStats(user.businessId!, {
+      assignedToId:
+        user.businessRole === BusinessMemberRole.MEMBER &&
+        !user.staffPermissions?.['appointments.view_all_calendars']
+          ? user.id
+          : undefined,
+      includeBusinessOps: user.businessRole !== BusinessMemberRole.MEMBER,
+    });
   }
 
   @Get('current/dashboard-feed')
@@ -73,7 +80,7 @@ export class BusinessController {
   getDashboardFeed(
     @CurrentUser() user: RequestUser,
   ): Promise<BusinessDashboardFeedDto> {
-    return this.dashboardFeedService.getFeed(user.businessId!);
+    return this.dashboardFeedService.getFeed(user.businessId!, user);
   }
 
   @Patch('current')
