@@ -278,6 +278,9 @@ export interface BusinessMember {
   gender?: string | null;
   isServiceProvider?: boolean;
   canAssignProductSales?: boolean;
+  onlineBookingEnabled?: boolean;
+  canManageWaitlist?: boolean;
+  staffBookingUrl?: string | null;
 }
 
 export interface AuditLog {

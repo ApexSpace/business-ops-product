@@ -76,6 +76,37 @@ export const EMAIL_TYPE_REGISTRY: Record<string, EmailTypeDefinition> = {
       'appointment.title',
     ],
   },
+  'appointment.booked_for': {
+    key: 'appointment.booked_for',
+    category: 'appointments',
+    label: 'Booked-for notification',
+    description:
+      'Sent to the guest when someone else books an appointment on their behalf.',
+    defaultEnabled: true,
+    businessConfigurable: true,
+    defaultSubject:
+      '{{booked_by.name}} booked an appointment for you at {{business.name}}',
+    defaultHtmlBody: WRAPPER(`
+      <p>Hi {{booked_for.name}},</p>
+      <p><strong>{{booked_by.name}}</strong> booked an appointment for you at <strong>{{business.name}}</strong>.</p>
+      <p><strong>When:</strong> {{appointment.start_at}}</p>
+      <p><strong>Service:</strong> {{appointment.calendar_name}}</p>
+      <p>We look forward to seeing you.</p>
+    `),
+    defaultTextBody:
+      'Hi {{booked_for.name}},\n\n{{booked_by.name}} booked an appointment for you at {{business.name}}.\n\nWhen: {{appointment.start_at}}\nService: {{appointment.calendar_name}}\n\nWe look forward to seeing you.',
+    variables: [
+      'business.name',
+      'booked_for.name',
+      'booked_for.email',
+      'booked_by.name',
+      'booked_by.email',
+      'appointment.start_at',
+      'appointment.end_at',
+      'appointment.calendar_name',
+      'appointment.title',
+    ],
+  },
   'appointment.owner_notification': {
     key: 'appointment.owner_notification',
     category: 'appointments',
@@ -201,6 +232,83 @@ export const EMAIL_TYPE_REGISTRY: Record<string, EmailTypeDefinition> = {
       'appointment.previous_start_at',
       'appointment.calendar_name',
       'appointment.title',
+    ],
+  },
+  'booking.waitlist_joined': {
+    key: 'booking.waitlist_joined',
+    category: 'appointments',
+    label: 'Waitlist joined (client)',
+    description: 'Sent to the client when they join the online booking waitlist.',
+    defaultEnabled: true,
+    businessConfigurable: true,
+    defaultSubject: 'You are on the waitlist at {{business.name}}',
+    defaultHtmlBody: WRAPPER(`
+      <p>Hi {{contact.name}},</p>
+      <p>You have been added to the waitlist at <strong>{{business.name}}</strong>.</p>
+      <p><strong>Service:</strong> {{waitlist.service_name}}</p>
+      <p><strong>Date:</strong> {{waitlist.preferred_date}}</p>
+      <p><strong>Staff:</strong> {{waitlist.staff_name}}</p>
+      <p>We will contact you when an opening becomes available.</p>
+    `),
+    defaultTextBody:
+      'Hi {{contact.name}},\n\nYou have been added to the waitlist at {{business.name}}.\n\nService: {{waitlist.service_name}}\nDate: {{waitlist.preferred_date}}\nStaff: {{waitlist.staff_name}}\n\nWe will contact you when an opening becomes available.',
+    variables: [
+      'business.name',
+      'contact.name',
+      'waitlist.service_name',
+      'waitlist.preferred_date',
+      'waitlist.staff_name',
+    ],
+  },
+  'booking.waitlist_staff_notification': {
+    key: 'booking.waitlist_staff_notification',
+    category: 'appointments',
+    label: 'Waitlist joined (staff)',
+    description: 'Sent to staff when a client joins the online booking waitlist.',
+    defaultEnabled: true,
+    businessConfigurable: true,
+    defaultSubject: 'New waitlist entry: {{contact.name}}',
+    defaultHtmlBody: WRAPPER(`
+      <p>A client joined the waitlist at <strong>{{business.name}}</strong>.</p>
+      <p><strong>Client:</strong> {{contact.name}}</p>
+      <p><strong>Service:</strong> {{waitlist.service_name}}</p>
+      <p><strong>Date:</strong> {{waitlist.preferred_date}}</p>
+      <p><strong>Staff:</strong> {{waitlist.staff_name}}</p>
+    `),
+    defaultTextBody:
+      'A client joined the waitlist at {{business.name}}.\n\nClient: {{contact.name}}\nService: {{waitlist.service_name}}\nDate: {{waitlist.preferred_date}}\nStaff: {{waitlist.staff_name}}',
+    variables: [
+      'business.name',
+      'contact.name',
+      'waitlist.service_name',
+      'waitlist.preferred_date',
+      'waitlist.staff_name',
+    ],
+  },
+  'booking.waitlist_opening_available': {
+    key: 'booking.waitlist_opening_available',
+    category: 'appointments',
+    label: 'Waitlist opening available',
+    description: 'Sent to staff when a waitlist entry has a matching calendar opening.',
+    defaultEnabled: true,
+    businessConfigurable: true,
+    defaultSubject: 'Waitlist opening available for {{contact.name}}',
+    defaultHtmlBody: WRAPPER(`
+      <p>An opening is now available for a waitlist entry at <strong>{{business.name}}</strong>.</p>
+      <p><strong>Client:</strong> {{contact.name}}</p>
+      <p><strong>Service:</strong> {{waitlist.service_name}}</p>
+      <p><strong>Date:</strong> {{waitlist.preferred_date}}</p>
+      <p><strong>Staff:</strong> {{waitlist.staff_name}}</p>
+      <p>Review the waitlist in your calendar to book this client.</p>
+    `),
+    defaultTextBody:
+      'An opening is now available for a waitlist entry at {{business.name}}.\n\nClient: {{contact.name}}\nService: {{waitlist.service_name}}\nDate: {{waitlist.preferred_date}}\nStaff: {{waitlist.staff_name}}\n\nReview the waitlist in your calendar to book this client.',
+    variables: [
+      'business.name',
+      'contact.name',
+      'waitlist.service_name',
+      'waitlist.preferred_date',
+      'waitlist.staff_name',
     ],
   },
   'invoice.sent': {

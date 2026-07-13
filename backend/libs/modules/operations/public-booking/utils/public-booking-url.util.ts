@@ -19,12 +19,21 @@ export function buildPublicServiceBookingUrl(
   return `${base}?${search.toString()}`;
 }
 
+export function buildPublicStaffBookingUrl(
+  frontendUrl: string,
+  publicSlug: string,
+  staffId: string,
+): string {
+  const base = buildPublicBookingUrl(frontendUrl, publicSlug);
+  return `${base}?staffId=${encodeURIComponent(staffId)}`;
+}
+
 export function buildPublicEmbedUrl(
   frontendUrl: string,
   publicSlug: string,
 ): string {
   const base = frontendUrl.replace(/\/$/, '');
-  return `${base}/embed/calendar/${publicSlug}`;
+  return `${base}/embed/booking/${publicSlug}`;
 }
 
 export function buildPublicEmbedCode(

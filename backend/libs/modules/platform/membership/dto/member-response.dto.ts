@@ -63,6 +63,15 @@ export class MemberResponseDto {
 
   @ApiProperty()
   canAssignProductSales!: boolean;
+
+  @ApiProperty()
+  onlineBookingEnabled!: boolean;
+
+  @ApiProperty()
+  canManageWaitlist!: boolean;
+
+  @ApiPropertyOptional()
+  staffBookingUrl?: string | null;
 }
 
 export class InviteMemberResponseDto extends MemberResponseDto {

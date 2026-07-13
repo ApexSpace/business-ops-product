@@ -176,7 +176,6 @@ export function AppointmentTimeBlockDrawer({
       onOpenChange(false);
       onSuccess?.();
     },
-    onError: (error: Error) => toast.error(error.message),
   });
 
   return (

@@ -7,6 +7,7 @@ export const STRIPE_PAYMENT_PURPOSE = {
   GIFT_CARD: 'gift_card',
   PACKAGE: 'package',
   MEMBERSHIP: 'membership',
+  BOOKING: 'booking',
 } as const;
 
 export type StripePaymentPurpose =

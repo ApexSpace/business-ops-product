@@ -403,6 +403,13 @@ export const queryKeys = {
       listKey(["appointments", "list"], filters),
     detail: (id: string) => ["appointments", "detail", id] as const,
   },
+  waitlist: {
+    all: () => ["waitlist"] as const,
+    summary: () => ["waitlist", "summary"] as const,
+    list: (filters?: ListFilters) =>
+      listKey(["waitlist", "list"], filters),
+    detail: (id: string) => ["waitlist", "detail", id] as const,
+  },
   integrations: {
     all: () => ["integrations"] as const,
     businessProviders: () => ["integrations", "business", "providers"] as const,

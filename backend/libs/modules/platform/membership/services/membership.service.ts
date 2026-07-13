@@ -20,6 +20,7 @@ import { InviteMemberDto } from '../dto/invite-member.dto';
 import { CreateStaffMemberDto } from '../dto/create-staff-member.dto';
 import { ListMembersQueryDto } from '../dto/list-members-query.dto';
 import { SetTimeClockPinDto } from '../dto/set-time-clock-pin.dto';
+import { UpdateStaffMemberProfileDto } from '../dto/update-staff-member-profile.dto';
 import { UpdateMemberDto } from '../dto/update-member.dto';
 import { SetBusinessOwnerDto } from '../dto/set-owner.dto';
 import {
@@ -29,6 +30,7 @@ import {
 import { BusinessMembershipRepository } from '../repositories/business-membership.repository';
 import { EmailNotificationService } from '@app/modules/communications/email/services/email-notification.service';
 import { formatUserName } from '@app/modules/communications/email/utils/email-variables.util';
+import { buildPublicStaffBookingUrl } from '@app/modules/operations/public-booking/utils/public-booking-url.util';
 
 @Injectable()
 export class MembershipService {
@@ -59,10 +61,75 @@ export class MembershipService {
       },
     );
 
+    const bookingContext = await this.resolveBookingLinkContext(businessId);
+
     return {
-      items: items.map((m) => this.toMemberResponse(m)),
+      items: items.map((m) => this.toMemberResponse(m, bookingContext)),
       meta: { total, page, limit },
     };
+  }
+
+  private async resolveBookingLinkContext(businessId: string): Promise<{
+    slug: string | null;
+    enabled: boolean;
+    frontendUrl: string;
+  }> {
+    const settings = await this.prisma.businessOnlineBookingSettings.findUnique(
+      { where: { businessId } },
+    );
+    const frontendUrl = this.configService.get('app', {
+      infer: true,
+    }).frontendUrl;
+    return {
+      slug: settings?.publicSlug ?? null,
+      enabled: settings?.onlineBookingEnabled ?? false,
+      frontendUrl,
+    };
+  }
+
+  async updateStaffProfile(
+    businessId: string,
+    targetUserId: string,
+    dto: UpdateStaffMemberProfileDto,
+    actor: RequestUser,
+  ): Promise<MemberResponseDto> {
+    const membership =
+      await this.membershipRepository.findByUserAndBusinessWithUser(
+        targetUserId,
+        businessId,
+      );
+    if (!membership) {
+      throw new AppException(
+        ErrorCode.MEMBERSHIP_NOT_FOUND,
+        'Membership not found',
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    const updated = await this.membershipRepository.update(membership.id, {
+      ...(dto.onlineBookingEnabled !== undefined
+        ? { onlineBookingEnabled: dto.onlineBookingEnabled }
+        : {}),
+      ...(dto.isServiceProvider !== undefined
+        ? { isServiceProvider: dto.isServiceProvider }
+        : {}),
+      ...(dto.canManageWaitlist !== undefined
+        ? { canManageWaitlist: dto.canManageWaitlist }
+        : {}),
+    });
+
+    await this.auditService.log({
+      actorUserId: actor.id,
+      businessId,
+      action: 'membership.staff_profile_updated',
+      entityType: 'BusinessMembership',
+      entityId: updated.id,
+      metadata: { ...dto },
+    });
+
+    const withUser = await this.membershipRepository.findById(updated.id);
+    const bookingContext = await this.resolveBookingLinkContext(businessId);
+    return this.toMemberResponse(withUser!, bookingContext);
   }
 
   async listForPlatform(businessId: string): Promise<MemberResponseDto[]> {
@@ -715,7 +782,24 @@ export class MembershipService {
     membership: Awaited<
       ReturnType<BusinessMembershipRepository['findById']>
     > & {},
+    bookingContext?: {
+      slug: string | null;
+      enabled: boolean;
+      frontendUrl: string;
+    },
   ): MemberResponseDto {
+    const staffBookingUrl =
+      bookingContext?.enabled &&
+      bookingContext.slug &&
+      membership.onlineBookingEnabled &&
+      membership.isServiceProvider
+        ? buildPublicStaffBookingUrl(
+            bookingContext.frontendUrl,
+            bookingContext.slug,
+            membership.userId,
+          )
+        : null;
+
     return {
       id: membership.id,
       userId: membership.userId,
@@ -736,6 +820,9 @@ export class MembershipService {
       gender: membership.gender,
       isServiceProvider: membership.isServiceProvider,
       canAssignProductSales: membership.canAssignProductSales,
+      onlineBookingEnabled: membership.onlineBookingEnabled,
+      canManageWaitlist: membership.canManageWaitlist,
+      staffBookingUrl,
     };
   }
 }

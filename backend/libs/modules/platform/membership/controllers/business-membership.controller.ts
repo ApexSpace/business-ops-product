@@ -20,6 +20,7 @@ import { InviteMemberDto } from '../dto/invite-member.dto';
 import { CreateStaffMemberDto } from '../dto/create-staff-member.dto';
 import { ListMembersQueryDto } from '../dto/list-members-query.dto';
 import { SetTimeClockPinDto } from '../dto/set-time-clock-pin.dto';
+import { UpdateStaffMemberProfileDto } from '../dto/update-staff-member-profile.dto';
 import { UpdateMemberDto } from '../dto/update-member.dto';
 import { MembershipService } from '@app/modules/platform/membership/services/membership.service';
 
@@ -50,6 +51,21 @@ export class BusinessMembershipController {
   ) {
     return this.membershipService.createStaffMember(
       user.businessId!,
+      dto,
+      user,
+    );
+  }
+
+  @Patch(':userId/staff-profile')
+  @BusinessRoles(BusinessMemberRole.OWNER, BusinessMemberRole.ADMIN)
+  updateStaffProfile(
+    @CurrentUser() user: RequestUser,
+    @Param('userId', ParseUUIDPipe) userId: string,
+    @Body() dto: UpdateStaffMemberProfileDto,
+  ) {
+    return this.membershipService.updateStaffProfile(
+      user.businessId!,
+      userId,
       dto,
       user,
     );

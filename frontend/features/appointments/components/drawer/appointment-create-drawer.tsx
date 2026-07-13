@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { FileText } from "lucide-react";
+import { FileText, TriangleAlert } from "lucide-react";
 import { toast } from "sonner";
 import {
   DrawerShell,
@@ -31,6 +31,14 @@ import { getCalendarSchedulingConfig } from "@/features/appointments/utils/appoi
 import { listCalendars } from "@/features/calendars/api/calendars.api";
 import { resolveAppointmentDisplayTimezone } from "@/features/calendars/utils/timezone";
 import { listBusinessMembers } from "@/features/settings/api/business.api";
+import { useAppointmentsWorkingHours } from "@/features/appointments/hooks/use-appointments-working-hours";
+import {
+  dayOfWeekForDateKey,
+  getOutsideScheduleMessage,
+  getWorkingWindowForDay,
+  isRangeOutsideWorkingWindow,
+  resolveEffectiveWeeklyHours,
+} from "@/features/appointments/utils/working-hours";
 import { useCurrentBusiness } from "@/features/settings/hooks/use-current-business";
 import { queryKeys } from "@/lib/query/keys";
 import {
@@ -131,6 +139,57 @@ export function AppointmentCreateDrawer({
   const [notes, setNotes] = useState("");
   const [sendConfirmation, setSendConfirmation] = useState(true);
 
+  const assignedStaffIds = useMemo(
+    () =>
+      [
+        ...new Set(
+          services
+            .map((line) => line.assignedToId)
+            .filter(Boolean)
+            .concat(defaultAssignedToId ? [defaultAssignedToId] : []),
+        ),
+      ] as string[],
+    [services, defaultAssignedToId],
+  );
+
+  const { businessSlots, staffSlotsByUserId } =
+    useAppointmentsWorkingHours(assignedStaffIds);
+
+  const outsideScheduleWarning = useMemo(() => {
+    if (!dateKey || !services.length) return null;
+    for (const line of services) {
+      const staffId = line.assignedToId ?? defaultAssignedToId;
+      if (!staffId) continue;
+      const staffSlots = staffSlotsByUserId.get(staffId) ?? null;
+      const weekly = resolveEffectiveWeeklyHours(
+        businessSlots,
+        staffSlots ?? undefined,
+      );
+      const dayOfWeek = dayOfWeekForDateKey(dateKey, timezone);
+      const window = getWorkingWindowForDay(weekly, dayOfWeek);
+      const lineStart = line.startMinutes ?? startMinutes;
+      const lineEnd = lineStart + line.occupancyMinutes;
+      if (
+        isRangeOutsideWorkingWindow(lineStart, lineEnd, window)
+      ) {
+        const staffLabel =
+          staffOptions.find((s) => s.userId === staffId)?.label ??
+          "this staff member";
+        return getOutsideScheduleMessage(staffLabel);
+      }
+    }
+    return null;
+  }, [
+    dateKey,
+    services,
+    defaultAssignedToId,
+    staffSlotsByUserId,
+    businessSlots,
+    timezone,
+    startMinutes,
+    staffOptions,
+  ]);
+
   useEffect(() => {
     if (!open || !defaults) return;
     const schedule = scheduleFromUtcIso(
@@ -196,14 +255,17 @@ export function AppointmentCreateDrawer({
       if (saved.scheduleWarning) {
         toast.warning(saved.scheduleWarning);
       }
-      toast.success("Appointment created");
+      if (saved.status === "UNCONFIRMED" && saved.scheduleWarning) {
+        toast.message("Saved as unconfirmed. Confirm the appointment when ready.");
+      } else {
+        toast.success("Appointment created");
+      }
       void queryClient.invalidateQueries({
         queryKey: queryKeys.appointments.all(),
       });
       onOpenChange(false);
       onSuccess?.(saved.id);
     },
-    onError: (error: Error) => toast.error(error.message),
   });
 
   const handleContactSelect = (contact: Contact) => {
@@ -316,6 +378,13 @@ export function AppointmentCreateDrawer({
             Send confirmation to client
           </Label>
         </div>
+
+        {outsideScheduleWarning ? (
+          <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm text-amber-950 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-100">
+            <TriangleAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
+            <p>{outsideScheduleWarning}</p>
+          </div>
+        ) : null}
       </div>
     </DrawerShell>
   );

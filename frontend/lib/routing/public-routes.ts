@@ -22,12 +22,16 @@ export type PublicRouteResource = {
 export const PUBLIC_ROUTE_RESOURCES: PublicRouteResource[] = [
   {
     prefix: "/book",
-    description: "Public calendar booking",
+    description: "Public business online booking",
+  },
+  {
+    prefix: "/booking",
+    description: "Public business online booking alias",
   },
   {
     prefix: "/calendar",
     legacyPrefixes: ["/embed"],
-    description: "Public calendar booking (canonical + embed widget)",
+    description: "Legacy public booking paths",
   },
   {
     prefix: "/invoice",

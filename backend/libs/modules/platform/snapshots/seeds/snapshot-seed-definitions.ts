@@ -124,6 +124,7 @@ function baseEmailPrefs() {
   return [
     { emailType: 'membership.invite', enabled: true },
     { emailType: 'appointment.confirmation', enabled: true },
+    { emailType: 'appointment.booked_for', enabled: true },
     { emailType: 'appointment.reminder', enabled: true },
     { emailType: 'invoice.sent', enabled: true },
   ];

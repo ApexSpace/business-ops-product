@@ -27,7 +27,6 @@ import { listResourcePicker } from "@/features/resources/api/resources.api";
 import type { ResourcePickerItem } from "@/features/resources/types";
 import { resourceTypeLabel } from "@/features/resources/utils/resource-schedule.util";
 import { listBusinessMembers } from "@/features/settings/api/business.api";
-import { listCalendars } from "@/features/calendars/api/calendars.api";
 import type { Service } from "@/features/services/types";
 import type { ServiceWorkspace } from "@/features/services/api/service-workspace.api";
 import {
@@ -68,11 +67,6 @@ export function ServiceWorkspacePanel({
   const { data: membersData } = useQuery({
     queryKey: queryKeys.business.members({ limit: 100 }),
     queryFn: () => listBusinessMembers({ limit: 100 }),
-  });
-
-  const { data: calendarsData } = useQuery({
-    queryKey: ["calendars", "list", { limit: 50 }],
-    queryFn: () => listCalendars({ limit: 50 }),
   });
 
   const { data: directLinks } = useQuery({
@@ -233,7 +227,6 @@ export function ServiceWorkspacePanel({
         <TabsContent value="online" className="mt-4">
           <OnlineBookingTab
             settings={data.onlineBooking}
-            calendars={calendarsData?.items ?? []}
             directLink={directLinks?.serviceLink}
             hint={directLinks?.hint}
             isPending={onlineMutation.isPending}
@@ -353,7 +346,39 @@ function DetailsTab({
         <Field label="Description" value={form.description} onChange={(v) => setForm({ ...form, description: v })} />
 
         <ToggleRow label="Processing time" checked={form.hasProcessingTime} onCheckedChange={(v) => setForm({ ...form, hasProcessingTime: v })} />
+        {form.hasProcessingTime ? (
+          <div className="grid gap-4 sm:grid-cols-2 rounded-lg border bg-muted/20 p-3">
+            <Field
+              label="Processing duration (min)"
+              value={form.processingDurationMinutes}
+              onChange={(v) => setForm({ ...form, processingDurationMinutes: v })}
+              type="number"
+            />
+            <Field
+              label="Finish duration (min, optional)"
+              value={form.finishDurationMinutes}
+              onChange={(v) => setForm({ ...form, finishDurationMinutes: v })}
+              type="number"
+            />
+          </div>
+        ) : null}
         <ToggleRow label="Buffer time" checked={form.hasBufferTime} onCheckedChange={(v) => setForm({ ...form, hasBufferTime: v })} />
+        {form.hasBufferTime ? (
+          <div className="grid gap-4 sm:grid-cols-2 rounded-lg border bg-muted/20 p-3">
+            <Field
+              label="Buffer before (min)"
+              value={form.bufferBeforeMinutes}
+              onChange={(v) => setForm({ ...form, bufferBeforeMinutes: v })}
+              type="number"
+            />
+            <Field
+              label="Buffer after (min)"
+              value={form.bufferAfterMinutes}
+              onChange={(v) => setForm({ ...form, bufferAfterMinutes: v })}
+              type="number"
+            />
+          </div>
+        ) : null}
         <ToggleRow label="Uses products" checked={form.usesProducts} onCheckedChange={(v) => setForm({ ...form, usesProducts: v })} />
         <ToggleRow label="Resource only (no staff)" checked={form.requiresNoStaff} onCheckedChange={(v) => setForm({ ...form, requiresNoStaff: v, requiresTwoStaff: v ? false : form.requiresTwoStaff })} />
         <ToggleRow label="Requires two staff" checked={form.requiresTwoStaff} onCheckedChange={(v) => setForm({ ...form, requiresTwoStaff: v, requiresNoStaff: v ? false : form.requiresNoStaff })} />
@@ -854,14 +879,12 @@ function CustomizationsTab({
 
 function OnlineBookingTab({
   settings,
-  calendars,
   directLink,
   hint,
   isPending,
   onSave,
 }: {
   settings: Record<string, unknown> | null;
-  calendars: Array<{ id: string; name: string; publicSlug: string | null }>;
   directLink: string | null | undefined;
   hint: string | null | undefined;
   isPending: boolean;
@@ -869,7 +892,6 @@ function OnlineBookingTab({
 }) {
   const [form, setForm] = useState({
     onlineBookingEnabled: Boolean(settings?.onlineBookingEnabled ?? true),
-    calendarId: settings?.calendarId ? String(settings.calendarId) : "",
     customizePriceDisplay: Boolean(settings?.customizePriceDisplay),
     showPromptToCall: Boolean(settings?.showPromptToCall),
     requireHomeAddress: Boolean(settings?.requireHomeAddress),
@@ -881,7 +903,6 @@ function OnlineBookingTab({
     if (!settings) return;
     setForm({
       onlineBookingEnabled: Boolean(settings.onlineBookingEnabled ?? true),
-      calendarId: settings.calendarId ? String(settings.calendarId) : "",
       customizePriceDisplay: Boolean(settings.customizePriceDisplay),
       showPromptToCall: Boolean(settings.showPromptToCall),
       requireHomeAddress: Boolean(settings.requireHomeAddress),
@@ -898,26 +919,6 @@ function OnlineBookingTab({
           checked={form.onlineBookingEnabled}
           onCheckedChange={(v) => setForm({ ...form, onlineBookingEnabled: v })}
         />
-        <div className="space-y-1">
-          <Label>Booking calendar</Label>
-          <Select
-            value={form.calendarId || "__none__"}
-            onValueChange={(v) =>
-              setForm({ ...form, calendarId: !v || v === "__none__" ? "" : v })
-            }
-          >
-            <SelectTrigger><SelectValue placeholder="Select calendar" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="__none__">None</SelectItem>
-              {calendars.map((c) => (
-                <SelectItem key={c.id} value={c.id}>
-                  {c.name}
-                  {!c.publicSlug ? " (no public slug)" : ""}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
         {directLink ? (
           <div className="flex items-center gap-2 rounded border p-2 text-sm">
             <span className="truncate flex-1">{directLink}</span>
@@ -940,17 +941,9 @@ function OnlineBookingTab({
         <ToggleRow label="Show prompt to call" checked={form.showPromptToCall} onCheckedChange={(v) => setForm({ ...form, showPromptToCall: v })} />
         <ToggleRow label="Require home address" checked={form.requireHomeAddress} onCheckedChange={(v) => setForm({ ...form, requireHomeAddress: v })} />
         <ToggleRow label="Require credit card" checked={form.requireCreditCard} onCheckedChange={(v) => setForm({ ...form, requireCreditCard: v })} />
-        <p className="text-xs text-muted-foreground">
-          Payment at booking enforcement is stored but not yet active in public booking.
-        </p>
         <Button
           disabled={isPending}
-          onClick={() =>
-            onSave({
-              ...form,
-              calendarId: form.calendarId || null,
-            })
-          }
+          onClick={() => onSave(form)}
         >
           Save online booking
         </Button>

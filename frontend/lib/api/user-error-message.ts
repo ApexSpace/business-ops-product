@@ -34,13 +34,14 @@ const CODE_MESSAGES: Record<string, string> = {
 export function getUserErrorMessage(error: unknown): UserErrorMessage {
   if (error instanceof ApiClientError) {
     const category = classifyApiError(error);
+    const isClientError = error.status >= 400 && error.status < 500;
 
     if (category === "business_access" && error.code) {
       const blocked = getAccessBlockedMessage(error.code);
       return {
         title: blocked.title,
         description: blocked.message,
-        requestId: error.requestId,
+        requestId: isClientError ? undefined : error.requestId,
       };
     }
 
@@ -49,7 +50,15 @@ export function getUserErrorMessage(error: unknown): UserErrorMessage {
         title: "Feature not included",
         description:
           CODE_MESSAGES.FEATURE_NOT_AVAILABLE ?? error.message,
-        requestId: error.requestId,
+        requestId: isClientError ? undefined : error.requestId,
+      };
+    }
+
+    if (error.code === "APPOINTMENT_SCHEDULE_CONFLICT" || error.status === 409) {
+      return {
+        title: "Scheduling conflict",
+        description: error.message || "This time is no longer available.",
+        requestId: undefined,
       };
     }
 
@@ -72,7 +81,7 @@ export function getUserErrorMessage(error: unknown): UserErrorMessage {
               ? "Not authorized"
               : "Request failed",
       description,
-      requestId: error.requestId,
+      requestId: isClientError ? undefined : error.requestId,
     };
   }
 

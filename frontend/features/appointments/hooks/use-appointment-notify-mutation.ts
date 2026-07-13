@@ -16,6 +16,5 @@ export function useAppointmentNotifyMutation(appointmentId?: string | null) {
       });
       toast.success("Client notified");
     },
-    onError: (error: Error) => toast.error(error.message),
   });
 }

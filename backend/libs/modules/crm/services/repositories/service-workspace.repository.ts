@@ -389,15 +389,9 @@ export class ServiceWorkspaceRepository {
   findOnlineBookingSettings(
     businessId: string,
     serviceId: string,
-  ): Promise<
-    | (ServiceOnlineBookingSettings & {
-        calendar: { publicSlug: string | null } | null;
-      })
-    | null
-  > {
+  ): Promise<ServiceOnlineBookingSettings | null> {
     return this.prisma.serviceOnlineBookingSettings.findFirst({
       where: { businessId, serviceId },
-      include: { calendar: { select: { publicSlug: true } } },
     });
   }
 }

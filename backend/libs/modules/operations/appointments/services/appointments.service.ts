@@ -1,5 +1,5 @@
-import { HttpStatus, Injectable, Logger } from '@nestjs/common';
-import { AppointmentStatus, Prisma } from '@prisma/client';
+import { HttpStatus, Inject, Injectable, Logger, forwardRef } from '@nestjs/common';
+import { AppointmentStatus, BusinessMemberRole, Prisma } from '@prisma/client';
 import { RequestUser } from '@app/common/decorators/current-user.decorator';
 import { AppException } from '@app/common/exceptions/app.exception';
 import { ErrorCode } from '@app/common/exceptions/error-code.enum';
@@ -26,6 +26,14 @@ import { ClientPackagesService } from '@app/modules/finance/packages/services/cl
 import { AppointmentRepository } from '../repositories/appointment.repository';
 import { AppointmentNotificationService } from './appointment-notification.service';
 import { resolveServiceTiming } from '@app/modules/crm/services/utils/service-timing.util';
+import {
+  appointmentBlocksOverlap,
+  resolveAppointmentBlockingWindow,
+} from '../utils/appointment-blocking.util';
+import { formatStaffScheduleConflictMessage } from '../utils/format-appointment-schedule-message.util';
+import { WorkingHoursService } from '@app/modules/operations/online-booking-settings/services/working-hours.service';
+import { WaitlistMatchingService } from '@app/modules/operations/waitlist/services/waitlist-matching.service';
+import { DateTime } from 'luxon';
 
 @Injectable()
 export class AppointmentsService {
@@ -43,6 +51,9 @@ export class AppointmentsService {
     private readonly jobEnqueueService: JobEnqueueService,
     private readonly appointmentNotificationService: AppointmentNotificationService,
     private readonly clientPackagesService: ClientPackagesService,
+    private readonly workingHoursService: WorkingHoursService,
+    @Inject(forwardRef(() => WaitlistMatchingService))
+    private readonly waitlistMatchingService: WaitlistMatchingService,
   ) {}
 
   private scheduleGoogleCalendarSync(
@@ -51,7 +62,7 @@ export class AppointmentsService {
     actorUserId: string,
     operation: 'sync' | 'delete' = 'sync',
     snapshot?: {
-      calendarId: string;
+      calendarId?: string | null;
       externalEventId: string | null;
       externalProvider: string | null;
     },
@@ -62,7 +73,7 @@ export class AppointmentsService {
         appointmentId,
         actorUserId,
         operation,
-        calendarId: snapshot?.calendarId,
+        calendarId: snapshot?.calendarId ?? undefined,
         externalEventId: snapshot?.externalEventId,
         externalProvider: snapshot?.externalProvider,
       })
@@ -73,6 +84,53 @@ export class AppointmentsService {
           }`,
         );
       });
+  }
+
+  private scheduleWaitlistRecheck(
+    businessId: string,
+    appointment: {
+      assignedToId?: string | null;
+      startAt: Date;
+      serviceLines?: Array<{ assignedToId?: string | null }>;
+    },
+  ): void {
+    const staffIds = new Set<string>();
+    if (appointment.assignedToId) {
+      staffIds.add(appointment.assignedToId);
+    }
+    for (const line of appointment.serviceLines ?? []) {
+      if (line.assignedToId) staffIds.add(line.assignedToId);
+    }
+
+    const dateKey = DateTime.fromJSDate(appointment.startAt, {
+      zone: 'utc',
+    }).toISODate();
+    if (!dateKey) return;
+
+    const run = async () => {
+      if (staffIds.size === 0) {
+        await this.waitlistMatchingService.recheckOnCalendarMutation({
+          businessId,
+          dateKey,
+        });
+        return;
+      }
+      for (const staffId of staffIds) {
+        await this.waitlistMatchingService.recheckOnCalendarMutation({
+          businessId,
+          staffId,
+          dateKey,
+        });
+      }
+    };
+
+    void run().catch((err) => {
+      this.logger.warn(
+        `Failed waitlist recheck for business ${businessId}: ${
+          err instanceof Error ? err.message : String(err)
+        }`,
+      );
+    });
   }
 
   private parseStatusFilter(status?: string): AppointmentStatus[] | undefined {
@@ -86,11 +144,16 @@ export class AppointmentsService {
 
   private async detectScheduleConflicts(
     businessId: string,
-    calendarId: string,
+    _calendarId: string | null | undefined,
     serviceLines: Prisma.AppointmentServiceLineUncheckedCreateWithoutAppointmentInput[],
-    calendarBuffers: { bufferBeforeMinutes: number; bufferAfterMinutes: number },
+    _calendarBuffers: {
+      bufferBeforeMinutes: number;
+      bufferAfterMinutes: number;
+    },
     excludeAppointmentId?: string,
   ): Promise<string | null> {
+    const timezone =
+      await this.workingHoursService.resolveAppointmentTimezone(businessId);
     const warnings: string[] = [];
 
     for (const line of serviceLines) {
@@ -106,46 +169,111 @@ export class AppointmentsService {
       );
       if (!service) continue;
 
-      const timing = resolveServiceTiming(
+      const timing = resolveServiceTiming({
+        durationMinutes: service.durationMinutes,
+        hasProcessingTime: service.hasProcessingTime,
+        processingDurationMinutes: service.processingDurationMinutes,
+        finishDurationMinutes: service.finishDurationMinutes,
+        hasBufferTime: service.hasBufferTime,
+        bufferBeforeMinutes: service.bufferBeforeMinutes,
+        bufferAfterMinutes: service.bufferAfterMinutes,
+      });
+
+      const occupancyMinutes =
+        line.durationMinutes ?? timing.clientOccupancyMinutes;
+      const lineEnd = new Date(lineStart.getTime() + occupancyMinutes * 60_000);
+      const candidate = resolveAppointmentBlockingWindow(
+        { startAt: lineStart, endAt: lineEnd },
         {
-          durationMinutes: service.durationMinutes,
-          hasProcessingTime: service.hasProcessingTime,
-          processingDurationMinutes: service.processingDurationMinutes,
-          finishDurationMinutes: service.finishDurationMinutes,
-          hasBufferTime: service.hasBufferTime,
-          bufferBeforeMinutes: service.bufferBeforeMinutes,
-          bufferAfterMinutes: service.bufferAfterMinutes,
+          bufferBeforeMinutes: timing.bufferBeforeMinutes,
+          bufferAfterMinutes: timing.bufferAfterMinutes,
         },
-        calendarBuffers,
       );
 
-      const occupancyMinutes = line.durationMinutes ?? timing.clientOccupancyMinutes;
-      const bufferBefore = timing.bufferBeforeMinutes;
-      const bufferAfter = timing.bufferAfterMinutes;
-      const blockStart = new Date(
-        lineStart.getTime() - bufferBefore * 60_000,
-      );
-      const blockEnd = new Date(
-        lineStart.getTime() + occupancyMinutes * 60_000 + bufferAfter * 60_000,
+      const conflicts =
+        await this.appointmentRepository.findStaffBlockingInRange(
+          businessId,
+          null,
+          candidate.blockStart,
+          candidate.blockEnd,
+          staffId,
+          excludeAppointmentId,
+        );
+
+      const overlapping = conflicts.filter((existing) =>
+        appointmentBlocksOverlap(
+          resolveAppointmentBlockingWindow(existing),
+          candidate,
+        ),
       );
 
-      const conflicts = await this.appointmentRepository.findStaffBlockingInRange(
-        businessId,
-        calendarId,
-        blockStart,
-        blockEnd,
-        staffId,
-        excludeAppointmentId,
-      );
-
-      if (conflicts.length > 0) {
+      if (overlapping.length > 0) {
+        const first = overlapping[0];
         warnings.push(
-          `${service.name}: provider has ${conflicts.length} overlapping booking(s)`,
+          formatStaffScheduleConflictMessage(
+            first.startAt,
+            first.endAt,
+            timezone,
+          ),
         );
       }
     }
 
     return warnings.length > 0 ? warnings.join('; ') : null;
+  }
+
+  private resolveServiceLineEndAt(
+    line: Prisma.AppointmentServiceLineUncheckedCreateWithoutAppointmentInput,
+    lineStart: Date,
+  ): Date {
+    if (line.durationMinutes && line.durationMinutes > 0) {
+      return new Date(lineStart.getTime() + line.durationMinutes * 60_000);
+    }
+    return lineStart;
+  }
+
+  private async detectOutsideWorkingHours(
+    businessId: string,
+    serviceLines: Prisma.AppointmentServiceLineUncheckedCreateWithoutAppointmentInput[],
+    timezone: string,
+    fallbackAssignedToId?: string | null,
+  ): Promise<string | null> {
+    const warnings: string[] = [];
+
+    for (const line of serviceLines) {
+      const staffId = line.assignedToId ?? fallbackAssignedToId;
+      if (!staffId || !line.startAt) continue;
+
+      const lineStart =
+        line.startAt instanceof Date ? line.startAt : new Date(line.startAt);
+      const lineEnd = this.resolveServiceLineEndAt(line, lineStart);
+
+      const startLocal = DateTime.fromJSDate(lineStart, {
+        zone: 'utc',
+      }).setZone(timezone);
+      const endLocal = DateTime.fromJSDate(lineEnd, { zone: 'utc' }).setZone(
+        timezone,
+      );
+      const dateKey = startLocal.toISODate()!;
+      const startMinutes = startLocal.hour * 60 + startLocal.minute;
+      const endMinutes = endLocal.hour * 60 + endLocal.minute;
+
+      const result =
+        await this.workingHoursService.isAppointmentOutsideWorkingHours({
+          businessId,
+          staffUserId: staffId,
+          dateKey,
+          startMinutes,
+          endMinutes: Math.max(endMinutes, startMinutes + 1),
+          timezone,
+        });
+
+      if (result.outside && result.label && !warnings.includes(result.label)) {
+        warnings.push(result.label);
+      }
+    }
+
+    return warnings.length > 0 ? warnings.join(' ') : null;
   }
 
   private async buildServiceLines(
@@ -168,7 +296,11 @@ export class AppointmentsService {
           : [];
 
     if (inputLines.length === 0) {
-      return { serviceLines: [], primaryServiceId: null, endAt: appointmentEnd };
+      return {
+        serviceLines: [],
+        primaryServiceId: null,
+        endAt: appointmentEnd,
+      };
     }
 
     let cursor = appointmentStart;
@@ -176,7 +308,7 @@ export class AppointmentsService {
       [];
 
     for (let i = 0; i < inputLines.length; i++) {
-      const line = inputLines[i]!;
+      const line = inputLines[i];
       const service = await this.serviceRepository.findById(
         businessId,
         line.serviceId,
@@ -194,9 +326,10 @@ export class AppointmentsService {
         await this.assertAssignee(businessId, assignedToId);
       }
 
-      const lineStart = line.startAt ? new Date(line.startAt) : new Date(cursor);
-      const duration =
-        line.durationMinutes ?? service.durationMinutes ?? 60;
+      const lineStart = line.startAt
+        ? new Date(line.startAt)
+        : new Date(cursor);
+      const duration = line.durationMinutes ?? service.durationMinutes ?? 60;
       cursor = new Date(lineStart.getTime() + duration * 60_000);
 
       serviceLines.push({
@@ -211,7 +344,7 @@ export class AppointmentsService {
 
     return {
       serviceLines,
-      primaryServiceId: inputLines[0]!.serviceId,
+      primaryServiceId: inputLines[0].serviceId,
       endAt: cursor > appointmentEnd ? cursor : appointmentEnd,
     };
   }
@@ -225,7 +358,9 @@ export class AppointmentsService {
     let endAt = new Date(dto.endAt);
     const isTimeBlock = dto.isTimeBlock === true;
 
-    const calendar = await this.assertCalendar(businessId, dto.calendarId);
+    const calendar = dto.calendarId
+      ? await this.assertCalendar(businessId, dto.calendarId)
+      : null;
     if (!isTimeBlock) {
       if (!dto.contactId) {
         throw new AppException(
@@ -240,37 +375,67 @@ export class AppointmentsService {
     if (dto.assignedToId)
       await this.assertAssignee(businessId, dto.assignedToId);
 
-    const { serviceLines, primaryServiceId, endAt: computedEnd } =
-      isTimeBlock
-        ? { serviceLines: [], primaryServiceId: null, endAt }
-        : await this.buildServiceLines(
-            businessId,
-            startAt,
-            endAt,
-            dto.assignedToId,
-            dto.services,
-            dto.serviceId,
-          );
+    const {
+      serviceLines,
+      primaryServiceId,
+      endAt: computedEnd,
+    } = isTimeBlock
+      ? { serviceLines: [], primaryServiceId: null, endAt }
+      : await this.buildServiceLines(
+          businessId,
+          startAt,
+          endAt,
+          dto.assignedToId,
+          dto.services,
+          dto.serviceId,
+        );
     endAt = computedEnd;
     this.assertValidRange(startAt, endAt);
 
-    const scheduleWarning =
+    const scheduleTimezone =
+      await this.workingHoursService.resolveAppointmentTimezone(businessId);
+
+    const conflictWarning =
       serviceLines.length > 0
         ? await this.detectScheduleConflicts(
             businessId,
             dto.calendarId,
             serviceLines,
             {
-              bufferBeforeMinutes: calendar.bufferBeforeMinutes,
-              bufferAfterMinutes: calendar.bufferAfterMinutes,
+              bufferBeforeMinutes: calendar?.bufferBeforeMinutes ?? 0,
+              bufferAfterMinutes: calendar?.bufferAfterMinutes ?? 0,
             },
           )
         : null;
 
+    if (conflictWarning) {
+      throw new AppException(
+        ErrorCode.APPOINTMENT_SCHEDULE_CONFLICT,
+        conflictWarning,
+        HttpStatus.CONFLICT,
+      );
+    }
+
+    const outsideHoursWarning =
+      serviceLines.length > 0
+        ? await this.detectOutsideWorkingHours(
+            businessId,
+            serviceLines,
+            scheduleTimezone,
+            dto.assignedToId,
+          )
+        : null;
+
+    const scheduleWarning = outsideHoursWarning ?? null;
+
+    const resolvedStatus = outsideHoursWarning
+      ? AppointmentStatus.UNCONFIRMED
+      : (dto.status ?? AppointmentStatus.CONFIRMED);
+
     const appointment = await this.appointmentRepository.create(
       businessId,
       {
-        calendarId: dto.calendarId,
+        calendarId: dto.calendarId ?? null,
         contactId: dto.contactId ?? null,
         serviceId: primaryServiceId,
         workItemId: dto.workItemId ?? null,
@@ -279,7 +444,7 @@ export class AppointmentsService {
         description: dto.description?.trim() || null,
         startAt,
         endAt,
-        status: dto.status ?? AppointmentStatus.CONFIRMED,
+        status: resolvedStatus,
         source: dto.source,
         locationType: dto.locationType ?? null,
         locationValue: dto.locationValue?.trim() || null,
@@ -304,7 +469,12 @@ export class AppointmentsService {
       .sendOwnerNotifications(businessId, appointment)
       .catch(() => undefined);
 
-    if (dto.sendConfirmation !== false && !isTimeBlock && dto.contactId) {
+    if (
+      dto.sendConfirmation !== false &&
+      !isTimeBlock &&
+      dto.contactId &&
+      resolvedStatus !== AppointmentStatus.UNCONFIRMED
+    ) {
       void this.appointmentNotificationService
         .sendConfirmation(businessId, appointment)
         .catch(() => undefined);
@@ -331,17 +501,23 @@ export class AppointmentsService {
       );
     }
 
+    this.scheduleWaitlistRecheck(businessId, appointment);
+
     return toAppointmentResponse(appointment, { scheduleWarning });
   }
 
   async list(
     businessId: string,
     query: ListAppointmentsQueryDto,
+    user?: RequestUser,
   ): Promise<{
     items: AppointmentResponseDto[];
     meta: { total: number; page: number; limit: number };
   }> {
     const { page, limit, skip, take } = getPaginationParams(query);
+    const isMemberOnly = user?.businessRole === BusinessMemberRole.MEMBER;
+    const assignedToId = isMemberOnly ? user.id : query.assignedToId;
+
     const { items, total } = await this.appointmentRepository.findMany(
       businessId,
       {
@@ -351,7 +527,7 @@ export class AppointmentsService {
         contactId: query.contactId,
         serviceId: query.serviceId,
         workItemId: query.workItemId,
-        assignedToId: query.assignedToId,
+        assignedToId,
         statuses: this.parseStatusFilter(query.status),
         startFrom: query.startFrom ? new Date(query.startFrom) : undefined,
         startTo: query.startTo ? new Date(query.startTo) : undefined,
@@ -442,11 +618,11 @@ export class AppointmentsService {
     const previousStartAt = existing.startAt;
 
     if (dto.calendarId) await this.assertCalendar(businessId, dto.calendarId);
-    const calendarId = dto.calendarId ?? existing.calendarId;
-    const calendar = await this.calendarRepository.findById(
-      businessId,
-      calendarId,
-    );
+    const calendarId =
+      dto.calendarId !== undefined ? dto.calendarId : existing.calendarId;
+    const calendar = calendarId
+      ? await this.calendarRepository.findById(businessId, calendarId)
+      : null;
     if (dto.contactId) await this.assertContact(businessId, dto.contactId);
     if (dto.workItemId) await this.assertWorkItem(businessId, dto.workItemId);
     if (dto.assignedToId)
@@ -487,19 +663,47 @@ export class AppointmentsService {
         sortOrder: line.sortOrder,
       }));
 
-    const scheduleWarning =
-      linesForConflict.length > 0 && calendar
+    const scheduleTimezone =
+      await this.workingHoursService.resolveAppointmentTimezone(businessId);
+
+    const conflictWarning =
+      linesForConflict.length > 0
         ? await this.detectScheduleConflicts(
             businessId,
             calendarId,
             linesForConflict,
             {
-              bufferBeforeMinutes: calendar.bufferBeforeMinutes,
-              bufferAfterMinutes: calendar.bufferAfterMinutes,
+              bufferBeforeMinutes: calendar?.bufferBeforeMinutes ?? 0,
+              bufferAfterMinutes: calendar?.bufferAfterMinutes ?? 0,
             },
             id,
           )
         : null;
+
+    if (conflictWarning) {
+      throw new AppException(
+        ErrorCode.APPOINTMENT_SCHEDULE_CONFLICT,
+        conflictWarning,
+        HttpStatus.CONFLICT,
+      );
+    }
+
+    const outsideHoursWarning =
+      linesForConflict.length > 0
+        ? await this.detectOutsideWorkingHours(
+            businessId,
+            linesForConflict,
+            scheduleTimezone,
+            assignedToId,
+          )
+        : null;
+
+    const scheduleWarning = outsideHoursWarning ?? null;
+
+    const resolvedStatus =
+      outsideHoursWarning && dto.status === undefined
+        ? AppointmentStatus.UNCONFIRMED
+        : dto.status;
 
     const appointment = await this.appointmentRepository.update(
       id,
@@ -525,7 +729,7 @@ export class AppointmentsService {
           : {}),
         startAt,
         endAt,
-        ...(dto.status !== undefined ? { status: dto.status } : {}),
+        ...(resolvedStatus !== undefined ? { status: resolvedStatus } : {}),
         ...(dto.source !== undefined ? { source: dto.source } : {}),
         ...(dto.locationType !== undefined
           ? { locationType: dto.locationType ?? null }
@@ -533,7 +737,9 @@ export class AppointmentsService {
         ...(dto.locationValue !== undefined
           ? { locationValue: dto.locationValue?.trim() || null }
           : {}),
-        ...(dto.notes !== undefined ? { notes: dto.notes?.trim() || null } : {}),
+        ...(dto.notes !== undefined
+          ? { notes: dto.notes?.trim() || null }
+          : {}),
       },
       serviceLines,
     );
@@ -552,6 +758,11 @@ export class AppointmentsService {
       void this.appointmentNotificationService
         .sendRescheduled(businessId, appointment, previousStartAt)
         .catch(() => undefined);
+    }
+
+    this.scheduleWaitlistRecheck(businessId, existing);
+    if (scheduleChanged) {
+      this.scheduleWaitlistRecheck(businessId, appointment);
     }
 
     return toAppointmentResponse(appointment, { scheduleWarning });
@@ -595,6 +806,8 @@ export class AppointmentsService {
         .sendCancelled(businessId, appointment)
         .catch(() => undefined);
     }
+
+    this.scheduleWaitlistRecheck(businessId, existing);
 
     return toAppointmentResponse(appointment);
   }
@@ -681,6 +894,8 @@ export class AppointmentsService {
       entityType: 'Appointment',
       entityId: id,
     });
+
+    this.scheduleWaitlistRecheck(businessId, existing);
   }
 
   private assertValidRange(startAt: Date, endAt: Date) {

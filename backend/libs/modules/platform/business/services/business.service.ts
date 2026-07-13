@@ -445,6 +445,14 @@ export class BusinessService {
       metadata: { ...dto },
     });
 
+    if (dto.timezone?.trim()) {
+      await this.prisma.businessOnlineBookingSettings.upsert({
+        where: { businessId: id },
+        create: { businessId: id, timezone: dto.timezone.trim() },
+        update: { timezone: dto.timezone.trim() },
+      });
+    }
+
     return toBusinessResponse(refreshed ?? business);
   }
 

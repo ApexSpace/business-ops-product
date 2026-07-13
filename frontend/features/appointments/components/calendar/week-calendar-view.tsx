@@ -16,6 +16,7 @@ import {
   parseDateKeyInTimezone,
 } from "@/features/calendars/utils/timezone";
 import { CALENDAR_GRID } from "@/features/calendars/utils/calendar-grid-styles";
+import type { BusinessHoursSlot } from "@/features/business-hours/types";
 import { cn } from "@/lib/utils";
 
 interface WeekCalendarViewProps {
@@ -36,6 +37,8 @@ interface WeekCalendarViewProps {
     event: React.PointerEvent,
   ) => void;
   draggingAppointmentId?: string | null;
+  businessHoursSlots?: BusinessHoursSlot[];
+  weekStaffHoursSlots?: BusinessHoursSlot[] | null;
   onSlotClick: (
     dateKey: string,
     hour: number,
@@ -56,6 +59,8 @@ export function WeekCalendarView({
   onAppointmentMoveStart,
   onAppointmentResizeStart,
   draggingAppointmentId,
+  businessHoursSlots,
+  weekStaffHoursSlots,
   onSlotClick,
 }: WeekCalendarViewProps) {
   const weekDateKeys = getWeekDateKeysInTimezone(anchorDateKey, timezone);
@@ -74,7 +79,7 @@ export function WeekCalendarView({
           <div className="max-h-[min(75vh,840px)] overflow-auto">
             <div
               className={cn(
-                "sticky top-0 z-20 grid bg-card",
+                "sticky top-0 z-30 grid bg-card",
                 CALENDAR_GRID.headerRow,
               )}
               style={{ gridTemplateColumns: `56px repeat(7, minmax(0, 1fr))` }}
@@ -115,7 +120,7 @@ export function WeekCalendarView({
                 Loading appointments…
               </div>
             ) : (
-              <div className="relative" style={{ minHeight: GRID_HEIGHT }}>
+              <div className="relative overflow-hidden" style={{ minHeight: GRID_HEIGHT }}>
                 {currentTimeTop !== null ? (
                   <CalendarCurrentTimeIndicator topPx={currentTimeTop} />
                 ) : null}
@@ -139,6 +144,8 @@ export function WeekCalendarView({
                       onAppointmentMoveStart={onAppointmentMoveStart}
                       onAppointmentResizeStart={onAppointmentResizeStart}
                       draggingAppointmentId={draggingAppointmentId}
+                      businessHoursSlots={businessHoursSlots}
+                      staffHoursSlots={weekStaffHoursSlots}
                       onSlotClick={onSlotClick}
                     />
                   ))}

@@ -5,7 +5,11 @@ import { DateTime } from "luxon";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { normalizeTimezone } from "@/features/calendars/utils/timezone";
+import {
+  getMonthGridDateKeysInTimezone,
+  normalizeTimezone,
+  parseDateKeyInTimezone,
+} from "@/features/calendars/utils/timezone";
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -27,48 +31,39 @@ export function BookingMonthCalendar({
   accentColor,
 }: BookingMonthCalendarProps) {
   const tz = normalizeTimezone(timezone);
-  const today = DateTime.now().setZone(tz).startOf("day");
+  const todayKey = DateTime.now().setZone(tz).toFormat("yyyy-MM-dd");
+  const today = parseDateKeyInTimezone(todayKey, tz);
   const maxDay = today.plus({ days: maxBookingDays });
 
-  const [viewMonth, setViewMonth] = useState(() =>
-    today.startOf("month"),
+  const [viewMonthKey, setViewMonthKey] = useState(() =>
+    today.toFormat("yyyy-MM-dd"),
   );
 
+  const viewMonth = parseDateKeyInTimezone(viewMonthKey, tz);
   const monthLabel = viewMonth.toFormat("LLLL yyyy");
 
   const days = useMemo(() => {
-    const start = viewMonth.startOf("month");
-    const end = viewMonth.endOf("month");
-    const gridStart = start.startOf("week");
-    const gridEnd = end.endOf("week");
-    const cells: Array<{
-      dateKey: string;
-      day: number;
-      inMonth: boolean;
-      disabled: boolean;
-      bookable: boolean;
-    }> = [];
-    let cursor = gridStart;
-    while (cursor <= gridEnd) {
-      const dateKey = cursor.toISODate()!;
+    const gridKeys = getMonthGridDateKeysInTimezone(viewMonthKey, tz);
+    return gridKeys.map((dateKey) => {
+      const cursor = parseDateKeyInTimezone(dateKey, tz);
       const inMonth = cursor.month === viewMonth.month;
       const beforeToday = cursor < today;
       const afterMax = cursor > maxDay;
       const bookable = bookableDates.has(dateKey);
-      cells.push({
+      return {
         dateKey,
         day: cursor.day,
         inMonth,
         disabled: beforeToday || afterMax || !bookable || !inMonth,
         bookable: bookable && inMonth && !beforeToday && !afterMax,
-      });
-      cursor = cursor.plus({ days: 1 });
-    }
-    return cells;
-  }, [viewMonth, today, maxDay, bookableDates]);
+      };
+    });
+  }, [viewMonthKey, tz, viewMonth.month, today, maxDay, bookableDates]);
 
   const canPrev = viewMonth > today.startOf("month");
-  const canNext = viewMonth.plus({ months: 1 }).startOf("month") <= maxDay.startOf("month");
+  const canNext =
+    viewMonth.plus({ months: 1 }).startOf("month") <=
+    maxDay.startOf("month");
 
   return (
     <div className="select-none">
@@ -79,7 +74,11 @@ export function BookingMonthCalendar({
           size="icon"
           className="size-10 shrink-0"
           disabled={!canPrev}
-          onClick={() => setViewMonth((m) => m.minus({ months: 1 }))}
+          onClick={() =>
+            setViewMonthKey(
+              viewMonth.minus({ months: 1 }).toFormat("yyyy-MM-dd"),
+            )
+          }
           aria-label="Previous month"
         >
           <ChevronLeft className="size-5" />
@@ -91,7 +90,11 @@ export function BookingMonthCalendar({
           size="icon"
           className="size-10 shrink-0"
           disabled={!canNext}
-          onClick={() => setViewMonth((m) => m.plus({ months: 1 }))}
+          onClick={() =>
+            setViewMonthKey(
+              viewMonth.plus({ months: 1 }).toFormat("yyyy-MM-dd"),
+            )
+          }
           aria-label="Next month"
         >
           <ChevronRight className="size-5" />

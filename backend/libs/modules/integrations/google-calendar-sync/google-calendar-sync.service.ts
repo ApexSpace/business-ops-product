@@ -196,6 +196,10 @@ export class GoogleCalendarSyncService {
         return { synced: false };
       }
 
+      if (!appointment.calendarId) {
+        return { synced: false };
+      }
+
       const context = await this.resolveContext(
         businessId,
         appointment.calendarId,
@@ -272,12 +276,16 @@ export class GoogleCalendarSyncService {
     businessId: string,
     appointment: {
       id: string;
-      calendarId: string;
+      calendarId: string | null;
       externalEventId: string | null;
       externalProvider: string | null;
     },
     actorUserId: string,
   ): Promise<void> {
+    if (!appointment.calendarId) {
+      return;
+    }
+
     try {
       const context = await this.resolveContext(
         businessId,
@@ -514,6 +522,9 @@ export class GoogleCalendarSyncService {
       if (appointment.status === AppointmentStatus.CANCELLED) {
         continue;
       }
+      if (!appointment.calendarId) {
+        continue;
+      }
       try {
         const accessToken = await this.googleTokenService.getAccessToken(
           businessId,
@@ -557,7 +568,7 @@ export class GoogleCalendarSyncService {
   private buildGoogleEventPayload(
     appointment: {
       id: string;
-      calendarId: string;
+      calendarId: string | null;
       title: string;
       description: string | null;
       notes: string | null;
@@ -607,7 +618,7 @@ export class GoogleCalendarSyncService {
         private: {
           internalAppointmentId: appointment.id,
           businessId,
-          calendarId: appointment.calendarId,
+          calendarId: appointment.calendarId ?? '',
         },
       },
     };

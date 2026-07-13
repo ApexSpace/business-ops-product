@@ -510,6 +510,40 @@ enum DayOfWeek {
   SUNDAY
 }
 
+enum AnyoneAssignmentMode {
+  RANDOM
+  ORDER
+}
+
+enum GapTimeBlockMode {
+  IGNORE
+  SAME_AS_APPOINTMENTS
+}
+
+enum GapEmptyDayMode {
+  ALL_TIMES
+  SHIFT_EDGES_ONLY
+}
+
+enum GapMultiProviderMode {
+  SAME_AS_SINGLE
+  ALLOW_GAPS
+}
+
+enum BookingWaitlistStatus {
+  WAITING
+  MATCHED
+  BOOKED
+  DISMISSED
+  EXPIRED
+  CANCELLED
+}
+
+enum BookingWaitlistSource {
+  ONLINE_BOOKING
+  STAFF_MANUAL
+}
+
 enum ConversationChannel {
   FACEBOOK
   INSTAGRAM
@@ -688,6 +722,9 @@ model User {
   snapshotsUpdated      Snapshot[]              @relation("SnapshotUpdatedBy")
   subscriptionEventsCreated BusinessSubscriptionEvent[] @relation("SubscriptionEventCreatedBy")
   subscriptionPaymentsCreated BusinessSubscriptionPayment[] @relation("SubscriptionPaymentCreatedBy")
+  staffWorkSchedules          StaffWorkSchedule[]           @relation("StaffWorkScheduleUser")
+  staffWorkExceptions         StaffWorkException[]          @relation("StaffWorkExceptionUser")
+  bookingWaitlistEntries      BookingWaitlistEntry[]        @relation("BookingWaitlistStaff")
 
   @@map("users")
 }
@@ -873,6 +910,12 @@ model Business {
   offers                   Offer[]
   offerUsageLogs           OfferUsageLog[]
   timeCards                TimeCard[]
+  onlineBookingSettings    BusinessOnlineBookingSettings?
+  businessHours            BusinessHours[]
+  businessHourExceptions   BusinessHourException[]
+  staffWorkSchedules       StaffWorkSchedule[]
+  staffWorkExceptions      StaffWorkException[]
+  bookingWaitlistEntries   BookingWaitlistEntry[]
 
   @@index([createdById])
   @@index([industryId])
@@ -998,7 +1041,9 @@ model BusinessMembership {
   phoneNumber  String?
   gender       StaffGender?
   isServiceProvider       Boolean @default(false)
+  onlineBookingEnabled    Boolean @default(true)
   canAssignProductSales   Boolean @default(false)
+  canManageWaitlist       Boolean @default(false)
   invitedById  String?
   inviteToken String?            @unique
   joinedAt    DateTime?
@@ -1103,6 +1148,7 @@ model Contact {
   clientPackages        ClientPackage[]
   clientMemberships     ClientMembership[]
   offerUsageLogs        OfferUsageLog[]
+  bookingWaitlistEntries BookingWaitlistEntry[]
 
   @@index([businessId])
   @@index([businessId, createdAt])
@@ -1237,6 +1283,7 @@ model Service {
   packageServiceGroupItems PackageServiceGroupItem[]
   packageServiceAllocations PackageServiceAllocation[]
   membershipServiceGroupItems MembershipServiceGroupItem[]
+  bookingWaitlistEntries BookingWaitlistEntry[]
 
   @@index([businessId])
   @@index([businessId, categoryId])
@@ -2687,8 +2734,6 @@ model Calendar {
   requireApproval        Boolean              @default(false)
   autoConfirm            Boolean              @default(true)
   capacity               Int                  @default(1)
-  publicSlug             String?              @unique
-  publicBookingEnabled   Boolean              @default(false)
   embedEnabled           Boolean              @default(true)
   formSettings           Json?
   confirmationSettings Json?
@@ -2708,6 +2753,7 @@ model Calendar {
   availability CalendarAvailability[]
   exceptions   CalendarException[]
   appointments Appointment[]
+  bookingWaitlistEntries BookingWaitlistEntry[]
   serviceOnlineBookingSettings ServiceOnlineBookingSettings[]
 
   @@index([businessId])
@@ -2773,10 +2819,165 @@ model CalendarException {
   @@map("calendar_exceptions")
 }
 
+model BusinessOnlineBookingSettings {
+  id                      String               @id @default(uuid())
+  businessId              String               @unique
+  publicSlug              String?              @unique
+  onlineBookingEnabled    Boolean              @default(false)
+  minimumNoticeMinutes    Int                  @default(60)
+  maxBookingDays          Int                  @default(60)
+  slotIntervalMinutes     Int                  @default(15)
+  bufferBeforeMinutes     Int                  @default(0)
+  bufferAfterMinutes      Int                  @default(0)
+  timezone                String               @default("UTC")
+  locationType            CalendarLocationType @default(PHYSICAL)
+  locationValue           String?
+  requireApproval         Boolean              @default(false)
+  autoConfirm             Boolean              @default(true)
+  avoidGapsEnabled              Boolean              @default(false)
+  avoidGapsMaxGapMinutes        Int?
+  avoidGapsMinGapMinutes        Int?
+  avoidGapsTimeBlockMode        GapTimeBlockMode     @default(SAME_AS_APPOINTMENTS)
+  avoidGapsEmptyDayMode         GapEmptyDayMode      @default(ALL_TIMES)
+  avoidGapsMultiProviderMode    GapMultiProviderMode @default(SAME_AS_SINGLE)
+  allowMultipleServices   Boolean              @default(false)
+  allowDuplicateServices  Boolean              @default(false)
+  singleStaffOnly         Boolean              @default(false)
+  collectPhotosEnabled    Boolean              @default(false)
+  photoUploadPrompt       String?
+  waitlistEnabled         Boolean              @default(false)
+  randomizeStaffOrder     Boolean              @default(false)
+  showGenderOptions       Boolean              @default(false)
+  showAnyoneOption        Boolean              @default(true)
+  anyoneAssignmentMode    AnyoneAssignmentMode @default(RANDOM)
+  anyoneExcludedStaffIds  Json?
+  embedEnabled            Boolean              @default(true)
+  overlayEnabled          Boolean              @default(true)
+  formSettings            Json?
+  confirmationSettings    Json?
+  widgetSettings          Json?
+  notificationSettings    Json?
+  createdAt               DateTime             @default(now())
+  updatedAt               DateTime             @updatedAt
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([businessId])
+  @@map("business_online_booking_settings")
+}
+
+model BusinessHours {
+  id         String    @id @default(uuid())
+  businessId String
+  dayOfWeek  DayOfWeek
+  startTime  String
+  endTime    String
+  isEnabled  Boolean   @default(true)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@unique([businessId, dayOfWeek])
+  @@index([businessId])
+  @@map("business_hours")
+}
+
+model BusinessHourException {
+  id            String   @id @default(uuid())
+  businessId    String
+  date          DateTime @db.Date
+  startTime     String?
+  endTime       String?
+  isUnavailable Boolean  @default(true)
+  reason        String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([businessId])
+  @@index([businessId, date])
+  @@map("business_hour_exceptions")
+}
+
+model StaffWorkSchedule {
+  id           String    @id @default(uuid())
+  businessId   String
+  userId       String
+  dayOfWeek    DayOfWeek
+  startTime    String
+  endTime      String
+  isEnabled    Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  user     User     @relation("StaffWorkScheduleUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([businessId, userId, dayOfWeek])
+  @@index([businessId])
+  @@index([businessId, userId])
+  @@map("staff_work_schedules")
+}
+
+model StaffWorkException {
+  id            String   @id @default(uuid())
+  businessId    String
+  userId        String
+  date          DateTime @db.Date
+  startTime     String?
+  endTime       String?
+  isUnavailable Boolean  @default(true)
+  reason        String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  user     User     @relation("StaffWorkExceptionUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([businessId])
+  @@index([businessId, userId, date])
+  @@map("staff_work_exceptions")
+}
+
+model BookingWaitlistEntry {
+  id                 String                @id @default(uuid())
+  businessId         String
+  calendarId         String?
+  contactId          String
+  serviceId          String
+  staffId            String?
+  preferredDate      DateTime              @db.Date
+  preferredMorning   Boolean               @default(false)
+  preferredAfternoon Boolean               @default(false)
+  preferredEvening   Boolean               @default(false)
+  comments           String?
+  status             BookingWaitlistStatus @default(WAITING)
+  source             BookingWaitlistSource @default(ONLINE_BOOKING)
+  metadata           Json?
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
+
+  business Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  calendar Calendar? @relation(fields: [calendarId], references: [id], onDelete: SetNull)
+  contact  Contact   @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  service  Service   @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  staff    User?     @relation("BookingWaitlistStaff", fields: [staffId], references: [id], onDelete: SetNull)
+
+  @@index([businessId])
+  @@index([businessId, status])
+  @@index([businessId, serviceId])
+  @@index([businessId, preferredDate])
+  @@index([businessId, staffId])
+  @@index([businessId, calendarId])
+  @@map("booking_waitlist_entries")
+}
+
 model Appointment {
   id               String             @id @default(uuid())
   businessId       String
-  calendarId       String
+  calendarId       String?
   contactId        String?
   serviceId        String?
   workItemId       String?
@@ -2799,7 +3000,7 @@ model Appointment {
   deletedAt        DateTime?
 
   business   Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  calendar   Calendar  @relation(fields: [calendarId], references: [id], onDelete: Restrict)
+  calendar   Calendar? @relation(fields: [calendarId], references: [id], onDelete: SetNull)
   contact    Contact?  @relation(fields: [contactId], references: [id], onDelete: Restrict)
   service    Service?  @relation(fields: [serviceId], references: [id], onDelete: SetNull)
   workItem   WorkItem? @relation(fields: [workItemId], references: [id], onDelete: SetNull)

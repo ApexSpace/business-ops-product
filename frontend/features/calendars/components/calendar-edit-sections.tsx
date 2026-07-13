@@ -12,7 +12,6 @@ import {
 import { CalendarEditSectionNav } from "@/features/calendars/components/calendar-edit-section-nav";
 import { CalendarEditGeneralSection } from "@/features/calendars/components/edit/calendar-edit-general-section";
 import { CalendarEditAvailabilityTabSection } from "@/features/calendars/components/edit/calendar-edit-availability-tab-section";
-import { CalendarEditBookingLinkSection } from "@/features/calendars/components/edit/calendar-edit-booking-link-section";
 import { CalendarEditGoogleSection } from "@/features/calendars/components/edit/calendar-edit-google-section";
 import { CalendarEditAdvancedTabSection } from "@/features/calendars/components/edit/calendar-edit-advanced-tab-section";
 import type { IntegrationResourcesListResponse } from "@/features/integrations/utils/integration-resources";
@@ -78,8 +77,6 @@ export function CalendarEditSectionContent({
       return <CalendarEditGeneralSection {...sectionProps} />;
     case "availability":
       return <CalendarEditAvailabilityTabSection {...sectionProps} />;
-    case "booking-page":
-      return <CalendarEditBookingLinkSection {...sectionProps} />;
     case "integrations":
       return (
         <CalendarEditGoogleSection

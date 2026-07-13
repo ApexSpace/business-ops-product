@@ -1,6 +1,6 @@
 import { api } from "@/lib/api/client";
 
-export type PayableType = "INVOICE";
+export type PayableType = "INVOICE" | "BOOKING_DEPOSIT";
 
 export type PaymentMethod =
   | "CASH"

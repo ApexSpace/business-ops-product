@@ -13,7 +13,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type {
-  PublicBookingCalendar,
+  PublicBookingBusiness,
   PublicBookingConfirmation,
 } from "@/features/public-booking/schemas/public-booking";
 import {
@@ -29,22 +29,32 @@ import {
 } from "@/features/public-booking/utils/booking-calendar-links";
 
 interface BookingSuccessViewProps {
-  calendar: PublicBookingCalendar;
+  business: PublicBookingBusiness;
+  calendar?: PublicBookingBusiness;
   confirmation: PublicBookingConfirmation;
   customerName: string;
   accentColor: string;
   embed?: boolean;
   compact?: boolean;
+  serviceSummaries?: Array<{
+    serviceName: string;
+    staffName: string;
+    timeLabel: string;
+    price?: string | null;
+  }>;
 }
 
 export function BookingSuccessView({
+  business,
   calendar,
   confirmation,
   customerName,
   accentColor,
   embed = false,
   compact = false,
+  serviceSummaries = [],
 }: BookingSuccessViewProps) {
+  const data = business ?? calendar!;
   const [showExtras, setShowExtras] = useState(false);
   const tz = confirmation.timezone;
   const dateLabel = DateTime.fromISO(confirmation.startAt, { zone: "utc" })
@@ -78,7 +88,7 @@ export function BookingSuccessView({
     customerName,
   });
 
-  const websiteUrl = confirmation.redirectUrl ?? calendar.websiteUrl;
+  const websiteUrl = confirmation.redirectUrl ?? data.websiteUrl;
 
   async function copyDetails() {
     try {
@@ -142,21 +152,41 @@ export function BookingSuccessView({
             <p className="text-xs text-muted-foreground">Date</p>
             <p className="font-medium">{dateLabel}</p>
           </div>
-          <div>
-            <p className="text-xs text-muted-foreground">Time</p>
-            <p className="font-medium">{timeLabel}</p>
-          </div>
+          {serviceSummaries.length <= 1 ? (
+            <div>
+              <p className="text-xs text-muted-foreground">Time</p>
+              <p className="font-medium">{timeLabel}</p>
+            </div>
+          ) : null}
           <div>
             <p className="text-xs text-muted-foreground">Timezone</p>
             <p className="font-medium">{tz.replace(/_/g, " ")}</p>
           </div>
-          <div>
-            <p className="text-xs text-muted-foreground">Duration</p>
-            <p className="font-medium">
-              {formatDuration(calendar.durationMinutes)}
-            </p>
-          </div>
+          {confirmation.staffName && serviceSummaries.length <= 1 ? (
+            <div>
+              <p className="text-xs text-muted-foreground">Staff</p>
+              <p className="font-medium">{confirmation.staffName}</p>
+            </div>
+          ) : null}
         </div>
+        {serviceSummaries.length > 1 ? (
+          <div className="space-y-3 border-t pt-4">
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Services
+            </p>
+            {serviceSummaries.map((line) => (
+              <div key={`${line.serviceName}-${line.timeLabel}`}>
+                <p className="font-medium">
+                  {line.serviceName}
+                  {line.price ? ` ($${line.price})` : ""}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  with {line.staffName} at {line.timeLabel}
+                </p>
+              </div>
+            ))}
+          </div>
+        ) : null}
         {confirmation.locationSummary ? (
           <div>
             <p className="text-xs text-muted-foreground">Location</p>

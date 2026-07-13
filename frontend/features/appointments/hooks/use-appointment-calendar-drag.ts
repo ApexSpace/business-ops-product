@@ -72,7 +72,6 @@ export function useAppointmentCalendarDrag({
         queryKey: queryKeys.appointments.all(),
       });
     },
-    onError: (error: Error) => toast.error(error.message),
   });
 
   const pixelsToMinutes = useCallback((deltaY: number) => {

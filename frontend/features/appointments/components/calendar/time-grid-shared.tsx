@@ -17,6 +17,9 @@ import {
   isTodayDateKey,
 } from "@/features/calendars/utils/timezone";
 import { CALENDAR_GRID } from "@/features/calendars/utils/calendar-grid-styles";
+import { WorkingHoursOverlays } from "@/features/appointments/components/calendar/working-hours-overlays";
+import type { BusinessHoursSlot } from "@/features/business-hours/types";
+import { defaultBusinessHoursSlots } from "@/features/business-hours/utils/default-business-hours";
 import { cn } from "@/lib/utils";
 
 const GRID_HEIGHT = getTimeGridHeight();
@@ -41,6 +44,8 @@ interface TimeGridColumnProps {
     event: React.PointerEvent,
   ) => void;
   draggingAppointmentId?: string | null;
+  businessHoursSlots?: BusinessHoursSlot[];
+  staffHoursSlots?: BusinessHoursSlot[] | null;
   onSlotClick: (
     dateKey: string,
     hour: number,
@@ -61,9 +66,13 @@ export function TimeGridColumn({
   onAppointmentMoveStart,
   onAppointmentResizeStart,
   draggingAppointmentId,
+  businessHoursSlots,
+  staffHoursSlots,
   onSlotClick,
 }: TimeGridColumnProps) {
   const slotLabels = getTimeSlotLabels();
+  const resolvedBusinessHours =
+    businessHoursSlots?.length ? businessHoursSlots : defaultBusinessHoursSlots();
 
   // Bucket appointments into day columns using the grid's view timezone so a
   // day/column matches the axis, slot clicks, and card positions.
@@ -99,7 +108,7 @@ export function TimeGridColumn({
   return (
     <div
       className={cn(
-        "relative min-w-0 cursor-pointer",
+        "relative min-w-0 cursor-pointer overflow-hidden",
         CALENDAR_GRID.column,
         highlightToday &&
           isTodayDateKey(dateKey, viewTimezone) &&
@@ -120,6 +129,12 @@ export function TimeGridColumn({
           aria-hidden
         />
       ))}
+      <WorkingHoursOverlays
+        dateKey={dateKey}
+        timezone={viewTimezone}
+        businessSlots={resolvedBusinessHours}
+        staffSlots={staffHoursSlots}
+      />
       <TimeGridAppointments
         appointments={dayAppointments}
         viewTimezone={viewTimezone}

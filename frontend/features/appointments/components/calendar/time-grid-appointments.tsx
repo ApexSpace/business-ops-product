@@ -74,7 +74,7 @@ export function TimeGridAppointments({
           return (
             <div
               key={`more-${item.appointments.map((a) => a.id).join("-")}-${item.top}`}
-              className="pointer-events-none absolute z-20 px-0.5"
+              className="pointer-events-none absolute z-10 px-0.5"
               style={layoutStyle(item)}
             >
               <div className="pointer-events-auto flex h-full min-h-[36px] items-stretch">

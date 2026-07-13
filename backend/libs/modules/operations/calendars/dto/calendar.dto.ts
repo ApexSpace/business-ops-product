@@ -174,17 +174,6 @@ export class CreateCalendarDto {
 
   @ApiPropertyOptional()
   @IsOptional()
-  @IsString()
-  @MaxLength(80)
-  publicSlug?: string;
-
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsBoolean()
-  publicBookingEnabled?: boolean;
-
-  @ApiPropertyOptional()
-  @IsOptional()
   @IsBoolean()
   embedEnabled?: boolean;
 }
@@ -251,8 +240,6 @@ export class CalendarResponseDto {
   policySettings!: Record<string, unknown> | null;
   widgetSettings!: Record<string, unknown> | null;
   googleSyncSettings!: Record<string, unknown> | null;
-  publicSlug!: string | null;
-  publicBookingEnabled!: boolean;
   embedEnabled!: boolean;
   publicBookingUrl?: string | null;
   embedUrl?: string | null;

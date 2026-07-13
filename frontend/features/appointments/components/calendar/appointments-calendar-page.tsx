@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, useState } from "react";
 import { AppointmentListView } from "@/features/appointments/components/calendar/appointment-list-view";
 import { CalendarToolbar } from "@/features/appointments/components/calendar/calendar-toolbar";
 import { MonthCalendarView } from "@/features/appointments/components/calendar/month-calendar-view";
@@ -17,6 +17,7 @@ import { useAppointmentsCreateAction } from "@/features/appointments/hooks/use-a
 import { useAppointmentCalendarDrag } from "@/features/appointments/hooks/use-appointment-calendar-drag";
 import { useAppointmentsCalendarPage } from "@/features/appointments/hooks/use-appointments-calendar-page";
 import { getAppointment } from "@/features/appointments/api/appointments.api";
+import { WaitlistPanel } from "@/features/waitlist/components/waitlist-panel";
 
 export function AppointmentsCalendarPage() {
   return (
@@ -30,6 +31,7 @@ const BARE_VIEW_CLASS = "rounded-none border-0 shadow-none";
 
 function AppointmentsCalendarPageContent() {
   const cal = useAppointmentsCalendarPage();
+  const [waitlistOpen, setWaitlistOpen] = useState(false);
   const drag = useAppointmentCalendarDrag({
     timezone: cal.displayTimezone,
     enabled: cal.view === "day" || cal.view === "week",
@@ -63,10 +65,12 @@ function AppointmentsCalendarPageContent() {
             onSelectedStaffIdChange={cal.handleSelectedStaffIdChange}
             visibleStaffIds={cal.visibleStaffIds}
             onVisibleStaffIdsChange={cal.handleVisibleStaffIdsChange}
+            showStaffSelector={!cal.isMemberOnlyView}
             statusFilter={cal.params.status}
             onStatusFilterChange={(status) =>
               cal.setParams({ status, page: "1" })
             }
+            onOpenWaitlist={() => setWaitlistOpen(true)}
           />
         </div>
 
@@ -81,6 +85,8 @@ function AppointmentsCalendarPageContent() {
               appointments={cal.appointments}
               isLoading={cal.isLoading}
               className={BARE_VIEW_CLASS}
+              businessHoursSlots={cal.businessSlots}
+              staffSlotsByUserId={cal.staffSlotsByUserId}
               onAppointmentClick={cal.openAppointmentDetail}
               onAppointmentMoveStart={drag.startMove}
               onAppointmentResizeStart={drag.startResize}
@@ -98,6 +104,13 @@ function AppointmentsCalendarPageContent() {
               appointments={cal.appointments}
               isLoading={cal.isLoading}
               className={BARE_VIEW_CLASS}
+              businessHoursSlots={cal.businessSlots}
+              weekStaffHoursSlots={
+                cal.params.assignedToId
+                  ? (cal.staffSlotsByUserId.get(cal.params.assignedToId) ??
+                    null)
+                  : null
+              }
               onAppointmentClick={cal.openAppointmentDetail}
               onAppointmentMoveStart={drag.startMove}
               onAppointmentResizeStart={drag.startResize}
@@ -234,6 +247,19 @@ function AppointmentsCalendarPageContent() {
         onConfirm={() =>
           cal.deleteId && cal.deleteMutation.mutate(cal.deleteId)
         }
+      />
+
+      <WaitlistPanel
+        open={waitlistOpen}
+        onOpenChange={setWaitlistOpen}
+        anchorDateKey={cal.anchorDateKey}
+        staffId={cal.params.assignedToId}
+        calendarId={cal.params.calendarId}
+        timezone={cal.displayTimezone}
+        onBooked={(appointmentId) => {
+          setWaitlistOpen(false);
+          cal.drawer.openDetail(appointmentId);
+        }}
       />
     </div>
   );

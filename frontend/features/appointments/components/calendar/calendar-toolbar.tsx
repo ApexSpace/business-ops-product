@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import type { CalendarViewMode } from "@/features/calendars/utils/calendar-dates";
 import { formatDateRangeLabelInTimezone } from "@/features/calendars/utils/timezone";
 import { cn } from "@/lib/utils";
+import { WaitlistToolbarButton } from "@/features/waitlist/components/waitlist-toolbar-button";
 
 interface CalendarToolbarProps {
   view: CalendarViewMode;
@@ -36,8 +37,10 @@ interface CalendarToolbarProps {
   onSelectedStaffIdChange?: (userId: string) => void;
   visibleStaffIds?: string[];
   onVisibleStaffIdsChange?: (ids: string[]) => void;
+  showStaffSelector?: boolean;
   statusFilter: string;
   onStatusFilterChange: (value: string) => void;
+  onOpenWaitlist?: () => void;
   className?: string;
 }
 
@@ -62,8 +65,10 @@ export function CalendarToolbar({
   onSelectedStaffIdChange,
   visibleStaffIds,
   onVisibleStaffIdsChange,
+  showStaffSelector: showStaffSelectorProp,
   statusFilter,
   onStatusFilterChange,
+  onOpenWaitlist,
   className,
 }: CalendarToolbarProps) {
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -74,7 +79,9 @@ export function CalendarToolbar({
     timezone,
   );
   const showStaffSelector =
-    (view === "week" || view === "day") && staffMembers.length > 0;
+    showStaffSelectorProp !== false &&
+    (view === "week" || view === "day") &&
+    staffMembers.length > 0;
 
   return (
     <div
@@ -182,6 +189,10 @@ export function CalendarToolbar({
           statusFilter={statusFilter}
           onStatusFilterChange={onStatusFilterChange}
         />
+
+        {onOpenWaitlist ? (
+          <WaitlistToolbarButton onClick={onOpenWaitlist} />
+        ) : null}
 
         <CalendarViewSwitcher value={view} onChange={onViewChange} />
       </div>

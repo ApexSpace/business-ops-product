@@ -65,6 +65,20 @@ export function setMemberTimeClockPin(userId: string, pin: string) {
   );
 }
 
+export function updateStaffMemberProfile(
+  userId: string,
+  body: {
+    onlineBookingEnabled?: boolean;
+    isServiceProvider?: boolean;
+    canManageWaitlist?: boolean;
+  },
+) {
+  return api.patch<BusinessMember>(
+    `businesses/current/members/${userId}/staff-profile`,
+    body,
+  );
+}
+
 export function removeMemberTimeClockPin(userId: string) {
   return api.delete<{ success: true }>(
     `businesses/current/members/${userId}/time-clock-pin`,

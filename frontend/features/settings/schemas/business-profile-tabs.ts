@@ -3,6 +3,7 @@ export const BUSINESS_PROFILE_TABS = [
   { value: "business", label: "Business" },
   { value: "address", label: "Address" },
   { value: "regional", label: "Regional & tax" },
+  { value: "hours", label: "Business hours" },
 ] as const;
 
 export type BusinessProfileTab =
@@ -15,7 +16,8 @@ export function parseBusinessProfileTab(
     value === "contact" ||
     value === "business" ||
     value === "address" ||
-    value === "regional"
+    value === "regional" ||
+    value === "hours"
   ) {
     return value;
   }

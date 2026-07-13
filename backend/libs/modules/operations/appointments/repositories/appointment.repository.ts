@@ -32,7 +32,7 @@ export type AppointmentServiceLineWithRelations =
   }>;
 
 export type AppointmentWithRelations = Appointment & {
-  calendar: { id: string; name: string; color: string | null };
+  calendar: { id: string; name: string; color: string | null } | null;
   contact: {
     id: string;
     firstName: string | null;
@@ -193,7 +193,9 @@ export class AppointmentRepository {
   ): Promise<AppointmentWithRelations> {
     return this.prisma.$transaction(async (tx) => {
       if (serviceLines !== undefined) {
-        await tx.appointmentServiceLine.deleteMany({ where: { appointmentId: id } });
+        await tx.appointmentServiceLine.deleteMany({
+          where: { appointmentId: id },
+        });
         if (serviceLines.length > 0) {
           await tx.appointmentServiceLine.createMany({
             data: serviceLines.map((line) => ({
@@ -220,20 +222,23 @@ export class AppointmentRepository {
 
   findStaffBlockingInRange(
     businessId: string,
-    calendarId: string,
+    calendarId: string | null | undefined,
     rangeStart: Date,
     rangeEnd: Date,
     staffUserId: string,
     excludeAppointmentId?: string,
-  ): Promise<Array<{ id: string; startAt: Date; endAt: Date }>> {
+  ): Promise<
+    Array<{ id: string; startAt: Date; endAt: Date; metadata: unknown }>
+  > {
     return this.prisma.appointment.findMany({
       where: {
         ...this.activeWhere(businessId, {
-          calendarId,
           status: { in: BLOCKING_STATUSES },
           startAt: { lt: rangeEnd },
           endAt: { gt: rangeStart },
-          ...(excludeAppointmentId ? { id: { not: excludeAppointmentId } } : {}),
+          ...(excludeAppointmentId
+            ? { id: { not: excludeAppointmentId } }
+            : {}),
           OR: [
             { assignedToId: staffUserId },
             {
@@ -244,7 +249,7 @@ export class AppointmentRepository {
           ],
         }),
       },
-      select: { id: true, startAt: true, endAt: true },
+      select: { id: true, startAt: true, endAt: true, metadata: true },
     });
   }
 
@@ -264,6 +269,52 @@ export class AppointmentRepository {
         ...(assignedToId ? { assignedToId } : {}),
       }),
       select: { startAt: true, endAt: true },
+    });
+  }
+
+  findBlockingInRangeForStaff(
+    businessId: string,
+    rangeStart: Date,
+    rangeEnd: Date,
+    assignedToId?: string,
+  ): Promise<
+    Array<{
+      id: string;
+      startAt: Date;
+      endAt: Date;
+      assignedToId: string | null;
+      metadata: unknown;
+      serviceLines: Array<{ assignedToId: string | null }>;
+    }>
+  > {
+    return this.prisma.appointment.findMany({
+      where: this.activeWhere(businessId, {
+        status: { in: BLOCKING_STATUSES },
+        startAt: { lt: rangeEnd },
+        endAt: { gt: rangeStart },
+        ...(assignedToId
+          ? {
+              OR: [
+                { assignedToId },
+                {
+                  serviceLines: {
+                    some: { assignedToId },
+                  },
+                },
+              ],
+            }
+          : {}),
+      }),
+      select: {
+        id: true,
+        startAt: true,
+        endAt: true,
+        assignedToId: true,
+        metadata: true,
+        serviceLines: {
+          select: { assignedToId: true },
+        },
+      },
     });
   }
 

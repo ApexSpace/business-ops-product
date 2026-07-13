@@ -102,7 +102,10 @@ function ServiceLineCard({
           <span>with</span>
           <Select
             value={line.assignedToId}
-            onValueChange={(userId) => onUpdate({ assignedToId: userId })}
+            onValueChange={(userId) => {
+              if (!userId) return;
+              onUpdate({ assignedToId: userId });
+            }}
             disabled={disabled}
           >
             <SelectTrigger className={INLINE_SELECT_TRIGGER_CLASS}>
@@ -223,12 +226,23 @@ export function AppointmentServiceLineEditor({
       return;
     }
 
+    const normalizedPatch = { ...patch };
+    if (normalizedPatch.occupancyMinutes !== undefined) {
+      normalizedPatch.clientOccupancyMinutes = normalizedPatch.occupancyMinutes;
+      normalizedPatch.staffBlockedMinutes = normalizedPatch.occupancyMinutes;
+    }
+
     const next = value.map((line, i) =>
-      i === index ? { ...line, ...patch } : line,
+      i === index ? { ...line, ...normalizedPatch } : line,
     );
 
-    if (patch.startMinutes !== undefined || patch.occupancyMinutes !== undefined) {
-      onChange(rechainServiceLinesAfterChange(next, appointmentStartMinutes, index));
+    if (
+      normalizedPatch.startMinutes !== undefined ||
+      normalizedPatch.occupancyMinutes !== undefined
+    ) {
+      onChange(
+        rechainServiceLinesAfterChange(next, appointmentStartMinutes, index),
+      );
       return;
     }
 

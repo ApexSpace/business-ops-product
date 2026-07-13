@@ -17,7 +17,7 @@ describe('resolveServiceTiming', () => {
     expect(result.segments).toHaveLength(3);
   });
 
-  it('falls back to calendar buffers when service buffer disabled', () => {
+  it('uses zero buffer when service buffer is disabled', () => {
     const result = resolveServiceTiming(
       {
         durationMinutes: 45,
@@ -31,6 +31,8 @@ describe('resolveServiceTiming', () => {
       { bufferBeforeMinutes: 5, bufferAfterMinutes: 10 },
     );
 
-    expect(result.staffBlockedMinutes).toBe(60);
+    expect(result.staffBlockedMinutes).toBe(45);
+    expect(result.bufferBeforeMinutes).toBe(0);
+    expect(result.bufferAfterMinutes).toBe(0);
   });
 });

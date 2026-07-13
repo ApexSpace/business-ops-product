@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { PublicBookingSlot } from "@/features/public-booking/schemas/public-booking";
 import { formatTimeRange } from "@/features/public-booking/utils/booking-format";
+import { BookingWaitlistForm } from "@/features/public-booking/components/booking-waitlist-form";
+import type { BookingWaitlistFormValues } from "@/features/public-booking/components/booking-waitlist-form";
 
 interface BookingTimeSlotsProps {
   slots: PublicBookingSlot[];
@@ -12,12 +14,23 @@ interface BookingTimeSlotsProps {
   selectedDate: string | null;
   timezone: string;
   durationMinutes: number;
+  /** Slot length returned by availability API (includes processing/finish time). */
+  slotDurationMinutes: number;
   pendingSlotStart: string | null;
   accentColor: string;
   onSelectSlot: (slot: PublicBookingSlot) => void;
   onConfirmSlot: () => void;
   /** Full-height step layout without nested scroll (mobile/tablet flow). */
   fullHeight?: boolean;
+  waitlistEnabled?: boolean;
+  waitlistJoined?: boolean;
+  waitlistSubmitting?: boolean;
+  waitlistContext?: {
+    serviceLabel?: string;
+    staffLabel?: string;
+    dateLabel?: string;
+  };
+  onJoinWaitlist?: (values: BookingWaitlistFormValues) => void;
 }
 
 export function BookingTimeSlots({
@@ -26,11 +39,17 @@ export function BookingTimeSlots({
   selectedDate,
   timezone,
   durationMinutes,
+  slotDurationMinutes,
   pendingSlotStart,
   accentColor,
   onSelectSlot,
   onConfirmSlot,
   fullHeight = false,
+  waitlistEnabled = false,
+  waitlistJoined = false,
+  waitlistSubmitting = false,
+  waitlistContext,
+  onJoinWaitlist,
 }: BookingTimeSlotsProps) {
   const visibleSlots = slots.filter((slot) => {
     if (!slot.available) return false;
@@ -38,7 +57,7 @@ export function BookingTimeSlots({
     const end = Date.parse(slot.endAt);
     if (Number.isNaN(start) || Number.isNaN(end)) return false;
     const lengthMinutes = Math.round((end - start) / 60_000);
-    return lengthMinutes === durationMinutes;
+    return lengthMinutes === slotDurationMinutes;
   });
 
   if (!selectedDate) {
@@ -78,14 +97,32 @@ export function BookingTimeSlots({
     return (
       <div
         className={cn(
-          "flex flex-col items-center justify-center px-4 text-center",
-          fullHeight ? "py-6" : "h-full min-h-[280px]",
+          "flex min-h-0 flex-1 flex-col",
+          !fullHeight && "min-h-[280px]",
         )}
       >
-        <p className="text-sm font-medium">No times available</p>
-        <p className="mt-1 text-xs text-muted-foreground">
-          No times available for this date. Try another day.
-        </p>
+        <div className="shrink-0 px-4 py-4 text-center">
+          <p className="text-sm font-medium">No times available</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            No times available for this date. Try another day or join the
+            waitlist.
+          </p>
+        </div>
+        {waitlistEnabled && !waitlistJoined && onJoinWaitlist ? (
+          <BookingWaitlistForm
+            className="min-h-0 flex-1 border-t"
+            accentColor={accentColor}
+            serviceLabel={waitlistContext?.serviceLabel}
+            staffLabel={waitlistContext?.staffLabel}
+            dateLabel={waitlistContext?.dateLabel}
+            submitting={waitlistSubmitting}
+            onSubmit={onJoinWaitlist}
+          />
+        ) : waitlistJoined ? (
+          <p className="px-4 pb-4 text-center text-sm text-muted-foreground">
+            You are on the waitlist for this date.
+          </p>
+        ) : null}
       </div>
     );
   }
@@ -93,14 +130,13 @@ export function BookingTimeSlots({
   return (
     <div
       className={cn(
-        "flex flex-col",
-        fullHeight ? "" : "max-h-[min(420px,60vh)] sm:max-h-[480px]",
+        "flex min-h-0 flex-1 flex-col",
+        !fullHeight && "max-h-[min(560px,70vh)]",
       )}
     >
       <div
         className={cn(
-          "flex flex-col gap-2 p-3 sm:p-4",
-          !fullHeight && "overflow-y-auto",
+          "flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto p-3 sm:p-4",
         )}
       >
         {visibleSlots.map((slot) => {
@@ -149,6 +185,22 @@ export function BookingTimeSlots({
           );
         })}
       </div>
+
+      {waitlistEnabled && !waitlistJoined && onJoinWaitlist ? (
+        <BookingWaitlistForm
+          accentColor={accentColor}
+          compactTrigger
+          serviceLabel={waitlistContext?.serviceLabel}
+          staffLabel={waitlistContext?.staffLabel}
+          dateLabel={waitlistContext?.dateLabel}
+          submitting={waitlistSubmitting}
+          onSubmit={onJoinWaitlist}
+        />
+      ) : waitlistJoined ? (
+        <div className="border-t px-4 py-4 text-center text-sm text-muted-foreground">
+          You are on the waitlist for this date.
+        </div>
+      ) : null}
     </div>
   );
 }

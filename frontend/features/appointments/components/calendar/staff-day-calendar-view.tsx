@@ -16,6 +16,7 @@ import {
   parseDateKeyInTimezone,
 } from "@/features/calendars/utils/timezone";
 import { CALENDAR_GRID } from "@/features/calendars/utils/calendar-grid-styles";
+import type { BusinessHoursSlot } from "@/features/business-hours/types";
 import { ProfileAvatar } from "@/components/ui/profile-avatar";
 import { cn } from "@/lib/utils";
 
@@ -38,6 +39,8 @@ interface StaffDayCalendarViewProps {
     event: React.PointerEvent,
   ) => void;
   draggingAppointmentId?: string | null;
+  businessHoursSlots?: BusinessHoursSlot[];
+  staffSlotsByUserId?: Map<string, BusinessHoursSlot[] | null>;
   onSlotClick: (
     dateKey: string,
     hour: number,
@@ -59,6 +62,8 @@ export function StaffDayCalendarView({
   onAppointmentMoveStart,
   onAppointmentResizeStart,
   draggingAppointmentId,
+  businessHoursSlots,
+  staffSlotsByUserId,
   onSlotClick,
 }: StaffDayCalendarViewProps) {
   const isToday = isTodayDateKey(dateKey, timezone);
@@ -80,7 +85,7 @@ export function StaffDayCalendarView({
           <div className="max-h-[min(75vh,840px)] overflow-auto">
             <div
               className={cn(
-                "sticky top-0 z-20 grid bg-card",
+                "sticky top-0 z-30 grid bg-card",
                 CALENDAR_GRID.headerRow,
               )}
               style={{ gridTemplateColumns: gridTemplate }}
@@ -119,7 +124,7 @@ export function StaffDayCalendarView({
                 Loading appointments…
               </div>
             ) : (
-              <div className="relative" style={{ minHeight: GRID_HEIGHT }}>
+              <div className="relative overflow-hidden" style={{ minHeight: GRID_HEIGHT }}>
                 {currentTimeTop !== null ? (
                   <CalendarCurrentTimeIndicator topPx={currentTimeTop} />
                 ) : null}
@@ -145,6 +150,10 @@ export function StaffDayCalendarView({
                       onAppointmentMoveStart={onAppointmentMoveStart}
                       onAppointmentResizeStart={onAppointmentResizeStart}
                       draggingAppointmentId={draggingAppointmentId}
+                      businessHoursSlots={businessHoursSlots}
+                      staffHoursSlots={
+                        staffSlotsByUserId?.get(member.userId) ?? null
+                      }
                       onSlotClick={onSlotClick}
                     />
                   ))}

@@ -28,6 +28,7 @@ import {
 import { queryKeys } from "@/lib/query/keys";
 import { PERMISSIONS, useCan } from "@/features/auth/permissions";
 import type { Business } from "@/features/settings/types";
+import { BusinessHoursSettingsPanel } from "@/features/settings/components/business-hours-settings-panel";
 import { getCurrentBusiness, updateCurrentBusiness } from "@/features/settings/api/business.api";
 
 export function BusinessProfileSettings() {
@@ -103,28 +104,32 @@ export function BusinessProfileSettings() {
           >
             {BUSINESS_PROFILE_TABS.map((tab) => (
               <PageTabsPanel key={tab.value} value={tab.value}>
-                <BusinessProfileFormFields
-                  form={form}
-                  disabled={!canEdit}
-                  activeTab={tab.value}
-                  constrainScroll={false}
-                />
+                {tab.value === "hours" ? (
+                  <BusinessHoursSettingsPanel disabled={!canEdit} />
+                ) : (
+                  <BusinessProfileFormFields
+                    form={form}
+                    disabled={!canEdit}
+                    activeTab={tab.value}
+                    constrainScroll={false}
+                  />
+                )}
               </PageTabsPanel>
             ))}
           </PageTabs>
 
-          {canEdit ? (
+          {activeTab !== "hours" && canEdit ? (
             <FormActions>
               <Button type="submit" disabled={mutation.isPending}>
                 {mutation.isPending ? "Saving…" : "Save changes"}
               </Button>
             </FormActions>
-          ) : (
+          ) : activeTab !== "hours" && !canEdit ? (
             <p className="text-sm text-muted-foreground">
               Only owners, admins, and platform administrators can edit the
               business profile.
             </p>
-          )}
+          ) : null}
           </form>
         </FormSchemaProvider>
       </Form>

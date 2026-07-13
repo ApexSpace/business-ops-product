@@ -112,11 +112,11 @@ export function useAppointmentForm({
     () =>
       defaultContactLabel ??
       (appointment
-        ? appointment.contact.displayName ??
-          [appointment.contact.firstName, appointment.contact.lastName]
+        ? appointment.contact?.displayName ??
+          [appointment.contact?.firstName, appointment.contact?.lastName]
             .filter(Boolean)
             .join(" ") ??
-          appointment.contact.email ??
+          appointment.contact?.email ??
           ""
         : ""),
   );
@@ -207,7 +207,6 @@ export function useAppointmentForm({
       onSuccess();
       onOpenChange(false);
     },
-    onError: (err: Error) => toast.error(err.message),
   });
 
   const calendarOptions =

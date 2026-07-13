@@ -9,10 +9,8 @@ import {
 } from "@/features/calendars/utils/calendar-dates";
 
 export const OVERLAP_LAYOUT_GAP_PX = 2;
-/** Preview appointment width when "+ N more" is shown beside it */
-export const OVERLAP_PREVIEW_WIDTH_PERCENT = 68;
-/** "+ N more" chip width (same row as preview) */
-export const OVERLAP_MORE_WIDTH_PERCENT = 32;
+/** Mangomint-style: bars use this share of the column; the rest stays clickable. */
+export const OVERLAP_BARS_MAX_WIDTH_PERCENT = 78;
 
 export type TimedAppointment = Pick<Appointment, "id" | "startAt" | "endAt">;
 
@@ -20,7 +18,6 @@ function instant(iso: string): number {
   return new Date(iso).getTime();
 }
 
-/** Compare UTC instants — timezone does not affect overlap. */
 export function appointmentsOverlap(
   a: TimedAppointment,
   b: TimedAppointment,
@@ -28,7 +25,6 @@ export function appointmentsOverlap(
   return instant(a.startAt) < instant(b.endAt) && instant(b.startAt) < instant(a.endAt);
 }
 
-/** Alias for overlap checks. */
 export function detectAppointmentOverlaps(
   a: TimedAppointment,
   b: TimedAppointment,
@@ -36,7 +32,6 @@ export function detectAppointmentOverlaps(
   return appointmentsOverlap(a, b);
 }
 
-/** Connected components: each group contains mutually overlapping appointments. */
 export function getOverlappingAppointmentGroups<T extends TimedAppointment>(
   appointments: T[],
 ): T[][] {
@@ -98,9 +93,7 @@ export interface TimeGridMoreLayout {
 export type TimeGridAppointmentLayout = TimeGridEventLayout | TimeGridMoreLayout;
 
 export interface LayoutOverlappingOptions {
-  /** Fallback when resolveEventTimezone is not provided */
   timezone: string;
-  /** Per-appointment TZ (calendar timezone) for stable grid position */
   resolveEventTimezone?: (appointment: Appointment) => string;
   dayStartHour?: number;
   dayEndHour?: number;
@@ -130,37 +123,41 @@ function eventPosition(appointment: TimedAppointment, opts: LayoutOverlappingOpt
   );
 }
 
-function sortClusterForLayout<T extends TimedAppointment>(cluster: T[]): T[] {
-  return [...cluster].sort((a, b) => {
-    const startDiff = instant(a.startAt) - instant(b.startAt);
-    if (startDiff !== 0) return startDiff;
-    return instant(b.endAt) - instant(a.endAt);
-  });
-}
+/** Greedy column assignment: each bar only shares a column with non-overlapping events. */
+function assignOverlapColumns<T extends TimedAppointment>(
+  cluster: T[],
+): Map<string, number> {
+  const sorted = [...cluster].sort(
+    (a, b) => instant(a.startAt) - instant(b.startAt),
+  );
+  const columns: T[][] = [];
+  const placement = new Map<string, number>();
 
-/** Shared top/height for all items in an overlap cluster (same time slot box). */
-function clusterSlotBounds(
-  cluster: TimedAppointment[],
-  options: LayoutOverlappingOptions,
-): { top: number; height: number } {
-  let top = Infinity;
-  let bottom = 0;
-
-  for (const apt of cluster) {
-    const { top: aptTop, height } = eventPosition(apt, options);
-    const aptHeight = Math.max(height, CALENDAR_EVENT_MIN_HEIGHT_PX);
-    top = Math.min(top, aptTop);
-    bottom = Math.max(bottom, aptTop + aptHeight);
+  for (const apt of sorted) {
+    let placed = false;
+    for (let col = 0; col < columns.length; col++) {
+      const overlapsColumn = columns[col].some((existing) =>
+        appointmentsOverlap(existing, apt),
+      );
+      if (!overlapsColumn) {
+        columns[col].push(apt);
+        placement.set(apt.id, col);
+        placed = true;
+        break;
+      }
+    }
+    if (!placed) {
+      placement.set(apt.id, columns.length);
+      columns.push([apt]);
+    }
   }
 
-  return {
-    top,
-    height: Math.max(bottom - top, CALENDAR_EVENT_MIN_HEIGHT_PX),
-  };
+  return placement;
 }
 
 /**
- * Overlapping slot: one appointment preview + "+ N more" beside it in the same box.
+ * Mangomint-style: each appointment is a narrow vertical bar at its true start/end.
+ * Concurrent overlaps render side-by-side; empty space on the right stays clickable.
  */
 export function layoutOverlappingAppointments(
   appointments: Appointment[],
@@ -179,36 +176,35 @@ export function layoutOverlappingAppointments(
         top,
         height: Math.max(height, CALENDAR_EVENT_MIN_HEIGHT_PX),
         leftPercent: 0,
-        widthPercent: 100,
+        widthPercent: OVERLAP_BARS_MAX_WIDTH_PERCENT,
         columnIndex: 0,
         columnCount: 1,
       });
       continue;
     }
 
-    const sorted = sortClusterForLayout(cluster as Appointment[]);
-    const [first, ...rest] = sorted;
-    const { top, height } = clusterSlotBounds(sorted, options);
+    const sorted = [...cluster].sort(
+      (a, b) => instant(a.startAt) - instant(b.startAt),
+    ) as Appointment[];
+    const placement = assignOverlapColumns(sorted);
+    const columnCount =
+      Math.max(...Array.from(placement.values()), 0) + 1;
+    const barWidth = OVERLAP_BARS_MAX_WIDTH_PERCENT / columnCount;
 
-    layouts.push({
-      type: "event",
-      appointment: first,
-      top,
-      height,
-      leftPercent: 0,
-      widthPercent: OVERLAP_PREVIEW_WIDTH_PERCENT,
-      columnIndex: 0,
-      columnCount: 2,
-    });
-
-    layouts.push({
-      type: "more",
-      appointments: rest,
-      top,
-      height,
-      leftPercent: OVERLAP_PREVIEW_WIDTH_PERCENT,
-      widthPercent: OVERLAP_MORE_WIDTH_PERCENT,
-    });
+    for (const apt of sorted) {
+      const columnIndex = placement.get(apt.id) ?? 0;
+      const { top, height } = eventPosition(apt, options);
+      layouts.push({
+        type: "event",
+        appointment: apt,
+        top,
+        height: Math.max(height, CALENDAR_EVENT_MIN_HEIGHT_PX),
+        leftPercent: columnIndex * barWidth,
+        widthPercent: barWidth,
+        columnIndex,
+        columnCount,
+      });
+    }
   }
 
   return layouts;

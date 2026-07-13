@@ -101,7 +101,7 @@ export class AppointmentServiceLineInputDto {
 export class CreateAppointmentDto {
   @ApiProperty()
   @IsUUID()
-  calendarId!: string;
+  calendarId?: string | null;
 
   @ApiPropertyOptional()
   @IsOptional()
@@ -109,7 +109,8 @@ export class CreateAppointmentDto {
   contactId?: string;
 
   @ApiPropertyOptional({
-    description: 'When true, creates a staff time block without a client or services',
+    description:
+      'When true, creates a staff time block without a client or services',
   })
   @IsOptional()
   @IsBoolean()
@@ -191,7 +192,8 @@ export class CreateAppointmentDto {
   clientPackageId?: string;
 
   @ApiPropertyOptional({
-    description: 'Send appointment confirmation email to the client (default true)',
+    description:
+      'Send appointment confirmation email to the client (default true)',
     default: true,
   })
   @IsOptional()
@@ -215,7 +217,12 @@ export class AppointmentServiceLineResponseDto {
   durationMinutes!: number | null;
   price!: string | null;
   sortOrder!: number;
-  service!: { id: string; name: string; durationMinutes: number; price: string | null };
+  service!: {
+    id: string;
+    name: string;
+    durationMinutes: number;
+    price: string | null;
+  };
   assignedTo!: {
     id: string;
     firstName: string | null;
@@ -242,7 +249,7 @@ export class AppointmentActivityItemDto {
 export class AppointmentResponseDto {
   id!: string;
   businessId!: string;
-  calendarId!: string;
+  calendarId?: string | null;
   contactId!: string | null;
   serviceId!: string | null;
   workItemId!: string | null;
@@ -260,7 +267,7 @@ export class AppointmentResponseDto {
   externalEventId!: string | null;
   createdAt!: Date;
   updatedAt!: Date;
-  calendar!: { id: string; name: string; color: string | null };
+  calendar!: { id: string; name: string; color: string | null } | null;
   contact!: {
     id: string;
     firstName: string | null;

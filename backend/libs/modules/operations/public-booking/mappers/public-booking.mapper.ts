@@ -1,13 +1,11 @@
-import { Calendar, CalendarLocationType, Business } from '@prisma/client';
+import { CalendarLocationType } from '@prisma/client';
+import type { BusinessBookingContext } from '@app/modules/operations/online-booking-settings/repositories/online-booking-settings.repository';
+import { resolveBookingTimezone } from '@app/modules/operations/online-booking-settings/utils/resolve-booking-timezone.util';
 import {
-  PublicBookingCalendarDto,
+  PublicBookingBusinessDto,
   PublicBookingConfirmationDto,
   PublicBookingFormSettingsDto,
 } from '../dto/public-booking.dto';
-
-type CalendarWithBusiness = Calendar & {
-  business: Pick<Business, 'name' | 'settings'>;
-};
 
 function readJsonRecord(value: unknown): Record<string, unknown> {
   if (value && typeof value === 'object' && !Array.isArray(value)) {
@@ -22,6 +20,12 @@ function readFormSettings(formSettings: unknown): PublicBookingFormSettingsDto {
     requireEmail: Boolean(fs.requireEmail),
     requirePhone: Boolean(fs.requirePhone),
     showNotes: fs.showNotes !== false,
+    showBookForSomeoneElse: fs.showBookForSomeoneElse !== false,
+    cancellationPolicyText:
+      typeof fs.cancellationPolicyText === 'string'
+        ? fs.cancellationPolicyText
+        : null,
+    requirePolicyAgreement: Boolean(fs.requirePolicyAgreement),
   };
 }
 
@@ -34,12 +38,13 @@ function locationSummary(
   return value;
 }
 
-export function toPublicBookingCalendar(
-  calendar: CalendarWithBusiness,
-): PublicBookingCalendarDto {
-  const ws = readJsonRecord(calendar.widgetSettings);
-  const cs = readJsonRecord(calendar.confirmationSettings);
-  const businessSettings = readJsonRecord(calendar.business.settings);
+export function toPublicBookingBusiness(
+  context: BusinessBookingContext,
+  extras?: { giftCardUrl?: string | null; packageUrl?: string | null },
+): PublicBookingBusinessDto {
+  const ws = readJsonRecord(context.widgetSettings);
+  const cs = readJsonRecord(context.confirmationSettings);
+  const businessSettings = readJsonRecord(context.business.settings);
   const logoUrl =
     typeof businessSettings.logoUrl === 'string'
       ? businessSettings.logoUrl
@@ -47,33 +52,43 @@ export function toPublicBookingCalendar(
   const theme = readJsonRecord(ws.theme);
   const brandColor =
     (typeof theme.primaryColor === 'string' && theme.primaryColor.trim()) ||
-    calendar.color ||
     null;
   const websiteUrl =
     typeof businessSettings.website === 'string'
       ? businessSettings.website.trim() || null
-      : null;
+      : context.business.name
+        ? null
+        : null;
 
   return {
-    slug: calendar.publicSlug!,
-    name: calendar.name,
-    title: (typeof ws.title === 'string' && ws.title.trim()) || calendar.name,
-    description:
-      calendar.description ??
-      (typeof ws.description === 'string' ? ws.description : null),
-    timezone: calendar.timezone,
-    durationMinutes: calendar.defaultDurationMinutes,
-    businessName: calendar.business.name,
-    logoUrl,
-    color: calendar.color,
-    brandColor,
-    websiteUrl,
-    locationType: calendar.locationType,
-    locationSummary: locationSummary(
-      calendar.locationType,
-      calendar.locationValue,
+    slug: context.publicSlug!,
+    businessName: context.business.name,
+    title:
+      (typeof ws.title === 'string' && ws.title.trim()) ||
+      context.business.name,
+    description: (typeof ws.description === 'string' && ws.description) || null,
+    timezone: resolveBookingTimezone(
+      context.timezone,
+      context.business.timezone,
     ),
-    formSettings: readFormSettings(calendar.formSettings),
+    logoUrl,
+    brandColor,
+    websiteUrl:
+      (websiteUrl ??
+        (typeof context.business.settings === 'object' &&
+        context.business.settings &&
+        'website' in (context.business.settings as object)
+          ? String(
+              (context.business.settings as { website?: string }).website ?? '',
+            )
+          : null)) ||
+      null,
+    locationType: context.locationType,
+    locationSummary: locationSummary(
+      context.locationType,
+      context.locationValue,
+    ),
+    formSettings: readFormSettings(context.formSettings),
     confirmationMessage:
       (typeof cs.successMessage === 'string' && cs.successMessage) ||
       (typeof ws.thankYouMessage === 'string' && ws.thankYouMessage) ||
@@ -83,14 +98,34 @@ export function toPublicBookingCalendar(
     buttonText:
       (typeof ws.buttonText === 'string' && ws.buttonText.trim()) ||
       'Book Appointment',
-    embedEnabled: calendar.embedEnabled,
+    embedEnabled: context.embedEnabled,
     bookingRules: {
-      durationMinutes: calendar.defaultDurationMinutes,
-      minimumNoticeMinutes: calendar.minimumNoticeMinutes,
-      maxBookingDays: calendar.maxBookingDays,
-      bufferBeforeMinutes: calendar.bufferBeforeMinutes,
-      bufferAfterMinutes: calendar.bufferAfterMinutes,
+      minimumNoticeMinutes: context.minimumNoticeMinutes,
+      maxBookingDays: context.maxBookingDays,
+      allowMultipleServices: context.allowMultipleServices,
+      allowDuplicateServices: context.allowDuplicateServices,
+      singleStaffOnly: context.singleStaffOnly,
+      waitlistEnabled: context.waitlistEnabled,
     },
+    giftCardUrl: extras?.giftCardUrl ?? null,
+    packageUrl: extras?.packageUrl ?? null,
+  };
+}
+
+/** @deprecated */
+export function toPublicBookingCalendar(
+  context: BusinessBookingContext,
+): PublicBookingBusinessDto & {
+  name: string;
+  durationMinutes: number;
+  color: string | null;
+} {
+  const base = toPublicBookingBusiness(context);
+  return {
+    ...base,
+    name: base.businessName,
+    durationMinutes: 30,
+    color: base.brandColor,
   };
 }
 
@@ -101,11 +136,23 @@ export function toPublicBookingConfirmation(params: {
   endAt: Date;
   timezone: string;
   status: string;
-  calendar: Calendar;
   businessName: string;
+  serviceName?: string | null;
+  staffName?: string | null;
+  serviceLines?: Array<{
+    serviceId: string;
+    serviceName: string;
+    staffId: string | null;
+    staffName: string | null;
+    startAt: Date;
+    endAt: Date;
+    price: string | null;
+  }>;
+  context: BusinessBookingContext;
+  uploadToken?: string | null;
 }): PublicBookingConfirmationDto {
-  const cs = readJsonRecord(params.calendar.confirmationSettings);
-  const ws = readJsonRecord(params.calendar.widgetSettings);
+  const cs = readJsonRecord(params.context.confirmationSettings);
+  const ws = readJsonRecord(params.context.widgetSettings);
 
   return {
     appointmentId: params.appointmentId,
@@ -114,8 +161,18 @@ export function toPublicBookingConfirmation(params: {
     endAt: params.endAt.toISOString(),
     timezone: params.timezone,
     status: params.status,
-    calendarName: params.calendar.name,
     businessName: params.businessName,
+    serviceName: params.serviceName ?? null,
+    staffName: params.staffName ?? null,
+    serviceLines: (params.serviceLines ?? []).map((line) => ({
+      serviceId: line.serviceId,
+      serviceName: line.serviceName,
+      staffId: line.staffId,
+      staffName: line.staffName,
+      startAt: line.startAt.toISOString(),
+      endAt: line.endAt.toISOString(),
+      price: line.price,
+    })),
     confirmationMessage:
       (typeof cs.successMessage === 'string' && cs.successMessage) ||
       (typeof ws.thankYouMessage === 'string' && ws.thankYouMessage) ||
@@ -123,8 +180,11 @@ export function toPublicBookingConfirmation(params: {
     redirectUrl:
       typeof cs.redirectUrl === 'string' ? cs.redirectUrl.trim() || null : null,
     locationSummary: locationSummary(
-      params.calendar.locationType,
-      params.calendar.locationValue,
+      params.context.locationType,
+      params.context.locationValue,
     ),
+    collectPhotosEnabled: params.context.collectPhotosEnabled,
+    photoUploadPrompt: params.context.photoUploadPrompt,
+    uploadToken: params.uploadToken ?? null,
   };
 }

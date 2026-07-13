@@ -7,6 +7,7 @@ import { InvoicesModule } from '@app/modules/finance/invoices/invoices.module';
 import { IntegrationsModule } from '@app/modules/integrations/integrations/integrations.module';
 import { EmailModule } from '@app/modules/communications/email/email.module';
 import { PaymentsController } from './controllers/payments.controller';
+import { BookingDepositPayableHandler } from './handlers/booking-deposit-payable.handler';
 import { InvoicePayableHandler } from './handlers/invoice-payable.handler';
 import { PaymentOrchestratorService } from './orchestration/payment-orchestrator.service';
 import { PayableHandlerRegistry } from './registry/payable-handler.registry';
@@ -19,6 +20,9 @@ import { PaymentsService } from './services/payments.service';
 import { StripeContactPaymentMethodService } from './services/stripe-contact-payment-method.service';
 import { WalletLedgerService } from './services/wallet-ledger.service';
 import { GiftCardsModule } from '@app/modules/finance/gift-cards/gift-cards.module';
+import { RedisModule } from '@app/core/redis/redis.module';
+import { BookingDepositHoldStore } from './stores/booking-deposit-hold.store';
+import { BookingDepositPaymentService } from './services/booking-deposit-payment.service';
 
 @Module({
   imports: [
@@ -30,6 +34,7 @@ import { GiftCardsModule } from '@app/modules/finance/gift-cards/gift-cards.modu
     forwardRef(() => IntegrationsModule),
     forwardRef(() => EmailModule),
     forwardRef(() => GiftCardsModule),
+    RedisModule,
   ],
   controllers: [PaymentsController],
   providers: [
@@ -38,6 +43,9 @@ import { GiftCardsModule } from '@app/modules/finance/gift-cards/gift-cards.modu
     PaymentsService,
     PaymentsOverviewService,
     PayableHandlerRegistry,
+    BookingDepositHoldStore,
+    BookingDepositPayableHandler,
+    BookingDepositPaymentService,
     InvoicePayableHandler,
     WalletLedgerService,
     StripeContactPaymentMethodService,
@@ -50,6 +58,7 @@ import { GiftCardsModule } from '@app/modules/finance/gift-cards/gift-cards.modu
     PaymentsService,
     PaymentsOverviewService,
     PaymentOrchestratorService,
+    BookingDepositPaymentService,
     WalletLedgerService,
     PayableHandlerRegistry,
     PaymentRealtimeService,

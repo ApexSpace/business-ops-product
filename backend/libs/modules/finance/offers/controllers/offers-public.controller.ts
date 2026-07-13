@@ -49,24 +49,23 @@ export class OffersPublicController {
   }
 
   private async resolveBusinessByBookingSlug(slug: string) {
-    const calendar = await this.prisma.calendar.findFirst({
+    const settings = await this.prisma.businessOnlineBookingSettings.findFirst({
       where: {
         publicSlug: slug,
-        deletedAt: null,
-        publicBookingEnabled: true,
+        onlineBookingEnabled: true,
       },
       select: {
         businessId: true,
         business: { select: { id: true, name: true } },
       },
     });
-    if (!calendar) {
+    if (!settings) {
       throw new AppException(
         ErrorCode.PUBLIC_BOOKING_DISABLED,
         'Booking not found',
         HttpStatus.NOT_FOUND,
       );
     }
-    return calendar.business;
+    return settings.business;
   }
 }

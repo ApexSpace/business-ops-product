@@ -5,6 +5,7 @@ import {
   ClipboardList,
   CreditCard,
   GitBranch,
+  Globe,
   MessageCircle,
   MessageSquare,
   Palette,
@@ -34,6 +35,11 @@ const generalItems: BusinessSettingsNavItem[] = [
 ];
 
 const operationsItems: BusinessSettingsNavItem[] = [
+  {
+    title: "Online Booking",
+    href: "/business/settings/online-booking",
+    icon: Globe,
+  },
   {
     title: "Calendars",
     href: "/business/settings/calendars",

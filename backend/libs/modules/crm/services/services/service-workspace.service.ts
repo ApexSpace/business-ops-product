@@ -4,6 +4,7 @@ import { Prisma, ServiceStatus } from '@prisma/client';
 import { RequestUser } from '@app/common/decorators/current-user.decorator';
 import { AppException } from '@app/common/exceptions/app.exception';
 import { ErrorCode } from '@app/common/exceptions/error-code.enum';
+import { PrismaService } from '@app/core/database/prisma.service';
 import { AuditService } from '@app/modules/platform/audit/services/audit.service';
 import { BusinessMembershipRepository } from '@app/modules/platform/membership/repositories/business-membership.repository';
 import { ServiceCategoryRepository } from '../repositories/service-category.repository';
@@ -42,6 +43,7 @@ export class ServiceWorkspaceService {
     private readonly membershipRepository: BusinessMembershipRepository,
     private readonly auditService: AuditService,
     private readonly resourcesService: ResourcesService,
+    private readonly prisma: PrismaService,
   ) {}
 
   private getFrontendUrl(): string {
@@ -123,8 +125,6 @@ export class ServiceWorkspaceService {
       onlineBooking: workspace.onlineBookingSettings
         ? {
             ...workspace.onlineBookingSettings,
-            calendarSlug:
-              workspace.onlineBookingSettings.calendar?.publicSlug ?? null,
           }
         : null,
       resourceRequirements: workspace.resourceRequirements.map((r) => ({
@@ -479,17 +479,18 @@ export class ServiceWorkspaceService {
 
   async getDirectLinks(businessId: string, serviceId: string) {
     await this.requireService(businessId, serviceId);
-    const settings = await this.workspaceRepository.findOnlineBookingSettings(
-      businessId,
-      serviceId,
-    );
-    const slug = settings?.calendar?.publicSlug;
+    const bookingSettings =
+      await this.prisma.businessOnlineBookingSettings.findUnique({
+        where: { businessId },
+      });
+    const slug = bookingSettings?.publicSlug;
+    const enabled = bookingSettings?.onlineBookingEnabled;
     const frontendUrl = this.getFrontendUrl();
-    if (!slug || !frontendUrl) {
+    if (!slug || !enabled || !frontendUrl) {
       return {
         serviceLink: null,
         staffLinks: [],
-        hint: 'Configure a calendar with public booking enabled and select it in Online Booking settings.',
+        hint: 'Enable Online Booking in Settings and ensure a public link is generated.',
       };
     }
 

@@ -45,7 +45,7 @@ export class AppointmentsController {
     @CurrentUser() user: RequestUser,
     @Query() query: ListAppointmentsQueryDto,
   ) {
-    return this.appointmentsService.list(user.businessId!, query);
+    return this.appointmentsService.list(user.businessId!, query, user);
   }
 
   @Post()

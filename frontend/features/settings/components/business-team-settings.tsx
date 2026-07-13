@@ -36,6 +36,7 @@ import { queryKeys } from "@/lib/query/keys";
 import { PERMISSIONS, useCan } from "@/features/auth/permissions";
 import { AddStaffMemberDialog } from "@/features/settings/components/add-staff-member-dialog";
 import { MemberTimeClockPinDialog } from "@/features/settings/components/member-time-clock-pin-dialog";
+import { MemberOnlineBookingDialog } from "@/features/settings/components/member-online-booking-dialog";
 import type { BusinessMember } from "@/features/settings/types";
 import {
   archiveStaffMember,
@@ -61,6 +62,8 @@ function BusinessTeamSettingsContent() {
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [pinMember, setPinMember] = useState<BusinessMember | null>(null);
+  const [onlineBookingMember, setOnlineBookingMember] =
+    useState<BusinessMember | null>(null);
   const [archiveTarget, setArchiveTarget] = useState<BusinessMember | null>(
     null,
   );
@@ -199,16 +202,23 @@ function BusinessTeamSettingsContent() {
                     !isSelf &&
                     row.status !== "REMOVED" &&
                     row.role !== "OWNER";
-                  if (!canArchive) return null;
                   return (
                     <DataTableRowActions
                       menuLabel="Staff actions"
                       actions={[
                         {
-                          label: "Archive",
-                          destructive: true,
-                          onClick: () => setArchiveTarget(row),
+                          label: "Online booking",
+                          onClick: () => setOnlineBookingMember(row),
                         },
+                        ...(canArchive
+                          ? [
+                              {
+                                label: "Archive",
+                                destructive: true,
+                                onClick: () => setArchiveTarget(row),
+                              },
+                            ]
+                          : []),
                       ]}
                     />
                   );
@@ -238,6 +248,14 @@ function BusinessTeamSettingsContent() {
         open={Boolean(pinMember)}
         onOpenChange={(next) => {
           if (!next) setPinMember(null);
+        }}
+      />
+
+      <MemberOnlineBookingDialog
+        member={onlineBookingMember}
+        open={Boolean(onlineBookingMember)}
+        onOpenChange={(next) => {
+          if (!next) setOnlineBookingMember(null);
         }}
       />
 

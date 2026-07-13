@@ -226,7 +226,6 @@ export function AppointmentEditDrawer({
       onOpenChange(false);
       onSuccess?.();
     },
-    onError: (error: Error) => toast.error(error.message),
   });
 
   const handleContactSelect = (contact: Contact) => {

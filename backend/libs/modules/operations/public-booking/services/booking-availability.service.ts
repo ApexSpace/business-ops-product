@@ -7,7 +7,7 @@ import {
   DayOfWeek,
 } from '@prisma/client';
 import { DateTime } from 'luxon';
-import { normalizeTimezone } from '@app/common/utils/timezone.util';
+import { normalizeTimezone, resolveBusinessTimezone } from '@app/common/utils/timezone.util';
 import { AppointmentRepository } from '@app/modules/operations/appointments/repositories/appointment.repository';
 import type { PublicBookingTimingContext } from '@app/modules/crm/services/services/service-booking-timing.service';
 import {
@@ -63,8 +63,11 @@ export class BookingAvailabilityService {
     viewerTimezone: string;
     staffId?: string;
     timing?: PublicBookingTimingContext | null;
+    businessTimezone?: string | null;
   }): Promise<PublicBookingDayAvailabilityDto[]> {
-    const calendarTz = normalizeTimezone(params.calendar.timezone);
+    const calendarTz = resolveBusinessTimezone(
+      params.businessTimezone ?? params.calendar.timezone,
+    );
     const viewerTz = normalizeTimezone(params.viewerTimezone);
     const now = DateTime.now().setZone(calendarTz);
     const minStart = now.plus({
@@ -205,8 +208,11 @@ export class BookingAvailabilityService {
     endAt: Date;
     staffId?: string;
     timing?: PublicBookingTimingContext | null;
+    businessTimezone?: string | null;
   }): Promise<boolean> {
-    const calendarTz = normalizeTimezone(params.calendar.timezone);
+    const calendarTz = resolveBusinessTimezone(
+      params.businessTimezone ?? params.calendar.timezone,
+    );
     const start = DateTime.fromJSDate(params.startAt, { zone: 'utc' }).setZone(
       calendarTz,
     );

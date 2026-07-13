@@ -87,14 +87,14 @@ export class ServiceBookingTimingService {
       staffTiming,
     );
 
-    const resolved = resolveServiceTiming(merged, {
-      bufferBeforeMinutes: params.calendar.bufferBeforeMinutes,
-      bufferAfterMinutes: params.calendar.bufferAfterMinutes,
-    });
+    const resolved = resolveServiceTiming(merged);
 
     return {
       ...resolved,
-      slotDurationMinutes: resolved.staffBlockedMinutes,
+      slotDurationMinutes:
+        resolved.clientOccupancyMinutes +
+        (resolved.hasBufferTime ? resolved.bufferBeforeMinutes : 0) +
+        (resolved.hasBufferTime ? resolved.bufferAfterMinutes : 0),
     };
   }
 

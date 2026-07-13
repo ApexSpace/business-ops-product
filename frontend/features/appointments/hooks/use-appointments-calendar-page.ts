@@ -32,6 +32,8 @@ import {
 } from "@/features/sales/api/checkouts.api";
 import type { StaffMemberOption } from "@/features/appointments/components/calendar/staff-selector";
 import { useAppointmentDrawer } from "@/features/appointments/hooks/use-appointment-drawer";
+import { useAppointmentsWorkingHours } from "@/features/appointments/hooks/use-appointments-working-hours";
+import { useAuth } from "@/lib/auth/provider";
 
 export const APPOINTMENTS_CALENDAR_PARAMS = {
   view: { default: "week" },
@@ -82,6 +84,8 @@ function memberLabel(member: {
 
 export function useAppointmentsCalendarPage() {
   const queryClient = useQueryClient();
+  const { user, jwt } = useAuth();
+  const isMemberOnlyView = jwt?.businessRole === "MEMBER";
   const urlInitDone = useRef(false);
   const appointmentUrlHandled = useRef(false);
   const [isClient, setIsClient] = useState(false);
@@ -127,15 +131,17 @@ export function useAppointmentsCalendarPage() {
     queryFn: () => listBusinessMembers({ page: 1, limit: 100 }),
   });
 
-  const staffMembers: StaffMemberOption[] = useMemo(
-    () =>
-      (members?.items ?? []).map((m) => ({
-        userId: m.userId,
-        label: memberLabel(m),
-        avatarUrl: null,
-      })),
-    [members?.items],
-  );
+  const staffMembers: StaffMemberOption[] = useMemo(() => {
+    const all = (members?.items ?? []).map((m) => ({
+      userId: m.userId,
+      label: memberLabel(m),
+      avatarUrl: null,
+    }));
+    if (isMemberOnlyView && user?.id) {
+      return all.filter((m) => m.userId === user.id);
+    }
+    return all;
+  }, [members?.items, isMemberOnlyView, user?.id]);
 
   const visibleStaffIds = useMemo(() => {
     if (params.staffIds) {
@@ -149,6 +155,26 @@ export function useAppointmentsCalendarPage() {
       staffMembers.filter((m) => visibleStaffIds.includes(m.userId)),
     [staffMembers, visibleStaffIds],
   );
+
+  const workingHoursStaffIds = useMemo(() => {
+    if (view === "week" && params.assignedToId) {
+      return [params.assignedToId];
+    }
+    if (view === "day") {
+      return visibleStaffMembers.map((m) => m.userId);
+    }
+    return [];
+  }, [view, params.assignedToId, visibleStaffMembers]);
+
+  const { businessSlots, staffSlotsByUserId } = useAppointmentsWorkingHours(
+    workingHoursStaffIds,
+  );
+
+  useEffect(() => {
+    if (!isClient || !isMemberOnlyView || !user?.id) return;
+    if (params.assignedToId === user.id) return;
+    setParams({ assignedToId: user.id });
+  }, [isClient, isMemberOnlyView, user?.id, params.assignedToId, setParams]);
 
   useEffect(() => {
     if (!isClient || urlInitDone.current) return;
@@ -293,7 +319,6 @@ export function useAppointmentsCalendarPage() {
         queryKey: queryKeys.appointments.all(),
       });
     },
-    onError: (err: Error) => toast.error(err.message),
   });
 
   const cancelMutation = useMutation({
@@ -304,7 +329,6 @@ export function useAppointmentsCalendarPage() {
         queryKey: queryKeys.appointments.all(),
       });
     },
-    onError: (err: Error) => toast.error(err.message),
   });
 
   const checkoutMutation = useMutation({
@@ -351,7 +375,6 @@ export function useAppointmentsCalendarPage() {
       }
       drawer.openCheckout(checkout.id);
     },
-    onError: (err: Error) => toast.error(err.message),
   });
 
   const resolveDurationMinutes = useCallback(
@@ -368,13 +391,13 @@ export function useAppointmentsCalendarPage() {
     (appointment: Appointment) => {
       drawer.openCreate({
         startAt: new Date().toISOString(),
-        calendarId: appointment.calendarId,
+        calendarId: appointment.calendarId ?? undefined,
         assignedToId: appointment.assignedToId ?? undefined,
-        contactId: appointment.contactId,
+        contactId: appointment.contactId ?? undefined,
         contactLabel: [
-          appointment.contact.firstName,
-          appointment.contact.lastName,
-          appointment.contact.displayName,
+          appointment.contact?.firstName,
+          appointment.contact?.lastName,
+          appointment.contact?.displayName,
         ]
           .filter(Boolean)
           .join(" ") || undefined,
@@ -527,6 +550,9 @@ export function useAppointmentsCalendarPage() {
     staffMembers,
     visibleStaffMembers,
     visibleStaffIds,
+    businessSlots,
+    staffSlotsByUserId,
+    isMemberOnlyView,
     displayTimezone,
     anchorDateKey,
     appointments,

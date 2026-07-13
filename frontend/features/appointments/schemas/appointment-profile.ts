@@ -241,8 +241,8 @@ export function appointmentToForm(
   const tzInput = (iso: string) =>
     timezone ? utcToLocalDateTimeInputValue(iso, timezone) : toLocalDatetimeInput(iso);
   return {
-    calendarId: a.calendarId,
-    contactId: a.contactId,
+    calendarId: a.calendarId ?? "",
+    contactId: a.contactId ?? "",
     serviceId: a.serviceId ?? "",
     services:
       a.services?.map((line) => ({

@@ -230,7 +230,7 @@ export class AppointmentNotificationService {
         appointment.endAt,
         timezone,
       ),
-      'appointment.calendar_name': appointment.calendar.name,
+      'appointment.calendar_name': appointment.calendar?.name ?? 'Appointment',
       'appointment.title': appointment.title,
     };
   }

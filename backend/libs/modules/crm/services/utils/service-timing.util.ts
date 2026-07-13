@@ -23,7 +23,10 @@ export type ResolvedServiceTiming = ServiceTimingFields & {
 
 export function resolveServiceTiming(
   input: ServiceTimingFields,
-  calendarBuffers?: { bufferBeforeMinutes: number; bufferAfterMinutes: number },
+  _calendarBuffers?: {
+    bufferBeforeMinutes: number;
+    bufferAfterMinutes: number;
+  },
 ): ResolvedServiceTiming {
   const finish = input.finishDurationMinutes ?? 0;
   const clientOccupancyMinutes =
@@ -31,12 +34,8 @@ export function resolveServiceTiming(
     (input.hasProcessingTime ? input.processingDurationMinutes : 0) +
     finish;
 
-  const bufferBefore = input.hasBufferTime
-    ? input.bufferBeforeMinutes
-    : (calendarBuffers?.bufferBeforeMinutes ?? 0);
-  const bufferAfter = input.hasBufferTime
-    ? input.bufferAfterMinutes
-    : (calendarBuffers?.bufferAfterMinutes ?? 0);
+  const bufferBefore = input.hasBufferTime ? input.bufferBeforeMinutes : 0;
+  const bufferAfter = input.hasBufferTime ? input.bufferAfterMinutes : 0;
 
   const staffBlockedMinutes =
     input.durationMinutes + finish + bufferBefore + bufferAfter;
