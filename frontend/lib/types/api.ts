@@ -275,7 +275,7 @@ export interface BusinessMember {
   createdAt: string;
   hasTimeclockPin?: boolean;
   phoneNumber?: string | null;
-  gender?: string | null;
+  gender?: "FEMALE" | "MALE" | "NON_BINARY" | "PREFER_NOT_TO_SAY" | null;
   isServiceProvider?: boolean;
   canAssignProductSales?: boolean;
   onlineBookingEnabled?: boolean;

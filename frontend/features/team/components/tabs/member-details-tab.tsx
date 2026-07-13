@@ -27,14 +27,21 @@ import { queryKeys } from "@/lib/query/keys";
 import { MemberTimeClockPinDialog } from "@/features/settings/components/member-time-clock-pin-dialog";
 import { useState } from "react";
 
+const staffGenderValues = [
+  "FEMALE",
+  "MALE",
+  "NON_BINARY",
+  "PREFER_NOT_TO_SAY",
+] as const;
+
+type StaffGender = (typeof staffGenderValues)[number];
+
 const schema = z.object({
   firstName: z.string().trim().min(1),
   lastName: z.string().trim().min(1),
   email: z.string().email(),
   phoneNumber: z.string().optional(),
-  gender: z
-    .enum(["FEMALE", "MALE", "NON_BINARY", "PREFER_NOT_TO_SAY"])
-    .optional(),
+  gender: z.enum(staffGenderValues).optional(),
   isServiceProvider: z.boolean(),
   onlineBookingEnabled: z.boolean(),
   canAssignProductSales: z.boolean(),
@@ -42,6 +49,27 @@ const schema = z.object({
 });
 
 type FormValues = z.infer<typeof schema>;
+
+function toStaffGender(value: string | null | undefined): StaffGender | undefined {
+  if (!value) return undefined;
+  return (staffGenderValues as readonly string[]).includes(value)
+    ? (value as StaffGender)
+    : undefined;
+}
+
+function toMemberFormValues(member: TeamMemberDetail): FormValues {
+  return {
+    firstName: member.user.firstName ?? "",
+    lastName: member.user.lastName ?? "",
+    email: member.user.email,
+    phoneNumber: member.phoneNumber ?? "",
+    gender: toStaffGender(member.gender),
+    isServiceProvider: member.isServiceProvider ?? false,
+    onlineBookingEnabled: member.onlineBookingEnabled ?? false,
+    canAssignProductSales: member.canAssignProductSales ?? false,
+    canManageWaitlist: member.canManageWaitlist ?? false,
+  };
+}
 
 type Props = {
   member: TeamMemberDetail;
@@ -55,30 +83,11 @@ export function MemberDetailsTab({ member, canManage, onArchive }: Props) {
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: {
-      firstName: member.user.firstName ?? "",
-      lastName: member.user.lastName ?? "",
-      email: member.user.email,
-      phoneNumber: member.phoneNumber ?? "",
-      isServiceProvider: member.isServiceProvider,
-      onlineBookingEnabled: member.onlineBookingEnabled,
-      canAssignProductSales: member.canAssignProductSales,
-      canManageWaitlist: member.canManageWaitlist,
-    },
+    defaultValues: toMemberFormValues(member),
   });
 
   useEffect(() => {
-    form.reset({
-      firstName: member.user.firstName ?? "",
-      lastName: member.user.lastName ?? "",
-      email: member.user.email,
-      phoneNumber: member.phoneNumber ?? "",
-      gender: member.gender ?? undefined,
-      isServiceProvider: member.isServiceProvider,
-      onlineBookingEnabled: member.onlineBookingEnabled,
-      canAssignProductSales: member.canAssignProductSales,
-      canManageWaitlist: member.canManageWaitlist,
-    });
+    form.reset(toMemberFormValues(member));
   }, [member, form]);
 
   const saveMutation = useMutation({
