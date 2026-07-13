@@ -81,14 +81,9 @@ export function BusinessProfileRegionalFields({
 
   return (
     <>
-      <section className="space-y-4">
+      <section className="space-y-5">
         {showSectionTitles ? (
           <BusinessProfileSectionTitle>Online &amp; timezone</BusinessProfileSectionTitle>
-        ) : activeTab ? (
-          <p className="text-sm text-muted-foreground">
-            Website, timezone, and default tax settings for estimates and
-            invoices.
-          </p>
         ) : null}
         <TextField
           control={form.control}
@@ -128,9 +123,15 @@ export function BusinessProfileRegionalFields({
         )}
       </section>
 
-      <section className="space-y-4">
+      <section className="space-y-5">
         {showSectionTitles ? (
           <BusinessProfileSectionTitle>Taxes &amp; currency</BusinessProfileSectionTitle>
+        ) : activeTab && !showSectionTitles ? (
+          <div className="border-t border-border/60 pt-5">
+            <p className="text-[13px] font-semibold tracking-tight">
+              Taxes &amp; currency
+            </p>
+          </div>
         ) : null}
         {twoColumnLayout ? (
           <div className="grid items-start gap-4 sm:grid-cols-2">

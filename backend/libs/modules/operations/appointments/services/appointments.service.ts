@@ -33,6 +33,7 @@ import {
 import { formatStaffScheduleConflictMessage } from '../utils/format-appointment-schedule-message.util';
 import { WorkingHoursService } from '@app/modules/operations/online-booking-settings/services/working-hours.service';
 import { WaitlistMatchingService } from '@app/modules/operations/waitlist/services/waitlist-matching.service';
+import { StorageService } from '@app/modules/storage/services/storage.service';
 import { DateTime } from 'luxon';
 
 @Injectable()
@@ -54,6 +55,7 @@ export class AppointmentsService {
     private readonly workingHoursService: WorkingHoursService,
     @Inject(forwardRef(() => WaitlistMatchingService))
     private readonly waitlistMatchingService: WaitlistMatchingService,
+    private readonly storageService: StorageService,
   ) {}
 
   private scheduleGoogleCalendarSync(
@@ -556,6 +558,67 @@ export class AppointmentsService {
       );
     }
     return toAppointmentResponse(appointment);
+  }
+
+  async listPhotos(
+    businessId: string,
+    id: string,
+  ): Promise<{
+    items: Array<{
+      id: string;
+      filename: string;
+      mimeType: string;
+      size: number;
+      downloadUrl: string;
+      expiresIn: number;
+    }>;
+  }> {
+    const appointment = await this.appointmentRepository.findById(
+      businessId,
+      id,
+    );
+    if (!appointment) {
+      throw new AppException(
+        ErrorCode.APPOINTMENT_NOT_FOUND,
+        'Appointment not found',
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    const metadata =
+      appointment.metadata && typeof appointment.metadata === 'object'
+        ? (appointment.metadata as Record<string, unknown>)
+        : {};
+    const photoFileIds = Array.isArray(metadata.photoFileIds)
+      ? (metadata.photoFileIds as unknown[]).filter(
+          (fileId): fileId is string => typeof fileId === 'string',
+        )
+      : [];
+
+    const items = [];
+    for (const fileId of photoFileIds) {
+      try {
+        const file = await this.storageService.getFile(businessId, fileId);
+        const download = await this.storageService.getDownloadUrl(
+          businessId,
+          fileId,
+        );
+        items.push({
+          id: file.id,
+          filename: file.filename,
+          mimeType: file.mimeType,
+          size: file.size,
+          downloadUrl: download.downloadUrl,
+          expiresIn: download.expiresIn,
+        });
+      } catch {
+        this.logger.warn(
+          `Skipping missing booking photo ${fileId} on appointment ${id}`,
+        );
+      }
+    }
+
+    return { items };
   }
 
   async getActivity(

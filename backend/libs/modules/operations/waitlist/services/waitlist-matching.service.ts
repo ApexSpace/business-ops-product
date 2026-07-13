@@ -105,7 +105,7 @@ export class WaitlistMatchingService {
 
     if (!hasMatch) {
       if (entry.status === BookingWaitlistStatus.MATCHED) {
-        await this.waitlistRepository.update(entry.id, {
+        await this.waitlistRepository.updateIfOpen(entry.id, {
           status: BookingWaitlistStatus.WAITING,
           metadata: {
             ...previousMetadata,
@@ -124,10 +124,14 @@ export class WaitlistMatchingService {
       matchedAt: new Date().toISOString(),
     };
 
-    const updated = await this.waitlistRepository.update(entry.id, {
+    const updated = await this.waitlistRepository.updateIfOpen(entry.id, {
       status: BookingWaitlistStatus.MATCHED,
       metadata: nextMetadata as unknown as Prisma.InputJsonValue,
     });
+
+    if (!updated) {
+      return;
+    }
 
     if (!hadMatch) {
       void this.notifyStaffOpeningAvailable(updated).catch(() => undefined);

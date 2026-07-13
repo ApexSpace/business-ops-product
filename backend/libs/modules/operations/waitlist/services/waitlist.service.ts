@@ -349,6 +349,17 @@ export class WaitlistService {
       );
     }
 
+    if (
+      entry.status !== BookingWaitlistStatus.WAITING &&
+      entry.status !== BookingWaitlistStatus.MATCHED
+    ) {
+      throw new AppException(
+        ErrorCode.BAD_REQUEST,
+        'This waitlist entry has already been booked or closed',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
     const metadata = parseWaitlistMetadata(entry.metadata);
     const matchedSlot =
       metadata.matchedOpenings?.find((slot) => slot.startAt === dto.startAt) ??
@@ -367,37 +378,70 @@ export class WaitlistService {
         ? metadata.serviceLines
         : [{ serviceId: entry.serviceId, staffId: entry.staffId }];
 
-    const appointment = await this.appointmentsService.create(
-      businessId,
-      {
-        contactId: entry.contactId,
-        calendarId: dto.calendarId ?? entry.calendarId ?? undefined,
-        startAt: matchedSlot.startAt,
-        endAt: matchedSlot.endAt,
-        assignedToId:
-          dto.staffId ??
-          matchedSlot.staffId ??
-          entry.staffId ??
-          undefined,
-        services: serviceLines.map((line, index) => ({
-          serviceId: line.serviceId,
+    // Claim the entry before creating the appointment so a calendar-mutation
+    // recheck cannot revive it with remaining openings on the same day.
+    const claimed = await this.waitlistRepository.updateIfOpen(id, {
+      status: BookingWaitlistStatus.BOOKED,
+      metadata: {
+        ...metadata,
+        matchedOpenings: [],
+        matchedAt: undefined,
+      } as unknown as Prisma.InputJsonValue,
+    });
+    if (!claimed) {
+      throw new AppException(
+        ErrorCode.BAD_REQUEST,
+        'This waitlist entry has already been booked or closed',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    let appointment;
+    try {
+      appointment = await this.appointmentsService.create(
+        businessId,
+        {
+          contactId: entry.contactId,
+          calendarId: dto.calendarId ?? entry.calendarId ?? undefined,
+          startAt: matchedSlot.startAt,
+          endAt: matchedSlot.endAt,
           assignedToId:
-            matchedSlot.serviceLines?.[index]?.staffId ??
-            line.staffId ??
+            dto.staffId ??
+            matchedSlot.staffId ??
+            entry.staffId ??
             undefined,
-          startAt: matchedSlot.serviceLines?.[index]?.startAt,
-        })),
-        title: entry.service.name,
-        source: AppointmentSource.INTERNAL,
-        status: AppointmentStatus.CONFIRMED,
-      },
-      actor,
-    );
+          services: serviceLines.map((line, index) => ({
+            serviceId: line.serviceId,
+            assignedToId:
+              matchedSlot.serviceLines?.[index]?.staffId ??
+              line.staffId ??
+              undefined,
+            startAt: matchedSlot.serviceLines?.[index]?.startAt,
+          })),
+          title: entry.service.name,
+          source: AppointmentSource.INTERNAL,
+          status: AppointmentStatus.CONFIRMED,
+        },
+        actor,
+      );
+    } catch (err) {
+      await this.waitlistRepository.update(id, {
+        status: BookingWaitlistStatus.MATCHED,
+        metadata: {
+          ...metadata,
+          matchedOpenings: metadata.matchedOpenings ?? [],
+          matchedAt: new Date().toISOString(),
+        } as unknown as Prisma.InputJsonValue,
+      });
+      throw err;
+    }
 
     const updated = await this.waitlistRepository.update(id, {
       status: BookingWaitlistStatus.BOOKED,
       metadata: {
         ...metadata,
+        matchedOpenings: [],
+        matchedAt: undefined,
         bookedAppointmentId: appointment.id,
       } as unknown as Prisma.InputJsonValue,
     });

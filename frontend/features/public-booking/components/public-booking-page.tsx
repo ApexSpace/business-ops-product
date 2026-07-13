@@ -40,9 +40,8 @@ import { BookingSuccessView } from "@/features/public-booking/components/booking
 import { BookingServiceCatalog } from "@/features/public-booking/components/booking-service-catalog";
 import { BookingStaffPicker } from "@/features/public-booking/components/booking-staff-picker";
 import { BookingServiceCart } from "@/features/public-booking/components/booking-service-cart";
-import { BookingWaitlistForm } from "@/features/public-booking/components/booking-waitlist-form";
-import type { BookingWaitlistFormValues } from "@/features/public-booking/components/booking-waitlist-form";
 import { BookingWaitlistSuccess } from "@/features/public-booking/components/booking-waitlist-success";
+import type { BookingWaitlistFormValues } from "@/features/public-booking/components/booking-waitlist-form";
 import {
   publicHasOfferCodes,
   validatePublicOfferCode,
@@ -61,6 +60,22 @@ interface PublicBookingPageProps {
 
 function resolveAccent(business: PublicBookingBusiness): string {
   return business.brandColor ?? "#0069ff";
+}
+
+/**
+ * When singleStaffOnly reuses the first line's staff for another service,
+ * stamp that service's catalog timing so occupancy is not copied from service 1.
+ */
+function staffForAdditionalService(
+  sharedStaff: PublicBookingStaff,
+  service: PublicBookingCatalogService,
+): PublicBookingStaff {
+  return {
+    ...sharedStaff,
+    durationMinutes: service.durationMinutes,
+    clientOccupancyMinutes: service.clientOccupancyMinutes,
+    price: service.price ?? sharedStaff.price,
+  };
 }
 
 export function PublicBookingPage({ slug, embed = false }: PublicBookingPageProps) {
@@ -250,7 +265,18 @@ export function PublicBookingPage({ slug, embed = false }: PublicBookingPageProp
   const bookableDateSet = useMemo(() => {
     const set = new Set<string>();
     for (const day of availability) {
-      if (day.slots.length > 0) set.add(day.date);
+      if (day.slots.some((slot) => slot.available !== false)) {
+        set.add(day.date);
+      }
+    }
+    return set;
+  }, [availability]);
+
+  /** Working days returned by the API (includes empty days when waitlist is on). */
+  const openDateSet = useMemo(() => {
+    const set = new Set<string>();
+    for (const day of availability) {
+      set.add(day.date);
     }
     return set;
   }, [availability]);
@@ -522,18 +548,20 @@ export function PublicBookingPage({ slug, embed = false }: PublicBookingPageProp
     ) ||
     selectedService?.durationMinutes ||
     30;
+  // Prefer per-service occupancy so shared staff (singleStaffOnly) does not
+  // reuse the first service's timing for later lines.
   const slotDurationMinutes =
     serviceLines.reduce(
       (total, line) =>
         total +
-        (line.staff.clientOccupancyMinutes ??
-          line.service.clientOccupancyMinutes ??
+        (line.service.clientOccupancyMinutes ??
+          line.staff.clientOccupancyMinutes ??
           line.service.durationMinutes ??
           30),
       0,
     ) ||
-    selectedStaff?.clientOccupancyMinutes ||
     selectedService?.clientOccupancyMinutes ||
+    selectedStaff?.clientOccupancyMinutes ||
     durationMinutes;
 
   const slotSummary =
@@ -600,6 +628,7 @@ export function PublicBookingPage({ slug, embed = false }: PublicBookingPageProp
           confirmation={confirmation}
           customerName={customerName}
           accentColor={accent}
+          slug={slug}
           embed={embed}
           compact={isCompact}
           serviceSummaries={serviceSummaries}
@@ -624,9 +653,15 @@ export function PublicBookingPage({ slug, embed = false }: PublicBookingPageProp
           onSelectService={(svc) => {
             setSelectedService(svc);
             if (singleStaffOnly && serviceLines.length > 0) {
-              const sharedStaff = serviceLines[0].staff;
+              const sharedStaff = staffForAdditionalService(
+                serviceLines[0].staff,
+                svc,
+              );
               setSelectedStaff(sharedStaff);
-              setServiceLines((prev) => [...prev, { service: svc, staff: sharedStaff }]);
+              setServiceLines((prev) => [
+                ...prev,
+                { service: svc, staff: sharedStaff },
+              ]);
               setPhase("cart");
               return;
             }
@@ -713,8 +748,14 @@ export function PublicBookingPage({ slug, embed = false }: PublicBookingPageProp
           }}
           onSelectAdditionalService={(svc) => {
             if (singleStaffOnly && serviceLines.length > 0) {
-              const sharedStaff = serviceLines[0].staff;
-              setServiceLines((prev) => [...prev, { service: svc, staff: sharedStaff }]);
+              const sharedStaff = staffForAdditionalService(
+                serviceLines[0].staff,
+                svc,
+              );
+              setServiceLines((prev) => [
+                ...prev,
+                { service: svc, staff: sharedStaff },
+              ]);
               return;
             }
             setSelectedService(svc);
@@ -738,33 +779,18 @@ export function PublicBookingPage({ slug, embed = false }: PublicBookingPageProp
           <BookingMonthCalendar
             timezone={bookingTimezone}
             bookableDates={bookableDateSet}
+            openDates={openDateSet}
             selectedDate={selectedDate}
             maxBookingDays={business.bookingRules.maxBookingDays}
+            waitlistEnabled={Boolean(business.bookingRules.waitlistEnabled)}
             onSelectDate={(date) => {
               setSelectedDate(date);
               setPendingSlot(null);
+              setWaitlistJoined(false);
               if (isCompact) setScheduleStep("time");
             }}
             accentColor={accent}
           />
-          {selectedDate &&
-          !availabilityLoadingState &&
-          slotsForSelectedDate.length === 0 &&
-          business.bookingRules.waitlistEnabled ? (
-            waitlistJoined ? (
-              <p className="mt-4 text-sm text-muted-foreground">
-                You are on the waitlist for this date. We will contact you when
-                a slot opens.
-              </p>
-            ) : (
-              <BookingWaitlistForm
-                accentColor={accent}
-                submitting={waitlistMutation.isPending}
-                {...waitlistContext}
-                onSubmit={handleJoinWaitlist}
-              />
-            )
-          ) : null}
         </div>
       ) : (
         <div className="flex flex-1 flex-col">

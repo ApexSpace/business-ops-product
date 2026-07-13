@@ -37,7 +37,12 @@ export function useWaitlistMutations() {
       startAt: string;
       calendarId?: string;
       staffId?: string;
-    }) => bookFromWaitlist(id, { startAt, calendarId, staffId }),
+    }) =>
+      bookFromWaitlist(id, {
+        startAt,
+        ...(calendarId ? { calendarId } : {}),
+        ...(staffId ? { staffId } : {}),
+      }),
     onSuccess: () => {
       toast.success("Appointment booked from waitlist");
       void invalidateWaitlist(queryClient);

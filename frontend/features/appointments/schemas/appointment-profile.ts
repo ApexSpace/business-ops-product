@@ -100,6 +100,8 @@ export interface Appointment {
   waitingNotifiedAt: string | null;
   googleSyncWarning?: string | null;
   scheduleWarning?: string | null;
+  photoFileIds?: string[];
+  hasPhotos?: boolean;
 }
 
 export function getAppointmentSyncIndicator(appointment: Appointment): {

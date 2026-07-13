@@ -274,6 +274,25 @@ export function OnlineBookingSettingsScreen() {
                   />
                 </div>
               ))}
+              {data.collectPhotosEnabled ? (
+                <div className="space-y-2">
+                  <Label>Photo upload prompt</Label>
+                  <Textarea
+                    defaultValue={String(data.photoUploadPrompt ?? "")}
+                    placeholder="Please share any reference or inspiration photos that are relevant to your appointment."
+                    disabled={!canManage}
+                    onBlur={(e) =>
+                      prefsMutation.mutate({
+                        photoUploadPrompt: e.target.value.trim() || null,
+                      })
+                    }
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Shown on the booking confirmation page. Clients can upload up
+                    to 3 photos.
+                  </p>
+                </div>
+              ) : null}
               <div className="space-y-2">
                 <Label>Cancellation policy</Label>
                 <Textarea

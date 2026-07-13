@@ -38,8 +38,8 @@ export function BookingTimeSlots({
   loading,
   selectedDate,
   timezone,
-  durationMinutes,
-  slotDurationMinutes,
+  durationMinutes: _durationMinutes,
+  slotDurationMinutes: _slotDurationMinutes,
   pendingSlotStart,
   accentColor,
   onSelectSlot,
@@ -51,14 +51,10 @@ export function BookingTimeSlots({
   waitlistContext,
   onJoinWaitlist,
 }: BookingTimeSlotsProps) {
-  const visibleSlots = slots.filter((slot) => {
-    if (!slot.available) return false;
-    const start = Date.parse(slot.startAt);
-    const end = Date.parse(slot.endAt);
-    if (Number.isNaN(start) || Number.isNaN(end)) return false;
-    const lengthMinutes = Math.round((end - start) / 60_000);
-    return lengthMinutes === slotDurationMinutes;
-  });
+  // Trust the availability API — do not re-filter by client-computed duration.
+  // Chained bookings (especially single-staff reuse) can disagree on occupancy
+  // minutes between catalog/staff objects and the server's resolved timing.
+  const visibleSlots = slots.filter((slot) => slot.available !== false);
 
   if (!selectedDate) {
     return (
@@ -104,8 +100,9 @@ export function BookingTimeSlots({
         <div className="shrink-0 px-4 py-4 text-center">
           <p className="text-sm font-medium">No times available</p>
           <p className="mt-1 text-xs text-muted-foreground">
-            No times available for this date. Try another day or join the
-            waitlist.
+            {waitlistEnabled
+              ? "There are no open times on this date. Join the waitlist and we’ll notify you if a spot opens."
+              : "No times available for this date. Try another day."}
           </p>
         </div>
         {waitlistEnabled && !waitlistJoined && onJoinWaitlist ? (

@@ -55,10 +55,15 @@ export class WaitlistRepository {
   ): Prisma.BookingWaitlistEntryWhereInput {
     return {
       businessId,
-      status: { not: BookingWaitlistStatus.CANCELLED },
       ...extra,
     };
   }
+
+  /** Entries staff actively work from the waitlist panel. */
+  private openStatuses = [
+    BookingWaitlistStatus.WAITING,
+    BookingWaitlistStatus.MATCHED,
+  ] as const;
 
   async create(
     data: Prisma.BookingWaitlistEntryUncheckedCreateInput,
@@ -89,17 +94,20 @@ export class WaitlistRepository {
     skip: number;
     take: number;
   }): Promise<{ items: WaitlistEntryWithRelations[]; total: number }> {
+    const statusFilter = params.hasOpening
+      ? { status: BookingWaitlistStatus.MATCHED }
+      : params.status?.length
+        ? { status: { in: params.status } }
+        : { status: { in: [...this.openStatuses] } };
+
     const where: Prisma.BookingWaitlistEntryWhereInput = this.activeWhere(
       params.businessId,
       {
-        ...(params.status?.length ? { status: { in: params.status } } : {}),
+        ...statusFilter,
         ...(params.staffId ? { staffId: params.staffId } : {}),
         ...(params.calendarId ? { calendarId: params.calendarId } : {}),
         ...(params.preferredDate
           ? { preferredDate: params.preferredDate }
-          : {}),
-        ...(params.hasOpening
-          ? { status: BookingWaitlistStatus.MATCHED }
           : {}),
       },
     );
@@ -151,6 +159,28 @@ export class WaitlistRepository {
     return this.prisma.bookingWaitlistEntry.update({
       where: { id },
       data,
+      include: entryInclude,
+    });
+  }
+
+  /**
+   * Only updates entries still in the open pool (WAITING/MATCHED).
+   * Prevents a matching race from overwriting BOOKED after staff books.
+   */
+  async updateIfOpen(
+    id: string,
+    data: Prisma.BookingWaitlistEntryUpdateInput,
+  ): Promise<WaitlistEntryWithRelations | null> {
+    const result = await this.prisma.bookingWaitlistEntry.updateMany({
+      where: {
+        id,
+        status: { in: [...this.openStatuses] },
+      },
+      data: data as Prisma.BookingWaitlistEntryUpdateManyMutationInput,
+    });
+    if (result.count === 0) return null;
+    return this.prisma.bookingWaitlistEntry.findFirst({
+      where: { id },
       include: entryInclude,
     });
   }

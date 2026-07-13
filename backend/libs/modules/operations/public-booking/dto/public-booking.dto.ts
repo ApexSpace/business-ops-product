@@ -2,6 +2,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { AppointmentSource, StaffGender } from '@prisma/client';
 import {
   Allow,
+  ArrayMaxSize,
   IsArray,
   IsBoolean,
   IsEmail,
@@ -318,10 +319,30 @@ export class PublicBookingAttachPhotosDto {
   @MaxLength(64)
   uploadToken!: string;
 
-  @ApiProperty({ type: [String] })
+  @ApiProperty({ type: [String], maxItems: 3 })
   @IsArray()
+  @ArrayMaxSize(3)
   @IsUUID('4', { each: true })
   fileIds!: string[];
+}
+
+export class PublicBookingPhotoConfirmDto {
+  @ApiProperty()
+  @IsUUID()
+  appointmentId!: string;
+
+  @ApiProperty()
+  @IsString()
+  @MaxLength(64)
+  uploadToken!: string;
+}
+
+export class PublicBookingPhotoFailDto extends PublicBookingPhotoConfirmDto {
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(1000)
+  reason?: string;
 }
 
 export class JoinBookingWaitlistDto {

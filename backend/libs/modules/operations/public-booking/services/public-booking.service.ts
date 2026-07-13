@@ -31,6 +31,8 @@ import {
   PublicBookingCatalogCategoryDto,
   PublicBookingConfirmationDto,
   PublicBookingDayAvailabilityDto,
+  PublicBookingPhotoConfirmDto,
+  PublicBookingPhotoFailDto,
   PublicBookingPhotoUploadDto,
   PublicBookingStaffDto,
 } from '../dto/public-booking.dto';
@@ -53,7 +55,7 @@ import { randomUUID } from 'crypto';
 import { PublicBookingCheckoutService } from './public-booking-checkout.service';
 import { StorageService } from '@app/modules/storage/services/storage.service';
 import { CreateUploadDto } from '@app/modules/storage/dto/create-upload.dto';
-import { FileCategory, FileVisibility } from '@prisma/client';
+import { FileCategory, FileAssetStatus, FileVisibility } from '@prisma/client';
 
 @Injectable()
 export class PublicBookingService {
@@ -769,33 +771,25 @@ export class PublicBookingService {
   }
 
   async createPhotoUpload(slug: string, dto: PublicBookingPhotoUploadDto) {
-    const context = await this.settingsService.resolveBusinessBySlug(slug);
-    if (!context.collectPhotosEnabled) {
+    const { context, appointment, metadata } =
+      await this.requirePhotoUploadAccess(slug, dto.appointmentId, dto.uploadToken);
+
+    const existing = Array.isArray(metadata.photoFileIds)
+      ? (metadata.photoFileIds as string[])
+      : [];
+    if (existing.length >= 3) {
       throw new AppException(
-        ErrorCode.BAD_REQUEST,
-        'Photo upload is not enabled',
+        ErrorCode.VALIDATION_ERROR,
+        'Maximum of 3 photos already attached',
         HttpStatus.BAD_REQUEST,
       );
     }
 
-    const appointment = await this.appointmentRepository.findById(
-      context.businessId,
-      dto.appointmentId,
-    );
-    if (!appointment) {
+    if (!dto.mimeType.startsWith('image/')) {
       throw new AppException(
-        ErrorCode.NOT_FOUND,
-        'Appointment not found',
-        HttpStatus.NOT_FOUND,
-      );
-    }
-
-    const metadata = (appointment.metadata ?? {}) as Record<string, unknown>;
-    if (metadata.uploadToken !== dto.uploadToken) {
-      throw new AppException(
-        ErrorCode.FORBIDDEN,
-        'Invalid upload token',
-        HttpStatus.FORBIDDEN,
+        ErrorCode.VALIDATION_ERROR,
+        'Only image uploads are allowed',
+        HttpStatus.BAD_REQUEST,
       );
     }
 
@@ -803,7 +797,7 @@ export class PublicBookingService {
       filename: dto.filename,
       mimeType: dto.mimeType,
       size: dto.size,
-      category: FileCategory.OTHER,
+      category: FileCategory.IMAGE,
       visibility: FileVisibility.PRIVATE,
     };
 
@@ -814,33 +808,82 @@ export class PublicBookingService {
     );
   }
 
-  async attachPhotos(slug: string, dto: PublicBookingAttachPhotosDto) {
-    const context = await this.settingsService.resolveBusinessBySlug(slug);
-    const appointment = await this.appointmentRepository.findById(
-      context.businessId,
+  async confirmPhotoUpload(
+    slug: string,
+    fileAssetId: string,
+    dto: PublicBookingPhotoConfirmDto,
+  ) {
+    const { context } = await this.requirePhotoUploadAccess(
+      slug,
       dto.appointmentId,
+      dto.uploadToken,
     );
-    if (!appointment) {
-      throw new AppException(
-        ErrorCode.NOT_FOUND,
-        'Appointment not found',
-        HttpStatus.NOT_FOUND,
-      );
-    }
+    return this.storageService.confirmBusinessUpload(
+      context.businessId,
+      fileAssetId,
+      SYSTEM_AUDIT_ACTOR_SENTINEL,
+    );
+  }
 
-    const metadata = (appointment.metadata ?? {}) as Record<string, unknown>;
-    if (metadata.uploadToken !== dto.uploadToken) {
-      throw new AppException(
-        ErrorCode.FORBIDDEN,
-        'Invalid upload token',
-        HttpStatus.FORBIDDEN,
-      );
-    }
+  async failPhotoUpload(
+    slug: string,
+    fileAssetId: string,
+    dto: PublicBookingPhotoFailDto,
+  ) {
+    const { context } = await this.requirePhotoUploadAccess(
+      slug,
+      dto.appointmentId,
+      dto.uploadToken,
+    );
+    return this.storageService.failBusinessUpload(
+      context.businessId,
+      fileAssetId,
+      dto.reason?.trim() || 'Upload aborted by client',
+      SYSTEM_AUDIT_ACTOR_SENTINEL,
+    );
+  }
+
+  async attachPhotos(slug: string, dto: PublicBookingAttachPhotosDto) {
+    const { appointment, metadata } = await this.requirePhotoUploadAccess(
+      slug,
+      dto.appointmentId,
+      dto.uploadToken,
+    );
 
     const existing = Array.isArray(metadata.photoFileIds)
       ? (metadata.photoFileIds as string[])
       : [];
-    const merged = [...existing, ...dto.fileIds].slice(0, 3);
+    const uniqueIncoming = [...new Set(dto.fileIds)];
+    if (existing.length + uniqueIncoming.length > 3) {
+      throw new AppException(
+        ErrorCode.VALIDATION_ERROR,
+        `You can attach up to 3 photos (${existing.length} already attached)`,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    for (const fileId of uniqueIncoming) {
+      const file = await this.storageService.getFile(
+        appointment.businessId,
+        fileId,
+      );
+      if (file.status !== FileAssetStatus.READY) {
+        throw new AppException(
+          ErrorCode.VALIDATION_ERROR,
+          'All photos must be fully uploaded before attaching',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+      if (file.category !== FileCategory.IMAGE) {
+        throw new AppException(
+          ErrorCode.VALIDATION_ERROR,
+          'Only image uploads can be attached',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+    }
+
+    const merged = [...existing, ...uniqueIncoming];
 
     await this.prisma.appointment.update({
       where: { id: appointment.id },
@@ -853,6 +896,44 @@ export class PublicBookingService {
     });
 
     return { photoFileIds: merged };
+  }
+
+  private async requirePhotoUploadAccess(
+    slug: string,
+    appointmentId: string,
+    uploadToken: string,
+  ) {
+    const context = await this.settingsService.resolveBusinessBySlug(slug);
+    if (!context.collectPhotosEnabled) {
+      throw new AppException(
+        ErrorCode.BAD_REQUEST,
+        'Photo upload is not enabled',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const appointment = await this.appointmentRepository.findById(
+      context.businessId,
+      appointmentId,
+    );
+    if (!appointment) {
+      throw new AppException(
+        ErrorCode.NOT_FOUND,
+        'Appointment not found',
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    const metadata = (appointment.metadata ?? {}) as Record<string, unknown>;
+    if (metadata.uploadToken !== uploadToken) {
+      throw new AppException(
+        ErrorCode.FORBIDDEN,
+        'Invalid upload token',
+        HttpStatus.FORBIDDEN,
+      );
+    }
+
+    return { context, appointment, metadata };
   }
 
   /** @deprecated Calendar-slug endpoints */

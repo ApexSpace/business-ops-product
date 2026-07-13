@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { ImageIcon } from "lucide-react";
 import {
   getContactDisplayName,
   getAppointmentSyncIndicator,
@@ -57,6 +58,9 @@ export function AppointmentEventCard({
   const end = formatTime(appointment.endAt, timeZone);
   const contactName = getContactDisplayName(appointment.contact);
   const syncIndicator = getAppointmentSyncIndicator(appointment);
+  const hasPhotos = Boolean(
+    appointment.hasPhotos || (appointment.photoFileIds?.length ?? 0) > 0,
+  );
   const interactive = Boolean(onClick);
   const draggable = Boolean(onMoveStart);
 
@@ -122,6 +126,14 @@ export function AppointmentEventCard({
         >
           {appointment.title}
         </CardLine>
+        {hasPhotos ? (
+          <span
+            className="mt-0.5 shrink-0 text-current opacity-80"
+            title="Has attached photos"
+          >
+            <ImageIcon className="size-3" aria-hidden />
+          </span>
+        ) : null}
         {syncIndicator ? (
           <span
             className={cn(

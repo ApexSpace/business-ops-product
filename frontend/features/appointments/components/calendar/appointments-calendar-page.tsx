@@ -253,8 +253,6 @@ function AppointmentsCalendarPageContent() {
         open={waitlistOpen}
         onOpenChange={setWaitlistOpen}
         anchorDateKey={cal.anchorDateKey}
-        staffId={cal.params.assignedToId}
-        calendarId={cal.params.calendarId}
         timezone={cal.displayTimezone}
         onBooked={(appointmentId) => {
           setWaitlistOpen(false);

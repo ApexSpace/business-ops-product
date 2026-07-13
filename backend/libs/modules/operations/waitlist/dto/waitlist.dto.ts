@@ -3,6 +3,7 @@ import {
   BookingWaitlistSource,
   BookingWaitlistStatus,
 } from '@prisma/client';
+import { Transform } from 'class-transformer';
 import {
   IsArray,
   IsBoolean,
@@ -17,6 +18,10 @@ import {
 import { PaginationQueryDto } from '@app/common/dto/pagination-query.dto';
 import { PublicBookingSlotDto } from '@app/modules/operations/public-booking/dto/public-booking.dto';
 
+function emptyToUndefined({ value }: { value: unknown }) {
+  return value === '' || value === null ? undefined : value;
+}
+
 export class ListWaitlistQueryDto extends PaginationQueryDto {
   @ApiPropertyOptional({ enum: BookingWaitlistStatus })
   @IsOptional()
@@ -25,16 +30,19 @@ export class ListWaitlistQueryDto extends PaginationQueryDto {
 
   @ApiPropertyOptional()
   @IsOptional()
+  @Transform(emptyToUndefined)
   @IsUUID()
   staffId?: string;
 
   @ApiPropertyOptional()
   @IsOptional()
+  @Transform(emptyToUndefined)
   @IsUUID()
   calendarId?: string;
 
   @ApiPropertyOptional()
   @IsOptional()
+  @Transform(emptyToUndefined)
   @IsDateString()
   preferredDate?: string;
 
@@ -42,6 +50,12 @@ export class ListWaitlistQueryDto extends PaginationQueryDto {
     description: 'When true, only entries with available openings',
   })
   @IsOptional()
+  @Transform(({ value }) => {
+    if (value === undefined || value === null || value === '') return undefined;
+    if (value === true || value === 'true' || value === '1') return true;
+    if (value === false || value === 'false' || value === '0') return false;
+    return value;
+  })
   @IsBoolean()
   hasOpening?: boolean;
 }
@@ -104,11 +118,13 @@ export class BookFromWaitlistDto {
 
   @ApiPropertyOptional()
   @IsOptional()
+  @Transform(emptyToUndefined)
   @IsUUID()
   calendarId?: string;
 
   @ApiPropertyOptional()
   @IsOptional()
+  @Transform(emptyToUndefined)
   @IsUUID()
   staffId?: string;
 }

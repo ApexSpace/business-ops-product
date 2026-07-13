@@ -22,6 +22,11 @@ export function toAppointmentResponse(
     typeof metadata?.waitingNotifiedAt === 'string'
       ? metadata.waitingNotifiedAt
       : null;
+  const photoFileIds = Array.isArray(metadata?.photoFileIds)
+    ? (metadata.photoFileIds as unknown[]).filter(
+        (id): id is string => typeof id === 'string',
+      )
+    : [];
 
   return {
     id: row.id,
@@ -68,6 +73,8 @@ export function toAppointmentResponse(
     relatedCheckoutId: checkout?.id ?? null,
     relatedCheckoutStatus: checkout?.status ?? null,
     waitingNotifiedAt,
+    photoFileIds,
+    hasPhotos: photoFileIds.length > 0,
     ...(options?.googleSyncWarning
       ? { googleSyncWarning: options.googleSyncWarning }
       : {}),

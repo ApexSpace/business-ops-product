@@ -217,6 +217,28 @@ export function createBookingPhotoUpload(
   });
 }
 
+export function confirmBookingPhotoUpload(
+  slug: string,
+  fileAssetId: string,
+  body: { appointmentId: string; uploadToken: string },
+) {
+  return publicFetch(
+    `public/booking/businesses/${encodeURIComponent(slug)}/uploads/${encodeURIComponent(fileAssetId)}/confirm`,
+    { method: "POST", body: JSON.stringify(body) },
+  );
+}
+
+export function failBookingPhotoUpload(
+  slug: string,
+  fileAssetId: string,
+  body: { appointmentId: string; uploadToken: string; reason?: string },
+) {
+  return publicFetch(
+    `public/booking/businesses/${encodeURIComponent(slug)}/uploads/${encodeURIComponent(fileAssetId)}/fail`,
+    { method: "POST", body: JSON.stringify(body) },
+  );
+}
+
 export function attachBookingPhotos(
   slug: string,
   body: {

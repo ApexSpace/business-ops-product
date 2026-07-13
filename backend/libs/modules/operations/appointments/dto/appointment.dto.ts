@@ -288,4 +288,7 @@ export class AppointmentResponseDto {
   googleSyncWarning?: string | null;
   /** Soft warning for schedule conflicts (e.g. staff double-booked) */
   scheduleWarning?: string | null;
+  /** File asset IDs for customer-uploaded booking photos (max 3). */
+  photoFileIds!: string[];
+  hasPhotos!: boolean;
 }

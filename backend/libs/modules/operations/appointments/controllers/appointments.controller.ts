@@ -84,6 +84,19 @@ export class AppointmentsController {
     return this.appointmentsService.notifyClient(user.businessId!, id, user);
   }
 
+  @Get(':id/photos')
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
+  listPhotos(
+    @CurrentUser() user: RequestUser,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.appointmentsService.listPhotos(user.businessId!, id);
+  }
+
   @Get(':id')
   @BusinessRoles(
     BusinessMemberRole.OWNER,

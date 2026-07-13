@@ -222,7 +222,10 @@ export class BusinessAvailabilityService {
         dayEndUtc,
       );
 
-      if (weekly?.isEnabled && !this.isDayFullyBlocked(exception)) {
+      const dayIsOpen =
+        Boolean(weekly?.isEnabled) && !this.isDayFullyBlocked(exception);
+
+      if (dayIsOpen && weekly) {
         const windowStart = parseTimeToMinutes(weekly.startTime);
         const windowEnd = parseTimeToMinutes(weekly.endTime);
         const blockedRanges = this.getBlockedRangesForDay(
@@ -335,7 +338,12 @@ export class BusinessAvailabilityService {
         }
       }
 
-      if (slots.length > 0) {
+      // When waitlist is on, include open working days with zero slots so
+      // customers can still select that date and join the waitlist.
+      if (
+        slots.length > 0 ||
+        (params.settings.waitlistEnabled && dayIsOpen)
+      ) {
         days.push({ date: dateKey, slots });
       }
 
@@ -419,10 +427,16 @@ export class BusinessAvailabilityService {
         avoidGapsEnabled: false,
       });
 
-    const weeklyHours = resolveEffectiveWeeklyHours(
-      params.businessHours,
-      undefined,
-    );
+    // Prefer staff timetable when every line shares the same provider.
+    const sharedStaffHours =
+      params.chain[0]?.staffId &&
+      params.chain.every((line) => line.staffId === params.chain[0]?.staffId)
+        ? params.chain[0]?.weeklyHours
+        : undefined;
+    const weeklyHours =
+      sharedStaffHours?.length
+        ? sharedStaffHours
+        : resolveEffectiveWeeklyHours(params.businessHours, undefined);
     const exceptions = this.mergeExceptions(
       params.businessExceptions,
       undefined,
@@ -453,7 +467,10 @@ export class BusinessAvailabilityService {
         dayEndUtc,
       );
 
-      if (weekly?.isEnabled && !this.isDayFullyBlocked(exception)) {
+      const dayIsOpen =
+        Boolean(weekly?.isEnabled) && !this.isDayFullyBlocked(exception);
+
+      if (dayIsOpen && weekly) {
         const windowStart = parseTimeToMinutes(weekly.startTime);
         const windowEnd = parseTimeToMinutes(weekly.endTime);
         const blockedRanges = this.getBlockedRangesForDay(
@@ -521,7 +538,10 @@ export class BusinessAvailabilityService {
         }
       }
 
-      if (slots.length > 0) {
+      if (
+        slots.length > 0 ||
+        (params.settings.waitlistEnabled && dayIsOpen)
+      ) {
         days.push({ date: dateKey, slots });
       }
 

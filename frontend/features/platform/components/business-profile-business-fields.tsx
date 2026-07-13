@@ -32,7 +32,7 @@ export function BusinessProfileBusinessFields({
   twoColumnLayout?: boolean;
 }) {
   const industryField = industriesLoading ? (
-    <Skeleton className="h-10 w-full" />
+    <Skeleton className="h-[var(--control-height)] w-full" />
   ) : industryOptions.length === 0 ? (
     <p className="text-sm text-muted-foreground sm:col-span-2">
       No industries configured. Ask a platform admin to add industries under
@@ -59,8 +59,19 @@ export function BusinessProfileBusinessFields({
     />
   ) : null;
 
+  const logoField = (
+    <TextField
+      control={form.control}
+      name="logoUrl"
+      label="Logo URL"
+      type="url"
+      placeholder="https://example.com/logo.png"
+      disabled={disabled}
+    />
+  );
+
   return (
-    <section className="space-y-4">
+    <section className="space-y-5">
       {showSectionTitle ? (
         <BusinessProfileSectionTitle>Business</BusinessProfileSectionTitle>
       ) : null}
@@ -71,10 +82,10 @@ export function BusinessProfileBusinessFields({
         placeholder="ABC Med Spa"
         disabled={disabled}
       />
-      {twoColumnLayout && showStatus ? (
+      {twoColumnLayout ? (
         <div className="grid gap-4 sm:grid-cols-2">
           {industryField}
-          {statusField}
+          {statusField ?? logoField}
         </div>
       ) : (
         <>
@@ -84,7 +95,7 @@ export function BusinessProfileBusinessFields({
       )}
       {showSnapshotPicker ? (
         snapshotsLoading ? (
-          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-[var(--control-height)] w-full" />
         ) : (
           <SelectField
             control={form.control}
@@ -99,14 +110,8 @@ export function BusinessProfileBusinessFields({
           />
         )
       ) : null}
-      <TextField
-        control={form.control}
-        name="logoUrl"
-        label="Logo URL"
-        type="url"
-        placeholder="https://example.com/logo.png"
-        disabled={disabled}
-      />
+      {twoColumnLayout && showStatus ? logoField : null}
+      {!twoColumnLayout ? logoField : null}
     </section>
   );
 }

@@ -56,6 +56,7 @@ import {
   AppointmentServicesList,
   resolveAppointmentUpdatedBy,
 } from "./appointment-drawer-sections";
+import { AppointmentAttachedPhotos } from "./appointment-attached-photos";
 
 export type AppointmentDrawerView = "detail" | "checkout";
 
@@ -397,6 +398,14 @@ export function AppointmentDetailDrawer({
                     </p>
                   </div>
                 ) : null}
+
+                <AppointmentAttachedPhotos
+                  appointmentId={appointment.id}
+                  hasPhotos={Boolean(
+                    appointment.hasPhotos ||
+                      (appointment.photoFileIds?.length ?? 0) > 0,
+                  )}
+                />
 
                 <AppointmentBookingDetailsSummary
                   createdAt={appointment.createdAt}

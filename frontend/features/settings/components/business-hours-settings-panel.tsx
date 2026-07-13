@@ -17,10 +17,13 @@ import {
 
 interface BusinessHoursSettingsPanelProps {
   disabled?: boolean;
+  /** When true, hide the intro — parent SettingsCard already provides it. */
+  embedded?: boolean;
 }
 
 export function BusinessHoursSettingsPanel({
   disabled = false,
+  embedded = false,
 }: BusinessHoursSettingsPanelProps) {
   const queryClient = useQueryClient();
   const [slots, setSlots] = useState<BusinessHoursSlot[]>(
@@ -52,14 +55,16 @@ export function BusinessHoursSettingsPanel({
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h3 className="text-base font-medium">Business hours</h3>
-        <p className="mt-1 text-sm text-muted-foreground">
-          When your business accepts online bookings each week. Staff can
-          override these with their own schedule from the team settings.
-        </p>
-      </div>
+    <div className="space-y-5">
+      {!embedded ? (
+        <div>
+          <h3 className="text-base font-medium">Business hours</h3>
+          <p className="mt-1 text-sm text-muted-foreground">
+            When your business accepts online bookings each week. Staff can
+            override these with their own schedule from the team settings.
+          </p>
+        </div>
+      ) : null}
 
       <BusinessHoursEditor
         slots={slots}
@@ -68,13 +73,15 @@ export function BusinessHoursSettingsPanel({
       />
 
       {!disabled ? (
-        <Button
-          type="button"
-          onClick={() => saveMutation.mutate()}
-          disabled={saveMutation.isPending}
-        >
-          {saveMutation.isPending ? "Saving…" : "Save business hours"}
-        </Button>
+        <div className="flex justify-end border-t border-border/60 pt-4">
+          <Button
+            type="button"
+            onClick={() => saveMutation.mutate()}
+            disabled={saveMutation.isPending}
+          >
+            {saveMutation.isPending ? "Saving…" : "Save business hours"}
+          </Button>
+        </div>
       ) : null}
     </div>
   );

@@ -5,6 +5,7 @@ import {
   Headers,
   Inject,
   Param,
+  ParseUUIDPipe,
   Post,
   Query,
   Req,
@@ -23,6 +24,8 @@ import {
   PublicBookingAttachPhotosDto,
   PublicBookingAvailabilityBaseQueryDto,
   PublicBookingCheckoutDto,
+  PublicBookingPhotoConfirmDto,
+  PublicBookingPhotoFailDto,
   PublicBookingPhotoUploadDto,
 } from '../dto/public-booking.dto';
 import { PublicBookingService } from '../services/public-booking.service';
@@ -148,6 +151,28 @@ export class PublicBookingController {
     @Body() dto: PublicBookingPhotoUploadDto,
   ) {
     return this.publicBookingService.createPhotoUpload(slug, dto);
+  }
+
+  @Post('businesses/:slug/uploads/:id/confirm')
+  @Public()
+  @Throttle({ default: { limit: 30, ttl: 60000 } })
+  confirmPhotoUpload(
+    @Param('slug') slug: string,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: PublicBookingPhotoConfirmDto,
+  ) {
+    return this.publicBookingService.confirmPhotoUpload(slug, id, dto);
+  }
+
+  @Post('businesses/:slug/uploads/:id/fail')
+  @Public()
+  @Throttle({ default: { limit: 30, ttl: 60000 } })
+  failPhotoUpload(
+    @Param('slug') slug: string,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: PublicBookingPhotoFailDto,
+  ) {
+    return this.publicBookingService.failPhotoUpload(slug, id, dto);
   }
 
   @Post('businesses/:slug/photos')

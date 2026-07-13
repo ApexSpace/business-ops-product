@@ -47,6 +47,21 @@ export function getAppointmentActivity(id: string) {
   );
 }
 
+export type AppointmentPhotoItem = {
+  id: string;
+  filename: string;
+  mimeType: string;
+  size: number;
+  downloadUrl: string;
+  expiresIn: number;
+};
+
+export function getAppointmentPhotos(id: string) {
+  return api.get<{ items: AppointmentPhotoItem[] }>(
+    `appointments/${id}/photos`,
+  );
+}
+
 export function createAppointment(body: Record<string, unknown>) {
   return api.post<Appointment>("appointments", body);
 }

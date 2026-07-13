@@ -10,6 +10,7 @@ import { BusinessProfileFormFields } from "@/features/platform/components/busine
 import { FormActions } from "@/components/layout/form-actions";
 import { PageHeader } from "@/components/layout/page-header";
 import { PageTabs, PageTabsPanel } from "@/components/layout/page-tabs";
+import { SettingsCard } from "@/components/layout/settings-card";
 import { Button } from "@/components/ui/button";
 import { Form, FormSchemaProvider } from "@/components/ui/form";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -27,9 +28,40 @@ import {
 } from "@/features/settings/schemas/business-profile-tabs";
 import { queryKeys } from "@/lib/query/keys";
 import { PERMISSIONS, useCan } from "@/features/auth/permissions";
-import type { Business } from "@/features/settings/types";
 import { BusinessHoursSettingsPanel } from "@/features/settings/components/business-hours-settings-panel";
-import { getCurrentBusiness, updateCurrentBusiness } from "@/features/settings/api/business.api";
+import {
+  getCurrentBusiness,
+  updateCurrentBusiness,
+} from "@/features/settings/api/business.api";
+
+const PROFILE_TAB_CARDS: Record<
+  BusinessProfileTab,
+  { title: string; description: string }
+> = {
+  contact: {
+    title: "Primary contact",
+    description:
+      "Contact person details used across invoices, booking, and notifications.",
+  },
+  business: {
+    title: "Business details",
+    description: "Legal name, industry, and branding for this workspace.",
+  },
+  address: {
+    title: "Business address",
+    description:
+      "Physical address shown on invoices, estimates, and public pages.",
+  },
+  regional: {
+    title: "Regional & tax",
+    description: "Website, timezone, currency, and default tax settings.",
+  },
+  hours: {
+    title: "Business hours",
+    description:
+      "Weekly hours for online booking. Staff can override these from team settings.",
+  },
+};
 
 export function BusinessProfileSettings() {
   const router = useRouter();
@@ -84,6 +116,19 @@ export function BusinessProfileSettings() {
 
   if (isLoading) return <Skeleton className="h-48 w-full" />;
 
+  const profileSaveFooter = canEdit ? (
+    <FormActions>
+      <Button type="submit" disabled={mutation.isPending}>
+        {mutation.isPending ? "Saving…" : "Save changes"}
+      </Button>
+    </FormActions>
+  ) : (
+    <p className="text-sm text-muted-foreground">
+      Only owners, admins, and platform administrators can edit the business
+      profile.
+    </p>
+  );
+
   return (
     <div className="w-full min-w-0 space-y-6">
       <PageHeader />
@@ -92,44 +137,48 @@ export function BusinessProfileSettings() {
         <FormSchemaProvider schema={businessProfileSchema}>
           <form
             onSubmit={form.handleSubmit((v) => mutation.mutate(v))}
-            className="w-full min-w-0 space-y-6"
+            className="w-full min-w-0 max-w-3xl space-y-5"
           >
-          <PageTabs
-            value={activeTab}
-            onValueChange={(v) =>
-              setActiveTab(parseBusinessProfileTab(v))
-            }
-            tabs={[...BUSINESS_PROFILE_TABS]}
-            className="w-full"
-          >
-            {BUSINESS_PROFILE_TABS.map((tab) => (
-              <PageTabsPanel key={tab.value} value={tab.value}>
-                {tab.value === "hours" ? (
-                  <BusinessHoursSettingsPanel disabled={!canEdit} />
-                ) : (
-                  <BusinessProfileFormFields
-                    form={form}
-                    disabled={!canEdit}
-                    activeTab={tab.value}
-                    constrainScroll={false}
-                  />
-                )}
-              </PageTabsPanel>
-            ))}
-          </PageTabs>
-
-          {activeTab !== "hours" && canEdit ? (
-            <FormActions>
-              <Button type="submit" disabled={mutation.isPending}>
-                {mutation.isPending ? "Saving…" : "Save changes"}
-              </Button>
-            </FormActions>
-          ) : activeTab !== "hours" && !canEdit ? (
-            <p className="text-sm text-muted-foreground">
-              Only owners, admins, and platform administrators can edit the
-              business profile.
-            </p>
-          ) : null}
+            <PageTabs
+              value={activeTab}
+              onValueChange={(v) => setActiveTab(parseBusinessProfileTab(v))}
+              tabs={[...BUSINESS_PROFILE_TABS]}
+              className="w-full"
+            >
+              {BUSINESS_PROFILE_TABS.map((tab) => {
+                const card = PROFILE_TAB_CARDS[tab.value];
+                return (
+                  <PageTabsPanel
+                    key={tab.value}
+                    value={tab.value}
+                    className="mt-5"
+                  >
+                    <SettingsCard
+                      title={card.title}
+                      description={card.description}
+                      footer={
+                        tab.value === "hours" ? undefined : profileSaveFooter
+                      }
+                    >
+                      {tab.value === "hours" ? (
+                        <BusinessHoursSettingsPanel
+                          disabled={!canEdit}
+                          embedded
+                        />
+                      ) : (
+                        <BusinessProfileFormFields
+                          form={form}
+                          disabled={!canEdit}
+                          activeTab={tab.value}
+                          constrainScroll={false}
+                          twoColumnLayout
+                        />
+                      )}
+                    </SettingsCard>
+                  </PageTabsPanel>
+                );
+              })}
+            </PageTabs>
           </form>
         </FormSchemaProvider>
       </Form>

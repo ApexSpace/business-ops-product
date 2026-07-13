@@ -27,6 +27,7 @@ import {
   buildOutlookCalendarUrl,
   downloadIcsFile,
 } from "@/features/public-booking/utils/booking-calendar-links";
+import { BookingSuccessPhotoUpload } from "@/features/public-booking/components/booking-success-photo-upload";
 
 interface BookingSuccessViewProps {
   business: PublicBookingBusiness;
@@ -34,6 +35,7 @@ interface BookingSuccessViewProps {
   confirmation: PublicBookingConfirmation;
   customerName: string;
   accentColor: string;
+  slug: string;
   embed?: boolean;
   compact?: boolean;
   serviceSummaries?: Array<{
@@ -50,6 +52,7 @@ export function BookingSuccessView({
   confirmation,
   customerName,
   accentColor,
+  slug,
   embed = false,
   compact = false,
   serviceSummaries = [],
@@ -202,6 +205,16 @@ export function BookingSuccessView({
           <p className="font-medium">{confirmation.businessName}</p>
         </div>
       </div>
+
+      {confirmation.collectPhotosEnabled && confirmation.uploadToken ? (
+        <BookingSuccessPhotoUpload
+          slug={slug}
+          appointmentId={confirmation.appointmentId}
+          uploadToken={confirmation.uploadToken}
+          prompt={confirmation.photoUploadPrompt}
+          accentColor={accentColor}
+        />
+      ) : null}
 
       <div className={cn("space-y-3", compact ? "mt-4" : "mt-6")}>
         {websiteUrl ? (
