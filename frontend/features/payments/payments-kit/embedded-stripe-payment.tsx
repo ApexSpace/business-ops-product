@@ -132,9 +132,17 @@ function CheckoutPaymentForm({
   const stripe = useStripe();
   const elements = useElements();
   const [submitting, setSubmitting] = useState(false);
+  const [elementReady, setElementReady] = useState(false);
 
   async function handlePay() {
-    if (!stripe || !elements) return;
+    if (!stripe || !elements) {
+      onError("Payment form is still loading. Please wait a moment.");
+      return;
+    }
+    if (!elementReady) {
+      onError("Payment form is still loading. Please wait a moment.");
+      return;
+    }
 
     setSubmitting(true);
     try {
@@ -168,17 +176,22 @@ function CheckoutPaymentForm({
 
   return (
     <div className="space-y-4">
-      <PaymentElement />
+      <PaymentElement onReady={() => setElementReady(true)} />
       <Button
         type="button"
         className="w-full"
-        disabled={!stripe || submitting}
+        disabled={!stripe || !elementReady || submitting}
         onClick={() => void handlePay()}
       >
         {submitting ? (
           <>
             <Loader2 className="mr-2 size-4 animate-spin" />
             Processing…
+          </>
+        ) : !elementReady ? (
+          <>
+            <Loader2 className="mr-2 size-4 animate-spin" />
+            Loading payment…
           </>
         ) : (
           "Pay now"
