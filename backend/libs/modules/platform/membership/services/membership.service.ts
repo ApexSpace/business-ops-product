@@ -34,6 +34,7 @@ import {
 import { SetBusinessOwnerDto } from '../dto/set-owner.dto';
 import {
   defaultPermissionsForMember,
+  hasStaffPermission,
   isStaffPermissionKey,
   normalizeNotificationSettings,
   normalizeStaffPermissions,
@@ -986,6 +987,10 @@ export class MembershipService {
     }
     if (dto.canManageWaitlist !== undefined) {
       profilePatch.canManageWaitlist = dto.canManageWaitlist;
+      profilePatch.permissions = normalizeStaffPermissions({
+        ...normalizeStaffPermissions(membership.permissions),
+        'appointments.manage_waitlist': dto.canManageWaitlist,
+      });
     }
 
     if (Object.keys(profilePatch).length > 0) {
@@ -1067,6 +1072,7 @@ export class MembershipService {
 
     await this.membershipRepository.update(membership.id, {
       permissions: normalizeStaffPermissions(sanitized),
+      canManageWaitlist: sanitized['appointments.manage_waitlist'] === true,
     });
 
     await this.auditService.log({
@@ -1382,7 +1388,11 @@ export class MembershipService {
         STAFF_PERMISSION_KEYS.map((key) => [key, true]),
       );
     }
-    return normalizeStaffPermissions(membership!.permissions);
+    const permissions = normalizeStaffPermissions(membership!.permissions);
+    if (membership!.canManageWaitlist) {
+      permissions['appointments.manage_waitlist'] = true;
+    }
+    return permissions;
   }
 
   private toCompensationResponse(
@@ -1445,6 +1455,16 @@ export class MembershipService {
     if (
       actorMembership?.role === BusinessMemberRole.OWNER ||
       actorMembership?.role === BusinessMemberRole.ADMIN
+    ) {
+      return;
+    }
+
+    if (
+      hasStaffPermission(
+        normalizeStaffPermissions(actorMembership?.permissions),
+        'settings.team.manage',
+        actorMembership?.role,
+      )
     ) {
       return;
     }

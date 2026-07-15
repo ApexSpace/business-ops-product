@@ -13,7 +13,7 @@ import { ContactTagsService } from '@app/modules/crm/contacts/services/contact-t
 @ApiBearerAuth()
 @Controller('contact-tags')
 @UseGuards(BusinessRolesGuard)
-@StaffPermission('contacts.access')
+@StaffPermission('contacts.access', 'contacts.view_last_names')
 export class ContactTagsController {
   constructor(private readonly contactTagsService: ContactTagsService) {}
 

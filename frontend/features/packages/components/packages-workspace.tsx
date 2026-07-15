@@ -46,6 +46,7 @@ import {
   PackageDetailPanel,
   packageDisplayName,
 } from "@/features/packages/components/package-detail-panel";
+import { usePackageStaffPermissions } from "@/features/packages/hooks/use-package-staff-permissions";
 import type { ClientPackageListItem } from "@/features/packages/types";
 
 function formatListDate(value: string) {
@@ -56,6 +57,7 @@ export function PackagesWorkspace() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
+  const { canManage } = usePackageStaffPermissions();
   const {
     selectedId,
     isOpen,
@@ -65,7 +67,7 @@ export function PackagesWorkspace() {
 
   const contactFilter = searchParams.get("contact");
   const [search, setSearch] = useState("");
-  const [addOpen, setAddOpen] = useState(() => !!contactFilter);
+  const [addOpen, setAddOpen] = useState(false);
   const [transferOpen, setTransferOpen] = useState(false);
   const [adjustMode, setAdjustMode] = useState(false);
   const [allocationDraft, setAllocationDraft] = useState<
@@ -91,6 +93,12 @@ export function PackagesWorkspace() {
       clearSelection();
     }
   }, [contactFilter, selectedId, clearSelection]);
+
+  useEffect(() => {
+    if (contactFilter && canManage) {
+      setAddOpen(true);
+    }
+  }, [contactFilter, canManage]);
 
   const listQuery = useQuery({
     queryKey: queryKeys.packages.clientList({ search }),
@@ -355,10 +363,12 @@ export function PackagesWorkspace() {
               <Settings className="mr-1.5 size-4" />
               Settings
             </Button>
-            <Button size="sm" onClick={() => setAddOpen(true)}>
-              <Plus className="mr-1.5 size-4" />
-              Add package
-            </Button>
+            {canManage ? (
+              <Button size="sm" onClick={() => setAddOpen(true)}>
+                <Plus className="mr-1.5 size-4" />
+                Add package
+              </Button>
+            ) : null}
           </>
         }
         footer={
@@ -387,10 +397,12 @@ export function PackagesWorkspace() {
             emptyTitle="No client packages yet"
             emptyDescription="Add a package to assign prepaid services to a client."
             emptyAction={
-              <Button size="sm" onClick={() => setAddOpen(true)}>
-                <Plus className="mr-1.5 size-4" />
-                Add package
-              </Button>
+              canManage ? (
+                <Button size="sm" onClick={() => setAddOpen(true)}>
+                  <Plus className="mr-1.5 size-4" />
+                  Add package
+                </Button>
+              ) : undefined
             }
             className={WORKSPACE_TABLE_CLASS}
           />
@@ -413,7 +425,7 @@ export function PackagesWorkspace() {
           detail?.isDemo ? <Badge variant="secondary">Demo</Badge> : null
         }
         overflowActions={
-          detail
+          canManage && detail
             ? [
                 {
                   id: "transfer",
@@ -440,6 +452,7 @@ export function PackagesWorkspace() {
         ) : null}
       </EntityDetailDrawer>
 
+      {canManage ? (
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
         <DialogContent>
           <DialogHeader>
@@ -503,7 +516,9 @@ export function PackagesWorkspace() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      ) : null}
 
+      {canManage ? (
       <Dialog open={transferOpen} onOpenChange={setTransferOpen}>
         <DialogContent>
           <DialogHeader>
@@ -537,6 +552,7 @@ export function PackagesWorkspace() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      ) : null}
     </>
   );
 }

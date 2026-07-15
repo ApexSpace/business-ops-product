@@ -52,6 +52,7 @@ export function BusinessDashboardPage() {
     !isMember ||
     Boolean(
       jwt?.staffPermissions?.["contacts.access"] ||
+        jwt?.staffPermissions?.["contacts.view_last_names"] ||
         jwt?.staffPermissions?.["pipelines.access"],
     );
   const canViewConversations =
@@ -218,7 +219,7 @@ export function BusinessDashboardPage() {
 
       <div className="space-y-4">
         <ScheduleRailCard
-          title="My schedule"
+          title={isMember ? "My schedule" : "Today's schedule"}
           appointments={feedQuery.data?.todayAppointments ?? []}
           timezone={business?.timezone ?? undefined}
         />

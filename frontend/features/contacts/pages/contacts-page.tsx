@@ -20,10 +20,10 @@ import { Button } from "@/components/ui/button";
 import { ListPagination } from "@/components/ui/list-pagination";
 import { ProfileAvatar } from "@/components/ui/profile-avatar";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Can } from "@/features/auth/permissions/can";
-import { PERMISSIONS } from "@/features/auth/permissions/permissions";
+import { ContactMergeDialog } from "@/features/contacts/components/contact-merge-dialog";
 import { useContactDetail } from "@/features/contacts/hooks/use-contact-detail";
 import { useContactsList } from "@/features/contacts/hooks/use-contacts-list";
+import { useContactStaffPermissions } from "@/features/contacts/hooks/use-contact-staff-permissions";
 import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
 import { useListSearchParams } from "@/lib/hooks/use-list-search-params";
 import {
@@ -58,9 +58,11 @@ function BusinessContactsPageContent() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const contactPerms = useContactStaffPermissions();
   const { params, page, setParams } = useListSearchParams(LIST_SCHEMA);
   const debouncedSearch = useDebouncedValue(params.search);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [mergeOpen, setMergeOpen] = useState(false);
   const [noteComposerOpen, setNoteComposerOpen] = useState(false);
   const createFromQuery = searchParams.get("action") === "create";
   const panelActionsRef = useRef<ContactDetailPanelActions | null>(null);
@@ -86,6 +88,13 @@ function BusinessContactsPageContent() {
     }
   }, [isOpen, selectedId]);
 
+  useEffect(() => {
+    if (selectedId && !contactPerms.canOpenProfiles) {
+      clearSelection();
+      setNoteComposerOpen(false);
+    }
+  }, [selectedId, contactPerms.canOpenProfiles, clearSelection]);
+
   const handleNoteComposerOpenChange = useCallback(
     (open: boolean) => {
       if (open) {
@@ -103,10 +112,14 @@ function BusinessContactsPageContent() {
   };
 
   const { data, isLoading } = useContactsList(listFilters);
-  const { isLoading: detailLoading } = useContactDetail(selectedId ?? "");
-
+  const canLoadDetail = Boolean(selectedId && contactPerms.canOpenProfiles);
+  const { isLoading: detailLoading } = useContactDetail(
+    canLoadDetail ? (selectedId ?? "") : "",
+  );
   const contacts = data?.items ?? [];
   const total = data?.meta?.total ?? contacts.length;
+  const selectedContact =
+    contacts.find((contact) => contact.id === selectedId) ?? null;
 
   const handleActionsReady = useCallback((actions: ContactDetailPanelActions) => {
     panelActionsRef.current = actions;
@@ -178,26 +191,28 @@ function BusinessContactsPageContent() {
           />
         }
         actions={
-          <Can permission={PERMISSIONS["contacts.create"]}>
-            <Button
-              type="button"
-              size="icon-sm"
-              className="sm:hidden"
-              aria-label="Add contact"
-              onClick={() => setDialogOpen(true)}
-            >
-              <Plus className="size-4" />
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              className="hidden shrink-0 sm:inline-flex"
-              onClick={() => setDialogOpen(true)}
-            >
-              <Plus className="mr-1.5 size-4" />
-              Add contact
-            </Button>
-          </Can>
+          contactPerms.canManage ? (
+            <>
+              <Button
+                type="button"
+                size="icon-sm"
+                className="sm:hidden"
+                aria-label="Add contact"
+                onClick={() => setDialogOpen(true)}
+              >
+                <Plus className="size-4" />
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                className="hidden shrink-0 sm:inline-flex"
+                onClick={() => setDialogOpen(true)}
+              >
+                <Plus className="mr-1.5 size-4" />
+                Add contact
+              </Button>
+            </>
+          ) : null
         }
         footer={
           data?.meta ? (
@@ -221,30 +236,33 @@ function BusinessContactsPageContent() {
           density="compact"
           activeRowId={selectedId}
           onRowClick={(row) => {
+            if (!contactPerms.canOpenProfiles) return;
             if (row.id !== selectedId) {
               setTab("timeline");
             }
             setSelectedId(row.id);
           }}
           getRowClassName={(row) =>
-            selectedId === row.id ? WORKSPACE_ACTIVE_ROW_CLASS : undefined
+            contactPerms.canOpenProfiles && selectedId === row.id
+              ? WORKSPACE_ACTIVE_ROW_CLASS
+              : undefined
           }
           emptyTitle="No contacts yet"
           emptyDescription="Add your first contact to start building your CRM."
           emptyAction={
-            <Can permission={PERMISSIONS["contacts.create"]}>
+            contactPerms.canManage ? (
               <ActionButton onClick={() => setDialogOpen(true)}>
                 <Plus className="mr-2 size-4" />
                 Add contact
               </ActionButton>
-            </Can>
+            ) : undefined
           }
           className={WORKSPACE_TABLE_CLASS}
         />
       </EntityWorkspaceLayout>
 
       <EntityDetailDrawer
-        open={isOpen}
+        open={isOpen && contactPerms.canOpenProfiles}
         onOpenChange={(open) => {
           if (!open) {
             clearSelection();
@@ -255,9 +273,9 @@ function BusinessContactsPageContent() {
         title="Contact details"
         isLoading={detailLoading}
         fullBleed
-        bodyClassName="!overflow-hidden"
+        bodyClassName="flex flex-col !overflow-hidden"
         overflowActions={
-          selectedId
+          selectedId && contactPerms.canOpenProfiles
             ? [
                 {
                   id: "print",
@@ -265,18 +283,27 @@ function BusinessContactsPageContent() {
                   icon: <Printer className="size-3.5" />,
                   onSelect: () => panelActionsRef.current?.printAppointments(),
                 },
-                {
-                  id: "delete",
-                  label: "Delete",
-                  icon: <Trash2 className="size-3.5" />,
-                  destructive: true,
-                  onSelect: () => panelActionsRef.current?.openDelete(),
-                },
+                ...(contactPerms.canDeleteMerge
+                  ? [
+                      {
+                        id: "merge",
+                        label: "Merge contact…",
+                        onSelect: () => setMergeOpen(true),
+                      },
+                      {
+                        id: "delete",
+                        label: "Delete",
+                        icon: <Trash2 className="size-3.5" />,
+                        destructive: true,
+                        onSelect: () => panelActionsRef.current?.openDelete(),
+                      },
+                    ]
+                  : []),
               ]
             : undefined
         }
       >
-        {selectedId ? (
+        {selectedId && contactPerms.canOpenProfiles ? (
           <ContactDetailPanel
             embedded
             contactId={selectedId}
@@ -312,6 +339,18 @@ function BusinessContactsPageContent() {
           void invalidateContactPicker(queryClient);
         }}
       />
+
+      {selectedId && selectedContact ? (
+        <ContactMergeDialog
+          open={mergeOpen}
+          onOpenChange={setMergeOpen}
+          keepContactId={selectedId}
+          keepContactLabel={selectedContact.label}
+          onMerged={() => {
+            void invalidateContactLists(queryClient);
+          }}
+        />
+      ) : null}
     </>
   );
 }

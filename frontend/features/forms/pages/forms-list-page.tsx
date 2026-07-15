@@ -20,6 +20,7 @@ import { FormCreateDialog } from "@/features/forms/components/form-create-dialog
 import { FormShareDialog } from "@/features/forms/components/form-share-dialog";
 import { FormsListHeaderActions } from "@/features/forms/components/forms-list-header-actions";
 import { useFormMutations } from "@/features/forms/hooks/use-form-mutations";
+import { useFormStaffPermissions } from "@/features/forms/hooks/use-form-staff-permissions";
 import { useFormsList } from "@/features/forms/hooks/use-forms-list";
 import type { FormListItem, FormStatus } from "@/features/forms/types";
 import { getForm } from "@/features/forms/api/forms.api";
@@ -53,6 +54,7 @@ function FormsListPageContent() {
   const [createOpen, setCreateOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [shareForm, setShareForm] = useState<FormListItem | null>(null);
+  const { canManageTemplates } = useFormStaffPermissions();
 
   const filters = {
     search: debouncedSearch || undefined,
@@ -161,7 +163,9 @@ function FormsListPageContent() {
         title="Forms"
         description="Build lead capture forms for your website and landing pages."
         actions={
-          <FormsListHeaderActions onCreate={() => setCreateOpen(true)} />
+          canManageTemplates ? (
+            <FormsListHeaderActions onCreate={() => setCreateOpen(true)} />
+          ) : undefined
         }
         filters={
           <FilterBar>
@@ -190,20 +194,28 @@ function FormsListPageContent() {
           emptyTitle="No forms yet"
           emptyDescription="Create your first lead capture form."
           emptyAction={
-            <ActionButton onClick={() => setCreateOpen(true)}>
-              <Plus className="mr-2 size-4" />
-              Create form
-            </ActionButton>
+            canManageTemplates ? (
+              <ActionButton onClick={() => setCreateOpen(true)}>
+                <Plus className="mr-2 size-4" />
+                Create form
+              </ActionButton>
+            ) : undefined
           }
           rowActions={(form) => (
             <DataTableRowActions
               menuLabel={`Actions for ${form.name}`}
               actions={[
-                {
-                  label: "Edit",
-                  onClick: () =>
-                    router.push(`/business/settings/forms/${form.id}/edit`),
-                },
+                ...(canManageTemplates
+                  ? [
+                      {
+                        label: "Edit",
+                        onClick: () =>
+                          router.push(
+                            `/business/settings/forms/${form.id}/edit`,
+                          ),
+                      },
+                    ]
+                  : []),
                 {
                   label: "View submissions",
                   onClick: () =>
@@ -211,60 +223,66 @@ function FormsListPageContent() {
                       `/business/settings/forms/${form.id}/submissions`,
                     ),
                 },
-                {
-                  label: "Duplicate",
-                  onClick: () => duplicateMutation.mutate(form.id),
-                },
-                ...(form.status === "published"
+                ...(canManageTemplates
                   ? [
                       {
-                        label: "Share link",
-                        onClick: () => setShareForm(form),
+                        label: "Duplicate",
+                        onClick: () => duplicateMutation.mutate(form.id),
+                      },
+                      ...(form.status === "published"
+                        ? [
+                            {
+                              label: "Share link",
+                              onClick: () => setShareForm(form),
+                            },
+                          ]
+                        : []),
+                      form.status === "published"
+                        ? {
+                            label: "Move to draft",
+                            onClick: () => draftMutation.mutate(form.id),
+                          }
+                        : {
+                            label: "Publish",
+                            onClick: () => publishMutation.mutate(form.id),
+                          },
+                      ...(form.status !== "archived"
+                        ? [
+                            {
+                              label: "Archive",
+                              onClick: () => archiveMutation.mutate(form.id),
+                            },
+                          ]
+                        : []),
+                      {
+                        label: "Export JSON",
+                        onClick: async () => {
+                          const record = await getForm(form.id);
+                          downloadFormJson(record);
+                        },
+                      },
+                      {
+                        label: "Delete",
+                        onClick: () => setDeleteId(form.id),
+                        destructive: true,
                       },
                     ]
                   : []),
-                form.status === "published"
-                  ? {
-                      label: "Move to draft",
-                      onClick: () => draftMutation.mutate(form.id),
-                    }
-                  : {
-                      label: "Publish",
-                      onClick: () => publishMutation.mutate(form.id),
-                    },
-                ...(form.status !== "archived"
-                  ? [
-                      {
-                        label: "Archive",
-                        onClick: () => archiveMutation.mutate(form.id),
-                      },
-                    ]
-                  : []),
-                {
-                  label: "Export JSON",
-                  onClick: async () => {
-                    const record = await getForm(form.id);
-                    downloadFormJson(record);
-                  },
-                },
-                {
-                  label: "Delete",
-                  onClick: () => setDeleteId(form.id),
-                  destructive: true,
-                },
               ]}
             />
           )}
         />
       </ListPage>
 
-      <FormCreateDialog
-        open={createOpen}
-        onOpenChange={setCreateOpen}
-        onCreated={(id) => {
-          router.push(`/business/settings/forms/${id}/edit`);
-        }}
-      />
+      {canManageTemplates ? (
+        <FormCreateDialog
+          open={createOpen}
+          onOpenChange={setCreateOpen}
+          onCreated={(id) => {
+            router.push(`/business/settings/forms/${id}/edit`);
+          }}
+        />
+      ) : null}
 
       <ConfirmDeleteDialog
         open={!!deleteId}

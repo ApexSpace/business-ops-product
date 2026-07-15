@@ -48,6 +48,7 @@ import {
   GiftCardMiniIcon,
   GiftCardStatusBadge,
 } from "@/features/gift-cards/components/gift-card-visual";
+import { useGiftCardStaffPermissions } from "@/features/gift-cards/hooks/use-gift-card-staff-permissions";
 import { useCurrentBusiness } from "@/features/settings/hooks/use-current-business";
 import type { GiftCardListItem } from "@/features/gift-cards/types";
 
@@ -55,6 +56,7 @@ export function GiftCardsWorkspace() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { data: business } = useCurrentBusiness();
+  const { canManage } = useGiftCardStaffPermissions();
   const {
     selectedId,
     isOpen,
@@ -278,18 +280,22 @@ export function GiftCardsWorkspace() {
         }
         actions={
           <>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => router.push("/business/gift-cards/settings")}
-            >
-              <Settings className="mr-1.5 size-4" />
-              Settings
-            </Button>
-            <Button size="sm" onClick={() => void openAdd()}>
-              <Plus className="mr-1.5 size-4" />
-              Add gift card
-            </Button>
+            {canManage ? (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => router.push("/business/gift-cards/settings")}
+              >
+                <Settings className="mr-1.5 size-4" />
+                Settings
+              </Button>
+            ) : null}
+            {canManage ? (
+              <Button size="sm" onClick={() => void openAdd()}>
+                <Plus className="mr-1.5 size-4" />
+                Add gift card
+              </Button>
+            ) : null}
           </>
         }
         footer={
@@ -321,10 +327,12 @@ export function GiftCardsWorkspace() {
             emptyTitle="No gift cards yet"
             emptyDescription="Create a gift card to get started."
             emptyAction={
-              <Button size="sm" onClick={() => void openAdd()}>
-                <Plus className="mr-1.5 size-4" />
-                Add gift card
-              </Button>
+              canManage ? (
+                <Button size="sm" onClick={() => void openAdd()}>
+                  <Plus className="mr-1.5 size-4" />
+                  Add gift card
+                </Button>
+              ) : undefined
             }
             className={WORKSPACE_TABLE_CLASS}
           />
@@ -355,7 +363,7 @@ export function GiftCardsWorkspace() {
           ) : null
         }
         headerActions={
-          detail ? (
+          canManage && detail ? (
             drawerMode === "view" ? (
               <Button
                 variant="outline"
@@ -369,7 +377,7 @@ export function GiftCardsWorkspace() {
           ) : null
         }
         footer={
-          detail ? (
+          canManage && detail ? (
             drawerMode === "edit" ? (
               <EntityDetailFooter>
                 <Button

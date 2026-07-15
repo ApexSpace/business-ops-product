@@ -2,12 +2,20 @@ export type StaffPermissionKey = (typeof STAFF_PERMISSION_KEYS)[number];
 
 export const STAFF_PERMISSION_KEYS = [
   'appointments.access',
-  'appointments.view_all_calendars',
-  'appointments.manage_own',
-  'appointments.manage_all',
   'appointments.change_status',
+  'appointments.manage_own',
+  'appointments.view_all_calendars',
+  'appointments.manage_all',
+  'appointments.manage_own_time_blocks',
+  'appointments.manage_all_time_blocks',
+  'appointments.manage_waitlist',
+  'appointments.view_history',
   'contacts.access',
+  'contacts.view_last_names',
+  'contacts.view_contact_details',
   'contacts.manage',
+  'contacts.delete_merge',
+  'contacts.adjust_balances',
   'work_items.access',
   'work_items.manage',
   'pipelines.access',
@@ -16,10 +24,13 @@ export const STAFF_PERMISSION_KEYS = [
   'conversations.view_all',
   'conversations.send',
   'sales.access',
+  'sales.view_on_calendar',
   'sales.view_own',
   'sales.view_all',
   'sales.checkout',
+  'sales.sell_non_retail',
   'sales.refund',
+  'sales.refund_open',
   'payments.access',
   'payments.manage',
   'products.access',
@@ -63,28 +74,54 @@ export const STAFF_PERMISSION_GROUPS: StaffPermissionGroup[] = [
       {
         key: 'appointments.access',
         label: 'Can access calendar',
-        description: 'View the appointments calendar app.',
-      },
-      {
-        key: 'appointments.view_all_calendars',
-        label: 'Can view all staff calendars',
-        description:
-          'See schedules and appointments for all staff, not only their own.',
-      },
-      {
-        key: 'appointments.manage_own',
-        label: 'Can manage own appointments',
-        description: 'Book, change, and cancel appointments on their calendar.',
-      },
-      {
-        key: 'appointments.manage_all',
-        label: 'Can manage all appointments',
-        description: 'Book, change, and cancel appointments for any staff.',
+        description: 'Open the appointments calendar app.',
       },
       {
         key: 'appointments.change_status',
-        label: 'Can change appointment status',
-        description: 'Confirm, check in, and update appointment status.',
+        label: 'Can change status of appointments',
+        description:
+          'Confirm/unconfirm appointments, check in clients, etc. Does not allow canceling appointments.',
+      },
+      {
+        key: 'appointments.manage_own',
+        label: 'Can book and change own appointments',
+        description:
+          'Book, change, and cancel appointments on their own calendar.',
+      },
+      {
+        key: 'appointments.view_all_calendars',
+        label: "Can view other people's calendars",
+        description:
+          "Viewing only. Does not allow changing appointments or time blocks on other people's calendars.",
+      },
+      {
+        key: 'appointments.manage_all',
+        label: "Can book and change other people's appointments",
+        description:
+          'Book, change, and cancel appointments where another staff member is assigned.',
+      },
+      {
+        key: 'appointments.manage_own_time_blocks',
+        label: 'Can create and change own time blocks',
+        description:
+          'Add, change, and remove time blocks on their own calendar.',
+      },
+      {
+        key: 'appointments.manage_all_time_blocks',
+        label: "Can create and change other people's time blocks",
+        description:
+          "Add, change, and remove time blocks on other people's calendars.",
+      },
+      {
+        key: 'appointments.manage_waitlist',
+        label: 'Can manage waitlist',
+        description: 'Add, change, and remove waitlist entries.',
+      },
+      {
+        key: 'appointments.view_history',
+        label: 'Can view appointment change history',
+        description:
+          'View a record of changes made to appointments, such as status updates, reschedules, and edits.',
       },
     ],
   },
@@ -94,13 +131,37 @@ export const STAFF_PERMISSION_GROUPS: StaffPermissionGroup[] = [
     permissions: [
       {
         key: 'contacts.access',
-        label: 'Can access contacts',
-        description: 'View the contacts workspace.',
+        label: 'Can open contact profiles',
+        description:
+          'Open contact detail pages from the contacts list or when linked from other apps (for example appointments).',
+      },
+      {
+        key: 'contacts.view_last_names',
+        label: "Can view clients' last names",
+        description:
+          "Disable this permission to hide clients' last names from this staff member and remove access to the clients list.",
+      },
+      {
+        key: 'contacts.view_contact_details',
+        label: "Can access clients' contact details",
+        description:
+          'Disable this permission to hide any client contact details (i.e. phone number, email address) from this staff member.',
       },
       {
         key: 'contacts.manage',
-        label: 'Can manage contacts',
-        description: 'Create, edit, and delete contacts.',
+        label: 'Can create and edit contacts',
+        description: 'Create new contacts and edit contact profile fields.',
+      },
+      {
+        key: 'contacts.delete_merge',
+        label: 'Can delete and merge clients',
+        description:
+          'Allows deleting or merging any clients this staff member can access. Does not affect client visibility.',
+      },
+      {
+        key: 'contacts.adjust_balances',
+        label: 'Can manually adjust client account balances',
+        description: "Manually increase or decrease a client's account balance.",
       },
     ],
   },
@@ -143,17 +204,20 @@ export const STAFF_PERMISSION_GROUPS: StaffPermissionGroup[] = [
       {
         key: 'conversations.access',
         label: 'Can access conversations',
-        description: 'View the conversations inbox.',
+        description:
+          'Open the conversations inbox and view conversations assigned to this person.',
       },
       {
         key: 'conversations.view_all',
         label: 'Can view all conversations',
-        description: 'View conversations for all contacts, not only assigned.',
+        description:
+          'View conversations for all contacts, not only those assigned to this person. Does not allow sending.',
       },
       {
         key: 'conversations.send',
         label: 'Can send messages',
-        description: 'Send messages in conversations they can view.',
+        description:
+          'Send messages in conversations this person can view.',
       },
     ],
   },
@@ -162,29 +226,45 @@ export const STAFF_PERMISSION_GROUPS: StaffPermissionGroup[] = [
     label: 'Sales',
     permissions: [
       {
-        key: 'sales.access',
-        label: 'Can access sales',
-        description: 'Open the sales workspace.',
+        key: 'sales.view_on_calendar',
+        label: 'Can view individual sales on calendar',
+        description:
+          'View the attached sale for appointments that are visible to this person. Does not grant access to the Sales app.',
       },
       {
         key: 'sales.view_own',
-        label: 'Can view own sales',
-        description: 'View sales where they are assigned as staff.',
+        label: 'Can view list of own sales',
+        description: 'Grants access to the list of their own sales.',
       },
       {
         key: 'sales.view_all',
         label: 'Can view all sales',
-        description: 'View all sales in the business.',
+        description:
+          'Viewing only. Grants access to the Sales app. Does not allow modifying of sales.',
       },
       {
         key: 'sales.checkout',
-        label: 'Can start and modify checkouts',
-        description: 'Create and edit open sales checkouts.',
+        label: 'Can start a checkout and modify sales',
+        description:
+          'Take payments, reopen closed sales, make changes to services and products in a sale, etc.',
+      },
+      {
+        key: 'sales.sell_non_retail',
+        label: 'Can sell non-retail products',
+        description:
+          "Add products from 'non-retail' categories during checkout. Can be helpful for tracking internal product usage (professional-use items).",
       },
       {
         key: 'sales.refund',
-        label: 'Can refund sales',
-        description: 'Process refunds on open and closed sales.',
+        label: 'Can refund sales (open and closed)',
+        description:
+          'Allow refunding items or entire sales, whether they are open or closed. Grants full refund capabilities.',
+      },
+      {
+        key: 'sales.refund_open',
+        label: 'Can refund open sales',
+        description:
+          'Allow refunding payments during checkout or on a re-opened sale.',
       },
     ],
   },
@@ -372,6 +452,8 @@ export const DEFAULT_SERVICE_PROVIDER_PERMISSIONS: Partial<
 > = {
   'appointments.access': true,
   'appointments.manage_own': true,
+  'appointments.manage_own_time_blocks': true,
+  'appointments.change_status': true,
   'time_clock.access': true,
 };
 
@@ -395,11 +477,49 @@ export function normalizeStaffPermissions(
   if (!raw || typeof raw !== 'object') {
     return result;
   }
-  for (const [key, value] of Object.entries(raw as Record<string, unknown>)) {
+  const source = raw as Record<string, unknown>;
+  for (const [key, value] of Object.entries(source)) {
     if (isStaffPermissionKey(key) && value === true) {
       result[key] = true;
     }
   }
+
+  // Migrate legacy contacts permissions into the Mangomint-style keys.
+  if (source['contacts.access'] === true) {
+    if (source['contacts.view_last_names'] === undefined) {
+      result['contacts.view_last_names'] = true;
+    }
+    if (source['contacts.view_contact_details'] === undefined) {
+      result['contacts.view_contact_details'] = true;
+    }
+  }
+  if (
+    source['contacts.manage'] === true &&
+    source['contacts.delete_merge'] === undefined
+  ) {
+    result['contacts.delete_merge'] = true;
+  }
+
+  // Migrate legacy sales.access into Mangomint-style sales visibility keys.
+  if (source['sales.access'] === true) {
+    if (source['sales.view_all'] === undefined) {
+      result['sales.view_all'] = true;
+    }
+    if (source['sales.view_own'] === undefined) {
+      result['sales.view_own'] = true;
+    }
+  }
+  if (
+    source['sales.refund'] === true &&
+    source['sales.refund_open'] === undefined
+  ) {
+    result['sales.refund_open'] = true;
+  }
+  // Keep sales.access derived so existing nav/route gates keep working.
+  if (result['sales.view_own'] || result['sales.view_all']) {
+    result['sales.access'] = true;
+  }
+
   return result;
 }
 
@@ -430,13 +550,25 @@ export function hasStaffPermission(
   return Boolean(permissions?.[key]);
 }
 
+/** View-only access to other staff calendars (does not imply manage). */
+export function canViewAllStaffCalendars(
+  permissions: Record<string, boolean> | undefined,
+  businessRole?: string,
+): boolean {
+  return hasStaffPermission(
+    permissions,
+    'appointments.view_all_calendars',
+    businessRole,
+  );
+}
+
 export const NAV_KEY_PERMISSION_MAP: Record<string, StaffPermissionKey> = {
   dashboard: 'appointments.access',
   appointments: 'appointments.access',
   'work-items': 'work_items.access',
   pipelines: 'pipelines.access',
   conversations: 'conversations.access',
-  contacts: 'contacts.access',
+  contacts: 'contacts.view_last_names',
   sales: 'sales.access',
   'gift-cards': 'gift_cards.access',
   packages: 'packages.access',
@@ -445,6 +577,7 @@ export const NAV_KEY_PERMISSION_MAP: Record<string, StaffPermissionKey> = {
   offers: 'offers.access',
   payments: 'payments.access',
   'time-clock': 'time_clock.access',
+  'time-cards': 'time_cards.manage',
 };
 
 /**

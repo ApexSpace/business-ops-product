@@ -34,6 +34,9 @@ export function MemberPermissionsTab({ userId, role, canManage }: Props) {
       void queryClient.invalidateQueries({
         queryKey: queryKeys.business.memberPermissions(userId),
       });
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.business.memberDetail(userId),
+      });
     },
     onError: (err: Error) => toast.error(err.message),
   });
@@ -54,10 +57,6 @@ export function MemberPermissionsTab({ userId, role, canManage }: Props) {
       </Card>
     );
   }
-
-  const toggle = (key: string, checked: boolean) => {
-    mutation.mutate({ ...data.permissions, [key]: checked });
-  };
 
   return (
     <div className="space-y-4">
@@ -82,7 +81,10 @@ export function MemberPermissionsTab({ userId, role, canManage }: Props) {
                   checked={Boolean(data.permissions[permission.key])}
                   disabled={!canManage || mutation.isPending}
                   onCheckedChange={(checked) =>
-                    toggle(permission.key, checked)
+                    mutation.mutate({
+                      ...data.permissions,
+                      [permission.key]: checked,
+                    })
                   }
                 />
               </div>

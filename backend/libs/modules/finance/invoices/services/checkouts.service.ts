@@ -1,5 +1,6 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import {
+  BusinessMemberRole,
   InvoiceLineType,
   InvoiceStatus,
   MembershipStatus,
@@ -14,6 +15,7 @@ import { ErrorCode } from '@app/common/exceptions/error-code.enum';
 import { getPaginationParams } from '@app/common/utils/pagination.util';
 import { PrismaService } from '@app/core/database/prisma.service';
 import { AuditService } from '@app/modules/platform/audit/services/audit.service';
+import { hasStaffPermission } from '@app/modules/platform/membership/permissions/staff-permission.registry';
 import { FinancialSettingsService } from '@app/modules/platform/business/services/financial-settings.service';
 import { computeDefaultTaxAmount } from '@app/modules/platform/business/utils/financial-settings.util';
 import { ContactRepository } from '@app/modules/crm/contacts/repositories/contact.repository';
@@ -41,6 +43,7 @@ import { ListCheckoutsQueryDto } from '../dto/checkout-query.dto';
 import { CloseCheckoutDto } from '../dto/checkout-query.dto';
 import { CheckoutResponseDto } from '../dto/checkout-response.dto';
 import { toCheckoutResponse } from '../mappers/checkout.mapper';
+import * as SalesStaffAccess from '../utils/sales-staff-access.util';
 import {
   CheckoutItemInput,
   CheckoutRepository,
@@ -75,10 +78,12 @@ export class CheckoutsService {
   async list(
     businessId: string,
     query: ListCheckoutsQueryDto,
+    user: RequestUser,
   ): Promise<{
     items: CheckoutResponseDto[];
     meta: { total: number; page: number; limit: number };
   }> {
+    SalesStaffAccess.assertCanListSales(user);
     const { page, limit, skip, take } = getPaginationParams(query);
     const { items, total } = await this.checkoutRepository.findMany(
       businessId,
@@ -90,6 +95,9 @@ export class CheckoutsService {
         status: query.status,
         issueFrom: query.issueFrom ? new Date(query.issueFrom) : undefined,
         issueTo: query.issueTo ? new Date(query.issueTo) : undefined,
+        staffUserId: SalesStaffAccess.canViewAllSales(user)
+          ? undefined
+          : user.id,
       },
     );
     return {
@@ -98,8 +106,13 @@ export class CheckoutsService {
     };
   }
 
-  async getById(businessId: string, id: string): Promise<CheckoutResponseDto> {
+  async getById(
+    businessId: string,
+    id: string,
+    user: RequestUser,
+  ): Promise<CheckoutResponseDto> {
     const checkout = await this.requireOpenOrClosedCheckout(businessId, id);
+    SalesStaffAccess.assertCanViewCheckout(user, checkout);
     return toCheckoutResponse(checkout);
   }
 
@@ -290,7 +303,7 @@ export class CheckoutsService {
     actor: RequestUser,
   ): Promise<CheckoutResponseDto> {
     const checkout = await this.requireEditableCheckout(businessId, checkoutId);
-    const product = await this.productRepository.findById(
+    const product = await this.productRepository.findByIdWithDetail(
       businessId,
       dto.productId,
     );
@@ -300,6 +313,9 @@ export class CheckoutsService {
         'Product not found',
         HttpStatus.NOT_FOUND,
       );
+    }
+    if (product.category?.isNonRetail) {
+      SalesStaffAccess.assertCanSellNonRetail(actor);
     }
     if (product.productType === ProductType.BUNDLE) {
       throw new AppException(
@@ -390,12 +406,28 @@ export class CheckoutsService {
     return this.recalculateAndReturn(businessId, checkoutId, actor.id);
   }
 
-  async listProductsForPicker(businessId: string, search?: string) {
+  async listProductsForPicker(
+    businessId: string,
+    search: string | undefined,
+    user: RequestUser,
+  ) {
     const items = await this.productPickerService.listSellable(
       businessId,
       search,
     );
-    return { items };
+    const canSellNonRetail =
+      user.businessRole === BusinessMemberRole.OWNER ||
+      user.businessRole === BusinessMemberRole.ADMIN ||
+      hasStaffPermission(
+        user.staffPermissions,
+        'sales.sell_non_retail',
+        user.businessRole,
+      );
+    return {
+      items: canSellNonRetail
+        ? items
+        : items.filter((item) => !item.isNonRetail),
+    };
   }
 
   async addWalletDeposit(

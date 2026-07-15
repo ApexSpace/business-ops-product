@@ -14,6 +14,7 @@ import { WorkItemBoard } from "@/features/work-items/components/work-item-board"
 import { WorkItemFormDialog } from "@/features/work-items/components/work-item-form-dialog";
 import { WorkItemsPageToolbar } from "@/features/work-items/components/work-items-page-toolbar";
 import { useWorkItemsPageToolbar } from "@/features/work-items/hooks/use-work-items-page-toolbar";
+import { useWorkItemStaffPermissions } from "@/features/work-items/hooks/use-work-item-staff-permissions";
 import { ActionButton } from "@/components/ui/action-button";
 import { ListPagination } from "@/components/ui/list-pagination";
 import { deleteWorkItem } from "@/features/work-items/api/work-items.api";
@@ -26,6 +27,7 @@ import type { WorkItem, WorkItemStatus } from "@/features/work-items/types";
 
 export function WorkItemsPageContent() {
   const queryClient = useQueryClient();
+  const { canManage } = useWorkItemStaffPermissions();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<WorkItem | null>(null);
   const [createDefaultStatus, setCreateDefaultStatus] = useState<
@@ -106,6 +108,7 @@ export function WorkItemsPageContent() {
               setParams({ view: next, page: "1" }, resetPage)
             }
             onAddClick={() => openCreate()}
+            canManage={canManage}
           />
         }
         pagination={
@@ -129,9 +132,10 @@ export function WorkItemsPageContent() {
             truncatedTotal={data?.meta.total}
             countSingular={countSingular}
             countPlural={countPlural}
-            onEdit={openEdit}
-            onDelete={(item) => setDeleteId(item.id)}
-            onAddItem={openCreate}
+            onEdit={canManage ? openEdit : undefined}
+            onDelete={canManage ? (item) => setDeleteId(item.id) : undefined}
+            onAddItem={canManage ? openCreate : undefined}
+            canManage={canManage}
           />
         ) : (
           <DataTable
@@ -142,23 +146,29 @@ export function WorkItemsPageContent() {
             emptyTitle={`No ${countPlural} yet`}
             emptyDescription="Add your first record: pick a customer, service, and status."
             emptyAction={
-              <ActionButton onClick={() => openCreate()}>
-                <Plus className="mr-2 size-4" />
-                Add {countSingular}
-              </ActionButton>
+              canManage ? (
+                <ActionButton onClick={() => openCreate()}>
+                  <Plus className="mr-2 size-4" />
+                  Add {countSingular}
+                </ActionButton>
+              ) : undefined
             }
-            rowActions={(item) => (
-              <DataTableRowActions
-                actions={[
-                  { label: "Edit", onClick: () => openEdit(item) },
-                  {
-                    label: "Delete",
-                    onClick: () => setDeleteId(item.id),
-                    destructive: true,
-                  },
-                ]}
-              />
-            )}
+            rowActions={
+              canManage
+                ? (item) => (
+                    <DataTableRowActions
+                      actions={[
+                        { label: "Edit", onClick: () => openEdit(item) },
+                        {
+                          label: "Delete",
+                          onClick: () => setDeleteId(item.id),
+                          destructive: true,
+                        },
+                      ]}
+                    />
+                  )
+                : undefined
+            }
           />
         )}
       </ListPage>

@@ -33,6 +33,7 @@ interface WorkItemsPageToolbarProps {
   onAssignedToIdChange: (value: string | null) => void;
   onViewChange: (view: WorkItemsView) => void;
   onAddClick: () => void;
+  canManage?: boolean;
 }
 
 function WorkItemFilterSelects({
@@ -99,6 +100,7 @@ export function WorkItemsPageToolbar({
   onAssignedToIdChange,
   onViewChange,
   onAddClick,
+  canManage = true,
 }: WorkItemsPageToolbarProps) {
   const searchPlaceholder = `Search ${workItemsLabel.toLowerCase()}…`;
 
@@ -127,10 +129,12 @@ export function WorkItemsPageToolbar({
             onChange={onViewChange}
             className="w-full [&>button]:flex-1"
           />
-          <ActionButton onClick={onAddClick} className="w-full">
-            <Plus className="mr-2 size-4" />
-            Add {countSingular}
-          </ActionButton>
+          {canManage ? (
+            <ActionButton onClick={onAddClick} className="w-full">
+              <Plus className="mr-2 size-4" />
+              Add {countSingular}
+            </ActionButton>
+          ) : null}
         </div>
       </div>
 
@@ -169,10 +173,12 @@ export function WorkItemsPageToolbar({
           onChange={onViewChange}
           className="shrink-0"
         />
-        <ActionButton onClick={onAddClick} className="shrink-0">
-          <Plus className="mr-2 size-4" />
-          Add {countSingular}
-        </ActionButton>
+        {canManage ? (
+          <ActionButton onClick={onAddClick} className="shrink-0">
+            <Plus className="mr-2 size-4" />
+            Add {countSingular}
+          </ActionButton>
+        ) : null}
       </div>
     </div>
   );

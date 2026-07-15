@@ -67,25 +67,32 @@ function baseNavigation(): SnapshotAssets['navigation'] {
       order: 8,
     },
     {
+      key: 'time-cards',
+      route: '/business/time-cards',
+      icon: 'clock',
+      labelKey: 'nav.timeCards',
+      order: 9,
+    },
+    {
       key: 'payments',
       route: '/business/payments',
       icon: 'credit-card',
       labelKey: 'nav.payments',
-      order: 9,
+      order: 10,
     },
     {
       key: 'sales',
       route: '/business/sales',
       icon: 'shopping-bag',
       labelKey: 'nav.sales',
-      order: 10,
+      order: 11,
     },
     {
       key: 'products',
       route: '/business/products',
       icon: 'package',
       labelKey: 'nav.products',
-      order: 11,
+      order: 12,
     },
   ];
 }

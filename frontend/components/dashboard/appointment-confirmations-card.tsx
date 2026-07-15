@@ -11,11 +11,13 @@ import {
 import type { DashboardFeedAppointment } from "@/features/dashboard/types";
 
 function contactName(appointment: DashboardFeedAppointment): string {
+  const contact = appointment.contact;
+  if (!contact) {
+    return appointment.title?.trim() || "Blocked time";
+  }
   return (
-    appointment.contact.displayName ??
-    [appointment.contact.firstName, appointment.contact.lastName]
-      .filter(Boolean)
-      .join(" ") ??
+    contact.displayName?.trim() ||
+    [contact.firstName, contact.lastName].filter(Boolean).join(" ").trim() ||
     "Client"
   );
 }

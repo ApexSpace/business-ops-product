@@ -28,9 +28,11 @@ import { formatContactCreatedAt } from "@/features/contacts/workspace/contact-wo
 import { invalidateContactWorkspace } from "@/lib/query/invalidation";
 import { queryKeys } from "@/lib/query/keys";
 import type { ContactRecordsSectionProps } from "@/features/contacts/workspace/records/contact-records-types";
+import { useContactStaffPermissions } from "@/features/contacts/hooks/use-contact-staff-permissions";
 
 export function ContactRecordsWalletSection({ contact, businessTimezone }: ContactRecordsSectionProps) {
   const queryClient = useQueryClient();
+  const { canAdjustBalances } = useContactStaffPermissions();
   const [adjustOpen, setAdjustOpen] = useState(false);
   const [amount, setAmount] = useState("");
   const [description, setDescription] = useState("");
@@ -77,14 +79,16 @@ export function ContactRecordsWalletSection({ contact, businessTimezone }: Conta
               {currency} {balance}
             </p>
           </div>
-          <ActionButton
-            size="sm"
-            className="h-9 rounded-[10px] px-3 text-[12.5px] font-semibold"
-            onClick={() => setAdjustOpen(true)}
-          >
-            <Plus className="mr-1 size-3.5" />
-            Add to balance
-          </ActionButton>
+          {canAdjustBalances ? (
+            <ActionButton
+              size="sm"
+              className="h-9 rounded-[10px] px-3 text-[12.5px] font-semibold"
+              onClick={() => setAdjustOpen(true)}
+            >
+              <Plus className="mr-1 size-3.5" />
+              Add to balance
+            </ActionButton>
+          ) : null}
         </div>
       </div>
 

@@ -31,8 +31,9 @@ import {
   subscribeToOAuthMessages,
   watchOAuthPopupClosed,
 } from "@/features/integrations/utils/oauth-popup";
-import { PERMISSIONS, useCan } from "@/features/auth/permissions";
+import { hasStaffPermission } from "@/features/team/permissions/staff-permissions";
 import { queryKeys } from "@/lib/query/keys";
+import { useAuth } from "@/lib/auth/provider";
 import {
   connectBusinessIntegration,
   connectPlatformDefaultEmail,
@@ -44,7 +45,15 @@ import {
 
 export function useBusinessIntegrationsSettings() {
   const queryClient = useQueryClient();
-  const canManage = useCan(PERMISSIONS["settings.business"]);
+  const { user, jwt } = useAuth();
+  const role = user?.businessRole ?? jwt?.businessRole;
+  const staffPermissions =
+    user?.staffPermissions ?? jwt?.staffPermissions ?? undefined;
+  const canManage = hasStaffPermission(
+    staffPermissions,
+    "settings.integrations.manage",
+    role,
+  );
 
   const [category, setCategory] = useState<IntegrationCategory | "ALL">("ALL");
   const [selectedProvider, setSelectedProvider] =

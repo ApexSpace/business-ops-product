@@ -179,7 +179,7 @@ export interface DashboardFeedAppointment {
     firstName?: string | null;
     lastName?: string | null;
     displayName?: string | null;
-  };
+  } | null;
 }
 
 export interface DashboardRecentConversation {
@@ -584,7 +584,8 @@ export type InvoiceStatus =
   | "PARTIAL"
   | "PAID"
   | "OVERDUE"
-  | "VOID";
+  | "VOID"
+  | "OPEN";
 
 export interface InvoiceItem {
   id: string;

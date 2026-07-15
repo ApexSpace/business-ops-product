@@ -9,6 +9,7 @@ import { CreateLeadDialog } from "@/features/leads/components/create-lead-dialog
 import { LeadDetailSheet } from "@/features/leads/components/lead-detail-sheet";
 import { PipelineBoard } from "@/features/pipelines/components/pipeline-board";
 import { PipelineViewToggle } from "@/features/pipelines/components/pipeline-view-toggle";
+import { usePipelineStaffPermissions } from "@/features/pipelines/hooks/use-pipeline-staff-permissions";
 import { PageHeader } from "@/components/layout/page-header";
 import { ConfirmDeleteDialog } from "@/components/forms/confirm-delete-dialog";
 import { Button } from "@/components/ui/button";
@@ -37,6 +38,7 @@ function getFirstStageId(pipeline?: Pipeline): string {
 
 export function BusinessCrmPipelinePage() {
   const queryClient = useQueryClient();
+  const { canManage } = usePipelineStaffPermissions();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [createLeadOpen, setCreateLeadOpen] = useState(false);
   const [createLeadStageId, setCreateLeadStageId] = useState<string | undefined>();
@@ -120,13 +122,15 @@ export function BusinessCrmPipelinePage() {
     <div className="space-y-[var(--page-stack-gap)]">
       <PageHeader
         actions={
-          <Button
-            onClick={() => openAddLead()}
-            disabled={!selectedPipeline}
-          >
-            <Plus className="mr-2 size-4" />
-            Add lead
-          </Button>
+          canManage ? (
+            <Button
+              onClick={() => openAddLead()}
+              disabled={!selectedPipeline}
+            >
+              <Plus className="mr-2 size-4" />
+              Add lead
+            </Button>
+          ) : null
         }
       />
 
@@ -183,22 +187,23 @@ export function BusinessCrmPipelinePage() {
           isLoading={leadsLoading}
           pipelineId={selectedPipeline.id}
           onLeadOpen={setDetailLead}
-          onLeadEdit={setDetailLead}
-          onLeadDelete={setDeleteLeadTarget}
-          onAddLead={openAddLead}
+          onLeadEdit={canManage ? setDetailLead : undefined}
+          onLeadDelete={canManage ? setDeleteLeadTarget : undefined}
+          onAddLead={canManage ? openAddLead : undefined}
         />
       ) : null}
 
-      <CreateLeadDialog
-        open={createLeadOpen}
-        onOpenChange={setCreateLeadOpen}
-        defaultPipelineId={selectedPipeline?.id}
-        defaultPipelineStageId={
-          createLeadStageId ?? getFirstStageId(selectedPipeline ?? undefined)
-        }
-        onSuccess={invalidate}
-      />
-
+      {canManage ? (
+        <CreateLeadDialog
+          open={createLeadOpen}
+          onOpenChange={setCreateLeadOpen}
+          defaultPipelineId={selectedPipeline?.id}
+          defaultPipelineStageId={
+            createLeadStageId ?? getFirstStageId(selectedPipeline ?? undefined)
+          }
+          onSuccess={invalidate}
+        />
+      ) : null}
       <LeadDetailSheet
         open={!!detailLead}
         onOpenChange={(open) => !open && setDetailLead(null)}

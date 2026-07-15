@@ -58,6 +58,7 @@ import {
   formatMembershipPrice,
   membershipPlanLabel,
 } from "@/features/memberships/components/membership-detail-panel";
+import { useMembershipStaffPermissions } from "@/features/memberships/hooks/use-membership-staff-permissions";
 import type {
   ClientMembershipListItem,
   ClientMembershipStatus,
@@ -70,6 +71,7 @@ function formatListDate(value: string) {
 export function MembershipsWorkspace() {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { canManage } = useMembershipStaffPermissions();
   const {
     selectedId,
     isOpen,
@@ -279,22 +281,26 @@ export function MembershipsWorkspace() {
         }
         actions={
           <>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => router.push("/business/memberships/plans")}
-            >
-              <LayoutTemplate className="mr-1.5 size-4" />
-              Manage plans
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => router.push("/business/memberships/settings")}
-            >
-              <Settings className="mr-1.5 size-4" />
-              Settings
-            </Button>
+            {canManage ? (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => router.push("/business/memberships/plans")}
+              >
+                <LayoutTemplate className="mr-1.5 size-4" />
+                Manage plans
+              </Button>
+            ) : null}
+            {canManage ? (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => router.push("/business/memberships/settings")}
+              >
+                <Settings className="mr-1.5 size-4" />
+                Settings
+              </Button>
+            ) : null}
             <Button
               variant="outline"
               size="icon-sm"
@@ -303,10 +309,12 @@ export function MembershipsWorkspace() {
             >
               <SlidersHorizontal className="size-4" />
             </Button>
-            <Button size="sm" onClick={() => setAddOpen(true)}>
-              <Plus className="mr-1.5 size-4" />
-              New membership
-            </Button>
+            {canManage ? (
+              <Button size="sm" onClick={() => setAddOpen(true)}>
+                <Plus className="mr-1.5 size-4" />
+                New membership
+              </Button>
+            ) : null}
           </>
         }
         footer={
@@ -335,10 +343,12 @@ export function MembershipsWorkspace() {
             emptyTitle="No memberships found"
             emptyDescription="Start a membership for a client or adjust your filters."
             emptyAction={
-              <Button size="sm" onClick={() => setAddOpen(true)}>
-                <Plus className="mr-1.5 size-4" />
-                New membership
-              </Button>
+              canManage ? (
+                <Button size="sm" onClick={() => setAddOpen(true)}>
+                  <Plus className="mr-1.5 size-4" />
+                  New membership
+                </Button>
+              ) : undefined
             }
             className={WORKSPACE_TABLE_CLASS}
           />
@@ -358,7 +368,7 @@ export function MembershipsWorkspace() {
           detail ? <MembershipStatusBadge status={detail.status} /> : null
         }
         footer={
-          detail ? (
+          canManage && detail ? (
             <EntityDetailFooter className="flex-col sm:flex-row">
               {detail.status === "ACTIVE" ? (
                 <Button

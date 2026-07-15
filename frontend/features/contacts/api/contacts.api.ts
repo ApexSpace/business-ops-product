@@ -35,3 +35,9 @@ export function updateContact(id: string, body: Record<string, unknown>) {
 export function deleteContact(id: string) {
   return api.delete<void>(`contacts/${id}?confirm=true`);
 }
+
+export function mergeContacts(keepContactId: string, mergeContactId: string) {
+  return api.post<Contact>(`contacts/${keepContactId}/merge`, {
+    mergeContactId,
+  });
+}

@@ -67,9 +67,14 @@ import { queryKeys } from "@/lib/query/keys";
 export interface OfferDetailPanelProps {
   offer: Offer;
   activeTab: OfferTabId;
+  canManage?: boolean;
 }
 
-export function OfferDetailPanel({ offer, activeTab }: OfferDetailPanelProps) {
+export function OfferDetailPanel({
+  offer,
+  activeTab,
+  canManage = true,
+}: OfferDetailPanelProps) {
   const queryClient = useQueryClient();
   const [detailsEditing, setDetailsEditing] = useState(false);
   const [addingDiscount, setAddingDiscount] = useState(false);
@@ -299,6 +304,7 @@ export function OfferDetailPanel({ offer, activeTab }: OfferDetailPanelProps) {
         ) : (
           <DetailsReadOnly
             offer={offer}
+            canManage={canManage}
             onEdit={() => setDetailsEditing(true)}
           />
         )}
@@ -323,31 +329,35 @@ export function OfferDetailPanel({ offer, activeTab }: OfferDetailPanelProps) {
                   </p>
                 ) : null}
               </div>
-              <DropdownMenu>
-                <DropdownMenuTrigger
-                  render={
-                    <Button variant="ghost" size="icon-sm">
-                      <MoreHorizontal className="size-4" />
-                    </Button>
-                  }
-                />
-                <DropdownMenuContent align="end" className="w-40">
-                  <DropdownMenuItem onClick={() => startEditDiscount(discount)}>
-                    Edit
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    variant="destructive"
-                    onClick={() =>
-                      deleteDiscountMutation.mutate({
-                        offerId: offer.id,
-                        discountId: discount.id,
-                      })
+              {canManage ? (
+                <DropdownMenu>
+                  <DropdownMenuTrigger
+                    render={
+                      <Button variant="ghost" size="icon-sm">
+                        <MoreHorizontal className="size-4" />
+                      </Button>
                     }
-                  >
-                    Delete
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                  />
+                  <DropdownMenuContent align="end" className="w-40">
+                    <DropdownMenuItem
+                      onClick={() => startEditDiscount(discount)}
+                    >
+                      Edit
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      variant="destructive"
+                      onClick={() =>
+                        deleteDiscountMutation.mutate({
+                          offerId: offer.id,
+                          discountId: discount.id,
+                        })
+                      }
+                    >
+                      Delete
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : null}
             </div>
           ))}
 
@@ -366,7 +376,7 @@ export function OfferDetailPanel({ offer, activeTab }: OfferDetailPanelProps) {
               onCancel={cancelDiscountForm}
               onSave={saveDiscountForm}
             />
-          ) : (
+          ) : canManage ? (
             <Button
               type="button"
               variant="outline"
@@ -376,7 +386,7 @@ export function OfferDetailPanel({ offer, activeTab }: OfferDetailPanelProps) {
               <Plus className="mr-1.5 size-4" />
               Add discount
             </Button>
-          )}
+          ) : null}
         </div>
       </SettingsCard>
     );
@@ -389,6 +399,7 @@ export function OfferDetailPanel({ offer, activeTab }: OfferDetailPanelProps) {
       <RadioGroup
         value={editForm.commissionBasis}
         onValueChange={(value) => {
+          if (!canManage) return;
           const commissionBasis = value as MembershipCommissionBasis;
           setEditForm({ ...editForm, commissionBasis });
           saveAdvanced.mutate({
@@ -396,6 +407,7 @@ export function OfferDetailPanel({ offer, activeTab }: OfferDetailPanelProps) {
             commissionBasis,
           });
         }}
+        disabled={!canManage}
       >
         <div className="space-y-2 rounded-lg border border-border bg-muted/20 p-3">
           <div className="flex items-center gap-2">
@@ -422,9 +434,11 @@ export function OfferDetailPanel({ offer, activeTab }: OfferDetailPanelProps) {
 
 function DetailsReadOnly({
   offer,
+  canManage,
   onEdit,
 }: {
   offer: Offer;
+  canManage: boolean;
   onEdit: () => void;
 }) {
   return (
@@ -472,12 +486,14 @@ function DetailsReadOnly({
         </ul>
       </div>
 
-      <div className="flex justify-end">
-        <Button variant="outline" size="sm" onClick={onEdit}>
-          <Pencil className="mr-1.5 size-4" />
-          Edit
-        </Button>
-      </div>
+      {canManage ? (
+        <div className="flex justify-end">
+          <Button variant="outline" size="sm" onClick={onEdit}>
+            <Pencil className="mr-1.5 size-4" />
+            Edit
+          </Button>
+        </div>
+      ) : null}
     </div>
   );
 }

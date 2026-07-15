@@ -91,6 +91,6 @@ export class AuthController {
   @ApiBearerAuth()
   @Get('me')
   me(@CurrentUser() user: RequestUser) {
-    return this.authService.getMe(user.id);
+    return this.authService.getMe(user);
   }
 }

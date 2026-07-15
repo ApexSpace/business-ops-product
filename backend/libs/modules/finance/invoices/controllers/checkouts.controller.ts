@@ -40,7 +40,13 @@ import { CheckoutsService } from '../services/checkouts.service';
 @Controller('checkouts')
 @UseGuards(BusinessRolesGuard, BusinessCapabilityGuard)
 @RequireModule('payments')
-@StaffPermission('sales.access')
+@StaffPermission(
+  'sales.access',
+  'sales.view_own',
+  'sales.view_all',
+  'sales.view_on_calendar',
+  'sales.checkout',
+)
 export class CheckoutsController {
   constructor(private readonly checkoutsService: CheckoutsService) {}
 
@@ -50,11 +56,12 @@ export class CheckoutsController {
     BusinessMemberRole.ADMIN,
     BusinessMemberRole.MEMBER,
   )
+  @StaffPermission('sales.view_own', 'sales.view_all', 'sales.access')
   list(
     @CurrentUser() user: RequestUser,
     @Query() query: ListCheckoutsQueryDto,
   ) {
-    return this.checkoutsService.list(user.businessId!, query);
+    return this.checkoutsService.list(user.businessId!, query, user);
   }
 
   @Get('picker/services')
@@ -104,7 +111,7 @@ export class CheckoutsController {
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
   ) {
-    return this.checkoutsService.getById(user.businessId!, id);
+    return this.checkoutsService.getById(user.businessId!, id, user);
   }
 
   @Patch(':id')
@@ -175,6 +182,7 @@ export class CheckoutsController {
     return this.checkoutsService.listProductsForPicker(
       user.businessId!,
       search,
+      user,
     );
   }
 

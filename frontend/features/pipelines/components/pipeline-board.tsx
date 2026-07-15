@@ -144,6 +144,7 @@ export function PipelineBoard({
 
   const moveLead = useCallback(
     (lead: Lead, targetStageId: string) => {
+      if (!onLeadEdit) return;
       const currentStageId = getLeadStageId(lead);
       if (targetStageId === currentStageId) return;
 
@@ -167,7 +168,7 @@ export function PipelineBoard({
         },
       );
     },
-    [applyStageChange, moveMutation, pipelineId, queryClient],
+    [applyStageChange, moveMutation, onLeadEdit, pipelineId, queryClient],
   );
 
   const handleDragStart = (event: DragStartEvent) => {

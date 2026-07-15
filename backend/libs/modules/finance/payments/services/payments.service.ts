@@ -35,6 +35,7 @@ import {
 import { BusinessRepository } from '@app/modules/platform/business/repositories/business.repository';
 import { DateTime } from 'luxon';
 import { PaymentOrchestratorService } from '../orchestration/payment-orchestrator.service';
+import { assertCanRefundSale } from '@app/modules/finance/invoices/utils/sales-staff-access.util';
 
 @Injectable()
 export class PaymentsService {
@@ -425,6 +426,9 @@ export class PaymentsService {
         HttpStatus.BAD_REQUEST,
       );
     }
+
+    const invoiceStatus = existing.invoice?.status ?? null;
+    assertCanRefundSale(actor, invoiceStatus);
 
     const refundedAmount = existing.amount.toFixed(2);
 

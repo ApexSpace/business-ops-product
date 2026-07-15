@@ -446,4 +446,7 @@ export class ProductPickerItemResponseDto {
 
   @ApiProperty()
   assignStaffToSale!: boolean;
+
+  @ApiProperty()
+  isNonRetail!: boolean;
 }

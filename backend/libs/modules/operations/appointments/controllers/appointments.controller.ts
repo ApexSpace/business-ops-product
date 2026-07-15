@@ -56,7 +56,12 @@ export class AppointmentsController {
     BusinessMemberRole.ADMIN,
     BusinessMemberRole.MEMBER,
   )
-  @StaffPermission('appointments.manage_own', 'appointments.manage_all')
+  @StaffPermission(
+    'appointments.manage_own',
+    'appointments.manage_all',
+    'appointments.manage_own_time_blocks',
+    'appointments.manage_all_time_blocks',
+  )
   create(@CurrentUser() user: RequestUser, @Body() dto: CreateAppointmentDto) {
     return this.appointmentsService.create(user.businessId!, dto, user);
   }
@@ -67,11 +72,12 @@ export class AppointmentsController {
     BusinessMemberRole.ADMIN,
     BusinessMemberRole.MEMBER,
   )
+  @StaffPermission('appointments.view_history')
   getActivity(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
   ) {
-    return this.appointmentsService.getActivity(user.businessId!, id);
+    return this.appointmentsService.getActivity(user.businessId!, id, user);
   }
 
   @Post(':id/notify')
@@ -80,7 +86,12 @@ export class AppointmentsController {
     BusinessMemberRole.ADMIN,
     BusinessMemberRole.MEMBER,
   )
-  @StaffPermission('appointments.manage_own', 'appointments.manage_all')
+  @StaffPermission(
+    'appointments.manage_own',
+    'appointments.manage_all',
+    'appointments.manage_own_time_blocks',
+    'appointments.manage_all_time_blocks',
+  )
   notifyClient(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -98,7 +109,7 @@ export class AppointmentsController {
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
   ) {
-    return this.appointmentsService.listPhotos(user.businessId!, id);
+    return this.appointmentsService.listPhotos(user.businessId!, id, user);
   }
 
   @Get(':id')
@@ -111,7 +122,7 @@ export class AppointmentsController {
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
   ) {
-    return this.appointmentsService.getById(user.businessId!, id);
+    return this.appointmentsService.getById(user.businessId!, id, user);
   }
 
   @Patch(':id/status')
@@ -120,7 +131,11 @@ export class AppointmentsController {
     BusinessMemberRole.ADMIN,
     BusinessMemberRole.MEMBER,
   )
-  @StaffPermission('appointments.change_status')
+  @StaffPermission(
+    'appointments.change_status',
+    'appointments.manage_own',
+    'appointments.manage_all',
+  )
   updateStatus(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -140,7 +155,12 @@ export class AppointmentsController {
     BusinessMemberRole.ADMIN,
     BusinessMemberRole.MEMBER,
   )
-  @StaffPermission('appointments.manage_own', 'appointments.manage_all')
+  @StaffPermission(
+    'appointments.manage_own',
+    'appointments.manage_all',
+    'appointments.manage_own_time_blocks',
+    'appointments.manage_all_time_blocks',
+  )
   update(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -156,7 +176,12 @@ export class AppointmentsController {
     BusinessMemberRole.MEMBER,
   )
   @ApiQuery({ name: 'confirm', required: true, type: Boolean })
-  @StaffPermission('appointments.manage_own', 'appointments.manage_all')
+  @StaffPermission(
+    'appointments.manage_own',
+    'appointments.manage_all',
+    'appointments.manage_own_time_blocks',
+    'appointments.manage_all_time_blocks',
+  )
   remove(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,

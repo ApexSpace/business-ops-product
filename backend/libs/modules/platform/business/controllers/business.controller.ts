@@ -17,6 +17,7 @@ import { FinancialSettingsService } from '@app/modules/platform/business/service
 import { BusinessBillingService } from '@app/modules/platform/business/services/business-billing.service';
 import { CancelBusinessSubscriptionDto } from '../dto/cancel-business-subscription.dto';
 import { ChangeBusinessPlanTierDto } from '../dto/change-business-plan-tier.dto';
+import { canViewAllStaffCalendars } from '@app/modules/platform/membership/permissions/staff-permission.registry';
 
 @ApiTags('business')
 @ApiBearerAuth()
@@ -62,11 +63,12 @@ export class BusinessController {
     @CurrentUser() user: RequestUser,
   ): Promise<BusinessDashboardStatsDto> {
     return this.dashboardStatsService.getStats(user.businessId!, {
-      assignedToId:
-        user.businessRole === BusinessMemberRole.MEMBER &&
-        !user.staffPermissions?.['appointments.view_all_calendars']
-          ? user.id
-          : undefined,
+      assignedToId: canViewAllStaffCalendars(
+        user.staffPermissions,
+        user.businessRole,
+      )
+        ? undefined
+        : user.id,
       includeBusinessOps: user.businessRole !== BusinessMemberRole.MEMBER,
     });
   }

@@ -34,15 +34,24 @@ function AppointmentsCalendarPageContent() {
   const [waitlistOpen, setWaitlistOpen] = useState(false);
   const drag = useAppointmentCalendarDrag({
     timezone: cal.displayTimezone,
-    enabled: cal.view === "day" || cal.view === "week",
+    enabled:
+      (cal.view === "day" || cal.view === "week") &&
+      (cal.calendarPerms.canManageOwn || cal.calendarPerms.canManageOthers),
   });
 
   useAppointmentsCreateAction(() => {
+    if (!cal.calendarPerms.canCreateAnyAppointment) {
+      return;
+    }
     const startIso = new Date().toISOString();
+    const assignedToId = cal.params.assignedToId || undefined;
+    if (!cal.calendarPerms.canManageAppointmentOnStaff(assignedToId)) {
+      return;
+    }
     cal.drawer.openCreate({
       startAt: startIso,
       calendarId: cal.params.calendarId || cal.calendars?.items[0]?.id,
-      assignedToId: cal.params.assignedToId || undefined,
+      assignedToId,
     });
   });
 
@@ -70,7 +79,11 @@ function AppointmentsCalendarPageContent() {
             onStatusFilterChange={(status) =>
               cal.setParams({ status, page: "1" })
             }
-            onOpenWaitlist={() => setWaitlistOpen(true)}
+            onOpenWaitlist={
+              cal.calendarPerms.canManageWaitlist
+                ? () => setWaitlistOpen(true)
+                : undefined
+            }
           />
         </div>
 

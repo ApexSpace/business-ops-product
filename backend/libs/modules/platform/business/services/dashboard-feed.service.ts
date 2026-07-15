@@ -17,7 +17,10 @@ import {
   normalizeTimezone,
 } from '@app/common/utils/timezone.util';
 import { buildOverdueInvoiceWhere } from '@app/modules/finance/shared/utils/overdue-invoice-where.util';
-import { hasStaffPermission } from '@app/modules/platform/membership/permissions/staff-permission.registry';
+import {
+  canViewAllStaffCalendars,
+  hasStaffPermission,
+} from '@app/modules/platform/membership/permissions/staff-permission.registry';
 import {
   BusinessDashboardFeedDto,
   DashboardAttentionItemDto,
@@ -109,7 +112,12 @@ export class DashboardFeedService {
         assignedToId: scope.staffUserId ?? undefined,
         includeBusinessOps: scope.canViewBusinessOps,
       }),
-      this.getOverview(businessId, now, endOfToday, scope.staffUserId),
+      this.getOverview(
+        businessId,
+        startOfToday,
+        endOfToday,
+        scope.staffUserId,
+      ),
       this.getTodayAppointmentsMetric(
         businessId,
         timezone,
@@ -180,11 +188,7 @@ export class DashboardFeedService {
     const isMember = role === BusinessMemberRole.MEMBER;
     const canViewAllCalendars =
       !isMember ||
-      hasStaffPermission(
-        user?.staffPermissions,
-        'appointments.view_all_calendars',
-        role,
-      );
+      canViewAllStaffCalendars(user?.staffPermissions, role);
 
     return {
       staffUserId: canViewAllCalendars ? null : (user?.id ?? null),
@@ -192,6 +196,11 @@ export class DashboardFeedService {
       canViewLeads:
         !isMember ||
         hasStaffPermission(user?.staffPermissions, 'contacts.access', role) ||
+        hasStaffPermission(
+          user?.staffPermissions,
+          'contacts.view_last_names',
+          role,
+        ) ||
         hasStaffPermission(user?.staffPermissions, 'pipelines.access', role),
       canViewConversations:
         !isMember ||
@@ -239,20 +248,26 @@ export class DashboardFeedService {
 
   private async getOverview(
     businessId: string,
-    now: Date,
+    startOfToday: Date,
     endOfToday: Date,
     staffUserId: string | null,
   ): Promise<DashboardOverviewDto> {
+    // Whole business day for active statuses; assignee-scoped when staffUserId is set.
     const waitingClientsToday = await this.prisma.appointment.count({
       where: {
         businessId,
         deletedAt: null,
         startAt: {
-          gte: now,
+          gte: startOfToday,
           lte: endOfToday,
         },
         status: {
-          in: [AppointmentStatus.UNCONFIRMED, AppointmentStatus.CONFIRMED],
+          in: [
+            AppointmentStatus.UNCONFIRMED,
+            AppointmentStatus.CONFIRMED,
+            AppointmentStatus.WAITING,
+            AppointmentStatus.IN_SERVICE,
+          ],
         },
         ...this.appointmentAssigneeWhere(staffUserId),
       },

@@ -74,7 +74,7 @@ export class ContactWorkspaceController {
 
   @Post(':id/wallet/adjust')
   @BusinessRoles(...MEMBER_ROLES)
-  @StaffPermission('contacts.manage')
+  @StaffPermission('contacts.adjust_balances')
   adjustWallet(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,

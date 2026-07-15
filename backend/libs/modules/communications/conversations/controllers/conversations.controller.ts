@@ -87,7 +87,7 @@ export class ConversationsController {
     @CurrentUser() user: RequestUser,
     @Query() query: ListConversationsQueryDto,
   ) {
-    return this.conversationsService.list(user.businessId!, query, user.id);
+    return this.conversationsService.list(user.businessId!, query, user);
   }
 
   @Post('admin/backfill-contact-identity')
@@ -118,7 +118,7 @@ export class ConversationsController {
     return this.unifiedConversationsService.list(
       user.businessId!,
       query,
-      user.id,
+      user,
     );
   }
 
@@ -132,7 +132,11 @@ export class ConversationsController {
     @CurrentUser() user: RequestUser,
     @Param('contactId', ParseUUIDPipe) contactId: string,
   ) {
-    return this.conversationsService.listByContact(user.businessId!, contactId);
+    return this.conversationsService.listByContact(
+      user.businessId!,
+      contactId,
+      user,
+    );
   }
 
   @Get(':id')
@@ -145,7 +149,7 @@ export class ConversationsController {
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
   ) {
-    return this.conversationsService.getById(user.businessId!, id);
+    return this.conversationsService.getById(user.businessId!, id, user);
   }
 
   @Get(':id/messages')
@@ -159,7 +163,7 @@ export class ConversationsController {
     @Param('id', ParseUUIDPipe) id: string,
     @Query() query: ListMessagesQueryDto,
   ) {
-    return this.messagesService.list(user.businessId!, id, query);
+    return this.messagesService.list(user.businessId!, id, query, user);
   }
 
   @Post(':id/messages')
@@ -269,7 +273,7 @@ export class ConversationsController {
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
   ) {
-    return this.notesService.list(user.businessId!, id);
+    return this.notesService.list(user.businessId!, id, user);
   }
 
   @Post(':id/notes')

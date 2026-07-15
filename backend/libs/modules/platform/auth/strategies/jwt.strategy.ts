@@ -31,6 +31,7 @@ function isTenantAccessEndpoint(req: Request): boolean {
 function compactStaffPermissions(
   role: BusinessMemberRole | undefined,
   raw: unknown,
+  options?: { canManageWaitlist?: boolean },
 ): Record<string, boolean> | undefined {
   if (
     !role ||
@@ -40,6 +41,9 @@ function compactStaffPermissions(
     return undefined;
   }
   const normalized = normalizeStaffPermissions(raw);
+  if (options?.canManageWaitlist) {
+    normalized['appointments.manage_waitlist'] = true;
+  }
   const compact: Record<string, boolean> = {};
   for (const [key, value] of Object.entries(normalized)) {
     if (value) compact[key] = true;
@@ -151,6 +155,12 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
             ? membership.role
             : undefined,
           membership?.permissions,
+          {
+            canManageWaitlist:
+              membership?.status === MembershipStatus.ACTIVE
+                ? membership.canManageWaitlist
+                : false,
+          },
         ),
       };
     }
@@ -172,6 +182,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       staffPermissions: compactStaffPermissions(
         membership.role,
         membership.permissions,
+        { canManageWaitlist: membership.canManageWaitlist },
       ),
     };
   }

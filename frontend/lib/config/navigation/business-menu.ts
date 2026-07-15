@@ -123,9 +123,16 @@ export const businessOperationalMenuItems: BusinessMenuItem[] = [
   },
   {
     title: "Time Clock",
-    href: "/business/time-cards",
+    href: "/business/time-clock",
     icon: Clock,
     navKey: "time-clock",
+    navTier: "apps",
+  },
+  {
+    title: "Time Cards",
+    href: "/business/time-cards",
+    icon: Clock,
+    navKey: "time-cards",
     navTier: "apps",
   },
 ];

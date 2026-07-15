@@ -9,6 +9,7 @@ import {
 } from '../dto/conversation-note.dto';
 import { ConversationsRepository } from '../repositories/conversations.repository';
 import { ConversationNotesRepository } from '../repositories/conversation-notes.repository';
+import { assertCanViewConversation } from '../utils/conversation-staff-access.util';
 
 @Injectable()
 export class ConversationNotesService {
@@ -21,8 +22,9 @@ export class ConversationNotesService {
   async list(
     businessId: string,
     conversationId: string,
+    user: RequestUser,
   ): Promise<ConversationNoteResponseDto[]> {
-    await this.requireConversation(businessId, conversationId);
+    await this.requireConversation(businessId, conversationId, user);
     const notes = await this.notesRepository.findManyByConversation(
       businessId,
       conversationId,
@@ -36,7 +38,7 @@ export class ConversationNotesService {
     dto: CreateConversationNoteDto,
     actor: RequestUser,
   ): Promise<ConversationNoteResponseDto> {
-    await this.requireConversation(businessId, conversationId);
+    await this.requireConversation(businessId, conversationId, actor);
     const note = await this.notesRepository.create({
       business: { connect: { id: businessId } },
       conversation: { connect: { id: conversationId } },
@@ -87,6 +89,7 @@ export class ConversationNotesService {
   private async requireConversation(
     businessId: string,
     conversationId: string,
+    user: RequestUser,
   ) {
     const conversation = await this.conversationsRepository.findById(
       businessId,
@@ -99,6 +102,7 @@ export class ConversationNotesService {
         HttpStatus.NOT_FOUND,
       );
     }
+    assertCanViewConversation(user, conversation);
     return conversation;
   }
 }

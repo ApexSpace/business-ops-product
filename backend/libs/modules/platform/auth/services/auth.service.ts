@@ -400,24 +400,33 @@ export class AuthService {
     return { sent: true };
   }
 
-  async getMe(userId: string) {
-    const user = await this.userRepository.findById(userId);
-    if (!user) {
+  async getMe(user: RequestUser | string) {
+    const userId = typeof user === 'string' ? user : user.id;
+    const row = await this.userRepository.findById(userId);
+    if (!row) {
       throw new AppException(
         ErrorCode.NOT_FOUND,
         'User not found',
         HttpStatus.NOT_FOUND,
       );
     }
+    const requestUser = typeof user === 'string' ? null : user;
     return {
-      id: user.id,
-      email: user.email,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      status: user.status,
-      lastLoginAt: user.lastLoginAt,
-      emailVerifiedAt: user.emailVerifiedAt,
-      contexts: await this.buildContexts(user),
+      id: row.id,
+      email: row.email,
+      firstName: row.firstName,
+      lastName: row.lastName,
+      status: row.status,
+      lastLoginAt: row.lastLoginAt,
+      emailVerifiedAt: row.emailVerifiedAt,
+      contexts: await this.buildContexts(row),
+      ...(requestUser
+        ? {
+            businessId: requestUser.businessId ?? null,
+            businessRole: requestUser.businessRole ?? null,
+            staffPermissions: requestUser.staffPermissions ?? null,
+          }
+        : {}),
     };
   }
 
@@ -749,7 +758,11 @@ export class AuthService {
       context: 'business',
       businessId: selected.businessId,
       businessRole: membership.role,
-      ...this.staffPermissionsClaim(membership.role, membership.permissions),
+      ...this.staffPermissionsClaim(
+        membership.role,
+        membership.permissions,
+        membership.canManageWaitlist,
+      ),
     };
   }
 
@@ -835,18 +848,26 @@ export class AuthService {
       context: 'business',
       businessId,
       businessRole: membership.role,
-      ...this.staffPermissionsClaim(membership.role, membership.permissions),
+      ...this.staffPermissionsClaim(
+        membership.role,
+        membership.permissions,
+        membership.canManageWaitlist,
+      ),
     };
   }
 
   private staffPermissionsClaim(
     role: BusinessMemberRole,
     rawPermissions: unknown,
+    canManageWaitlist = false,
   ): Pick<JwtAccessPayload, 'staffPermissions'> {
     if (role === BusinessMemberRole.OWNER || role === BusinessMemberRole.ADMIN) {
       return {};
     }
     const normalized = normalizeStaffPermissions(rawPermissions);
+    if (canManageWaitlist) {
+      normalized['appointments.manage_waitlist'] = true;
+    }
     const compact: Record<string, boolean> = {};
     for (const [key, value] of Object.entries(normalized)) {
       if (value) compact[key] = true;

@@ -70,7 +70,7 @@ export class WaitlistController {
     BusinessMemberRole.ADMIN,
     BusinessMemberRole.MEMBER,
   )
-  @StaffPermission('appointments.manage_own', 'appointments.manage_all')
+  @StaffPermission('appointments.manage_waitlist')
   create(
     @CurrentUser() user: RequestUser,
     @Body() dto: CreateWaitlistEntryDto,
@@ -84,7 +84,7 @@ export class WaitlistController {
     BusinessMemberRole.ADMIN,
     BusinessMemberRole.MEMBER,
   )
-  @StaffPermission('appointments.manage_own', 'appointments.manage_all')
+  @StaffPermission('appointments.manage_waitlist')
   dismiss(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -98,7 +98,7 @@ export class WaitlistController {
     BusinessMemberRole.ADMIN,
     BusinessMemberRole.MEMBER,
   )
-  @StaffPermission('appointments.manage_own', 'appointments.manage_all')
+  @StaffPermission('appointments.manage_waitlist')
   book(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -118,7 +118,7 @@ export class WaitlistController {
     BusinessMemberRole.ADMIN,
     BusinessMemberRole.MEMBER,
   )
-  @StaffPermission('appointments.manage_own', 'appointments.manage_all')
+  @StaffPermission('appointments.manage_waitlist')
   cancel(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,

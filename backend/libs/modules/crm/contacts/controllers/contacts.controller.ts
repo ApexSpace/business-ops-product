@@ -20,6 +20,7 @@ import { StaffPermission } from '@app/common/decorators/staff-permission.decorat
 import { BusinessRolesGuard } from '@app/common/guards/business-roles.guard';
 import { CreateContactDto } from '../dto/create-contact.dto';
 import { ListContactsQueryDto } from '../dto/list-contacts-query.dto';
+import { MergeContactsDto } from '../dto/merge-contacts.dto';
 import { UpdateContactDto } from '../dto/update-contact.dto';
 import { ContactsService } from '@app/modules/crm/contacts/services/contacts.service';
 
@@ -28,7 +29,7 @@ import { ContactsService } from '@app/modules/crm/contacts/services/contacts.ser
 @ApiBearerAuth()
 @Controller('contacts')
 @UseGuards(BusinessRolesGuard)
-@StaffPermission('contacts.access')
+@StaffPermission('contacts.access', 'contacts.view_last_names')
 export class ContactsController {
   constructor(private readonly contactsService: ContactsService) {}
 
@@ -49,8 +50,9 @@ export class ContactsController {
     BusinessMemberRole.ADMIN,
     BusinessMemberRole.MEMBER,
   )
+  @StaffPermission('contacts.view_last_names')
   list(@CurrentUser() user: RequestUser, @Query() query: ListContactsQueryDto) {
-    return this.contactsService.list(user.businessId!, query);
+    return this.contactsService.list(user.businessId!, query, user);
   }
 
   @Get(':id')
@@ -59,11 +61,12 @@ export class ContactsController {
     BusinessMemberRole.ADMIN,
     BusinessMemberRole.MEMBER,
   )
+  @StaffPermission('contacts.access')
   get(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
   ) {
-    return this.contactsService.getById(user.businessId!, id);
+    return this.contactsService.getById(user.businessId!, id, user);
   }
 
   @Patch(':id')
@@ -81,6 +84,26 @@ export class ContactsController {
     return this.contactsService.update(user.businessId!, id, dto, user);
   }
 
+  @Post(':id/merge')
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
+  @StaffPermission('contacts.delete_merge')
+  merge(
+    @CurrentUser() user: RequestUser,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: MergeContactsDto,
+  ) {
+    return this.contactsService.merge(
+      user.businessId!,
+      id,
+      dto.mergeContactId,
+      user,
+    );
+  }
+
   @Delete(':id')
   @BusinessRoles(
     BusinessMemberRole.OWNER,
@@ -93,7 +116,7 @@ export class ContactsController {
     type: Boolean,
     description: 'Must be true to confirm deletion',
   })
-  @StaffPermission('contacts.manage')
+  @StaffPermission('contacts.delete_merge')
   remove(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,

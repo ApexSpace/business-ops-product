@@ -99,6 +99,17 @@ export function canRefundPayment(payment: Payment): boolean {
   return !isPaymentRefunded(payment);
 }
 
+/** Staff sales refund gate: full refund or open-sale-only refund. */
+export function canStaffRefundPayment(
+  payment: Payment,
+  options: { canRefundAll: boolean; canRefundOpen: boolean },
+): boolean {
+  if (!canRefundPayment(payment)) return false;
+  if (options.canRefundAll) return true;
+  if (!options.canRefundOpen) return false;
+  return payment.invoice?.status === "OPEN";
+}
+
 /** Recorded payments are successful until refunded; refunded rows show the amount reversed. */
 export function getTransactionStatusLabel(payment: Payment): string {
   if (!isPaymentRefunded(payment)) {

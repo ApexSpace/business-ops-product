@@ -30,6 +30,7 @@ import {
   UpdateMemberPermissionsDto,
   UpdateStaffCompensationDto,
 } from '../dto/staff-member-settings.dto';
+import { StaffPermission } from '@app/common/decorators/staff-permission.decorator';
 import { MembershipService } from '@app/modules/platform/membership/services/membership.service';
 
 @ApiTags('business')
@@ -40,19 +41,34 @@ export class BusinessMembershipController {
   constructor(private readonly membershipService: MembershipService) {}
 
   @Get()
-  @BusinessRoles(BusinessMemberRole.OWNER, BusinessMemberRole.ADMIN)
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
+  @StaffPermission('appointments.access', 'settings.team.manage')
   list(@CurrentUser() user: RequestUser, @Query() query: ListMembersQueryDto) {
     return this.membershipService.listForBusiness(user.businessId!, query);
   }
 
   @Post('invite')
-  @BusinessRoles(BusinessMemberRole.OWNER, BusinessMemberRole.ADMIN)
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
+  @StaffPermission('settings.team.manage')
   invite(@CurrentUser() user: RequestUser, @Body() dto: InviteMemberDto) {
     return this.membershipService.invite(user.businessId!, dto, user);
   }
 
   @Post(':userId/resend-invite')
-  @BusinessRoles(BusinessMemberRole.OWNER, BusinessMemberRole.ADMIN)
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
+  @StaffPermission('settings.team.manage')
   resendInvite(
     @CurrentUser() user: RequestUser,
     @Param('userId', ParseUUIDPipe) userId: string,
@@ -61,7 +77,12 @@ export class BusinessMembershipController {
   }
 
   @Post()
-  @BusinessRoles(BusinessMemberRole.OWNER, BusinessMemberRole.ADMIN)
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
+  @StaffPermission('settings.team.manage')
   createStaff(
     @CurrentUser() user: RequestUser,
     @Body() dto: CreateStaffMemberDto,
@@ -74,7 +95,12 @@ export class BusinessMembershipController {
   }
 
   @Get(':userId')
-  @BusinessRoles(BusinessMemberRole.OWNER, BusinessMemberRole.ADMIN)
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
+  @StaffPermission('settings.team.manage')
   getMember(
     @CurrentUser() user: RequestUser,
     @Param('userId', ParseUUIDPipe) userId: string,
@@ -83,7 +109,12 @@ export class BusinessMembershipController {
   }
 
   @Patch(':userId/details')
-  @BusinessRoles(BusinessMemberRole.OWNER, BusinessMemberRole.ADMIN)
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
+  @StaffPermission('settings.team.manage')
   updateDetails(
     @CurrentUser() user: RequestUser,
     @Param('userId', ParseUUIDPipe) userId: string,
@@ -122,7 +153,12 @@ export class BusinessMembershipController {
   }
 
   @Get(':userId/notifications')
-  @BusinessRoles(BusinessMemberRole.OWNER, BusinessMemberRole.ADMIN)
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
+  @StaffPermission('settings.team.manage')
   getNotifications(
     @CurrentUser() user: RequestUser,
     @Param('userId', ParseUUIDPipe) userId: string,
@@ -134,7 +170,12 @@ export class BusinessMembershipController {
   }
 
   @Patch(':userId/notifications')
-  @BusinessRoles(BusinessMemberRole.OWNER, BusinessMemberRole.ADMIN)
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
+  @StaffPermission('settings.team.manage')
   updateNotifications(
     @CurrentUser() user: RequestUser,
     @Param('userId', ParseUUIDPipe) userId: string,
@@ -176,7 +217,12 @@ export class BusinessMembershipController {
   }
 
   @Get(':userId/services')
-  @BusinessRoles(BusinessMemberRole.OWNER, BusinessMemberRole.ADMIN)
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
+  @StaffPermission('settings.team.manage')
   getServices(
     @CurrentUser() user: RequestUser,
     @Param('userId', ParseUUIDPipe) userId: string,
@@ -185,7 +231,12 @@ export class BusinessMembershipController {
   }
 
   @Put(':userId/services')
-  @BusinessRoles(BusinessMemberRole.OWNER, BusinessMemberRole.ADMIN)
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
+  @StaffPermission('settings.team.manage')
   replaceServices(
     @CurrentUser() user: RequestUser,
     @Param('userId', ParseUUIDPipe) userId: string,
@@ -200,7 +251,12 @@ export class BusinessMembershipController {
   }
 
   @Patch(':userId/staff-profile')
-  @BusinessRoles(BusinessMemberRole.OWNER, BusinessMemberRole.ADMIN)
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
+  @StaffPermission('settings.team.manage')
   updateStaffProfile(
     @CurrentUser() user: RequestUser,
     @Param('userId', ParseUUIDPipe) userId: string,
@@ -215,7 +271,12 @@ export class BusinessMembershipController {
   }
 
   @Patch(':userId')
-  @BusinessRoles(BusinessMemberRole.OWNER, BusinessMemberRole.ADMIN)
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
+  @StaffPermission('settings.team.manage')
   update(
     @CurrentUser() user: RequestUser,
     @Param('userId', ParseUUIDPipe) userId: string,

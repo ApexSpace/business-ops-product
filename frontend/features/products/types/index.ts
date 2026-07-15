@@ -138,6 +138,7 @@ export interface ProductPickerItem {
   stockQuantity: number;
   trackInventory: boolean;
   status: ProductStatus;
+  isNonRetail?: boolean;
 }
 
 export interface CheckoutProductPickerItem extends ProductPickerItem {}

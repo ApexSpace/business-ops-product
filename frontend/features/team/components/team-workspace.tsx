@@ -35,6 +35,7 @@ import {
   isTeamMemberTab,
   type TeamMemberTabId,
 } from "@/features/team/constants/team-member-tabs";
+import { hasStaffPermission } from "@/features/team/permissions/staff-permissions";
 import { invalidateBusinessMembers } from "@/lib/query/invalidation";
 import { queryKeys } from "@/lib/query/keys";
 import { useAuth } from "@/lib/auth/provider";
@@ -43,8 +44,17 @@ const TEAM_LIST_LIMIT = 100;
 
 function TeamWorkspaceContent() {
   const queryClient = useQueryClient();
-  const { user } = useAuth();
-  const canManage = useCan(PERMISSIONS["members.invite"]);
+  const { user, jwt } = useAuth();
+  const canInviteAsAdmin = useCan(PERMISSIONS["members.invite"]);
+  const role = user?.businessRole ?? jwt?.businessRole;
+  const staffPermissions =
+    user?.staffPermissions ?? jwt?.staffPermissions ?? undefined;
+  const canManageTeam =
+    canInviteAsAdmin ||
+    hasStaffPermission(staffPermissions, "settings.team.manage", role);
+  /** Permissions/compensation remain owner/admin-only per staff permission copy. */
+  const canManage = canInviteAsAdmin;
+  const canEditDetails = canManageTeam;
   const [search, setSearch] = useState("");
   const [addOpen, setAddOpen] = useState(false);
   const [archiveTarget, setArchiveTarget] = useState<string | null>(null);
@@ -82,10 +92,16 @@ function TeamWorkspaceContent() {
 
   const selectedUserId = selectedId ?? members[0]?.userId ?? null;
 
-  const { data: memberDetail, isLoading: detailLoading } = useQuery({
+  const {
+    data: memberDetail,
+    isLoading: detailLoading,
+    isError: detailError,
+    error: detailErrorValue,
+  } = useQuery({
     queryKey: queryKeys.business.memberDetail(selectedUserId ?? ""),
     queryFn: () => getTeamMember(selectedUserId!),
     enabled: Boolean(selectedUserId),
+    retry: false,
   });
 
   const archiveMutation = useMutation({
@@ -107,10 +123,19 @@ function TeamWorkspaceContent() {
         </div>
       );
     }
-    if (detailLoading || !memberDetail) {
+    if (detailLoading) {
       return (
         <div className="flex flex-1 items-center justify-center p-8 text-sm text-muted-foreground">
           Loading staff member…
+        </div>
+      );
+    }
+    if (detailError || !memberDetail) {
+      return (
+        <div className="flex flex-1 items-center justify-center p-8 text-sm text-destructive">
+          {detailErrorValue instanceof Error
+            ? detailErrorValue.message
+            : "Unable to load this staff member."}
         </div>
       );
     }
@@ -120,7 +145,7 @@ function TeamWorkspaceContent() {
         return (
           <MemberDetailsTab
             member={memberDetail}
-            canManage={canManage}
+            canManage={canEditDetails}
             onArchive={
               canManage &&
               selectedUserId &&
@@ -134,7 +159,7 @@ function TeamWorkspaceContent() {
         return (
           <MemberNotificationsTab
             userId={selectedUserId}
-            canManage={canManage}
+            canManage={canEditDetails}
           />
         );
       case "permissions":
@@ -147,11 +172,17 @@ function TeamWorkspaceContent() {
         );
       case "services":
         return (
-          <MemberServicesTab userId={selectedUserId} canManage={canManage} />
+          <MemberServicesTab
+            userId={selectedUserId}
+            canManage={canEditDetails}
+          />
         );
       case "work-hours":
         return (
-          <MemberWorkHoursTab userId={selectedUserId} canManage={canManage} />
+          <MemberWorkHoursTab
+            userId={selectedUserId}
+            canManage={canEditDetails}
+          />
         );
       case "compensation":
         return (
@@ -166,7 +197,10 @@ function TeamWorkspaceContent() {
     }
   }, [
     activeTab,
+    canEditDetails,
     canManage,
+    detailError,
+    detailErrorValue,
     detailLoading,
     memberDetail,
     selectedUserId,
@@ -193,7 +227,7 @@ function TeamWorkspaceContent() {
             onSearchChange={setSearch}
             onSelect={setSelectedId}
             onAdd={() => setAddOpen(true)}
-            canManage={canManage}
+            canManage={canManageTeam}
             isLoading={isLoading}
             isError={isError}
             errorMessage={error instanceof Error ? error.message : undefined}
@@ -202,7 +236,9 @@ function TeamWorkspaceContent() {
             <TeamMemberTabs
               activeTab={activeTab}
               onTabChange={setTab}
-              hidePermissionsAndCompensation={isAdminTarget}
+              hidePermissionsAndCompensation={
+                isAdminTarget || !canManage
+              }
             />
           ) : null}
           <div className="min-w-0 flex-1 overflow-y-auto p-4">{panel}</div>

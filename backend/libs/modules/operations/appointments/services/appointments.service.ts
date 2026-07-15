@@ -1,5 +1,5 @@
 import { HttpStatus, Inject, Injectable, Logger, forwardRef } from '@nestjs/common';
-import { AppointmentStatus, BusinessMemberRole, Prisma } from '@prisma/client';
+import { AppointmentStatus, Prisma } from '@prisma/client';
 import { RequestUser } from '@app/common/decorators/current-user.decorator';
 import { AppException } from '@app/common/exceptions/app.exception';
 import { ErrorCode } from '@app/common/exceptions/error-code.enum';
@@ -34,7 +34,16 @@ import { formatStaffScheduleConflictMessage } from '../utils/format-appointment-
 import { WorkingHoursService } from '@app/modules/operations/online-booking-settings/services/working-hours.service';
 import { WaitlistMatchingService } from '@app/modules/operations/waitlist/services/waitlist-matching.service';
 import { StorageService } from '@app/modules/storage/services/storage.service';
+import { canViewAllStaffCalendars } from '@app/modules/platform/membership/permissions/staff-permission.registry';
+import {
+  assertCanChangeAppointmentStatus,
+  assertCanMutateAppointment,
+  assertCanViewAppointment,
+  assertCanViewAppointmentHistory,
+  isBusinessAdminRole,
+} from '../utils/appointment-staff-access.util';
 import { hasStaffPermission } from '@app/modules/platform/membership/permissions/staff-permission.registry';
+import { applyContactSummaryPrivacy } from '@app/modules/crm/contacts/utils/contact-privacy.util';
 import { DateTime } from 'luxon';
 
 @Injectable()
@@ -361,6 +370,19 @@ export class AppointmentsService {
     let endAt = new Date(dto.endAt);
     const isTimeBlock = dto.isTimeBlock === true;
 
+    assertCanMutateAppointment(
+      actor,
+      {
+        assignedToId: dto.assignedToId ?? null,
+        createdById: actor.id,
+        metadata: isTimeBlock ? { kind: 'TIME_BLOCK' } : undefined,
+        serviceLines: (dto.services ?? []).map((line) => ({
+          assignedToId: line.assignedToId ?? dto.assignedToId ?? null,
+        })),
+      },
+      { isTimeBlock },
+    );
+
     const calendar = dto.calendarId
       ? await this.assertCalendar(businessId, dto.calendarId)
       : null;
@@ -509,7 +531,7 @@ export class AppointmentsService {
 
     this.scheduleWaitlistRecheck(businessId, appointment);
 
-    return toAppointmentResponse(appointment, { scheduleWarning });
+    return this.toResponse(appointment, actor, { scheduleWarning });
   }
 
   async list(
@@ -521,13 +543,10 @@ export class AppointmentsService {
     meta: { total: number; page: number; limit: number };
   }> {
     const { page, limit, skip, take } = getPaginationParams(query);
-    const canViewAllCalendars =
-      user?.businessRole !== BusinessMemberRole.MEMBER ||
-      hasStaffPermission(
-        user.staffPermissions,
-        'appointments.view_all_calendars',
-        user.businessRole,
-      );
+    const canViewAllCalendars = canViewAllStaffCalendars(
+      user?.staffPermissions,
+      user?.businessRole,
+    );
     const assignedToId = canViewAllCalendars
       ? query.assignedToId
       : user?.id;
@@ -549,7 +568,7 @@ export class AppointmentsService {
       },
     );
     return {
-      items: items.map((row) => toAppointmentResponse(row)),
+      items: items.map((row) => this.toResponse(row, user)),
       meta: { total, page, limit },
     };
   }
@@ -557,6 +576,7 @@ export class AppointmentsService {
   async getById(
     businessId: string,
     id: string,
+    user?: RequestUser,
   ): Promise<AppointmentResponseDto> {
     const appointment = await this.appointmentRepository.findById(
       businessId,
@@ -569,12 +589,26 @@ export class AppointmentsService {
         HttpStatus.NOT_FOUND,
       );
     }
-    return toAppointmentResponse(appointment);
+    assertCanViewAppointment(user, appointment);
+    const response = this.toResponse(appointment, user);
+    const canViewHistory =
+      !user ||
+      isBusinessAdminRole(user.businessRole) ||
+      hasStaffPermission(
+        user.staffPermissions,
+        'appointments.view_history',
+        user.businessRole,
+      );
+    if (!canViewHistory) {
+      response.createdBy = null;
+    }
+    return response;
   }
 
   async listPhotos(
     businessId: string,
     id: string,
+    user?: RequestUser,
   ): Promise<{
     items: Array<{
       id: string;
@@ -596,6 +630,7 @@ export class AppointmentsService {
         HttpStatus.NOT_FOUND,
       );
     }
+    assertCanViewAppointment(user, appointment);
 
     const metadata =
       appointment.metadata && typeof appointment.metadata === 'object'
@@ -636,7 +671,9 @@ export class AppointmentsService {
   async getActivity(
     businessId: string,
     id: string,
+    user?: RequestUser,
   ): Promise<{ items: AppointmentActivityItemDto[] }> {
+    assertCanViewAppointmentHistory(user);
     const appointment = await this.appointmentRepository.findById(
       businessId,
       id,
@@ -648,6 +685,7 @@ export class AppointmentsService {
         HttpStatus.NOT_FOUND,
       );
     }
+    assertCanViewAppointment(user, appointment);
 
     const logs = await this.auditLogRepository.findByEntity(
       businessId,
@@ -684,6 +722,18 @@ export class AppointmentsService {
         HttpStatus.NOT_FOUND,
       );
     }
+
+    const nextAssignedToId =
+      dto.assignedToId !== undefined ? dto.assignedToId : existing.assignedToId;
+    assertCanMutateAppointment(actor, existing);
+    assertCanMutateAppointment(actor, {
+      ...existing,
+      assignedToId: nextAssignedToId,
+      serviceLines:
+        dto.services?.map((line) => ({
+          assignedToId: line.assignedToId ?? nextAssignedToId,
+        })) ?? existing.serviceLines,
+    });
 
     const startAt = dto.startAt ? new Date(dto.startAt) : existing.startAt;
     let endAt = dto.endAt ? new Date(dto.endAt) : existing.endAt;
@@ -849,7 +899,7 @@ export class AppointmentsService {
       this.scheduleWaitlistRecheck(businessId, appointment);
     }
 
-    return toAppointmentResponse(appointment, { scheduleWarning });
+    return this.toResponse(appointment, actor, { scheduleWarning });
   }
 
   async updateStatus(
@@ -866,6 +916,8 @@ export class AppointmentsService {
         HttpStatus.NOT_FOUND,
       );
     }
+
+    assertCanChangeAppointmentStatus(actor, existing, dto.status);
 
     const appointment = await this.appointmentRepository.update(id, {
       status: dto.status,
@@ -896,7 +948,7 @@ export class AppointmentsService {
 
     this.scheduleWaitlistRecheck(businessId, existing);
 
-    return toAppointmentResponse(appointment);
+    return this.toResponse(appointment, actor);
   }
 
   async notifyClient(
@@ -913,6 +965,7 @@ export class AppointmentsService {
       );
     }
 
+    assertCanMutateAppointment(actor, existing);
     if (existing.status !== AppointmentStatus.WAITING) {
       throw new AppException(
         ErrorCode.BAD_REQUEST,
@@ -952,7 +1005,7 @@ export class AppointmentsService {
       entityId: id,
     });
 
-    return toAppointmentResponse(appointment);
+    return this.toResponse(appointment, actor);
   }
 
   async remove(
@@ -968,6 +1021,7 @@ export class AppointmentsService {
         HttpStatus.NOT_FOUND,
       );
     }
+    assertCanMutateAppointment(actor, existing);
     this.scheduleGoogleCalendarSync(businessId, id, actor.id, 'delete', {
       calendarId: existing.calendarId,
       externalEventId: existing.externalEventId,
@@ -993,6 +1047,19 @@ export class AppointmentsService {
         HttpStatus.BAD_REQUEST,
       );
     }
+  }
+
+  private toResponse(
+    row: Parameters<typeof toAppointmentResponse>[0],
+    user?: RequestUser,
+    options?: Parameters<typeof toAppointmentResponse>[1],
+  ): AppointmentResponseDto {
+    const response = toAppointmentResponse(row, options);
+    if (!response.contact) return response;
+    return {
+      ...response,
+      contact: applyContactSummaryPrivacy(response.contact, user),
+    };
   }
 
   private async assertCalendar(businessId: string, calendarId: string) {

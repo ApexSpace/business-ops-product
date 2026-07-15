@@ -14,7 +14,7 @@ export interface PulseTimelineAppointment {
     displayName?: string | null;
     firstName?: string | null;
     lastName?: string | null;
-  };
+  } | null;
 }
 
 type PulseStatus = "live" | "done" | "upcoming";
@@ -44,9 +44,12 @@ const statusStyles: Record<PulseStatus, string> = {
 
 function contactLabel(appointment: PulseTimelineAppointment): string {
   const contact = appointment.contact;
+  if (!contact) {
+    return appointment.title?.trim() || "Blocked time";
+  }
   return (
-    contact.displayName ??
-    [contact.firstName, contact.lastName].filter(Boolean).join(" ") ??
+    contact.displayName?.trim() ||
+    [contact.firstName, contact.lastName].filter(Boolean).join(" ").trim() ||
     "Contact"
   );
 }

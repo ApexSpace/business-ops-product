@@ -21,6 +21,7 @@ import {
 } from "@/features/sales/api/checkouts.api";
 import { parseMembershipRedemptionSelection } from "@/features/sales/components/checkout-membership-field";
 import type { CheckoutItem } from "@/features/sales/types/checkout";
+import { useSalesStaffPermissions } from "@/features/sales/hooks/use-sales-staff-permissions";
 import {
   pickerProductKey,
   productPickerLabel,
@@ -49,6 +50,7 @@ function expandLatestLine(
 
 export function useCheckoutPanel(checkoutId: string) {
   const queryClient = useQueryClient();
+  const { canCheckout } = useSalesStaffPermissions();
   const [inlineAddMode, setInlineAddModeState] = useState<InlineAddMode>(null);
   const [expandedLineId, setExpandedLineId] = useState<string | null>(null);
   const [changePriceItem, setChangePriceItem] = useState<CheckoutItem | null>(
@@ -64,13 +66,24 @@ export function useCheckoutPanel(checkoutId: string) {
   const [selectedOfferId, setSelectedOfferId] = useState<string | null>(null);
   const [depositAmount, setDepositAmount] = useState(25);
 
-  const { data: checkout, isLoading } = useQuery({
+  const {
+    data: checkout,
+    isLoading,
+    error: checkoutError,
+    isError: checkoutFailed,
+  } = useQuery({
     queryKey: queryKeys.checkouts.detail(checkoutId),
     queryFn: () => getCheckout(checkoutId),
+    retry: false,
   });
 
-  const canEdit = Boolean(checkout?.isOpen);
+  const canEdit = Boolean(checkout?.isOpen) && canCheckout;
   const pickerEnabled = canEdit;
+  const loadError = checkoutFailed
+    ? checkoutError instanceof Error
+      ? checkoutError.message
+      : "Unable to load this checkout."
+    : null;
 
   const refreshCheckout = useCallback(() => {
     void invalidateCheckouts(queryClient, checkoutId);
@@ -330,6 +343,7 @@ export function useCheckoutPanel(checkoutId: string) {
   return {
     checkout,
     isLoading,
+    loadError,
     canEdit,
     refreshCheckout,
     inlineAddMode,

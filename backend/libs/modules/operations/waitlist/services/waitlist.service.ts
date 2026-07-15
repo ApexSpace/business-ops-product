@@ -15,6 +15,7 @@ import { AuditService } from '@app/modules/platform/audit/services/audit.service
 import { ContactRepository } from '@app/modules/crm/contacts/repositories/contact.repository';
 import { ServiceRepository } from '@app/modules/crm/services/repositories/service.repository';
 import { BusinessMembershipRepository } from '@app/modules/platform/membership/repositories/business-membership.repository';
+import { hasStaffPermission } from '@app/modules/platform/membership/permissions/staff-permission.registry';
 import { OnlineBookingSettingsRepository } from '@app/modules/operations/online-booking-settings/repositories/online-booking-settings.repository';
 import { EmailNotificationService } from '@app/modules/communications/email/services/email-notification.service';
 import { AppointmentsService } from '@app/modules/operations/appointments/services/appointments.service';
@@ -66,17 +67,29 @@ export class WaitlistService {
       return;
     }
 
+    if (
+      hasStaffPermission(
+        user.staffPermissions,
+        'appointments.manage_waitlist',
+        user.businessRole,
+      )
+    ) {
+      return;
+    }
+
     const membership = await this.membershipRepository.findActiveByUserAndBusiness(
       user.id,
       businessId,
     );
-    if (!membership?.canManageWaitlist) {
-      throw new AppException(
-        ErrorCode.FORBIDDEN,
-        'You do not have permission to manage the waitlist',
-        HttpStatus.FORBIDDEN,
-      );
+    if (membership?.canManageWaitlist) {
+      return;
     }
+
+    throw new AppException(
+      ErrorCode.FORBIDDEN,
+      'You do not have permission to manage the waitlist',
+      HttpStatus.FORBIDDEN,
+    );
   }
 
   async list(

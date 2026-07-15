@@ -340,7 +340,8 @@
 .contacts-detail-card--drawer-split {
   display: flex;
   min-height: 0;
-  flex: 1;
+  height: 100%;
+  flex: 1 1 auto;
   flex-direction: row;
   overflow: hidden;
   background: transparent;
@@ -401,10 +402,13 @@
 }
 
 .contacts-drawer-tab-scroll {
+  display: flex;
   min-height: 0;
   flex: 1;
+  flex-direction: column;
   overflow-x: hidden;
   overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 12px 20px 24px;
   scrollbar-width: thin;
 }

@@ -34,6 +34,7 @@ import type { StaffMemberOption } from "@/features/appointments/components/calen
 import { useAppointmentDrawer } from "@/features/appointments/hooks/use-appointment-drawer";
 import { useAppointmentsWorkingHours } from "@/features/appointments/hooks/use-appointments-working-hours";
 import { useAuth } from "@/lib/auth/provider";
+import { useCalendarStaffPermissions } from "@/features/appointments/hooks/use-calendar-staff-permissions";
 
 export const APPOINTMENTS_CALENDAR_PARAMS = {
   view: { default: "week" },
@@ -84,10 +85,9 @@ function memberLabel(member: {
 
 export function useAppointmentsCalendarPage() {
   const queryClient = useQueryClient();
-  const { user, jwt } = useAuth();
-  const isMemberOnlyView =
-    jwt?.businessRole === "MEMBER" &&
-    !jwt.staffPermissions?.["appointments.view_all_calendars"];
+  const { user } = useAuth();
+  const calendarPerms = useCalendarStaffPermissions();
+  const isMemberOnlyView = calendarPerms.isMemberOnlyView;
   const urlInitDone = useRef(false);
   const appointmentUrlHandled = useRef(false);
   const [isClient, setIsClient] = useState(false);
@@ -184,7 +184,10 @@ export function useAppointmentsCalendarPage() {
     const needsDate = !params.date;
     const needsMobileDayView = params.view === "week" && isMobileViewport();
     const needsStaffDefault =
-      view === "week" && !params.assignedToId && staffMembers.length > 0;
+      view === "week" &&
+      isMemberOnlyView &&
+      !params.assignedToId &&
+      Boolean(user?.id);
 
     if (!needsDate && !needsMobileDayView && !needsStaffDefault) {
       urlInitDone.current = true;
@@ -200,8 +203,8 @@ export function useAppointmentsCalendarPage() {
     if (needsMobileDayView) {
       updates.view = "day";
     }
-    if (needsStaffDefault) {
-      updates.assignedToId = staffMembers[0]!.userId;
+    if (needsStaffDefault && user?.id) {
+      updates.assignedToId = user.id;
     }
 
     urlInitDone.current = true;
@@ -216,7 +219,8 @@ export function useAppointmentsCalendarPage() {
     displayTimezone,
     setParams,
     view,
-    staffMembers,
+    isMemberOnlyView,
+    user?.id,
   ]);
 
   useEffect(() => {
@@ -431,6 +435,13 @@ export function useAppointmentsCalendarPage() {
       minute: number,
       assignedToId?: string,
     ) => {
+      const staffId =
+        assignedToId ??
+        (view === "week" ? params.assignedToId || undefined : undefined);
+      if (!calendarPerms.canManageTimeBlockOnStaff(staffId)) {
+        toast.error("You do not have permission to manage this time block");
+        return;
+      }
       const startIso = wallTimeInTimezoneToUtcIso(
         dateKey,
         hour,
@@ -439,9 +450,7 @@ export function useAppointmentsCalendarPage() {
       );
       drawer.openTimeBlock({
         startAt: startIso,
-        assignedToId:
-          assignedToId ??
-          (view === "week" ? params.assignedToId || undefined : undefined),
+        assignedToId: staffId,
         calendarId: params.calendarId || calendars?.items[0]?.id,
       });
     },
@@ -452,6 +461,7 @@ export function useAppointmentsCalendarPage() {
       calendars?.items,
       drawer,
       view,
+      calendarPerms,
     ],
   );
 
@@ -462,6 +472,13 @@ export function useAppointmentsCalendarPage() {
       minute: number,
       assignedToId?: string,
     ) => {
+      const staffId =
+        assignedToId ??
+        (view === "week" ? params.assignedToId || undefined : undefined);
+      if (!calendarPerms.canManageAppointmentOnStaff(staffId)) {
+        toast.error("You do not have permission to book on this calendar");
+        return;
+      }
       const startIso = wallTimeInTimezoneToUtcIso(
         dateKey,
         hour,
@@ -470,9 +487,7 @@ export function useAppointmentsCalendarPage() {
       );
       drawer.openCreate({
         startAt: startIso,
-        assignedToId:
-          assignedToId ??
-          (view === "week" ? params.assignedToId || undefined : undefined),
+        assignedToId: staffId,
         calendarId: params.calendarId || calendars?.items[0]?.id,
       });
     },
@@ -483,6 +498,7 @@ export function useAppointmentsCalendarPage() {
       calendars?.items,
       drawer,
       view,
+      calendarPerms,
     ],
   );
 
@@ -555,6 +571,7 @@ export function useAppointmentsCalendarPage() {
     businessSlots,
     staffSlotsByUserId,
     isMemberOnlyView,
+    calendarPerms,
     displayTimezone,
     anchorDateKey,
     appointments,

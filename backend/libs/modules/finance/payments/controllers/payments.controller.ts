@@ -202,7 +202,7 @@ export class PaymentsController {
     BusinessMemberRole.ADMIN,
     BusinessMemberRole.MEMBER,
   )
-  @StaffPermission('sales.refund')
+  @StaffPermission('sales.refund', 'sales.refund_open')
   refund(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,

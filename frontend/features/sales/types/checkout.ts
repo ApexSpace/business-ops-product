@@ -73,6 +73,7 @@ export interface CheckoutProductPickerItem {
   stockQuantity: number;
   trackInventory: boolean;
   assignStaffToSale?: boolean;
+  isNonRetail?: boolean;
 }
 
 export interface CloseCheckoutResult {

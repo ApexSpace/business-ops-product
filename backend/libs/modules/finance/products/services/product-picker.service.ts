@@ -37,6 +37,7 @@ export class ProductPickerService {
       },
       orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
       include: {
+        category: { select: { isNonRetail: true } },
         variants: {
           where: {
             deletedAt: null,
@@ -59,6 +60,7 @@ export class ProductPickerService {
     const rows: ProductPickerItemResponseDto[] = [];
 
     for (const product of products) {
+      const isNonRetail = product.category?.isNonRetail === true;
       if (product.productType === ProductType.SIMPLE) {
         rows.push({
           productId: product.id,
@@ -72,6 +74,7 @@ export class ProductPickerService {
           trackInventory: product.trackInventory,
           status: product.status,
           assignStaffToSale: product.assignStaffToSale,
+          isNonRetail,
         });
         continue;
       }
@@ -100,6 +103,7 @@ export class ProductPickerService {
           trackInventory: product.trackInventory,
           status: product.status,
           assignStaffToSale: product.assignStaffToSale,
+          isNonRetail,
         });
       }
     }

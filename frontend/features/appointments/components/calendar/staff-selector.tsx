@@ -138,6 +138,22 @@ export function StaffSelector({
           <p className="px-2 py-1.5 text-[11px] font-semibold uppercase tracking-[0.06em] text-muted-foreground">
             Staff member
           </p>
+          <button
+            type="button"
+            className={cn(
+              "flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-left text-sm transition-colors hover:bg-muted/70",
+              !selectedStaffId && "bg-muted/60",
+            )}
+            onClick={() => onSelectedStaffIdChange?.("")}
+          >
+            <StaffAvatarStack members={members} max={2} avatarClassName="size-8" />
+            <span className="min-w-0 flex-1 truncate font-medium">
+              All staff
+            </span>
+            {!selectedStaffId ? (
+              <Check className="size-4 shrink-0 text-primary" />
+            ) : null}
+          </button>
           {members.map((member) => {
             const isSelected = selectedStaffId === member.userId;
             return (

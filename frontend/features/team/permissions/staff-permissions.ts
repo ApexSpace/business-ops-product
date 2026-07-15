@@ -10,6 +10,7 @@ export {
   normalizeStaffPermissions,
   normalizeNotificationSettings,
   hasStaffPermission,
+  canViewAllStaffCalendars,
   canAccessSettingsHref,
   resolveSettingsHrefAccessRule,
   type StaffPermissionKey,

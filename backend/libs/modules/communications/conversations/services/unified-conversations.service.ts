@@ -1,8 +1,10 @@
 import { Injectable } from '@nestjs/common';
+import { RequestUser } from '@app/common/decorators/current-user.decorator';
 import { getPaginationParams } from '@app/common/utils/pagination.util';
 import { ListConversationsQueryDto } from '../dto/list-conversations-query.dto';
 import { UnifiedConversationThreadDto } from '../dto/unified-conversation-response.dto';
 import { ConversationsRepository } from '../repositories/conversations.repository';
+import { resolveAssignedConversationScope } from '../utils/conversation-staff-access.util';
 import { groupConversationsIntoUnifiedThreads } from '../utils/unified-threads.util';
 
 const UNIFIED_FETCH_CAP = 1000;
@@ -16,12 +18,15 @@ export class UnifiedConversationsService {
   async list(
     businessId: string,
     query: ListConversationsQueryDto,
-    currentUserId: string,
+    user: RequestUser,
   ): Promise<{
     items: UnifiedConversationThreadDto[];
     meta: { total: number; page: number; limit: number };
   }> {
     const { page, limit, skip, take } = getPaginationParams(query);
+    const scope = resolveAssignedConversationScope(user, {
+      assignedToMe: query.assignedToMe,
+    });
 
     const { items: conversations } =
       await this.conversationsRepository.findMany(businessId, {
@@ -29,8 +34,9 @@ export class UnifiedConversationsService {
         take: UNIFIED_FETCH_CAP,
         channel: query.channel,
         status: query.status,
-        assignedToMe: query.assignedToMe,
-        currentUserId,
+        assignedToMe: scope.assignedToMe,
+        assignedToUserId: scope.assignedToUserId,
+        currentUserId: user.id,
         contactId: query.contactId,
         resourceId: query.resourceId,
         search: query.search?.trim() || undefined,

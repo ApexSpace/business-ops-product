@@ -46,7 +46,11 @@ export class GoogleCalendarSyncController {
 
   @Post(':id/sync/google')
   @HttpCode(HttpStatus.ACCEPTED)
-  @BusinessRoles(BusinessMemberRole.OWNER, BusinessMemberRole.ADMIN)
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
   async syncGoogle(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,

@@ -20,6 +20,9 @@ interface ContactSidebarPanelProps extends ContactRecordsSectionProps {
   onDelete: () => void;
   /** Hide the trash action (e.g. conversations inbox). */
   showDeleteButton?: boolean;
+  showEditButton?: boolean;
+  showPhone?: boolean;
+  showEmail?: boolean;
   /** Show edit on avatar hover instead of icon buttons below the name. */
   avatarEditOnHover?: boolean;
   className?: string;
@@ -33,6 +36,9 @@ export function ContactSidebarPanel({
   onEdit,
   onDelete,
   showDeleteButton = true,
+  showEditButton = true,
+  showPhone = true,
+  showEmail = true,
   avatarEditOnHover = false,
   className,
   ...sectionProps
@@ -116,7 +122,7 @@ export function ContactSidebarPanel({
               className={avatarEditOnHover ? "size-10" : "size-12"}
               fallbackClassName="bg-primary/10 text-sm font-medium text-primary"
             />
-            {avatarEditOnHover ? (
+            {avatarEditOnHover && showEditButton ? (
               <button
                 type="button"
                 onClick={onEdit}
@@ -131,9 +137,11 @@ export function ContactSidebarPanel({
             <h2 className="truncate text-base font-semibold">{contact.label}</h2>
             {!avatarEditOnHover ? (
               <div className="mt-2 flex gap-1">
-                <IconButton aria-label="Edit contact" onClick={onEdit}>
-                  <Pencil className="size-4" />
-                </IconButton>
+                {showEditButton ? (
+                  <IconButton aria-label="Edit contact" onClick={onEdit}>
+                    <Pencil className="size-4" />
+                  </IconButton>
+                ) : null}
                 {showDeleteButton ? (
                   <IconButton
                     aria-label="Delete contact"
@@ -155,7 +163,12 @@ export function ContactSidebarPanel({
           {activeSection === "profile" ? null : headerAction}
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
-          <ContactSidebarDetailsFields contact={contact} />
+          <ContactSidebarDetailsFields
+            contact={contact}
+            showPhone={showPhone}
+            showEmail={showEmail}
+            onRequestEdit={showEditButton ? onEdit : undefined}
+          />
           {activeSection !== "profile" ? (
             <div className="mt-4 border-t border-border/60 pt-4">
               <ContactRecordsSectionBody

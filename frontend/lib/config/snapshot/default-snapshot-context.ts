@@ -52,6 +52,13 @@ export const DEFAULT_SNAPSHOT_NAVIGATION = [
     order: 55,
   },
   {
+    key: "time-cards",
+    route: "/business/time-cards",
+    icon: "clock",
+    labelKey: "nav.timeCards",
+    order: 56,
+  },
+  {
     key: "payments",
     route: "/business/payments",
     icon: "credit-card",

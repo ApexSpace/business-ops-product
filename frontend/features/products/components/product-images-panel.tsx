@@ -33,6 +33,7 @@ const MAX_GALLERY_IMAGES = 10;
 interface ProductImagesPanelProps {
   productId: string;
   featuredImageKey?: string | null;
+  canManage?: boolean;
 }
 
 function ProductImagePreview({
@@ -128,6 +129,7 @@ function ProductGalleryImagePreview({
 export function ProductImagesPanel({
   productId,
   featuredImageKey,
+  canManage = true,
 }: ProductImagesPanelProps) {
   const queryClient = useQueryClient();
   const featuredInputRef = useRef<HTMLInputElement>(null);
@@ -358,10 +360,12 @@ export function ProductImagesPanel({
     <div className="space-y-4 border-b p-4">
       <div>
         <p className="text-sm font-medium">Images</p>
-        <p className="text-xs text-muted-foreground">
-          JPEG, PNG, or WebP · max {PRODUCT_IMAGE_MAX_MB} MB · min{" "}
-          {PRODUCT_MIN_IMAGE_DIMENSION}px
-        </p>
+        {canManage ? (
+          <p className="text-xs text-muted-foreground">
+            JPEG, PNG, or WebP · max {PRODUCT_IMAGE_MAX_MB} MB · min{" "}
+            {PRODUCT_MIN_IMAGE_DIMENSION}px
+          </p>
+        ) : null}
       </div>
 
       <div className="space-y-2">
@@ -384,51 +388,55 @@ export function ProductImagesPanel({
             </div>
           )}
         </div>
-        <input
-          ref={featuredInputRef}
-          type="file"
-          accept={PRODUCT_IMAGE_ACCEPT}
-          className="hidden"
-          disabled={imageBusy}
-          onChange={(event) => {
-            const file = event.target.files?.[0];
-            if (file) {
-              void handleFileSelected(file, "featured");
-            }
-            event.target.value = "";
-          }}
-        />
-        <div className="flex flex-wrap gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            disabled={imageBusy}
-            onClick={() => featuredInputRef.current?.click()}
-          >
-            {uploadingFeatured ? (
-              <>
-                <Loader2 className="mr-2 size-4 animate-spin" />
-                Uploading…
-              </>
-            ) : hasFeaturedImage ? (
-              "Replace featured"
-            ) : (
-              "Upload featured"
-            )}
-          </Button>
-          {hasFeaturedImage ? (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              disabled={imageBusy || clearFeaturedMutation.isPending}
-              onClick={() => clearFeaturedMutation.mutate()}
-            >
-              Remove
-            </Button>
-          ) : null}
-        </div>
+        {canManage ? (
+          <>
+            <input
+              ref={featuredInputRef}
+              type="file"
+              accept={PRODUCT_IMAGE_ACCEPT}
+              className="hidden"
+              disabled={imageBusy}
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                if (file) {
+                  void handleFileSelected(file, "featured");
+                }
+                event.target.value = "";
+              }}
+            />
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={imageBusy}
+                onClick={() => featuredInputRef.current?.click()}
+              >
+                {uploadingFeatured ? (
+                  <>
+                    <Loader2 className="mr-2 size-4 animate-spin" />
+                    Uploading…
+                  </>
+                ) : hasFeaturedImage ? (
+                  "Replace featured"
+                ) : (
+                  "Upload featured"
+                )}
+              </Button>
+              {hasFeaturedImage ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  disabled={imageBusy || clearFeaturedMutation.isPending}
+                  onClick={() => clearFeaturedMutation.mutate()}
+                >
+                  Remove
+                </Button>
+              ) : null}
+            </div>
+          </>
+        ) : null}
       </div>
 
       <div className="space-y-2">
@@ -451,53 +459,59 @@ export function ProductImagesPanel({
                   productId={productId}
                   image={image}
                 />
-                <Button
-                  type="button"
-                  size="icon-sm"
-                  variant="secondary"
-                  className="absolute top-1 right-1 opacity-0 transition-opacity group-hover:opacity-100"
-                  disabled={removeGalleryMutation.isPending}
-                  onClick={() => removeGalleryMutation.mutate(image.id)}
-                  aria-label="Remove gallery image"
-                >
-                  <Trash2 className="size-3.5" />
-                </Button>
+                {canManage ? (
+                  <Button
+                    type="button"
+                    size="icon-sm"
+                    variant="secondary"
+                    className="absolute top-1 right-1 opacity-0 transition-opacity group-hover:opacity-100"
+                    disabled={removeGalleryMutation.isPending}
+                    onClick={() => removeGalleryMutation.mutate(image.id)}
+                    aria-label="Remove gallery image"
+                  >
+                    <Trash2 className="size-3.5" />
+                  </Button>
+                ) : null}
               </div>
             ))}
           </div>
         ) : (
           <p className="text-xs text-muted-foreground">No gallery images yet.</p>
         )}
-        <input
-          ref={galleryInputRef}
-          type="file"
-          accept={PRODUCT_IMAGE_ACCEPT}
-          className="hidden"
-          disabled={imageBusy || galleryFull}
-          onChange={(event) => {
-            const file = event.target.files?.[0];
-            if (file) {
-              void handleFileSelected(file, "gallery");
-            }
-            event.target.value = "";
-          }}
-        />
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          disabled={imageBusy || galleryFull}
-          onClick={() => galleryInputRef.current?.click()}
-        >
-          {uploadingGallery ? (
-            <>
-              <Loader2 className="mr-2 size-4 animate-spin" />
-              Uploading…
-            </>
-          ) : (
-            "Add gallery image"
-          )}
-        </Button>
+        {canManage ? (
+          <>
+            <input
+              ref={galleryInputRef}
+              type="file"
+              accept={PRODUCT_IMAGE_ACCEPT}
+              className="hidden"
+              disabled={imageBusy || galleryFull}
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                if (file) {
+                  void handleFileSelected(file, "gallery");
+                }
+                event.target.value = "";
+              }}
+            />
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={imageBusy || galleryFull}
+              onClick={() => galleryInputRef.current?.click()}
+            >
+              {uploadingGallery ? (
+                <>
+                  <Loader2 className="mr-2 size-4 animate-spin" />
+                  Uploading…
+                </>
+              ) : (
+                "Add gallery image"
+              )}
+            </Button>
+          </>
+        ) : null}
       </div>
     </div>
   );

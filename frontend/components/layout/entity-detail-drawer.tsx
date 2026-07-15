@@ -116,7 +116,12 @@ export function EntityDetailDrawer({
         ) : null}
 
         <SheetBody
-          className={cn(ENTITY_DRAWER_BODY_CLASS, "!p-0", bodyClassName)}
+          className={cn(
+            ENTITY_DRAWER_BODY_CLASS,
+            "!p-0",
+            fullBleed && "flex flex-col overflow-hidden",
+            bodyClassName,
+          )}
         >
           {isLoading ? (
             <div
@@ -128,7 +133,9 @@ export function EntityDetailDrawer({
               <LoadingState variant="skeleton" rows={4} />
             </div>
           ) : fullBleed ? (
-            children
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+              {children}
+            </div>
           ) : (
             <div
               className={cn(

@@ -17,6 +17,7 @@ import {
   invalidateContactPicker,
 } from "@/lib/query/invalidation";
 import { WORKSPACE_DESKTOP_ROW_CLASS, WORKSPACE_PANEL_CLASS } from "@/features/contacts/workspace/contact-workspace";
+import { useContactStaffPermissions } from "@/features/contacts/hooks/use-contact-staff-permissions";
 import { useAppRouter } from "@/lib/hooks/use-app-router";
 import { cn } from "@/lib/utils";
 import { useQueryClient } from "@tanstack/react-query";
@@ -25,6 +26,7 @@ import type { ContactWorkspaceState } from "@/features/contacts/workspace/use-co
 export function ContactWorkspaceView(state: ContactWorkspaceState) {
   const router = useAppRouter();
   const queryClient = useQueryClient();
+  const contactPerms = useContactStaffPermissions();
   const {
     contactId,
     business,
@@ -171,6 +173,10 @@ export function ContactWorkspaceView(state: ContactWorkspaceState) {
       activeSection={activeSection}
       onEdit={() => setEditOpen(true)}
       onDelete={() => setDeleteContactOpen(true)}
+      showEditButton={contactPerms.canManage}
+      showDeleteButton={contactPerms.canDeleteMerge}
+      showPhone={contactPerms.canViewContactDetails}
+      showEmail={contactPerms.canViewContactDetails}
       className="h-full w-full min-w-0"
     />
   );

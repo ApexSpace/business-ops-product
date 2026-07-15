@@ -17,7 +17,7 @@ export const BUSINESS_ROUTE_STAFF_PERMISSION: Record<
   "/business/work-items": "work_items.access",
   "/business/pipelines": "pipelines.access",
   "/business/conversations": "conversations.access",
-  "/business/contacts": "contacts.access",
+  "/business/contacts": "contacts.view_last_names",
   "/business/sales": "sales.access",
   "/business/gift-cards": "gift_cards.access",
   "/business/packages": "packages.access",
@@ -26,6 +26,7 @@ export const BUSINESS_ROUTE_STAFF_PERMISSION: Record<
   "/business/offers": "offers.access",
   "/business/payments": "payments.access",
   "/business/time-clock": "time_clock.access",
+  "/business/time-cards": "time_cards.manage",
   "/business/settings": "always",
 };
 

@@ -6,6 +6,8 @@ import { DateTime } from "luxon";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { getContactMemberships } from "@/features/contacts/api/contact-workspace.api";
+import { useMembershipStaffPermissions } from "@/features/memberships/hooks/use-membership-staff-permissions";
+import { usePackageStaffPermissions } from "@/features/packages/hooks/use-package-staff-permissions";
 import { ContactRecordsSectionPlaceholder } from "@/features/contacts/workspace/records/contact-records-placeholder";
 import { RecordListEmpty } from "@/features/contacts/components/contact-workspace/contact-record-section";
 import { queryKeys } from "@/lib/query/keys";
@@ -37,6 +39,8 @@ function membershipBadgeVariant(status: ClientMembershipListItem["status"]) {
 export function ContactRecordsMembershipsSection({
   contact,
 }: ContactRecordsSectionProps) {
+  const { canManage: canManageMemberships } = useMembershipStaffPermissions();
+  const { canManage: canManagePackages } = usePackageStaffPermissions();
   const { data, isLoading } = useQuery({
     queryKey: queryKeys.contacts.memberships(contact.id),
     queryFn: () => getContactMemberships(contact.id),
@@ -63,15 +67,19 @@ export function ContactRecordsMembershipsSection({
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-2">
         <h3 className="text-[15px] font-semibold">Memberships</h3>
-        <Button
-          size="sm"
-          variant="outline"
-          className="rounded-[10px] border-border/70"
-          nativeButton={false}
-          render={<Link href={`/business/memberships?contact=${contact.id}`} />}
-        >
-          Add membership
-        </Button>
+        {canManageMemberships ? (
+          <Button
+            size="sm"
+            variant="outline"
+            className="rounded-[10px] border-border/70"
+            nativeButton={false}
+            render={
+              <Link href={`/business/memberships?contact=${contact.id}`} />
+            }
+          >
+            Add membership
+          </Button>
+        ) : null}
       </div>
 
       {memberships.length === 0 ? (
@@ -113,15 +121,17 @@ export function ContactRecordsMembershipsSection({
 
       <div className="flex items-center justify-between gap-2">
         <h3 className="text-[15px] font-semibold">Packages</h3>
-        <Button
-          size="sm"
-          variant="outline"
-          className="rounded-[10px] border-border/70"
-          nativeButton={false}
-          render={<Link href={`/business/packages?contact=${contact.id}`} />}
-        >
-          Add package
-        </Button>
+        {canManagePackages ? (
+          <Button
+            size="sm"
+            variant="outline"
+            className="rounded-[10px] border-border/70"
+            nativeButton={false}
+            render={<Link href={`/business/packages?contact=${contact.id}`} />}
+          >
+            Add package
+          </Button>
+        ) : null}
       </div>
 
       {packages.length === 0 ? (

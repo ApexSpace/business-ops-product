@@ -3,6 +3,7 @@
 import { useCallback, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useSalesStaffPermissions } from "@/features/sales/hooks/use-sales-staff-permissions";
 import {
   Check,
   CreditCard,
@@ -133,6 +134,7 @@ export function SalesWorkspace() {
   const [lineQty, setLineQty] = useState(1);
   const [lineUnitPrice, setLineUnitPrice] = useState(0);
   const [lineStaffId, setLineStaffId] = useState<string | null>(null);
+  const { canCheckout } = useSalesStaffPermissions();
 
   const listFilters = useMemo(
     () => ({
@@ -564,26 +566,28 @@ export function SalesWorkspace() {
           />
         }
         actions={
-          <>
-            <Button
-              type="button"
-              size="icon-sm"
-              className="sm:hidden"
-              onClick={openNewSale}
-              aria-label="New sale"
-            >
-              <Plus className="size-4" />
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              className="hidden shrink-0 sm:inline-flex"
-              onClick={openNewSale}
-            >
-              <Plus className="mr-1.5 size-4" />
-              New sale
-            </Button>
-          </>
+          canCheckout ? (
+            <>
+              <Button
+                type="button"
+                size="icon-sm"
+                className="sm:hidden"
+                onClick={openNewSale}
+                aria-label="New sale"
+              >
+                <Plus className="size-4" />
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                className="hidden shrink-0 sm:inline-flex"
+                onClick={openNewSale}
+              >
+                <Plus className="mr-1.5 size-4" />
+                New sale
+              </Button>
+            </>
+          ) : null
         }
         footer={
           sales.length > 0
@@ -609,10 +613,12 @@ export function SalesWorkspace() {
           emptyTitle="No sales yet"
           emptyDescription="Create a new sale to get started."
           emptyAction={
-            <Button size="sm" onClick={openNewSale}>
-              <Plus className="mr-1.5 size-4" />
-              New sale
-            </Button>
+            canCheckout ? (
+              <Button size="sm" onClick={openNewSale}>
+                <Plus className="mr-1.5 size-4" />
+                New sale
+              </Button>
+            ) : undefined
           }
           className={WORKSPACE_TABLE_CLASS}
         />
@@ -639,22 +645,20 @@ export function SalesWorkspace() {
           ) : null
         }
         headerActions={
-          sale?.isOpen && saleDetailProps ? (
-            saleEditMode ? null : (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={saleDetailProps.onEdit}
-              >
-                <Pencil className="mr-1 size-3.5" />
-                Edit
-              </Button>
-            )
+          sale?.isOpen && saleDetailProps && canCheckout && !saleEditMode ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={saleDetailProps.onEdit}
+            >
+              <Pencil className="mr-1 size-3.5" />
+              Edit
+            </Button>
           ) : null
         }
         overflowActions={
-          sale?.isOpen && saleDetailProps && !saleEditMode
+          sale?.isOpen && saleDetailProps && canCheckout && !saleEditMode
             ? [
                 {
                   id: "void",
@@ -667,7 +671,7 @@ export function SalesWorkspace() {
             : undefined
         }
         toolbar={
-          sale?.isOpen && saleDetailProps && !saleEditMode ? (
+          sale?.isOpen && saleDetailProps && canCheckout && !saleEditMode ? (
             <SaleAddItemsToolbar
               onAddDeposit={saleDetailProps.onAddDeposit}
               onAddService={saleDetailProps.onAddService}
@@ -679,7 +683,7 @@ export function SalesWorkspace() {
           ) : null
         }
         footer={
-          sale?.isOpen && saleDetailProps ? (
+          sale?.isOpen && saleDetailProps && canCheckout ? (
             saleEditMode ? (
               <EntityDetailFooter>
                 <Button
@@ -718,6 +722,7 @@ export function SalesWorkspace() {
           <SaleDetail
             embedded
             {...saleDetailProps}
+            canModify={canCheckout}
             saleEditMode={saleEditMode}
             editContactId={editContactId}
             editNotes={editNotes}
@@ -1040,6 +1045,7 @@ function SaleAddItemsToolbar({
 function SaleDetail({
   sale,
   embedded = false,
+  canModify = true,
   onApplyOffer,
   onRemoveOffer,
   removeOfferPending,
@@ -1066,6 +1072,7 @@ function SaleDetail({
 }: {
   sale: Checkout;
   embedded?: boolean;
+  canModify?: boolean;
   onAddService: () => void;
   onAddProduct: () => void;
   onAddGiftCard: () => void;
@@ -1172,7 +1179,7 @@ function SaleDetail({
                     {formatMoney(parseFloat(item.totalPrice))}
                   </span>
                   ) : null}
-                  {sale.isOpen && !saleEditMode ? (
+                  {sale.isOpen && !saleEditMode && canModify ? (
                     <div className="flex items-center gap-1.5">
                       {!isLineEditing ? (
                       <Button
@@ -1283,7 +1290,7 @@ function SaleDetail({
           >
             <span className="flex min-w-0 items-center gap-2">
               <span className="truncate">Offer: {offer.offerName}</span>
-              {sale.isOpen ? (
+              {sale.isOpen && canModify ? (
                 <Button
                   type="button"
                   variant="ghost"

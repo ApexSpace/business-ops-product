@@ -84,7 +84,11 @@ export class BusinessIntegrationsController {
   }
 
   @Post('whatsapp/embedded-signup/complete')
-  @BusinessRoles(BusinessMemberRole.OWNER, BusinessMemberRole.ADMIN)
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
   async whatsappEmbeddedSignupComplete(
     @CurrentUser() user: RequestUser,
     @Body() dto: WhatsAppEmbeddedSignupCompleteDto,
@@ -98,7 +102,11 @@ export class BusinessIntegrationsController {
   }
 
   @Post(':providerKey/connect')
-  @BusinessRoles(BusinessMemberRole.OWNER, BusinessMemberRole.ADMIN)
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
   connect(
     @CurrentUser() user: RequestUser,
     @Param('providerKey') providerKey: string,
@@ -113,7 +121,11 @@ export class BusinessIntegrationsController {
   }
 
   @Patch(':providerKey')
-  @BusinessRoles(BusinessMemberRole.OWNER, BusinessMemberRole.ADMIN)
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
   update(
     @CurrentUser() user: RequestUser,
     @Param('providerKey') providerKey: string,
@@ -128,7 +140,11 @@ export class BusinessIntegrationsController {
   }
 
   @Delete(':providerKey')
-  @BusinessRoles(BusinessMemberRole.OWNER, BusinessMemberRole.ADMIN)
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
   @ApiQuery({
     name: 'confirm',
     required: true,

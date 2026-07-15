@@ -53,7 +53,12 @@ export class BusinessFormsController {
 
   @Post()
   @RequireCapability('settings.forms.create')
-  @BusinessRoles(BusinessMemberRole.OWNER, BusinessMemberRole.ADMIN)
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
+  @StaffPermission('forms.manage_templates')
   create(@CurrentUser() user: RequestUser, @Body() dto: CreateFormDto) {
     return this.formsService.create(user.businessId!, dto, user);
   }
@@ -103,7 +108,12 @@ export class BusinessFormsController {
 
   @Delete(':id/submissions/:submissionId')
   @RequireCapability('settings.forms.delete')
-  @BusinessRoles(BusinessMemberRole.OWNER, BusinessMemberRole.ADMIN)
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
+  @StaffPermission('forms.view_all_submissions', 'forms.manage_templates')
   removeSubmission(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -118,7 +128,12 @@ export class BusinessFormsController {
 
   @Patch(':id')
   @RequireCapability('settings.forms.edit')
-  @BusinessRoles(BusinessMemberRole.OWNER, BusinessMemberRole.ADMIN)
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
+  @StaffPermission('forms.manage_templates')
   update(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -129,7 +144,12 @@ export class BusinessFormsController {
 
   @Delete(':id')
   @RequireCapability('settings.forms.delete')
-  @BusinessRoles(BusinessMemberRole.OWNER, BusinessMemberRole.ADMIN)
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
+  @StaffPermission('forms.manage_templates')
   remove(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -139,7 +159,12 @@ export class BusinessFormsController {
 
   @Post(':id/duplicate')
   @RequireCapability('settings.forms.create')
-  @BusinessRoles(BusinessMemberRole.OWNER, BusinessMemberRole.ADMIN)
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
+  @StaffPermission('forms.manage_templates')
   duplicate(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -150,7 +175,12 @@ export class BusinessFormsController {
 
   @Post(':id/publish')
   @RequireCapability('settings.forms.edit')
-  @BusinessRoles(BusinessMemberRole.OWNER, BusinessMemberRole.ADMIN)
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
+  @StaffPermission('forms.manage_templates')
   publish(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -160,7 +190,12 @@ export class BusinessFormsController {
 
   @Post(':id/move-to-draft')
   @RequireCapability('settings.forms.edit')
-  @BusinessRoles(BusinessMemberRole.OWNER, BusinessMemberRole.ADMIN)
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
+  @StaffPermission('forms.manage_templates')
   moveToDraft(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -170,7 +205,12 @@ export class BusinessFormsController {
 
   @Post(':id/archive')
   @RequireCapability('settings.forms.edit')
-  @BusinessRoles(BusinessMemberRole.OWNER, BusinessMemberRole.ADMIN)
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
+  @StaffPermission('forms.manage_templates')
   archive(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,

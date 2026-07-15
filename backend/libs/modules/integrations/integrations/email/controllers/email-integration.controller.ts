@@ -39,7 +39,11 @@ export class EmailIntegrationController {
 
   @Post('connect-platform-default')
   @HttpCode(HttpStatus.OK)
-  @BusinessRoles(BusinessMemberRole.OWNER, BusinessMemberRole.ADMIN)
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
   connectPlatformDefault(@CurrentUser() user: RequestUser) {
     return this.platformEmailProvisioning.connectPlatformDefaultEmail(
       user.businessId!,

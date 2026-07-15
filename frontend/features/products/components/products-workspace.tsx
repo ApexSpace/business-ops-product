@@ -88,6 +88,7 @@ import { useProductsList } from "@/features/products/hooks/use-products-list";
 import { useProductDetail } from "@/features/products/hooks/use-product-detail";
 import { useProductCategories } from "@/features/products/hooks/use-product-categories";
 import { useProductMutations } from "@/features/products/hooks/use-product-mutations";
+import { useProductStaffPermissions } from "@/features/products/hooks/use-product-staff-permissions";
 import { ProductOptionsEditor } from "@/features/products/components/product-options-editor";
 import { ProductImagesPanel } from "@/features/products/components/product-images-panel";
 import {
@@ -204,6 +205,7 @@ export function ProductsWorkspace() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [newCategoryName, setNewCategoryName] = useState("");
   const [categoriesOpen, setCategoriesOpen] = useState(false);
+  const { canManage } = useProductStaffPermissions();
 
   const listFilters = useMemo(
     () => ({
@@ -321,30 +323,36 @@ export function ProductsWorkspace() {
         }
         actions={
           <>
-            <Button
-              variant="outline"
-              size="icon-sm"
-              aria-label="Options"
-              onClick={() => setOptionsOpen(true)}
-            >
-              <SlidersHorizontal className="size-4" />
-            </Button>
-            <Button
-              size="icon-sm"
-              className="sm:hidden"
-              aria-label="Add product"
-              onClick={openCreate}
-            >
-              <Plus className="size-4" />
-            </Button>
-            <Button
-              size="sm"
-              className="hidden shrink-0 sm:inline-flex"
-              onClick={openCreate}
-            >
-              <Plus className="mr-1.5 size-4" />
-              Add product
-            </Button>
+            {canManage ? (
+              <Button
+                variant="outline"
+                size="icon-sm"
+                aria-label="Options"
+                onClick={() => setOptionsOpen(true)}
+              >
+                <SlidersHorizontal className="size-4" />
+              </Button>
+            ) : null}
+            {canManage ? (
+              <>
+                <Button
+                  size="icon-sm"
+                  className="sm:hidden"
+                  aria-label="Add product"
+                  onClick={openCreate}
+                >
+                  <Plus className="size-4" />
+                </Button>
+                <Button
+                  size="sm"
+                  className="hidden shrink-0 sm:inline-flex"
+                  onClick={openCreate}
+                >
+                  <Plus className="mr-1.5 size-4" />
+                  Add product
+                </Button>
+              </>
+            ) : null}
           </>
         }
         footer={
@@ -370,10 +378,12 @@ export function ProductsWorkspace() {
           emptyTitle="No products yet"
           emptyDescription="Add your first product to get started."
           emptyAction={
-            <Button size="sm" onClick={openCreate}>
-              <Plus className="mr-1.5 size-4" />
-              Add product
-            </Button>
+            canManage ? (
+              <Button size="sm" onClick={openCreate}>
+                <Plus className="mr-1.5 size-4" />
+                Add product
+              </Button>
+            ) : undefined
           }
           className={WORKSPACE_TABLE_CLASS}
         />
@@ -409,17 +419,15 @@ export function ProductsWorkspace() {
           ) : null
         }
         headerActions={
-          selectedId && detail ? (
-            drawerMode === "view" ? (
-              <Button variant="outline" size="sm" onClick={startEdit}>
-                <Pencil className="mr-1 size-3.5" />
-                Edit
-              </Button>
-            ) : null
+          canManage && selectedId && detail && drawerMode === "view" ? (
+            <Button variant="outline" size="sm" onClick={startEdit}>
+              <Pencil className="mr-1 size-3.5" />
+              Edit
+            </Button>
           ) : null
         }
         overflowActions={
-          drawerMode === "view" && selectedId
+          canManage && drawerMode === "view" && selectedId
             ? [
                 {
                   id: "delete",
@@ -459,6 +467,7 @@ export function ProductsWorkspace() {
           <ProductDetailBody
             productId={selectedId}
             detail={detail}
+            canManage={canManage}
             onAdjust={detailPanelProps.onAdjust}
             adjustPending={detailPanelProps.adjustPending}
           />
@@ -693,11 +702,13 @@ export function ProductsWorkspace() {
 function ProductDetailBody({
   productId,
   detail,
+  canManage = true,
   onAdjust,
   adjustPending,
 }: {
   productId: string;
   detail: NonNullable<ReturnType<typeof useProductDetail>["data"]>;
+  canManage?: boolean;
   onAdjust: (body: {
     variantId?: string;
     type: ProductInventoryAdjustmentType;
@@ -755,9 +766,10 @@ function ProductDetailBody({
       <ProductImagesPanel
         productId={productId}
         featuredImageKey={detail.featuredImageKey}
+        canManage={canManage}
       />
 
-      {isVariable ? (
+      {isVariable && canManage ? (
         <div className="border-b border-border p-4">
           <ProductOptionsEditor productId={productId} options={detail.options} />
         </div>
@@ -793,7 +805,7 @@ function ProductDetailBody({
         </EntityDetailSection>
       ) : null}
 
-      {detail.trackInventory ? (
+      {detail.trackInventory && canManage ? (
         <EntityDetailSection title="Inventory adjustment" className="border-b border-border p-4">
           <div className="space-y-3 rounded-lg border border-border bg-muted/20 p-3">
             {isVariable ? (

@@ -53,10 +53,18 @@ export function CheckoutDrawerPanel({
     }
   }, [step, onSubmitActionChange]);
 
-  if (panel.isLoading || !panel.checkout) {
+  if (panel.isLoading) {
     return (
       <div className="flex items-center justify-center py-16 text-muted-foreground">
         <Loader2 className="size-5 animate-spin" />
+      </div>
+    );
+  }
+
+  if (!panel.checkout) {
+    return (
+      <div className="px-1 py-10 text-center text-sm text-muted-foreground">
+        {panel.loadError ?? "Unable to load this checkout."}
       </div>
     );
   }

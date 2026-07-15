@@ -51,6 +51,7 @@ import {
 } from "@/features/conversations/utils/reply-channel.utils";
 import { useWhatsAppTemplateComposerState } from "@/features/conversations/hooks/use-whatsapp-template-composer-state";
 import { useBusinessAccess } from "@/lib/business-access/use-business-access";
+import { useConversationStaffPermissions } from "@/features/conversations/hooks/use-conversation-staff-permissions";
 import { useConversationsInboxFilters } from "@/features/conversations/hooks/use-conversations-inbox-filters";
 import { RealtimeOfflineBanner } from "@/features/realtime/components/realtime-offline-banner";
 import { createOptimisticOutboundMessage } from "@/features/conversations/utils/optimistic-message";
@@ -108,8 +109,9 @@ export function ConversationsInbox() {
     useState<ThreadChannelFilterValue>("ALL");
   const [mobilePane, setMobilePane] = useState<InboxMobilePane>("list");
   const { hasCapability } = useBusinessAccess();
-  const canSendMessages = hasCapability("conversations.send");
-
+  const conversationPerms = useConversationStaffPermissions();
+  const canSendMessages =
+    hasCapability("conversations.send") && conversationPerms.canSend;
   useQuery({
     queryKey: queryKeys.integrations.platformEmail(),
     queryFn: () => getPlatformDefaultEmail(),
@@ -680,7 +682,9 @@ export function ConversationsInbox() {
       selectedThreadKey={activeThread?.threadKey ?? null}
       onSelectThread={selectThread}
       useVirtualThreads={useVirtualThreads}
-      onNewEmail={() => setNewEmailOpen(true)}
+      onNewEmail={
+        canSendMessages ? () => setNewEmailOpen(true) : undefined
+      }
       className="h-full w-full"
     />
   );

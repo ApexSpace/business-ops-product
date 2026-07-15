@@ -66,14 +66,22 @@ export class WhatsAppTemplatesController {
 
   @Post('sync')
   @RequireCapability('conversations.whatsapp_templates_manage')
-  @BusinessRoles(BusinessMemberRole.OWNER, BusinessMemberRole.ADMIN)
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
   syncAll(@CurrentUser() user: RequestUser) {
     return this.templateService.syncAll(user.businessId!);
   }
 
   @Post('with-header-sample')
   @RequireCapability('conversations.whatsapp_templates_manage')
-  @BusinessRoles(BusinessMemberRole.OWNER, BusinessMemberRole.ADMIN)
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
   @ApiConsumes('multipart/form-data')
   @ApiBody({
     schema: {
@@ -139,7 +147,11 @@ export class WhatsAppTemplatesController {
 
   @Post()
   @RequireCapability('conversations.whatsapp_templates_manage')
-  @BusinessRoles(BusinessMemberRole.OWNER, BusinessMemberRole.ADMIN)
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
   create(
     @CurrentUser() user: RequestUser,
     @Body() dto: CreateWhatsAppTemplateDto,
@@ -163,7 +175,11 @@ export class WhatsAppTemplatesController {
 
   @Patch(':id')
   @RequireCapability('conversations.whatsapp_templates_manage')
-  @BusinessRoles(BusinessMemberRole.OWNER, BusinessMemberRole.ADMIN)
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
   update(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -174,7 +190,11 @@ export class WhatsAppTemplatesController {
 
   @Post(':id/sync')
   @RequireCapability('conversations.whatsapp_templates_manage')
-  @BusinessRoles(BusinessMemberRole.OWNER, BusinessMemberRole.ADMIN)
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
   syncOne(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -184,7 +204,11 @@ export class WhatsAppTemplatesController {
 
   @Delete(':id')
   @RequireCapability('conversations.whatsapp_templates_manage')
-  @BusinessRoles(BusinessMemberRole.OWNER, BusinessMemberRole.ADMIN)
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
   async delete(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,

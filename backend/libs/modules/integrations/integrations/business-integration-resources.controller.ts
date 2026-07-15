@@ -53,7 +53,11 @@ export class BusinessIntegrationResourcesController {
 
   @Post('sync')
   @HttpCode(HttpStatus.ACCEPTED)
-  @BusinessRoles(BusinessMemberRole.OWNER, BusinessMemberRole.ADMIN)
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
   async sync(
     @CurrentUser() user: RequestUser,
     @Param('providerKey') providerKey: string,
@@ -70,7 +74,11 @@ export class BusinessIntegrationResourcesController {
   }
 
   @Patch(':resourceId')
-  @BusinessRoles(BusinessMemberRole.OWNER, BusinessMemberRole.ADMIN)
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
   update(
     @CurrentUser() user: RequestUser,
     @Param('providerKey') providerKey: string,
@@ -86,7 +94,11 @@ export class BusinessIntegrationResourcesController {
   }
 
   @Post(':resourceId/select')
-  @BusinessRoles(BusinessMemberRole.OWNER, BusinessMemberRole.ADMIN)
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
   select(
     @CurrentUser() user: RequestUser,
     @Param('providerKey') providerKey: string,
@@ -100,7 +112,11 @@ export class BusinessIntegrationResourcesController {
   }
 
   @Post(':resourceId/unselect')
-  @BusinessRoles(BusinessMemberRole.OWNER, BusinessMemberRole.ADMIN)
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
   unselect(
     @CurrentUser() user: RequestUser,
     @Param('providerKey') providerKey: string,
@@ -114,7 +130,11 @@ export class BusinessIntegrationResourcesController {
   }
 
   @Post(':resourceId/make-default')
-  @BusinessRoles(BusinessMemberRole.OWNER, BusinessMemberRole.ADMIN)
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
   makeDefault(
     @CurrentUser() user: RequestUser,
     @Param('providerKey') providerKey: string,

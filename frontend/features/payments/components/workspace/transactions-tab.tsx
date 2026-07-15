@@ -32,6 +32,7 @@ import { formatMoney } from "@/features/invoices/schemas/invoice-profile";
 import {
   PAYMENT_METHOD_OPTIONS,
   canRefundPayment,
+  canStaffRefundPayment,
   formatTransactionDate,
   formatTransactionProvider,
   formatTransactionSource,
@@ -40,6 +41,7 @@ import {
 import { getPayment } from "@/features/payments/api/payments.api";
 import { invalidateFinancialLists } from "@/features/payments/workspace/payments-workspace";
 import { viewTransactionInvoicePublic } from "@/features/payments/utils/transaction-invoice-view";
+import { useSalesStaffPermissions } from "@/features/sales/hooks/use-sales-staff-permissions";
 import { queryKeys } from "@/lib/query/keys";
 import type { Payment } from "@/features/payments/types";
 import { listPayments, refundPayment } from "@/features/payments/api/payments.api";
@@ -63,6 +65,7 @@ export function PaymentsTransactionsTab() {
   const queryClient = useQueryClient();
   const { params, page, setParams } = useListSearchParams(LIST_SCHEMA);
   const debouncedSearch = useDebouncedValue(params.search);
+  const { canRefundAll, canRefundOpen } = useSalesStaffPermissions();
   const {
     selectedId,
     isOpen,
@@ -72,6 +75,9 @@ export function PaymentsTransactionsTab() {
 
   const [createOpen, setCreateOpen] = useState(false);
   const [refundId, setRefundId] = useState<string | null>(null);
+
+  const canRefundRow = (payment: Payment) =>
+    canStaffRefundPayment(payment, { canRefundAll, canRefundOpen });
 
   usePaymentsTabCreateAction(() => {
     setCreateOpen(true);
@@ -272,7 +278,7 @@ export function PaymentsTransactionsTab() {
             <TransactionTableRowActions
               onView={() => setSelectedId(row.id)}
               onRefund={
-                canRefundPayment(row)
+                canRefundRow(row)
                   ? () => setRefundId(row.id)
                   : undefined
               }
@@ -321,7 +327,7 @@ export function PaymentsTransactionsTab() {
           ) : null
         }
         footer={
-          drawerPayment && canRefundPayment(drawerPayment) ? (
+          drawerPayment && canRefundRow(drawerPayment) ? (
             <EntityDetailFooter>
               <Button
                 variant="destructive"

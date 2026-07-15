@@ -12,6 +12,7 @@ import { ContactProfileEditForm } from "@/features/contacts/components/contact-p
 import { ContactSidebarDetailsFields } from "@/features/contacts/components/contact-workspace/contact-sidebar-details-fields";
 import { ContactRecordsSectionBody } from "@/features/contacts/components/contact-workspace/contact-records-section-body";
 import { useContactDetailPanel } from "@/features/contacts/hooks/use-contact-detail-panel";
+import { useContactStaffPermissions } from "@/features/contacts/hooks/use-contact-staff-permissions";
 import { ContactWorkspaceDialogs } from "@/features/contacts/workspace/contact-workspace-dialogs";
 import { openContactPrintAppointments } from "@/features/contacts/utils/contact-print";
 import { formatContactCreatedAt } from "@/features/contacts/workspace/contact-workspace";
@@ -118,6 +119,7 @@ export function ContactDetailPanel({
   className,
 }: ContactDetailPanelProps) {
   const queryClient = useQueryClient();
+  const contactPerms = useContactStaffPermissions();
   const state = useContactDetailPanel(contactId, activeSection);
   const {
     business,
@@ -270,67 +272,70 @@ export function ContactDetailPanel({
   if (embedded) {
     return (
       <>
-        <div className="contacts-detail-card contacts-detail-card--drawer-split">
-          {editOpen ? (
-            <ContactProfileEditForm
-              contact={contact}
-              onCancel={() => setEditOpen(false)}
-              onSuccess={onContactEditSuccess}
-              className="contacts-drawer-profile-panel"
-            />
-          ) : (
-            <ContactDrawerProfilePanel
-              contact={contact}
-              contactId={contact.id}
-              onEdit={() => setEditOpen(true)}
-              noteComposerOpen={noteComposerOpen}
-              onNoteComposerOpenChange={onNoteComposerOpenChange}
-            />
-          )}
-          <div className="contacts-drawer-records-panel">
-            <div className="contacts-d2-tabbar-wrap">
-              <div
-                className="contacts-d2-tabbar"
-                role="tablist"
-                aria-label="Contact records"
-              >
-                {CONTACT_DETAIL_TABS.map((tab) => (
-                  <button
-                    key={tab.id}
-                    type="button"
-                    role="tab"
-                    aria-selected={activeSection === tab.id}
-                    className={cn(
-                      "contacts-d2-tab",
-                      activeSection === tab.id && "active",
-                    )}
-                    onClick={() => onSectionChange(tab.id)}
-                  >
-                    {tab.id === "memberships" ? "Memberships" : tab.label}
-                  </button>
-                ))}
+        <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
+          <div className="contacts-detail-card contacts-detail-card--drawer-split">
+            {editOpen ? (
+              <ContactProfileEditForm
+                contact={contact}
+                onCancel={() => setEditOpen(false)}
+                onSuccess={onContactEditSuccess}
+                className="contacts-drawer-profile-panel"
+              />
+            ) : (
+              <ContactDrawerProfilePanel
+                contact={contact}
+                contactId={contact.id}
+                onEdit={() => setEditOpen(true)}
+                showEditButton={contactPerms.canManage}
+                noteComposerOpen={noteComposerOpen}
+                onNoteComposerOpenChange={onNoteComposerOpenChange}
+              />
+            )}
+            <div className="contacts-drawer-records-panel">
+              <div className="contacts-d2-tabbar-wrap">
+                <div
+                  className="contacts-d2-tabbar"
+                  role="tablist"
+                  aria-label="Contact records"
+                >
+                  {CONTACT_DETAIL_TABS.map((tab) => (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      role="tab"
+                      aria-selected={activeSection === tab.id}
+                      className={cn(
+                        "contacts-d2-tab",
+                        activeSection === tab.id && "active",
+                      )}
+                      onClick={() => onSectionChange(tab.id)}
+                    >
+                      {tab.id === "memberships" ? "Memberships" : tab.label}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
-            <div
-              className={cn(
-                "contacts-d2-tabpanel",
-                activeSection === "timeline" &&
-                  "contacts-drawer-tabpanel-inner--timeline",
-              )}
-            >
-              {activeSection === "timeline" ? (
-                <ContactRecordsSectionBody
-                  activeSection={activeSection}
-                  {...recordsPanelProps}
-                />
-              ) : (
-                <div className="contacts-drawer-tab-scroll">
+              <div
+                className={cn(
+                  "contacts-d2-tabpanel",
+                  activeSection === "timeline" &&
+                    "contacts-drawer-tabpanel-inner--timeline",
+                )}
+              >
+                {activeSection === "timeline" ? (
                   <ContactRecordsSectionBody
                     activeSection={activeSection}
                     {...recordsPanelProps}
                   />
-                </div>
-              )}
+                ) : (
+                  <div className="contacts-drawer-tab-scroll">
+                    <ContactRecordsSectionBody
+                      activeSection={activeSection}
+                      {...recordsPanelProps}
+                    />
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -375,28 +380,34 @@ export function ContactDetailPanel({
             </div>
             <div className="mt-2 flex">
               <div className="flex w-16 shrink-0 justify-center gap-1.5">
-                <div className="contacts-profile-actions">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon-sm"
-                    className="size-8"
-                    onClick={() => setEditOpen(true)}
-                    aria-label="Edit contact"
-                  >
-                    <Pencil className="size-4" />
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon-sm"
-                    className="size-8 text-destructive hover:bg-destructive/5 hover:text-destructive"
-                    onClick={() => setDeleteContactOpen(true)}
-                    aria-label="Delete contact"
-                  >
-                    <Trash2 className="size-4" />
-                  </Button>
-                </div>
+                {contactPerms.canManage || contactPerms.canDeleteMerge ? (
+                  <div className="contacts-profile-actions">
+                    {contactPerms.canManage ? (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon-sm"
+                        className="size-8"
+                        onClick={() => setEditOpen(true)}
+                        aria-label="Edit contact"
+                      >
+                        <Pencil className="size-4" />
+                      </Button>
+                    ) : null}
+                    {contactPerms.canDeleteMerge ? (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon-sm"
+                        className="size-8 text-destructive hover:bg-destructive/5 hover:text-destructive"
+                        onClick={() => setDeleteContactOpen(true)}
+                        aria-label="Delete contact"
+                      >
+                        <Trash2 className="size-4" />
+                      </Button>
+                    ) : null}
+                  </div>
+                ) : null}
               </div>
             </div>
           </div>
@@ -407,7 +418,11 @@ export function ContactDetailPanel({
               showNotes={false}
               showCreated
               createdAt={createdAt}
-              onRequestEdit={() => setEditOpen(true)}
+              showPhone={contactPerms.canViewContactDetails}
+              showEmail={contactPerms.canViewContactDetails}
+              onRequestEdit={
+                contactPerms.canManage ? () => setEditOpen(true) : undefined
+              }
             />
           </div>
 
@@ -417,7 +432,9 @@ export function ContactDetailPanel({
               showPhone={false}
               showEmail={false}
               showCreated={false}
-              onRequestEdit={() => setEditOpen(true)}
+              onRequestEdit={
+                contactPerms.canManage ? () => setEditOpen(true) : undefined
+              }
               notesTextareaClassName="!min-h-[72px] max-h-40 resize-y focus:!min-h-[96px]"
             />
           </div>

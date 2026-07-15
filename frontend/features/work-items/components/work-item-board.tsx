@@ -39,8 +39,9 @@ export interface WorkItemBoardProps {
   truncatedTotal?: number;
   countSingular?: string;
   countPlural?: string;
-  onEdit: (item: WorkItem) => void;
-  onDelete: (item: WorkItem) => void;
+  canManage?: boolean;
+  onEdit?: (item: WorkItem) => void;
+  onDelete?: (item: WorkItem) => void;
   onAddItem?: (status: WorkItemStatus) => void;
 }
 
@@ -52,6 +53,7 @@ export function WorkItemBoard({
   truncatedTotal,
   countSingular = "item",
   countPlural = "items",
+  canManage = true,
   onEdit,
   onDelete,
   onAddItem,
@@ -152,7 +154,7 @@ export function WorkItemBoard({
 
   const moveItem = useCallback(
     (item: WorkItem, newStatus: WorkItemStatus) => {
-      if (item.status === newStatus) return;
+      if (!onEdit || item.status === newStatus) return;
 
       setMovingId(item.id);
       applyStatusOverride(item.id, newStatus);
@@ -170,7 +172,7 @@ export function WorkItemBoard({
         },
       );
     },
-    [applyStatusOverride, statusMutation],
+    [applyStatusOverride, onEdit, statusMutation],
   );
 
   const handleDragStart = (event: DragStartEvent) => {

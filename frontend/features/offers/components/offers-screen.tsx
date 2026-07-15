@@ -33,6 +33,7 @@ import {
 } from "@/features/offers/api/offers.api";
 import { OfferDetailPanel } from "@/features/offers/components/offer-detail-panel";
 import { useOfferListColumns } from "@/features/offers/components/offer-list-columns";
+import { useOfferStaffPermissions } from "@/features/offers/hooks/use-offer-staff-permissions";
 import {
   OFFER_DETAIL_TABS,
   offerDrawerSubtitle,
@@ -66,6 +67,7 @@ export function OffersScreen() {
   const [newName, setNewName] = useState("");
   const [newDescription, setNewDescription] = useState("");
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const { canManage } = useOfferStaffPermissions();
 
   const activeTab = (tab ?? "details") as OfferTabId;
 
@@ -149,24 +151,26 @@ export function OffersScreen() {
           />
         }
         actions={
-          <>
-            <Button
-              size="icon-sm"
-              className="sm:hidden"
-              aria-label="Create offer"
-              onClick={() => setCreateOpen(true)}
-            >
-              <Plus className="size-4" />
-            </Button>
-            <Button
-              size="sm"
-              className="hidden shrink-0 sm:inline-flex"
-              onClick={() => setCreateOpen(true)}
-            >
-              <Plus className="mr-1.5 size-4" />
-              Create offer
-            </Button>
-          </>
+          canManage ? (
+            <>
+              <Button
+                size="icon-sm"
+                className="sm:hidden"
+                aria-label="Create offer"
+                onClick={() => setCreateOpen(true)}
+              >
+                <Plus className="size-4" />
+              </Button>
+              <Button
+                size="sm"
+                className="hidden shrink-0 sm:inline-flex"
+                onClick={() => setCreateOpen(true)}
+              >
+                <Plus className="mr-1.5 size-4" />
+                Create offer
+              </Button>
+            </>
+          ) : null
         }
         footer={
           offers.length > 0
@@ -194,10 +198,12 @@ export function OffersScreen() {
             emptyTitle="No offers yet"
             emptyDescription="Create your first promotional offer to get started."
             emptyAction={
-              <Button size="sm" onClick={() => setCreateOpen(true)}>
-                <Plus className="mr-1.5 size-4" />
-                Create offer
-              </Button>
+              canManage ? (
+                <Button size="sm" onClick={() => setCreateOpen(true)}>
+                  <Plus className="mr-1.5 size-4" />
+                  Create offer
+                </Button>
+              ) : undefined
             }
             className={WORKSPACE_TABLE_CLASS}
           />
@@ -221,7 +227,7 @@ export function OffersScreen() {
           ) : null
         }
         headerActions={
-          detail ? (
+          canManage && detail ? (
             <Button
               variant="outline"
               size="sm"
@@ -242,7 +248,7 @@ export function OffersScreen() {
           ) : null
         }
         overflowActions={
-          selectedId
+          canManage && selectedId
             ? [
                 {
                   id: "duplicate",
@@ -265,7 +271,11 @@ export function OffersScreen() {
         onTabChange={(value) => setTab(value)}
       >
         {selectedId && detail ? (
-          <OfferDetailPanel offer={detail} activeTab={activeTab} />
+          <OfferDetailPanel
+            offer={detail}
+            activeTab={activeTab}
+            canManage={canManage}
+          />
         ) : null}
       </EntityDetailDrawer>
 

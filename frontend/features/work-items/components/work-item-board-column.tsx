@@ -114,8 +114,12 @@ export function WorkItemBoardColumn({
                 />
                 <p className="text-xs font-medium leading-relaxed text-muted-foreground">
                   No {countPlural} in this status yet
-                  <br />
-                  Drag a card here or add one below
+                  {onAddItem ? (
+                    <>
+                      <br />
+                      Drag a card here or add one below
+                    </>
+                  ) : null}
                 </p>
               </div>
             ) : (
@@ -132,17 +136,21 @@ export function WorkItemBoardColumn({
             )}
           </div>
 
-          <div className="shrink-0 px-3 pb-3.5 pt-1">
-            <Button
-              type="button"
-              variant="ghost"
-              className="h-9 w-full gap-1.5 rounded-[var(--radius-control)] border border-dashed border-border/80 text-xs font-semibold text-muted-foreground hover:border-primary/40 hover:bg-primary-tint/50 hover:text-primary"
-              onClick={() => onAddItem?.(column.value)}
-            >
-              <Plus className="size-3.5" aria-hidden />
-              {addLabel}
-            </Button>
-          </div>
+          {onAddItem ? (
+            <div className="shrink-0 px-3 pb-3.5 pt-1">
+              <Button
+                type="button"
+                variant="ghost"
+                className="h-9 w-full gap-1.5 rounded-[var(--radius-control)] border border-dashed border-border/80 text-xs font-semibold text-muted-foreground hover:border-primary/40 hover:bg-primary-tint/50 hover:text-primary"
+                onClick={() => onAddItem(column.value)}
+              >
+                <Plus className="size-3.5" aria-hidden />
+                {addLabel}
+              </Button>
+            </div>
+          ) : (
+            <div className="shrink-0 pb-3" />
+          )}
         </>
       ) : null}
     </div>

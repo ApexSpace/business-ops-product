@@ -27,6 +27,7 @@ import { ConversationRealtimeService } from './conversation-realtime.service';
 import { WhatsAppSessionWindowService } from './whatsapp-session-window.service';
 import type { SendWhatsAppTemplateDto } from '../dto/send-message.dto';
 import { buildWhatsAppTemplateDisplayText } from '@app/modules/integrations/whatsapp/utils/whatsapp-template-display.util';
+import { assertCanViewConversation } from '../utils/conversation-staff-access.util';
 
 export interface AsyncMessageResponse {
   data: ConversationMessageResponseDto;
@@ -53,6 +54,7 @@ export class ConversationMessagesService {
     businessId: string,
     conversationId: string,
     query: ListMessagesQueryDto,
+    user: RequestUser,
   ): Promise<{
     items: ConversationMessageResponseDto[];
     meta: {
@@ -64,7 +66,7 @@ export class ConversationMessagesService {
       hasMore?: boolean;
     };
   }> {
-    await this.requireConversation(businessId, conversationId);
+    await this.requireConversation(businessId, conversationId, user);
     const { page, limit, skip, take } = getPaginationParams(query);
 
     if (query.cursor || query.latest) {
@@ -112,6 +114,7 @@ export class ConversationMessagesService {
     const conversation = await this.requireConversation(
       businessId,
       conversationId,
+      actor,
     );
 
     if (!conversation.resourceId) {
@@ -355,7 +358,11 @@ export class ConversationMessagesService {
       : undefined;
   }
 
-  private async requireConversation(businessId: string, id: string) {
+  private async requireConversation(
+    businessId: string,
+    id: string,
+    user: RequestUser,
+  ) {
     const conversation = await this.conversationsRepository.findById(
       businessId,
       id,
@@ -367,6 +374,7 @@ export class ConversationMessagesService {
         HttpStatus.NOT_FOUND,
       );
     }
+    assertCanViewConversation(user, conversation);
     return conversation;
   }
 }

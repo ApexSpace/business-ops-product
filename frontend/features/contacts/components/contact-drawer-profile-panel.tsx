@@ -14,6 +14,7 @@ interface ContactDrawerProfilePanelProps {
   contact: Contact;
   contactId: string;
   onEdit: () => void;
+  showEditButton?: boolean;
   noteComposerOpen?: boolean;
   onNoteComposerOpenChange?: (open: boolean) => void;
   className?: string;
@@ -58,6 +59,7 @@ export function ContactDrawerProfilePanel({
   contact,
   contactId,
   onEdit,
+  showEditButton = true,
   noteComposerOpen = false,
   onNoteComposerOpenChange,
   className,
@@ -78,16 +80,18 @@ export function ContactDrawerProfilePanel({
             className="!size-20 ring-1 ring-border"
             fallbackClassName="bg-primary/10 text-base font-semibold text-primary"
           />
-          <Button
-            type="button"
-            variant="outline"
-            size="icon-sm"
-            className="absolute -right-1 -top-1 size-7 rounded-full bg-background shadow-sm"
-            onClick={onEdit}
-            aria-label="Edit contact"
-          >
-            <Pencil className="size-3.5" />
-          </Button>
+          {showEditButton ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="icon-sm"
+              className="absolute -right-1 -top-1 size-7 rounded-full bg-background shadow-sm"
+              onClick={onEdit}
+              aria-label="Edit contact"
+            >
+              <Pencil className="size-3.5" />
+            </Button>
+          ) : null}
         </div>
         <h2 className="mt-3 text-base font-semibold leading-snug">
           {contact.label}

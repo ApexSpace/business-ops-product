@@ -13,6 +13,7 @@ import {
   type AppointmentStatus,
 } from "@/features/appointments/schemas/appointment-profile";
 import { getAppointmentStatusDotClass } from "@/features/appointments/utils/appointment-calendar-styles";
+import { useSalesStaffPermissions } from "@/features/sales/hooks/use-sales-staff-permissions";
 import { cn } from "@/lib/utils";
 
 const STATUS_ACTION_BUTTON_CLASS =
@@ -130,6 +131,10 @@ function AppointmentStatusActions({
   onCheckInOpenChange: (open: boolean) => void;
 }) {
   const checkoutOpen = isCheckoutOpen(relatedCheckoutStatus);
+  const { canCheckout, canViewOnCalendar, canViewOwn, canViewAll } =
+    useSalesStaffPermissions();
+  const canViewAttachedSale =
+    canViewOnCalendar || canViewOwn || canViewAll || canCheckout;
 
   if (status === "CONFIRMED") {
     return (
@@ -200,6 +205,22 @@ function AppointmentStatusActions({
   }
 
   if (status === "IN_SERVICE") {
+    if (!canCheckout) {
+      if (checkoutOpen && relatedCheckoutId && canViewAttachedSale) {
+        return (
+          <ActionButton
+            type="button"
+            variant="outline"
+            disabled={disabled}
+            onClick={onViewSale}
+            className={STATUS_ACTION_BUTTON_CLASS}
+          >
+            View sale
+          </ActionButton>
+        );
+      }
+      return null;
+    }
     if (checkoutOpen && relatedCheckoutId) {
       return (
         <ActionButton
@@ -227,7 +248,7 @@ function AppointmentStatusActions({
     );
   }
 
-  if (status === "COMPLETED" && relatedCheckoutId) {
+  if (status === "COMPLETED" && relatedCheckoutId && canViewAttachedSale) {
     return (
       <ActionButton
         type="button"

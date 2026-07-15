@@ -356,6 +356,7 @@ const businessTerminologyKeys: Partial<Record<string, string>> = {
   "/business/conversations": "nav.conversations",
   "/business/appointments": "nav.appointments",
   "/business/time-clock": "nav.timeClock",
+  "/business/time-cards": "nav.timeCards",
 };
 
 function applyRouteTerminology(

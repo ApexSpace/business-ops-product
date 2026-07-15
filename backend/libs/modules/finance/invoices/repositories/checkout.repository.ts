@@ -107,8 +107,59 @@ export class CheckoutRepository {
       status?: InvoiceStatus;
       issueFrom?: Date;
       issueTo?: Date;
+      /** When set, only sales created by or staffed by this user. */
+      staffUserId?: string;
     },
   ): Promise<{ items: CheckoutWithRelations[]; total: number }> {
+    const staffScope: Prisma.InvoiceWhereInput | undefined = params.staffUserId
+      ? {
+          OR: [
+            { createdById: params.staffUserId },
+            { items: { some: { staffUserId: params.staffUserId } } },
+          ],
+        }
+      : undefined;
+    const searchScope: Prisma.InvoiceWhereInput | undefined = params.search
+      ? {
+          OR: [
+            {
+              invoiceNumber: {
+                contains: params.search,
+                mode: 'insensitive',
+              },
+            },
+            {
+              contact: {
+                OR: [
+                  {
+                    firstName: {
+                      contains: params.search,
+                      mode: 'insensitive',
+                    },
+                  },
+                  {
+                    lastName: {
+                      contains: params.search,
+                      mode: 'insensitive',
+                    },
+                  },
+                  {
+                    displayName: {
+                      contains: params.search,
+                      mode: 'insensitive',
+                    },
+                  },
+                ],
+              },
+            },
+          ],
+        }
+      : undefined;
+
+    const scopeFilters = [staffScope, searchScope].filter(
+      (scope): scope is Prisma.InvoiceWhereInput => scope != null,
+    );
+
     const where = this.activeCheckoutWhere(businessId, {
       ...(params.contactId ? { contactId: params.contactId } : {}),
       ...(params.status ? { status: params.status } : {}),
@@ -120,39 +171,11 @@ export class CheckoutRepository {
             },
           }
         : {}),
-      ...(params.search
-        ? {
-            OR: [
-              {
-                invoiceNumber: { contains: params.search, mode: 'insensitive' },
-              },
-              {
-                contact: {
-                  OR: [
-                    {
-                      firstName: {
-                        contains: params.search,
-                        mode: 'insensitive',
-                      },
-                    },
-                    {
-                      lastName: {
-                        contains: params.search,
-                        mode: 'insensitive',
-                      },
-                    },
-                    {
-                      displayName: {
-                        contains: params.search,
-                        mode: 'insensitive',
-                      },
-                    },
-                  ],
-                },
-              },
-            ],
-          }
-        : {}),
+      ...(scopeFilters.length > 1
+        ? { AND: scopeFilters }
+        : scopeFilters[0]
+          ? scopeFilters[0]
+          : {}),
     });
 
     return Promise.all([

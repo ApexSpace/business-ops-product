@@ -57,6 +57,7 @@ import {
   resolveAppointmentUpdatedBy,
 } from "./appointment-drawer-sections";
 import { AppointmentAttachedPhotos } from "./appointment-attached-photos";
+import { useCalendarStaffPermissions } from "@/features/appointments/hooks/use-calendar-staff-permissions";
 
 export type AppointmentDrawerView = "detail" | "checkout";
 
@@ -100,6 +101,7 @@ export function AppointmentDetailDrawer({
   onDelete,
 }: AppointmentDetailDrawerProps) {
   const { data: business } = useCurrentBusiness();
+  const calendarPerms = useCalendarStaffPermissions();
   const statusMutation = useAppointmentStatusMutation(appointmentId);
   const notifyMutation = useAppointmentNotifyMutation(appointmentId);
   const [checkoutStep, setCheckoutStep] = useState<CheckoutDrawerStep>("items");
@@ -127,7 +129,10 @@ export function AppointmentDetailDrawer({
   const { data: updatedBy } = useQuery({
     queryKey: ["appointments", "detail", appointmentId, "activity"],
     queryFn: () => getAppointmentActivity(appointmentId!),
-    enabled: Boolean(appointmentId) && drawerView === "detail",
+    enabled:
+      Boolean(appointmentId) &&
+      drawerView === "detail" &&
+      calendarPerms.canViewHistory,
     select: (data) => resolveAppointmentUpdatedBy(data.items),
   });
 
@@ -176,6 +181,21 @@ export function AppointmentDetailDrawer({
   const showCheckout = drawerView === "checkout" && Boolean(checkoutId);
   const title =
     showCheckout && checkoutStep === "payment" ? "Payment" : showCheckout ? "Checkout" : "Appointment";
+
+  const canMutateThisAppointment = appointment
+    ? calendarPerms.canManageAppointmentOnStaff(appointment.assignedToId)
+    : false;
+  const canChangeThisStatus =
+    calendarPerms.canChangeStatus &&
+    (appointment
+      ? calendarPerms.isAdmin ||
+        appointment.assignedToId === calendarPerms.userId ||
+        calendarPerms.canViewOthers
+      : false);
+  const allowCancel = Boolean(onCancel) && canMutateThisAppointment;
+  const allowDelete = Boolean(onDelete) && canMutateThisAppointment;
+  const allowEdit = canMutateThisAppointment;
+  const allowStatusMenu = canChangeThisStatus;
 
   const contactHeader = appointment?.contact
     ? {
@@ -233,41 +253,43 @@ export function AppointmentDetailDrawer({
           }
         />
         <DropdownMenuContent align="end" className="w-52">
-          {APPOINTMENT_LIFECYCLE_STATUS_OPTIONS.map((option) => {
-            const isCurrent = appointment?.status === option.value;
-            return (
-              <DropdownMenuItem
-                key={option.value}
-                disabled={isCurrent || statusMutation.isPending}
-                onClick={() => handleStatusChange(option.value)}
-              >
-                <span
-                  className={cn(
-                    "mr-2 size-2 rounded-full",
-                    getAppointmentStatusDotClass(option.value),
-                  )}
-                />
-                {option.label}
-              </DropdownMenuItem>
-            );
-          })}
-          <DropdownMenuSeparator />
-          {onRebook ? (
+          {allowStatusMenu
+            ? APPOINTMENT_LIFECYCLE_STATUS_OPTIONS.map((option) => {
+                const isCurrent = appointment?.status === option.value;
+                return (
+                  <DropdownMenuItem
+                    key={option.value}
+                    disabled={isCurrent || statusMutation.isPending}
+                    onClick={() => handleStatusChange(option.value)}
+                  >
+                    <span
+                      className={cn(
+                        "mr-2 size-2 rounded-full",
+                        getAppointmentStatusDotClass(option.value),
+                      )}
+                    />
+                    {option.label}
+                  </DropdownMenuItem>
+                );
+              })
+            : null}
+          {allowStatusMenu ? <DropdownMenuSeparator /> : null}
+          {onRebook && canMutateThisAppointment ? (
             <DropdownMenuItem onClick={() => onRebook(appointmentId)}>
               Rebook appointment
             </DropdownMenuItem>
           ) : null}
-          {onCancel && appointment?.status !== "CANCELLED" ? (
+          {allowCancel && appointment?.status !== "CANCELLED" ? (
             <DropdownMenuItem
-              onClick={() => onCancel(appointmentId)}
+              onClick={() => onCancel?.(appointmentId)}
               className="text-destructive focus:text-destructive"
             >
               Cancel appointment
             </DropdownMenuItem>
           ) : null}
-          {onDelete ? (
+          {allowDelete ? (
             <DropdownMenuItem
-              onClick={() => onDelete(appointmentId)}
+              onClick={() => onDelete?.(appointmentId)}
               className="text-destructive focus:text-destructive"
             >
               <Trash2 className="mr-2 size-4" />
@@ -276,13 +298,15 @@ export function AppointmentDetailDrawer({
           ) : null}
         </DropdownMenuContent>
       </DropdownMenu>
-      <IconButton
-        aria-label="Edit appointment"
-        onClick={handleEditClick}
-        className={DRAWER_SHELL_HEADER_ACTION_CLASS}
-      >
-        <Pencil className="size-4" />
-      </IconButton>
+      {allowEdit ? (
+        <IconButton
+          aria-label="Edit appointment"
+          onClick={handleEditClick}
+          className={DRAWER_SHELL_HEADER_ACTION_CLASS}
+        >
+          <Pencil className="size-4" />
+        </IconButton>
+      ) : null}
       {variant === "panel" ? (
         <IconButton
           aria-label="Close appointment details"
@@ -356,9 +380,15 @@ export function AppointmentDetailDrawer({
                   relatedCheckoutId={appointment.relatedCheckoutId ?? null}
                   relatedCheckoutStatus={appointment.relatedCheckoutStatus ?? null}
                   waitingNotifiedAt={appointment.waitingNotifiedAt ?? null}
-                  disabled={statusMutation.isPending || notifyMutation.isPending}
+                  disabled={
+                    !allowStatusMenu ||
+                    statusMutation.isPending ||
+                    notifyMutation.isPending
+                  }
                   onStatusChange={handleStatusChange}
-                  onNotify={() => notifyMutation.mutate()}
+                  onNotify={() => {
+                    if (canMutateThisAppointment) notifyMutation.mutate();
+                  }}
                   onCheckout={() => onCheckout(appointment.id)}
                   onViewSale={() => {
                     if (appointment.relatedCheckoutId) {
@@ -407,13 +437,15 @@ export function AppointmentDetailDrawer({
                   )}
                 />
 
-                <AppointmentBookingDetailsSummary
-                  createdAt={appointment.createdAt}
-                  updatedAt={appointment.updatedAt}
-                  createdBy={appointment.createdBy}
-                  updatedBy={updatedBy}
-                  timezone={timezone}
-                />
+                {calendarPerms.canViewHistory ? (
+                  <AppointmentBookingDetailsSummary
+                    createdAt={appointment.createdAt}
+                    updatedAt={appointment.updatedAt}
+                    createdBy={appointment.createdBy}
+                    updatedBy={updatedBy}
+                    timezone={timezone}
+                  />
+                ) : null}
               </div>
             </div>
           )}

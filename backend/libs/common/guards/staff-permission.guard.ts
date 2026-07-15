@@ -77,6 +77,9 @@ export class StaffPermissionGuard implements CanActivate {
     }
 
     const permissions = normalizeStaffPermissions(membership.permissions);
+    if (membership.canManageWaitlist) {
+      permissions['appointments.manage_waitlist'] = true;
+    }
     const allowed = required.some((key) =>
       hasStaffPermission(permissions, key, membership.role),
     );

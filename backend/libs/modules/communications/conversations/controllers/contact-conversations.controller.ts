@@ -49,6 +49,7 @@ export class ContactConversationsController {
       user.businessId!,
       contactId,
       query,
+      user,
     );
   }
 
@@ -65,6 +66,7 @@ export class ContactConversationsController {
     return this.contactConversationsService.listReplyChannels(
       user.businessId!,
       contactId,
+      user,
     );
   }
 
