@@ -276,10 +276,17 @@ export function isPlatformEmailProvider(providerKey: string): boolean {
   return providerKey === "email";
 }
 
+export function isPlatformSmsProvider(providerKey: string): boolean {
+  return providerKey === "sms";
+}
+
 export function shouldUseManualConnect(
   provider: Pick<IntegrationProvider, "connectionType" | "key">,
 ): boolean {
   if (isPlatformEmailProvider(provider.key)) {
+    return false;
+  }
+  if (isPlatformSmsProvider(provider.key)) {
     return false;
   }
   return !shouldUseOAuthPopup(provider);
@@ -348,6 +355,7 @@ export function getIntegrationConnectLabel(
     if (provider.key === "instagram") return "Connect Instagram";
     if (provider.key === "stripe") return "Connect Stripe";
     if (isPlatformEmailProvider(provider.key)) return "Activate email";
+    if (isPlatformSmsProvider(provider.key)) return "Configure SMS";
     if (isGoogleOAuthProvider(provider.key)) return "Connect with Google";
     if (shouldUseOAuthPopup(provider)) return `Connect ${provider.name}`;
     return "Connect";

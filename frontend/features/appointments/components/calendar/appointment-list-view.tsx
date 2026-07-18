@@ -23,6 +23,7 @@ const STATUS_VARIANT: Record<
   AppointmentStatus,
   "default" | "secondary" | "destructive" | "outline"
 > = {
+  PENDING_COMPLETION: "outline",
   UNCONFIRMED: "outline",
   CONFIRMED: "default",
   WAITING: "default",
@@ -86,7 +87,11 @@ export function AppointmentListView({
       {
         id: "contact",
         header: "Contact",
-        cell: (row) => getContactDisplayName(row.contact),
+        cell: (row) =>
+          getContactDisplayName(row.contact, {
+            guestFirstName: row.guestFirstName,
+            guestEmail: row.guestEmail,
+          }),
       },
       {
         id: "staff",

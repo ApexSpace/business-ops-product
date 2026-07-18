@@ -350,11 +350,13 @@ export function useAppointmentsCalendarPage() {
         throw new Error("Appointment has no client for checkout");
       }
 
-      if (
-        appointment.relatedCheckoutId &&
-        isCheckoutOpen(appointment.relatedCheckoutStatus ?? null)
-      ) {
-        return { id: appointment.relatedCheckoutId, continued: true as const };
+      if (appointment.relatedCheckoutId) {
+        // Open checkout: continue editing. Paid/closed: open view only (no new sale).
+        return {
+          id: appointment.relatedCheckoutId,
+          continued: true as const,
+          viewOnly: !isCheckoutOpen(appointment.relatedCheckoutStatus ?? null),
+        };
       }
 
       const checkout = await createCheckout({

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { MoreHorizontal } from "lucide-react";
+import { MoreHorizontal, RefreshCw, Trash2 } from "lucide-react";
 import { ProfileAvatar } from "@/components/ui/profile-avatar";
 import { cn } from "@/lib/utils";
 import {
@@ -18,6 +18,8 @@ import {
   isImageAttachment,
   parseMessageAttachments,
 } from "@/features/conversations/utils/message-attachments";
+import { isConversationActivityMessage } from "@/features/conversations/utils/conversation-activity.util";
+import { isDeletableConversationMessage } from "@/features/conversations/utils/message-delete.util";
 
 const NEAR_BOTTOM_THRESHOLD_PX = 120;
 
@@ -36,6 +38,11 @@ type VirtualizedMessageListProps = {
   threadContext?: MessageListThreadContext;
   /** Resets scroll anchoring when the active thread/conversation changes. */
   scrollKey?: string | null;
+  messageDeleteMode?: boolean;
+  onRequestDeleteMessage?: (message: ConversationMessage) => void;
+  onRetryMessage?: (message: ConversationMessage) => void;
+  retryingMessageId?: string | null;
+  canRetryMessages?: boolean;
 };
 
 export function VirtualizedMessageList({
@@ -46,6 +53,11 @@ export function VirtualizedMessageList({
   variant = "default",
   threadContext,
   scrollKey = null,
+  messageDeleteMode = false,
+  onRequestDeleteMessage,
+  onRetryMessage,
+  retryingMessageId = null,
+  canRetryMessages = true,
 }: VirtualizedMessageListProps) {
   const parentRef = useRef<HTMLDivElement>(null);
   const isNearBottomRef = useRef(true);
@@ -193,12 +205,26 @@ export function VirtualizedMessageList({
                 <DateSeparator label={formatMessageDateSeparator(message.createdAt)} />
               ) : null}
               {variant === "thread" && threadContext ? (
-                <ThreadMessageBubble
-                  message={message}
-                  threadContext={threadContext}
-                />
+                isConversationActivityMessage(message) ? (
+                  <ActivityTimelineRow message={message} />
+                ) : (
+                  <ThreadMessageBubble
+                    message={message}
+                    threadContext={threadContext}
+                    deleteMode={messageDeleteMode}
+                    onRequestDelete={onRequestDeleteMessage}
+                    onRetry={onRetryMessage}
+                    isRetrying={retryingMessageId === message.id}
+                    canRetry={canRetryMessages}
+                  />
+                )
               ) : (
-                <MessageBubble message={message} />
+                <MessageBubble
+                  message={message}
+                  onRetry={onRetryMessage}
+                  isRetrying={retryingMessageId === message.id}
+                  canRetry={canRetryMessages}
+                />
               )}
             </div>
           );
@@ -331,12 +357,69 @@ function outboundSenderLabel(
   return businessName?.trim() || "You";
 }
 
+function ActivityTimelineRow({ message }: { message: ConversationMessage }) {
+  const label = message.text?.trim() || "Activity";
+  return (
+    <div className="flex justify-center px-4 py-1" role="status">
+      <p className="max-w-[90%] text-center text-[11px] leading-snug text-muted-foreground">
+        {label}
+        <span className="text-muted-foreground/70">
+          {" "}
+          · {formatRelativeTime(message.createdAt)}
+        </span>
+      </p>
+    </div>
+  );
+}
+
+function FailedMessageRetryButton({
+  onRetry,
+  isRetrying,
+  disabled,
+}: {
+  onRetry?: () => void;
+  isRetrying?: boolean;
+  disabled?: boolean;
+}) {
+  if (!onRetry) return null;
+
+  return (
+    <button
+      type="button"
+      className={cn(
+        "inline-flex items-center gap-1 rounded-md px-1 py-0.5 text-[11px] font-medium text-destructive transition-colors",
+        "hover:bg-destructive/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive/30",
+        (disabled || isRetrying) && "pointer-events-none opacity-60",
+      )}
+      aria-label="Retry sending message"
+      disabled={disabled || isRetrying}
+      onClick={(event) => {
+        event.stopPropagation();
+        onRetry();
+      }}
+    >
+      <RefreshCw className={cn("size-3", isRetrying && "animate-spin")} />
+      <span>{isRetrying ? "Retrying…" : "Retry"}</span>
+    </button>
+  );
+}
+
 function ThreadMessageBubble({
   message,
   threadContext,
+  deleteMode = false,
+  onRequestDelete,
+  onRetry,
+  isRetrying = false,
+  canRetry = true,
 }: {
   message: ConversationMessage;
   threadContext: MessageListThreadContext;
+  deleteMode?: boolean;
+  onRequestDelete?: (message: ConversationMessage) => void;
+  onRetry?: (message: ConversationMessage) => void;
+  isRetrying?: boolean;
+  canRetry?: boolean;
 }) {
   const outbound = message.direction === "OUTBOUND";
   const failed = message.status === "FAILED";
@@ -347,6 +430,8 @@ function ThreadMessageBubble({
     ? outboundSenderLabel(message, threadContext.businessName)
     : threadContext.contactName;
   const avatarUrl = outbound ? null : threadContext.contactAvatarUrl;
+  const canDelete = isDeletableConversationMessage(message);
+  const showRetry = failed && canRetry && Boolean(onRetry) && !deleteMode;
 
   return (
     <div
@@ -376,21 +461,42 @@ function ThreadMessageBubble({
         </p>
         <div
           className={cn(
-            "w-full rounded-xl border px-3.5 py-2.5 text-sm shadow-elevation-xs",
-            outbound
-              ? "border-primary/15 bg-primary/[0.06]"
-              : "border-border/60 bg-card",
-            failed &&
-              "border-destructive/40 bg-destructive/8 text-destructive",
+            "flex w-full items-start gap-2",
+            outbound ? "flex-row-reverse" : "flex-row",
           )}
         >
-          <MessageBody
-            message={message}
-            attachments={attachments}
-            displayText={displayText}
-            templateDisplay={templateDisplay}
-            variant="thread"
-          />
+          {deleteMode ? (
+            <button
+              type="button"
+              className="mt-2 inline-flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-destructive"
+              aria-label={
+                canDelete
+                  ? "Delete message"
+                  : "Automated message cannot be deleted"
+              }
+              onClick={() => onRequestDelete?.(message)}
+            >
+              <Trash2 className="size-3.5" />
+            </button>
+          ) : null}
+          <div
+            className={cn(
+              "min-w-0 flex-1 rounded-xl border px-3.5 py-2.5 text-sm shadow-elevation-xs",
+              outbound
+                ? "border-primary/15 bg-primary/[0.06]"
+                : "border-border/60 bg-card",
+              failed &&
+                "border-destructive/40 bg-destructive/8 text-destructive",
+            )}
+          >
+            <MessageBody
+              message={message}
+              attachments={attachments}
+              displayText={displayText}
+              templateDisplay={templateDisplay}
+              variant="thread"
+            />
+          </div>
         </div>
         <div
           className={cn(
@@ -400,18 +506,31 @@ function ThreadMessageBubble({
         >
           <span>{formatMessageTime(message.createdAt)}</span>
           {failed ? (
-            <span className="text-destructive">· Failed to send</span>
+            <span
+              className="text-destructive"
+              title={message.errorMessage ?? undefined}
+            >
+              · Failed to send
+            </span>
+          ) : null}
+          {showRetry ? (
+            <FailedMessageRetryButton
+              onRetry={() => onRetry?.(message)}
+              isRetrying={isRetrying}
+            />
           ) : null}
           {outbound && !failed ? (
             <MessageDeliveryStatus status={message.status} />
           ) : null}
-          <button
-            type="button"
-            className="inline-flex size-5 items-center justify-center rounded-md text-muted-foreground/70 opacity-0 transition-opacity hover:bg-muted/60 hover:text-foreground group-hover/message:opacity-100"
-            aria-label="Message options"
-          >
-            <MoreHorizontal className="size-3.5" />
-          </button>
+          {!deleteMode ? (
+            <button
+              type="button"
+              className="inline-flex size-5 items-center justify-center rounded-md text-muted-foreground/70 opacity-0 transition-opacity hover:bg-muted/60 hover:text-foreground group-hover/message:opacity-100"
+              aria-label="Message options"
+            >
+              <MoreHorizontal className="size-3.5" />
+            </button>
+          ) : null}
         </div>
       </div>
     </div>
@@ -509,12 +628,23 @@ function MessageBody({
   );
 }
 
-function MessageBubble({ message }: { message: ConversationMessage }) {
+function MessageBubble({
+  message,
+  onRetry,
+  isRetrying = false,
+  canRetry = true,
+}: {
+  message: ConversationMessage;
+  onRetry?: (message: ConversationMessage) => void;
+  isRetrying?: boolean;
+  canRetry?: boolean;
+}) {
   const outbound = message.direction === "OUTBOUND";
   const failed = message.status === "FAILED";
   const attachments = parseMessageAttachments(message.attachments);
   const displayText = messageDisplayText(message);
   const templateDisplay = parseTemplateDisplay(message);
+  const showRetry = failed && canRetry && Boolean(onRetry);
 
   return (
     <div className={cn("flex", outbound ? "justify-end" : "justify-start")}>
@@ -541,7 +671,15 @@ function MessageBubble({ message }: { message: ConversationMessage }) {
           )}
         >
           <span>{formatRelativeTime(message.createdAt)}</span>
-          {failed ? <span>· Failed to send</span> : null}
+          {failed ? (
+            <span title={message.errorMessage ?? undefined}>· Failed to send</span>
+          ) : null}
+          {showRetry ? (
+            <FailedMessageRetryButton
+              onRetry={() => onRetry?.(message)}
+              isRetrying={isRetrying}
+            />
+          ) : null}
           {outbound && !failed ? (
             <MessageDeliveryStatus status={message.status} />
           ) : null}

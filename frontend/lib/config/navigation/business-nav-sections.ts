@@ -19,6 +19,7 @@ export const BUSINESS_APPS_NAV_KEYS = [
   "payments",
   "time-clock",
   "time-cards",
+  "reports",
 ] as const;
 
 export type BusinessPrimaryNavKey = (typeof BUSINESS_PRIMARY_NAV_KEYS)[number];

@@ -634,6 +634,25 @@ export const REGISTRY_MODULES: RegistryModuleDefinition[] = [
     ],
   },
   {
+    moduleKey: 'reports',
+    name: 'Reports',
+    description: 'Business reports with PDF and Excel export.',
+    icon: 'file-bar-chart',
+    sortOrder: 95,
+    options: [
+      option('reports', 'access', {
+        name: 'Company reports',
+        description: 'Access the Reports app, generate and export reports.',
+        permissionKey: 'reports.access',
+        routeKeys: ['/business/reports'],
+        icon: 'file-bar-chart',
+        group: 'Analytics',
+        defaultEnabled: true,
+        isBillable: true,
+      }),
+    ],
+  },
+  {
     moduleKey: 'settings',
     name: 'Settings',
     description: 'Business settings pages and configuration.',

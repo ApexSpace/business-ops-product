@@ -58,6 +58,14 @@ export interface OnlineBookingSettings {
   collectPhotosEnabled: boolean;
   photoUploadPrompt: string | null;
   waitlistEnabled: boolean;
+  expressBookingEnabled: boolean;
+  expressBookingAutoEnable: boolean;
+  expressBookingTimeLimitMinutes: number;
+  expressRequireCard: boolean;
+  expressRequireDeposit: boolean;
+  expressDepositType: string;
+  expressAllowPhotoUpload: boolean;
+  cancellationPolicyVersion: string;
   randomizeStaffOrder: boolean;
   showGenderOptions: boolean;
   showAnyoneOption: boolean;

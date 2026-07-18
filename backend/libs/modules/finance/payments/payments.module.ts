@@ -23,6 +23,7 @@ import { GiftCardsModule } from '@app/modules/finance/gift-cards/gift-cards.modu
 import { RedisModule } from '@app/core/redis/redis.module';
 import { BookingDepositHoldStore } from './stores/booking-deposit-hold.store';
 import { BookingDepositPaymentService } from './services/booking-deposit-payment.service';
+import { BookingLinkSaleService } from './services/booking-link-sale.service';
 
 @Module({
   imports: [
@@ -46,6 +47,7 @@ import { BookingDepositPaymentService } from './services/booking-deposit-payment
     BookingDepositHoldStore,
     BookingDepositPayableHandler,
     BookingDepositPaymentService,
+    BookingLinkSaleService,
     InvoicePayableHandler,
     WalletLedgerService,
     StripeContactPaymentMethodService,
@@ -59,6 +61,7 @@ import { BookingDepositPaymentService } from './services/booking-deposit-payment
     PaymentsOverviewService,
     PaymentOrchestratorService,
     BookingDepositPaymentService,
+    BookingLinkSaleService,
     WalletLedgerService,
     PayableHandlerRegistry,
     PaymentRealtimeService,

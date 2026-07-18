@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ActionButton } from "@/components/ui/action-button";
 import {
   Popover,
@@ -32,16 +32,35 @@ function formatRelativeNotified(iso: string): string {
   return diffHours === 1 ? "an hour ago" : `${diffHours} hours ago`;
 }
 
+function formatExpressCountdown(expiresAt: string | null | undefined): string {
+  if (!expiresAt) return "Waiting for client to complete";
+  const remainingMs = new Date(expiresAt).getTime() - Date.now();
+  if (remainingMs <= 0) return "Link expired";
+  const totalSeconds = Math.floor(remainingMs / 1000);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  if (hours > 0) {
+    return `Expires in ${hours}h ${minutes}m`;
+  }
+  if (minutes > 0) {
+    return `Expires in ${minutes}m ${seconds.toString().padStart(2, "0")}s`;
+  }
+  return `Expires in ${seconds}s`;
+}
+
 export interface AppointmentStatusActionsProps {
   status: AppointmentStatus;
   relatedCheckoutId: string | null;
   relatedCheckoutStatus: string | null;
   waitingNotifiedAt: string | null;
+  expressBookingExpiresAt?: string | null;
   disabled?: boolean;
   onStatusChange: (status: AppointmentStatus) => void;
   onNotify: () => void;
   onCheckout: () => void;
   onViewSale: () => void;
+  onCompleteExpress?: () => void;
 }
 
 export function AppointmentStatusBar({
@@ -49,19 +68,33 @@ export function AppointmentStatusBar({
   relatedCheckoutId,
   relatedCheckoutStatus,
   waitingNotifiedAt,
+  expressBookingExpiresAt = null,
   disabled = false,
   onStatusChange,
   onNotify,
   onCheckout,
   onViewSale,
+  onCompleteExpress,
 }: AppointmentStatusActionsProps) {
   const [checkInOpen, setCheckInOpen] = useState(false);
+  const [countdownLabel, setCountdownLabel] = useState(() =>
+    formatExpressCountdown(expressBookingExpiresAt),
+  );
   const displayLabel = getAppointmentStatusDisplayLabel(
     status,
     relatedCheckoutId,
     relatedCheckoutStatus,
   );
   const checkoutOpen = isCheckoutOpen(relatedCheckoutStatus);
+
+  useEffect(() => {
+    if (status !== "PENDING_COMPLETION") return;
+    const tick = () =>
+      setCountdownLabel(formatExpressCountdown(expressBookingExpiresAt));
+    tick();
+    const id = window.setInterval(tick, 1000);
+    return () => window.clearInterval(id);
+  }, [status, expressBookingExpiresAt]);
 
   return (
     <div className="rounded-[10px] border border-border/70 bg-muted/15 px-4 py-3">
@@ -89,8 +122,15 @@ export function AppointmentStatusBar({
           onNotify={onNotify}
           onCheckout={onCheckout}
           onViewSale={onViewSale}
+          onCompleteExpress={onCompleteExpress}
         />
       </div>
+
+      {status === "PENDING_COMPLETION" ? (
+        <p className="mt-2 text-[12px] text-muted-foreground">
+          {countdownLabel}. Client still needs to finish the booking link.
+        </p>
+      ) : null}
 
       {status === "WAITING" && waitingNotifiedAt ? (
         <p className="mt-2 text-[12px] text-muted-foreground">
@@ -126,7 +166,11 @@ function AppointmentStatusActions({
   onNotify,
   onCheckout,
   onViewSale,
-}: Omit<AppointmentStatusActionsProps, "waitingNotifiedAt"> & {
+  onCompleteExpress,
+}: Omit<
+  AppointmentStatusActionsProps,
+  "waitingNotifiedAt" | "expressBookingExpiresAt"
+> & {
   checkInOpen: boolean;
   onCheckInOpenChange: (open: boolean) => void;
 }) {
@@ -135,6 +179,35 @@ function AppointmentStatusActions({
     useSalesStaffPermissions();
   const canViewAttachedSale =
     canViewOnCalendar || canViewOwn || canViewAll || canCheckout;
+
+  if (status === "PENDING_COMPLETION") {
+    if (!onCompleteExpress) return null;
+    return (
+      <ActionButton
+        type="button"
+        variant="outline"
+        disabled={disabled}
+        onClick={onCompleteExpress}
+        className={STATUS_ACTION_BUTTON_CLASS}
+      >
+        Complete
+      </ActionButton>
+    );
+  }
+
+  if (status === "UNCONFIRMED") {
+    return (
+      <ActionButton
+        type="button"
+        variant="outline"
+        disabled={disabled}
+        onClick={() => onStatusChange("CONFIRMED")}
+        className={STATUS_ACTION_BUTTON_CLASS}
+      >
+        Confirm
+      </ActionButton>
+    );
+  }
 
   if (status === "CONFIRMED") {
     return (

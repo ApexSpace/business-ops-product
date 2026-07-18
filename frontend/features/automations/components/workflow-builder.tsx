@@ -26,6 +26,13 @@ import type {
   FilterOperatorMetadata,
 } from "@/features/automations/types/metadata";
 import { insertMergeTagAtCursor } from "@/features/automations/utils/insert-merge-tag.util";
+import {
+  SMS_MAX_SEGMENTS,
+  analyzeSmsSegments,
+  formatSmsSegmentCounter,
+  formatUcs2CostWarning,
+} from "@/features/conversations/utils/sms-segment.util";
+import { cn } from "@/lib/utils";
 
 type WorkflowBuilderProps = {
   workflow: AutomationWorkflow;
@@ -45,6 +52,11 @@ function defaultConfigForAction(actionKey: string): Record<string, unknown> {
       subject: "Hello {{contact.first_name}}",
       htmlBody: "<p>Hi {{contact.first_name}},</p>",
       fromName: "{{business.name}}",
+    };
+  }
+  if (actionKey === "communication.send_sms") {
+    return {
+      body: "Hi {{contact.first_name}}, reminder from {{business.name}}.",
     };
   }
   if (actionKey === "workflow.delay") {
@@ -251,6 +263,13 @@ export function WorkflowBuilder({
                     />
                   ) : null}
 
+                  {step.actionKey === "communication.send_sms" ? (
+                    <SmsStepConfig
+                      config={step.config}
+                      onChange={(config) => updateStep(index, { config })}
+                    />
+                  ) : null}
+
                   {step.actionKey === "workflow.delay" ? (
                     <DelayStepConfig
                       config={step.config}
@@ -416,6 +435,63 @@ function EmailStepConfig({
           onChange={(e) => onChange({ ...config, htmlBody: e.target.value })}
           rows={5}
         />
+      </div>
+    </div>
+  );
+}
+
+function SmsStepConfig({
+  config,
+  onChange,
+}: {
+  config: Record<string, unknown>;
+  onChange: (config: Record<string, unknown>) => void;
+}) {
+  const body = String(config.body ?? config.textBody ?? "");
+  const previewForLength = body.replace(/\{\{[^}]+\}\}/g, "");
+  const segmentInfo = analyzeSmsSegments(previewForLength);
+  const ucsWarning = formatUcs2CostWarning(segmentInfo);
+  const overLimit = segmentInfo.segmentCount > SMS_MAX_SEGMENTS;
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between gap-2">
+        <Label>SMS body</Label>
+        <CustomValuePicker
+          onInsert={(tag) => onChange({ ...config, body: `${body}{{${tag}}}` })}
+        />
+      </div>
+      <Textarea
+        value={body}
+        onChange={(e) =>
+          onChange({ ...config, body: e.target.value, textBody: undefined })
+        }
+        rows={4}
+        className={cn(overLimit && "border-destructive")}
+      />
+      <div className="space-y-1">
+        <p
+          className={cn(
+            "text-xs tabular-nums",
+            overLimit
+              ? "font-medium text-destructive"
+              : segmentInfo.segmentCount === 2
+                ? "text-amber-700 dark:text-amber-400"
+                : "text-muted-foreground",
+          )}
+        >
+          {formatSmsSegmentCounter(segmentInfo)}
+        </p>
+        {ucsWarning ? (
+          <p className="text-xs text-amber-700 dark:text-amber-400">
+            {ucsWarning}
+          </p>
+        ) : null}
+        <p className="text-xs text-muted-foreground">
+          Length checked on placeholders as written; final length depends on
+          contact/business field values. Messages over {SMS_MAX_SEGMENTS}{" "}
+          segments will not send.
+        </p>
       </div>
     </div>
   );

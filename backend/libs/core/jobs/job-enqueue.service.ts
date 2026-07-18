@@ -1,22 +1,19 @@
 import { Injectable } from '@nestjs/common';
 import { AsyncJob, AsyncJobStatus, Prisma } from '@prisma/client';
 import {
-  FILE_QUEUE,
   JOB_APPOINTMENT_GOOGLE_SYNC,
   JOB_CALENDAR_SYNC,
+  JOB_GENERATE_REPORT,
   JOB_INTEGRATION_RESOURCE_SYNC,
   JOB_META_RESOURCE_SYNC,
-  MESSAGE_QUEUE,
-  SYNC_QUEUE,
-  WEBHOOK_QUEUE,
 } from '../queue/queue.constants';
 import { QueueService } from '../queue/queue.service';
 import type {
   AppointmentGoogleSyncJobPayload,
   CalendarSyncJobPayload,
+  GenerateReportJobPayload,
   IntegrationResourceSyncJobPayload,
   MetaResourceSyncJobPayload,
-  ProcessMetaWebhookPayload,
   ProcessStripeWebhookPayload,
   SendOutboundMessagePayload,
 } from '../queue/queue.types';
@@ -85,6 +82,7 @@ export class JobEnqueueService {
     idempotencyKey?: string;
     actorUserId?: string;
     bullJobId?: string;
+    queue?: 'sync' | 'file';
   }): Promise<AsyncJob> {
     const asyncJob = await this.createJob({
       businessId: params.businessId,
@@ -100,11 +98,17 @@ export class JobEnqueueService {
       asyncJobId: asyncJob.id,
     } as T;
 
-    const bullJobId = await this.queueService.addSyncJob(
-      params.jobName,
-      fullPayload,
-      params.bullJobId ?? `async-${asyncJob.id}-${Date.now()}`,
-    );
+    const bullJobId =
+      params.queue === 'file'
+        ? await this.queueService.addFileJob(
+            params.jobName,
+            fullPayload as unknown as Record<string, unknown>,
+          )
+        : await this.queueService.addSyncJob(
+            params.jobName,
+            fullPayload as unknown as Record<string, unknown>,
+            params.bullJobId ?? `async-${asyncJob.id}-${Date.now()}`,
+          );
 
     if (bullJobId) {
       await this.asyncJobRepository.update(asyncJob.id, { bullJobId });
@@ -125,6 +129,12 @@ export class JobEnqueueService {
 
   async enqueueResendWebhook(webhookEventId: string): Promise<void> {
     await this.queueService.enqueueResendWebhook({ webhookEventId });
+  }
+
+  async enqueueTwilioSmsWebhook(payload: {
+    webhookEventId: string;
+  }): Promise<string | null> {
+    return this.queueService.enqueueTwilioSmsWebhook(payload);
   }
 
   async enqueueSendMessage(
@@ -252,6 +262,31 @@ export class JobEnqueueService {
       payload: {
         businessId: params.businessId,
         providerKey: params.providerKey,
+      },
+    });
+  }
+
+  async enqueueReportGenerate(params: {
+    businessId: string;
+    reportKey: string;
+    format: 'pdf' | 'xlsx';
+    filters: Record<string, unknown>;
+    actorUserId: string;
+  }): Promise<AsyncJob> {
+    return this.enqueueWithAsyncJob<GenerateReportJobPayload>({
+      businessId: params.businessId,
+      type: 'report_generate',
+      jobName: JOB_GENERATE_REPORT,
+      entityType: 'Report',
+      entityId: params.reportKey,
+      actorUserId: params.actorUserId,
+      queue: 'file',
+      payload: {
+        businessId: params.businessId,
+        reportKey: params.reportKey,
+        format: params.format,
+        filters: params.filters,
+        actorUserId: params.actorUserId,
       },
     });
   }

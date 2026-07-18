@@ -7,6 +7,7 @@ import { getAppointmentStatusDotClass } from "@/features/appointments/utils/appo
 import { cn } from "@/lib/utils";
 
 export const APPOINTMENT_STATUS_DOT_CLASS: Record<AppointmentStatus, string> = {
+  PENDING_COMPLETION: getAppointmentStatusDotClass("PENDING_COMPLETION"),
   UNCONFIRMED: getAppointmentStatusDotClass("UNCONFIRMED"),
   CONFIRMED: getAppointmentStatusDotClass("CONFIRMED"),
   WAITING: getAppointmentStatusDotClass("WAITING"),

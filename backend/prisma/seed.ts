@@ -39,6 +39,7 @@ const integrationProviders = [
     category: 'COMMUNICATION',
     isPlatformLevel: true,
     isBusinessLevel: true,
+    connectionType: 'MANUAL',
     sortOrder: 20,
   },
   {

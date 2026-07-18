@@ -1,8 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronLeft, Loader2, MoreHorizontal, Pencil, Trash2, X } from "lucide-react";
+import { toast } from "sonner";
 import { DrawerFooterPrimaryAction } from "@/components/layout/drawer-footer-primary";
 import { AcknowledgementGuardDialog } from "@/components/forms/acknowledgement-guard-dialog";
 import {
@@ -20,6 +21,8 @@ import {
 import {
   getAppointment,
   getAppointmentActivity,
+  resendExpressAppointment,
+  staffCompleteExpressAppointment,
 } from "@/features/appointments/api/appointments.api";
 import { AppointmentStatusBar } from "@/features/appointments/components/drawer/appointment-status-actions";
 import { useAppointmentNotifyMutation } from "@/features/appointments/hooks/use-appointment-notify-mutation";
@@ -100,10 +103,39 @@ export function AppointmentDetailDrawer({
   onCancel,
   onDelete,
 }: AppointmentDetailDrawerProps) {
+  const queryClient = useQueryClient();
   const { data: business } = useCurrentBusiness();
   const calendarPerms = useCalendarStaffPermissions();
   const statusMutation = useAppointmentStatusMutation(appointmentId);
   const notifyMutation = useAppointmentNotifyMutation(appointmentId);
+  const invalidateAppointmentQueries = () => {
+    void queryClient.invalidateQueries({
+      queryKey: queryKeys.appointments.all(),
+    });
+    if (appointmentId) {
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.appointments.detail(appointmentId),
+      });
+    }
+  };
+
+  const resendExpressMutation = useMutation({
+    mutationFn: () => resendExpressAppointment(appointmentId!),
+    onSuccess: () => {
+      toast.success("Completion email resent");
+      invalidateAppointmentQueries();
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
+  const staffCompleteExpressMutation = useMutation({
+    mutationFn: () => staffCompleteExpressAppointment(appointmentId!),
+    onSuccess: (saved) => {
+      toast.success("Appointment marked complete — now unconfirmed");
+      invalidateAppointmentQueries();
+      onStatusChange?.(saved.status);
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
   const [checkoutStep, setCheckoutStep] = useState<CheckoutDrawerStep>("items");
   const [paymentAction, setPaymentAction] =
     useState<CheckoutDrawerSubmitAction | null>(null);
@@ -197,12 +229,17 @@ export function AppointmentDetailDrawer({
   const allowEdit = canMutateThisAppointment;
   const allowStatusMenu = canChangeThisStatus;
 
-  const contactHeader = appointment?.contact
+  const contactHeader = appointment
     ? {
-        name: getContactDisplayName(appointment.contact),
-        sinceLabel: appointment.contact.createdAt
+        name: getContactDisplayName(appointment.contact, {
+          guestFirstName: appointment.guestFirstName,
+          guestEmail: appointment.guestEmail,
+        }),
+        sinceLabel: appointment.contact?.createdAt
           ? `Client since ${new Date(appointment.contact.createdAt).toLocaleDateString(undefined, { month: "long", year: "numeric" })}`
-          : null,
+          : appointment.status === "PENDING_COMPLETION"
+            ? "Waiting for client to complete Express Booking"
+            : null,
       }
     : null;
 
@@ -274,6 +311,14 @@ export function AppointmentDetailDrawer({
               })
             : null}
           {allowStatusMenu ? <DropdownMenuSeparator /> : null}
+          {appointment?.expressBookingPending ? (
+            <DropdownMenuItem
+              disabled={resendExpressMutation.isPending}
+              onClick={() => resendExpressMutation.mutate()}
+            >
+              Resend completion link
+            </DropdownMenuItem>
+          ) : null}
           {onRebook && canMutateThisAppointment ? (
             <DropdownMenuItem onClick={() => onRebook(appointmentId)}>
               Rebook appointment
@@ -380,15 +425,24 @@ export function AppointmentDetailDrawer({
                   relatedCheckoutId={appointment.relatedCheckoutId ?? null}
                   relatedCheckoutStatus={appointment.relatedCheckoutStatus ?? null}
                   waitingNotifiedAt={appointment.waitingNotifiedAt ?? null}
+                  expressBookingExpiresAt={
+                    appointment.expressBookingExpiresAt ?? null
+                  }
                   disabled={
                     !allowStatusMenu ||
                     statusMutation.isPending ||
-                    notifyMutation.isPending
+                    notifyMutation.isPending ||
+                    staffCompleteExpressMutation.isPending
                   }
                   onStatusChange={handleStatusChange}
                   onNotify={() => {
                     if (canMutateThisAppointment) notifyMutation.mutate();
                   }}
+                  onCompleteExpress={
+                    allowStatusMenu
+                      ? () => staffCompleteExpressMutation.mutate()
+                      : undefined
+                  }
                   onCheckout={() => onCheckout(appointment.id)}
                   onViewSale={() => {
                     if (appointment.relatedCheckoutId) {
@@ -405,6 +459,10 @@ export function AppointmentDetailDrawer({
 
                 <AppointmentClientBlock
                   contact={appointment.contact}
+                  guestFirstName={appointment.guestFirstName}
+                  guestEmail={appointment.guestEmail}
+                  guestPhone={appointment.guestPhone}
+                  pendingExpress={appointment.status === "PENDING_COMPLETION"}
                   onMessageClick={
                     appointment.contactId
                       ? () => onMessageClick(appointment.contactId!)

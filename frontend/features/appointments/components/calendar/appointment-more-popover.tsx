@@ -84,7 +84,10 @@ export function AppointmentMorePopover({
                 calendars,
                 businessTimezone,
               );
-            const contactName = getContactDisplayName(apt.contact);
+            const contactName = getContactDisplayName(apt.contact, {
+              guestFirstName: apt.guestFirstName,
+              guestEmail: apt.guestEmail,
+            });
             const clientLabel = contactName || apt.title;
             const serviceLabel = getAppointmentServiceSummaryLabel(apt);
 

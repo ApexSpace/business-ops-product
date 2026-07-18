@@ -73,6 +73,20 @@ export function toAppointmentResponse(
     relatedCheckoutId: checkout?.id ?? null,
     relatedCheckoutStatus: checkout?.status ?? null,
     waitingNotifiedAt,
+    guestFirstName: row.guestFirstName ?? null,
+    guestEmail: row.guestEmail ?? null,
+    guestPhone: row.guestPhone ?? null,
+    guestPhoneCountryCode: row.guestPhoneCountryCode ?? null,
+    expressBookingExpiresAt: row.expressBookingExpiresAt ?? null,
+    expressBookingCompletedAt: row.expressBookingCompletedAt ?? null,
+    expressBookingPending:
+      row.status === 'PENDING_COMPLETION' &&
+      Boolean(row.expressBookingToken) &&
+      (!row.expressBookingExpiresAt ||
+        row.expressBookingExpiresAt.getTime() > Date.now()),
+    expressRequireCard: row.expressRequireCard ?? null,
+    expressRequireDeposit: row.expressRequireDeposit ?? null,
+    expressTimeLimitMinutes: row.expressTimeLimitMinutes ?? null,
     photoFileIds,
     hasPhotos: photoFileIds.length > 0,
     ...(options?.googleSyncWarning

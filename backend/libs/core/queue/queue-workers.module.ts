@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { CommunicationsWorkerModule } from '@app/modules/communications/communications-worker.module';
 import { AutomationsWorkerModule } from '@app/modules/communications/automations/automations-worker.module';
+import { ReportsWorkerModule } from '@app/modules/reports/reports-worker.module';
 import { SyncProcessorsModule } from './sync-processors.module';
 import { QueueWorkersService } from './queue-workers.service';
 
@@ -8,6 +9,7 @@ import { QueueWorkersService } from './queue-workers.service';
   imports: [
     CommunicationsWorkerModule,
     AutomationsWorkerModule,
+    ReportsWorkerModule,
     SyncProcessorsModule,
   ],
   providers: [QueueWorkersService],

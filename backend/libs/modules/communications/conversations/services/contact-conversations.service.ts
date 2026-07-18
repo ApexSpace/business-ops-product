@@ -18,9 +18,10 @@ import {
 import { ConversationMessagesRepository } from '../repositories/conversation-messages.repository';
 import { ConversationsRepository } from '../repositories/conversations.repository';
 import { buildReplyChannelCandidates } from '../utils/contact-reply-channels.util';
-import { resolveMetaParticipantId } from '../utils/contact-outbound-identity.util';
+import { resolveMetaParticipantId, resolveSmsParticipantId } from '../utils/contact-outbound-identity.util';
 import { EmailConversationsService } from './email-conversations.service';
 import { MetaConversationsService } from './meta-conversations.service';
+import { SmsConversationsService } from './sms-conversations.service';
 import { WhatsAppSessionWindowService } from './whatsapp-session-window.service';
 import { WhatsAppParticipantSyncService } from './whatsapp-participant-sync.service';
 import {
@@ -37,6 +38,7 @@ export class ContactConversationsService {
     private readonly messagingStatusService: MessagingStatusService,
     private readonly emailConversationsService: EmailConversationsService,
     private readonly metaConversationsService: MetaConversationsService,
+    private readonly smsConversationsService: SmsConversationsService,
     private readonly whatsAppSessionWindowService: WhatsAppSessionWindowService,
     private readonly whatsAppParticipantSyncService: WhatsAppParticipantSyncService,
   ) {}
@@ -219,6 +221,15 @@ export class ContactConversationsService {
       );
     }
 
+    if (dto.channel === ConversationChannel.SMS) {
+      return this.smsConversationsService.startConversation(
+        businessId,
+        contact,
+        actor,
+        { text: dto.text },
+      );
+    }
+
     throw new AppException(
       ErrorCode.BAD_REQUEST,
       'This channel is not supported for outbound conversation start.',
@@ -281,6 +292,14 @@ export class ContactConversationsService {
           externalParticipantId: participantId,
         });
       }
+    }
+
+    const smsParticipantId = resolveSmsParticipantId(contact);
+    if (smsParticipantId) {
+      identityFilters.push({
+        channel: ConversationChannel.SMS,
+        externalParticipantId: smsParticipantId,
+      });
     }
 
     const mismatched =

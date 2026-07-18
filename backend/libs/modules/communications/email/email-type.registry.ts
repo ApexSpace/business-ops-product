@@ -158,6 +158,64 @@ export const EMAIL_TYPE_REGISTRY: Record<string, EmailTypeDefinition> = {
       'appointment.title',
     ],
   },
+  'appointment.express_complete': {
+    key: 'appointment.express_complete',
+    category: 'appointments',
+    label: 'Express Booking completion link',
+    description:
+      'Sent to the customer so they can finish an Express Booking started by staff.',
+    defaultEnabled: true,
+    businessConfigurable: true,
+    defaultSubject: 'Complete your booking with {{business.name}}',
+    defaultHtmlBody: WRAPPER(`
+      <p>Hi {{contact.name}},</p>
+      <p><strong>{{business.name}}</strong> started a booking for you. Please complete your details using the link below.</p>
+      <p><strong>When:</strong> {{appointment.start_at}}</p>
+      <p><strong>Service:</strong> {{appointment.service_name}}</p>
+      <p><strong>Complete by:</strong> {{express.expires_at}}</p>
+      <p><a href="{{express.complete_url}}">Complete your booking</a></p>
+      <p>If the link expires, contact the business to get a new one.</p>
+    `),
+    defaultTextBody:
+      'Hi {{contact.name}},\n\n{{business.name}} started a booking for you.\n\nWhen: {{appointment.start_at}}\nService: {{appointment.service_name}}\nComplete by: {{express.expires_at}}\n\nComplete your booking: {{express.complete_url}}',
+    variables: [
+      'business.name',
+      'contact.name',
+      'appointment.start_at',
+      'appointment.end_at',
+      'appointment.service_name',
+      'appointment.title',
+      'express.expires_at',
+      'express.complete_url',
+    ],
+  },
+  'appointment.express_expired': {
+    key: 'appointment.express_expired',
+    category: 'appointments',
+    label: 'Express Booking expired',
+    description:
+      'Sent when an Express Booking is cancelled because the client did not finish in time.',
+    defaultEnabled: true,
+    businessConfigurable: true,
+    defaultSubject: 'Your booking link with {{business.name}} expired',
+    defaultHtmlBody: WRAPPER(`
+      <p>Hi {{contact.name}},</p>
+      <p>Your booking with <strong>{{business.name}}</strong> was cancelled because it was not completed in time.</p>
+      <p><strong>When:</strong> {{appointment.start_at}}</p>
+      <p><strong>Service:</strong> {{appointment.service_name}}</p>
+      <p>Please contact the business if you still need an appointment.</p>
+    `),
+    defaultTextBody:
+      'Hi {{contact.name}},\n\nYour booking with {{business.name}} was cancelled because it was not completed in time.\n\nWhen: {{appointment.start_at}}\nService: {{appointment.service_name}}\n\nPlease contact the business if you still need an appointment.',
+    variables: [
+      'business.name',
+      'contact.name',
+      'appointment.start_at',
+      'appointment.end_at',
+      'appointment.service_name',
+      'appointment.title',
+    ],
+  },
   'appointment.cancelled': {
     key: 'appointment.cancelled',
     category: 'appointments',

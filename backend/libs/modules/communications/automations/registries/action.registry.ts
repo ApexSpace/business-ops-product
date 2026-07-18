@@ -9,6 +9,7 @@ import {
   emptyActionConfigSchema,
   leadStageActionConfigSchema,
   sendEmailActionConfigSchema,
+  sendSmsActionConfigSchema,
   tagActionConfigSchema,
   updateFieldActionConfigSchema,
   webhookOutboundActionConfigSchema,
@@ -45,8 +46,8 @@ export const ACTION_REGISTRY: ActionDefinition[] = [
     label: 'Send SMS',
     description: 'Send an SMS message to the contact.',
     icon: 'smartphone',
-    implementationStatus: 'stub',
-    configSchema: sendEmailActionConfigSchema,
+    implementationStatus: 'implemented',
+    configSchema: sendSmsActionConfigSchema,
     requiredContext: ['contact.phone'],
   }),
   act({

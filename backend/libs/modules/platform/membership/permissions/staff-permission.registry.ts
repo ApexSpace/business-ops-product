@@ -49,6 +49,7 @@ export const STAFF_PERMISSION_KEYS = [
   'automations.manage',
   'time_clock.access',
   'time_cards.manage',
+  'reports.access',
   'settings.services.manage',
   'settings.calendars.manage',
   'settings.online_booking.manage',
@@ -414,6 +415,17 @@ export const STAFF_PERMISSION_GROUPS: StaffPermissionGroup[] = [
     ],
   },
   {
+    id: 'reports',
+    label: 'Reports',
+    permissions: [
+      {
+        key: 'reports.access',
+        label: 'Can access company reports',
+        description: 'Open Reports, generate previews, and download PDF/Excel.',
+      },
+    ],
+  },
+  {
     id: 'setup',
     label: 'Setup & management',
     permissions: [
@@ -578,6 +590,7 @@ export const NAV_KEY_PERMISSION_MAP: Record<string, StaffPermissionKey> = {
   payments: 'payments.access',
   'time-clock': 'time_clock.access',
   'time-cards': 'time_cards.manage',
+  reports: 'reports.access',
 };
 
 export const NOTIFICATION_SETTING_KEYS = [

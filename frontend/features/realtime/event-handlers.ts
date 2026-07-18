@@ -15,6 +15,7 @@ export const REALTIME_EVENTS = {
   disabled: "realtime.disabled",
   messageReceived: "message.received",
   messageUpdated: "message.updated",
+  messageDeleted: "message.deleted",
   conversationUpdated: "conversation.updated",
   jobCompleted: "job.completed",
   integrationStatusChanged: "integration.status_changed",
@@ -40,6 +41,16 @@ function shouldApplyMessageStatusUpdate(
   if (next === "FAILED") {
     return current !== "READ";
   }
+  // Manual retry resets FAILED → PENDING (then SENT/DELIVERED/…)
+  if (
+    current === "FAILED" &&
+    (next === "PENDING" ||
+      next === "SENT" ||
+      next === "DELIVERED" ||
+      next === "READ")
+  ) {
+    return true;
+  }
   return MESSAGE_STATUS_RANK[next] > MESSAGE_STATUS_RANK[current];
 }
 
@@ -60,6 +71,18 @@ export function handleRealtimeEvent(
     case matchesEvent(event, "conversation.message.updated"):
       handleMessageUpdatedEvent(queryClient, payload.data);
       break;
+    case matchesEvent(event, REALTIME_EVENTS.messageDeleted):
+    case matchesEvent(event, "conversation.message.deleted"): {
+      const data = payload.data as Record<string, unknown> | undefined;
+      const conversationId =
+        typeof data?.conversationId === "string" ? data.conversationId : null;
+      const messageId =
+        typeof data?.messageId === "string" ? data.messageId : null;
+      if (conversationId && messageId) {
+        removeMessageFromCache(queryClient, conversationId, messageId);
+      }
+      break;
+    }
     case matchesEvent(event, REALTIME_EVENTS.conversationUpdated):
     case matchesEvent(event, "conversation.updated"):
       patchConversationEvent(queryClient, payload.data);
@@ -184,7 +207,11 @@ function handleMessageUpdatedEvent(
       ? (record.status as MessageStatus)
       : undefined;
   const errorMessage =
-    typeof record.errorMessage === "string" ? record.errorMessage : undefined;
+    typeof record.errorMessage === "string"
+      ? record.errorMessage
+      : record.errorMessage === null
+        ? null
+        : undefined;
 
   const contactId = conversationId
     ? resolveContactIdForConversation(queryClient, conversationId)

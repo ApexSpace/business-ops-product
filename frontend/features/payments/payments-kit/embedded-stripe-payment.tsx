@@ -28,7 +28,7 @@ function getStripePromise(publishableKey: string, accountId?: string | null) {
   return stripePromise;
 }
 
-export type EmbeddedStripePaymentMode = "staff" | "checkout";
+export type EmbeddedStripePaymentMode = "staff" | "checkout" | "setup";
 
 interface StaffCardPaymentFormProps {
   clientSecret: string;
@@ -176,7 +176,17 @@ function CheckoutPaymentForm({
 
   return (
     <div className="space-y-4">
-      <PaymentElement onReady={() => setElementReady(true)} />
+      <PaymentElement
+        onReady={() => setElementReady(true)}
+        options={{
+          wallets: {
+            applePay: "never",
+            googlePay: "never",
+            link: "never",
+          },
+          paymentMethodOrder: ["card"],
+        }}
+      />
       <Button
         type="button"
         className="w-full"
@@ -201,13 +211,103 @@ function CheckoutPaymentForm({
   );
 }
 
+/** Customer card-on-file: SetupIntent via Payment Element (no charge). */
+function SetupCardForm({
+  onSuccess,
+  onError,
+}: {
+  onSuccess: (setupIntentId: string) => void;
+  onError: (message: string) => void;
+}) {
+  const stripe = useStripe();
+  const elements = useElements();
+  const [submitting, setSubmitting] = useState(false);
+  const [elementReady, setElementReady] = useState(false);
+
+  async function handleSave() {
+    if (!stripe || !elements) {
+      onError("Card form is still loading. Please wait a moment.");
+      return;
+    }
+    if (!elementReady) {
+      onError("Card form is still loading. Please wait a moment.");
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const { error, setupIntent } = await stripe.confirmSetup({
+        elements,
+        redirect: "if_required",
+      });
+
+      if (error) {
+        onError(error.message ?? "Card setup failed");
+        return;
+      }
+
+      if (
+        setupIntent?.status === "succeeded" ||
+        setupIntent?.status === "processing"
+      ) {
+        onSuccess(setupIntent.id);
+        return;
+      }
+
+      onError("Card was not saved. Try again.");
+    } catch (err) {
+      onError(
+        err instanceof Error ? err.message : "Card could not be saved",
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <div className="space-y-4">
+      <PaymentElement
+        onReady={() => setElementReady(true)}
+        options={{
+          wallets: {
+            applePay: "never",
+            googlePay: "never",
+            link: "never",
+          },
+          paymentMethodOrder: ["card"],
+        }}
+      />
+      <Button
+        type="button"
+        className="w-full"
+        disabled={!stripe || !elementReady || submitting}
+        onClick={() => void handleSave()}
+      >
+        {submitting ? (
+          <>
+            <Loader2 className="mr-2 size-4 animate-spin" />
+            Saving…
+          </>
+        ) : !elementReady ? (
+          <>
+            <Loader2 className="mr-2 size-4 animate-spin" />
+            Loading…
+          </>
+        ) : (
+          "Save card"
+        )}
+      </Button>
+    </div>
+  );
+}
+
 export interface EmbeddedStripePaymentProps {
   publishableKey: string;
   clientSecret: string;
   stripeAccountId?: string | null;
-  /** Staff-recorded payments: card fields only. Checkout: all enabled methods. */
+  /** Staff-recorded payments: card fields only. Checkout: charge. Setup: tokenize. */
   mode?: EmbeddedStripePaymentMode;
-  onSuccess: () => void;
+  onSuccess: (result?: { setupIntentId?: string; paymentIntentId?: string }) => void;
   onError: (message: string) => void;
 }
 
@@ -225,9 +325,9 @@ export function EmbeddedStripePayment({
   // `stripe.confirmCardPayment(clientSecret, ...)`, so the Elements group must
   // be created WITHOUT a clientSecret. Passing one here makes Stripe.js expect
   // the PaymentElement flow and it fails to resolve the CardElement.
-  // PaymentElement (checkout mode) requires the clientSecret up front.
+  // PaymentElement (checkout/setup) requires the clientSecret up front.
   const options =
-    mode === "checkout"
+    mode === "checkout" || mode === "setup"
       ? { clientSecret, appearance: { theme: "stripe" as const } }
       : { appearance: { theme: "stripe" as const } };
 
@@ -240,11 +340,19 @@ export function EmbeddedStripePayment({
       {mode === "staff" ? (
         <StaffCardPaymentForm
           clientSecret={clientSecret}
-          onSuccess={onSuccess}
+          onSuccess={() => onSuccess()}
+          onError={onError}
+        />
+      ) : mode === "setup" ? (
+        <SetupCardForm
+          onSuccess={(setupIntentId) => onSuccess({ setupIntentId })}
           onError={onError}
         />
       ) : (
-        <CheckoutPaymentForm onSuccess={onSuccess} onError={onError} />
+        <CheckoutPaymentForm
+          onSuccess={() => onSuccess()}
+          onError={onError}
+        />
       )}
     </Elements>
   );

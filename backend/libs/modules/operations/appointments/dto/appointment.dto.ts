@@ -284,6 +284,17 @@ export class AppointmentResponseDto {
   relatedCheckoutId!: string | null;
   relatedCheckoutStatus!: string | null;
   waitingNotifiedAt!: string | null;
+  guestFirstName!: string | null;
+  guestEmail!: string | null;
+  guestPhone!: string | null;
+  guestPhoneCountryCode!: string | null;
+  expressBookingExpiresAt!: Date | null;
+  expressBookingCompletedAt!: Date | null;
+  /** True while a completion link can still be resent. */
+  expressBookingPending!: boolean;
+  expressRequireCard!: boolean | null;
+  expressRequireDeposit!: boolean | null;
+  expressTimeLimitMinutes!: number | null;
   /** Set when internal save succeeded but Google sync failed */
   googleSyncWarning?: string | null;
   /** Soft warning for schedule conflicts (e.g. staff double-booked) */

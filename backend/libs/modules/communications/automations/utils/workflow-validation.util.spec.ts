@@ -6,8 +6,8 @@ describe('assertActivatableWorkflow', () => {
       assertActivatableWorkflow('contact.created', [
         {
           id: 'step-1',
-          actionKey: 'communication.send_sms',
-          config: {},
+          actionKey: 'communication.send_message',
+          config: { body: 'hello' },
         },
       ]),
     ).toThrow('not available for activation');
@@ -20,6 +20,18 @@ describe('assertActivatableWorkflow', () => {
           id: 'step-1',
           actionKey: 'workflow.end',
           config: {},
+        },
+      ]),
+    ).not.toThrow();
+  });
+
+  it('allows implemented send_sms action', () => {
+    expect(() =>
+      assertActivatableWorkflow('contact.created', [
+        {
+          id: 'step-1',
+          actionKey: 'communication.send_sms',
+          config: { body: 'Hello' },
         },
       ]),
     ).not.toThrow();

@@ -176,6 +176,54 @@ export function connectPlatformDefaultEmail() {
   );
 }
 
+export type PlatformDefaultSms = {
+  integrationId: string;
+  resourceId: string;
+  fromNumber: string;
+  mode: "platform";
+};
+
+export function getPlatformDefaultSms() {
+  return api.get<PlatformDefaultSms | null>(
+    "integrations/business/sms/platform-default",
+  );
+}
+
+export function connectPlatformDefaultSms() {
+  return api.post<PlatformDefaultSms>(
+    "integrations/business/sms/connect-platform-default",
+  );
+}
+
+export function listTwilioPhoneNumbers(body: {
+  accountSid: string;
+  authToken: string;
+}) {
+  return api.post<
+    Array<{ sid: string; phoneNumber: string; friendlyName: string }>
+  >("integrations/business/sms/list-phone-numbers", body);
+}
+
+export function connectBusinessTwilio(body: {
+  accountSid: string;
+  authToken: string;
+  phoneNumberSid: string;
+}) {
+  return api.post<{
+    integrationId: string;
+    resourceId: string;
+    fromNumber: string;
+    mode: "business";
+  }>("integrations/business/sms/connect-twilio", body);
+}
+
+export function getSmsWebhookUrls() {
+  return api.get<{
+    inboundUrl: string | null;
+    statusCallbackUrl: string | null;
+  }>("integrations/business/sms/webhook-url");
+}
+
 export function listBusinessIntegrationProviders() {
   return api.get<IntegrationProviderWithStatus[]>("integrations/providers");
 }

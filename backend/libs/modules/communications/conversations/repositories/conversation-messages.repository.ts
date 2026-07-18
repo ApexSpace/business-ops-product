@@ -14,12 +14,18 @@ import { PrismaService } from '@app/core/database/prisma.service';
 export class ConversationMessagesRepository {
   constructor(private readonly prisma: PrismaService) {}
 
+  private activeListWhere(
+    extra: Prisma.ConversationMessageWhereInput,
+  ): Prisma.ConversationMessageWhereInput {
+    return { deletedAt: null, ...extra };
+  }
+
   findById(
     businessId: string,
     id: string,
   ): Promise<ConversationMessage | null> {
     return this.prisma.conversationMessage.findFirst({
-      where: { id, businessId },
+      where: { id, businessId, deletedAt: null },
     });
   }
 
@@ -48,7 +54,7 @@ export class ConversationMessagesRepository {
     conversationId: string,
     params: { skip: number; take: number },
   ): Promise<{ items: ConversationMessage[]; total: number }> {
-    const where = { businessId, conversationId };
+    const where = this.activeListWhere({ businessId, conversationId });
 
     return this.prisma
       .$transaction([
@@ -79,15 +85,15 @@ export class ConversationMessagesRepository {
     prevCursor: string | null;
     hasMore: boolean;
   }> {
-    const where: Prisma.ConversationMessageWhereInput = {
+    const where: Prisma.ConversationMessageWhereInput = this.activeListWhere({
       businessId,
       conversationId,
-    };
+    });
 
     let anchor: ConversationMessage | null = null;
     if (params.cursor) {
       anchor = await this.prisma.conversationMessage.findFirst({
-        where: { id: params.cursor, businessId, conversationId },
+        where: { id: params.cursor, businessId, conversationId, deletedAt: null },
       });
       if (!anchor) {
         return {
@@ -196,6 +202,15 @@ export class ConversationMessagesRepository {
     });
   }
 
+  softDelete(businessId: string, id: string): Promise<void> {
+    return this.prisma.conversationMessage
+      .updateMany({
+        where: { id, businessId, deletedAt: null },
+        data: { deletedAt: new Date() },
+      })
+      .then(() => undefined);
+  }
+
   updateContactIdForConversations(
     conversationIds: string[],
     contactId: string,
@@ -228,7 +243,9 @@ export class ConversationMessagesRepository {
     prevCursor: string | null;
     hasMore: boolean;
   }> {
-    const scopeWhere = buildContactMessageScopeWhere(businessId, contact);
+    const scopeWhere: Prisma.ConversationMessageWhereInput = {
+      AND: [buildContactMessageScopeWhere(businessId, contact), { deletedAt: null }],
+    };
 
     let anchor: ConversationMessage | null = null;
     if (params.cursor) {

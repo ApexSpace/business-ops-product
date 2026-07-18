@@ -102,6 +102,12 @@ enum ServicePaymentRequirement {
   REQUIRED
 }
 
+enum ExpressDepositType {
+  FULL
+  PERCENTAGE
+  FIXED
+}
+
 enum ProductType {
   SIMPLE
   VARIABLE
@@ -474,6 +480,7 @@ enum CalendarType {
 }
 
 enum AppointmentStatus {
+  PENDING_COMPLETION
   UNCONFIRMED
   CONFIRMED
   WAITING
@@ -487,6 +494,7 @@ enum AppointmentSource {
   INTERNAL
   BOOKING_WIDGET
   PUBLIC_LINK
+  EXPRESS
   GOOGLE_SYNC
   IMPORTED
 }
@@ -648,10 +656,16 @@ enum WebhookEventProvider {
   GOOGLE
   OTHER
   RESEND
+  TWILIO
 }
 
 enum EmailProvider {
   RESEND
+}
+
+enum NotificationChannel {
+  EMAIL
+  SMS
 }
 
 enum EmailMessageStatus {
@@ -689,6 +703,7 @@ model User {
   refreshTokens        RefreshToken[]
   invitedMemberships   BusinessMembership[]  @relation("MembershipInvitedBy")
   createdContacts      Contact[]             @relation("ContactCreatedBy")
+  blockedContacts      Contact[]             @relation("ContactBlockedBy")
   contactWalletTransactionsCreated ContactWalletTransaction[] @relation("ContactWalletTransactionCreatedBy")
   assignedLeads        Lead[]                @relation("LeadAssignedTo")
   createdLeads         Lead[]                @relation("LeadCreatedBy")
@@ -874,6 +889,7 @@ model Business {
   calendarAvailability CalendarAvailability[]
   calendarExceptions   CalendarException[]
   appointments         Appointment[]
+  cancellationPolicyAcceptances CancellationPolicyAcceptance[]
   conversations        Conversation[]
   conversationMessages ConversationMessage[]
   conversationParticipants ConversationParticipant[]
@@ -885,9 +901,11 @@ model Business {
   chatbotRules         ChatbotRule[]
   chatbotSessions      ChatbotSession[]
   webhookEvents            WebhookEvent[]
+  platformSmsSuppressions  PlatformSmsSuppression[]
   asyncJobs                AsyncJob[]
   fileAssets               FileAsset[]
   businessEmailPreferences BusinessEmailPreference[]
+  businessNotificationChannelPreferences BusinessNotificationChannelPreference[]
   emailTemplates           EmailTemplate[]
   whatsappMessageTemplates WhatsAppMessageTemplate[]
   emailMessages            EmailMessage[]
@@ -1148,12 +1166,15 @@ model Contact {
   clientNotes      String?   @db.Text
   metadata         Json?
   createdById      String?
+  blockedAt        DateTime?
+  blockedByUserId  String?
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
   deletedAt        DateTime?
 
   business  Business     @relation(fields: [businessId], references: [id], onDelete: Cascade)
   createdBy User?        @relation("ContactCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  blockedBy User?        @relation("ContactBlockedBy", fields: [blockedByUserId], references: [id], onDelete: SetNull)
   tags      ContactTag[]
   leads     Lead[]
   workItems WorkItem[]
@@ -1183,6 +1204,7 @@ model Contact {
   @@index([businessId, createdAt])
   @@index([businessId, email])
   @@index([businessId, phoneNumber])
+  @@index([businessId, blockedAt])
   @@index([avatarAssetId])
   @@map("contacts")
 }
@@ -2875,6 +2897,14 @@ model BusinessOnlineBookingSettings {
   collectPhotosEnabled    Boolean              @default(false)
   photoUploadPrompt       String?
   waitlistEnabled         Boolean              @default(false)
+  expressBookingEnabled           Boolean @default(false)
+  expressBookingAutoEnable        Boolean @default(false)
+  expressBookingTimeLimitMinutes  Int     @default(30)
+  expressRequireCard              Boolean @default(false)
+  expressRequireDeposit           Boolean @default(false)
+  expressDepositType              ExpressDepositType @default(FULL)
+  expressAllowPhotoUpload         Boolean @default(false)
+  cancellationPolicyVersion       String  @default("1")
   randomizeStaffOrder     Boolean              @default(false)
   showGenderOptions       Boolean              @default(false)
   showAnyoneOption        Boolean              @default(true)
@@ -3021,6 +3051,16 @@ model Appointment {
   locationValue    String?
   notes            String?
   metadata         Json?
+  guestFirstName   String?
+  guestEmail       String?
+  guestPhone       String?
+  guestPhoneCountryCode String?
+  expressBookingToken       String?   @unique
+  expressBookingExpiresAt   DateTime?
+  expressBookingCompletedAt DateTime?
+  expressRequireCard        Boolean?
+  expressRequireDeposit     Boolean?
+  expressTimeLimitMinutes   Int?
   externalProvider String?
   externalEventId  String?
   createdById      String?
@@ -3038,13 +3078,32 @@ model Appointment {
   resourceAssignments AppointmentResourceAssignment[]
   serviceLines        AppointmentServiceLine[]
   invoices            Invoice[]
+  cancellationPolicyAcceptance CancellationPolicyAcceptance?
 
   @@index([businessId])
   @@index([businessId, calendarId])
   @@index([businessId, contactId])
   @@index([businessId, startAt])
   @@index([businessId, status])
+  @@index([businessId, status, expressBookingExpiresAt])
   @@map("appointments")
+}
+
+model CancellationPolicyAcceptance {
+  id             String   @id @default(uuid())
+  businessId     String
+  appointmentId  String   @unique
+  policyVersion  String
+  acceptedAt     DateTime @default(now())
+  ipAddress      String?
+  userAgent      String?
+  createdAt      DateTime @default(now())
+
+  business    Business    @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  appointment Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+
+  @@index([businessId])
+  @@map("cancellation_policy_acceptances")
 }
 
 model AppointmentServiceLine {
@@ -3129,6 +3188,7 @@ model ConversationMessage {
   receivedAt          DateTime?
   createdAt           DateTime              @default(now())
   updatedAt           DateTime              @updatedAt
+  deletedAt           DateTime?
 
   business     Business     @relation(fields: [businessId], references: [id], onDelete: Cascade)
   conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
@@ -3140,6 +3200,7 @@ model ConversationMessage {
   @@index([channel])
   @@index([createdAt])
   @@index([conversationId, createdAt])
+  @@index([conversationId, deletedAt])
   @@map("conversation_messages")
 }
 
@@ -3346,6 +3407,24 @@ model WebhookEvent {
   @@map("webhook_events")
 }
 
+model PlatformSmsSuppression {
+  id                  String    @id @default(uuid())
+  platformFromNumber  String
+  customerPhoneE164   String
+  businessId          String?
+  optedOutAt          DateTime?
+  optedInAt           DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  business Business? @relation(fields: [businessId], references: [id], onDelete: SetNull)
+
+  @@unique([platformFromNumber, customerPhoneE164], map: "platform_sms_suppressions_from_phone_key")
+  @@index([businessId])
+  @@index([platformFromNumber])
+  @@map("platform_sms_suppressions")
+}
+
 model BusinessEmailPreference {
   id         String   @id @default(uuid())
   businessId String
@@ -3359,6 +3438,21 @@ model BusinessEmailPreference {
   @@unique([businessId, emailType])
   @@index([businessId])
   @@map("business_email_preferences")
+}
+
+model BusinessNotificationChannelPreference {
+  id              String              @id @default(uuid())
+  businessId      String
+  notificationKey String
+  channel         NotificationChannel @default(EMAIL)
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@unique([businessId, notificationKey], map: "bncp_business_notification_key")
+  @@index([businessId])
+  @@map("business_notification_channel_preferences")
 }
 
 model EmailTemplate {

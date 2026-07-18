@@ -119,6 +119,7 @@ export class ContactRepository {
       | 'facebookPsid'
       | 'instagramUserId'
       | 'whatsappWaId'
+      | 'smsPhone'
       | 'emailAddress',
     externalId: string,
   ): Promise<Contact | null> {

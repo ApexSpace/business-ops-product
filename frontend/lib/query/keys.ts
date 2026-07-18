@@ -364,6 +364,16 @@ export const queryKeys = {
     logs: (filters?: ListFilters) =>
       listKey(["email-notifications", "logs"], filters),
   },
+  notificationChannelPreferences: {
+    all: () => ["notification-channel-preferences"] as const,
+    list: () => ["notification-channel-preferences", "list"] as const,
+    detail: (notificationKey: string) =>
+      [
+        "notification-channel-preferences",
+        "detail",
+        notificationKey,
+      ] as const,
+  },
   automations: {
     all: () => ["automations"] as const,
     categories: (scope?: string) =>
@@ -452,6 +462,12 @@ export const queryKeys = {
       detail: (id: string) =>
         ["whatsapp-settings", "templates", "detail", id] as const,
     },
+  },
+  reports: {
+    all: () => ["reports"] as const,
+    catalog: () => ["reports", "catalog"] as const,
+    document: (reportKey: string, filters?: ListFilters) =>
+      listKey(["reports", "document", reportKey], filters),
   },
   platform: {
     businesses: {

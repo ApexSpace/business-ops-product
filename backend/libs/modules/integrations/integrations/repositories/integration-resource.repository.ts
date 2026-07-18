@@ -50,6 +50,22 @@ export class IntegrationResourceRepository {
     });
   }
 
+  findActiveByExternalId(
+    externalId: string,
+    providerKey: string,
+    type: IntegrationResourceType,
+  ): Promise<IntegrationResource | null> {
+    return this.prisma.integrationResource.findFirst({
+      where: {
+        externalId,
+        providerKey,
+        type,
+        status: IntegrationResourceStatus.ACTIVE,
+      },
+      orderBy: [{ isDefault: 'desc' }, { updatedAt: 'desc' }],
+    });
+  }
+
   findBySlugForProvider(
     providerKey: string,
     slug: string,

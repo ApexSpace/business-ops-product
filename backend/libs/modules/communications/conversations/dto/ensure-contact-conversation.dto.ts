@@ -13,6 +13,7 @@ const ENSURE_CHANNELS = [
   ConversationChannel.WHATSAPP,
   ConversationChannel.FACEBOOK,
   ConversationChannel.INSTAGRAM,
+  ConversationChannel.SMS,
 ] as const;
 
 export class EnsureContactConversationDto {

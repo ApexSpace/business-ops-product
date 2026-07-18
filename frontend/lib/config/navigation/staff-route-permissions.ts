@@ -27,6 +27,7 @@ export const BUSINESS_ROUTE_STAFF_PERMISSION: Record<
   "/business/payments": "payments.access",
   "/business/time-clock": "time_clock.access",
   "/business/time-cards": "time_cards.manage",
+  "/business/reports": "reports.access",
   "/business/settings": "always",
 };
 

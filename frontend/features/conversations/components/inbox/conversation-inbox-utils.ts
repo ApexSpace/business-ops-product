@@ -32,6 +32,9 @@ export function channelComposerHint(
     }
     return "24h reply window open.";
   }
+  if (channel === "SMS") {
+    return "SMS is billed per segment. Stay within 2 segments to control cost.";
+  }
   return null;
 }
 

@@ -1,4 +1,6 @@
 import { Contact, ConversationChannel } from '@prisma/client';
+import { normalizeE164Phone } from '@app/core/config/twilio/twilio.config';
+import { sanitizePhoneFields } from '@app/modules/crm/contacts/utils/contact-profile.util';
 import { resolveChannelMetadataKey } from './contact-channel-identity.util';
 
 function readMetadataString(metadata: unknown, key: string): string | null {
@@ -69,6 +71,30 @@ export function resolveWhatsAppParticipantId(contact: Contact): string | null {
     return normalized || fromPhone;
   }
   return fromPhone;
+}
+
+export function resolveSmsParticipantId(contact: Contact): string | null {
+  const metadataKey = resolveChannelMetadataKey(ConversationChannel.SMS);
+  const fromMeta = readMetadataString(contact.metadata, metadataKey);
+  if (fromMeta) {
+    const normalized = normalizeE164Phone(fromMeta);
+    return normalized || null;
+  }
+
+  const { phoneCountryCode, phoneNumber } = sanitizePhoneFields(
+    contact.phoneCountryCode,
+    contact.phoneNumber,
+  );
+  if (!phoneNumber) {
+    return null;
+  }
+
+  const dialDigits = (phoneCountryCode ?? '').replace(/\D/g, '');
+  if (!dialDigits) {
+    return normalizeE164Phone(phoneNumber) || null;
+  }
+
+  return normalizeE164Phone(`+${dialDigits}${phoneNumber}`) || null;
 }
 
 export function resolveMetaParticipantId(

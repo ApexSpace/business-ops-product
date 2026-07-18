@@ -1,97 +1,45 @@
 "use client";
 
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { Settings2, Zap } from "lucide-react";
+import { Tags } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { listCannedResponses } from "@/features/conversations/api/canned-responses.api";
-import { CannedResponsesSettingsDialog } from "@/features/conversations/components/inbox/canned-responses-settings-dialog";
-import { queryKeys } from "@/lib/query/keys";
+import { QuickRepliesDialog } from "@/features/conversations/components/inbox/quick-replies-dialog";
+import { cn } from "@/lib/utils";
 
 interface CannedResponsesPickerProps {
   onSelect: (body: string) => void;
+  disabled?: boolean;
+  className?: string;
 }
 
-export function CannedResponsesPicker({ onSelect }: CannedResponsesPickerProps) {
-  const [settingsOpen, setSettingsOpen] = useState(false);
-  const { data: items = [], isLoading } = useQuery({
-    queryKey: queryKeys.cannedResponses.list(),
-    queryFn: listCannedResponses,
-  });
+export function CannedResponsesPicker({
+  onSelect,
+  disabled = false,
+  className,
+}: CannedResponsesPickerProps) {
+  const [open, setOpen] = useState(false);
 
   return (
     <>
-      <Popover>
-        <PopoverTrigger
-          render={
-            <Button
-              type="button"
-              size="icon"
-              variant="ghost"
-              className="size-8 shrink-0"
-            >
-              <Zap className="size-4" />
-              <span className="sr-only">Quick replies</span>
-            </Button>
-          }
-        />
-        <PopoverContent align="start" className="w-72 p-2">
-          <div className="flex items-center justify-between px-2 py-1">
-            <p className="text-xs font-medium text-muted-foreground">
-              Quick replies
-            </p>
-            <Button
-              type="button"
-              size="sm"
-              variant="ghost"
-              className="h-7 gap-1 px-2 text-xs"
-              onClick={() => setSettingsOpen(true)}
-            >
-              <Settings2 className="size-3.5" />
-              Manage
-            </Button>
-          </div>
-          {isLoading ? (
-            <p className="px-2 py-3 text-sm text-muted-foreground">Loading…</p>
-          ) : items.length === 0 ? (
-            <p className="px-2 py-3 text-sm text-muted-foreground">
-              No quick replies yet.{" "}
-              <button
-                type="button"
-                className="text-primary underline-offset-2 hover:underline"
-                onClick={() => setSettingsOpen(true)}
-              >
-                Add one
-              </button>
-            </p>
-          ) : (
-            <div className="max-h-56 space-y-1 overflow-y-auto">
-              {items.map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  className="w-full rounded-md px-2 py-2 text-left hover:bg-muted"
-                  onClick={() => onSelect(item.body)}
-                >
-                  <p className="text-sm font-medium">{item.title}</p>
-                  <p className="line-clamp-2 text-xs text-muted-foreground">
-                    {item.body}
-                  </p>
-                </button>
-              ))}
-            </div>
-          )}
-        </PopoverContent>
-      </Popover>
+      <Button
+        type="button"
+        size="icon"
+        variant="ghost"
+        className={cn(
+          "size-8 shrink-0 rounded-md text-muted-foreground",
+          className,
+        )}
+        disabled={disabled}
+        onClick={() => setOpen(true)}
+        aria-label="Quick replies"
+      >
+        <Tags className="size-4" />
+      </Button>
 
-      <CannedResponsesSettingsDialog
-        open={settingsOpen}
-        onOpenChange={setSettingsOpen}
+      <QuickRepliesDialog
+        open={open}
+        onOpenChange={setOpen}
+        onUseResponse={onSelect}
       />
     </>
   );

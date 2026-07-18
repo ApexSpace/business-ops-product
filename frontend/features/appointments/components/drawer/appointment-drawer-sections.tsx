@@ -117,16 +117,46 @@ export function AppointmentDateTimeBar({
 
 export interface AppointmentClientBlockProps {
   contact: Appointment["contact"];
+  guestFirstName?: string | null;
+  guestEmail?: string | null;
+  guestPhone?: string | null;
+  pendingExpress?: boolean;
   onMessageClick?: () => void;
   className?: string;
 }
 
 export function AppointmentClientBlock({
   contact,
+  guestFirstName,
+  guestEmail,
+  guestPhone,
+  pendingExpress = false,
   onMessageClick,
   className,
 }: AppointmentClientBlockProps) {
   if (!contact) {
+    if (pendingExpress || guestFirstName || guestEmail) {
+      const name = guestFirstName?.trim() || guestEmail?.trim() || "Guest";
+      return (
+        <div
+          className={cn(
+            "rounded-[10px] border border-dashed border-amber-500/40 bg-amber-500/[0.08] px-3.5 py-3",
+            className,
+          )}
+        >
+          <p className="text-[14px] font-semibold text-foreground">{name}</p>
+          {guestEmail ? (
+            <p className="mt-0.5 text-[12px] text-muted-foreground">{guestEmail}</p>
+          ) : null}
+          {guestPhone ? (
+            <p className="mt-0.5 text-[12px] text-muted-foreground">{guestPhone}</p>
+          ) : null}
+          <p className="mt-1 text-[12px] font-medium text-amber-800 dark:text-amber-200">
+            Pending Express Booking completion
+          </p>
+        </div>
+      );
+    }
     return (
       <div
         className={cn(

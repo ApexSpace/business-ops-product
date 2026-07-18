@@ -2,11 +2,16 @@ import { resolveBackendPublicUrl } from './backend-public-url.util';
 import { resolveDatabaseUrl } from './database-url.util';
 import { EmailConfig, resolveEmailConfig } from './email/email.config';
 import {
+  TwilioConfig,
+  resolveTwilioConfig,
+} from './twilio/twilio.config';
+import {
   RealtimeConfig,
   resolveRealtimeConfig,
 } from '../realtime/realtime.config';
 
 export type { EmailConfig };
+export type { TwilioConfig } from './twilio/twilio.config';
 export type { RealtimeConfig } from '../realtime/realtime.config';
 
 /** Resolves the public frontend origin for OAuth redirects and invite links. */
@@ -67,6 +72,7 @@ export interface RootConfig {
   seed: SeedConfig;
   integrations: IntegrationConfig;
   email: EmailConfig;
+  twilio: TwilioConfig;
   realtime: RealtimeConfig;
 }
 
@@ -108,5 +114,6 @@ export default (): RootConfig => ({
     encryptionKey: process.env.INTEGRATION_ENCRYPTION_KEY,
   },
   email: resolveEmailConfig(process.env),
+  twilio: resolveTwilioConfig(process.env),
   realtime: resolveRealtimeConfig(process.env),
 });

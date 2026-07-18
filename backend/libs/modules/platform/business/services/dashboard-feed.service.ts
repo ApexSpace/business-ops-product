@@ -543,7 +543,8 @@ export class DashboardFeedService {
     return rows
       .filter(
         (row): row is typeof row & { lastMessageAt: Date } =>
-          row.lastMessageAt instanceof Date,
+          row.lastMessageAt instanceof Date &&
+          !Number.isNaN(row.lastMessageAt.getTime()),
       )
       .map((row) => ({
         id: row.id,

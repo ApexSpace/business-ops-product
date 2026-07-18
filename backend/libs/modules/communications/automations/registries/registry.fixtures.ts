@@ -84,6 +84,9 @@ export const ACTION_CONFIG_FIXTURES: Record<string, unknown> = {
     htmlBody: '<p>New enrollment</p>',
     fromName: '{{business.name}}',
   },
+  'communication.send_sms': {
+    body: 'Hi {{contact.first_name}}, your appointment is confirmed.',
+  },
   'contact.add_tag': {
     tagId: '33333333-3333-4333-8333-333333333333',
   },

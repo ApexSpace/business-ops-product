@@ -11,6 +11,7 @@ export const BUSINESS_ROUTE_REGISTRY = new Set<string>([
   '/business/time-cards',
   '/business/payments',
   '/business/sales',
+  '/business/reports',
   '/business/products',
   '/business/settings/profile',
   '/business/settings/team',

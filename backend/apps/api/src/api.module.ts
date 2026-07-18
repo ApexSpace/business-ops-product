@@ -13,6 +13,7 @@ import { FinanceApiModule } from '@app/modules/finance/finance-api.module';
 import { IntegrationsApiModule } from '@app/modules/integrations/integrations-api.module';
 import { OperationsApiModule } from '@app/modules/operations/operations-api.module';
 import { PlatformApiModule } from '@app/modules/platform/platform-api.module';
+import { ReportsApiModule } from '@app/modules/reports/reports-api.module';
 import { MembershipModule } from '@app/modules/platform/membership/membership.module';
 import { QueueBoardModule } from './queue-board.module';
 
@@ -32,6 +33,7 @@ import { QueueBoardModule } from './queue-board.module';
     FinanceApiModule,
     OperationsApiModule,
     PlatformApiModule,
+    ReportsApiModule,
     MembershipModule,
     QueueBoardModule,
   ],

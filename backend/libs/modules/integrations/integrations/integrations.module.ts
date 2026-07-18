@@ -28,6 +28,8 @@ import { StripeWebhookDispatchService } from './stripe/services/stripe-webhook-d
 import { StripeWebhookService } from './stripe/services/stripe-webhook.service';
 import { MetaOAuthController } from './meta/controllers/meta-oauth.controller';
 import { EmailIntegrationController } from './email/controllers/email-integration.controller';
+import { SmsIntegrationController } from './sms/controllers/sms-integration.controller';
+import { TwilioModule } from '../twilio/twilio.module';
 import { PlatformEmailProvisioningService } from './email/services/platform-email-provisioning.service';
 import { MetaWebhookController } from './meta/controllers/meta-webhook.controller';
 import { MetaApiClient } from './meta/services/meta-api-client';
@@ -69,6 +71,7 @@ import { WhatsAppTemplatesController } from '../whatsapp/controllers/whatsapp-te
     MetaWebhookProcessorModule,
     WhatsAppModule,
     StripePlatformBillingModule,
+    TwilioModule,
   ],
   controllers: [
     IntegrationProvidersController,
@@ -84,6 +87,7 @@ import { WhatsAppTemplatesController } from '../whatsapp/controllers/whatsapp-te
     MetaOAuthController,
     MetaWebhookController,
     EmailIntegrationController,
+    SmsIntegrationController,
   ],
   providers: [
     IntegrationProviderRepository,
@@ -144,6 +148,7 @@ import { WhatsAppTemplatesController } from '../whatsapp/controllers/whatsapp-te
     MetaApiClient,
     MetaResourceSyncService,
     PlatformEmailProvisioningService,
+    TwilioModule,
   ],
 })
 export class IntegrationsModule {}

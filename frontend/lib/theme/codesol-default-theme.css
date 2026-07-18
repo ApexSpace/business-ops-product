@@ -50,6 +50,66 @@
   --cs-page-orb-3: rgb(183 110 0 / 12%);
 }
 
+/*
+ * Public booking / express / invoice shells use a forced light page background.
+ * When html is .dark, theme tokens would otherwise paint light text on that
+ * background — restore light palette for these surfaces only.
+ */
+.public-booking-surface {
+  color-scheme: light;
+  --cs-navy: #0b1530;
+  --cs-navy-2: #111d42;
+  --cs-navy-hover: #1b2a58;
+  --cs-blue: #375bd2;
+  --cs-cyan: #17b8ce;
+  --cs-lilac: #a78bfa;
+  --cs-blue-tint: #eef2ff;
+  --cs-blue-text: #2b47a8;
+  --cs-ink: #12172b;
+  --cs-ink-2: #5b6478;
+  --cs-ink-3: #9aa1b2;
+  --cs-border: #e4e7ef;
+  --cs-page: #f7f8fa;
+  --cs-green: #1f9d63;
+  --cs-green-tint: #e7f7ef;
+  --cs-amber: #b76e00;
+  --cs-amber-tint: #fdf1e0;
+  --cs-red: #dc3545;
+  --cs-red-tint: #fcecec;
+  --cs-glass-surface: color-mix(in srgb, white 76%, var(--cs-blue-tint));
+  --cs-glass-surface-strong: color-mix(in srgb, white 84%, var(--cs-blue-tint));
+  --cs-glass-surface-soft: color-mix(in srgb, white 62%, var(--cs-blue-tint));
+  --cs-glass-border: rgb(18 23 43 / 8%);
+  --cs-glass-border-strong: rgb(18 23 43 / 12%);
+  --cs-glass-highlight: rgb(255 255 255 / 58%);
+  --cs-control-surface: rgb(255 255 255 / 62%);
+  --cs-control-border: rgb(18 23 43 / 8%);
+
+  /* Semantic tokens are computed on html.dark — re-bind them here so children inherit usable light values */
+  --background: var(--cs-page);
+  --foreground: var(--cs-ink);
+  --foreground-subtle: var(--cs-ink-3);
+  --card: var(--cs-glass-surface-strong);
+  --card-foreground: var(--cs-ink);
+  --popover: var(--cs-glass-surface-strong);
+  --popover-foreground: var(--cs-ink);
+  --primary: var(--cs-blue);
+  --primary-foreground: #ffffff;
+  --primary-tint: var(--cs-blue-tint);
+  --primary-text: var(--cs-blue-text);
+  --secondary: color-mix(in srgb, var(--cs-glass-surface-soft) 85%, white);
+  --secondary-foreground: var(--cs-ink);
+  --muted: color-mix(in srgb, var(--cs-glass-surface-soft) 88%, white);
+  --muted-foreground: var(--cs-ink-2);
+  --accent: var(--cs-blue-tint);
+  --accent-foreground: var(--cs-blue-text);
+  --destructive: var(--cs-red);
+  --destructive-foreground: #ffffff;
+  --border: var(--cs-glass-border-strong);
+  --input: var(--cs-control-border);
+  --ring: var(--cs-blue);
+}
+
 .dark {
   --cs-navy: #070d1f;
   --cs-navy-2: #0b1530;

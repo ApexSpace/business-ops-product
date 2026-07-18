@@ -8,6 +8,12 @@ export const APPOINTMENT_STATUS_COLORS: Record<
   AppointmentStatus,
   { bg: string; border: string; text: string; dot: string }
 > = {
+  PENDING_COMPLETION: {
+    bg: "bg-amber-500/[0.12]",
+    border: "border-amber-500/50 border-dashed",
+    text: "text-amber-950 dark:text-amber-200",
+    dot: "bg-amber-500",
+  },
   UNCONFIRMED: {
     bg: "bg-orange-500/[0.1]",
     border: "border-orange-400/40",

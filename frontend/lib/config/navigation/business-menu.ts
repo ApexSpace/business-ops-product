@@ -5,6 +5,7 @@ import {
   Clock,
   Contact,
   CreditCard,
+  FileBarChart,
   Gift,
   GitBranch,
   LayoutDashboard,
@@ -133,6 +134,13 @@ export const businessOperationalMenuItems: BusinessMenuItem[] = [
     href: "/business/time-cards",
     icon: Clock,
     navKey: "time-cards",
+    navTier: "apps",
+  },
+  {
+    title: "Reports",
+    href: "/business/reports",
+    icon: FileBarChart,
+    navKey: "reports",
     navTier: "apps",
   },
 ];

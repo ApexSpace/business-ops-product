@@ -66,6 +66,32 @@ export function createAppointment(body: Record<string, unknown>) {
   return api.post<Appointment>("appointments", body);
 }
 
+export function createExpressAppointment(body: {
+  contactId?: string;
+  guestFirstName?: string;
+  guestEmail?: string;
+  guestPhone?: string;
+  guestPhoneCountryCode?: string;
+  serviceId: string;
+  startAt: string;
+  endAt?: string;
+  assignedToId: string;
+  calendarId?: string | null;
+  expressRequireCard?: boolean;
+  expressRequireDeposit?: boolean;
+  expressTimeLimitMinutes?: number;
+}) {
+  return api.post<Appointment>("appointments/express", body);
+}
+
+export function resendExpressAppointment(id: string) {
+  return api.post<Appointment>(`appointments/${id}/express/resend`);
+}
+
+export function staffCompleteExpressAppointment(id: string) {
+  return api.post<Appointment>(`appointments/${id}/express/staff-complete`);
+}
+
 export function updateAppointment(id: string, body: Record<string, unknown>) {
   return api.patch<Appointment>(`appointments/${id}`, body);
 }

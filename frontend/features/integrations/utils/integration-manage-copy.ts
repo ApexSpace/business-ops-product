@@ -187,6 +187,28 @@ const COPY_BY_PROVIDER: Record<string, IntegrationManageCopy> = {
     messagingComposerHint:
       "Replies from customers are routed back to this conversation automatically.",
   },
+  sms: {
+    connectionTitle: "Twilio SMS",
+    description:
+      "Connect your Twilio account and phone number for two-way inbox SMS. Outbound notification texts (e.g. Express Booking links) use the CodeSol platform number automatically.",
+    resourcesSectionLabel: "SMS number",
+    syncButtonLabel: "Refresh SMS settings",
+    syncSuccessToast: () => "SMS settings refreshed",
+    syncEmptyToast: "No SMS number configured",
+    emptyState: {
+      title: "SMS not configured",
+      message:
+        "Enable platform SMS notifications or connect your Twilio number to start sending messages.",
+      checklist: [
+        "Enable platform SMS for one-way notifications.",
+        "Connect your Twilio account for two-way inbox messaging.",
+        "Configure the Twilio webhook URL on your number if needed.",
+      ],
+    },
+    disconnectLabel: "Disconnect SMS",
+    messagingComposerHint:
+      "Two-way SMS replies are only available when your own Twilio number is connected.",
+  },
   linkedin: {
     connectionTitle: "LinkedIn connection",
     description:

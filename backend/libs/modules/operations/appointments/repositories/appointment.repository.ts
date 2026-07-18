@@ -3,6 +3,7 @@ import { Appointment, AppointmentStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '@app/core/database/prisma.service';
 
 const BLOCKING_STATUSES: AppointmentStatus[] = [
+  AppointmentStatus.PENDING_COMPLETION,
   AppointmentStatus.UNCONFIRMED,
   AppointmentStatus.CONFIRMED,
   AppointmentStatus.WAITING,
@@ -40,6 +41,7 @@ export type AppointmentWithRelations = Appointment & {
     displayName: string | null;
     email: string | null;
     phoneNumber: string | null;
+    phoneCountryCode: string | null;
     createdAt: Date;
   } | null;
   service: { id: string; name: string } | null;
@@ -98,6 +100,33 @@ export class AppointmentRepository {
     return this.prisma.appointment.findFirst({
       where: this.activeWhere(businessId, { id }),
       include: this.includeRelations(),
+    });
+  }
+
+  findByExpressToken(
+    token: string,
+  ): Promise<AppointmentWithRelations | null> {
+    return this.prisma.appointment.findFirst({
+      where: {
+        deletedAt: null,
+        expressBookingToken: token,
+      },
+      include: this.includeRelations(),
+    });
+  }
+
+  findExpiredPendingExpress(now: Date, take = 100): Promise<
+    AppointmentWithRelations[]
+  > {
+    return this.prisma.appointment.findMany({
+      where: {
+        deletedAt: null,
+        status: AppointmentStatus.PENDING_COMPLETION,
+        expressBookingExpiresAt: { lt: now },
+      },
+      include: this.includeRelations(),
+      take,
+      orderBy: { expressBookingExpiresAt: 'asc' },
     });
   }
 
@@ -329,6 +358,7 @@ export class AppointmentRepository {
           displayName: true,
           email: true,
           phoneNumber: true,
+          phoneCountryCode: true,
           createdAt: true,
         },
       },

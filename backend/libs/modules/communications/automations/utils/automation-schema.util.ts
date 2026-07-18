@@ -1,5 +1,10 @@
 import { z } from 'zod';
 import type { SubjectType } from '../types/automation-registry.types';
+import {
+  SMS_MAX_SEGMENTS,
+  analyzeSmsSegments,
+  buildSmsTooLongMessage,
+} from '@app/modules/communications/sms/utils/sms-segment.util';
 
 /** Shared event payload shape for domain-triggered automations. */
 export const baseTriggerPayloadSchema = z.object({
@@ -40,6 +45,35 @@ export const sendEmailActionConfigSchema = z.object({
   to: z.enum(['contact', 'custom']).optional(),
   customTo: z.string().email().optional(),
 });
+
+export const sendSmsActionConfigSchema = z
+  .object({
+    body: z.string().min(1).optional(),
+    textBody: z.string().min(1).optional(),
+    htmlBody: z.string().min(1).optional(),
+    subject: z.string().optional(),
+  })
+  .refine(
+    (data) => Boolean(data.body || data.textBody || data.htmlBody),
+    { message: 'Provide body, textBody, or htmlBody' },
+  )
+  .superRefine((data, ctx) => {
+    const raw =
+      data.body?.trim() ||
+      data.textBody?.trim() ||
+      (data.htmlBody ? data.htmlBody.replace(/<[^>]+>/g, ' ').trim() : '');
+    if (!raw) return;
+    // Static template check only — merge tags expand at runtime.
+    const withoutTags = raw.replace(/\{\{[^}]+\}\}/g, '');
+    const info = analyzeSmsSegments(withoutTags);
+    if (info.segmentCount > SMS_MAX_SEGMENTS) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: buildSmsTooLongMessage(info),
+        path: ['body'],
+      });
+    }
+  });
 
 export const tagActionConfigSchema = z.object({
   tagId: z.string().uuid(),

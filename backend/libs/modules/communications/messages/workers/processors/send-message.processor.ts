@@ -193,6 +193,11 @@ export class SendMessageProcessor {
         messageId: message.id,
         status: finalStatus,
       });
+
+      await this.idempotencyService.release(
+        `send-message:${payload.messageId}`,
+        payload.messageId,
+      );
     } catch (error) {
       const errorMessage =
         error instanceof AppException
@@ -244,6 +249,10 @@ export class SendMessageProcessor {
       errorMessage,
     });
     await this.asyncJobRepository.markFailed(payload.asyncJobId, errorMessage);
+    await this.idempotencyService.release(
+      `send-message:${payload.messageId}`,
+      payload.messageId,
+    );
   }
 
   private readWhatsAppTemplateMetadata(

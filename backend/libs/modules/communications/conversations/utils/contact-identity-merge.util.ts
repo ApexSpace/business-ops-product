@@ -6,6 +6,7 @@ const CHANNEL_METADATA_KEYS = [
   'facebookPsid',
   'instagramUserId',
   'whatsappWaId',
+  'smsPhone',
   'emailAddress',
 ] as const;
 

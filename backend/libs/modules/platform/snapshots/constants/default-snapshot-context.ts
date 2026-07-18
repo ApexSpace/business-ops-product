@@ -90,11 +90,18 @@ export const DEFAULT_SNAPSHOT_CONTEXT: SnapshotContextResponse = {
       order: 10,
     },
     {
+      key: 'reports',
+      route: '/business/reports',
+      icon: 'file-bar-chart',
+      labelKey: 'nav.reports',
+      order: 11,
+    },
+    {
       key: 'products',
       route: '/business/products',
       icon: 'package',
       labelKey: 'nav.products',
-      order: 11,
+      order: 12,
     },
   ],
   dashboard: {

@@ -1,4 +1,5 @@
 import { Module, forwardRef } from '@nestjs/common';
+import { IdempotencyModule } from '@app/core/idempotency/idempotency.module';
 import { EmailModule } from '../email/email.module';
 import { OutboundMessageDispatchService } from '../messages/services/outbound-message-dispatch.service';
 import { OutboundMessageRecoveryService } from '../messages/services/outbound-message-recovery.service';
@@ -13,6 +14,7 @@ import { FacebookMessengerAdapter } from './adapters/meta/facebook-messenger.ada
 import { InstagramMessagingAdapter } from './adapters/meta/instagram-messaging.adapter';
 import { WhatsAppMessagingAdapter } from './adapters/meta/whatsapp-messaging.adapter';
 import { EmailMessagingAdapter } from './adapters/email/email-messaging.adapter';
+import { SmsMessagingAdapter } from './adapters/sms/sms-messaging.adapter';
 import { WebchatAdapter } from './adapters/webchat/webchat.adapter';
 import { ContactConversationsController } from './controllers/contact-conversations.controller';
 import { ConversationsController } from './controllers/conversations.controller';
@@ -30,6 +32,7 @@ import { ContactConversationsService } from './services/contact-conversations.se
 import { ContactIdentityBackfillService } from './services/contact-identity-backfill.service';
 import { EmailConversationsService } from './services/email-conversations.service';
 import { MetaConversationsService } from './services/meta-conversations.service';
+import { SmsConversationsService } from './services/sms-conversations.service';
 import { UnifiedConversationsService } from './services/unified-conversations.service';
 import { WhatsAppParticipantSyncService } from './services/whatsapp-participant-sync.service';
 import { WhatsAppSessionWindowService } from './services/whatsapp-session-window.service';
@@ -38,11 +41,14 @@ import { ConversationNotesService } from './services/conversation-notes.service'
 import { CannedResponsesRepository } from './repositories/canned-responses.repository';
 import { CannedResponsesService } from './services/canned-responses.service';
 import { CannedResponsesController } from './controllers/canned-responses.controller';
+import { ConversationActivityService } from './services/conversation-activity.service';
 import { ChatbotsModule } from '../chatbots/chatbots.module';
+import { TwilioModule } from '@app/modules/integrations/twilio/twilio.module';
 
 @Module({
   imports: [
     AuditModule,
+    IdempotencyModule,
     forwardRef(() => BusinessModule),
     forwardRef(() => ContactsModule),
     WebhookEventsModule,
@@ -50,6 +56,7 @@ import { ChatbotsModule } from '../chatbots/chatbots.module';
     forwardRef(() => IntegrationsModule),
     forwardRef(() => SendMessageProcessorModule),
     forwardRef(() => ChatbotsModule),
+    TwilioModule,
   ],
   controllers: [
     ConversationsController,
@@ -67,17 +74,20 @@ import { ChatbotsModule } from '../chatbots/chatbots.module';
     ConversationMessagesService,
     ConversationContactResolverService,
     ConversationAssignmentService,
+    ConversationActivityService,
     ConversationRealtimeService,
     ConversationWebhookIngestionService,
     WhatsAppDeliveryStatusBufferService,
     EmailConversationsService,
     MetaConversationsService,
+    SmsConversationsService,
     WhatsAppSessionWindowService,
     WhatsAppParticipantSyncService,
     EmailMessagingAdapter,
     FacebookMessengerAdapter,
     InstagramMessagingAdapter,
     WhatsAppMessagingAdapter,
+    SmsMessagingAdapter,
     WebchatAdapter,
     ConversationChannelAdapterRegistry,
     OutboundMessageDispatchService,
@@ -100,6 +110,7 @@ import { ChatbotsModule } from '../chatbots/chatbots.module';
     ConversationRealtimeService,
     ConversationNotesService,
     CannedResponsesService,
+    ConversationActivityService,
   ],
 })
 export class ConversationsModule {}

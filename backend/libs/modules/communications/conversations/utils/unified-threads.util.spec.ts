@@ -24,14 +24,35 @@ function conversation(overrides: Record<string, unknown> = {}) {
     deletedAt: null,
     contact: {
       id: 'contact-1',
-      displayName: 'Shahbaz',
+      businessId: 'biz-1',
       firstName: 'Shahbaz',
       lastName: null,
+      displayName: 'Shahbaz',
+      companyName: null,
+      email: null,
+      phoneCountryCode: null,
+      phoneNumber: null,
+      timezone: null,
+      address: null,
+      city: null,
+      state: null,
+      country: null,
+      zip: null,
       avatarUrl: null,
+      avatarAssetId: null,
+      source: null,
+      clientNotes: null,
+      metadata: null,
+      createdById: null,
+      blockedAt: null,
+      blockedByUserId: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      deletedAt: null,
     },
     assignedTo: null,
     ...overrides,
-  };
+  } as Parameters<typeof groupConversationsIntoUnifiedThreads>[0][number];
 }
 
 describe('groupConversationsIntoUnifiedThreads', () => {

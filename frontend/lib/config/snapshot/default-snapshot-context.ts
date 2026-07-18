@@ -107,6 +107,13 @@ export const DEFAULT_SNAPSHOT_NAVIGATION = [
     labelKey: "nav.products",
     order: 70,
   },
+  {
+    key: "reports",
+    route: "/business/reports",
+    icon: "file-bar-chart",
+    labelKey: "nav.reports",
+    order: 75,
+  },
 ] as const;
 
 export const DEFAULT_SNAPSHOT_QUICK_LINKS = [

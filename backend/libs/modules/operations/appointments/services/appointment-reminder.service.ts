@@ -68,6 +68,7 @@ export class AppointmentReminderService {
             displayName: true,
             email: true,
             phoneNumber: true,
+            phoneCountryCode: true,
             createdAt: true,
           },
         },

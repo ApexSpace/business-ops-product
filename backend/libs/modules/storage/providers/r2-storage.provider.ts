@@ -16,6 +16,11 @@ import type {
   SignedUploadResult,
 } from '../types/storage.types';
 
+function buildAttachmentContentDisposition(fileName: string): string {
+  const safe = fileName.replace(/["\\\r\n]/g, '_');
+  return `attachment; filename="${safe}"`;
+}
+
 @Injectable()
 export class R2StorageProvider {
   private readonly logger = new Logger(R2StorageProvider.name);
@@ -76,6 +81,7 @@ export class R2StorageProvider {
 
   async createSignedDownloadUrl(
     objectKey: string,
+    options?: { downloadFileName?: string },
   ): Promise<SignedDownloadResult> {
     const { client, config } = this.requireClient();
     const expiresIn = config.signedDownloadExpiresSeconds;
@@ -83,6 +89,13 @@ export class R2StorageProvider {
     const command = new GetObjectCommand({
       Bucket: config.bucket,
       Key: objectKey,
+      ...(options?.downloadFileName
+        ? {
+            ResponseContentDisposition: buildAttachmentContentDisposition(
+              options.downloadFileName,
+            ),
+          }
+        : {}),
     });
 
     const downloadUrl = await getSignedUrl(client, command, { expiresIn });
@@ -123,5 +136,23 @@ export class R2StorageProvider {
     }
     const bytes = await body.transformToByteArray();
     return Buffer.from(bytes);
+  }
+
+  /** Server-side upload (report generation, system artifacts). */
+  async putObject(params: {
+    objectKey: string;
+    mimeType: string;
+    body: Buffer;
+  }): Promise<void> {
+    const { client, config } = this.requireClient();
+    await client.send(
+      new PutObjectCommand({
+        Bucket: config.bucket,
+        Key: params.objectKey,
+        Body: params.body,
+        ContentType: params.mimeType,
+        ContentLength: params.body.length,
+      }),
+    );
   }
 }

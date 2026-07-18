@@ -9,6 +9,7 @@ import { ProfileAvatar } from "@/components/ui/profile-avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getContact } from "@/features/contacts/api/contacts.api";
 import { useContactConversationComposer } from "@/features/contacts/hooks/use-contact-conversation-composer";
+import { useRetryConversationMessage } from "@/features/conversations/hooks/use-retry-conversation-message";
 import { MessageComposer } from "@/features/conversations/components/inbox/message-composer";
 import { ConversationInternalNotesPanel } from "@/features/conversations/components/inbox/conversation-internal-notes-panel";
 import { VirtualizedMessageList } from "@/features/conversations/components/virtualized-message-list";
@@ -82,6 +83,11 @@ export function ContactConversationDrawer({
     setTemplateHeaderMediaUrl,
     buildTemplatePayload,
   } = useContactConversationComposer(contactId ?? "");
+
+  const { retryMessage, retryingMessageId } = useRetryConversationMessage({
+    contactId,
+    enabled: canSend,
+  });
 
   const showEmailSubject = effectiveReplyChannel === "EMAIL";
   const hasChannels = replyChannels.length > 0;
@@ -183,6 +189,9 @@ export function ContactConversationDrawer({
                       : null,
                     businessName: business?.name,
                   }}
+                  onRetryMessage={retryMessage}
+                  retryingMessageId={retryingMessageId}
+                  canRetryMessages={canSend}
                 />
               )}
             </div>
@@ -220,6 +229,7 @@ export function ContactConversationDrawer({
                   onTemplateVariableValueChange={handleTemplateVariableValueChange}
                   templateHeaderMediaUrl={templateHeaderMediaUrl}
                   onTemplateHeaderMediaUrlChange={setTemplateHeaderMediaUrl}
+                  showCannedResponses
                   onSend={() => {
                     const attachments = pendingAttachment
                       ? [{ type: pendingAttachment.type, url: pendingAttachment.url }]

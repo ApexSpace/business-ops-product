@@ -6,6 +6,7 @@ import { NotesModule } from '@app/modules/crm/notes/notes.module';
 import { TasksModule } from '@app/modules/operations/tasks/tasks.module';
 import { MembershipModule } from '@app/modules/platform/membership/membership.module';
 import { EmailModule } from '../email/email.module';
+import { SmsModule } from '../sms/sms.module';
 import { AutomationStepProcessor } from './workers/processors/automation-step.processor';
 import { AutomationActionExecutorService } from './services/automation-action-executor.service';
 import { AutomationEngineService } from './services/automation-engine.service';
@@ -22,6 +23,7 @@ import {
   imports: [
     AuditModule,
     EmailModule,
+    SmsModule,
     ContactsModule,
     forwardRef(() => LeadsModule),
     NotesModule,

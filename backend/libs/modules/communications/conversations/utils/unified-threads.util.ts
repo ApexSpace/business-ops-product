@@ -6,7 +6,7 @@ import {
   User,
 } from '@prisma/client';
 import { UnifiedConversationThreadDto } from '../dto/unified-conversation-response.dto';
-import { toConversationResponse } from '../mappers/conversation.mapper';
+import { toConversationContactSummary, toConversationResponse } from '../mappers/conversation.mapper';
 
 type ConversationWithRelations = Conversation & {
   contact?: Contact | null;
@@ -53,16 +53,7 @@ function buildThreadDto(
     threadKey,
     contactId,
     contact: primary.contact
-      ? {
-          id: primary.contact.id,
-          label:
-            primary.contact.displayName?.trim() ||
-            [primary.contact.firstName, primary.contact.lastName]
-              .filter(Boolean)
-              .join(' ') ||
-            'Contact',
-          avatarUrl: primary.contact.avatarUrl,
-        }
+      ? toConversationContactSummary(primary.contact)
       : null,
     channels,
     conversations: conversations.map((row) => toConversationResponse(row)),

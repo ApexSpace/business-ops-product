@@ -16,6 +16,7 @@ describe("isPublicPath", () => {
     expect(isPublicPath("/chat/bot-key")).toBe(true);
     expect(isPublicPath("/widget/chat/bot-key")).toBe(true);
     expect(isPublicPath("/form/contact-us")).toBe(true);
+    expect(isPublicPath("/express/abc123")).toBe(true);
     expect(isPublicPath("/public/anything")).toBe(true);
   });
 

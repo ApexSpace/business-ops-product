@@ -114,7 +114,9 @@ export class BookingDepositPaymentService {
       {
         amount: amountCents,
         currency: snapshot.currency.toLowerCase(),
-        automatic_payment_methods: { enabled: true },
+        // Card only — same as staff POS / saved-card SetupIntents.
+        // automatic_payment_methods surfaces Klarna, Cash App, Link, etc.
+        payment_method_types: ['card'],
         metadata: {
           businessId: params.holdPayload.businessId,
           purpose: STRIPE_PAYMENT_PURPOSE.BOOKING,

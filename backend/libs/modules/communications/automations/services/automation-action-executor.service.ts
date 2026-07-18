@@ -2,6 +2,12 @@ import { HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { htmlToPlainText } from '@app/common/utils/html-text.util';
 import { PrismaService } from '@app/core/database/prisma.service';
 import { resolveEmailConfig } from '@app/core/config/email/email.config';
+import { PlatformSmsSendService } from '@app/modules/communications/sms/services/platform-sms-send.service';
+import {
+  SMS_MAX_SEGMENTS,
+  analyzeSmsSegments,
+  buildSmsTooLongMessage,
+} from '@app/modules/communications/sms/utils/sms-segment.util';
 import { EmailNotificationService } from '@app/modules/communications/email/services/email-notification.service';
 import { resolveTransactionalEmailSender } from '@app/modules/communications/email/utils/email-sender.util';
 import { ContactRepository } from '@app/modules/crm/contacts/repositories/contact.repository';
@@ -54,6 +60,7 @@ export class AutomationActionExecutorService {
     private readonly customValueResolver: CustomValueResolverService,
     private readonly conditionEvaluator: ConditionEvaluatorService,
     private readonly emailNotificationService: EmailNotificationService,
+    private readonly platformSmsSendService: PlatformSmsSendService,
     private readonly contactRepository: ContactRepository,
     private readonly tagRepository: TagRepository,
     private readonly leadRepository: LeadRepository,
@@ -114,6 +121,17 @@ export class AutomationActionExecutorService {
           },
           context,
           true,
+          workflowCreatedById,
+        );
+      case 'communication.send_sms':
+        return this.sendSms(
+          parsed.data as {
+            subject?: string;
+            htmlBody?: string;
+            textBody?: string;
+            body?: string;
+          },
+          context,
           workflowCreatedById,
         );
       case 'contact.add_tag':
@@ -322,6 +340,92 @@ export class AutomationActionExecutorService {
         fromName: sender.name,
         usedDefaultSender: sender.usedDefaultSender,
         usedStepFromName: sender.usedStepFromName,
+      },
+    };
+  }
+
+  private async sendSms(
+    config: {
+      subject?: string;
+      htmlBody?: string;
+      textBody?: string;
+      body?: string;
+    },
+    context: AutomationRunContext,
+    workflowCreatedById?: string | null,
+  ): Promise<ActionExecutionResult> {
+    const mergeValues = await this.resolveMergeValues(context, [
+      config.body ?? '',
+      config.textBody ?? '',
+      config.htmlBody ?? '',
+      config.subject ?? '',
+    ]);
+
+    const body = interpolateMergeTags(
+      config.body ??
+        config.textBody ??
+        (config.htmlBody ? htmlToPlainText(config.htmlBody) : ''),
+      mergeValues,
+    ).trim();
+
+    if (!body) {
+      return { type: 'continue', output: { skipped: true, reason: 'empty_body' } };
+    }
+
+    const segmentInfo = analyzeSmsSegments(body);
+    if (segmentInfo.segmentCount > SMS_MAX_SEGMENTS) {
+      return {
+        type: 'continue',
+        output: {
+          skipped: true,
+          reason: 'sms_too_long',
+          message: buildSmsTooLongMessage(segmentInfo),
+          encoding: segmentInfo.encoding,
+          segmentCount: segmentInfo.segmentCount,
+          charCount: segmentInfo.charCount,
+        },
+      };
+    }
+
+    if (!context.contactId) {
+      return { type: 'continue', output: { skipped: true, reason: 'no_contact' } };
+    }
+
+    const contact = await this.contactRepository.findById(
+      context.businessId,
+      context.contactId,
+    );
+    const phone = contact?.phoneNumber?.trim();
+    if (!phone) {
+      return { type: 'continue', output: { skipped: true, reason: 'no_phone' } };
+    }
+
+    const to = phone.startsWith('+') ? phone : `+${phone.replace(/\D/g, '')}`;
+    const result = await this.platformSmsSendService.sendNotification({
+      businessId: context.businessId,
+      to,
+      body,
+    });
+
+    const actorId = await resolveAutomationActorUserId(
+      this.prisma,
+      workflowCreatedById,
+    );
+
+    await this.auditService.log({
+      actorUserId: actorId ?? SYSTEM_AUDIT_ACTOR_SENTINEL,
+      businessId: context.businessId,
+      action: 'automation.sms.sent',
+      entityType: 'AutomationWorkflowRun',
+      entityId: context.runId,
+      metadata: automationAuditMetadata(context.runId, context.workflowId),
+    });
+
+    return {
+      type: 'continue',
+      output: {
+        messageSid: result.sid,
+        to,
       },
     };
   }

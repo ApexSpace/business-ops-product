@@ -12,7 +12,7 @@ const CHANNEL_PROVIDER: Record<ConversationChannel, string | null> = {
   [ConversationChannel.WHATSAPP]: 'whatsapp',
   [ConversationChannel.FACEBOOK]: 'facebook',
   [ConversationChannel.INSTAGRAM]: 'instagram',
-  [ConversationChannel.SMS]: null,
+  [ConversationChannel.SMS]: 'sms',
   [ConversationChannel.WEBCHAT]: 'webchat',
   [ConversationChannel.LINKEDIN]: null,
 };
@@ -63,6 +63,12 @@ export function buildReplyChannelCandidates(
     {
       channel: ConversationChannel.INSTAGRAM,
       hasIdentity: Boolean(readMetadataString(metadata, 'instagramUserId')),
+    },
+    {
+      channel: ConversationChannel.SMS,
+      hasIdentity:
+        contactHasPhone(contact) ||
+        Boolean(readMetadataString(metadata, 'smsPhone')),
     },
     {
       channel: ConversationChannel.WEBCHAT,

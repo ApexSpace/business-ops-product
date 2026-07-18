@@ -219,6 +219,76 @@ export class StorageService {
     return toFileAssetResponse(updated);
   }
 
+  /**
+   * Create a READY FileAsset from an in-memory buffer (server-generated reports).
+   */
+  async putGeneratedFile(params: {
+    businessId: string;
+    fileName: string;
+    mimeType: string;
+    category: import('@prisma/client').FileCategory;
+    visibility: import('@prisma/client').FileVisibility;
+    buffer: Buffer;
+    uploadedById?: string;
+    auditActorUserId?: string;
+  }): Promise<{
+    fileAssetId: string;
+    downloadUrl: string;
+    expiresIn: number;
+  }> {
+    const dto: CreateUploadDto = {
+      filename: params.fileName,
+      mimeType: params.mimeType,
+      size: params.buffer.length,
+      category: params.category,
+      visibility: params.visibility,
+    };
+
+    const created = await this.createBusinessUpload(params.businessId, dto, {
+      uploadedById: params.uploadedById,
+      auditActorUserId: params.auditActorUserId,
+    });
+
+    const asset = await this.fileAssetRepository.findById(
+      params.businessId,
+      created.fileAssetId,
+    );
+    if (!asset) {
+      throw new AppException(
+        ErrorCode.NOT_FOUND,
+        'File asset not found after create',
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    await this.r2StorageProvider.putObject({
+      objectKey: asset.objectKey,
+      mimeType: params.mimeType,
+      body: params.buffer,
+    });
+
+    await this.fileAssetService.markReady(asset.id);
+
+    const { downloadUrl, expiresIn } =
+      await this.r2StorageProvider.createSignedDownloadUrl(asset.objectKey, {
+        downloadFileName: params.fileName,
+      });
+
+    await this.auditService.log({
+      actorUserId: params.auditActorUserId ?? SYSTEM_AUDIT_ACTOR_SENTINEL,
+      businessId: params.businessId,
+      action: 'file_asset.generated',
+      entityType: 'FileAsset',
+      entityId: asset.id,
+    });
+
+    return {
+      fileAssetId: asset.id,
+      downloadUrl,
+      expiresIn,
+    };
+  }
+
   async deleteOrphanPending(
     fileAssetId: string,
     businessId: string,

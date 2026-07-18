@@ -3,7 +3,9 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
+  Bot,
   CheckCircle2,
+  ChevronDown,
   Loader2,
   PauseCircle,
   PlayCircle,
@@ -12,6 +14,12 @@ import {
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   convertChatbotSessionForConversation,
   endChatbotSessionForConversation,
   pauseChatbotForConversation,
@@ -19,9 +27,6 @@ import {
 } from "@/features/conversations/api/conversation-notes.api";
 import { queryKeys } from "@/lib/query/keys";
 import { cn } from "@/lib/utils";
-
-const ACTION_BTN_CLASS =
-  "h-7 shrink-0 gap-1 px-1.5 text-[10px] sm:px-2 sm:text-[11px]";
 
 interface ChatbotSessionActionsProps {
   conversationId: string;
@@ -95,74 +100,67 @@ export function ChatbotSessionActions({
     resumeMutation.isPending;
 
   return (
-    <div className={cn("flex items-center gap-1", className)}>
+    <div className={cn("flex items-center gap-1.5", className)}>
       {paused ? (
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          className={ACTION_BTN_CLASS}
-          disabled={pending}
-          onClick={() => resumeMutation.mutate()}
-          title="Resume bot"
-        >
-          {resumeMutation.isPending ? (
-            <Loader2 className="size-3 animate-spin" />
+        <span className="hidden text-[10px] font-medium text-amber-700 sm:inline dark:text-amber-400">
+          Bot paused
+        </span>
+      ) : null}
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          render={
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="h-7 shrink-0 gap-1 px-2 text-[11px]"
+              disabled={pending}
+              aria-label="Chatbot actions"
+            >
+              {pending ? (
+                <Loader2 className="size-3.5 animate-spin" />
+              ) : (
+                <Bot className="size-3.5" />
+              )}
+              <span className="hidden min-[420px]:inline">Bot</span>
+              <ChevronDown className="size-3 opacity-70" />
+            </Button>
+          }
+        />
+        <DropdownMenuContent align="end" className="w-auto min-w-48">
+          {paused ? (
+            <DropdownMenuItem
+              disabled={pending}
+              onClick={() => resumeMutation.mutate()}
+            >
+              <PlayCircle className="size-3.5" />
+              Resume bot
+            </DropdownMenuItem>
           ) : (
-            <PlayCircle className="size-3" />
+            <DropdownMenuItem
+              disabled={pending}
+              onClick={() => pauseMutation.mutate()}
+            >
+              <PauseCircle className="size-3.5" />
+              Pause bot
+            </DropdownMenuItem>
           )}
-          <span className="hidden min-[420px]:inline">Resume</span>
-        </Button>
-      ) : (
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          className={ACTION_BTN_CLASS}
-          disabled={pending}
-          onClick={() => pauseMutation.mutate()}
-          title="Pause bot"
-        >
-          {pauseMutation.isPending ? (
-            <Loader2 className="size-3 animate-spin" />
-          ) : (
-            <PauseCircle className="size-3" />
-          )}
-          <span className="hidden min-[420px]:inline">Pause</span>
-        </Button>
-      )}
-      <Button
-        type="button"
-        size="sm"
-        variant="outline"
-        className={ACTION_BTN_CLASS}
-        disabled={pending}
-        onClick={() => endMutation.mutate()}
-        title="End session"
-      >
-        {endMutation.isPending ? (
-          <Loader2 className="size-3 animate-spin" />
-        ) : (
-          <XCircle className="size-3" />
-        )}
-        <span className="hidden min-[480px]:inline">End</span>
-      </Button>
-      <Button
-        type="button"
-        size="sm"
-        variant="outline"
-        className={ACTION_BTN_CLASS}
-        disabled={pending}
-        onClick={() => convertMutation.mutate()}
-        title="Mark converted"
-      >
-        {convertMutation.isPending ? (
-          <Loader2 className="size-3 animate-spin" />
-        ) : (
-          <CheckCircle2 className="size-3" />
-        )}
-        <span className="hidden min-[540px]:inline">Convert</span>
-      </Button>
+          <DropdownMenuItem
+            disabled={pending}
+            onClick={() => endMutation.mutate()}
+          >
+            <XCircle className="size-3.5" />
+            End session
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            disabled={pending}
+            onClick={() => convertMutation.mutate()}
+          >
+            <CheckCircle2 className="size-3.5" />
+            Mark converted
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   );
 }

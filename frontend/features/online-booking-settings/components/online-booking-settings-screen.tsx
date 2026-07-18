@@ -17,7 +17,15 @@ import {
   updateOnlineBookingStaffSelection,
 } from "@/features/online-booking-settings/api/online-booking-settings.api";
 import { AvoidGapsSettingsSection } from "@/features/online-booking-settings/components/avoid-gaps-settings-section";
+import {
+  APPOINTMENT_EXPRESS_COMPLETE_KEY,
+  getNotificationChannelPreference,
+  updateNotificationChannelPreference,
+  type NotificationChannel,
+} from "@/features/notifications/api/notification-channel-preferences.api";
+import { NotificationChannelPicker } from "@/features/notifications/components/notification-channel-picker";
 import { useCan } from "@/features/auth/permissions";
+import { queryKeys } from "@/lib/query/keys";
 
 async function copyText(text: string, label: string) {
   try {
@@ -37,8 +45,31 @@ export function OnlineBookingSettingsScreen() {
     queryFn: getOnlineBookingSettings,
   });
 
+  const { data: expressChannelPref } = useQuery({
+    queryKey: queryKeys.notificationChannelPreferences.detail(
+      APPOINTMENT_EXPRESS_COMPLETE_KEY,
+    ),
+    queryFn: () =>
+      getNotificationChannelPreference(APPOINTMENT_EXPRESS_COMPLETE_KEY),
+  });
+
   const invalidate = () =>
     queryClient.invalidateQueries({ queryKey: ["online-booking-settings"] });
+
+  const channelMutation = useMutation({
+    mutationFn: (channel: NotificationChannel) =>
+      updateNotificationChannelPreference({
+        notificationKey: APPOINTMENT_EXPRESS_COMPLETE_KEY,
+        channel,
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.notificationChannelPreferences.all(),
+      });
+      toast.success("Delivery channel saved");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
 
   const setupMutation = useMutation({
     mutationFn: updateOnlineBookingSetup,
@@ -274,6 +305,82 @@ export function OnlineBookingSettingsScreen() {
                   />
                 </div>
               ))}
+
+              <div className="space-y-3 rounded-lg border border-border/70 p-4">
+                <div>
+                  <p className="text-sm font-semibold text-foreground">
+                    Express Booking
+                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Staff-started bookings completed by the client via a
+                    completion link. Expired pending requests cancel
+                    automatically, then soft-delete after 24 hours.
+                  </p>
+                </div>
+                {(
+                  [
+                    ["expressBookingEnabled", "Enable Express Booking"],
+                    [
+                      "expressBookingAutoEnable",
+                      "Automatically enable for new appointments",
+                    ],
+                    ["expressRequireCard", "Require a credit card to complete"],
+                    [
+                      "expressRequireDeposit",
+                      "Require a payment or deposit to complete",
+                    ],
+                    [
+                      "expressAllowPhotoUpload",
+                      "Collect photos during Express Booking",
+                    ],
+                  ] as const
+                ).map(([key, label]) => (
+                  <div key={key} className="flex items-center justify-between">
+                    <Label>{label}</Label>
+                    <Switch
+                      checked={Boolean(data[key])}
+                      disabled={!canManage}
+                      onCheckedChange={(v) =>
+                        prefsMutation.mutate({ [key]: v })
+                      }
+                    />
+                  </div>
+                ))}
+                {data.expressBookingEnabled ? (
+                  <div className="space-y-4">
+                    <NotificationChannelPicker
+                      notificationKey={APPOINTMENT_EXPRESS_COMPLETE_KEY}
+                      label="Send link via"
+                      value={expressChannelPref?.channel ?? "EMAIL"}
+                      disabled={!canManage || channelMutation.isPending}
+                      onChange={(channel) => channelMutation.mutate(channel)}
+                    />
+                    <div className="space-y-2">
+                      <Label>Time limit (minutes)</Label>
+                      <Input
+                        type="number"
+                        min={5}
+                        max={1440}
+                        defaultValue={data.expressBookingTimeLimitMinutes}
+                        disabled={!canManage}
+                        onBlur={(e) =>
+                          prefsMutation.mutate({
+                            expressBookingTimeLimitMinutes: Number(
+                              e.target.value,
+                            ),
+                          })
+                        }
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        How long the client has to finish before the slot is
+                        released. Policy version:{" "}
+                        {data.cancellationPolicyVersion || "1"}
+                      </p>
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+
               {data.collectPhotosEnabled ? (
                 <div className="space-y-2">
                   <Label>Photo upload prompt</Label>

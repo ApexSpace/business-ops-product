@@ -53,6 +53,10 @@ const ROUTE_CAPABILITY_MAP = new Map<string, RouteCapabilityEntry>([
     { moduleKey: "products", capabilityKeys: ["products.list"] },
   ],
   [
+    "/business/reports",
+    { moduleKey: "reports", capabilityKeys: ["reports.access"] },
+  ],
+  [
     "/business/invoices",
     { moduleKey: "payments", capabilityKeys: ["payments.invoices.list"] },
   ],

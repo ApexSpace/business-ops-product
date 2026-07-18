@@ -29,6 +29,8 @@ const CODE_MESSAGES: Record<string, string> = {
     "Something went wrong on our side. If this keeps happening, contact support with the reference below.",
   FEATURE_NOT_AVAILABLE:
     "This feature is not included in your current package.",
+  SMS_MESSAGE_TOO_LONG:
+    "This SMS is too long. Shorten it to stay within 2 segments.",
 };
 
 export function getUserErrorMessage(error: unknown): UserErrorMessage {

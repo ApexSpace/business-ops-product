@@ -8,6 +8,7 @@ import {
 } from "@/features/calendars/utils/timezone";
 
 export type AppointmentStatus =
+  | "PENDING_COMPLETION"
   | "UNCONFIRMED"
   | "CONFIRMED"
   | "WAITING"
@@ -20,6 +21,7 @@ export type AppointmentSource =
   | "INTERNAL"
   | "BOOKING_WIDGET"
   | "PUBLIC_LINK"
+  | "EXPRESS"
   | "GOOGLE_SYNC"
   | "IMPORTED";
 
@@ -98,6 +100,16 @@ export interface Appointment {
   relatedCheckoutId: string | null;
   relatedCheckoutStatus: string | null;
   waitingNotifiedAt: string | null;
+  guestFirstName?: string | null;
+  guestEmail?: string | null;
+  guestPhone?: string | null;
+  guestPhoneCountryCode?: string | null;
+  expressBookingExpiresAt?: string | null;
+  expressBookingCompletedAt?: string | null;
+  expressBookingPending?: boolean;
+  expressRequireCard?: boolean | null;
+  expressRequireDeposit?: boolean | null;
+  expressTimeLimitMinutes?: number | null;
   googleSyncWarning?: string | null;
   scheduleWarning?: string | null;
   photoFileIds?: string[];
@@ -127,6 +139,7 @@ export const APPOINTMENT_LIFECYCLE_STATUS_OPTIONS: {
   value: AppointmentStatus;
   label: string;
 }[] = [
+  { value: "PENDING_COMPLETION", label: "Pending completion" },
   { value: "UNCONFIRMED", label: "Unconfirmed" },
   { value: "CONFIRMED", label: "Confirmed" },
   { value: "WAITING", label: "Waiting" },
@@ -189,6 +202,7 @@ export const appointmentFormSchema = z
     startAt: z.string().min(1),
     endAt: z.string().min(1),
     status: z.enum([
+      "PENDING_COMPLETION",
       "UNCONFIRMED",
       "CONFIRMED",
       "WAITING",
@@ -322,6 +336,7 @@ export function formatAppointmentRange(
 }
 
 export function formatAppointmentStatus(status: AppointmentStatus): string {
+  if (status === "PENDING_COMPLETION") return "Pending completion";
   return (
     APPOINTMENT_STATUS_OPTIONS.find((o) => o.value === status)?.label ??
     (status === "CANCELLED"
@@ -382,8 +397,20 @@ export const CLOSED_SALE_EDIT_GUARD_COPY = {
 
 export function getContactDisplayName(
   contact: Appointment["contact"],
+  guest?: {
+    guestFirstName?: string | null;
+    guestEmail?: string | null;
+  } | null,
 ): string {
-  if (!contact) return "Time block";
+  if (!contact) {
+    if (guest?.guestFirstName?.trim()) {
+      return guest.guestFirstName.trim();
+    }
+    if (guest?.guestEmail?.trim()) {
+      return guest.guestEmail.trim();
+    }
+    return "Time block";
+  }
   return (
     contact.displayName ??
     [contact.firstName, contact.lastName].filter(Boolean).join(" ") ??

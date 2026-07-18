@@ -18,6 +18,7 @@ import type { ThreadChannelFilterValue } from "@/features/conversations/componen
 import { filterMessagesByThreadChannel } from "@/features/conversations/components/inbox/thread-channel-filter";
 import { ContactWorkspaceShell } from "@/features/contacts/components/contact-workspace/contact-workspace-shell";
 import { useConversationInboxContactSidebar } from "@/features/conversations/hooks/use-conversation-inbox-contact-sidebar";
+import { useRetryConversationMessage } from "@/features/conversations/hooks/use-retry-conversation-message";
 import { WORKSPACE_PADDING_CLASS } from "@/features/contacts/workspace/contact-workspace";
 import { NewEmailDialog } from "@/features/conversations/components/inbox/new-email-dialog";
 import { Button } from "@/components/ui/button";
@@ -95,7 +96,8 @@ export function ConversationsInbox() {
   const searchParams = useSearchParams();
   const threadFromQuery = searchParams.get("thread");
   const conversationFromQuery = searchParams.get("conversation");
-  const { search, setSearch, listFilters } = useConversationsInboxFilters();
+  const { search, setSearch, statusFilter, setStatusFilter, listFilters } =
+    useConversationsInboxFilters();
   const [manualThreadKey, setManualThreadKey] = useState<string | null>(null);
   const [composer, setComposer] = useState("");
   const [attachmentUrl, setAttachmentUrl] = useState("");
@@ -583,6 +585,11 @@ export function ConversationsInbox() {
     onSuccess: invalidateAll,
   });
 
+  const { retryMessage, retryingMessageId } = useRetryConversationMessage({
+    contactId,
+    enabled: canSendMessages,
+  });
+
   useEffect(() => {
     if (!activeThread) return;
 
@@ -597,8 +604,16 @@ export function ConversationsInbox() {
   const hasComposerContent =
     composer.trim().length > 0 || Boolean(pendingAttachment);
 
+  const contactIsBlocked = Boolean(
+    threadConversation?.contact?.isBlocked ??
+      activeThread?.contact?.isBlocked,
+  );
+  const conversationIsSpam = threadConversation?.status === "SPAM";
+
   const canSend =
     canSendMessages &&
+    !contactIsBlocked &&
+    !conversationIsSpam &&
     (mergedTimeline
       ? canSendViaReplyChannel(
           activeReplyChannel,
@@ -619,6 +634,12 @@ export function ConversationsInbox() {
   const sendDisabledReason = useMemo(() => {
     if (!canSendMessages) {
       return "You do not have permission to send messages.";
+    }
+    if (contactIsBlocked) {
+      return "This contact is blocked. Unblock them to send messages.";
+    }
+    if (conversationIsSpam) {
+      return "Conversation is marked as spam. Mark as not spam to reply.";
     }
     if (mergedTimeline) {
       return replyChannelSendDisabledReason(
@@ -661,6 +682,8 @@ export function ConversationsInbox() {
   }, [
     activeReplyChannel,
     canSendMessages,
+    contactIsBlocked,
+    conversationIsSpam,
     isWebchat,
     mergedTimeline,
     messagingStatusQuery.data?.readyForMessaging,
@@ -677,6 +700,8 @@ export function ConversationsInbox() {
     <ConversationListPanel
       search={search}
       onSearchChange={setSearch}
+      statusFilter={statusFilter}
+      onStatusFilterChange={setStatusFilter}
       threads={threads}
       listLoading={listLoading}
       selectedThreadKey={activeThread?.threadKey ?? null}
@@ -750,6 +775,9 @@ export function ConversationsInbox() {
             replyChannel: activeReplyChannel,
           }),
       }}
+      onRetryMessage={retryMessage}
+      retryingMessageId={retryingMessageId}
+      canRetryMessages={canSendMessages}
       onBackToList={() => setMobilePane("list")}
       onOpenContactDetails={() => setMobilePane("contact")}
       className="h-full w-full"

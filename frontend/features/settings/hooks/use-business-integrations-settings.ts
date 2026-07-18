@@ -15,6 +15,7 @@ import {
   filterIntegrationProvidersByCategory,
   OAUTH_ROUTE_NOT_CONFIGURED_MESSAGE,
   isPlatformEmailProvider,
+  isPlatformSmsProvider,
   shouldUseManualConnect,
   shouldUseOAuthPopup,
   usesWhatsAppEmbeddedSignup,
@@ -299,6 +300,14 @@ export function useBusinessIntegrationsSettings() {
         return;
       }
       openManage(provider);
+      return;
+    }
+    if (isPlatformSmsProvider(provider.key)) {
+      setSelectedProvider(provider);
+      setDialogMode(
+        provider.status === "NOT_CONNECTED" ? "connect" : "manage",
+      );
+      setDialogOpen(true);
       return;
     }
     if (usesWhatsAppEmbeddedSignup(provider.key)) {

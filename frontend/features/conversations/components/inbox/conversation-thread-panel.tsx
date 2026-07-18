@@ -1,14 +1,41 @@
 "use client";
 
-import { ArrowLeft, MessageSquare, UserRound } from "lucide-react";
-import { UseMutationResult } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
+import { ArrowLeft, MessageSquare, MoreHorizontal, UserRound } from "lucide-react";
+import { useMutation, useQueryClient, UseMutationResult } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { ConfirmDeleteDialog } from "@/components/forms/confirm-delete-dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { VirtualizedMessageList } from "@/features/conversations/components/virtualized-message-list";
 import { IconButton } from "@/components/ui/icon-button";
 import { ProfileAvatar } from "@/components/ui/profile-avatar";
 import { ThreadChannelFilter } from "@/features/conversations/components/inbox/thread-channel-filter";
 import type { ThreadChannelFilterValue } from "@/features/conversations/components/inbox/thread-channel-filter";
 import {
+  blockConversationContact,
   channelLabel,
+  closeConversation,
+  deleteConversationMessage,
+  markConversationSpam,
+  reopenConversation,
+  unblockConversationContact,
+  unmarkConversationSpam,
   type ContactReplyChannel,
   type Conversation,
   type ConversationChannel,
@@ -21,12 +48,15 @@ import {
   contactDisplayName,
 } from "@/features/conversations/components/inbox/conversation-inbox-utils";
 import { unifiedThreadDisplayName } from "@/features/conversations/utils/unified-thread.utils";
+import { isDeletableConversationMessage } from "@/features/conversations/utils/message-delete.util";
 import {
   MessageComposer,
   type PendingMessageAttachment,
 } from "@/features/conversations/components/inbox/message-composer";
 import { ConversationInternalNotesPanel } from "@/features/conversations/components/inbox/conversation-internal-notes-panel";
 import { ChatbotSessionActions } from "@/features/conversations/components/inbox/chatbot-session-actions";
+import { removeMessageFromCache } from "@/features/realtime/event-handlers";
+import { queryKeys } from "@/lib/query/keys";
 import { cn } from "@/lib/utils";
 
 const INBOX_THREAD_PANEL_CLASS =
@@ -92,6 +122,9 @@ interface ConversationThreadPanelProps {
       };
     }
   >;
+  onRetryMessage?: (message: ConversationMessage) => void;
+  retryingMessageId?: string | null;
+  canRetryMessages?: boolean;
   onBackToList?: () => void;
   onOpenContactDetails?: () => void;
   className?: string;
@@ -136,10 +169,118 @@ export function ConversationThreadPanel({
   onTemplateHeaderMediaUrlChange,
   buildTemplatePayload,
   sendMutation,
+  onRetryMessage,
+  retryingMessageId = null,
+  canRetryMessages = true,
   onBackToList,
   onOpenContactDetails,
   className,
 }: ConversationThreadPanelProps) {
+  const queryClient = useQueryClient();
+  const [messageDeleteMode, setMessageDeleteMode] = useState(false);
+  const [pendingDeleteMessage, setPendingDeleteMessage] =
+    useState<ConversationMessage | null>(null);
+  const [cannotDeleteOpen, setCannotDeleteOpen] = useState(false);
+
+  useEffect(() => {
+    setMessageDeleteMode(false);
+    setPendingDeleteMessage(null);
+    setCannotDeleteOpen(false);
+  }, [selectedId]);
+
+  const contactId =
+    selectedThread?.contactId ?? selected?.contactId ?? selected?.contact?.id;
+  const isBlocked = Boolean(
+    selected?.contact?.isBlocked ?? selectedThread?.contact?.isBlocked,
+  );
+  const status = selected?.status;
+  const isSpam = status === "SPAM";
+  const isClosed = status === "CLOSED";
+  const isOpen = status === "OPEN" || status === "PENDING";
+
+  const invalidateConversationQueries = () => {
+    void queryClient.invalidateQueries({
+      queryKey: queryKeys.conversations.all(),
+    });
+    if (selectedId) {
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.conversations.detail(selectedId),
+      });
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.conversations.messages(selectedId, 0),
+      });
+    }
+    if (contactId) {
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.contacts.detail(contactId),
+      });
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.conversations.contactMessages(contactId, 0),
+      });
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.conversations.byContact(contactId),
+      });
+    }
+  };
+
+  const deleteMessageMutation = useMutation({
+    mutationFn: (message: ConversationMessage) =>
+      deleteConversationMessage(message.conversationId, message.id),
+    onSuccess: (_data, message) => {
+      removeMessageFromCache(
+        queryClient,
+        message.conversationId,
+        message.id,
+        selectedThread?.contactId ?? selected?.contactId,
+      );
+      toast.success("Message deleted");
+      setPendingDeleteMessage(null);
+      setMessageDeleteMode(false);
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
+
+  const statusMutation = useMutation({
+    mutationFn: async (
+      action:
+        | "close"
+        | "reopen"
+        | "mark-spam"
+        | "unmark-spam"
+        | "block"
+        | "unblock",
+    ) => {
+      if (!selectedId) throw new Error("No conversation selected");
+      switch (action) {
+        case "close":
+          return closeConversation(selectedId);
+        case "reopen":
+          return reopenConversation(selectedId);
+        case "mark-spam":
+          return markConversationSpam(selectedId);
+        case "unmark-spam":
+          return unmarkConversationSpam(selectedId);
+        case "block":
+          return blockConversationContact(selectedId);
+        case "unblock":
+          return unblockConversationContact(selectedId);
+      }
+    },
+    onSuccess: (_data, action) => {
+      invalidateConversationQueries();
+      const messagesByAction: Record<typeof action, string> = {
+        close: "Conversation closed",
+        reopen: "Conversation reopened",
+        "mark-spam": "Marked as spam",
+        "unmark-spam": "Marked as not spam",
+        block: "Contact blocked",
+        unblock: "Contact unblocked",
+      };
+      toast.success(messagesByAction[action]);
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
+
   const threadDisplayName = selected
     ? selectedThread
       ? unifiedThreadDisplayName(selectedThread)
@@ -150,6 +291,14 @@ export function ConversationThreadPanel({
   const headerChannel =
     selectedReplyChannel ??
     (threadChannels.length === 1 ? threadChannels[0] : null);
+
+  function handleRequestDeleteMessage(message: ConversationMessage) {
+    if (!isDeletableConversationMessage(message)) {
+      setCannotDeleteOpen(true);
+      return;
+    }
+    setPendingDeleteMessage(message);
+  }
 
   return (
     <section className={cn(INBOX_THREAD_PANEL_CLASS, className)}>
@@ -182,6 +331,70 @@ export function ConversationThreadPanel({
                 <p className="truncate text-sm font-semibold leading-none">
                   {threadDisplayName}
                 </p>
+                <DropdownMenu>
+                  <DropdownMenuTrigger
+                    render={
+                      <IconButton
+                        aria-label="Conversation actions"
+                        className="size-7 shrink-0"
+                      >
+                        <MoreHorizontal className="size-3.5" />
+                      </IconButton>
+                    }
+                  />
+                  <DropdownMenuContent
+                    align="start"
+                    className="w-auto min-w-56"
+                  >
+                    {messageDeleteMode ? (
+                      <DropdownMenuItem
+                        onClick={() => setMessageDeleteMode(false)}
+                      >
+                        Cancel message selection
+                      </DropdownMenuItem>
+                    ) : (
+                      <DropdownMenuItem
+                        onClick={() => setMessageDeleteMode(true)}
+                      >
+                        Select message to delete…
+                      </DropdownMenuItem>
+                    )}
+                    <DropdownMenuSeparator />
+                    {contactId ? (
+                      <DropdownMenuItem
+                        disabled={statusMutation.isPending}
+                        onClick={() =>
+                          statusMutation.mutate(isBlocked ? "unblock" : "block")
+                        }
+                      >
+                        {isBlocked ? "Unblock contact" : "Block contact"}
+                      </DropdownMenuItem>
+                    ) : null}
+                    {isSpam ? (
+                      <DropdownMenuItem
+                        disabled={statusMutation.isPending}
+                        onClick={() => statusMutation.mutate("unmark-spam")}
+                      >
+                        Mark as not spam
+                      </DropdownMenuItem>
+                    ) : (
+                      <DropdownMenuItem
+                        disabled={statusMutation.isPending}
+                        onClick={() => statusMutation.mutate("mark-spam")}
+                      >
+                        Mark as spam
+                      </DropdownMenuItem>
+                    )}
+                    {isOpen ? (
+                      <DropdownMenuItem
+                        disabled={statusMutation.isPending}
+                        onClick={() => statusMutation.mutate("close")}
+                      >
+                        Close conversation
+                      </DropdownMenuItem>
+                    ) : null}
+                  </DropdownMenuContent>
+                </DropdownMenu>
                 {headerChannel ? (
                   <ConversationChannelBadge
                     channel={headerChannel}
@@ -192,6 +405,28 @@ export function ConversationThreadPanel({
               </div>
 
               <div className="flex max-w-[58%] shrink-0 items-center gap-1 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] sm:max-w-none sm:overflow-visible [&::-webkit-scrollbar]:hidden">
+                {messageDeleteMode ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-7 shrink-0 px-2 text-xs"
+                    onClick={() => setMessageDeleteMode(false)}
+                  >
+                    Done
+                  </Button>
+                ) : null}
+                {isClosed ? (
+                  <Button
+                    type="button"
+                    size="sm"
+                    className="h-7 shrink-0 px-2.5 text-xs"
+                    disabled={statusMutation.isPending}
+                    onClick={() => statusMutation.mutate("reopen")}
+                  >
+                    Reopen
+                  </Button>
+                ) : null}
                 {selected.channel === "WEBCHAT" ? (
                   <ChatbotSessionActions
                     conversationId={selectedId}
@@ -217,6 +452,26 @@ export function ConversationThreadPanel({
               </div>
             </header>
 
+            {isSpam ? (
+              <div
+                className="flex shrink-0 items-center justify-between gap-3 border-b border-amber-500/30 bg-amber-50 px-3 py-2 text-xs text-amber-950 dark:bg-amber-950/30 dark:text-amber-100 sm:px-4"
+                role="status"
+              >
+                <p className="min-w-0 flex-1 leading-snug">
+                  Conversation marked as spam.{" "}
+                  <button
+                    type="button"
+                    className="font-semibold underline underline-offset-2"
+                    disabled={statusMutation.isPending}
+                    onClick={() => statusMutation.mutate("unmark-spam")}
+                  >
+                    Mark as not spam
+                  </button>{" "}
+                  to reply.
+                </p>
+              </div>
+            ) : null}
+
             <div className="min-h-0 flex-1 overflow-hidden bg-muted/10">
               {messagesLoading ? (
                 <p className="px-4 py-3 text-sm text-muted-foreground">
@@ -241,6 +496,11 @@ export function ConversationThreadPanel({
                     contactName: threadDisplayName,
                     contactAvatarUrl: threadAvatarUrl,
                   }}
+                  messageDeleteMode={messageDeleteMode}
+                  onRequestDeleteMessage={handleRequestDeleteMessage}
+                  onRetryMessage={onRetryMessage}
+                  retryingMessageId={retryingMessageId}
+                  canRetryMessages={canRetryMessages}
                 />
               )}
             </div>
@@ -281,7 +541,7 @@ export function ConversationThreadPanel({
                 onTemplateVariableValueChange={onTemplateVariableValueChange}
                 templateHeaderMediaUrl={templateHeaderMediaUrl}
                 onTemplateHeaderMediaUrlChange={onTemplateHeaderMediaUrlChange}
-                showCannedResponses={selectedReplyChannel === "WEBCHAT"}
+                showCannedResponses
                 onSend={() => {
                   const template = whatsAppRequiresTemplate
                     ? buildTemplatePayload?.()
@@ -304,6 +564,37 @@ export function ConversationThreadPanel({
             </div>
           </>
         )}
+
+      <ConfirmDeleteDialog
+        open={pendingDeleteMessage !== null}
+        onOpenChange={(open) => {
+          if (!open) setPendingDeleteMessage(null);
+        }}
+        title="Delete message?"
+        description="This message will be removed from the conversation. This can’t be undone."
+        confirmLabel="OK"
+        pendingLabel="Deleting…"
+        isPending={deleteMessageMutation.isPending}
+        onConfirm={() => {
+          if (pendingDeleteMessage) {
+            deleteMessageMutation.mutate(pendingDeleteMessage);
+          }
+        }}
+      />
+
+      <AlertDialog open={cannotDeleteOpen} onOpenChange={setCannotDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cannot Delete Message</AlertDialogTitle>
+            <AlertDialogDescription>
+              This is an automated message and cannot be deleted.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction>OK</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </section>
   );
 }

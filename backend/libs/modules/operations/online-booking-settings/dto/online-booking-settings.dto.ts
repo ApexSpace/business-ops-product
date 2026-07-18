@@ -145,6 +145,49 @@ export class UpdateOnlineBookingPreferencesDto {
 
   @ApiPropertyOptional()
   @IsOptional()
+  @IsBoolean()
+  expressBookingEnabled?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  expressBookingAutoEnable?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsInt()
+  @Min(5)
+  @Max(1440)
+  expressBookingTimeLimitMinutes?: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  expressRequireCard?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  expressRequireDeposit?: boolean;
+
+  @ApiPropertyOptional({ enum: ['FULL', 'PERCENTAGE', 'FIXED'] })
+  @IsOptional()
+  @IsString()
+  expressDepositType?: 'FULL' | 'PERCENTAGE' | 'FIXED';
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  expressAllowPhotoUpload?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
+  cancellationPolicyVersion?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
   @IsInt()
   @Min(5)
   @Max(240)
@@ -308,6 +351,14 @@ export class OnlineBookingSettingsResponseDto {
   collectPhotosEnabled!: boolean;
   photoUploadPrompt!: string | null;
   waitlistEnabled!: boolean;
+  expressBookingEnabled!: boolean;
+  expressBookingAutoEnable!: boolean;
+  expressBookingTimeLimitMinutes!: number;
+  expressRequireCard!: boolean;
+  expressRequireDeposit!: boolean;
+  expressDepositType!: string;
+  expressAllowPhotoUpload!: boolean;
+  cancellationPolicyVersion!: string;
   randomizeStaffOrder!: boolean;
   showGenderOptions!: boolean;
   showAnyoneOption!: boolean;

@@ -6,6 +6,7 @@ import { ConversationMessageResponseDto } from '../dto/conversation-response.dto
 export const CONVERSATION_REALTIME_EVENTS = {
   messageReceived: 'conversation.message.received',
   messageUpdated: 'conversation.message.updated',
+  messageDeleted: 'conversation.message.deleted',
   conversationUpdated: 'conversation.updated',
 } as const;
 
@@ -15,6 +16,7 @@ export interface ConversationRealtimePayload {
   status?: MessageStatus | string;
   channel?: ConversationChannel | string;
   id?: string;
+  errorMessage?: string | null;
   message?: ConversationMessageResponseDto;
 }
 
@@ -42,6 +44,17 @@ export class ConversationRealtimeService {
     await this.publish(
       businessId,
       CONVERSATION_REALTIME_EVENTS.messageUpdated,
+      payload,
+    );
+  }
+
+  async publishMessageDeleted(
+    businessId: string,
+    payload: ConversationRealtimePayload,
+  ): Promise<void> {
+    await this.publish(
+      businessId,
+      CONVERSATION_REALTIME_EVENTS.messageDeleted,
       payload,
     );
   }

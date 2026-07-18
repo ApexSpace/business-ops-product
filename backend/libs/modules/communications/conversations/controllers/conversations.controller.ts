@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Headers,
   HttpCode,
@@ -20,6 +21,7 @@ import { BusinessRoles } from '@app/common/decorators/business-roles.decorator';
 import { StaffPermission } from '@app/common/decorators/staff-permission.decorator';
 import { RequireModule } from '@app/common/decorators/require-module.decorator';
 import { RequireCapability } from '@app/common/decorators/require-capability.decorator';
+import { ConfirmDeleteQueryDto } from '@app/common/dto/confirm-delete-query.dto';
 import { BusinessCapabilityGuard } from '@app/common/guards/business-capability.guard';
 import { BusinessRolesGuard } from '@app/common/guards/business-roles.guard';
 import { AssignConversationDto } from '../dto/assign-conversation.dto';
@@ -166,6 +168,27 @@ export class ConversationsController {
     return this.messagesService.list(user.businessId!, id, query, user);
   }
 
+  @Delete(':id/messages/:messageId')
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
+  @StaffPermission('conversations.access')
+  removeMessage(
+    @CurrentUser() user: RequestUser,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('messageId', ParseUUIDPipe) messageId: string,
+    @Query() _query: ConfirmDeleteQueryDto,
+  ) {
+    return this.messagesService.remove(
+      user.businessId!,
+      id,
+      messageId,
+      user,
+    );
+  }
+
   @Post(':id/messages')
   @HttpCode(HttpStatus.ACCEPTED)
   @BusinessRoles(
@@ -185,6 +208,30 @@ export class ConversationsController {
       user.businessId!,
       id,
       dto,
+      user,
+      idempotencyKey,
+    );
+  }
+
+  @Post(':id/messages/:messageId/retry')
+  @HttpCode(HttpStatus.ACCEPTED)
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
+  @RequireCapability('conversations.send')
+  @StaffPermission('conversations.send')
+  retryMessage(
+    @CurrentUser() user: RequestUser,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('messageId', ParseUUIDPipe) messageId: string,
+    @Headers('idempotency-key') idempotencyKey?: string,
+  ) {
+    return this.messagesService.retry(
+      user.businessId!,
+      id,
+      messageId,
       user,
       idempotencyKey,
     );
@@ -247,6 +294,62 @@ export class ConversationsController {
     @Param('id', ParseUUIDPipe) id: string,
   ) {
     return this.assignmentService.reopen(user.businessId!, id, user);
+  }
+
+  @Post(':id/mark-spam')
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
+  @StaffPermission('conversations.access')
+  markSpam(
+    @CurrentUser() user: RequestUser,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.assignmentService.markSpam(user.businessId!, id, user);
+  }
+
+  @Post(':id/unmark-spam')
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
+  @StaffPermission('conversations.access')
+  unmarkSpam(
+    @CurrentUser() user: RequestUser,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.assignmentService.unmarkSpam(user.businessId!, id, user);
+  }
+
+  @Post(':id/block-contact')
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
+  @StaffPermission('conversations.access')
+  blockContact(
+    @CurrentUser() user: RequestUser,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.assignmentService.blockContact(user.businessId!, id, user);
+  }
+
+  @Post(':id/unblock-contact')
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
+  @StaffPermission('conversations.access')
+  unblockContact(
+    @CurrentUser() user: RequestUser,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.assignmentService.unblockContact(user.businessId!, id, user);
   }
 
   @Post(':id/mark-read')

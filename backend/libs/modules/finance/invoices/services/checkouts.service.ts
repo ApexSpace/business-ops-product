@@ -122,6 +122,35 @@ export class CheckoutsService {
     actor: RequestUser,
   ): Promise<CheckoutResponseDto> {
     await this.assertContact(businessId, dto.contactId);
+
+    if (dto.appointmentId) {
+      const existingForAppointment = await this.prisma.invoice.findFirst({
+        where: {
+          businessId,
+          appointmentId: dto.appointmentId,
+          kind: 'CHECKOUT',
+          deletedAt: null,
+          status: { in: [InvoiceStatus.OPEN, InvoiceStatus.PAID] },
+        },
+        orderBy: { createdAt: 'desc' },
+        select: { id: true, status: true },
+      });
+      if (existingForAppointment?.status === InvoiceStatus.PAID) {
+        throw new AppException(
+          ErrorCode.BAD_REQUEST,
+          'This appointment already has a completed sale',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+      if (existingForAppointment?.status === InvoiceStatus.OPEN) {
+        throw new AppException(
+          ErrorCode.BAD_REQUEST,
+          'This appointment already has an open checkout. Continue the existing sale instead of creating a new one.',
+          HttpStatus.CONFLICT,
+        );
+      }
+    }
+
     const items = dto.items?.length
       ? await this.mapItemInputs(businessId, dto.items)
       : [];

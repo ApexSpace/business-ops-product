@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { FinancialDueStatusService } from '@app/modules/finance/shared/services/financial-due-status.service';
 import { AppointmentReminderService } from '@app/modules/operations/appointments/services/appointment-reminder.service';
+import { ExpressBookingService } from '@app/modules/operations/express-booking/services/express-booking.service';
 import { AutomationAppointmentTriggerService } from '@app/modules/communications/automations/services/automation-appointment-trigger.service';
 import { ClientPackagesService } from '@app/modules/finance/packages/services/client-packages.service';
 import { ClientMembershipsService } from '@app/modules/finance/memberships/services/client-memberships.service';
@@ -19,6 +20,7 @@ export class SchedulerTasksService {
   constructor(
     private readonly queueService: QueueService,
     private readonly appointmentReminderService: AppointmentReminderService,
+    private readonly expressBookingService: ExpressBookingService,
     private readonly financialDueStatusService: FinancialDueStatusService,
     private readonly automationAppointmentTriggerService: AutomationAppointmentTriggerService,
     private readonly clientPackagesService: ClientPackagesService,
@@ -70,6 +72,41 @@ export class SchedulerTasksService {
     } catch (error) {
       this.logger.error(
         `Appointment reminder cron failed: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+    }
+  }
+
+  @Cron(CronExpression.EVERY_MINUTE)
+  async processExpiredExpressBookings(): Promise<void> {
+    try {
+      const count = await this.expressBookingService.processExpired();
+      if (count > 0) {
+        this.logger.log(`Expired ${count} express booking(s)`);
+      }
+    } catch (error) {
+      this.logger.error(
+        `Express booking expiry cron failed: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+    }
+  }
+
+  @Cron(CronExpression.EVERY_HOUR)
+  async softDeleteExpiredCancelledExpressBookings(): Promise<void> {
+    try {
+      const count =
+        await this.expressBookingService.processSoftDeleteExpiredCancelled();
+      if (count > 0) {
+        this.logger.log(
+          `Soft-deleted ${count} expired cancelled express booking(s)`,
+        );
+      }
+    } catch (error) {
+      this.logger.error(
+        `Express booking soft-delete cron failed: ${
           error instanceof Error ? error.message : String(error)
         }`,
       );

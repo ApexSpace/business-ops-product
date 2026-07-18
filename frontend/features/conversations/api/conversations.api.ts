@@ -27,6 +27,7 @@ export interface ConversationContactSummary {
   id: string;
   label: string;
   avatarUrl: string | null;
+  isBlocked?: boolean;
 }
 
 export interface ConversationAssignee {
@@ -89,6 +90,8 @@ export interface ConversationMessage {
   sentAt: string | null;
   receivedAt: string | null;
   createdAt: string;
+  /** Present for timeline activity rows (block/spam/close/etc.). */
+  activityType?: string | null;
 }
 
 export interface MessagingStatus {
@@ -261,8 +264,32 @@ export async function sendConversationMessage(
   };
 }
 
+export async function retryConversationMessage(
+  conversationId: string,
+  messageId: string,
+): Promise<SendMessageResult> {
+  const { data, meta } = await api.postWithMeta<ConversationMessage>(
+    `conversations/${conversationId}/messages/${messageId}/retry`,
+  );
+
+  return {
+    message: data,
+    jobId: typeof meta.jobId === "string" ? meta.jobId : undefined,
+    pollUrl: typeof meta.pollUrl === "string" ? meta.pollUrl : undefined,
+  };
+}
+
 export function startEmailConversation(input: StartEmailConversationInput) {
   return api.post<Conversation>("conversations/email/start", input);
+}
+
+export function deleteConversationMessage(
+  conversationId: string,
+  messageId: string,
+) {
+  return api.delete<{ deleted: true }>(
+    `conversations/${conversationId}/messages/${messageId}?confirm=true`,
+  );
 }
 
 export function listConversationsByContact(contactId: string) {
@@ -279,6 +306,22 @@ export function closeConversation(id: string) {
 
 export function reopenConversation(id: string) {
   return api.post<Conversation>(`conversations/${id}/reopen`);
+}
+
+export function markConversationSpam(id: string) {
+  return api.post<Conversation>(`conversations/${id}/mark-spam`);
+}
+
+export function unmarkConversationSpam(id: string) {
+  return api.post<Conversation>(`conversations/${id}/unmark-spam`);
+}
+
+export function blockConversationContact(id: string) {
+  return api.post<Conversation>(`conversations/${id}/block-contact`);
+}
+
+export function unblockConversationContact(id: string) {
+  return api.post<Conversation>(`conversations/${id}/unblock-contact`);
 }
 
 export function assignConversation(
@@ -353,7 +396,7 @@ export function listContactReplyChannels(contactId: string) {
 }
 
 export type EnsureContactConversationInput = {
-  channel: "EMAIL" | "WHATSAPP" | "FACEBOOK" | "INSTAGRAM";
+  channel: "EMAIL" | "WHATSAPP" | "FACEBOOK" | "INSTAGRAM" | "SMS";
   subject?: string;
   text?: string;
 };

@@ -2,6 +2,7 @@
 
 import { PanelRightOpen } from "lucide-react";
 import { ProfileAvatar } from "@/components/ui/profile-avatar";
+import { ContactSidebarAppointments } from "@/features/contacts/components/contact-workspace/contact-sidebar-appointments";
 import { ContactSidebarDetailsFields } from "@/features/contacts/components/contact-workspace/contact-sidebar-details-fields";
 import { WORKSPACE_PANEL_CLASS } from "@/features/contacts/workspace/contact-workspace";
 import type { Contact } from "@/features/contacts/types";
@@ -45,11 +46,16 @@ export function ContactCompactContextPanel({
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
-        <ContactSidebarDetailsFields
-          contact={contact}
-          onRequestEdit={onViewFullProfile}
-          notesTextareaClassName="!min-h-[72px] max-h-40 resize-y focus:!min-h-[96px]"
-        />
+        <div className="space-y-5">
+          <ContactSidebarDetailsFields
+            contact={contact}
+            onRequestEdit={onViewFullProfile}
+            showNotes={false}
+          />
+          <div className="border-t border-border/50 pt-5">
+            <ContactSidebarAppointments contactId={contact.id} />
+          </div>
+        </div>
       </div>
     </aside>
   );

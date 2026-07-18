@@ -56,6 +56,7 @@ import { PublicBookingCheckoutService } from './public-booking-checkout.service'
 import { StorageService } from '@app/modules/storage/services/storage.service';
 import { CreateUploadDto } from '@app/modules/storage/dto/create-upload.dto';
 import { FileCategory, FileAssetStatus, FileVisibility } from '@prisma/client';
+import { BookingLinkSaleService } from '@app/modules/finance/payments/services/booking-link-sale.service';
 
 @Injectable()
 export class PublicBookingService {
@@ -78,6 +79,7 @@ export class PublicBookingService {
     private readonly configService: ConfigService,
     private readonly checkoutService: PublicBookingCheckoutService,
     private readonly storageService: StorageService,
+    private readonly bookingLinkSale: BookingLinkSaleService,
   ) {}
 
   async getBusinessBySlug(slug: string) {
@@ -709,6 +711,42 @@ export class PublicBookingService {
           sortOrder: line.sortOrder,
         },
       });
+    }
+
+    if (dto.paymentIntentId) {
+      try {
+        const sale = await this.bookingLinkSale.createPrepaidCheckoutSale({
+          businessId: bookingContext.businessId,
+          appointmentId: appointment.id,
+          contactId: contact.id,
+          serviceId: primaryServiceId!,
+          serviceName: primaryService?.name ?? serviceName,
+          staffUserId: assignedStaffId ?? undefined,
+          amount: primaryService?.price?.toString() ?? '0',
+          paymentIntentId: dto.paymentIntentId,
+        });
+        const previousMetadata =
+          appointment.metadata && typeof appointment.metadata === 'object'
+            ? (appointment.metadata as Record<string, unknown>)
+            : {};
+        await this.appointmentRepository.update(appointment.id, {
+          metadata: {
+            ...previousMetadata,
+            prepaidCheckoutId: sale.checkoutId,
+          },
+        });
+      } catch (error) {
+        this.logger.error(
+          `Failed to create prepaid checkout sale for appointment ${appointment.id}: ${
+            error instanceof Error ? error.message : String(error)
+          }`,
+        );
+        throw new AppException(
+          ErrorCode.BAD_REQUEST,
+          'Payment succeeded but sale could not be recorded. Please contact the business.',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
     }
 
     const confirmationLines = builtLines.serviceLines.map((line, index) => ({

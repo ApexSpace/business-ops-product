@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { ImageIcon } from "lucide-react";
+import { ImageIcon, Timer } from "lucide-react";
 import {
   getContactDisplayName,
   getAppointmentSyncIndicator,
@@ -56,11 +56,15 @@ export function AppointmentEventCard({
   const statusColors = APPOINTMENT_STATUS_COLORS[appointment.status];
   const start = formatTime(appointment.startAt, timeZone);
   const end = formatTime(appointment.endAt, timeZone);
-  const contactName = getContactDisplayName(appointment.contact);
+  const contactName = getContactDisplayName(appointment.contact, {
+    guestFirstName: appointment.guestFirstName,
+    guestEmail: appointment.guestEmail,
+  });
   const syncIndicator = getAppointmentSyncIndicator(appointment);
   const hasPhotos = Boolean(
     appointment.hasPhotos || (appointment.photoFileIds?.length ?? 0) > 0,
   );
+  const isPendingExpress = appointment.status === "PENDING_COMPLETION";
   const interactive = Boolean(onClick);
   const draggable = Boolean(onMoveStart);
 
@@ -132,6 +136,14 @@ export function AppointmentEventCard({
             title="Has attached photos"
           >
             <ImageIcon className="size-3" aria-hidden />
+          </span>
+        ) : null}
+        {isPendingExpress ? (
+          <span
+            className="mt-0.5 shrink-0 text-current opacity-90"
+            title="Pending Express Booking completion"
+          >
+            <Timer className="size-3" aria-hidden />
           </span>
         ) : null}
         {syncIndicator ? (

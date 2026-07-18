@@ -146,6 +146,21 @@ export class ConversationWebhookIngestionService {
       resource,
     );
 
+    if (contact.blockedAt) {
+      await this.auditService.log({
+        actorUserId: SYSTEM_AUDIT_ACTOR_SENTINEL,
+        businessId,
+        action: 'conversation.inbound_dropped_blocked',
+        entityType: 'Contact',
+        entityId: contact.id,
+        metadata: {
+          channel: inbound.channel,
+          externalMessageId: inbound.externalMessageId,
+        },
+      });
+      return;
+    }
+
     let conversation =
       inbound.channel === ConversationChannel.EMAIL
         ? await this.conversationsRepository.findById(
@@ -386,6 +401,13 @@ export class ConversationWebhookIngestionService {
       objectType === 'whatsapp' ||
       objectType === 'whatsapp_business_account'
     ) {
+      return this.conversationIntegrationRepository.findResourceByExternalId(
+        inbound.externalResourceId,
+        IntegrationResourceType.PHONE_NUMBER,
+      );
+    }
+
+    if (inbound.channel === ConversationChannel.SMS) {
       return this.conversationIntegrationRepository.findResourceByExternalId(
         inbound.externalResourceId,
         IntegrationResourceType.PHONE_NUMBER,

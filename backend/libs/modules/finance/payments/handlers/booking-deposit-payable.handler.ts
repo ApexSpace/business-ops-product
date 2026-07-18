@@ -95,16 +95,11 @@ export class BookingDepositPayableHandler
     };
   }
 
-  async onPaymentComplete(ctx: PaymentCompleteContext): Promise<void> {
-    await this.prisma.appointment.updateMany({
-      where: {
-        id: ctx.payableId,
-        businessId: ctx.businessId,
-        deletedAt: null,
-      },
-      data: {
-        updatedAt: new Date(),
-      },
-    });
+  /**
+   * Intentionally a no-op. Prepaid CHECKOUT sale creation is owned by the
+   * Express / Public Online Booking complete path via BookingLinkSaleService.
+   */
+  async onPaymentComplete(_ctx: PaymentCompleteContext): Promise<void> {
+    return;
   }
 }

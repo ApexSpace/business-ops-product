@@ -10,6 +10,7 @@ import {
   FILE_QUEUE,
   JOB_PROCESS_META_WEBHOOK,
   JOB_PROCESS_RESEND_WEBHOOK,
+  JOB_PROCESS_TWILIO_SMS_WEBHOOK,
   JOB_PROCESS_STRIPE_WEBHOOK,
   JOB_AUTOMATION_STEP,
   JOB_SEND_EMAIL,
@@ -23,6 +24,7 @@ import type {
   ProcessMetaWebhookPayload,
   ProcessResendWebhookPayload,
   ProcessStripeWebhookPayload,
+  ProcessTwilioSmsWebhookPayload,
   SendEmailJobPayload,
   SendOutboundMessagePayload,
   AutomationStepJobPayload,
@@ -161,6 +163,20 @@ export class QueueService {
       return null;
     }
     const job = await queue.add(JOB_PROCESS_META_WEBHOOK, payload);
+    return job.id ?? null;
+  }
+
+  async enqueueTwilioSmsWebhook(
+    payload: ProcessTwilioSmsWebhookPayload,
+  ): Promise<string | null> {
+    const queue = this.webhookQueue();
+    const jobId = `twilio-sms-webhook-${payload.webhookEventId}`;
+    if (!this.guardQueueAvailable(queue, `enqueue Twilio SMS webhook (${jobId})`)) {
+      return null;
+    }
+    const job = await queue.add(JOB_PROCESS_TWILIO_SMS_WEBHOOK, payload, {
+      jobId,
+    });
     return job.id ?? null;
   }
 

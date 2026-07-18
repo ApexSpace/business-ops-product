@@ -59,6 +59,10 @@ export const PUBLIC_ROUTE_RESOURCES: PublicRouteResource[] = [
     description: "Public form submissions",
   },
   {
+    prefix: "/express",
+    description: "Public Express Booking completion (token link from email)",
+  },
+  {
     prefix: "/public",
     description: "Generic public pages and assets",
   },

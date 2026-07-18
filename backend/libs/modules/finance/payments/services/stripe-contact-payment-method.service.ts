@@ -28,7 +28,11 @@ export class StripeContactPaymentMethodService {
   async createSetupIntent(
     businessId: string,
     contactId: string,
-  ): Promise<{ clientSecret: string }> {
+  ): Promise<{
+    clientSecret: string;
+    publishableKey: string | null;
+    stripeAccountId: string;
+  }> {
     const stripeAccountId =
       await this.connectContext.requireStripeAccountId(businessId);
     const { stripeCustomerId } =
@@ -56,7 +60,11 @@ export class StripeContactPaymentMethodService {
       );
     }
 
-    return { clientSecret: setupIntent.client_secret };
+    return {
+      clientSecret: setupIntent.client_secret,
+      publishableKey: this.connectContext.getPublishableKey(),
+      stripeAccountId,
+    };
   }
 
   async syncFromSetupIntent(setupIntent: SetupIntentObject): Promise<void> {
