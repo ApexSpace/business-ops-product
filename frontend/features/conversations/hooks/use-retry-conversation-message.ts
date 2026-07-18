@@ -15,9 +15,12 @@ import {
 } from "@/features/realtime/event-handlers";
 
 function buildOptimisticRetryPayload(message: ConversationMessage) {
-  const attachments = parseMessageAttachments(message.attachments).map(
-    (item) => ({ type: item.type, url: item.url }),
-  );
+  const attachments = parseMessageAttachments(message.attachments)
+    .filter(
+      (item): item is { type: string; url: string; title?: string | null } =>
+        typeof item.url === "string" && item.url.length > 0,
+    )
+    .map((item) => ({ type: item.type, url: item.url }));
 
   return {
     text: message.text?.trim() || undefined,

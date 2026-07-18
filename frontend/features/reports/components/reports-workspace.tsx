@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { FileBarChart } from "lucide-react";
 import { ApiErrorState } from "@/components/data-display/api-error-state";
 import { ReportCatalogSidebar } from "@/features/reports/components/report-catalog-sidebar";
@@ -14,15 +14,17 @@ export function ReportsWorkspace() {
 
   const reports = useMemo(() => data ?? [], [data]);
 
-  useEffect(() => {
-    if (selectedKey && !reports.some((r) => r.key === selectedKey)) {
-      setSelectedKey(null);
-    }
+  // Derive a valid selection without syncing via effect (catalog can change).
+  const activeKey = useMemo(() => {
+    if (!selectedKey) return null;
+    return reports.some((report) => report.key === selectedKey)
+      ? selectedKey
+      : null;
   }, [reports, selectedKey]);
 
   const selectedReport = useMemo(
-    () => reports.find((report) => report.key === selectedKey) ?? null,
-    [reports, selectedKey],
+    () => reports.find((report) => report.key === activeKey) ?? null,
+    [reports, activeKey],
   );
 
   if (isError) {
@@ -37,7 +39,7 @@ export function ReportsWorkspace() {
     <div className="flex h-full min-h-0 flex-1 overflow-hidden">
       <ReportCatalogSidebar
         groups={groups}
-        selectedKey={selectedKey}
+        selectedKey={activeKey}
         onSelect={setSelectedKey}
         isLoading={isLoading}
       />
