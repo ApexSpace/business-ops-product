@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   buildReportDateRangeOptions,
+  defaultRetentionMonthPreset,
+  describeReportDateRangeBounds,
   isMonthPreset,
   monthPresetValue,
 } from "./report-date-range-options";
@@ -26,9 +28,35 @@ describe("buildReportDateRangeOptions", () => {
     expect(monthOptions).toHaveLength(13);
   });
 
+  it("supports months-only mode for client retention", () => {
+    const options = buildReportDateRangeOptions(new Date(2026, 6, 19), "months");
+    const values = options.map((o) => o.value);
+    expect(values).not.toContain("today");
+    expect(values).not.toContain("last_7_days");
+    expect(values).toContain("custom");
+    expect(values.filter((v) => isMonthPreset(v))).toHaveLength(13);
+    expect(options[0]?.label).toBe("July 2026");
+  });
+
   it("labels today with the short date", () => {
     const options = buildReportDateRangeOptions(new Date(2026, 6, 19));
     expect(options[0]?.label).toMatch(/^Today \(/);
+  });
+});
+
+describe("describeReportDateRangeBounds", () => {
+  it("describes month presets for the initial-client note", () => {
+    const bounds = describeReportDateRangeBounds("month:2026-07");
+    expect(bounds?.label).toContain("July 1, 2026");
+    expect(bounds?.label).toContain("July 31, 2026");
+  });
+});
+
+describe("defaultRetentionMonthPreset", () => {
+  it("defaults to the previous calendar month", () => {
+    expect(defaultRetentionMonthPreset(new Date(2026, 6, 19))).toBe(
+      "month:2026-06",
+    );
   });
 });
 

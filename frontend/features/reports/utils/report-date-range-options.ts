@@ -53,14 +53,94 @@ export function isCustomDateRange(value: string): boolean {
   return value === "custom";
 }
 
-/**
- * Build the reusable date-range options list.
- * Includes rolling presets plus named months from the current month back one year.
- */
-export function buildReportDateRangeOptions(
+/** Named months from the current month back one year (13 entries). */
+export function buildReportMonthOptions(
   nowInput: Date = new Date(),
 ): ReportDateRangeOption[] {
   const now = startOfLocalDay(nowInput);
+  const options: ReportDateRangeOption[] = [];
+  for (let i = 0; i < MONTH_COUNT; i++) {
+    const monthDate = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    options.push({
+      value: monthPresetValue(monthDate.getFullYear(), monthDate.getMonth()),
+      label: formatMonthYear(monthDate),
+    });
+  }
+  return options;
+}
+
+/** Default month preset for Client Retention (previous calendar month). */
+export function defaultRetentionMonthPreset(
+  nowInput: Date = new Date(),
+): string {
+  const now = startOfLocalDay(nowInput);
+  const prev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  return monthPresetValue(prev.getFullYear(), prev.getMonth());
+}
+
+/**
+ * Human-readable bounds for the selected period (used by the initial-client note).
+ */
+export function describeReportDateRangeBounds(
+  preset: string,
+  fromDate?: string,
+  toDate?: string,
+): { start: Date; end: Date; label: string } | null {
+  const formatLong = (date: Date) =>
+    date.toLocaleDateString("en-US", {
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+    });
+
+  if (isMonthPreset(preset)) {
+    const match = /^month:(\d{4})-(\d{2})$/.exec(preset);
+    if (!match) return null;
+    const year = Number(match[1]);
+    const monthIndex = Number(match[2]) - 1;
+    const start = new Date(year, monthIndex, 1);
+    const end = new Date(year, monthIndex + 1, 0);
+    return {
+      start,
+      end,
+      label: `${formatLong(start)} – ${formatLong(end)}`,
+    };
+  }
+
+  if (isCustomDateRange(preset)) {
+    if (!fromDate || !toDate) return null;
+    const start = new Date(`${fromDate}T00:00:00`);
+    const end = new Date(`${toDate}T00:00:00`);
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+      return null;
+    }
+    return {
+      start,
+      end,
+      label: `${formatLong(start)} – ${formatLong(end)}`,
+    };
+  }
+
+  return null;
+}
+
+/**
+ * Build the reusable date-range options list.
+ * `full` = rolling presets + named months; `months` = named months + custom only.
+ */
+export function buildReportDateRangeOptions(
+  nowInput: Date = new Date(),
+  mode: "full" | "months" = "full",
+): ReportDateRangeOption[] {
+  const now = startOfLocalDay(nowInput);
+
+  if (mode === "months") {
+    return [
+      ...buildReportMonthOptions(now),
+      { value: "custom", label: "Custom time period" },
+    ];
+  }
+
   const yesterday = addDays(now, -1);
   const last7Start = addDays(now, -6);
   const last30Start = addDays(now, -29);
@@ -105,16 +185,6 @@ export function buildReportDateRangeOptions(
     },
   ];
 
-  for (let i = 0; i < MONTH_COUNT; i++) {
-    const monthDate = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    options.push({
-      value: monthPresetValue(
-        monthDate.getFullYear(),
-        monthDate.getMonth(),
-      ),
-      label: formatMonthYear(monthDate),
-    });
-  }
-
+  options.push(...buildReportMonthOptions(now));
   return options;
 }

@@ -1,53 +1,112 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@app/core/database/prisma.service';
-import { DateTime } from 'luxon';
-import type { ReportDocument, ReportFilters } from '../contracts/report-document';
-import type { ReportDataProvider, ReportGenerateContext } from '../contracts/report-provider.interface';
-import { moneyNumber, resolveReportDateRange } from '../utils/report-date-range.util';
-import { buildDocument, buildReportMeta, row, section } from '../utils/report-document.builder';
+import type {
+  ReportColumn,
+  ReportDocument,
+  ReportFilters,
+  ReportRow,
+} from '../contracts/report-document';
+import type {
+  ReportDataProvider,
+  ReportGenerateContext,
+} from '../contracts/report-provider.interface';
+import {
+  moneyNumber,
+  resolveReportDateRange,
+} from '../utils/report-date-range.util';
+import {
+  buildDocument,
+  buildReportMeta,
+  row,
+  section,
+} from '../utils/report-document.builder';
+
+const COLUMNS: ReportColumn[] = [
+  { key: 'offer', label: 'Offer', format: 'text', align: 'left' },
+  { key: 'code', label: 'Code', format: 'text', align: 'left' },
+  { key: 'usedCount', label: '# used', format: 'int', align: 'right' },
+  { key: 'discounts', label: 'Discounts', format: 'money', align: 'right' },
+];
+
+function round2(n: number): number {
+  return Math.round(n * 100) / 100;
+}
 
 @Injectable()
 export class OffersSummaryProvider implements ReportDataProvider {
   readonly key = 'offers_summary';
   constructor(private readonly prisma: PrismaService) {}
-  async generate(businessId: string, filters: ReportFilters, context: ReportGenerateContext): Promise<ReportDocument> {
+
+  async generate(
+    businessId: string,
+    filters: ReportFilters,
+    context: ReportGenerateContext,
+  ): Promise<ReportDocument> {
     const range = resolveReportDateRange(filters, context.timezone);
     const logs = await this.prisma.offerUsageLog.findMany({
       where: { businessId, usedAt: { gte: range.start, lte: range.end } },
-      select: { usedAt: true, discountAmount: true },
+      select: {
+        offerId: true,
+        discountAmount: true,
+        offer: {
+          select: {
+            name: true,
+            offerCode: true,
+          },
+        },
+      },
     });
-    const byDay = new Map<string, { count: number; discount: number }>();
-    for (const l of logs) {
-      const day = DateTime.fromJSDate(l.usedAt).setZone(context.timezone).toFormat('yyyy-MM-dd');
-      const agg = byDay.get(day) ?? { count: 0, discount: 0 };
+
+    const byOffer = new Map<
+      string,
+      {
+        name: string;
+        code: string;
+        count: number;
+        discount: number;
+      }
+    >();
+
+    for (const entry of logs) {
+      const agg = byOffer.get(entry.offerId) ?? {
+        name: entry.offer.name,
+        code: entry.offer.offerCode?.trim() ?? '',
+        count: 0,
+        discount: 0,
+      };
       agg.count += 1;
-      agg.discount += moneyNumber(l.discountAmount);
-      byDay.set(day, agg);
+      agg.discount += moneyNumber(entry.discountAmount);
+      byOffer.set(entry.offerId, agg);
     }
+
     let totalCount = 0;
     let totalDiscount = 0;
-    const rows = [...byDay.entries()]
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([day, agg]) => {
+    const rows: ReportRow[] = [...byOffer.values()]
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map((agg) => {
         totalCount += agg.count;
         totalDiscount += agg.discount;
-        return row(day, {
-          day,
-          count: agg.count,
-          discount: Math.round(agg.discount * 100) / 100,
+        return row(agg.name, {
+          offer: agg.name,
+          code: agg.code || null,
+          usedCount: agg.count,
+          discounts: round2(agg.discount),
         });
       });
+
     rows.push(
       row(
         'total',
         {
-          day: 'Total',
-          count: totalCount,
-          discount: Math.round(totalDiscount * 100) / 100,
+          offer: 'Total',
+          code: '',
+          usedCount: totalCount,
+          discounts: round2(totalDiscount),
         },
         { isTotal: true },
       ),
     );
+
     return buildDocument(
       buildReportMeta({
         reportKey: this.key,
@@ -56,17 +115,7 @@ export class OffersSummaryProvider implements ReportDataProvider {
         periodLabel: range.periodLabel,
         context,
       }),
-      [
-        section(
-          'summary',
-          [
-            { key: 'day', label: 'Day', format: 'text', align: 'left' },
-            { key: 'count', label: '# Uses', format: 'int' },
-            { key: 'discount', label: 'Total Discount', format: 'money' },
-          ],
-          rows,
-        ),
-      ],
+      [section('summary', COLUMNS, rows)],
     );
   }
 }

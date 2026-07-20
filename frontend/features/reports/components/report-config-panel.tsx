@@ -11,14 +11,23 @@ import type {
   ReportCatalogItem,
   ReportFilterValues,
 } from "@/features/reports/types";
+import { defaultRetentionMonthPreset } from "@/features/reports/utils/report-date-range-options";
 
 function buildDefaultValues(report: ReportCatalogItem): ReportFilterValues {
   const values: ReportFilterValues = {};
+  const today = new Date().toISOString().slice(0, 10);
   for (const field of report.filters) {
-    if (field.defaultValue !== undefined) {
+    if (field.type === "date_range" && field.dateRangeMode === "months") {
+      values[field.key] =
+        typeof field.defaultValue === "string"
+          ? field.defaultValue
+          : defaultRetentionMonthPreset();
+    } else if (field.defaultValue !== undefined) {
       values[field.key] = field.defaultValue;
     } else if (field.type === "date_range") {
       values[field.key] = "today";
+    } else if (field.type === "single_date") {
+      values[field.key] = today;
     }
   }
   return values;

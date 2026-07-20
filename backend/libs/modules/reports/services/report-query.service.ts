@@ -46,6 +46,16 @@ export class ReportQueryService {
   }
 
   async listCatalog(businessId: string): Promise<ReportCatalogItemDto[]> {
+    const needsBrandOptions = REPORT_DEFINITIONS.some(
+      (def) =>
+        !def.deferred &&
+        this.providers.has(def.key) &&
+        def.filters.some((field) => field.key === 'brand'),
+    );
+    const brandOptions = needsBrandOptions
+      ? await this.loadBrandFilterOptions(businessId)
+      : null;
+
     const items: ReportCatalogItemDto[] = [];
     for (const def of REPORT_DEFINITIONS) {
       if (def.deferred) continue;
@@ -58,12 +68,48 @@ export class ReportQueryService {
         categoryLabel: REPORT_CATEGORY_LABELS[def.category],
         title: def.title,
         description: def.description,
-        filters: def.filters,
+        filters: this.withDynamicFilterOptions(def.filters, brandOptions),
         footnotes: def.footnotes ?? [],
         exportFormats: def.exportFormats ?? ['pdf', 'xlsx'],
       });
     }
     return items;
+  }
+
+  private withDynamicFilterOptions(
+    filters: ReportDefinition['filters'],
+    brandOptions: Array<{ value: string; label: string }> | null,
+  ): ReportDefinition['filters'] {
+    if (!brandOptions) return filters;
+    return filters.map((field) => {
+      if (field.key !== 'brand') return field;
+      return { ...field, options: brandOptions };
+    });
+  }
+
+  private async loadBrandFilterOptions(
+    businessId: string,
+  ): Promise<Array<{ value: string; label: string }>> {
+    const rows = await this.prisma.product.findMany({
+      where: {
+        businessId,
+        deletedAt: null,
+        AND: [{ brand: { not: null } }, { brand: { not: '' } }],
+      },
+      select: { brand: true },
+      distinct: ['brand'],
+      orderBy: { brand: 'asc' },
+    });
+
+    const brands = rows
+      .map((row) => row.brand?.trim())
+      .filter((brand): brand is string => Boolean(brand))
+      .sort((a, b) => a.localeCompare(b));
+
+    return [
+      { value: 'all', label: 'All' },
+      ...brands.map((brand) => ({ value: brand, label: brand })),
+    ];
   }
 
   async generate(

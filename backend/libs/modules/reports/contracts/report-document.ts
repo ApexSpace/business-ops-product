@@ -63,6 +63,7 @@ export type ReportCategory =
 
 export type ReportFilterFieldType =
   | 'date_range'
+  | 'single_date'
   | 'staff_multi'
   | 'staff_toggle'
   | 'group_by'
@@ -76,6 +77,8 @@ export type ReportFilterOption = {
   label: string;
 };
 
+export type ReportDateRangeMode = 'full' | 'months';
+
 export type ReportFilterField = {
   key: string;
   label: string;
@@ -84,6 +87,11 @@ export type ReportFilterField = {
   /** Show this field only when another filter has a given value */
   visibleWhen?: { key: string; equals: string | boolean };
   defaultValue?: string | boolean | string[] | null;
+  /**
+   * For `date_range` filters: `full` = rolling presets + months;
+   * `months` = named months for the past year + custom only (Client Retention).
+   */
+  dateRangeMode?: ReportDateRangeMode;
 };
 
 export type ReportDefinition = {

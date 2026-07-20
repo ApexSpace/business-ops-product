@@ -14,6 +14,7 @@ import { ClientMembershipsService } from '@app/modules/finance/memberships/servi
 import { CheckoutOffersService } from './checkout-offers.service';
 import { ProductInventoryService } from '@app/modules/finance/products/services/product-inventory.service';
 import { WalletLedgerService } from '@app/modules/finance/payments/services/wallet-ledger.service';
+import { syncInvoicePaymentFields } from '@app/modules/finance/payments/utils/sync-invoice-payment-fields.util';
 
 @Injectable()
 export class CheckoutCompletionService {
@@ -33,6 +34,8 @@ export class CheckoutCompletionService {
     invoiceId: string,
     actorUserId?: string,
   ): Promise<void> {
+    await syncInvoicePaymentFields(this.prisma, businessId, invoiceId);
+
     const checkout = await this.prisma.invoice.findFirst({
       where: {
         id: invoiceId,

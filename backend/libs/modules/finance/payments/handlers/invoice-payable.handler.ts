@@ -17,7 +17,7 @@ import { PrismaService } from '@app/core/database/prisma.service';
 import { CheckoutCompletionService } from '@app/modules/finance/invoices/services/checkout-completion.service';
 import { PaymentRealtimeService } from '../services/payment-realtime.service';
 import { PayableHandlerRegistry } from '../registry/payable-handler.registry';
-import { computeInvoicePaymentSyncFields } from '../utils/invoice-payment-sync.util';
+import { syncInvoicePaymentFields } from '../utils/sync-invoice-payment-fields.util';
 import type {
   PayableHandler,
   PayableSnapshot,
@@ -144,30 +144,6 @@ export class InvoicePayableHandler implements PayableHandler, OnModuleInit {
     businessId: string,
     invoiceId: string,
   ): Promise<void> {
-    const invoice = await this.prisma.invoice.findFirst({
-      where: { id: invoiceId, businessId, deletedAt: null },
-    });
-    if (!invoice) return;
-
-    const payments = await this.prisma.payment.findMany({
-      where: {
-        businessId,
-        invoiceId,
-        deletedAt: null,
-        status: 'SUCCEEDED',
-        paidAt: { not: null },
-      },
-      select: { amount: true, paidAt: true },
-    });
-
-    const fields = computeInvoicePaymentSyncFields(
-      invoice,
-      payments.map((p) => ({ amount: p.amount, paidAt: p.paidAt! })),
-    );
-
-    await this.prisma.invoice.update({
-      where: { id: invoiceId },
-      data: fields,
-    });
+    await syncInvoicePaymentFields(this.prisma, businessId, invoiceId);
   }
 }

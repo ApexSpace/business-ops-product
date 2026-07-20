@@ -22,6 +22,7 @@ import { ContactRepository } from '@app/modules/crm/contacts/repositories/contac
 import { ServiceRepository } from '@app/modules/crm/services/repositories/service.repository';
 import { ServiceWorkspaceRepository } from '@app/modules/crm/services/repositories/service-workspace.repository';
 import { PaymentOrchestratorService } from '@app/modules/finance/payments/orchestration/payment-orchestrator.service';
+import { loadInvoicePaymentFields, syncInvoicePaymentFields } from '@app/modules/finance/payments/utils/sync-invoice-payment-fields.util';
 import { ProductPickerService } from '@app/modules/finance/products/services/product-picker.service';
 import { ProductRepository } from '@app/modules/finance/products/repositories/product.repository';
 import { ClientMembershipsService } from '@app/modules/finance/memberships/services/client-memberships.service';
@@ -111,7 +112,20 @@ export class CheckoutsService {
     id: string,
     user: RequestUser,
   ): Promise<CheckoutResponseDto> {
-    const checkout = await this.requireOpenOrClosedCheckout(businessId, id);
+    await syncInvoicePaymentFields(this.prisma, businessId, id);
+    let checkout = await this.requireOpenOrClosedCheckout(businessId, id);
+    if (
+      checkout.status === InvoiceStatus.OPEN &&
+      checkout.balanceDue.lessThanOrEqualTo(0) &&
+      checkout.paidAmount.greaterThan(0)
+    ) {
+      await this.checkoutCompletion.finalizeCheckoutIfPaid(
+        businessId,
+        id,
+        user.id,
+      );
+      checkout = await this.requireOpenOrClosedCheckout(businessId, id);
+    }
     SalesStaffAccess.assertCanViewCheckout(user, checkout);
     return toCheckoutResponse(checkout);
   }
@@ -649,6 +663,7 @@ export class CheckoutsService {
     dto: CloseCheckoutDto,
     actor: RequestUser,
   ) {
+    await syncInvoicePaymentFields(this.prisma, businessId, id);
     const checkout = await this.requireEditableCheckout(businessId, id);
     if (checkout.items.length === 0) {
       throw new AppException(
@@ -706,12 +721,13 @@ export class CheckoutsService {
       actorUserId: actor.id,
     });
 
+    await this.checkoutCompletion.finalizeCheckoutIfPaid(
+      businessId,
+      checkout.id,
+      actor.id,
+    );
+
     if (result.completed) {
-      await this.checkoutCompletion.finalizeCheckoutIfPaid(
-        businessId,
-        checkout.id,
-        actor.id,
-      );
       await this.auditService.log({
         actorUserId: actor.id,
         businessId,
@@ -1001,15 +1017,41 @@ export class CheckoutsService {
       offerResult.totalOfferDiscount,
     );
 
+    const paymentFields = await loadInvoicePaymentFields(
+      this.prisma,
+      businessId,
+      checkoutId,
+      totals.totalAmount,
+      checkout.status,
+    );
+
     await this.checkoutRepository.update(businessId, checkoutId, {
       subtotal: totals.subtotal,
       taxAmount: totals.taxAmount,
       discountAmount: totals.discountAmount,
       totalAmount: totals.totalAmount,
-      balanceDue: totals.balanceDue,
-      remainingAmount: totals.balanceDue,
+      balanceDue: paymentFields.balanceDue,
+      remainingAmount: paymentFields.remainingAmount,
+      paidAmount: paymentFields.paidAmount,
+      paymentStatus: paymentFields.paymentStatus,
+      status:
+        checkout.status === InvoiceStatus.VOID
+          ? InvoiceStatus.VOID
+          : paymentFields.status,
+      lastPaymentAt: paymentFields.lastPaymentAt,
       metadata: offerResult.metadata,
     });
+
+    if (
+      paymentFields.balanceDue.lessThanOrEqualTo(0) &&
+      paymentFields.paidAmount.greaterThan(0)
+    ) {
+      await this.checkoutCompletion.finalizeCheckoutIfPaid(
+        businessId,
+        checkoutId,
+        _actorUserId,
+      );
+    }
 
     const refreshed = await this.checkoutRepository.findById(
       businessId,

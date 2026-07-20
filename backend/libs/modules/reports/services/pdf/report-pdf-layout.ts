@@ -348,7 +348,7 @@ export class ReportPdfLayout {
 
     columns.forEach((col, i) => {
       const raw = row.cells[col.key];
-      const text = this.formatCell(raw, col, currency);
+      const text = this.formatCell(raw, col, currency, row.isTotal);
       const indent = (row.depth ?? 0) * 10;
       const width = colWidths[i]! - (i === 0 ? indent : 0);
       doc.text(text, x + (i === 0 ? indent : 0), y, {
@@ -367,8 +367,19 @@ export class ReportPdfLayout {
     value: string | number | null | undefined,
     column: ReportColumn,
     currency: string,
+    isTotal = false,
   ): string {
-    if (value == null || value === '') return '—';
+    const isNumeric =
+      column.format === 'money' ||
+      column.format === 'int' ||
+      column.format === 'percent';
+
+    if (value === '') return '';
+
+    if (value == null) {
+      if (isTotal && !isNumeric) return '';
+      return '—';
+    }
     switch (column.format) {
       case 'money': {
         const n = typeof value === 'number' ? value : Number(value);

@@ -58,6 +58,13 @@ export const invoiceItemsInclude = {
           unitPrice: true,
         },
       },
+      variant: {
+        select: {
+          id: true,
+          purchaseCost: true,
+          price: true,
+        },
+      },
       staffUser: { select: { id: true, firstName: true, lastName: true } },
     },
   },

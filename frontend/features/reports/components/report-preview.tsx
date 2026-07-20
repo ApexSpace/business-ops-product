@@ -16,12 +16,28 @@ import type {
   ReportRow,
 } from "@/features/reports/types";
 
+function isNumericColumn(column: ReportColumn): boolean {
+  return (
+    column.format === "money" ||
+    column.format === "int" ||
+    column.format === "percent"
+  );
+}
+
 function formatCell(
   value: string | number | null,
   column: ReportColumn,
   currency: string,
+  isTotal = false,
 ): string {
-  if (value === null || value === undefined || value === "") {
+  if (value === "") {
+    return "";
+  }
+
+  if (value === null || value === undefined) {
+    if (isTotal && !isNumericColumn(column)) {
+      return "";
+    }
     return "—";
   }
 
@@ -137,7 +153,12 @@ function ReportSectionTable({
                         )}
                         style={indent ? { paddingLeft: indent + 16 } : undefined}
                       >
-                        {formatCell(row.cells[column.key], column, currency)}
+                        {formatCell(
+                          row.cells[column.key],
+                          column,
+                          currency,
+                          row.isTotal,
+                        )}
                       </TableCell>
                     );
                   })}

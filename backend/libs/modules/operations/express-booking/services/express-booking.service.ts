@@ -893,12 +893,23 @@ export class ExpressBookingService {
       try {
         const guestEmail = appointment.guestEmail?.trim();
         const guestFirstName = appointment.guestFirstName;
+        const existingMeta =
+          appointment.metadata &&
+          typeof appointment.metadata === 'object' &&
+          !Array.isArray(appointment.metadata)
+            ? (appointment.metadata as Record<string, unknown>)
+            : {};
         const cancelled = await this.appointmentRepository.update(
           appointment.id,
           {
             status: AppointmentStatus.CANCELLED,
             expressBookingToken: null,
             expressBookingExpiresAt: null,
+            metadata: {
+              ...existingMeta,
+              expressExpired: true,
+              cancellationType: 'expired_express',
+            },
           },
         );
         if (guestEmail) {

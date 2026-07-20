@@ -1,7 +1,13 @@
 ﻿import { Injectable } from '@nestjs/common';
 import { PaymentMethod, PaymentStatus } from '@prisma/client';
+import { DateTime } from 'luxon';
 import { PrismaService } from '@app/core/database/prisma.service';
-import type { ReportDocument, ReportFilters } from '../contracts/report-document';
+import type {
+  ReportColumn,
+  ReportDocument,
+  ReportFilters,
+  ReportRow,
+} from '../contracts/report-document';
 import type {
   ReportDataProvider,
   ReportGenerateContext,
@@ -23,6 +29,7 @@ import {
   refundTimestamp,
 } from '../utils/refunded-payments.util';
 
+/** Cash-equivalent methods (excludes gift cards, wallet/packages). */
 const CASH_EQUIVALENT: PaymentMethod[] = [
   PaymentMethod.CASH,
   PaymentMethod.CARD,
@@ -31,6 +38,72 @@ const CASH_EQUIVALENT: PaymentMethod[] = [
   PaymentMethod.OTHER,
 ];
 
+const COLUMNS: ReportColumn[] = [
+  { key: 'date', label: 'Date', format: 'text', align: 'left' },
+  {
+    key: 'incoming',
+    label: 'Incoming Cashflow',
+    format: 'money',
+    align: 'right',
+  },
+  {
+    key: 'staffTips',
+    label: 'Staff Tips',
+    format: 'money',
+    align: 'right',
+  },
+  {
+    key: 'netCashflow',
+    label: 'Net Cashflow',
+    format: 'money',
+    align: 'right',
+  },
+];
+
+const DESCRIPTION =
+  'Shows gross and net totals for cashflow. Includes all cash-equivalent forms of payment and ignores non-cash payments like gift cards, packages, etc.';
+
+const FOOTNOTES = [
+  'Incoming cashflow includes all cash and card payments.',
+];
+
+type DayAgg = {
+  incoming: number;
+  staffTips: number;
+};
+
+function round2(n: number): number {
+  return Math.round(n * 100) / 100;
+}
+
+function tipFromMetadata(metadata: unknown): number {
+  if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) {
+    return 0;
+  }
+  return moneyNumber((metadata as Record<string, unknown>).tipAmount);
+}
+
+function dayKeyFromDate(date: Date, timezone: string): string {
+  return DateTime.fromJSDate(date, { zone: 'utc' })
+    .setZone(timezone || 'UTC')
+    .toFormat('yyyy-MM-dd');
+}
+
+function formatDayLabel(dayKey: string, timezone: string): string {
+  return DateTime.fromISO(dayKey, { zone: timezone || 'UTC' }).toFormat(
+    'LLL d',
+  );
+}
+
+/**
+ * Cashflow (Mangomint parity).
+ *
+ * Daily rows by payment date:
+ * - Incoming = cash-equivalent payments (− cash-equivalent refunds)
+ * - Staff Tips = tipAmount from the sale, allocated across that sale’s
+ *   cash-equivalent payments (payment-date weighted)
+ * - Net = Incoming − Staff Tips
+ */
 @Injectable()
 export class CashflowProvider implements ReportDataProvider {
   readonly key = 'cashflow';
@@ -42,6 +115,7 @@ export class CashflowProvider implements ReportDataProvider {
     context: ReportGenerateContext,
   ): Promise<ReportDocument> {
     const range = resolveReportDateRange(filters, context.timezone);
+    const timezone = context.timezone || 'UTC';
 
     const [payments, refundPayments] = await Promise.all([
       this.prisma.payment.findMany({
@@ -50,9 +124,29 @@ export class CashflowProvider implements ReportDataProvider {
           deletedAt: null,
           method: { in: CASH_EQUIVALENT },
           status: PaymentStatus.SUCCEEDED,
-          paidAt: { gte: range.start, lte: range.end },
+          OR: [
+            { paidAt: { gte: range.start, lte: range.end } },
+            {
+              paidAt: null,
+              createdAt: { gte: range.start, lte: range.end },
+            },
+          ],
         },
-        select: { method: true, amount: true },
+        select: {
+          id: true,
+          amount: true,
+          paidAt: true,
+          createdAt: true,
+          invoiceId: true,
+          invoice: {
+            select: {
+              id: true,
+              metadata: true,
+            },
+          },
+        },
+        orderBy: [{ paidAt: 'asc' }, { createdAt: 'asc' }],
+        take: 10000,
       }),
       this.prisma.payment.findMany({
         where: {
@@ -73,45 +167,99 @@ export class CashflowProvider implements ReportDataProvider {
       }),
     ]);
 
-    let gross = 0;
-    let refunds = 0;
-    const byMethod = new Map<string, number>();
+    const invoiceIds = [
+      ...new Set(payments.map((p) => p.invoiceId).filter(Boolean)),
+    ];
 
-    for (const p of payments) {
-      const amt = moneyNumber(p.amount);
-      gross += amt;
-      byMethod.set(p.method, (byMethod.get(p.method) ?? 0) + amt);
+    // All cash-equivalent payments on those invoices (for tip allocation base).
+    const invoiceCashTotals = new Map<string, number>();
+    if (invoiceIds.length > 0) {
+      const allCashOnInvoices = await this.prisma.payment.findMany({
+        where: {
+          businessId,
+          deletedAt: null,
+          invoiceId: { in: invoiceIds },
+          method: { in: CASH_EQUIVALENT },
+          status: {
+            in: [PaymentStatus.SUCCEEDED, PaymentStatus.REFUNDED],
+          },
+        },
+        select: { invoiceId: true, amount: true },
+      });
+      for (const payment of allCashOnInvoices) {
+        invoiceCashTotals.set(
+          payment.invoiceId,
+          (invoiceCashTotals.get(payment.invoiceId) ?? 0) +
+            moneyNumber(payment.amount),
+        );
+      }
     }
 
-    for (const p of refundPayments) {
-      if (!isRefundedPayment(p)) continue;
-      const refundedAt = refundTimestamp(p);
+    const byDay = new Map<string, DayAgg>();
+
+    function dayAgg(dayKey: string): DayAgg {
+      const existing = byDay.get(dayKey);
+      if (existing) return existing;
+      const created: DayAgg = { incoming: 0, staffTips: 0 };
+      byDay.set(dayKey, created);
+      return created;
+    }
+
+    for (const payment of payments) {
+      const occurredAt = payment.paidAt ?? payment.createdAt;
+      const dayKey = dayKeyFromDate(occurredAt, timezone);
+      const amount = moneyNumber(payment.amount);
+      const agg = dayAgg(dayKey);
+      agg.incoming += amount;
+
+      const invoiceTip = tipFromMetadata(payment.invoice?.metadata);
+      if (invoiceTip > 0) {
+        const cashBase = invoiceCashTotals.get(payment.invoiceId) ?? 0;
+        if (cashBase > 0.005) {
+          agg.staffTips += invoiceTip * (amount / cashBase);
+        }
+      }
+    }
+
+    for (const payment of refundPayments) {
+      if (!isRefundedPayment(payment)) continue;
+      const refundedAt = refundTimestamp(payment);
       if (refundedAt < range.start || refundedAt > range.end) continue;
-      refunds += refundAmountValue(p);
+      const dayKey = dayKeyFromDate(refundedAt, timezone);
+      const agg = dayAgg(dayKey);
+      agg.incoming -= refundAmountValue(payment);
     }
 
-    const rows = [...byMethod.entries()].map(([method, total]) =>
-      row(method, { method, total: Math.round(total * 100) / 100 }),
-    );
+    const days = [...byDay.keys()].sort((a, b) => a.localeCompare(b));
+    const rows: ReportRow[] = [];
+    let totalIncoming = 0;
+    let totalTips = 0;
+
+    for (const dayKey of days) {
+      const agg = byDay.get(dayKey)!;
+      const incoming = round2(agg.incoming);
+      const staffTips = round2(agg.staffTips);
+      const netCashflow = round2(incoming - staffTips);
+      totalIncoming += incoming;
+      totalTips += staffTips;
+      rows.push(
+        row(dayKey, {
+          date: formatDayLabel(dayKey, timezone),
+          incoming,
+          staffTips,
+          netCashflow,
+        }),
+      );
+    }
+
     rows.push(
       row(
-        'gross',
-        { method: 'Gross', total: Math.round(gross * 100) / 100 },
-        { isGroup: true },
-      ),
-    );
-    rows.push(
-      row('refunds', {
-        method: 'Refunds',
-        total: Math.round(refunds * 100) / 100,
-      }),
-    );
-    rows.push(
-      row(
-        'net',
+        'total',
         {
-          method: 'Net Cashflow',
-          total: Math.round((gross - refunds) * 100) / 100,
+          date: 'Total',
+          incoming: round2(totalIncoming),
+          staffTips: round2(totalTips),
+          netCashflow: round2(totalIncoming - totalTips),
         },
         { isTotal: true },
       ),
@@ -121,21 +269,12 @@ export class CashflowProvider implements ReportDataProvider {
       buildReportMeta({
         reportKey: this.key,
         title: 'Cashflow',
-        description:
-          'Shows gross and net totals for cashflow. Includes cash-equivalent forms of payment; ignores non-cash payments such as gift cards and packages.',
+        description: DESCRIPTION,
         periodLabel: range.periodLabel,
         context,
+        footnotes: FOOTNOTES,
       }),
-      [
-        section(
-          'cashflow',
-          [
-            { key: 'method', label: 'Type', format: 'text', align: 'left' },
-            { key: 'total', label: 'Amount', format: 'money' },
-          ],
-          rows,
-        ),
-      ],
+      [section('cashflow', COLUMNS, rows)],
     );
   }
 }

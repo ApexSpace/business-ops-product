@@ -267,6 +267,7 @@ export const REPORT_DEFINITIONS: ReportDefinition[] = [
     title: 'Offers Usage',
     description: 'Shows the details of offer usages.',
     requiredModuleKey: 'payments',
+    exportFormats: ['pdf'],
     filters: [
       DATE_RANGE,
       {
@@ -283,29 +284,54 @@ export const REPORT_DEFINITIONS: ReportDefinition[] = [
     title: 'Offers Summary',
     description: 'Shows daily summary of the offers being used.',
     requiredModuleKey: 'payments',
+    exportFormats: ['pdf'],
   }),
 
   // —— Client account ——
   def({
     key: 'client_account_usage',
     category: 'client_account',
-    title: 'Client Account Usage',
-    description: 'Shows account balance usage details.',
+    title: 'Client Account Balance Usage',
+    description: 'Shows the details of client account balance usages.',
     requiredModuleKey: 'payments',
+    exportFormats: ['pdf', 'xlsx'],
   }),
   def({
     key: 'client_account_balances',
     category: 'client_account',
     title: 'Client Account Balances',
-    description: 'Shows current client account balances.',
+    description: 'Shows current account balances.',
     requiredModuleKey: 'payments',
+    exportFormats: ['pdf', 'xlsx'],
+    filters: [
+      {
+        key: 'asOfDate',
+        label: 'Show balance at end of day',
+        type: 'single_date',
+        defaultValue: null,
+      },
+    ],
   }),
   def({
     key: 'client_account_deposits',
     category: 'client_account',
-    title: 'Client Account Deposits',
-    description: 'Shows account balance deposit details.',
+    title: 'Client Account Balance Deposits',
+    description: 'Shows the details of client account balance deposits.',
     requiredModuleKey: 'payments',
+    exportFormats: ['pdf', 'xlsx'],
+    filters: [
+      DATE_RANGE,
+      {
+        key: 'filterRefundsBy',
+        label: 'Filter refunds by',
+        type: 'select',
+        options: [
+          { value: 'sale_date', label: 'Sale Date' },
+          { value: 'refund_date', label: 'Refund Date' },
+        ],
+        defaultValue: 'sale_date',
+      },
+    ],
   }),
 
   // —— Gift cards ——
@@ -313,24 +339,52 @@ export const REPORT_DEFINITIONS: ReportDefinition[] = [
     key: 'gift_card_usage',
     category: 'gift_cards',
     title: 'Gift Card Usage',
-    description:
-      'Shows gift card usage details, including refunded gift card payments.',
+    description: 'Shows the details of gift cards usages.',
     requiredModuleKey: 'payments',
+    exportFormats: ['pdf'],
   }),
   def({
     key: 'gift_card_balances',
     category: 'gift_cards',
     title: 'Gift Card Balances',
-    description:
-      'Shows outstanding gift card balances at the end of the selected day.',
+    description: 'Shows outstanding gift card balances.',
     requiredModuleKey: 'payments',
+    exportFormats: ['pdf', 'xlsx'],
+    filters: [
+      {
+        key: 'asOfDate',
+        label: 'Show balance at end of day',
+        type: 'single_date',
+        defaultValue: null,
+      },
+    ],
   }),
   def({
     key: 'gift_card_sales',
     category: 'gift_cards',
     title: 'Gift Card Sales',
-    description: 'Shows quantities and sales totals of gift cards.',
+    description: 'Shows the quantities and sales totals of gift cards.',
     requiredModuleKey: 'payments',
+    exportFormats: ['pdf'],
+    filters: [
+      DATE_RANGE,
+      {
+        key: 'includeDailyDetails',
+        label: 'Include details for each day',
+        type: 'boolean',
+        defaultValue: false,
+      },
+      {
+        key: 'filterRefundsBy',
+        label: 'Filter refunds by',
+        type: 'select',
+        options: [
+          { value: 'sale_date', label: 'Sale Date' },
+          { value: 'refund_date', label: 'Refund Date' },
+        ],
+        defaultValue: 'sale_date',
+      },
+    ],
   }),
   def({
     key: 'gift_card_sales_details',
@@ -339,6 +393,7 @@ export const REPORT_DEFINITIONS: ReportDefinition[] = [
     description:
       'Shows details for gift card sales, such as the name of the gift card promotion.',
     requiredModuleKey: 'payments',
+    exportFormats: ['pdf', 'xlsx'],
   }),
 
   // —— Packages ——
@@ -346,29 +401,73 @@ export const REPORT_DEFINITIONS: ReportDefinition[] = [
     key: 'package_usage',
     category: 'packages',
     title: 'Package Usage',
-    description: 'Shows package usage details.',
+    description: 'Shows the details of package usages.',
     requiredModuleKey: 'payments',
+    exportFormats: ['pdf'],
+    filters: [
+      DATE_RANGE,
+      {
+        key: 'filterRefundsBy',
+        label: 'Filter refunds by',
+        type: 'select',
+        options: [
+          { value: 'sale_date', label: 'Sale Date' },
+          { value: 'refund_date', label: 'Refund Date' },
+        ],
+        defaultValue: 'sale_date',
+      },
+    ],
   }),
   def({
     key: 'outstanding_packages',
     category: 'packages',
     title: 'Outstanding Packages',
-    description: 'Shows outstanding package credits as of today.',
+    description: 'Shows the list of outstanding package credits.',
     requiredModuleKey: 'payments',
+    exportFormats: ['pdf', 'xlsx'],
+    filters: [
+      {
+        key: 'asOfDate',
+        label: 'Show credits at end of day',
+        type: 'single_date',
+        defaultValue: null,
+      },
+    ],
   }),
   def({
     key: 'package_sales',
     category: 'packages',
     title: 'Package Sales',
-    description: 'Shows quantities and sales totals of packages.',
+    description: 'Shows the quantities and sales totals of packages.',
     requiredModuleKey: 'payments',
+    exportFormats: ['pdf'],
+    filters: [
+      DATE_RANGE,
+      {
+        key: 'includeDailyDetails',
+        label: 'Include details for each day',
+        type: 'boolean',
+        defaultValue: false,
+      },
+      {
+        key: 'filterRefundsBy',
+        label: 'Filter refunds by',
+        type: 'select',
+        options: [
+          { value: 'sale_date', label: 'Sale Date' },
+          { value: 'refund_date', label: 'Refund Date' },
+        ],
+        defaultValue: 'sale_date',
+      },
+    ],
   }),
   def({
     key: 'package_sales_details',
     category: 'packages',
     title: 'Package Sales Details',
-    description: 'Shows details for each package sale.',
+    description: 'Shows details for each sale of a package.',
     requiredModuleKey: 'payments',
+    exportFormats: ['pdf', 'xlsx'],
   }),
 
   // —— Memberships ——
@@ -379,13 +478,47 @@ export const REPORT_DEFINITIONS: ReportDefinition[] = [
     description:
       'Shows payments for new memberships and membership renewals.',
     requiredModuleKey: 'payments',
+    exportFormats: ['pdf'],
+    filters: [
+      DATE_RANGE,
+      {
+        key: 'includeDailyDetails',
+        label: 'Include details for each day',
+        type: 'boolean',
+        defaultValue: false,
+      },
+      {
+        key: 'filterRefundsBy',
+        label: 'Filter refunds by',
+        type: 'select',
+        options: [
+          { value: 'sale_date', label: 'Sale Date' },
+          { value: 'refund_date', label: 'Refund Date' },
+        ],
+        defaultValue: 'sale_date',
+      },
+    ],
   }),
   def({
     key: 'membership_service_usage',
     category: 'memberships',
-    title: 'Membership Service Usage',
-    description: 'Shows details for used membership services.',
+    title: 'Membership Credit Usage',
+    description: 'Shows the details of membership services used.',
     requiredModuleKey: 'payments',
+    exportFormats: ['pdf'],
+    filters: [
+      DATE_RANGE,
+      {
+        key: 'filterRefundsBy',
+        label: 'Filter refunds by',
+        type: 'select',
+        options: [
+          { value: 'sale_date', label: 'Sale Date' },
+          { value: 'refund_date', label: 'Refund Date' },
+        ],
+        defaultValue: 'sale_date',
+      },
+    ],
   }),
   def({
     key: 'memberships_started',
@@ -411,14 +544,16 @@ export const REPORT_DEFINITIONS: ReportDefinition[] = [
     description:
       'Shows quantities and totals of payments by payment method. Also includes membership usage and package usage.',
     requiredModuleKey: 'payments',
+    exportFormats: ['pdf'],
   }),
   def({
     key: 'payment_details',
     category: 'payments',
     title: 'Payment Details',
     description:
-      'Shows payment details for each sale such as payment method, payment amount, and refunds.',
+      'Shows the payment details, such as payment amount and payment method, for each sale.',
     requiredModuleKey: 'payments',
+    exportFormats: ['pdf', 'xlsx'],
   }),
   def({
     key: 'cash_drawer_activity',
@@ -434,15 +569,18 @@ export const REPORT_DEFINITIONS: ReportDefinition[] = [
     category: 'payments',
     title: 'Deposits Collected',
     description:
-      'Shows deposits collected via online booking or Express Booking.',
+      'Shows deposit payments collected in online booking or Express Booking™.',
     requiredModuleKey: 'payments',
+    exportFormats: ['pdf', 'xlsx'],
   }),
   def({
     key: 'deposits_used',
     category: 'payments',
     title: 'Deposits Used',
-    description: 'Shows used deposits based on their associated sale date.',
+    description:
+      'Shows used deposit payments, based on their associated sale date, when the sale is closed.',
     requiredModuleKey: 'payments',
+    exportFormats: ['pdf', 'xlsx'],
   }),
 
   // —— Inventory ——
@@ -452,6 +590,7 @@ export const REPORT_DEFINITIONS: ReportDefinition[] = [
     title: 'Cost of Goods Sold',
     description: 'Shows costs and profits of products.',
     requiredModuleKey: 'products',
+    exportFormats: ['pdf'],
     filters: [
       DATE_RANGE,
       {
@@ -460,7 +599,7 @@ export const REPORT_DEFINITIONS: ReportDefinition[] = [
         type: 'group_by',
         options: [
           { value: 'category', label: 'Category' },
-          { value: 'product', label: 'Product' },
+          { value: 'brand', label: 'Brand' },
         ],
         defaultValue: 'category',
       },
@@ -475,6 +614,25 @@ export const REPORT_DEFINITIONS: ReportDefinition[] = [
     title: 'Product Inventory',
     description: 'Shows the stock of products at the end of the selected day.',
     requiredModuleKey: 'products',
+    exportFormats: ['pdf', 'xlsx'],
+    filters: [
+      {
+        key: 'groupBy',
+        label: 'Group by',
+        type: 'group_by',
+        options: [
+          { value: 'category', label: 'Category' },
+          { value: 'brand', label: 'Brand' },
+        ],
+        defaultValue: 'category',
+      },
+      {
+        key: 'asOfDate',
+        label: 'Show inventory at end of day',
+        type: 'single_date',
+        defaultValue: null,
+      },
+    ],
   }),
   def({
     key: 'product_inventory_changes',
@@ -482,6 +640,16 @@ export const REPORT_DEFINITIONS: ReportDefinition[] = [
     title: 'Product Inventory Changes',
     description: 'Shows product inventory changes.',
     requiredModuleKey: 'products',
+    exportFormats: ['pdf', 'xlsx'],
+    filters: [
+      DATE_RANGE,
+      {
+        key: 'brand',
+        label: 'Filter by brand',
+        type: 'entity_select',
+        defaultValue: 'all',
+      },
+    ],
   }),
   def({
     key: 'product_stock_usage',
@@ -490,6 +658,26 @@ export const REPORT_DEFINITIONS: ReportDefinition[] = [
     description:
       'Shows end stock quantities based on sold products, professional use products, and service usage.',
     requiredModuleKey: 'products',
+    exportFormats: ['pdf', 'xlsx'],
+    filters: [
+      DATE_RANGE,
+      {
+        key: 'groupBy',
+        label: 'Group by',
+        type: 'group_by',
+        options: [
+          { value: 'category', label: 'Category' },
+          { value: 'brand', label: 'Brand' },
+        ],
+        defaultValue: 'category',
+      },
+      {
+        key: 'brand',
+        label: 'Filter by brand',
+        type: 'entity_select',
+        defaultValue: 'all',
+      },
+    ],
   }),
 
   // —— Business ——
@@ -498,48 +686,159 @@ export const REPORT_DEFINITIONS: ReportDefinition[] = [
     category: 'business',
     title: 'Cashflow',
     description:
-      'Shows gross and net totals for cashflow. Includes cash-equivalent forms of payment; ignores non-cash payments such as gift cards and packages.',
+      'Shows gross and net totals for cashflow. Includes all cash-equivalent forms of payment and ignores non-cash payments like gift cards, packages, etc.',
     requiredModuleKey: 'payments',
+    exportFormats: ['pdf'],
+    footnotes: [
+      'Incoming cashflow includes all cash and card payments.',
+    ],
   }),
   def({
     key: 'bi_appointments',
     category: 'business',
     title: 'Business Intelligence: Appointments',
     description:
-      'Provides insight into appointment metrics such as booked percentage, pre-bookings, walk-ins, and staff requests.',
+      'Provides insights into appointment metrics, such as booked percentage (productivity), pre-bookings, walk-ins and staff requests.',
     requiredModuleKey: 'appointments',
+    exportFormats: ['pdf'],
+    footnotes: [
+      'Prebooking: An appointment that has a future appointment for the same client created within 24 hours of the appointment start, or any time before the appointment start.',
+      'Walk-in: An appointment that was created within 1 hour before to 1 hour after the appointment start time.',
+    ],
+    filters: [
+      DATE_RANGE,
+      {
+        key: 'staffIds',
+        label: 'Staff',
+        type: 'staff_multi',
+        defaultValue: [],
+      },
+      {
+        key: 'includeProcessingTimeAsBooked',
+        label: 'Include processing time as booked time',
+        type: 'boolean',
+        defaultValue: false,
+      },
+      {
+        key: 'includeTimeBlocksAsAvailable',
+        label: 'Include time blocks as available time',
+        type: 'boolean',
+        defaultValue: false,
+      },
+    ],
   }),
   def({
     key: 'bi_sales',
     category: 'business',
     title: 'Business Intelligence: Sales',
     description:
-      'Provides insight into sales metrics such as average product total per sale for each staff member.',
+      'Provides insights into sales metrics, such as average retail product total per sale by each staff member.',
     requiredModuleKey: 'payments',
+    exportFormats: ['pdf'],
+    filters: [
+      DATE_RANGE,
+      {
+        key: 'staffIds',
+        label: 'Staff',
+        type: 'staff_multi',
+        defaultValue: [],
+      },
+    ],
   }),
   def({
     key: 'bi_forecast',
     category: 'business',
     title: 'Business Intelligence: Forecast',
     description:
-      'Provides insight into future business metrics such as productivity and appointments booked.',
+      'Provides insights into future business metrics, such as productivity and appointments booked.',
     requiredModuleKey: 'appointments',
+    exportFormats: ['pdf'],
+    filters: [
+      DATE_RANGE,
+      {
+        key: 'onlySpecificStaff',
+        label: 'Only for specific staff members',
+        type: 'boolean',
+        defaultValue: false,
+      },
+      {
+        key: 'includePendingExpressBookings',
+        label: 'Include pending Express Bookings',
+        type: 'boolean',
+        defaultValue: false,
+      },
+      {
+        key: 'staffIds',
+        label: 'Staff',
+        type: 'staff_multi',
+        visibleWhen: { key: 'onlySpecificStaff', equals: true },
+        defaultValue: [],
+      },
+    ],
   }),
   def({
     key: 'client_retention',
     category: 'business',
     title: 'Client Retention',
     description:
-      'Specifies how many clients from the selected time period visited again within 90 or 180 days.',
+      'Specifies how many clients from the selected time period visited again within 30, 60, 90, or 180 days.',
     requiredModuleKey: 'appointments',
+    exportFormats: ['pdf'],
+    syncMaxDateSpanDays: 366,
+    footnotes: [
+      'Initial appointment: The client’s first appointment in the selected time period.',
+      'New client: A client who did not have any appointments (with any staff member) before their initial appointment.',
+      'Existing client: A client who had at least one appointment (with any staff member) before their initial appointment.',
+      'Retained client: A client who had at least one appointment (with any staff member) within 30, 60, 90, or 180 days after their initial appointment.',
+      'If a client’s initial appointment was with more than one staff member, the client is included in each staff member’s total. All Selected Staff counts each client once.',
+    ],
+    filters: [
+      {
+        key: 'dateRange',
+        label: 'Time period',
+        type: 'date_range',
+        dateRangeMode: 'months',
+        defaultValue: null,
+      },
+      {
+        key: 'staffIds',
+        label: 'Team members',
+        type: 'staff_multi',
+        defaultValue: [],
+      },
+    ],
   }),
   def({
     key: 'appointment_cancellations',
     category: 'business',
     title: 'Appointment Cancellations',
     description:
-      'Shows client and appointment details for canceled appointments, deleted appointments, and expired Express Bookings.',
+      'Shows client and appointment details for canceled appointments.',
     requiredModuleKey: 'appointments',
+    exportFormats: ['pdf', 'xlsx'],
+    footnotes: [
+      'To see additional client and appointment information please download the Excel report.',
+    ],
+    filters: [
+      DATE_RANGE,
+      {
+        key: 'cancellationType',
+        label: 'Cancellation type',
+        type: 'select',
+        defaultValue: 'all',
+        options: [
+          { value: 'all', label: 'All' },
+          { value: 'normal', label: 'Normal Cancellation' },
+          { value: 'late', label: 'Late Cancellation' },
+          { value: 'no_show', label: 'No Show' },
+          { value: 'deleted', label: 'Deleted' },
+          {
+            value: 'expired_express',
+            label: 'Expired Express Booking',
+          },
+        ],
+      },
+    ],
   }),
 
   // —— Deferred payroll ——

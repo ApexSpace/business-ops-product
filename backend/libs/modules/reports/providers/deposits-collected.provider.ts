@@ -1,70 +1,153 @@
 import { Injectable } from '@nestjs/common';
 import { PayableType, PaymentStatus } from '@prisma/client';
+import { DateTime } from 'luxon';
 import { PrismaService } from '@app/core/database/prisma.service';
-import type { ReportDocument, ReportFilters } from '../contracts/report-document';
-import type { ReportDataProvider, ReportGenerateContext } from '../contracts/report-provider.interface';
-import { moneyNumber, resolveReportDateRange } from '../utils/report-date-range.util';
-import { buildDocument, buildReportMeta, row, section } from '../utils/report-document.builder';
+import type {
+  ReportColumn,
+  ReportDocument,
+  ReportFilters,
+  ReportRow,
+} from '../contracts/report-document';
+import type {
+  ReportDataProvider,
+  ReportGenerateContext,
+} from '../contracts/report-provider.interface';
+import {
+  moneyNumber,
+  resolveReportDateRange,
+} from '../utils/report-date-range.util';
+import {
+  buildDocument,
+  buildReportMeta,
+  row,
+  section,
+} from '../utils/report-document.builder';
+
+const COLUMNS: ReportColumn[] = [
+  {
+    key: 'paymentDate',
+    label: 'Payment Date',
+    format: 'text',
+    align: 'left',
+  },
+  { key: 'saleNumber', label: 'Sale #', format: 'text', align: 'left' },
+  { key: 'client', label: 'Client', format: 'text', align: 'left' },
+  {
+    key: 'depositAmount',
+    label: 'Deposit Amount',
+    format: 'money',
+    align: 'right',
+  },
+];
+
+function round2(n: number): number {
+  return Math.round(n * 100) / 100;
+}
+
+function formatReportDate(date: Date, timezone: string): string {
+  return DateTime.fromJSDate(date, { zone: 'utc' })
+    .setZone(timezone || 'UTC')
+    .toFormat('LLL d, yyyy');
+}
+
+function contactLabel(
+  contact: {
+    displayName: string | null;
+    firstName: string | null;
+    lastName: string | null;
+  },
+): string {
+  return (
+    contact.displayName ||
+    [contact.firstName, contact.lastName].filter(Boolean).join(' ') ||
+    ''
+  );
+}
+
+function resolveSaleNumber(
+  invoice: { displaySequence: number | null } | null | undefined,
+): string {
+  return invoice?.displaySequence != null
+    ? String(invoice.displaySequence)
+    : '';
+}
 
 @Injectable()
 export class DepositsCollectedProvider implements ReportDataProvider {
   readonly key = 'deposits_collected';
   constructor(private readonly prisma: PrismaService) {}
-  async generate(businessId: string, filters: ReportFilters, context: ReportGenerateContext): Promise<ReportDocument> {
+
+  async generate(
+    businessId: string,
+    filters: ReportFilters,
+    context: ReportGenerateContext,
+  ): Promise<ReportDocument> {
     const range = resolveReportDateRange(filters, context.timezone);
+    const timezone = context.timezone || 'UTC';
+
     const payments = await this.prisma.payment.findMany({
       where: {
         businessId,
         deletedAt: null,
         payableType: PayableType.BOOKING_DEPOSIT,
         status: PaymentStatus.SUCCEEDED,
-        paidAt: { gte: range.start, lte: range.end },
+        OR: [
+          { paidAt: { gte: range.start, lte: range.end } },
+          {
+            paidAt: null,
+            createdAt: { gte: range.start, lte: range.end },
+          },
+        ],
       },
       include: {
-        contact: { select: { displayName: true, firstName: true, lastName: true } },
+        contact: {
+          select: { displayName: true, firstName: true, lastName: true },
+        },
+        invoice: {
+          select: { displaySequence: true },
+        },
       },
-      orderBy: { paidAt: 'desc' },
+      orderBy: [{ paidAt: 'desc' }, { createdAt: 'desc' }],
       take: 5000,
     });
+
     let total = 0;
-    const rows = payments.map((p) => {
-      const amount = moneyNumber(p.amount);
+    const rows: ReportRow[] = payments.map((payment) => {
+      const amount = round2(moneyNumber(payment.amount));
       total += amount;
-      return row(p.id, {
-        date: p.paidAt?.toISOString().slice(0, 10) ?? '—',
-        client:
-          p.contact.displayName ||
-          [p.contact.firstName, p.contact.lastName].filter(Boolean).join(' ') ||
-          '—',
-        method: p.method,
-        amount: Math.round(amount * 100) / 100,
-        appointmentId: p.payableId,
+      const occurredAt = payment.paidAt ?? payment.createdAt;
+
+      return row(payment.id, {
+        paymentDate: formatReportDate(occurredAt, timezone),
+        saleNumber: resolveSaleNumber(payment.invoice),
+        client: contactLabel(payment.contact),
+        depositAmount: amount,
       });
     });
+
     rows.push(
-      row('total', { date: 'Total', client: '', method: '', amount: Math.round(total * 100) / 100, appointmentId: '' }, { isTotal: true }),
+      row(
+        'total',
+        {
+          paymentDate: 'Total',
+          saleNumber: '',
+          client: '',
+          depositAmount: round2(total),
+        },
+        { isTotal: true },
+      ),
     );
+
     return buildDocument(
       buildReportMeta({
         reportKey: this.key,
         title: 'Deposits Collected',
-        description: 'Shows deposits collected via online booking or Express Booking.',
+        description:
+          'Shows deposit payments collected in online booking or Express Booking™.',
         periodLabel: range.periodLabel,
         context,
       }),
-      [
-        section(
-          'deposits',
-          [
-            { key: 'date', label: 'Date', format: 'text', align: 'left' },
-            { key: 'client', label: 'Client', format: 'text', align: 'left' },
-            { key: 'method', label: 'Method', format: 'text', align: 'left' },
-            { key: 'amount', label: 'Amount', format: 'money' },
-            { key: 'appointmentId', label: 'Appointment', format: 'text', align: 'left' },
-          ],
-          rows,
-        ),
-      ],
+      [section('deposits', COLUMNS, rows)],
     );
   }
 }
