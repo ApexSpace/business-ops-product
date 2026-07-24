@@ -11,6 +11,7 @@ export type NeedsAttentionFlag =
 export type BusinessAccessReasonCode =
   | 'ACCESS_GRANTED'
   | 'BUSINESS_SUSPENDED'
+  | 'BUSINESS_BLOCKED'
   | 'BUSINESS_NOT_ACTIVE'
   | 'NO_SUBSCRIPTION'
   | 'SUBSCRIPTION_ACTIVE'
@@ -21,6 +22,8 @@ export type BusinessAccessReasonCode =
   | 'SUBSCRIPTION_EXPIRED'
   | 'SUBSCRIPTION_CANCELED'
   | 'SUBSCRIPTION_PAST_DUE'
+  | 'SUBSCRIPTION_UNPAID'
+  | 'SUBSCRIPTION_INCOMPLETE'
   | 'SUBSCRIPTION_UNKNOWN';
 
 export interface EffectiveCapability {

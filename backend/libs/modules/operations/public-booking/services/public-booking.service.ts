@@ -13,6 +13,7 @@ import { normalizeTimezone } from '@app/common/utils/timezone.util';
 import { AuditService } from '@app/modules/platform/audit/services/audit.service';
 import { SYSTEM_AUDIT_ACTOR_SENTINEL } from '@app/modules/platform/audit/constants/audit.constants';
 import { JobEnqueueService } from '@app/core/jobs/job-enqueue.service';
+import { formatPhone } from '@app/modules/crm/contacts/utils/contact-profile.util';
 import { AppointmentRepository } from '@app/modules/operations/appointments/repositories/appointment.repository';
 import { ServiceRepository } from '@app/modules/crm/services/repositories/service.repository';
 import { ServiceBookingTimingService } from '@app/modules/crm/services/services/service-booking-timing.service';
@@ -42,7 +43,7 @@ import {
 } from '../mappers/public-booking.mapper';
 import { BusinessAvailabilityService } from './business-availability.service';
 import { PublicBookingContactService } from './public-booking-contact.service';
-import { EmailNotificationService } from '@app/modules/communications/email/services/email-notification.service';
+import { NotificationDispatchService } from '@app/modules/communications/notifications/services/notification-dispatch.service';
 import {
   formatAppointmentDateTime,
   formatContactName,
@@ -74,7 +75,7 @@ export class PublicBookingService {
     private readonly membershipRepository: BusinessMembershipRepository,
     private readonly auditService: AuditService,
     private readonly jobEnqueueService: JobEnqueueService,
-    private readonly emailNotificationService: EmailNotificationService,
+    private readonly notificationDispatch: NotificationDispatchService,
     private readonly prisma: PrismaService,
     private readonly configService: ConfigService,
     private readonly checkoutService: PublicBookingCheckoutService,
@@ -1463,21 +1464,21 @@ export class PublicBookingService {
       'appointment.title': appointment.title,
     };
 
-    if (dto.customerEmail?.trim()) {
-      void this.emailNotificationService
-        .enqueueTransactionalEmail({
-          businessId: context.businessId,
-          emailType: 'appointment.confirmation',
-          toEmail: dto.customerEmail.trim(),
-          contactId,
-          entityType: 'Appointment',
-          entityId: appointment.id,
-          fromName: context.business.name,
-          idempotencyKey: `booking-confirm-${appointment.id}`,
-          variables: bookingVariables,
-        })
-        .catch(() => undefined);
-    }
+    void this.notificationDispatch
+      .dispatch({
+        businessId: context.businessId,
+        notificationKey: 'appointment.confirmation',
+        toEmail: dto.customerEmail?.trim(),
+        toPhone: formatPhone(dto.phoneCountryCode, dto.phoneNumber),
+        contactId,
+        entityType: 'Appointment',
+        entityId: appointment.id,
+        fromName: context.business.name,
+        idempotencyKey: `booking-confirm-${appointment.id}`,
+        missingRecipient: 'skip',
+        variables: bookingVariables,
+      })
+      .catch(() => undefined);
 
     const bookedForEmail = dto.bookedForEmail?.trim();
     if (bookedForEmail) {
@@ -1485,15 +1486,17 @@ export class PublicBookingService {
         [dto.bookedForFirstName?.trim(), dto.bookedForLastName?.trim()]
           .filter(Boolean)
           .join(' ') || bookedForEmail;
-      void this.emailNotificationService
-        .enqueueTransactionalEmail({
+      void this.notificationDispatch
+        .dispatch({
           businessId: context.businessId,
-          emailType: 'appointment.booked_for',
+          notificationKey: 'appointment.booked_for',
           toEmail: bookedForEmail,
+          toPhone: null,
           entityType: 'Appointment',
           entityId: appointment.id,
           fromName: context.business.name,
           idempotencyKey: `booking-booked-for-${appointment.id}`,
+          missingRecipient: 'skip',
           variables: {
             'business.name': context.business.name,
             'booked_for.name': bookedForName,
@@ -1516,17 +1519,18 @@ export class PublicBookingService {
       .findOwnersAndAdmins(context.businessId)
       .then((members) => {
         for (const member of members) {
-          if (!member.user.email) continue;
-          void this.emailNotificationService
-            .enqueueTransactionalEmail({
+          void this.notificationDispatch
+            .dispatch({
               businessId: context.businessId,
-              emailType: 'appointment.owner_notification',
+              notificationKey: 'appointment.owner_notification',
               toEmail: member.user.email,
+              toPhone: null,
               userId: member.userId,
               entityType: 'Appointment',
               entityId: appointment.id,
               fromName: context.business.name,
               idempotencyKey: `booking-owner-${appointment.id}-${member.userId}`,
+              missingRecipient: 'skip',
               variables: bookingVariables,
             })
             .catch(() => undefined);

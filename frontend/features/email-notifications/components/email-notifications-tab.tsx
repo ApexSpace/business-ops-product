@@ -21,6 +21,13 @@ import {
   type EmailPreference,
   type EmailTypeCategory,
 } from "@/features/email-notifications/api/email-notifications.api";
+import {
+  listNotificationChannelPreferences,
+  updateNotificationChannelPreference,
+  type NotificationChannel,
+  type NotificationChannelPreference,
+} from "@/features/notifications/api/notification-channel-preferences.api";
+import { cn } from "@/lib/utils";
 import { queryKeys } from "@/lib/query/keys";
 
 const CATEGORY_ORDER: EmailTypeCategory[] = [
@@ -44,6 +51,17 @@ const SYSTEM_AUTH_TYPES: EmailPreference[] = [
     businessConfigurable: false,
   },
   {
+    emailType: "auth.password_changed",
+    category: "auth",
+    label: "Password changed",
+    description:
+      "Sent after a password reset succeeds to confirm the account change.",
+    enabled: true,
+    isCustomized: false,
+    systemOnly: true,
+    businessConfigurable: false,
+  },
+  {
     emailType: "auth.email_verification",
     category: "auth",
     label: "Email verification",
@@ -55,19 +73,70 @@ const SYSTEM_AUTH_TYPES: EmailPreference[] = [
   },
 ];
 
+function CompactChannelControl({
+  notificationKey,
+  value,
+  disabled,
+  onChange,
+}: {
+  notificationKey: string;
+  value: NotificationChannel;
+  disabled: boolean;
+  onChange: (channel: NotificationChannel) => void;
+}) {
+  return (
+    <div
+      className={cn(
+        "inline-flex rounded-md border border-border/70 p-0.5",
+        disabled && "opacity-60",
+      )}
+      role="group"
+      aria-label={`Delivery channel for ${notificationKey}`}
+    >
+      {(["EMAIL", "SMS"] as const).map((channel) => (
+        <button
+          key={channel}
+          type="button"
+          disabled={disabled}
+          onClick={() => onChange(channel)}
+          className={cn(
+            "rounded px-2.5 py-1 text-xs font-medium transition-colors",
+            value === channel
+              ? "bg-foreground text-background"
+              : "text-muted-foreground hover:text-foreground",
+            disabled && "cursor-not-allowed",
+          )}
+        >
+          {channel === "EMAIL" ? "Email" : "SMS"}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 function NotificationToggleRow({
   item,
+  channel,
   disabled,
+  channelDisabled,
   onToggle,
+  onChannelChange,
 }: {
   item: EmailPreference;
+  channel: NotificationChannel;
   disabled: boolean;
+  channelDisabled: boolean;
   onToggle: (item: EmailPreference, enabled: boolean) => void;
+  onChannelChange: (
+    item: EmailPreference,
+    channel: NotificationChannel,
+  ) => void;
 }) {
   const locked = item.systemOnly || item.businessConfigurable === false;
+  const showChannel = !locked;
 
   return (
-    <div className="flex items-start justify-between gap-4 p-4">
+    <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-start sm:justify-between">
       <div className="min-w-0 space-y-1">
         <div className="flex flex-wrap items-center gap-2">
           <Label htmlFor={item.emailType} className="font-medium">
@@ -82,12 +151,24 @@ function NotificationToggleRow({
         </div>
         <p className="text-sm text-muted-foreground">{item.description}</p>
       </div>
-      <Switch
-        id={item.emailType}
-        checked={item.enabled}
-        disabled={locked || disabled}
-        onCheckedChange={(checked) => onToggle(item, checked)}
-      />
+      <div className="flex shrink-0 items-center gap-3">
+        {showChannel ? (
+          <CompactChannelControl
+            notificationKey={item.emailType}
+            value={channel}
+            disabled={
+              locked || !item.enabled || disabled || channelDisabled
+            }
+            onChange={(next) => onChannelChange(item, next)}
+          />
+        ) : null}
+        <Switch
+          id={item.emailType}
+          checked={item.enabled}
+          disabled={locked || disabled}
+          onCheckedChange={(checked) => onToggle(item, checked)}
+        />
+      </div>
     </div>
   );
 }
@@ -103,6 +184,19 @@ export function EmailNotificationsTab() {
     queryFn: listEmailPreferences,
   });
 
+  const { data: channelPrefs = [] } = useQuery({
+    queryKey: queryKeys.notificationChannelPreferences.all(),
+    queryFn: listNotificationChannelPreferences,
+  });
+
+  const channelByKey = useMemo(() => {
+    const map = new Map<string, NotificationChannelPreference>();
+    for (const pref of channelPrefs) {
+      map.set(pref.notificationKey, pref);
+    }
+    return map;
+  }, [channelPrefs]);
+
   const mutation = useMutation({
     mutationFn: (preferences: { emailType: string; enabled: boolean }[]) =>
       updateEmailPreferences(preferences),
@@ -111,6 +205,20 @@ export function EmailNotificationsTab() {
         queryKey: queryKeys.emailNotifications.all(),
       });
       toast.success("Notification preferences updated");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const channelMutation = useMutation({
+    mutationFn: (body: {
+      notificationKey: string;
+      channel: NotificationChannel;
+    }) => updateNotificationChannelPreference(body),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.notificationChannelPreferences.all(),
+      });
+      toast.success("Delivery channel saved");
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -137,6 +245,19 @@ export function EmailNotificationsTab() {
     mutation.mutate([{ emailType: item.emailType, enabled }]);
   };
 
+  const changeChannel = (
+    item: EmailPreference,
+    channel: NotificationChannel,
+  ) => {
+    if (item.systemOnly || item.businessConfigurable === false) {
+      return;
+    }
+    channelMutation.mutate({
+      notificationKey: item.emailType,
+      channel,
+    });
+  };
+
   if (isLoading) {
     return (
       <p className="text-sm text-muted-foreground">Loading preferences…</p>
@@ -146,7 +267,7 @@ export function EmailNotificationsTab() {
   if (allItems.length === 0) {
     return (
       <p className="text-sm text-muted-foreground">
-        No email notification types are available yet.
+        No notification types are available yet.
       </p>
     );
   }
@@ -191,8 +312,13 @@ export function EmailNotificationsTab() {
                   <NotificationToggleRow
                     key={item.emailType}
                     item={item}
+                    channel={
+                      channelByKey.get(item.emailType)?.channel ?? "EMAIL"
+                    }
                     disabled={mutation.isPending}
+                    channelDisabled={channelMutation.isPending}
                     onToggle={toggle}
+                    onChannelChange={changeChannel}
                   />
                 ))}
               </div>

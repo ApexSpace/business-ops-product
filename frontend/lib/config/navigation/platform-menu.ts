@@ -1,15 +1,15 @@
 import {
   Building2,
-  Camera,
-  Factory,
   FileText,
   Layers,
   LayoutDashboard,
+  PackagePlus,
   Plug,
   Settings,
   Shield,
   TableProperties,
   Users,
+  Workflow,
 } from "lucide-react";
 import type { ShellNavItem, ShellNavSection } from "@/lib/types/shell-nav";
 
@@ -31,6 +31,11 @@ export const platformOperationalSections: ShellNavSection[] = [
         href: "/platform/dashboard",
         icon: LayoutDashboard,
       },
+      {
+        title: "Operations",
+        href: "/platform/operations",
+        icon: Workflow,
+      },
     ],
   },
   {
@@ -43,24 +48,19 @@ export const platformOperationalSections: ShellNavSection[] = [
         icon: Building2,
       },
       {
-        title: "Snapshots",
-        href: "/platform/snapshots",
-        icon: Camera,
+        title: "Tiers",
+        href: "/platform/tiers",
+        icon: TableProperties,
+      },
+      {
+        title: "Add-ons",
+        href: "/platform/addons",
+        icon: PackagePlus,
       },
       {
         title: "Capabilities",
         href: "/platform/capabilities",
         icon: Layers,
-      },
-      {
-        title: "Plan Groups",
-        href: "/platform/plan-groups",
-        icon: TableProperties,
-      },
-      {
-        title: "Industries",
-        href: "/platform/industries",
-        icon: Factory,
       },
       { title: "Users", href: "/platform/users", icon: Users },
     ],

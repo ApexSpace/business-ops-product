@@ -5,7 +5,7 @@ import { ContactsModule } from '@app/modules/crm/contacts/contacts.module';
 import { RealtimeModule } from '@app/core/realtime/realtime.module';
 import { InvoicesModule } from '@app/modules/finance/invoices/invoices.module';
 import { IntegrationsModule } from '@app/modules/integrations/integrations/integrations.module';
-import { EmailModule } from '@app/modules/communications/email/email.module';
+import { NotificationsModule } from '@app/modules/communications/notifications/notifications.module';
 import { PaymentsController } from './controllers/payments.controller';
 import { BookingDepositPayableHandler } from './handlers/booking-deposit-payable.handler';
 import { InvoicePayableHandler } from './handlers/invoice-payable.handler';
@@ -33,7 +33,7 @@ import { BookingLinkSaleService } from './services/booking-link-sale.service';
     forwardRef(() => BusinessModule),
     forwardRef(() => InvoicesModule),
     forwardRef(() => IntegrationsModule),
-    forwardRef(() => EmailModule),
+    forwardRef(() => NotificationsModule),
     forwardRef(() => GiftCardsModule),
     RedisModule,
   ],

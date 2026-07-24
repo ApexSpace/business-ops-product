@@ -1,5 +1,6 @@
 import { Body, Controller, Get, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { Public } from '@app/common/decorators/public.decorator';
 import { CurrentUser } from '@app/common/decorators/current-user.decorator';
 import type { RequestUser } from '@app/common/decorators/current-user.decorator';
@@ -26,6 +27,7 @@ export class AuthController {
   }
 
   @Public()
+  @Throttle({ default: { limit: 20, ttl: 60000 } })
   @Post('login')
   login(@Body() dto: LoginDto) {
     return this.authService.login(dto.email, dto.password);
@@ -53,12 +55,14 @@ export class AuthController {
   }
 
   @Public()
+  @Throttle({ default: { limit: 5, ttl: 900000 } })
   @Post('forgot-password')
   forgotPassword(@Body() dto: ForgotPasswordDto) {
     return this.authService.forgotPassword(dto.email);
   }
 
   @Public()
+  @Throttle({ default: { limit: 10, ttl: 900000 } })
   @Post('reset-password')
   resetPassword(@Body() dto: ResetPasswordDto) {
     return this.authService.resetPassword(dto.token, dto.password);

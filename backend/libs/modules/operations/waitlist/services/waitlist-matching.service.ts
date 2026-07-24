@@ -3,7 +3,7 @@ import { BookingWaitlistStatus, Prisma } from '@prisma/client';
 import { DateTime } from 'luxon';
 import { PublicBookingService } from '@app/modules/operations/public-booking/services/public-booking.service';
 import { OnlineBookingSettingsRepository } from '@app/modules/operations/online-booking-settings/repositories/online-booking-settings.repository';
-import { EmailNotificationService } from '@app/modules/communications/email/services/email-notification.service';
+import { NotificationDispatchService } from '@app/modules/communications/notifications/services/notification-dispatch.service';
 import { BusinessMembershipRepository } from '@app/modules/platform/membership/repositories/business-membership.repository';
 import { resolveBookingTimezone } from '@app/modules/operations/online-booking-settings/utils/resolve-booking-timezone.util';
 import {
@@ -25,7 +25,7 @@ export class WaitlistMatchingService {
     @Inject(forwardRef(() => PublicBookingService))
     private readonly publicBookingService: PublicBookingService,
     private readonly settingsRepository: OnlineBookingSettingsRepository,
-    private readonly emailNotificationService: EmailNotificationService,
+    private readonly notificationDispatch: NotificationDispatchService,
     private readonly membershipRepository: BusinessMembershipRepository,
   ) {}
 
@@ -159,17 +159,18 @@ export class WaitlistMatchingService {
     );
 
     for (const member of members) {
-      if (!member.user.email) continue;
-      void this.emailNotificationService
-        .enqueueTransactionalEmail({
+      void this.notificationDispatch
+        .dispatch({
           businessId: entry.businessId,
-          emailType: 'booking.waitlist_opening_available',
+          notificationKey: 'booking.waitlist_opening_available',
           toEmail: member.user.email,
+          toPhone: null,
           userId: member.userId,
           entityType: 'BookingWaitlistEntry',
           entityId: entry.id,
           fromName: context.business.name,
           idempotencyKey: `waitlist-opening-${entry.id}-${member.userId}`,
+          missingRecipient: 'skip',
           variables: {
             'business.name': context.business.name,
             'contact.name': contactName,

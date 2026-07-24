@@ -6,7 +6,7 @@ import { EstimatesModule } from '@app/modules/finance/estimates/estimates.module
 import { ServicesModule } from '@app/modules/crm/services/services.module';
 import { WorkItemsModule } from '@app/modules/operations/work-items/work-items.module';
 import { IntegrationsModule } from '@app/modules/integrations/integrations/integrations.module';
-import { EmailModule } from '@app/modules/communications/email/email.module';
+import { NotificationsModule } from '@app/modules/communications/notifications/notifications.module';
 import { PaymentsModule } from '@app/modules/finance/payments/payments.module';
 import { ProductsModule } from '@app/modules/finance/products/products.module';
 import { GiftCardsModule } from '@app/modules/finance/gift-cards/gift-cards.module';
@@ -34,7 +34,7 @@ import { StripeInvoicePaymentService } from './services/stripe-invoice-payment.s
     ServicesModule,
     forwardRef(() => WorkItemsModule),
     forwardRef(() => IntegrationsModule),
-    forwardRef(() => EmailModule),
+    forwardRef(() => NotificationsModule),
     forwardRef(() => PaymentsModule),
     ProductsModule,
     forwardRef(() => GiftCardsModule),

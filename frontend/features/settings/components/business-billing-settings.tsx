@@ -23,7 +23,9 @@ import {
   cancelBusinessSubscription,
   createBusinessCheckoutSession,
   createBusinessPortalSession,
+  createBusinessSetupIntent,
   getBusinessPlanOptions,
+  listBusinessPaymentMethods,
 } from "@/features/settings/api/business-billing.api";
 import {
   PlanChangeDialog,
@@ -36,6 +38,7 @@ import {
   getPlanChangeButtonLabel,
   getTierPosition,
 } from "@/features/settings/utils/plan-tier-position.util";
+import { EmbeddedStripePayment } from "@/features/payments/payments-kit/embedded-stripe-payment";
 import { queryKeys } from "@/lib/query/keys";
 
 function formatLabel(value?: string | null): string {
@@ -60,14 +63,27 @@ export function BusinessBillingSettings() {
     null,
   );
   const [cancelOpen, setCancelOpen] = useState(false);
+  const [setupClientSecret, setSetupClientSecret] = useState<string | null>(
+    null,
+  );
+  const [setupPublishableKey, setSetupPublishableKey] = useState<string | null>(
+    null,
+  );
 
   const hasPlanGroup = Boolean(access?.subscription?.planGroupId);
+  const hasTier = Boolean(access?.subscription?.planTierId);
+  const canLoadPlanOptions = hasPlanGroup || hasTier;
   const isStripeBilling = access?.subscription?.billingSource === "STRIPE";
 
   const { data: planOptions } = useQuery({
     queryKey: queryKeys.business.planOptions(),
     queryFn: getBusinessPlanOptions,
-    enabled: hasPlanGroup,
+    enabled: canLoadPlanOptions,
+  });
+
+  const { data: paymentMethods, refetch: refetchPaymentMethods } = useQuery({
+    queryKey: ["business", "billing", "payment-methods"],
+    queryFn: listBusinessPaymentMethods,
   });
 
   const tierPosition = useMemo(
@@ -79,11 +95,11 @@ export function BusinessBillingSettings() {
     [planOptions?.currentPlanTierIndex, planOptions?.tiers.length],
   );
 
-  const showBothWays = hasPlanGroup && canChangePlanBothWays(tierPosition);
+  const showBothWays = canLoadPlanOptions && canChangePlanBothWays(tierPosition);
   const showUpgradeOnly =
-    hasPlanGroup && canUpgrade(tierPosition) && !showBothWays;
+    canLoadPlanOptions && canUpgrade(tierPosition) && !showBothWays;
   const showDowngradeOnly =
-    hasPlanGroup && canDowngrade(tierPosition) && !showBothWays;
+    canLoadPlanOptions && canDowngrade(tierPosition) && !showBothWays;
   const planChangeLabel = getPlanChangeButtonLabel(tierPosition);
   const subscriptionStatus = access?.subscription?.status?.toUpperCase();
   const showCancelSubscription =
@@ -105,13 +121,26 @@ export function BusinessBillingSettings() {
     onError: (err: Error) => toast.error(err.message),
   });
 
+  const setupIntentMutation = useMutation({
+    mutationFn: createBusinessSetupIntent,
+    onSuccess: (data) => {
+      if (!data.clientSecret || !data.publishableKey) {
+        toast.error("Card setup is unavailable right now.");
+        return;
+      }
+      setSetupClientSecret(data.clientSecret);
+      setSetupPublishableKey(data.publishableKey);
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
   const cancelMutation = useMutation({
     mutationFn: () => cancelBusinessSubscription(),
     onSuccess: async () => {
       setCancelOpen(false);
       if (isStripeBilling) {
         toast.success(
-          "Cancellation scheduled. Your workspace stays active until the current billing period ends.",
+          "Cancellation requested. Access continues until the current period ends — refreshes when Stripe confirms.",
         );
         return;
       }
@@ -175,17 +204,13 @@ export function BusinessBillingSettings() {
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>Current plan</CardTitle>
+            <CardTitle>Current tier</CardTitle>
             <CardDescription>Package assigned to this workspace.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4 text-sm">
             <div className="space-y-2">
               <div className="flex justify-between gap-4">
-                <span className="text-muted-foreground">Plan group</span>
-                <span>{sub?.planGroupName ?? "—"}</span>
-              </div>
-              <div className="flex justify-between gap-4">
-                <span className="text-muted-foreground">Plan tier</span>
+                <span className="text-muted-foreground">Tier</span>
                 <span>{sub?.planTierName ?? "—"}</span>
               </div>
               <div className="flex justify-between gap-4">
@@ -213,7 +238,7 @@ export function BusinessBillingSettings() {
                   <ExternalLink className="mr-2 size-4" />
                   Manage billing
                 </ActionButton>
-              ) : hasPlanGroup ? (
+              ) : canLoadPlanOptions ? (
                 <ActionButton
                   size="sm"
                   onClick={startCheckout}
@@ -279,21 +304,87 @@ export function BusinessBillingSettings() {
               <span className="text-muted-foreground">Payment status</span>
               <span>{formatLabel(sub?.paymentStatus)}</span>
             </div>
-            <div className="flex justify-between gap-4">
-              <span className="text-muted-foreground">Current period ends</span>
-              <span>{formatDate(sub?.currentPeriodEnd)}</span>
-            </div>
-            <div className="flex justify-between gap-4">
-              <span className="text-muted-foreground">Amount</span>
-              <span>
-                {sub?.amount && sub.currency
-                  ? `${sub.currency} ${sub.amount}`
-                  : "—"}
-              </span>
-            </div>
+              <div className="flex justify-between gap-4">
+                <span className="text-muted-foreground">Current period ends</span>
+                <span>{formatDate(sub?.currentPeriodEnd)}</span>
+              </div>
+              {sub?.cancelAtPeriodEnd ? (
+                <div className="flex justify-between gap-4">
+                  <span className="text-muted-foreground">Access until</span>
+                  <span>
+                    {formatDate(sub.currentPeriodEnd)} (cancel at period end)
+                  </span>
+                </div>
+              ) : null}
+              <div className="flex justify-between gap-4">
+                <span className="text-muted-foreground">Amount</span>
+                <span>
+                  {sub?.amount && sub.currency
+                    ? `${sub.currency} ${sub.amount}`
+                    : "—"}
+                </span>
+              </div>
           </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Card on file</CardTitle>
+          <CardDescription>
+            Save a card for off-session renewals (platform Stripe account).
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {(paymentMethods?.length ?? 0) > 0 ? (
+            <ul className="space-y-2 text-sm">
+              {paymentMethods!.map((pm) => (
+                <li
+                  key={pm.id}
+                  className="flex items-center justify-between rounded-md border px-3 py-2"
+                >
+                  <span>
+                    {(pm.brand ?? "Card").toUpperCase()} ···· {pm.last4 ?? "????"}
+                    {pm.expMonth && pm.expYear
+                      ? ` · ${pm.expMonth}/${pm.expYear}`
+                      : ""}
+                  </span>
+                  {pm.isDefault ? (
+                    <Badge variant="secondary">Default</Badge>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-sm text-muted-foreground">No cards on file yet.</p>
+          )}
+
+          {setupClientSecret && setupPublishableKey ? (
+            <EmbeddedStripePayment
+              mode="setup"
+              publishableKey={setupPublishableKey}
+              clientSecret={setupClientSecret}
+              onSuccess={() => {
+                toast.success("Card saved");
+                setSetupClientSecret(null);
+                setSetupPublishableKey(null);
+                void refetchPaymentMethods();
+              }}
+              onError={(message) => toast.error(message)}
+            />
+          ) : (
+            <ActionButton
+              size="sm"
+              variant="outline"
+              onClick={() => setupIntentMutation.mutate()}
+              disabled={setupIntentMutation.isPending}
+            >
+              <CreditCard className="mr-2 size-4" />
+              {setupIntentMutation.isPending ? "Preparing…" : "Add card"}
+            </ActionButton>
+          )}
+        </CardContent>
+      </Card>
 
       {access?.warnings.length ? (
         <Card>

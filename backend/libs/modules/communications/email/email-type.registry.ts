@@ -5,7 +5,8 @@ export type EmailTypeCategory =
   | 'gift_cards'
   | 'packages'
   | 'auth'
-  | 'automation';
+  | 'automation'
+  | 'platform';
 
 export interface EmailTypeDefinition {
   key: string;
@@ -16,6 +17,11 @@ export interface EmailTypeDefinition {
   defaultSubject: string;
   defaultHtmlBody: string;
   defaultTextBody?: string;
+  /**
+   * Short SMS body with the same {{variable}} placeholders as email templates.
+   * Required for business-configurable types that support EMAIL/SMS channel override.
+   */
+  defaultSmsBody?: string;
   variables: string[];
   /** Platform-only emails; not listed in business preferences/templates. */
   systemOnly?: boolean;
@@ -43,6 +49,8 @@ export const EMAIL_TYPE_REGISTRY: Record<string, EmailTypeDefinition> = {
     `),
     defaultTextBody:
       'Hi,\n\n{{inviter.name}} invited you to join {{business.name}}.\n\nAccept invitation: {{invite_link}}\n\nIf you did not expect this email, you can ignore it.',
+    defaultSmsBody:
+      '{{inviter.name}} invited you to join {{business.name}}. Accept: {{invite_link}}',
     variables: [
       'invitee.email',
       'inviter.name',
@@ -67,6 +75,8 @@ export const EMAIL_TYPE_REGISTRY: Record<string, EmailTypeDefinition> = {
     `),
     defaultTextBody:
       'Hi {{contact.name}},\n\nYour appointment with {{business.name}} is confirmed.\n\nWhen: {{appointment.start_at}}\nCalendar: {{appointment.calendar_name}}\n\nWe look forward to seeing you.',
+    defaultSmsBody:
+      'Hi {{contact.name}}, your appointment with {{business.name}} is confirmed for {{appointment.start_at}}.',
     variables: [
       'business.name',
       'contact.name',
@@ -95,6 +105,8 @@ export const EMAIL_TYPE_REGISTRY: Record<string, EmailTypeDefinition> = {
     `),
     defaultTextBody:
       'Hi {{booked_for.name}},\n\n{{booked_by.name}} booked an appointment for you at {{business.name}}.\n\nWhen: {{appointment.start_at}}\nService: {{appointment.calendar_name}}\n\nWe look forward to seeing you.',
+    defaultSmsBody:
+      'Hi {{booked_for.name}}, {{booked_by.name}} booked you at {{business.name}} for {{appointment.start_at}}.',
     variables: [
       'business.name',
       'booked_for.name',
@@ -123,6 +135,8 @@ export const EMAIL_TYPE_REGISTRY: Record<string, EmailTypeDefinition> = {
     `),
     defaultTextBody:
       'A new booking was received for {{business.name}}.\n\nCustomer: {{contact.name}}\nWhen: {{appointment.start_at}}\nCalendar: {{appointment.calendar_name}}',
+    defaultSmsBody:
+      'New booking at {{business.name}}: {{contact.name}} on {{appointment.start_at}}.',
     variables: [
       'business.name',
       'contact.name',
@@ -149,6 +163,8 @@ export const EMAIL_TYPE_REGISTRY: Record<string, EmailTypeDefinition> = {
     `),
     defaultTextBody:
       'Hi {{contact.name}},\n\nReminder: your appointment with {{business.name}}.\n\nWhen: {{appointment.start_at}}\nCalendar: {{appointment.calendar_name}}',
+    defaultSmsBody:
+      'Hi {{contact.name}}, reminder: your appointment with {{business.name}} is on {{appointment.start_at}}.',
     variables: [
       'business.name',
       'contact.name',
@@ -178,6 +194,8 @@ export const EMAIL_TYPE_REGISTRY: Record<string, EmailTypeDefinition> = {
     `),
     defaultTextBody:
       'Hi {{contact.name}},\n\n{{business.name}} started a booking for you.\n\nWhen: {{appointment.start_at}}\nService: {{appointment.service_name}}\nComplete by: {{express.expires_at}}\n\nComplete your booking: {{express.complete_url}}',
+    defaultSmsBody:
+      'Hi {{contact.name}} - {{business.name}} started a booking for you. {{appointment.start_at}} - {{appointment.service_name}}. Complete by {{express.expires_at}}.\n{{express.complete_url}}',
     variables: [
       'business.name',
       'contact.name',
@@ -207,6 +225,8 @@ export const EMAIL_TYPE_REGISTRY: Record<string, EmailTypeDefinition> = {
     `),
     defaultTextBody:
       'Hi {{contact.name}},\n\nYour booking with {{business.name}} was cancelled because it was not completed in time.\n\nWhen: {{appointment.start_at}}\nService: {{appointment.service_name}}\n\nPlease contact the business if you still need an appointment.',
+    defaultSmsBody:
+      'Hi {{contact.name}}, your booking with {{business.name}} on {{appointment.start_at}} expired and was cancelled.',
     variables: [
       'business.name',
       'contact.name',
@@ -231,6 +251,8 @@ export const EMAIL_TYPE_REGISTRY: Record<string, EmailTypeDefinition> = {
     `),
     defaultTextBody:
       'Hi {{contact.name}},\n\nYour appointment with {{business.name}} on {{appointment.start_at}} has been cancelled.\n\nIf you have questions, please contact us.',
+    defaultSmsBody:
+      'Hi {{contact.name}}, your appointment with {{business.name}} on {{appointment.start_at}} was cancelled.',
     variables: [
       'business.name',
       'contact.name',
@@ -257,6 +279,8 @@ export const EMAIL_TYPE_REGISTRY: Record<string, EmailTypeDefinition> = {
     `),
     defaultTextBody:
       'Hi {{contact.name}},\n\nYour appointment with {{business.name}} is ready.\n\nWhen: {{appointment.start_at}}\nCalendar: {{appointment.calendar_name}}\n\nPlease come in at your earliest convenience.',
+    defaultSmsBody:
+      'Hi {{contact.name}}, your appointment with {{business.name}} is ready. Please come in.',
     variables: [
       'business.name',
       'contact.name',
@@ -283,6 +307,8 @@ export const EMAIL_TYPE_REGISTRY: Record<string, EmailTypeDefinition> = {
     `),
     defaultTextBody:
       'Hi {{contact.name}},\n\nYour appointment with {{business.name}} has been rescheduled.\n\nPrevious: {{appointment.previous_start_at}}\nNew: {{appointment.start_at}}\nCalendar: {{appointment.calendar_name}}',
+    defaultSmsBody:
+      'Hi {{contact.name}}, your appointment with {{business.name}} was rescheduled to {{appointment.start_at}}.',
     variables: [
       'business.name',
       'contact.name',
@@ -310,6 +336,8 @@ export const EMAIL_TYPE_REGISTRY: Record<string, EmailTypeDefinition> = {
     `),
     defaultTextBody:
       'Hi {{contact.name}},\n\nYou have been added to the waitlist at {{business.name}}.\n\nService: {{waitlist.service_name}}\nDate: {{waitlist.preferred_date}}\nStaff: {{waitlist.staff_name}}\n\nWe will contact you when an opening becomes available.',
+    defaultSmsBody:
+      'Hi {{contact.name}}, you joined the waitlist at {{business.name}} for {{waitlist.service_name}} on {{waitlist.preferred_date}}.',
     variables: [
       'business.name',
       'contact.name',
@@ -335,6 +363,8 @@ export const EMAIL_TYPE_REGISTRY: Record<string, EmailTypeDefinition> = {
     `),
     defaultTextBody:
       'A client joined the waitlist at {{business.name}}.\n\nClient: {{contact.name}}\nService: {{waitlist.service_name}}\nDate: {{waitlist.preferred_date}}\nStaff: {{waitlist.staff_name}}',
+    defaultSmsBody:
+      'New waitlist entry at {{business.name}}: {{contact.name}} for {{waitlist.service_name}} on {{waitlist.preferred_date}}.',
     variables: [
       'business.name',
       'contact.name',
@@ -361,6 +391,8 @@ export const EMAIL_TYPE_REGISTRY: Record<string, EmailTypeDefinition> = {
     `),
     defaultTextBody:
       'An opening is now available for a waitlist entry at {{business.name}}.\n\nClient: {{contact.name}}\nService: {{waitlist.service_name}}\nDate: {{waitlist.preferred_date}}\nStaff: {{waitlist.staff_name}}\n\nReview the waitlist in your calendar to book this client.',
+    defaultSmsBody:
+      'Waitlist opening at {{business.name}} for {{contact.name}} ({{waitlist.service_name}} on {{waitlist.preferred_date}}).',
     variables: [
       'business.name',
       'contact.name',
@@ -386,6 +418,8 @@ export const EMAIL_TYPE_REGISTRY: Record<string, EmailTypeDefinition> = {
     `),
     defaultTextBody:
       'Hi {{contact.name}},\n\nInvoice {{invoice.number}} from {{business.name}}.\nTotal: {{invoice.total}}\nDue: {{invoice.due_date}}\n\nView invoice: {{invoice.public_url}}',
+    defaultSmsBody:
+      'Hi {{contact.name}}, invoice {{invoice.number}} from {{business.name}} ({{invoice.total}}). View: {{invoice.public_url}}',
     variables: [
       'business.name',
       'contact.name',
@@ -411,6 +445,8 @@ export const EMAIL_TYPE_REGISTRY: Record<string, EmailTypeDefinition> = {
     `),
     defaultTextBody:
       'Hi {{contact.name}},\n\nPay invoice {{invoice.number}} from {{business.name}}.\nAmount due: {{invoice.balance_due}}\n\nPay now: {{payment_link}}',
+    defaultSmsBody:
+      'Hi {{contact.name}}, pay invoice {{invoice.number}} ({{invoice.balance_due}}): {{payment_link}}',
     variables: [
       'business.name',
       'contact.name',
@@ -436,6 +472,8 @@ export const EMAIL_TYPE_REGISTRY: Record<string, EmailTypeDefinition> = {
     `),
     defaultTextBody:
       'Hi {{contact.name}},\n\nThank you — we received your payment for invoice {{invoice.number}}.\nAmount paid: {{payment.amount}}\nDate: {{payment.date}}',
+    defaultSmsBody:
+      'Hi {{contact.name}}, payment of {{payment.amount}} received for invoice {{invoice.number}}.',
     variables: [
       'business.name',
       'contact.name',
@@ -461,6 +499,8 @@ export const EMAIL_TYPE_REGISTRY: Record<string, EmailTypeDefinition> = {
     `),
     defaultTextBody:
       'Hi {{contact.name}},\n\nYou received a gift card from {{business.name}}.\nCard number: {{gift_card.number}}\nBalance: {{gift_card.balance}}',
+    defaultSmsBody:
+      'Hi {{contact.name}}, you received a gift card from {{business.name}}. Number: {{gift_card.number}}, Balance: {{gift_card.balance}}.',
     variables: [
       'business.name',
       'contact.name',
@@ -489,6 +529,8 @@ export const EMAIL_TYPE_REGISTRY: Record<string, EmailTypeDefinition> = {
     `),
     defaultTextBody:
       'Hi {{contact.name}},\n\nThank you for your gift card purchase from {{business.name}}.\nAmount paid: {{gift_card.amount_paid}}\nGift card value: {{gift_card.balance}}\nCard number: {{gift_card.number}}\nRecipient: {{gift_card.recipient_email}}',
+    defaultSmsBody:
+      'Hi {{contact.name}}, gift card purchase confirmed at {{business.name}}. Card {{gift_card.number}}, value {{gift_card.balance}}.',
     variables: [
       'business.name',
       'contact.name',
@@ -515,6 +557,8 @@ export const EMAIL_TYPE_REGISTRY: Record<string, EmailTypeDefinition> = {
     `),
     defaultTextBody:
       'New gift card sold for {{business.name}}.\nNumber: {{gift_card.number}}\nValue: {{gift_card.balance}}\nPurchaser: {{gift_card.purchaser_name}}\nRecipient: {{gift_card.recipient_name}}',
+    defaultSmsBody:
+      'New gift card sold at {{business.name}}: {{gift_card.number}} ({{gift_card.balance}}). Purchaser: {{gift_card.purchaser_name}}.',
     variables: [
       'business.name',
       'gift_card.number',
@@ -541,6 +585,8 @@ export const EMAIL_TYPE_REGISTRY: Record<string, EmailTypeDefinition> = {
     `),
     defaultTextBody:
       'Hi {{contact.name}},\n\nThank you for your package purchase from {{business.name}}.\nPackage: {{package.name}}\nAmount paid: {{package.amount_paid}}\nIncludes: {{package.includes}}\nExpires: {{package.expiration_date}}',
+    defaultSmsBody:
+      'Hi {{contact.name}}, package {{package.name}} purchased from {{business.name}} ({{package.amount_paid}}).',
     variables: [
       'business.name',
       'contact.name',
@@ -568,6 +614,8 @@ export const EMAIL_TYPE_REGISTRY: Record<string, EmailTypeDefinition> = {
     `),
     defaultTextBody:
       'New package sold for {{business.name}}.\nPackage: {{package.name}}\nAmount paid: {{package.amount_paid}}\nClient: {{package.client_name}}\nPurchaser: {{package.purchaser_name}}',
+    defaultSmsBody:
+      'New package sold at {{business.name}}: {{package.name}} ({{package.amount_paid}}) for {{package.client_name}}.',
     variables: [
       'business.name',
       'package.name',
@@ -601,11 +649,30 @@ export const EMAIL_TYPE_REGISTRY: Record<string, EmailTypeDefinition> = {
       <p>Hi {{user.name}},</p>
       <p>We received a request to reset your password.</p>
       <p><a href="{{reset_link}}">Reset password</a></p>
-      <p>If you did not request this, you can ignore this email.</p>
+      <p>This link expires in 1 hour. If you did not request this, you can ignore this email.</p>
     `),
     defaultTextBody:
-      'Hi {{user.name}},\n\nReset your password: {{reset_link}}\n\nIf you did not request this, you can ignore this email.',
+      'Hi {{user.name}},\n\nReset your password: {{reset_link}}\n\nThis link expires in 1 hour. If you did not request this, you can ignore this email.',
     variables: ['user.name', 'user.email', 'reset_link'],
+  },
+  'auth.password_changed': {
+    key: 'auth.password_changed',
+    category: 'auth',
+    label: 'Password changed',
+    description:
+      'Sent after a password reset succeeds to confirm the account change.',
+    defaultEnabled: true,
+    systemOnly: true,
+    businessConfigurable: false,
+    defaultSubject: 'Your password was changed',
+    defaultHtmlBody: WRAPPER(`
+      <p>Hi {{user.name}},</p>
+      <p>Your password was changed successfully.</p>
+      <p>If you did not make this change, contact support immediately.</p>
+    `),
+    defaultTextBody:
+      'Hi {{user.name}},\n\nYour password was changed successfully.\n\nIf you did not make this change, contact support immediately.',
+    variables: ['user.name', 'user.email'],
   },
   'auth.email_verification': {
     key: 'auth.email_verification',
@@ -624,6 +691,63 @@ export const EMAIL_TYPE_REGISTRY: Record<string, EmailTypeDefinition> = {
     defaultTextBody:
       'Hi {{user.name}},\n\nVerify your email: {{verification_link}}',
     variables: ['user.name', 'user.email', 'verification_link'],
+  },
+  'platform.addon_packaging_change': {
+    key: 'platform.addon_packaging_change',
+    category: 'platform',
+    label: 'Add-on packaging change',
+    description:
+      'Sent to business owners when platform admin changes how an add-on is packaged for their subscription.',
+    defaultEnabled: true,
+    systemOnly: true,
+    businessConfigurable: false,
+    defaultSubject: 'Update about {{addon.name}} on {{business.name}}',
+    defaultHtmlBody: WRAPPER(`
+      <p>Hi {{owner.name}},</p>
+      <p>We updated how <strong>{{addon.name}}</strong> is packaged for <strong>{{business.name}}</strong>.</p>
+      <p><strong>What this means:</strong> {{change.summary}}</p>
+      <p>{{change.detail}}</p>
+      <p>{{change.effective}}</p>
+    `),
+    defaultTextBody:
+      'Hi {{owner.name}},\n\nWe updated how {{addon.name}} is packaged for {{business.name}}.\n\n{{change.summary}}\n{{change.detail}}\n{{change.effective}}\n',
+    variables: [
+      'owner.name',
+      'owner.email',
+      'business.name',
+      'addon.name',
+      'change.summary',
+      'change.detail',
+      'change.effective',
+    ],
+  },
+  'platform.entitlement_change': {
+    key: 'platform.entitlement_change',
+    category: 'platform',
+    label: 'Entitlement change notice',
+    description:
+      'Sent to business owners for tier price, capability, or service packaging changes managed in Operations.',
+    defaultEnabled: true,
+    systemOnly: true,
+    businessConfigurable: false,
+    defaultSubject: 'Important update for {{business.name}}',
+    defaultHtmlBody: WRAPPER(`
+      <p>Hi {{owner.name}},</p>
+      <p><strong>{{change.summary}}</strong></p>
+      <p style="white-space: pre-wrap; margin: 16px 0;">{{change.detail}}</p>
+      <p><strong>{{change.effective}}</strong></p>
+      <p style="color: #555; font-size: 13px;">Reply to this email or contact support if you have questions about upgrading or purchasing add-ons.</p>
+    `),
+    defaultTextBody:
+      'Hi {{owner.name}},\n\n{{change.summary}}\n\n{{change.detail}}\n\n{{change.effective}}\n',
+    variables: [
+      'owner.name',
+      'owner.email',
+      'business.name',
+      'change.summary',
+      'change.detail',
+      'change.effective',
+    ],
   },
 };
 
@@ -664,6 +788,7 @@ export function listEmailTypesByCategory(): Record<
     packages: [],
     auth: [],
     automation: [],
+    platform: [],
   };
   for (const def of Object.values(EMAIL_TYPE_REGISTRY)) {
     grouped[def.category].push(def);

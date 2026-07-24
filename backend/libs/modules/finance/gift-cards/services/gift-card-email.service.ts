@@ -1,7 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { GiftCard, GiftCardPromotion, GiftCardSettings } from '@prisma/client';
-import { EmailNotificationService } from '@app/modules/communications/email/services/email-notification.service';
+import { formatPhone } from '@app/modules/crm/contacts/utils/contact-profile.util';
 import { formatContactName } from '@app/modules/communications/email/utils/email-variables.util';
+import { NotificationDispatchService } from '@app/modules/communications/notifications/services/notification-dispatch.service';
 
 type GiftCardWithContacts = GiftCard & {
   ownerContact: {
@@ -9,6 +10,8 @@ type GiftCardWithContacts = GiftCard & {
     lastName: string | null;
     displayName: string | null;
     email: string | null;
+    phoneNumber?: string | null;
+    phoneCountryCode?: string | null;
   };
   promotion?: GiftCardPromotion | null;
 };
@@ -23,7 +26,9 @@ type BusinessEmailContext = {
 export class GiftCardEmailService {
   private readonly logger = new Logger(GiftCardEmailService.name);
 
-  constructor(private readonly emailNotification: EmailNotificationService) {}
+  constructor(
+    private readonly notificationDispatch: NotificationDispatchService,
+  ) {}
 
   async sendGiftCardEmail(
     giftCard: GiftCardWithContacts,
@@ -32,8 +37,12 @@ export class GiftCardEmailService {
     options?: { allowResend?: boolean },
   ): Promise<void> {
     const email = giftCard.ownerContact.email?.trim();
-    if (!email) {
-      this.logger.warn(`Gift card ${giftCard.id} has no owner email`);
+    const phone = formatPhone(
+      giftCard.ownerContact.phoneCountryCode,
+      giftCard.ownerContact.phoneNumber,
+    );
+    if (!email && !phone) {
+      this.logger.warn(`Gift card ${giftCard.id} has no owner email or phone`);
       return;
     }
 
@@ -46,11 +55,13 @@ export class GiftCardEmailService {
       ? `<p><em>${settings.purchaseDisclaimer.trim()}</em></p>`
       : '';
 
-    await this.emailNotification.enqueueTransactionalEmail({
+    await this.notificationDispatch.dispatch({
       businessId: business.id,
-      emailType: 'gift_card.delivery',
+      notificationKey: 'gift_card.delivery',
       toEmail: email,
+      toPhone: phone,
       fromName: businessName,
+      missingRecipient: 'skip',
       variables: {
         'business.name': businessName,
         'contact.name': ownerName,
@@ -64,8 +75,8 @@ export class GiftCardEmailService {
       entityType: 'GiftCard',
       entityId: giftCard.id,
       idempotencyKey: options?.allowResend
-        ? `gift-card-delivery-${giftCard.id}-${email}-${Date.now()}`
-        : `gift-card-delivery-${giftCard.id}-${email}`,
+        ? `gift-card-delivery-${giftCard.id}-${email ?? phone}-${Date.now()}`
+        : `gift-card-delivery-${giftCard.id}-${email ?? phone}`,
       templateOverride: {
         subject: `You received a gift card from ${businessName}`,
         htmlBody: `
@@ -89,17 +100,21 @@ export class GiftCardEmailService {
     purchaserName: string,
     amountPaid: string,
     recipientEmail: string,
+    purchaserPhone?: string | null,
   ): Promise<void> {
     const email = purchaserEmail.trim();
-    if (!email) return;
+    const phone = purchaserPhone?.trim() || null;
+    if (!email && !phone) return;
 
     const businessName = this.resolveBusinessName(business);
 
-    await this.emailNotification.enqueueTransactionalEmail({
+    await this.notificationDispatch.dispatch({
       businessId: business.id,
-      emailType: 'gift_card.purchase_confirmation',
-      toEmail: email,
+      notificationKey: 'gift_card.purchase_confirmation',
+      toEmail: email || null,
+      toPhone: phone,
       fromName: businessName,
+      missingRecipient: 'skip',
       variables: {
         'business.name': businessName,
         'contact.name': purchaserName,
@@ -110,7 +125,7 @@ export class GiftCardEmailService {
       },
       entityType: 'GiftCard',
       entityId: giftCard.id,
-      idempotencyKey: `gift-card-purchase-confirm-${giftCard.id}-${email}`,
+      idempotencyKey: `gift-card-purchase-confirm-${giftCard.id}-${email || phone}`,
       templateOverride: {
         subject: `Your gift card purchase from ${businessName}`,
         htmlBody: `
@@ -139,11 +154,14 @@ export class GiftCardEmailService {
 
     const businessName = this.resolveBusinessName(business);
 
-    await this.emailNotification.enqueueTransactionalEmail({
+    // Internal notify address is email-only; SMS channel will skip without a phone.
+    await this.notificationDispatch.dispatch({
       businessId: business.id,
-      emailType: 'gift_card.internal_notification',
+      notificationKey: 'gift_card.internal_notification',
       toEmail: email,
+      toPhone: null,
       fromName: businessName,
+      missingRecipient: 'skip',
       variables: {
         'business.name': businessName,
         'gift_card.number': giftCard.number,

@@ -62,7 +62,7 @@ export const subscriptionPaymentMethodOptions: SelectOption[] = [
   { value: "CASH", label: "Cash" },
   { value: "JAZZCASH", label: "JazzCash" },
   { value: "EASYPAISA", label: "EasyPaisa" },
-  { value: "MANUAL_INVOICE", label: "Manual Invoice" },
+  { value: "MANUAL_INVOICE", label: "Manual Invoice (offline)" },
   { value: "FREE_INTERNAL", label: "Free Internal" },
 ];
 

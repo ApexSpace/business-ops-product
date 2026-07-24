@@ -67,7 +67,7 @@ export class TwilioSmsWebhookController {
     }
 
     if (
-      this.twilioSmsWebhookService.isPlatformInbound(params.To) &&
+      (await this.twilioSmsWebhookService.isOneWayInbound(params.To)) &&
       this.twilioSmsWebhookService.isComplianceKeyword(params.Body)
     ) {
       const twiml = await this.twilioSmsWebhookService.processWebhookEvent(

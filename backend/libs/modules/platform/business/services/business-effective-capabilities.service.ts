@@ -1,10 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import {
   BusinessCapabilityAssignmentStatus,
+  BusinessFeatureGrantStatus,
   CapabilityFeatureStatus,
 } from '@prisma/client';
 import { PrismaService } from '@app/core/database/prisma.service';
-import { getRegistryFeature } from '@app/modules/platform/capabilities/registries/capability-feature.registry';
+import {
+  getRegistryFeature,
+  normalizeFeatureKey,
+} from '@app/modules/platform/capabilities/registries/capability-feature.registry';
 import {
   flattenRegistryFeatures,
   getAllRegistryModuleKeys,
@@ -37,55 +41,66 @@ export class BusinessEffectiveCapabilitiesService {
       (row) => row.status === BusinessCapabilityAssignmentStatus.ACTIVE,
     );
 
-    if (activeRows.length === 0) {
-      return [];
-    }
-
-    const capabilityIds = activeRows.map((row) => row.capabilityId);
-    const bundles = await this.prisma.capability.findMany({
-      where: { id: { in: capabilityIds }, deletedAt: null },
-      include: {
-        featureAssignments: {
-          where: { deletedAt: null, status: CapabilityFeatureStatus.ACTIVE },
-          include: {
-            feature: {
-              select: { key: true, name: true, description: true },
-            },
-          },
-        },
-        moduleAssignments: {
-          where: { deletedAt: null },
-          select: { moduleKey: true },
-        },
-      },
-    });
-
-    const bundleById = new Map(bundles.map((bundle) => [bundle.id, bundle]));
     const featureKeys = new Set<string>();
 
-    for (const row of activeRows) {
-      const bundle = bundleById.get(row.capabilityId);
-      if (!bundle) {
-        this.addLegacyCapabilityKey(featureKeys, row.capability.key);
-        continue;
-      }
+    if (activeRows.length > 0) {
+      const capabilityIds = activeRows.map((row) => row.capabilityId);
+      const bundles = await this.prisma.capability.findMany({
+        where: { id: { in: capabilityIds }, deletedAt: null },
+        include: {
+          featureAssignments: {
+            where: { deletedAt: null, status: CapabilityFeatureStatus.ACTIVE },
+            include: {
+              feature: {
+                select: { key: true, name: true, description: true },
+              },
+            },
+          },
+          moduleAssignments: {
+            where: { deletedAt: null },
+            select: { moduleKey: true },
+          },
+        },
+      });
 
-      for (const assignment of bundle.featureAssignments) {
-        featureKeys.add(assignment.featureKey);
-      }
+      const bundleById = new Map(bundles.map((bundle) => [bundle.id, bundle]));
 
-      for (const assignment of bundle.moduleAssignments) {
-        for (const key of getFeatureKeysForModule(assignment.moduleKey)) {
-          featureKeys.add(key);
+      for (const row of activeRows) {
+        const bundle = bundleById.get(row.capabilityId);
+        if (!bundle) {
+          this.addLegacyCapabilityKey(featureKeys, row.capability.key);
+          continue;
+        }
+
+        for (const assignment of bundle.featureAssignments) {
+          featureKeys.add(normalizeFeatureKey(assignment.featureKey));
+        }
+
+        for (const assignment of bundle.moduleAssignments) {
+          for (const key of getFeatureKeysForModule(assignment.moduleKey)) {
+            featureKeys.add(normalizeFeatureKey(key));
+          }
+        }
+
+        if (
+          bundle.featureAssignments.length === 0 &&
+          bundle.moduleAssignments.length === 0
+        ) {
+          this.addLegacyCapabilityKey(featureKeys, bundle.key);
         }
       }
+    }
 
-      if (
-        bundle.featureAssignments.length === 0 &&
-        bundle.moduleAssignments.length === 0
-      ) {
-        this.addLegacyCapabilityKey(featureKeys, bundle.key);
-      }
+    // Grandfathered / manual feature grants (services removed from capabilities).
+    const grants = await this.prisma.businessFeatureGrant.findMany({
+      where: {
+        businessId,
+        status: BusinessFeatureGrantStatus.ACTIVE,
+      },
+      select: { featureKey: true },
+    });
+    for (const grant of grants) {
+      featureKeys.add(normalizeFeatureKey(grant.featureKey));
     }
 
     return Array.from(featureKeys)
@@ -127,22 +142,23 @@ export class BusinessEffectiveCapabilitiesService {
   }
 
   private toEffectiveCapability(featureKey: string): EffectiveCapability {
-    const registry = getRegistryFeature(featureKey);
+    const normalized = normalizeFeatureKey(featureKey);
+    const registry = getRegistryFeature(normalized);
     if (registry) {
       return {
-        key: featureKey,
+        key: normalized,
         name: registry.featureName,
       };
     }
 
-    const [moduleKey, ...rest] = featureKey.split('.');
+    const [moduleKey, ...rest] = normalized.split('.');
     const label =
       rest.length > 0
         ? `${moduleKey} ${rest.join(' ')}`.replace(/_/g, ' ')
-        : featureKey;
+        : normalized;
 
     return {
-      key: featureKey,
+      key: normalized,
       name: label,
     };
   }

@@ -14,6 +14,7 @@ import {
 import { StripePlatformApiService } from './stripe-platform-api.service';
 import { StripePlatformMetadataService } from './stripe-platform-metadata.service';
 import { StripePlatformPlanMappingService } from './stripe-platform-plan-mapping.service';
+import { StripePlatformTierPriceSyncService } from './stripe-platform-tier-price-sync.service';
 
 @Injectable()
 export class StripePlatformCheckoutService {
@@ -24,6 +25,7 @@ export class StripePlatformCheckoutService {
     private readonly stripeApi: StripePlatformApiService,
     private readonly planMapping: StripePlatformPlanMappingService,
     private readonly metadataService: StripePlatformMetadataService,
+    private readonly tierPriceSync: StripePlatformTierPriceSyncService,
   ) {}
 
   async createCheckoutSession(input: {
@@ -44,6 +46,9 @@ export class StripePlatformCheckoutService {
         HttpStatus.NOT_FOUND,
       );
     }
+
+    // Fail closed: Stripe Price IDs must exist and be active (Stripe-owned).
+    await this.tierPriceSync.assertPriceIdsPresent(input.planTierId);
 
     const { priceId } = await this.planMapping.resolvePublishedTierPrice(
       input.planGroupId,
@@ -106,18 +111,8 @@ export class StripePlatformCheckoutService {
       );
     }
 
-    if (subscription) {
-      await this.prisma.businessSubscription.update({
-        where: { businessId: input.businessId },
-        data: {
-          billingSource: SubscriptionBillingSource.STRIPE,
-          planGroupId: input.planGroupId,
-          planTierId: input.planTierId,
-          billingCycle: input.billingCycle,
-        },
-      });
-    }
-
+    // Do not author local billing state here — checkout.session.completed +
+    // customer.subscription.* webhooks own the STRIPE mirror.
     this.logger.log(
       `Created platform checkout ${session.id} for business ${input.businessId}`,
     );

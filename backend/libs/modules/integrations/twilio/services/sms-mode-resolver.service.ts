@@ -9,7 +9,10 @@ import type { RootConfig } from '@app/core/config/configuration';
 import { SMS_PROVIDER_KEY } from '@app/modules/communications/sms/constants/sms-platform.constants';
 import {
   isBusinessOwnedSmsResource,
+  isPlatformProvisionedSmsResource,
   isPlatformSmsResource,
+  isTwoWayEnabledSmsResource,
+  readSmsResourceFromNumber,
   SmsSendMode,
 } from '@app/modules/communications/sms/utils/sms-channel.util';
 import { normalizeE164Phone } from '@app/core/config/twilio/twilio.config';
@@ -22,9 +25,10 @@ export interface ResolvedSmsContext {
   accountSid: string;
   authToken: string;
   fromNumber: string;
-  /** Present for inbox / connected numbers; null for env-based platform notifications. */
+  /** Present for provisioned / connected numbers; null for bare env fallback. */
   resource: IntegrationResource | null;
   twoWayEnabled: boolean;
+  messagingServiceSid?: string | null;
 }
 
 @Injectable()
@@ -37,9 +41,7 @@ export class SmsModeResolverService {
   ) {}
 
   /**
-   * Outbound notification SMS (Express Booking, automations, etc.).
-   * Always uses the platform Twilio number from env when enabled —
-   * no per-business SMS integration is required.
+   * Env-only platform fallback (shared TWILIO_PLATFORM_FROM_NUMBER).
    */
   resolvePlatformNotification(): ResolvedSmsContext | null {
     const twilioConfig = this.configService.get('twilio', { infer: true });
@@ -59,7 +61,61 @@ export class SmsModeResolverService {
       fromNumber: twilioConfig.platformFromNumber,
       resource: null,
       twoWayEnabled: false,
+      messagingServiceSid: twilioConfig.messagingServiceSid,
     };
+  }
+
+  /**
+   * Notification SMS for a business: prefer auto-assigned PLATFORM_PROVISIONED
+   * From number; otherwise env platform From.
+   */
+  async resolveNotificationForBusiness(
+    businessId: string,
+  ): Promise<ResolvedSmsContext | null> {
+    const twilioConfig = this.configService.get('twilio', { infer: true });
+    if (
+      !twilioConfig.enabled ||
+      !twilioConfig.accountSid ||
+      !twilioConfig.authToken
+    ) {
+      return null;
+    }
+
+    const resource = await this.integrationResourceRepository.findDefault(
+      businessId,
+      SMS_PROVIDER_KEY,
+      IntegrationResourceType.PHONE_NUMBER,
+    );
+
+    if (resource && isPlatformProvisionedSmsResource(resource)) {
+      const fromNumber = readSmsResourceFromNumber(
+        resource,
+        twilioConfig.platformFromNumber,
+      );
+      if (fromNumber) {
+        const metadata = (resource.metadata ?? {}) as Record<string, unknown>;
+        return {
+          mode: 'platform',
+          accountSid: twilioConfig.accountSid,
+          authToken: twilioConfig.authToken,
+          fromNumber,
+          resource,
+          twoWayEnabled: false,
+          messagingServiceSid:
+            (typeof metadata.messagingServiceSid === 'string'
+              ? metadata.messagingServiceSid
+              : null) ?? twilioConfig.messagingServiceSid,
+        };
+      }
+    }
+
+    if (resource && isPlatformSmsResource(resource)) {
+      const platform = this.resolvePlatformNotification();
+      if (!platform) return null;
+      return { ...platform, resource };
+    }
+
+    return this.resolvePlatformNotification();
   }
 
   /**
@@ -91,20 +147,12 @@ export class SmsModeResolverService {
       }
     }
 
-    // Conversation may still point at a stale platform resource after Twilio
-    // was connected — prefer an active business-owned number for inbox sends.
     const businessOwned = await this.resolveBusinessOwned(businessId);
     if (businessOwned) {
       return businessOwned;
     }
 
-    if (resource && isPlatformSmsResource(resource)) {
-      const platform = this.resolvePlatformNotification();
-      if (!platform) return null;
-      return { ...platform, resource };
-    }
-
-    return this.resolvePlatformNotification();
+    return this.resolveNotificationForBusiness(businessId);
   }
 
   /**
@@ -152,11 +200,8 @@ export class SmsModeResolverService {
       const creds = this.twilioCredentialsService.decrypt(
         integration.credentials,
       );
-      const metadata = (resource.metadata ?? {}) as Record<string, unknown>;
-      const fromNumber =
-        typeof metadata.fromNumber === 'string'
-          ? metadata.fromNumber
-          : resource.externalId;
+      const fromNumber = readSmsResourceFromNumber(resource, null);
+      if (!fromNumber) return null;
       return {
         mode: 'business',
         accountSid: creds.accountSid,
@@ -172,19 +217,46 @@ export class SmsModeResolverService {
 
   /**
    * True when a business has connected this E.164 as their two-way inbox number.
-   * Used so the shared platform number can still receive inbox SMS during testing.
    */
   async isBusinessOwnedFromNumber(fromNumber: string): Promise<boolean> {
-    const normalized = normalizeE164Phone(fromNumber);
-    if (!normalized) return false;
-
-    const resource =
-      await this.integrationResourceRepository.findActiveByExternalId(
-        normalized,
-        SMS_PROVIDER_KEY,
-        IntegrationResourceType.PHONE_NUMBER,
-      );
+    const resource = await this.findActivePhoneResourceByTo(fromNumber);
     return isBusinessOwnedSmsResource(resource);
+  }
+
+  /**
+   * Env shared From OR any PLATFORM_PROVISIONED / PLATFORM_SHARED resource matching To.
+   * Used for compliance-only inbound when two-way is off.
+   */
+  async isOneWayNotificationNumber(toNumber: string): Promise<boolean> {
+    if (this.isPlatformNumber(toNumber)) {
+      const owned = await this.isBusinessOwnedFromNumber(toNumber);
+      return !owned;
+    }
+
+    const resource = await this.findActivePhoneResourceByTo(toNumber);
+    if (!resource) return false;
+    if (isBusinessOwnedSmsResource(resource)) return false;
+    if (isPlatformProvisionedSmsResource(resource)) {
+      return !isTwoWayEnabledSmsResource(resource);
+    }
+    return isPlatformSmsResource(resource);
+  }
+
+  /** @deprecated Alias — prefer isOneWayNotificationNumber */
+  async isOneWayPlatformInboundNumber(toNumber: string): Promise<boolean> {
+    return this.isOneWayNotificationNumber(toNumber);
+  }
+
+  async findActivePhoneResourceByTo(
+    toNumber: string,
+  ): Promise<IntegrationResource | null> {
+    const normalized = normalizeE164Phone(toNumber);
+    if (!normalized) return null;
+    return this.integrationResourceRepository.findActiveByExternalId(
+      normalized,
+      SMS_PROVIDER_KEY,
+      IntegrationResourceType.PHONE_NUMBER,
+    );
   }
 
   isPlatformNumber(toNumber: string): boolean {

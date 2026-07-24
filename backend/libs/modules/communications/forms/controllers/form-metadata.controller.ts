@@ -19,7 +19,7 @@ import { FormMetadataService } from '../services/form-metadata.service';
 @ApiBearerAuth()
 @Controller('forms/metadata')
 @UseGuards(BusinessRolesGuard, BusinessCapabilityGuard)
-@RequireModule('settings')
+@RequireModule('forms')
 @StaffPermission('forms.manage_templates')
 export class FormMetadataController {
   constructor(private readonly metadataService: FormMetadataService) {}
@@ -31,7 +31,7 @@ export class FormMetadataController {
     BusinessMemberRole.ADMIN,
     BusinessMemberRole.MEMBER,
   )
-  @RequireCapability('settings.forms.list')
+  @RequireCapability('forms.list')
   listCategories() {
     return this.metadataService.listCategories();
   }
@@ -43,7 +43,7 @@ export class FormMetadataController {
     BusinessMemberRole.ADMIN,
     BusinessMemberRole.MEMBER,
   )
-  @RequireCapability('settings.forms.list')
+  @RequireCapability('forms.list')
   listFieldTypes(@Query() query: FormMetadataQueryDto) {
     return this.metadataService.listFieldTypes(this.parseFilter(query));
   }
@@ -55,7 +55,7 @@ export class FormMetadataController {
     BusinessMemberRole.ADMIN,
     BusinessMemberRole.MEMBER,
   )
-  @RequireCapability('settings.forms.list')
+  @RequireCapability('forms.list')
   listPalette(@Query() query: FormMetadataQueryDto) {
     return this.metadataService.listPalette(this.parseFilter(query));
   }

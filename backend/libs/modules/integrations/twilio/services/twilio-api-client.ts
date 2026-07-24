@@ -33,6 +33,19 @@ export interface TwilioPhoneNumberSummary {
   friendlyName: string;
 }
 
+export interface TwilioAvailableLocalNumber {
+  phoneNumber: string;
+  friendlyName: string;
+  locality: string | null;
+  region: string | null;
+}
+
+export interface TwilioPurchasedPhoneNumber {
+  sid: string;
+  phoneNumber: string;
+  friendlyName: string;
+}
+
 @Injectable()
 export class TwilioApiClient {
   constructor(
@@ -46,6 +59,84 @@ export class TwilioApiClient {
       }),
       autoRetry: false,
     });
+  }
+
+  /**
+   * Search US local SMS-capable inventory on the primary account.
+   * Pass areaCode to prefer a NANP match; omit to list any available US locals.
+   */
+  async searchAvailableUsLocalNumbers(params: {
+    accountSid: string;
+    authToken: string;
+    areaCode?: string | null;
+    limit?: number;
+  }): Promise<TwilioAvailableLocalNumber[]> {
+    const client = this.createClient(params.accountSid, params.authToken);
+    try {
+      const list = await client
+        .availablePhoneNumbers('US')
+        .local.list({
+          ...(params.areaCode ? { areaCode: Number(params.areaCode) } : {}),
+          smsEnabled: true,
+          limit: params.limit ?? 20,
+        });
+      return list.map((n) => ({
+        phoneNumber: n.phoneNumber,
+        friendlyName: n.friendlyName,
+        locality: n.locality ?? null,
+        region: n.region ?? null,
+      }));
+    } catch (error) {
+      throw this.toApiException(error);
+    }
+  }
+
+  async purchasePhoneNumber(params: {
+    accountSid: string;
+    authToken: string;
+    phoneNumber: string;
+    smsUrl?: string;
+    friendlyName?: string;
+  }): Promise<TwilioPurchasedPhoneNumber> {
+    const client = this.createClient(params.accountSid, params.authToken);
+    try {
+      const purchased = await client.incomingPhoneNumbers.create({
+        phoneNumber: params.phoneNumber,
+        ...(params.smsUrl
+          ? { smsUrl: params.smsUrl, smsMethod: 'POST' as const }
+          : {}),
+        ...(params.friendlyName ? { friendlyName: params.friendlyName } : {}),
+      });
+      return {
+        sid: purchased.sid,
+        phoneNumber: purchased.phoneNumber,
+        friendlyName: purchased.friendlyName,
+      };
+    } catch (error) {
+      throw this.toApiException(error);
+    }
+  }
+
+  async addPhoneNumberToMessagingService(params: {
+    accountSid: string;
+    authToken: string;
+    messagingServiceSid: string;
+    phoneNumberSid: string;
+  }): Promise<void> {
+    const client = this.createClient(params.accountSid, params.authToken);
+    try {
+      await client.messaging.v1
+        .services(params.messagingServiceSid)
+        .phoneNumbers.create({ phoneNumberSid: params.phoneNumberSid });
+    } catch (error) {
+      // Already in pool is fine for idempotent retries.
+      const status = (error as { status?: number } | null)?.status;
+      const code = (error as { code?: number } | null)?.code;
+      if (status === 409 || code === 21710) {
+        return;
+      }
+      throw this.toApiException(error);
+    }
   }
 
   async listSmsPhoneNumbers(

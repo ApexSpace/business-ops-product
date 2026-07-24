@@ -5,7 +5,7 @@ import { AppException } from '@app/common/exceptions/app.exception';
 import { ErrorCode } from '@app/common/exceptions/error-code.enum';
 import type { RootConfig } from '@app/core/config/configuration';
 
-export type AuthEmailAction = 'password_reset' | 'email_verification';
+export type AuthEmailAction = 'email_verification';
 
 export interface AuthActionTokenPayload {
   sub: string;
@@ -21,14 +21,10 @@ export class AuthActionTokenService {
 
   async sign(userId: string, purpose: AuthEmailAction): Promise<string> {
     const secret = this.configService.get('jwt.accessSecret', { infer: true });
-    const expiresIn =
-      purpose === 'password_reset'
-        ? '1h'
-        : ('24h' as `${number}${'s' | 'm' | 'h' | 'd'}`);
 
     return this.jwtService.signAsync(
       { sub: userId, purpose } satisfies AuthActionTokenPayload,
-      { secret, expiresIn },
+      { secret, expiresIn: '24h' },
     );
   }
 

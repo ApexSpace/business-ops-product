@@ -17,6 +17,8 @@ import { ConfirmDeleteQueryDto } from '@app/common/dto/confirm-delete-query.dto'
 import { CurrentUser } from '@app/common/decorators/current-user.decorator';
 import type { RequestUser } from '@app/common/decorators/current-user.decorator';
 import { BusinessRoles } from '@app/common/decorators/business-roles.decorator';
+import { RequireModule } from '@app/common/decorators/require-module.decorator';
+import { BusinessCapabilityGuard } from '@app/common/guards/business-capability.guard';
 import { BusinessRolesGuard } from '@app/common/guards/business-roles.guard';
 import {
   CreateServiceCategoryDto,
@@ -34,7 +36,8 @@ const MEMBER_ROLES = [
 @ApiTags('service-categories')
 @ApiBearerAuth()
 @Controller('service-categories')
-@UseGuards(BusinessRolesGuard)
+@UseGuards(BusinessRolesGuard, BusinessCapabilityGuard)
+@RequireModule('services')
 export class ServiceCategoriesController {
   constructor(private readonly categoriesService: ServiceCategoriesService) {}
 

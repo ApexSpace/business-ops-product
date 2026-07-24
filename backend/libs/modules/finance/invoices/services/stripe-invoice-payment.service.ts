@@ -18,7 +18,8 @@ import { PaymentOrchestratorService } from '@app/modules/finance/payments/orches
 import { STRIPE_PAYMENT_PURPOSE } from '@app/modules/finance/payments/constants/stripe-payment-purpose.constants';
 import { StripeContactPaymentMethodService } from '@app/modules/finance/payments/services/stripe-contact-payment-method.service';
 import { computeInvoicePaymentSyncFields } from '@app/modules/finance/payments/utils/invoice-payment-sync.util';
-import { EmailNotificationService } from '@app/modules/communications/email/services/email-notification.service';
+import { NotificationDispatchService } from '@app/modules/communications/notifications/services/notification-dispatch.service';
+import { formatPhone } from '@app/modules/crm/contacts/utils/contact-profile.util';
 import {
   formatContactName,
   formatMoney,
@@ -65,7 +66,7 @@ export class StripeInvoicePaymentService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly auditService: AuditService,
-    private readonly emailNotificationService: EmailNotificationService,
+    private readonly notificationDispatch: NotificationDispatchService,
     private readonly businessRepository: BusinessRepository,
     @Inject(forwardRef(() => PaymentOrchestratorService))
     private readonly paymentOrchestrator: PaymentOrchestratorService,
@@ -515,26 +516,34 @@ export class StripeInvoicePaymentService {
             lastName: true,
             companyName: true,
             email: true,
+            phoneCountryCode: true,
+            phoneNumber: true,
           },
         },
       },
     });
 
     const contactEmail = invoice?.contact?.email?.trim();
-    if (!invoice || !contactEmail) {
+    const contactPhone = formatPhone(
+      invoice?.contact?.phoneCountryCode,
+      invoice?.contact?.phoneNumber,
+    );
+    if (!invoice || (!contactEmail && !contactPhone)) {
       return;
     }
 
     const business = await this.businessRepository.findById(params.businessId);
 
-    await this.emailNotificationService.enqueueTransactionalEmail({
+    await this.notificationDispatch.dispatch({
       businessId: params.businessId,
-      emailType: 'invoice.paid_receipt',
+      notificationKey: 'invoice.paid_receipt',
       toEmail: contactEmail,
+      toPhone: contactPhone,
       contactId: invoice.contactId,
       entityType: 'Invoice',
       entityId: invoice.id,
       idempotencyKey: params.idempotencyKey,
+      missingRecipient: 'skip',
       variables: {
         'business.name': business?.name ?? 'Business',
         'contact.name': formatContactName(invoice.contact),

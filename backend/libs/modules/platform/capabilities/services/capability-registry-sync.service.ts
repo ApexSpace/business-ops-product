@@ -10,12 +10,14 @@ import {
 import { getRegistryModules } from '../registries/capability-module.registry';
 import type { CapabilityRegistrySyncReport } from '../types/capability-registry.types';
 import { CapabilityRepository } from '../repositories/capability.repository';
+import { CapabilityFeatureKeyMigrationService } from './capability-feature-key-migration.service';
 
 @Injectable()
 export class CapabilityRegistrySyncService {
   constructor(
     private readonly repository: CapabilityRepository,
     private readonly auditService: AuditService,
+    private readonly featureKeyMigration: CapabilityFeatureKeyMigrationService,
   ) {}
 
   listRegistryModules(): RegistryModuleCatalogDto[] {
@@ -46,6 +48,7 @@ export class CapabilityRegistrySyncService {
     const report = await this.buildDiff(dryRun);
 
     if (!dryRun) {
+      await this.featureKeyMigration.migrate({ dryRun: false });
       await this.auditService.log({
         actorUserId: actor.id,
         action: 'platform.capability.registry.synced',
@@ -212,9 +215,14 @@ export async function seedCapabilityRegistryFromCode(
   prismaClient: import('@prisma/client').PrismaClient,
 ): Promise<CapabilityRegistryDiffDto> {
   const repository = new CapabilityRepository(prismaClient as never);
-  const syncService = new CapabilityRegistrySyncService(repository, {
-    log: async () => undefined,
-  } as never);
+  const featureKeyMigration = new CapabilityFeatureKeyMigrationService(
+    prismaClient as never,
+  );
+  const syncService = new CapabilityRegistrySyncService(
+    repository,
+    { log: async () => undefined } as never,
+    featureKeyMigration,
+  );
   return syncService.sync({ dryRun: false }, {
     id: 'seed',
     email: 'seed@system.local',

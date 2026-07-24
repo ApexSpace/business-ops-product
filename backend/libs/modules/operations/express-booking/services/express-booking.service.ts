@@ -16,11 +16,10 @@ import type { RequestUser } from '@app/common/decorators/current-user.decorator'
 import { PrismaService } from '@app/core/database/prisma.service';
 import { AuditService } from '@app/modules/platform/audit/services/audit.service';
 import { SYSTEM_AUDIT_ACTOR_SENTINEL } from '@app/modules/platform/audit/constants/audit.constants';
-import { EmailNotificationService } from '@app/modules/communications/email/services/email-notification.service';
 import { formatAppointmentDateTime } from '@app/modules/communications/email/utils/email-variables.util';
 import { APPOINTMENT_EXPRESS_COMPLETE_KEY } from '@app/modules/communications/notifications/constants/notification-channel.constants';
 import { NotificationChannelPreferenceService } from '@app/modules/communications/notifications/services/notification-channel-preference.service';
-import { PlatformSmsSendService } from '@app/modules/communications/sms/services/platform-sms-send.service';
+import { NotificationDispatchService } from '@app/modules/communications/notifications/services/notification-dispatch.service';
 import { BusinessRepository } from '@app/modules/platform/business/repositories/business.repository';
 import { ServiceRepository } from '@app/modules/crm/services/repositories/service.repository';
 import { ServiceWorkspaceRepository } from '@app/modules/crm/services/repositories/service-workspace.repository';
@@ -83,14 +82,13 @@ export class ExpressBookingService {
     private readonly bookingLinkSale: BookingLinkSaleService,
     private readonly stripeContactPaymentMethod: StripeContactPaymentMethodService,
     private readonly prisma: PrismaService,
-    private readonly emailNotificationService: EmailNotificationService,
     private readonly appointmentNotificationService: AppointmentNotificationService,
     private readonly businessRepository: BusinessRepository,
     private readonly contactRepository: ContactRepository,
     private readonly auditService: AuditService,
     private readonly configService: ConfigService,
     private readonly notificationChannelPreference: NotificationChannelPreferenceService,
-    private readonly platformSmsSendService: PlatformSmsSendService,
+    private readonly notificationDispatch: NotificationDispatchService,
   ) {}
 
   async create(
@@ -995,11 +993,6 @@ export class ExpressBookingService {
       return;
     }
 
-    const channel = await this.notificationChannelPreference.getChannel(
-      businessId,
-      APPOINTMENT_EXPRESS_COMPLETE_KEY,
-    );
-
     const business = await this.businessRepository.findById(businessId);
     const settings = await this.settingsRepository.ensureSettings(businessId);
     const timezone = resolveBookingTimezone(
@@ -1020,61 +1013,26 @@ export class ExpressBookingService {
       ? formatAppointmentDateTime(appointment.expressBookingExpiresAt, timezone)
       : '';
 
-    if (channel === NotificationChannel.SMS) {
-      const toPhone = formatPhone(
-        appointment.guestPhoneCountryCode ??
-          appointment.contact?.phoneCountryCode,
-        appointment.guestPhone ?? appointment.contact?.phoneNumber,
-      );
-      if (!toPhone) {
-        throw new AppException(
-          ErrorCode.BAD_REQUEST,
-          'A phone number is required to send the Express Booking link by SMS',
-          HttpStatus.BAD_REQUEST,
-        );
-      }
-
-      const body = [
-        `Hi ${contactName} - ${businessName} started a booking for you.`,
-        `${formatAppointmentDateTime(appointment.startAt, timezone)}${
-          appointment.service?.name || appointment.title
-            ? ` - ${appointment.service?.name ?? appointment.title}`
-            : ''
-        }`,
-        expiresAtLabel ? `Complete by ${expiresAtLabel}.` : null,
-        completeUrl,
-      ]
-        .filter(Boolean)
-        .join('\n');
-
-      await this.platformSmsSendService.sendNotification({
-        businessId,
-        to: toPhone,
-        body,
-      });
-      return;
-    }
-
     const toEmail =
       appointment.guestEmail?.trim() ||
       appointment.contact?.email?.trim() ||
       null;
-    if (!toEmail) {
-      throw new AppException(
-        ErrorCode.BAD_REQUEST,
-        'An email is required to send the Express Booking link',
-        HttpStatus.BAD_REQUEST,
-      );
-    }
+    const toPhone = formatPhone(
+      appointment.guestPhoneCountryCode ??
+        appointment.contact?.phoneCountryCode,
+      appointment.guestPhone ?? appointment.contact?.phoneNumber,
+    );
 
-    await this.emailNotificationService.enqueueTransactionalEmail({
+    await this.notificationDispatch.dispatch({
       businessId,
-      emailType: APPOINTMENT_EXPRESS_COMPLETE_KEY,
+      notificationKey: APPOINTMENT_EXPRESS_COMPLETE_KEY,
       toEmail,
+      toPhone,
       contactId: appointment.contactId ?? undefined,
       entityType: 'Appointment',
       entityId: appointment.id,
       idempotencyKey: `appointment-express-complete-${appointment.id}-${appointment.expressBookingToken}`,
+      missingRecipient: 'throw',
       variables: {
         'business.name': businessName,
         'contact.name': contactName,
@@ -1100,6 +1058,8 @@ export class ExpressBookingService {
     appointment: AppointmentWithRelations & {
       guestEmail: string;
       guestFirstName: string | null;
+      guestPhone?: string | null;
+      guestPhoneCountryCode?: string | null;
     },
   ) {
     const business = await this.businessRepository.findById(businessId);
@@ -1109,13 +1069,18 @@ export class ExpressBookingService {
       business?.timezone,
     );
 
-    await this.emailNotificationService.enqueueTransactionalEmail({
+    await this.notificationDispatch.dispatch({
       businessId,
-      emailType: 'appointment.express_expired',
+      notificationKey: 'appointment.express_expired',
       toEmail: appointment.guestEmail,
+      toPhone: formatPhone(
+        appointment.guestPhoneCountryCode,
+        appointment.guestPhone,
+      ),
       entityType: 'Appointment',
       entityId: appointment.id,
       idempotencyKey: `appointment-express-expired-${appointment.id}`,
+      missingRecipient: 'skip',
       variables: {
         'business.name': business?.displayName ?? business?.name ?? 'Business',
         'contact.name': appointment.guestFirstName ?? 'there',

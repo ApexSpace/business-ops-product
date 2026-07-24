@@ -9,7 +9,9 @@ export type SubscriptionAccessStatus =
   | "CANCELED"
   | "EXPIRED"
   | "INTERNAL"
-  | "PAST_DUE";
+  | "PAST_DUE"
+  | "UNPAID"
+  | "INCOMPLETE";
 
 export type SubscriptionPaymentMethod =
   | "STRIPE"

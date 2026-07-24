@@ -5,7 +5,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { EffectiveCapability } from "@/features/platform/utils/business-access-resolver.util";
 
 export function PackageImpactPreview({
-  snapshotName,
   capabilities,
   amount,
   currency,
@@ -29,10 +28,6 @@ export function PackageImpactPreview({
         <CardTitle className="text-sm">Impact Preview</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3 text-sm">
-        <div>
-          <p className="text-xs text-muted-foreground">Snapshot</p>
-          <p>{snapshotName ?? "—"}</p>
-        </div>
         <div>
           <p className="text-xs text-muted-foreground">Capabilities ({capabilities.length})</p>
           <div className="mt-1 flex flex-wrap gap-1">
@@ -60,8 +55,7 @@ export function PackageImpactPreview({
           )}
         </div>
         <p className="text-xs text-muted-foreground">
-          Plan Tier decides capabilities. Snapshot controls labels, navigation, and
-          experience.
+          The selected tier decides included features and limits for this business.
         </p>
         {showDiff && (toAdd.length > 0 || toRemove.length > 0) && (
           <div className="grid gap-3 sm:grid-cols-2">

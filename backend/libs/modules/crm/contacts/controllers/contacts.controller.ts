@@ -17,6 +17,8 @@ import { CurrentUser } from '@app/common/decorators/current-user.decorator';
 import type { RequestUser } from '@app/common/decorators/current-user.decorator';
 import { BusinessRoles } from '@app/common/decorators/business-roles.decorator';
 import { StaffPermission } from '@app/common/decorators/staff-permission.decorator';
+import { RequireModule } from '@app/common/decorators/require-module.decorator';
+import { BusinessCapabilityGuard } from '@app/common/guards/business-capability.guard';
 import { BusinessRolesGuard } from '@app/common/guards/business-roles.guard';
 import { CreateContactDto } from '../dto/create-contact.dto';
 import { ListContactsQueryDto } from '../dto/list-contacts-query.dto';
@@ -24,11 +26,11 @@ import { MergeContactsDto } from '../dto/merge-contacts.dto';
 import { UpdateContactDto } from '../dto/update-contact.dto';
 import { ContactsService } from '@app/modules/crm/contacts/services/contacts.service';
 
-// TODO: capability guard phase 5 — verify route map before enabling contacts guard
 @ApiTags('contacts')
 @ApiBearerAuth()
 @Controller('contacts')
-@UseGuards(BusinessRolesGuard)
+@UseGuards(BusinessRolesGuard, BusinessCapabilityGuard)
+@RequireModule('contacts')
 @StaffPermission('contacts.access', 'contacts.view_last_names')
 export class ContactsController {
   constructor(private readonly contactsService: ContactsService) {}

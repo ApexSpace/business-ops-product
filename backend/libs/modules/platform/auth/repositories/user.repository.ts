@@ -47,6 +47,57 @@ export class UserRepository {
     });
   }
 
+  setPasswordResetToken(
+    id: string,
+    tokenHash: string,
+    expiresAt: Date,
+  ): Promise<User> {
+    return this.prisma.user.update({
+      where: { id },
+      data: {
+        passwordResetTokenHash: tokenHash,
+        passwordResetExpiresAt: expiresAt,
+      },
+    });
+  }
+
+  findByPasswordResetTokenHash(tokenHash: string): Promise<User | null> {
+    return this.prisma.user.findFirst({
+      where: { passwordResetTokenHash: tokenHash },
+    });
+  }
+
+  clearPasswordResetToken(id: string): Promise<User> {
+    return this.prisma.user.update({
+      where: { id },
+      data: {
+        passwordResetTokenHash: null,
+        passwordResetExpiresAt: null,
+      },
+    });
+  }
+
+  updatePasswordAndClearResetToken(
+    id: string,
+    passwordHash: string,
+    expectedTokenHash: string,
+  ): Promise<number> {
+    return this.prisma.user
+      .updateMany({
+        where: {
+          id,
+          passwordResetTokenHash: expectedTokenHash,
+          passwordResetExpiresAt: { gt: new Date() },
+        },
+        data: {
+          passwordHash,
+          passwordResetTokenHash: null,
+          passwordResetExpiresAt: null,
+        },
+      })
+      .then((result) => result.count);
+  }
+
   setEmailVerifiedAt(id: string, verifiedAt: Date): Promise<User> {
     return this.prisma.user.update({
       where: { id },

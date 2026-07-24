@@ -33,13 +33,13 @@ import { AutomationWorkflowsService } from '../services/automation-workflows.ser
 @ApiBearerAuth()
 @Controller('automations/workflows')
 @UseGuards(BusinessRolesGuard, BusinessCapabilityGuard)
-@RequireModule('settings')
+@RequireModule('automations')
 @StaffPermission('automations.manage')
 export class AutomationWorkflowsController {
   constructor(private readonly workflowsService: AutomationWorkflowsService) {}
 
   @Get()
-  @RequireCapability('settings.automations.list')
+  @RequireCapability('automations.list')
   @BusinessRoles(
     BusinessMemberRole.OWNER,
     BusinessMemberRole.ADMIN,
@@ -53,7 +53,7 @@ export class AutomationWorkflowsController {
   }
 
   @Post()
-  @RequireCapability('settings.automations.create')
+  @RequireCapability('automations.create')
   @BusinessRoles(BusinessMemberRole.OWNER, BusinessMemberRole.ADMIN)
   create(
     @CurrentUser() user: RequestUser,
@@ -63,7 +63,7 @@ export class AutomationWorkflowsController {
   }
 
   @Get('runs')
-  @RequireCapability('settings.automations.list')
+  @RequireCapability('automations.list')
   @BusinessRoles(
     BusinessMemberRole.OWNER,
     BusinessMemberRole.ADMIN,
@@ -77,7 +77,7 @@ export class AutomationWorkflowsController {
   }
 
   @Get('runs/:runId')
-  @RequireCapability('settings.automations.list')
+  @RequireCapability('automations.list')
   @BusinessRoles(
     BusinessMemberRole.OWNER,
     BusinessMemberRole.ADMIN,
@@ -91,7 +91,7 @@ export class AutomationWorkflowsController {
   }
 
   @Get(':id')
-  @RequireCapability('settings.automations.list')
+  @RequireCapability('automations.list')
   @BusinessRoles(
     BusinessMemberRole.OWNER,
     BusinessMemberRole.ADMIN,
@@ -105,7 +105,7 @@ export class AutomationWorkflowsController {
   }
 
   @Patch(':id')
-  @RequireCapability('settings.automations.edit')
+  @RequireCapability('automations.edit')
   @BusinessRoles(BusinessMemberRole.OWNER, BusinessMemberRole.ADMIN)
   update(
     @CurrentUser() user: RequestUser,
@@ -116,7 +116,7 @@ export class AutomationWorkflowsController {
   }
 
   @Patch(':id/status')
-  @RequireCapability('settings.automations.edit')
+  @RequireCapability('automations.edit')
   @BusinessRoles(BusinessMemberRole.OWNER, BusinessMemberRole.ADMIN)
   updateStatus(
     @CurrentUser() user: RequestUser,
@@ -127,7 +127,7 @@ export class AutomationWorkflowsController {
   }
 
   @Delete(':id')
-  @RequireCapability('settings.automations.delete')
+  @RequireCapability('automations.delete')
   @BusinessRoles(BusinessMemberRole.OWNER, BusinessMemberRole.ADMIN)
   remove(
     @CurrentUser() user: RequestUser,

@@ -30,7 +30,7 @@ import { EstimatesService } from '@app/modules/finance/estimates/services/estima
 @ApiBearerAuth()
 @Controller('estimates')
 @UseGuards(BusinessRolesGuard, BusinessCapabilityGuard)
-@RequireModule('payments')
+@RequireModule('estimates')
 @StaffPermission('payments.access')
 export class EstimatesController {
   constructor(private readonly estimatesService: EstimatesService) {}

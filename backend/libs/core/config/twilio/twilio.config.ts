@@ -4,6 +4,15 @@ export interface TwilioConfig {
   authToken: string | null;
   platformFromNumber: string | null;
   webhookAuthToken: string | null;
+  /** Shared A2P Messaging Service SID — auto-assigned numbers join this sender pool. */
+  messagingServiceSid: string | null;
+  /** Fallback NANP area code when business phone has none (e.g. "512"). */
+  defaultAreaCode: string | null;
+  /**
+   * When false, skip buying US local numbers on business create / ensure.
+   * Falls back to TWILIO_PLATFORM_FROM_NUMBER only. Default true.
+   */
+  autoPurchaseNumbers: boolean;
 }
 
 export function resolveTwilioConfig(
@@ -15,6 +24,12 @@ export function resolveTwilioConfig(
     env.TWILIO_PLATFORM_FROM_NUMBER?.trim() ||
     env.TWILIO_FROM_NUMBER?.trim() ||
     null;
+  const messagingServiceSid =
+    env.TWILIO_SHARED_MESSAGING_SERVICE_SID?.trim() ||
+    env.TWILIO_MESSAGING_SERVICE_SID?.trim() ||
+    null;
+  const defaultAreaCode =
+    env.TWILIO_DEFAULT_AREA_CODE?.replace(/\D/g, '').slice(0, 3) || null;
 
   return {
     enabled:
@@ -24,6 +39,14 @@ export function resolveTwilioConfig(
     authToken,
     platformFromNumber,
     webhookAuthToken: authToken,
+    messagingServiceSid,
+    defaultAreaCode:
+      defaultAreaCode && /^[2-9]\d{2}$/.test(defaultAreaCode)
+        ? defaultAreaCode
+        : null,
+    // Default true unless explicitly set to "false" (local/test kill-switch).
+    autoPurchaseNumbers:
+      (env.TWILIO_AUTO_PURCHASE_NUMBERS ?? 'true').toLowerCase() !== 'false',
   };
 }
 

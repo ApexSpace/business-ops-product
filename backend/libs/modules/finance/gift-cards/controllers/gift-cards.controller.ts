@@ -48,7 +48,7 @@ const MEMBER_ROLES = [
 @ApiBearerAuth()
 @Controller('gift-cards')
 @UseGuards(BusinessRolesGuard, BusinessCapabilityGuard)
-@RequireModule('payments')
+@RequireModule('gift_cards')
 @StaffPermission('gift_cards.access')
 export class GiftCardsController {
   constructor(

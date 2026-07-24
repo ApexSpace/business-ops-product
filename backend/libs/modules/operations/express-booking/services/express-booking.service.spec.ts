@@ -43,9 +43,6 @@ describe('ExpressBookingService', () => {
       updateMany: jest.fn().mockResolvedValue({ count: 0 }),
     },
   };
-  const emailNotificationService = {
-    enqueueTransactionalEmail: jest.fn(),
-  };
   const appointmentNotificationService = {
     sendOwnerNotifications: jest.fn().mockResolvedValue(undefined),
     sendStaffNotifications: jest.fn().mockResolvedValue(undefined),
@@ -66,8 +63,8 @@ describe('ExpressBookingService', () => {
   const notificationChannelPreference = {
     getChannel: jest.fn().mockResolvedValue('EMAIL'),
   };
-  const platformSmsSendService = {
-    sendNotification: jest.fn(),
+  const notificationDispatch = {
+    dispatch: jest.fn().mockResolvedValue('email'),
   };
 
   const service = new ExpressBookingService(
@@ -80,14 +77,13 @@ describe('ExpressBookingService', () => {
     bookingLinkSale as never,
     stripeContactPaymentMethod as never,
     prisma as never,
-    emailNotificationService as never,
     appointmentNotificationService as never,
     businessRepository as never,
     contactRepository as never,
     auditService as never,
     configService as never,
     notificationChannelPreference as never,
-    platformSmsSendService as never,
+    notificationDispatch as never,
   );
 
   const actor = { id: 'user-1', businessId: 'biz-1' } as never;
@@ -213,18 +209,19 @@ describe('ExpressBookingService', () => {
       }),
       expect.any(Array),
     );
-    expect(emailNotificationService.enqueueTransactionalEmail).toHaveBeenCalledWith(
+    expect(notificationDispatch.dispatch).toHaveBeenCalledWith(
       expect.objectContaining({
-        emailType: 'appointment.express_complete',
+        notificationKey: 'appointment.express_complete',
         toEmail: 'alex@example.com',
+        missingRecipient: 'throw',
       }),
     );
-    expect(platformSmsSendService.sendNotification).not.toHaveBeenCalled();
     expect(result.status).toBe(AppointmentStatus.PENDING_COMPLETION);
   });
 
   it('creates a pending express appointment and texts the completion link', async () => {
     notificationChannelPreference.getChannel.mockResolvedValue('SMS');
+    notificationDispatch.dispatch.mockResolvedValue('sms');
     const smsAppointment = {
       id: 'appt-sms-1',
       businessId: 'biz-1',
@@ -283,14 +280,16 @@ describe('ExpressBookingService', () => {
       actor,
     );
 
-    expect(platformSmsSendService.sendNotification).toHaveBeenCalledWith(
+    expect(notificationDispatch.dispatch).toHaveBeenCalledWith(
       expect.objectContaining({
-        businessId: 'biz-1',
-        to: '+15551234567',
-        body: expect.stringContaining('/express/token-sms'),
+        notificationKey: 'appointment.express_complete',
+        toPhone: '+15551234567',
+        missingRecipient: 'throw',
+        variables: expect.objectContaining({
+          'express.complete_url': expect.stringContaining('/express/token-sms'),
+        }),
       }),
     );
-    expect(emailNotificationService.enqueueTransactionalEmail).not.toHaveBeenCalled();
     expect(result.id).toBe('appt-sms-1');
   });
 
@@ -312,8 +311,7 @@ describe('ExpressBookingService', () => {
     ).rejects.toThrow(
       'Provide either an existing contact or guest first name and phone',
     );
-    expect(platformSmsSendService.sendNotification).not.toHaveBeenCalled();
-    expect(emailNotificationService.enqueueTransactionalEmail).not.toHaveBeenCalled();
+    expect(notificationDispatch.dispatch).not.toHaveBeenCalled();
   });
 
   it('rejects create when both contact and guest are missing', async () => {
@@ -523,9 +521,9 @@ describe('ExpressBookingService', () => {
         expressBookingToken: null,
       }),
     );
-    expect(emailNotificationService.enqueueTransactionalEmail).toHaveBeenCalledWith(
+    expect(notificationDispatch.dispatch).toHaveBeenCalledWith(
       expect.objectContaining({
-        emailType: 'appointment.express_expired',
+        notificationKey: 'appointment.express_expired',
         toEmail: 'alex@example.com',
       }),
     );

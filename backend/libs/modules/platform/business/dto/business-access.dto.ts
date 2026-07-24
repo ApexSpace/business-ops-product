@@ -104,6 +104,11 @@ export class BusinessAccessSubscriptionDto {
   @ApiPropertyOptional()
   canceledAt?: Date | null;
 
+  @ApiPropertyOptional({
+    description: 'Mirrored from Stripe cancel_at_period_end',
+  })
+  cancelAtPeriodEnd?: boolean;
+
   @ApiProperty()
   createdAt!: Date;
 
@@ -294,6 +299,15 @@ export class BusinessAccessCreateFieldsDto {
   @IsOptional()
   @IsUUID()
   planTierId?: string;
+
+  @ApiPropertyOptional({
+    type: [String],
+    description: 'Independent add-on IDs to purchase at create time',
+  })
+  @IsOptional()
+  @IsArray()
+  @IsUUID('4', { each: true })
+  purchaseAddonIds?: string[];
 
   @ApiPropertyOptional({ enum: SubscriptionStatus })
   @IsOptional()

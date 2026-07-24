@@ -1,4 +1,5 @@
 import { Injectable, Scope } from '@nestjs/common';
+import { normalizeFeatureKey } from '@app/modules/platform/capabilities/registries/capability-feature.registry';
 import { getFeatureKeysForModule } from '@app/modules/platform/capabilities/registries/capability-module.registry';
 import { BusinessEffectiveCapabilitiesService } from './business-effective-capabilities.service';
 
@@ -16,7 +17,7 @@ export class BusinessCapabilityCheckService {
     if (moduleFeatures.length === 0) {
       return keys.has(moduleKey);
     }
-    return moduleFeatures.some((key) => keys.has(key));
+    return moduleFeatures.some((key) => keys.has(normalizeFeatureKey(key)));
   }
 
   async hasCapability(
@@ -24,7 +25,7 @@ export class BusinessCapabilityCheckService {
     capabilityKey: string,
   ): Promise<boolean> {
     const keys = await this.getActiveCapabilityKeys(businessId);
-    return keys.has(capabilityKey);
+    return keys.has(normalizeFeatureKey(capabilityKey));
   }
 
   private async getActiveCapabilityKeys(

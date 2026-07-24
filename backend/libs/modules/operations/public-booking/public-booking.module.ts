@@ -5,7 +5,7 @@ import { ServicesModule } from '@app/modules/crm/services/services.module';
 import { MembershipModule } from '@app/modules/platform/membership/membership.module';
 import { CalendarsModule } from '@app/modules/operations/calendars/calendars.module';
 import { AppointmentsModule } from '@app/modules/operations/appointments/appointments.module';
-import { EmailModule } from '@app/modules/communications/email/email.module';
+import { NotificationsModule } from '@app/modules/communications/notifications/notifications.module';
 import { JobEnqueueModule } from '@app/core/jobs/job-enqueue.module';
 import { OnlineBookingSettingsModule } from '@app/modules/operations/online-booking-settings/online-booking-settings.module';
 import { IntegrationsModule } from '@app/modules/integrations/integrations/integrations.module';
@@ -28,7 +28,7 @@ import { WaitlistModule } from '@app/modules/operations/waitlist/waitlist.module
     ContactsModule,
     ServicesModule,
     MembershipModule,
-    EmailModule,
+    NotificationsModule,
     JobEnqueueModule,
     OnlineBookingSettingsModule,
     IntegrationsModule,

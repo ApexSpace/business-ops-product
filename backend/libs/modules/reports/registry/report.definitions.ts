@@ -894,7 +894,7 @@ export const REPORT_DEFINITIONS: ReportDefinition[] = [
     title: 'Form Submissions',
     description: 'Form submission counts by form.',
     requiredModuleKey: 'settings',
-    requiredCapabilityKey: 'settings.forms.list',
+    requiredCapabilityKey: 'forms.list',
   }),
   def({
     key: 'booking_conversion',
@@ -916,7 +916,7 @@ export const REPORT_DEFINITIONS: ReportDefinition[] = [
     title: 'Automation Runs',
     description: 'Automation run success and failure counts by workflow.',
     requiredModuleKey: 'settings',
-    requiredCapabilityKey: 'settings.automations.list',
+    requiredCapabilityKey: 'automations.list',
   }),
   def({
     key: 'product_low_stock',

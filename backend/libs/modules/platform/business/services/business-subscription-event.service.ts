@@ -61,6 +61,8 @@ const SUBSCRIPTION_STATUS_LABELS: Record<SubscriptionStatus, string> = {
   EXPIRED: 'Expired',
   INTERNAL: 'Internal',
   PAST_DUE: 'Past due',
+  UNPAID: 'Unpaid',
+  INCOMPLETE: 'Incomplete',
 };
 
 @Injectable()

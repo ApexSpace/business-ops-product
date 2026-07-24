@@ -39,7 +39,7 @@ import { CheckoutsService } from '../services/checkouts.service';
 @ApiBearerAuth()
 @Controller('checkouts')
 @UseGuards(BusinessRolesGuard, BusinessCapabilityGuard)
-@RequireModule('payments')
+@RequireModule('sales')
 @StaffPermission(
   'sales.access',
   'sales.view_own',

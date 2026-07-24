@@ -33,7 +33,7 @@ export interface NotificationChannelPickerProps {
 
 /**
  * Shared EMAIL/SMS picker for a notification key.
- * Reusable on Express Booking settings and a future Notifications tab.
+ * Used on the Notifications settings tab and anywhere channel is configured inline.
  */
 export function NotificationChannelPicker({
   notificationKey: _notificationKey,

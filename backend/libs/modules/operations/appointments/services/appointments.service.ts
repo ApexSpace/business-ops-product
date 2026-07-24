@@ -974,10 +974,10 @@ export class AppointmentsService {
       );
     }
 
-    if (!existing.contact?.email?.trim()) {
+    if (!existing.contact?.email?.trim() && !existing.contact?.phoneNumber?.trim()) {
       throw new AppException(
         ErrorCode.BAD_REQUEST,
-        'Client has no email address on file',
+        'Client has no email or phone number on file',
         HttpStatus.BAD_REQUEST,
       );
     }

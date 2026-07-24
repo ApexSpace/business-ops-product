@@ -21,6 +21,7 @@ import { isPlatformEmailConversation } from '@app/modules/communications/email/u
 import { PlatformEmailProvisioningService } from '@app/modules/integrations/integrations/email/services/platform-email-provisioning.service';
 import { BusinessIntegrationRepository } from '@app/modules/integrations/integrations/repositories/business-integration.repository';
 import { AuditService } from '@app/modules/platform/audit/services/audit.service';
+import { BusinessEffectiveCapabilitiesService } from '@app/modules/platform/business/services/business-effective-capabilities.service';
 import { SendMessageDto } from '../dto/send-message.dto';
 import { ListMessagesQueryDto } from '../dto/list-messages-query.dto';
 import { ConversationMessageResponseDto } from '../dto/conversation-response.dto';
@@ -58,6 +59,7 @@ export class ConversationMessagesService {
     private readonly idempotencyService: IdempotencyService,
     private readonly realtime: ConversationRealtimeService,
     private readonly auditService: AuditService,
+    private readonly effectiveCapabilities: BusinessEffectiveCapabilitiesService,
   ) {}
 
   async list(
@@ -207,6 +209,10 @@ export class ConversationMessagesService {
       businessId,
       conversation,
     );
+
+    if (conversation.channel === ConversationChannel.SMS) {
+      await this.assertSmsTwoWayEntitled(businessId);
+    }
 
     const hasTemplate = this.hasWhatsAppTemplateMetadata(message.metadata);
     const hasAttachments =
@@ -362,8 +368,11 @@ export class ConversationMessagesService {
     const hasTemplate = Boolean(dto.template?.name?.trim());
     const hasFreeForm = Boolean(text) || hasAttachments;
 
-    if (conversation.channel === ConversationChannel.SMS && text) {
-      assertSmsBodyWithinSegmentLimit(text);
+    if (conversation.channel === ConversationChannel.SMS) {
+      await this.assertSmsTwoWayEntitled(businessId);
+      if (text) {
+        assertSmsBodyWithinSegmentLimit(text);
+      }
     }
 
     await this.assertWhatsAppSessionAllowsSend(
@@ -624,6 +633,17 @@ export class ConversationMessagesService {
     }
 
     return { isWebchat, isPlatformEmail };
+  }
+
+  private async assertSmsTwoWayEntitled(businessId: string): Promise<void> {
+    const keys = await this.effectiveCapabilities.resolveFeatureKeys(businessId);
+    if (!keys.has('sms.two_way')) {
+      throw new AppException(
+        ErrorCode.FEATURE_NOT_AVAILABLE,
+        'Two-way SMS is not included in your current package.',
+        HttpStatus.FORBIDDEN,
+      );
+    }
   }
 
   private async assertWhatsAppSessionAllowsSend(

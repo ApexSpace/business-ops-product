@@ -52,7 +52,7 @@ export const SUBSCRIPTION_TAB_GROUP_LABELS: Record<
   SubscriptionActionGroupId,
   string
 > = {
-  plan: "Plan",
+  plan: "Tier",
   payment: "Payment",
   trial: "Trial",
   access: "Access",
@@ -83,7 +83,7 @@ export const ACCESS_TAB_CATEGORY_LABELS: Record<string, string> = {
   billing: "Payment",
   trial: "Trial",
   access: "Access",
-  package: "Plan",
+  package: "Tier",
   snapshot: "Experience",
   danger: "Danger Zone",
 };
@@ -106,7 +106,7 @@ export const ACTION_KEY_LABELS: Record<SubscriptionActionKey, string> = {
   EXPIRE_TRIAL: "End Trial",
   SUSPEND_BUSINESS: "Pause Access",
   REACTIVATE_BUSINESS: "Restore Access",
-  CHANGE_PACKAGE: "Change Plan",
+  CHANGE_PACKAGE: "Change Tier",
   CHANGE_SNAPSHOT: "Change Business Experience",
   SYNC_CAPABILITIES: "Refresh Included Features",
   MANUAL_ADJUSTMENT: "Advanced Adjustment",
@@ -188,16 +188,16 @@ export function getSubscriptionActionLabel(
   context: SubscriptionActionLabelContext = {},
 ): string {
   if (key === "CHANGE_PACKAGE") {
-    if (!context.hasPlanTier) return "Assign Plan";
-    if (context.subscriptionStatus === "TRIALING") return "Change Plan";
+    if (!context.hasPlanTier) return "Assign Tier";
+    if (context.subscriptionStatus === "TRIALING") return "Change Tier";
     if (context.businessStatus === "SUSPENDED") return "Review Subscription";
     if (
       context.planPriceComparison === "upgrade"
     ) {
-      return "Upgrade Plan";
+      return "Upgrade Tier";
     }
     if (context.planPriceComparison === "downgrade") {
-      return "Downgrade Plan";
+      return "Downgrade Tier";
     }
     return ACTION_KEY_LABELS.CHANGE_PACKAGE;
   }
@@ -242,8 +242,8 @@ export function resolveChangePlanLabel(
   ) {
     return ACTION_KEY_LABELS.CHANGE_PACKAGE;
   }
-  if (newAmount > currentAmount) return "Upgrade Plan";
-  if (newAmount < currentAmount) return "Downgrade Plan";
+  if (newAmount > currentAmount) return "Upgrade Tier";
+  if (newAmount < currentAmount) return "Downgrade Tier";
   return ACTION_KEY_LABELS.CHANGE_PACKAGE;
 }
 
@@ -306,13 +306,13 @@ export function getActionConfirmationCopy(
     SYNC_CAPABILITIES: {
       title: "Refresh included features?",
       description:
-        "This syncs plan features with the current tier. Custom or manual add-ons are preserved.",
+        "This syncs included features with the current tier. Custom or manual add-ons are preserved.",
       confirmLabel: "Refresh Included Features",
     },
     CHANGE_PACKAGE: {
-      title: "Change plan?",
+      title: "Change tier?",
       description:
-        "This updates the customer's plan and billing right away. Review the impact preview before confirming.",
+        "This updates the customer's tier and billing right away. Review the impact preview before confirming.",
       confirmLabel: label,
     },
     CHANGE_SNAPSHOT: {

@@ -13,11 +13,12 @@ import { ErrorCode } from '@app/common/exceptions/error-code.enum';
 import { getPaginationParams } from '@app/common/utils/pagination.util';
 import { AuditService } from '@app/modules/platform/audit/services/audit.service';
 import { ContactRepository } from '@app/modules/crm/contacts/repositories/contact.repository';
+import { formatPhone } from '@app/modules/crm/contacts/utils/contact-profile.util';
 import { ServiceRepository } from '@app/modules/crm/services/repositories/service.repository';
 import { BusinessMembershipRepository } from '@app/modules/platform/membership/repositories/business-membership.repository';
 import { hasStaffPermission } from '@app/modules/platform/membership/permissions/staff-permission.registry';
 import { OnlineBookingSettingsRepository } from '@app/modules/operations/online-booking-settings/repositories/online-booking-settings.repository';
-import { EmailNotificationService } from '@app/modules/communications/email/services/email-notification.service';
+import { NotificationDispatchService } from '@app/modules/communications/notifications/services/notification-dispatch.service';
 import { AppointmentsService } from '@app/modules/operations/appointments/services/appointments.service';
 import { PublicBookingContactService } from '@app/modules/operations/public-booking/services/public-booking-contact.service';
 import {
@@ -48,7 +49,7 @@ export class WaitlistService {
     private readonly serviceRepository: ServiceRepository,
     private readonly membershipRepository: BusinessMembershipRepository,
     private readonly settingsRepository: OnlineBookingSettingsRepository,
-    private readonly emailNotificationService: EmailNotificationService,
+    private readonly notificationDispatch: NotificationDispatchService,
     @Inject(forwardRef(() => PublicBookingContactService))
     private readonly publicBookingContactService: PublicBookingContactService,
     @Inject(forwardRef(() => AppointmentsService))
@@ -525,42 +526,43 @@ export class WaitlistService {
       entry.contact.id,
     );
 
-    if (contact?.email?.trim()) {
-      void this.emailNotificationService
-        .enqueueTransactionalEmail({
-          businessId,
-          emailType: 'booking.waitlist_joined',
-          toEmail: contact.email,
-          entityType: 'BookingWaitlistEntry',
-          entityId: entry.id,
-          fromName: businessName,
-          idempotencyKey: `waitlist-joined-client-${entry.id}`,
-          variables: {
-            'business.name': businessName,
-            'contact.name': customerName,
-            'waitlist.service_name': entry.service.name,
-            'waitlist.preferred_date': preferredDate,
-            'waitlist.staff_name': entry.staff?.name ?? 'Anyone',
-          },
-        })
-        .catch(() => undefined);
-    }
+    void this.notificationDispatch
+      .dispatch({
+        businessId,
+        notificationKey: 'booking.waitlist_joined',
+        toEmail: contact?.email?.trim(),
+        toPhone: formatPhone(contact?.phoneCountryCode, contact?.phoneNumber),
+        entityType: 'BookingWaitlistEntry',
+        entityId: entry.id,
+        fromName: businessName,
+        idempotencyKey: `waitlist-joined-client-${entry.id}`,
+        missingRecipient: 'skip',
+        variables: {
+          'business.name': businessName,
+          'contact.name': customerName,
+          'waitlist.service_name': entry.service.name,
+          'waitlist.preferred_date': preferredDate,
+          'waitlist.staff_name': entry.staff?.name ?? 'Anyone',
+        },
+      })
+      .catch(() => undefined);
 
     const members = await this.membershipRepository.findOwnersAndAdmins(
       businessId,
     );
     for (const member of members) {
-      if (!member.user.email) continue;
-      void this.emailNotificationService
-        .enqueueTransactionalEmail({
+      void this.notificationDispatch
+        .dispatch({
           businessId,
-          emailType: 'booking.waitlist_staff_notification',
+          notificationKey: 'booking.waitlist_staff_notification',
           toEmail: member.user.email,
+          toPhone: null,
           userId: member.userId,
           entityType: 'BookingWaitlistEntry',
           entityId: entry.id,
           fromName: businessName,
           idempotencyKey: `waitlist-joined-staff-${entry.id}-${member.userId}`,
+          missingRecipient: 'skip',
           variables: {
             'business.name': businessName,
             'contact.name': customerName,

@@ -14,6 +14,7 @@ import {
   parsePaymentTermsDays,
 } from '@app/modules/platform/business/utils/financial-settings.util';
 import { ContactRepository } from '@app/modules/crm/contacts/repositories/contact.repository';
+import { formatPhone } from '@app/modules/crm/contacts/utils/contact-profile.util';
 import { EstimateRepository } from '@app/modules/finance/estimates/repositories/estimate.repository';
 import { ServiceRepository } from '@app/modules/crm/services/repositories/service.repository';
 import { WorkItemRepository } from '@app/modules/operations/work-items/repositories/work-item.repository';
@@ -33,7 +34,7 @@ import {
   calculateInvoiceTotals,
   recalculateBalanceDue,
 } from '../utils/invoice-calculations.util';
-import { EmailNotificationService } from '@app/modules/communications/email/services/email-notification.service';
+import { NotificationDispatchService } from '@app/modules/communications/notifications/services/notification-dispatch.service';
 import {
   formatContactName,
   formatMoney,
@@ -55,7 +56,7 @@ export class InvoicesService {
     private readonly serviceRepository: ServiceRepository,
     private readonly auditService: AuditService,
     private readonly financialSettingsService: FinancialSettingsService,
-    private readonly emailNotificationService: EmailNotificationService,
+    private readonly notificationDispatch: NotificationDispatchService,
     private readonly businessRepository: BusinessRepository,
     private readonly configService: ConfigService<RootConfig, true>,
   ) {}
@@ -417,7 +418,11 @@ export class InvoicesService {
     invoice: NonNullable<Awaited<ReturnType<InvoiceRepository['findById']>>>,
   ): Promise<void> {
     const contactEmail = invoice.contact?.email?.trim();
-    if (!contactEmail) {
+    const contactPhone = formatPhone(
+      invoice.contact?.phoneCountryCode,
+      invoice.contact?.phoneNumber,
+    );
+    if (!contactEmail && !contactPhone) {
       return;
     }
 
@@ -427,14 +432,16 @@ export class InvoicesService {
       await this.financialSettingsService.getSettingsForBusiness(businessId);
     const currency = financialSettings.taxesAndCurrency.currencyCode;
 
-    await this.emailNotificationService.enqueueTransactionalEmail({
+    await this.notificationDispatch.dispatch({
       businessId,
-      emailType: 'invoice.sent',
+      notificationKey: 'invoice.sent',
       toEmail: contactEmail,
+      toPhone: contactPhone,
       contactId: invoice.contactId,
       entityType: 'Invoice',
       entityId: invoice.id,
       idempotencyKey: `invoice-sent-${invoice.id}`,
+      missingRecipient: 'skip',
       variables: {
         'business.name': business?.name ?? 'Business',
         'contact.name': formatContactName(invoice.contact),

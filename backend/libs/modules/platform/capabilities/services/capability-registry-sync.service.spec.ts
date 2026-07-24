@@ -22,13 +22,24 @@ describe('CapabilityRegistrySyncService', () => {
       }),
     };
     const auditService = { log: jest.fn() };
+    const featureKeyMigration = {
+      migrate: jest.fn().mockResolvedValue({
+        dryRun: false,
+        registryFeaturesUpserted: 0,
+        assignmentsRewritten: 0,
+        assignmentsSkippedConflict: 0,
+        grantsRewritten: 0,
+        moduleAssignmentsAdded: 0,
+      }),
+    };
 
     const service = new CapabilityRegistrySyncService(
       repository as never,
       auditService as never,
+      featureKeyMigration as never,
     );
 
-    return { service, repository, auditService };
+    return { service, repository, auditService, featureKeyMigration };
   }
 
   it('dry run does not write to database', async () => {

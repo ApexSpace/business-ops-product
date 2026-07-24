@@ -17,6 +17,8 @@ import { CurrentUser } from '@app/common/decorators/current-user.decorator';
 import type { RequestUser } from '@app/common/decorators/current-user.decorator';
 import { BusinessRoles } from '@app/common/decorators/business-roles.decorator';
 import { StaffPermission } from '@app/common/decorators/staff-permission.decorator';
+import { RequireModule } from '@app/common/decorators/require-module.decorator';
+import { BusinessCapabilityGuard } from '@app/common/guards/business-capability.guard';
 import { BusinessRolesGuard } from '@app/common/guards/business-roles.guard';
 import { AssignLeadDto } from '../dto/assign-lead.dto';
 import { CreateLeadFromContactDto } from '../dto/create-lead-from-contact.dto';
@@ -28,7 +30,8 @@ import { LeadsService } from '@app/modules/crm/leads/services/leads.service';
 @ApiTags('leads')
 @ApiBearerAuth()
 @Controller('leads')
-@UseGuards(BusinessRolesGuard)
+@UseGuards(BusinessRolesGuard, BusinessCapabilityGuard)
+@RequireModule('leads')
 @StaffPermission('pipelines.access')
 export class LeadsController {
   constructor(private readonly leadsService: LeadsService) {}

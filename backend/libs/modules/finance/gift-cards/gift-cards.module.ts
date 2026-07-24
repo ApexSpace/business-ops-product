@@ -2,7 +2,7 @@ import { Module, forwardRef } from '@nestjs/common';
 import { AuditModule } from '@app/modules/platform/audit/audit.module';
 import { BusinessModule } from '@app/modules/platform/business/business.module';
 import { ContactsModule } from '@app/modules/crm/contacts/contacts.module';
-import { EmailModule } from '@app/modules/communications/email/email.module';
+import { NotificationsModule } from '@app/modules/communications/notifications/notifications.module';
 import { IntegrationsModule } from '@app/modules/integrations/integrations/integrations.module';
 import { StorageModule } from '@app/modules/storage/storage.module';
 import { GiftCardsController } from './controllers/gift-cards.controller';
@@ -24,7 +24,7 @@ import { GiftCardsService } from './services/gift-cards.service';
     AuditModule,
     forwardRef(() => BusinessModule),
     forwardRef(() => ContactsModule),
-    forwardRef(() => EmailModule),
+    forwardRef(() => NotificationsModule),
     forwardRef(() => IntegrationsModule),
     StorageModule,
   ],

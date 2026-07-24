@@ -24,8 +24,8 @@ export function canChangePlanBothWays(position: TierPosition): boolean {
 }
 
 export function getPlanChangeButtonLabel(position: TierPosition): string {
-  if (position === "middle") return "Upgrade / Downgrade plan";
-  if (position === "lowest") return "Upgrade plan";
-  if (position === "highest") return "Downgrade plan";
-  return "Change plan";
+  if (position === "middle") return "Upgrade / Downgrade tier";
+  if (position === "lowest") return "Upgrade tier";
+  if (position === "highest") return "Downgrade tier";
+  return "Change tier";
 }

@@ -16,6 +16,8 @@ import { CurrentUser } from '@app/common/decorators/current-user.decorator';
 import type { RequestUser } from '@app/common/decorators/current-user.decorator';
 import { BusinessRoles } from '@app/common/decorators/business-roles.decorator';
 import { StaffPermission } from '@app/common/decorators/staff-permission.decorator';
+import { RequireModule } from '@app/common/decorators/require-module.decorator';
+import { BusinessCapabilityGuard } from '@app/common/guards/business-capability.guard';
 import { BusinessRolesGuard } from '@app/common/guards/business-roles.guard';
 import { AdjustContactWalletDto } from '../dto/adjust-contact-wallet.dto';
 import {
@@ -40,7 +42,8 @@ const MEMBER_ROLES = [
 @ApiTags('contacts')
 @ApiBearerAuth()
 @Controller('contacts')
-@UseGuards(BusinessRolesGuard)
+@UseGuards(BusinessRolesGuard, BusinessCapabilityGuard)
+@RequireModule('contacts')
 @StaffPermission('contacts.access')
 export class ContactWorkspaceController {
   constructor(

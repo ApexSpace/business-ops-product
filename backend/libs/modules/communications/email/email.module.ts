@@ -52,6 +52,8 @@ import { SendEmailProcessor } from './workers/processors/send-email.processor';
   ],
   exports: [
     EmailNotificationService,
+    EmailPreferenceService,
+    EmailTemplateRendererService,
     ResendProviderService,
     SendEmailProcessor,
     ResendWebhookProcessor,

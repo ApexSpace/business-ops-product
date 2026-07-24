@@ -23,6 +23,7 @@ import { getRegistryFeature } from '../registries/capability-feature.registry';
 import { CapabilityRepository } from '../repositories/capability.repository';
 import { CapabilityValidationService } from './capability-validation.service';
 import { CapabilitiesService } from './capabilities.service';
+import { CapabilityEntitlementImpactService } from './capability-entitlement-impact.service';
 
 @Injectable()
 export class CapabilityFeaturesService {
@@ -31,6 +32,7 @@ export class CapabilityFeaturesService {
     private readonly capabilitiesService: CapabilitiesService,
     private readonly validation: CapabilityValidationService,
     private readonly auditService: AuditService,
+    private readonly entitlementImpact: CapabilityEntitlementImpactService,
   ) {}
 
   async listAssigned(
@@ -94,6 +96,7 @@ export class CapabilityFeaturesService {
         entityId: capabilityId,
         metadata: { featureKeys: assigned },
       });
+      await this.entitlementImpact.onFeaturesAdded(capabilityId);
     }
 
     return { assigned, skipped };
@@ -118,6 +121,11 @@ export class CapabilityFeaturesService {
     }
 
     await this.repository.unassignFeature(capabilityId, featureKey);
+    await this.entitlementImpact.onFeaturesRemoved(
+      capabilityId,
+      [featureKey],
+      actor,
+    );
     await this.auditService.log({
       actorUserId: actor.id,
       action: 'platform.capability.features.unassigned',

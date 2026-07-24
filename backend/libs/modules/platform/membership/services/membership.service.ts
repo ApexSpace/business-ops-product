@@ -45,9 +45,10 @@ import {
   MemberResponseDto,
 } from '../dto/member-response.dto';
 import { BusinessMembershipRepository } from '../repositories/business-membership.repository';
-import { EmailNotificationService } from '@app/modules/communications/email/services/email-notification.service';
+import { NotificationDispatchService } from '@app/modules/communications/notifications/services/notification-dispatch.service';
 import { formatUserName } from '@app/modules/communications/email/utils/email-variables.util';
 import { buildPublicStaffBookingUrl } from '@app/modules/operations/public-booking/utils/public-booking-url.util';
+import { EntitlementService } from '@app/modules/platform/business/services/entitlement.service';
 
 @Injectable()
 export class MembershipService {
@@ -60,7 +61,8 @@ export class MembershipService {
     private readonly auditService: AuditService,
     private readonly configService: ConfigService<RootConfig, true>,
     private readonly prisma: PrismaService,
-    private readonly emailNotificationService: EmailNotificationService,
+    private readonly notificationDispatch: NotificationDispatchService,
+    private readonly entitlementService: EntitlementService,
   ) {}
 
   async listForBusiness(
@@ -269,13 +271,31 @@ export class MembershipService {
     businessId: string,
     dto: InviteMemberDto,
     actor: RequestUser,
+    options?: { allowOwnerRole?: boolean },
   ): Promise<InviteMemberResponseDto> {
-    if (dto.role === BusinessMemberRole.OWNER) {
+    const invitingAsOwner =
+      dto.role === BusinessMemberRole.OWNER && options?.allowOwnerRole === true;
+
+    if (dto.role === BusinessMemberRole.OWNER && !invitingAsOwner) {
       throw new AppException(
         ErrorCode.BAD_REQUEST,
         'Cannot invite as OWNER',
         HttpStatus.BAD_REQUEST,
       );
+    }
+
+    if (invitingAsOwner) {
+      const ownerCount =
+        await this.membershipRepository.countOwners(businessId);
+      if (ownerCount > 0) {
+        throw new AppException(
+          ErrorCode.OWNER_ALREADY_EXISTS,
+          'Business already has an owner',
+          HttpStatus.CONFLICT,
+        );
+      }
+    } else {
+      await this.entitlementService.assertStaffLimit(businessId);
     }
 
     const business = await this.businessRepository.findById(businessId);
@@ -354,15 +374,17 @@ export class MembershipService {
     const withUser = await this.membershipRepository.findById(membership.id);
     const inviter = await this.userRepository.findById(actor.id);
 
-    void this.emailNotificationService
-      .enqueueTransactionalEmail({
+    void this.notificationDispatch
+      .dispatch({
         businessId,
-        emailType: 'membership.invite',
+        notificationKey: 'membership.invite',
         toEmail: dto.email,
+        toPhone: null,
         userId: user.id,
         entityType: 'BusinessMembership',
         entityId: membership.id,
         idempotencyKey: `membership-invite-${membership.id}`,
+        missingRecipient: 'skip',
         variables: {
           'invitee.email': dto.email,
           'inviter.name': formatUserName(inviter ?? { email: actor.email }),
@@ -436,15 +458,17 @@ export class MembershipService {
     const inviteLink = `${frontendUrl}/accept-invite?token=${inviteToken}`;
     const inviter = await this.userRepository.findById(actor.id);
 
-    void this.emailNotificationService
-      .enqueueTransactionalEmail({
+    void this.notificationDispatch
+      .dispatch({
         businessId,
-        emailType: 'membership.invite',
+        notificationKey: 'membership.invite',
         toEmail: membership.user.email,
+        toPhone: null,
         userId: membership.userId,
         entityType: 'BusinessMembership',
         entityId: membership.id,
         idempotencyKey: `membership-invite-resend-${membership.id}-${Date.now()}`,
+        missingRecipient: 'skip',
         variables: {
           'invitee.email': membership.user.email,
           'inviter.name': formatUserName(inviter ?? { email: actor.email }),
@@ -488,6 +512,8 @@ export class MembershipService {
         HttpStatus.BAD_REQUEST,
       );
     }
+
+    await this.entitlementService.assertStaffLimit(businessId);
 
     const business = await this.businessRepository.findById(businessId);
     if (!business) {
@@ -593,15 +619,17 @@ export class MembershipService {
       const inviteLink = `${frontendUrl}/accept-invite?token=${inviteToken}`;
       const inviter = await this.userRepository.findById(actor.id);
 
-      void this.emailNotificationService
-        .enqueueTransactionalEmail({
+      void this.notificationDispatch
+        .dispatch({
           businessId,
-          emailType: 'membership.invite',
+          notificationKey: 'membership.invite',
           toEmail: email,
+          toPhone: null,
           userId: user.id,
           entityType: 'BusinessMembership',
           entityId: membership.id,
           idempotencyKey: `membership-invite-${membership.id}-${Date.now()}`,
+          missingRecipient: 'skip',
           variables: {
             'invitee.email': email,
             'inviter.name': formatUserName(inviter ?? { email: actor.email }),

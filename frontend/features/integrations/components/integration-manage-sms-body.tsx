@@ -220,19 +220,31 @@ export function IntegrationManageSmsBody({
 
       <section className="space-y-3 rounded-lg border border-dashed p-4">
         <div>
-          <p className="font-medium">Outbound notification SMS (optional)</p>
+          <p className="font-medium">Outbound notification SMS</p>
           <p className="text-muted-foreground text-sm">
-            Express Booking and other notifications use the CodeSol platform
-            Twilio number from server config. You do not need a business
-            integration for those sends. Use this only if you want the
-            integration marked active for platform SMS in settings.
+            US businesses are auto-assigned a local Codesol Twilio number (same
+            area code as your business phone when available) for one-way
+            appointment and automation texts. Two-way inbox requires connecting
+            your own Twilio number above (or a future SMS Chat add-on).
           </p>
         </div>
         {platform?.fromNumber ? (
-          <p className="text-sm">
-            Platform sender:{" "}
-            <span className="font-mono">{platform.fromNumber}</span>
-          </p>
+          <div className="space-y-1 text-sm">
+            <p>
+              Notification sender:{" "}
+              <span className="font-mono">{platform.fromNumber}</span>
+            </p>
+            {platform.provisioned ? (
+              <p className="text-muted-foreground text-xs">
+                Auto-assigned Codesol number (shared A2P pool)
+                {platform.a2pPool ? ` · ${platform.a2pPool}` : ""}
+              </p>
+            ) : (
+              <p className="text-muted-foreground text-xs">
+                Using shared platform fallback number
+              </p>
+            )}
+          </div>
         ) : null}
         <Button
           type="button"
@@ -242,8 +254,8 @@ export function IntegrationManageSmsBody({
           onClick={() => activateMutation.mutate()}
         >
           {platform?.fromNumber
-            ? "Refresh platform SMS record"
-            : "Register platform SMS for this business"}
+            ? "Refresh notification SMS number"
+            : "Assign notification SMS number"}
         </Button>
       </section>
     </div>

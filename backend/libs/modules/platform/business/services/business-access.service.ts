@@ -122,6 +122,7 @@ export class BusinessAccessService {
             currentPeriodEnd: subscription.currentPeriodEnd,
             amount: subscription.amount?.toString() ?? null,
             currency: subscription.currency,
+            cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
           }
         : null,
       effectiveCapabilities: effectiveCapabilities.map((cap) => ({
@@ -737,6 +738,7 @@ export class BusinessAccessService {
       nextBillingLabel: period.nextBillingLabel,
       notes: sub.notes,
       canceledAt: sub.canceledAt,
+      cancelAtPeriodEnd: sub.cancelAtPeriodEnd,
       createdAt: sub.createdAt,
       updatedAt: sub.updatedAt,
     };

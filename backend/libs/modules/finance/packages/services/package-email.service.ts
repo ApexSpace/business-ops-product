@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { EmailNotificationService } from '@app/modules/communications/email/services/email-notification.service';
+import { NotificationDispatchService } from '@app/modules/communications/notifications/services/notification-dispatch.service';
 import type { ClientPackageDetailResponseDto } from '../dto/package.dto';
 
 type BusinessEmailContext = {
@@ -12,7 +12,9 @@ type BusinessEmailContext = {
 export class PackageEmailService {
   private readonly logger = new Logger(PackageEmailService.name);
 
-  constructor(private readonly emailNotification: EmailNotificationService) {}
+  constructor(
+    private readonly notificationDispatch: NotificationDispatchService,
+  ) {}
 
   async sendPurchaseConfirmation(params: {
     business: BusinessEmailContext;
@@ -20,11 +22,13 @@ export class PackageEmailService {
     purchaserEmail: string;
     purchaserName: string;
     amountPaid: string;
+    purchaserPhone?: string | null;
   }): Promise<void> {
     const email = params.purchaserEmail.trim();
-    if (!email) {
+    const phone = params.purchaserPhone?.trim() || null;
+    if (!email && !phone) {
       this.logger.warn(
-        `Client package ${params.clientPackage.id} has no purchaser email`,
+        `Client package ${params.clientPackage.id} has no purchaser email or phone`,
       );
       return;
     }
@@ -38,12 +42,14 @@ export class PackageEmailService {
       params.clientPackage.expirationDate,
     );
 
-    await this.emailNotification.enqueueTransactionalEmail({
+    await this.notificationDispatch.dispatch({
       businessId: params.business.id,
-      emailType: 'package.purchase_confirmation',
-      toEmail: email,
+      notificationKey: 'package.purchase_confirmation',
+      toEmail: email || null,
+      toPhone: phone,
       fromName: businessName,
       contactId: params.clientPackage.contact.id,
+      missingRecipient: 'skip',
       variables: {
         'business.name': businessName,
         'contact.name': purchaserName,
@@ -55,7 +61,7 @@ export class PackageEmailService {
       },
       entityType: 'ClientPackage',
       entityId: params.clientPackage.id,
-      idempotencyKey: `package-purchase-confirm-${params.clientPackage.id}-${email}`,
+      idempotencyKey: `package-purchase-confirm-${params.clientPackage.id}-${email || phone}`,
       templateOverride: {
         subject: `Your package purchase from ${businessName}`,
         htmlBody: `
@@ -88,11 +94,13 @@ export class PackageEmailService {
     const purchaserName =
       params.purchaserName.trim() || params.clientPackage.contact.name;
 
-    await this.emailNotification.enqueueTransactionalEmail({
+    await this.notificationDispatch.dispatch({
       businessId: params.business.id,
-      emailType: 'package.internal_notification',
+      notificationKey: 'package.internal_notification',
       toEmail: email,
+      toPhone: null,
       fromName: businessName,
+      missingRecipient: 'skip',
       variables: {
         'business.name': businessName,
         'package.name': packageName,

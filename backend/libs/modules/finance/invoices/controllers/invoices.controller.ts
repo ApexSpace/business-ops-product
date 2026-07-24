@@ -31,7 +31,7 @@ import { InvoicesService } from '@app/modules/finance/invoices/services/invoices
 @ApiBearerAuth()
 @Controller('invoices')
 @UseGuards(BusinessRolesGuard, BusinessCapabilityGuard)
-@RequireModule('payments')
+@RequireModule('invoices')
 @StaffPermission('payments.access')
 export class InvoicesController {
   constructor(

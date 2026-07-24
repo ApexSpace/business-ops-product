@@ -186,7 +186,7 @@ export function SubscriptionOverviewSection({
           <CardContent className="space-y-4">
             {!subscription.planTierId ? (
               <div className="rounded-md border border-dashed p-3 text-sm">
-                <p className="text-muted-foreground">No plan tier assigned.</p>
+                <p className="text-muted-foreground">No tier assigned.</p>
                 {canUpdate ? (
                   <Button
                     type="button"
@@ -194,7 +194,7 @@ export function SubscriptionOverviewSection({
                     className="h-auto p-0"
                     onClick={() => setChangePackageOpen(true)}
                   >
-                    Assign Plan
+                    Assign Tier
                   </Button>
                 ) : null}
               </div>
@@ -202,11 +202,7 @@ export function SubscriptionOverviewSection({
 
             <dl className="grid gap-3 sm:grid-cols-2">
               <OverviewField
-                label="Plan group"
-                value={subscription.planGroupName ?? "—"}
-              />
-              <OverviewField
-                label="Plan tier"
+                label="Tier"
                 value={subscription.planTierName ?? "—"}
               />
               <OverviewField
@@ -244,11 +240,11 @@ export function SubscriptionOverviewSection({
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                Included in plan
+                Included in tier
               </p>
               <CapabilityList
                 items={planTier}
-                emptyLabel="No plan capabilities synced yet."
+                emptyLabel="No tier capabilities synced yet."
               />
             </div>
             <div className="space-y-2">

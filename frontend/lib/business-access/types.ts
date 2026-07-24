@@ -45,6 +45,7 @@ export interface TenantAccessSubscription {
   currentPeriodEnd?: string | null;
   amount?: string | null;
   currency?: string | null;
+  cancelAtPeriodEnd?: boolean;
 }
 
 export interface BusinessTenantAccess {

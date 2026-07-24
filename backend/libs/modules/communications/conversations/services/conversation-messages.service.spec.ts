@@ -12,6 +12,7 @@ import { OutboundMessageDispatchService } from '@app/modules/communications/mess
 import { PlatformEmailProvisioningService } from '@app/modules/integrations/integrations/email/services/platform-email-provisioning.service';
 import { BusinessIntegrationRepository } from '@app/modules/integrations/integrations/repositories/business-integration.repository';
 import { AuditService } from '@app/modules/platform/audit/services/audit.service';
+import { BusinessEffectiveCapabilitiesService } from '@app/modules/platform/business/services/business-effective-capabilities.service';
 import { ConversationMessagesRepository } from '../repositories/conversation-messages.repository';
 import { ConversationsRepository } from '../repositories/conversations.repository';
 import { ConversationMessagesService } from './conversation-messages.service';
@@ -50,6 +51,9 @@ describe('ConversationMessagesService.retry', () => {
   };
   const auditService = {
     log: jest.fn(),
+  };
+  const effectiveCapabilities = {
+    resolveFeatureKeys: jest.fn().mockResolvedValue(new Set(['sms.two_way'])),
   };
 
   const actor = {
@@ -112,6 +116,10 @@ describe('ConversationMessagesService.retry', () => {
         { provide: IdempotencyService, useValue: idempotencyService },
         { provide: ConversationRealtimeService, useValue: realtime },
         { provide: AuditService, useValue: auditService },
+        {
+          provide: BusinessEffectiveCapabilitiesService,
+          useValue: effectiveCapabilities,
+        },
       ],
     }).compile();
 

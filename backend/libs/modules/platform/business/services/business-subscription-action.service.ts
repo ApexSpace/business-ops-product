@@ -52,6 +52,8 @@ import {
   assertTierPriceOrCustomAmount,
 } from '../utils/subscription-billing-validation.util';
 import { StripePlatformSubscriptionService } from '@app/modules/platform/billing/stripe/services/stripe-platform-subscription.service';
+import { BusinessAddonSyncService } from './business-addon-sync.service';
+import { BusinessStatusService } from './business-status.service';
 
 type ActionResult = BusinessAccessDto & { correlationId?: string };
 
@@ -66,6 +68,8 @@ export class BusinessSubscriptionActionService {
     private readonly availabilityService: BusinessSubscriptionActionAvailabilityService,
     private readonly capabilitySyncService: BusinessCapabilitySyncService,
     private readonly stripeSubscriptionService: StripePlatformSubscriptionService,
+    private readonly addonSync: BusinessAddonSyncService,
+    private readonly statusService: BusinessStatusService,
   ) {}
 
   async previewAction(
@@ -591,29 +595,41 @@ export class BusinessSubscriptionActionService {
     actor: RequestUser,
     reason?: string,
   ): Promise<ActionResult> {
+    const current = await this.prisma.business.findUnique({
+      where: { id: businessId },
+    });
+    if (current?.status === BusinessStatus.SUSPENDED) {
+      throw new AppException(
+        ErrorCode.BAD_REQUEST,
+        'Business is already suspended',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    await this.statusService.suspend(
+      businessId,
+      reason?.trim() || 'Suspended by platform admin',
+      actor,
+    );
+
     return this.executeAction(
       businessId,
       'SUSPEND_BUSINESS',
       actor,
       async (tx, correlationId, before) => {
+        // Status already set via BusinessStatusService; keep event/audit trail
         const business = await tx.business.findUnique({
           where: { id: businessId },
         });
-        if (business?.status === BusinessStatus.SUSPENDED) {
-          throw new AppException(
-            ErrorCode.BAD_REQUEST,
-            'Business is already suspended',
-            HttpStatus.BAD_REQUEST,
+        if (business?.status !== BusinessStatus.SUSPENDED) {
+          await this.accessService.updateAccessInternal(
+            tx,
+            businessId,
+            { businessStatus: BusinessStatus.SUSPENDED },
+            actor,
+            { skipAudit: true },
           );
         }
-
-        await this.accessService.updateAccessInternal(
-          tx,
-          businessId,
-          { businessStatus: BusinessStatus.SUSPENDED },
-          actor,
-          { skipAudit: true },
-        );
 
         const after = await this.eventService.captureState(businessId, tx);
         const sub = await tx.businessSubscription.findUnique({
@@ -643,6 +659,12 @@ export class BusinessSubscriptionActionService {
     dto: ReactivateBusinessDto,
     actor: RequestUser,
   ): Promise<ActionResult> {
+    await this.statusService.reinstate(
+      businessId,
+      dto.reason?.trim() || 'Reactivated by platform admin',
+      actor,
+    );
+
     return this.executeAction(
       businessId,
       'REACTIVATE_BUSINESS',
@@ -786,17 +808,15 @@ export class BusinessSubscriptionActionService {
         dto.billingCycle ??
         existingSub.billingCycle ??
         BusinessSubscriptionBillingCycle.MONTHLY;
-      if (groupId) {
-        await this.stripeSubscriptionService.updateSubscriptionTier({
-          businessId,
-          planGroupId: groupId,
-          planTierId: dto.planTierId,
-          billingCycle,
-        });
-      }
+      await this.stripeSubscriptionService.updateSubscriptionTier({
+        businessId,
+        planGroupId: groupId,
+        planTierId: dto.planTierId,
+        billingCycle,
+      });
     }
 
-    return this.executeAction(
+    const result = await this.executeAction(
       businessId,
       'CHANGE_PACKAGE',
       actor,
@@ -834,7 +854,11 @@ export class BusinessSubscriptionActionService {
             tier,
             amount: dto.customPrice ? dto.amount : undefined,
             currency:
-              dto.currency ?? existing?.currency ?? tier.planGroup.currency,
+              dto.currency ??
+              existing?.currency ??
+              tier.planGroup?.currency ??
+              tier.currency ??
+              'USD',
             customPrice: dto.customPrice,
           });
         }
@@ -842,7 +866,8 @@ export class BusinessSubscriptionActionService {
         const currency =
           dto.currency ??
           existing?.currency ??
-          tier.planGroup.currency ??
+          tier.planGroup?.currency ??
+          tier.currency ??
           'USD';
 
         let amount: number | undefined;
@@ -1038,6 +1063,12 @@ export class BusinessSubscriptionActionService {
         );
       },
     );
+
+    if (dto.syncCapabilities ?? true) {
+      await this.addonSync.syncIncludedFromTier(businessId, dto.planTierId);
+    }
+
+    return result;
   }
 
   async changeSnapshot(
@@ -1118,6 +1149,10 @@ export class BusinessSubscriptionActionService {
         }
 
         const result = await this.capabilitySyncService.syncFromPlanTier(
+          businessId,
+          subscription.planTierId,
+        );
+        await this.addonSync.syncIncludedFromTier(
           businessId,
           subscription.planTierId,
         );

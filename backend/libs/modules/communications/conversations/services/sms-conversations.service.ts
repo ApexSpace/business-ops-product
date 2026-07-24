@@ -13,6 +13,7 @@ import { SMS_PROVIDER_KEY } from '@app/modules/communications/sms/constants/sms-
 import { SmsModeResolverService } from '@app/modules/integrations/twilio/services/sms-mode-resolver.service';
 import { AuditService } from '@app/modules/platform/audit/services/audit.service';
 import { SYSTEM_AUDIT_ACTOR_SENTINEL } from '@app/modules/platform/audit/constants/audit.constants';
+import { BusinessEffectiveCapabilitiesService } from '@app/modules/platform/business/services/business-effective-capabilities.service';
 import { ContactRepository } from '@app/modules/crm/contacts/repositories/contact.repository';
 import { ConversationResponseDto } from '../dto/conversation-response.dto';
 import { toConversationResponse } from '../mappers/conversation.mapper';
@@ -30,6 +31,7 @@ export class SmsConversationsService {
     private readonly prisma: PrismaService,
     private readonly auditService: AuditService,
     private readonly smsModeResolver: SmsModeResolverService,
+    private readonly effectiveCapabilities: BusinessEffectiveCapabilitiesService,
   ) {}
 
   async startConversation(
@@ -38,6 +40,15 @@ export class SmsConversationsService {
     actor: RequestUser,
     options?: { text?: string },
   ): Promise<ConversationResponseDto> {
+    const keys = await this.effectiveCapabilities.resolveFeatureKeys(businessId);
+    if (!keys.has('sms.two_way')) {
+      throw new AppException(
+        ErrorCode.FEATURE_NOT_AVAILABLE,
+        'Two-way SMS is not included in your current package.',
+        HttpStatus.FORBIDDEN,
+      );
+    }
+
     const participantId = resolveSmsParticipantId(contact);
     if (!participantId) {
       throw new AppException(

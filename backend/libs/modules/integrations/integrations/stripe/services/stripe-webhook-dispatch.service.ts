@@ -118,6 +118,7 @@ export class StripeWebhookDispatchService {
       'customer.subscription.deleted',
       'invoice.paid',
       'invoice.payment_failed',
+      'setup_intent.succeeded',
     ]);
 
     if (!platformTypes.has(event.type)) {

@@ -1,7 +1,6 @@
-"use client";
+import { redirect } from "next/navigation";
 
-import { PlatformSnapshotsPage } from "@/features/platform/pages/platform-snapshots-page";
-
-export default function Page() {
-  return <PlatformSnapshotsPage />;
+/** Snapshots removed — MedSpa bootstrap seeds new businesses in code. */
+export default function SnapshotsRedirectPage() {
+  redirect("/platform/tiers");
 }

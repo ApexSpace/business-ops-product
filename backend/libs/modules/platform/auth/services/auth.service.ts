@@ -8,6 +8,7 @@ import {
   UserStatus,
 } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+import { randomUUID } from 'crypto';
 import {
   AuthContext,
   RequestUser,
@@ -30,6 +31,8 @@ import {
 import { IndustriesService } from '@app/modules/crm/industries/services/industries.service';
 import { SnapshotApplyService } from '@app/modules/platform/snapshots/services/snapshot-apply.service';
 import { SnapshotsService } from '@app/modules/platform/snapshots/services/snapshots.service';
+import { MedSpaBootstrapService } from '@app/modules/platform/business/services/medspa-bootstrap.service';
+import { BusinessProvisioningService } from '@app/modules/platform/business/services/business-provisioning.service';
 import { TokenService } from './token.service';
 import { AuthActionTokenService } from './auth-action-token.service';
 import { resolvePlatformBusinessRole } from '../utils/platform-business-access.util';
@@ -39,6 +42,7 @@ import {
   defaultPermissionsForMember,
   normalizeStaffPermissions,
 } from '@app/modules/platform/membership/permissions/staff-permission.registry';
+import { PlatformSmsProvisioningService } from '@app/modules/integrations/twilio/services/platform-sms-provisioning.service';
 
 export interface AuthContextItem {
   type: AuthContext;
@@ -74,8 +78,11 @@ export class AuthService {
     private readonly industriesService: IndustriesService,
     private readonly snapshotsService: SnapshotsService,
     private readonly snapshotApplyService: SnapshotApplyService,
+    private readonly medSpaBootstrap: MedSpaBootstrapService,
+    private readonly provisioning: BusinessProvisioningService,
     private readonly authActionTokenService: AuthActionTokenService,
     private readonly emailNotificationService: EmailNotificationService,
+    private readonly platformSmsProvisioning: PlatformSmsProvisioningService,
   ) {}
 
   async register(input: {
@@ -110,17 +117,9 @@ export class AuthService {
       );
     }
 
-    const snapshot = await this.snapshotsService.resolveForBusiness(
-      input.snapshotId,
-    );
-
-    if (!snapshot) {
-      throw new AppException(
-        ErrorCode.BAD_REQUEST,
-        'No published snapshot is configured',
-        HttpStatus.BAD_REQUEST,
-      );
-    }
+    const snapshot = input.snapshotId
+      ? await this.snapshotsService.resolveForBusiness(input.snapshotId)
+      : null;
 
     const result = await this.prisma.$transaction(async (tx) => {
       const user = await tx.user.create({
@@ -152,11 +151,23 @@ export class AuthService {
       return { user, business };
     });
 
-    await this.snapshotApplyService.apply(
-      result.business.id,
-      snapshot.id,
-      result.user.id,
-    );
+    if (snapshot) {
+      await this.snapshotApplyService.apply(
+        result.business.id,
+        snapshot.id,
+        result.user.id,
+      );
+    }
+
+    await this.provisioning.provisionAccess(result.business.id, {
+      name: input.businessName,
+      accessMode: 'TRIAL',
+      createdById: result.user.id,
+    });
+
+    void this.platformSmsProvisioning
+      .ensurePlatformDefaultSms(result.business.id)
+      .catch(() => undefined);
 
     await this.userRepository.updateLastLogin(result.user.id);
 
@@ -336,12 +347,16 @@ export class AuthService {
     token: string,
     password: string,
   ): Promise<{ reset: boolean }> {
-    const userId = await this.authActionTokenService.verify(
-      token,
-      'password_reset',
-    );
-    const user = await this.userRepository.findById(userId);
-    if (!user || user.status !== UserStatus.ACTIVE) {
+    const tokenHash = this.tokenService.hashToken(token);
+    const user =
+      await this.userRepository.findByPasswordResetTokenHash(tokenHash);
+
+    if (
+      !user ||
+      user.status !== UserStatus.ACTIVE ||
+      !user.passwordResetExpiresAt ||
+      user.passwordResetExpiresAt.getTime() < Date.now()
+    ) {
       throw new AppException(
         ErrorCode.BAD_REQUEST,
         'Invalid or expired token',
@@ -351,8 +366,20 @@ export class AuthService {
 
     const rounds = this.configService.get('auth.bcryptRounds', { infer: true });
     const passwordHash = await bcrypt.hash(password, rounds);
-    await this.userRepository.updatePassword(userId, passwordHash);
-    await this.refreshTokenRepository.revokeAllForUser(userId);
+    const updated = await this.userRepository.updatePasswordAndClearResetToken(
+      user.id,
+      passwordHash,
+      tokenHash,
+    );
+    if (updated === 0) {
+      throw new AppException(
+        ErrorCode.BAD_REQUEST,
+        'Invalid or expired token',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+    await this.refreshTokenRepository.revokeAllForUser(user.id);
+    void this.sendPasswordChangedNotice(user.id).catch(() => undefined);
 
     return { reset: true };
   }
@@ -564,14 +591,19 @@ export class AuthService {
       return;
     }
 
-    const token = await this.authActionTokenService.sign(
+    const rawToken = randomUUID();
+    const tokenHash = this.tokenService.hashToken(rawToken);
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
+    await this.userRepository.setPasswordResetToken(
       userId,
-      'password_reset',
+      tokenHash,
+      expiresAt,
     );
+
     const frontendUrl = this.configService.get('app.frontendUrl', {
       infer: true,
     });
-    const resetLink = `${frontendUrl}/reset-password?token=${encodeURIComponent(token)}`;
+    const resetLink = `${frontendUrl}/reset-password?token=${encodeURIComponent(rawToken)}`;
 
     await this.emailNotificationService.enqueueTransactionalEmail({
       businessId: null,
@@ -585,6 +617,27 @@ export class AuthService {
         'user.name': formatUserName(user),
         'user.email': user.email,
         reset_link: resetLink,
+      },
+    });
+  }
+
+  private async sendPasswordChangedNotice(userId: string): Promise<void> {
+    const user = await this.userRepository.findById(userId);
+    if (!user?.email) {
+      return;
+    }
+
+    await this.emailNotificationService.enqueueTransactionalEmail({
+      businessId: null,
+      emailType: 'auth.password_changed',
+      toEmail: user.email,
+      userId: user.id,
+      entityType: 'User',
+      entityId: user.id,
+      idempotencyKey: `password-changed-${user.id}-${Date.now()}`,
+      variables: {
+        'user.name': formatUserName(user),
+        'user.email': user.email,
       },
     });
   }

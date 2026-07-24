@@ -40,7 +40,7 @@ const MEMBER_ROLES = [
 @ApiBearerAuth()
 @Controller('memberships/plans')
 @UseGuards(BusinessRolesGuard, BusinessCapabilityGuard)
-@RequireModule('payments')
+@RequireModule('memberships')
 @StaffPermission('memberships.access')
 export class MembershipPlansController {
   constructor(private readonly plansService: MembershipPlansService) {}

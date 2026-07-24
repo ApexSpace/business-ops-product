@@ -41,6 +41,7 @@ export class PlatformDashboardService {
       ACTIVE: 0,
       NOT_ACTIVE: 0,
       SUSPENDED: 0,
+      BLOCKED: 0,
       ARCHIVED: 0,
     };
 
@@ -52,6 +53,7 @@ export class PlatformDashboardService {
       statusCounts.ACTIVE +
       statusCounts.NOT_ACTIVE +
       statusCounts.SUSPENDED +
+      statusCounts.BLOCKED +
       statusCounts.ARCHIVED;
 
     const mrr = subscriptionRows.reduce((sum, sub) => {

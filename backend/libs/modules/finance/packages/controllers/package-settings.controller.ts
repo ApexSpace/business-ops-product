@@ -21,7 +21,7 @@ const MEMBER_ROLES = [
 @ApiBearerAuth()
 @Controller('package-settings')
 @UseGuards(BusinessRolesGuard, BusinessCapabilityGuard)
-@RequireModule('payments')
+@RequireModule('packages')
 @StaffPermission('packages.access')
 export class PackageSettingsController {
   constructor(private readonly settingsService: PackageSettingsService) {}

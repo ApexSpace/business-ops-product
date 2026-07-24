@@ -48,7 +48,10 @@ export class AppointmentReminderService {
           lte: lookAheadEnd,
         },
         contact: {
-          email: { not: null },
+          OR: [
+            { email: { not: null } },
+            { phoneNumber: { not: null } },
+          ],
         },
       },
       include: {
@@ -130,7 +133,10 @@ export class AppointmentReminderService {
       const reminderOptIn = readReminderOptIn(appointment.metadata);
 
       if (!appointment.calendar) {
-        if (reminderOptIn !== true || !appointment.contact?.email) {
+        if (
+          reminderOptIn !== true ||
+          (!appointment.contact?.email && !appointment.contact?.phoneNumber)
+        ) {
           continue;
         }
 

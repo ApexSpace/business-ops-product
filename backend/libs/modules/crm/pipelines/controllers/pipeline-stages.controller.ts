@@ -15,6 +15,8 @@ import { ConfirmDeleteQueryDto } from '@app/common/dto/confirm-delete-query.dto'
 import { CurrentUser } from '@app/common/decorators/current-user.decorator';
 import type { RequestUser } from '@app/common/decorators/current-user.decorator';
 import { BusinessRoles } from '@app/common/decorators/business-roles.decorator';
+import { RequireModule } from '@app/common/decorators/require-module.decorator';
+import { BusinessCapabilityGuard } from '@app/common/guards/business-capability.guard';
 import { BusinessRolesGuard } from '@app/common/guards/business-roles.guard';
 import { CreatePipelineStageDto } from '../dto/create-pipeline-stage.dto';
 import { ReorderPipelineStagesDto } from '../dto/reorder-pipeline-stages.dto';
@@ -24,7 +26,8 @@ import { PipelineStagesService } from '@app/modules/crm/pipelines/services/pipel
 @ApiTags('pipelines')
 @ApiBearerAuth()
 @Controller('pipelines/:pipelineId/stages')
-@UseGuards(BusinessRolesGuard)
+@UseGuards(BusinessRolesGuard, BusinessCapabilityGuard)
+@RequireModule('pipelines')
 export class PipelineStagesController {
   constructor(private readonly stagesService: PipelineStagesService) {}
 

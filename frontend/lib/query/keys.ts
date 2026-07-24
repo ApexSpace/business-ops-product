@@ -524,6 +524,28 @@ export const queryKeys = {
         listKey(["platform", "snapshots", "list"], filters),
       detail: (id: string) => ["platform", "snapshots", id] as const,
     },
+    tiers: {
+      all: () => ["platform", "tiers"] as const,
+      list: (filters: {
+        page?: number;
+        limit?: number;
+        status?: string;
+        search?: string;
+        isPublic?: boolean;
+      }) => listKey(["platform", "tiers", "list"], filters),
+      detail: (id: string) => ["platform", "tiers", id] as const,
+    },
+    addons: {
+      all: () => ["platform", "addons"] as const,
+      list: (filters: {
+        page?: number;
+        limit?: number;
+        status?: string;
+        search?: string;
+        purchaseMode?: string;
+      }) => listKey(["platform", "addons", "list"], filters),
+      detail: (id: string) => ["platform", "addons", id] as const,
+    },
     planGroups: {
       all: () => ["platform", "plan-groups"] as const,
       stats: () => ["platform", "plan-groups", "stats"] as const,

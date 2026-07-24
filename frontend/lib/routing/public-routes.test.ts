@@ -5,6 +5,10 @@ describe("isPublicPath", () => {
   it("allows auth pages", () => {
     expect(isPublicPath("/login")).toBe(true);
     expect(isPublicPath("/select-context")).toBe(true);
+    expect(isPublicPath("/forgot-password")).toBe(true);
+    expect(isPublicPath("/reset-password")).toBe(true);
+    expect(isPublicPath("/api/auth/forgot-password")).toBe(true);
+    expect(isPublicPath("/api/auth/reset-password")).toBe(true);
   });
 
   it("allows canonical public resource routes", () => {

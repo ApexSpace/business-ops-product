@@ -22,13 +22,14 @@ export class PlatformSmsSendService {
   ) {}
 
   /**
-   * Outbound notification SMS via the platform (Codesol) Twilio number.
-   * Does not require a per-business SMS integration — only TWILIO_* env config.
+   * Outbound notification SMS via the business's auto-assigned Codesol number
+   * when present; otherwise the shared TWILIO_PLATFORM_FROM_NUMBER fallback.
+   * Always uses primary-account credentials (not BYO Twilio).
    */
   async sendNotification(params: PlatformSmsSendParams) {
-    // Notifications always use the platform number from env, regardless of
-    // whether the business has connected their own Twilio inbox number.
-    const context = this.smsModeResolver.resolvePlatformNotification();
+    const context = await this.smsModeResolver.resolveNotificationForBusiness(
+      params.businessId,
+    );
     if (!context) {
       throw new AppException(
         ErrorCode.CONVERSATION_CHANNEL_NOT_READY,

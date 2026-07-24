@@ -181,6 +181,8 @@ export type PlatformDefaultSms = {
   resourceId: string;
   fromNumber: string;
   mode: "platform";
+  a2pPool?: "SHARED" | "OWNED";
+  provisioned?: boolean;
 };
 
 export function getPlatformDefaultSms() {

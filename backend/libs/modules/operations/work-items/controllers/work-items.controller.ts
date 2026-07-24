@@ -17,6 +17,8 @@ import { CurrentUser } from '@app/common/decorators/current-user.decorator';
 import type { RequestUser } from '@app/common/decorators/current-user.decorator';
 import { BusinessRoles } from '@app/common/decorators/business-roles.decorator';
 import { StaffPermission } from '@app/common/decorators/staff-permission.decorator';
+import { RequireModule } from '@app/common/decorators/require-module.decorator';
+import { BusinessCapabilityGuard } from '@app/common/guards/business-capability.guard';
 import { BusinessRolesGuard } from '@app/common/guards/business-roles.guard';
 import { CreateWorkItemDto } from '../dto/create-work-item.dto';
 import { ListWorkItemsQueryDto } from '../dto/list-work-items-query.dto';
@@ -26,7 +28,8 @@ import { WorkItemsService } from '@app/modules/operations/work-items/services/wo
 @ApiTags('work-items')
 @ApiBearerAuth()
 @Controller('work-items')
-@UseGuards(BusinessRolesGuard)
+@UseGuards(BusinessRolesGuard, BusinessCapabilityGuard)
+@RequireModule('work_items')
 @StaffPermission('work_items.access')
 export class WorkItemsController {
   constructor(private readonly workItemsService: WorkItemsService) {}

@@ -75,7 +75,7 @@ export function formatPaymentMethod(
     CASH: "Cash",
     JAZZCASH: "JazzCash",
     EASYPAISA: "EasyPaisa",
-    MANUAL_INVOICE: "Manual Invoice",
+    MANUAL_INVOICE: "Manual Invoice (offline)",
     FREE_INTERNAL: "Free/Internal",
     NOT_SELECTED: "Not Selected",
   };

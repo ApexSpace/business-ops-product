@@ -22,6 +22,8 @@ enum BusinessStatus {
   ACTIVE
   NOT_ACTIVE
   SUSPENDED
+  /// Admin/policy/fraud lock — distinct from SUSPENDED (billing).
+  BLOCKED
   /// Legacy/backward-compat — treated as blocked for workspace access (same as NOT_ACTIVE).
   ARCHIVED
 }
@@ -214,8 +216,12 @@ enum SubscriptionStatus {
   CANCELED
   EXPIRED
   INTERNAL
-  /// Legacy/backward-compat — treated as blocked; prefer PENDING_PAYMENT for new records.
+  /// Grace period — workspace access retained while payment recovers.
   PAST_DUE
+  /// Stripe unpaid — workspace access cut off.
+  UNPAID
+  /// Stripe incomplete / incomplete_expired — workspace access cut off.
+  INCOMPLETE
 }
 
 enum SubscriptionPaymentMethod {
@@ -259,9 +265,14 @@ enum BusinessSubscriptionEventType {
   EXPIRED
   REACTIVATED
   SUSPENDED
+  BLOCKED
   BUSINESS_STATUS_CHANGED
   CAPABILITIES_SYNCED
   SNAPSHOT_CHANGED
+  ADDON_PURCHASED
+  ADDON_CANCELED
+  ADDON_INCLUDED
+  TIER_VERSION_MIGRATED
   MANUAL_ADJUSTMENT
 }
 
@@ -318,8 +329,81 @@ enum SubscriptionBillingSource {
 
 enum BusinessCapabilitySource {
   PLAN_TIER
+  /// Synced from tier capabilities (alias of PLAN_TIER for new code).
+  TIER
+  /// Granted via included or purchased add-on.
+  ADDON
   CUSTOM
   MANUAL
+}
+
+enum AddonPurchaseMode {
+  INDEPENDENT
+  DEPENDENT
+}
+
+enum AddonStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum BusinessAddonStatus {
+  ACTIVE
+  CANCELED
+  PENDING
+}
+
+enum BusinessAddonSource {
+  /// Independent add-on bought separately (Stripe line item).
+  PURCHASED
+  /// Came from tier (dependent link or independent included) — not charged.
+  INCLUDED
+}
+
+enum EntitlementChangeCampaignType {
+  TIER_PRICE
+  TIER_CAPABILITY
+  CAPABILITY_FEATURE
+  ADDON_PACKAGING
+}
+
+enum EntitlementChangeCampaignStatus {
+  OPEN
+  NOTIFIED
+  DUE
+  COMPLETED
+  CANCELLED
+}
+
+enum EntitlementChangeCampaignPolicy {
+  KEEP_GRANDFATHERED
+  FORCE_REMOVE
+  CONVERT_TO_PURCHASED
+  APPLY_NEW_PRICE
+}
+
+enum EntitlementChangeCampaignMemberStatus {
+  PENDING
+  NOTIFIED
+  EXTENDED
+  MIGRATED
+  EXCLUDED
+}
+
+enum BusinessFeatureGrantSource {
+  GRANDFATHERED
+  MANUAL
+}
+
+enum BusinessFeatureGrantStatus {
+  ACTIVE
+  REVOKED
+}
+
+enum BusinessLocationStatus {
+  ACTIVE
+  INACTIVE
 }
 
 enum BusinessCapabilityAssignmentStatus {
@@ -685,16 +769,18 @@ enum WebhookEventStatus {
 }
 
 model User {
-  id              String    @id @default(uuid())
-  email           String    @unique
-  passwordHash    String
-  firstName       String?
-  lastName        String?
-  status          UserStatus @default(ACTIVE)
-  emailVerifiedAt DateTime?
-  lastLoginAt     DateTime?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  id                       String    @id @default(uuid())
+  email                    String    @unique
+  passwordHash             String
+  firstName                String?
+  lastName                 String?
+  status                   UserStatus @default(ACTIVE)
+  emailVerifiedAt          DateTime?
+  lastLoginAt              DateTime?
+  passwordResetTokenHash   String?
+  passwordResetExpiresAt   DateTime?
+  createdAt                DateTime  @default(now())
+  updatedAt                DateTime  @updatedAt
 
   platformMembership   PlatformMembership?
   businessMemberships  BusinessMembership[]
@@ -737,11 +823,14 @@ model User {
   snapshotsUpdated      Snapshot[]              @relation("SnapshotUpdatedBy")
   subscriptionEventsCreated BusinessSubscriptionEvent[] @relation("SubscriptionEventCreatedBy")
   subscriptionPaymentsCreated BusinessSubscriptionPayment[] @relation("SubscriptionPaymentCreatedBy")
+  businessStatusLogsChanged BusinessStatusLog[] @relation("BusinessStatusLogChangedBy")
   staffWorkSchedules          StaffWorkSchedule[]           @relation("StaffWorkScheduleUser")
   staffWorkExceptions         StaffWorkException[]          @relation("StaffWorkExceptionUser")
   staffCompensationSettings   StaffCompensationSettings[]
   bookingWaitlistEntries      BookingWaitlistEntry[]        @relation("BookingWaitlistStaff")
+  entitlementChangeCampaignsCreated EntitlementChangeCampaign[] @relation("EntitlementChangeCampaignCreatedBy")
 
+  @@index([passwordResetTokenHash])
   @@map("users")
 }
 
@@ -910,6 +999,13 @@ model Business {
   whatsappMessageTemplates WhatsAppMessageTemplate[]
   emailMessages            EmailMessage[]
   capabilities             BusinessCapability[]
+  businessAddons           BusinessAddon[]
+  businessFeatureGrants    BusinessFeatureGrant[]
+  businessLocations        BusinessLocation[]
+  businessStripeCustomer   BusinessStripeCustomer?
+  businessPaymentMethods   BusinessPaymentMethod[]
+  businessStatusLogs       BusinessStatusLog[]
+  entitlementChangeCampaignMembers EntitlementChangeCampaignMember[]
   automationWorkflows      AutomationWorkflow[]
   automationWorkflowRuns   AutomationWorkflowRun[]
   contactWalletBalances    ContactWalletBalance[]
@@ -2197,15 +2293,24 @@ model PlanGroup {
 
 model PlanTier {
   id           String         @id @default(uuid())
-  planGroupId  String
+  /// Optional legacy parent. New tiers are standalone (CEO model).
+  planGroupId  String?
+  /// Stable unique key for the sellable tier SKU (e.g. starter, growth).
+  key          String?
   slug         String
   name         String
   description  String?
   status       PlanTierStatus @default(DRAFT)
+  isPublic     Boolean        @default(true)
   priceMonthly Decimal?       @db.Decimal(10, 2)
   priceYearly  Decimal?       @db.Decimal(10, 2)
   setupFee     Decimal?       @db.Decimal(10, 2)
   trialDays    Int?
+  /// null = unlimited
+  staffLimit   Int?
+  /// null = unlimited
+  locationLimit Int?
+  currency     String         @default("USD")
   badge        String?
   highlighted  Boolean        @default(false)
   ctaLabel     String?
@@ -2217,15 +2322,216 @@ model PlanTier {
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
 
-  planGroup     PlanGroup              @relation(fields: [planGroupId], references: [id], onDelete: Cascade)
+  planGroup     PlanGroup?             @relation(fields: [planGroupId], references: [id], onDelete: SetNull)
   capabilities  PlanTierCapability[]
   features      PlanTierFeature[]
   subscriptions BusinessSubscription[]
+  versions      TierVersion[]
+  includedAddons TierIncludedAddon[]
+  dependentAddonLinks AddonTierLink[]
+  entitlementChangeCampaigns EntitlementChangeCampaign[]
 
   @@unique([planGroupId, slug])
+  @@unique([key])
   @@index([planGroupId, sortOrder])
   @@index([status])
+  @@index([isPublic])
   @@map("plan_tiers")
+}
+
+/// Immutable published snapshot of a tier (price, limits, capabilities, addon links).
+model TierVersion {
+  id              String   @id @default(uuid())
+  tierId          String
+  version         Int
+  priceMonthly    Decimal? @db.Decimal(10, 2)
+  priceYearly     Decimal? @db.Decimal(10, 2)
+  staffLimit      Int?
+  locationLimit   Int?
+  /// Snapshot of capability IDs at publish time.
+  capabilityIds   Json     @default("[]")
+  /// Snapshot of included independent addon IDs.
+  includedAddonIds Json    @default("[]")
+  /// Snapshot of dependent addon IDs linked to this tier.
+  dependentAddonIds Json   @default("[]")
+  metadata        Json?
+  publishedAt     DateTime @default(now())
+  createdAt       DateTime @default(now())
+
+  tier          PlanTier               @relation(fields: [tierId], references: [id], onDelete: Cascade)
+  subscriptions BusinessSubscription[]
+
+  @@unique([tierId, version])
+  @@index([tierId])
+  @@map("tier_versions")
+}
+
+model Addon {
+  id                String            @id @default(uuid())
+  key               String            @unique
+  name              String
+  description       String?
+  purchaseMode      AddonPurchaseMode
+  status            AddonStatus       @default(DRAFT)
+  isPublic          Boolean           @default(true)
+  /// Required when purchaseMode = INDEPENDENT; null for DEPENDENT.
+  priceMonthly      Decimal?          @db.Decimal(10, 2)
+  priceYearly       Decimal?          @db.Decimal(10, 2)
+  staffLimitDelta   Int?
+  locationLimitDelta Int?
+  capabilityId      String
+  sortOrder         Int               @default(0)
+  metadata          Json?
+  deletedAt         DateTime?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  capability      Capability         @relation(fields: [capabilityId], references: [id], onDelete: Restrict)
+  tierLinks       AddonTierLink[]
+  includedInTiers TierIncludedAddon[]
+  businessAddons  BusinessAddon[]
+  entitlementChangeCampaigns EntitlementChangeCampaign[]
+
+  @@index([status])
+  @@index([purchaseMode])
+  @@index([capabilityId])
+  @@map("addons")
+}
+
+/// Dependent add-on → must link to ≥1 tier.
+model AddonTierLink {
+  id        String   @id @default(uuid())
+  addonId   String
+  tierId    String
+  createdAt DateTime @default(now())
+
+  addon Addon    @relation(fields: [addonId], references: [id], onDelete: Cascade)
+  tier  PlanTier @relation(fields: [tierId], references: [id], onDelete: Cascade)
+
+  @@unique([addonId, tierId])
+  @@index([tierId])
+  @@map("addon_tier_links")
+}
+
+/// Independent add-on optionally included in a tier (price absorbed).
+model TierIncludedAddon {
+  id        String   @id @default(uuid())
+  tierId    String
+  addonId   String
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  tier  PlanTier @relation(fields: [tierId], references: [id], onDelete: Cascade)
+  addon Addon    @relation(fields: [addonId], references: [id], onDelete: Cascade)
+
+  @@unique([tierId, addonId])
+  @@index([addonId])
+  @@map("tier_included_addons")
+}
+
+model BusinessAddon {
+  id                       String              @id @default(uuid())
+  businessId               String
+  addonId                  String
+  status                   BusinessAddonStatus @default(ACTIVE)
+  source                   BusinessAddonSource
+  priceAtPurchase          Decimal?            @db.Decimal(10, 2)
+  billingCycle             BusinessSubscriptionBillingCycle?
+  stripeSubscriptionItemId String?
+  activatedAt              DateTime            @default(now())
+  canceledAt               DateTime?
+  metadata                 Json?
+  createdAt                DateTime            @default(now())
+  updatedAt                DateTime            @updatedAt
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  addon    Addon    @relation(fields: [addonId], references: [id], onDelete: Restrict)
+
+  @@unique([businessId, addonId])
+  @@index([businessId])
+  @@index([addonId])
+  @@index([status])
+  @@index([source])
+  @@map("business_addons")
+}
+
+model BusinessLocation {
+  id               String                 @id @default(uuid())
+  businessId       String
+  name             String
+  address          String?
+  city             String?
+  state            String?
+  country          String?
+  zip              String?
+  timezone         String?
+  status           BusinessLocationStatus @default(ACTIVE)
+  isPrimary        Boolean                @default(false)
+  defaultCalendarId String?
+  deactivatedAt    DateTime?
+  createdAt        DateTime               @default(now())
+  updatedAt        DateTime               @updatedAt
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([businessId])
+  @@index([businessId, status])
+  @@map("business_locations")
+}
+
+model BusinessStripeCustomer {
+  id               String   @id @default(uuid())
+  businessId       String   @unique
+  stripeCustomerId String
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  business        Business                 @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  paymentMethods  BusinessPaymentMethod[]
+
+  @@index([stripeCustomerId])
+  @@map("business_stripe_customers")
+}
+
+model BusinessPaymentMethod {
+  id                     String    @id @default(uuid())
+  businessId             String
+  businessStripeCustomerId String
+  stripePaymentMethodId  String
+  brand                  String?
+  last4                  String?
+  expMonth               Int?
+  expYear                Int?
+  isDefault              Boolean   @default(false)
+  deletedAt              DateTime?
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+
+  business               Business               @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  businessStripeCustomer BusinessStripeCustomer @relation(fields: [businessStripeCustomerId], references: [id], onDelete: Cascade)
+
+  @@unique([businessId, stripePaymentMethodId])
+  @@index([businessId])
+  @@index([businessStripeCustomerId])
+  @@map("business_payment_methods")
+}
+
+model BusinessStatusLog {
+  id              String         @id @default(uuid())
+  businessId      String
+  fromStatus      BusinessStatus?
+  toStatus        BusinessStatus
+  reason          String
+  changedByUserId String?
+  metadata        Json?
+  createdAt       DateTime       @default(now())
+
+  business  Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  changedBy User?    @relation("BusinessStatusLogChangedBy", fields: [changedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([businessId])
+  @@index([createdAt])
+  @@map("business_status_logs")
 }
 
 model PlanTierCapability {
@@ -2322,6 +2628,8 @@ model Capability {
   configSchemas        CapabilityConfigSchema[]
   tierAssignments      PlanTierCapability[]
   businessAssignments  BusinessCapability[]
+  addons               Addon[]
+  entitlementChangeCampaigns EntitlementChangeCampaign[]
 
   @@index([status])
   @@index([sortOrder])
@@ -2537,6 +2845,8 @@ model BusinessSubscription {
   businessId         String                    @unique
   planGroupId        String?
   planTierId         String?
+  /// Locked tier version this business is billed/entitled on.
+  tierVersionId      String?
   status             SubscriptionStatus        @default(TRIALING)
   paymentMethod      SubscriptionPaymentMethod @default(NOT_SELECTED)
   paymentStatus      SubscriptionPaymentStatus @default(NOT_REQUIRED)
@@ -2544,7 +2854,22 @@ model BusinessSubscription {
   billingCycle       BusinessSubscriptionBillingCycle?
   currentPeriodStart DateTime?
   currentPeriodEnd   DateTime?
+  /// Stripe Customer id (mirror — webhook/reconcile owned for STRIPE billing).
+  stripeCustomerId   String?
+  /// Stripe Subscription id (mirror).
+  stripeSubscriptionId String?                 @unique
+  /// Stripe Price id for the base tier line item (mirror).
+  stripePriceId      String?
+  /// Mirror of Stripe cancel_at_period_end.
+  cancelAtPeriodEnd  Boolean                   @default(false)
   amount             Decimal?                  @db.Decimal(10, 2)
+  /// Snapshot of price at assignment / last accepted migration.
+  /// For STRIPE billing this is a display mirror from webhooks only.
+  priceAtPurchase    Decimal?                  @db.Decimal(10, 2)
+  staffLimitAtPurchase Int?
+  locationLimitAtPurchase Int?
+  /// Feature keys snapshot at purchase / last accepted change.
+  capabilitySnapshot Json?
   currency           String?
   notes              String?
   metadata           Json?
@@ -2552,16 +2877,20 @@ model BusinessSubscription {
   createdAt          DateTime                  @default(now())
   updatedAt          DateTime                  @updatedAt
 
-  business  Business   @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  planGroup PlanGroup? @relation(fields: [planGroupId], references: [id], onDelete: SetNull)
-  planTier  PlanTier?  @relation(fields: [planTierId], references: [id], onDelete: SetNull)
-  events    BusinessSubscriptionEvent[]
-  payments  BusinessSubscriptionPayment[]
+  business    Business     @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  planGroup   PlanGroup?   @relation(fields: [planGroupId], references: [id], onDelete: SetNull)
+  planTier    PlanTier?    @relation(fields: [planTierId], references: [id], onDelete: SetNull)
+  tierVersion TierVersion? @relation(fields: [tierVersionId], references: [id], onDelete: SetNull)
+  events      BusinessSubscriptionEvent[]
+  payments    BusinessSubscriptionPayment[]
 
   @@index([planGroupId])
   @@index([planTierId])
+  @@index([tierVersionId])
   @@index([status])
   @@index([paymentStatus])
+  @@index([stripeCustomerId])
+  @@index([stripePriceId])
   @@map("business_subscriptions")
 }
 
@@ -2665,6 +2994,95 @@ model BusinessCapability {
   @@index([capabilityId])
   @@index([source])
   @@map("business_capabilities")
+}
+
+/// Per-business feature pin used when a service is removed from a capability (grandfathering).
+model BusinessFeatureGrant {
+  id         String                     @id @default(uuid())
+  businessId String
+  featureKey String
+  source     BusinessFeatureGrantSource @default(GRANDFATHERED)
+  status     BusinessFeatureGrantStatus @default(ACTIVE)
+  capabilityId String?
+  campaignId String?
+  revokedAt  DateTime?
+  createdAt  DateTime                   @default(now())
+  updatedAt  DateTime                   @updatedAt
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  campaign EntitlementChangeCampaign? @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+
+  @@unique([businessId, featureKey, source])
+  @@index([businessId])
+  @@index([featureKey])
+  @@index([status])
+  @@index([campaignId])
+  @@map("business_feature_grants")
+}
+
+/// Platform ops campaign for packaging / price / capability / feature migrations.
+model EntitlementChangeCampaign {
+  id              String                           @id @default(uuid())
+  type            EntitlementChangeCampaignType
+  status          EntitlementChangeCampaignStatus  @default(OPEN)
+  policy          EntitlementChangeCampaignPolicy  @default(KEEP_GRANDFATHERED)
+  summary         String
+  message         String?
+  tierId          String?
+  addonId         String?
+  capabilityId    String?
+  featureKeys     Json                             @default("[]")
+  fromVersionId   String?
+  toVersionId     String?
+  /// Catalog snapshot / payload for migrate apply (prices, capability ids, etc.).
+  payload         Json?
+  effectiveAt     DateTime?
+  autoForce       Boolean                          @default(true)
+  createdByUserId String?
+  completedAt     DateTime?
+  cancelledAt     DateTime?
+  createdAt       DateTime                         @default(now())
+  updatedAt       DateTime                         @updatedAt
+
+  tier       PlanTier?  @relation(fields: [tierId], references: [id], onDelete: SetNull)
+  addon      Addon?     @relation(fields: [addonId], references: [id], onDelete: SetNull)
+  capability Capability? @relation(fields: [capabilityId], references: [id], onDelete: SetNull)
+  createdBy  User?      @relation("EntitlementChangeCampaignCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  members    EntitlementChangeCampaignMember[]
+  featureGrants BusinessFeatureGrant[]
+
+  @@index([type])
+  @@index([status])
+  @@index([tierId])
+  @@index([addonId])
+  @@index([capabilityId])
+  @@index([effectiveAt])
+  @@index([createdAt])
+  @@map("entitlement_change_campaigns")
+}
+
+model EntitlementChangeCampaignMember {
+  id          String                               @id @default(uuid())
+  campaignId  String
+  businessId  String
+  included    Boolean                              @default(true)
+  status      EntitlementChangeCampaignMemberStatus @default(PENDING)
+  /// Per-business override of campaign effectiveAt (extensions).
+  effectiveAt DateTime?
+  notifiedAt  DateTime?
+  migratedAt  DateTime?
+  createdAt   DateTime                             @default(now())
+  updatedAt   DateTime                             @updatedAt
+
+  campaign EntitlementChangeCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  business Business                 @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@unique([campaignId, businessId])
+  @@index([campaignId])
+  @@index([businessId])
+  @@index([status])
+  @@index([effectiveAt])
+  @@map("entitlement_change_campaign_members")
 }
 
 model PlatformSetting {

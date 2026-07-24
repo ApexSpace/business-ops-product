@@ -1,4 +1,5 @@
 import { NotificationChannel } from '@prisma/client';
+import { CHANNEL_OVERRIDE_NOTIFICATION_KEYS } from '../constants/notification-channel.constants';
 import { NotificationChannelPreferenceService } from './notification-channel-preference.service';
 
 describe('NotificationChannelPreferenceService', () => {
@@ -36,23 +37,23 @@ describe('NotificationChannelPreferenceService', () => {
 
   it('upserts an allowed notification key', async () => {
     preferenceRepository.upsert.mockResolvedValue({
-      notificationKey: 'appointment.express_complete',
+      notificationKey: 'appointment.confirmation',
       channel: NotificationChannel.SMS,
     });
 
     const result = await service.setChannel(
       'biz-1',
-      'appointment.express_complete',
+      'appointment.confirmation',
       NotificationChannel.SMS,
     );
 
     expect(preferenceRepository.upsert).toHaveBeenCalledWith(
       'biz-1',
-      'appointment.express_complete',
+      'appointment.confirmation',
       NotificationChannel.SMS,
     );
     expect(result).toEqual({
-      notificationKey: 'appointment.express_complete',
+      notificationKey: 'appointment.confirmation',
       channel: NotificationChannel.SMS,
       isDefault: false,
     });
@@ -62,23 +63,44 @@ describe('NotificationChannelPreferenceService', () => {
     await expect(
       service.setChannel(
         'biz-1',
-        'appointment.confirmation',
+        'auth.password_reset',
         NotificationChannel.SMS,
       ),
     ).rejects.toThrow(
-      'Channel preference is not supported for notification key: appointment.confirmation',
+      'Channel preference is not supported for notification key: auth.password_reset',
     );
   });
 
-  it('lists allowed keys with defaults', async () => {
+  it('lists all business-configurable keys with defaults', async () => {
     preferenceRepository.findByBusiness.mockResolvedValue([]);
 
-    await expect(service.listForBusiness('biz-1')).resolves.toEqual([
-      {
-        notificationKey: 'appointment.express_complete',
-        channel: NotificationChannel.EMAIL,
-        isDefault: true,
-      },
-    ]);
+    const list = await service.listForBusiness('biz-1');
+
+    expect(list.length).toBe(CHANNEL_OVERRIDE_NOTIFICATION_KEYS.length);
+    expect(list).toEqual(
+      expect.arrayContaining([
+        {
+          notificationKey: 'appointment.express_complete',
+          channel: NotificationChannel.EMAIL,
+          isDefault: true,
+        },
+        {
+          notificationKey: 'appointment.confirmation',
+          channel: NotificationChannel.EMAIL,
+          isDefault: true,
+        },
+        {
+          notificationKey: 'invoice.sent',
+          channel: NotificationChannel.EMAIL,
+          isDefault: true,
+        },
+      ]),
+    );
+    expect(
+      list.find((item) => item.notificationKey === 'auth.password_reset'),
+    ).toBeUndefined();
+    expect(
+      list.find((item) => item.notificationKey === 'automation.workflow'),
+    ).toBeUndefined();
   });
 });

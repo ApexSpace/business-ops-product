@@ -68,6 +68,11 @@ export class TenantAccessSubscriptionDto {
 
   @ApiPropertyOptional()
   currency?: string | null;
+
+  @ApiPropertyOptional({
+    description: 'Mirrored from Stripe cancel_at_period_end',
+  })
+  cancelAtPeriodEnd?: boolean;
 }
 
 export class BusinessTenantAccessDto {

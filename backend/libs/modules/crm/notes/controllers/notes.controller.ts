@@ -17,6 +17,8 @@ import { CurrentUser } from '@app/common/decorators/current-user.decorator';
 import type { RequestUser } from '@app/common/decorators/current-user.decorator';
 import { BusinessRoles } from '@app/common/decorators/business-roles.decorator';
 import { StaffPermission } from '@app/common/decorators/staff-permission.decorator';
+import { RequireModule } from '@app/common/decorators/require-module.decorator';
+import { BusinessCapabilityGuard } from '@app/common/guards/business-capability.guard';
 import { BusinessRolesGuard } from '@app/common/guards/business-roles.guard';
 import { CreateNoteDto } from '../dto/create-note.dto';
 import { ListNotesQueryDto } from '../dto/list-notes-query.dto';
@@ -26,7 +28,8 @@ import { NotesService } from '@app/modules/crm/notes/services/notes.service';
 @ApiTags('notes')
 @ApiBearerAuth()
 @Controller('notes')
-@UseGuards(BusinessRolesGuard)
+@UseGuards(BusinessRolesGuard, BusinessCapabilityGuard)
+@RequireModule('notes')
 @StaffPermission('contacts.access')
 export class NotesController {
   constructor(private readonly notesService: NotesService) {}

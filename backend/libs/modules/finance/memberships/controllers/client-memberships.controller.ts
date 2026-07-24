@@ -37,7 +37,7 @@ const MEMBER_ROLES = [
 @ApiBearerAuth()
 @Controller('memberships/client-memberships')
 @UseGuards(BusinessRolesGuard, BusinessCapabilityGuard)
-@RequireModule('payments')
+@RequireModule('memberships')
 @StaffPermission('memberships.access')
 export class ClientMembershipsController {
   constructor(

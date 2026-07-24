@@ -32,7 +32,7 @@ import { FormsService } from '../services/forms.service';
 @ApiBearerAuth()
 @Controller('forms')
 @UseGuards(BusinessRolesGuard, BusinessCapabilityGuard)
-@RequireModule('settings')
+@RequireModule('forms')
 @StaffPermission('forms.view_own_submissions', 'forms.view_all_submissions', 'forms.manage_templates')
 export class BusinessFormsController {
   constructor(
@@ -41,7 +41,7 @@ export class BusinessFormsController {
   ) {}
 
   @Get()
-  @RequireCapability('settings.forms.list')
+  @RequireCapability('forms.list')
   @BusinessRoles(
     BusinessMemberRole.OWNER,
     BusinessMemberRole.ADMIN,
@@ -52,7 +52,7 @@ export class BusinessFormsController {
   }
 
   @Post()
-  @RequireCapability('settings.forms.create')
+  @RequireCapability('forms.create')
   @BusinessRoles(
     BusinessMemberRole.OWNER,
     BusinessMemberRole.ADMIN,
@@ -64,7 +64,7 @@ export class BusinessFormsController {
   }
 
   @Get(':id')
-  @RequireCapability('settings.forms.list')
+  @RequireCapability('forms.list')
   @BusinessRoles(
     BusinessMemberRole.OWNER,
     BusinessMemberRole.ADMIN,
@@ -78,7 +78,7 @@ export class BusinessFormsController {
   }
 
   @Get(':id/embed')
-  @RequireCapability('settings.forms.list')
+  @RequireCapability('forms.list')
   @BusinessRoles(
     BusinessMemberRole.OWNER,
     BusinessMemberRole.ADMIN,
@@ -92,7 +92,7 @@ export class BusinessFormsController {
   }
 
   @Get(':id/submissions')
-  @RequireCapability('settings.forms.list')
+  @RequireCapability('forms.list')
   @BusinessRoles(
     BusinessMemberRole.OWNER,
     BusinessMemberRole.ADMIN,
@@ -107,7 +107,7 @@ export class BusinessFormsController {
   }
 
   @Delete(':id/submissions/:submissionId')
-  @RequireCapability('settings.forms.delete')
+  @RequireCapability('forms.delete')
   @BusinessRoles(
     BusinessMemberRole.OWNER,
     BusinessMemberRole.ADMIN,
@@ -127,7 +127,7 @@ export class BusinessFormsController {
   }
 
   @Patch(':id')
-  @RequireCapability('settings.forms.edit')
+  @RequireCapability('forms.edit')
   @BusinessRoles(
     BusinessMemberRole.OWNER,
     BusinessMemberRole.ADMIN,
@@ -143,7 +143,7 @@ export class BusinessFormsController {
   }
 
   @Delete(':id')
-  @RequireCapability('settings.forms.delete')
+  @RequireCapability('forms.delete')
   @BusinessRoles(
     BusinessMemberRole.OWNER,
     BusinessMemberRole.ADMIN,
@@ -158,7 +158,7 @@ export class BusinessFormsController {
   }
 
   @Post(':id/duplicate')
-  @RequireCapability('settings.forms.create')
+  @RequireCapability('forms.create')
   @BusinessRoles(
     BusinessMemberRole.OWNER,
     BusinessMemberRole.ADMIN,
@@ -174,7 +174,7 @@ export class BusinessFormsController {
   }
 
   @Post(':id/publish')
-  @RequireCapability('settings.forms.edit')
+  @RequireCapability('forms.edit')
   @BusinessRoles(
     BusinessMemberRole.OWNER,
     BusinessMemberRole.ADMIN,
@@ -189,7 +189,7 @@ export class BusinessFormsController {
   }
 
   @Post(':id/move-to-draft')
-  @RequireCapability('settings.forms.edit')
+  @RequireCapability('forms.edit')
   @BusinessRoles(
     BusinessMemberRole.OWNER,
     BusinessMemberRole.ADMIN,
@@ -204,7 +204,7 @@ export class BusinessFormsController {
   }
 
   @Post(':id/archive')
-  @RequireCapability('settings.forms.edit')
+  @RequireCapability('forms.edit')
   @BusinessRoles(
     BusinessMemberRole.OWNER,
     BusinessMemberRole.ADMIN,

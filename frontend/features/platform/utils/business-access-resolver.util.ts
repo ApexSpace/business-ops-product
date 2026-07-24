@@ -3,6 +3,7 @@ import type {
   SubscriptionAccessStatus,
   SubscriptionPaymentStatus,
 } from "@/features/platform/types/business-access";
+import { resolveSubscriptionAccessReason } from "@/lib/business-access/subscription-status-policy";
 
 export type NeedsAttentionFlag =
   | "TRIAL_EXPIRED"
@@ -27,6 +28,8 @@ export type BusinessAccessReasonCode =
   | "SUBSCRIPTION_EXPIRED"
   | "SUBSCRIPTION_CANCELED"
   | "SUBSCRIPTION_PAST_DUE"
+  | "SUBSCRIPTION_UNPAID"
+  | "SUBSCRIPTION_INCOMPLETE"
   | "SUBSCRIPTION_UNKNOWN";
 
 export interface EffectiveCapability {
@@ -70,7 +73,9 @@ const REASON_LABELS: Record<BusinessAccessReasonCode, string> = {
   SUBSCRIPTION_PENDING_PAYMENT: "Payment is pending.",
   SUBSCRIPTION_EXPIRED: "Subscription has expired.",
   SUBSCRIPTION_CANCELED: "Subscription is canceled.",
-  SUBSCRIPTION_PAST_DUE: "Subscription payment is past due.",
+  SUBSCRIPTION_PAST_DUE: "Subscription payment is past due (grace period).",
+  SUBSCRIPTION_UNPAID: "Subscription is unpaid.",
+  SUBSCRIPTION_INCOMPLETE: "Subscription setup is incomplete.",
   SUBSCRIPTION_UNKNOWN: "Subscription does not allow access.",
 };
 
@@ -119,31 +124,14 @@ function resolveAccess(
     return { canAccessWorkspace: false, reasonCode: "NO_SUBSCRIPTION" };
   }
 
-  switch (sub.status) {
-    case "ACTIVE":
-      return { canAccessWorkspace: true, reasonCode: "SUBSCRIPTION_ACTIVE" };
-    case "TRIALING": {
-      if (sub.currentPeriodEnd && new Date(sub.currentPeriodEnd) >= now) {
-        return { canAccessWorkspace: true, reasonCode: "SUBSCRIPTION_TRIALING" };
-      }
-      return { canAccessWorkspace: false, reasonCode: "TRIAL_EXPIRED" };
-    }
-    case "INTERNAL":
-      return { canAccessWorkspace: true, reasonCode: "SUBSCRIPTION_INTERNAL" };
-    case "PENDING_PAYMENT":
-      return {
-        canAccessWorkspace: false,
-        reasonCode: "SUBSCRIPTION_PENDING_PAYMENT",
-      };
-    case "EXPIRED":
-      return { canAccessWorkspace: false, reasonCode: "SUBSCRIPTION_EXPIRED" };
-    case "CANCELED":
-      return { canAccessWorkspace: false, reasonCode: "SUBSCRIPTION_CANCELED" };
-    case "PAST_DUE":
-      return { canAccessWorkspace: false, reasonCode: "SUBSCRIPTION_PAST_DUE" };
-    default:
-      return { canAccessWorkspace: false, reasonCode: "SUBSCRIPTION_UNKNOWN" };
-  }
+  const { canAccess, reasonCode } = resolveSubscriptionAccessReason(sub.status, {
+    currentPeriodEnd: sub.currentPeriodEnd,
+    now,
+  });
+  return {
+    canAccessWorkspace: canAccess,
+    reasonCode: reasonCode as BusinessAccessReasonCode,
+  };
 }
 
 export function resolveBusinessAccess(

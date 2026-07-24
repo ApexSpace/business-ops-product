@@ -1,10 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { MembershipStatus } from '@prisma/client';
-import { EmailNotificationService } from '@app/modules/communications/email/services/email-notification.service';
+import { formatPhone } from '@app/modules/crm/contacts/utils/contact-profile.util';
 import {
   formatAppointmentDateTime,
   formatContactName,
 } from '@app/modules/communications/email/utils/email-variables.util';
+import { NotificationDispatchService } from '@app/modules/communications/notifications/services/notification-dispatch.service';
 import { BusinessRepository } from '@app/modules/platform/business/repositories/business.repository';
 import { BusinessMembershipRepository } from '@app/modules/platform/membership/repositories/business-membership.repository';
 import { normalizeNotificationSettings } from '@app/modules/platform/membership/permissions/staff-permission.registry';
@@ -15,7 +16,7 @@ export class AppointmentNotificationService {
   private readonly logger = new Logger(AppointmentNotificationService.name);
 
   constructor(
-    private readonly emailNotificationService: EmailNotificationService,
+    private readonly notificationDispatch: NotificationDispatchService,
     private readonly businessRepository: BusinessRepository,
     private readonly membershipRepository: BusinessMembershipRepository,
   ) {}
@@ -25,11 +26,6 @@ export class AppointmentNotificationService {
     appointment: AppointmentWithRelations,
     timezone?: string | null,
   ): Promise<void> {
-    const contactEmail = appointment.contact?.email?.trim();
-    if (!contactEmail) {
-      return;
-    }
-
     const business = await this.businessRepository.findById(businessId);
     const variables = this.buildVariables(
       business?.name ?? 'Business',
@@ -37,14 +33,16 @@ export class AppointmentNotificationService {
       timezone,
     );
 
-    await this.emailNotificationService.enqueueTransactionalEmail({
+    await this.notificationDispatch.dispatch({
       businessId,
-      emailType: 'appointment.confirmation',
-      toEmail: contactEmail,
+      notificationKey: 'appointment.confirmation',
+      toEmail: appointment.contact?.email?.trim(),
+      toPhone: this.contactPhone(appointment),
       contactId: appointment.contactId ?? undefined,
       entityType: 'Appointment',
       entityId: appointment.id,
       idempotencyKey: `appointment-confirm-${appointment.id}`,
+      missingRecipient: 'skip',
       variables,
     });
   }
@@ -64,19 +62,17 @@ export class AppointmentNotificationService {
     const members =
       await this.membershipRepository.findOwnersAndAdmins(businessId);
     for (const member of members) {
-      if (!member.user.email) {
-        continue;
-      }
-
-      void this.emailNotificationService
-        .enqueueTransactionalEmail({
+      void this.notificationDispatch
+        .dispatch({
           businessId,
-          emailType: 'appointment.owner_notification',
+          notificationKey: 'appointment.owner_notification',
           toEmail: member.user.email,
+          toPhone: null,
           userId: member.userId,
           entityType: 'Appointment',
           entityId: appointment.id,
           idempotencyKey: `appointment-owner-${appointment.id}-${member.userId}`,
+          missingRecipient: 'skip',
           variables,
         })
         .catch((err) => {
@@ -143,15 +139,17 @@ export class AppointmentNotificationService {
         continue;
       }
 
-      void this.emailNotificationService
-        .enqueueTransactionalEmail({
+      void this.notificationDispatch
+        .dispatch({
           businessId,
-          emailType: 'appointment.owner_notification',
+          notificationKey: 'appointment.owner_notification',
           toEmail: membership.user.email,
+          toPhone: null,
           userId: membership.userId,
           entityType: 'Appointment',
           entityId: appointment.id,
           idempotencyKey: `appointment-staff-${event}-${appointment.id}-${membership.userId}`,
+          missingRecipient: 'skip',
           variables,
         })
         .catch((err) => {
@@ -169,11 +167,6 @@ export class AppointmentNotificationService {
     appointment: AppointmentWithRelations,
     timezone?: string | null,
   ): Promise<void> {
-    const contactEmail = appointment.contact?.email?.trim();
-    if (!contactEmail) {
-      return;
-    }
-
     const business = await this.businessRepository.findById(businessId);
     const variables = this.buildVariables(
       business?.name ?? 'Business',
@@ -181,14 +174,16 @@ export class AppointmentNotificationService {
       timezone,
     );
 
-    await this.emailNotificationService.enqueueTransactionalEmail({
+    await this.notificationDispatch.dispatch({
       businessId,
-      emailType: 'appointment.cancelled',
-      toEmail: contactEmail,
+      notificationKey: 'appointment.cancelled',
+      toEmail: appointment.contact?.email?.trim(),
+      toPhone: this.contactPhone(appointment),
       contactId: appointment.contactId ?? undefined,
       entityType: 'Appointment',
       entityId: appointment.id,
       idempotencyKey: `appointment-cancelled-${appointment.id}`,
+      missingRecipient: 'skip',
       variables,
     });
   }
@@ -199,11 +194,6 @@ export class AppointmentNotificationService {
     previousStartAt: Date,
     timezone?: string | null,
   ): Promise<void> {
-    const contactEmail = appointment.contact?.email?.trim();
-    if (!contactEmail) {
-      return;
-    }
-
     const business = await this.businessRepository.findById(businessId);
     const variables = {
       ...this.buildVariables(
@@ -217,14 +207,16 @@ export class AppointmentNotificationService {
       ),
     };
 
-    await this.emailNotificationService.enqueueTransactionalEmail({
+    await this.notificationDispatch.dispatch({
       businessId,
-      emailType: 'appointment.rescheduled',
-      toEmail: contactEmail,
+      notificationKey: 'appointment.rescheduled',
+      toEmail: appointment.contact?.email?.trim(),
+      toPhone: this.contactPhone(appointment),
       contactId: appointment.contactId ?? undefined,
       entityType: 'Appointment',
       entityId: appointment.id,
       idempotencyKey: `appointment-rescheduled-${appointment.id}-${appointment.startAt.toISOString()}`,
+      missingRecipient: 'skip',
       variables,
     });
   }
@@ -234,11 +226,6 @@ export class AppointmentNotificationService {
     appointment: AppointmentWithRelations,
     timezone?: string | null,
   ): Promise<void> {
-    const contactEmail = appointment.contact?.email?.trim();
-    if (!contactEmail) {
-      return;
-    }
-
     const business = await this.businessRepository.findById(businessId);
     const variables = this.buildVariables(
       business?.name ?? 'Business',
@@ -246,14 +233,16 @@ export class AppointmentNotificationService {
       timezone,
     );
 
-    await this.emailNotificationService.enqueueTransactionalEmail({
+    await this.notificationDispatch.dispatch({
       businessId,
-      emailType: 'appointment.ready',
-      toEmail: contactEmail,
+      notificationKey: 'appointment.ready',
+      toEmail: appointment.contact?.email?.trim(),
+      toPhone: this.contactPhone(appointment),
       contactId: appointment.contactId ?? undefined,
       entityType: 'Appointment',
       entityId: appointment.id,
       idempotencyKey: `appointment-ready-${appointment.id}-${Date.now()}`,
+      missingRecipient: 'skip',
       variables,
     });
   }
@@ -264,11 +253,6 @@ export class AppointmentNotificationService {
     reminderHoursBefore: number,
     timezone?: string | null,
   ): Promise<void> {
-    const contactEmail = appointment.contact?.email?.trim();
-    if (!contactEmail) {
-      return;
-    }
-
     const business = await this.businessRepository.findById(businessId);
     const variables = this.buildVariables(
       business?.name ?? 'Business',
@@ -276,16 +260,27 @@ export class AppointmentNotificationService {
       timezone,
     );
 
-    await this.emailNotificationService.enqueueTransactionalEmail({
+    await this.notificationDispatch.dispatch({
       businessId,
-      emailType: 'appointment.reminder',
-      toEmail: contactEmail,
+      notificationKey: 'appointment.reminder',
+      toEmail: appointment.contact?.email?.trim(),
+      toPhone: this.contactPhone(appointment),
       contactId: appointment.contactId ?? undefined,
       entityType: 'Appointment',
       entityId: appointment.id,
       idempotencyKey: `appointment-reminder-${appointment.id}-${reminderHoursBefore}h`,
+      missingRecipient: 'skip',
       variables,
     });
+  }
+
+  private contactPhone(
+    appointment: AppointmentWithRelations,
+  ): string | null {
+    return formatPhone(
+      appointment.contact?.phoneCountryCode,
+      appointment.contact?.phoneNumber,
+    );
   }
 
   private buildVariables(

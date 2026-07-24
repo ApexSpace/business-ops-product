@@ -73,6 +73,8 @@ export const PUBLIC_AUTH_PATHS = [
   "/login",
   "/select-context",
   "/accept-invite",
+  "/forgot-password",
+  "/reset-password",
 ] as const;
 
 /** OAuth and other callback flows that must work logged out. */
@@ -84,6 +86,8 @@ export const PUBLIC_API_PATH_PREFIXES = [
   "/api/auth/refresh",
   "/api/auth/accept-invite",
   "/api/auth/invite-preview",
+  "/api/auth/forgot-password",
+  "/api/auth/reset-password",
 ] as const;
 
 function normalizePathname(pathname: string): string {

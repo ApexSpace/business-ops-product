@@ -26,8 +26,8 @@ export default function PlatformDashboardPage() {
 
   const quickLinks = [
     { href: "/platform/businesses", label: "Businesses" },
-    { href: "/platform/users", label: "Platform users" },
-    { href: "/platform/plan-groups", label: "Plan groups" },
+    { href: "/platform/tiers", label: "Tiers" },
+    { href: "/platform/addons", label: "Add-ons" },
     { href: "/platform/audit-logs", label: "Audit logs" },
   ];
 

@@ -17,15 +17,7 @@ import {
   updateOnlineBookingStaffSelection,
 } from "@/features/online-booking-settings/api/online-booking-settings.api";
 import { AvoidGapsSettingsSection } from "@/features/online-booking-settings/components/avoid-gaps-settings-section";
-import {
-  APPOINTMENT_EXPRESS_COMPLETE_KEY,
-  getNotificationChannelPreference,
-  updateNotificationChannelPreference,
-  type NotificationChannel,
-} from "@/features/notifications/api/notification-channel-preferences.api";
-import { NotificationChannelPicker } from "@/features/notifications/components/notification-channel-picker";
 import { useCan } from "@/features/auth/permissions";
-import { queryKeys } from "@/lib/query/keys";
 
 async function copyText(text: string, label: string) {
   try {
@@ -45,31 +37,8 @@ export function OnlineBookingSettingsScreen() {
     queryFn: getOnlineBookingSettings,
   });
 
-  const { data: expressChannelPref } = useQuery({
-    queryKey: queryKeys.notificationChannelPreferences.detail(
-      APPOINTMENT_EXPRESS_COMPLETE_KEY,
-    ),
-    queryFn: () =>
-      getNotificationChannelPreference(APPOINTMENT_EXPRESS_COMPLETE_KEY),
-  });
-
   const invalidate = () =>
     queryClient.invalidateQueries({ queryKey: ["online-booking-settings"] });
-
-  const channelMutation = useMutation({
-    mutationFn: (channel: NotificationChannel) =>
-      updateNotificationChannelPreference({
-        notificationKey: APPOINTMENT_EXPRESS_COMPLETE_KEY,
-        channel,
-      }),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({
-        queryKey: queryKeys.notificationChannelPreferences.all(),
-      });
-      toast.success("Delivery channel saved");
-    },
-    onError: (e: Error) => toast.error(e.message),
-  });
 
   const setupMutation = useMutation({
     mutationFn: updateOnlineBookingSetup,
@@ -348,13 +317,10 @@ export function OnlineBookingSettingsScreen() {
                 ))}
                 {data.expressBookingEnabled ? (
                   <div className="space-y-4">
-                    <NotificationChannelPicker
-                      notificationKey={APPOINTMENT_EXPRESS_COMPLETE_KEY}
-                      label="Send link via"
-                      value={expressChannelPref?.channel ?? "EMAIL"}
-                      disabled={!canManage || channelMutation.isPending}
-                      onChange={(channel) => channelMutation.mutate(channel)}
-                    />
+                    <p className="text-xs text-muted-foreground">
+                      Delivery channel (email or SMS) is configured under
+                      Settings → Notifications.
+                    </p>
                     <div className="space-y-2">
                       <Label>Time limit (minutes)</Label>
                       <Input

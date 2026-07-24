@@ -8,6 +8,7 @@ import {
   SMS_PROVIDER_KEY,
 } from '@app/modules/communications/sms/constants/sms-platform.constants';
 import { PlatformEmailProvisioningService } from '../email/services/platform-email-provisioning.service';
+import { PlatformSmsProvisioningService } from '../../twilio/services/platform-sms-provisioning.service';
 import { getMetaScopesForProvider } from '../meta/constants/meta-provider.config';
 import { MetaConfigService } from '../meta/services/meta-config.service';
 import { BusinessIntegrationRepository } from '../repositories/business-integration.repository';
@@ -35,6 +36,7 @@ export class MessagingStatusService {
     private readonly businessIntegrationRepository: BusinessIntegrationRepository,
     private readonly integrationResourceRepository: IntegrationResourceRepository,
     private readonly platformEmailProvisioning: PlatformEmailProvisioningService,
+    private readonly platformSmsProvisioning: PlatformSmsProvisioningService,
   ) {}
 
   async getMessagingStatus(
@@ -236,6 +238,10 @@ export class MessagingStatusService {
   private async getSmsMessagingStatus(
     businessId: string,
   ): Promise<MessagingStatusDto> {
+    await this.platformSmsProvisioning
+      .ensurePlatformDefaultSms(businessId)
+      .catch(() => null);
+
     const twilioConfig = this.configService.get('twilio', { infer: true });
     const warnings: string[] = [];
 
@@ -243,6 +249,11 @@ export class MessagingStatusService {
     if (!platformConfigured) {
       warnings.push(
         'Platform SMS is not configured (TWILIO_ENABLED, TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_PLATFORM_FROM_NUMBER).',
+      );
+    }
+    if (platformConfigured && !twilioConfig.messagingServiceSid) {
+      warnings.push(
+        'TWILIO_SHARED_MESSAGING_SERVICE_SID is not set; auto-assigned numbers will not join the shared A2P sender pool.',
       );
     }
 
@@ -274,7 +285,7 @@ export class MessagingStatusService {
 
     if (!isBusinessOwned) {
       warnings.push(
-        'Connect your Twilio number in Settings → Integrations to send and receive SMS in the inbox.',
+        'Outbound appointment SMS uses your Codesol-assigned number (one-way). Connect your own Twilio number or enable SMS Chat later for two-way inbox.',
       );
     }
 

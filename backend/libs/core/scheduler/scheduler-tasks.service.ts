@@ -6,6 +6,8 @@ import { ExpressBookingService } from '@app/modules/operations/express-booking/s
 import { AutomationAppointmentTriggerService } from '@app/modules/communications/automations/services/automation-appointment-trigger.service';
 import { ClientPackagesService } from '@app/modules/finance/packages/services/client-packages.service';
 import { ClientMembershipsService } from '@app/modules/finance/memberships/services/client-memberships.service';
+import { OperationsCampaignService } from '@app/modules/platform/operations/services/operations-campaign.service';
+import { StripePlatformBillingReconcileService } from '@app/modules/platform/billing/stripe/services/stripe-platform-billing-reconcile.service';
 import {
   JOB_CLEANUP_ASYNC_JOBS,
   JOB_CLEANUP_ORPHAN_FILES,
@@ -25,6 +27,8 @@ export class SchedulerTasksService {
     private readonly automationAppointmentTriggerService: AutomationAppointmentTriggerService,
     private readonly clientPackagesService: ClientPackagesService,
     private readonly clientMembershipsService: ClientMembershipsService,
+    private readonly operationsCampaignService: OperationsCampaignService,
+    private readonly stripeBillingReconcile: StripePlatformBillingReconcileService,
   ) {}
 
   @Cron(CronExpression.EVERY_DAY_AT_3AM)
@@ -169,5 +173,42 @@ export class SchedulerTasksService {
     this.logger.log(
       `Enqueued orphan file cleanup (>${hours}h pending) bullJobId=${jobId ?? 'n/a'}`,
     );
+  }
+
+  @Cron(CronExpression.EVERY_HOUR)
+  async processEntitlementCampaignsDue(): Promise<void> {
+    try {
+      const result =
+        await this.operationsCampaignService.processDueCampaigns();
+      if (result.due > 0 || result.migrated > 0) {
+        this.logger.log(
+          `Entitlement campaigns: markedDue=${result.due} autoMigrated=${result.migrated}`,
+        );
+      }
+    } catch (error) {
+      this.logger.error(
+        `Entitlement campaign due processing failed: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+    }
+  }
+
+  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
+  async reconcileStripePlatformBilling(): Promise<void> {
+    try {
+      const result = await this.stripeBillingReconcile.reconcileAll({
+        limit: 500,
+      });
+      this.logger.log(
+        `Stripe billing reconcile checked=${result.checked} corrected=${result.corrected} errors=${result.errors}`,
+      );
+    } catch (error) {
+      this.logger.error(
+        `Stripe billing reconcile failed: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+    }
   }
 }

@@ -62,6 +62,56 @@ export function syncPlatformBusinessCapabilitiesFromTier(
   );
 }
 
+export type BusinessAddonPackagingItem = {
+  addonId: string;
+  addonKey: string;
+  addonName: string;
+  purchaseMode: "INDEPENDENT" | "DEPENDENT";
+  source: "INCLUDED" | "PURCHASED";
+  status: string;
+  grandfathered: boolean;
+  priceAtPurchase: string | null;
+  capability: { id: string; key: string; name: string; status: string };
+  activatedAt: string;
+};
+
+export type BusinessAddonPackagingResponse = {
+  businessId: string;
+  tierId: string | null;
+  tierName: string | null;
+  items: BusinessAddonPackagingItem[];
+};
+
+export function listPlatformBusinessAddons(businessId: string) {
+  return api.get<BusinessAddonPackagingResponse>(
+    `platform/businesses/${businessId}/addons`,
+  );
+}
+
+export function syncPlatformBusinessIncludedAddons(businessId: string) {
+  return api.post<{ success: boolean; grantedAddonIds?: string[] }>(
+    `platform/businesses/${businessId}/addons/sync-included-from-tier`,
+  );
+}
+
+export function migratePlatformBusinessAddon(
+  businessId: string,
+  addonId: string,
+  body: {
+    policy: "keep_grandfathered" | "force_remove" | "convert_to_purchased";
+    notifyOwners?: boolean;
+    notifyEffectiveDate?: string;
+    notifyMessage?: string;
+  },
+) {
+  return api.post<{
+    addonId: string;
+    policy: string;
+    affectedCount: number;
+    notifiedCount: number;
+  }>(`platform/businesses/${businessId}/addons/${addonId}/migrate`, body);
+}
+
 export function markPlatformBusinessPaid(
   businessId: string,
   body?: MarkPaidInput,

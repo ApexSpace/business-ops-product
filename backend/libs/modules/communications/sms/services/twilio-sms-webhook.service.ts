@@ -89,6 +89,15 @@ export class TwilioSmsWebhookService {
     return this.smsModeResolver.isPlatformNumber(to);
   }
 
+  async isOneWayInbound(to: string | undefined): Promise<boolean> {
+    if (!to) return false;
+    return this.smsModeResolver.isOneWayNotificationNumber(to);
+  }
+
+  async isOneWayPlatformInbound(to: string | undefined): Promise<boolean> {
+    return this.isOneWayInbound(to);
+  }
+
   isComplianceKeyword(body: string | null | undefined): boolean {
     return parseSmsComplianceKeyword(body) !== null;
   }
@@ -128,25 +137,20 @@ export class TwilioSmsWebhookService {
     const from = payload.From ?? '';
     const body = payload.Body ?? null;
 
-    // Platform number is normally compliance-only (STOP/HELP for notification SMS).
-    // If the same number is also connected as a business inbox number (common in
-    // single-number local testing), route normal messages into conversations.
-    if (this.smsModeResolver.isPlatformNumber(to)) {
-      const businessOwnsNumber =
-        await this.smsModeResolver.isBusinessOwnedFromNumber(to);
-
-      if (!businessOwnsNumber || this.isComplianceKeyword(body)) {
-        const result = await this.platformSmsCompliance.handleInbound({
-          to,
-          from,
-          body,
-        });
-        await this.webhookEventsRepository.updateStatus(
-          webhookEventId,
-          WebhookEventStatus.PROCESSED,
-        );
-        return result.twiml ?? buildEmptyTwimlResponse();
-      }
+    // One-way notification numbers (shared env From or auto-assigned
+    // PLATFORM_PROVISIONED with twoWayEnabled=false): STOP/HELP only —
+    // do not open inbox conversations.
+    if (await this.smsModeResolver.isOneWayNotificationNumber(to)) {
+      const result = await this.platformSmsCompliance.handleInbound({
+        to,
+        from,
+        body,
+      });
+      await this.webhookEventsRepository.updateStatus(
+        webhookEventId,
+        WebhookEventStatus.PROCESSED,
+      );
+      return result.twiml ?? buildEmptyTwimlResponse();
     }
 
     const inbound = normalizeTwilioInboundSms(payload);

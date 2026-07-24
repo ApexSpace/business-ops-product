@@ -44,7 +44,7 @@ const MEMBER_ROLES = [
 @ApiBearerAuth()
 @Controller('offers')
 @UseGuards(BusinessRolesGuard, BusinessCapabilityGuard)
-@RequireModule('payments')
+@RequireModule('offers')
 @StaffPermission('offers.access')
 export class OffersController {
   constructor(private readonly offersService: OffersService) {}

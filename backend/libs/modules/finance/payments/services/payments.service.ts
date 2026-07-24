@@ -27,7 +27,8 @@ import {
 import { BusinessIntegrationRepository } from '@app/modules/integrations/integrations/repositories/business-integration.repository';
 import { StripeApiService } from '@app/modules/integrations/integrations/stripe/services/stripe-api.service';
 import { assertStripeReadyForPayments } from '@app/modules/integrations/integrations/stripe/utils/stripe-readiness.util';
-import { EmailNotificationService } from '@app/modules/communications/email/services/email-notification.service';
+import { NotificationDispatchService } from '@app/modules/communications/notifications/services/notification-dispatch.service';
+import { formatPhone } from '@app/modules/crm/contacts/utils/contact-profile.util';
 import {
   formatContactName,
   formatMoney,
@@ -46,7 +47,7 @@ export class PaymentsService {
     private readonly auditService: AuditService,
     private readonly businessIntegrationRepository: BusinessIntegrationRepository,
     private readonly stripeApiService: StripeApiService,
-    private readonly emailNotificationService: EmailNotificationService,
+    private readonly notificationDispatch: NotificationDispatchService,
     private readonly businessRepository: BusinessRepository,
     private readonly paymentOrchestrator: PaymentOrchestratorService,
   ) {}
@@ -658,6 +659,8 @@ export class PaymentsService {
         lastName: string | null;
         companyName: string | null;
         email: string | null;
+        phoneCountryCode?: string | null;
+        phoneNumber?: string | null;
       };
       invoice: { id: string; invoiceNumber: string };
     },
@@ -665,20 +668,26 @@ export class PaymentsService {
     paidAt: Date,
   ): Promise<void> {
     const contactEmail = payment.contact.email?.trim();
-    if (!contactEmail) {
+    const contactPhone = formatPhone(
+      payment.contact.phoneCountryCode,
+      payment.contact.phoneNumber,
+    );
+    if (!contactEmail && !contactPhone) {
       return;
     }
 
     const business = await this.businessRepository.findById(businessId);
 
-    await this.emailNotificationService.enqueueTransactionalEmail({
+    await this.notificationDispatch.dispatch({
       businessId,
-      emailType: 'invoice.paid_receipt',
+      notificationKey: 'invoice.paid_receipt',
       toEmail: contactEmail,
+      toPhone: contactPhone,
       contactId: payment.contact.id,
       entityType: 'Payment',
       entityId: payment.id,
       idempotencyKey: `invoice-paid-manual-${payment.id}`,
+      missingRecipient: 'skip',
       variables: {
         'business.name': business?.name ?? 'Business',
         'contact.name': formatContactName(payment.contact),

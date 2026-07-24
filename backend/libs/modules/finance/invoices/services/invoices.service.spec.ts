@@ -30,8 +30,8 @@ describe('InvoicesService invoice.sent', () => {
   const frontendUrl = 'https://app.example.com';
 
   function buildService() {
-    const emailNotificationService = {
-      enqueueTransactionalEmail: jest.fn().mockResolvedValue(undefined),
+    const notificationDispatch = {
+      dispatch: jest.fn().mockResolvedValue('email'),
     };
     const invoiceRepository = {
       findById: jest.fn(),
@@ -57,18 +57,18 @@ describe('InvoicesService invoice.sent', () => {
           taxesAndCurrency: { currencyCode: 'USD' },
         }),
       } as never,
-      emailNotificationService as never,
+      notificationDispatch as never,
       { findById: jest.fn().mockResolvedValue({ name: 'Acme' }) } as never,
       configService as never,
     );
 
-    return { service, emailNotificationService, invoiceRepository };
+    return { service, notificationDispatch, invoiceRepository };
   }
 
   it('always builds invoice.sent public URL from FRONTEND_URL and publicToken', async () => {
     const publicToken = 'abc123token';
     const expectedUrl = buildInvoicePublicUrl(frontendUrl, publicToken);
-    const { service, emailNotificationService } = buildService();
+    const { service, notificationDispatch } = buildService();
 
     await (
       service as unknown as {
@@ -79,11 +79,9 @@ describe('InvoicesService invoice.sent', () => {
       buildInvoiceMock({ publicToken, publicUrl: 'https://stale.example/old' }),
     );
 
-    expect(
-      emailNotificationService.enqueueTransactionalEmail,
-    ).toHaveBeenCalledWith(
+    expect(notificationDispatch.dispatch).toHaveBeenCalledWith(
       expect.objectContaining({
-        emailType: 'invoice.sent',
+        notificationKey: 'invoice.sent',
         idempotencyKey: 'invoice-sent-inv-1',
         variables: expect.objectContaining({
           'invoice.public_url': expectedUrl,

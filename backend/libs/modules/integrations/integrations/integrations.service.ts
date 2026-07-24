@@ -32,6 +32,7 @@ import { BusinessIntegrationRepository } from './repositories/business-integrati
 import { IntegrationProviderRepository } from './repositories/integration-provider.repository';
 import { PlatformIntegrationRepository } from './repositories/platform-integration.repository';
 import { PlatformEmailProvisioningService } from './email/services/platform-email-provisioning.service';
+import { PlatformSmsProvisioningService } from '../twilio/services/platform-sms-provisioning.service';
 
 @Injectable()
 export class IntegrationsService {
@@ -41,6 +42,7 @@ export class IntegrationsService {
     private readonly platformIntegrationRepository: PlatformIntegrationRepository,
     private readonly auditService: AuditService,
     private readonly platformEmailProvisioning: PlatformEmailProvisioningService,
+    private readonly platformSmsProvisioning: PlatformSmsProvisioningService,
   ) {}
 
   // ── Business providers ──────────────────────────────────────────────
@@ -50,6 +52,9 @@ export class IntegrationsService {
   ): Promise<IntegrationProviderWithStatusDto[]> {
     await this.platformEmailProvisioning
       .ensurePlatformDefaultEmail(businessId)
+      .catch(() => null);
+    await this.platformSmsProvisioning
+      .ensurePlatformDefaultSms(businessId)
       .catch(() => null);
 
     const providers =
