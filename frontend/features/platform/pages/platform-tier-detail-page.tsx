@@ -230,7 +230,12 @@ export function PlatformTierDetailPage({ isNew = false }: { isNew?: boolean }) {
           </div>
           <div className="space-y-2">
             <Label>Status</Label>
-            <Select value={status} onValueChange={setStatus}>
+            <Select
+              value={status}
+              onValueChange={(v) => {
+                if (v != null) setStatus(v);
+              }}
+            >
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>

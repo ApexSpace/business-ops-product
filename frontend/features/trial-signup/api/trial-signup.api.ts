@@ -1,5 +1,5 @@
 import { getPublicBackendUrl } from "@/lib/config/public-backend-url";
-import type { TrialWizardState } from "./constants";
+import type { TrialWizardState } from "../constants";
 
 type Envelope<T> = {
   data?: T;
