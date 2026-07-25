@@ -97,6 +97,11 @@ export const ACTION_CONFIG_FIXTURES: Record<string, unknown> = {
   'lead.move_stage': {
     stageId: '55555555-5555-4555-8555-555555555555',
   },
+  'business.create_from_lead': {
+    pipelineId: '66666666-6666-4666-8666-666666666666',
+    stageId: '55555555-5555-4555-8555-555555555555',
+    businessName: 'Lead Co',
+  },
   'task.create': {
     title: 'Follow up with {{contact.first_name}}',
     description: 'Automation task',

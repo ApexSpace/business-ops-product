@@ -51,6 +51,7 @@ export class ContactIdentityBackfillService {
       ? [options.businessId]
       : (
           await this.prisma.business.findMany({
+            where: { type: 'TENANT', lifecycleStage: 'ACTIVE' },
             select: { id: true },
             orderBy: { createdAt: 'asc' },
           })

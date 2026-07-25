@@ -10,6 +10,7 @@ import {
   baseTriggerPayloadSchema,
   triggerPayloadSchema,
 } from '../utils/automation-schema.util';
+import { applyPlatformAudiencesToTriggers } from '../utils/automation-audience.util';
 
 type TriggerInput = Omit<TriggerDefinition, 'payloadSchema'> & {
   payloadSchema?: z.ZodTypeAny;
@@ -1040,6 +1041,8 @@ export const TRIGGER_REGISTRY: TriggerDefinition[] = [
     payloadSchema: triggerPayloadSchema('client_membership'),
   }),
 ];
+
+applyPlatformAudiencesToTriggers(TRIGGER_REGISTRY);
 
 export const TRIGGER_BY_KEY = Object.fromEntries(
   TRIGGER_REGISTRY.map((t) => [t.key, t]),

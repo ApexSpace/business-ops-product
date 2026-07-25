@@ -1,5 +1,6 @@
 import {
   Building2,
+  ClipboardList,
   FileText,
   Layers,
   LayoutDashboard,
@@ -69,6 +70,21 @@ export const platformOperationalSections: ShellNavSection[] = [
     id: "system",
     label: "System",
     items: [
+      {
+        title: "Forms",
+        href: "/platform/forms",
+        icon: ClipboardList,
+      },
+      {
+        title: "Automations",
+        href: "/platform/automations",
+        icon: Workflow,
+      },
+      {
+        title: "Pipelines",
+        href: "/platform/pipelines",
+        icon: Layers,
+      },
       {
         title: "Integrations",
         href: "/platform/settings/integrations",

@@ -20,6 +20,8 @@ describe('AutomationActionExecutorService (implemented actions)', () => {
 
   const prisma = {
     automationWorkflow: { findUnique: jest.fn() },
+    business: { findFirst: jest.fn().mockResolvedValue({ type: 'TENANT' }) },
+    platformMembership: { findMany: jest.fn().mockResolvedValue([]) },
     contactTag: { findFirst: jest.fn(), create: jest.fn() },
     pipelineStage: { findFirst: jest.fn() },
   };
@@ -34,6 +36,9 @@ describe('AutomationActionExecutorService (implemented actions)', () => {
   };
   const emailNotificationService = {
     enqueueTransactionalEmail: jest.fn().mockResolvedValue(undefined),
+  };
+  const platformSmsSendService = {
+    send: jest.fn().mockResolvedValue(undefined),
   };
   const contactRepository = {
     findById: jest.fn().mockResolvedValue({
@@ -65,12 +70,19 @@ describe('AutomationActionExecutorService (implemented actions)', () => {
       .mockResolvedValue([{ user: { email: 'owner@example.com' } }]),
   };
   const auditService = { log: jest.fn().mockResolvedValue(undefined) };
+  const businessLifecycleService = {
+    createFromLead: jest.fn().mockResolvedValue({
+      id: '99999999-9999-4999-8999-999999999999',
+      lifecycleStage: 'LEAD',
+    }),
+  };
 
   const service = new AutomationActionExecutorService(
     prisma as never,
     customValueResolver as never,
     conditionEvaluator as never,
     emailNotificationService as never,
+    platformSmsSendService as never,
     contactRepository as never,
     tagRepository as never,
     leadRepository as never,
@@ -78,6 +90,7 @@ describe('AutomationActionExecutorService (implemented actions)', () => {
     noteRepository as never,
     membershipRepository as never,
     auditService as never,
+    businessLifecycleService as never,
   );
 
   beforeEach(() => {
@@ -158,5 +171,54 @@ describe('AutomationActionExecutorService (implemented actions)', () => {
     if (result.type === 'delay') {
       expect(result.delayMs).toBeGreaterThan(0);
     }
+  });
+
+  it('send_internal_email uses platform membership emails for INTERNAL ops', async () => {
+    prisma.business.findFirst.mockResolvedValue({ type: 'INTERNAL' });
+    prisma.platformMembership.findMany.mockResolvedValue([
+      { user: { email: 'admin@codesol.test' } },
+      { user: { email: 'support@codesol.test' } },
+    ]);
+
+    const result = await service.execute(
+      'communication.send_internal_email',
+      ACTION_CONFIG_FIXTURES[
+        'communication.send_internal_email'
+      ] as Record<string, unknown>,
+      context,
+      ID.user,
+    );
+
+    expect(result).toEqual(
+      expect.objectContaining({
+        type: 'continue',
+        output: expect.objectContaining({ recipientCount: 2 }),
+      }),
+    );
+    expect(membershipRepository.findOwnersAndAdmins).not.toHaveBeenCalled();
+    expect(emailNotificationService.enqueueTransactionalEmail).toHaveBeenCalledTimes(
+      2,
+    );
+    expect(
+      emailNotificationService.enqueueTransactionalEmail.mock.calls.map(
+        (call: [{ toEmail: string }]) => call[0].toEmail,
+      ),
+    ).toEqual(['admin@codesol.test', 'support@codesol.test']);
+  });
+
+  it('send_internal_email fails loud when INTERNAL has no platform admin emails', async () => {
+    prisma.business.findFirst.mockResolvedValue({ type: 'INTERNAL' });
+    prisma.platformMembership.findMany.mockResolvedValue([]);
+
+    await expect(
+      service.execute(
+        'communication.send_internal_email',
+        ACTION_CONFIG_FIXTURES[
+          'communication.send_internal_email'
+        ] as Record<string, unknown>,
+        context,
+        ID.user,
+      ),
+    ).rejects.toThrow(/No platform admin emails/);
   });
 });

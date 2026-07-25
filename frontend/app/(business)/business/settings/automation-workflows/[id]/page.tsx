@@ -1,5 +1,9 @@
 import dynamic from "next/dynamic";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  AutomationsHostProvider,
+  BUSINESS_AUTOMATIONS_HOST,
+} from "@/features/automations/automations-host-context";
 
 const AutomationWorkflowEditorPage = dynamic(
   () =>
@@ -12,5 +16,9 @@ const AutomationWorkflowEditorPage = dynamic(
 );
 
 export default function Page() {
-  return <AutomationWorkflowEditorPage />;
+  return (
+    <AutomationsHostProvider value={BUSINESS_AUTOMATIONS_HOST}>
+      <AutomationWorkflowEditorPage />
+    </AutomationsHostProvider>
+  );
 }

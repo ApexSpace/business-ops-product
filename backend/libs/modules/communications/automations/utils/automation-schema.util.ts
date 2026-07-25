@@ -89,6 +89,18 @@ export const leadStageActionConfigSchema = z.object({
   pipelineId: z.string().uuid().optional(),
 });
 
+export const createBusinessFromLeadActionConfigSchema = z.object({
+  pipelineId: z.string().uuid(),
+  stageId: z.string().uuid(),
+  /** Supports merge tags; defaults to form business/name fields when empty. */
+  businessName: z.string().min(1).optional(),
+  email: z.string().optional(),
+  firstName: z.string().optional(),
+  lastName: z.string().optional(),
+  phoneNumber: z.string().optional(),
+  phoneCountryCode: z.string().optional(),
+});
+
 export const assignActionConfigSchema = z.object({
   userId: z.string().uuid(),
 });

@@ -312,8 +312,12 @@ export const queryKeys = {
   },
   pipelines: {
     all: () => ["pipelines"] as const,
-    list: () => ["pipelines", "list"] as const,
-    detail: (id: string) => ["pipelines", "detail", id] as const,
+    list: (apiBase = "pipelines") =>
+      ["pipelines", apiBase, "list"] as const,
+    detail: (id: string, apiBase = "pipelines") =>
+      ["pipelines", apiBase, "detail", id] as const,
+    lifecycleBoard: (apiBase: string, pipelineId: string) =>
+      ["pipelines", apiBase, "lifecycle-board", pipelineId] as const,
   },
   industries: {
     active: () => ["industries", "active"] as const,
@@ -339,21 +343,30 @@ export const queryKeys = {
   },
   forms: {
     all: () => ["forms"] as const,
-    list: (filters?: {
-      search?: string;
-      status?: string;
-      sort?: string;
-      sortDir?: string;
-    }) => listKey(["forms", "list"], filters),
-    detail: (id: string) => ["forms", "detail", id] as const,
-    embed: (id: string) => ["forms", "embed", id] as const,
-    submissions: (formId: string, filters?: { page?: number; limit?: number }) =>
-      listKey(["forms", formId, "submissions"], filters),
-    categories: () => ["forms", "metadata", "categories"] as const,
-    fieldTypes: (filters?: ListFilters) =>
-      listKey(["forms", "metadata", "field-types"], filters),
-    palette: (filters?: ListFilters) =>
-      listKey(["forms", "metadata", "palette"], filters),
+    list: (
+      apiBase: string,
+      filters?: {
+        search?: string;
+        status?: string;
+        sort?: string;
+        sortDir?: string;
+      },
+    ) => listKey(["forms", apiBase, "list"], filters),
+    detail: (apiBase: string, id: string) =>
+      ["forms", apiBase, "detail", id] as const,
+    embed: (apiBase: string, id: string) =>
+      ["forms", apiBase, "embed", id] as const,
+    submissions: (
+      apiBase: string,
+      formId: string,
+      filters?: { page?: number; limit?: number },
+    ) => listKey(["forms", apiBase, formId, "submissions"], filters),
+    categories: (apiBase: string) =>
+      ["forms", apiBase, "metadata", "categories"] as const,
+    fieldTypes: (apiBase: string, filters?: ListFilters) =>
+      listKey(["forms", apiBase, "metadata", "field-types"], filters),
+    palette: (apiBase: string, filters?: ListFilters) =>
+      listKey(["forms", apiBase, "metadata", "palette"], filters),
   },
   emailNotifications: {
     all: () => ["email-notifications"] as const,
@@ -376,27 +389,33 @@ export const queryKeys = {
   },
   automations: {
     all: () => ["automations"] as const,
-    categories: (scope?: string) =>
-      listKey(["automations", "categories"], scope ? { scope } : undefined),
-    triggers: (filters?: ListFilters) =>
-      listKey(["automations", "triggers"], filters),
-    actions: (filters?: ListFilters) =>
-      listKey(["automations", "actions"], filters),
-    customValues: (filters?: ListFilters) =>
-      listKey(["automations", "custom-values"], filters),
-    conditions: (filters?: ListFilters) =>
-      listKey(["automations", "conditions"], filters),
-    filterOperators: () => ["automations", "filter-operators"] as const,
+    categories: (apiBase: string, scope?: string) =>
+      listKey(
+        ["automations", apiBase, "categories"],
+        scope ? { scope } : undefined,
+      ),
+    triggers: (apiBase: string, filters?: ListFilters) =>
+      listKey(["automations", apiBase, "triggers"], filters),
+    actions: (apiBase: string, filters?: ListFilters) =>
+      listKey(["automations", apiBase, "actions"], filters),
+    customValues: (apiBase: string, filters?: ListFilters) =>
+      listKey(["automations", apiBase, "custom-values"], filters),
+    conditions: (apiBase: string, filters?: ListFilters) =>
+      listKey(["automations", apiBase, "conditions"], filters),
+    filterOperators: (apiBase: string) =>
+      ["automations", apiBase, "filter-operators"] as const,
     workflows: {
-      all: () => ["automations", "workflows"] as const,
-      list: (filters?: ListFilters) =>
-        listKey(["automations", "workflows", "list"], filters),
-      detail: (id: string) => ["automations", "workflows", "detail", id] as const,
+      all: (apiBase: string) => ["automations", apiBase, "workflows"] as const,
+      list: (apiBase: string, filters?: ListFilters) =>
+        listKey(["automations", apiBase, "workflows", "list"], filters),
+      detail: (apiBase: string, id: string) =>
+        ["automations", apiBase, "workflows", "detail", id] as const,
     },
     workflowRuns: {
-      all: () => ["automations", "workflow-runs"] as const,
-      list: (filters?: ListFilters) =>
-        listKey(["automations", "workflow-runs", "list"], filters),
+      all: (apiBase: string) =>
+        ["automations", apiBase, "workflow-runs"] as const,
+      list: (apiBase: string, filters?: ListFilters) =>
+        listKey(["automations", apiBase, "workflow-runs", "list"], filters),
     },
   },
   conversations: {

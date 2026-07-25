@@ -32,7 +32,10 @@ export class StripePlatformBillingReconcileService {
 
     const limit = opts?.limit ?? 200;
     const rows = await this.prisma.businessSubscription.findMany({
-      where: { billingSource: SubscriptionBillingSource.STRIPE },
+      where: {
+        billingSource: SubscriptionBillingSource.STRIPE,
+        business: { type: 'TENANT', lifecycleStage: 'ACTIVE' },
+      },
       take: limit,
       orderBy: { updatedAt: 'asc' },
     });

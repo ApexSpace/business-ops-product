@@ -1,11 +1,12 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { PipelineStageType } from '@prisma/client';
+import { BusinessLifecycleStage, PipelineStageType } from '@prisma/client';
 import {
   IsEnum,
   IsOptional,
   IsString,
   MaxLength,
   MinLength,
+  ValidateIf,
 } from 'class-validator';
 
 export class UpdatePipelineStageDto {
@@ -20,4 +21,10 @@ export class UpdatePipelineStageDto {
   @IsOptional()
   @IsEnum(PipelineStageType)
   type?: PipelineStageType;
+
+  @ApiPropertyOptional({ enum: BusinessLifecycleStage, nullable: true })
+  @IsOptional()
+  @ValidateIf((_, v) => v !== null)
+  @IsEnum(BusinessLifecycleStage)
+  mapsToLifecycleStage?: BusinessLifecycleStage | null;
 }

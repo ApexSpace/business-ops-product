@@ -155,6 +155,7 @@ export class BusinessAddonSyncService {
     const subscriptions = await this.prisma.businessSubscription.findMany({
       where: {
         planTierId: { in: tierIds },
+        business: { type: 'TENANT', lifecycleStage: 'ACTIVE' },
         ...(options?.businessIds?.length
           ? { businessId: { in: options.businessIds } }
           : {}),
@@ -231,6 +232,7 @@ export class BusinessAddonSyncService {
       where: {
         addonId,
         status: BusinessAddonStatus.ACTIVE,
+        business: { type: 'TENANT', lifecycleStage: 'ACTIVE' },
       },
       select: { businessId: true },
     });

@@ -45,12 +45,18 @@ describe('PublicFormsService', () => {
     const conversationBridge = {
       maybeCreateConversationFromSubmission: jest.fn(),
     };
+    const prisma = {
+      business: {
+        findFirst: jest.fn().mockResolvedValue({ type: 'TENANT' }),
+      },
+    };
     const service = new PublicFormsService(
       formsRepository as never,
       submissionsRepository as never,
       auditService as never,
       storageService as never,
       conversationBridge as never,
+      prisma as never,
     );
     return {
       service,
@@ -58,6 +64,7 @@ describe('PublicFormsService', () => {
       submissionsRepository,
       storageService,
       conversationBridge,
+      prisma,
     };
   }
 

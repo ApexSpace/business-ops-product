@@ -2,6 +2,11 @@ import type { z } from 'zod';
 
 export type ImplementationStatus = 'implemented' | 'planned' | 'stub';
 
+/** Who may use a registry entry in metadata / activation. */
+export type AutomationAudience = 'business' | 'platform';
+
+export const DEFAULT_AUTOMATION_AUDIENCES: AutomationAudience[] = ['business'];
+
 export type AutomationCategoryKey =
   | 'contact'
   | 'lead'
@@ -94,6 +99,8 @@ export interface TriggerDefinition {
   filterFields?: TriggerFilterField[];
   payloadSchema: z.ZodTypeAny;
   availableCustomValueCategories?: AutomationCategoryKey[];
+  /** Defaults to business-only when omitted. */
+  audiences?: AutomationAudience[];
 }
 
 export interface ActionDefinition {
@@ -106,6 +113,8 @@ export interface ActionDefinition {
   configSchema: z.ZodTypeAny;
   requiredContext?: string[];
   isTerminal?: boolean;
+  /** Defaults to business-only when omitted. */
+  audiences?: AutomationAudience[];
 }
 
 export interface CustomValueDefinition {
@@ -116,6 +125,8 @@ export interface CustomValueDefinition {
   example?: string;
   resolver: string;
   implementationStatus: ImplementationStatus;
+  /** Defaults to business-only when omitted. */
+  audiences?: AutomationAudience[];
 }
 
 export type ConditionValueType =
@@ -134,6 +145,8 @@ export interface ConditionDefinition {
   valueType: ConditionValueType;
   enumValues?: string[];
   implementationStatus: ImplementationStatus;
+  /** Defaults to business-only when omitted. */
+  audiences?: AutomationAudience[];
 }
 
 export type FilterOperatorKey =

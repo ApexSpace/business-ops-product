@@ -7,6 +7,7 @@ import {
   listFormFieldPalette,
   listFormFieldTypes,
 } from "@/features/forms/api/metadata.api";
+import { useFormsHost } from "@/features/forms/forms-host-context";
 import type { FormMetadataFilters, FormFieldTypeMetadata } from "@/features/forms/types/metadata";
 import { queryKeys, type ListFilters } from "@/lib/query/keys";
 
@@ -17,25 +18,28 @@ function metadataFilters(
 }
 
 export function useFormFieldCategories() {
+  const { apiBase } = useFormsHost();
   return useQuery({
-    queryKey: queryKeys.forms.categories(),
-    queryFn: () => listFormFieldCategories(),
+    queryKey: queryKeys.forms.categories(apiBase),
+    queryFn: () => listFormFieldCategories(apiBase),
     staleTime: 5 * 60_000,
   });
 }
 
 export function useFormFieldTypes(filters?: FormMetadataFilters) {
+  const { apiBase } = useFormsHost();
   return useQuery({
-    queryKey: queryKeys.forms.fieldTypes(metadataFilters(filters)),
-    queryFn: () => listFormFieldTypes(filters),
+    queryKey: queryKeys.forms.fieldTypes(apiBase, metadataFilters(filters)),
+    queryFn: () => listFormFieldTypes(filters, apiBase),
     staleTime: 5 * 60_000,
   });
 }
 
 export function useFormFieldPalette(filters?: FormMetadataFilters) {
+  const { apiBase } = useFormsHost();
   return useQuery({
-    queryKey: queryKeys.forms.palette(metadataFilters(filters)),
-    queryFn: () => listFormFieldPalette(filters),
+    queryKey: queryKeys.forms.palette(apiBase, metadataFilters(filters)),
+    queryFn: () => listFormFieldPalette(filters, apiBase),
     staleTime: 5 * 60_000,
   });
 }

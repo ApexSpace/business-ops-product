@@ -28,6 +28,21 @@ enum BusinessStatus {
   ARCHIVED
 }
 
+/// TENANT = real customer workspace. INTERNAL = single platform-ops tenant (forms, etc.).
+enum BusinessType {
+  TENANT
+  INTERNAL
+}
+
+/// Sales/funnel progress for TENANT businesses (orthogonal to BusinessStatus / BusinessType).
+enum BusinessLifecycleStage {
+  LEAD
+  CONTACTED
+  TRIAL
+  ACTIVE
+  CHURNED
+}
+
 enum BusinessMemberRole {
   OWNER
   ADMIN
@@ -926,6 +941,13 @@ model Business {
   snapshotId       String?
   snapshotAppliedAt DateTime?
   status           BusinessStatus @default(ACTIVE)
+  /// Real customer vs single platform-ops workspace. Default TENANT.
+  type             BusinessType   @default(TENANT)
+  /// Funnel progress for TENANT customers. Existing/normal creates default ACTIVE.
+  lifecycleStage   BusinessLifecycleStage @default(ACTIVE)
+  /// Optional placement on an INTERNAL ops campaign pipeline (platform sales board).
+  lifecyclePipelineId      String?
+  lifecyclePipelineStageId String?
   firstName        String?
   lastName         String?
   displayName      String?
@@ -949,6 +971,8 @@ model Business {
   createdBy      User?             @relation("BusinessCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
   industry       Industry?         @relation(fields: [industryId], references: [id], onDelete: SetNull)
   snapshot       Snapshot?         @relation(fields: [snapshotId], references: [id], onDelete: SetNull)
+  lifecyclePipeline      Pipeline?      @relation("BusinessLifecyclePipeline", fields: [lifecyclePipelineId], references: [id], onDelete: SetNull)
+  lifecyclePipelineStage PipelineStage? @relation("BusinessLifecyclePipelineStage", fields: [lifecyclePipelineStageId], references: [id], onDelete: SetNull)
   snapshotProvisions SnapshotProvision[]
   memberships    BusinessMembership[]
   subscription        BusinessSubscription?
@@ -1052,6 +1076,9 @@ model Business {
   @@index([createdById])
   @@index([industryId])
   @@index([snapshotId])
+  @@index([type])
+  @@index([lifecycleStage])
+  @@index([lifecyclePipelineId, lifecyclePipelineStageId])
   @@map("businesses")
 }
 
@@ -1358,6 +1385,7 @@ model Pipeline {
   business Business        @relation(fields: [businessId], references: [id], onDelete: Cascade)
   stages   PipelineStage[]
   leads    Lead[]
+  lifecycleBusinesses Business[] @relation("BusinessLifecyclePipeline")
 
   @@unique([businessId, name])
   @@index([businessId])
@@ -1371,12 +1399,15 @@ model PipelineStage {
   name       String
   position   Int
   type       PipelineStageType?
+  /// When set (ops campaign stages), moving a Business card here updates Business.lifecycleStage.
+  mapsToLifecycleStage BusinessLifecycleStage?
   createdAt  DateTime           @default(now())
   updatedAt  DateTime           @updatedAt
 
   business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
   pipeline Pipeline @relation(fields: [pipelineId], references: [id], onDelete: Cascade)
   leads    Lead[]
+  lifecycleBusinesses Business[] @relation("BusinessLifecyclePipelineStage")
 
   @@unique([pipelineId, position])
   @@index([businessId])

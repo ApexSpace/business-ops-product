@@ -21,6 +21,7 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs";
 import { getFormEmbed } from "@/features/forms/api/forms.api";
+import { useFormsHost } from "@/features/forms/forms-host-context";
 import type { FormStatus } from "@/features/forms/types";
 import { copyTextToClipboard } from "@/features/forms/utils/copy-text.util";
 import { queryKeys } from "@/lib/query/keys";
@@ -81,9 +82,10 @@ export function FormShareDialog({
   status,
   formName,
 }: FormShareDialogProps) {
+  const { apiBase } = useFormsHost();
   const { data: embed, isLoading, isError, error, refetch } = useQuery({
-    queryKey: queryKeys.forms.embed(formId ?? ""),
-    queryFn: () => getFormEmbed(formId!),
+    queryKey: queryKeys.forms.embed(apiBase, formId ?? ""),
+    queryFn: () => getFormEmbed(formId!, apiBase),
     enabled: open && Boolean(formId),
   });
 

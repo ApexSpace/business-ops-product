@@ -8,11 +8,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PageHeader } from "@/components/layout/page-header";
+import { useAutomationsHost } from "@/features/automations/automations-host-context";
 import { TriggerPicker } from "@/features/automations/components/trigger-picker";
 import { useAutomationWorkflowMutations } from "@/features/automations/hooks/use-automation-workflows";
 
 export function WorkflowCreatePage() {
   const router = useRouter();
+  const { basePath, workflowsBasePath } = useAutomationsHost();
   const { createMutation } = useAutomationWorkflowMutations();
   const [name, setName] = useState("");
   const [triggerKey, setTriggerKey] = useState<string | null>(null);
@@ -33,7 +35,7 @@ export function WorkflowCreatePage() {
       },
       {
         onSuccess: (workflow) => {
-          router.push(`/business/settings/automation-workflows/${workflow.id}`);
+          router.push(`${workflowsBasePath}/${workflow.id}`);
         },
       },
     );
@@ -45,7 +47,7 @@ export function WorkflowCreatePage() {
         variant="ghost"
         size="sm"
         nativeButton={false}
-        render={<Link href="/business/settings/automations" />}
+        render={<Link href={basePath} />}
       >
         <ArrowLeft className="mr-1 size-4" />
         Back to workflows
@@ -74,7 +76,7 @@ export function WorkflowCreatePage() {
           <Button
             variant="outline"
             nativeButton={false}
-            render={<Link href="/business/settings/automations" />}
+            render={<Link href={basePath} />}
           >
             Cancel
           </Button>

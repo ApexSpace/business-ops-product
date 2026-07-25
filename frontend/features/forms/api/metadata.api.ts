@@ -5,6 +5,7 @@ import type {
   FormMetadataFilters,
   FormPaletteCategory,
 } from "@/features/forms/types/metadata";
+import { DEFAULT_FORMS_API_BASE } from "@/features/forms/api/forms.api";
 
 function toSearchParams(filters: FormMetadataFilters = {}) {
   const params: Record<string, string> = {};
@@ -14,18 +15,30 @@ function toSearchParams(filters: FormMetadataFilters = {}) {
   return params;
 }
 
-export function listFormFieldCategories() {
-  return api.get<FormFieldCategory[]>("forms/metadata/categories");
+function metadataPath(apiBase: string, segment: string) {
+  return `${apiBase}/metadata/${segment}`;
 }
 
-export function listFormFieldTypes(filters?: FormMetadataFilters) {
-  return api.get<FormFieldTypeMetadata[]>("forms/metadata/field-types", {
+export function listFormFieldCategories(
+  apiBase: string = DEFAULT_FORMS_API_BASE,
+) {
+  return api.get<FormFieldCategory[]>(metadataPath(apiBase, "categories"));
+}
+
+export function listFormFieldTypes(
+  filters?: FormMetadataFilters,
+  apiBase: string = DEFAULT_FORMS_API_BASE,
+) {
+  return api.get<FormFieldTypeMetadata[]>(metadataPath(apiBase, "field-types"), {
     searchParams: toSearchParams(filters),
   });
 }
 
-export function listFormFieldPalette(filters?: FormMetadataFilters) {
-  return api.get<FormPaletteCategory[]>("forms/metadata/palette", {
+export function listFormFieldPalette(
+  filters?: FormMetadataFilters,
+  apiBase: string = DEFAULT_FORMS_API_BASE,
+) {
+  return api.get<FormPaletteCategory[]>(metadataPath(apiBase, "palette"), {
     searchParams: toSearchParams(filters),
   });
 }

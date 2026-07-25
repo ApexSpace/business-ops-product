@@ -3,12 +3,14 @@ import { AppException } from '@app/common/exceptions/app.exception';
 import { ErrorCode } from '@app/common/exceptions/error-code.enum';
 import { ACTION_BY_KEY } from '../registries/action.registry';
 import { TRIGGER_BY_KEY } from '../registries/trigger.registry';
+import type { AutomationAudience } from '../types/automation-registry.types';
 import type {
   WorkflowSettings,
   WorkflowStepDefinition,
   WorkflowTriggerFilter,
 } from '../types/workflow.types';
 import { DEFAULT_WORKFLOW_SETTINGS } from '../types/workflow.types';
+import { isAllowedForAudience } from './automation-audience.util';
 
 export function normalizeWorkflowSettings(
   settings?: Partial<WorkflowSettings> | null,
@@ -30,9 +32,48 @@ export function assertValidTriggerKey(triggerKey: string): void {
   }
 }
 
+export function assertTriggerAllowedForAudience(
+  triggerKey: string,
+  audience: AutomationAudience,
+): void {
+  assertValidTriggerKey(triggerKey);
+  const trigger = TRIGGER_BY_KEY[triggerKey];
+  if (!isAllowedForAudience(trigger.audiences, audience)) {
+    throw new AppException(
+      ErrorCode.BAD_REQUEST,
+      `Trigger is not available for ${audience}: ${triggerKey}`,
+      HttpStatus.BAD_REQUEST,
+    );
+  }
+}
+
+export function assertActionsAllowedForAudience(
+  steps: WorkflowStepDefinition[],
+  audience: AutomationAudience,
+): void {
+  for (const step of steps) {
+    const action = ACTION_BY_KEY[step.actionKey];
+    if (!action) {
+      throw new AppException(
+        ErrorCode.BAD_REQUEST,
+        `Unknown action: ${step.actionKey}`,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+    if (!isAllowedForAudience(action.audiences, audience)) {
+      throw new AppException(
+        ErrorCode.BAD_REQUEST,
+        `Action is not available for ${audience}: ${step.actionKey}`,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+  }
+}
+
 export function assertActivatableWorkflow(
   triggerKey: string,
   steps: WorkflowStepDefinition[],
+  audience?: AutomationAudience,
 ): void {
   const trigger = TRIGGER_BY_KEY[triggerKey];
   if (!trigger || trigger.implementationStatus !== 'implemented') {
@@ -41,6 +82,9 @@ export function assertActivatableWorkflow(
       `Trigger is not available for activation: ${triggerKey}`,
       HttpStatus.BAD_REQUEST,
     );
+  }
+  if (audience) {
+    assertTriggerAllowedForAudience(triggerKey, audience);
   }
 
   for (const step of steps) {
@@ -52,6 +96,9 @@ export function assertActivatableWorkflow(
         HttpStatus.BAD_REQUEST,
       );
     }
+  }
+  if (audience) {
+    assertActionsAllowedForAudience(steps, audience);
   }
 }
 

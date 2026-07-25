@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { TriggerPicker } from "@/features/automations/components/trigger-picker";
+import { useAutomationsHost } from "@/features/automations/automations-host-context";
 import { useAutomationWorkflowMutations } from "@/features/automations/hooks/use-automation-workflows";
 
 type WorkflowCreateDialogProps = {
@@ -25,6 +26,7 @@ export function WorkflowCreateDialog({
   onOpenChange,
 }: WorkflowCreateDialogProps) {
   const router = useRouter();
+  const { workflowsBasePath } = useAutomationsHost();
   const { createMutation } = useAutomationWorkflowMutations();
   const [name, setName] = useState("");
   const [triggerKey, setTriggerKey] = useState<string | null>(null);
@@ -49,7 +51,7 @@ export function WorkflowCreateDialog({
     });
     reset();
     onOpenChange(false);
-    router.push(`/business/settings/automation-workflows/${workflow.id}`);
+    router.push(`${workflowsBasePath}/${workflow.id}`);
   };
 
   return (

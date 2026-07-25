@@ -29,6 +29,11 @@ describe('AutomationWorkflowsService', () => {
   };
   const runRepository = { findMany: jest.fn(), findById: jest.fn() };
   const auditService = { log: jest.fn() };
+  const prisma = {
+    business: {
+      findFirst: jest.fn().mockResolvedValue({ type: 'TENANT' }),
+    },
+  };
 
   const actor = {
     id: 'user-1',
@@ -37,17 +42,23 @@ describe('AutomationWorkflowsService', () => {
     context: 'business',
   } as const;
 
+  function createService() {
+    return new AutomationWorkflowsService(
+      workflowRepository as never,
+      runRepository as never,
+      auditService as never,
+      prisma as never,
+    );
+  }
+
   beforeEach(() => {
     jest.clearAllMocks();
+    prisma.business.findFirst.mockResolvedValue({ type: 'TENANT' });
   });
 
   it('creates a workflow and audits', async () => {
     workflowRepository.create.mockResolvedValue(workflow);
-    const service = new AutomationWorkflowsService(
-      workflowRepository as never,
-      runRepository as never,
-      auditService as never,
-    );
+    const service = createService();
 
     const result = await service.create(
       'biz-1',
@@ -67,11 +78,7 @@ describe('AutomationWorkflowsService', () => {
 
   it('blocks activation without steps', async () => {
     workflowRepository.findById.mockResolvedValue({ ...workflow, steps: [] });
-    const service = new AutomationWorkflowsService(
-      workflowRepository as never,
-      runRepository as never,
-      auditService as never,
-    );
+    const service = createService();
 
     await expect(
       service.updateStatus(
@@ -87,11 +94,7 @@ describe('AutomationWorkflowsService', () => {
     workflowRepository.countSystemTemplates.mockResolvedValue(0);
     workflowRepository.findMany.mockResolvedValue([[], 0]);
     workflowRepository.create.mockResolvedValue(workflow);
-    const service = new AutomationWorkflowsService(
-      workflowRepository as never,
-      runRepository as never,
-      auditService as never,
-    );
+    const service = createService();
 
     await service.list('biz-1', {});
 
@@ -112,14 +115,21 @@ describe('AutomationWorkflowsService', () => {
   it('skips MedSpa template provisioning when templates already exist', async () => {
     workflowRepository.countSystemTemplates.mockResolvedValue(2);
     workflowRepository.findMany.mockResolvedValue([[], 0]);
-    const service = new AutomationWorkflowsService(
-      workflowRepository as never,
-      runRepository as never,
-      auditService as never,
-    );
+    const service = createService();
 
     await service.list('biz-1', {});
 
+    expect(workflowRepository.create).not.toHaveBeenCalled();
+  });
+
+  it('skips MedSpa template provisioning for INTERNAL ops business', async () => {
+    prisma.business.findFirst.mockResolvedValue({ type: 'INTERNAL' });
+    workflowRepository.findMany.mockResolvedValue([[], 0]);
+    const service = createService();
+
+    await service.list('ops-1', {});
+
+    expect(workflowRepository.countSystemTemplates).not.toHaveBeenCalled();
     expect(workflowRepository.create).not.toHaveBeenCalled();
   });
 });

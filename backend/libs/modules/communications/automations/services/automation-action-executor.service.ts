@@ -2,6 +2,7 @@ import { HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { htmlToPlainText } from '@app/common/utils/html-text.util';
 import { PrismaService } from '@app/core/database/prisma.service';
 import { resolveEmailConfig } from '@app/core/config/email/email.config';
+import { BusinessType, PlatformMemberRole } from '@prisma/client';
 import { PlatformSmsSendService } from '@app/modules/communications/sms/services/platform-sms-send.service';
 import {
   SMS_MAX_SEGMENTS,
@@ -17,6 +18,7 @@ import { NoteRepository } from '@app/modules/crm/notes/repositories/note.reposit
 import { TaskRepository } from '@app/modules/operations/tasks/repositories/task.repository';
 import { AuditService } from '@app/modules/platform/audit/services/audit.service';
 import { BusinessMembershipRepository } from '@app/modules/platform/membership/repositories/business-membership.repository';
+import { BusinessLifecycleService } from '@app/modules/platform/business/services/business-lifecycle.service';
 import { SYSTEM_AUDIT_ACTOR_SENTINEL } from '@app/modules/platform/audit/constants/audit.constants';
 import { AppException } from '@app/common/exceptions/app.exception';
 import { ErrorCode } from '@app/common/exceptions/error-code.enum';
@@ -68,6 +70,7 @@ export class AutomationActionExecutorService {
     private readonly noteRepository: NoteRepository,
     private readonly membershipRepository: BusinessMembershipRepository,
     private readonly auditService: AuditService,
+    private readonly businessLifecycleService: BusinessLifecycleService,
   ) {}
 
   async execute(
@@ -149,6 +152,21 @@ export class AutomationActionExecutorService {
       case 'lead.move_stage':
         return this.moveLeadStage(
           parsed.data as { stageId: string },
+          context,
+          workflowCreatedById,
+        );
+      case 'business.create_from_lead':
+        return this.createBusinessFromLead(
+          parsed.data as {
+            pipelineId: string;
+            stageId: string;
+            businessName?: string;
+            email?: string;
+            firstName?: string;
+            lastName?: string;
+            phoneNumber?: string;
+            phoneCountryCode?: string;
+          },
           context,
           workflowCreatedById,
         );
@@ -277,12 +295,47 @@ export class AutomationActionExecutorService {
 
     const recipients: string[] = [];
     if (internal) {
-      const members = await this.membershipRepository.findOwnersAndAdmins(
-        context.businessId,
-      );
-      for (const member of members) {
-        if (member.user.email) {
-          recipients.push(member.user.email);
+      const business = await this.prisma.business.findFirst({
+        where: { id: context.businessId },
+        select: { type: true },
+      });
+
+      if (business?.type === BusinessType.INTERNAL) {
+        const platformMembers = await this.prisma.platformMembership.findMany({
+          where: {
+            deletedAt: null,
+            role: {
+              in: [
+                PlatformMemberRole.SUPER_ADMIN,
+                PlatformMemberRole.PLATFORM_ADMIN,
+                PlatformMemberRole.SUPPORT,
+              ],
+            },
+          },
+          select: {
+            user: { select: { email: true } },
+          },
+        });
+        for (const member of platformMembers) {
+          if (member.user.email) {
+            recipients.push(member.user.email);
+          }
+        }
+        if (recipients.length === 0) {
+          throw new AppException(
+            ErrorCode.BAD_REQUEST,
+            'No platform admin emails available for internal automation email',
+            HttpStatus.BAD_REQUEST,
+          );
+        }
+      } else {
+        const members = await this.membershipRepository.findOwnersAndAdmins(
+          context.businessId,
+        );
+        for (const member of members) {
+          if (member.user.email) {
+            recipients.push(member.user.email);
+          }
         }
       }
     } else if (config.to === 'custom' && config.customTo) {
@@ -522,6 +575,113 @@ export class AutomationActionExecutorService {
     }
 
     return { type: 'continue', output: { tagId: config.tagId } };
+  }
+
+  private async createBusinessFromLead(
+    config: {
+      pipelineId: string;
+      stageId: string;
+      businessName?: string;
+      email?: string;
+      firstName?: string;
+      lastName?: string;
+      phoneNumber?: string;
+      phoneCountryCode?: string;
+    },
+    context: AutomationRunContext,
+    workflowCreatedById?: string | null,
+  ): Promise<ActionExecutionResult> {
+    const mergeValues = await this.resolveMergeValues(context, [
+      config.businessName ?? '',
+      config.email ?? '',
+      config.firstName ?? '',
+      config.lastName ?? '',
+      config.phoneNumber ?? '',
+      config.phoneCountryCode ?? '',
+      '{{form.business_name}}',
+      '{{form.name}}',
+      '{{form.email}}',
+      '{{form.first_name}}',
+      '{{form.last_name}}',
+      '{{form.phone}}',
+    ]);
+
+    const interpolatedName = config.businessName
+      ? interpolateMergeTags(config.businessName, mergeValues).trim()
+      : '';
+    const name =
+      interpolatedName ||
+      String(
+        mergeValues['form.business_name'] ??
+          mergeValues['form.name'] ??
+          mergeValues['business.name'] ??
+          '',
+      ).trim() ||
+      [
+        mergeValues['form.first_name'],
+        mergeValues['form.last_name'],
+      ]
+        .map((p) => String(p ?? '').trim())
+        .filter(Boolean)
+        .join(' ')
+        .trim() ||
+      'New lead';
+
+    const email =
+      (config.email
+        ? interpolateMergeTags(config.email, mergeValues).trim()
+        : '') ||
+      String(mergeValues['form.email'] ?? '').trim() ||
+      null;
+
+    const firstName =
+      (config.firstName
+        ? interpolateMergeTags(config.firstName, mergeValues).trim()
+        : '') ||
+      String(mergeValues['form.first_name'] ?? '').trim() ||
+      null;
+
+    const lastName =
+      (config.lastName
+        ? interpolateMergeTags(config.lastName, mergeValues).trim()
+        : '') ||
+      String(mergeValues['form.last_name'] ?? '').trim() ||
+      null;
+
+    const phoneNumber =
+      (config.phoneNumber
+        ? interpolateMergeTags(config.phoneNumber, mergeValues).trim()
+        : '') ||
+      String(mergeValues['form.phone'] ?? '').trim() ||
+      null;
+
+    const phoneCountryCode = config.phoneCountryCode
+      ? interpolateMergeTags(config.phoneCountryCode, mergeValues).trim() ||
+        null
+      : null;
+
+    const business = await this.businessLifecycleService.createFromLead({
+      opsBusinessId: context.businessId,
+      pipelineId: config.pipelineId,
+      pipelineStageId: config.stageId,
+      name,
+      email,
+      firstName,
+      lastName,
+      phoneNumber,
+      phoneCountryCode,
+      actorUserId: workflowCreatedById,
+    });
+
+    return {
+      type: 'continue',
+      output: {
+        businessId: business.id,
+        lifecycleStage: business.lifecycleStage,
+        pipelineId: config.pipelineId,
+        stageId: config.stageId,
+      },
+    };
   }
 
   private async createLead(

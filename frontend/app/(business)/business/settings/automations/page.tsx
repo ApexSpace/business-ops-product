@@ -1,5 +1,9 @@
 import dynamic from "next/dynamic";
 import { ListPageSkeleton } from "@/components/layout/list-page";
+import {
+  AutomationsHostProvider,
+  BUSINESS_AUTOMATIONS_HOST,
+} from "@/features/automations/automations-host-context";
 
 const AutomationsListPage = dynamic(
   () =>
@@ -10,5 +14,9 @@ const AutomationsListPage = dynamic(
 );
 
 export default function Page() {
-  return <AutomationsListPage />;
+  return (
+    <AutomationsHostProvider value={BUSINESS_AUTOMATIONS_HOST}>
+      <AutomationsListPage />
+    </AutomationsHostProvider>
+  );
 }

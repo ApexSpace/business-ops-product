@@ -53,7 +53,10 @@ export class StripeSubscriptionMirrorService {
 
     // Legacy fallback while metadata still holds IDs
     const rows = await this.prisma.businessSubscription.findMany({
-      where: { billingSource: SubscriptionBillingSource.STRIPE },
+      where: {
+        billingSource: SubscriptionBillingSource.STRIPE,
+        business: { type: 'TENANT', lifecycleStage: 'ACTIVE' },
+      },
       take: 200,
       orderBy: { updatedAt: 'desc' },
     });

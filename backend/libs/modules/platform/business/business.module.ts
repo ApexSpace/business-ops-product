@@ -41,6 +41,8 @@ import { MedSpaBootstrapService } from './services/medspa-bootstrap.service';
 import { BusinessProvisioningService } from './services/business-provisioning.service';
 
 import { BusinessLocationService } from './services/business-location.service';
+import { InternalBusinessService } from './services/internal-business.service';
+import { BusinessLifecycleService } from './services/business-lifecycle.service';
 
 @Module({
   imports: [
@@ -89,6 +91,8 @@ import { BusinessLocationService } from './services/business-location.service';
     MedSpaBootstrapService,
     BusinessProvisioningService,
     BusinessLocationService,
+    InternalBusinessService,
+    BusinessLifecycleService,
   ],
   exports: [
     BusinessRepository,
@@ -98,6 +102,7 @@ import { BusinessLocationService } from './services/business-location.service';
     BusinessCapabilityCheckService,
     BusinessCapabilityGuard,
     BusinessCapabilitySyncService,
+    InternalBusinessService,
     BusinessEffectiveCapabilitiesService,
     BusinessSubscriptionActionService,
     BusinessSubscriptionEventService,
@@ -110,6 +115,7 @@ import { BusinessLocationService } from './services/business-location.service';
     MedSpaBootstrapService,
     BusinessProvisioningService,
     BusinessLocationService,
+    BusinessLifecycleService,
   ],
 })
 export class BusinessModule {}

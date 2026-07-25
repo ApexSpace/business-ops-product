@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Industry, IndustryStatus, Prisma } from '@prisma/client';
+import { BusinessLifecycleStage, BusinessType, Industry, IndustryStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '@app/core/database/prisma.service';
 
 @Injectable()
@@ -72,7 +72,12 @@ export class IndustryRepository {
 
   countBusinesses(id: string): Promise<number> {
     return this.prisma.business.count({
-      where: { industryId: id, deletedAt: null },
+      where: {
+        industryId: id,
+        deletedAt: null,
+        type: BusinessType.TENANT,
+        lifecycleStage: BusinessLifecycleStage.ACTIVE,
+      },
     });
   }
 }

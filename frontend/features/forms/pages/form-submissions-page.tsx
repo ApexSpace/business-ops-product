@@ -21,6 +21,7 @@ import {
 import { useFormDetail } from "@/features/forms/hooks/use-form-detail";
 import { useFormSubmissionMutations } from "@/features/forms/hooks/use-form-submission-mutations";
 import { useFormSubmissionsList } from "@/features/forms/hooks/use-form-submissions-list";
+import { useFormsHost } from "@/features/forms/forms-host-context";
 import type { FormSubmissionListItem } from "@/features/forms/types";
 import { formatFormTableDate } from "@/features/forms/utils/form-display.util";
 import {
@@ -38,6 +39,7 @@ interface FormSubmissionsPageProps {
 }
 
 function FormSubmissionsPageContent({ formId }: FormSubmissionsPageProps) {
+  const { basePath } = useFormsHost();
   const [page, setPage] = useState(1);
   const limit = 25;
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -95,7 +97,7 @@ function FormSubmissionsPageContent({ formId }: FormSubmissionsPageProps) {
   return (
     <>
       <Link
-        href="/business/settings/forms"
+        href={basePath}
         className="mb-4 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
       >
         <ArrowLeft className="size-4" />
@@ -109,7 +111,8 @@ function FormSubmissionsPageContent({ formId }: FormSubmissionsPageProps) {
           <Button
             variant="outline"
             size="sm"
-            render={<Link href={`/business/settings/forms/${formId}/edit`} />}
+            nativeButton={false}
+            render={<Link href={`${basePath}/${formId}/edit`} />}
           >
             Edit form
           </Button>

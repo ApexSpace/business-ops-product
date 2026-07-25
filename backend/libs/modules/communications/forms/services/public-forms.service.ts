@@ -1,9 +1,10 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
-import { Form, FormStatus, Prisma } from '@prisma/client';
+import { BusinessType, Form, FormStatus, Prisma } from '@prisma/client';
 import { AppException } from '@app/common/exceptions/app.exception';
 import { ErrorCode } from '@app/common/exceptions/error-code.enum';
 import { AuditService } from '@app/modules/platform/audit/services/audit.service';
 import { SYSTEM_AUDIT_ACTOR_SENTINEL } from '@app/modules/platform/audit/constants/audit.constants';
+import { PrismaService } from '@app/core/database/prisma.service';
 import { CreateUploadDto } from '@app/modules/storage/dto/create-upload.dto';
 import { StorageService } from '@app/modules/storage/services/storage.service';
 import { FormSubmissionResponseDto } from '../dto/form-submission-response.dto';
@@ -37,6 +38,7 @@ export class PublicFormsService {
     private readonly auditService: AuditService,
     private readonly storageService: StorageService,
     private readonly conversationBridge: FormSubmissionConversationBridgeService,
+    private readonly prisma: PrismaService,
   ) {}
 
   async getConfig(publicKey: string): Promise<PublicFormConfigDto> {
@@ -97,6 +99,13 @@ export class PublicFormsService {
 
     const createConversationOnSubmit =
       definition.settings.createConversationOnSubmit === true;
+    const business = await this.prisma.business.findFirst({
+      where: { id: form.businessId },
+      select: { type: true },
+    });
+    const allowConversation =
+      createConversationOnSubmit && business?.type !== BusinessType.INTERNAL;
+
     await this.conversationBridge.maybeCreateConversationFromSubmission({
       businessId: form.businessId,
       formId: form.id,
@@ -104,7 +113,7 @@ export class PublicFormsService {
       submissionId: submission.id,
       fields: definition.fields as Array<{ type?: string; name?: string }>,
       data: sanitized,
-      enabled: createConversationOnSubmit,
+      enabled: allowConversation,
     });
 
     const redirectUrl =

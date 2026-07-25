@@ -5,6 +5,7 @@ import { LeadsModule } from '@app/modules/crm/leads/leads.module';
 import { NotesModule } from '@app/modules/crm/notes/notes.module';
 import { TasksModule } from '@app/modules/operations/tasks/tasks.module';
 import { MembershipModule } from '@app/modules/platform/membership/membership.module';
+import { BusinessModule } from '@app/modules/platform/business/business.module';
 import { EmailModule } from '../email/email.module';
 import { SmsModule } from '../sms/sms.module';
 import { AutomationStepProcessor } from './workers/processors/automation-step.processor';
@@ -29,6 +30,7 @@ import {
     NotesModule,
     TasksModule,
     MembershipModule,
+    forwardRef(() => BusinessModule),
   ],
   providers: [
     AutomationWorkflowRepository,

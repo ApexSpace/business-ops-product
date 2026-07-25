@@ -1,13 +1,14 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import {
-  AutomationWorkflowRunStatus,
   AutomationWorkflowStatus,
+  BusinessType,
   Prisma,
 } from '@prisma/client';
 import { RequestUser } from '@app/common/decorators/current-user.decorator';
 import { AppException } from '@app/common/exceptions/app.exception';
 import { ErrorCode } from '@app/common/exceptions/error-code.enum';
 import { getPaginationParams } from '@app/common/utils/pagination.util';
+import { PrismaService } from '@app/core/database/prisma.service';
 import { AuditService } from '@app/modules/platform/audit/services/audit.service';
 import {
   CreateAutomationWorkflowDto,
@@ -17,9 +18,7 @@ import {
   UpdateAutomationWorkflowStatusDto,
 } from '../dto/automation-workflow.dto';
 import {
-  parseWorkflowSettings,
   parseWorkflowSteps,
-  parseWorkflowTriggerFilters,
   toAutomationWorkflowResponse,
   toAutomationWorkflowRunResponse,
 } from '../mappers/automation-workflow.mapper';
@@ -27,8 +26,11 @@ import {
   AutomationWorkflowRepository,
   AutomationWorkflowRunRepository,
 } from '../repositories/automation-workflow.repository';
+import type { AutomationAudience } from '../types/automation-registry.types';
 import {
+  assertActionsAllowedForAudience,
   assertActivatableWorkflow,
+  assertTriggerAllowedForAudience,
   assertValidTriggerKey,
   normalizeWorkflowSettings,
   validateTriggerFilters,
@@ -45,6 +47,7 @@ export class AutomationWorkflowsService {
     private readonly workflowRepository: AutomationWorkflowRepository,
     private readonly runRepository: AutomationWorkflowRunRepository,
     private readonly auditService: AuditService,
+    private readonly prisma: PrismaService,
   ) {}
 
   async list(businessId: string, query: ListAutomationWorkflowsQueryDto) {
@@ -74,10 +77,15 @@ export class AutomationWorkflowsService {
     businessId: string,
     dto: CreateAutomationWorkflowDto,
     actor: RequestUser,
+    audience?: AutomationAudience,
   ) {
     assertValidTriggerKey(dto.triggerKey);
     validateTriggerFilters(dto.triggerFilters);
     validateWorkflowSteps(dto.steps);
+    if (audience) {
+      assertTriggerAllowedForAudience(dto.triggerKey, audience);
+      assertActionsAllowedForAudience(dto.steps, audience);
+    }
 
     const workflow = await this.workflowRepository.create({
       businessId,
@@ -108,11 +116,16 @@ export class AutomationWorkflowsService {
     id: string,
     dto: UpdateAutomationWorkflowDto,
     actor: RequestUser,
+    audience?: AutomationAudience,
   ) {
     await this.requireWorkflow(businessId, id);
     assertValidTriggerKey(dto.triggerKey);
     validateTriggerFilters(dto.triggerFilters);
     validateWorkflowSteps(dto.steps);
+    if (audience) {
+      assertTriggerAllowedForAudience(dto.triggerKey, audience);
+      assertActionsAllowedForAudience(dto.steps, audience);
+    }
 
     const workflow = await this.workflowRepository.update(businessId, id, {
       name: dto.name.trim(),
@@ -141,6 +154,7 @@ export class AutomationWorkflowsService {
     id: string,
     dto: UpdateAutomationWorkflowStatusDto,
     actor: RequestUser,
+    audience?: AutomationAudience,
   ) {
     const existing = await this.requireWorkflow(businessId, id);
     if (dto.status === AutomationWorkflowStatus.ACTIVE) {
@@ -152,7 +166,7 @@ export class AutomationWorkflowsService {
           HttpStatus.BAD_REQUEST,
         );
       }
-      assertActivatableWorkflow(existing.triggerKey, steps);
+      assertActivatableWorkflow(existing.triggerKey, steps, audience);
     }
 
     const workflow = await this.workflowRepository.update(businessId, id, {
@@ -249,6 +263,14 @@ export class AutomationWorkflowsService {
   }
 
   private async ensureMedSpaSystemTemplates(businessId: string) {
+    const business = await this.prisma.business.findFirst({
+      where: { id: businessId },
+      select: { type: true },
+    });
+    if (business?.type === BusinessType.INTERNAL) {
+      return;
+    }
+
     const existing =
       await this.workflowRepository.countSystemTemplates(businessId);
     if (existing > 0) {

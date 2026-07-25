@@ -7,6 +7,7 @@ import { CONDITION_REGISTRY } from '../registries/condition.registry';
 import { FILTER_OPERATOR_REGISTRY } from '../registries/filter-operator.registry';
 import type {
   ActionDefinition,
+  AutomationAudience,
   AutomationCategoryDefinition,
   AutomationCategoryScope,
   ConditionDefinition,
@@ -25,11 +26,13 @@ import type {
   TriggerMetadataResponseDto,
 } from '../dto/automation-metadata.dto';
 import { AUTOMATION_CATEGORY_BY_KEY } from '../registries/category.registry';
+import { isAllowedForAudience } from '../utils/automation-audience.util';
 
 type MetadataFilter = {
   categoryKeys?: string[];
   status?: ImplementationStatus;
   search?: string;
+  audience?: AutomationAudience;
 };
 
 function matchesSearch(
@@ -141,6 +144,12 @@ export class AutomationMetadataService {
     filter: MetadataFilter,
   ): boolean {
     if (
+      filter.audience &&
+      !isAllowedForAudience(trigger.audiences, filter.audience)
+    ) {
+      return false;
+    }
+    if (
       filter.categoryKeys?.length &&
       !filter.categoryKeys.includes(trigger.category)
     ) {
@@ -157,6 +166,12 @@ export class AutomationMetadataService {
     filter: MetadataFilter,
   ): boolean {
     if (
+      filter.audience &&
+      !isAllowedForAudience(action.audiences, filter.audience)
+    ) {
+      return false;
+    }
+    if (
       filter.categoryKeys?.length &&
       !filter.categoryKeys.includes(action.category)
     ) {
@@ -172,6 +187,12 @@ export class AutomationMetadataService {
     value: CustomValueDefinition,
     filter: MetadataFilter,
   ): boolean {
+    if (
+      filter.audience &&
+      !isAllowedForAudience(value.audiences, filter.audience)
+    ) {
+      return false;
+    }
     if (
       filter.categoryKeys?.length &&
       !filter.categoryKeys.includes(value.category)

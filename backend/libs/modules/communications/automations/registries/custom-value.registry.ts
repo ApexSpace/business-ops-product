@@ -1,4 +1,5 @@
 import type { CustomValueDefinition } from '../types/automation-registry.types';
+import { applyPlatformAudiencesToCustomValues } from '../utils/automation-audience.util';
 
 function cv(
   category: CustomValueDefinition['category'],
@@ -750,6 +751,8 @@ export const CUSTOM_VALUE_REGISTRY: CustomValueDefinition[] = [
     'planned',
   ),
 ];
+
+applyPlatformAudiencesToCustomValues(CUSTOM_VALUE_REGISTRY);
 
 export const CUSTOM_VALUE_BY_KEY = Object.fromEntries(
   CUSTOM_VALUE_REGISTRY.map((v) => [v.key, v]),

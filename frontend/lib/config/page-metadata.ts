@@ -347,6 +347,10 @@ const platformRoutes: Record<string, RouteEntry> = {
     title: "Platform Integrations",
     description: "Configure platform-wide AI, messaging, storage, and OAuth providers.",
   },
+  "/platform/forms": {
+    title: "Forms",
+    description: "Build and publish platform marketing and ops forms.",
+  },
 };
 
 const businessTerminologyKeys: Partial<Record<string, string>> = {

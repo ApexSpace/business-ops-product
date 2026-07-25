@@ -359,16 +359,16 @@ export function invalidatePlatformAuditLogs(queryClient: QueryClient) {
 export function invalidateFormLists(queryClient: QueryClient) {
   return queryClient.invalidateQueries({
     queryKey: queryKeys.forms.all(),
-    predicate: (query) => {
-      const key = query.queryKey;
-      return key[1] === "list" || key.length === 1;
-    },
   });
 }
 
 export function invalidateFormDetail(queryClient: QueryClient, id: string) {
   return queryClient.invalidateQueries({
-    queryKey: queryKeys.forms.detail(id),
+    queryKey: queryKeys.forms.all(),
+    predicate: (query) => {
+      const key = query.queryKey;
+      return key.includes("detail") && key.includes(id);
+    },
   });
 }
 
@@ -377,7 +377,11 @@ export function invalidateFormSubmissions(
   formId: string,
 ) {
   return queryClient.invalidateQueries({
-    queryKey: ["forms", formId, "submissions"],
+    queryKey: queryKeys.forms.all(),
+    predicate: (query) => {
+      const key = query.queryKey;
+      return key.includes(formId) && key.includes("submissions");
+    },
   });
 }
 

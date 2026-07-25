@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SectionHeader } from "@/features/forms/components/builder/settings-controls/section-header";
 import { getFormEmbed } from "@/features/forms/api/forms.api";
+import { useFormsHost } from "@/features/forms/forms-host-context";
 import type { FormStatus } from "@/features/forms/types";
 import { copyTextToClipboard } from "@/features/forms/utils/copy-text.util";
 import { queryKeys } from "@/lib/query/keys";
@@ -21,10 +22,11 @@ export function ShareFormSection({
   status,
   onOpenShareDialog,
 }: ShareFormSectionProps) {
+  const { apiBase } = useFormsHost();
   const isPublished = status === "published";
   const { data: embed } = useQuery({
-    queryKey: queryKeys.forms.embed(formId ?? ""),
-    queryFn: () => getFormEmbed(formId!),
+    queryKey: queryKeys.forms.embed(apiBase, formId ?? ""),
+    queryFn: () => getFormEmbed(formId!, apiBase),
     enabled: Boolean(formId) && isPublished,
   });
 

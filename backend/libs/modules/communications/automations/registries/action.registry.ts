@@ -8,12 +8,14 @@ import {
   delayActionConfigSchema,
   emptyActionConfigSchema,
   leadStageActionConfigSchema,
+  createBusinessFromLeadActionConfigSchema,
   sendEmailActionConfigSchema,
   sendSmsActionConfigSchema,
   tagActionConfigSchema,
   updateFieldActionConfigSchema,
   webhookOutboundActionConfigSchema,
 } from '../utils/automation-schema.util';
+import { applyPlatformAudiencesToActions } from '../utils/automation-audience.util';
 
 function act(input: ActionDefinition): ActionDefinition {
   return input;
@@ -126,6 +128,18 @@ export const ACTION_REGISTRY: ActionDefinition[] = [
     implementationStatus: 'planned',
     configSchema: assignActionConfigSchema,
     requiredContext: ['lead.id'],
+  }),
+
+  // Business lifecycle (platform sales funnel)
+  act({
+    key: 'business.create_from_lead',
+    category: 'business',
+    label: 'Create business from lead',
+    description:
+      'Create a TENANT business (lifecycle LEAD) and place it on an ops campaign pipeline stage.',
+    icon: 'building-2',
+    implementationStatus: 'implemented',
+    configSchema: createBusinessFromLeadActionConfigSchema,
   }),
 
   // Appointment (1)
@@ -249,6 +263,8 @@ export const ACTION_REGISTRY: ActionDefinition[] = [
     configSchema: webhookOutboundActionConfigSchema,
   }),
 ];
+
+applyPlatformAudiencesToActions(ACTION_REGISTRY);
 
 export const ACTION_BY_KEY = Object.fromEntries(
   ACTION_REGISTRY.map((a) => [a.key, a]),

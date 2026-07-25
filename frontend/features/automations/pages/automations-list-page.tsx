@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { WORKSPACE_TABLE_CLASS } from "@/lib/design/workspace-tokens";
 import { workflowStatusLabel } from "@/features/automations/api/workflows.api";
+import { useAutomationsHost } from "@/features/automations/automations-host-context";
 import {
   useAutomationWorkflowMutations,
   useAutomationWorkflowsList,
@@ -31,6 +32,7 @@ function statusVariant(
 
 function AutomationsListPageContent() {
   const router = useRouter();
+  const { workflowsBasePath, registryPath } = useAutomationsHost();
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const { data, isLoading } = useAutomationWorkflowsList({ limit: 50 });
   const { statusMutation, deleteMutation } = useAutomationWorkflowMutations();
@@ -90,21 +92,19 @@ function AutomationsListPageContent() {
         description="Linear workflows that run when triggers fire."
         actions={
           <>
+            {registryPath ? (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => router.push(registryPath)}
+              >
+                Registry
+              </Button>
+            ) : null}
             <Button
-              type="button"
-              variant="outline"
               size="sm"
-              onClick={() =>
-                router.push("/business/settings/automation-registry")
-              }
-            >
-              Registry
-            </Button>
-            <Button
-              size="sm"
-              onClick={() =>
-                router.push("/business/settings/automation-workflows/new")
-              }
+              onClick={() => router.push(`${workflowsBasePath}/new`)}
             >
               <Plus className="mr-1.5 size-4" />
               Create workflow
@@ -123,17 +123,13 @@ function AutomationsListPageContent() {
           getRowId={(row) => row.id}
           isLoading={isLoading}
           density="compact"
-          onRowClick={(row) =>
-            router.push(`/business/settings/automation-workflows/${row.id}`)
-          }
+          onRowClick={(row) => router.push(`${workflowsBasePath}/${row.id}`)}
           emptyTitle="No workflows yet"
           emptyDescription="Create one to get started."
           emptyAction={
             <Button
               size="sm"
-              onClick={() =>
-                router.push("/business/settings/automation-workflows/new")
-              }
+              onClick={() => router.push(`${workflowsBasePath}/new`)}
             >
               <Plus className="mr-1.5 size-4" />
               Create workflow
@@ -145,9 +141,7 @@ function AutomationsListPageContent() {
                 {
                   label: "Edit",
                   onClick: () =>
-                    router.push(
-                      `/business/settings/automation-workflows/${row.id}`,
-                    ),
+                    router.push(`${workflowsBasePath}/${row.id}`),
                 },
                 {
                   label: row.status === "ACTIVE" ? "Deactivate" : "Activate",

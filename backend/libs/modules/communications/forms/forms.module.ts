@@ -5,6 +5,8 @@ import { StorageModule } from '@app/modules/storage/storage.module';
 import { ConversationsModule } from '../conversations/conversations.module';
 import { FormMetadataController } from './controllers/form-metadata.controller';
 import { BusinessFormsController } from './controllers/business-forms.controller';
+import { PlatformFormMetadataController } from './controllers/platform-form-metadata.controller';
+import { PlatformFormsController } from './controllers/platform-forms.controller';
 import { FormWidgetsController } from './controllers/form-widgets.controller';
 import { PublicFormsController } from './controllers/public-forms.controller';
 import { FormSubmissionsRepository } from './repositories/form-submissions.repository';
@@ -27,6 +29,8 @@ import { FormSubmissionConversationBridgeService } from './services/form-submiss
   controllers: [
     BusinessFormsController,
     FormMetadataController,
+    PlatformFormMetadataController,
+    PlatformFormsController,
     PublicFormsController,
     FormWidgetsController,
   ],

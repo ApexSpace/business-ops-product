@@ -28,6 +28,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { IconButton } from "@/components/ui/icon-button";
+import { useFormsHost } from "@/features/forms/forms-host-context";
 import type { FormStatus } from "@/features/forms/types";
 import { formStatusLabel, formStatusVariant } from "@/features/forms/utils/form-display.util";
 
@@ -150,13 +151,14 @@ export function BuilderTopbar({
   onShare,
   onDelete,
 }: BuilderTopbarProps) {
+  const { basePath } = useFormsHost();
   return (
     <header className="sticky top-0 z-20 flex flex-wrap items-center gap-3 border-b bg-background px-[var(--page-padding-x)] py-3">
       <IconButton
         aria-label="Back to forms"
         className="size-9"
         nativeButton={false}
-        render={<Link href="/business/settings/forms" />}
+        render={<Link href={basePath} />}
       >
         <ArrowLeft className="size-4" />
       </IconButton>
@@ -197,7 +199,7 @@ export function BuilderTopbar({
             size="sm"
             nativeButton={false}
             render={
-              <Link href={`/business/settings/forms/${formId}/submissions`} />
+              <Link href={`${basePath}/${formId}/submissions`} />
             }
           >
             <ClipboardList className="mr-2 size-4" />

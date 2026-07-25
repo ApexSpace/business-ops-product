@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { PipelineStageType } from '@prisma/client';
+import { BusinessLifecycleStage, PipelineStageType } from '@prisma/client';
 import {
   IsEnum,
   IsInt,
@@ -27,4 +27,9 @@ export class CreatePipelineStageDto {
   @IsOptional()
   @IsEnum(PipelineStageType)
   type?: PipelineStageType;
+
+  @ApiPropertyOptional({ enum: BusinessLifecycleStage })
+  @IsOptional()
+  @IsEnum(BusinessLifecycleStage)
+  mapsToLifecycleStage?: BusinessLifecycleStage | null;
 }

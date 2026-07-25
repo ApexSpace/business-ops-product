@@ -22,6 +22,7 @@ import { FormsListHeaderActions } from "@/features/forms/components/forms-list-h
 import { useFormMutations } from "@/features/forms/hooks/use-form-mutations";
 import { useFormStaffPermissions } from "@/features/forms/hooks/use-form-staff-permissions";
 import { useFormsList } from "@/features/forms/hooks/use-forms-list";
+import { useFormsHost } from "@/features/forms/forms-host-context";
 import type { FormListItem, FormStatus } from "@/features/forms/types";
 import { getForm } from "@/features/forms/api/forms.api";
 import {
@@ -49,6 +50,7 @@ const STATUS_OPTIONS = [
 
 function FormsListPageContent() {
   const router = useRouter();
+  const { basePath, apiBase } = useFormsHost();
   const { params, setParams } = useListSearchParams(LIST_SCHEMA);
   const debouncedSearch = useDebouncedValue(params.search);
   const [createOpen, setCreateOpen] = useState(false);
@@ -82,7 +84,7 @@ function FormsListPageContent() {
         cell: (row) => (
           <div className="min-w-[180px]">
             <Link
-              href={`/business/settings/forms/${row.id}/edit`}
+              href={`${basePath}/${row.id}/edit`}
               className="font-medium hover:underline"
             >
               {row.name}
@@ -118,7 +120,7 @@ function FormsListPageContent() {
         cell: (row) =>
           row.submissionCount > 0 ? (
             <Link
-              href={`/business/settings/forms/${row.id}/submissions`}
+              href={`${basePath}/${row.id}/submissions`}
               className="text-sm font-medium hover:underline"
             >
               {row.submissionCount}
@@ -152,7 +154,7 @@ function FormsListPageContent() {
         ),
       },
     ],
-    [],
+    [basePath],
   );
 
   const deleteTarget = data?.items.find((item) => item.id === deleteId);
@@ -210,18 +212,14 @@ function FormsListPageContent() {
                       {
                         label: "Edit",
                         onClick: () =>
-                          router.push(
-                            `/business/settings/forms/${form.id}/edit`,
-                          ),
+                          router.push(`${basePath}/${form.id}/edit`),
                       },
                     ]
                   : []),
                 {
                   label: "View submissions",
                   onClick: () =>
-                    router.push(
-                      `/business/settings/forms/${form.id}/submissions`,
-                    ),
+                    router.push(`${basePath}/${form.id}/submissions`),
                 },
                 ...(canManageTemplates
                   ? [
@@ -257,7 +255,7 @@ function FormsListPageContent() {
                       {
                         label: "Export JSON",
                         onClick: async () => {
-                          const record = await getForm(form.id);
+                          const record = await getForm(form.id, apiBase);
                           downloadFormJson(record);
                         },
                       },
@@ -279,7 +277,7 @@ function FormsListPageContent() {
           open={createOpen}
           onOpenChange={setCreateOpen}
           onCreated={(id) => {
-            router.push(`/business/settings/forms/${id}/edit`);
+            router.push(`${basePath}/${id}/edit`);
           }}
         />
       ) : null}

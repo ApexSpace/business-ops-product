@@ -151,9 +151,9 @@ export const AUTOMATION_CATEGORY_REGISTRY: AutomationCategoryDefinition[] = [
   cat(
     'business',
     'Business',
-    'Tenant profile merge fields.',
+    'Tenant profile and platform lifecycle actions.',
     180,
-    ['custom_value'],
+    ['action', 'custom_value'],
     'building',
   ),
   cat(
