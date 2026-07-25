@@ -1,5 +1,6 @@
 import { Module, forwardRef } from '@nestjs/common';
 import { AuditModule } from '@app/modules/platform/audit/audit.module';
+import { BusinessModule } from '@app/modules/platform/business/business.module';
 import { ConversationsModule } from '@app/modules/communications/conversations/conversations.module';
 import { GiftCardsModule } from '@app/modules/finance/gift-cards/gift-cards.module';
 import { MembershipsModule } from '@app/modules/finance/memberships/memberships.module';
@@ -24,6 +25,7 @@ import { ContactsService } from './services/contacts.service';
   imports: [
     AuditModule,
     StorageModule,
+    forwardRef(() => BusinessModule),
     forwardRef(() => ConversationsModule),
     forwardRef(() => GiftCardsModule),
     forwardRef(() => MembershipsModule),

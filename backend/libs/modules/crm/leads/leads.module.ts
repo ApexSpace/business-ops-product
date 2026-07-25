@@ -1,5 +1,6 @@
 import { Module, forwardRef } from '@nestjs/common';
 import { AuditModule } from '@app/modules/platform/audit/audit.module';
+import { BusinessModule } from '@app/modules/platform/business/business.module';
 import { ContactsModule } from '@app/modules/crm/contacts/contacts.module';
 import { MembershipModule } from '@app/modules/platform/membership/membership.module';
 import { PipelinesModule } from '@app/modules/crm/pipelines/pipelines.module';
@@ -12,6 +13,7 @@ import { LeadsService } from './services/leads.service';
   imports: [
     AuditModule,
     PipelinesModule,
+    forwardRef(() => BusinessModule),
     forwardRef(() => ContactsModule),
     ServicesModule,
     forwardRef(() => MembershipModule),

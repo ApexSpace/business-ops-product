@@ -85,7 +85,7 @@ export class CapabilityFeatureKeyMigrationService {
         if (!dryRun) {
           await this.prisma.capabilityFeatureAssignment.update({
             where: { id: row.id },
-            data: { deletedAt: new Date(), status: CapabilityFeatureStatus.INACTIVE },
+            data: { deletedAt: new Date(), status: CapabilityFeatureStatus.DISABLED },
           });
         }
         continue;
@@ -99,7 +99,7 @@ export class CapabilityFeatureKeyMigrationService {
             where: { id: row.id },
             data: {
               deletedAt: new Date(),
-              status: CapabilityFeatureStatus.INACTIVE,
+              status: CapabilityFeatureStatus.DISABLED,
             },
           });
           await tx.capabilityFeatureAssignment.create({

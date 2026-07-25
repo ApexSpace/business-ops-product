@@ -15,6 +15,7 @@ import { OperationsApiModule } from '@app/modules/operations/operations-api.modu
 import { PlatformApiModule } from '@app/modules/platform/platform-api.module';
 import { ReportsApiModule } from '@app/modules/reports/reports-api.module';
 import { MembershipModule } from '@app/modules/platform/membership/membership.module';
+import { PublicTrialCorsMiddleware } from '@app/modules/platform/trial-signup/middleware/public-trial-cors.middleware';
 import { QueueBoardModule } from './queue-board.module';
 
 @Module({
@@ -39,6 +40,7 @@ import { QueueBoardModule } from './queue-board.module';
   ],
   providers: [
     TransformInterceptor,
+    PublicTrialCorsMiddleware,
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     { provide: APP_GUARD, useClass: StaffPermissionGuard },
     { provide: APP_GUARD, useClass: ThrottlerGuard },
@@ -46,6 +48,7 @@ import { QueueBoardModule } from './queue-board.module';
 })
 export class ApiModule implements NestModule {
   configure(consumer: MiddlewareConsumer): void {
+    consumer.apply(PublicTrialCorsMiddleware).forRoutes('*');
     consumer.apply(IdempotencyMiddleware).forRoutes('*');
   }
 }

@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
+import { PrismaService } from '@app/core/database/prisma.service';
 import { FinancialDueStatusService } from '@app/modules/finance/shared/services/financial-due-status.service';
 import { AppointmentReminderService } from '@app/modules/operations/appointments/services/appointment-reminder.service';
 import { ExpressBookingService } from '@app/modules/operations/express-booking/services/express-booking.service';
@@ -29,7 +30,28 @@ export class SchedulerTasksService {
     private readonly clientMembershipsService: ClientMembershipsService,
     private readonly operationsCampaignService: OperationsCampaignService,
     private readonly stripeBillingReconcile: StripePlatformBillingReconcileService,
+    private readonly prisma: PrismaService,
   ) {}
+
+  @Cron(CronExpression.EVERY_HOUR)
+  async cleanupExpiredTrialSignupSessions(): Promise<void> {
+    try {
+      const result = await this.prisma.trialSignupSession.deleteMany({
+        where: { expiresAt: { lt: new Date() } },
+      });
+      if (result.count > 0) {
+        this.logger.log(
+          `Deleted ${result.count} expired trial signup session(s)`,
+        );
+      }
+    } catch (error) {
+      this.logger.error(
+        `Trial signup session cleanup failed: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+    }
+  }
 
   @Cron(CronExpression.EVERY_DAY_AT_3AM)
   async enqueueWebhookCleanup(): Promise<void> {

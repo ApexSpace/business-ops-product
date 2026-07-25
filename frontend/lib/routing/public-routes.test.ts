@@ -7,8 +7,11 @@ describe("isPublicPath", () => {
     expect(isPublicPath("/select-context")).toBe(true);
     expect(isPublicPath("/forgot-password")).toBe(true);
     expect(isPublicPath("/reset-password")).toBe(true);
+    expect(isPublicPath("/auth/trial-handoff")).toBe(true);
     expect(isPublicPath("/api/auth/forgot-password")).toBe(true);
     expect(isPublicPath("/api/auth/reset-password")).toBe(true);
+    expect(isPublicPath("/api/auth/trial-handoff")).toBe(true);
+    expect(isPublicPath("/widget/trial")).toBe(true);
   });
 
   it("allows canonical public resource routes", () => {

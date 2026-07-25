@@ -1,5 +1,6 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { AuditModule } from '@app/modules/platform/audit/audit.module';
+import { BusinessModule } from '@app/modules/platform/business/business.module';
 import { PipelineStagesController } from './controllers/pipeline-stages.controller';
 import { PipelinesController } from './controllers/pipelines.controller';
 import { PipelineRepository } from './repositories/pipeline.repository';
@@ -9,7 +10,7 @@ import { PipelineStagesService } from './services/pipeline-stages.service';
 import { PipelinesService } from './services/pipelines.service';
 
 @Module({
-  imports: [AuditModule],
+  imports: [AuditModule, forwardRef(() => BusinessModule)],
   controllers: [PipelinesController, PipelineStagesController],
   providers: [
     PipelineRepository,
