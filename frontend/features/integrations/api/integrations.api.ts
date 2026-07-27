@@ -144,6 +144,15 @@ export function completeWhatsappEmbeddedSignup(body: Record<string, unknown>) {
   );
 }
 
+export function completePlatformWhatsappEmbeddedSignup(
+  body: Record<string, unknown>,
+) {
+  return api.post<{ success: true }>(
+    "platform/integrations/oauth/meta/whatsapp/embedded-signup/complete",
+    body,
+  );
+}
+
 export type MetaClientConfig = {
   appId: string;
   graphApiVersion: string;
@@ -153,6 +162,43 @@ export type MetaClientConfig = {
 
 export function getMetaClientConfig() {
   return api.get<MetaClientConfig>("integrations/oauth/meta/client-config");
+}
+
+export function getPlatformMetaClientConfig() {
+  return api.get<MetaClientConfig>(
+    "platform/integrations/oauth/meta/client-config",
+  );
+}
+
+export type OpsMessagingChannel = {
+  providerKey: string;
+  integration: BusinessIntegration | null;
+  messagingStatus: {
+    connected: boolean;
+    defaultResourceSelected: boolean;
+    webhookEndpointConfigured: boolean;
+    requiredPermissionsPresent: boolean;
+    readyForMessaging: boolean;
+    warnings: string[];
+  };
+};
+
+export function listOpsMessagingChannels() {
+  return api.get<{ businessId: string; channels: OpsMessagingChannel[] }>(
+    "platform/integrations/messaging",
+  );
+}
+
+export function connectOpsSms() {
+  return api.post<PlatformDefaultSms>(
+    "platform/integrations/messaging/sms/connect",
+  );
+}
+
+export function connectOpsEmail() {
+  return api.post<PlatformDefaultEmail>(
+    "platform/integrations/messaging/email/connect",
+  );
 }
 
 export type PlatformDefaultEmail = {

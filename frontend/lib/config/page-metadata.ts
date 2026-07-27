@@ -351,6 +351,11 @@ const platformRoutes: Record<string, RouteEntry> = {
     title: "Forms",
     description: "Build and publish platform marketing and ops forms.",
   },
+  "/platform/chatbots": {
+    title: "Chatbots",
+    description:
+      "Configure AI chatbots for the CodeSol marketing site and ops surfaces.",
+  },
 };
 
 const businessTerminologyKeys: Partial<Record<string, string>> = {
@@ -483,6 +488,18 @@ export function resolvePageMetadata(
       breadcrumbs: [
         { label: "Settings", href: "/business/settings/profile" },
         { label: "Chatbots", href: "/business/settings/chatbots" },
+        { label: "Edit" },
+      ],
+    };
+  }
+
+  if (pathname.match(/^\/platform\/chatbots\/[^/]+\/edit$/)) {
+    return {
+      title: "Edit chatbot",
+      description:
+        "Configure the platform chat widget, replies, and embed code.",
+      breadcrumbs: [
+        { label: "Chatbots", href: "/platform/chatbots" },
         { label: "Edit" },
       ],
     };

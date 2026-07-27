@@ -331,15 +331,20 @@ export const queryKeys = {
     googleSyncStatus: (id: string) => ["calendars", "google-sync-status", id] as const,
   },
   chatbots: {
-    all: () => ["chatbots"] as const,
-    list: () => ["chatbots", "list"] as const,
-    detail: (id: string) => ["chatbots", "detail", id] as const,
-    rules: (id: string) => ["chatbots", id, "rules"] as const,
-    embed: (id: string) => ["chatbots", id, "embed"] as const,
+    all: (apiBase = "chatbots") => ["chatbots", apiBase] as const,
+    list: (apiBase = "chatbots") => ["chatbots", apiBase, "list"] as const,
+    detail: (apiBase: string, id: string) =>
+      ["chatbots", apiBase, "detail", id] as const,
+    rules: (apiBase: string, id: string) =>
+      ["chatbots", apiBase, id, "rules"] as const,
+    embed: (apiBase: string, id: string) =>
+      ["chatbots", apiBase, id, "embed"] as const,
   },
   cannedResponses: {
-    all: () => ["canned-responses"] as const,
-    list: () => ["canned-responses", "list"] as const,
+    all: (apiBase: string = "canned-responses") =>
+      ["canned-responses", apiBase] as const,
+    list: (apiBase: string = "canned-responses") =>
+      ["canned-responses", apiBase, "list"] as const,
   },
   forms: {
     all: () => ["forms"] as const,
@@ -419,22 +424,40 @@ export const queryKeys = {
     },
   },
   conversations: {
-    all: () => ["conversations"] as const,
-    list: (filters?: Record<string, string | number | undefined | null>) =>
-      listKey(["conversations", "list"], filters),
-    unifiedList: (filters?: Record<string, string | number | undefined | null>) =>
-      listKey(["conversations", "unified", "list"], filters),
-    detail: (id: string) => ["conversations", "detail", id] as const,
-    messages: (id: string, page?: number) =>
-      ["conversations", id, "messages", page ?? 1] as const,
-    contactMessages: (contactId: string, page?: number) =>
-      ["conversations", "contacts", contactId, "messages", page ?? 0] as const,
-    replyChannels: (contactId: string) =>
-      ["conversations", "contacts", contactId, "reply-channels"] as const,
-    byContact: (contactId: string) =>
-      ["conversations", "by-contact", contactId] as const,
-    notes: (conversationId: string) =>
-      ["conversations", conversationId, "notes"] as const,
+    all: (apiBase: string = "conversations") =>
+      ["conversations", apiBase] as const,
+    list: (
+      filters?: Record<string, string | number | undefined | null>,
+      apiBase: string = "conversations",
+    ) => listKey(["conversations", apiBase, "list"], filters),
+    unifiedList: (
+      filters?: Record<string, string | number | undefined | null>,
+      apiBase: string = "conversations",
+    ) => listKey(["conversations", apiBase, "unified", "list"], filters),
+    detail: (id: string, apiBase: string = "conversations") =>
+      ["conversations", apiBase, "detail", id] as const,
+    messages: (id: string, page?: number, apiBase: string = "conversations") =>
+      ["conversations", apiBase, id, "messages", page ?? 1] as const,
+    contactMessages: (
+      contactId: string,
+      page?: number,
+      apiBase: string = "conversations",
+    ) =>
+      [
+        "conversations",
+        apiBase,
+        "contacts",
+        contactId,
+        "messages",
+        page ?? 0,
+      ] as const,
+    replyChannels: (contactId: string, apiBase: string = "conversations") =>
+      ["conversations", apiBase, "contacts", contactId, "reply-channels"] as const,
+    byContact: (contactId: string, apiBase: string = "conversations") =>
+      ["conversations", apiBase, "by-contact", contactId] as const,
+    notes: (conversationId: string, apiBase: string = "conversations") =>
+      ["conversations", apiBase, conversationId, "notes"] as const,
+    opsContext: () => ["conversations", "platform", "ops-context"] as const,
   },
   appointments: {
     all: () => ["appointments"] as const,
@@ -464,6 +487,7 @@ export const queryKeys = {
     platformList: () => ["integrations", "platform", "list"] as const,
     platformDetail: (providerKey: string) =>
       ["integrations", "platform", "detail", providerKey] as const,
+    opsMessaging: () => ["integrations", "platform", "ops-messaging"] as const,
   },
   storage: {
     all: ["storage"] as const,

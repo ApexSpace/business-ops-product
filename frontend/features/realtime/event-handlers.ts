@@ -25,6 +25,8 @@ export const REALTIME_EVENTS = {
 
 type MessagePage = { items: ConversationMessage[] };
 
+const DEFAULT_CONVERSATIONS_API_BASE = "conversations";
+
 const MESSAGE_STATUS_RANK: Record<MessageStatus, number> = {
   RECEIVED: 0,
   PENDING: 1,
@@ -57,19 +59,22 @@ function shouldApplyMessageStatusUpdate(
 export function handleRealtimeEvent(
   queryClient: QueryClient,
   payload: RealtimeEventPayload,
+  options?: { conversationsApiBase?: string },
 ): void {
   const event = payload.event;
+  const apiBase =
+    options?.conversationsApiBase ?? DEFAULT_CONVERSATIONS_API_BASE;
 
   switch (true) {
     case matchesEvent(event, REALTIME_EVENTS.disabled):
       break;
     case matchesEvent(event, REALTIME_EVENTS.messageReceived):
     case matchesEvent(event, "conversation.message.received"):
-      handleMessageReceivedEvent(queryClient, payload.data);
+      handleMessageReceivedEvent(queryClient, payload.data, apiBase);
       break;
     case matchesEvent(event, REALTIME_EVENTS.messageUpdated):
     case matchesEvent(event, "conversation.message.updated"):
-      handleMessageUpdatedEvent(queryClient, payload.data);
+      handleMessageUpdatedEvent(queryClient, payload.data, apiBase);
       break;
     case matchesEvent(event, REALTIME_EVENTS.messageDeleted):
     case matchesEvent(event, "conversation.message.deleted"): {
@@ -79,13 +84,19 @@ export function handleRealtimeEvent(
       const messageId =
         typeof data?.messageId === "string" ? data.messageId : null;
       if (conversationId && messageId) {
-        removeMessageFromCache(queryClient, conversationId, messageId);
+        removeMessageFromCache(
+          queryClient,
+          conversationId,
+          messageId,
+          undefined,
+          apiBase,
+        );
       }
       break;
     }
     case matchesEvent(event, REALTIME_EVENTS.conversationUpdated):
     case matchesEvent(event, "conversation.updated"):
-      patchConversationEvent(queryClient, payload.data);
+      patchConversationEvent(queryClient, payload.data, apiBase);
       break;
     case matchesEvent(event, REALTIME_EVENTS.jobCompleted):
     case matchesEvent(event, REALTIME_EVENTS.integrationStatusChanged):
@@ -118,6 +129,7 @@ function matchesEvent(event: string, expected: string): boolean {
 function handleMessageReceivedEvent(
   queryClient: QueryClient,
   data: unknown,
+  apiBase: string,
 ): void {
   if (!data || typeof data !== "object") return;
   const record = data as Record<string, unknown>;
@@ -127,12 +139,16 @@ function handleMessageReceivedEvent(
       : undefined;
   if (!conversationId) {
     void queryClient.invalidateQueries({
-      queryKey: queryKeys.conversations.all(),
+      queryKey: queryKeys.conversations.all(apiBase),
     });
     return;
   }
 
-  const contactId = resolveContactIdForConversation(queryClient, conversationId);
+  const contactId = resolveContactIdForConversation(
+    queryClient,
+    conversationId,
+    apiBase,
+  );
   const message = parseConversationMessage(record.message);
   if (message) {
     if (
@@ -150,49 +166,56 @@ function handleMessageReceivedEvent(
         new Notification("New website chat", { body: preview });
       }
     }
-    upsertMessageInCache(queryClient, conversationId, message, contactId);
+    upsertMessageInCache(
+      queryClient,
+      conversationId,
+      message,
+      contactId,
+      apiBase,
+    );
     if (contactId) {
       void queryClient.invalidateQueries({
-        queryKey: queryKeys.conversations.replyChannels(contactId),
+        queryKey: queryKeys.conversations.replyChannels(contactId, apiBase),
       });
     }
     void queryClient.invalidateQueries({
-      queryKey: queryKeys.conversations.list(),
+      queryKey: queryKeys.conversations.list(undefined, apiBase),
     });
     void queryClient.invalidateQueries({
-      queryKey: queryKeys.conversations.unifiedList(),
+      queryKey: queryKeys.conversations.unifiedList(undefined, apiBase),
     });
     void queryClient.invalidateQueries({
-      queryKey: queryKeys.conversations.detail(conversationId),
+      queryKey: queryKeys.conversations.detail(conversationId, apiBase),
     });
     return;
   }
 
   void queryClient.invalidateQueries({
-    queryKey: queryKeys.conversations.messages(conversationId, 0),
+    queryKey: queryKeys.conversations.messages(conversationId, 0, apiBase),
   });
   if (contactId) {
     void queryClient.invalidateQueries({
-      queryKey: queryKeys.conversations.contactMessages(contactId, 0),
+      queryKey: queryKeys.conversations.contactMessages(contactId, 0, apiBase),
     });
     void queryClient.invalidateQueries({
-      queryKey: queryKeys.conversations.replyChannels(contactId),
+      queryKey: queryKeys.conversations.replyChannels(contactId, apiBase),
     });
   }
   void queryClient.invalidateQueries({
-    queryKey: queryKeys.conversations.detail(conversationId),
+    queryKey: queryKeys.conversations.detail(conversationId, apiBase),
   });
   void queryClient.invalidateQueries({
-    queryKey: queryKeys.conversations.list(),
+    queryKey: queryKeys.conversations.list(undefined, apiBase),
   });
   void queryClient.invalidateQueries({
-    queryKey: queryKeys.conversations.unifiedList(),
+    queryKey: queryKeys.conversations.unifiedList(undefined, apiBase),
   });
 }
 
 function handleMessageUpdatedEvent(
   queryClient: QueryClient,
   data: unknown,
+  apiBase: string,
 ): void {
   if (!data || typeof data !== "object") return;
   const record = data as Record<string, unknown>;
@@ -214,7 +237,7 @@ function handleMessageUpdatedEvent(
         : undefined;
 
   const contactId = conversationId
-    ? resolveContactIdForConversation(queryClient, conversationId)
+    ? resolveContactIdForConversation(queryClient, conversationId, apiBase)
     : undefined;
 
   if (conversationId && messageId && status) {
@@ -227,18 +250,23 @@ function handleMessageUpdatedEvent(
         ...(errorMessage !== undefined ? { errorMessage } : {}),
       },
       contactId,
+      apiBase,
     );
     if (patched) {
       return;
     }
 
     void queryClient.refetchQueries({
-      queryKey: queryKeys.conversations.messages(conversationId, 0),
+      queryKey: queryKeys.conversations.messages(conversationId, 0, apiBase),
       type: "active",
     });
     if (contactId) {
       void queryClient.refetchQueries({
-        queryKey: queryKeys.conversations.contactMessages(contactId, 0),
+        queryKey: queryKeys.conversations.contactMessages(
+          contactId,
+          0,
+          apiBase,
+        ),
         type: "active",
       });
     }
@@ -247,31 +275,35 @@ function handleMessageUpdatedEvent(
 
   if (!conversationId) {
     void queryClient.invalidateQueries({
-      queryKey: queryKeys.conversations.all(),
+      queryKey: queryKeys.conversations.all(apiBase),
     });
     return;
   }
 
   void queryClient.invalidateQueries({
-    queryKey: queryKeys.conversations.messages(conversationId, 0),
+    queryKey: queryKeys.conversations.messages(conversationId, 0, apiBase),
   });
   if (contactId) {
     void queryClient.invalidateQueries({
-      queryKey: queryKeys.conversations.contactMessages(contactId, 0),
+      queryKey: queryKeys.conversations.contactMessages(contactId, 0, apiBase),
     });
   }
   void queryClient.invalidateQueries({
-    queryKey: queryKeys.conversations.detail(conversationId),
+    queryKey: queryKeys.conversations.detail(conversationId, apiBase),
   });
   void queryClient.invalidateQueries({
-    queryKey: queryKeys.conversations.list(),
+    queryKey: queryKeys.conversations.list(undefined, apiBase),
   });
   void queryClient.invalidateQueries({
-    queryKey: queryKeys.conversations.unifiedList(),
+    queryKey: queryKeys.conversations.unifiedList(undefined, apiBase),
   });
 }
 
-function patchConversationEvent(queryClient: QueryClient, data: unknown): void {
+function patchConversationEvent(
+  queryClient: QueryClient,
+  data: unknown,
+  apiBase: string,
+): void {
   if (!data || typeof data !== "object") return;
   const record = data as Record<string, unknown>;
   const id =
@@ -283,7 +315,7 @@ function patchConversationEvent(queryClient: QueryClient, data: unknown): void {
 
   if (id) {
     queryClient.setQueryData<Conversation>(
-      queryKeys.conversations.detail(id),
+      queryKeys.conversations.detail(id, apiBase),
       (prev) =>
         prev
           ? ({ ...prev, ...(record as Partial<Conversation>) } as Conversation)
@@ -292,10 +324,10 @@ function patchConversationEvent(queryClient: QueryClient, data: unknown): void {
   }
 
   void queryClient.invalidateQueries({
-    queryKey: queryKeys.conversations.list(),
+    queryKey: queryKeys.conversations.list(undefined, apiBase),
   });
   void queryClient.invalidateQueries({
-    queryKey: queryKeys.conversations.unifiedList(),
+    queryKey: queryKeys.conversations.unifiedList(undefined, apiBase),
   });
 }
 
@@ -317,14 +349,17 @@ export function appendMessageToCache(
   conversationId: string,
   message: ConversationMessage,
   contactId?: string | null,
+  apiBase: string = DEFAULT_CONVERSATIONS_API_BASE,
 ): void {
   const resolvedContactId =
-    contactId ?? resolveContactIdForConversation(queryClient, conversationId);
+    contactId ??
+    resolveContactIdForConversation(queryClient, conversationId, apiBase);
   upsertMessageInCache(
     queryClient,
     conversationId,
     message,
     resolvedContactId,
+    apiBase,
   );
 }
 
@@ -332,8 +367,9 @@ export function appendMessageToContactCache(
   queryClient: QueryClient,
   contactId: string,
   message: ConversationMessage,
+  apiBase: string = DEFAULT_CONVERSATIONS_API_BASE,
 ): void {
-  upsertMessageInContactCache(queryClient, contactId, message);
+  upsertMessageInContactCache(queryClient, contactId, message, apiBase);
 }
 
 function findOptimisticReconcileIndex(
@@ -350,12 +386,14 @@ export function removeMessageFromCache(
   conversationId: string,
   messageId: string,
   contactId?: string | null,
+  apiBase: string = DEFAULT_CONVERSATIONS_API_BASE,
 ): void {
   const resolvedContactId =
-    contactId ?? resolveContactIdForConversation(queryClient, conversationId);
+    contactId ??
+    resolveContactIdForConversation(queryClient, conversationId, apiBase);
 
   queryClient.setQueryData<InfiniteData<MessagePage>>(
-    queryKeys.conversations.messages(conversationId, 0),
+    queryKeys.conversations.messages(conversationId, 0, apiBase),
     (old) => {
       if (!old?.pages?.length) return old;
 
@@ -370,7 +408,7 @@ export function removeMessageFromCache(
 
   if (resolvedContactId) {
     queryClient.setQueryData<InfiniteData<MessagePage>>(
-      queryKeys.conversations.contactMessages(resolvedContactId, 0),
+      queryKeys.conversations.contactMessages(resolvedContactId, 0, apiBase),
       (old) => {
         if (!old?.pages?.length) return old;
 
@@ -389,11 +427,12 @@ export function patchConversationPreviewInCache(
   queryClient: QueryClient,
   conversationId: string,
   preview: string,
+  apiBase: string = DEFAULT_CONVERSATIONS_API_BASE,
 ): void {
   const now = new Date().toISOString();
 
   queryClient.setQueriesData<{ items: Conversation[] }>(
-    { queryKey: queryKeys.conversations.list() },
+    { queryKey: queryKeys.conversations.list(undefined, apiBase) },
     (old) => {
       if (!old?.items) return old;
 
@@ -413,7 +452,7 @@ export function patchConversationPreviewInCache(
   );
 
   queryClient.setQueriesData<{ items: UnifiedConversationThread[] }>(
-    { queryKey: queryKeys.conversations.unifiedList() },
+    { queryKey: queryKeys.conversations.unifiedList(undefined, apiBase) },
     (old) => {
       if (!old?.items) return old;
 
@@ -491,9 +530,10 @@ function upsertMessageInInfiniteCache(
 export function refetchContactMessagesCache(
   queryClient: QueryClient,
   contactId: string,
+  apiBase: string = DEFAULT_CONVERSATIONS_API_BASE,
 ): Promise<void> {
   return queryClient.refetchQueries({
-    queryKey: queryKeys.conversations.contactMessages(contactId, 0),
+    queryKey: queryKeys.conversations.contactMessages(contactId, 0, apiBase),
     type: "active",
   });
 }
@@ -502,10 +542,11 @@ function upsertMessageInContactCache(
   queryClient: QueryClient,
   contactId: string,
   message: ConversationMessage,
+  apiBase: string = DEFAULT_CONVERSATIONS_API_BASE,
 ): void {
   upsertMessageInInfiniteCache(
     queryClient,
-    queryKeys.conversations.contactMessages(contactId, 0),
+    queryKeys.conversations.contactMessages(contactId, 0, apiBase),
     message,
   );
 }
@@ -515,27 +556,35 @@ export function upsertMessageInCache(
   conversationId: string,
   message: ConversationMessage,
   contactId?: string | null,
+  apiBase: string = DEFAULT_CONVERSATIONS_API_BASE,
 ): void {
   const resolvedContactId =
-    contactId ?? resolveContactIdForConversation(queryClient, conversationId);
+    contactId ??
+    resolveContactIdForConversation(queryClient, conversationId, apiBase);
 
   upsertMessageInInfiniteCache(
     queryClient,
-    queryKeys.conversations.messages(conversationId, 0),
+    queryKeys.conversations.messages(conversationId, 0, apiBase),
     message,
   );
 
   if (resolvedContactId) {
-    upsertMessageInContactCache(queryClient, resolvedContactId, message);
+    upsertMessageInContactCache(
+      queryClient,
+      resolvedContactId,
+      message,
+      apiBase,
+    );
   }
 }
 
 function resolveContactIdForConversation(
   queryClient: QueryClient,
   conversationId: string,
+  apiBase: string = DEFAULT_CONVERSATIONS_API_BASE,
 ): string | null {
   const detail = queryClient.getQueryData<Conversation>(
-    queryKeys.conversations.detail(conversationId),
+    queryKeys.conversations.detail(conversationId, apiBase),
   );
   if (detail?.contactId) {
     return detail.contactId;
@@ -543,7 +592,7 @@ function resolveContactIdForConversation(
 
   const unifiedLists = queryClient.getQueriesData<{
     items: UnifiedConversationThread[];
-  }>({ queryKey: queryKeys.conversations.unifiedList() });
+  }>({ queryKey: queryKeys.conversations.unifiedList(undefined, apiBase) });
 
   for (const [, data] of unifiedLists) {
     const thread = data?.items?.find((item) =>
@@ -597,13 +646,15 @@ export function updateMessageInCache(
   messageId: string,
   patch: Partial<Pick<ConversationMessage, "status" | "errorMessage" | "sentAt">>,
   contactId?: string | null,
+  apiBase: string = DEFAULT_CONVERSATIONS_API_BASE,
 ): boolean {
   const resolvedContactId =
-    contactId ?? resolveContactIdForConversation(queryClient, conversationId);
+    contactId ??
+    resolveContactIdForConversation(queryClient, conversationId, apiBase);
 
   const patched = patchMessageInInfiniteCache(
     queryClient,
-    queryKeys.conversations.messages(conversationId, 0),
+    queryKeys.conversations.messages(conversationId, 0, apiBase),
     messageId,
     patch,
   );
@@ -611,7 +662,7 @@ export function updateMessageInCache(
   if (resolvedContactId) {
     patchMessageInInfiniteCache(
       queryClient,
-      queryKeys.conversations.contactMessages(resolvedContactId, 0),
+      queryKeys.conversations.contactMessages(resolvedContactId, 0, apiBase),
       messageId,
       patch,
     );

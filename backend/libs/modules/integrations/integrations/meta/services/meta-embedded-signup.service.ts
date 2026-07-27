@@ -60,15 +60,36 @@ export class MetaEmbeddedSignupService {
     user: RequestUser,
     res: Response,
   ): Promise<void> {
+    if (!user.businessId) {
+      throw new AppException(
+        ErrorCode.BAD_REQUEST,
+        'Business context is required for WhatsApp embedded signup',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+    await this.redirectToWhatsAppSignupForBusiness(
+      user,
+      user.businessId,
+      res,
+    );
+  }
+
+  async redirectToWhatsAppSignupForBusiness(
+    user: RequestUser,
+    businessId: string,
+    res: Response,
+  ): Promise<void> {
     this.assertMetaOAuthConfigured();
     await this.assertWhatsAppProvider();
     this.assertWhatsAppEmbeddedSignupConfigured();
 
-    this.logger.log('Meta WhatsApp embedded signup start');
+    this.logger.log(
+      `Meta WhatsApp embedded signup start businessId=${businessId}`,
+    );
 
     const state = createMetaOAuthState(
       {
-        businessId: user.businessId!,
+        businessId,
         userId: user.id,
         providerKey: META_WHATSAPP_PROVIDER_KEY,
         flowType: 'WHATSAPP_EMBEDDED_SIGNUP',

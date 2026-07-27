@@ -7,6 +7,7 @@ import {
   sendConversationMessage,
   type ConversationMessage,
 } from "@/features/conversations/api/conversations.api";
+import { useConversationsHost } from "@/features/conversations/conversations-host-context";
 import { isOptimisticMessageId } from "@/features/conversations/utils/optimistic-message";
 import { parseMessageAttachments } from "@/features/conversations/utils/message-attachments";
 import {
@@ -32,6 +33,7 @@ export function useRetryConversationMessage(options?: {
   contactId?: string | null;
   enabled?: boolean;
 }) {
+  const { apiBase } = useConversationsHost();
   const queryClient = useQueryClient();
   const contactId = options?.contactId ?? null;
   const enabled = options?.enabled ?? true;
@@ -47,22 +49,26 @@ export function useRetryConversationMessage(options?: {
         if (!payload.text && !payload.attachments?.length) {
           throw new Error("Nothing to retry for this message.");
         }
-        return sendConversationMessage(message.conversationId, payload).then(
-          (result) => ({
-            ...result,
-            conversationId: message.conversationId,
-            optimisticId: message.id,
-          }),
-        );
-      }
-
-      return retryConversationMessage(message.conversationId, message.id).then(
-        (result) => ({
+        return sendConversationMessage(
+          message.conversationId,
+          payload,
+          apiBase,
+        ).then((result) => ({
           ...result,
           conversationId: message.conversationId,
-          optimisticId: null as string | null,
-        }),
-      );
+          optimisticId: message.id,
+        }));
+      }
+
+      return retryConversationMessage(
+        message.conversationId,
+        message.id,
+        apiBase,
+      ).then((result) => ({
+        ...result,
+        conversationId: message.conversationId,
+        optimisticId: null as string | null,
+      }));
     },
     onMutate: async (message) => {
       updateMessageInCache(
@@ -71,6 +77,7 @@ export function useRetryConversationMessage(options?: {
         message.id,
         { status: "PENDING", errorMessage: null },
         contactId,
+        apiBase,
       );
       return { message };
     },
@@ -80,6 +87,7 @@ export function useRetryConversationMessage(options?: {
         data.conversationId,
         data.message,
         contactId,
+        apiBase,
       );
     },
     onError: (error, message) => {
@@ -92,6 +100,7 @@ export function useRetryConversationMessage(options?: {
           errorMessage: error instanceof Error ? error.message : "Retry failed",
         },
         contactId,
+        apiBase,
       );
       toast.error(error instanceof Error ? error.message : "Failed to retry message");
     },

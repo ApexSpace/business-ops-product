@@ -25,6 +25,7 @@ import {
   pauseChatbotForConversation,
   resumeChatbotForConversation,
 } from "@/features/conversations/api/conversation-notes.api";
+import { useConversationsHost } from "@/features/conversations/conversations-host-context";
 import { queryKeys } from "@/lib/query/keys";
 import { cn } from "@/lib/utils";
 
@@ -39,8 +40,11 @@ export function ChatbotSessionActions({
   botPaused = false,
   className,
 }: ChatbotSessionActionsProps) {
+  const { apiBase, mode } = useConversationsHost();
   const queryClient = useQueryClient();
   const [paused, setPaused] = useState(botPaused);
+  const chatbotsApiBase =
+    mode === "platform" ? "platform/chatbots" : "chatbots";
 
   useEffect(() => {
     setPaused(botPaused);
@@ -48,13 +52,15 @@ export function ChatbotSessionActions({
 
   const invalidate = () => {
     void queryClient.invalidateQueries({
-      queryKey: queryKeys.conversations.all(),
+      queryKey: queryKeys.conversations.all(apiBase),
     });
-    void queryClient.invalidateQueries({ queryKey: queryKeys.chatbots.all() });
+    void queryClient.invalidateQueries({
+      queryKey: queryKeys.chatbots.all(chatbotsApiBase),
+    });
   };
 
   const endMutation = useMutation({
-    mutationFn: () => endChatbotSessionForConversation(conversationId),
+    mutationFn: () => endChatbotSessionForConversation(conversationId, apiBase),
     onSuccess: (result) => {
       invalidate();
       if (result.sessionId) toast.success("Chat session ended");
@@ -64,7 +70,8 @@ export function ChatbotSessionActions({
   });
 
   const convertMutation = useMutation({
-    mutationFn: () => convertChatbotSessionForConversation(conversationId),
+    mutationFn: () =>
+      convertChatbotSessionForConversation(conversationId, apiBase),
     onSuccess: (result) => {
       invalidate();
       if (result.sessionId) toast.success("Chat marked as converted");
@@ -74,7 +81,7 @@ export function ChatbotSessionActions({
   });
 
   const pauseMutation = useMutation({
-    mutationFn: () => pauseChatbotForConversation(conversationId),
+    mutationFn: () => pauseChatbotForConversation(conversationId, apiBase),
     onSuccess: () => {
       invalidate();
       setPaused(true);
@@ -84,7 +91,7 @@ export function ChatbotSessionActions({
   });
 
   const resumeMutation = useMutation({
-    mutationFn: () => resumeChatbotForConversation(conversationId),
+    mutationFn: () => resumeChatbotForConversation(conversationId, apiBase),
     onSuccess: () => {
       invalidate();
       setPaused(false);

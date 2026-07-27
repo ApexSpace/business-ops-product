@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { ContactCompactContextPanel } from "@/features/contacts/components/contact-workspace/contact-compact-context-panel";
 import { ContactFullProfileDrawer } from "@/features/contacts/components/contact-full-profile-drawer";
 import { WORKSPACE_PANEL_CLASS } from "@/features/contacts/workspace/contact-workspace";
+import { useConversationsHost } from "@/features/conversations/conversations-host-context";
 import {
   channelLabel,
   type Conversation,
@@ -74,6 +75,7 @@ export function ConversationInboxContactSidebar({
   sidebarState: sidebar,
   className,
 }: ConversationInboxContactSidebarProps) {
+  const { mode } = useConversationsHost();
   const contactId = selectedThread?.contactId ?? selected?.contactId ?? null;
 
   if (!selected) {
@@ -87,6 +89,16 @@ export function ConversationInboxContactSidebar({
       >
         No conversation selected.
       </aside>
+    );
+  }
+
+  // Platform inbox: keep a reduced sidebar — no /business/contacts deep-links.
+  if (mode === "platform") {
+    return (
+      <ConversationInboxContactFallback
+        selected={selected}
+        selectedThread={selectedThread}
+      />
     );
   }
 

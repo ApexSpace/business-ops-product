@@ -64,6 +64,27 @@ export class MetaOAuthService {
     providerKey: string | undefined,
     res: Response,
   ): Promise<void> {
+    if (!user.businessId) {
+      throw new AppException(
+        ErrorCode.BAD_REQUEST,
+        'Business context is required for Meta OAuth',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+    await this.redirectToMetaForBusiness(
+      user,
+      user.businessId,
+      providerKey,
+      res,
+    );
+  }
+
+  async redirectToMetaForBusiness(
+    user: RequestUser,
+    businessId: string,
+    providerKey: string | undefined,
+    res: Response,
+  ): Promise<void> {
     this.assertMetaOAuthConfigured();
 
     if (!providerKey?.trim()) {
@@ -76,7 +97,9 @@ export class MetaOAuthService {
 
     const normalizedKey = providerKey.trim();
 
-    this.logger.log(`Meta OAuth start providerKey=${normalizedKey}`);
+    this.logger.log(
+      `Meta OAuth start providerKey=${normalizedKey} businessId=${businessId}`,
+    );
 
     if (!isMetaBusinessOAuthProviderKey(normalizedKey)) {
       if (normalizedKey === META_WHATSAPP_PROVIDER_KEY) {
@@ -98,7 +121,7 @@ export class MetaOAuthService {
     const providerConfig = getMetaProviderConfig(normalizedKey)!;
     const state = createMetaOAuthState(
       {
-        businessId: user.businessId!,
+        businessId,
         userId: user.id,
         providerKey: normalizedKey,
         flowType: providerConfig.flowType,

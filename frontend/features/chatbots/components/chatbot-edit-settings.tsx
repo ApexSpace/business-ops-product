@@ -34,6 +34,7 @@ import {
   updateChatbot,
   type Chatbot,
 } from "@/features/chatbots/api/chatbots.api";
+import { useChatbotsHost } from "@/features/chatbots/chatbots-host-context";
 import {
   ChatbotLivePreview,
   ChatbotPreviewLink,
@@ -56,36 +57,39 @@ interface ChatbotEditSettingsProps {
 
 export function ChatbotEditSettings({ chatbotId }: ChatbotEditSettingsProps) {
   const queryClient = useQueryClient();
+  const { apiBase, basePath, mode } = useChatbotsHost();
   const [tab, setTab] = useState("styles");
   const [device, setDevice] = useState<PreviewDevice>("desktop");
 
   const { data: bot, isLoading } = useQuery({
-    queryKey: queryKeys.chatbots.detail(chatbotId),
-    queryFn: () => getChatbot(chatbotId),
+    queryKey: queryKeys.chatbots.detail(apiBase, chatbotId),
+    queryFn: () => getChatbot(chatbotId, apiBase),
   });
 
   const { data: rules = [] } = useQuery({
-    queryKey: queryKeys.chatbots.rules(chatbotId),
-    queryFn: () => listChatbotRules(chatbotId),
+    queryKey: queryKeys.chatbots.rules(apiBase, chatbotId),
+    queryFn: () => listChatbotRules(chatbotId, apiBase),
     enabled: Boolean(bot),
   });
 
   const { data: embed } = useQuery({
-    queryKey: queryKeys.chatbots.embed(chatbotId),
-    queryFn: () => getChatbotEmbed(chatbotId),
+    queryKey: queryKeys.chatbots.embed(apiBase, chatbotId),
+    queryFn: () => getChatbotEmbed(chatbotId, apiBase),
     enabled: Boolean(bot),
   });
 
   const invalidate = () => {
     void queryClient.invalidateQueries({
-      queryKey: queryKeys.chatbots.detail(chatbotId),
+      queryKey: queryKeys.chatbots.detail(apiBase, chatbotId),
     });
-    void queryClient.invalidateQueries({ queryKey: queryKeys.chatbots.all() });
+    void queryClient.invalidateQueries({
+      queryKey: queryKeys.chatbots.all(apiBase),
+    });
   };
 
   const saveMutation = useMutation({
     mutationFn: (body: Parameters<typeof updateChatbot>[1]) =>
-      updateChatbot(chatbotId, body),
+      updateChatbot(chatbotId, body, apiBase),
     onSuccess: () => {
       invalidate();
       toast.success("Saved");
@@ -105,6 +109,9 @@ export function ChatbotEditSettings({ chatbotId }: ChatbotEditSettingsProps) {
     <ChatbotEditForm
       bot={bot}
       chatbotId={chatbotId}
+      apiBase={apiBase}
+      basePath={basePath}
+      mode={mode}
       tab={tab}
       setTab={setTab}
       device={device}
@@ -120,6 +127,9 @@ export function ChatbotEditSettings({ chatbotId }: ChatbotEditSettingsProps) {
 function ChatbotEditForm({
   bot,
   chatbotId,
+  apiBase,
+  basePath,
+  mode,
   tab,
   setTab,
   device,
@@ -131,6 +141,9 @@ function ChatbotEditForm({
 }: {
   bot: Chatbot;
   chatbotId: string;
+  apiBase: string;
+  basePath: string;
+  mode: "business" | "platform";
   tab: string;
   setTab: (v: string) => void;
   device: PreviewDevice;
@@ -142,12 +155,15 @@ function ChatbotEditForm({
   >;
   invalidate: () => void;
 }) {
-  const { data: business } = useCurrentBusiness();
+  const { data: business } = useCurrentBusiness({
+    enabled: mode === "business",
+  });
+  const defaultTimezone =
+    mode === "platform" ? "UTC" : (business?.timezone ?? "UTC");
   const [draft, setDraft] = useState<Partial<Chatbot>>({});
   const [consentOpen, setConsentOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
 
-  const defaultTimezone = business?.timezone ?? "UTC";
   const resolvedBusinessHours = normalizeBusinessHoursSettings(
     draft.businessHoursSettings ?? bot.businessHoursSettings,
     defaultTimezone,
@@ -173,7 +189,7 @@ function ChatbotEditForm({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <Link
-            href="/business/settings/chatbots"
+            href={basePath}
             className="inline-flex size-9 items-center justify-center rounded-md hover:bg-muted"
           >
             <ArrowLeft className="size-4" />
@@ -212,14 +228,21 @@ function ChatbotEditForm({
             </>
           ) : null}
           {bot.status !== "ACTIVE" ? (
-            <Button size="sm" onClick={() => activateChatbot(chatbotId).then(invalidate)}>
+            <Button
+              size="sm"
+              onClick={() =>
+                activateChatbot(chatbotId, apiBase).then(invalidate)
+              }
+            >
               Activate
             </Button>
           ) : (
             <Button
               size="sm"
               variant="outline"
-              onClick={() => disableChatbot(chatbotId).then(invalidate)}
+              onClick={() =>
+                disableChatbot(chatbotId, apiBase).then(invalidate)
+              }
             >
               Disable
             </Button>
@@ -599,8 +622,8 @@ function ChatbotEditForm({
                 title="Delete chatbot?"
                 description="This chatbot will be archived and removed from your list."
                 onConfirm={async () => {
-                  await deleteChatbot(chatbotId);
-                  window.location.href = "/business/settings/chatbots";
+                  await deleteChatbot(chatbotId, apiBase);
+                  window.location.href = basePath;
                 }}
               />
             </TabsContent>

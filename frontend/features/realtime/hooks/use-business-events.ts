@@ -10,12 +10,15 @@ import {
 } from "@/features/realtime/realtime-mode-context";
 import { RealtimeClient } from "@/features/realtime/transport/realtime-client";
 import { fetchWsAccessToken } from "@/lib/realtime/fetch-ws-access-token";
-import { queryKeys } from "@/lib/query/keys";
 
-export function useBusinessEvents(businessId: string | undefined) {
+export function useBusinessEvents(
+  businessId: string | undefined,
+  options?: { conversationsApiBase?: string },
+) {
   const queryClient = useQueryClient();
   const setRealtimeMode = useRealtimeModeSetter();
   const setConnectionState = useRealtimeConnectionStateSetter();
+  const conversationsApiBase = options?.conversationsApiBase;
 
   useEffect(() => {
     if (!businessId || !isAnyRealtimeTransportEnabled()) {
@@ -29,7 +32,10 @@ export function useBusinessEvents(businessId: string | undefined) {
     const client = new RealtimeClient({
       businessId,
       getAccessToken: fetchWsAccessToken,
-      onEvent: (payload) => handleRealtimeEvent(queryClient, payload),
+      onEvent: (payload) =>
+        handleRealtimeEvent(queryClient, payload, {
+          conversationsApiBase,
+        }),
       onModeChange: (mode) => {
         setRealtimeMode(mode);
         if (mode === "websocket" || mode === "sse") {
@@ -52,5 +58,11 @@ export function useBusinessEvents(businessId: string | undefined) {
 
     client.connect();
     return () => client.close();
-  }, [businessId, queryClient, setConnectionState, setRealtimeMode]);
+  }, [
+    businessId,
+    conversationsApiBase,
+    queryClient,
+    setConnectionState,
+    setRealtimeMode,
+  ]);
 }

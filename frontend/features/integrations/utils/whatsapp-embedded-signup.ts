@@ -276,8 +276,10 @@ function loginWithEmbeddedSignupConfig(
   });
 }
 
-export async function launchWhatsAppEmbeddedSignup(): Promise<WhatsAppEmbeddedSignupResult> {
-  const config = await fetchMetaClientConfig();
+export async function launchWhatsAppEmbeddedSignup(
+  clientConfig?: MetaClientConfig,
+): Promise<WhatsAppEmbeddedSignupResult> {
+  const config = clientConfig ?? (await fetchMetaClientConfig());
 
   if (!config.whatsappEmbeddedSignupReady || !config.whatsappEmbeddedSignupConfigId) {
     throw new Error(WHATSAPP_EMBEDDED_SIGNUP_NOT_CONFIGURED_MESSAGE);
@@ -313,6 +315,22 @@ export async function completeWhatsAppEmbeddedSignupOnServer(
   payload: WhatsAppEmbeddedSignupResult,
 ): Promise<void> {
   await completeWhatsappEmbeddedSignup({
+    code: payload.code,
+    wabaId: payload.wabaId,
+    phoneNumberId: payload.phoneNumberId,
+    displayPhoneNumber: payload.displayPhoneNumber,
+    verifiedName: payload.verifiedName,
+    onboardingType: payload.onboardingType,
+  });
+}
+
+export async function completePlatformWhatsAppEmbeddedSignupOnServer(
+  payload: WhatsAppEmbeddedSignupResult,
+): Promise<void> {
+  const { completePlatformWhatsappEmbeddedSignup } = await import(
+    "@/features/integrations/api/integrations.api"
+  );
+  await completePlatformWhatsappEmbeddedSignup({
     code: payload.code,
     wabaId: payload.wabaId,
     phoneNumberId: payload.phoneNumberId,

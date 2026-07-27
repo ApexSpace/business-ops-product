@@ -532,6 +532,50 @@ export const TRIGGER_REGISTRY: TriggerDefinition[] = [
     }),
   }),
 
+  // Chatbot sessions (platform + business)
+  trig({
+    key: 'chatbot.session.converted',
+    category: 'ai_agent',
+    label: 'Chatbot session converted',
+    description: 'Fires when a chatbot session is marked converted.',
+    icon: 'bot',
+    implementationStatus: 'implemented',
+    auditAction: 'chatbot.session.converted',
+    subjectType: 'conversation',
+    contextEntityTypes: ['conversation'],
+    filterFields: [],
+    availableCustomValueCategories: ['business', 'contact'],
+    payloadSchema: triggerPayloadSchema('conversation').extend({
+      metadata: z
+        .object({
+          sessionId: z.string().uuid().optional(),
+          conversationId: z.string().uuid().optional(),
+        })
+        .optional(),
+    }),
+  }),
+  trig({
+    key: 'chatbot.session.ended',
+    category: 'ai_agent',
+    label: 'Chatbot session ended',
+    description: 'Fires when a chatbot session ends.',
+    icon: 'bot',
+    implementationStatus: 'implemented',
+    auditAction: 'chatbot.session.ended',
+    subjectType: 'conversation',
+    contextEntityTypes: ['conversation'],
+    filterFields: [],
+    availableCustomValueCategories: ['business', 'contact'],
+    payloadSchema: triggerPayloadSchema('conversation').extend({
+      metadata: z
+        .object({
+          sessionId: z.string().uuid().optional(),
+          conversationId: z.string().uuid().optional(),
+        })
+        .optional(),
+    }),
+  }),
+
   // Estimate (4)
   trig({
     key: 'estimate.created',

@@ -106,53 +106,84 @@ export type CreateChatbotBody = {
   allowedDomains?: string[];
 };
 
-export function listChatbots(params?: { page?: number; limit?: number }) {
-  return api.getPaginated<Chatbot>("chatbots", { searchParams: params });
+const DEFAULT_API_BASE = "chatbots";
+
+function path(apiBase: string, ...segments: string[]) {
+  return [apiBase, ...segments].filter(Boolean).join("/");
 }
 
-export function getChatbot(id: string) {
-  return api.get<Chatbot>(`chatbots/${id}`);
+export function listChatbots(
+  params?: { page?: number; limit?: number },
+  apiBase: string = DEFAULT_API_BASE,
+) {
+  return api.getPaginated<Chatbot>(apiBase, { searchParams: params });
 }
 
-export function createChatbot(body: CreateChatbotBody) {
-  return api.post<Chatbot>("chatbots", body);
+export function getChatbot(id: string, apiBase: string = DEFAULT_API_BASE) {
+  return api.get<Chatbot>(path(apiBase, id));
 }
 
-export function updateChatbot(id: string, body: Partial<CreateChatbotBody> & {
-  status?: ChatbotStatus;
-  aiEnabled?: boolean;
-  businessHoursOnly?: boolean;
-  businessHoursSettings?: ChatbotBusinessHoursSettings;
-  welcomeVariants?: ChatbotWelcomeVariant[];
-  progressiveProfilingEnabled?: boolean;
-  progressiveProfilingAskAfterMessages?: number;
-  progressiveProfilingPromptMessage?: string;
-}) {
-  return api.patch<Chatbot>(`chatbots/${id}`, body);
+export function createChatbot(
+  body: CreateChatbotBody,
+  apiBase: string = DEFAULT_API_BASE,
+) {
+  return api.post<Chatbot>(apiBase, body);
 }
 
-export function deleteChatbot(id: string) {
-  return api.delete<void>(`chatbots/${id}?confirm=true`);
+export function updateChatbot(
+  id: string,
+  body: Partial<CreateChatbotBody> & {
+    status?: ChatbotStatus;
+    aiEnabled?: boolean;
+    businessHoursOnly?: boolean;
+    businessHoursSettings?: ChatbotBusinessHoursSettings;
+    welcomeVariants?: ChatbotWelcomeVariant[];
+    progressiveProfilingEnabled?: boolean;
+    progressiveProfilingAskAfterMessages?: number;
+    progressiveProfilingPromptMessage?: string;
+  },
+  apiBase: string = DEFAULT_API_BASE,
+) {
+  return api.patch<Chatbot>(path(apiBase, id), body);
 }
 
-export function duplicateChatbot(id: string) {
-  return api.post<Chatbot>(`chatbots/${id}/duplicate`);
+export function deleteChatbot(id: string, apiBase: string = DEFAULT_API_BASE) {
+  return api.delete<void>(`${path(apiBase, id)}?confirm=true`);
 }
 
-export function activateChatbot(id: string) {
-  return api.post<Chatbot>(`chatbots/${id}/activate`);
+export function duplicateChatbot(
+  id: string,
+  apiBase: string = DEFAULT_API_BASE,
+) {
+  return api.post<Chatbot>(path(apiBase, id, "duplicate"));
 }
 
-export function disableChatbot(id: string) {
-  return api.post<Chatbot>(`chatbots/${id}/disable`);
+export function activateChatbot(
+  id: string,
+  apiBase: string = DEFAULT_API_BASE,
+) {
+  return api.post<Chatbot>(path(apiBase, id, "activate"));
 }
 
-export function getChatbotEmbed(id: string) {
-  return api.get<ChatbotEmbed>(`chatbots/${id}/embed`);
+export function disableChatbot(
+  id: string,
+  apiBase: string = DEFAULT_API_BASE,
+) {
+  return api.post<Chatbot>(path(apiBase, id, "disable"));
 }
 
-export function listChatbotRules(chatbotId: string) {
-  return api.get<ChatbotRule[]>(`chatbots/${chatbotId}/rules`);
+export function getChatbotEmbed(
+  id: string,
+  apiBase: string = DEFAULT_API_BASE,
+) {
+  return api.get<ChatbotEmbed>(path(apiBase, id, "embed"));
+}
+
+export function listChatbotRules(
+  chatbotId: string,
+  apiBase: string = DEFAULT_API_BASE,
+) {
+  return api.get<ChatbotRule[]>(path(apiBase, chatbotId, "rules"));
 }
 
 export function createChatbotRule(
@@ -164,8 +195,9 @@ export function createChatbotRule(
     sortOrder?: number;
     isActive?: boolean;
   },
+  apiBase: string = DEFAULT_API_BASE,
 ) {
-  return api.post<ChatbotRule>(`chatbots/${chatbotId}/rules`, body);
+  return api.post<ChatbotRule>(path(apiBase, chatbotId, "rules"), body);
 }
 
 export function updateChatbotRule(
@@ -178,30 +210,49 @@ export function updateChatbotRule(
     sortOrder: number;
     isActive: boolean;
   }>,
+  apiBase: string = DEFAULT_API_BASE,
 ) {
-  return api.patch<ChatbotRule>(`chatbots/${chatbotId}/rules/${ruleId}`, body);
-}
-
-export function deleteChatbotRule(chatbotId: string, ruleId: string) {
-  return api.delete<void>(
-    `chatbots/${chatbotId}/rules/${ruleId}?confirm=true`,
+  return api.patch<ChatbotRule>(
+    path(apiBase, chatbotId, "rules", ruleId),
+    body,
   );
 }
 
-export function reorderChatbotRules(chatbotId: string, ruleIds: string[]) {
-  return api.patch<ChatbotRule[]>(`chatbots/${chatbotId}/rules/reorder`, {
+export function deleteChatbotRule(
+  chatbotId: string,
+  ruleId: string,
+  apiBase: string = DEFAULT_API_BASE,
+) {
+  return api.delete<void>(
+    `${path(apiBase, chatbotId, "rules", ruleId)}?confirm=true`,
+  );
+}
+
+export function reorderChatbotRules(
+  chatbotId: string,
+  ruleIds: string[],
+  apiBase: string = DEFAULT_API_BASE,
+) {
+  return api.patch<ChatbotRule[]>(path(apiBase, chatbotId, "rules", "reorder"), {
     ruleIds,
   });
 }
 
-export function previewChatbotRule(chatbotId: string, text: string) {
+export function previewChatbotRule(
+  chatbotId: string,
+  text: string,
+  apiBase: string = DEFAULT_API_BASE,
+) {
   return api.post<{ type: "reply" | "handoff" | null; text: string | null }>(
-    `chatbots/${chatbotId}/rules/preview`,
+    path(apiBase, chatbotId, "rules", "preview"),
     { text },
   );
 }
 
-export function exportChatbotRules(chatbotId: string) {
+export function exportChatbotRules(
+  chatbotId: string,
+  apiBase: string = DEFAULT_API_BASE,
+) {
   return api.get<
     Array<{
       triggerType: ChatbotRuleTriggerType;
@@ -210,7 +261,7 @@ export function exportChatbotRules(chatbotId: string) {
       sortOrder: number;
       isActive: boolean;
     }>
-  >(`chatbots/${chatbotId}/rules/export`);
+  >(path(apiBase, chatbotId, "rules", "export"));
 }
 
 export function importChatbotRules(
@@ -223,8 +274,9 @@ export function importChatbotRules(
     isActive?: boolean;
   }>,
   replace = true,
+  apiBase: string = DEFAULT_API_BASE,
 ) {
-  return api.post<ChatbotRule[]>(`chatbots/${chatbotId}/rules/import`, {
+  return api.post<ChatbotRule[]>(path(apiBase, chatbotId, "rules", "import"), {
     rules,
     replace,
   });
@@ -264,3 +316,4 @@ export function getChatbotPlacementLabel(bot: Chatbot): string {
     (bot.position === "BOTTOM_LEFT" ? "Bottom left" : "Bottom right")
   );
 }
+

@@ -55,6 +55,7 @@ import {
 } from "@/features/conversations/components/inbox/message-composer";
 import { ConversationInternalNotesPanel } from "@/features/conversations/components/inbox/conversation-internal-notes-panel";
 import { ChatbotSessionActions } from "@/features/conversations/components/inbox/chatbot-session-actions";
+import { useConversationsHost } from "@/features/conversations/conversations-host-context";
 import { removeMessageFromCache } from "@/features/realtime/event-handlers";
 import { queryKeys } from "@/lib/query/keys";
 import { cn } from "@/lib/utils";
@@ -176,6 +177,7 @@ export function ConversationThreadPanel({
   onOpenContactDetails,
   className,
 }: ConversationThreadPanelProps) {
+  const { apiBase } = useConversationsHost();
   const queryClient = useQueryClient();
   const [messageDeleteMode, setMessageDeleteMode] = useState(false);
   const [pendingDeleteMessage, setPendingDeleteMessage] =
@@ -200,14 +202,14 @@ export function ConversationThreadPanel({
 
   const invalidateConversationQueries = () => {
     void queryClient.invalidateQueries({
-      queryKey: queryKeys.conversations.all(),
+      queryKey: queryKeys.conversations.all(apiBase),
     });
     if (selectedId) {
       void queryClient.invalidateQueries({
-        queryKey: queryKeys.conversations.detail(selectedId),
+        queryKey: queryKeys.conversations.detail(selectedId, apiBase),
       });
       void queryClient.invalidateQueries({
-        queryKey: queryKeys.conversations.messages(selectedId, 0),
+        queryKey: queryKeys.conversations.messages(selectedId, 0, apiBase),
       });
     }
     if (contactId) {
@@ -215,23 +217,24 @@ export function ConversationThreadPanel({
         queryKey: queryKeys.contacts.detail(contactId),
       });
       void queryClient.invalidateQueries({
-        queryKey: queryKeys.conversations.contactMessages(contactId, 0),
+        queryKey: queryKeys.conversations.contactMessages(contactId, 0, apiBase),
       });
       void queryClient.invalidateQueries({
-        queryKey: queryKeys.conversations.byContact(contactId),
+        queryKey: queryKeys.conversations.byContact(contactId, apiBase),
       });
     }
   };
 
   const deleteMessageMutation = useMutation({
     mutationFn: (message: ConversationMessage) =>
-      deleteConversationMessage(message.conversationId, message.id),
+      deleteConversationMessage(message.conversationId, message.id, apiBase),
     onSuccess: (_data, message) => {
       removeMessageFromCache(
         queryClient,
         message.conversationId,
         message.id,
         selectedThread?.contactId ?? selected?.contactId,
+        apiBase,
       );
       toast.success("Message deleted");
       setPendingDeleteMessage(null);
@@ -253,17 +256,17 @@ export function ConversationThreadPanel({
       if (!selectedId) throw new Error("No conversation selected");
       switch (action) {
         case "close":
-          return closeConversation(selectedId);
+          return closeConversation(selectedId, apiBase);
         case "reopen":
-          return reopenConversation(selectedId);
+          return reopenConversation(selectedId, apiBase);
         case "mark-spam":
-          return markConversationSpam(selectedId);
+          return markConversationSpam(selectedId, apiBase);
         case "unmark-spam":
-          return unmarkConversationSpam(selectedId);
+          return unmarkConversationSpam(selectedId, apiBase);
         case "block":
-          return blockConversationContact(selectedId);
+          return blockConversationContact(selectedId, apiBase);
         case "unblock":
-          return unblockConversationContact(selectedId);
+          return unblockConversationContact(selectedId, apiBase);
       }
     },
     onSuccess: (_data, action) => {

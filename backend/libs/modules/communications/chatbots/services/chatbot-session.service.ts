@@ -1,5 +1,9 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
-import { ChatbotSessionStatus, ConversationChannel } from '@prisma/client';
+import {
+  ChatbotIdentityRefType,
+  ChatbotSessionStatus,
+  ConversationChannel,
+} from '@prisma/client';
 import { RequestUser } from '@app/common/decorators/current-user.decorator';
 import { AppException } from '@app/common/exceptions/app.exception';
 import { ErrorCode } from '@app/common/exceptions/error-code.enum';
@@ -17,6 +21,22 @@ export class ChatbotSessionService {
     private readonly auditService: AuditService,
     private readonly realtime: ConversationRealtimeService,
   ) {}
+
+  async listByIdentity(
+    businessId: string,
+    query: {
+      identityRefId: string;
+      identityRefType: ChatbotIdentityRefType;
+      chatbotId?: string;
+    },
+  ) {
+    return this.sessionsRepository.listByIdentity({
+      businessId,
+      identityRefId: query.identityRefId,
+      identityRefType: query.identityRefType,
+      chatbotId: query.chatbotId,
+    });
+  }
 
   async endSession(
     businessId: string,
@@ -37,6 +57,7 @@ export class ChatbotSessionService {
       action: 'chatbot.session.ended',
       entityType: 'ChatbotSession',
       entityId: session.id,
+      metadata: { conversationId: session.conversationId ?? undefined },
     });
     return { sessionId: updated.id, status: updated.status };
   }
@@ -60,6 +81,7 @@ export class ChatbotSessionService {
       action: 'chatbot.session.converted',
       entityType: 'ChatbotSession',
       entityId: session.id,
+      metadata: { conversationId: session.conversationId ?? undefined },
     });
     return { sessionId: updated.id, status: updated.status };
   }

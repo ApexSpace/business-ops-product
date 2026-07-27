@@ -749,6 +749,18 @@ enum ChatbotSessionStatus {
   CONVERTED
 }
 
+enum ChatbotSessionIdentityType {
+  ANONYMOUS
+  ANONYMOUS_WITH_PROFILE
+  AUTHENTICATED
+}
+
+/// Polymorphic claimed identity — single source of truth (not contactId).
+enum ChatbotIdentityRefType {
+  CONTACT
+  PLATFORM_CUSTOMER
+}
+
 enum WebhookEventProvider {
   META
   STRIPE
@@ -3819,24 +3831,28 @@ model ChatbotRule {
 }
 
 model ChatbotSession {
-  id             String               @id @default(uuid())
-  businessId     String
-  chatbotId      String
-  conversationId String?
-  contactId      String?
-  visitorId      String
-  visitorName    String?
-  visitorEmail   String?
-  visitorPhone   String?
-  pageUrl        String?
-  referrer       String?
-  userAgent      String?
-  ipHash         String?
-  status         ChatbotSessionStatus @default(ACTIVE)
-  metadata       Json?
-  createdAt      DateTime             @default(now())
-  updatedAt      DateTime             @updatedAt
-  endedAt        DateTime?
+  id              String                      @id @default(uuid())
+  businessId      String
+  chatbotId       String
+  conversationId  String?
+  /// Derived convenience when identityRefType=CONTACT — never primary SoT for claim.
+  contactId       String?
+  visitorId       String
+  visitorName     String?
+  visitorEmail    String?
+  visitorPhone    String?
+  identityType    ChatbotSessionIdentityType  @default(ANONYMOUS)
+  identityRefId   String?
+  identityRefType ChatbotIdentityRefType?
+  pageUrl         String?
+  referrer        String?
+  userAgent       String?
+  ipHash          String?
+  status          ChatbotSessionStatus        @default(ACTIVE)
+  metadata        Json?
+  createdAt       DateTime                    @default(now())
+  updatedAt       DateTime                    @updatedAt
+  endedAt         DateTime?
 
   business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
   chatbot  Chatbot  @relation(fields: [chatbotId], references: [id], onDelete: Cascade)
@@ -3846,6 +3862,9 @@ model ChatbotSession {
   @@index([visitorId])
   @@index([conversationId])
   @@index([contactId])
+  @@index([chatbotId, visitorId])
+  @@index([identityRefType, identityRefId])
+  @@index([chatbotId, identityRefId])
   @@map("chatbot_sessions")
 }
 

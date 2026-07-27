@@ -95,6 +95,32 @@ const AUDIT_SUBJECT_RESOLVERS: Record<
       },
     };
   },
+  'chatbot.session.converted': (audit) => {
+    const conversationId = asString(audit.metadata?.conversationId);
+    if (!conversationId || !isUuid(conversationId)) return null;
+    return {
+      subjectId: conversationId,
+      contextEntityId: conversationId,
+      contextEntityType: 'conversation',
+      metadata: {
+        sessionId: isUuid(audit.entityId) ? audit.entityId : undefined,
+        conversationId,
+      },
+    };
+  },
+  'chatbot.session.ended': (audit) => {
+    const conversationId = asString(audit.metadata?.conversationId);
+    if (!conversationId || !isUuid(conversationId)) return null;
+    return {
+      subjectId: conversationId,
+      contextEntityId: conversationId,
+      contextEntityType: 'conversation',
+      metadata: {
+        sessionId: isUuid(audit.entityId) ? audit.entityId : undefined,
+        conversationId,
+      },
+    };
+  },
   'lead.created_from_contact': (audit) => {
     if (!isUuid(audit.entityId)) return null;
     const contactId = asString(audit.metadata?.contactId);

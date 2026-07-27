@@ -376,6 +376,23 @@ export class StartChatbotSessionDto {
   @IsOptional()
   @IsBoolean()
   anonymous?: boolean;
+
+  /** Optional access JWT for Scenario C (authenticated start). */
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(4000)
+  authToken?: string;
+}
+
+export class ClaimChatbotSessionDto {
+  @ApiPropertyOptional({
+    description: 'Access JWT; may also be sent as Authorization Bearer header',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(4000)
+  authToken?: string;
 }
 
 export class SendChatbotMessageDto {

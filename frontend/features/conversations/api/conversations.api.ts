@@ -1,5 +1,12 @@
 import { api } from "@/lib/api/client";
 
+const DEFAULT_API_BASE = "conversations";
+const DEFAULT_CONTACTS_API_BASE = "contacts";
+
+function path(apiBase: string, ...segments: string[]) {
+  return [apiBase, ...segments].filter(Boolean).join("/");
+}
+
 export type ConversationChannel =
   | "FACEBOOK"
   | "INSTAGRAM"
@@ -113,8 +120,11 @@ export type ConversationListFilters = {
   contactId?: string;
 };
 
-export async function listConversations(filters: ConversationListFilters = {}) {
-  const { items, meta } = await api.getPaginated<Conversation>("conversations", {
+export async function listConversations(
+  filters: ConversationListFilters = {},
+  apiBase: string = DEFAULT_API_BASE,
+) {
+  const { items, meta } = await api.getPaginated<Conversation>(apiBase, {
     searchParams: {
       page: filters.page,
       limit: filters.limit,
@@ -130,9 +140,10 @@ export async function listConversations(filters: ConversationListFilters = {}) {
 
 export async function listUnifiedConversations(
   filters: ConversationListFilters = {},
+  apiBase: string = DEFAULT_API_BASE,
 ) {
   const { items, meta } = await api.getPaginated<UnifiedConversationThread>(
-    "conversations/unified",
+    path(apiBase, "unified"),
     {
       searchParams: {
         page: filters.page,
@@ -148,8 +159,40 @@ export async function listUnifiedConversations(
   return { items, meta };
 }
 
-export function getConversation(id: string) {
-  return api.get<Conversation>(`conversations/${id}`);
+export function getConversation(
+  id: string,
+  apiBase: string = DEFAULT_API_BASE,
+) {
+  return api.get<Conversation>(path(apiBase, id));
+}
+
+export function listPlatformConversationAssignees(): Promise<
+  ConversationAssignee[]
+> {
+  return api
+    .getPaginated<{
+      id: string;
+      userId: string;
+      firstName?: string | null;
+      lastName?: string | null;
+      email: string;
+    }>("platform/users", {
+      searchParams: { page: 1, limit: 100 },
+    })
+    .then(({ items }) =>
+      items.map((member) => ({
+        id: member.userId,
+        firstName: member.firstName ?? null,
+        lastName: member.lastName ?? null,
+        email: member.email,
+      })),
+    );
+}
+
+export function getConversationsOpsContext(
+  apiBase: string = "platform/conversations",
+) {
+  return api.get<{ businessId: string }>(path(apiBase, "ops-context"));
 }
 
 export async function listConversationMessages(
@@ -161,6 +204,7 @@ export async function listConversationMessages(
     direction?: "before" | "after";
     latest?: boolean;
   } = {},
+  apiBase: string = DEFAULT_API_BASE,
 ) {
   const { page = 1, limit = 50, cursor, direction, latest } = options;
   const searchParams: Record<string, string | number | boolean | undefined> = {
@@ -177,7 +221,7 @@ export async function listConversationMessages(
 
   if (cursor || latest) {
     const { data, meta } = await api.getEnvelope<ConversationMessage[]>(
-      `conversations/${id}/messages`,
+      path(apiBase, id, "messages"),
       { searchParams },
     );
     const items = Array.isArray(data) ? data : [];
@@ -199,7 +243,7 @@ export async function listConversationMessages(
   }
 
   const { items, meta } = await api.getPaginated<ConversationMessage>(
-    `conversations/${id}/messages`,
+    path(apiBase, id, "messages"),
     { searchParams },
   );
 
@@ -241,6 +285,7 @@ export type StartEmailConversationInput = {
 export async function sendConversationMessage(
   id: string,
   input: string | SendConversationMessageInput,
+  apiBase: string = DEFAULT_API_BASE,
 ): Promise<SendMessageResult> {
   const body =
     typeof input === "string"
@@ -253,7 +298,7 @@ export async function sendConversationMessage(
         };
 
   const { data, meta } = await api.postWithMeta<ConversationMessage>(
-    `conversations/${id}/messages`,
+    path(apiBase, id, "messages"),
     body,
   );
 
@@ -267,9 +312,10 @@ export async function sendConversationMessage(
 export async function retryConversationMessage(
   conversationId: string,
   messageId: string,
+  apiBase: string = DEFAULT_API_BASE,
 ): Promise<SendMessageResult> {
   const { data, meta } = await api.postWithMeta<ConversationMessage>(
-    `conversations/${conversationId}/messages/${messageId}/retry`,
+    path(apiBase, conversationId, "messages", messageId, "retry"),
   );
 
   return {
@@ -279,61 +325,98 @@ export async function retryConversationMessage(
   };
 }
 
-export function startEmailConversation(input: StartEmailConversationInput) {
-  return api.post<Conversation>("conversations/email/start", input);
+export function startEmailConversation(
+  input: StartEmailConversationInput,
+  apiBase: string = DEFAULT_API_BASE,
+) {
+  return api.post<Conversation>(path(apiBase, "email", "start"), input);
 }
 
 export function deleteConversationMessage(
   conversationId: string,
   messageId: string,
+  apiBase: string = DEFAULT_API_BASE,
 ) {
   return api.delete<{ deleted: true }>(
-    `conversations/${conversationId}/messages/${messageId}?confirm=true`,
+    `${path(apiBase, conversationId, "messages", messageId)}?confirm=true`,
   );
 }
 
-export function listConversationsByContact(contactId: string) {
-  return api.get<Conversation[]>(`conversations/by-contact/${contactId}`);
+export function listConversationsByContact(
+  contactId: string,
+  apiBase: string = DEFAULT_API_BASE,
+) {
+  return api.get<Conversation[]>(path(apiBase, "by-contact", contactId));
 }
 
-export function markConversationRead(id: string) {
-  return api.post<Conversation>(`conversations/${id}/mark-read`);
+export function markConversationRead(
+  id: string,
+  apiBase: string = DEFAULT_API_BASE,
+) {
+  return api.post<Conversation>(path(apiBase, id, "mark-read"));
 }
 
-export function closeConversation(id: string) {
-  return api.post<Conversation>(`conversations/${id}/close`);
+export function closeConversation(
+  id: string,
+  apiBase: string = DEFAULT_API_BASE,
+) {
+  return api.post<Conversation>(path(apiBase, id, "close"));
 }
 
-export function reopenConversation(id: string) {
-  return api.post<Conversation>(`conversations/${id}/reopen`);
+export function reopenConversation(
+  id: string,
+  apiBase: string = DEFAULT_API_BASE,
+) {
+  return api.post<Conversation>(path(apiBase, id, "reopen"));
 }
 
-export function markConversationSpam(id: string) {
-  return api.post<Conversation>(`conversations/${id}/mark-spam`);
+export function markConversationSpam(
+  id: string,
+  apiBase: string = DEFAULT_API_BASE,
+) {
+  return api.post<Conversation>(path(apiBase, id, "mark-spam"));
 }
 
-export function unmarkConversationSpam(id: string) {
-  return api.post<Conversation>(`conversations/${id}/unmark-spam`);
+export function unmarkConversationSpam(
+  id: string,
+  apiBase: string = DEFAULT_API_BASE,
+) {
+  return api.post<Conversation>(path(apiBase, id, "unmark-spam"));
 }
 
-export function blockConversationContact(id: string) {
-  return api.post<Conversation>(`conversations/${id}/block-contact`);
+export function blockConversationContact(
+  id: string,
+  apiBase: string = DEFAULT_API_BASE,
+) {
+  return api.post<Conversation>(path(apiBase, id, "block-contact"));
 }
 
-export function unblockConversationContact(id: string) {
-  return api.post<Conversation>(`conversations/${id}/unblock-contact`);
+export function unblockConversationContact(
+  id: string,
+  apiBase: string = DEFAULT_API_BASE,
+) {
+  return api.post<Conversation>(path(apiBase, id, "unblock-contact"));
 }
 
 export function assignConversation(
   id: string,
   assignedToUserId: string | null,
+  apiBase: string = DEFAULT_API_BASE,
 ) {
-  return api.post<Conversation>(`conversations/${id}/assign`, {
+  return api.post<Conversation>(path(apiBase, id, "assign"), {
     assignedToUserId,
   });
 }
 
-export function getMessagingStatus(providerKey: string) {
+export function getMessagingStatus(
+  providerKey: string,
+  options?: { platform?: boolean },
+) {
+  if (options?.platform) {
+    return api.get<MessagingStatus>(
+      `platform/integrations/messaging/${providerKey}/status`,
+    );
+  }
   return api.get<MessagingStatus>(
     `integrations/business/${providerKey}/messaging-status`,
   );
@@ -358,6 +441,7 @@ export async function listContactMessages(
     direction?: "before" | "after";
     latest?: boolean;
   } = {},
+  contactsApiBase: string = DEFAULT_CONTACTS_API_BASE,
 ) {
   const { limit = 50, cursor, direction, latest } = options;
   const searchParams: Record<string, string | number | boolean | undefined> = {
@@ -369,7 +453,7 @@ export async function listContactMessages(
   if (latest) searchParams.latest = true;
 
   const { data, meta } = await api.getEnvelope<ConversationMessage[]>(
-    `contacts/${contactId}/messages`,
+    path(contactsApiBase, contactId, "messages"),
     { searchParams },
   );
   const items = Array.isArray(data) ? data : [];
@@ -391,8 +475,13 @@ export async function listContactMessages(
   };
 }
 
-export function listContactReplyChannels(contactId: string) {
-  return api.get<ContactReplyChannel[]>(`contacts/${contactId}/reply-channels`);
+export function listContactReplyChannels(
+  contactId: string,
+  contactsApiBase: string = DEFAULT_CONTACTS_API_BASE,
+) {
+  return api.get<ContactReplyChannel[]>(
+    path(contactsApiBase, contactId, "reply-channels"),
+  );
 }
 
 export type EnsureContactConversationInput = {
@@ -404,9 +493,10 @@ export type EnsureContactConversationInput = {
 export function ensureContactConversation(
   contactId: string,
   input: EnsureContactConversationInput,
+  contactsApiBase: string = DEFAULT_CONTACTS_API_BASE,
 ) {
   return api.post<Conversation>(
-    `contacts/${contactId}/conversations/ensure`,
+    path(contactsApiBase, contactId, "conversations", "ensure"),
     input,
   );
 }

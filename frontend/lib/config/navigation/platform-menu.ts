@@ -1,9 +1,11 @@
 import {
+  Bot,
   Building2,
   ClipboardList,
   FileText,
   Layers,
   LayoutDashboard,
+  MessageSquare,
   PackagePlus,
   Plug,
   Settings,
@@ -84,6 +86,16 @@ export const platformOperationalSections: ShellNavSection[] = [
         title: "Pipelines",
         href: "/platform/pipelines",
         icon: Layers,
+      },
+      {
+        title: "Chatbots",
+        href: "/platform/chatbots",
+        icon: Bot,
+      },
+      {
+        title: "Inbox",
+        href: "/platform/conversations",
+        icon: MessageSquare,
       },
       {
         title: "Integrations",

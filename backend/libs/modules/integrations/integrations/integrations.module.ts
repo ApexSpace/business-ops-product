@@ -43,6 +43,7 @@ import { MetaWebhookDispatchService } from './meta/services/meta-webhook-dispatc
 import { MetaWebhookRecoveryService } from './meta/services/meta-webhook-recovery.service';
 import { MetaWebhookService } from './meta/services/meta-webhook.service';
 import { PlatformIntegrationsController } from './platform-integrations.controller';
+import { PlatformOpsMessagingController } from './controllers/platform-ops-messaging.controller';
 import { FacebookResourceSyncHandler } from './providers/resource-sync/facebook-resource-sync.handler';
 import { GoogleBusinessProfileResourceSyncHandler } from './providers/resource-sync/google-business-profile-resource-sync.handler';
 import { GoogleCalendarResourceSyncHandler } from './providers/resource-sync/google-calendar-resource-sync.handler';
@@ -79,6 +80,7 @@ import { WhatsAppTemplatesController } from '../whatsapp/controllers/whatsapp-te
     BusinessIntegrationResourcesController,
     BusinessWhatsAppController,
     WhatsAppTemplatesController,
+    PlatformOpsMessagingController,
     PlatformIntegrationsController,
     GoogleOAuthController,
     LinkedInOAuthController,

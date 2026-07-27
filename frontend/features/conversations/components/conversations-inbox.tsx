@@ -51,6 +51,7 @@ import {
   replyChannelSendDisabledReason,
 } from "@/features/conversations/utils/reply-channel.utils";
 import { useWhatsAppTemplateComposerState } from "@/features/conversations/hooks/use-whatsapp-template-composer-state";
+import { useConversationsHost } from "@/features/conversations/conversations-host-context";
 import { useBusinessAccess } from "@/lib/business-access/use-business-access";
 import { useConversationStaffPermissions } from "@/features/conversations/hooks/use-conversation-staff-permissions";
 import { useConversationsInboxFilters } from "@/features/conversations/hooks/use-conversations-inbox-filters";
@@ -86,6 +87,7 @@ import { cn } from "@/lib/utils";
 type InboxMobilePane = "list" | "thread" | "contact";
 
 export function ConversationsInbox() {
+  const { mode, apiBase, contactsApiBase } = useConversationsHost();
   const queryClient = useQueryClient();
   const realtimeMode = useRealtimeMode();
   const pollInterval = isAnyRealtimeTransportEnabled()
@@ -113,16 +115,19 @@ export function ConversationsInbox() {
   const { hasCapability } = useBusinessAccess();
   const conversationPerms = useConversationStaffPermissions();
   const canSendMessages =
-    hasCapability("conversations.send") && conversationPerms.canSend;
+    mode === "platform"
+      ? conversationPerms.canSend
+      : hasCapability("conversations.send") && conversationPerms.canSend;
   useQuery({
     queryKey: queryKeys.integrations.platformEmail(),
     queryFn: () => getPlatformDefaultEmail(),
     staleTime: 60_000,
+    enabled: mode === "business",
   });
 
   const { data: listData, isLoading: listLoading } = useQuery({
-    queryKey: queryKeys.conversations.unifiedList(listFilters),
-    queryFn: () => listUnifiedConversations(listFilters),
+    queryKey: queryKeys.conversations.unifiedList(listFilters, apiBase),
+    queryFn: () => listUnifiedConversations(listFilters, apiBase),
     placeholderData: keepPreviousData,
     staleTime: 5_000,
     refetchInterval: pollInterval,
@@ -168,11 +173,15 @@ export function ConversationsInbox() {
       router.replace(`${pathname}?${params.toString()}`, { scroll: false });
       if (thread.contactId) {
         void queryClient.invalidateQueries({
-          queryKey: queryKeys.conversations.contactMessages(thread.contactId, 0),
+          queryKey: queryKeys.conversations.contactMessages(
+            thread.contactId,
+            0,
+            apiBase,
+          ),
         });
       }
     },
-    [queryClient, pathname, router, searchParams],
+    [apiBase, queryClient, pathname, router, searchParams],
   );
 
   useEffect(() => {
@@ -228,8 +237,8 @@ export function ConversationsInbox() {
   );
 
   const { data: replyChannels = [] } = useQuery({
-    queryKey: queryKeys.conversations.replyChannels(contactId ?? ""),
-    queryFn: () => listContactReplyChannels(contactId!),
+    queryKey: queryKeys.conversations.replyChannels(contactId ?? "", apiBase),
+    queryFn: () => listContactReplyChannels(contactId!, contactsApiBase),
     enabled: Boolean(contactId),
     staleTime: 10_000,
   });
@@ -312,14 +321,14 @@ export function ConversationsInbox() {
     : orphanConversationId;
 
   const { data: selected } = useQuery({
-    queryKey: queryKeys.conversations.detail(replyConversationId ?? ""),
-    queryFn: () => getConversation(replyConversationId!),
+    queryKey: queryKeys.conversations.detail(replyConversationId ?? "", apiBase),
+    queryFn: () => getConversation(replyConversationId!, apiBase),
     enabled: Boolean(replyConversationId),
   });
 
   const { data: statusConversation } = useQuery({
-    queryKey: queryKeys.conversations.detail(statusConversationId ?? ""),
-    queryFn: () => getConversation(statusConversationId!),
+    queryKey: queryKeys.conversations.detail(statusConversationId ?? "", apiBase),
+    queryFn: () => getConversation(statusConversationId!, apiBase),
     enabled: Boolean(statusConversationId) && mergedTimeline,
   });
 
@@ -363,10 +372,16 @@ export function ConversationsInbox() {
   const isWebchat = isWebchatConversation(threadConversation);
 
   const messagingStatusQuery = useQuery({
-    queryKey: queryKeys.integrations.messagingStatus(
-      `${threadConversation?.channel ?? ""}:${threadConversation?.providerKey ?? ""}`,
-    ),
-    queryFn: () => getMessagingStatus(threadConversation!.providerKey),
+    queryKey: [
+      ...queryKeys.integrations.messagingStatus(
+        `${threadConversation?.channel ?? ""}:${threadConversation?.providerKey ?? ""}`,
+      ),
+      apiBase,
+    ],
+    queryFn: () =>
+      getMessagingStatus(threadConversation!.providerKey, {
+        platform: mode === "platform",
+      }),
     enabled:
       Boolean(threadConversation?.providerKey) && !isWebchat && !mergedTimeline,
   });
@@ -410,7 +425,9 @@ export function ConversationsInbox() {
     : (threadConversation?.channel ?? null);
 
   const invalidateAll = async () => {
-    await queryClient.invalidateQueries({ queryKey: queryKeys.conversations.all() });
+    await queryClient.invalidateQueries({
+      queryKey: queryKeys.conversations.all(apiBase),
+    });
   };
 
   const resolveSendConversationId = useCallback(
@@ -422,11 +439,15 @@ export function ConversationsInbox() {
         return channel.conversationId;
       }
       if (contactId) {
-        const conversation = await ensureContactConversation(contactId, {
-          channel: channel.channel as EnsureContactConversationInput["channel"],
-        });
+        const conversation = await ensureContactConversation(
+          contactId,
+          {
+            channel: channel.channel as EnsureContactConversationInput["channel"],
+          },
+          contactsApiBase,
+        );
         await queryClient.invalidateQueries({
-          queryKey: queryKeys.conversations.replyChannels(contactId),
+          queryKey: queryKeys.conversations.replyChannels(contactId, apiBase),
         });
         return conversation.id;
       }
@@ -435,7 +456,7 @@ export function ConversationsInbox() {
           "No conversation for this channel. Add contact details or complete channel setup.",
       );
     },
-    [contactId, queryClient],
+    [apiBase, contactId, contactsApiBase, queryClient],
   );
 
   const sendMutation = useMutation({
@@ -460,12 +481,16 @@ export function ConversationsInbox() {
       const conversationId = mergedTimeline
         ? await resolveSendConversationId(replyChannel)
         : orphanConversationId!;
-      return sendConversationMessage(conversationId, {
-        text: text || undefined,
-        subject,
-        attachments,
-        template,
-      }).then((result) => ({ ...result, conversationId }));
+      return sendConversationMessage(
+        conversationId,
+        {
+          text: text || undefined,
+          subject,
+          attachments,
+          template,
+        },
+        apiBase,
+      ).then((result) => ({ ...result, conversationId }));
     },
     onMutate: async ({ text, attachments, replyChannel, template }) => {
       const conversationId = mergedTimeline
@@ -488,12 +513,12 @@ export function ConversationsInbox() {
 
       if (contactId) {
         await queryClient.cancelQueries({
-          queryKey: queryKeys.conversations.contactMessages(contactId, 0),
+          queryKey: queryKeys.conversations.contactMessages(contactId, 0, apiBase),
         });
       }
       if (conversationId) {
         await queryClient.cancelQueries({
-          queryKey: queryKeys.conversations.messages(conversationId, 0),
+          queryKey: queryKeys.conversations.messages(conversationId, 0, apiBase),
         });
       }
 
@@ -508,7 +533,12 @@ export function ConversationsInbox() {
       });
 
       if (contactId) {
-        appendMessageToContactCache(queryClient, contactId, optimisticMessage);
+        appendMessageToContactCache(
+          queryClient,
+          contactId,
+          optimisticMessage,
+          apiBase,
+        );
       }
       if (conversationId) {
         appendMessageToCache(
@@ -516,9 +546,15 @@ export function ConversationsInbox() {
           conversationId,
           optimisticMessage,
           contactId,
+          apiBase,
         );
         const preview = text.trim() || attachments?.[0]?.url || "Attachment";
-        patchConversationPreviewInCache(queryClient, conversationId, preview);
+        patchConversationPreviewInCache(
+          queryClient,
+          conversationId,
+          preview,
+          apiBase,
+        );
       }
 
       setComposer("");
@@ -544,6 +580,7 @@ export function ConversationsInbox() {
           conversationId,
           data.message,
           contactId,
+          apiBase,
         );
       }
 
@@ -551,16 +588,21 @@ export function ConversationsInbox() {
         data.message.text?.trim() ||
         _variables.text.trim() ||
         (_variables.attachments?.[0]?.url ?? "Attachment");
-      patchConversationPreviewInCache(queryClient, conversationId, preview);
+      patchConversationPreviewInCache(
+        queryClient,
+        conversationId,
+        preview,
+        apiBase,
+      );
 
       await queryClient.invalidateQueries({
-        queryKey: queryKeys.conversations.unifiedList(),
+        queryKey: queryKeys.conversations.unifiedList(undefined, apiBase),
       });
       if (contactId) {
         await queryClient.invalidateQueries({
-          queryKey: queryKeys.conversations.replyChannels(contactId),
+          queryKey: queryKeys.conversations.replyChannels(contactId, apiBase),
         });
-        await refetchContactMessagesCache(queryClient, contactId);
+        await refetchContactMessagesCache(queryClient, contactId, apiBase);
       }
     },
     onError: (error: Error, _variables, context) => {
@@ -574,6 +616,7 @@ export function ConversationsInbox() {
             errorMessage: error.message,
           },
           contactId,
+          apiBase,
         );
       }
       toast.error(error.message);
@@ -581,7 +624,7 @@ export function ConversationsInbox() {
   });
 
   const markReadMutation = useMutation({
-    mutationFn: (id: string) => markConversationRead(id),
+    mutationFn: (id: string) => markConversationRead(id, apiBase),
     onSuccess: invalidateAll,
   });
 
@@ -864,7 +907,7 @@ export function ConversationsInbox() {
         onOpenChange={setNewEmailOpen}
         onCreated={async (conversationId) => {
           await invalidateAll();
-          const refreshed = await listUnifiedConversations(listFilters);
+          const refreshed = await listUnifiedConversations(listFilters, apiBase);
           const matched = findUnifiedThreadByConversationId(
             refreshed.items,
             conversationId,

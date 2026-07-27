@@ -44,6 +44,7 @@ import {
   type ChatbotRule,
   type ChatbotRuleTriggerType,
 } from "@/features/chatbots/api/chatbots.api";
+import { useChatbotsHost } from "@/features/chatbots/chatbots-host-context";
 
 function SortableRuleRow({
   rule,
@@ -104,6 +105,7 @@ export function ChatbotRulesEditor({
   rules,
   onChanged,
 }: ChatbotRulesEditorProps) {
+  const { apiBase } = useChatbotsHost();
   const [triggerType, setTriggerType] =
     useState<ChatbotRuleTriggerType>("CONTAINS");
   const [triggerText, setTriggerText] = useState("");
@@ -126,7 +128,7 @@ export function ChatbotRulesEditor({
 
   const reorderMutation = useMutation({
     mutationFn: (ruleIds: string[]) =>
-      reorderChatbotRules(chatbotId, ruleIds),
+      reorderChatbotRules(chatbotId, ruleIds, apiBase),
     onSuccess: () => {
       onChanged();
       toast.success("Rules reordered");
@@ -135,7 +137,7 @@ export function ChatbotRulesEditor({
   });
 
   const previewMutation = useMutation({
-    mutationFn: (text: string) => previewChatbotRule(chatbotId, text),
+    mutationFn: (text: string) => previewChatbotRule(chatbotId, text, apiBase),
     onSuccess: (result) => {
       setPreviewResult(result.text ?? "No matching reply");
     },
@@ -153,7 +155,7 @@ export function ChatbotRulesEditor({
   };
 
   const handleExport = async () => {
-    const data = await exportChatbotRules(chatbotId);
+    const data = await exportChatbotRules(chatbotId, apiBase);
     const blob = new Blob([JSON.stringify(data, null, 2)], {
       type: "application/json",
     });
@@ -174,7 +176,7 @@ export function ChatbotRulesEditor({
       sortOrder?: number;
       isActive?: boolean;
     }>;
-    await importChatbotRules(chatbotId, parsed, true);
+    await importChatbotRules(chatbotId, parsed, true, apiBase);
     onChanged();
     toast.success("Rules imported");
   };
@@ -197,7 +199,13 @@ export function ChatbotRulesEditor({
               e.currentTarget.value = "";
             }}
           />
-          <Button type="button" size="sm" variant="outline" render={<span />}>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            nativeButton={false}
+            render={<span />}
+          >
             <Upload className="mr-1 size-4" />
             Import
           </Button>
@@ -295,11 +303,15 @@ export function ChatbotRulesEditor({
           size="sm"
           disabled={!triggerText.trim() || !responseText.trim()}
           onClick={() =>
-            createChatbotRule(chatbotId, {
-              triggerType,
-              triggerText: triggerText.trim(),
-              responseText: responseText.trim(),
-            }).then(() => {
+            createChatbotRule(
+              chatbotId,
+              {
+                triggerType,
+                triggerText: triggerText.trim(),
+                responseText: responseText.trim(),
+              },
+              apiBase,
+            ).then(() => {
               setTriggerText("");
               setResponseText("");
               onChanged();
@@ -321,7 +333,7 @@ export function ChatbotRulesEditor({
         description="This rule will be permanently removed."
         onConfirm={async () => {
           if (!deleteRuleId) return;
-          await deleteChatbotRule(chatbotId, deleteRuleId);
+          await deleteChatbotRule(chatbotId, deleteRuleId, apiBase);
           setDeleteRuleId(null);
           onChanged();
           toast.success("Rule deleted");

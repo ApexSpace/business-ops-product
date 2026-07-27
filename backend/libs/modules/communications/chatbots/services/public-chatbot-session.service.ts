@@ -2,6 +2,9 @@ import { createHash, randomUUID } from 'crypto';
 import { HttpStatus, Injectable } from '@nestjs/common';
 import {
   Chatbot,
+  ChatbotIdentityRefType,
+  ChatbotSession,
+  ChatbotSessionIdentityType,
   ChatbotSessionStatus,
   ChatbotStatus,
   Conversation,
@@ -23,6 +26,7 @@ import { ConversationsRepository } from '@app/modules/communications/conversatio
 import { ConversationRealtimeService } from '@app/modules/communications/conversations/services/conversation-realtime.service';
 import { toConversationMessageResponse } from '@app/modules/communications/conversations/mappers/conversation.mapper';
 import {
+  ClaimChatbotSessionDto,
   SendChatbotMessageDto,
   StartChatbotSessionDto,
   UpdateChatbotSessionProfileDto,
@@ -42,14 +46,20 @@ import { isChatbotDomainAllowed } from '../utils/chatbot-domain-allowlist.util';
 import { parseChatbotSessionMetadata } from '../utils/chatbot-session-metadata.util';
 import { resolveWelcomeMessage } from '../utils/chatbot-welcome-variant.util';
 import { ChatbotRulesRepository } from '../repositories/chatbot-rules.repository';
-import { ChatbotSessionsRepository } from '../repositories/chatbot-sessions.repository';
+import {
+  ChatbotSessionsRepository,
+  claimedIdentityEquals,
+} from '../repositories/chatbot-sessions.repository';
 import { ChatbotsRepository } from '../repositories/chatbots.repository';
 import {
   CHATBOT_MAX_MESSAGE_LENGTH,
   WEBCHAT_PROVIDER_KEY,
 } from '../utils/chatbot-public-key.util';
+import { ChatIdentityResolverService } from '../identity/chat-identity-resolver.service';
+import type { ResolvedChatIdentity } from '../identity/chat-identity-resolver';
 import { ChatbotAutoReplyService } from './chatbot-auto-reply.service';
 import { ChatbotContactResolverService } from './chatbot-contact-resolver.service';
+import { ChatbotPersonalizationPipelineService } from './chatbot-personalization-pipeline.service';
 
 @Injectable()
 export class PublicChatbotSessionService {
@@ -64,6 +74,8 @@ export class PublicChatbotSessionService {
     private readonly autoReply: ChatbotAutoReplyService,
     private readonly auditService: AuditService,
     private readonly realtime: ConversationRealtimeService,
+    private readonly identityResolver: ChatIdentityResolverService,
+    private readonly personalization: ChatbotPersonalizationPipelineService,
   ) {}
 
   async getConfig(publicKey: string): Promise<PublicChatbotConfigDto> {
@@ -80,7 +92,12 @@ export class PublicChatbotSessionService {
   async startSession(
     publicKey: string,
     dto: StartChatbotSessionDto,
-    context: { userAgent?: string; referer?: string; ip?: string },
+    context: {
+      userAgent?: string;
+      referer?: string;
+      ip?: string;
+      authToken?: string;
+    },
   ): Promise<PublicChatbotSessionDto> {
     const chatbot = await this.requirePublicChatbot(publicKey);
     const settings = parseChatbotSettings(chatbot);
@@ -142,21 +159,50 @@ export class PublicChatbotSessionService {
       );
     }
 
-    const contact = dto.anonymous
-      ? null
-      : await this.contactResolver.resolveOrCreate(businessId, {
-          visitorId: dto.visitorId,
-          visitorName: dto.visitorName,
-          visitorEmail: dto.visitorEmail,
-          visitorPhone: dto.visitorPhone,
-          chatbotId: chatbot.id,
-          pageUrl: dto.pageUrl,
-        });
+    const authToken = dto.authToken?.trim() || context.authToken?.trim();
+    let resolvedIdentity: ResolvedChatIdentity | null = null;
+    if (authToken) {
+      resolvedIdentity = await this.identityResolver.resolveForChatbot(
+        authToken,
+        businessId,
+      );
+    }
+
+    const contact = resolvedIdentity
+      ? resolvedIdentity.refType === ChatbotIdentityRefType.CONTACT
+        ? await this.prisma.contact.findFirst({
+            where: {
+              id: resolvedIdentity.id,
+              businessId,
+              deletedAt: null,
+            },
+          })
+        : null
+      : dto.anonymous
+        ? null
+        : await this.contactResolver.resolveOrCreate(businessId, {
+            visitorId: dto.visitorId,
+            visitorName: dto.visitorName,
+            visitorEmail: dto.visitorEmail,
+            visitorPhone: dto.visitorPhone,
+            chatbotId: chatbot.id,
+            pageUrl: dto.pageUrl,
+          });
 
     const title =
+      resolvedIdentity?.displayName?.trim() ||
       contact?.displayName?.trim() ||
       dto.visitorName?.trim() ||
       'Website Visitor';
+
+    const identityFields = this.buildIdentityCreateFields({
+      resolvedIdentity,
+      contactId: contact?.id ?? null,
+      visitorName: dto.visitorName,
+      visitorEmail: dto.visitorEmail,
+    });
+
+    // Continue with conversation create — preserved from original below
 
     let conversation =
       await this.conversationsRepository.findByExternalConversationId(
@@ -215,11 +261,17 @@ export class PublicChatbotSessionService {
       business: { connect: { id: businessId } },
       chatbot: { connect: { id: chatbot.id } },
       conversationId: conversation.id,
-      contactId: contact?.id ?? undefined,
+      contactId: identityFields.contactId ?? undefined,
       visitorId: dto.visitorId,
-      visitorName: dto.visitorName?.trim() ?? null,
+      visitorName:
+        resolvedIdentity?.displayName?.trim() ||
+        dto.visitorName?.trim() ||
+        null,
       visitorEmail: dto.visitorEmail?.trim().toLowerCase() ?? null,
       visitorPhone: dto.visitorPhone?.trim() ?? null,
+      identityType: identityFields.identityType,
+      identityRefId: identityFields.identityRefId,
+      identityRefType: identityFields.identityRefType,
       pageUrl: dto.pageUrl ?? null,
       referrer: dto.referrer ?? context.referer ?? null,
       userAgent: context.userAgent ?? null,
@@ -391,6 +443,10 @@ export class PublicChatbotSessionService {
         dto.visitorEmail?.trim().toLowerCase() ?? session.visitorEmail,
       visitorPhone: dto.visitorPhone?.trim() ?? session.visitorPhone,
       contactId: contact.id,
+      identityType:
+        session.identityType === ChatbotSessionIdentityType.AUTHENTICATED
+          ? ChatbotSessionIdentityType.AUTHENTICATED
+          : ChatbotSessionIdentityType.ANONYMOUS_WITH_PROFILE,
     });
 
     await this.conversationsRepository.update(conversationId, {
@@ -400,6 +456,134 @@ export class PublicChatbotSessionService {
     });
 
     return { contactId: contact.id };
+  }
+
+  /**
+   * Scenario D — claim an anonymous session with a JWT.
+   * Claim-once: reject if already claimed by a different identity.
+   */
+  async claimSession(
+    sessionId: string,
+    dto: ClaimChatbotSessionDto,
+    authHeaderToken?: string,
+  ): Promise<PublicChatbotSessionDto> {
+    const session = await this.requireSession(sessionId);
+    const token = dto.authToken?.trim() || authHeaderToken?.trim();
+    if (!token) {
+      throw new AppException(
+        ErrorCode.CHATBOT_AUTH_INVALID,
+        'Authentication token is required',
+        HttpStatus.UNAUTHORIZED,
+      );
+    }
+
+    const identity = await this.identityResolver.resolveForChatbot(
+      token,
+      session.businessId,
+    );
+
+    if (session.identityRefId) {
+      if (claimedIdentityEquals(session, identity)) {
+        return {
+          sessionId: session.id,
+          conversationId: session.conversationId ?? '',
+        };
+      }
+      throw new AppException(
+        ErrorCode.CHATBOT_SESSION_ALREADY_CLAIMED,
+        'This chat session is already claimed by another identity',
+        HttpStatus.CONFLICT,
+      );
+    }
+
+    const contactId =
+      identity.refType === ChatbotIdentityRefType.CONTACT
+        ? identity.id
+        : session.contactId;
+
+    await this.sessionsRepository.update(session.id, {
+      identityType: ChatbotSessionIdentityType.AUTHENTICATED,
+      identityRefId: identity.id,
+      identityRefType: identity.refType,
+      contactId: contactId ?? null,
+      visitorName: identity.displayName || session.visitorName,
+    });
+
+    if (session.conversationId && contactId) {
+      await this.conversationsRepository.update(session.conversationId, {
+        contact: { connect: { id: contactId } },
+        title: identity.displayName,
+      });
+    }
+
+    return {
+      sessionId: session.id,
+      conversationId: session.conversationId ?? '',
+    };
+  }
+
+  /** Refresh rehydration — session metadata + message history. */
+  async getSession(sessionId: string): Promise<{
+    sessionId: string;
+    conversationId: string | null;
+    visitorId: string;
+    identityType: ChatbotSessionIdentityType;
+    identityRefId: string | null;
+    identityRefType: ChatbotIdentityRefType | null;
+    visitorName: string | null;
+    visitorEmail: string | null;
+    status: ChatbotSessionStatus;
+    messages: PublicChatbotMessageDto[];
+  }> {
+    const session = await this.requireSession(sessionId);
+    const messages = await this.listMessages(sessionId);
+    return {
+      sessionId: session.id,
+      conversationId: session.conversationId,
+      visitorId: session.visitorId,
+      identityType: session.identityType,
+      identityRefId: session.identityRefId,
+      identityRefType: session.identityRefType,
+      visitorName: session.visitorName,
+      visitorEmail: session.visitorEmail,
+      status: session.status,
+      messages,
+    };
+  }
+
+  private buildIdentityCreateFields(input: {
+    resolvedIdentity: ResolvedChatIdentity | null;
+    contactId: string | null;
+    visitorName?: string;
+    visitorEmail?: string;
+  }): {
+    identityType: ChatbotSessionIdentityType;
+    identityRefId: string | null;
+    identityRefType: ChatbotIdentityRefType | null;
+    contactId: string | null;
+  } {
+    if (input.resolvedIdentity) {
+      return {
+        identityType: ChatbotSessionIdentityType.AUTHENTICATED,
+        identityRefId: input.resolvedIdentity.id,
+        identityRefType: input.resolvedIdentity.refType,
+        contactId:
+          input.resolvedIdentity.refType === ChatbotIdentityRefType.CONTACT
+            ? input.resolvedIdentity.id
+            : input.contactId,
+      };
+    }
+
+    const hasProfile =
+      !!input.visitorName?.trim() || !!input.visitorEmail?.trim();
+    return {
+      identityType: hasProfile
+        ? ChatbotSessionIdentityType.ANONYMOUS_WITH_PROFILE
+        : ChatbotSessionIdentityType.ANONYMOUS,
+      identityRefId: null,
+      identityRefType: null,
+      contactId: input.contactId,
+    };
   }
 
   async listMessages(
@@ -459,11 +643,7 @@ export class PublicChatbotSessionService {
 
   private async appendInboundAndMaybeReply(
     chatbot: Chatbot,
-    session: {
-      id: string;
-      businessId: string;
-      metadata: Prisma.JsonValue | null;
-    },
+    session: ChatbotSession,
     conversation: Conversation,
     contactId: string | null,
     visitorId: string,
@@ -513,6 +693,14 @@ export class PublicChatbotSessionService {
     const botPaused =
       sessionMetadata.botPaused ||
       this.isConversationBotPaused(conversation.metadata);
+
+    // Personalization scaffold (context for future LLM; auto-reply still drives replies today)
+    await this.personalization.buildContext(session);
+    await this.personalization.retrieveKnowledge(text);
+    await this.personalization.toolDefinitions();
+    if (await this.personalization.needsHandoff(text)) {
+      // Future handoff path — no-op stub
+    }
 
     const rules = await this.rulesRepository.findActiveByChatbot(
       businessId,

@@ -385,19 +385,22 @@ export function invalidateFormSubmissions(
   });
 }
 
-export function invalidateChatbotLists(queryClient: QueryClient) {
+export function invalidateChatbotLists(
+  queryClient: QueryClient,
+  apiBase = "chatbots",
+) {
   return queryClient.invalidateQueries({
-    queryKey: queryKeys.chatbots.all(),
-    predicate: (query) => {
-      const key = query.queryKey;
-      return key[1] === "list" || key.length === 1;
-    },
+    queryKey: queryKeys.chatbots.all(apiBase),
   });
 }
 
-export function invalidateChatbotDetail(queryClient: QueryClient, id: string) {
+export function invalidateChatbotDetail(
+  queryClient: QueryClient,
+  id: string,
+  apiBase = "chatbots",
+) {
   return queryClient.invalidateQueries({
-    queryKey: queryKeys.chatbots.detail(id),
+    queryKey: queryKeys.chatbots.detail(apiBase, id),
   });
 }
 

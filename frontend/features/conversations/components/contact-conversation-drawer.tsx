@@ -14,6 +14,7 @@ import { MessageComposer } from "@/features/conversations/components/inbox/messa
 import { ConversationInternalNotesPanel } from "@/features/conversations/components/inbox/conversation-internal-notes-panel";
 import { VirtualizedMessageList } from "@/features/conversations/components/virtualized-message-list";
 import { listConversationsByContact } from "@/features/conversations/api/conversations.api";
+import { useConversationsHost } from "@/features/conversations/conversations-host-context";
 import { useCurrentBusiness } from "@/features/settings/hooks/use-current-business";
 import { queryKeys } from "@/lib/query/keys";
 import { cn } from "@/lib/utils";
@@ -31,6 +32,7 @@ export function ContactConversationDrawer({
   contactId,
   onClose,
 }: ContactConversationDrawerProps) {
+  const { apiBase, basePath } = useConversationsHost();
   const [activeTab, setActiveTab] = useState<"reply" | "note">("reply");
   const { data: business } = useCurrentBusiness();
 
@@ -41,16 +43,16 @@ export function ContactConversationDrawer({
   });
 
   const { data: conversations = [] } = useQuery({
-    queryKey: queryKeys.conversations.byContact(contactId ?? ""),
-    queryFn: () => listConversationsByContact(contactId!),
+    queryKey: queryKeys.conversations.byContact(contactId ?? "", apiBase),
+    queryFn: () => listConversationsByContact(contactId!, apiBase),
     enabled: open && Boolean(contactId),
   });
 
   const primaryConversationId = conversations[0]?.id ?? null;
   const contactName = contact?.label ?? "Client";
   const inboxHref = contactId
-    ? `/business/conversations?thread=${encodeURIComponent(contactId)}`
-    : "/business/conversations";
+    ? `${basePath}?thread=${encodeURIComponent(contactId)}`
+    : basePath;
 
   const {
     messages,

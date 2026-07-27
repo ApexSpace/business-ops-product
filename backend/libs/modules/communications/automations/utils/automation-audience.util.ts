@@ -7,7 +7,11 @@ import type {
 import { DEFAULT_AUTOMATION_AUDIENCES } from '../types/automation-registry.types';
 
 /** Platform v1: form submissions + safe non-CRM actions. */
-export const PLATFORM_TRIGGER_KEYS = new Set(['form.submitted']);
+export const PLATFORM_TRIGGER_KEYS = new Set([
+  'form.submitted',
+  'chatbot.session.converted',
+  'chatbot.session.ended',
+]);
 
 export const PLATFORM_ACTION_KEYS = new Set([
   'communication.send_internal_email',

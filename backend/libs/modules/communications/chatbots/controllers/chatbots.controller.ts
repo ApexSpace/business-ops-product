@@ -10,8 +10,12 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { BusinessMemberRole } from '@prisma/client';
+import { ApiBearerAuth, ApiPropertyOptional, ApiTags } from '@nestjs/swagger';
+import {
+  BusinessMemberRole,
+  ChatbotIdentityRefType,
+} from '@prisma/client';
+import { IsEnum, IsOptional, IsUUID } from 'class-validator';
 import { CurrentUser } from '@app/common/decorators/current-user.decorator';
 import type { RequestUser } from '@app/common/decorators/current-user.decorator';
 import { BusinessRoles } from '@app/common/decorators/business-roles.decorator';
@@ -33,6 +37,21 @@ import { ChatbotRulesService } from '../services/chatbot-rules.service';
 import { ChatbotSessionService } from '../services/chatbot-session.service';
 import { ChatbotsService } from '../services/chatbots.service';
 
+class ListSessionsByIdentityQueryDto {
+  @ApiPropertyOptional()
+  @IsUUID()
+  identityRefId!: string;
+
+  @ApiPropertyOptional({ enum: ChatbotIdentityRefType })
+  @IsEnum(ChatbotIdentityRefType)
+  identityRefType!: ChatbotIdentityRefType;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsUUID()
+  chatbotId?: string;
+}
+
 @ApiTags('chatbots')
 @ApiBearerAuth()
 @Controller('chatbots')
@@ -53,6 +72,19 @@ export class ChatbotsController {
   )
   list(@CurrentUser() user: RequestUser, @Query() query: ListChatbotsQueryDto) {
     return this.chatbotsService.list(user.businessId!, query);
+  }
+
+  @Get('sessions')
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
+  listSessionsByIdentity(
+    @CurrentUser() user: RequestUser,
+    @Query() query: ListSessionsByIdentityQueryDto,
+  ) {
+    return this.sessionService.listByIdentity(user.businessId!, query);
   }
 
   @Post()

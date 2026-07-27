@@ -1,5 +1,11 @@
 import { api } from "@/lib/api/client";
 
+const DEFAULT_API_BASE = "conversations";
+
+function path(apiBase: string, ...segments: string[]) {
+  return [apiBase, ...segments].filter(Boolean).join("/");
+}
+
 export interface ConversationNote {
   id: string;
   conversationId: string;
@@ -14,40 +20,59 @@ export interface ConversationNote {
   updatedAt: string;
 }
 
-export function listConversationNotes(conversationId: string) {
-  return api.get<ConversationNote[]>(`conversations/${conversationId}/notes`);
+export function listConversationNotes(
+  conversationId: string,
+  apiBase: string = DEFAULT_API_BASE,
+) {
+  return api.get<ConversationNote[]>(path(apiBase, conversationId, "notes"));
 }
 
-export function createConversationNote(conversationId: string, body: string) {
-  return api.post<ConversationNote>(`conversations/${conversationId}/notes`, {
+export function createConversationNote(
+  conversationId: string,
+  body: string,
+  apiBase: string = DEFAULT_API_BASE,
+) {
+  return api.post<ConversationNote>(path(apiBase, conversationId, "notes"), {
     body,
   });
 }
 
-export function endChatbotSessionForConversation(conversationId: string) {
+export function endChatbotSessionForConversation(
+  conversationId: string,
+  apiBase: string = DEFAULT_API_BASE,
+) {
   return api.post<{ sessionId: string | null; status: string | null }>(
-    `conversations/${conversationId}/end-chatbot-session`,
+    path(apiBase, conversationId, "end-chatbot-session"),
     {},
   );
 }
 
-export function convertChatbotSessionForConversation(conversationId: string) {
+export function convertChatbotSessionForConversation(
+  conversationId: string,
+  apiBase: string = DEFAULT_API_BASE,
+) {
   return api.post<{ sessionId: string | null; status: string | null }>(
-    `conversations/${conversationId}/convert-chatbot-session`,
+    path(apiBase, conversationId, "convert-chatbot-session"),
     {},
   );
 }
 
-export function pauseChatbotForConversation(conversationId: string) {
+export function pauseChatbotForConversation(
+  conversationId: string,
+  apiBase: string = DEFAULT_API_BASE,
+) {
   return api.post<{ botPaused: boolean }>(
-    `conversations/${conversationId}/pause-chatbot`,
+    path(apiBase, conversationId, "pause-chatbot"),
     {},
   );
 }
 
-export function resumeChatbotForConversation(conversationId: string) {
+export function resumeChatbotForConversation(
+  conversationId: string,
+  apiBase: string = DEFAULT_API_BASE,
+) {
   return api.post<{ botPaused: boolean }>(
-    `conversations/${conversationId}/resume-chatbot`,
+    path(apiBase, conversationId, "resume-chatbot"),
     {},
   );
 }

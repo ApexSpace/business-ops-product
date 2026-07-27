@@ -44,6 +44,7 @@ import {
   updateCannedResponse,
   type CannedResponse,
 } from "@/features/conversations/api/canned-responses.api";
+import { useConversationsHost } from "@/features/conversations/conversations-host-context";
 import {
   getRecentQuickReplyIds,
   markQuickReplyUsed,
@@ -73,6 +74,7 @@ export function QuickRepliesDialog({
   onOpenChange,
   onUseResponse,
 }: QuickRepliesDialogProps) {
+  const { cannedApiBase } = useConversationsHost();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [sortMode, setSortMode] = useState<QuickReplySortMode>("recent");
@@ -84,8 +86,8 @@ export function QuickRepliesDialog({
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const { data: items = [], isLoading } = useQuery({
-    queryKey: queryKeys.cannedResponses.list(),
-    queryFn: listCannedResponses,
+    queryKey: queryKeys.cannedResponses.list(cannedApiBase),
+    queryFn: () => listCannedResponses(cannedApiBase),
     enabled: open,
   });
 
@@ -113,7 +115,7 @@ export function QuickRepliesDialog({
 
   const invalidate = () => {
     void queryClient.invalidateQueries({
-      queryKey: queryKeys.cannedResponses.all(),
+      queryKey: queryKeys.cannedResponses.all(cannedApiBase),
     });
   };
 
@@ -136,10 +138,13 @@ export function QuickRepliesDialog({
 
   const createMutation = useMutation({
     mutationFn: () =>
-      createCannedResponse({
-        title: draftTitle.trim(),
-        body: draftBody.trim(),
-      }),
+      createCannedResponse(
+        {
+          title: draftTitle.trim(),
+          body: draftBody.trim(),
+        },
+        cannedApiBase,
+      ),
     onSuccess: (created) => {
       toast.success("Quick reply saved");
       invalidate();
@@ -156,10 +161,14 @@ export function QuickRepliesDialog({
       if (editor?.type !== "edit") {
         throw new Error("Nothing to update");
       }
-      return updateCannedResponse(editor.id, {
-        title: draftTitle.trim(),
-        body: draftBody.trim(),
-      });
+      return updateCannedResponse(
+        editor.id,
+        {
+          title: draftTitle.trim(),
+          body: draftBody.trim(),
+        },
+        cannedApiBase,
+      );
     },
     onSuccess: (updated) => {
       toast.success("Quick reply updated");
@@ -173,7 +182,7 @@ export function QuickRepliesDialog({
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => deleteCannedResponse(id),
+    mutationFn: (id: string) => deleteCannedResponse(id, cannedApiBase),
     onSuccess: (_data, id) => {
       toast.success("Quick reply deleted");
       setDeleteId(null);

@@ -18,6 +18,9 @@ import { SmsMessagingAdapter } from './adapters/sms/sms-messaging.adapter';
 import { WebchatAdapter } from './adapters/webchat/webchat.adapter';
 import { ContactConversationsController } from './controllers/contact-conversations.controller';
 import { ConversationsController } from './controllers/conversations.controller';
+import { PlatformCannedResponsesController } from './controllers/platform-canned-responses.controller';
+import { PlatformContactConversationsController } from './controllers/platform-contact-conversations.controller';
+import { PlatformConversationsController } from './controllers/platform-conversations.controller';
 import { ConversationIntegrationRepository } from './repositories/conversation-integration.repository';
 import { ConversationMessagesRepository } from './repositories/conversation-messages.repository';
 import { ConversationsRepository } from './repositories/conversations.repository';
@@ -62,6 +65,9 @@ import { TwilioModule } from '@app/modules/integrations/twilio/twilio.module';
     ConversationsController,
     ContactConversationsController,
     CannedResponsesController,
+    PlatformConversationsController,
+    PlatformContactConversationsController,
+    PlatformCannedResponsesController,
   ],
   providers: [
     ConversationsRepository,

@@ -34,6 +34,7 @@ import {
   listPlatformIntegrationProviders,
   updatePlatformIntegration,
 } from "@/features/integrations/api/integrations.api";
+import { PlatformOpsMessagingChannels } from "@/features/settings/components/platform-ops-messaging-channels";
 
 export function PlatformIntegrationsSettings() {
   const queryClient = useQueryClient();
@@ -160,7 +161,9 @@ export function PlatformIntegrationsSettings() {
 
   return (
     <div className="w-full min-w-0 space-y-6">
-      <PageHeader description="Configure platform-wide providers for AI, messaging, payments, and storage. Meta (WhatsApp, Facebook, Instagram) is configured via backend environment variables." />
+      <PageHeader description="Configure platform-wide providers for AI, messaging, payments, and storage. Connect ops messaging channels below for the platform Unified Inbox." />
+
+      <PlatformOpsMessagingChannels />
 
       <IntegrationCategoryTabs value={category} onValueChange={setCategory} />
 

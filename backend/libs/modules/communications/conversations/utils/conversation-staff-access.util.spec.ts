@@ -60,4 +60,20 @@ describe('conversation-staff-access.util', () => {
       assertCanViewConversation(member(), { assignedToUserId: 'other' }),
     ).toThrow(/permission to view this conversation/);
   });
+
+  it('lets platform ops roles view all conversations', () => {
+    const platformAdmin = {
+      id: 'platform-1',
+      email: 'ops@example.com',
+      context: 'platform',
+      platformRole: 'PLATFORM_ADMIN',
+    } as RequestUser;
+    expect(canViewAllConversations(platformAdmin)).toBe(true);
+    expect(
+      canViewConversation(platformAdmin, { assignedToUserId: 'someone-else' }),
+    ).toBe(true);
+    expect(
+      resolveAssignedConversationScope(platformAdmin, { assignedToMe: true }),
+    ).toEqual({ assignedToMe: true });
+  });
 });

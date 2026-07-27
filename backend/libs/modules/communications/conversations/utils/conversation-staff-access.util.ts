@@ -1,5 +1,5 @@
 import { HttpStatus } from '@nestjs/common';
-import { BusinessMemberRole } from '@prisma/client';
+import { BusinessMemberRole, PlatformMemberRole } from '@prisma/client';
 import type { RequestUser } from '@app/common/decorators/current-user.decorator';
 import { AppException } from '@app/common/exceptions/app.exception';
 import { ErrorCode } from '@app/common/exceptions/error-code.enum';
@@ -9,15 +9,26 @@ export type ConversationAssigneeShape = {
   assignedToUserId?: string | null;
 };
 
+const PLATFORM_VIEW_ALL_ROLES = new Set<PlatformMemberRole>([
+  PlatformMemberRole.SUPER_ADMIN,
+  PlatformMemberRole.PLATFORM_ADMIN,
+  PlatformMemberRole.SUPPORT,
+]);
+
 function isBusinessAdminRole(role?: string | null): boolean {
   return (
     role === BusinessMemberRole.OWNER || role === BusinessMemberRole.ADMIN
   );
 }
 
-/** OWNER/ADMIN or staff with conversations.view_all. */
+function isPlatformViewAllRole(role?: PlatformMemberRole | null): boolean {
+  return role != null && PLATFORM_VIEW_ALL_ROLES.has(role);
+}
+
+/** OWNER/ADMIN, platform ops roles, or staff with conversations.view_all. */
 export function canViewAllConversations(user?: RequestUser): boolean {
   if (!user) return false;
+  if (isPlatformViewAllRole(user.platformRole)) return true;
   if (isBusinessAdminRole(user.businessRole)) return true;
   return hasStaffPermission(
     user.staffPermissions,

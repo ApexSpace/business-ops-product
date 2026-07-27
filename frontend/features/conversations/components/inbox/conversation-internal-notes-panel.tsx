@@ -10,6 +10,7 @@ import {
   createConversationNote,
   listConversationNotes,
 } from "@/features/conversations/api/conversation-notes.api";
+import { useConversationsHost } from "@/features/conversations/conversations-host-context";
 import { queryKeys } from "@/lib/query/keys";
 import { formatRelativeTime } from "@/lib/ui/relative-time";
 import { cn } from "@/lib/utils";
@@ -37,23 +38,25 @@ export function ConversationInternalNotesPanel({
   conversationId,
   className,
 }: ConversationInternalNotesPanelProps) {
+  const { apiBase } = useConversationsHost();
   const queryClient = useQueryClient();
   const [draft, setDraft] = useState("");
   const [expanded, setExpanded] = useState(false);
 
   const notesQuery = useQuery({
-    queryKey: queryKeys.conversations.notes(conversationId ?? ""),
-    queryFn: () => listConversationNotes(conversationId!),
+    queryKey: queryKeys.conversations.notes(conversationId ?? "", apiBase),
+    queryFn: () => listConversationNotes(conversationId!, apiBase),
     enabled: Boolean(conversationId),
   });
 
   const createMutation = useMutation({
-    mutationFn: (body: string) => createConversationNote(conversationId!, body),
+    mutationFn: (body: string) =>
+      createConversationNote(conversationId!, body, apiBase),
     onSuccess: () => {
       setDraft("");
       setExpanded(true);
       void queryClient.invalidateQueries({
-        queryKey: queryKeys.conversations.notes(conversationId!),
+        queryKey: queryKeys.conversations.notes(conversationId!, apiBase),
       });
       toast.success("Internal note added");
     },

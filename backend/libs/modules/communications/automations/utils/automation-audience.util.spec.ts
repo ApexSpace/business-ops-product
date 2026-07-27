@@ -38,7 +38,13 @@ describe('automation audience (platform v1)', () => {
     const actions = service.listActions({ audience: 'platform' });
     const customValues = service.listCustomValues({ audience: 'platform' });
 
-    expect(triggers.map((t) => t.key)).toEqual(['form.submitted']);
+    expect(triggers.map((t) => t.key).sort()).toEqual(
+      [
+        'chatbot.session.converted',
+        'chatbot.session.ended',
+        'form.submitted',
+      ].sort(),
+    );
     expect(actions.map((a) => a.key).sort()).toEqual(
       [...PLATFORM_ACTION_KEYS].sort(),
     );
