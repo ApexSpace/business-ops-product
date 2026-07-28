@@ -1,5 +1,5 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
-import { ConversationChannel } from '@prisma/client';
+import { ConversationChannel, type IntegrationResource } from '@prisma/client';
 import { AppException } from '@app/common/exceptions/app.exception';
 import { ErrorCode } from '@app/common/exceptions/error-code.enum';
 import { META_INSTAGRAM_LOGIN_AUTH_SCOPES } from '@app/modules/integrations/integrations/meta/constants/meta-provider.config';
@@ -96,7 +96,7 @@ export class InstagramMessagingAdapter implements ConversationChannelAdapter {
 
   private async sendViaInstagramLogin(
     params: SendChannelMessageParams,
-    resource: { externalId: string; metadata: unknown },
+    resource: IntegrationResource,
     attachments: Array<{ type: string; url: string }>,
   ): Promise<SendChannelMessageResult> {
     const credentials = await this.metaTokenService.getStoredCredentials(
@@ -137,7 +137,7 @@ export class InstagramMessagingAdapter implements ConversationChannelAdapter {
 
   private async sendViaFacebookLogin(
     params: SendChannelMessageParams,
-    resource: { externalId: string; metadata: unknown },
+    resource: IntegrationResource,
     attachments: Array<{ type: string; url: string }>,
   ): Promise<SendChannelMessageResult> {
     const accessToken = getPageAccessTokenFromResource(
