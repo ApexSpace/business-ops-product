@@ -345,7 +345,8 @@ const platformRoutes: Record<string, RouteEntry> = {
   },
   "/platform/settings/integrations": {
     title: "Platform Integrations",
-    description: "Configure platform-wide AI, messaging, storage, and OAuth providers.",
+    description:
+      "Connect messaging channels for the platform Unified Inbox, plus platform-wide providers.",
   },
   "/platform/forms": {
     title: "Forms",

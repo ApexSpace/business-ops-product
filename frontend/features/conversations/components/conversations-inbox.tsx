@@ -52,7 +52,7 @@ import {
 } from "@/features/conversations/utils/reply-channel.utils";
 import { useWhatsAppTemplateComposerState } from "@/features/conversations/hooks/use-whatsapp-template-composer-state";
 import { useConversationsHost } from "@/features/conversations/conversations-host-context";
-import { useBusinessAccess } from "@/lib/business-access/use-business-access";
+import { useOptionalBusinessAccess } from "@/lib/business-access/use-business-access";
 import { useConversationStaffPermissions } from "@/features/conversations/hooks/use-conversation-staff-permissions";
 import { useConversationsInboxFilters } from "@/features/conversations/hooks/use-conversations-inbox-filters";
 import { RealtimeOfflineBanner } from "@/features/realtime/components/realtime-offline-banner";
@@ -112,12 +112,13 @@ export function ConversationsInbox() {
   const [threadChannelFilter, setThreadChannelFilter] =
     useState<ThreadChannelFilterValue>("ALL");
   const [mobilePane, setMobilePane] = useState<InboxMobilePane>("list");
-  const { hasCapability } = useBusinessAccess();
+  const businessAccess = useOptionalBusinessAccess();
   const conversationPerms = useConversationStaffPermissions();
   const canSendMessages =
     mode === "platform"
       ? conversationPerms.canSend
-      : hasCapability("conversations.send") && conversationPerms.canSend;
+      : Boolean(businessAccess?.hasCapability("conversations.send")) &&
+        conversationPerms.canSend;
   useQuery({
     queryKey: queryKeys.integrations.platformEmail(),
     queryFn: () => getPlatformDefaultEmail(),

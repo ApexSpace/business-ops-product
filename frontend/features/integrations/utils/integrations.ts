@@ -45,6 +45,8 @@ export interface IntegrationSummary {
 export interface IntegrationProviderWithStatus extends IntegrationProvider {
   status: IntegrationStatus;
   integration: IntegrationSummary | null;
+  /** Active pages / IG accounts / etc. for this provider (catalog badge). */
+  resourceCount?: number;
 }
 
 export interface BusinessIntegration {
@@ -323,16 +325,71 @@ export const META_OAUTH_START_ROUTES = {
 
 export function getMetaOAuthStartUrl(
   providerKey: MetaBusinessProviderKey,
+  authFlow?: InstagramAuthFlowParam,
 ): string {
-  return META_OAUTH_START_ROUTES[providerKey];
+  const base = META_OAUTH_START_ROUTES[providerKey];
+  if (providerKey !== "instagram" || !authFlow) {
+    return base;
+  }
+  return appendAuthFlowQuery(base, authFlow);
 }
 
-export function getOAuthStartUrl(providerKey: string): string {
+/** Platform admin Meta OAuth — stamps INTERNAL ops business into OAuth state. */
+export const PLATFORM_META_OAUTH_START_ROUTES = {
+  facebook: "/api/oauth/meta/platform/start?providerKey=facebook",
+  instagram: "/api/oauth/meta/platform/start?providerKey=instagram",
+} as const satisfies Record<"facebook" | "instagram", string>;
+
+export type InstagramAuthFlowParam = "facebook_login" | "instagram_login";
+
+export type InstagramAuthFlow = "FACEBOOK_LOGIN" | "INSTAGRAM_LOGIN";
+
+export function parseInstagramAuthFlowFromConfig(
+  config: Record<string, unknown> | null | undefined,
+): InstagramAuthFlow {
+  const raw = config?.authFlow;
+  if (typeof raw !== "string") return "FACEBOOK_LOGIN";
+  const normalized = raw.trim().toUpperCase().replace(/-/g, "_");
+  return normalized === "INSTAGRAM_LOGIN" ? "INSTAGRAM_LOGIN" : "FACEBOOK_LOGIN";
+}
+
+function appendAuthFlowQuery(url: string, authFlow: InstagramAuthFlowParam): string {
+  const separator = url.includes("?") ? "&" : "?";
+  return `${url}${separator}authFlow=${authFlow}`;
+}
+
+export function getPlatformMetaOAuthStartUrl(
+  providerKey: "facebook" | "instagram",
+  authFlow?: InstagramAuthFlowParam,
+): string {
+  const base = PLATFORM_META_OAUTH_START_ROUTES[providerKey];
+  if (providerKey !== "instagram" || !authFlow) {
+    return base;
+  }
+  return appendAuthFlowQuery(base, authFlow);
+}
+
+export function getOAuthStartUrl(
+  providerKey: string,
+  options?: { authFlow?: InstagramAuthFlowParam; host?: "business" | "platform" },
+): string {
+  if (options?.host === "platform") {
+    if (providerKey !== "facebook" && providerKey !== "instagram") {
+      throw new Error(OAUTH_ROUTE_NOT_CONFIGURED_MESSAGE);
+    }
+    return getPlatformMetaOAuthStartUrl(providerKey, options.authFlow);
+  }
+
+  if (providerKey === "instagram" && options?.authFlow) {
+    return getMetaOAuthStartUrl("instagram", options.authFlow);
+  }
+
   if (!hasOAuthStartRoute(providerKey)) {
     throw new Error(OAUTH_ROUTE_NOT_CONFIGURED_MESSAGE);
   }
   return OAUTH_START_ROUTES[providerKey];
 }
+
 
 /** @deprecated Use getOAuthStartUrl */
 export function getGoogleOAuthStartUrl(providerKey: string): string {

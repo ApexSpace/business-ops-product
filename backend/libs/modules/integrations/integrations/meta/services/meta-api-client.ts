@@ -170,6 +170,179 @@ export class MetaApiClient {
   }
 
   /**
+   * Business Login for Instagram — exchange authorization code for short-lived token.
+   * POST https://api.instagram.com/oauth/access_token
+   */
+  async exchangeInstagramLoginCodeForToken(
+    code: string,
+  ): Promise<MetaTokenResponse & { user_id?: number | string }> {
+    const { appId, appSecret } =
+      this.metaConfigService.getInstagramLoginAppCredentials();
+    const redirectUri = this.metaConfigService.getMetaRedirectUri(
+      'instagram',
+      'INSTAGRAM_LOGIN',
+    );
+
+    const body = new URLSearchParams({
+      client_id: appId,
+      client_secret: appSecret,
+      grant_type: 'authorization_code',
+      redirect_uri: redirectUri,
+      code,
+    });
+
+    const response = await fetch('https://api.instagram.com/oauth/access_token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: body.toString(),
+    });
+
+    if (!response.ok) {
+      const detail = this.sanitizeGraphError(await response.text());
+      throw new Error(`Instagram Login token exchange failed: ${detail}`);
+    }
+
+    const data = (await response.json()) as {
+      access_token?: string;
+      token_type?: string;
+      expires_in?: number;
+      user_id?: number | string;
+      // Some responses wrap in data array
+      data?: Array<{
+        access_token?: string;
+        user_id?: number | string;
+        permissions?: string;
+      }>;
+    };
+
+    const token =
+      data.access_token ??
+      data.data?.[0]?.access_token;
+    if (!token) {
+      throw new Error('Instagram Login token exchange returned no access_token');
+    }
+
+    return {
+      access_token: token,
+      token_type: data.token_type ?? 'bearer',
+      expires_in: data.expires_in,
+      user_id: data.user_id ?? data.data?.[0]?.user_id,
+    };
+  }
+
+  /** Exchange short-lived Instagram User token for long-lived (60 days). */
+  async exchangeInstagramLoginForLongLivedToken(
+    shortLivedToken: string,
+  ): Promise<MetaTokenResponse> {
+    const { appSecret } =
+      this.metaConfigService.getInstagramLoginAppCredentials();
+    const url = new URL('https://graph.instagram.com/access_token');
+    url.searchParams.set('grant_type', 'ig_exchange_token');
+    url.searchParams.set('client_secret', appSecret);
+    url.searchParams.set('access_token', shortLivedToken);
+
+    const response = await fetch(url.toString());
+    if (!response.ok) {
+      const detail = this.sanitizeGraphError(await response.text());
+      throw new Error(
+        `Instagram Login long-lived token exchange failed: ${detail}`,
+      );
+    }
+
+    return (await response.json()) as MetaTokenResponse;
+  }
+
+  async getInstagramLoginProfile(accessToken: string): Promise<{
+    id: string;
+    username?: string;
+    name?: string;
+    profile_picture_url?: string;
+  }> {
+    const url = new URL('https://graph.instagram.com/me');
+    url.searchParams.set(
+      'fields',
+      'user_id,username,name,account_type,profile_picture_url',
+    );
+    url.searchParams.set('access_token', accessToken);
+
+    const response = await fetch(url.toString());
+    if (!response.ok) {
+      const detail = this.sanitizeGraphError(await response.text());
+      throw new Error(`Failed to fetch Instagram Login profile: ${detail}`);
+    }
+
+    const data = (await response.json()) as {
+      user_id?: string | number;
+      id?: string | number;
+      username?: string;
+      name?: string;
+      profile_picture_url?: string;
+    };
+
+    const id = String(data.user_id ?? data.id ?? '');
+    if (!id) {
+      throw new Error('Instagram Login profile missing user id');
+    }
+
+    return {
+      id,
+      username: data.username,
+      name: data.name,
+      profile_picture_url: data.profile_picture_url,
+    };
+  }
+
+  /**
+   * Send an Instagram DM via Instagram API with Instagram Login
+   * (graph.instagram.com / {ig-user-id}/messages).
+   */
+  async sendInstagramLoginMessage(
+    igUserId: string,
+    igUserAccessToken: string,
+    recipientIgsid: string,
+    text: string,
+    attachments?: Array<{ type: string; url: string }>,
+  ): Promise<{ messageId: string }> {
+    const payloads = this.buildOutboundMessagePayloads(text, attachments);
+    if (payloads.length === 0) {
+      throw new Error(
+        'Instagram send message failed: message text or attachment is required',
+      );
+    }
+
+    const version = process.env.META_GRAPH_API_VERSION?.trim() || 'v20.0';
+    let lastMessageId = '';
+
+    for (const message of payloads) {
+      const endpoint = new URL(
+        `https://graph.instagram.com/${version}/${igUserId}/messages`,
+      );
+      endpoint.searchParams.set('access_token', igUserAccessToken);
+
+      const response = await fetch(endpoint.toString(), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          recipient: { id: recipientIgsid },
+          message,
+        }),
+      });
+
+      if (!response.ok) {
+        const detail = this.sanitizeGraphError(await response.text());
+        throw new Error(`Instagram Login send message failed: ${detail}`);
+      }
+
+      const data = (await response.json()) as {
+        message_id?: string;
+      };
+      lastMessageId = data.message_id ?? lastMessageId;
+    }
+
+    return { messageId: lastMessageId };
+  }
+
+  /**
    * Lists Facebook Pages the user authorized (user access token).
    * Paginates and requests instagram_business_account with nested fields.
    */

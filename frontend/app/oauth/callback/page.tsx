@@ -26,10 +26,12 @@ function OAuthCallbackContent() {
     if (connected) {
       setPhase("success");
       setMessage("Connection successful. This window will close automatically.");
+      const jobId = searchParams.get("jobId") ?? undefined;
       postOAuthResultToOpener({
         type: OAUTH_MESSAGE_TYPE.SUCCESS,
         providerKey: providerKey ?? connected,
         warning,
+        ...(jobId ? { jobId } : {}),
       });
       const timer = window.setTimeout(() => window.close(), 1500);
       return () => window.clearTimeout(timer);

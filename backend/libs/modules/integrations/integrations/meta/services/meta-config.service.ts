@@ -133,12 +133,23 @@ export class MetaConfigService {
    * OAuth redirect URI used in Meta authorize + token exchange.
    * Defaults to META_REDIRECT_URI for all Meta providers (register this URL in the Meta app).
    * Set META_WHATSAPP_REDIRECT_URI only when WhatsApp embedded signup uses a separate callback URL.
+   * Set META_INSTAGRAM_DIRECT_REDIRECT_URI when Direct Instagram Login uses a distinct registered URI.
    */
-  getMetaRedirectUri(providerKey?: MetaProviderKey | string): string {
+  getMetaRedirectUri(
+    providerKey?: MetaProviderKey | string,
+    authFlow?: 'FACEBOOK_LOGIN' | 'INSTAGRAM_LOGIN',
+  ): string {
     if (providerKey === 'whatsapp') {
       const whatsappUri = process.env.META_WHATSAPP_REDIRECT_URI?.trim();
       if (whatsappUri) {
         return whatsappUri;
+      }
+    }
+
+    if (providerKey === 'instagram' && authFlow === 'INSTAGRAM_LOGIN') {
+      const directUri = process.env.META_INSTAGRAM_DIRECT_REDIRECT_URI?.trim();
+      if (directUri) {
+        return directUri;
       }
     }
 
@@ -152,6 +163,26 @@ export class MetaConfigService {
     }
 
     return redirectUri;
+  }
+
+  /** Instagram App credentials for Business Login for Instagram (Direct).
+   *
+   * Deployer checklist (Meta App Dashboard):
+   * 1. Instagram → API setup with Instagram login enabled.
+   * 2. Add Direct redirect URI under Instagram Login valid OAuth URIs
+   *    (META_INSTAGRAM_DIRECT_REDIRECT_URI or the shared META_REDIRECT_URI).
+   * 3. Request Advanced Access for instagram_business_basic (+ manage_messages).
+   * 4. Keep META_INSTAGRAM_LOGIN_CONFIG_ID as Facebook Login for Business (path 1).
+   * 5. Keep existing Instagram object webhook callback valid for both paths.
+   */
+  getInstagramLoginAppCredentials(): { appId: string; appSecret: string } {
+    const fallback = this.getMetaAppConfig();
+    return {
+      appId:
+        process.env.META_INSTAGRAM_APP_ID?.trim() || fallback.appId,
+      appSecret:
+        process.env.META_INSTAGRAM_APP_SECRET?.trim() || fallback.appSecret,
+    };
   }
 
   getLoginConfigId(): string | null {

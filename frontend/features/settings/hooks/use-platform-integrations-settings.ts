@@ -10,10 +10,8 @@ import {
 import {
   formatOAuthErrorMessage,
   formatOAuthWarningMessage,
-  getOAuthStartUrl,
-  hasOAuthStartRoute,
+  getPlatformMetaOAuthStartUrl,
   filterIntegrationProvidersByCategory,
-  OAUTH_ROUTE_NOT_CONFIGURED_MESSAGE,
   isPlatformEmailProvider,
   isPlatformSmsProvider,
   shouldUseManualConnect,
@@ -24,7 +22,7 @@ import {
   type InstagramAuthFlowParam,
 } from "@/features/integrations/utils/integrations";
 import {
-  completeWhatsAppEmbeddedSignupOnServer,
+  completePlatformWhatsAppEmbeddedSignupOnServer,
   launchWhatsAppEmbeddedSignup,
 } from "@/features/integrations/utils/whatsapp-embedded-signup";
 import {
@@ -38,29 +36,35 @@ import {
   oauthSyncOutcomeToastMessage,
   waitForOAuthResourceSync,
 } from "@/features/integrations/utils/oauth-sync-outcome";
-import { hasStaffPermission } from "@/features/team/permissions/staff-permissions";
+import { PERMISSIONS, useCan } from "@/features/auth/permissions";
 import { queryKeys } from "@/lib/query/keys";
-import { useAuth } from "@/lib/auth/provider";
 import {
-  connectBusinessIntegration,
-  connectPlatformDefaultEmail,
-  confirmDisconnectBusinessIntegration,
-  getBusinessIntegration,
-  listBusinessIntegrationProviders,
-  updateBusinessIntegration,
+  confirmDisconnectOpsWorkspaceIntegration,
+  confirmDisconnectPlatformIntegration,
+  connectOpsEmail,
+  connectOpsSms,
+  connectPlatformIntegration,
+  getOpsWorkspaceIntegration,
+  getPlatformMetaClientConfig,
+  listOpsWorkspaceProviders,
+  updatePlatformIntegration,
 } from "@/features/integrations/api/integrations.api";
 
-export function useBusinessIntegrationsSettings() {
+const OPS_WORKSPACE_MESSAGING_KEYS = new Set([
+  "facebook",
+  "instagram",
+  "whatsapp",
+  "sms",
+  "email",
+]);
+
+function isOpsWorkspaceChannel(providerKey: string) {
+  return OPS_WORKSPACE_MESSAGING_KEYS.has(providerKey);
+}
+
+export function usePlatformIntegrationsSettings() {
   const queryClient = useQueryClient();
-  const { user, jwt } = useAuth();
-  const role = user?.businessRole ?? jwt?.businessRole;
-  const staffPermissions =
-    user?.staffPermissions ?? jwt?.staffPermissions ?? undefined;
-  const canManage = hasStaffPermission(
-    staffPermissions,
-    "settings.integrations.manage",
-    role,
-  );
+  const canManage = useCan(PERMISSIONS["platform.settings.manage"]);
 
   const [category, setCategory] = useState<IntegrationCategory | "ALL">("ALL");
   const [selectedProvider, setSelectedProvider] =
@@ -85,8 +89,8 @@ export function useBusinessIntegrationsSettings() {
   const oauthCompletedRef = useRef(false);
 
   const { data: providers = [], isLoading } = useQuery({
-    queryKey: queryKeys.integrations.businessProviders(),
-    queryFn: () => listBusinessIntegrationProviders(),
+    queryKey: queryKeys.integrations.platformProviders(),
+    queryFn: () => listOpsWorkspaceProviders(),
   });
 
   providersRef.current = providers;
@@ -100,14 +104,15 @@ export function useBusinessIntegrationsSettings() {
   }, [providers, selectedProvider]);
 
   const { data: integrationDetail } = useQuery({
-    queryKey: queryKeys.integrations.businessDetail(
+    queryKey: queryKeys.integrations.platformDetail(
       selectedProvider?.key ?? "",
     ),
-    queryFn: () => getBusinessIntegration(selectedProvider!.key),
+    queryFn: () => getOpsWorkspaceIntegration(selectedProvider!.key),
     enabled:
       dialogOpen &&
       dialogMode === "manage" &&
       !!selectedProvider &&
+      isOpsWorkspaceChannel(selectedProvider.key) &&
       shouldUseOAuthPopup(selectedProvider),
   });
 
@@ -119,10 +124,10 @@ export function useBusinessIntegrationsSettings() {
   const invalidateIntegrations = async (providerKey?: string) => {
     await Promise.all([
       queryClient.invalidateQueries({
-        queryKey: queryKeys.integrations.businessProviders(),
+        queryKey: queryKeys.integrations.platformProviders(),
       }),
       queryClient.invalidateQueries({
-        queryKey: queryKeys.integrations.businessList(),
+        queryKey: queryKeys.integrations.platformList(),
       }),
       queryClient.invalidateQueries({
         queryKey: queryKeys.integrations.all(),
@@ -130,13 +135,19 @@ export function useBusinessIntegrationsSettings() {
       ...(providerKey
         ? [
             queryClient.invalidateQueries({
-              queryKey: queryKeys.integrations.businessResources(providerKey),
+              queryKey: queryKeys.integrations.businessResources(
+                providerKey,
+                "platform",
+              ),
             }),
             queryClient.invalidateQueries({
-              queryKey: queryKeys.integrations.messagingStatus(providerKey),
+              queryKey: queryKeys.integrations.messagingStatus(
+                providerKey,
+                "platform",
+              ),
             }),
             queryClient.invalidateQueries({
-              queryKey: queryKeys.integrations.businessDetail(providerKey),
+              queryKey: queryKeys.integrations.platformDetail(providerKey),
             }),
           ]
         : []),
@@ -163,7 +174,7 @@ export function useBusinessIntegrationsSettings() {
             const { resourceCount } = await waitForOAuthResourceSync({
               providerKey,
               jobId: message.jobId,
-              host: "business",
+              host: "platform",
             });
             const outcome = oauthSyncOutcomeToastMessage(
               providerKey,
@@ -208,19 +219,11 @@ export function useBusinessIntegrationsSettings() {
     setConnectingProviderKey(provider.key);
 
     try {
-      const result = await launchWhatsAppEmbeddedSignup();
-      await completeWhatsAppEmbeddedSignupOnServer(result);
+      const config = await getPlatformMetaClientConfig();
+      const result = await launchWhatsAppEmbeddedSignup(config);
+      await completePlatformWhatsAppEmbeddedSignupOnServer(result);
       toast.success("WhatsApp connected successfully");
       await invalidateIntegrations();
-      void queryClient.invalidateQueries({
-        queryKey: queryKeys.integrations.businessResources("whatsapp"),
-      });
-      void queryClient.invalidateQueries({
-        queryKey: queryKeys.whatsappSettings.overview(),
-      });
-      void queryClient.invalidateQueries({
-        queryKey: queryKeys.whatsappSettings.numbers(),
-      });
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "WhatsApp signup failed";
@@ -230,20 +233,27 @@ export function useBusinessIntegrationsSettings() {
     }
   };
 
-  const platformEmailMutation = useMutation({
-    mutationFn: () => connectPlatformDefaultEmail(),
+  const opsEmailMutation = useMutation({
+    mutationFn: () => connectOpsEmail(),
     onSuccess: async () => {
-      toast.success("Email activated for your business");
+      toast.success("Email activated for ops inbox");
       setDialogOpen(false);
       await invalidateIntegrations();
-      await queryClient.invalidateQueries({
-        queryKey: queryKeys.integrations.platformEmail(),
-      });
     },
     onError: (error: Error) => toast.error(error.message),
   });
 
-  const connectMutation = useMutation({
+  const opsSmsMutation = useMutation({
+    mutationFn: () => connectOpsSms(),
+    onSuccess: async () => {
+      toast.success("SMS connected for ops inbox");
+      setDialogOpen(false);
+      await invalidateIntegrations();
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
+
+  const connectPlatformMutation = useMutation({
     mutationFn: ({
       providerKey,
       values,
@@ -251,16 +261,16 @@ export function useBusinessIntegrationsSettings() {
       providerKey: string;
       values: IntegrationManageFormValues;
     }) =>
-      connectBusinessIntegration(providerKey, integrationFormToPayload(values)),
+      connectPlatformIntegration(providerKey, integrationFormToPayload(values)),
     onSuccess: async () => {
-      toast.success("Integration connected");
+      toast.success("Platform integration connected");
       setDialogOpen(false);
       await invalidateIntegrations();
     },
     onError: (error: Error) => toast.error(error.message),
   });
 
-  const updateMutation = useMutation({
+  const updatePlatformMutation = useMutation({
     mutationFn: ({
       providerKey,
       values,
@@ -268,9 +278,9 @@ export function useBusinessIntegrationsSettings() {
       providerKey: string;
       values: IntegrationManageFormValues;
     }) =>
-      updateBusinessIntegration(providerKey, integrationFormToPayload(values)),
+      updatePlatformIntegration(providerKey, integrationFormToPayload(values)),
     onSuccess: async () => {
-      toast.success("Integration updated");
+      toast.success("Platform integration updated");
       setDialogOpen(false);
       await invalidateIntegrations();
     },
@@ -279,19 +289,15 @@ export function useBusinessIntegrationsSettings() {
 
   const deleteMutation = useMutation({
     mutationFn: (providerKey: string) =>
-      confirmDisconnectBusinessIntegration(providerKey),
+      isOpsWorkspaceChannel(providerKey)
+        ? confirmDisconnectOpsWorkspaceIntegration(providerKey)
+        : confirmDisconnectPlatformIntegration(providerKey),
     onSuccess: async () => {
       toast.success("Integration removed");
       setDeleteOpen(false);
       setDialogOpen(false);
       setSelectedProvider(null);
       await invalidateIntegrations();
-      void queryClient.invalidateQueries({
-        queryKey: queryKeys.whatsappSettings.overview(),
-      });
-      void queryClient.invalidateQueries({
-        queryKey: queryKeys.whatsappSettings.numbers(),
-      });
     },
     onError: (error: Error) => toast.error(error.message),
   });
@@ -301,31 +307,17 @@ export function useBusinessIntegrationsSettings() {
     options?: { authFlow?: InstagramAuthFlowParam },
   ) => {
     if (connectingProviderKey) return;
-
-    if (!hasOAuthStartRoute(provider.key)) {
-      toast.error(OAUTH_ROUTE_NOT_CONFIGURED_MESSAGE);
+    if (provider.key !== "facebook" && provider.key !== "instagram") {
+      toast.error("OAuth is only available for Facebook and Instagram.");
       return;
     }
 
-    oauthCompletedRef.current = false;
+    // Reconnect from Manage: close dialog so popup + toasts are clearer.
     setDialogOpen(false);
+    oauthCompletedRef.current = false;
     setConnectingProviderKey(provider.key);
 
-    let url: string;
-    try {
-      url = getOAuthStartUrl(provider.key, {
-        authFlow: options?.authFlow,
-      });
-    } catch (error) {
-      setConnectingProviderKey(null);
-      toast.error(
-        error instanceof Error
-          ? formatOAuthErrorMessage(error.message)
-          : OAUTH_ROUTE_NOT_CONFIGURED_MESSAGE,
-      );
-      return;
-    }
-
+    const url = getPlatformMetaOAuthStartUrl(provider.key, options?.authFlow);
     const { blocked, popup } = openOAuthPopup(url);
 
     if (blocked) {
@@ -344,8 +336,8 @@ export function useBusinessIntegrationsSettings() {
           isCompleted: () => oauthCompletedRef.current,
           checkConnected: async () => {
             const latest = await queryClient.fetchQuery({
-              queryKey: queryKeys.integrations.businessProviders(),
-              queryFn: () => listBusinessIntegrationProviders(),
+              queryKey: queryKeys.integrations.platformProviders(),
+              queryFn: () => listOpsWorkspaceProviders(),
             });
             return latest.some(
               (item) =>
@@ -388,18 +380,18 @@ export function useBusinessIntegrationsSettings() {
         provider.status === "EXPIRED" ||
         provider.status === "ERROR"
       ) {
-        platformEmailMutation.mutate();
+        opsEmailMutation.mutate();
         return;
       }
       openManage(provider);
       return;
     }
     if (isPlatformSmsProvider(provider.key)) {
-      setSelectedProvider(provider);
-      setDialogMode(
-        provider.status === "NOT_CONNECTED" ? "connect" : "manage",
-      );
-      setDialogOpen(true);
+      if (provider.status === "NOT_CONNECTED") {
+        opsSmsMutation.mutate();
+        return;
+      }
+      openManage(provider);
       return;
     }
     if (usesWhatsAppEmbeddedSignup(provider.key)) {
@@ -414,11 +406,14 @@ export function useBusinessIntegrationsSettings() {
       openInstagramChooser(provider);
       return;
     }
-    if (shouldUseOAuthPopup(provider)) {
+    if (
+      shouldUseOAuthPopup(provider) &&
+      (provider.key === "facebook" || provider.key === "instagram")
+    ) {
       startOAuthConnect(provider);
       return;
     }
-    if (shouldUseManualConnect(provider)) {
+    if (shouldUseManualConnect(provider) || !isOpsWorkspaceChannel(provider.key)) {
       setSelectedProvider(provider);
       setDialogMode("connect");
       setDialogOpen(true);
@@ -445,11 +440,18 @@ export function useBusinessIntegrationsSettings() {
 
   const handleDialogSubmit = (values: IntegrationManageFormValues) => {
     if (!selectedProvider || shouldUseOAuthPopup(selectedProvider)) return;
+    if (isOpsWorkspaceChannel(selectedProvider.key)) return;
     if (dialogMode === "connect") {
-      connectMutation.mutate({ providerKey: selectedProvider.key, values });
+      connectPlatformMutation.mutate({
+        providerKey: selectedProvider.key,
+        values,
+      });
       return;
     }
-    updateMutation.mutate({ providerKey: selectedProvider.key, values });
+    updatePlatformMutation.mutate({
+      providerKey: selectedProvider.key,
+      values,
+    });
   };
 
   const handleDelete = (provider: IntegrationProviderWithStatus) => {
@@ -458,9 +460,10 @@ export function useBusinessIntegrationsSettings() {
   };
 
   const isPending =
-    connectMutation.isPending ||
-    platformEmailMutation.isPending ||
-    updateMutation.isPending ||
+    connectPlatformMutation.isPending ||
+    opsEmailMutation.isPending ||
+    opsSmsMutation.isPending ||
+    updatePlatformMutation.isPending ||
     deleteMutation.isPending;
 
   return {

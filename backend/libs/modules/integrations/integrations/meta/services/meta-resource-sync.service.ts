@@ -12,7 +12,11 @@ import { BusinessIntegrationRepository } from '../../repositories/business-integ
 import { IntegrationResourceRepository } from '../../repositories/integration-resource.repository';
 import {
   getMetaProviderConfig,
+  META_FACEBOOK_NO_PAGES_MESSAGE,
+  META_INSTAGRAM_DIRECT_NO_ACCOUNT_MESSAGE,
   META_INSTAGRAM_NO_ACCOUNTS_MESSAGE,
+  parseMetaInstagramAuthFlow,
+  type MetaInstagramAuthFlow,
 } from '../constants/meta-provider.config';
 import { META_INSTAGRAM_APP_WEBHOOK_FIELDS } from '../constants/meta-messaging-webhook.constants';
 import { MetaApiClient } from './meta-api-client';
@@ -46,16 +50,32 @@ export class MetaResourceSyncService {
 
     if (items.length === 0) {
       if (providerKey === 'instagram') {
+        const authFlow = readAuthFlowFromIntegrationConfig(integration.config);
         await this.businessIntegrationRepository.update(
           businessId,
           providerKey,
           {
-            errorMessage: META_INSTAGRAM_NO_ACCOUNTS_MESSAGE,
+            errorMessage:
+              authFlow === 'INSTAGRAM_LOGIN'
+                ? META_INSTAGRAM_DIRECT_NO_ACCOUNT_MESSAGE
+                : META_INSTAGRAM_NO_ACCOUNTS_MESSAGE,
             lastSyncAt: new Date(),
           },
         );
         this.logger.warn(
-          `[Instagram Sync] saved resources count=0 — no instagram_business_account on authorized Pages`,
+          `[Instagram Sync] saved resources count=0 authFlow=${authFlow}`,
+        );
+      } else if (providerKey === 'facebook') {
+        await this.businessIntegrationRepository.update(
+          businessId,
+          providerKey,
+          {
+            errorMessage: META_FACEBOOK_NO_PAGES_MESSAGE,
+            lastSyncAt: new Date(),
+          },
+        );
+        this.logger.warn(
+          `[Facebook Sync] saved resources count=0 — /me/accounts returned no Pages`,
         );
       }
       return 0;
@@ -66,6 +86,11 @@ export class MetaResourceSyncService {
       businessId,
       providerKey,
       items,
+    );
+
+    await this.resourceRepository.deactivateMissingExternalIds(
+      integration.id,
+      items.map((item) => item.externalId),
     );
 
     await this.ensureDefaultResources(integration.id, resources);
@@ -204,36 +229,48 @@ export class MetaResourceSyncService {
         lastSyncedAt: now,
       }));
     } else if (providerKey === 'instagram') {
+      const integration =
+        await this.businessIntegrationRepository.findByBusinessAndKey(
+          businessId,
+          providerKey,
+        );
+      const authFlow = readAuthFlowFromIntegrationConfig(integration?.config);
       this.logger.log(
-        `[Instagram Sync] starting fetchResources businessId=${businessId}`,
+        `[Instagram Sync] starting fetchResources businessId=${businessId} authFlow=${authFlow}`,
       );
-      const pages = await this.metaApiClient.listPages(accessToken);
-      const accounts = await this.metaApiClient.listInstagramAccounts(
-        accessToken,
-        pages,
-      );
-      items = accounts.map((account) => ({
-        externalId: account.id,
-        name: account.username ?? account.name ?? account.linkedPageName,
-        type: IntegrationResourceType.INSTAGRAM_ACCOUNT,
-        metadata: {
-          username: account.username ?? null,
-          displayName: account.name ?? null,
-          linkedPageId: account.linkedPageId,
-          linkedPageName: account.linkedPageName,
-          profilePictureUrl: account.profile_picture_url ?? null,
-          pageAccessTokenStored: Boolean(account.pageAccessToken),
-          ...(account.pageAccessToken
-            ? {
-                pageAccessTokenEncrypted: encryptIntegrationCredentials(
-                  this.metaConfigService.getEncryptionKey(),
-                  { pageAccessToken: account.pageAccessToken },
-                ),
-              }
-            : {}),
-        },
-        lastSyncedAt: now,
-      }));
+
+      if (authFlow === 'INSTAGRAM_LOGIN') {
+        items = await this.fetchInstagramLoginResources(accessToken, now);
+      } else {
+        const pages = await this.metaApiClient.listPages(accessToken);
+        const accounts = await this.metaApiClient.listInstagramAccounts(
+          accessToken,
+          pages,
+        );
+        items = accounts.map((account) => ({
+          externalId: account.id,
+          name: account.username ?? account.name ?? account.linkedPageName,
+          type: IntegrationResourceType.INSTAGRAM_ACCOUNT,
+          metadata: {
+            username: account.username ?? null,
+            displayName: account.name ?? null,
+            linkedPageId: account.linkedPageId,
+            linkedPageName: account.linkedPageName,
+            profilePictureUrl: account.profile_picture_url ?? null,
+            authFlow: 'FACEBOOK_LOGIN',
+            pageAccessTokenStored: Boolean(account.pageAccessToken),
+            ...(account.pageAccessToken
+              ? {
+                  pageAccessTokenEncrypted: encryptIntegrationCredentials(
+                    this.metaConfigService.getEncryptionKey(),
+                    { pageAccessToken: account.pageAccessToken },
+                  ),
+                }
+              : {}),
+          },
+          lastSyncedAt: now,
+        }));
+      }
       this.logger.log(`[Instagram Sync] saved resources count=${items.length}`);
     } else if (providerKey === 'whatsapp') {
       const wabas =
@@ -278,9 +315,38 @@ export class MetaResourceSyncService {
     return filtered;
   }
 
+  private async fetchInstagramLoginResources(
+    accessToken: string,
+    now: Date,
+  ): Promise<UpsertIntegrationResourceInput[]> {
+    const profile =
+      await this.metaApiClient.getInstagramLoginProfile(accessToken);
+    return [
+      {
+        externalId: profile.id,
+        name: profile.username ?? profile.name ?? profile.id,
+        type: IntegrationResourceType.INSTAGRAM_ACCOUNT,
+        metadata: {
+          username: profile.username ?? null,
+          displayName: profile.name ?? null,
+          linkedPageId: null,
+          linkedPageName: null,
+          profilePictureUrl: profile.profile_picture_url ?? null,
+          authFlow: 'INSTAGRAM_LOGIN',
+          graphHost: 'graph.instagram.com',
+          pageAccessTokenStored: false,
+        },
+        lastSyncedAt: now,
+        isSelected: true,
+        isDefault: true,
+      },
+    ];
+  }
+
   /**
    * Subscribes linked Facebook Pages (and the app for Instagram) to Meta messaging webhooks.
    * WhatsApp uses WABA subscription instead; see ensureWhatsAppWebhookSubscriptions.
+   * Direct Instagram Login has no Page token — skip Page subscribed_apps, keep app-level IG webhooks.
    */
   async ensureMessagingWebhookSubscriptions(
     businessId: string,
@@ -295,6 +361,11 @@ export class MetaResourceSyncService {
     const pageSubscriptions = new Map<string, string>();
 
     for (const item of items) {
+      const authFlow = readMetadataString(item.metadata, 'authFlow');
+      if (authFlow === 'INSTAGRAM_LOGIN') {
+        continue;
+      }
+
       const pageId =
         providerKey === 'facebook'
           ? item.externalId
@@ -328,7 +399,9 @@ export class MetaResourceSyncService {
       }
     }
 
-    await this.ensureInstagramAppWebhookSubscription(businessId);
+    if (providerKey === 'instagram') {
+      await this.ensureInstagramAppWebhookSubscription(businessId);
+    }
   }
 
   /** Registers Instagram object webhooks on the Meta app (same callback URL as Messenger). */
@@ -394,4 +467,17 @@ function readPageAccessTokenFromItemMetadata(
     pageAccessToken?: string;
   };
   return decrypted.pageAccessToken?.trim() || null;
+}
+
+function readAuthFlowFromIntegrationConfig(
+  config: unknown,
+): MetaInstagramAuthFlow {
+  if (!config || typeof config !== 'object' || Array.isArray(config)) {
+    return 'FACEBOOK_LOGIN';
+  }
+  const authFlow = (config as Record<string, unknown>).authFlow;
+  if (typeof authFlow === 'string') {
+    return parseMetaInstagramAuthFlow(authFlow);
+  }
+  return 'FACEBOOK_LOGIN';
 }

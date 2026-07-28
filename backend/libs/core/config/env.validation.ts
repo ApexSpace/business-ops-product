@@ -85,10 +85,22 @@ const baseSchema = Joi.object({
   META_GRAPH_API_VERSION: Joi.string().default('v20.0'),
   /** Facebook Login for Business — Facebook connect (Page-oriented variation) */
   META_FACEBOOK_LOGIN_CONFIG_ID: Joi.string().optional(),
-  /** Instagram Graph API Login for Business — Instagram connect */
+  /** Facebook Login for Business config used for Instagram-with-Facebook connect */
   META_INSTAGRAM_LOGIN_CONFIG_ID: Joi.string().optional(),
   /** @deprecated Fallback when META_FACEBOOK_LOGIN_CONFIG_ID / META_INSTAGRAM_LOGIN_CONFIG_ID unset */
   META_LOGIN_CONFIG_ID: Joi.string().optional(),
+  /**
+   * Instagram App ID for Business Login for Instagram (Direct).
+   * Falls back to META_APP_ID when unset.
+   */
+  META_INSTAGRAM_APP_ID: Joi.string().optional(),
+  /** Instagram App Secret for Direct Instagram Login (falls back to META_APP_SECRET). */
+  META_INSTAGRAM_APP_SECRET: Joi.string().optional(),
+  /**
+   * OAuth redirect URI registered under Instagram → API setup with Instagram login.
+   * Falls back to META_REDIRECT_URI when unset.
+   */
+  META_INSTAGRAM_DIRECT_REDIRECT_URI: Joi.string().uri().optional(),
   /** WhatsApp Embedded Signup only — do not use for Facebook/Instagram */
   META_EMBEDDED_SIGNUP_CONFIG_ID: Joi.string().optional(),
 

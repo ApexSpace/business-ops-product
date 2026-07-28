@@ -3,17 +3,20 @@
 import { useQuery } from "@tanstack/react-query";
 import { AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import type { IntegrationsHostMode } from "@/features/integrations/api/integrations.api";
 import { getMessagingStatus } from "@/features/conversations/api/conversations.api";
 import { queryKeys } from "@/lib/query/keys";
 
 interface IntegrationMessagingStatusProps {
   providerKey: string;
   isConnected: boolean;
+  host?: IntegrationsHostMode;
 }
 
 export function IntegrationMessagingStatus({
   providerKey,
   isConnected,
+  host = "business",
 }: IntegrationMessagingStatusProps) {
   const enabled =
     isConnected &&
@@ -22,8 +25,9 @@ export function IntegrationMessagingStatus({
       providerKey === "whatsapp");
 
   const { data, isLoading } = useQuery({
-    queryKey: queryKeys.integrations.messagingStatus(providerKey),
-    queryFn: () => getMessagingStatus(providerKey),
+    queryKey: queryKeys.integrations.messagingStatus(providerKey, host),
+    queryFn: () =>
+      getMessagingStatus(providerKey, { platform: host === "platform" }),
     enabled,
   });
 
@@ -45,7 +49,9 @@ export function IntegrationMessagingStatus({
     : data.defaultResourceSelected
       ? "Setup incomplete"
       : data.connected
-        ? "Page not selected"
+        ? providerKey === "instagram"
+          ? "Account not selected"
+          : "Page not selected"
         : "Not connected";
 
   const StatusIcon = data.readyForMessaging ? CheckCircle2 : AlertCircle;
@@ -60,9 +66,7 @@ export function IntegrationMessagingStatus({
         </Badge>
       </div>
       <ul className="space-y-1 text-xs text-muted-foreground">
-        <li>
-          {data.connected ? "✓" : "○"} Integration connected
-        </li>
+        <li>{data.connected ? "✓" : "○"} Integration connected</li>
         <li>
           {data.defaultResourceSelected ? "✓" : "○"} Default{" "}
           {providerKey === "facebook"

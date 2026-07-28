@@ -236,6 +236,15 @@ function loginWithEmbeddedSignupConfig(
       return;
     }
 
+    if (window.location.protocol !== "https:") {
+      reject(
+        new Error(
+          "WhatsApp Embedded Signup requires HTTPS. Open the app over https:// (for local dev, use a TLS proxy such as mkcert or ngrok) and try again.",
+        ),
+      );
+      return;
+    }
+
     const timer = window.setTimeout(() => {
       reject(
         new Error(

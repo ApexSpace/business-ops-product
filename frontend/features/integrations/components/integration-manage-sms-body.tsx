@@ -9,6 +9,7 @@ import {
   getPlatformDefaultSms,
   getSmsWebhookUrls,
   listTwilioPhoneNumbers,
+  type IntegrationsHostMode,
   type PlatformDefaultSms,
 } from "@/features/integrations/api/integrations.api";
 import type { IntegrationProviderWithStatus } from "@/features/integrations/utils/integrations";
@@ -22,10 +23,12 @@ export function IntegrationManageSmsBody({
   providerKey,
   provider,
   isConnected,
+  host = "business",
 }: {
   providerKey: string;
   provider: IntegrationProviderWithStatus;
   isConnected: boolean;
+  host?: IntegrationsHostMode;
 }) {
   const queryClient = useQueryClient();
   const [accountSid, setAccountSid] = useState("");
@@ -36,19 +39,19 @@ export function IntegrationManageSmsBody({
   >([]);
 
   const platformQuery = useQuery({
-    queryKey: [...queryKeys.integrations.all(), "sms", "platform-default"],
-    queryFn: getPlatformDefaultSms,
+    queryKey: [...queryKeys.integrations.all(), "sms", host, "platform-default"],
+    queryFn: () => getPlatformDefaultSms(host),
     enabled: providerKey === "sms",
   });
 
   const webhookQuery = useQuery({
-    queryKey: [...queryKeys.integrations.all(), "sms", "webhook-url"],
-    queryFn: getSmsWebhookUrls,
+    queryKey: [...queryKeys.integrations.all(), "sms", host, "webhook-url"],
+    queryFn: () => getSmsWebhookUrls(host),
     enabled: providerKey === "sms",
   });
 
   const activateMutation = useMutation({
-    mutationFn: connectPlatformDefaultSms,
+    mutationFn: () => connectPlatformDefaultSms(host),
     onSuccess: async () => {
       toast.success("Platform SMS notifications enabled");
       await queryClient.invalidateQueries({ queryKey: queryKeys.integrations.all() });
@@ -58,7 +61,7 @@ export function IntegrationManageSmsBody({
   });
 
   const listNumbersMutation = useMutation({
-    mutationFn: () => listTwilioPhoneNumbers({ accountSid, authToken }),
+    mutationFn: () => listTwilioPhoneNumbers({ accountSid, authToken }, host),
     onSuccess: (numbers) => {
       setAvailableNumbers(numbers);
       if (numbers.length === 0) {
@@ -73,7 +76,7 @@ export function IntegrationManageSmsBody({
 
   const connectTwilioMutation = useMutation({
     mutationFn: () =>
-      connectBusinessTwilio({ accountSid, authToken, phoneNumberSid }),
+      connectBusinessTwilio({ accountSid, authToken, phoneNumberSid }, host),
     onSuccess: async (result) => {
       toast.success(`Twilio number ${result.fromNumber} connected`);
       await queryClient.invalidateQueries({ queryKey: queryKeys.integrations.all() });

@@ -55,9 +55,15 @@ export class MetaOAuthController {
   async start(
     @CurrentUser() user: RequestUser,
     @Query('providerKey') providerKey: string,
+    @Query('authFlow') authFlow: string | undefined,
     @Res() res: Response,
   ): Promise<void> {
-    await this.metaOAuthService.redirectToMeta(user, providerKey, res);
+    await this.metaOAuthService.redirectToMeta(
+      user,
+      providerKey,
+      res,
+      authFlow,
+    );
   }
 
   @Get('callback')

@@ -37,6 +37,10 @@ export async function GET(request: NextRequest) {
     `${getBackendApiUrl()}/platform/integrations/oauth/meta/start`,
   );
   target.searchParams.set("providerKey", providerKey);
+  const authFlow = request.nextUrl.searchParams.get("authFlow");
+  if (authFlow) {
+    target.searchParams.set("authFlow", authFlow);
+  }
 
   const res = await fetch(target.toString(), {
     headers: { Authorization: `Bearer ${accessToken}` },

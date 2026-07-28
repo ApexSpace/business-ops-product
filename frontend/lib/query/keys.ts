@@ -478,16 +478,15 @@ export const queryKeys = {
     businessList: () => ["integrations", "business", "list"] as const,
     businessDetail: (providerKey: string) =>
       ["integrations", "business", "detail", providerKey] as const,
-    businessResources: (providerKey: string) =>
-      ["integrations", "business", "resources", providerKey] as const,
-    messagingStatus: (providerKey: string) =>
-      ["integrations", "business", "messaging-status", providerKey] as const,
+    businessResources: (providerKey: string, host: "business" | "platform" = "business") =>
+      ["integrations", host, "resources", providerKey] as const,
+    messagingStatus: (providerKey: string, host: "business" | "platform" = "business") =>
+      ["integrations", host, "messaging-status", providerKey] as const,
     platformEmail: () => ["integrations", "business", "platform-email"] as const,
     platformProviders: () => ["integrations", "platform", "providers"] as const,
     platformList: () => ["integrations", "platform", "list"] as const,
     platformDetail: (providerKey: string) =>
       ["integrations", "platform", "detail", providerKey] as const,
-    opsMessaging: () => ["integrations", "platform", "ops-messaging"] as const,
   },
   storage: {
     all: ["storage"] as const,

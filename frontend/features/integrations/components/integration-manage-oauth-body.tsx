@@ -5,8 +5,10 @@ import { IntegrationAdvancedDetails } from "@/features/integrations/components/i
 import { IntegrationMessagingStatus } from "@/features/integrations/components/integration-messaging-status";
 import { IntegrationManageHeader } from "@/features/integrations/components/integration-manage-header";
 import { IntegrationResourcesPanel } from "@/features/integrations/components/integration-resources-panel";
+import type { IntegrationsHostMode } from "@/features/integrations/api/integrations.api";
 import type { BusinessIntegration } from "@/features/integrations/utils/integrations";
 import type { IntegrationProviderWithStatus } from "@/features/integrations/utils/integrations";
+import { parseInstagramAuthFlowFromConfig } from "@/features/integrations/utils/integrations";
 import { providerSupportsResources } from "@/features/integrations/utils/integration-resources";
 
 export interface IntegrationManageOAuthBodyProps {
@@ -17,6 +19,8 @@ export interface IntegrationManageOAuthBodyProps {
   showAdvancedDetails: boolean;
   oauthScopes: string[];
   onReconnect?: () => void;
+  host?: IntegrationsHostMode;
+  isSyncingAssets?: boolean;
 }
 
 export function IntegrationManageOAuthBody({
@@ -27,12 +31,21 @@ export function IntegrationManageOAuthBody({
   showAdvancedDetails,
   oauthScopes,
   onReconnect,
+  host = "business",
+  isSyncingAssets = false,
 }: IntegrationManageOAuthBodyProps) {
   const supportsResources = providerSupportsResources(provider.key);
+  const authFlow =
+    provider.key === "instagram"
+      ? parseInstagramAuthFlowFromConfig(integrationDetail?.config)
+      : undefined;
 
   return (
     <div className="space-y-6">
-      <IntegrationManageHeader provider={provider} />
+      <IntegrationManageHeader
+        provider={provider}
+        integrationDetail={integrationDetail}
+      />
 
       {(provider.key === "facebook" ||
         provider.key === "instagram" ||
@@ -40,6 +53,7 @@ export function IntegrationManageOAuthBody({
         <IntegrationMessagingStatus
           providerKey={provider.key}
           isConnected={isConnected}
+          host={host}
         />
       )}
 
@@ -63,6 +77,14 @@ export function IntegrationManageOAuthBody({
           isConnected={isConnected}
           canManage={canDelete}
           onReconnect={onReconnect}
+          host={host}
+          isSyncingAssets={isSyncingAssets}
+          authFlow={authFlow}
+          syncErrorMessage={
+            integrationDetail?.errorMessage ??
+            provider.integration?.errorMessage ??
+            null
+          }
         />
       ) : provider.key === "linkedin" && isConnected ? (
         <div className="rounded-lg border border-border/70 bg-muted/20 p-4 text-sm text-muted-foreground">

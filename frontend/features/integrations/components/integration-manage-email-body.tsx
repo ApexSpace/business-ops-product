@@ -3,22 +3,24 @@
 import { Mail } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
-import { getPlatformDefaultEmail } from "@/features/integrations/api/integrations.api";
+import { getPlatformDefaultEmail, type IntegrationsHostMode } from "@/features/integrations/api/integrations.api";
 import type { IntegrationProviderWithStatus } from "@/features/integrations/utils/integrations";
 import { queryKeys } from "@/lib/query/keys";
 
 interface IntegrationManageEmailBodyProps {
   provider: IntegrationProviderWithStatus;
   isConnected: boolean;
+  host?: IntegrationsHostMode;
 }
 
 export function IntegrationManageEmailBody({
   provider,
   isConnected,
+  host = "business",
 }: IntegrationManageEmailBodyProps) {
   const { data: platformEmail, isLoading } = useQuery({
-    queryKey: queryKeys.integrations.platformEmail(),
-    queryFn: () => getPlatformDefaultEmail(),
+    queryKey: [...queryKeys.integrations.platformEmail(), host],
+    queryFn: () => getPlatformDefaultEmail(host),
     enabled: provider.key === "email",
   });
 
