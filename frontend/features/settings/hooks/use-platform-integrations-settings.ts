@@ -10,8 +10,10 @@ import {
 import {
   formatOAuthErrorMessage,
   formatOAuthWarningMessage,
+  getPlatformGoogleOAuthStartUrl,
   getPlatformMetaOAuthStartUrl,
   filterIntegrationProvidersByCategory,
+  isGoogleOAuthProvider,
   isPlatformEmailProvider,
   isPlatformSmsProvider,
   shouldUseManualConnect,
@@ -20,6 +22,7 @@ import {
   type IntegrationCategory,
   type IntegrationProviderWithStatus,
   type InstagramAuthFlowParam,
+  type PlatformGoogleOAuthProviderKey,
 } from "@/features/integrations/utils/integrations";
 import {
   completePlatformWhatsAppEmbeddedSignupOnServer,
@@ -33,6 +36,7 @@ import {
   watchOAuthPopupClosed,
 } from "@/features/integrations/utils/oauth-popup";
 import {
+  oauthConnectingToastMessage,
   oauthSyncOutcomeToastMessage,
   waitForOAuthResourceSync,
 } from "@/features/integrations/utils/oauth-sync-outcome";
@@ -60,6 +64,15 @@ const OPS_WORKSPACE_MESSAGING_KEYS = new Set([
 
 function isOpsWorkspaceChannel(providerKey: string) {
   return OPS_WORKSPACE_MESSAGING_KEYS.has(providerKey);
+}
+
+/** Providers connected via OAuth onto the INTERNAL ops business. */
+function isPlatformOpsOAuthProvider(providerKey: string) {
+  return (
+    providerKey === "facebook" ||
+    providerKey === "instagram" ||
+    isGoogleOAuthProvider(providerKey)
+  );
 }
 
 export function usePlatformIntegrationsSettings() {
@@ -112,7 +125,8 @@ export function usePlatformIntegrationsSettings() {
       dialogOpen &&
       dialogMode === "manage" &&
       !!selectedProvider &&
-      isOpsWorkspaceChannel(selectedProvider.key) &&
+      (isOpsWorkspaceChannel(selectedProvider.key) ||
+        isPlatformOpsOAuthProvider(selectedProvider.key)) &&
       shouldUseOAuthPopup(selectedProvider),
   });
 
@@ -161,12 +175,8 @@ export function usePlatformIntegrationsSettings() {
       if (message.type === OAUTH_MESSAGE_TYPE.SUCCESS) {
         oauthCompletedRef.current = true;
         const providerKey = message.providerKey;
-        const provider = providersRef.current.find(
-          (item) => item.key === providerKey,
-        );
-        const label = provider?.name ?? providerKey;
 
-        toast.message(`${label} connected — syncing pages…`);
+        toast.message(oauthConnectingToastMessage(providerKey));
         setSyncingAssetsProviderKey(providerKey);
 
         void (async () => {
@@ -195,7 +205,7 @@ export function usePlatformIntegrationsSettings() {
             toast.error(
               error instanceof Error
                 ? error.message
-                : "Connected, but page sync did not finish. Open Manage to sync again.",
+                : "Connected, but resource sync did not finish. Open Manage to sync again.",
             );
           } finally {
             setSyncingAssetsProviderKey((current) =>
@@ -289,7 +299,8 @@ export function usePlatformIntegrationsSettings() {
 
   const deleteMutation = useMutation({
     mutationFn: (providerKey: string) =>
-      isOpsWorkspaceChannel(providerKey)
+      isOpsWorkspaceChannel(providerKey) ||
+      isPlatformOpsOAuthProvider(providerKey)
         ? confirmDisconnectOpsWorkspaceIntegration(providerKey)
         : confirmDisconnectPlatformIntegration(providerKey),
     onSuccess: async () => {
@@ -306,9 +317,19 @@ export function usePlatformIntegrationsSettings() {
     provider: IntegrationProviderWithStatus,
     options?: { authFlow?: InstagramAuthFlowParam },
   ) => {
-    if (connectingProviderKey) return;
-    if (provider.key !== "facebook" && provider.key !== "instagram") {
-      toast.error("OAuth is only available for Facebook and Instagram.");
+    if (
+      connectingProviderKey &&
+      connectingProviderKey !== provider.key
+    ) {
+      return;
+    }
+
+    const isMeta =
+      provider.key === "facebook" || provider.key === "instagram";
+    const isGoogle = isGoogleOAuthProvider(provider.key);
+
+    if (!isMeta && !isGoogle) {
+      toast.error("OAuth is not available for this provider on platform.");
       return;
     }
 
@@ -317,54 +338,75 @@ export function usePlatformIntegrationsSettings() {
     oauthCompletedRef.current = false;
     setConnectingProviderKey(provider.key);
 
-    const url = getPlatformMetaOAuthStartUrl(provider.key, options?.authFlow);
-    const { blocked, popup } = openOAuthPopup(url);
-
-    if (blocked) {
+    let url: string;
+    try {
+      url = isMeta
+        ? getPlatformMetaOAuthStartUrl(provider.key, options?.authFlow)
+        : getPlatformGoogleOAuthStartUrl(
+            provider.key as PlatformGoogleOAuthProviderKey,
+          );
+    } catch (error) {
       setConnectingProviderKey(null);
-      setBlockedOAuthUrl(url);
-      setPopupBlockedOpen(true);
-      toast.error(formatOAuthErrorMessage("popup_blocked"));
+      toast.error(
+        error instanceof Error
+          ? formatOAuthErrorMessage(error.message)
+          : "OAuth route is not configured for this provider.",
+      );
       return;
     }
 
-    if (popup) {
-      watchOAuthPopupClosed(popup, async () => {
-        // Meta COOP often marks the popup closed while Facebook login continues.
-        const outcome = await settleOAuthPopupClose({
-          providerKey: provider.key,
-          isCompleted: () => oauthCompletedRef.current,
-          checkConnected: async () => {
-            const latest = await queryClient.fetchQuery({
-              queryKey: queryKeys.integrations.platformProviders(),
-              queryFn: () => listOpsWorkspaceProviders(),
-            });
-            return latest.some(
-              (item) =>
-                item.key === provider.key &&
-                item.status === "CONNECTED" &&
-                ((item.resourceCount ?? 0) > 0 ||
-                  !!item.integration?.lastSyncAt),
-            );
-          },
-        });
+    const { blocked, popup } = openOAuthPopup(url);
 
-        setConnectingProviderKey((current) =>
-          current === provider.key ? null : current,
-        );
-
-        if (outcome === "cancelled" && !oauthCompletedRef.current) {
-          const hint =
-            provider.key === "instagram"
-              ? options?.authFlow === "instagram_login"
-                ? "Instagram connection was cancelled or did not complete. Use a Business or Creator account and try again."
-                : "Instagram connection was cancelled or did not complete. Ensure your professional account is linked to a Facebook Page and try again."
-              : "Connection was cancelled or did not complete. Please try again.";
-          toast.error(hint);
-        }
-        oauthCompletedRef.current = false;
-      });
+    if (blocked || !popup) {
+      setConnectingProviderKey(null);
+      if (blocked) {
+        setBlockedOAuthUrl(url);
+        setPopupBlockedOpen(true);
+        toast.error(formatOAuthErrorMessage("popup_blocked"));
+      } else {
+        toast.error("Could not open the authorization window. Please try again.");
+      }
+      return;
     }
+
+    watchOAuthPopupClosed(popup, async () => {
+      // Clear the "Opening…" button immediately — settle can take up to ~2 minutes
+      // for Meta COOP false closes, which left Google error/cancel looking stuck.
+      setConnectingProviderKey((current) =>
+        current === provider.key ? null : current,
+      );
+
+      const outcome = await settleOAuthPopupClose({
+        providerKey: provider.key,
+        isCompleted: () => oauthCompletedRef.current,
+        checkConnected: async () => {
+          const latest = await queryClient.fetchQuery({
+            queryKey: queryKeys.integrations.platformProviders(),
+            queryFn: () => listOpsWorkspaceProviders(),
+          });
+          return latest.some(
+            (item) =>
+              item.key === provider.key &&
+              (item.status === "CONNECTED" ||
+                item.status === "ERROR" ||
+                item.status === "EXPIRED"),
+          );
+        },
+      });
+
+      if (outcome === "cancelled" && !oauthCompletedRef.current) {
+        const hint =
+          provider.key === "instagram"
+            ? options?.authFlow === "instagram_login"
+              ? "Instagram connection was cancelled or did not complete. Use a Business or Creator account and try again."
+              : "Instagram connection was cancelled or did not complete. Ensure your professional account is linked to a Facebook Page and try again."
+            : provider.key === "google-business-profile"
+              ? "Google Business Profile connection was cancelled or did not complete. Try again with an account that manages the profile."
+              : "Connection was cancelled or did not complete. Please try again.";
+        toast.error(hint);
+      }
+      oauthCompletedRef.current = false;
+    });
   };
 
   const openInstagramChooser = (provider: IntegrationProviderWithStatus) => {
@@ -406,14 +448,12 @@ export function usePlatformIntegrationsSettings() {
       openInstagramChooser(provider);
       return;
     }
-    if (
-      shouldUseOAuthPopup(provider) &&
-      (provider.key === "facebook" || provider.key === "instagram")
-    ) {
+    // Never open the manual JSON form for OAuth providers (Meta / Google / etc.).
+    if (shouldUseOAuthPopup(provider)) {
       startOAuthConnect(provider);
       return;
     }
-    if (shouldUseManualConnect(provider) || !isOpsWorkspaceChannel(provider.key)) {
+    if (shouldUseManualConnect(provider)) {
       setSelectedProvider(provider);
       setDialogMode("connect");
       setDialogOpen(true);

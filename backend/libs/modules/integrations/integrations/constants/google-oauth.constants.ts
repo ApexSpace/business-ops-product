@@ -7,6 +7,9 @@ export const GOOGLE_OAUTH_PROVIDER_KEYS = [
 export type GoogleOAuthProviderKey =
   (typeof GOOGLE_OAUTH_PROVIDER_KEYS)[number];
 
+export const GOOGLE_BUSINESS_MANAGE_SCOPE =
+  'https://www.googleapis.com/auth/business.manage';
+
 const BASE_SCOPES = ['openid', 'email', 'profile'] as const;
 
 const PROVIDER_SCOPES: Record<GoogleOAuthProviderKey, readonly string[]> = {
@@ -17,13 +20,32 @@ const PROVIDER_SCOPES: Record<GoogleOAuthProviderKey, readonly string[]> = {
   ],
   'google-business-profile': [
     ...BASE_SCOPES,
-    'https://www.googleapis.com/auth/business.manage',
+    GOOGLE_BUSINESS_MANAGE_SCOPE,
   ],
   'google-lead-ads': [
     ...BASE_SCOPES,
     'https://www.googleapis.com/auth/adwords',
   ],
 };
+
+export function googleTokenHasBusinessManageScope(
+  scope: string | null | undefined,
+): boolean {
+  if (!scope?.trim()) return false;
+  const granted = new Set(
+    scope
+      .split(/[\s,]+/)
+      .map((part) => part.trim().toLowerCase())
+      .filter(Boolean),
+  );
+  return (
+    granted.has(GOOGLE_BUSINESS_MANAGE_SCOPE.toLowerCase()) ||
+    granted.has('https://www.googleapis.com/auth/plus.business.manage')
+  );
+}
+
+export const GOOGLE_BUSINESS_MANAGE_SCOPE_MISSING_MESSAGE =
+  'Google did not grant Business Profile access (business.manage). In Google Cloud → OAuth consent screen, add the scope https://www.googleapis.com/auth/business.manage, then Disconnect and Reconnect with Google, and approve Business Profile management when prompted.';
 
 export function isGoogleOAuthProviderKey(
   providerKey: string,

@@ -23,6 +23,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  getIntegrationConnectLabel,
   getIntegrationReconnectLabel,
   parseInstagramAuthFlowFromConfig,
   shouldUseOAuthPopup,
@@ -200,6 +201,32 @@ export function IntegrationManageDialog({
           host={host}
           isSyncingAssets={isSyncingAssets}
         />
+      </FormDialog>
+    );
+  }
+
+  // OAuth providers must never show the manual JSON connect form.
+  if (isOAuth && mode === "connect") {
+    return (
+      <FormDialog
+        open={open}
+        onOpenChange={onOpenChange}
+        title={title}
+        description={copy.description}
+        form={form}
+        onSubmit={() => {
+          onOpenChange(false);
+          onReconnect?.();
+        }}
+        isPending={isPending}
+        submitLabel={getIntegrationConnectLabel(provider, "NOT_CONNECTED")}
+        size="md"
+        footerVariant="actions"
+      >
+        <p className="text-sm text-muted-foreground">
+          This integration connects with a secure sign-in popup. Click Connect
+          to continue — you do not need to enter account details or JSON here.
+        </p>
       </FormDialog>
     );
   }

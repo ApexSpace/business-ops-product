@@ -35,6 +35,7 @@ import {
   watchOAuthPopupClosed,
 } from "@/features/integrations/utils/oauth-popup";
 import {
+  oauthConnectingToastMessage,
   oauthSyncOutcomeToastMessage,
   waitForOAuthResourceSync,
 } from "@/features/integrations/utils/oauth-sync-outcome";
@@ -150,12 +151,8 @@ export function useBusinessIntegrationsSettings() {
       if (message.type === OAUTH_MESSAGE_TYPE.SUCCESS) {
         oauthCompletedRef.current = true;
         const providerKey = message.providerKey;
-        const provider = providersRef.current.find(
-          (item) => item.key === providerKey,
-        );
-        const label = provider?.name ?? providerKey;
 
-        toast.message(`${label} connected — syncing pages…`);
+        toast.message(oauthConnectingToastMessage(providerKey));
         setSyncingAssetsProviderKey(providerKey);
 
         void (async () => {
@@ -184,7 +181,7 @@ export function useBusinessIntegrationsSettings() {
             toast.error(
               error instanceof Error
                 ? error.message
-                : "Connected, but page sync did not finish. Open Manage to sync again.",
+                : "Connected, but resource sync did not finish. Open Manage to sync again.",
             );
           } finally {
             setSyncingAssetsProviderKey((current) =>
@@ -300,7 +297,12 @@ export function useBusinessIntegrationsSettings() {
     provider: IntegrationProviderWithStatus,
     options?: { authFlow?: InstagramAuthFlowParam },
   ) => {
-    if (connectingProviderKey) return;
+    if (
+      connectingProviderKey &&
+      connectingProviderKey !== provider.key
+    ) {
+      return;
+    }
 
     if (!hasOAuthStartRoute(provider.key)) {
       toast.error(OAUTH_ROUTE_NOT_CONFIGURED_MESSAGE);
@@ -328,51 +330,57 @@ export function useBusinessIntegrationsSettings() {
 
     const { blocked, popup } = openOAuthPopup(url);
 
-    if (blocked) {
+    if (blocked || !popup) {
       setConnectingProviderKey(null);
-      setBlockedOAuthUrl(url);
-      setPopupBlockedOpen(true);
-      toast.error(formatOAuthErrorMessage("popup_blocked"));
+      if (blocked) {
+        setBlockedOAuthUrl(url);
+        setPopupBlockedOpen(true);
+        toast.error(formatOAuthErrorMessage("popup_blocked"));
+      } else {
+        toast.error("Could not open the authorization window. Please try again.");
+      }
       return;
     }
 
-    if (popup) {
-      watchOAuthPopupClosed(popup, async () => {
-        // Meta COOP often marks the popup closed while Facebook login continues.
-        const outcome = await settleOAuthPopupClose({
-          providerKey: provider.key,
-          isCompleted: () => oauthCompletedRef.current,
-          checkConnected: async () => {
-            const latest = await queryClient.fetchQuery({
-              queryKey: queryKeys.integrations.businessProviders(),
-              queryFn: () => listBusinessIntegrationProviders(),
-            });
-            return latest.some(
-              (item) =>
-                item.key === provider.key &&
-                item.status === "CONNECTED" &&
-                ((item.resourceCount ?? 0) > 0 ||
-                  !!item.integration?.lastSyncAt),
-            );
-          },
-        });
+    watchOAuthPopupClosed(popup, async () => {
+      // Clear the "Opening…" button immediately — settle can take up to ~2 minutes
+      // for Meta COOP false closes, which left Google error/cancel looking stuck.
+      setConnectingProviderKey((current) =>
+        current === provider.key ? null : current,
+      );
 
-        setConnectingProviderKey((current) =>
-          current === provider.key ? null : current,
-        );
-
-        if (outcome === "cancelled" && !oauthCompletedRef.current) {
-          const hint =
-            provider.key === "instagram"
-              ? options?.authFlow === "instagram_login"
-                ? "Instagram connection was cancelled or did not complete. Use a Business or Creator account and try again."
-                : "Instagram connection was cancelled or did not complete. Ensure your professional account is linked to a Facebook Page and try again."
-              : "Connection was cancelled or did not complete. Please try again.";
-          toast.error(hint);
-        }
-        oauthCompletedRef.current = false;
+      // Meta COOP often marks the popup closed while Facebook login continues.
+      const outcome = await settleOAuthPopupClose({
+        providerKey: provider.key,
+        isCompleted: () => oauthCompletedRef.current,
+        checkConnected: async () => {
+          const latest = await queryClient.fetchQuery({
+            queryKey: queryKeys.integrations.businessProviders(),
+            queryFn: () => listBusinessIntegrationProviders(),
+          });
+          return latest.some(
+            (item) =>
+              item.key === provider.key &&
+              (item.status === "CONNECTED" ||
+                item.status === "ERROR" ||
+                item.status === "EXPIRED"),
+          );
+        },
       });
-    }
+
+      if (outcome === "cancelled" && !oauthCompletedRef.current) {
+        const hint =
+          provider.key === "instagram"
+            ? options?.authFlow === "instagram_login"
+              ? "Instagram connection was cancelled or did not complete. Use a Business or Creator account and try again."
+              : "Instagram connection was cancelled or did not complete. Ensure your professional account is linked to a Facebook Page and try again."
+            : provider.key === "google-business-profile"
+              ? "Google Business Profile connection was cancelled or did not complete. Try again with an account that manages the profile."
+              : "Connection was cancelled or did not complete. Please try again.";
+        toast.error(hint);
+      }
+      oauthCompletedRef.current = false;
+    });
   };
 
   const openInstagramChooser = (provider: IntegrationProviderWithStatus) => {

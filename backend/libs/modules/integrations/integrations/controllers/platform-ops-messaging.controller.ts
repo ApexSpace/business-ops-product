@@ -27,6 +27,7 @@ import { PlatformEmailProvisioningService } from '@app/modules/integrations/inte
 import { WhatsAppEmbeddedSignupCompleteDto } from '@app/modules/integrations/integrations/meta/dto/whatsapp-embedded-signup.dto';
 import { MetaEmbeddedSignupService } from '@app/modules/integrations/integrations/meta/services/meta-embedded-signup.service';
 import { MetaOAuthService } from '@app/modules/integrations/integrations/meta/services/meta-oauth.service';
+import { GoogleOAuthService } from '@app/modules/integrations/integrations/google-oauth.service';
 import {
   IntegrationResourceResponseDto,
   IntegrationResourcesListResponseDto,
@@ -67,6 +68,7 @@ export class PlatformOpsMessagingController {
     private readonly integrationResourcesService: IntegrationResourcesService,
     private readonly messagingStatusService: MessagingStatusService,
     private readonly metaOAuthService: MetaOAuthService,
+    private readonly googleOAuthService: GoogleOAuthService,
     private readonly metaEmbeddedSignupService: MetaEmbeddedSignupService,
     private readonly platformSmsProvisioning: PlatformSmsProvisioningService,
     private readonly platformEmailProvisioning: PlatformEmailProvisioningService,
@@ -211,6 +213,22 @@ export class PlatformOpsMessagingController {
       providerKey,
       res,
       authFlow,
+    );
+  }
+
+  @Get('oauth/google/start')
+  @SkipEnvelope()
+  async startGoogleOAuth(
+    @CurrentUser() user: RequestUser,
+    @Query('providerKey') providerKey: string,
+    @Res() res: Response,
+  ): Promise<void> {
+    const businessId = await this.internalBusiness.getId();
+    await this.googleOAuthService.redirectToGoogleForBusiness(
+      user,
+      businessId,
+      providerKey,
+      res,
     );
   }
 

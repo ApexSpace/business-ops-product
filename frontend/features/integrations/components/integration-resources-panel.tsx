@@ -210,8 +210,8 @@ export function IntegrationResourcesPanel({
           ) : null}
           {isGbp ? (
             <p className="text-sm text-muted-foreground">
-              Select locations to sync reviews and posts from Google Business
-              Profile.
+              Select the locations your business should use. You can change this
+              later.
             </p>
           ) : null}
           <IntegrationResourceList

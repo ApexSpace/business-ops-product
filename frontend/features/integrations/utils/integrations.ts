@@ -340,6 +340,25 @@ export const PLATFORM_META_OAUTH_START_ROUTES = {
   instagram: "/api/oauth/meta/platform/start?providerKey=instagram",
 } as const satisfies Record<"facebook" | "instagram", string>;
 
+/** Platform admin Google OAuth — stamps INTERNAL ops business into OAuth state. */
+export const PLATFORM_GOOGLE_OAUTH_START_ROUTES = {
+  "google-calendar":
+    "/api/oauth/google/platform/start?providerKey=google-calendar",
+  "google-business-profile":
+    "/api/oauth/google/platform/start?providerKey=google-business-profile",
+  "google-lead-ads":
+    "/api/oauth/google/platform/start?providerKey=google-lead-ads",
+} as const;
+
+export type PlatformGoogleOAuthProviderKey =
+  keyof typeof PLATFORM_GOOGLE_OAUTH_START_ROUTES;
+
+export function getPlatformGoogleOAuthStartUrl(
+  providerKey: PlatformGoogleOAuthProviderKey,
+): string {
+  return PLATFORM_GOOGLE_OAUTH_START_ROUTES[providerKey];
+}
+
 export type InstagramAuthFlowParam = "facebook_login" | "instagram_login";
 
 export type InstagramAuthFlow = "FACEBOOK_LOGIN" | "INSTAGRAM_LOGIN";
@@ -374,10 +393,15 @@ export function getOAuthStartUrl(
   options?: { authFlow?: InstagramAuthFlowParam; host?: "business" | "platform" },
 ): string {
   if (options?.host === "platform") {
-    if (providerKey !== "facebook" && providerKey !== "instagram") {
-      throw new Error(OAUTH_ROUTE_NOT_CONFIGURED_MESSAGE);
+    if (providerKey === "facebook" || providerKey === "instagram") {
+      return getPlatformMetaOAuthStartUrl(providerKey, options.authFlow);
     }
-    return getPlatformMetaOAuthStartUrl(providerKey, options.authFlow);
+    if (isGoogleOAuthProvider(providerKey)) {
+      return getPlatformGoogleOAuthStartUrl(
+        providerKey as PlatformGoogleOAuthProviderKey,
+      );
+    }
+    throw new Error(OAUTH_ROUTE_NOT_CONFIGURED_MESSAGE);
   }
 
   if (providerKey === "instagram" && options?.authFlow) {

@@ -41,7 +41,11 @@ export function oauthSyncOutcomeToastMessage(
       ? "Facebook"
       : providerKey === "instagram"
         ? "Instagram"
-        : providerKey;
+        : providerKey === "google-business-profile"
+          ? "Google Business Profile"
+          : providerKey === "google-calendar"
+            ? "Google Calendar"
+            : providerKey;
 
   if (resourceCount > 0) {
     return {
@@ -54,4 +58,20 @@ export function oauthSyncOutcomeToastMessage(
     type: "warning",
     message: `${label} connected, but ${copy.syncEmptyToast.toLowerCase()}. Open Manage to reconnect or sync again.`,
   };
+}
+
+export function oauthConnectingToastMessage(providerKey: string): string {
+  if (providerKey === "google-business-profile") {
+    return "Google Business Profile connected — syncing locations…";
+  }
+  if (providerKey === "google-calendar") {
+    return "Google Calendar connected — syncing calendars…";
+  }
+  if (providerKey === "facebook") {
+    return "Facebook connected — syncing pages…";
+  }
+  if (providerKey === "instagram") {
+    return "Instagram connected — syncing accounts…";
+  }
+  return "Connected — syncing resources…";
 }

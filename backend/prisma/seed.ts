@@ -66,7 +66,7 @@ const integrationProviders = [
   {
     key: 'google-business-profile',
     name: 'Google Business Profile',
-    description: 'Manage reviews and business listings on Google.',
+    description: 'Sync Google Business Profile locations for your business.',
     category: 'REPUTATION',
     isPlatformLevel: false,
     isBusinessLevel: true,

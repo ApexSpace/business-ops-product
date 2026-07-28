@@ -50,6 +50,14 @@ export function recordSyncAttempt(
   lastSyncAt.set(syncKey(businessId, providerKey), Date.now());
 }
 
+/** Clear cooldown after a failed sync so reconnect / retry is not blocked. */
+export function clearSyncAttempt(
+  businessId: string,
+  providerKey: string,
+): void {
+  lastSyncAt.delete(syncKey(businessId, providerKey));
+}
+
 export class SyncCooldownError extends Error {
   readonly retryAfterMs: number;
 

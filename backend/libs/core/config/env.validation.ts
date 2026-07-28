@@ -57,11 +57,7 @@ const baseSchema = Joi.object({
     then: Joi.string().required(),
     otherwise: Joi.string().optional(),
   }),
-  GOOGLE_OAUTH_REDIRECT_URI: Joi.when('GOOGLE_OAUTH_ENABLED', {
-    is: 'true',
-    then: Joi.string().uri().required(),
-    otherwise: Joi.string().uri().optional(),
-  }),
+  GOOGLE_OAUTH_REDIRECT_URI: Joi.string().uri().optional(),
   INTEGRATION_ENCRYPTION_KEY: Joi.string().min(32).optional(),
   META_OAUTH_ENABLED: Joi.string().valid('true', 'false').default('false'),
   META_APP_ID: Joi.when('META_OAUTH_ENABLED', {

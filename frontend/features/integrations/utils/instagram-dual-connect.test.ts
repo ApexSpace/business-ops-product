@@ -45,6 +45,14 @@ describe("instagram dual connect helpers", () => {
     );
   });
 
+  it("routes platform Google Business Profile start URL", () => {
+    expect(
+      getOAuthStartUrl("google-business-profile", { host: "platform" }),
+    ).toBe(
+      "/api/oauth/google/platform/start?providerKey=google-business-profile",
+    );
+  });
+
   it("parses authFlow from integration config", () => {
     expect(parseInstagramAuthFlowFromConfig({ authFlow: "INSTAGRAM_LOGIN" })).toBe(
       "INSTAGRAM_LOGIN",

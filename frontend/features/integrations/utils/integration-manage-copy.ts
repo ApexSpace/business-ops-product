@@ -142,21 +142,28 @@ const COPY_BY_PROVIDER: Record<string, IntegrationManageCopy> = {
   "google-business-profile": {
     connectionTitle: "Google Business Profile connection",
     description:
-      "Connect Google Business Profile so your team can manage locations and reviews.",
-    resourcesSectionLabel: "Business profiles",
-    syncButtonLabel: "Sync business profiles",
+      "Connect with Google to sync Business Profile locations you own or manage (including company profiles where an owner invited you). Select the locations your team should use in the platform.",
+    resourcesSectionLabel: "Business locations",
+    syncButtonLabel: "Sync locations",
     syncSuccessToast: (count) =>
-      count === 1
-        ? "Business profile synced"
-        : `${count} business profiles synced`,
-    syncEmptyToast: "No business profile found",
+      count === 1 ? "Location synced" : `${count} locations synced`,
+    syncEmptyToast: "No business location found",
+    syncingAssetsTitle: "Finding your business locations…",
+    syncingAssetsMessage:
+      "Google is returning the Business Profile locations for the account you authorized.",
     emptyState: {
-      title: "No business profile found",
-      message: "We could not find a Business Profile location for this account.",
+      title: "No business location found",
+      message:
+        "We could not load Google Business Profile locations for this Google account. Locations you own and locations where you are a manager (invited by the company owner) should appear here after sync — similar to Facebook Pages.",
       checklist: [
-        "Confirm you granted Business Profile access during Google login.",
-        "Wait about a minute between syncs, then try again.",
+        "Use Reconnect with Google and approve Business Profile management (business.manage) when Google asks.",
+        "Sign in with the Google account that was invited as a manager (or the owner account).",
+        "Confirm the invite is accepted in Google Business Profile and the location is verified.",
+        "In Google Cloud, add the business.manage scope on the OAuth consent screen, enable Account Management and Business Information APIs, and ensure GBP API access is approved (quota above 0).",
+        "Wait about a minute between syncs if you hit a rate limit, then try Sync again.",
       ],
+      learnMoreUrl: "https://developers.google.com/my-business/content/prereqs",
+      learnMoreLabel: "Google Business Profile API prerequisites",
     },
     disconnectLabel: "Disconnect Google Business Profile",
   },

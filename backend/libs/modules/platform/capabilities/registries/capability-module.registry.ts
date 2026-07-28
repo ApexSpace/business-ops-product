@@ -135,7 +135,7 @@ const BUSINESS_INTEGRATION_PROVIDERS: Array<{
   {
     key: 'google-business-profile',
     name: 'Google Business Profile',
-    description: 'Manage reviews and business listings on Google.',
+    description: 'Sync Google Business Profile locations for your business.',
   },
   {
     key: 'stripe',
