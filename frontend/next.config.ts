@@ -2,7 +2,7 @@ import type { NextConfig } from "next";
 import path from "path";
 import { fileURLToPath } from "url";
 
-const turbopackRoot = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
+const repoRoot = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 import bundleAnalyzer from "@next/bundle-analyzer";
 
 const withBundleAnalyzer = bundleAnalyzer({
@@ -11,8 +11,10 @@ const withBundleAnalyzer = bundleAnalyzer({
 
 const nextConfig: NextConfig = {
   turbopack: {
-    root: turbopackRoot,
+    root: repoRoot,
   },
+  /** Required for correct standalone output in the npm workspaces monorepo. */
+  outputFileTracingRoot: repoRoot,
   /** Expose backend origin to the browser for embed/public pricing URLs (falls back to BACKEND_URL). */
   env: {
     NEXT_PUBLIC_BACKEND_URL:
@@ -23,6 +25,8 @@ const nextConfig: NextConfig = {
       process.env.NEXT_PUBLIC_BACKEND_WS_URL?.trim() || "",
     NEXT_PUBLIC_ENABLE_WEBSOCKET:
       process.env.NEXT_PUBLIC_ENABLE_WEBSOCKET?.trim() || "",
+    NEXT_PUBLIC_ENABLE_SSE:
+      process.env.NEXT_PUBLIC_ENABLE_SSE?.trim() || "",
     NEXT_PUBLIC_REALTIME_TRANSPORT:
       process.env.NEXT_PUBLIC_REALTIME_TRANSPORT?.trim() || "",
   },
@@ -31,6 +35,8 @@ const nextConfig: NextConfig = {
     "ops.codesoltech.com",
     "app.codesoltech.com",
     "fb-login.codesoltech.com",
+    "dev.pandacue.com",
+    "dev-api.pandacue.com",
   ],
 };
 

@@ -1,23 +1,30 @@
-### Build stage
+### Build from monorepo root
+### Dokploy: Docker File = frontend/Dockerfile , Docker Context Path = .
 FROM node:22.13-bookworm-slim AS build
 WORKDIR /app
 
 COPY package.json package-lock.json ./
+COPY frontend/package.json ./frontend/
+COPY packages/api-contract/package.json ./packages/api-contract/
 RUN npm ci
 
-COPY . .
+COPY frontend ./frontend
+COPY packages/api-contract ./packages/api-contract
+
+WORKDIR /app/frontend
 RUN npm run build
 
-### Runtime stage
+### Runtime stage (Next.js standalone)
 FROM node:22.13-bookworm-slim AS runtime
 WORKDIR /app
 
 ENV NODE_ENV=production
 ENV PORT=3000
+ENV HOSTNAME=0.0.0.0
 
-COPY --from=build /app/.next/standalone ./
-COPY --from=build /app/.next/static ./.next/static
-COPY --from=build /app/public ./public
+COPY --from=build /app/frontend/.next/standalone ./
+COPY --from=build /app/frontend/.next/static ./frontend/.next/static
+COPY --from=build /app/frontend/public ./frontend/public
 
 EXPOSE 3000
-CMD ["node", "server.js"]
+CMD ["node", "frontend/server.js"]
