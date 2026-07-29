@@ -48,7 +48,14 @@ export class ChatbotBusinessHoursSettingsUpdateDto {
     type: 'object',
     additionalProperties: {
       type: 'array',
-      items: { $ref: '#/components/schemas/ChatbotBusinessHoursIntervalDto' },
+      items: {
+        type: 'object',
+        properties: {
+          start: { type: 'string', maxLength: 8 },
+          end: { type: 'string', maxLength: 8 },
+        },
+        required: ['start', 'end'],
+      },
     },
   })
   @IsOptional()

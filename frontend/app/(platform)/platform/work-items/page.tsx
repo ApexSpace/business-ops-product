@@ -1,14 +1,12 @@
-"use client";
-
 import {
   WorkItemsHostProvider,
-  BUSINESS_WORK_ITEMS_HOST,
+  PLATFORM_WORK_ITEMS_HOST,
 } from "@/features/work-items/work-items-host-context";
 import { WorkItemsPage } from "@/features/work-items/pages/work-items-page";
 
-export default function Page() {
+export default function PlatformWorkItemsPage() {
   return (
-    <WorkItemsHostProvider value={BUSINESS_WORK_ITEMS_HOST}>
+    <WorkItemsHostProvider value={PLATFORM_WORK_ITEMS_HOST}>
       <WorkItemsPage />
     </WorkItemsHostProvider>
   );

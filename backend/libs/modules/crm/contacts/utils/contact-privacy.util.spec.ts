@@ -59,6 +59,19 @@ describe('contact-privacy.util', () => {
     expect(applyContactPrivacy(fullContact, admin)).toEqual(fullContact);
   });
 
+  it('platform ops users always pass privacy checks', () => {
+    const platformUser = {
+      id: 'platform-1',
+      email: 'ops@example.com',
+      context: 'platform',
+      platformRole: 'SUPPORT',
+    } as RequestUser;
+    expect(canViewContactLastNames(platformUser)).toBe(true);
+    expect(canViewContactDetails(platformUser)).toBe(true);
+    expect(applyContactPrivacy(fullContact, platformUser)).toEqual(fullContact);
+    expect(() => assertCanListContacts(platformUser)).not.toThrow();
+  });
+
   it('redacts last names when permission is off', () => {
     const result = applyContactPrivacy(
       fullContact,

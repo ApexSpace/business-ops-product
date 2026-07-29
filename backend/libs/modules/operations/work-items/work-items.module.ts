@@ -5,6 +5,7 @@ import { ContactsModule } from '@app/modules/crm/contacts/contacts.module';
 import { LeadsModule } from '@app/modules/crm/leads/leads.module';
 import { MembershipModule } from '@app/modules/platform/membership/membership.module';
 import { ServicesModule } from '@app/modules/crm/services/services.module';
+import { PlatformWorkItemsController } from './controllers/platform-work-items.controller';
 import { WorkItemsController } from './controllers/work-items.controller';
 import { WorkItemRepository } from './repositories/work-item.repository';
 import { WorkItemsService } from './services/work-items.service';
@@ -18,7 +19,7 @@ import { WorkItemsService } from './services/work-items.service';
     forwardRef(() => LeadsModule),
     forwardRef(() => MembershipModule),
   ],
-  controllers: [WorkItemsController],
+  controllers: [WorkItemsController, PlatformWorkItemsController],
   providers: [WorkItemRepository, WorkItemsService],
   exports: [WorkItemRepository, WorkItemsService],
 })

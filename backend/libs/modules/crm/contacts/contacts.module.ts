@@ -9,6 +9,7 @@ import { StorageModule } from '@app/modules/storage/storage.module';
 import { ContactTagsController } from './controllers/contact-tags.controller';
 import { ContactWorkspaceController } from './controllers/contact-workspace.controller';
 import { ContactsController } from './controllers/contacts.controller';
+import { PlatformContactsController } from './controllers/platform-contacts.controller';
 import { ContactAdjustmentRepository } from './repositories/contact-adjustment.repository';
 import { ContactRepository } from './repositories/contact.repository';
 import { ContactWalletRepository } from './repositories/contact-wallet.repository';
@@ -34,6 +35,7 @@ import { ContactsService } from './services/contacts.service';
   controllers: [
     ContactWorkspaceController,
     ContactsController,
+    PlatformContactsController,
     ContactTagsController,
   ],
   providers: [

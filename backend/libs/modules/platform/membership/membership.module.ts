@@ -5,6 +5,7 @@ import { BusinessModule } from '@app/modules/platform/business/business.module';
 import { NotificationsModule } from '@app/modules/communications/notifications/notifications.module';
 import { BusinessMembershipController } from './controllers/business-membership.controller';
 import { PlatformMembershipController } from './controllers/platform-membership.controller';
+import { PlatformOpsMembersController } from './controllers/platform-ops-members.controller';
 import { PlatformUsersController } from './controllers/platform-users.controller';
 import { BusinessMembershipRepository } from './repositories/business-membership.repository';
 import { PlatformMembershipAdminRepository } from './repositories/platform-membership-admin.repository';
@@ -21,6 +22,7 @@ import { PlatformUserService } from './services/platform-user.service';
   controllers: [
     BusinessMembershipController,
     PlatformMembershipController,
+    PlatformOpsMembersController,
     PlatformUsersController,
   ],
   providers: [

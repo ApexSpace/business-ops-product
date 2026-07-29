@@ -57,7 +57,7 @@ export function useContactWorkspaceMutations(contactId: string) {
   });
 
   const deleteWorkItemMutation = useMutation({
-    mutationFn: deleteWorkItem,
+    mutationFn: (id: string) => deleteWorkItem(id),
     onSuccess: () => {
       toast.success("Work item deleted");
       refreshContactData();

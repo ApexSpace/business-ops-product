@@ -6,6 +6,7 @@ import { ResourcesModule } from '@app/modules/operations/resources/resources.mod
 import { ServiceCategoriesController } from './controllers/service-categories.controller';
 import { ServiceWorkspaceController } from './controllers/service-workspace.controller';
 import { ServicesController } from './controllers/services.controller';
+import { PlatformServicesController } from './controllers/platform-services.controller';
 import { ServiceCategoryRepository } from './repositories/service-category.repository';
 import { ServiceRepository } from './repositories/service.repository';
 import { ServiceWorkspaceRepository } from './repositories/service-workspace.repository';
@@ -25,6 +26,7 @@ import { ServicesService } from './services/services.service';
     ServiceCategoriesController,
     ServiceWorkspaceController,
     ServicesController,
+    PlatformServicesController,
   ],
   providers: [
     ServiceRepository,

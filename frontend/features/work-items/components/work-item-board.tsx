@@ -19,6 +19,7 @@ import { WorkItemBoardCard } from "@/features/work-items/components/work-item-bo
 import { WorkItemBoardColumn } from "@/features/work-items/components/work-item-board-column";
 import { groupWorkItemsByStatus } from "@/features/work-items/components/work-item-board-utils";
 import { getWorkItemStatusAccent } from "@/features/work-items/utils/work-item-status-colors";
+import { useWorkItemsHost } from "@/features/work-items/work-items-host-context";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   invalidateBusinessDashboardStats,
@@ -59,6 +60,7 @@ export function WorkItemBoard({
   onAddItem,
 }: WorkItemBoardProps) {
   const queryClient = useQueryClient();
+  const { apiBase, mode } = useWorkItemsHost();
   const columns = useMemo(
     () =>
       statusFilter
@@ -111,7 +113,7 @@ export function WorkItemBoard({
     }: {
       itemId: string;
       status: WorkItemStatus;
-    }) => updateWorkItem(itemId, { status }),
+    }) => updateWorkItem(itemId, { status }, apiBase),
     onSuccess: (updated, { status }) => {
       queryClient.setQueryData<PaginatedResult<WorkItem>>(
         listQueryKey,
@@ -135,8 +137,10 @@ export function WorkItemBoard({
           };
         },
       );
-      void invalidateWorkItemLists(queryClient);
-      void invalidateBusinessDashboardStats(queryClient);
+      void invalidateWorkItemLists(queryClient, apiBase);
+      if (mode === "business") {
+        void invalidateBusinessDashboardStats(queryClient);
+      }
       toast.success(`Moved to ${formatWorkItemStatus(status)}`);
       setStatusOverrides((prev) => {
         const next = { ...prev };

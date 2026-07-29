@@ -32,6 +32,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { createWorkItem, updateWorkItem } from "@/features/work-items/api/work-items.api";
+import { useWorkItemsHost } from "@/features/work-items/work-items-host-context";
 import { PERMISSIONS, useCan } from "@/features/auth/permissions";
 import { listBusinessMembers } from "@/features/settings/api/business.api";
 import { listServices } from "@/features/settings/api/services.api";
@@ -68,7 +69,15 @@ export function WorkItemFormDialog({
   onSuccess,
 }: WorkItemFormDialogProps) {
   const isEdit = !!workItem;
-  const canAssign = useCan(PERMISSIONS["members.invite"]);
+  const {
+    apiBase,
+    contactsApiBase,
+    servicesApiBase,
+    membersApiBase,
+    mode,
+  } = useWorkItemsHost();
+  const canInviteMembers = useCan(PERMISSIONS["members.invite"]);
+  const canAssign = mode === "platform" || canInviteMembers;
 
   const form = useForm<WorkItemFormValues>({
     resolver: zodResolver(workItemFormSchema),
@@ -76,15 +85,19 @@ export function WorkItemFormDialog({
   });
 
   const { data: services } = useQuery({
-    queryKey: queryKeys.services.picker(),
+    queryKey: queryKeys.services.picker(servicesApiBase),
     queryFn: () =>
-      listServices({ page: 1, limit: 100, status: "ACTIVE" }),
+      listServices({ page: 1, limit: 100, status: "ACTIVE" }, servicesApiBase),
     enabled: open,
   });
 
   const { data: members } = useQuery({
-    queryKey: queryKeys.business.members({ page: 1, limit: 100 }),
-    queryFn: () => listBusinessMembers({ page: 1, limit: 100 }),
+    queryKey: queryKeys.business.members(
+      { page: 1, limit: 100 },
+      membersApiBase,
+    ),
+    queryFn: () =>
+      listBusinessMembers({ page: 1, limit: 100 }, membersApiBase),
     enabled: open && canAssign,
   });
 
@@ -133,9 +146,9 @@ export function WorkItemFormDialog({
         if (!values.assignedToId?.trim()) body.assignedToId = null;
       }
       if (isEdit && workItem) {
-        return updateWorkItem(workItem.id, body);
+        return updateWorkItem(workItem.id, body, apiBase);
       }
-      return createWorkItem(body);
+      return createWorkItem(body, apiBase);
     },
     onSuccess: () => {
       toast.success(isEdit ? "Work item updated" : "Work item created");
@@ -217,6 +230,7 @@ export function WorkItemFormDialog({
                 placeholder="Search or add customer…"
                 locked={!!lockedContact}
                 lockedContact={lockedContact}
+                apiBase={contactsApiBase}
               />
             </FormControl>
             <FormMessage />
@@ -295,14 +309,22 @@ export function WorkItemFormDialog({
           name="assignedToId"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Assigned staff (optional)</FormLabel>
+              <FormLabel>
+                {mode === "platform"
+                  ? "Assigned support (optional)"
+                  : "Assigned staff (optional)"}
+              </FormLabel>
               <FormControl>
                 <SearchableSelect
                   items={assigneeItems}
                   value={field.value ?? ""}
                   onValueChange={field.onChange}
                   placeholder="Unassigned"
-                  emptyMessage="No team members found"
+                  emptyMessage={
+                    mode === "platform"
+                      ? "No support users found"
+                      : "No team members found"
+                  }
                 />
               </FormControl>
               <FormMessage />

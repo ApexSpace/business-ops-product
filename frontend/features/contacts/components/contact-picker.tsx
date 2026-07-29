@@ -42,6 +42,8 @@ export interface ContactPickerProps {
   lockedContact?: ContactPickerSelection;
   id?: string;
   triggerClassName?: string;
+  /** Contacts API path prefix (business `contacts` or `platform/contacts`). */
+  apiBase?: string;
 }
 
 function contactToSelection(contact: Contact): ContactPickerSelection {
@@ -101,6 +103,7 @@ export function ContactPicker({
   lockedContact,
   id,
   triggerClassName,
+  apiBase = "contacts",
 }: ContactPickerProps) {
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
@@ -113,15 +116,18 @@ export function ContactPicker({
   const debouncedSearch = useDebouncedValue(search, 300);
 
   const { data: searchResults, isFetching } = useQuery({
-    queryKey: queryKeys.contacts.search(debouncedSearch),
+    queryKey: queryKeys.contacts.search(debouncedSearch, apiBase),
     queryFn: () =>
-      listContacts({ page: 1, limit: 20, search: debouncedSearch || undefined }),
+      listContacts(
+        { page: 1, limit: 20, search: debouncedSearch || undefined },
+        apiBase,
+      ),
     enabled: open && !locked,
   });
 
   const { data: loadedContact } = useQuery({
-    queryKey: queryKeys.contacts.detail(value),
-    queryFn: () => getContact(value),
+    queryKey: queryKeys.contacts.detail(value, apiBase),
+    queryFn: () => getContact(value, apiBase),
     enabled: !!value && !selection && !lockedContact && !locked,
   });
 
@@ -166,8 +172,8 @@ export function ContactPicker({
     setSelection(picked);
     onValueChange(contact.id);
     onContactSelect?.(contact);
-    void invalidateContactPicker(queryClient);
-    void invalidateContactLists(queryClient);
+    void invalidateContactPicker(queryClient, apiBase);
+    void invalidateContactLists(queryClient, apiBase);
     setOpen(false);
     setSearch("");
   };
@@ -287,6 +293,7 @@ export function ContactPicker({
         onOpenChange={setCreateOpen}
         initialValues={createPrefill}
         createLabel={search.trim() ? search.trim() : undefined}
+        apiBase={apiBase}
         onCreated={handleCreated}
       />
     </>

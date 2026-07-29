@@ -16,19 +16,19 @@ export type BusinessMembersListFilters = {
   search?: string;
 };
 
+export const DEFAULT_MEMBERS_API_BASE = "businesses/current/members";
+
 export async function listBusinessMembers(
   filters: BusinessMembersListFilters = {},
+  apiBase: string = DEFAULT_MEMBERS_API_BASE,
 ): Promise<PaginatedResult<BusinessMember>> {
-  const { items, meta } = await api.getPaginated<BusinessMember>(
-    "businesses/current/members",
-    {
-      searchParams: {
-        page: filters.page,
-        limit: filters.limit,
-        search: filters.search,
-      },
+  const { items, meta } = await api.getPaginated<BusinessMember>(apiBase, {
+    searchParams: {
+      page: filters.page,
+      limit: filters.limit,
+      search: filters.search,
     },
-  );
+  });
   return { items, meta };
 }
 

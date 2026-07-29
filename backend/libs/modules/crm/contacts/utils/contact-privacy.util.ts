@@ -13,11 +13,15 @@ function isAdmin(role?: string | null): boolean {
   );
 }
 
+function isPlatformOps(user?: RequestUser): boolean {
+  return user?.context === 'platform' && !!user.platformRole;
+}
+
 export function canViewContactLastNames(
   user?: RequestUser,
 ): boolean {
   if (!user) return false;
-  if (isAdmin(user.businessRole)) return true;
+  if (isPlatformOps(user) || isAdmin(user.businessRole)) return true;
   return hasStaffPermission(
     user.staffPermissions,
     'contacts.view_last_names',
@@ -27,7 +31,7 @@ export function canViewContactLastNames(
 
 export function canViewContactDetails(user?: RequestUser): boolean {
   if (!user) return false;
-  if (isAdmin(user.businessRole)) return true;
+  if (isPlatformOps(user) || isAdmin(user.businessRole)) return true;
   return hasStaffPermission(
     user.staffPermissions,
     'contacts.view_contact_details',
@@ -48,7 +52,7 @@ export function applyContactPrivacy(
   contact: ContactResponseDto,
   user?: RequestUser,
 ): ContactResponseDto {
-  if (!user || isAdmin(user.businessRole)) {
+  if (!user || isPlatformOps(user) || isAdmin(user.businessRole)) {
     return contact;
   }
 
@@ -100,7 +104,7 @@ export function applyContactSummaryPrivacy<
     phone?: string | null;
   },
 >(summary: T, user?: RequestUser): T {
-  if (!user || isAdmin(user.businessRole)) return summary;
+  if (!user || isPlatformOps(user) || isAdmin(user.businessRole)) return summary;
   const next = { ...summary };
   if (!canViewContactLastNames(user)) {
     next.lastName = null;

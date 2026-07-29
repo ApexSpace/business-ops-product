@@ -9,6 +9,7 @@ import { useSnapshotContext } from "@/lib/snapshot/use-snapshot-context";
 import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
 import { useListSearchParams } from "@/lib/hooks/use-list-search-params";
 import { useWorkItemsList } from "@/features/work-items/hooks/use-work-items-list";
+import { useWorkItemsHost } from "@/features/work-items/work-items-host-context";
 import { listBusinessMembers } from "@/features/settings/api/business.api";
 import { listServices } from "@/features/settings/api/services.api";
 import { queryKeys } from "@/lib/query/keys";
@@ -38,6 +39,7 @@ export const workItemsStatusFilterItems = [
 ];
 
 export function useWorkItemsPageToolbar() {
+  const { apiBase, servicesApiBase, membersApiBase, mode } = useWorkItemsHost();
   const { params, page, setParams } = useListSearchParams(WORK_ITEMS_LIST_SCHEMA);
   const debouncedSearch = useDebouncedValue(params.search);
 
@@ -50,7 +52,8 @@ export function useWorkItemsPageToolbar() {
 
   const { context: snapshotContext } = useSnapshotContext();
   const labels = resolveNavEntityLabels(snapshotContext.terminology);
-  const workItemsLabel = labels.workItems;
+  const workItemsLabel =
+    mode === "platform" ? "Work Items" : labels.workItems;
 
   const listFilters = {
     page: listPage,
@@ -62,7 +65,7 @@ export function useWorkItemsPageToolbar() {
     view,
   };
 
-  const listQueryKey = queryKeys.workItems.list(listFilters);
+  const listQueryKey = queryKeys.workItems.list(apiBase, listFilters);
 
   const { data, isLoading } = useWorkItemsList({
     page: listPage,
@@ -74,14 +77,15 @@ export function useWorkItemsPageToolbar() {
   });
 
   const { data: services } = useQuery({
-    queryKey: queryKeys.services.picker(),
+    queryKey: queryKeys.services.picker(servicesApiBase),
     queryFn: () =>
-      listServices({ page: 1, limit: 100, status: "ACTIVE" }),
+      listServices({ page: 1, limit: 100, status: "ACTIVE" }, servicesApiBase),
   });
 
   const { data: members } = useQuery({
-    queryKey: queryKeys.business.members({ page: 1, limit: 100 }),
-    queryFn: () => listBusinessMembers({ page: 1, limit: 100 }),
+    queryKey: queryKeys.business.members({ page: 1, limit: 100 }, membersApiBase),
+    queryFn: () =>
+      listBusinessMembers({ page: 1, limit: 100 }, membersApiBase),
   });
 
   const serviceFilterItems = useMemo(
@@ -97,7 +101,7 @@ export function useWorkItemsPageToolbar() {
 
   const assigneeFilterItems = useMemo(
     () => [
-      { value: "", label: "All staff" },
+      { value: "", label: mode === "platform" ? "All support" : "All staff" },
       ...(members?.items.map((m) => ({
         value: m.user.id,
         label:
@@ -105,7 +109,7 @@ export function useWorkItemsPageToolbar() {
           m.user.email,
       })) ?? []),
     ],
-    [members?.items],
+    [members?.items, mode],
   );
 
   const columns = useMemo<DataTableColumn<WorkItem>[]>(
@@ -119,7 +123,10 @@ export function useWorkItemsPageToolbar() {
       },
       {
         id: "contact",
-        header: labels.contacts.replace(/s$/, "") || "Customer",
+        header:
+          mode === "platform"
+            ? "Customer"
+            : labels.contacts.replace(/s$/, "") || "Customer",
         sortable: true,
         sortValue: (row) => row.contact?.label ?? "",
         cell: (row) => row.contact?.label ?? "—",
@@ -149,7 +156,7 @@ export function useWorkItemsPageToolbar() {
         cell: (row) => formatWorkItemAmount(row.amount) ?? "—",
       },
     ],
-    [labels.contacts],
+    [labels.contacts, mode],
   );
 
   const countSingular =

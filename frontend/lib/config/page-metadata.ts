@@ -357,6 +357,11 @@ const platformRoutes: Record<string, RouteEntry> = {
     description:
       "Configure AI chatbots for the CodeSol marketing site and ops surfaces.",
   },
+  "/platform/work-items": {
+    title: "Work Items",
+    description:
+      "Track ops work for platform support — assign to support users on the INTERNAL workspace.",
+  },
 };
 
 const businessTerminologyKeys: Partial<Record<string, string>> = {

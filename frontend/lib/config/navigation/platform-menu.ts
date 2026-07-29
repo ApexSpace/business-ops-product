@@ -5,6 +5,7 @@ import {
   FileText,
   Layers,
   LayoutDashboard,
+  ListTodo,
   MessageSquare,
   PackagePlus,
   Plug,
@@ -91,6 +92,11 @@ export const platformOperationalSections: ShellNavSection[] = [
         title: "Chatbots",
         href: "/platform/chatbots",
         icon: Bot,
+      },
+      {
+        title: "Work Items",
+        href: "/platform/work-items",
+        icon: ListTodo,
       },
       {
         title: "Inbox",

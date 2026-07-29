@@ -24,7 +24,7 @@ export function useContactRelatedRecords(contactId: string) {
   });
 
   const workItemsQuery = useQuery({
-    queryKey: queryKeys.workItems.list(listFilters),
+    queryKey: queryKeys.workItems.list("work-items", listFilters),
     queryFn: () => listWorkItems(listFilters),
     enabled: !!contactId,
   });

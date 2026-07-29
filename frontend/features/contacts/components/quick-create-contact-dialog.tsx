@@ -24,6 +24,7 @@ interface QuickCreateContactDialogProps {
   /** Prefill from search text (name, email, or phone). */
   initialValues?: Partial<QuickContactFormValues>;
   createLabel?: string;
+  apiBase?: string;
   onCreated: (contact: Contact) => void;
 }
 
@@ -32,6 +33,7 @@ export function QuickCreateContactDialog({
   onOpenChange,
   initialValues,
   createLabel,
+  apiBase = "contacts",
   onCreated,
 }: QuickCreateContactDialogProps) {
   const form = useForm<QuickContactFormValues>({
@@ -61,7 +63,7 @@ export function QuickCreateContactDialog({
 
   const mutation = useMutation({
     mutationFn: (values: QuickContactFormValues) =>
-      createContact(quickContactFormToApiBody(values)),
+      createContact(quickContactFormToApiBody(values), apiBase),
     onSuccess: (contact) => {
       toast.success("Contact created");
       onCreated(contact);

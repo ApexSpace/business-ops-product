@@ -15,6 +15,7 @@ import { WorkItemFormDialog } from "@/features/work-items/components/work-item-f
 import { WorkItemsPageToolbar } from "@/features/work-items/components/work-items-page-toolbar";
 import { useWorkItemsPageToolbar } from "@/features/work-items/hooks/use-work-items-page-toolbar";
 import { useWorkItemStaffPermissions } from "@/features/work-items/hooks/use-work-item-staff-permissions";
+import { useWorkItemsHost } from "@/features/work-items/work-items-host-context";
 import { ActionButton } from "@/components/ui/action-button";
 import { ListPagination } from "@/components/ui/list-pagination";
 import { deleteWorkItem } from "@/features/work-items/api/work-items.api";
@@ -27,6 +28,7 @@ import type { WorkItem, WorkItemStatus } from "@/features/work-items/types";
 
 export function WorkItemsPageContent() {
   const queryClient = useQueryClient();
+  const { apiBase, mode } = useWorkItemsHost();
   const { canManage } = useWorkItemStaffPermissions();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<WorkItem | null>(null);
@@ -53,11 +55,13 @@ export function WorkItemsPageContent() {
   } = useWorkItemsPageToolbar();
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => deleteWorkItem(id),
+    mutationFn: (id: string) => deleteWorkItem(id, apiBase),
     onSuccess: () => {
       toast.success("Deleted");
-      void invalidateWorkItemLists(queryClient);
-      void invalidateBusinessDashboardStats(queryClient);
+      void invalidateWorkItemLists(queryClient, apiBase);
+      if (mode === "business") {
+        void invalidateBusinessDashboardStats(queryClient);
+      }
       setDeleteId(null);
     },
     onError: (err: Error) => toast.error(err.message),
@@ -80,7 +84,11 @@ export function WorkItemsPageContent() {
     <>
       <ListPage
         title={workItemsLabel}
-        description="Record customer, service, and work done — without a CRM pipeline."
+        description={
+          mode === "platform"
+            ? "Track ops work for platform support — assign to support users."
+            : "Record customer, service, and work done — without a CRM pipeline."
+        }
         toolbar={
           <WorkItemsPageToolbar
             workItemsLabel={workItemsLabel}
@@ -179,8 +187,10 @@ export function WorkItemsPageContent() {
         workItem={editing}
         defaultStatus={editing ? undefined : createDefaultStatus}
         onSuccess={() => {
-          void invalidateWorkItemLists(queryClient);
-          void invalidateBusinessDashboardStats(queryClient);
+          void invalidateWorkItemLists(queryClient, apiBase);
+          if (mode === "business") {
+            void invalidateBusinessDashboardStats(queryClient);
+          }
         }}
       />
 

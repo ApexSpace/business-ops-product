@@ -41,8 +41,10 @@ export const queryKeys = {
     snapshotContext: (businessId: string) =>
       ["business", businessId, "snapshot-context"] as const,
     financialSettings: () => ["business", "financial-settings"] as const,
-    members: (filters?: { page?: number; limit?: number; search?: string }) =>
-      listKey(["business", "members"], filters),
+    members: (
+      filters?: { page?: number; limit?: number; search?: string },
+      apiBase = "businesses/current/members",
+    ) => listKey(["business", "members", apiBase], filters),
     memberDetail: (userId: string) =>
       ["business", "members", "detail", userId] as const,
     memberPermissions: (userId: string) =>
@@ -58,16 +60,20 @@ export const queryKeys = {
     planOptions: () => ["business", "plan-options"] as const,
   },
   services: {
-    all: () => ["services"] as const,
-    list: (filters: {
-      page?: number;
-      limit?: number;
-      search?: string;
-      status?: string;
-      categoryId?: string;
-    }) => listKey(["services", "list"], filters),
-    picker: () => ["services", "picker"] as const,
-    detail: (id: string) => ["services", "detail", id] as const,
+    all: (apiBase = "services") => ["services", apiBase] as const,
+    list: (
+      filters: {
+        page?: number;
+        limit?: number;
+        search?: string;
+        status?: string;
+        categoryId?: string;
+      },
+      apiBase = "services",
+    ) => listKey(["services", apiBase, "list"], filters),
+    picker: (apiBase = "services") => ["services", apiBase, "picker"] as const,
+    detail: (id: string, apiBase = "services") =>
+      ["services", apiBase, "detail", id] as const,
     tree: () => ["services", "tree"] as const,
     workspace: (id: string) => ["services", "workspace", id] as const,
   },
@@ -76,12 +82,16 @@ export const queryKeys = {
     list: () => ["service-categories", "list"] as const,
   },
   contacts: {
-    all: () => ["contacts"] as const,
-    list: (filters: { page?: number; limit?: number; search?: string }) =>
-      listKey(["contacts", "list"], filters),
-    search: (term: string) => ["contacts", "search", term] as const,
-    picker: () => ["contacts", "picker"] as const,
-    detail: (id: string) => ["contacts", "detail", id] as const,
+    all: (apiBase = "contacts") => ["contacts", apiBase] as const,
+    list: (
+      filters: { page?: number; limit?: number; search?: string },
+      apiBase = "contacts",
+    ) => listKey(["contacts", apiBase, "list"], filters),
+    search: (term: string, apiBase = "contacts") =>
+      ["contacts", apiBase, "search", term] as const,
+    picker: (apiBase = "contacts") => ["contacts", apiBase, "picker"] as const,
+    detail: (id: string, apiBase = "contacts") =>
+      ["contacts", apiBase, "detail", id] as const,
     timeline: (
       id: string,
       filters?: { types?: string[]; page?: number; limit?: number },
@@ -93,17 +103,21 @@ export const queryKeys = {
       ["contacts", id, "print-appointments"] as const,
   },
   workItems: {
-    all: () => ["work-items"] as const,
-    list: (filters: {
-      page?: number;
-      limit?: number;
-      search?: string;
-      status?: string;
-      serviceId?: string;
-      contactId?: string;
-      assignedToId?: string;
-    }) => listKey(["work-items", "list"], filters),
-    detail: (id: string) => ["work-items", "detail", id] as const,
+    all: (apiBase = "work-items") => ["work-items", apiBase] as const,
+    list: (
+      apiBase: string,
+      filters: {
+        page?: number;
+        limit?: number;
+        search?: string;
+        status?: string;
+        serviceId?: string;
+        contactId?: string;
+        assignedToId?: string;
+      },
+    ) => listKey(["work-items", apiBase, "list"], filters),
+    detail: (apiBase: string, id: string) =>
+      ["work-items", apiBase, "detail", id] as const,
   },
   notes: {
     all: () => ["notes"] as const,
