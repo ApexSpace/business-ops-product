@@ -39,7 +39,7 @@ export const workItemsStatusFilterItems = [
 ];
 
 export function useWorkItemsPageToolbar() {
-  const { apiBase, servicesApiBase, membersApiBase, mode } = useWorkItemsHost();
+  const { apiBase, servicesApiBase = "services", membersApiBase, mode } = useWorkItemsHost();
   const { params, page, setParams } = useListSearchParams(WORK_ITEMS_LIST_SCHEMA);
   const debouncedSearch = useDebouncedValue(params.search);
 
@@ -60,7 +60,7 @@ export function useWorkItemsPageToolbar() {
     limit: listLimit,
     search: debouncedSearch || undefined,
     status: params.status || undefined,
-    serviceId: params.serviceId || undefined,
+    serviceId: mode !== "platform" ? params.serviceId || undefined : undefined,
     assignedToId: params.assignedToId || undefined,
     view,
   };
@@ -80,6 +80,7 @@ export function useWorkItemsPageToolbar() {
     queryKey: queryKeys.services.picker(servicesApiBase),
     queryFn: () =>
       listServices({ page: 1, limit: 100, status: "ACTIVE" }, servicesApiBase),
+    enabled: mode !== "platform",
   });
 
   const { data: members } = useQuery({
@@ -89,14 +90,17 @@ export function useWorkItemsPageToolbar() {
   });
 
   const serviceFilterItems = useMemo(
-    () => [
-      { value: "", label: "All services" },
-      ...(services?.items.map((s) => ({
-        value: s.id,
-        label: s.category ? `${s.name} (${s.category})` : s.name,
-      })) ?? []),
-    ],
-    [services?.items],
+    () =>
+      mode === "platform"
+        ? []
+        : [
+            { value: "", label: "All services" },
+            ...(services?.items.map((s) => ({
+              value: s.id,
+              label: s.category ? `${s.name} (${s.category})` : s.name,
+            })) ?? []),
+          ],
+    [services?.items, mode],
   );
 
   const assigneeFilterItems = useMemo(
@@ -131,11 +135,15 @@ export function useWorkItemsPageToolbar() {
         sortValue: (row) => row.contact?.label ?? "",
         cell: (row) => row.contact?.label ?? "—",
       },
-      {
-        id: "service",
-        header: "Service",
-        cell: (row) => row.service?.name ?? "—",
-      },
+      ...(mode !== "platform"
+        ? [
+            {
+              id: "service",
+              header: "Service",
+              cell: (row: WorkItem) => row.service?.name ?? "—",
+            },
+          ]
+        : []),
       {
         id: "status",
         header: "Status",

@@ -12,8 +12,8 @@ export type WorkItemsHostConfig = {
   apiBase: string;
   /** Contacts API path prefix (picker / quick-create) */
   contactsApiBase: string;
-  /** Services API path prefix (filters / form) */
-  servicesApiBase: string;
+  /** Services API path prefix (filters / form) — not used in platform mode */
+  servicesApiBase?: string;
   /** Members API path prefix (assignee picker) */
   membersApiBase: string;
 };
@@ -32,7 +32,6 @@ export const PLATFORM_WORK_ITEMS_HOST: WorkItemsHostConfig = {
   basePath: "/platform/work-items",
   apiBase: "platform/work-items",
   contactsApiBase: "platform/contacts",
-  servicesApiBase: "platform/services",
   membersApiBase: "platform/ops/members",
 };
 

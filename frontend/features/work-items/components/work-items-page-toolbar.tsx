@@ -34,6 +34,7 @@ interface WorkItemsPageToolbarProps {
   onViewChange: (view: WorkItemsView) => void;
   onAddClick: () => void;
   canManage?: boolean;
+  showServiceFilter?: boolean;
 }
 
 function WorkItemFilterSelects({
@@ -45,6 +46,7 @@ function WorkItemFilterSelects({
   onStatusChange,
   onServiceIdChange,
   onAssignedToIdChange,
+  showServiceFilter = true,
   className,
 }: Pick<
   WorkItemsPageToolbarProps,
@@ -56,6 +58,7 @@ function WorkItemFilterSelects({
   | "onStatusChange"
   | "onServiceIdChange"
   | "onAssignedToIdChange"
+  | "showServiceFilter"
 > & { className?: string }) {
   return (
     <FilterBar className={cn("scrollbar-thin", className)}>
@@ -66,13 +69,15 @@ function WorkItemFilterSelects({
         placeholder="Status"
         triggerClassName={cn(FILTER_SELECT_TRIGGER_CLASS, "w-[8.5rem] shrink-0")}
       />
-      <SearchableSelect
-        items={serviceFilterItems}
-        value={serviceId}
-        onValueChange={onServiceIdChange}
-        placeholder="Service"
-        triggerClassName={cn(FILTER_SELECT_TRIGGER_CLASS, "w-[9rem] shrink-0")}
-      />
+      {showServiceFilter ? (
+        <SearchableSelect
+          items={serviceFilterItems}
+          value={serviceId}
+          onValueChange={onServiceIdChange}
+          placeholder="Service"
+          triggerClassName={cn(FILTER_SELECT_TRIGGER_CLASS, "w-[9rem] shrink-0")}
+        />
+      ) : null}
       <SearchableSelect
         items={assigneeFilterItems}
         value={assignedToId}
@@ -101,6 +106,7 @@ export function WorkItemsPageToolbar({
   onViewChange,
   onAddClick,
   canManage = true,
+  showServiceFilter = true,
 }: WorkItemsPageToolbarProps) {
   const searchPlaceholder = `Search ${workItemsLabel.toLowerCase()}…`;
 
@@ -122,6 +128,7 @@ export function WorkItemsPageToolbar({
           onStatusChange={onStatusChange}
           onServiceIdChange={onServiceIdChange}
           onAssignedToIdChange={onAssignedToIdChange}
+          showServiceFilter={showServiceFilter}
         />
         <div className="flex flex-col gap-2">
           <WorkItemsViewSwitcher
@@ -153,13 +160,15 @@ export function WorkItemsPageToolbar({
             placeholder="Status"
             triggerClassName={cn(FILTER_SELECT_TRIGGER_CLASS, "w-[8.5rem] shrink-0")}
           />
-          <SearchableSelect
-            items={serviceFilterItems}
-            value={serviceId}
-            onValueChange={onServiceIdChange}
-            placeholder="Service"
-            triggerClassName={cn(FILTER_SELECT_TRIGGER_CLASS, "w-[9rem] shrink-0")}
-          />
+          {showServiceFilter ? (
+            <SearchableSelect
+              items={serviceFilterItems}
+              value={serviceId}
+              onValueChange={onServiceIdChange}
+              placeholder="Service"
+              triggerClassName={cn(FILTER_SELECT_TRIGGER_CLASS, "w-[9rem] shrink-0")}
+            />
+          ) : null}
           <SearchableSelect
             items={assigneeFilterItems}
             value={assignedToId}

@@ -72,7 +72,7 @@ export function WorkItemFormDialog({
   const {
     apiBase,
     contactsApiBase,
-    servicesApiBase,
+    servicesApiBase = "services",
     membersApiBase,
     mode,
   } = useWorkItemsHost();
@@ -88,7 +88,7 @@ export function WorkItemFormDialog({
     queryKey: queryKeys.services.picker(servicesApiBase),
     queryFn: () =>
       listServices({ page: 1, limit: 100, status: "ACTIVE" }, servicesApiBase),
-    enabled: open,
+    enabled: open && mode !== "platform",
   });
 
   const { data: members } = useQuery({
@@ -141,8 +141,12 @@ export function WorkItemFormDialog({
   const mutation = useMutation({
     mutationFn: (values: WorkItemFormValues) => {
       const body = workItemFormToApiBody(values) as Record<string, unknown>;
-      if (isEdit) {
+      if (mode === "platform") {
+        delete body.serviceId;
+      } else if (isEdit) {
         if (!values.serviceId?.trim()) body.serviceId = null;
+      }
+      if (isEdit) {
         if (!values.assignedToId?.trim()) body.assignedToId = null;
       }
       if (isEdit && workItem) {
@@ -237,25 +241,27 @@ export function WorkItemFormDialog({
           </FormItem>
         )}
       />
-      <FormField
-        control={form.control}
-        name="serviceId"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Service (optional)</FormLabel>
-            <FormControl>
-              <SearchableSelect
-                items={serviceItems}
-                value={field.value ?? ""}
-                onValueChange={field.onChange}
-                placeholder="Select service"
-                emptyMessage="No services found"
-              />
-            </FormControl>
+      {mode !== "platform" ? (
+        <FormField
+          control={form.control}
+          name="serviceId"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Service (optional)</FormLabel>
+              <FormControl>
+                <SearchableSelect
+                  items={serviceItems}
+                  value={field.value ?? ""}
+                  onValueChange={field.onChange}
+                  placeholder="Select service"
+                  emptyMessage="No services found"
+                />
+              </FormControl>
             <FormMessage />
           </FormItem>
         )}
       />
+      ) : null}
       <FormField
         control={form.control}
         name="title"

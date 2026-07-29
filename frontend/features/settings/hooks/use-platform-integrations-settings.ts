@@ -341,7 +341,7 @@ export function usePlatformIntegrationsSettings() {
     let url: string;
     try {
       url = isMeta
-        ? getPlatformMetaOAuthStartUrl(provider.key, options?.authFlow)
+        ? getPlatformMetaOAuthStartUrl(provider.key as "facebook" | "instagram", options?.authFlow)
         : getPlatformGoogleOAuthStartUrl(
             provider.key as PlatformGoogleOAuthProviderKey,
           );

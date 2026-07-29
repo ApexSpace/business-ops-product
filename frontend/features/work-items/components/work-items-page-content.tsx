@@ -100,6 +100,7 @@ export function WorkItemsPageContent() {
             view={view}
             serviceFilterItems={serviceFilterItems}
             assigneeFilterItems={assigneeFilterItems}
+            showServiceFilter={mode !== "platform"}
             onSearchChange={(value) =>
               setParams({ search: value, page: "1" }, resetPage)
             }
