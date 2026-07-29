@@ -37,6 +37,7 @@ COPY --from=build /app/dist ./dist
 COPY --from=build /app/prisma ./prisma
 COPY --from=build /app/prisma.config.ts ./prisma.config.ts
 COPY scripts/docker-entrypoint.sh /entrypoint.sh
+COPY scripts/docker-seed.mjs /app/scripts/docker-seed.mjs
 
 RUN chmod +x /entrypoint.sh
 

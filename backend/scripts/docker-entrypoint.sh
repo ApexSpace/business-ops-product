@@ -3,6 +3,7 @@ set -e
 
 APP_ENTRY="${APP_ENTRY:-combined}"
 RUN_MIGRATIONS="${RUN_MIGRATIONS:-false}"
+RUN_SEED="${RUN_SEED:-false}"
 
 # Nest monorepo tsc output nests source paths under each app outDir.
 API_MAIN="dist/apps/api/apps/api/src/main.js"
@@ -17,6 +18,17 @@ run_migrations() {
     fi
     echo "Running prisma migrate deploy..."
     npx prisma migrate deploy
+  fi
+}
+
+run_seed() {
+  if [ "$RUN_SEED" = "true" ]; then
+    if [ -z "$DATABASE_URL" ]; then
+      echo "DATABASE_URL is required when RUN_SEED=true"
+      exit 1
+    fi
+    echo "Running database seed (super admin + integration providers)..."
+    node /app/scripts/docker-seed.mjs
   fi
 }
 
@@ -38,6 +50,7 @@ trap stop_children TERM INT
 case "$APP_ENTRY" in
   api)
     run_migrations
+    run_seed
     exec node "$API_MAIN"
     ;;
   worker)
@@ -48,6 +61,7 @@ case "$APP_ENTRY" in
     ;;
   combined)
     run_migrations
+    run_seed
     start_worker
     exec node "$API_MAIN"
     ;;
