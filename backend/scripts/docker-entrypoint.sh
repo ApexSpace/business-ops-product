@@ -4,6 +4,11 @@ set -e
 APP_ENTRY="${APP_ENTRY:-combined}"
 RUN_MIGRATIONS="${RUN_MIGRATIONS:-false}"
 
+# Nest monorepo tsc output nests source paths under each app outDir.
+API_MAIN="dist/apps/api/apps/api/src/main.js"
+WORKER_MAIN="dist/apps/worker/apps/worker/src/main.js"
+SCHEDULER_MAIN="dist/apps/scheduler/apps/scheduler/src/main.js"
+
 run_migrations() {
   if [ "$RUN_MIGRATIONS" = "true" ]; then
     if [ -z "$DATABASE_URL" ]; then
@@ -17,7 +22,7 @@ run_migrations() {
 
 start_worker() {
   echo "Starting worker..."
-  node dist/apps/worker/main.js &
+  node "$WORKER_MAIN" &
   WORKER_PID=$!
   echo "Worker PID: $WORKER_PID"
 }
@@ -33,18 +38,18 @@ trap stop_children TERM INT
 case "$APP_ENTRY" in
   api)
     run_migrations
-    exec node dist/apps/api/main.js
+    exec node "$API_MAIN"
     ;;
   worker)
-    exec node dist/apps/worker/main.js
+    exec node "$WORKER_MAIN"
     ;;
   scheduler)
-    exec node dist/apps/scheduler/main.js
+    exec node "$SCHEDULER_MAIN"
     ;;
   combined)
     run_migrations
     start_worker
-    exec node dist/apps/api/main.js
+    exec node "$API_MAIN"
     ;;
   *)
     echo "Unknown APP_ENTRY=$APP_ENTRY (expected api|worker|scheduler|combined)"
