@@ -1,6 +1,7 @@
-### Prefer repo-root Dockerfile.frontend in Dokploy to avoid path doubling.
-### Kept in sync for local builds from the frontend folder (not used by Dokploy).
-### Dokploy: Docker File = Dockerfile.frontend , Context = . (empty)
+### Frontend image — build from monorepo root
+### Dokploy settings:
+###   Docker File: Dockerfile.frontend
+###   Docker Context Path: (leave empty / default .)
 FROM node:22.13-bookworm-slim AS build
 WORKDIR /app
 
@@ -15,6 +16,7 @@ COPY packages/api-contract ./packages/api-contract
 WORKDIR /app/frontend
 RUN npm run build
 
+### Runtime stage (Next.js standalone)
 FROM node:22.13-bookworm-slim AS runtime
 WORKDIR /app
 
