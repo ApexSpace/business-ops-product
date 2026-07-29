@@ -424,7 +424,12 @@
         root.innerHTML = "";
         var wrap = document.createElement("div");
         wrap.className = "form-wrap";
-        if (settings.maxWidth) wrap.style.maxWidth = settings.maxWidth + "px";
+        if (settings.layoutWidth === "full") {
+          wrap.style.maxWidth = "100%";
+          wrap.style.width = "100%";
+        } else if (settings.maxWidth) {
+          wrap.style.maxWidth = settings.maxWidth + "px";
+        }
         if (settings.backgroundColor) wrap.style.background = settings.backgroundColor;
         if (settings.padding != null) wrap.style.padding = settings.padding + "px";
         wrap.style.borderRadius = radiusClass(settings.borderRadius || "lg");

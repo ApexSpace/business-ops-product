@@ -12,11 +12,10 @@ import { ConfirmDeleteDialog } from "@/components/forms/confirm-delete-dialog";
 import { ListPage } from "@/components/layout/list-page";
 import { WorkItemBoard } from "@/features/work-items/components/work-item-board";
 import { WorkItemFormDialog } from "@/features/work-items/components/work-item-form-dialog";
-import { WorkItemsPageFilters } from "@/features/work-items/components/work-items-page-filters";
-import {
-  WorkItemsViewSwitcher,
-} from "@/features/work-items/components/work-items-view-switcher";
+import { WorkItemsPageToolbar } from "@/features/work-items/components/work-items-page-toolbar";
 import { useWorkItemsPageToolbar } from "@/features/work-items/hooks/use-work-items-page-toolbar";
+import { useWorkItemStaffPermissions } from "@/features/work-items/hooks/use-work-item-staff-permissions";
+import { useWorkItemsHost } from "@/features/work-items/work-items-host-context";
 import { ActionButton } from "@/components/ui/action-button";
 import { ListPagination } from "@/components/ui/list-pagination";
 import { deleteWorkItem } from "@/features/work-items/api/work-items.api";
@@ -29,8 +28,13 @@ import type { WorkItem, WorkItemStatus } from "@/features/work-items/types";
 
 export function WorkItemsPageContent() {
   const queryClient = useQueryClient();
+  const { apiBase, mode } = useWorkItemsHost();
+  const { canManage } = useWorkItemStaffPermissions();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<WorkItem | null>(null);
+  const [createDefaultStatus, setCreateDefaultStatus] = useState<
+    WorkItemStatus | undefined
+  >();
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const {
@@ -51,18 +55,21 @@ export function WorkItemsPageContent() {
   } = useWorkItemsPageToolbar();
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => deleteWorkItem(id),
+    mutationFn: (id: string) => deleteWorkItem(id, apiBase),
     onSuccess: () => {
       toast.success("Deleted");
-      void invalidateWorkItemLists(queryClient);
-      void invalidateBusinessDashboardStats(queryClient);
+      void invalidateWorkItemLists(queryClient, apiBase);
+      if (mode === "business") {
+        void invalidateBusinessDashboardStats(queryClient);
+      }
       setDeleteId(null);
     },
     onError: (err: Error) => toast.error(err.message),
   });
 
-  const openCreate = () => {
+  const openCreate = (status?: WorkItemStatus) => {
     setEditing(null);
+    setCreateDefaultStatus(status);
     setDialogOpen(true);
   };
 
@@ -77,30 +84,23 @@ export function WorkItemsPageContent() {
     <>
       <ListPage
         title={workItemsLabel}
-        description="Record customer, service, and work done — without a CRM pipeline."
-        actions={
-          <>
-            <WorkItemsViewSwitcher
-              value={view}
-              onChange={(next) =>
-                setParams({ view: next, page: "1" }, resetPage)
-              }
-            />
-            <ActionButton onClick={openCreate}>
-              <Plus className="mr-2 size-4" />
-              Add {countSingular}
-            </ActionButton>
-          </>
+        description={
+          mode === "platform"
+            ? "Track ops work for platform support — assign to support users."
+            : "Record customer, service, and work done — without a CRM pipeline."
         }
-        filters={
-          <WorkItemsPageFilters
+        toolbar={
+          <WorkItemsPageToolbar
             workItemsLabel={workItemsLabel}
+            countSingular={countSingular}
             search={params.search}
             status={params.status}
             serviceId={params.serviceId}
             assignedToId={params.assignedToId}
+            view={view}
             serviceFilterItems={serviceFilterItems}
             assigneeFilterItems={assigneeFilterItems}
+            showServiceFilter={mode !== "platform"}
             onSearchChange={(value) =>
               setParams({ search: value, page: "1" }, resetPage)
             }
@@ -113,6 +113,11 @@ export function WorkItemsPageContent() {
             onAssignedToIdChange={(value) =>
               setParams({ assignedToId: value ?? "", page: "1" }, resetPage)
             }
+            onViewChange={(next) =>
+              setParams({ view: next, page: "1" }, resetPage)
+            }
+            onAddClick={() => openCreate()}
+            canManage={canManage}
           />
         }
         pagination={
@@ -136,8 +141,10 @@ export function WorkItemsPageContent() {
             truncatedTotal={data?.meta.total}
             countSingular={countSingular}
             countPlural={countPlural}
-            onEdit={openEdit}
-            onDelete={setDeleteId}
+            onEdit={canManage ? openEdit : undefined}
+            onDelete={canManage ? (item) => setDeleteId(item.id) : undefined}
+            onAddItem={canManage ? openCreate : undefined}
+            canManage={canManage}
           />
         ) : (
           <DataTable
@@ -148,23 +155,29 @@ export function WorkItemsPageContent() {
             emptyTitle={`No ${countPlural} yet`}
             emptyDescription="Add your first record: pick a customer, service, and status."
             emptyAction={
-              <ActionButton onClick={openCreate}>
-                <Plus className="mr-2 size-4" />
-                Add {countSingular}
-              </ActionButton>
+              canManage ? (
+                <ActionButton onClick={() => openCreate()}>
+                  <Plus className="mr-2 size-4" />
+                  Add {countSingular}
+                </ActionButton>
+              ) : undefined
             }
-            rowActions={(item) => (
-              <DataTableRowActions
-                actions={[
-                  { label: "Edit", onClick: () => openEdit(item) },
-                  {
-                    label: "Delete",
-                    onClick: () => setDeleteId(item.id),
-                    destructive: true,
-                  },
-                ]}
-              />
-            )}
+            rowActions={
+              canManage
+                ? (item) => (
+                    <DataTableRowActions
+                      actions={[
+                        { label: "Edit", onClick: () => openEdit(item) },
+                        {
+                          label: "Delete",
+                          onClick: () => setDeleteId(item.id),
+                          destructive: true,
+                        },
+                      ]}
+                    />
+                  )
+                : undefined
+            }
           />
         )}
       </ListPage>
@@ -173,9 +186,12 @@ export function WorkItemsPageContent() {
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         workItem={editing}
+        defaultStatus={editing ? undefined : createDefaultStatus}
         onSuccess={() => {
-          void invalidateWorkItemLists(queryClient);
-          void invalidateBusinessDashboardStats(queryClient);
+          void invalidateWorkItemLists(queryClient, apiBase);
+          if (mode === "business") {
+            void invalidateBusinessDashboardStats(queryClient);
+          }
         }}
       />
 

@@ -80,7 +80,10 @@ export class PlatformEmailProvisioningService {
         IntegrationResourceType.EMAIL_ACCOUNT,
       );
     if (existingResource) {
-      const metadata = (existingResource.metadata ?? {}) as Record<string, unknown>;
+      const metadata = (existingResource.metadata ?? {}) as Record<
+        string,
+        unknown
+      >;
       if (metadata.type === PLATFORM_EMAIL_METADATA_TYPE) {
         return {
           integrationId: existingResource.businessIntegrationId,
@@ -116,7 +119,7 @@ export class PlatformEmailProvisioningService {
           mode: PLATFORM_EMAIL_METADATA_TYPE,
           sendingDomain,
           inboundDomain: emailConfig.platform.inboundDomain,
-        } as Prisma.InputJsonValue,
+        },
         credentials: Prisma.DbNull,
         connectedAccountName: fromName,
         connectedAccountEmail: fromAddress,

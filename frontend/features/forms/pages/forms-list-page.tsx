@@ -17,9 +17,12 @@ import { ActionButton } from "@/components/ui/action-button";
 import { Badge } from "@/components/ui/badge";
 import { SearchableSelect } from "@/components/forms/searchable-select";
 import { FormCreateDialog } from "@/features/forms/components/form-create-dialog";
+import { FormShareDialog } from "@/features/forms/components/form-share-dialog";
 import { FormsListHeaderActions } from "@/features/forms/components/forms-list-header-actions";
 import { useFormMutations } from "@/features/forms/hooks/use-form-mutations";
+import { useFormStaffPermissions } from "@/features/forms/hooks/use-form-staff-permissions";
 import { useFormsList } from "@/features/forms/hooks/use-forms-list";
+import { useFormsHost } from "@/features/forms/forms-host-context";
 import type { FormListItem, FormStatus } from "@/features/forms/types";
 import { getForm } from "@/features/forms/api/forms.api";
 import {
@@ -47,10 +50,13 @@ const STATUS_OPTIONS = [
 
 function FormsListPageContent() {
   const router = useRouter();
+  const { basePath, apiBase } = useFormsHost();
   const { params, setParams } = useListSearchParams(LIST_SCHEMA);
   const debouncedSearch = useDebouncedValue(params.search);
   const [createOpen, setCreateOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [shareForm, setShareForm] = useState<FormListItem | null>(null);
+  const { canManageTemplates } = useFormStaffPermissions();
 
   const filters = {
     search: debouncedSearch || undefined,
@@ -78,7 +84,7 @@ function FormsListPageContent() {
         cell: (row) => (
           <div className="min-w-[180px]">
             <Link
-              href={`/business/settings/forms/${row.id}/edit`}
+              href={`${basePath}/${row.id}/edit`}
               className="font-medium hover:underline"
             >
               {row.name}
@@ -114,7 +120,7 @@ function FormsListPageContent() {
         cell: (row) =>
           row.submissionCount > 0 ? (
             <Link
-              href={`/business/settings/forms/${row.id}/submissions`}
+              href={`${basePath}/${row.id}/submissions`}
               className="text-sm font-medium hover:underline"
             >
               {row.submissionCount}
@@ -148,7 +154,7 @@ function FormsListPageContent() {
         ),
       },
     ],
-    [],
+    [basePath],
   );
 
   const deleteTarget = data?.items.find((item) => item.id === deleteId);
@@ -159,7 +165,9 @@ function FormsListPageContent() {
         title="Forms"
         description="Build lead capture forms for your website and landing pages."
         actions={
-          <FormsListHeaderActions onCreate={() => setCreateOpen(true)} />
+          canManageTemplates ? (
+            <FormsListHeaderActions onCreate={() => setCreateOpen(true)} />
+          ) : undefined
         }
         filters={
           <FilterBar>
@@ -188,73 +196,91 @@ function FormsListPageContent() {
           emptyTitle="No forms yet"
           emptyDescription="Create your first lead capture form."
           emptyAction={
-            <ActionButton onClick={() => setCreateOpen(true)}>
-              <Plus className="mr-2 size-4" />
-              Create form
-            </ActionButton>
+            canManageTemplates ? (
+              <ActionButton onClick={() => setCreateOpen(true)}>
+                <Plus className="mr-2 size-4" />
+                Create form
+              </ActionButton>
+            ) : undefined
           }
           rowActions={(form) => (
             <DataTableRowActions
               menuLabel={`Actions for ${form.name}`}
               actions={[
-                {
-                  label: "Edit",
-                  onClick: () =>
-                    router.push(`/business/settings/forms/${form.id}/edit`),
-                },
-                {
-                  label: "View submissions",
-                  onClick: () =>
-                    router.push(
-                      `/business/settings/forms/${form.id}/submissions`,
-                    ),
-                },
-                {
-                  label: "Duplicate",
-                  onClick: () => duplicateMutation.mutate(form.id),
-                },
-                form.status === "published"
-                  ? {
-                      label: "Move to draft",
-                      onClick: () => draftMutation.mutate(form.id),
-                    }
-                  : {
-                      label: "Publish",
-                      onClick: () => publishMutation.mutate(form.id),
-                    },
-                ...(form.status !== "archived"
+                ...(canManageTemplates
                   ? [
                       {
-                        label: "Archive",
-                        onClick: () => archiveMutation.mutate(form.id),
+                        label: "Edit",
+                        onClick: () =>
+                          router.push(`${basePath}/${form.id}/edit`),
                       },
                     ]
                   : []),
                 {
-                  label: "Export JSON",
-                  onClick: async () => {
-                    const record = await getForm(form.id);
-                    downloadFormJson(record);
-                  },
+                  label: "View submissions",
+                  onClick: () =>
+                    router.push(`${basePath}/${form.id}/submissions`),
                 },
-                {
-                  label: "Delete",
-                  onClick: () => setDeleteId(form.id),
-                  destructive: true,
-                },
+                ...(canManageTemplates
+                  ? [
+                      {
+                        label: "Duplicate",
+                        onClick: () => duplicateMutation.mutate(form.id),
+                      },
+                      ...(form.status === "published"
+                        ? [
+                            {
+                              label: "Share link",
+                              onClick: () => setShareForm(form),
+                            },
+                          ]
+                        : []),
+                      form.status === "published"
+                        ? {
+                            label: "Move to draft",
+                            onClick: () => draftMutation.mutate(form.id),
+                          }
+                        : {
+                            label: "Publish",
+                            onClick: () => publishMutation.mutate(form.id),
+                          },
+                      ...(form.status !== "archived"
+                        ? [
+                            {
+                              label: "Archive",
+                              onClick: () => archiveMutation.mutate(form.id),
+                            },
+                          ]
+                        : []),
+                      {
+                        label: "Export JSON",
+                        onClick: async () => {
+                          const record = await getForm(form.id, apiBase);
+                          downloadFormJson(record);
+                        },
+                      },
+                      {
+                        label: "Delete",
+                        onClick: () => setDeleteId(form.id),
+                        destructive: true,
+                      },
+                    ]
+                  : []),
               ]}
             />
           )}
         />
       </ListPage>
 
-      <FormCreateDialog
-        open={createOpen}
-        onOpenChange={setCreateOpen}
-        onCreated={(id) => {
-          router.push(`/business/settings/forms/${id}/edit`);
-        }}
-      />
+      {canManageTemplates ? (
+        <FormCreateDialog
+          open={createOpen}
+          onOpenChange={setCreateOpen}
+          onCreated={(id) => {
+            router.push(`${basePath}/${id}/edit`);
+          }}
+        />
+      ) : null}
 
       <ConfirmDeleteDialog
         open={!!deleteId}
@@ -267,6 +293,14 @@ function FormsListPageContent() {
         }
         isPending={deleteMutation.isPending}
         onConfirm={() => deleteId && deleteMutation.mutate(deleteId)}
+      />
+
+      <FormShareDialog
+        open={!!shareForm}
+        onOpenChange={(open) => !open && setShareForm(null)}
+        formId={shareForm?.id ?? null}
+        status={shareForm?.status ?? "draft"}
+        formName={shareForm?.name}
       />
     </>
   );

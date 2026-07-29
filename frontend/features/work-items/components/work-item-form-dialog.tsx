@@ -4,10 +4,24 @@ import { useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { Check, Clock } from "lucide-react";
 import { toast } from "sonner";
 import { ContactPicker } from "@/features/contacts/components/contact-picker";
-import { FormDialog } from "@/components/forms/form-dialog";
+import { FormSheet } from "@/components/forms/form-sheet";
+import {
+  DRAWER_FOOTER_ACTIONS_CLASS,
+  DRAWER_FOOTER_BUTTON_CLASS,
+  DRAWER_SHEET_CLASS,
+  DRAWER_SHEET_CONTENT_CLASS,
+  DRAWER_SHEET_DESCRIPTION_CLASS,
+  DRAWER_SHEET_HEADER_CLASS,
+  DRAWER_SHEET_TITLE_CLASS,
+} from "@/components/forms/drawer-sheet";
+import {
+  WORK_ITEM_DRAWER_FOOTER_CLASS,
+} from "@/features/work-items/components/work-item-form-drawer-shell";
 import { SearchableSelect } from "@/components/forms/searchable-select";
+import { ActionButton } from "@/components/ui/action-button";
 import {
   FormControl,
   FormField,
@@ -18,9 +32,12 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { createWorkItem, updateWorkItem } from "@/features/work-items/api/work-items.api";
+import { useWorkItemsHost } from "@/features/work-items/work-items-host-context";
 import { PERMISSIONS, useCan } from "@/features/auth/permissions";
 import { listBusinessMembers } from "@/features/settings/api/business.api";
 import { listServices } from "@/features/settings/api/services.api";
+import { mapApiFieldErrorsToForm } from "@/lib/forms/map-api-field-errors";
+import { ApiClientError } from "@/lib/api/errors";
 import { queryKeys } from "@/lib/query/keys";
 import {
   WORK_ITEM_STATUS_OPTIONS,
@@ -31,8 +48,6 @@ import {
   type WorkItemFormValues,
 } from "@/features/work-items/schemas/work-item-profile";
 import type { WorkItem } from "@/features/work-items/types";
-import type { Service } from "@/features/settings/types";
-import type { BusinessMember } from "@/lib/types/shared";
 
 interface WorkItemFormDialogProps {
   open: boolean;
@@ -40,6 +55,7 @@ interface WorkItemFormDialogProps {
   workItem?: WorkItem | null;
   defaultContactId?: string;
   defaultContactLabel?: string;
+  defaultStatus?: WorkItem["status"];
   onSuccess: () => void;
 }
 
@@ -49,10 +65,19 @@ export function WorkItemFormDialog({
   workItem,
   defaultContactId,
   defaultContactLabel,
+  defaultStatus,
   onSuccess,
 }: WorkItemFormDialogProps) {
   const isEdit = !!workItem;
-  const canAssign = useCan(PERMISSIONS["members.invite"]);
+  const {
+    apiBase,
+    contactsApiBase,
+    servicesApiBase = "services",
+    membersApiBase,
+    mode,
+  } = useWorkItemsHost();
+  const canInviteMembers = useCan(PERMISSIONS["members.invite"]);
+  const canAssign = mode === "platform" || canInviteMembers;
 
   const form = useForm<WorkItemFormValues>({
     resolver: zodResolver(workItemFormSchema),
@@ -60,16 +85,19 @@ export function WorkItemFormDialog({
   });
 
   const { data: services } = useQuery({
-    queryKey: queryKeys.services.picker(),
+    queryKey: queryKeys.services.picker(servicesApiBase),
     queryFn: () =>
-      listServices({ page: 1, limit: 100, status: "ACTIVE" }),
-    enabled: open,
+      listServices({ page: 1, limit: 100, status: "ACTIVE" }, servicesApiBase),
+    enabled: open && mode !== "platform",
   });
 
   const { data: members } = useQuery({
-    queryKey: queryKeys.business.members({ page: 1, limit: 100 }),
+    queryKey: queryKeys.business.members(
+      { page: 1, limit: 100 },
+      membersApiBase,
+    ),
     queryFn: () =>
-      listBusinessMembers({ page: 1, limit: 100 }),
+      listBusinessMembers({ page: 1, limit: 100 }, membersApiBase),
     enabled: open && canAssign,
   });
 
@@ -105,41 +133,93 @@ export function WorkItemFormDialog({
       form.reset({
         ...workItemFormDefaults,
         contactId: defaultContactId ?? "",
+        status: defaultStatus ?? workItemFormDefaults.status,
       });
     }
-  }, [workItem, form, open, defaultContactId]);
+  }, [workItem, form, open, defaultContactId, defaultStatus]);
 
   const mutation = useMutation({
     mutationFn: (values: WorkItemFormValues) => {
       const body = workItemFormToApiBody(values) as Record<string, unknown>;
-      if (isEdit) {
+      if (mode === "platform") {
+        delete body.serviceId;
+      } else if (isEdit) {
         if (!values.serviceId?.trim()) body.serviceId = null;
+      }
+      if (isEdit) {
         if (!values.assignedToId?.trim()) body.assignedToId = null;
       }
       if (isEdit && workItem) {
-        return updateWorkItem(workItem.id, body);
+        return updateWorkItem(workItem.id, body, apiBase);
       }
-      return createWorkItem(body);
+      return createWorkItem(body, apiBase);
     },
     onSuccess: () => {
-      toast.success(isEdit ? "Updated" : "Created");
+      toast.success(isEdit ? "Work item updated" : "Work item created");
       onSuccess();
       onOpenChange(false);
     },
-    onError: (err: Error) => toast.error(err.message),
+    onError: (err: Error) => {
+      if (!mapApiFieldErrorsToForm(err, form.setError)) {
+        const hint =
+          err instanceof ApiClientError && err.requestId
+            ? `${err.message} (${err.requestId})`
+            : err.message;
+        toast.error(hint);
+      }
+    },
   });
 
+  const submit = form.handleSubmit((values) => mutation.mutate(values));
+
   return (
-    <FormDialog
+    <FormSheet
       open={open}
       onOpenChange={onOpenChange}
-      title={isEdit ? "Edit" : "New"}
+      title={isEdit ? "Edit work item" : "New work item"}
+      description={
+        isEdit
+          ? "Update customer, service, and work details."
+          : "Record customer, service, and work details."
+      }
+      className={DRAWER_SHEET_CLASS}
+      headerClassName={DRAWER_SHEET_HEADER_CLASS}
+      titleClassName={DRAWER_SHEET_TITLE_CLASS}
+      descriptionClassName={DRAWER_SHEET_DESCRIPTION_CLASS}
+      contentClassName={DRAWER_SHEET_CONTENT_CLASS}
+      footerClassName={WORK_ITEM_DRAWER_FOOTER_CLASS}
       form={form}
       schema={workItemFormSchema}
       onSubmit={(v) => mutation.mutate(v)}
       isPending={mutation.isPending}
-      submitLabel={isEdit ? "Save changes" : "Create"}
-      className="sm:max-w-lg"
+      submitLabel={isEdit ? "Save changes" : "Create work item"}
+      footer={
+        <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
+          <p className="flex items-center gap-2 text-xs text-muted-foreground sm:mr-auto">
+            <Clock className="size-3.5 shrink-0" aria-hidden />
+            {isEdit
+              ? "Changes apply when you save this work item"
+              : "New work items appear on the board right away"}
+          </p>
+          <div className={DRAWER_FOOTER_ACTIONS_CLASS}>
+            <ActionButton
+              type="button"
+              disabled={mutation.isPending}
+              onClick={() => void submit()}
+              className={DRAWER_FOOTER_BUTTON_CLASS}
+            >
+              {mutation.isPending ? (
+                "Saving…"
+              ) : (
+                <>
+                  <Check className="size-4" />
+                  {isEdit ? "Save changes" : "Create work item"}
+                </>
+              )}
+            </ActionButton>
+          </div>
+        </div>
+      }
     >
       <FormField
         control={form.control}
@@ -154,31 +234,34 @@ export function WorkItemFormDialog({
                 placeholder="Search or add customer…"
                 locked={!!lockedContact}
                 lockedContact={lockedContact}
+                apiBase={contactsApiBase}
               />
             </FormControl>
             <FormMessage />
           </FormItem>
         )}
       />
-      <FormField
-        control={form.control}
-        name="serviceId"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Service (optional)</FormLabel>
-            <FormControl>
-              <SearchableSelect
-                items={serviceItems}
-                value={field.value ?? ""}
-                onValueChange={field.onChange}
-                placeholder="Select service"
-                emptyMessage="No services found"
-              />
-            </FormControl>
+      {mode !== "platform" ? (
+        <FormField
+          control={form.control}
+          name="serviceId"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Service (optional)</FormLabel>
+              <FormControl>
+                <SearchableSelect
+                  items={serviceItems}
+                  value={field.value ?? ""}
+                  onValueChange={field.onChange}
+                  placeholder="Select service"
+                  emptyMessage="No services found"
+                />
+              </FormControl>
             <FormMessage />
           </FormItem>
         )}
       />
+      ) : null}
       <FormField
         control={form.control}
         name="title"
@@ -232,14 +315,22 @@ export function WorkItemFormDialog({
           name="assignedToId"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Assigned staff (optional)</FormLabel>
+              <FormLabel>
+                {mode === "platform"
+                  ? "Assigned support (optional)"
+                  : "Assigned staff (optional)"}
+              </FormLabel>
               <FormControl>
                 <SearchableSelect
                   items={assigneeItems}
                   value={field.value ?? ""}
                   onValueChange={field.onChange}
                   placeholder="Unassigned"
-                  emptyMessage="No team members found"
+                  emptyMessage={
+                    mode === "platform"
+                      ? "No support users found"
+                      : "No team members found"
+                  }
                 />
               </FormControl>
               <FormMessage />
@@ -273,6 +364,6 @@ export function WorkItemFormDialog({
           </FormItem>
         )}
       />
-    </FormDialog>
+    </FormSheet>
   );
 }

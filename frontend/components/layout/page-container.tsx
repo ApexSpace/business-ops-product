@@ -15,7 +15,7 @@ export function PageContainer({
   return (
     <div
       className={cn(
-        "mx-auto w-full max-w-[1600px]",
+        "w-full",
         dense ? "space-y-2" : "space-y-[var(--page-stack-gap)]",
         className,
       )}

@@ -9,6 +9,7 @@ import type {
   LabelPosition,
   LabelSize,
 } from "@/features/forms/types";
+import { resolveFormLayout, resolveFormMaxWidthPx } from "@/features/forms/utils/form-layout.util";
 import { cn } from "@/lib/utils";
 
 const WIDTH_CLASS: Record<FieldWidth, string> = {
@@ -48,14 +49,33 @@ const FONT_CLASS: Record<FontPreset, string> = {
   mono: "font-mono",
 };
 
-function normalizeWidth(width?: FieldStyle["width"]): FieldWidth {
+export function normalizeFieldWidth(width?: FieldStyle["width"]): FieldWidth {
   if (width === "half") return 50;
   if (width === "full" || width == null) return 100;
-  return width;
+  const numeric = Number(width);
+  if (numeric === 25 || numeric === 33 || numeric === 50 || numeric === 67 || numeric === 75 || numeric === 100) {
+    return numeric;
+  }
+  return 100;
 }
 
 export function getFieldWidthClass(width?: FieldStyle["width"]): string {
-  return WIDTH_CLASS[normalizeWidth(width)];
+  return WIDTH_CLASS[normalizeFieldWidth(width)];
+}
+
+const COLUMN_GRID_CLASS: Record<1 | 2 | 3 | 4, string> = {
+  1: "grid-cols-1",
+  2: "grid-cols-1 sm:grid-cols-2",
+  3: "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3",
+  4: "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4",
+};
+
+export function getColumnGridClass(columnCount?: number): string {
+  const count = columnCount ?? 2;
+  if (count === 1 || count === 2 || count === 3 || count === 4) {
+    return COLUMN_GRID_CLASS[count];
+  }
+  return COLUMN_GRID_CLASS[2];
 }
 
 export function getLabelPositionClass(position?: LabelPosition): string {
@@ -86,9 +106,41 @@ export function getTextAlignClass(align?: FieldStyle["textAlign"]): string {
   return "text-left";
 }
 
+export function getFieldLayoutClassName(style?: FieldStyle): string {
+  const width = normalizeFieldWidth(style?.width);
+  const align = style?.textAlign ?? "left";
+
+  return cn(
+    getTextAlignClass(align),
+    width !== 100 && align === "center" && "mx-auto",
+    width !== 100 && align === "right" && "ml-auto",
+  );
+}
+
+export function parseFieldWidth(value: string | number | undefined): FieldWidth {
+  const numeric = typeof value === "number" ? value : Number.parseInt(String(value ?? ""), 10);
+  if (numeric === 25 || numeric === 33 || numeric === 50 || numeric === 67 || numeric === 75 || numeric === 100) {
+    return numeric;
+  }
+  return 100;
+}
+
+export function getFieldMarginStyle(style?: FieldStyle): CSSProperties {
+  if (style?.marginBottom == null) return {};
+  return { marginBottom: `${style.marginBottom}px` };
+}
+
+export function getFieldSizeStyle(style?: FieldStyle): CSSProperties {
+  const width = normalizeFieldWidth(style?.width);
+  if (width === 100) return {};
+  return { width: `${width}%`, maxWidth: `${width}%` };
+}
+
 export function getFieldWrapperStyle(style?: FieldStyle): CSSProperties {
-  const marginBottom = style?.marginBottom;
-  return marginBottom != null ? { marginBottom: `${marginBottom}px` } : {};
+  return {
+    ...getFieldSizeStyle(style),
+    ...getFieldMarginStyle(style),
+  };
 }
 
 export function getLabelInlineStyle(style?: FieldStyle): CSSProperties {
@@ -110,7 +162,16 @@ export function getFormContainerStyle(settings: FormSettings): CSSProperties {
   if (settings.backgroundColor) result.backgroundColor = settings.backgroundColor;
   if (settings.textColor) result.color = settings.textColor;
   if (settings.padding != null) result.padding = `${settings.padding}px`;
-  if (settings.maxWidth != null) result.maxWidth = `${settings.maxWidth}px`;
+
+  const layout = resolveFormLayout(settings);
+  const maxWidth = resolveFormMaxWidthPx(layout) ?? settings.maxWidth;
+  if (layout === "full") {
+    result.maxWidth = "100%";
+    result.width = "100%";
+  } else if (maxWidth != null) {
+    result.maxWidth = `${maxWidth}px`;
+  }
+
   return result;
 }
 

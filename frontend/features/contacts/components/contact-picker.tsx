@@ -41,6 +41,9 @@ export interface ContactPickerProps {
   locked?: boolean;
   lockedContact?: ContactPickerSelection;
   id?: string;
+  triggerClassName?: string;
+  /** Contacts API path prefix (business `contacts` or `platform/contacts`). */
+  apiBase?: string;
 }
 
 function contactToSelection(contact: Contact): ContactPickerSelection {
@@ -99,6 +102,8 @@ export function ContactPicker({
   locked = false,
   lockedContact,
   id,
+  triggerClassName,
+  apiBase = "contacts",
 }: ContactPickerProps) {
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
@@ -111,15 +116,18 @@ export function ContactPicker({
   const debouncedSearch = useDebouncedValue(search, 300);
 
   const { data: searchResults, isFetching } = useQuery({
-    queryKey: queryKeys.contacts.search(debouncedSearch),
+    queryKey: queryKeys.contacts.search(debouncedSearch, apiBase),
     queryFn: () =>
-      listContacts({ page: 1, limit: 20, search: debouncedSearch || undefined }),
+      listContacts(
+        { page: 1, limit: 20, search: debouncedSearch || undefined },
+        apiBase,
+      ),
     enabled: open && !locked,
   });
 
   const { data: loadedContact } = useQuery({
-    queryKey: queryKeys.contacts.detail(value),
-    queryFn: () => getContact(value),
+    queryKey: queryKeys.contacts.detail(value, apiBase),
+    queryFn: () => getContact(value, apiBase),
     enabled: !!value && !selection && !lockedContact && !locked,
   });
 
@@ -164,8 +172,8 @@ export function ContactPicker({
     setSelection(picked);
     onValueChange(contact.id);
     onContactSelect?.(contact);
-    void invalidateContactPicker(queryClient);
-    void invalidateContactLists(queryClient);
+    void invalidateContactPicker(queryClient, apiBase);
+    void invalidateContactLists(queryClient, apiBase);
     setOpen(false);
     setSearch("");
   };
@@ -175,7 +183,10 @@ export function ContactPicker({
     return (
       <div
         id={id}
-        className="flex h-[var(--control-height)] w-full items-center gap-2 rounded-md border border-input bg-muted/30 px-3 text-sm"
+        className={cn(
+          "flex h-11 w-full items-center gap-2.5 rounded-[10px] border-[1.5px] border-input bg-muted/30 px-3 text-[13.5px]",
+          triggerClassName,
+        )}
       >
         <User className="size-4 shrink-0 text-muted-foreground" />
         <span className="min-w-0 flex-1 truncate">
@@ -195,8 +206,9 @@ export function ContactPicker({
           id={id}
           disabled={disabled}
           className={cn(
-            "flex h-[var(--control-height)] w-full items-center justify-between gap-2 rounded-md border border-input bg-transparent px-3 text-sm font-normal shadow-none outline-none transition-[border-color,box-shadow] hover:bg-muted/30 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/40 disabled:cursor-not-allowed disabled:opacity-50",
+            "flex h-11 w-full items-center justify-between gap-2 rounded-[10px] border-[1.5px] border-input bg-transparent px-3 text-[13.5px] font-normal shadow-none outline-none transition-[border-color,box-shadow] hover:bg-muted/30 focus-visible:border-ring focus-visible:ring-[4px] focus-visible:ring-ring/15 disabled:cursor-not-allowed disabled:opacity-50",
             !displaySelection && "text-muted-foreground",
+            triggerClassName,
           )}
         >
           <span className="flex min-w-0 flex-1 items-center gap-2 text-left">
@@ -281,6 +293,7 @@ export function ContactPicker({
         onOpenChange={setCreateOpen}
         initialValues={createPrefill}
         createLabel={search.trim() ? search.trim() : undefined}
+        apiBase={apiBase}
         onCreated={handleCreated}
       />
     </>

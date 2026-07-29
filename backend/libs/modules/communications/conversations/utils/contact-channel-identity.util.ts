@@ -9,6 +9,7 @@ export type ChannelMetadataKey =
   | 'facebookPsid'
   | 'instagramUserId'
   | 'whatsappWaId'
+  | 'smsPhone'
   | 'emailAddress';
 
 export interface SenderProfileSnapshot {
@@ -29,6 +30,7 @@ export function resolveChannelMetadataKey(
   if (channel === ConversationChannel.FACEBOOK) return 'facebookPsid';
   if (channel === ConversationChannel.WHATSAPP) return 'whatsappWaId';
   if (channel === ConversationChannel.EMAIL) return 'emailAddress';
+  if (channel === ConversationChannel.SMS) return 'smsPhone';
   return 'instagramUserId';
 }
 
@@ -45,11 +47,17 @@ export function parseWhatsAppWaIdToPhone(waId: string): {
 } {
   const digits = waId.replace(/\D/g, '');
   if (!digits) {
-    return { phoneKey: null, phoneFields: { phoneCountryCode: null, phoneNumber: null } };
+    return {
+      phoneKey: null,
+      phoneFields: { phoneCountryCode: null, phoneNumber: null },
+    };
   }
 
   const phoneFields = sanitizePhoneFields('+', digits);
-  const phoneKey = normalizePhoneKey(phoneFields.phoneCountryCode, phoneFields.phoneNumber);
+  const phoneKey = normalizePhoneKey(
+    phoneFields.phoneCountryCode,
+    phoneFields.phoneNumber,
+  );
 
   return { phoneKey, phoneFields };
 }
@@ -77,6 +85,12 @@ export function buildInboundContactIdentity(
     phoneFields = parsed.phoneFields;
   }
 
+  if (inbound.channel === ConversationChannel.SMS) {
+    const parsed = parseWhatsAppWaIdToPhone(inbound.externalParticipantId);
+    phoneKey = parsed.phoneKey;
+    phoneFields = parsed.phoneFields;
+  }
+
   return { email, phoneKey, phoneFields };
 }
 
@@ -90,6 +104,11 @@ export function defaultInboundDisplayName(
       ? externalParticipantId
       : `+${externalParticipantId}`;
   }
+  if (channel === ConversationChannel.SMS) {
+    return externalParticipantId.startsWith('+')
+      ? externalParticipantId
+      : `+${externalParticipantId}`;
+  }
   if (channel === ConversationChannel.EMAIL) {
     return externalParticipantId;
   }
@@ -99,6 +118,7 @@ export function defaultInboundDisplayName(
 export function contactSourceLabel(channel: ConversationChannel): string {
   if (channel === ConversationChannel.FACEBOOK) return 'Facebook Messenger';
   if (channel === ConversationChannel.WHATSAPP) return 'WhatsApp';
+  if (channel === ConversationChannel.SMS) return 'SMS';
   if (channel === ConversationChannel.EMAIL) return 'Email';
   return 'Instagram';
 }

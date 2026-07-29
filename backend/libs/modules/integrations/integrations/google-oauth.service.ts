@@ -9,16 +9,24 @@ import { Response } from 'express';
 import { RequestUser } from '@app/common/decorators/current-user.decorator';
 import { AppException } from '@app/common/exceptions/app.exception';
 import { ErrorCode } from '@app/common/exceptions/error-code.enum';
-import { encryptIntegrationCredentials } from '@app/common/utils/integration-encryption.util';
+import {
+  decryptIntegrationCredentials,
+  encryptIntegrationCredentials,
+} from '@app/common/utils/integration-encryption.util';
 import { RootConfig } from '@app/core/config/configuration';
+import { resolveOAuthRedirectUri } from '@app/core/config/oauth-redirect-uri.util';
+import { JobEnqueueService } from '@app/core/jobs/job-enqueue.service';
 import { AuditService } from '@app/modules/platform/audit/services/audit.service';
 import {
   GOOGLE_OAUTH_AUTHORIZE_URL,
   GOOGLE_OAUTH_TOKEN_URL,
   GOOGLE_USERINFO_URL,
   getGoogleScopesForProvider,
+  googleTokenHasBusinessManageScope,
+  GOOGLE_BUSINESS_MANAGE_SCOPE_MISSING_MESSAGE,
   isGoogleOAuthProviderKey,
 } from './constants/google-oauth.constants';
+import { providerSupportsResources } from './constants/integration-resource.constants';
 import { BusinessIntegrationRepository } from './repositories/business-integration.repository';
 import { IntegrationProviderRepository } from './repositories/integration-provider.repository';
 import {
@@ -48,10 +56,33 @@ export class GoogleOAuthService {
     private readonly providerRepository: IntegrationProviderRepository,
     private readonly businessIntegrationRepository: BusinessIntegrationRepository,
     private readonly auditService: AuditService,
+    private readonly jobEnqueueService: JobEnqueueService,
   ) {}
 
   async redirectToGoogle(
     user: RequestUser,
+    providerKey: string,
+    res: Response,
+  ): Promise<void> {
+    if (!user.businessId) {
+      throw new AppException(
+        ErrorCode.BAD_REQUEST,
+        'Business context is required for Google OAuth',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+    await this.redirectToGoogleForBusiness(
+      user,
+      user.businessId,
+      providerKey,
+      res,
+    );
+  }
+
+  /** Platform ops: stamp INTERNAL business into OAuth state (no tenant JWT). */
+  async redirectToGoogleForBusiness(
+    user: RequestUser,
+    businessId: string,
     providerKey: string,
     res: Response,
   ): Promise<void> {
@@ -70,7 +101,7 @@ export class GoogleOAuthService {
 
     const state = createGoogleOAuthState(
       {
-        businessId: user.businessId!,
+        businessId,
         userId: user.id,
         providerKey,
       },
@@ -122,13 +153,36 @@ export class GoogleOAuthService {
     try {
       await this.assertOAuthProvider(payload.providerKey);
       const tokens = await this.exchangeCodeForTokens(code);
+      if (
+        payload.providerKey === 'google-business-profile' &&
+        !googleTokenHasBusinessManageScope(tokens.scope)
+      ) {
+        throw new AppException(
+          ErrorCode.BAD_REQUEST,
+          GOOGLE_BUSINESS_MANAGE_SCOPE_MISSING_MESSAGE,
+          HttpStatus.BAD_REQUEST,
+        );
+      }
       const profile = await this.fetchGoogleUserInfo(tokens.access_token);
       await this.saveBusinessIntegration(payload, tokens, profile);
+
+      let jobId: string | undefined;
+      if (providerSupportsResources(payload.providerKey)) {
+        const asyncJob =
+          await this.jobEnqueueService.enqueueIntegrationResourceSync({
+            businessId: payload.businessId,
+            providerKey: payload.providerKey,
+            actorUserId: payload.userId,
+            idempotencyKey: `google-oauth-sync-${payload.businessId}-${payload.providerKey}-${payload.nonce}`,
+          });
+        jobId = asyncJob.id;
+      }
 
       res.redirect(
         this.buildOAuthCallbackUrl({
           connected: payload.providerKey,
           providerKey: payload.providerKey,
+          jobId,
         }),
       );
     } catch (err) {
@@ -147,6 +201,7 @@ export class GoogleOAuthService {
     connected?: string;
     error?: string;
     providerKey?: string;
+    jobId?: string;
   }): string {
     const frontendBase = this.getFrontendBaseUrl();
     const url = new URL(`${frontendBase}/oauth/callback`);
@@ -158,6 +213,9 @@ export class GoogleOAuthService {
     }
     if (params.providerKey) {
       url.searchParams.set('providerKey', params.providerKey);
+    }
+    if (params.jobId) {
+      url.searchParams.set('jobId', params.jobId);
     }
     return url.toString();
   }
@@ -237,9 +295,32 @@ export class GoogleOAuthService {
       Date.now() + tokens.expires_in * 1000,
     ).toISOString();
 
+    const existing =
+      await this.businessIntegrationRepository.findByBusinessAndKey(
+        payload.businessId,
+        payload.providerKey,
+      );
+
+    let previousRefreshToken: string | null = null;
+    const existingEncrypted = (
+      existing?.credentials as { encrypted?: string } | null
+    )?.encrypted;
+    if (existingEncrypted) {
+      try {
+        const previous = decryptIntegrationCredentials(
+          this.getEncryptionKey(),
+          existingEncrypted,
+        ) as { refreshToken?: string | null };
+        previousRefreshToken = previous.refreshToken ?? null;
+      } catch {
+        previousRefreshToken = null;
+      }
+    }
+
     const credentialsPayload = {
       accessToken: tokens.access_token,
-      refreshToken: tokens.refresh_token ?? null,
+      // Google only returns refresh_token on first consent — keep the prior one on reconnect.
+      refreshToken: tokens.refresh_token ?? previousRefreshToken,
       expiresAt,
       scope: tokens.scope,
       tokenType: tokens.token_type,
@@ -353,10 +434,10 @@ export class GoogleOAuthService {
   }
 
   private getGoogleRedirectUri(): string {
-    return (
-      process.env.GOOGLE_OAUTH_REDIRECT_URI ??
-      'http://localhost:3000/api/v1/integrations/oauth/google/callback'
-    );
+    return resolveOAuthRedirectUri(process.env, {
+      explicitEnvValue: process.env.GOOGLE_OAUTH_REDIRECT_URI,
+      callbackPath: 'integrations/oauth/google/callback',
+    });
   }
 
   private getFrontendBaseUrl(): string {

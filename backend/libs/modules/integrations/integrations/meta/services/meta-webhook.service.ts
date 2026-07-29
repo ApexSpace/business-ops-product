@@ -105,10 +105,11 @@ export class MetaWebhookService {
     const externalEventId = extractMetaWebhookEventId(body);
 
     if (externalEventId) {
-      const existing = await this.webhookEventsRepository.findByProviderAndExternalId(
-        WebhookEventProvider.META,
-        externalEventId,
-      );
+      const existing =
+        await this.webhookEventsRepository.findByProviderAndExternalId(
+          WebhookEventProvider.META,
+          externalEventId,
+        );
       if (existing) {
         await this.resumeWebhookEvent(
           existing,
@@ -135,10 +136,11 @@ export class MetaWebhookService {
         error instanceof Prisma.PrismaClientKnownRequestError &&
         error.code === 'P2002'
       ) {
-        const existing = await this.webhookEventsRepository.findByProviderAndExternalId(
-          WebhookEventProvider.META,
-          externalEventId,
-        );
+        const existing =
+          await this.webhookEventsRepository.findByProviderAndExternalId(
+            WebhookEventProvider.META,
+            externalEventId,
+          );
         if (existing) {
           await this.resumeWebhookEvent(
             existing,

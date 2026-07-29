@@ -18,14 +18,22 @@ describe('CapabilityModulesService', () => {
       requireCapability: jest.fn().mockResolvedValue({ id: 'cap-1' }),
     };
     const auditService = { log: jest.fn() };
+    const entitlementImpact = {
+      onFeaturesAdded: jest.fn().mockResolvedValue(undefined),
+      onFeaturesRemoved: jest.fn().mockResolvedValue({
+        campaignId: null,
+        affectedCount: 0,
+      }),
+    };
 
     const service = new CapabilityModulesService(
       repository as never,
       capabilitiesService as never,
       auditService as never,
+      entitlementImpact as never,
     );
 
-    return { service, repository, auditService };
+    return { service, repository, auditService, entitlementImpact };
   }
 
   it('lists flat module catalog from code registry with options', () => {
@@ -46,38 +54,61 @@ describe('CapabilityModulesService', () => {
     expect(catalog.map((m) => m.moduleKey)).not.toEqual(
       expect.arrayContaining(['automation', 'email_marketing']),
     );
-    expect(catalog.map((m) => m.moduleKey)).not.toContain('forms');
+    expect(catalog.map((m) => m.moduleKey)).toEqual(
+      expect.arrayContaining([
+        'forms',
+        'automations',
+        'sms',
+        'gift_cards',
+        'packages',
+        'memberships',
+        'offers',
+        'sales',
+        'estimates',
+        'invoices',
+        'online_booking',
+        'services',
+        'notes',
+        'tasks',
+      ]),
+    );
     const settings = catalog.find((m) => m.moduleKey === 'settings');
     expect(
       settings?.availableOptions.some((o) => o.key === 'settings.team'),
     ).toBe(true);
-    expect(settings?.availableOptions.map((o) => o.key)).toEqual(
+    expect(settings?.availableOptions.map((o) => o.key)).not.toEqual(
       expect.arrayContaining([
         'settings.forms.list',
-        'settings.forms.create',
-        'settings.forms.edit',
-        'settings.forms.delete',
+        'settings.automations.list',
+        'settings.services',
       ]),
     );
-    const formsOptions = settings?.availableOptions.filter((o) =>
-      o.key.startsWith('settings.forms.'),
+    const forms = catalog.find((m) => m.moduleKey === 'forms');
+    expect(forms?.availableOptions.map((o) => o.key)).toEqual(
+      expect.arrayContaining([
+        'forms.list',
+        'forms.create',
+        'forms.edit',
+        'forms.delete',
+      ]),
     );
-    expect([...new Set(formsOptions?.map((o) => o.group))]).toEqual(['Forms']);
     const payments = catalog.find((m) => m.moduleKey === 'payments');
     expect(payments?.availableOptions.map((o) => o.key)).toEqual(
       expect.arrayContaining([
-        'payments.estimates.list',
-        'payments.invoices.list',
         'payments.transactions.list',
         'payments.refund',
         'payments.collect',
       ]),
     );
-    const paymentGroups = [
-      ...new Set(payments?.availableOptions.map((o) => o.group)),
-    ];
-    expect(paymentGroups).toEqual(
-      expect.arrayContaining(['Estimates', 'Invoices', 'Transactions']),
+    expect(payments?.availableOptions.map((o) => o.key)).not.toEqual(
+      expect.arrayContaining([
+        'payments.estimates.list',
+        'payments.invoices.list',
+      ]),
+    );
+    const sms = catalog.find((m) => m.moduleKey === 'sms');
+    expect(sms?.availableOptions.map((o) => o.key)).toEqual(
+      expect.arrayContaining(['sms.two_way', 'sms.notifications']),
     );
   });
 

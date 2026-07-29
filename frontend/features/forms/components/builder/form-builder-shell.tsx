@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   DndContext,
   DragOverlay,
@@ -15,6 +15,11 @@ import {
 import { sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import type { FieldType } from "@/features/forms/types";
 import { getFieldTypeLabel } from "@/features/forms/utils/field-defaults.util";
+import {
+  findColumnFieldContext,
+  parseColumnDropZoneId,
+  resolveColumnAddContext,
+} from "@/features/forms/utils/column-fields.util";
 import type { FormBuilderStateApi } from "@/features/forms/hooks/use-form-builder-state";
 import { BuilderTopbar } from "@/features/forms/components/builder/builder-topbar";
 import { FieldPalette } from "@/features/forms/components/builder/field-palette";
@@ -24,11 +29,13 @@ import {
   FormCanvas,
 } from "@/features/forms/components/builder/form-canvas";
 import { FieldSettingsPanel } from "@/features/forms/components/builder/field-settings-panel";
-import { FormEmbedDialog } from "@/features/forms/components/form-embed-dialog";
+import { FormShareDialog } from "@/features/forms/components/form-share-dialog";
 import { FormPreviewModal } from "@/features/forms/components/builder/form-preview-modal";
 
 interface FormBuilderShellProps {
   builder: FormBuilderStateApi;
+  shareOpen: boolean;
+  onShareOpenChange: (open: boolean) => void;
   onSave: () => void;
   onPublish: () => void;
   onMoveToDraft: () => void;
@@ -40,6 +47,8 @@ interface FormBuilderShellProps {
 
 export function FormBuilderShell({
   builder,
+  shareOpen,
+  onShareOpenChange,
   onSave,
   onPublish,
   onMoveToDraft,
@@ -49,18 +58,62 @@ export function FormBuilderShell({
   onDelete,
 }: FormBuilderShellProps) {
   const [activePaletteType, setActivePaletteType] = useState<FieldType | null>(null);
-  const [embedOpen, setEmbedOpen] = useState(false);
+  const [targetColumnIndex, setTargetColumnIndex] = useState(0);
   const canvasColumnRef = useRef<HTMLDivElement>(null);
+  const palettePanelRef = useRef<HTMLDivElement>(null);
   const settingsPanelRef = useRef<HTMLDivElement>(null);
+
+  const columnAddContext = useMemo(
+    () =>
+      resolveColumnAddContext(
+        builder.definition.fields,
+        builder.selectedFieldId,
+        targetColumnIndex,
+      ),
+    [builder.definition.fields, builder.selectedFieldId, targetColumnIndex],
+  );
+
+  useEffect(() => {
+    if (!builder.selectedFieldId) return;
+    const context = findColumnFieldContext(
+      builder.definition.fields,
+      builder.selectedFieldId,
+    );
+    if (context && context.columnsField.id !== builder.selectedFieldId) {
+      setTargetColumnIndex(context.columnIndex);
+    }
+  }, [builder.selectedFieldId, builder.definition.fields]);
+
+  const handlePaletteAddField = (type: FieldType) => {
+    if (columnAddContext) {
+      builder.addFieldToColumn(
+        columnAddContext.columnsFieldId,
+        columnAddContext.targetColumnIndex,
+        type,
+      );
+      return;
+    }
+    builder.addField(type);
+  };
 
   const handleDeselectField = () => {
     builder.setSelectedFieldId(null);
   };
 
   const handleBuilderPointerDown = (event: React.PointerEvent) => {
-    const target = event.target as Node;
+    const target = event.target;
+    if (!(target instanceof Node)) return;
     if (canvasColumnRef.current?.contains(target)) return;
+    if (palettePanelRef.current?.contains(target)) return;
     if (settingsPanelRef.current?.contains(target)) return;
+    if (
+      target instanceof Element &&
+      target.closest(
+        '[data-slot="dropdown-menu-content"], [data-slot="select-content"], [data-slot="popover-content"]',
+      )
+    ) {
+      return;
+    }
     handleDeselectField();
   };
 
@@ -88,8 +141,27 @@ export function FormBuilderShell({
     if (activeData?.source === "palette") {
       const type = activeData.type as FieldType;
       const overId = String(over.id);
+      const columnDrop = parseColumnDropZoneId(overId);
+
+      if (columnDrop) {
+        builder.addFieldToColumn(
+          columnDrop.columnsFieldId,
+          columnDrop.columnIndex,
+          type,
+        );
+        setTargetColumnIndex(columnDrop.columnIndex);
+        return;
+      }
 
       if (overId === CANVAS_EMPTY_ID || overId === CANVAS_APPEND_ID) {
+        if (columnAddContext) {
+          builder.addFieldToColumn(
+            columnAddContext.columnsFieldId,
+            columnAddContext.targetColumnIndex,
+            type,
+          );
+          return;
+        }
         builder.addField(type);
         return;
       }
@@ -97,6 +169,14 @@ export function FormBuilderShell({
       const index = builder.definition.fields.findIndex(
         (field) => field.id === overId,
       );
+      if (columnAddContext) {
+        builder.addFieldToColumn(
+          columnAddContext.columnsFieldId,
+          columnAddContext.targetColumnIndex,
+          type,
+        );
+        return;
+      }
       builder.addField(type, index >= 0 ? index : undefined);
       return;
     }
@@ -149,7 +229,7 @@ export function FormBuilderShell({
           onDuplicate={onDuplicate}
           onArchive={onArchive}
           onExport={onExport}
-          onEmbed={() => setEmbedOpen(true)}
+          onShare={() => onShareOpenChange(true)}
           onDelete={onDelete}
         />
       </div>
@@ -163,12 +243,20 @@ export function FormBuilderShell({
       >
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
           <div className="grid h-full min-h-0 flex-1 grid-cols-1 items-stretch overflow-hidden lg:grid-cols-[260px_minmax(0,1fr)_300px]">
-            <FieldPalette onAddField={builder.addField} className="hidden min-h-0 lg:flex" />
+            <div ref={palettePanelRef} className="min-h-0">
+              <FieldPalette
+                onAddField={handlePaletteAddField}
+                columnAddContext={columnAddContext}
+                onTargetColumnChange={setTargetColumnIndex}
+                className="hidden min-h-0 lg:flex"
+              />
+            </div>
             <div ref={canvasColumnRef} className="min-h-0">
               <FormCanvas
                 definition={builder.definition}
                 selectedFieldId={builder.selectedFieldId}
                 isDraggingFromPalette={activePaletteType != null}
+                activeColumnTargetIndex={columnAddContext?.targetColumnIndex ?? null}
                 onSelectField={builder.setSelectedFieldId}
                 onDeselectField={handleDeselectField}
                 onDuplicateField={builder.duplicateField}
@@ -182,7 +270,12 @@ export function FormBuilderShell({
                 selectedField={builder.selectedField}
                 fields={builder.definition.fields}
                 settings={builder.definition.settings}
+                formId={builder.formId}
+                formStatus={builder.status}
+                formName={builder.name}
+                onOpenShareDialog={() => onShareOpenChange(true)}
                 onUpdateField={builder.updateField}
+                onRemoveField={builder.removeField}
                 onUpdateSettings={builder.updateSettings}
                 className="hidden min-h-0 lg:flex"
               />
@@ -207,11 +300,12 @@ export function FormBuilderShell({
         onPreviewDeviceChange={builder.setPreviewDevice}
       />
 
-      <FormEmbedDialog
-        open={embedOpen}
-        onOpenChange={setEmbedOpen}
+      <FormShareDialog
+        open={shareOpen}
+        onOpenChange={onShareOpenChange}
         formId={builder.formId}
         status={builder.status}
+        formName={builder.name}
       />
     </div>
   );

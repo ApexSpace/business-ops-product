@@ -22,16 +22,12 @@ export function normalizeTimezone(timezone?: string | null): string {
   }
 }
 
-/** Business timezone, or a selected calendar's timezone when filtering one calendar. */
+/** Business timezone — single source of truth for all appointment scheduling UI. */
 export function resolveAppointmentDisplayTimezone(
   businessTimezone: string | null | undefined,
-  calendarId: string | undefined,
-  calendars?: CalendarTimezoneSource[],
+  _calendarId?: string | undefined,
+  _calendars?: CalendarTimezoneSource[],
 ): string {
-  if (calendarId && calendars?.length) {
-    const cal = calendars.find((c) => c.id === calendarId);
-    if (cal?.timezone) return normalizeTimezone(cal.timezone);
-  }
   return normalizeTimezone(businessTimezone);
 }
 
@@ -160,17 +156,13 @@ export function formatTimeInTimezone(iso: string, timezone: string): string {
     .toLocaleString({ hour: "numeric", minute: "2-digit", hour12: true });
 }
 
-/** Timezone for layout: always the appointment's calendar (stable when filtering all vs one). */
+/** Timezone for layout — always the business profile timezone. */
 export function resolveTimezoneForAppointment(
-  calendarId: string,
-  calendars?: CalendarTimezoneSource[],
+  _calendarId: string,
+  _calendars?: CalendarTimezoneSource[],
   businessTimezone?: string | null,
 ): string {
-  return resolveAppointmentDisplayTimezone(
-    businessTimezone,
-    calendarId,
-    calendars,
-  );
+  return resolveAppointmentDisplayTimezone(businessTimezone);
 }
 
 export function groupAppointmentsByCalendarTimezone<

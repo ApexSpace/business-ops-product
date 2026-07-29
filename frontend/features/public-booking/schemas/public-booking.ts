@@ -2,26 +2,27 @@ export interface PublicBookingFormSettings {
   requireEmail: boolean;
   requirePhone: boolean;
   showNotes: boolean;
+  showBookForSomeoneElse: boolean;
+  cancellationPolicyText: string | null;
+  requirePolicyAgreement: boolean;
 }
 
 export interface PublicBookingRulesSummary {
-  durationMinutes: number;
   minimumNoticeMinutes: number;
   maxBookingDays: number;
-  bufferBeforeMinutes: number;
-  bufferAfterMinutes: number;
+  allowMultipleServices: boolean;
+  allowDuplicateServices: boolean;
+  singleStaffOnly: boolean;
+  waitlistEnabled: boolean;
 }
 
-export interface PublicBookingCalendar {
+export interface PublicBookingBusiness {
   slug: string;
-  name: string;
+  businessName: string;
   title: string;
   description: string | null;
   timezone: string;
-  durationMinutes: number;
-  businessName: string;
   logoUrl: string | null;
-  color: string | null;
   brandColor: string | null;
   websiteUrl: string | null;
   locationType: string;
@@ -32,6 +33,47 @@ export interface PublicBookingCalendar {
   buttonText: string;
   embedEnabled: boolean;
   bookingRules: PublicBookingRulesSummary;
+  giftCardUrl: string | null;
+  packageUrl: string | null;
+}
+
+/** @deprecated */
+export type PublicBookingCalendar = PublicBookingBusiness & {
+  name: string;
+  durationMinutes: number;
+  color: string | null;
+};
+
+export interface PublicBookingCatalogService {
+  id: string;
+  name: string;
+  description: string | null;
+  price: string | null;
+  durationMinutes: number;
+  clientOccupancyMinutes: number;
+  categoryId: string;
+  categoryName: string;
+  requireHomeAddress?: boolean;
+  paymentRequired?: boolean;
+  servicePrice?: string | null;
+}
+
+export interface PublicBookingCatalogCategory {
+  id: string;
+  name: string;
+  services: PublicBookingCatalogService[];
+}
+
+export interface PublicBookingStaff {
+  id: string;
+  name: string;
+  avatarUrl: string | null;
+  gender: string | null;
+  price: string | null;
+  durationMinutes: number;
+  clientOccupancyMinutes: number;
+  availabilityLabel: string;
+  isAnyone?: boolean;
 }
 
 export interface PublicBookingSlot {
@@ -39,6 +81,20 @@ export interface PublicBookingSlot {
   endAt: string;
   label: string;
   available: boolean;
+  staffId?: string;
+  serviceLines?: PublicBookingChainedSlotLine[];
+}
+
+export interface PublicBookingChainedSlotLine {
+  serviceId: string;
+  staffId: string;
+  startAt: string;
+  endAt: string;
+}
+
+export interface PublicBookingServiceLineSelection {
+  service: PublicBookingCatalogService;
+  staff: PublicBookingStaff;
 }
 
 export interface PublicBookingDayAvailability {
@@ -53,9 +109,24 @@ export interface PublicBookingConfirmation {
   endAt: string;
   timezone: string;
   status: string;
-  calendarName: string;
   businessName: string;
+  serviceName: string | null;
+  staffName: string | null;
+  serviceLines: PublicBookingConfirmationServiceLine[];
   confirmationMessage: string;
   redirectUrl: string | null;
   locationSummary: string | null;
+  collectPhotosEnabled: boolean;
+  photoUploadPrompt: string | null;
+  uploadToken: string | null;
+}
+
+export interface PublicBookingConfirmationServiceLine {
+  serviceId: string;
+  serviceName: string;
+  staffId: string | null;
+  staffName: string | null;
+  startAt: string;
+  endAt: string;
+  price: string | null;
 }

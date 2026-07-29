@@ -10,8 +10,10 @@ export const CALENDAR_GRID = {
   /** Vertical separators between days / gutter */
   column: "border-l border-border/70",
   timeGutter: "border-r border-border/70",
-  /** Horizontal time-slot lines */
-  slot: "border-b border-border/55",
+  /** Horizontal sub-hour (15/30/45 min) time-slot lines — subtle */
+  slot: "border-b border-border/35",
+  /** Stronger divider at each full-hour boundary */
+  slotHour: "border-b border-border/80",
   /** Month view day cells */
   monthCell: "border-b border-r border-border/60",
 } as const;

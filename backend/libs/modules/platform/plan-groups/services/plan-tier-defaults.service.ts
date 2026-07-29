@@ -61,11 +61,11 @@ export class PlanTierDefaultsService {
     return {
       planGroupId: groupId,
       planTierId: tierId,
-      suggestedSnapshotId: tier.planGroup.snapshotId,
-      suggestedSnapshotName: tier.planGroup.snapshot?.name ?? null,
+      suggestedSnapshotId: tier.planGroup?.snapshotId ?? null,
+      suggestedSnapshotName: tier.planGroup?.snapshot?.name ?? null,
       capabilities,
       amount: tier.priceMonthly?.toString() ?? null,
-      currency: tier.planGroup.currency,
+      currency: tier.planGroup?.currency ?? tier.currency ?? 'USD',
       trialDays: tier.trialDays,
     };
   }

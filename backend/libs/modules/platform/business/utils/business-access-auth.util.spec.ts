@@ -24,8 +24,7 @@ describe('mapAccessBlockToAuthError', () => {
       mapAccessBlockToAuthError(BusinessStatus.ACTIVE, 'NO_SUBSCRIPTION'),
     ).toEqual({
       code: ErrorCode.NO_SUBSCRIPTION,
-      message:
-        'This workspace does not have an active subscription yet.',
+      message: 'This workspace does not have an active subscription yet.',
     });
   });
 });

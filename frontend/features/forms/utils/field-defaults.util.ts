@@ -1,4 +1,5 @@
 import type {
+  ColumnCount,
   FieldStyle,
   FieldType,
   FormField,
@@ -67,6 +68,44 @@ export function getFieldTypeLabel(type: FieldType): string {
   return FIELD_LABELS[type] ?? "Field";
 }
 
+export function resizeFormFieldColumns(
+  columns: FormField[][] | undefined,
+  count: ColumnCount,
+): FormField[][] {
+  const current =
+    columns && columns.length > 0
+      ? columns
+      : Array.from({ length: count }, (_, index) => [
+          createDefaultField("text", index),
+        ]);
+
+  let resized: FormField[][];
+  if (current.length === count) {
+    resized = current;
+  } else if (current.length < count) {
+    resized = [
+      ...current,
+      ...Array.from({ length: count - current.length }, (_, offset) => {
+        const index = current.length + offset;
+        return [createDefaultField("text", index)];
+      }),
+    ];
+  } else {
+    resized = current.slice(0, count);
+  }
+
+  return resized.map((column, index) =>
+    column.length > 0 ? column : [createDefaultField("text", index)],
+  );
+}
+
+export const COLUMN_COUNT_OPTIONS: { value: ColumnCount; label: string }[] = [
+  { value: 1, label: "1 column" },
+  { value: 2, label: "2 columns" },
+  { value: 3, label: "3 columns" },
+  { value: 4, label: "4 columns" },
+];
+
 export function createDefaultOptions(count = 3): FormField["options"] {
   return Array.from({ length: count }, (_, i) => ({
     id: generateId(),
@@ -116,7 +155,6 @@ export function createDefaultField(type: FieldType, index?: number): FormField {
         ...base,
         label: "Image",
         name: `image${suffix}`,
-        src: "",
       };
     case "hidden":
       return {
@@ -145,10 +183,15 @@ export function createDefaultField(type: FieldType, index?: number): FormField {
       return {
         ...base,
         columnCount: 2,
-        columns: [
-          [createDefaultField("text", 0)],
-          [createDefaultField("text", 1)],
-        ],
+        columnVerticalAlign: "top",
+        columnHorizontalAlign: "left",
+        columns: resizeFormFieldColumns(
+          [
+            [createDefaultField("text", 0)],
+            [createDefaultField("text", 1)],
+          ],
+          2,
+        ),
       };
     case "captcha":
       return {
@@ -207,7 +250,6 @@ export function createDefaultField(type: FieldType, index?: number): FormField {
         label: "Upload file",
         accept: "*/*",
         maxFiles: 1,
-        helpText: "File upload visual only — no persistence in this phase.",
       };
     case "textarea":
       return {
@@ -245,6 +287,7 @@ export function createDefaultFormSettings(): FormSettings {
     submitButtonAlign: "left",
     submitButtonBgColor: "",
     submitButtonTextColor: "",
+    layoutWidth: "container",
     maxWidth: 640,
     padding: 24,
     borderRadius: "lg",
@@ -259,81 +302,8 @@ export function createDefaultFormSettings(): FormSettings {
   };
 }
 
-export const INPUT_FIELD_TYPES: FieldType[] = [
-  "text",
-  "email",
-  "phone",
-  "number",
-  "password",
-  "textarea",
-  "select",
-  "multiselect",
-  "radio",
-  "checkbox",
-  "toggle",
-  "date",
-  "time",
-  "datetime",
-  "file",
-  "signature",
-  "rating",
-  "range",
-  "hidden",
-  "name",
-  "address",
-  "website",
-  "captcha",
-];
-
-export const LAYOUT_FIELD_TYPES: FieldType[] = [
-  "heading",
-  "paragraph",
-  "divider",
-  "spacer",
-  "image",
-  "columns",
-];
-
-export const CHOICE_FIELD_TYPES: FieldType[] = [
-  "select",
-  "multiselect",
-  "radio",
-  "checkbox",
-];
-
-export const PALETTE_CATEGORIES: {
-  id: string;
-  label: string;
-  types: FieldType[];
-}[] = [
-  {
-    id: "basic",
-    label: "Basic",
-    types: ["text", "email", "phone", "number", "password", "textarea", "website"],
-  },
-  {
-    id: "choice",
-    label: "Choice",
-    types: ["select", "multiselect", "radio", "checkbox", "toggle"],
-  },
-  {
-    id: "datetime",
-    label: "Date & Time",
-    types: ["date", "time", "datetime"],
-  },
-  {
-    id: "advanced",
-    label: "Advanced",
-    types: ["file", "signature", "rating", "range", "hidden", "captcha"],
-  },
-  {
-    id: "personal",
-    label: "Personal",
-    types: ["name", "address"],
-  },
-  {
-    id: "layout",
-    label: "Layout",
-    types: ["heading", "paragraph", "divider", "spacer", "image", "columns"],
-  },
-];
+export {
+  FORM_CHOICE_FIELD_KEYS as CHOICE_FIELD_TYPES,
+  FORM_INPUT_FIELD_KEYS as INPUT_FIELD_TYPES,
+  FORM_LAYOUT_FIELD_KEYS as LAYOUT_FIELD_TYPES,
+} from "@/features/forms/constants/form-field-type-keys.constant";

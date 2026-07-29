@@ -18,10 +18,16 @@ import {
 import { ConversationMessagesRepository } from '../repositories/conversation-messages.repository';
 import { ConversationsRepository } from '../repositories/conversations.repository';
 import { buildReplyChannelCandidates } from '../utils/contact-reply-channels.util';
-import { resolveMetaParticipantId } from '../utils/contact-outbound-identity.util';
+import { resolveMetaParticipantId, resolveSmsParticipantId } from '../utils/contact-outbound-identity.util';
 import { EmailConversationsService } from './email-conversations.service';
 import { MetaConversationsService } from './meta-conversations.service';
+import { SmsConversationsService } from './sms-conversations.service';
 import { WhatsAppSessionWindowService } from './whatsapp-session-window.service';
+import { WhatsAppParticipantSyncService } from './whatsapp-participant-sync.service';
+import {
+  canViewAllConversations,
+  canViewConversation,
+} from '../utils/conversation-staff-access.util';
 
 @Injectable()
 export class ContactConversationsService {
@@ -32,13 +38,16 @@ export class ContactConversationsService {
     private readonly messagingStatusService: MessagingStatusService,
     private readonly emailConversationsService: EmailConversationsService,
     private readonly metaConversationsService: MetaConversationsService,
+    private readonly smsConversationsService: SmsConversationsService,
     private readonly whatsAppSessionWindowService: WhatsAppSessionWindowService,
+    private readonly whatsAppParticipantSyncService: WhatsAppParticipantSyncService,
   ) {}
 
   async listMessages(
     businessId: string,
     contactId: string,
     query: ListMessagesQueryDto,
+    user: RequestUser,
   ): Promise<{
     items: ConversationMessageResponseDto[];
     meta: {
@@ -53,6 +62,18 @@ export class ContactConversationsService {
     const contact = await this.requireContact(businessId, contactId);
     await this.relinkIdentityConversations(businessId, contact);
     const { limit, take } = getPaginationParams(query);
+
+    if (!canViewAllConversations(user)) {
+      const hasVisible = (
+        await this.conversationsRepository.findByContactId(businessId, contactId)
+      ).some((row) => canViewConversation(user, row));
+      if (!hasVisible) {
+        return {
+          items: [],
+          meta: { limit, nextCursor: null, prevCursor: null, hasMore: false },
+        };
+      }
+    }
 
     if (query.cursor || query.latest) {
       const result = await this.messagesRepository.findManyByContactIdCursor(
@@ -101,13 +122,13 @@ export class ContactConversationsService {
   async listReplyChannels(
     businessId: string,
     contactId: string,
+    user: RequestUser,
   ): Promise<ContactReplyChannelDto[]> {
     const contact = await this.requireContact(businessId, contactId);
     await this.relinkIdentityConversations(businessId, contact);
-    const conversations = await this.conversationsRepository.findByContactId(
-      businessId,
-      contactId,
-    );
+    const conversations = (
+      await this.conversationsRepository.findByContactId(businessId, contactId)
+    ).filter((row) => canViewConversation(user, row));
 
     const candidates = buildReplyChannelCandidates(contact, conversations);
     const channels: ContactReplyChannelDto[] = [];
@@ -200,6 +221,15 @@ export class ContactConversationsService {
       );
     }
 
+    if (dto.channel === ConversationChannel.SMS) {
+      return this.smsConversationsService.startConversation(
+        businessId,
+        contact,
+        actor,
+        { text: dto.text },
+      );
+    }
+
     throw new AppException(
       ErrorCode.BAD_REQUEST,
       'This channel is not supported for outbound conversation start.',
@@ -235,6 +265,11 @@ export class ContactConversationsService {
     businessId: string,
     contact: Contact,
   ): Promise<void> {
+    await this.whatsAppParticipantSyncService.syncContactWhatsAppIdentity(
+      businessId,
+      contact,
+    );
+
     const identityFilters: Prisma.ConversationWhereInput[] = [];
 
     const email = contact.email?.trim().toLowerCase();
@@ -257,6 +292,14 @@ export class ContactConversationsService {
           externalParticipantId: participantId,
         });
       }
+    }
+
+    const smsParticipantId = resolveSmsParticipantId(contact);
+    if (smsParticipantId) {
+      identityFilters.push({
+        channel: ConversationChannel.SMS,
+        externalParticipantId: smsParticipantId,
+      });
     }
 
     const mismatched =
@@ -283,7 +326,10 @@ export class ContactConversationsService {
   }
 
   private async requireContact(businessId: string, contactId: string) {
-    const contact = await this.contactRepository.findById(businessId, contactId);
+    const contact = await this.contactRepository.findById(
+      businessId,
+      contactId,
+    );
     if (!contact) {
       throw new AppException(
         ErrorCode.CONTACT_NOT_FOUND,
@@ -293,5 +339,4 @@ export class ContactConversationsService {
     }
     return contact;
   }
-
 }

@@ -20,6 +20,7 @@ import type { ChannelMessageAttachment } from '@app/modules/communications/conve
 import { previewFromMessageContent } from '@app/modules/communications/conversations/adapters/meta/meta-attachment.util';
 import { ConversationRealtimeService } from '@app/modules/communications/conversations/services/conversation-realtime.service';
 import { ConversationWebhookIngestionService } from '@app/modules/communications/conversations/services/conversation-webhook-ingestion.service';
+import { WhatsAppParticipantSyncService } from '@app/modules/communications/conversations/services/whatsapp-participant-sync.service';
 import { WhatsAppBusinessContextService } from '@app/modules/integrations/whatsapp/services/whatsapp-business-context.service';
 import { WhatsAppTemplateRepository } from '@app/modules/integrations/whatsapp/repositories/whatsapp-template.repository';
 import { getTemplatePolicy } from '@app/modules/integrations/whatsapp/utils/template-policy.util';
@@ -40,6 +41,7 @@ export class SendMessageProcessor {
     private readonly conversationWebhookIngestion: ConversationWebhookIngestionService,
     private readonly whatsAppTemplateRepository: WhatsAppTemplateRepository,
     private readonly whatsAppBusinessContextService: WhatsAppBusinessContextService,
+    private readonly whatsAppParticipantSyncService: WhatsAppParticipantSyncService,
   ) {}
 
   async process(payload: SendOutboundMessagePayload): Promise<void> {
@@ -113,6 +115,11 @@ export class SendMessageProcessor {
       conversation.channel,
       message.metadata,
     );
+    const externalRecipientId =
+      await this.whatsAppParticipantSyncService.resolveSendRecipient(
+        payload.businessId,
+        conversation,
+      );
     const preview = previewFromMessageContent(
       message.text ?? (template ? `Template: ${template.name}` : ''),
       attachments,
@@ -123,7 +130,7 @@ export class SendMessageProcessor {
       const result = await adapter.sendMessage({
         businessId: payload.businessId,
         resourceId: conversation.resourceId,
-        externalRecipientId: conversation.externalParticipantId,
+        externalRecipientId,
         text: message.text ?? '',
         attachments,
         template,
@@ -131,10 +138,10 @@ export class SendMessageProcessor {
           conversationId: conversation.id,
           messageId: message.id,
           subject:
-            typeof (message.metadata as Record<string, unknown> | null)?.subject ===
-            'string'
-              ? ((message.metadata as Record<string, unknown>).subject as string)
-              : conversation.title ?? undefined,
+            typeof (message.metadata as Record<string, unknown> | null)
+              ?.subject === 'string'
+              ? (message.metadata as Record<string, unknown>).subject
+              : (conversation.title ?? undefined),
         },
       });
 
@@ -186,6 +193,11 @@ export class SendMessageProcessor {
         messageId: message.id,
         status: finalStatus,
       });
+
+      await this.idempotencyService.release(
+        `send-message:${payload.messageId}`,
+        payload.messageId,
+      );
     } catch (error) {
       const errorMessage =
         error instanceof AppException
@@ -206,7 +218,9 @@ export class SendMessageProcessor {
     }
   }
 
-  private readAttachments(value: unknown): ChannelMessageAttachment[] | undefined {
+  private readAttachments(
+    value: unknown,
+  ): ChannelMessageAttachment[] | undefined {
     if (!Array.isArray(value) || value.length === 0) {
       return undefined;
     }
@@ -235,6 +249,10 @@ export class SendMessageProcessor {
       errorMessage,
     });
     await this.asyncJobRepository.markFailed(payload.asyncJobId, errorMessage);
+    await this.idempotencyService.release(
+      `send-message:${payload.messageId}`,
+      payload.messageId,
+    );
   }
 
   private readWhatsAppTemplateMetadata(
@@ -295,15 +313,21 @@ export class SendMessageProcessor {
       return undefined;
     }
 
+    const context =
+      await this.whatsAppBusinessContextService.requireConnectedContext(
+        businessId,
+      );
+
     const stored = await this.whatsAppTemplateRepository.findByNameLanguage(
       businessId,
+      context.wabaId,
       template.name,
       template.language,
     );
     if (!stored) {
       throw new AppException(
         ErrorCode.WHATSAPP_TEMPLATE_NOT_FOUND,
-        `WhatsApp template "${template.name}" (${template.language}) was not found for this business.`,
+        `WhatsApp template "${template.name}" (${template.language}) was not found for the connected WhatsApp Business Account.`,
         HttpStatus.UNPROCESSABLE_ENTITY,
       );
     }
@@ -313,18 +337,6 @@ export class SendMessageProcessor {
       throw new AppException(
         ErrorCode.WHATSAPP_TEMPLATE_NOT_SENDABLE,
         `WhatsApp template "${template.name}" is ${stored.status.toLowerCase()} and cannot be sent. Only approved templates are allowed.`,
-        HttpStatus.UNPROCESSABLE_ENTITY,
-      );
-    }
-
-    const context =
-      await this.whatsAppBusinessContextService.requireConnectedContext(
-        businessId,
-      );
-    if (stored.wabaId !== context.wabaId) {
-      throw new AppException(
-        ErrorCode.WHATSAPP_TEMPLATE_NOT_SENDABLE,
-        `WhatsApp template "${template.name}" does not belong to the connected WhatsApp Business Account.`,
         HttpStatus.UNPROCESSABLE_ENTITY,
       );
     }

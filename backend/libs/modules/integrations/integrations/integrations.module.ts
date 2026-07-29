@@ -4,6 +4,7 @@ import { InvoicesModule } from '@app/modules/finance/invoices/invoices.module';
 import { AuditModule } from '@app/modules/platform/audit/audit.module';
 import { ConversationsModule } from '@app/modules/communications/conversations/conversations.module';
 import { MetaWebhookProcessorModule } from '@app/modules/communications/webhooks/meta-webhook-processor.module';
+import { MembershipsModule } from '@app/modules/finance/memberships/memberships.module';
 import { StripePlatformBillingModule } from '@app/modules/platform/billing/stripe/stripe-platform-billing.module';
 import { BusinessIntegrationResourcesController } from './business-integration-resources.controller';
 import { BusinessIntegrationsController } from './business-integrations.controller';
@@ -19,11 +20,16 @@ import { StripeWebhookController } from './stripe/controllers/stripe-webhook.con
 import { StripeAccountService } from './stripe/services/stripe-account.service';
 import { StripeApiService } from './stripe/services/stripe-api.service';
 import { StripeCheckoutService } from './stripe/services/stripe-checkout.service';
+import { StripeConnectContextService } from './stripe/services/stripe-connect-context.service';
+import { StripeCustomerService } from './stripe/services/stripe-customer.service';
+import { StripePaymentIntentService } from './stripe/services/stripe-payment-intent.service';
 import { StripeOAuthService } from './stripe/services/stripe-oauth.service';
 import { StripeWebhookDispatchService } from './stripe/services/stripe-webhook-dispatch.service';
 import { StripeWebhookService } from './stripe/services/stripe-webhook.service';
 import { MetaOAuthController } from './meta/controllers/meta-oauth.controller';
 import { EmailIntegrationController } from './email/controllers/email-integration.controller';
+import { SmsIntegrationController } from './sms/controllers/sms-integration.controller';
+import { TwilioModule } from '../twilio/twilio.module';
 import { PlatformEmailProvisioningService } from './email/services/platform-email-provisioning.service';
 import { MetaWebhookController } from './meta/controllers/meta-webhook.controller';
 import { MetaApiClient } from './meta/services/meta-api-client';
@@ -37,6 +43,7 @@ import { MetaWebhookDispatchService } from './meta/services/meta-webhook-dispatc
 import { MetaWebhookRecoveryService } from './meta/services/meta-webhook-recovery.service';
 import { MetaWebhookService } from './meta/services/meta-webhook.service';
 import { PlatformIntegrationsController } from './platform-integrations.controller';
+import { PlatformOpsMessagingController } from './controllers/platform-ops-messaging.controller';
 import { FacebookResourceSyncHandler } from './providers/resource-sync/facebook-resource-sync.handler';
 import { GoogleBusinessProfileResourceSyncHandler } from './providers/resource-sync/google-business-profile-resource-sync.handler';
 import { GoogleCalendarResourceSyncHandler } from './providers/resource-sync/google-calendar-resource-sync.handler';
@@ -61,9 +68,11 @@ import { WhatsAppTemplatesController } from '../whatsapp/controllers/whatsapp-te
     forwardRef(() => BusinessModule),
     forwardRef(() => ConversationsModule),
     forwardRef(() => InvoicesModule),
+    forwardRef(() => MembershipsModule),
     MetaWebhookProcessorModule,
     WhatsAppModule,
     StripePlatformBillingModule,
+    TwilioModule,
   ],
   controllers: [
     IntegrationProvidersController,
@@ -71,6 +80,7 @@ import { WhatsAppTemplatesController } from '../whatsapp/controllers/whatsapp-te
     BusinessIntegrationResourcesController,
     BusinessWhatsAppController,
     WhatsAppTemplatesController,
+    PlatformOpsMessagingController,
     PlatformIntegrationsController,
     GoogleOAuthController,
     LinkedInOAuthController,
@@ -79,6 +89,7 @@ import { WhatsAppTemplatesController } from '../whatsapp/controllers/whatsapp-te
     MetaOAuthController,
     MetaWebhookController,
     EmailIntegrationController,
+    SmsIntegrationController,
   ],
   providers: [
     IntegrationProviderRepository,
@@ -94,6 +105,9 @@ import { WhatsAppTemplatesController } from '../whatsapp/controllers/whatsapp-te
     StripeWebhookService,
     StripeWebhookDispatchService,
     StripeCheckoutService,
+    StripeConnectContextService,
+    StripeCustomerService,
+    StripePaymentIntentService,
     GoogleTokenService,
     IntegrationResourcesService,
     GoogleCalendarResourceSyncHandler,
@@ -126,6 +140,9 @@ import { WhatsAppTemplatesController } from '../whatsapp/controllers/whatsapp-te
     StripeApiService,
     StripeAccountService,
     StripeCheckoutService,
+    StripeConnectContextService,
+    StripeCustomerService,
+    StripePaymentIntentService,
     StripeWebhookDispatchService,
     BusinessIntegrationRepository,
     IntegrationResourceRepository,
@@ -133,6 +150,7 @@ import { WhatsAppTemplatesController } from '../whatsapp/controllers/whatsapp-te
     MetaApiClient,
     MetaResourceSyncService,
     PlatformEmailProvisioningService,
+    TwilioModule,
   ],
 })
 export class IntegrationsModule {}

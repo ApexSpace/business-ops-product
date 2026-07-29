@@ -5,7 +5,10 @@ import {
 import { HttpStatus } from '@nestjs/common';
 import { AppException } from '@app/common/exceptions/app.exception';
 import { ErrorCode } from '@app/common/exceptions/error-code.enum';
-import { resolveTierPrice, type TierPriceFields } from './resolve-tier-price.util';
+import {
+  resolveTierPrice,
+  type TierPriceFields,
+} from './resolve-tier-price.util';
 
 export function assertBillingCycleRequired(
   status: SubscriptionStatus,
@@ -35,8 +38,14 @@ export function assertTierPriceOrCustomAmount(params: {
   customPrice?: boolean;
   keepCurrentPrice?: boolean;
 }): void {
-  const { billingCycle, tier, amount, currency, customPrice, keepCurrentPrice } =
-    params;
+  const {
+    billingCycle,
+    tier,
+    amount,
+    currency,
+    customPrice,
+    keepCurrentPrice,
+  } = params;
 
   if (keepCurrentPrice) {
     return;

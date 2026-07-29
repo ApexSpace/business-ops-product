@@ -30,8 +30,10 @@ import {
 } from './mappers/integration.mapper';
 import { BusinessIntegrationRepository } from './repositories/business-integration.repository';
 import { IntegrationProviderRepository } from './repositories/integration-provider.repository';
+import { IntegrationResourceRepository } from './repositories/integration-resource.repository';
 import { PlatformIntegrationRepository } from './repositories/platform-integration.repository';
 import { PlatformEmailProvisioningService } from './email/services/platform-email-provisioning.service';
+import { PlatformSmsProvisioningService } from '../twilio/services/platform-sms-provisioning.service';
 
 @Injectable()
 export class IntegrationsService {
@@ -39,8 +41,10 @@ export class IntegrationsService {
     private readonly providerRepository: IntegrationProviderRepository,
     private readonly businessIntegrationRepository: BusinessIntegrationRepository,
     private readonly platformIntegrationRepository: PlatformIntegrationRepository,
+    private readonly resourceRepository: IntegrationResourceRepository,
     private readonly auditService: AuditService,
     private readonly platformEmailProvisioning: PlatformEmailProvisioningService,
+    private readonly platformSmsProvisioning: PlatformSmsProvisioningService,
   ) {}
 
   // ── Business providers ──────────────────────────────────────────────
@@ -51,15 +55,26 @@ export class IntegrationsService {
     await this.platformEmailProvisioning
       .ensurePlatformDefaultEmail(businessId)
       .catch(() => null);
+    await this.platformSmsProvisioning
+      .ensurePlatformDefaultSms(businessId)
+      .catch(() => null);
 
     const providers =
       await this.providerRepository.findActiveBusinessProviders();
     const integrations =
       await this.businessIntegrationRepository.findManyByBusiness(businessId);
     const integrationMap = new Map(integrations.map((i) => [i.providerKey, i]));
+    const resourceCounts =
+      await this.resourceRepository.countByBusinessGroupedByProvider(
+        businessId,
+      );
 
     return providers.map((provider) =>
-      toBusinessProviderWithStatus(provider, integrationMap.get(provider.key)),
+      toBusinessProviderWithStatus(
+        provider,
+        integrationMap.get(provider.key),
+        resourceCounts.get(provider.key) ?? 0,
+      ),
     );
   }
 
@@ -214,6 +229,43 @@ export class IntegrationsService {
 
     return providers.map((provider) =>
       toPlatformProviderWithStatus(provider, integrationMap.get(provider.key)),
+    );
+  }
+
+  /**
+   * Single provider catalog for the platform admin Integrations page:
+   * INTERNAL ops BusinessIntegration status for business-level channels
+   * (Facebook, Instagram, WhatsApp, SMS, Email, …), plus platform-only
+   * providers (e.g. OpenAI) that are not also business-level.
+   */
+  async listOpsWorkspaceProviders(
+    opsBusinessId: string,
+  ): Promise<IntegrationProviderWithStatusDto[]> {
+    const businessProviders = await this.listBusinessProviders(opsBusinessId);
+    const platformProviders = await this.listPlatformProviders();
+    const businessKeys = new Set(businessProviders.map((p) => p.key));
+
+    const platformOnly: IntegrationProviderWithStatusDto[] = platformProviders
+      .filter((provider) => !businessKeys.has(provider.key))
+      .map((provider) => ({
+        id: provider.id,
+        key: provider.key,
+        name: provider.name,
+        description: provider.description,
+        category: provider.category,
+        logoUrl: provider.logoUrl,
+        isPlatformLevel: provider.isPlatformLevel,
+        isBusinessLevel: provider.isBusinessLevel,
+        isActive: provider.isActive,
+        sortOrder: provider.sortOrder,
+        connectionType: provider.connectionType,
+        status: provider.status,
+        integration: provider.integration,
+        resourceCount: provider.resourceCount ?? 0,
+      }));
+
+    return [...businessProviders, ...platformOnly].sort(
+      (a, b) => a.sortOrder - b.sortOrder,
     );
   }
 

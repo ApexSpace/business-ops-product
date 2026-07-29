@@ -70,7 +70,79 @@ const businessRoutes: Record<string, RouteEntry> = {
   },
   "/business/appointments": {
     title: "Appointments",
-    description: "Booking calendar.",
+    description: "Schedule and manage appointments across your business calendars.",
+  },
+  "/business/time-clock": {
+    title: "Time Clock",
+    description: "Clock in and out with your PIN.",
+  },
+  "/business/time-cards": {
+    title: "Time Cards",
+    description: "Manage staff time card records.",
+  },
+  "/business/sales": {
+    title: "Sales",
+    description: "Point-of-sale checkouts — open sales, add items, and collect payment.",
+  },
+  "/business/gift-cards": {
+    title: "Gift Cards",
+    description: "Manage prepaid gift cards, balances, and online sales.",
+  },
+  "/business/gift-cards/settings": {
+    title: "Gift Card Settings",
+    description: "Online sales, artwork, numbering preferences, and promotions.",
+    breadcrumbs: [
+      { label: "Gift Cards", href: "/business/gift-cards" },
+      { label: "Settings" },
+    ],
+  },
+  "/business/packages": {
+    title: "Packages",
+    description: "Manage prepaid service packages assigned to clients.",
+  },
+  "/business/packages/setup": {
+    title: "Package Setup",
+    description: "Configure package templates, services, and online sales.",
+    breadcrumbs: [
+      { label: "Packages", href: "/business/packages" },
+      { label: "Setup" },
+    ],
+  },
+  "/business/packages/settings": {
+    title: "Package Settings",
+    description: "Online sales, shareable links, and embed options.",
+    breadcrumbs: [
+      { label: "Packages", href: "/business/packages" },
+      { label: "Settings" },
+    ],
+  },
+  "/business/memberships": {
+    title: "Memberships",
+    description: "Manage client memberships and subscriptions.",
+  },
+  "/business/memberships/plans": {
+    title: "Membership Plans",
+    description: "Configure plans, pricing, services, and online sales.",
+    breadcrumbs: [
+      { label: "Memberships", href: "/business/memberships" },
+      { label: "Plans" },
+    ],
+  },
+  "/business/memberships/settings": {
+    title: "Membership Settings",
+    description: "Online sales, shareable links, and embed options.",
+    breadcrumbs: [
+      { label: "Memberships", href: "/business/memberships" },
+      { label: "Settings" },
+    ],
+  },
+  "/business/offers": {
+    title: "Offers",
+    description: "Create and manage promotional offers, discount rules, and eligibility.",
+  },
+  "/business/products": {
+    title: "Products",
+    description: "Product catalog, inventory, variants, and bundles.",
   },
   "/business/settings/profile": {
     title: "Business Profile",
@@ -104,6 +176,15 @@ const businessRoutes: Record<string, RouteEntry> = {
       { label: "Services" },
     ],
   },
+  "/business/settings/resources": {
+    title: "Resources",
+    description:
+      "Manage rooms, equipment, and consumables. Configure schedules and see which services use each resource.",
+    breadcrumbs: [
+      { label: "Settings", href: "/business/settings/profile" },
+      { label: "Resources" },
+    ],
+  },
   "/business/settings/pipelines": {
     title: "Pipelines",
     description:
@@ -134,6 +215,22 @@ const businessRoutes: Record<string, RouteEntry> = {
     breadcrumbs: [
       { label: "Settings", href: "/business/settings/profile" },
       { label: "Automations" },
+    ],
+  },
+  "/business/settings/automation-workflows/new": {
+    title: "Create workflow",
+    breadcrumbs: [
+      { label: "Settings", href: "/business/settings/profile" },
+      { label: "Automations", href: "/business/settings/automations" },
+      { label: "Create workflow" },
+    ],
+  },
+  "/business/settings/automation-registry": {
+    title: "Automation registry",
+    breadcrumbs: [
+      { label: "Settings", href: "/business/settings/profile" },
+      { label: "Automations", href: "/business/settings/automations" },
+      { label: "Registry" },
     ],
   },
   "/business/settings/chatbots": {
@@ -248,7 +345,22 @@ const platformRoutes: Record<string, RouteEntry> = {
   },
   "/platform/settings/integrations": {
     title: "Platform Integrations",
-    description: "Configure platform-wide AI, messaging, storage, and OAuth providers.",
+    description:
+      "Connect messaging channels for the platform Unified Inbox, plus platform-wide providers.",
+  },
+  "/platform/forms": {
+    title: "Forms",
+    description: "Build and publish platform marketing and ops forms.",
+  },
+  "/platform/chatbots": {
+    title: "Chatbots",
+    description:
+      "Configure AI chatbots for the CodeSol marketing site and ops surfaces.",
+  },
+  "/platform/work-items": {
+    title: "Work Items",
+    description:
+      "Track ops work for platform support — assign to support users on the INTERNAL workspace.",
   },
 };
 
@@ -258,6 +370,8 @@ const businessTerminologyKeys: Partial<Record<string, string>> = {
   "/business/pipelines": "nav.pipelines",
   "/business/conversations": "nav.conversations",
   "/business/appointments": "nav.appointments",
+  "/business/time-clock": "nav.timeClock",
+  "/business/time-cards": "nav.timeCards",
 };
 
 function applyRouteTerminology(
@@ -385,6 +499,18 @@ export function resolvePageMetadata(
     };
   }
 
+  if (pathname.match(/^\/platform\/chatbots\/[^/]+\/edit$/)) {
+    return {
+      title: "Edit chatbot",
+      description:
+        "Configure the platform chat widget, replies, and embed code.",
+      breadcrumbs: [
+        { label: "Chatbots", href: "/platform/chatbots" },
+        { label: "Edit" },
+      ],
+    };
+  }
+
   if (pathname.match(/^\/business\/settings\/forms\/[^/]+\/edit$/)) {
     return {
       title: "Edit form",
@@ -416,6 +542,18 @@ export function resolvePageMetadata(
         { label: "Settings", href: "/business/settings/profile" },
         { label: "Pipelines", href: "/business/settings/pipelines" },
         { label: "Edit" },
+      ],
+    };
+  }
+
+  if (pathname.match(/^\/business\/settings\/automation-workflows\/[^/]+$/)) {
+    return {
+      title: "Edit workflow",
+      description: "Configure trigger, filters, and linear steps.",
+      breadcrumbs: [
+        { label: "Settings", href: "/business/settings/profile" },
+        { label: "Automations", href: "/business/settings/automations" },
+        { label: "Edit workflow" },
       ],
     };
   }

@@ -1,6 +1,7 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import {
   IntegrationResource,
+  IntegrationResourceStatus,
   IntegrationResourceType,
   IntegrationStatus,
   Prisma,
@@ -26,6 +27,7 @@ import { BusinessIntegrationRepository } from '../repositories/business-integrat
 import { IntegrationResourceRepository } from '../repositories/integration-resource.repository';
 import {
   assertSyncAllowed,
+  clearSyncAttempt,
   recordSyncAttempt,
   SyncCooldownError,
 } from '../utils/sync-cooldown.util';
@@ -56,10 +58,12 @@ export class IntegrationResourcesService {
     );
 
     const allowedTypes = config?.resourceTypes ?? [];
-    const filteredResources =
-      allowedTypes.length > 0
-        ? resources.filter((resource) => allowedTypes.includes(resource.type))
-        : resources;
+    const filteredResources = resources.filter((resource) => {
+      if (resource.status !== IntegrationResourceStatus.ACTIVE) {
+        return false;
+      }
+      return allowedTypes.length === 0 || allowedTypes.includes(resource.type);
+    });
 
     return {
       resources: filteredResources.map(toIntegrationResourceResponse),
@@ -78,8 +82,18 @@ export class IntegrationResourcesService {
     idempotencyKey?: string,
   ) {
     await this.assertSyncEligible(businessId, providerKey);
-    assertSyncAllowed(businessId, providerKey);
-    recordSyncAttempt(businessId, providerKey);
+    try {
+      assertSyncAllowed(businessId, providerKey);
+    } catch (error) {
+      if (error instanceof SyncCooldownError) {
+        throw new AppException(
+          ErrorCode.BAD_REQUEST,
+          error.message,
+          HttpStatus.TOO_MANY_REQUESTS,
+        );
+      }
+      throw error;
+    }
 
     const asyncJob =
       await this.jobEnqueueService.enqueueIntegrationResourceSync({
@@ -148,7 +162,6 @@ export class IntegrationResourcesService {
     }
 
     assertSyncAllowed(businessId, providerKey);
-    recordSyncAttempt(businessId, providerKey);
 
     try {
       const result = await handler.sync({
@@ -157,25 +170,59 @@ export class IntegrationResourcesService {
         businessIntegrationId: integration.id,
       });
 
+      // Only burn cooldown after Google was contacted successfully.
+      recordSyncAttempt(businessId, providerKey);
+
       const now = new Date();
       let resources: IntegrationResource[] = [];
 
-      if (result.items.length > 0) {
-        resources = await this.resourceRepository.upsertMany(
-          integration.id,
-          businessId,
-          providerKey,
-          result.items,
-        );
+      if (result.synced) {
+        if (result.items.length > 0) {
+          resources = await this.resourceRepository.upsertMany(
+            integration.id,
+            businessId,
+            providerKey,
+            result.items,
+          );
+          await this.resourceRepository.deactivateMissingExternalIds(
+            integration.id,
+            result.items.map((item) => item.externalId),
+          );
+          await this.ensureDefaultResource(resources);
+          resources = await this.resourceRepository.findManyByIntegration(
+            integration.id,
+          );
+          resources = resources.filter(
+            (resource) => resource.status === IntegrationResourceStatus.ACTIVE,
+          );
+          await this.syncIntegrationConfig(
+            businessId,
+            providerKey,
+            integration.id,
+          );
+        } else {
+          await this.resourceRepository.deactivateMissingExternalIds(
+            integration.id,
+            [],
+          );
+          resources = [];
+        }
+
+        await this.businessIntegrationRepository.update(businessId, providerKey, {
+          lastSyncAt: now,
+          errorMessage:
+            result.items.length === 0
+              ? emptySyncMessageForProvider(providerKey)
+              : null,
+        });
       } else {
         resources = await this.resourceRepository.findManyByIntegration(
           integration.id,
         );
+        await this.businessIntegrationRepository.update(businessId, providerKey, {
+          lastSyncAt: now,
+        });
       }
-
-      await this.businessIntegrationRepository.update(businessId, providerKey, {
-        lastSyncAt: now,
-      });
 
       if (isMetaOAuthProviderKey(providerKey) && result.synced && actorUserId) {
         await this.auditService.log({
@@ -204,8 +251,13 @@ export class IntegrationResourcesService {
           HttpStatus.TOO_MANY_REQUESTS,
         );
       }
+      clearSyncAttempt(businessId, providerKey);
       const message =
         error instanceof Error ? error.message : 'Resource sync failed';
+      await this.businessIntegrationRepository.update(businessId, providerKey, {
+        errorMessage: message,
+        lastSyncAt: new Date(),
+      });
       throw new AppException(
         ErrorCode.BAD_REQUEST,
         message,
@@ -391,6 +443,31 @@ export class IntegrationResourcesService {
     return resource;
   }
 
+  private async ensureDefaultResource(
+    resources: IntegrationResource[],
+  ): Promise<void> {
+    if (resources.length === 0) {
+      return;
+    }
+
+    const byType = new Map<IntegrationResourceType, IntegrationResource[]>();
+    for (const resource of resources) {
+      const list = byType.get(resource.type) ?? [];
+      list.push(resource);
+      byType.set(resource.type, list);
+    }
+
+    for (const [, group] of byType) {
+      if (group.some((resource) => resource.isDefault)) {
+        continue;
+      }
+      await this.resourceRepository.update(group[0].id, {
+        isDefault: true,
+        isSelected: true,
+      });
+    }
+  }
+
   private async syncIntegrationConfig(
     businessId: string,
     providerKey: string,
@@ -423,4 +500,14 @@ export class IntegrationResourcesService {
       },
     });
   }
+}
+
+function emptySyncMessageForProvider(providerKey: string): string | null {
+  if (providerKey === 'google-business-profile') {
+    return 'No Google Business Profile locations were found for this account. Confirm the Google account manages a verified location and that GBP API access is approved.';
+  }
+  if (providerKey === 'google-calendar') {
+    return 'No Google calendars were returned for this account.';
+  }
+  return null;
 }

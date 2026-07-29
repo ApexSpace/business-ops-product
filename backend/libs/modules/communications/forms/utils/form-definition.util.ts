@@ -1,5 +1,6 @@
 import { randomUUID } from 'crypto';
 import { Form, Prisma } from '@prisma/client';
+import { FORM_SUBMISSION_INPUT_KEYS } from '../registries/form-field-registry.util';
 
 export interface FormDefinitionView {
   fields: unknown[];
@@ -90,16 +91,22 @@ export function sanitizeFormDefinition(
   };
 }
 
-export function parseFormDefinition(form: Pick<Form, 'definition'>): FormDefinitionView {
+export function parseFormDefinition(
+  form: Pick<Form, 'definition'>,
+): FormDefinitionView {
   const raw = form.definition;
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
     return { fields: [], settings: { ...DEFAULT_SETTINGS } };
   }
 
   const obj = raw as Record<string, unknown>;
-  const fields = Array.isArray(obj.fields) ? sanitizeFormFields(obj.fields) : [];
+  const fields = Array.isArray(obj.fields)
+    ? sanitizeFormFields(obj.fields)
+    : [];
   const settings =
-    obj.settings && typeof obj.settings === 'object' && !Array.isArray(obj.settings)
+    obj.settings &&
+    typeof obj.settings === 'object' &&
+    !Array.isArray(obj.settings)
       ? { ...DEFAULT_SETTINGS, ...(obj.settings as Record<string, unknown>) }
       : { ...DEFAULT_SETTINGS };
 
@@ -118,31 +125,7 @@ export function countFormBuilderFields(fields: unknown[]): number {
 }
 
 export function countFormFields(fields: unknown[]): number {
-  const inputTypes = new Set([
-    'text',
-    'email',
-    'phone',
-    'number',
-    'password',
-    'textarea',
-    'select',
-    'multiselect',
-    'radio',
-    'checkbox',
-    'toggle',
-    'date',
-    'time',
-    'datetime',
-    'file',
-    'signature',
-    'rating',
-    'range',
-    'hidden',
-    'captcha',
-    'name',
-    'address',
-    'website',
-  ]);
+  const inputTypes = FORM_SUBMISSION_INPUT_KEYS;
 
   let count = 0;
   for (const field of fields) {

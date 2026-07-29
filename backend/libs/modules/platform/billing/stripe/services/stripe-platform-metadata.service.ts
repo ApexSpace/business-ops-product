@@ -12,7 +12,9 @@ export class StripePlatformMetadataService {
     }
     const root = metadata as Record<string, unknown>;
     const stripe =
-      root.stripe && typeof root.stripe === 'object' && !Array.isArray(root.stripe)
+      root.stripe &&
+      typeof root.stripe === 'object' &&
+      !Array.isArray(root.stripe)
         ? (root.stripe as Record<string, unknown>)
         : null;
     if (!stripe) return null;

@@ -33,7 +33,7 @@ export function DataTableColumnHeader({
       type="button"
       variant="ghost"
       size="sm"
-      className={cn("-ml-2.5 h-7 px-2 text-xs font-medium text-muted-foreground hover:text-foreground", className)}
+      className={cn("-ml-2.5 h-7 px-2 text-table-header hover:text-foreground", className)}
       onClick={onSort}
     >
       {title}

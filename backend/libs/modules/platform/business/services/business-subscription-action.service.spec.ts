@@ -30,7 +30,9 @@ describe('BusinessSubscriptionActionService', () => {
         },
       }),
     ),
-  } as unknown as ConstructorParameters<typeof BusinessSubscriptionActionService>[0];
+  } as unknown as ConstructorParameters<
+    typeof BusinessSubscriptionActionService
+  >[0];
 
   const beforeState = {
     businessStatus: BusinessStatus.NOT_ACTIVE,
@@ -89,12 +91,9 @@ describe('BusinessSubscriptionActionService', () => {
 
   const capabilitySyncService = {} as unknown as BusinessCapabilitySyncService;
 
-  const accessResolver = new BusinessAccessResolverService(
-    prisma,
-    {
-      resolveEffectiveCapabilities: jest.fn().mockResolvedValue([]),
-    } as unknown as BusinessEffectiveCapabilitiesService,
-  );
+  const accessResolver = new BusinessAccessResolverService(prisma, {
+    resolveEffectiveCapabilities: jest.fn().mockResolvedValue([]),
+  } as unknown as BusinessEffectiveCapabilitiesService);
 
   const service = new BusinessSubscriptionActionService(
     prisma,
@@ -178,7 +177,9 @@ describe('BusinessSubscriptionActionService', () => {
       SubscriptionStatus.PENDING_PAYMENT,
     );
     expect(result.accessImpact.beforeCanAccess).toBe(false);
-    expect(result.afterState.subscriptionStatus).toBe(SubscriptionStatus.ACTIVE);
+    expect(result.afterState.subscriptionStatus).toBe(
+      SubscriptionStatus.ACTIVE,
+    );
   });
 
   it('markPaid requires skip reason when skipping payment record', async () => {
@@ -215,9 +216,7 @@ describe('BusinessSubscriptionActionService', () => {
     expect(eventService.createCorrelatedEvents).toHaveBeenCalledWith(
       expect.anything(),
       expect.any(String),
-      expect.arrayContaining([
-        expect.objectContaining({ paymentId: 'pay-1' }),
-      ]),
+      expect.arrayContaining([expect.objectContaining({ paymentId: 'pay-1' })]),
       actor,
     );
   });

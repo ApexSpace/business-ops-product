@@ -31,10 +31,7 @@ export class StorageController {
     BusinessMemberRole.ADMIN,
     BusinessMemberRole.MEMBER,
   )
-  createUpload(
-    @CurrentUser() user: RequestUser,
-    @Body() dto: CreateUploadDto,
-  ) {
+  createUpload(@CurrentUser() user: RequestUser, @Body() dto: CreateUploadDto) {
     return this.storageService.createUpload(user.businessId!, dto, user);
   }
 

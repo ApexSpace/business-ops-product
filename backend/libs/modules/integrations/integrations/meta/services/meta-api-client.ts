@@ -1,4 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
+import {
+  META_INSTAGRAM_APP_WEBHOOK_FIELDS,
+  META_MESSAGING_PAGE_WEBHOOK_FIELDS,
+} from '../constants/meta-messaging-webhook.constants';
 import { getMetaGraphBaseUrl } from '../constants/meta-oauth.constants';
 import { MetaConfigService } from './meta-config.service';
 
@@ -108,14 +112,20 @@ export class MetaApiClient {
   async exchangeCodeForToken(
     code: string,
     providerKey?: string,
+    options?: { includeRedirectUri?: boolean },
   ): Promise<MetaTokenResponse> {
     const { appId, appSecret } = this.metaConfigService.getMetaAppConfig();
-    const redirectUri = this.metaConfigService.getMetaRedirectUri(providerKey);
+    const includeRedirectUri = options?.includeRedirectUri ?? true;
 
     const url = new URL(`${getMetaGraphBaseUrl()}/oauth/access_token`);
     url.searchParams.set('client_id', appId);
     url.searchParams.set('client_secret', appSecret);
-    url.searchParams.set('redirect_uri', redirectUri);
+    if (includeRedirectUri) {
+      url.searchParams.set(
+        'redirect_uri',
+        this.metaConfigService.getMetaRedirectUri(providerKey),
+      );
+    }
     url.searchParams.set('code', code);
 
     const response = await fetch(url.toString());
@@ -157,6 +167,179 @@ export class MetaApiClient {
     }
 
     return (await response.json()) as MetaUserProfile;
+  }
+
+  /**
+   * Business Login for Instagram — exchange authorization code for short-lived token.
+   * POST https://api.instagram.com/oauth/access_token
+   */
+  async exchangeInstagramLoginCodeForToken(
+    code: string,
+  ): Promise<MetaTokenResponse & { user_id?: number | string }> {
+    const { appId, appSecret } =
+      this.metaConfigService.getInstagramLoginAppCredentials();
+    const redirectUri = this.metaConfigService.getMetaRedirectUri(
+      'instagram',
+      'INSTAGRAM_LOGIN',
+    );
+
+    const body = new URLSearchParams({
+      client_id: appId,
+      client_secret: appSecret,
+      grant_type: 'authorization_code',
+      redirect_uri: redirectUri,
+      code,
+    });
+
+    const response = await fetch('https://api.instagram.com/oauth/access_token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: body.toString(),
+    });
+
+    if (!response.ok) {
+      const detail = this.sanitizeGraphError(await response.text());
+      throw new Error(`Instagram Login token exchange failed: ${detail}`);
+    }
+
+    const data = (await response.json()) as {
+      access_token?: string;
+      token_type?: string;
+      expires_in?: number;
+      user_id?: number | string;
+      // Some responses wrap in data array
+      data?: Array<{
+        access_token?: string;
+        user_id?: number | string;
+        permissions?: string;
+      }>;
+    };
+
+    const token =
+      data.access_token ??
+      data.data?.[0]?.access_token;
+    if (!token) {
+      throw new Error('Instagram Login token exchange returned no access_token');
+    }
+
+    return {
+      access_token: token,
+      token_type: data.token_type ?? 'bearer',
+      expires_in: data.expires_in,
+      user_id: data.user_id ?? data.data?.[0]?.user_id,
+    };
+  }
+
+  /** Exchange short-lived Instagram User token for long-lived (60 days). */
+  async exchangeInstagramLoginForLongLivedToken(
+    shortLivedToken: string,
+  ): Promise<MetaTokenResponse> {
+    const { appSecret } =
+      this.metaConfigService.getInstagramLoginAppCredentials();
+    const url = new URL('https://graph.instagram.com/access_token');
+    url.searchParams.set('grant_type', 'ig_exchange_token');
+    url.searchParams.set('client_secret', appSecret);
+    url.searchParams.set('access_token', shortLivedToken);
+
+    const response = await fetch(url.toString());
+    if (!response.ok) {
+      const detail = this.sanitizeGraphError(await response.text());
+      throw new Error(
+        `Instagram Login long-lived token exchange failed: ${detail}`,
+      );
+    }
+
+    return (await response.json()) as MetaTokenResponse;
+  }
+
+  async getInstagramLoginProfile(accessToken: string): Promise<{
+    id: string;
+    username?: string;
+    name?: string;
+    profile_picture_url?: string;
+  }> {
+    const url = new URL('https://graph.instagram.com/me');
+    url.searchParams.set(
+      'fields',
+      'user_id,username,name,account_type,profile_picture_url',
+    );
+    url.searchParams.set('access_token', accessToken);
+
+    const response = await fetch(url.toString());
+    if (!response.ok) {
+      const detail = this.sanitizeGraphError(await response.text());
+      throw new Error(`Failed to fetch Instagram Login profile: ${detail}`);
+    }
+
+    const data = (await response.json()) as {
+      user_id?: string | number;
+      id?: string | number;
+      username?: string;
+      name?: string;
+      profile_picture_url?: string;
+    };
+
+    const id = String(data.user_id ?? data.id ?? '');
+    if (!id) {
+      throw new Error('Instagram Login profile missing user id');
+    }
+
+    return {
+      id,
+      username: data.username,
+      name: data.name,
+      profile_picture_url: data.profile_picture_url,
+    };
+  }
+
+  /**
+   * Send an Instagram DM via Instagram API with Instagram Login
+   * (graph.instagram.com / {ig-user-id}/messages).
+   */
+  async sendInstagramLoginMessage(
+    igUserId: string,
+    igUserAccessToken: string,
+    recipientIgsid: string,
+    text: string,
+    attachments?: Array<{ type: string; url: string }>,
+  ): Promise<{ messageId: string }> {
+    const payloads = this.buildOutboundMessagePayloads(text, attachments);
+    if (payloads.length === 0) {
+      throw new Error(
+        'Instagram send message failed: message text or attachment is required',
+      );
+    }
+
+    const version = process.env.META_GRAPH_API_VERSION?.trim() || 'v20.0';
+    let lastMessageId = '';
+
+    for (const message of payloads) {
+      const endpoint = new URL(
+        `https://graph.instagram.com/${version}/${igUserId}/messages`,
+      );
+      endpoint.searchParams.set('access_token', igUserAccessToken);
+
+      const response = await fetch(endpoint.toString(), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          recipient: { id: recipientIgsid },
+          message,
+        }),
+      });
+
+      if (!response.ok) {
+        const detail = this.sanitizeGraphError(await response.text());
+        throw new Error(`Instagram Login send message failed: ${detail}`);
+      }
+
+      const data = (await response.json()) as {
+        message_id?: string;
+      };
+      lastMessageId = data.message_id ?? lastMessageId;
+    }
+
+    return { messageId: lastMessageId };
   }
 
   /**
@@ -415,20 +598,24 @@ export class MetaApiClient {
     );
   }
 
+  /**
+   * Send an Instagram DM via the Facebook Login / Messenger Platform integration.
+   * Uses the linked Facebook Page ID (not the Instagram account ID) per Meta docs.
+   */
   async sendInstagramMessage(
-    instagramUserId: string,
-    accessToken: string,
-    recipientId: string,
+    linkedPageId: string,
+    pageAccessToken: string,
+    recipientIgsid: string,
     text: string,
     attachments?: Array<{ type: string; url: string }>,
   ): Promise<{ messageId: string }> {
     return this.sendGraphMessages(
-      instagramUserId,
-      accessToken,
-      recipientId,
+      linkedPageId,
+      pageAccessToken,
+      recipientIgsid,
       text,
       attachments,
-      {},
+      { messagingType: 'RESPONSE' },
       'Instagram send message failed',
     );
   }
@@ -685,8 +872,7 @@ export class MetaApiClient {
         throw new Error(`Meta list message templates failed: ${detail}`);
       }
 
-      const data =
-        (await response.json()) as MetaMessageTemplateListResponse;
+      const data = (await response.json()) as MetaMessageTemplateListResponse;
       templates.push(...(data.data ?? []));
       nextUrl = data.paging?.next ?? null;
     }
@@ -871,5 +1057,91 @@ export class MetaApiClient {
     };
 
     return { messageId: data.messages?.[0]?.id ?? '' };
+  }
+
+  /** Subscribe the Meta app to receive WhatsApp webhooks for this WABA. */
+  async subscribeWhatsAppBusinessAccountToApp(
+    wabaId: string,
+    accessToken: string,
+  ): Promise<boolean> {
+    const url = this.buildGraphUrl(`/${wabaId}/subscribed_apps`, {
+      access_token: accessToken,
+    });
+
+    const response = await fetch(url, { method: 'POST' });
+    if (!response.ok) {
+      const detail = this.sanitizeGraphError(await response.text());
+      throw new Error(`Meta subscribe WABA to app failed: ${detail}`);
+    }
+
+    const data = (await response.json()) as { success?: boolean };
+    return data.success === true;
+  }
+
+  /** Subscribe a Facebook Page to receive messaging webhooks for this app. */
+  async subscribePageToMessagingWebhooks(
+    pageId: string,
+    pageAccessToken: string,
+    subscribedFields: readonly string[] = META_MESSAGING_PAGE_WEBHOOK_FIELDS,
+  ): Promise<boolean> {
+    const url = this.buildGraphUrl(`/${pageId}/subscribed_apps`, {
+      access_token: pageAccessToken,
+      subscribed_fields: subscribedFields.join(','),
+    });
+
+    const response = await fetch(url, { method: 'POST' });
+    if (!response.ok) {
+      const detail = this.sanitizeGraphError(await response.text());
+      throw new Error(
+        `Meta subscribe Page to messaging webhooks failed: ${detail}`,
+      );
+    }
+
+    const data = (await response.json()) as { success?: boolean | string };
+    return data.success === true || data.success === 'true';
+  }
+
+  /**
+   * Ensure the Meta app is subscribed to webhook fields for a given object type.
+   * Required for Instagram messaging (`object: instagram`) in addition to page subscriptions.
+   */
+  async ensureAppWebhookSubscription(
+    object: 'instagram' | 'page',
+    fields: readonly string[] = object === 'instagram'
+      ? META_INSTAGRAM_APP_WEBHOOK_FIELDS
+      : META_MESSAGING_PAGE_WEBHOOK_FIELDS,
+  ): Promise<boolean> {
+    const callbackUrl = this.metaConfigService.getMetaWebhookCallbackUrl();
+    const { appId, appSecret, webhookVerifyToken } =
+      this.metaConfigService.getMetaAppConfig();
+
+    if (!callbackUrl || !webhookVerifyToken) {
+      throw new Error(
+        'Meta webhook callback URL or verify token is not configured',
+      );
+    }
+
+    if (!callbackUrl.startsWith('https://')) {
+      throw new Error(
+        'Meta app webhook subscription requires an HTTPS callback URL (set BACKEND_PUBLIC_URL to your HTTPS tunnel, e.g. ngrok)',
+      );
+    }
+
+    const url = this.buildGraphUrl(`/${appId}/subscriptions`, {
+      access_token: `${appId}|${appSecret}`,
+      object,
+      callback_url: callbackUrl,
+      verify_token: webhookVerifyToken,
+      fields: fields.join(','),
+    });
+
+    const response = await fetch(url, { method: 'POST' });
+    if (!response.ok) {
+      const detail = this.sanitizeGraphError(await response.text());
+      throw new Error(`Meta app webhook subscription failed: ${detail}`);
+    }
+
+    const data = (await response.json()) as { success?: boolean };
+    return data.success === true;
   }
 }

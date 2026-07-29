@@ -5,6 +5,13 @@ describe("isPublicPath", () => {
   it("allows auth pages", () => {
     expect(isPublicPath("/login")).toBe(true);
     expect(isPublicPath("/select-context")).toBe(true);
+    expect(isPublicPath("/forgot-password")).toBe(true);
+    expect(isPublicPath("/reset-password")).toBe(true);
+    expect(isPublicPath("/auth/trial-handoff")).toBe(true);
+    expect(isPublicPath("/api/auth/forgot-password")).toBe(true);
+    expect(isPublicPath("/api/auth/reset-password")).toBe(true);
+    expect(isPublicPath("/api/auth/trial-handoff")).toBe(true);
+    expect(isPublicPath("/widget/trial")).toBe(true);
   });
 
   it("allows canonical public resource routes", () => {
@@ -16,6 +23,7 @@ describe("isPublicPath", () => {
     expect(isPublicPath("/chat/bot-key")).toBe(true);
     expect(isPublicPath("/widget/chat/bot-key")).toBe(true);
     expect(isPublicPath("/form/contact-us")).toBe(true);
+    expect(isPublicPath("/express/abc123")).toBe(true);
     expect(isPublicPath("/public/anything")).toBe(true);
   });
 

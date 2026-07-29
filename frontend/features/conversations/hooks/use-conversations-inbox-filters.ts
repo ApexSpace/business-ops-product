@@ -1,37 +1,31 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import type { ConversationStatus } from "@/features/conversations/api/conversations.api";
 
-export type ConversationInboxFilterKey =
-  | "all"
-  | "facebook"
-  | "instagram"
-  | "whatsapp"
-  | "email"
-  | "webchat"
-  | "open"
-  | "unread"
-  | "assigned";
+export type InboxStatusFilter = Extract<
+  ConversationStatus,
+  "OPEN" | "CLOSED" | "SPAM"
+>;
 
 export function useConversationsInboxFilters() {
-  const [filter, setFilter] = useState<ConversationInboxFilterKey>("all");
   const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<InboxStatusFilter>("OPEN");
 
   const listFilters = useMemo(() => {
-    const base: Record<string, string | number | undefined> = {
+    return {
       page: 1,
       limit: 50,
       search: search.trim() || undefined,
+      status: statusFilter,
     };
-    if (filter === "facebook") base.channel = "FACEBOOK";
-    if (filter === "instagram") base.channel = "INSTAGRAM";
-    if (filter === "whatsapp") base.channel = "WHATSAPP";
-    if (filter === "email") base.channel = "EMAIL";
-    if (filter === "webchat") base.channel = "WEBCHAT";
-    if (filter === "open") base.status = "OPEN";
-    if (filter === "assigned") base.assignedToMe = "true";
-    return base;
-  }, [filter, search]);
+  }, [search, statusFilter]);
 
-  return { filter, setFilter, search, setSearch, listFilters };
+  return {
+    search,
+    setSearch,
+    statusFilter,
+    setStatusFilter,
+    listFilters,
+  };
 }

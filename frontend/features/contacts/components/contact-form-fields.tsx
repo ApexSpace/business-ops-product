@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect } from "react";
+import { IdCard, Mail, MapPin, UserRound } from "lucide-react";
 import type { UseFormReturn } from "react-hook-form";
 import { AvatarUploadField } from "@/components/forms/avatar-upload-field";
+import { FormDrawerSection } from "@/components/forms/form-drawer-section";
 import { PhoneField } from "@/components/forms/phone-field";
 import { SelectField } from "@/components/forms/select-field";
 import { TextField } from "@/components/forms/text-field";
@@ -19,22 +21,16 @@ import { buildDisplayName } from "@/features/settings/schemas/business-profile";
 import type { ContactProfileFormValues } from "@/features/contacts/schemas/contact-profile";
 import { countryOptions, timezoneOptions } from "@/lib/config/geo-options";
 
-function SectionTitle({ children }: { children: React.ReactNode }) {
-  return (
-    <h3 className="border-b pb-2 text-sm font-medium text-foreground">
-      {children}
-    </h3>
-  );
-}
-
 export interface ContactFormFieldsProps {
   form: UseFormReturn<ContactProfileFormValues>;
   disabled?: boolean;
+  avatarPreviewUrl?: string | null;
 }
 
 export function ContactFormFields({
   form,
   disabled = false,
+  avatarPreviewUrl,
 }: ContactFormFieldsProps) {
   const firstName = form.watch("firstName");
   const lastName = form.watch("lastName");
@@ -47,16 +43,24 @@ export function ContactFormFields({
     }
   }, [firstName, lastName, displayName, form]);
 
-  return (
-    <div className="max-h-[min(70vh,640px)] space-y-6 overflow-y-auto pr-1">
-      <AvatarUploadField
-        control={form.control}
-        name="avatarUrl"
-        disabled={disabled}
-      />
+  const nameForInitials =
+    displayName?.trim() || buildDisplayName(firstName, lastName) || "Contact";
 
-      <section className="space-y-4">
-        <SectionTitle>Name</SectionTitle>
+  return (
+    <div className="space-y-4">
+      <FormDrawerSection icon={UserRound} title="Profile picture">
+        <AvatarUploadField
+          control={form.control}
+          name="avatarAssetId"
+          disabled={disabled}
+          fallbackPreviewUrl={avatarPreviewUrl}
+          layout="dropzone"
+          displayName={nameForInitials}
+          hideLabel
+        />
+      </FormDrawerSection>
+
+      <FormDrawerSection icon={IdCard} title="Name">
         <div className="grid gap-4 sm:grid-cols-2">
           <TextField
             control={form.control}
@@ -78,7 +82,12 @@ export function ContactFormFields({
             <FormItem>
               <FormLabel>Display name</FormLabel>
               <FormControl>
-                <Input {...field} readOnly disabled className="bg-muted" />
+                <Input
+                  {...field}
+                  readOnly
+                  disabled
+                  className="border-border/70 bg-muted/50 text-muted-foreground"
+                />
               </FormControl>
               <FormDescription>
                 Auto-filled from first and last name.
@@ -93,10 +102,9 @@ export function ContactFormFields({
           label="Company"
           disabled={disabled}
         />
-      </section>
+      </FormDrawerSection>
 
-      <section className="space-y-4">
-        <SectionTitle>Contact details</SectionTitle>
+      <FormDrawerSection icon={Mail} title="Contact details">
         <TextField
           control={form.control}
           name="email"
@@ -117,10 +125,9 @@ export function ContactFormFields({
           items={timezoneOptions}
           disabled={disabled}
         />
-      </section>
+      </FormDrawerSection>
 
-      <section className="space-y-4">
-        <SectionTitle>Address</SectionTitle>
+      <FormDrawerSection icon={MapPin} title="Address">
         <TextField
           control={form.control}
           name="address"
@@ -157,7 +164,7 @@ export function ContactFormFields({
             disabled={disabled}
           />
         </div>
-      </section>
+      </FormDrawerSection>
     </div>
   );
 }

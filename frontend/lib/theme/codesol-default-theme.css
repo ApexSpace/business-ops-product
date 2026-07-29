@@ -1,0 +1,158 @@
+/**
+ * CodeSol raw design tokens.
+ * Override these (via applyClientTheme or snapshot branding) for per-client white-labeling.
+ * Semantic variables in globals.css map to these values.
+ */
+:root {
+  --cs-navy: #0b1530;
+  --cs-navy-2: #111d42;
+  --cs-navy-hover: #1b2a58;
+  --cs-blue: #375bd2;
+  --cs-cyan: #17b8ce;
+  --cs-lilac: #a78bfa;
+  --cs-blue-tint: #eef2ff;
+  --cs-blue-text: #2b47a8;
+  --cs-ink: #12172b;
+  --cs-ink-2: #5b6478;
+  --cs-ink-3: #9aa1b2;
+  --cs-border: #e4e7ef;
+  --cs-page: #f7f8fa;
+  --cs-green: #1f9d63;
+  --cs-green-tint: #e7f7ef;
+  --cs-amber: #b76e00;
+  --cs-amber-tint: #fdf1e0;
+  --cs-red: #dc3545;
+  --cs-red-tint: #fcecec;
+  --cs-sidebar-group-label: #7c89c2;
+  --cs-sidebar-foreground: #c7ceea;
+  --cs-sidebar-muted: #9aa5d6;
+  --cs-glass-surface: color-mix(in srgb, white 76%, var(--cs-blue-tint));
+  --cs-glass-surface-strong: color-mix(in srgb, white 84%, var(--cs-blue-tint));
+  --cs-glass-surface-soft: color-mix(in srgb, white 62%, var(--cs-blue-tint));
+  --cs-glass-border: rgb(18 23 43 / 8%);
+  --cs-glass-border-strong: rgb(18 23 43 / 12%);
+  --cs-glass-highlight: rgb(255 255 255 / 58%);
+  --cs-control-surface: rgb(255 255 255 / 62%);
+  --cs-control-border: rgb(18 23 43 / 8%);
+  --cs-shell-sidebar-surface: linear-gradient(
+    180deg,
+    rgb(255 255 255 / 30%) 0%,
+    rgb(255 255 255 / 12%) 100%
+  );
+  --cs-shell-topbar-surface: color-mix(in srgb, white 74%, var(--cs-blue-tint));
+  --cs-page-gradient:
+    radial-gradient(circle at top left, rgb(55 91 210 / 20%) 0%, transparent 38%),
+    radial-gradient(circle at top right, rgb(76 124 240 / 12%) 0%, transparent 30%),
+    radial-gradient(circle at 55% 100%, rgb(183 110 0 / 10%) 0%, transparent 30%),
+    linear-gradient(180deg, #f2f6ff 0%, #e8f0ff 100%);
+  --cs-page-orb-1: rgb(55 91 210 / 22%);
+  --cs-page-orb-2: rgb(76 124 240 / 16%);
+  --cs-page-orb-3: rgb(183 110 0 / 12%);
+}
+
+/*
+ * Public booking / express / invoice shells use a forced light page background.
+ * When html is .dark, theme tokens would otherwise paint light text on that
+ * background — restore light palette for these surfaces only.
+ */
+.public-booking-surface {
+  color-scheme: light;
+  --cs-navy: #0b1530;
+  --cs-navy-2: #111d42;
+  --cs-navy-hover: #1b2a58;
+  --cs-blue: #375bd2;
+  --cs-cyan: #17b8ce;
+  --cs-lilac: #a78bfa;
+  --cs-blue-tint: #eef2ff;
+  --cs-blue-text: #2b47a8;
+  --cs-ink: #12172b;
+  --cs-ink-2: #5b6478;
+  --cs-ink-3: #9aa1b2;
+  --cs-border: #e4e7ef;
+  --cs-page: #f7f8fa;
+  --cs-green: #1f9d63;
+  --cs-green-tint: #e7f7ef;
+  --cs-amber: #b76e00;
+  --cs-amber-tint: #fdf1e0;
+  --cs-red: #dc3545;
+  --cs-red-tint: #fcecec;
+  --cs-glass-surface: color-mix(in srgb, white 76%, var(--cs-blue-tint));
+  --cs-glass-surface-strong: color-mix(in srgb, white 84%, var(--cs-blue-tint));
+  --cs-glass-surface-soft: color-mix(in srgb, white 62%, var(--cs-blue-tint));
+  --cs-glass-border: rgb(18 23 43 / 8%);
+  --cs-glass-border-strong: rgb(18 23 43 / 12%);
+  --cs-glass-highlight: rgb(255 255 255 / 58%);
+  --cs-control-surface: rgb(255 255 255 / 62%);
+  --cs-control-border: rgb(18 23 43 / 8%);
+
+  /* Semantic tokens are computed on html.dark — re-bind them here so children inherit usable light values */
+  --background: var(--cs-page);
+  --foreground: var(--cs-ink);
+  --foreground-subtle: var(--cs-ink-3);
+  --card: var(--cs-glass-surface-strong);
+  --card-foreground: var(--cs-ink);
+  --popover: var(--cs-glass-surface-strong);
+  --popover-foreground: var(--cs-ink);
+  --primary: var(--cs-blue);
+  --primary-foreground: #ffffff;
+  --primary-tint: var(--cs-blue-tint);
+  --primary-text: var(--cs-blue-text);
+  --secondary: color-mix(in srgb, var(--cs-glass-surface-soft) 85%, white);
+  --secondary-foreground: var(--cs-ink);
+  --muted: color-mix(in srgb, var(--cs-glass-surface-soft) 88%, white);
+  --muted-foreground: var(--cs-ink-2);
+  --accent: var(--cs-blue-tint);
+  --accent-foreground: var(--cs-blue-text);
+  --destructive: var(--cs-red);
+  --destructive-foreground: #ffffff;
+  --border: var(--cs-glass-border-strong);
+  --input: var(--cs-control-border);
+  --ring: var(--cs-blue);
+}
+
+.dark {
+  --cs-navy: #070d1f;
+  --cs-navy-2: #0b1530;
+  --cs-navy-hover: #111d42;
+  --cs-blue: #4a6ee0;
+  --cs-cyan: #38c7db;
+  --cs-lilac: #b197fc;
+  --cs-blue-tint: #1a2544;
+  --cs-blue-text: #a8b8f0;
+  --cs-ink: #eef0f6;
+  --cs-ink-2: #a8afc0;
+  --cs-ink-3: #6b7289;
+  --cs-border: #2a3555;
+  --cs-page: #0a1020;
+  --cs-green: #2eb872;
+  --cs-green-tint: #152a20;
+  --cs-amber: #d48806;
+  --cs-amber-tint: #2a2210;
+  --cs-red: #e85563;
+  --cs-red-tint: #2a1518;
+  --cs-sidebar-group-label: #6b7aad;
+  --cs-sidebar-foreground: #b8c0e0;
+  --cs-sidebar-muted: #8a94b8;
+  --cs-glass-surface: rgb(11 21 48 / 66%);
+  --cs-glass-surface-strong: rgb(11 21 48 / 82%);
+  --cs-glass-surface-soft: rgb(17 29 66 / 58%);
+  --cs-glass-border: rgb(168 184 240 / 10%);
+  --cs-glass-border-strong: rgb(168 184 240 / 16%);
+  --cs-glass-highlight: rgb(255 255 255 / 8%);
+  --cs-control-surface: rgb(17 29 66 / 68%);
+  --cs-control-border: rgb(168 184 240 / 12%);
+  --cs-shell-sidebar-surface: linear-gradient(
+    180deg,
+    rgb(7 13 31 / 92%) 0%,
+    rgb(11 21 48 / 82%) 100%
+  );
+  --cs-shell-topbar-surface: rgb(11 21 48 / 60%);
+  --cs-page-gradient:
+    radial-gradient(circle at top left, rgb(74 110 224 / 12%) 0%, transparent 34%),
+    radial-gradient(circle at top right, rgb(56 199 219 / 10%) 0%, transparent 28%),
+    radial-gradient(circle at 55% 100%, rgb(212 136 6 / 10%) 0%, transparent 30%),
+    linear-gradient(180deg, #08101f 0%, #0d1427 100%);
+  --cs-page-orb-1: rgb(74 110 224 / 20%);
+  --cs-page-orb-2: rgb(56 199 219 / 18%);
+  --cs-page-orb-3: rgb(212 136 6 / 14%);
+}

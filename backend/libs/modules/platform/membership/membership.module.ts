@@ -2,9 +2,10 @@ import { Module, forwardRef } from '@nestjs/common';
 import { AuditModule } from '@app/modules/platform/audit/audit.module';
 import { AuthModule } from '@app/modules/platform/auth/auth.module';
 import { BusinessModule } from '@app/modules/platform/business/business.module';
-import { EmailModule } from '@app/modules/communications/email/email.module';
+import { NotificationsModule } from '@app/modules/communications/notifications/notifications.module';
 import { BusinessMembershipController } from './controllers/business-membership.controller';
 import { PlatformMembershipController } from './controllers/platform-membership.controller';
+import { PlatformOpsMembersController } from './controllers/platform-ops-members.controller';
 import { PlatformUsersController } from './controllers/platform-users.controller';
 import { BusinessMembershipRepository } from './repositories/business-membership.repository';
 import { PlatformMembershipAdminRepository } from './repositories/platform-membership-admin.repository';
@@ -15,12 +16,13 @@ import { PlatformUserService } from './services/platform-user.service';
   imports: [
     AuditModule,
     forwardRef(() => BusinessModule),
-    forwardRef(() => EmailModule),
+    forwardRef(() => NotificationsModule),
     forwardRef(() => AuthModule),
   ],
   controllers: [
     BusinessMembershipController,
     PlatformMembershipController,
+    PlatformOpsMembersController,
     PlatformUsersController,
   ],
   providers: [

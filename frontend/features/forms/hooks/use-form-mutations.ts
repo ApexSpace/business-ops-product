@@ -11,6 +11,7 @@ import {
   publishForm,
   updateForm,
 } from "@/features/forms/api/forms.api";
+import { useFormsHost } from "@/features/forms/forms-host-context";
 import type { FormDefinition } from "@/features/forms/types";
 import {
   invalidateFormDetail,
@@ -19,6 +20,7 @@ import {
 
 export function useFormMutations() {
   const queryClient = useQueryClient();
+  const { apiBase } = useFormsHost();
 
   const invalidateAll = async (id?: string) => {
     await invalidateFormLists(queryClient);
@@ -28,7 +30,7 @@ export function useFormMutations() {
   };
 
   const createMutation = useMutation({
-    mutationFn: (name: string) => createForm(name),
+    mutationFn: (name: string) => createForm(name, apiBase),
     onSuccess: async () => {
       await invalidateAll();
       toast.success("Form created");
@@ -45,7 +47,7 @@ export function useFormMutations() {
       id: string;
       name?: string;
       definition?: FormDefinition;
-    }) => updateForm(id, { name, definition }),
+    }) => updateForm(id, { name, definition }, apiBase),
     onSuccess: async (_, { id }) => {
       await invalidateAll(id);
       toast.success("Form saved");
@@ -54,7 +56,7 @@ export function useFormMutations() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => deleteForm(id),
+    mutationFn: (id: string) => deleteForm(id, apiBase),
     onSuccess: async () => {
       await invalidateAll();
       toast.success("Form deleted");
@@ -63,7 +65,7 @@ export function useFormMutations() {
   });
 
   const duplicateMutation = useMutation({
-    mutationFn: (id: string) => duplicateForm(id),
+    mutationFn: (id: string) => duplicateForm(id, apiBase),
     onSuccess: async () => {
       await invalidateAll();
       toast.success("Form duplicated");
@@ -72,7 +74,7 @@ export function useFormMutations() {
   });
 
   const publishMutation = useMutation({
-    mutationFn: (id: string) => publishForm(id),
+    mutationFn: (id: string) => publishForm(id, apiBase),
     onSuccess: async (_, id) => {
       await invalidateAll(id);
       toast.success("Form published");
@@ -81,7 +83,7 @@ export function useFormMutations() {
   });
 
   const draftMutation = useMutation({
-    mutationFn: (id: string) => moveFormToDraft(id),
+    mutationFn: (id: string) => moveFormToDraft(id, apiBase),
     onSuccess: async (_, id) => {
       await invalidateAll(id);
       toast.success("Form moved to draft");
@@ -90,7 +92,7 @@ export function useFormMutations() {
   });
 
   const archiveMutation = useMutation({
-    mutationFn: (id: string) => archiveForm(id),
+    mutationFn: (id: string) => archiveForm(id, apiBase),
     onSuccess: async (_, id) => {
       await invalidateAll(id);
       toast.success("Form archived");

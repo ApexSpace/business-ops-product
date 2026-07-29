@@ -1,3 +1,5 @@
+import type { InstagramAuthFlow } from "@/features/integrations/utils/integrations";
+
 export interface IntegrationEmptyStateCopy {
   title: string;
   message: string;
@@ -13,6 +15,8 @@ export interface IntegrationManageCopy {
   syncButtonLabel: string;
   syncSuccessToast: (count: number) => string;
   syncEmptyToast: string;
+  syncingAssetsTitle?: string;
+  syncingAssetsMessage?: string;
   emptyState: IntegrationEmptyStateCopy;
   disconnectLabel: string;
   messagingComposerHint?: string;
@@ -42,7 +46,7 @@ const COPY_BY_PROVIDER: Record<string, IntegrationManageCopy> = {
   instagram: {
     connectionTitle: "Instagram connection",
     description:
-      "Connect your Instagram Professional account so your team can manage Instagram conversations and customer activity from this platform.",
+      "You'll sign in with Facebook and choose the Page linked to your Instagram Professional account so your team can manage Instagram conversations.",
     resourcesSectionLabel: "Instagram accounts",
     syncButtonLabel: "Sync Instagram accounts",
     syncSuccessToast: (count) =>
@@ -50,15 +54,18 @@ const COPY_BY_PROVIDER: Record<string, IntegrationManageCopy> = {
         ? "Instagram account synced"
         : `${count} Instagram accounts synced`,
     syncEmptyToast: "No Instagram account found",
+    syncingAssetsTitle: "Finding linked Instagram accounts…",
+    syncingAssetsMessage:
+      "Meta is confirming which Instagram Professional accounts are linked to the Pages you selected.",
     emptyState: {
       title: "No Instagram account found",
       message:
         "We could not find an Instagram Professional account connected to the selected Facebook Page.",
       checklist: [
-        "Your Instagram account must be Professional.",
-        "Your Instagram account must be linked to a Facebook Page.",
+        "Your Instagram account must be Professional (Business or Creator).",
+        "That Instagram account must be linked to a Facebook Page.",
         "You must be an admin of that Page.",
-        "Select the correct Page when reconnecting Instagram.",
+        "Select that Page in Meta's authorization dialog when reconnecting.",
       ],
       learnMoreUrl:
         "https://www.facebook.com/business/help/898752960195806",
@@ -69,19 +76,23 @@ const COPY_BY_PROVIDER: Record<string, IntegrationManageCopy> = {
   facebook: {
     connectionTitle: "Facebook connection",
     description:
-      "Connect your Facebook Page so your team can manage Page conversations and customer activity.",
+      "Sign in with Facebook and choose every Page your team should manage for conversations and customer activity.",
     resourcesSectionLabel: "Facebook Pages",
     syncButtonLabel: "Sync Facebook Pages",
     syncSuccessToast: (count) =>
       count === 1 ? "Facebook Page synced" : `${count} Facebook Pages synced`,
     syncEmptyToast: "No Facebook Page found",
+    syncingAssetsTitle: "Finding your Facebook Pages…",
+    syncingAssetsMessage:
+      "This usually takes a few seconds after you authorize Meta.",
     emptyState: {
       title: "No Facebook Page found",
-      message: "We could not find a Facebook Page for this connection.",
+      message:
+        "We could not find a Facebook Page for this connection. Meta's Page picker is required for messaging.",
       checklist: [
         "You must be an admin of the Facebook Page.",
-        "Select the Page during Facebook authorization.",
-        "Reconnect Facebook if you changed permissions.",
+        "Select the Page during Facebook authorization (not just your profile).",
+        "Reconnect Facebook if you changed permissions or skipped Pages.",
       ],
     },
     disconnectLabel: "Disconnect Facebook",
@@ -89,7 +100,7 @@ const COPY_BY_PROVIDER: Record<string, IntegrationManageCopy> = {
   whatsapp: {
     connectionTitle: "WhatsApp connection",
     description:
-      "Connect one WhatsApp Business number so your team can send and receive customer messages.",
+      "Connect your existing WhatsApp Business app number. You will sign in with Meta, choose to connect your mobile app account, enter your number, and confirm in the WhatsApp Business app on your phone.",
     messagingComposerHint:
       "Free-form replies are allowed within 24 hours of the customer's last message. Outside that window, use an approved WhatsApp message template to start or continue the conversation.",
     resourcesSectionLabel: "WhatsApp numbers",
@@ -131,21 +142,28 @@ const COPY_BY_PROVIDER: Record<string, IntegrationManageCopy> = {
   "google-business-profile": {
     connectionTitle: "Google Business Profile connection",
     description:
-      "Connect Google Business Profile so your team can manage locations and reviews.",
-    resourcesSectionLabel: "Business profiles",
-    syncButtonLabel: "Sync business profiles",
+      "Connect with Google to sync Business Profile locations you own or manage (including company profiles where an owner invited you). Select the locations your team should use in the platform.",
+    resourcesSectionLabel: "Business locations",
+    syncButtonLabel: "Sync locations",
     syncSuccessToast: (count) =>
-      count === 1
-        ? "Business profile synced"
-        : `${count} business profiles synced`,
-    syncEmptyToast: "No business profile found",
+      count === 1 ? "Location synced" : `${count} locations synced`,
+    syncEmptyToast: "No business location found",
+    syncingAssetsTitle: "Finding your business locations…",
+    syncingAssetsMessage:
+      "Google is returning the Business Profile locations for the account you authorized.",
     emptyState: {
-      title: "No business profile found",
-      message: "We could not find a Business Profile location for this account.",
+      title: "No business location found",
+      message:
+        "We could not load Google Business Profile locations for this Google account. Locations you own and locations where you are a manager (invited by the company owner) should appear here after sync — similar to Facebook Pages.",
       checklist: [
-        "Confirm you granted Business Profile access during Google login.",
-        "Wait about a minute between syncs, then try again.",
+        "Use Reconnect with Google and approve Business Profile management (business.manage) when Google asks.",
+        "Sign in with the Google account that was invited as a manager (or the owner account).",
+        "Confirm the invite is accepted in Google Business Profile and the location is verified.",
+        "In Google Cloud, add the business.manage scope on the OAuth consent screen, enable Account Management and Business Information APIs, and ensure GBP API access is approved (quota above 0).",
+        "Wait about a minute between syncs if you hit a rate limit, then try Sync again.",
       ],
+      learnMoreUrl: "https://developers.google.com/my-business/content/prereqs",
+      learnMoreLabel: "Google Business Profile API prerequisites",
     },
     disconnectLabel: "Disconnect Google Business Profile",
   },
@@ -187,6 +205,28 @@ const COPY_BY_PROVIDER: Record<string, IntegrationManageCopy> = {
     messagingComposerHint:
       "Replies from customers are routed back to this conversation automatically.",
   },
+  sms: {
+    connectionTitle: "Twilio SMS",
+    description:
+      "Connect your Twilio account and phone number for two-way inbox SMS. Outbound notification texts (e.g. Express Booking links) use the CodeSol platform number automatically.",
+    resourcesSectionLabel: "SMS number",
+    syncButtonLabel: "Refresh SMS settings",
+    syncSuccessToast: () => "SMS settings refreshed",
+    syncEmptyToast: "No SMS number configured",
+    emptyState: {
+      title: "SMS not configured",
+      message:
+        "Enable platform SMS notifications or connect your Twilio number to start sending messages.",
+      checklist: [
+        "Enable platform SMS for one-way notifications.",
+        "Connect your Twilio account for two-way inbox messaging.",
+        "Configure the Twilio webhook URL on your number if needed.",
+      ],
+    },
+    disconnectLabel: "Disconnect SMS",
+    messagingComposerHint:
+      "Two-way SMS replies are only available when your own Twilio number is connected.",
+  },
   linkedin: {
     connectionTitle: "LinkedIn connection",
     description:
@@ -207,7 +247,14 @@ const COPY_BY_PROVIDER: Record<string, IntegrationManageCopy> = {
   },
 };
 
-export function getIntegrationManageCopy(providerKey: string): IntegrationManageCopy {
+export function getIntegrationManageCopy(
+  providerKey: string,
+  options?: { authFlow?: InstagramAuthFlow },
+): IntegrationManageCopy {
+  if (providerKey === "instagram") {
+    return getInstagramManageCopy(options?.authFlow ?? "FACEBOOK_LOGIN");
+  }
+
   return COPY_BY_PROVIDER[providerKey] ?? {
     ...DEFAULT_COPY,
     connectionTitle: `${formatProviderName(providerKey)} connection`,
@@ -216,12 +263,57 @@ export function getIntegrationManageCopy(providerKey: string): IntegrationManage
   };
 }
 
+function getInstagramManageCopy(
+  authFlow: InstagramAuthFlow,
+): IntegrationManageCopy {
+  if (authFlow === "INSTAGRAM_LOGIN") {
+    return {
+      connectionTitle: "Instagram connection",
+      description:
+        "Connected with Direct Instagram Login. Your team can manage Instagram conversations without a Facebook Page.",
+      resourcesSectionLabel: "Instagram accounts",
+      syncButtonLabel: "Sync Instagram accounts",
+      syncSuccessToast: (count) =>
+        count === 1
+          ? "Instagram account synced"
+          : `${count} Instagram accounts synced`,
+      syncEmptyToast: "No Instagram account found",
+      syncingAssetsTitle: "Loading your Instagram account…",
+      syncingAssetsMessage:
+        "Meta is confirming your Instagram Business or Creator profile.",
+      emptyState: {
+        title: "No Instagram account found",
+        message:
+          "We could not load an Instagram Business or Creator profile for this Direct connection.",
+        checklist: [
+          "Your Instagram account must be Professional (Business or Creator).",
+          "Reconnect using Direct Instagram Integration and grant messaging permissions.",
+          "Confirm the Meta app has Advanced Access for Instagram Login scopes.",
+        ],
+      },
+      disconnectLabel: "Disconnect Instagram",
+    };
+  }
+
+  return COPY_BY_PROVIDER.instagram;
+}
+
 function formatProviderName(providerKey: string): string {
   return providerKey
     .split("-")
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(" ");
 }
+
+export function getInstagramConnectionMethodLabel(
+  authFlow: InstagramAuthFlow | null | undefined,
+): string | null {
+  if (!authFlow) return null;
+  return authFlow === "INSTAGRAM_LOGIN"
+    ? "Connected via Instagram"
+    : "Connected via Facebook";
+}
+
 
 /** User-facing webhook label; raw status stays in advanced details. */
 export function formatWebhookStatusForBusiness(

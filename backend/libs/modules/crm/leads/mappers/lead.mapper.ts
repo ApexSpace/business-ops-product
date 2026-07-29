@@ -32,8 +32,10 @@ export function toLeadResponse(lead: LeadWithRelations): LeadResponseDto {
     contact,
     service: lead.service
       ? {
-          ...lead.service,
+          id: lead.service.id,
+          name: lead.service.name,
           price: lead.service.price?.toString() ?? null,
+          category: lead.service.category?.name ?? null,
         }
       : null,
     pipeline: lead.pipeline,

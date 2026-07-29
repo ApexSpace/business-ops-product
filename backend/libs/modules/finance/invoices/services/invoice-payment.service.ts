@@ -15,7 +15,8 @@ import {
 } from '../utils/invoice-public-token.util';
 import { PublicInvoiceResponseDto } from '../dto/public-invoice-response.dto';
 import { toPublicInvoiceResponse } from '../mappers/public-invoice.mapper';
-import { EmailNotificationService } from '@app/modules/communications/email/services/email-notification.service';
+import { NotificationDispatchService } from '@app/modules/communications/notifications/services/notification-dispatch.service';
+import { formatPhone } from '@app/modules/crm/contacts/utils/contact-profile.util';
 import {
   formatContactName,
   formatMoney,
@@ -36,7 +37,7 @@ export class InvoicePaymentService {
     private readonly stripeCheckoutService: StripeCheckoutService,
     private readonly financialSettingsService: FinancialSettingsService,
     private readonly auditService: AuditService,
-    private readonly emailNotificationService: EmailNotificationService,
+    private readonly notificationDispatch: NotificationDispatchService,
     private readonly businessRepository: BusinessRepository,
   ) {}
 
@@ -155,20 +156,26 @@ export class InvoicePaymentService {
     sessionId: string,
   ): Promise<void> {
     const contactEmail = invoice.contact?.email?.trim();
-    if (!contactEmail) {
+    const contactPhone = formatPhone(
+      invoice.contact?.phoneCountryCode,
+      invoice.contact?.phoneNumber,
+    );
+    if (!contactEmail && !contactPhone) {
       return;
     }
 
     const business = await this.businessRepository.findById(businessId);
 
-    await this.emailNotificationService.enqueueTransactionalEmail({
+    await this.notificationDispatch.dispatch({
       businessId,
-      emailType: 'invoice.payment_link',
+      notificationKey: 'invoice.payment_link',
       toEmail: contactEmail,
+      toPhone: contactPhone,
       contactId: invoice.contactId,
       entityType: 'Invoice',
       entityId: invoice.id,
       idempotencyKey: `invoice-payment-link-${invoice.id}-${sessionId}`,
+      missingRecipient: 'skip',
       variables: {
         'business.name': business?.name ?? 'Business',
         'contact.name': formatContactName(invoice.contact),

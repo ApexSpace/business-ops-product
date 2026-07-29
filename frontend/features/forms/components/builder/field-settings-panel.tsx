@@ -9,11 +9,21 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
-import type { FieldStyle, FormField, FormSettings } from "@/features/forms/types";
+import type {
+  ColumnCount,
+  ColumnHorizontalAlign,
+  ColumnVerticalAlign,
+  FieldStyle,
+  FieldType,
+  FormField,
+  FormSettings,
+  FormStatus,
+} from "@/features/forms/types";
+import { useFormFieldTypeMap } from "@/features/forms/hooks/use-form-metadata";
 import {
-  CHOICE_FIELD_TYPES,
+  COLUMN_COUNT_OPTIONS,
   getFieldTypeLabel,
-  LAYOUT_FIELD_TYPES,
+  resizeFormFieldColumns,
 } from "@/features/forms/utils/field-defaults.util";
 import { SectionHeader } from "@/features/forms/components/builder/settings-controls/section-header";
 import { SettingInput } from "@/features/forms/components/builder/settings-controls/setting-input";
@@ -22,17 +32,30 @@ import { SettingSelect } from "@/features/forms/components/builder/settings-cont
 import { SettingToggle } from "@/features/forms/components/builder/settings-controls/setting-toggle";
 import { ColorInput } from "@/features/forms/components/builder/settings-controls/color-input";
 import { OptionsEditor } from "@/features/forms/components/builder/settings-controls/options-editor";
+import { ColumnsFieldEditor } from "@/features/forms/components/builder/settings-controls/columns-field-editor";
 import { FormInfoSection } from "@/features/forms/components/builder/form-settings/form-info-section";
 import { SubmitButtonSection } from "@/features/forms/components/builder/form-settings/submit-button-section";
 import { AfterSubmitSection } from "@/features/forms/components/builder/form-settings/after-submit-section";
 import { FormStylingSection } from "@/features/forms/components/builder/form-settings/form-styling-section";
 import { MultiStepSection } from "@/features/forms/components/builder/form-settings/multi-step-section";
+import { ShareFormSection } from "@/features/forms/components/builder/form-settings/share-form-section";
+import { FormFileUploadControl } from "@/features/forms/components/form-file-upload-control";
+import { FORM_IMAGE_ACCEPT } from "@/features/forms/utils/form-upload.util";
+import { parseFieldWidth } from "@/features/forms/utils/field-style.util";
+import { getColumnFieldRemovalContext } from "@/features/forms/utils/column-fields.util";
+import { Button } from "@/components/ui/button";
+import { Trash2 } from "lucide-react";
 
 interface FieldSettingsPanelProps {
   selectedField: FormField | null;
   fields: FormField[];
   settings: FormSettings;
+  formId?: string | null;
+  formStatus?: FormStatus;
+  formName?: string;
+  onOpenShareDialog?: () => void;
   onUpdateField: (fieldId: string, patch: Partial<FormField>) => void;
+  onRemoveField?: (fieldId: string) => void;
   onUpdateSettings: (patch: Partial<FormSettings>) => void;
   className?: string;
 }
@@ -93,6 +116,19 @@ const HEADING_LEVEL_OPTIONS = [
   { value: "4", label: "H4" },
 ];
 
+const COLUMN_VERTICAL_ALIGN_OPTIONS = [
+  { value: "top", label: "Top" },
+  { value: "center", label: "Center" },
+  { value: "bottom", label: "Bottom" },
+  { value: "stretch", label: "Stretch" },
+];
+
+const COLUMN_HORIZONTAL_ALIGN_OPTIONS = [
+  { value: "left", label: "Left" },
+  { value: "center", label: "Center" },
+  { value: "right", label: "Right" },
+];
+
 function updateStyle(
   field: FormField,
   onUpdate: (patch: Partial<FormField>) => void,
@@ -108,26 +144,21 @@ function FieldEditor({
   field: FormField;
   onUpdate: (patch: Partial<FormField>) => void;
 }) {
-  const isLayout = LAYOUT_FIELD_TYPES.includes(field.type);
-  const hasOptions = CHOICE_FIELD_TYPES.includes(field.type);
-  const skipInputStyle = [
-    ...LAYOUT_FIELD_TYPES,
-    "rating",
-    "range",
-    "signature",
-    "captcha",
-    "divider",
-    "spacer",
-  ].includes(field.type);
-  const skipValidation = isLayout || field.type === "hidden";
-  const skipLabelStyle = isLayout;
+  const { byKey } = useFormFieldTypeMap({ status: "implemented" });
+  const meta = byKey.get(field.type);
+  const isLayout = meta?.role === "layout";
+  const hasOptions = meta?.supportsOptions ?? false;
+  const skipInputStyle = meta ? !meta.supportsInputStyle : false;
+  const skipValidation = meta ? !meta.supportsValidation : false;
+  const skipLabelStyle = meta ? !meta.supportsLabelStyle : false;
+  const supportsLabel = meta?.supportsLabel ?? !isLayout;
 
   const widthValue = String(
     field.style?.width === "half"
       ? 50
       : field.style?.width === "full"
         ? 100
-        : (field.style?.width ?? 100),
+        : parseFieldWidth(field.style?.width),
   );
 
   return (
@@ -138,7 +169,7 @@ function FieldEditor({
 
       <Accordion key={field.id} defaultValue={["General"]}>
       <SectionHeader title="General">
-        {!isLayout && field.type !== "divider" && field.type !== "spacer" ? (
+        {supportsLabel ? (
           <>
             <SettingRow label="Label">
               <SettingInput
@@ -179,12 +210,16 @@ function FieldEditor({
         ) : null}
 
         {field.type === "image" ? (
-          <SettingRow label="Image URL">
-            <SettingInput
-              value={field.src ?? ""}
-              onChange={(value) => onUpdate({ src: value })}
-              type="url"
-              placeholder="https://…"
+          <SettingRow label="Image">
+            <FormFileUploadControl
+              variant="image"
+              accept={FORM_IMAGE_ACCEPT}
+              maxSizeMb={5}
+              value={field.fileAssetId ?? ""}
+              onChange={(fileAssetId) =>
+                onUpdate({ fileAssetId, src: undefined })
+              }
+              onClear={() => onUpdate({ fileAssetId: undefined, src: undefined })}
             />
           </SettingRow>
         ) : null}
@@ -293,26 +328,46 @@ function FieldEditor({
         ) : null}
 
         {field.type === "columns" ? (
-          <SettingRow label="Column count">
-            <SettingSelect
-              value={String(field.columnCount ?? 2)}
-              onChange={(value) => {
-                const count = Number(value) as 2 | 3;
-                const columns = field.columns ?? [[], []];
-                const next =
-                  count === 3 && columns.length < 3
-                    ? [...columns, []]
-                    : count === 2
-                      ? columns.slice(0, 2)
-                      : columns;
-                onUpdate({ columnCount: count, columns: next });
-              }}
-              options={[
-                { value: "2", label: "2 columns" },
-                { value: "3", label: "3 columns" },
-              ]}
+          <>
+            <SettingRow label="Column count">
+              <SettingSelect
+                value={String(field.columnCount ?? field.columns?.length ?? 2)}
+                onChange={(value) => {
+                  const count = Number(value) as ColumnCount;
+                  onUpdate({
+                    columnCount: count,
+                    columns: resizeFormFieldColumns(field.columns, count),
+                  });
+                }}
+                options={COLUMN_COUNT_OPTIONS.map((option) => ({
+                  value: String(option.value),
+                  label: option.label,
+                }))}
+              />
+            </SettingRow>
+            <SettingRow label="Vertical align">
+              <SettingSelect
+                value={field.columnVerticalAlign ?? "top"}
+                onChange={(value) =>
+                  onUpdate({ columnVerticalAlign: value as ColumnVerticalAlign })
+                }
+                options={COLUMN_VERTICAL_ALIGN_OPTIONS}
+              />
+            </SettingRow>
+            <SettingRow label="Horizontal align">
+              <SettingSelect
+                value={field.columnHorizontalAlign ?? "left"}
+                onChange={(value) =>
+                  onUpdate({ columnHorizontalAlign: value as ColumnHorizontalAlign })
+                }
+                options={COLUMN_HORIZONTAL_ALIGN_OPTIONS}
+              />
+            </SettingRow>
+            <ColumnsFieldEditor
+              columns={field.columns ?? []}
+              onChange={(columns) => onUpdate({ columns })}
             />
-          </SettingRow>
+          </>
         ) : null}
 
         {field.type === "hidden" ? (
@@ -536,7 +591,7 @@ function FieldEditor({
             value={widthValue}
             onChange={(value) =>
               updateStyle(field, onUpdate, {
-                width: Number(value) as FieldStyle["width"],
+                width: parseFieldWidth(value),
               })
             }
             options={WIDTH_OPTIONS}
@@ -574,11 +629,19 @@ export function FieldSettingsPanel({
   selectedField,
   fields,
   settings,
+  formId = null,
+  formStatus = "draft",
+  onOpenShareDialog,
   onUpdateField,
+  onRemoveField,
   onUpdateSettings,
   className,
 }: FieldSettingsPanelProps) {
   const selectedFieldId = selectedField?.id ?? null;
+  const columnRemovalContext = selectedFieldId
+    ? getColumnFieldRemovalContext(fields, selectedFieldId)
+    : null;
+  const isNestedColumnField = columnRemovalContext != null;
   const [tabOverride, setTabOverride] = useState<{
     fieldId: string | null;
     tab: SettingsTab;
@@ -624,10 +687,33 @@ export function FieldSettingsPanel({
         <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden py-2 pl-2 pr-[var(--page-padding-x)]">
           <TabsContent value="field" className="mt-0">
             {selectedField ? (
-              <FieldEditor
-                field={selectedField}
-                onUpdate={(patch) => onUpdateField(selectedField.id, patch)}
-              />
+              <div className="space-y-4">
+                {onRemoveField ? (
+                  <div className="space-y-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="w-full text-destructive hover:text-destructive"
+                      disabled={isNestedColumnField && !columnRemovalContext.canRemove}
+                      onClick={() => onRemoveField(selectedField.id)}
+                    >
+                      <Trash2 className="mr-2 size-4" />
+                      Delete field
+                    </Button>
+                    {isNestedColumnField && !columnRemovalContext.canRemove ? (
+                      <p className="text-xs text-muted-foreground">
+                        Each column must keep at least one field. Add another field
+                        before deleting this one.
+                      </p>
+                    ) : null}
+                  </div>
+                ) : null}
+                <FieldEditor
+                  field={selectedField}
+                  onUpdate={(patch) => onUpdateField(selectedField.id, patch)}
+                />
+              </div>
             ) : (
               <p className="text-sm text-muted-foreground">
                 Select a field on the canvas to edit its settings.
@@ -636,7 +722,12 @@ export function FieldSettingsPanel({
           </TabsContent>
 
           <TabsContent value="form" className="mt-0">
-            <Accordion defaultValue={["Form Info"]}>
+            <Accordion defaultValue={["Share & Embed", "Form Info"]}>
+              <ShareFormSection
+                formId={formId}
+                status={formStatus}
+                onOpenShareDialog={onOpenShareDialog ?? (() => undefined)}
+              />
               <FormInfoSection settings={settings} onUpdate={onUpdateSettings} />
               <SubmitButtonSection settings={settings} onUpdate={onUpdateSettings} />
               <AfterSubmitSection settings={settings} onUpdate={onUpdateSettings} />

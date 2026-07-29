@@ -68,7 +68,7 @@ export function ContactPaymentsPanel({
               title={payment.invoice?.invoiceNumber ?? "Payment"}
               lines={[
                 `${formatMoney(payment.amount)} · ${formatTransactionProvider(payment)}`,
-                `${formatTransactionDate(payment.paidAt)}${payment.reference ? ` · ${payment.reference}` : ""}`,
+                `${formatTransactionDate(payment.paidAt ?? payment.createdAt)}${payment.reference ? ` · ${payment.reference}` : ""}`,
               ]}
               status={{
                 domain: "transaction",

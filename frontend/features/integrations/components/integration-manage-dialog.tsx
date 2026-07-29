@@ -8,8 +8,10 @@ import { FormDialog } from "@/components/forms/form-dialog";
 import { IntegrationAdvancedDetails } from "@/features/integrations/components/integration-advanced-details";
 import { IntegrationManageHeader } from "@/features/integrations/components/integration-manage-header";
 import { IntegrationManageEmailBody } from "@/features/integrations/components/integration-manage-email-body";
+import { IntegrationManageSmsBody } from "@/features/integrations/components/integration-manage-sms-body";
 import { IntegrationManageOAuthBody } from "@/features/integrations/components/integration-manage-oauth-body";
-import { isPlatformEmailProvider } from "@/features/integrations/utils/integrations";
+import { isPlatformEmailProvider, isPlatformSmsProvider } from "@/features/integrations/utils/integrations";
+import type { IntegrationsHostMode } from "@/features/integrations/api/integrations.api";
 import {
   FormControl,
   FormDescription,
@@ -21,7 +23,9 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  getIntegrationConnectLabel,
   getIntegrationReconnectLabel,
+  parseInstagramAuthFlowFromConfig,
   shouldUseOAuthPopup,
   type BusinessIntegration,
   type IntegrationProviderWithStatus,
@@ -45,6 +49,10 @@ export interface IntegrationManageDialogProps {
   isPending?: boolean;
   canDelete?: boolean;
   showAdvancedDetails?: boolean;
+  /** business = tenant JWT routes; platform = INTERNAL ops platform routes */
+  host?: IntegrationsHostMode;
+  /** True while post-OAuth Meta resource sync is still running for this provider. */
+  isSyncingAssets?: boolean;
   onSubmit: (values: IntegrationManageFormValues) => void;
   onDelete?: () => void;
   onReconnect?: () => void;
@@ -59,6 +67,8 @@ export function IntegrationManageDialog({
   isPending = false,
   canDelete = false,
   showAdvancedDetails = true,
+  host = "business",
+  isSyncingAssets = false,
   onSubmit,
   onDelete,
   onReconnect,
@@ -86,8 +96,13 @@ export function IntegrationManageDialog({
 
   const isOAuth = shouldUseOAuthPopup(provider);
   const isPlatformEmail = isPlatformEmailProvider(provider.key);
+  const isPlatformSms = isPlatformSmsProvider(provider.key);
   const isConnected = provider.status !== "NOT_CONNECTED";
-  const copy = getIntegrationManageCopy(provider.key);
+  const authFlow =
+    provider.key === "instagram"
+      ? parseInstagramAuthFlowFromConfig(integrationDetail?.config)
+      : undefined;
+  const copy = getIntegrationManageCopy(provider.key, { authFlow });
   const title =
     mode === "connect" ? `Connect ${provider.name}` : copy.connectionTitle;
   const oauthScopes = Array.isArray(integrationDetail?.config?.scopes)
@@ -121,6 +136,34 @@ export function IntegrationManageDialog({
         <IntegrationManageEmailBody
           provider={provider}
           isConnected={isConnected}
+          host={host}
+        />
+      </FormDialog>
+    );
+  }
+
+  if (isPlatformSms) {
+    const smsTitle =
+      mode === "connect" ? "Connect Twilio SMS" : copy.connectionTitle;
+    return (
+      <FormDialog
+        open={open}
+        onOpenChange={onOpenChange}
+        title={smsTitle}
+        description={copy.description}
+        form={form}
+        onSubmit={() => onOpenChange(false)}
+        isPending={isPending}
+        submitLabel="Close"
+        size="lg"
+        footerVariant="actions"
+        hideCancel
+      >
+        <IntegrationManageSmsBody
+          providerKey={provider.key}
+          provider={provider}
+          isConnected={isConnected}
+          host={host}
         />
       </FormDialog>
     );
@@ -155,7 +198,35 @@ export function IntegrationManageDialog({
           showAdvancedDetails={showAdvancedDetails}
           oauthScopes={oauthScopes}
           onReconnect={onReconnect}
+          host={host}
+          isSyncingAssets={isSyncingAssets}
         />
+      </FormDialog>
+    );
+  }
+
+  // OAuth providers must never show the manual JSON connect form.
+  if (isOAuth && mode === "connect") {
+    return (
+      <FormDialog
+        open={open}
+        onOpenChange={onOpenChange}
+        title={title}
+        description={copy.description}
+        form={form}
+        onSubmit={() => {
+          onOpenChange(false);
+          onReconnect?.();
+        }}
+        isPending={isPending}
+        submitLabel={getIntegrationConnectLabel(provider, "NOT_CONNECTED")}
+        size="md"
+        footerVariant="actions"
+      >
+        <p className="text-sm text-muted-foreground">
+          This integration connects with a secure sign-in popup. Click Connect
+          to continue — you do not need to enter account details or JSON here.
+        </p>
       </FormDialog>
     );
   }

@@ -119,6 +119,18 @@ export interface AppointmentStats {
   cancelledOrNoShow: number;
 }
 
+export interface RevenueDayStats {
+  amount: string;
+  paymentCount: number;
+}
+
+export interface DashboardAttentionStats {
+  overdueInvoices: number;
+  overdueInvoiceBalance: string;
+  lowStockProducts: number;
+  unreadConversations: number;
+}
+
 export interface BusinessDashboardStats {
   contacts: number;
   leads: LeadStats;
@@ -128,6 +140,120 @@ export interface BusinessDashboardStats {
   conversations: number;
   members: number;
   workItems: WorkItemStats;
+  revenueToday: RevenueDayStats;
+  revenueYesterday?: RevenueDayStats;
+  attention: DashboardAttentionStats;
+}
+
+export interface DashboardAttentionItem {
+  id: string;
+  title: string;
+  description?: string;
+  href: string;
+}
+
+export type AppointmentSource =
+  | "INTERNAL"
+  | "BOOKING_WIDGET"
+  | "PUBLIC_LINK"
+  | "GOOGLE_SYNC"
+  | "IMPORTED";
+
+export interface DashboardFeedAppointment {
+  id: string;
+  title: string;
+  startAt: string;
+  endAt: string;
+  status: string;
+  source: AppointmentSource;
+  notes?: string | null;
+  serviceName?: string | null;
+  assignedTo?: {
+    id: string;
+    firstName?: string | null;
+    lastName?: string | null;
+    displayName?: string | null;
+  } | null;
+  contact: {
+    id: string;
+    firstName?: string | null;
+    lastName?: string | null;
+    displayName?: string | null;
+  } | null;
+}
+
+export interface DashboardRecentConversation {
+  id: string;
+  channel:
+    | "FACEBOOK"
+    | "INSTAGRAM"
+    | "WHATSAPP"
+    | "EMAIL"
+    | "SMS"
+    | "WEBCHAT"
+    | "LINKEDIN";
+  preview?: string | null;
+  lastMessageAt: string;
+  unreadCount: number;
+  href: string;
+  contact?: {
+    id: string;
+    firstName?: string | null;
+    lastName?: string | null;
+    displayName?: string | null;
+  } | null;
+}
+
+export interface DashboardTaskItem {
+  id: string;
+  title: string;
+  dueAt: string;
+  priority?: "LOW" | "MEDIUM" | "HIGH" | null;
+  assignedTo?: {
+    id: string;
+    firstName?: string | null;
+    lastName?: string | null;
+    displayName?: string | null;
+  } | null;
+}
+
+export interface DashboardRevenueCategory {
+  id: string;
+  label: string;
+  amount: string;
+  sharePercent: number;
+}
+
+export interface DashboardBookingSource {
+  source: AppointmentSource;
+  label: string;
+  count: number;
+  deltaPercent: number;
+}
+
+export interface DashboardOverview {
+  waitingClientsToday: number;
+}
+
+export interface DashboardTrendMetric {
+  value: number;
+  deltaPercent: number;
+  points: number[];
+}
+
+export interface BusinessDashboardFeed {
+  stats: BusinessDashboardStats;
+  overview: DashboardOverview;
+  todayAppointmentsMetric: DashboardTrendMetric;
+  newLeadsMetric: DashboardTrendMetric;
+  todayAppointments: DashboardFeedAppointment[];
+  attentionItems: DashboardAttentionItem[];
+  appointmentsToConfirm: DashboardFeedAppointment[];
+  recentConversations: DashboardRecentConversation[];
+  followUpTasks: DashboardTaskItem[];
+  staffAssignments: DashboardTaskItem[];
+  revenueByCategory: DashboardRevenueCategory[];
+  bookingsBySource: DashboardBookingSource[];
 }
 
 export interface MemberUser {
@@ -147,6 +273,14 @@ export interface BusinessMember {
   user: MemberUser;
   joinedAt: string | null;
   createdAt: string;
+  hasTimeclockPin?: boolean;
+  phoneNumber?: string | null;
+  gender?: "FEMALE" | "MALE" | "NON_BINARY" | "PREFER_NOT_TO_SAY" | null;
+  isServiceProvider?: boolean;
+  canAssignProductSales?: boolean;
+  onlineBookingEnabled?: boolean;
+  canManageWaitlist?: boolean;
+  staffBookingUrl?: string | null;
 }
 
 export interface AuditLog {
@@ -189,10 +323,31 @@ export type ServiceStatus = "ACTIVE" | "ARCHIVED";
 export interface Service {
   id: string;
   businessId: string;
+  categoryId: string;
+  categoryName: string;
+  /** @deprecated use categoryName */
+  category?: string | null;
   name: string;
-  category: string | null;
   description: string | null;
   price: string | null;
+  durationMinutes: number;
+  sortOrder: number;
+  isDemo: boolean;
+  hasProcessingTime: boolean;
+  processingDurationMinutes: number;
+  finishDurationMinutes: number | null;
+  hasBufferTime: boolean;
+  bufferBeforeMinutes: number;
+  bufferAfterMinutes: number;
+  usesProducts: boolean;
+  requiresNoStaff: boolean;
+  requiresTwoStaff: boolean;
+  hasCommissionDeduction: boolean;
+  commissionDeductionType: "FLAT" | "PERCENT" | null;
+  commissionDeductionValue: string | null;
+  staffingMode: "SINGLE_STAFF" | "TWO_STAFF" | "RESOURCE_ONLY";
+  clientOccupancyMinutes: number;
+  staffBlockedMinutes: number;
   status: ServiceStatus;
   createdAt: string;
   updatedAt: string;
@@ -429,7 +584,8 @@ export type InvoiceStatus =
   | "PARTIAL"
   | "PAID"
   | "OVERDUE"
-  | "VOID";
+  | "VOID"
+  | "OPEN";
 
 export interface InvoiceItem {
   id: string;
@@ -495,8 +651,17 @@ export type PaymentMethod =
   | "CASH"
   | "CARD"
   | "BANK_TRANSFER"
+  | "WALLET"
+  | "GIFT_CARD"
   | "STRIPE"
   | "OTHER";
+
+export type PaymentStatus =
+  | "PENDING"
+  | "SUCCEEDED"
+  | "FAILED"
+  | "CANCELLED"
+  | "REFUNDED";
 
 export interface PaymentInvoiceSummary {
   id: string;
@@ -531,8 +696,11 @@ export interface Payment {
   businessId: string;
   invoiceId: string;
   contactId: string;
+  payableType?: string;
+  payableId?: string;
   amount: string;
   method: PaymentMethod;
+  status?: PaymentStatus;
   provider: PaymentProvider;
   stripePaymentIntentId: string | null;
   stripeCheckoutSessionId: string | null;
@@ -541,7 +709,7 @@ export interface Payment {
   providerMetadata: Record<string, unknown> | null;
   reference: string | null;
   notes: string | null;
-  paidAt: string;
+  paidAt: string | null;
   createdById: string | null;
   createdAt: string;
   updatedAt: string;

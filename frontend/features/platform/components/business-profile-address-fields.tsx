@@ -17,24 +17,26 @@ export function BusinessProfileAddressFields({
   showSectionTitle: boolean;
 }) {
   return (
-    <section className="space-y-4">
+    <section className="space-y-5">
       {showSectionTitle ? (
         <BusinessProfileSectionTitle>Address</BusinessProfileSectionTitle>
       ) : null}
-      <TextField
-        control={form.control}
-        name="address"
-        label="Address line 1"
-        placeholder="123 Main St"
-        disabled={disabled}
-      />
-      <TextField
-        control={form.control}
-        name="addressLine2"
-        label="Address line 2"
-        placeholder="Suite 100"
-        disabled={disabled}
-      />
+      <div className="grid gap-4 sm:grid-cols-2">
+        <TextField
+          control={form.control}
+          name="address"
+          label="Address line 1"
+          placeholder="123 Main St"
+          disabled={disabled}
+        />
+        <TextField
+          control={form.control}
+          name="addressLine2"
+          label="Address line 2"
+          placeholder="Suite 100"
+          disabled={disabled}
+        />
+      </div>
       <div className="grid gap-4 sm:grid-cols-2">
         <TextField
           control={form.control}

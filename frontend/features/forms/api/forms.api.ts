@@ -15,6 +15,8 @@ import {
 } from "@/features/forms/utils/form-normalize.util";
 import { api } from "@/lib/api/client";
 
+export const DEFAULT_FORMS_API_BASE = "forms";
+
 type ApiFormStatus = "draft" | "published" | "archived";
 
 interface ApiFormListItem {
@@ -78,10 +80,15 @@ function listSearchParams(filters: FormsListFilters = {}) {
   };
 }
 
+function path(apiBase: string, ...segments: string[]) {
+  return [apiBase, ...segments].filter(Boolean).join("/");
+}
+
 export async function listForms(
   filters: FormsListFilters = {},
+  apiBase: string = DEFAULT_FORMS_API_BASE,
 ): Promise<FormsListResult> {
-  const { items, meta } = await api.getPaginated<ApiFormListItem>("forms", {
+  const { items, meta } = await api.getPaginated<ApiFormListItem>(apiBase, {
     searchParams: listSearchParams(filters),
   });
 
@@ -95,13 +102,19 @@ export async function listForms(
   };
 }
 
-export async function getForm(id: string): Promise<FormRecord> {
-  const form = await api.get<ApiFormDetail>(`forms/${id}`);
+export async function getForm(
+  id: string,
+  apiBase: string = DEFAULT_FORMS_API_BASE,
+): Promise<FormRecord> {
+  const form = await api.get<ApiFormDetail>(path(apiBase, id));
   return toFormRecord(form);
 }
 
-export async function createForm(name: string): Promise<FormRecord> {
-  const form = await api.post<ApiFormDetail>("forms", { name: name.trim() });
+export async function createForm(
+  name: string,
+  apiBase: string = DEFAULT_FORMS_API_BASE,
+): Promise<FormRecord> {
+  const form = await api.post<ApiFormDetail>(apiBase, { name: name.trim() });
   return toFormRecord(form);
 }
 
@@ -112,6 +125,7 @@ export async function updateForm(
     definition?: FormDefinition;
     status?: FormStatus;
   },
+  apiBase: string = DEFAULT_FORMS_API_BASE,
 ): Promise<FormRecord> {
   const body = {
     ...payload,
@@ -119,31 +133,46 @@ export async function updateForm(
       ? prepareFormDefinitionForSave(payload.definition)
       : undefined,
   };
-  const form = await api.patch<ApiFormDetail>(`forms/${id}`, body);
+  const form = await api.patch<ApiFormDetail>(path(apiBase, id), body);
   return toFormRecord(form);
 }
 
-export async function deleteForm(id: string): Promise<void> {
-  await api.delete<void>(`forms/${id}`);
+export async function deleteForm(
+  id: string,
+  apiBase: string = DEFAULT_FORMS_API_BASE,
+): Promise<void> {
+  await api.delete<void>(path(apiBase, id));
 }
 
-export async function duplicateForm(id: string): Promise<FormRecord> {
-  const form = await api.post<ApiFormDetail>(`forms/${id}/duplicate`, {});
+export async function duplicateForm(
+  id: string,
+  apiBase: string = DEFAULT_FORMS_API_BASE,
+): Promise<FormRecord> {
+  const form = await api.post<ApiFormDetail>(path(apiBase, id, "duplicate"), {});
   return toFormRecord(form);
 }
 
-export async function publishForm(id: string): Promise<FormRecord> {
-  const form = await api.post<ApiFormDetail>(`forms/${id}/publish`);
+export async function publishForm(
+  id: string,
+  apiBase: string = DEFAULT_FORMS_API_BASE,
+): Promise<FormRecord> {
+  const form = await api.post<ApiFormDetail>(path(apiBase, id, "publish"));
   return toFormRecord(form);
 }
 
-export async function archiveForm(id: string): Promise<FormRecord> {
-  const form = await api.post<ApiFormDetail>(`forms/${id}/archive`);
+export async function archiveForm(
+  id: string,
+  apiBase: string = DEFAULT_FORMS_API_BASE,
+): Promise<FormRecord> {
+  const form = await api.post<ApiFormDetail>(path(apiBase, id, "archive"));
   return toFormRecord(form);
 }
 
-export async function moveFormToDraft(id: string): Promise<FormRecord> {
-  const form = await api.post<ApiFormDetail>(`forms/${id}/move-to-draft`);
+export async function moveFormToDraft(
+  id: string,
+  apiBase: string = DEFAULT_FORMS_API_BASE,
+): Promise<FormRecord> {
+  const form = await api.post<ApiFormDetail>(path(apiBase, id, "move-to-draft"));
   return toFormRecord(form);
 }
 
@@ -158,8 +187,11 @@ export interface FormEmbed {
   isPublished: boolean;
 }
 
-export async function getFormEmbed(id: string): Promise<FormEmbed> {
-  return api.get<FormEmbed>(`forms/${id}/embed`);
+export async function getFormEmbed(
+  id: string,
+  apiBase: string = DEFAULT_FORMS_API_BASE,
+): Promise<FormEmbed> {
+  return api.get<FormEmbed>(path(apiBase, id, "embed"));
 }
 
 interface ApiFormSubmissionListItem {
@@ -185,9 +217,10 @@ function toFormSubmissionListItem(
 export async function listFormSubmissions(
   formId: string,
   filters: FormSubmissionsListFilters = {},
+  apiBase: string = DEFAULT_FORMS_API_BASE,
 ): Promise<FormSubmissionsListResult> {
   const { items, meta } = await api.getPaginated<ApiFormSubmissionListItem>(
-    `forms/${formId}/submissions`,
+    path(apiBase, formId, "submissions"),
     {
       searchParams: {
         page: filters.page,
@@ -210,6 +243,7 @@ export async function listFormSubmissions(
 export async function deleteFormSubmission(
   formId: string,
   submissionId: string,
+  apiBase: string = DEFAULT_FORMS_API_BASE,
 ): Promise<void> {
-  await api.delete<void>(`forms/${formId}/submissions/${submissionId}`);
+  await api.delete<void>(path(apiBase, formId, "submissions", submissionId));
 }

@@ -60,11 +60,13 @@ export class WhatsAppBusinessContextService {
     );
     const primary =
       defaultResource ??
-      (await this.resourceRepository.findSelected(
-        businessId,
-        WHATSAPP_PROVIDER_KEY,
-        IntegrationResourceType.PHONE_NUMBER,
-      ))[0] ??
+      (
+        await this.resourceRepository.findSelected(
+          businessId,
+          WHATSAPP_PROVIDER_KEY,
+          IntegrationResourceType.PHONE_NUMBER,
+        )
+      )[0] ??
       (
         await this.resourceRepository.findManyByBusinessAndProvider(
           businessId,
@@ -94,9 +96,7 @@ function readMetadataString(metadata: unknown, key: string): string | null {
   return typeof value === 'string' && value.trim() ? value.trim() : null;
 }
 
-export function parseTemplateCategory(
-  value: string,
-): WhatsAppTemplateCategory {
+export function parseTemplateCategory(value: string): WhatsAppTemplateCategory {
   const normalized = value.trim().toUpperCase();
   if (
     normalized === 'MARKETING' ||

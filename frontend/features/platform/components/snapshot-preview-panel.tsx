@@ -29,7 +29,7 @@ export function SnapshotPreviewPanel({
         navigation: context.navigation,
         resolveLabel,
         isPlatformAdmin: true,
-      }),
+      }).sections,
     [context.navigation, resolveLabel],
   );
 

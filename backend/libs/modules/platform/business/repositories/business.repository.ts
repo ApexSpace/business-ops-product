@@ -1,12 +1,15 @@
 import { Injectable } from '@nestjs/common';
 import {
   Business,
+  BusinessLifecycleStage,
   BusinessStatus,
+  BusinessType,
   Prisma,
   SubscriptionPaymentStatus,
   SubscriptionStatus,
 } from '@prisma/client';
 import { PrismaService } from '@app/core/database/prisma.service';
+import { customerBusinessWhere } from '../utils/tenant-business-scope.util';
 
 const businessListInclude = {
   industry: true,
@@ -41,23 +44,30 @@ export class BusinessRepository {
     });
   }
 
+  /** ACTIVE lifecycle customers with ACTIVE workspace status. */
   findAllActive(): Promise<Business[]> {
     return this.prisma.business.findMany({
-      where: {
+      where: customerBusinessWhere({
         deletedAt: null,
         status: BusinessStatus.ACTIVE,
-      },
+      }),
       orderBy: { name: 'asc' },
     });
   }
 
+  /** ACTIVE lifecycle customers (any BusinessStatus except deleted). */
   findAllNonDeleted(): Promise<Business[]> {
     return this.prisma.business.findMany({
-      where: { deletedAt: null },
+      where: customerBusinessWhere({ deletedAt: null }),
       orderBy: { name: 'asc' },
     });
   }
 
+  /**
+   * Lists customer businesses. Default lifecycle = ACTIVE only.
+   * Pass `lifecycleStages` to include funnel/trial rows (explicit opt-in).
+   * Pass `includeInternal: true` only for rare platform diagnostics.
+   */
   findMany(params: {
     skip: number;
     take: number;
@@ -69,9 +79,20 @@ export class BusinessRepository {
     search?: string;
     includeDeleted?: boolean;
     businessIds?: string[];
+    includeInternal?: boolean;
+    lifecycleStages?: BusinessLifecycleStage[];
   }): Promise<{ items: BusinessListItem[]; total: number }> {
     const search = params.search?.trim();
+    const lifecycleFilter =
+      params.lifecycleStages?.length && !params.includeInternal
+        ? { lifecycleStage: { in: params.lifecycleStages } }
+        : params.includeInternal
+          ? {}
+          : { lifecycleStage: BusinessLifecycleStage.ACTIVE };
+
     const where: Prisma.BusinessWhereInput = {
+      ...(params.includeInternal ? {} : { type: BusinessType.TENANT }),
+      ...lifecycleFilter,
       ...(params.status ? { status: params.status } : {}),
       ...(params.includeDeleted ? {} : { deletedAt: null }),
       ...(params.businessIds ? { id: { in: params.businessIds } } : {}),
@@ -90,9 +111,7 @@ export class BusinessRepository {
               ...(params.planGroupId
                 ? { planGroupId: params.planGroupId }
                 : {}),
-              ...(params.planTierId
-                ? { planTierId: params.planTierId }
-                : {}),
+              ...(params.planTierId ? { planTierId: params.planTierId } : {}),
             },
           }
         : {}),

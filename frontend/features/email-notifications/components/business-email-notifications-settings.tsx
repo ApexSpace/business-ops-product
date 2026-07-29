@@ -14,16 +14,16 @@ export function BusinessEmailNotificationsSettings() {
     <div className="space-y-6">
       <PageHeader
         title="Notifications"
-        description="Control transactional emails, customize templates, and review delivery logs."
+        description="Control which notifications send and whether they go by email or SMS. Customize email templates and review delivery logs."
       />
 
       <PageTabs
         value={tab}
         onValueChange={setTab}
         tabs={[
-          { value: "notifications", label: "Email Notifications" },
-          { value: "templates", label: "Templates" },
-          { value: "logs", label: "Logs" },
+          { value: "notifications", label: "Notifications" },
+          { value: "templates", label: "Email Templates" },
+          { value: "logs", label: "Email Logs" },
         ]}
       >
         <PageTabsPanel value="notifications">

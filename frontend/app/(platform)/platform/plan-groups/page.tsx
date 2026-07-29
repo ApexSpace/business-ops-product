@@ -1,7 +1,6 @@
-"use client";
+import { redirect } from "next/navigation";
 
-import { PlatformPlanGroupsPage } from "@/features/platform/pages/platform-plan-groups-page";
-
-export default function Page() {
-  return <PlatformPlanGroupsPage />;
+/** Plan groups removed from product surface — Tiers are the sellable unit. */
+export default function PlanGroupsRedirectPage() {
+  redirect("/platform/tiers");
 }

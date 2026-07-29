@@ -24,6 +24,7 @@ import { SearchableSelect } from "@/components/forms/searchable-select";
 import { TextField } from "@/components/forms/text-field";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogBody,
@@ -36,15 +37,12 @@ import { Form } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
+import { listPlatformAddons } from "@/features/platform/api/addons.api";
 import { createPlatformBusiness } from "@/features/platform/api/platform.api";
 import {
-  getPlatformPlanGroupDefaults,
-  getPlatformPlanGroupTierDefaults,
-  listPlatformPlanGroups,
-  listPlatformPlanGroupTiers,
-} from "@/features/platform/api/plan-groups.api";
-import { PackageImpactPreview } from "@/features/platform/components/access/package-impact-preview";
-import { listPlatformSnapshots } from "@/features/platform/api/snapshots.api";
+  listPlatformTiers,
+  type PlatformTier,
+} from "@/features/platform/api/tiers.api";
 import type {
   SubscriptionPaymentMethod,
   UnpaidAccessMode,
@@ -78,13 +76,12 @@ import {
 } from "@/features/platform/utils/tier-price.util";
 import { hasPhoneDigits, phoneToApiFields } from "@/lib/forms/phone";
 import { invalidatePlatformBusinesses } from "@/lib/query/invalidation";
-import { queryKeys } from "@/lib/query/keys";
 import { resolveBusinessAccess } from "@/features/platform/utils/business-access-resolver.util";
 import { cn } from "@/lib/utils";
 
 const STEPS = [
   { id: 1, title: "Business", description: "Name and owner contact" },
-  { id: 2, title: "Package", description: "Plan group, tier, and experience" },
+  { id: 2, title: "Tier", description: "Tier and optional add-ons" },
   { id: 3, title: "Payment", description: "Billing cycle, access, and payment" },
   { id: 4, title: "Review", description: "Confirm details before creating" },
 ] as const;
@@ -135,7 +132,7 @@ const detailsDefaults: WizardDetailsValues = {
   fullName: "",
   email: "",
   phone: "",
-  inviteOwner: false,
+  inviteOwner: true,
 };
 
 interface PaymentFormState {
@@ -165,14 +162,24 @@ const collectedPaymentMethods = subscriptionPaymentMethodOptions.filter(
   (o) => o.value !== "NOT_SELECTED" && o.value !== "FREE_INTERNAL",
 );
 
+function formatTierSelectLabel(tier: PlatformTier): string {
+  const price = tier.priceMonthly
+    ? ` · $${Number(tier.priceMonthly).toFixed(0)}/mo`
+    : "";
+  return `${tier.name}${price}`;
+}
+
+function formatLimit(value: number | null | undefined): string {
+  if (value == null) return "Unlimited";
+  return String(value);
+}
+
 export function CreateBusinessWizard() {
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState(1);
   const [skipPackageOpen, setSkipPackageOpen] = useState(false);
-  const [planGroupId, setPlanGroupId] = useState<string | null>(null);
   const [planTierId, setPlanTierId] = useState<string | null>(null);
-  const [snapshotId, setSnapshotId] = useState<string | null>(null);
-  const [snapshotManuallySet, setSnapshotManuallySet] = useState(false);
+  const [purchaseAddonIds, setPurchaseAddonIds] = useState<string[]>([]);
   const [payment, setPayment] = useState<PaymentFormState>(paymentDefaults);
   const [showNotesField, setShowNotesField] = useState(false);
   const [showReferenceField, setShowReferenceField] = useState(false);
@@ -187,48 +194,37 @@ export function CreateBusinessWizard() {
 
   const inviteOwner = detailsForm.watch("inviteOwner");
 
-  const { data: planGroups } = useQuery({
-    queryKey: queryKeys.platform.planGroups.list({ status: "PUBLISHED", limit: 50 }),
-    queryFn: () =>
-      listPlatformPlanGroups({ page: 1, limit: 50, status: "PUBLISHED" }),
+  const { data: tiers } = useQuery({
+    queryKey: ["platform", "tiers", { status: "PUBLISHED", limit: 100 }],
+    queryFn: () => listPlatformTiers({ status: "PUBLISHED", limit: 100 }),
     enabled: open,
   });
 
-  const { data: tiers } = useQuery({
-    queryKey: queryKeys.platform.planGroups.tiers(planGroupId ?? ""),
-    queryFn: () => listPlatformPlanGroupTiers(planGroupId!),
-    enabled: open && Boolean(planGroupId),
+  const { data: addons } = useQuery({
+    queryKey: [
+      "platform",
+      "addons",
+      { purchaseMode: "INDEPENDENT", status: "PUBLISHED", limit: 100 },
+    ],
+    queryFn: () =>
+      listPlatformAddons({
+        purchaseMode: "INDEPENDENT",
+        status: "PUBLISHED",
+        limit: 100,
+      }),
+    enabled: open,
   });
 
-  const { data: groupDefaults } = useQuery({
-    queryKey: queryKeys.platform.planGroups.groupDefaults(planGroupId ?? ""),
-    queryFn: () => getPlatformPlanGroupDefaults(planGroupId!),
-    enabled: open && Boolean(planGroupId),
-  });
+  const selectedTier = tiers?.items.find((t) => t.id === planTierId);
+  const trialDays = selectedTier?.trialDays ?? 14;
 
-  const { data: tierDefaults } = useQuery({
-    queryKey: queryKeys.platform.planGroups.tierDefaults(
-      planGroupId ?? "",
-      planTierId ?? "",
-    ),
-    queryFn: () => getPlatformPlanGroupTierDefaults(planGroupId!, planTierId!),
-    enabled: open && Boolean(planGroupId) && Boolean(planTierId),
-  });
-
-  const selectedTier = tiers?.find((t) => t.id === planTierId);
-  const selectedGroup = planGroups?.items.find((g) => g.id === planGroupId);
-
-  useEffect(() => {
-    if (!groupDefaults?.suggestedSnapshotId || snapshotManuallySet) return;
-    setSnapshotId(groupDefaults.suggestedSnapshotId);
-  }, [groupDefaults, snapshotManuallySet]);
-
-  useEffect(() => {
-    if (!tierDefaults || !selectedTier) return;
-    if (!snapshotManuallySet && tierDefaults.suggestedSnapshotId) {
-      setSnapshotId(tierDefaults.suggestedSnapshotId);
-    }
-  }, [tierDefaults, selectedTier, snapshotManuallySet]);
+  const selectedPurchaseAddons = useMemo(
+    () =>
+      (addons?.items ?? []).filter((addon) =>
+        purchaseAddonIds.includes(addon.id),
+      ),
+    [addons?.items, purchaseAddonIds],
+  );
 
   const accessDefaults = useMemo(
     () =>
@@ -249,7 +245,7 @@ export function CreateBusinessWizard() {
       setPayment((prev) => ({
         ...prev,
         currentPeriodStart: prev.currentPeriodStart || toDateInputValue(new Date()),
-        currentPeriodEnd: getDefaultTrialEnd(tierDefaults?.trialDays ?? 14),
+        currentPeriodEnd: getDefaultTrialEnd(trialDays),
       }));
     } else if (payment.unpaidAccessMode === "INTERNAL") {
       setPayment((prev) => ({
@@ -261,7 +257,7 @@ export function CreateBusinessWizard() {
     payment.paymentCollected,
     payment.unpaidAccessMode,
     payment.currentPeriodEnd,
-    tierDefaults?.trialDays,
+    trialDays,
   ]);
 
   useEffect(() => {
@@ -269,9 +265,8 @@ export function CreateBusinessWizard() {
     const resolved = resolveTierPriceFromStrings(selectedTier, payment.billingCycle);
     setPayment((prev) => {
       const start = prev.currentPeriodStart || toDateInputValue(new Date());
-      const amount =
-        resolved != null ? String(resolved) : tierDefaults?.amount ?? prev.amount;
-      const currency = tierDefaults?.currency ?? prev.currency;
+      const amount = resolved != null ? String(resolved) : prev.amount;
+      const currency = selectedTier.currency || prev.currency;
       let currentPeriodEnd = prev.currentPeriodEnd;
 
       if (payment.paymentCollected) {
@@ -280,8 +275,8 @@ export function CreateBusinessWizard() {
             ? prev.currentPeriodEnd
             : computePeriodEndFromBillingCycle(payment.billingCycle, start) ??
               prev.currentPeriodEnd;
-      } else if (payment.unpaidAccessMode === "TRIAL" && tierDefaults?.trialDays) {
-        currentPeriodEnd = getDefaultTrialEnd(tierDefaults.trialDays);
+      } else if (payment.unpaidAccessMode === "TRIAL") {
+        currentPeriodEnd = getDefaultTrialEnd(selectedTier.trialDays ?? 14);
       }
 
       return {
@@ -294,34 +289,17 @@ export function CreateBusinessWizard() {
     });
   }, [
     selectedTier,
-    tierDefaults,
     payment.billingCycle,
     payment.paymentCollected,
     payment.unpaidAccessMode,
     payment.currentPeriodStart,
   ]);
 
-  const { data: snapshots } = useQuery({
-    queryKey: queryKeys.platform.snapshots.list({
-      status: "PUBLISHED",
-      limit: 50,
-    }),
-    queryFn: () =>
-      listPlatformSnapshots({
-        page: 1,
-        limit: 50,
-        status: "PUBLISHED",
-      }),
-    enabled: open,
-  });
-
-  const selectedSnapshot = snapshots?.items.find((s) => s.id === snapshotId);
-
   const previewResolution = useMemo(
     () =>
       resolveBusinessAccess({
         businessStatus: accessDefaults.businessStatus,
-        snapshotId,
+        snapshotId: undefined,
         subscription: {
           status: accessDefaults.subscriptionStatus,
           planTierId,
@@ -329,21 +307,17 @@ export function CreateBusinessWizard() {
           currentPeriodEnd: payment.currentPeriodEnd,
         },
         capabilities:
-          tierDefaults?.capabilities ??
           selectedTier?.capabilities?.map((c) => ({
             key: c.key,
             name: c.name,
-          })) ??
-          [],
+          })) ?? [],
         hasPendingOwnerInvite:
           detailsForm.watch("inviteOwner") &&
           accessDefaults.businessStatus !== "ACTIVE",
       }),
     [
       accessDefaults,
-      snapshotId,
       planTierId,
-      tierDefaults,
       selectedTier,
       payment.currentPeriodEnd,
       detailsForm,
@@ -411,9 +385,8 @@ export function CreateBusinessWizard() {
           defaultTaxRate: 0,
           pricesIncludeTax: false,
         },
-        snapshotId: snapshotId ?? undefined,
-        planGroupId: planGroupId ?? undefined,
         planTierId: planTierId ?? undefined,
+        ...(purchaseAddonIds.length > 0 ? { purchaseAddonIds } : {}),
         billingCycle:
           payment.unpaidAccessMode === "INTERNAL"
             ? undefined
@@ -442,13 +415,19 @@ export function CreateBusinessWizard() {
     },
     onSuccess: (business) => {
       const amount = payment.amount ? Number(payment.amount) : undefined;
+      const invited =
+        detailsForm.getValues("inviteOwner") &&
+        Boolean(detailsForm.getValues("email")?.trim());
+      const baseToast = getCreateSuccessToast({
+        paymentCollected: payment.paymentCollected,
+        unpaidAccessMode: payment.unpaidAccessMode,
+        paymentRecorded:
+          payment.paymentCollected && amount != null && amount > 0,
+      });
       toast.success(
-        getCreateSuccessToast({
-          paymentCollected: payment.paymentCollected,
-          unpaidAccessMode: payment.unpaidAccessMode,
-          paymentRecorded:
-            payment.paymentCollected && amount != null && amount > 0,
-        }),
+        invited
+          ? `${baseToast} Owner invite sent — they set a password via the Accept invite link.`
+          : baseToast,
       );
       void invalidatePlatformBusinesses(queryClient);
       setOpen(false);
@@ -460,10 +439,8 @@ export function CreateBusinessWizard() {
 
   const resetWizard = () => {
     setStep(1);
-    setPlanGroupId(null);
     setPlanTierId(null);
-    setSnapshotId(null);
-    setSnapshotManuallySet(false);
+    setPurchaseAddonIds([]);
     setPayment({
       ...paymentDefaults,
       currentPeriodStart: toDateInputValue(new Date()),
@@ -507,7 +484,7 @@ export function CreateBusinessWizard() {
         defaults.currentPeriodStart ?? prev.currentPeriodStart,
       currentPeriodEnd:
         mode === "TRIAL"
-          ? getDefaultTrialEnd(tierDefaults?.trialDays ?? 14)
+          ? getDefaultTrialEnd(trialDays)
           : prev.currentPeriodEnd,
       billingCycle: mode === "INTERNAL" ? "CUSTOM" : prev.billingCycle,
     }));
@@ -530,6 +507,15 @@ export function CreateBusinessWizard() {
         currentPeriodEnd: end,
         amount: resolved != null ? String(resolved) : prev.amount,
       };
+    });
+  };
+
+  const togglePurchaseAddon = (addonId: string, checked: boolean) => {
+    setPurchaseAddonIds((prev) => {
+      if (checked) {
+        return prev.includes(addonId) ? prev : [...prev, addonId];
+      }
+      return prev.filter((id) => id !== addonId);
     });
   };
 
@@ -629,7 +615,7 @@ export function CreateBusinessWizard() {
                       label="Owner email"
                       type="email"
                       placeholder="owner@company.com"
-                      description="Optional unless you invite the owner now."
+                      description="Optional unless you invite the owner now. Same address receives the Accept invite email."
                     />
                   </div>
                   <PhoneField
@@ -642,7 +628,7 @@ export function CreateBusinessWizard() {
                       control={detailsForm.control}
                       name="inviteOwner"
                       label="Invite owner now"
-                      description="Sends an admin invite to the owner email after the business is created."
+                      description="Send invite email so they set a password (same as staff invite → Accept invite)."
                     />
                     {inviteOwner && accessDefaults.businessStatus !== "ACTIVE" ? (
                       <p className="mt-2 text-sm text-amber-700 dark:text-amber-300">
@@ -657,93 +643,112 @@ export function CreateBusinessWizard() {
 
             {step === 2 ? (
               <div className="space-y-4">
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium">Plan group</p>
-                    <SearchableSelect
-                      items={
-                        planGroups?.items.map((g) => ({
-                          value: g.id,
-                          label: g.name,
-                        })) ?? []
-                      }
-                      value={planGroupId}
-                      onValueChange={(v) => {
-                        setPlanGroupId(v);
-                        setPlanTierId(null);
-                        setSnapshotManuallySet(false);
-                      }}
-                      placeholder="Select plan group"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium">Plan tier</p>
-                    <SearchableSelect
-                      items={
-                        tiers?.map((t) => ({ value: t.id, label: t.name })) ?? []
-                      }
-                      value={planTierId}
-                      onValueChange={(v) => {
-                        setPlanTierId(v);
-                        setSnapshotManuallySet(false);
-                      }}
-                      placeholder="Select plan tier"
-                      disabled={!planGroupId}
-                    />
-                  </div>
-                  <div className="space-y-1 sm:col-span-2">
-                    <p className="text-sm font-medium">Snapshot</p>
-                    <SearchableSelect
-                      items={
-                        snapshots?.items.map((s) => ({
-                          value: s.id,
-                          label: s.name,
-                        })) ?? []
-                      }
-                      value={snapshotId}
-                      onValueChange={(v) => {
-                        setSnapshotId(v);
-                        setSnapshotManuallySet(true);
-                      }}
-                      placeholder="Auto-suggested from package"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Snapshot controls labels, navigation, and workspace experience.
-                      Leave as suggested or pick another published snapshot.
-                    </p>
-                  </div>
-                </div>
-                {planGroupId && planTierId ? (
-                  <PackageImpactPreview
-                    snapshotName={
-                      selectedSnapshot?.name ?? tierDefaults?.suggestedSnapshotName
+                <div className="space-y-1">
+                  <p className="text-sm font-medium">Tier</p>
+                  <SearchableSelect
+                    items={
+                      tiers?.items.map((t) => ({
+                        value: t.id,
+                        label: formatTierSelectLabel(t),
+                      })) ?? []
                     }
-                    capabilities={tierDefaults?.capabilities ?? []}
-                    amount={payment.amount ?? tierDefaults?.amount}
-                    currency={payment.currency ?? tierDefaults?.currency}
-                    trialDays={tierDefaults?.trialDays}
+                    value={planTierId}
+                    onValueChange={(v) => {
+                      setPlanTierId(v);
+                      setPurchaseAddonIds([]);
+                    }}
+                    placeholder="Select tier"
                   />
-                ) : (
-                  <p className="text-sm text-muted-foreground">
-                    Select a plan group and tier to preview included modules and
-                    suggested pricing. You can also continue without a package and
-                    configure access later.
-                  </p>
-                )}
-                {selectedGroup && selectedTier ? (
-                  <div className="rounded-md border bg-muted/30 p-3 text-sm">
-                    <p>
-                      <span className="font-medium">Package:</span>{" "}
-                      {selectedGroup.name} / {selectedTier.name}
+                </div>
+
+                {(addons?.items.length ?? 0) > 0 ? (
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">
+                      Independent add-ons to purchase
                     </p>
-                    <p>
-                      <span className="font-medium">Snapshot:</span>{" "}
-                      {selectedSnapshot?.name ??
-                        tierDefaults?.suggestedSnapshotName ??
-                        "Platform default"}
-                    </p>
+                    <div className="space-y-2 rounded-md border p-3">
+                      {addons!.items
+                        .filter(
+                          (addon) =>
+                            !selectedTier?.includedAddons.some(
+                              (included) => included.id === addon.id,
+                            ),
+                        )
+                        .map((addon) => {
+                        const checked = purchaseAddonIds.includes(addon.id);
+                        const priceLabel = addon.priceMonthly
+                          ? `$${Number(addon.priceMonthly).toFixed(2)}/mo`
+                          : "No monthly price";
+                        return (
+                          <label
+                            key={addon.id}
+                            htmlFor={`purchase-addon-${addon.id}`}
+                            className="flex cursor-pointer items-start gap-3"
+                          >
+                            <Checkbox
+                              id={`purchase-addon-${addon.id}`}
+                              checked={checked}
+                              onCheckedChange={(v) =>
+                                togglePurchaseAddon(addon.id, v === true)
+                              }
+                              className="mt-0.5"
+                            />
+                            <span className="min-w-0 flex-1">
+                              <span className="block text-sm font-medium">
+                                {addon.name}
+                              </span>
+                              <span className="block text-xs text-muted-foreground">
+                                {priceLabel}
+                              </span>
+                            </span>
+                          </label>
+                        );
+                      })}
+                    </div>
                   </div>
                 ) : null}
+
+                <p className="text-xs text-muted-foreground">
+                  MedSpa workspace defaults are applied automatically. Dependent
+                  add-ons linked to the tier are included with no extra charge.
+                </p>
+
+                {selectedTier ? (
+                  <div className="rounded-md border bg-muted/30 p-3 text-sm space-y-1">
+                    <p>
+                      <span className="font-medium">Tier:</span>{" "}
+                      {selectedTier.name}
+                    </p>
+                    <p>
+                      <span className="font-medium">Staff limit:</span>{" "}
+                      {formatLimit(selectedTier.staffLimit)}
+                      {" · "}
+                      <span className="font-medium">Location limit:</span>{" "}
+                      {formatLimit(selectedTier.locationLimit)}
+                    </p>
+                    <p>
+                      <span className="font-medium">Capabilities:</span>{" "}
+                      {selectedTier.capabilities?.length ?? 0}
+                    </p>
+                    {(selectedTier.dependentAddons?.length ?? 0) > 0 ? (
+                      <p>
+                        <span className="font-medium">Included (dependent):</span>{" "}
+                        {selectedTier.dependentAddons.map((a) => a.name).join(", ")}
+                      </p>
+                    ) : null}
+                    {(selectedTier.includedAddons?.length ?? 0) > 0 ? (
+                      <p>
+                        <span className="font-medium">Included (independent):</span>{" "}
+                        {selectedTier.includedAddons.map((a) => a.name).join(", ")}
+                      </p>
+                    ) : null}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    Select a tier to preview limits and included add-ons. You can
+                    also continue without a package and configure access later.
+                  </p>
+                )}
               </div>
             ) : null}
 
@@ -769,7 +774,7 @@ export function CreateBusinessWizard() {
                       <div>
                         <p className="text-sm font-medium">Yes</p>
                         <p className="text-xs text-muted-foreground">
-                          Payment received — activate with paid access.
+                          Offline payment already received — mark Paid (no card charge).
                         </p>
                       </div>
                     </label>
@@ -841,6 +846,10 @@ export function CreateBusinessWizard() {
                               }))
                             }
                           />
+                          <p className="text-xs text-muted-foreground">
+                            Admin bookkeeping only — does not charge Stripe or a
+                            card. Use this when the customer already paid offline.
+                          </p>
                         </div>
                         <div className="space-y-1">
                           <p className="text-sm font-medium">Currency</p>
@@ -985,24 +994,26 @@ export function CreateBusinessWizard() {
                     />
                     <SummaryRow
                       label="Invite owner"
-                      value={detailsForm.watch("inviteOwner") ? "Yes" : "No"}
-                    />
-                    <SummaryRow
-                      label="Package"
                       value={
-                        selectedGroup && selectedTier
-                          ? `${selectedGroup.name} / ${selectedTier.name}`
-                          : "None — configure in Access tab"
+                        detailsForm.watch("inviteOwner")
+                          ? "Yes — credentials via invite link (/accept-invite), not create"
+                          : "No"
                       }
                     />
                     <SummaryRow
-                      label="Snapshot"
+                      label="Tier"
                       value={
-                        selectedSnapshot?.name ??
-                        tierDefaults?.suggestedSnapshotName ??
-                        "Platform default"
+                        selectedTier?.name ?? "None — configure later"
                       }
                     />
+                    {selectedPurchaseAddons.length > 0 ? (
+                      <SummaryRow
+                        label="Add-ons"
+                        value={selectedPurchaseAddons
+                          .map((a) => a.name)
+                          .join(", ")}
+                      />
+                    ) : null}
                     <SummaryRow
                       label="Billing"
                       value={
@@ -1105,9 +1116,8 @@ export function CreateBusinessWizard() {
           <AlertDialogHeader>
             <AlertDialogTitle>Create without a package?</AlertDialogTitle>
             <AlertDialogDescription>
-              No plan tier is selected. The business will be created without
-              package capabilities. You can assign a plan and snapshot later from
-              the Access tab.
+              No tier is selected. The business will be created without package
+              capabilities. You can assign a tier later from the Access tab.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

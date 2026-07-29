@@ -8,14 +8,60 @@ import {
   IsBoolean,
   IsEnum,
   IsInt,
+  IsObject,
   IsOptional,
   IsString,
   IsUrl,
+  IsArray,
   MaxLength,
   MinLength,
+  ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { PaginationQueryDto } from '@app/common/dto/pagination-query.dto';
+
+export class ChatbotBusinessHoursIntervalDto {
+  @ApiProperty()
+  @IsString()
+  @MaxLength(8)
+  start!: string;
+
+  @ApiProperty()
+  @IsString()
+  @MaxLength(8)
+  end!: string;
+}
+
+export class ChatbotBusinessHoursSettingsUpdateDto {
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  enabled?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(80)
+  timezone?: string;
+
+  @ApiPropertyOptional({
+    type: 'object',
+    additionalProperties: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          start: { type: 'string', maxLength: 8 },
+          end: { type: 'string', maxLength: 8 },
+        },
+        required: ['start', 'end'],
+      },
+    },
+  })
+  @IsOptional()
+  @IsObject()
+  schedule?: Record<string, ChatbotBusinessHoursIntervalDto[]>;
+}
 
 export class CreateChatbotDto {
   @ApiProperty()
@@ -120,6 +166,48 @@ export class CreateChatbotDto {
   @IsOptional()
   @IsBoolean()
   embedEnabled?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  consentEnabled?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(2000)
+  consentText?: string;
+
+  @ApiPropertyOptional({ enum: ['message', 'chat', 'help'] })
+  @IsOptional()
+  @IsString()
+  launcherIcon?: 'message' | 'chat' | 'help';
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  collectPhoneWhenOffline?: boolean;
+
+  @ApiPropertyOptional({ type: [String] })
+  @IsOptional()
+  @IsString({ each: true })
+  allowedDomains?: string[];
+}
+
+export class ChatbotWelcomeVariantDto {
+  @ApiProperty({ enum: ['page_url', 'referrer'] })
+  @IsString()
+  matchType!: 'page_url' | 'referrer';
+
+  @ApiProperty()
+  @IsString()
+  @MaxLength(500)
+  pattern!: string;
+
+  @ApiProperty()
+  @IsString()
+  @MaxLength(2000)
+  message!: string;
 }
 
 export class UpdateChatbotDto extends PartialType(CreateChatbotDto) {
@@ -137,6 +225,36 @@ export class UpdateChatbotDto extends PartialType(CreateChatbotDto) {
   @IsOptional()
   @IsBoolean()
   businessHoursOnly?: boolean;
+
+  @ApiPropertyOptional({ type: ChatbotBusinessHoursSettingsUpdateDto })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => ChatbotBusinessHoursSettingsUpdateDto)
+  businessHoursSettings?: ChatbotBusinessHoursSettingsUpdateDto;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  progressiveProfilingEnabled?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  progressiveProfilingAskAfterMessages?: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(2000)
+  progressiveProfilingPromptMessage?: string;
+
+  @ApiPropertyOptional({ type: [ChatbotWelcomeVariantDto] })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ChatbotWelcomeVariantDto)
+  welcomeVariants?: ChatbotWelcomeVariantDto[];
 }
 
 export class CreateChatbotRuleDto {
@@ -169,6 +287,54 @@ export class CreateChatbotRuleDto {
 }
 
 export class UpdateChatbotRuleDto extends PartialType(CreateChatbotRuleDto) {}
+
+export class ReorderChatbotRulesDto {
+  @ApiProperty({ type: [String] })
+  @IsArray()
+  @IsString({ each: true })
+  ruleIds!: string[];
+}
+
+export class PreviewChatbotRuleDto {
+  @ApiProperty()
+  @IsString()
+  @MinLength(1)
+  @MaxLength(4000)
+  text!: string;
+}
+
+export class ImportChatbotRulesDto {
+  @ApiProperty({ type: [CreateChatbotRuleDto] })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreateChatbotRuleDto)
+  rules!: CreateChatbotRuleDto[];
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  replace?: boolean;
+}
+
+export class UpdateChatbotSessionProfileDto {
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  visitorName?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(254)
+  visitorEmail?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
+  visitorPhone?: string;
+}
 
 export class StartChatbotSessionDto {
   @ApiProperty()
@@ -217,6 +383,23 @@ export class StartChatbotSessionDto {
   @IsOptional()
   @IsBoolean()
   anonymous?: boolean;
+
+  /** Optional access JWT for Scenario C (authenticated start). */
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(4000)
+  authToken?: string;
+}
+
+export class ClaimChatbotSessionDto {
+  @ApiPropertyOptional({
+    description: 'Access JWT; may also be sent as Authorization Bearer header',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(4000)
+  authToken?: string;
 }
 
 export class SendChatbotMessageDto {

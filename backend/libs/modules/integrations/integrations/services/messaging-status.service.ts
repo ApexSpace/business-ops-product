@@ -1,13 +1,16 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import {
-  IntegrationResourceType,
-  IntegrationStatus,
-} from '@prisma/client';
+import { IntegrationResourceType, IntegrationStatus } from '@prisma/client';
 import type { RootConfig } from '@app/core/config/configuration';
 import { EMAIL_PROVIDER_KEY } from '@app/modules/communications/email/constants/email-platform.constants';
+import {
+  BUSINESS_SMS_METADATA_TYPE,
+  SMS_PROVIDER_KEY,
+} from '@app/modules/communications/sms/constants/sms-platform.constants';
 import { PlatformEmailProvisioningService } from '../email/services/platform-email-provisioning.service';
+import { PlatformSmsProvisioningService } from '../../twilio/services/platform-sms-provisioning.service';
 import { getMetaScopesForProvider } from '../meta/constants/meta-provider.config';
+import { MetaConfigService } from '../meta/services/meta-config.service';
 import { BusinessIntegrationRepository } from '../repositories/business-integration.repository';
 import { IntegrationResourceRepository } from '../repositories/integration-resource.repository';
 
@@ -17,23 +20,23 @@ export interface MessagingStatusDto {
   webhookEndpointConfigured: boolean;
   requiredPermissionsPresent: boolean;
   readyForMessaging: boolean;
+  twoWayEnabled?: boolean;
+  mode?: 'platform' | 'business';
   warnings: string[];
 }
 
-const MESSAGING_PROVIDER_KEYS = new Set([
-  'facebook',
-  'instagram',
-  'whatsapp',
-]);
+const MESSAGING_PROVIDER_KEYS = new Set(['facebook', 'instagram', 'whatsapp']);
 const WEBCHAT_PROVIDER_KEY = 'webchat';
 
 @Injectable()
 export class MessagingStatusService {
   constructor(
     private readonly configService: ConfigService<RootConfig, true>,
+    private readonly metaConfigService: MetaConfigService,
     private readonly businessIntegrationRepository: BusinessIntegrationRepository,
     private readonly integrationResourceRepository: IntegrationResourceRepository,
     private readonly platformEmailProvisioning: PlatformEmailProvisioningService,
+    private readonly platformSmsProvisioning: PlatformSmsProvisioningService,
   ) {}
 
   async getMessagingStatus(
@@ -57,6 +60,10 @@ export class MessagingStatusService {
       return this.getEmailMessagingStatus(businessId);
     }
 
+    if (providerKey === SMS_PROVIDER_KEY) {
+      return this.getSmsMessagingStatus(businessId);
+    }
+
     if (!MESSAGING_PROVIDER_KEYS.has(providerKey)) {
       return {
         connected: false,
@@ -65,7 +72,7 @@ export class MessagingStatusService {
         requiredPermissionsPresent: false,
         readyForMessaging: false,
         warnings: [
-          'Messaging status is only available for Facebook, Instagram, WhatsApp, and Email.',
+          'Messaging status is only available for Facebook, Instagram, WhatsApp, Email, and SMS.',
         ],
       };
     }
@@ -131,6 +138,14 @@ export class MessagingStatusService {
 
     if (connected && defaultResourceSelected && !tokenReady) {
       warnings.push(this.tokenWarning(providerKey));
+    }
+
+    if (providerKey === 'instagram' && connected && webhookEndpointConfigured) {
+      if (!this.metaConfigService.isMetaWebhookCallbackSecure()) {
+        warnings.push(
+          'Instagram DMs need META_WEBHOOK_CALLBACK_URL set to your HTTPS webhook URL (same as Meta App Dashboard → Webhooks). Restart the backend API and worker after changing .env, then sync Instagram resources.',
+        );
+      }
     }
 
     const readyForMessaging =
@@ -216,6 +231,94 @@ export class MessagingStatusService {
       webhookEndpointConfigured,
       requiredPermissionsPresent: true,
       readyForMessaging,
+      warnings,
+    };
+  }
+
+  private async getSmsMessagingStatus(
+    businessId: string,
+  ): Promise<MessagingStatusDto> {
+    await this.platformSmsProvisioning
+      .ensurePlatformDefaultSms(businessId)
+      .catch(() => null);
+
+    const twilioConfig = this.configService.get('twilio', { infer: true });
+    const warnings: string[] = [];
+
+    const platformConfigured = twilioConfig.enabled;
+    if (!platformConfigured) {
+      warnings.push(
+        'Platform SMS is not configured (TWILIO_ENABLED, TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_PLATFORM_FROM_NUMBER).',
+      );
+    }
+    if (platformConfigured && !twilioConfig.messagingServiceSid) {
+      warnings.push(
+        'TWILIO_SHARED_MESSAGING_SERVICE_SID is not set; auto-assigned numbers will not join the shared A2P sender pool.',
+      );
+    }
+
+    const integration =
+      await this.businessIntegrationRepository.findByBusinessAndKey(
+        businessId,
+        SMS_PROVIDER_KEY,
+      );
+    const connected = integration?.status === IntegrationStatus.CONNECTED;
+
+    const resources =
+      await this.integrationResourceRepository.findManyByBusinessAndProvider(
+        businessId,
+        SMS_PROVIDER_KEY,
+      );
+    const businessOwned = resources.find(
+      (resource) =>
+        (resource.metadata as Record<string, unknown> | null)?.type ===
+        BUSINESS_SMS_METADATA_TYPE,
+    );
+    const defaultResource =
+      businessOwned ??
+      resources.find((resource) => resource.isDefault) ??
+      null;
+    const defaultResourceSelected = Boolean(defaultResource);
+    const isBusinessOwned = Boolean(businessOwned);
+    const mode = isBusinessOwned ? 'business' : 'platform';
+    const twoWayEnabled = isBusinessOwned;
+
+    if (!isBusinessOwned) {
+      warnings.push(
+        'Outbound appointment SMS uses your Codesol-assigned number (one-way). Connect your own Twilio number or enable SMS Chat later for two-way inbox.',
+      );
+    }
+
+    if (connected && isBusinessOwned && !businessOwned?.isDefault) {
+      warnings.push('Select a default SMS phone number for this business.');
+    }
+
+    const webhookEndpointConfigured = Boolean(
+      this.configService.get('app.backendPublicUrl', { infer: true }),
+    );
+    if (isBusinessOwned && !webhookEndpointConfigured) {
+      warnings.push(
+        'Set BACKEND_PUBLIC_URL so Twilio can deliver inbound SMS webhooks.',
+      );
+    }
+
+    // Inbox reply readiness requires a business-owned Twilio number.
+    // Platform SMS is notification-only and must not light up the composer.
+    const readyForMessaging =
+      connected &&
+      twoWayEnabled &&
+      Boolean(businessOwned) &&
+      (webhookEndpointConfigured || platformConfigured);
+
+    return {
+      connected: connected && (twoWayEnabled || platformConfigured),
+      defaultResourceSelected,
+      webhookEndpointConfigured:
+        webhookEndpointConfigured || platformConfigured,
+      requiredPermissionsPresent: true,
+      readyForMessaging,
+      twoWayEnabled,
+      mode,
       warnings,
     };
   }

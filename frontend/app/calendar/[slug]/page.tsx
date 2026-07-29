@@ -1,11 +1,20 @@
 "use client";
 
-import PublicBookingRoutePage from "@/features/public-booking/components/public-booking-page";
+import { use, useEffect } from "react";
+import { useRouter } from "next/navigation";
 
-export default function CalendarBookingPage({
+/** @deprecated Redirect legacy /calendar/:slug to /book/:slug */
+export default function LegacyCalendarBookingRedirect({
   params,
 }: {
   params: Promise<{ slug: string }>;
 }) {
-  return <PublicBookingRoutePage params={params} />;
+  const { slug } = use(params);
+  const router = useRouter();
+
+  useEffect(() => {
+    router.replace(`/book/${encodeURIComponent(slug)}`);
+  }, [router, slug]);
+
+  return null;
 }

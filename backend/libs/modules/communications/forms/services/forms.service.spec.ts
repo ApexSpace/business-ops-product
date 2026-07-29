@@ -299,7 +299,10 @@ describe('FormsService', () => {
       }),
     );
     expect(result.definition.fields).toHaveLength(1);
-    expect(result.definition.fields[0]).toMatchObject({ type: 'text', name: 'name' });
+    expect(result.definition.fields[0]).toMatchObject({
+      type: 'text',
+      name: 'name',
+    });
   });
 
   it('duplicates a form as draft with a new publicKey and (Copy) name', async () => {

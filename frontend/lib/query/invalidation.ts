@@ -2,13 +2,36 @@ import type { QueryClient } from "@tanstack/react-query";
 import { queryKeys } from "./keys";
 
 export function invalidateServiceLists(queryClient: QueryClient) {
-  return queryClient.invalidateQueries({
-    queryKey: queryKeys.services.all(),
-    predicate: (query) => {
-      const key = query.queryKey;
-      return key[1] === "list" || key.length === 1;
-    },
-  });
+  return Promise.all([
+    queryClient.invalidateQueries({
+      queryKey: queryKeys.services.all(),
+      predicate: (query) => {
+        const key = query.queryKey;
+        return key[1] === "list" || key.length === 1;
+      },
+    }),
+    queryClient.invalidateQueries({ queryKey: queryKeys.services.tree() }),
+  ]);
+}
+
+export function invalidateServiceWorkspace(
+  queryClient: QueryClient,
+  serviceId: string,
+) {
+  return Promise.all([
+    queryClient.invalidateQueries({
+      queryKey: queryKeys.services.workspace(serviceId),
+    }),
+    invalidateServiceLists(queryClient),
+    invalidateServicePicker(queryClient),
+  ]);
+}
+
+export function invalidateServiceCategories(queryClient: QueryClient) {
+  return Promise.all([
+    queryClient.invalidateQueries({ queryKey: queryKeys.serviceCategories.all() }),
+    queryClient.invalidateQueries({ queryKey: queryKeys.services.tree() }),
+  ]);
 }
 
 export function invalidateServicePicker(queryClient: QueryClient) {
@@ -18,24 +41,30 @@ export function invalidateServicePicker(queryClient: QueryClient) {
 }
 
 /** Invalidate contact list queries only (not picker unless needed). */
-export function invalidateContactLists(queryClient: QueryClient) {
+export function invalidateContactLists(
+  queryClient: QueryClient,
+  apiBase = "contacts",
+) {
   return queryClient.invalidateQueries({
-    queryKey: queryKeys.contacts.all(),
+    queryKey: queryKeys.contacts.all(apiBase),
     predicate: (query) => {
       const key = query.queryKey;
-      return key[1] === "list" || key.length === 1;
+      return key.includes("list") || key.length <= 2;
     },
   });
 }
 
-export function invalidateContactPicker(queryClient: QueryClient) {
+export function invalidateContactPicker(
+  queryClient: QueryClient,
+  apiBase = "contacts",
+) {
   return Promise.all([
     queryClient.invalidateQueries({
-      queryKey: queryKeys.contacts.picker(),
+      queryKey: queryKeys.contacts.picker(apiBase),
     }),
     queryClient.invalidateQueries({
-      queryKey: queryKeys.contacts.all(),
-      predicate: (query) => query.queryKey[1] === "search",
+      queryKey: queryKeys.contacts.all(apiBase),
+      predicate: (query) => query.queryKey.includes("search"),
     }),
   ]);
 }
@@ -49,20 +78,44 @@ export function invalidateContactDetail(
   });
 }
 
-export function invalidateWorkItemLists(queryClient: QueryClient) {
+export function invalidateContactWorkspace(
+  queryClient: QueryClient,
+  contactId: string,
+) {
+  return Promise.all([
+    queryClient.invalidateQueries({
+      queryKey: queryKeys.contacts.timeline(contactId),
+    }),
+    queryClient.invalidateQueries({
+      queryKey: queryKeys.contacts.wallet(contactId),
+    }),
+    queryClient.invalidateQueries({
+      queryKey: queryKeys.contacts.adjustments(contactId),
+    }),
+    queryClient.invalidateQueries({
+      queryKey: queryKeys.contacts.memberships(contactId),
+    }),
+  ]);
+}
+
+export function invalidateWorkItemLists(
+  queryClient: QueryClient,
+  apiBase = "work-items",
+) {
   return queryClient.invalidateQueries({
-    queryKey: queryKeys.workItems.all(),
-    predicate: (query) => {
-      const key = query.queryKey;
-      return key[1] === "list" || key.length === 1;
-    },
+    queryKey: queryKeys.workItems.all(apiBase),
   });
 }
 
 export function invalidateBusinessDashboardStats(queryClient: QueryClient) {
-  return queryClient.invalidateQueries({
-    queryKey: queryKeys.business.dashboardStats(),
-  });
+  return Promise.all([
+    queryClient.invalidateQueries({
+      queryKey: queryKeys.business.dashboardStats(),
+    }),
+    queryClient.invalidateQueries({
+      queryKey: queryKeys.business.dashboardFeed(),
+    }),
+  ]);
 }
 
 export function invalidateNoteLists(queryClient: QueryClient) {
@@ -124,6 +177,125 @@ export function invalidatePaymentLists(queryClient: QueryClient) {
       return key[1] === "list" || key.length === 1;
     },
   });
+}
+
+export function invalidateProductLists(queryClient: QueryClient) {
+  return queryClient.invalidateQueries({
+    queryKey: queryKeys.products.all(),
+    predicate: (query) => {
+      const key = query.queryKey;
+      return key[1] === "list" || key[1] === "picker" || key.length === 1;
+    },
+  });
+}
+
+export function invalidateProductDetail(
+  queryClient: QueryClient,
+  id: string,
+) {
+  return Promise.all([
+    queryClient.invalidateQueries({ queryKey: queryKeys.products.detail(id) }),
+    queryClient.invalidateQueries({
+      queryKey: queryKeys.products.variants(id),
+    }),
+    queryClient.invalidateQueries({
+      queryKey: queryKeys.products.options(id),
+    }),
+    queryClient.invalidateQueries({
+      predicate: (query) =>
+        query.queryKey[0] === "products" &&
+        query.queryKey[1] === id &&
+        query.queryKey[2] === "inventory",
+    }),
+  ]);
+}
+
+export function invalidateProductCategories(queryClient: QueryClient) {
+  return queryClient.invalidateQueries({
+    queryKey: queryKeys.products.categories(),
+  });
+}
+
+export function invalidateResources(queryClient: QueryClient) {
+  return queryClient.invalidateQueries({
+    queryKey: queryKeys.resources.all(),
+  });
+}
+
+export function invalidateGiftCards(queryClient: QueryClient) {
+  return queryClient.invalidateQueries({
+    queryKey: queryKeys.giftCards.all(),
+  });
+}
+
+export function invalidatePackages(queryClient: QueryClient) {
+  return queryClient.invalidateQueries({
+    queryKey: queryKeys.packages.all(),
+  });
+}
+
+export function invalidateOffers(queryClient: QueryClient) {
+  return queryClient.invalidateQueries({
+    queryKey: queryKeys.offers.all(),
+  });
+}
+
+export function invalidateMemberships(queryClient: QueryClient) {
+  return queryClient.invalidateQueries({
+    queryKey: queryKeys.memberships.all(),
+  });
+}
+
+export function invalidateResourceGroups(queryClient: QueryClient) {
+  return Promise.all([
+    queryClient.invalidateQueries({ queryKey: queryKeys.resources.groups() }),
+    invalidateResources(queryClient),
+  ]);
+}
+
+export function invalidateResourceWorkspace(
+  queryClient: QueryClient,
+  resourceId: string,
+) {
+  return Promise.all([
+    queryClient.invalidateQueries({
+      queryKey: queryKeys.resources.workspace(resourceId),
+    }),
+    invalidateResources(queryClient),
+  ]);
+}
+
+export function invalidateResourcePicker(queryClient: QueryClient) {
+  return queryClient.invalidateQueries({
+    predicate: (query) =>
+      query.queryKey[0] === "resources" && query.queryKey[1] === "picker",
+  });
+}
+
+export function invalidateProductPicker(queryClient: QueryClient) {
+  return queryClient.invalidateQueries({
+    predicate: (query) =>
+      query.queryKey[0] === "products" && query.queryKey[1] === "picker",
+  });
+}
+
+export function invalidateCheckouts(
+  queryClient: QueryClient,
+  id?: string,
+) {
+  const tasks = [
+    queryClient.invalidateQueries({ queryKey: queryKeys.checkouts.all() }),
+    invalidatePaymentLists(queryClient),
+    queryClient.invalidateQueries({ queryKey: queryKeys.invoices.all() }),
+  ];
+  if (id) {
+    tasks.push(
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.checkouts.detail(id),
+      }),
+    );
+  }
+  return Promise.all(tasks);
 }
 
 export function invalidateEstimateLists(queryClient: QueryClient) {
@@ -192,16 +364,16 @@ export function invalidatePlatformAuditLogs(queryClient: QueryClient) {
 export function invalidateFormLists(queryClient: QueryClient) {
   return queryClient.invalidateQueries({
     queryKey: queryKeys.forms.all(),
-    predicate: (query) => {
-      const key = query.queryKey;
-      return key[1] === "list" || key.length === 1;
-    },
   });
 }
 
 export function invalidateFormDetail(queryClient: QueryClient, id: string) {
   return queryClient.invalidateQueries({
-    queryKey: queryKeys.forms.detail(id),
+    queryKey: queryKeys.forms.all(),
+    predicate: (query) => {
+      const key = query.queryKey;
+      return key.includes("detail") && key.includes(id);
+    },
   });
 }
 
@@ -210,6 +382,42 @@ export function invalidateFormSubmissions(
   formId: string,
 ) {
   return queryClient.invalidateQueries({
-    queryKey: ["forms", formId, "submissions"],
+    queryKey: queryKeys.forms.all(),
+    predicate: (query) => {
+      const key = query.queryKey;
+      return key.includes(formId) && key.includes("submissions");
+    },
+  });
+}
+
+export function invalidateChatbotLists(
+  queryClient: QueryClient,
+  apiBase = "chatbots",
+) {
+  return queryClient.invalidateQueries({
+    queryKey: queryKeys.chatbots.all(apiBase),
+  });
+}
+
+export function invalidateChatbotDetail(
+  queryClient: QueryClient,
+  id: string,
+  apiBase = "chatbots",
+) {
+  return queryClient.invalidateQueries({
+    queryKey: queryKeys.chatbots.detail(apiBase, id),
+  });
+}
+
+export function invalidateTimeCardLists(queryClient: QueryClient) {
+  return queryClient.invalidateQueries({
+    queryKey: queryKeys.timeClock.all(),
+    predicate: (query) => query.queryKey[2] === "list",
+  });
+}
+
+export function invalidateTimeCardDetail(queryClient: QueryClient, id: string) {
+  return queryClient.invalidateQueries({
+    queryKey: queryKeys.timeClock.cards.detail(id),
   });
 }

@@ -3,6 +3,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { deleteFormSubmission } from "@/features/forms/api/forms.api";
+import { useFormsHost } from "@/features/forms/forms-host-context";
 import {
   invalidateFormLists,
   invalidateFormSubmissions,
@@ -10,10 +11,11 @@ import {
 
 export function useFormSubmissionMutations(formId: string) {
   const queryClient = useQueryClient();
+  const { apiBase } = useFormsHost();
 
   const deleteMutation = useMutation({
     mutationFn: (submissionId: string) =>
-      deleteFormSubmission(formId, submissionId),
+      deleteFormSubmission(formId, submissionId, apiBase),
     onSuccess: async () => {
       await Promise.all([
         invalidateFormSubmissions(queryClient, formId),

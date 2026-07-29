@@ -47,6 +47,15 @@ export class FileAssetRepository {
     });
   }
 
+  findByObjectKey(
+    businessId: string,
+    objectKey: string,
+  ): Promise<FileAsset | null> {
+    return this.prisma.fileAsset.findFirst({
+      where: this.activeWhere(businessId, { objectKey }),
+    });
+  }
+
   findByIdIncludingDeleted(
     businessId: string,
     id: string,
@@ -56,10 +65,7 @@ export class FileAssetRepository {
     });
   }
 
-  update(
-    id: string,
-    data: Prisma.FileAssetUpdateInput,
-  ): Promise<FileAsset> {
+  update(id: string, data: Prisma.FileAssetUpdateInput): Promise<FileAsset> {
     return this.prisma.fileAsset.update({ where: { id }, data });
   }
 

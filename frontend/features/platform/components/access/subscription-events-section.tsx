@@ -62,7 +62,7 @@ export function SubscriptionEventsSection({ businessId }: { businessId: string }
                 </div>
                 {event.planTierLabel ? (
                   <p className="text-xs text-muted-foreground">
-                    Plan: {event.planTierLabel}
+                    Tier: {event.planTierLabel}
                   </p>
                 ) : null}
                 {event.paymentSnippet ? (

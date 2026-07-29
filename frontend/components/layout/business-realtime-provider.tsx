@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useBusinessEvents } from "@/features/realtime/hooks/use-business-events";
 import { RealtimeModeProvider } from "@/features/realtime/realtime-mode-context";
@@ -14,6 +15,18 @@ function BusinessRealtimeConnection({
   children: React.ReactNode;
 }) {
   useBusinessEvents(businessId);
+
+  useEffect(() => {
+    if (
+      typeof window === "undefined" ||
+      typeof Notification === "undefined" ||
+      Notification.permission !== "default"
+    ) {
+      return;
+    }
+    void Notification.requestPermission();
+  }, []);
+
   return <>{children}</>;
 }
 

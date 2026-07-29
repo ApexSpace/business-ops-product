@@ -150,7 +150,8 @@ export class StripeWebhookService {
     event: StripeWebhookEvent,
     source: 'platform' | 'connected',
   ): Promise<void> {
-    const existing = await this.webhookEventsRepository.findById(webhookEventId);
+    const existing =
+      await this.webhookEventsRepository.findById(webhookEventId);
     if (!existing) return;
 
     if (existing.status === WebhookEventStatus.PROCESSED) {

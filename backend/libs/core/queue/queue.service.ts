@@ -10,7 +10,9 @@ import {
   FILE_QUEUE,
   JOB_PROCESS_META_WEBHOOK,
   JOB_PROCESS_RESEND_WEBHOOK,
+  JOB_PROCESS_TWILIO_SMS_WEBHOOK,
   JOB_PROCESS_STRIPE_WEBHOOK,
+  JOB_AUTOMATION_STEP,
   JOB_SEND_EMAIL,
   JOB_SEND_OUTBOUND_MESSAGE,
   MESSAGE_QUEUE,
@@ -22,8 +24,10 @@ import type {
   ProcessMetaWebhookPayload,
   ProcessResendWebhookPayload,
   ProcessStripeWebhookPayload,
+  ProcessTwilioSmsWebhookPayload,
   SendEmailJobPayload,
   SendOutboundMessagePayload,
+  AutomationStepJobPayload,
 } from './queue.types';
 import { resolveEmailConfig } from '../config/email/email.config';
 
@@ -162,6 +166,20 @@ export class QueueService {
     return job.id ?? null;
   }
 
+  async enqueueTwilioSmsWebhook(
+    payload: ProcessTwilioSmsWebhookPayload,
+  ): Promise<string | null> {
+    const queue = this.webhookQueue();
+    const jobId = `twilio-sms-webhook-${payload.webhookEventId}`;
+    if (!this.guardQueueAvailable(queue, `enqueue Twilio SMS webhook (${jobId})`)) {
+      return null;
+    }
+    const job = await queue.add(JOB_PROCESS_TWILIO_SMS_WEBHOOK, payload, {
+      jobId,
+    });
+    return job.id ?? null;
+  }
+
   async enqueueStripeWebhook(
     payload: ProcessStripeWebhookPayload,
   ): Promise<string | null> {
@@ -216,5 +234,31 @@ export class QueueService {
     }
     const job = await queue.add(jobName, payload);
     return job.id ?? null;
+  }
+
+  async enqueueAutomationStep(
+    payload: AutomationStepJobPayload,
+    options?: { delay?: number },
+  ): Promise<string | null> {
+    const queue = this.syncQueue();
+    const jobId = `automation-${payload.runId}-${payload.stepIndex}`;
+    if (
+      !this.guardQueueAvailable(queue, `enqueue automation step (${jobId})`)
+    ) {
+      return null;
+    }
+    try {
+      const job = await queue.add(JOB_AUTOMATION_STEP, payload, {
+        jobId,
+        ...(options?.delay ? { delay: options.delay } : {}),
+      });
+      return job.id ?? null;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.error(
+        `Failed to enqueue automation step job ${jobId}: ${message}`,
+      );
+      throw error;
+    }
   }
 }

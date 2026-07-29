@@ -62,7 +62,9 @@ export class ConversationWebhookIngestionService {
     await this.applyWhatsAppDeliveryStatuses(buffered, { fromReplay: true });
   }
 
-  async ingestNormalizedInbound(inbound: NormalizedInboundMessage): Promise<void> {
+  async ingestNormalizedInbound(
+    inbound: NormalizedInboundMessage,
+  ): Promise<void> {
     await this.ingestInboundMessage(inbound, null);
   }
 
@@ -120,7 +122,8 @@ export class ConversationWebhookIngestionService {
     const resource = await this.resolveResource(inbound, objectType);
     if (!resource) {
       this.logger.warn(
-        `No integration resource for ${inbound.channel} externalId=${inbound.externalResourceId}`,
+        `No integration resource for ${inbound.channel} externalId=${inbound.externalResourceId}. ` +
+          `Sync Instagram/Facebook resources in Settings → Integrations after connecting or reconnecting.`,
       );
       return;
     }
@@ -143,14 +146,42 @@ export class ConversationWebhookIngestionService {
       resource,
     );
 
-    let conversation =
-      await this.conversationsRepository.findByExternalConversationId(
+    if (contact.blockedAt) {
+      await this.auditService.log({
+        actorUserId: SYSTEM_AUDIT_ACTOR_SENTINEL,
         businessId,
-        inbound.channel,
-        inbound.externalConversationId,
-      );
+        action: 'conversation.inbound_dropped_blocked',
+        entityType: 'Contact',
+        entityId: contact.id,
+        metadata: {
+          channel: inbound.channel,
+          externalMessageId: inbound.externalMessageId,
+        },
+      });
+      return;
+    }
 
-    const preview = previewFromMessageContent(inbound.text, inbound.attachments);
+    let conversation =
+      inbound.channel === ConversationChannel.EMAIL
+        ? await this.conversationsRepository.findById(
+            businessId,
+            inbound.externalConversationId,
+          )
+        : null;
+
+    if (!conversation) {
+      conversation =
+        await this.conversationsRepository.findByExternalConversationId(
+          businessId,
+          inbound.channel,
+          inbound.externalConversationId,
+        );
+    }
+
+    const preview = previewFromMessageContent(
+      inbound.text,
+      inbound.attachments,
+    );
     const messageAt = inbound.timestamp;
 
     if (!conversation) {
@@ -295,7 +326,10 @@ export class ConversationWebhookIngestionService {
       }
 
       const nextStatus = this.mapWhatsAppDeliveryStatus(status.status);
-      if (!nextStatus || !this.shouldApplyDeliveryStatus(message.status, nextStatus)) {
+      if (
+        !nextStatus ||
+        !this.shouldApplyDeliveryStatus(message.status, nextStatus)
+      ) {
         continue;
       }
 
@@ -367,6 +401,13 @@ export class ConversationWebhookIngestionService {
       objectType === 'whatsapp' ||
       objectType === 'whatsapp_business_account'
     ) {
+      return this.conversationIntegrationRepository.findResourceByExternalId(
+        inbound.externalResourceId,
+        IntegrationResourceType.PHONE_NUMBER,
+      );
+    }
+
+    if (inbound.channel === ConversationChannel.SMS) {
       return this.conversationIntegrationRepository.findResourceByExternalId(
         inbound.externalResourceId,
         IntegrationResourceType.PHONE_NUMBER,

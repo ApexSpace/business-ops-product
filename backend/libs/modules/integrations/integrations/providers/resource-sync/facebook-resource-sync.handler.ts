@@ -19,6 +19,11 @@ export class FacebookResourceSyncHandler implements IntegrationResourceSyncHandl
       context.businessId,
       context.providerKey,
     );
+    await this.metaResourceSyncService.ensureMessagingWebhookSubscriptions(
+      context.businessId,
+      'facebook',
+      items,
+    );
     return { items, synced: true };
   }
 }

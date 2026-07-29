@@ -42,6 +42,7 @@ export class PipelineStagesService {
       name,
       position,
       type: dto.type ?? null,
+      mapsToLifecycleStage: dto.mapsToLifecycleStage ?? null,
     });
 
     await this.auditService.log({
@@ -72,6 +73,9 @@ export class PipelineStagesService {
       {
         ...(dto.name !== undefined ? { name: dto.name.trim() } : {}),
         ...(dto.type !== undefined ? { type: dto.type } : {}),
+        ...(dto.mapsToLifecycleStage !== undefined
+          ? { mapsToLifecycleStage: dto.mapsToLifecycleStage }
+          : {}),
       },
     );
 

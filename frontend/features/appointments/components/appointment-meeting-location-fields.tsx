@@ -3,6 +3,11 @@
 import { useEffect, useRef } from "react";
 import { useFormContext } from "react-hook-form";
 import {
+  APPOINTMENT_FIELD_CONTROL_CLASS,
+  APPOINTMENT_FIELD_LABEL_CLASS,
+  APPOINTMENT_FORM_ITEM_CLASS,
+} from "@/features/appointments/components/appointment-form-drawer-shell";
+import {
   FormControl,
   FormField,
   FormItem,
@@ -44,31 +49,37 @@ function LocationModeOption({
   onSelect: () => void;
 }) {
   return (
-    <label
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={onSelect}
       className={cn(
-        "flex cursor-pointer gap-3 rounded-lg border p-3 transition-colors",
+        "flex w-full flex-col items-start rounded-xl border-[1.5px] p-3.5 text-left transition-colors",
         checked
-          ? "border-primary bg-primary/[0.04] ring-1 ring-primary/20"
-          : "border-border hover:bg-muted/40",
+          ? "border-primary bg-primary/5"
+          : "border-border hover:border-border/80",
         disabled && "cursor-not-allowed opacity-60",
       )}
     >
-      <input
-        type="radio"
-        name="meeting-location-mode"
-        className="mt-0.5 size-4 shrink-0 accent-primary"
-        checked={checked}
-        disabled={disabled}
-        onChange={onSelect}
-      />
-      <span className="min-w-0 flex-1">
-        <span className="block text-sm font-medium">{title}</span>
-        <span className="block text-xs text-muted-foreground">{description}</span>
-        {hint ? (
-          <span className="mt-1 block text-xs text-muted-foreground">{hint}</span>
-        ) : null}
+      <span
+        className={cn(
+          "mb-2.5 flex size-[18px] shrink-0 items-center justify-center rounded-full border-2",
+          checked ? "border-primary" : "border-border",
+        )}
+        aria-hidden
+      >
+        {checked ? <span className="size-2.5 rounded-full bg-primary" /> : null}
       </span>
-    </label>
+      <span className="text-[13.5px] font-semibold text-foreground">{title}</span>
+      <span className="mt-0.5 text-[11.5px] leading-relaxed text-muted-foreground">
+        {description}
+      </span>
+      {hint ? (
+        <span className="mt-0.5 text-[11.5px] leading-relaxed text-muted-foreground">
+          {hint}
+        </span>
+      ) : null}
+    </button>
   );
 }
 
@@ -100,15 +111,25 @@ export function AppointmentMeetingLocationFields({
       shouldDirty: false,
       shouldValidate: false,
     });
-  }, [selectedCalendar?.id, locationMode, form, selectedCalendar?.locationType, selectedCalendar?.locationValue]);
+  }, [
+    selectedCalendar?.id,
+    locationMode,
+    form,
+    selectedCalendar?.locationType,
+    selectedCalendar?.locationValue,
+  ]);
 
   const calendarSummary = selectedCalendar
     ? formatCalendarMeetingLocation(selectedCalendar)
     : null;
 
+  const fieldControlClass = APPOINTMENT_FIELD_CONTROL_CLASS;
+  const fieldLabelClass = APPOINTMENT_FIELD_LABEL_CLASS;
+  const formItemClass = APPOINTMENT_FORM_ITEM_CLASS;
+
   return (
-    <div className="space-y-3">
-      <p className="text-sm font-medium">Meeting location</p>
+    <div className={cn(formItemClass, "mb-0")}>
+      <p className={fieldLabelClass}>Meeting location</p>
 
       {!calendarSelected ? (
         <p className="text-xs text-muted-foreground">
@@ -116,7 +137,7 @@ export function AppointmentMeetingLocationFields({
         </p>
       ) : (
         <>
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid grid-cols-2 gap-3">
             <LocationModeOption
               checked={locationMode === "calendar_default"}
               title="Calendar default"
@@ -135,21 +156,23 @@ export function AppointmentMeetingLocationFields({
           </div>
 
           {locationMode === "custom" ? (
-            <div className="space-y-4 rounded-lg border border-border/60 bg-muted/20 p-3">
+            <div className="mt-4 space-y-4 rounded-xl border border-border/60 bg-muted/15 p-4">
               <FormField
                 control={form.control}
                 name="locationType"
                 render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Location type</FormLabel>
+                  <FormItem className={cn(formItemClass, "mb-0")}>
+                    <FormLabel className={fieldLabelClass}>Location type</FormLabel>
                     <SearchableSelect
-                      items={LOCATION_TYPE_OPTIONS.map((o) => ({
-                        value: o.value,
-                        label: o.label,
+                      items={LOCATION_TYPE_OPTIONS.map((option) => ({
+                        value: option.value,
+                        label: option.label,
                       }))}
                       value={field.value ?? "PHYSICAL"}
                       onValueChange={field.onChange}
                       disabled={disabled}
+                      triggerClassName={fieldControlClass}
+                      inDialog
                     />
                     <FormMessage />
                   </FormItem>
@@ -159,14 +182,15 @@ export function AppointmentMeetingLocationFields({
                 control={form.control}
                 name="locationValue"
                 render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Location details</FormLabel>
+                  <FormItem className={cn(formItemClass, "mb-0")}>
+                    <FormLabel className={fieldLabelClass}>Location details</FormLabel>
                     <FormControl>
                       <Input
                         placeholder={getLocationValuePlaceholder(
                           watchedLocationType ?? "PHYSICAL",
                         )}
                         disabled={disabled}
+                        className={fieldControlClass}
                         {...field}
                       />
                     </FormControl>

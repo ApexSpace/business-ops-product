@@ -81,10 +81,7 @@ export function BusinessAccessSummaryCard({
               <span className="text-sm text-muted-foreground">—</span>
             )}
           </SummaryItem>
-          <SummaryItem label="Plan group">
-            <span className="text-sm">{sub?.planGroupName ?? "—"}</span>
-          </SummaryItem>
-          <SummaryItem label="Plan tier">
+          <SummaryItem label="Tier">
             <span className="text-sm">{sub?.planTierName ?? "—"}</span>
           </SummaryItem>
           <SummaryItem label="Billing cycle">

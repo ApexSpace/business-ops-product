@@ -15,11 +15,13 @@ import {
   filterIntegrationProvidersByCategory,
   OAUTH_ROUTE_NOT_CONFIGURED_MESSAGE,
   isPlatformEmailProvider,
+  isPlatformSmsProvider,
   shouldUseManualConnect,
   shouldUseOAuthPopup,
   usesWhatsAppEmbeddedSignup,
   type IntegrationCategory,
   type IntegrationProviderWithStatus,
+  type InstagramAuthFlowParam,
 } from "@/features/integrations/utils/integrations";
 import {
   completeWhatsAppEmbeddedSignupOnServer,
@@ -28,11 +30,18 @@ import {
 import {
   OAUTH_MESSAGE_TYPE,
   openOAuthPopup,
+  settleOAuthPopupClose,
   subscribeToOAuthMessages,
   watchOAuthPopupClosed,
 } from "@/features/integrations/utils/oauth-popup";
-import { PERMISSIONS, useCan } from "@/features/auth/permissions";
+import {
+  oauthConnectingToastMessage,
+  oauthSyncOutcomeToastMessage,
+  waitForOAuthResourceSync,
+} from "@/features/integrations/utils/oauth-sync-outcome";
+import { hasStaffPermission } from "@/features/team/permissions/staff-permissions";
 import { queryKeys } from "@/lib/query/keys";
+import { useAuth } from "@/lib/auth/provider";
 import {
   connectBusinessIntegration,
   connectPlatformDefaultEmail,
@@ -44,7 +53,15 @@ import {
 
 export function useBusinessIntegrationsSettings() {
   const queryClient = useQueryClient();
-  const canManage = useCan(PERMISSIONS["settings.business"]);
+  const { user, jwt } = useAuth();
+  const role = user?.businessRole ?? jwt?.businessRole;
+  const staffPermissions =
+    user?.staffPermissions ?? jwt?.staffPermissions ?? undefined;
+  const canManage = hasStaffPermission(
+    staffPermissions,
+    "settings.integrations.manage",
+    role,
+  );
 
   const [category, setCategory] = useState<IntegrationCategory | "ALL">("ALL");
   const [selectedProvider, setSelectedProvider] =
@@ -58,6 +75,12 @@ export function useBusinessIntegrationsSettings() {
   const [connectingProviderKey, setConnectingProviderKey] = useState<
     string | null
   >(null);
+  const [syncingAssetsProviderKey, setSyncingAssetsProviderKey] = useState<
+    string | null
+  >(null);
+  const [instagramChooserOpen, setInstagramChooserOpen] = useState(false);
+  const [instagramChooserProvider, setInstagramChooserProvider] =
+    useState<IntegrationProviderWithStatus | null>(null);
 
   const providersRef = useRef<IntegrationProviderWithStatus[]>([]);
   const oauthCompletedRef = useRef(false);
@@ -68,6 +91,14 @@ export function useBusinessIntegrationsSettings() {
   });
 
   providersRef.current = providers;
+
+  useEffect(() => {
+    if (!selectedProvider) return;
+    const latest = providers.find((item) => item.key === selectedProvider.key);
+    if (latest && latest !== selectedProvider) {
+      setSelectedProvider(latest);
+    }
+  }, [providers, selectedProvider]);
 
   const { data: integrationDetail } = useQuery({
     queryKey: queryKeys.integrations.businessDetail(
@@ -86,7 +117,7 @@ export function useBusinessIntegrationsSettings() {
     [providers, category],
   );
 
-  const invalidateIntegrations = async () => {
+  const invalidateIntegrations = async (providerKey?: string) => {
     await Promise.all([
       queryClient.invalidateQueries({
         queryKey: queryKeys.integrations.businessProviders(),
@@ -97,6 +128,19 @@ export function useBusinessIntegrationsSettings() {
       queryClient.invalidateQueries({
         queryKey: queryKeys.integrations.all(),
       }),
+      ...(providerKey
+        ? [
+            queryClient.invalidateQueries({
+              queryKey: queryKeys.integrations.businessResources(providerKey),
+            }),
+            queryClient.invalidateQueries({
+              queryKey: queryKeys.integrations.messagingStatus(providerKey),
+            }),
+            queryClient.invalidateQueries({
+              queryKey: queryKeys.integrations.businessDetail(providerKey),
+            }),
+          ]
+        : []),
     ]);
   };
 
@@ -106,25 +150,46 @@ export function useBusinessIntegrationsSettings() {
 
       if (message.type === OAUTH_MESSAGE_TYPE.SUCCESS) {
         oauthCompletedRef.current = true;
-        const provider = providersRef.current.find(
-          (item) => item.key === message.providerKey,
-        );
-        const label = provider?.name ?? message.providerKey;
-        toast.success(`${label} connected successfully`);
-        if (message.warning) {
-          const warningText = formatOAuthWarningMessage(message.warning);
-          if (warningText) {
-            toast.warning(warningText);
+        const providerKey = message.providerKey;
+
+        toast.message(oauthConnectingToastMessage(providerKey));
+        setSyncingAssetsProviderKey(providerKey);
+
+        void (async () => {
+          try {
+            const { resourceCount } = await waitForOAuthResourceSync({
+              providerKey,
+              jobId: message.jobId,
+              host: "business",
+            });
+            const outcome = oauthSyncOutcomeToastMessage(
+              providerKey,
+              resourceCount,
+            );
+            if (outcome.type === "success") {
+              toast.success(outcome.message);
+            } else {
+              toast.warning(outcome.message);
+            }
+            if (message.warning) {
+              const warningText = formatOAuthWarningMessage(message.warning);
+              if (warningText) {
+                toast.warning(warningText);
+              }
+            }
+          } catch (error) {
+            toast.error(
+              error instanceof Error
+                ? error.message
+                : "Connected, but resource sync did not finish. Open Manage to sync again.",
+            );
+          } finally {
+            setSyncingAssetsProviderKey((current) =>
+              current === providerKey ? null : current,
+            );
+            await invalidateIntegrations(providerKey);
           }
-        }
-        void invalidateIntegrations();
-        if (message.providerKey) {
-          void queryClient.invalidateQueries({
-            queryKey: queryKeys.integrations.businessResources(
-              message.providerKey,
-            ),
-          });
-        }
+        })();
         return;
       }
 
@@ -228,8 +293,16 @@ export function useBusinessIntegrationsSettings() {
     onError: (error: Error) => toast.error(error.message),
   });
 
-  const startOAuthConnect = (provider: IntegrationProviderWithStatus) => {
-    if (connectingProviderKey) return;
+  const startOAuthConnect = (
+    provider: IntegrationProviderWithStatus,
+    options?: { authFlow?: InstagramAuthFlowParam },
+  ) => {
+    if (
+      connectingProviderKey &&
+      connectingProviderKey !== provider.key
+    ) {
+      return;
+    }
 
     if (!hasOAuthStartRoute(provider.key)) {
       toast.error(OAUTH_ROUTE_NOT_CONFIGURED_MESSAGE);
@@ -237,11 +310,14 @@ export function useBusinessIntegrationsSettings() {
     }
 
     oauthCompletedRef.current = false;
+    setDialogOpen(false);
     setConnectingProviderKey(provider.key);
 
     let url: string;
     try {
-      url = getOAuthStartUrl(provider.key);
+      url = getOAuthStartUrl(provider.key, {
+        authFlow: options?.authFlow,
+      });
     } catch (error) {
       setConnectingProviderKey(null);
       toast.error(
@@ -254,29 +330,63 @@ export function useBusinessIntegrationsSettings() {
 
     const { blocked, popup } = openOAuthPopup(url);
 
-    if (blocked) {
+    if (blocked || !popup) {
       setConnectingProviderKey(null);
-      setBlockedOAuthUrl(url);
-      setPopupBlockedOpen(true);
-      toast.error(formatOAuthErrorMessage("popup_blocked"));
+      if (blocked) {
+        setBlockedOAuthUrl(url);
+        setPopupBlockedOpen(true);
+        toast.error(formatOAuthErrorMessage("popup_blocked"));
+      } else {
+        toast.error("Could not open the authorization window. Please try again.");
+      }
       return;
     }
 
-    if (popup) {
-      watchOAuthPopupClosed(popup, () => {
-        setConnectingProviderKey((current) => {
-          if (current === provider.key && !oauthCompletedRef.current) {
-            const hint =
-              provider.key === "instagram"
-                ? "Instagram connection was cancelled or did not complete. Ensure your professional account is linked to a Facebook Page and try again."
-                : "Connection was cancelled or did not complete. Please try again.";
-            toast.error(hint);
-          }
-          oauthCompletedRef.current = false;
-          return current === provider.key ? null : current;
-        });
+    watchOAuthPopupClosed(popup, async () => {
+      // Clear the "Opening…" button immediately — settle can take up to ~2 minutes
+      // for Meta COOP false closes, which left Google error/cancel looking stuck.
+      setConnectingProviderKey((current) =>
+        current === provider.key ? null : current,
+      );
+
+      // Meta COOP often marks the popup closed while Facebook login continues.
+      const outcome = await settleOAuthPopupClose({
+        providerKey: provider.key,
+        isCompleted: () => oauthCompletedRef.current,
+        checkConnected: async () => {
+          const latest = await queryClient.fetchQuery({
+            queryKey: queryKeys.integrations.businessProviders(),
+            queryFn: () => listBusinessIntegrationProviders(),
+          });
+          return latest.some(
+            (item) =>
+              item.key === provider.key &&
+              (item.status === "CONNECTED" ||
+                item.status === "ERROR" ||
+                item.status === "EXPIRED"),
+          );
+        },
       });
-    }
+
+      if (outcome === "cancelled" && !oauthCompletedRef.current) {
+        const hint =
+          provider.key === "instagram"
+            ? options?.authFlow === "instagram_login"
+              ? "Instagram connection was cancelled or did not complete. Use a Business or Creator account and try again."
+              : "Instagram connection was cancelled or did not complete. Ensure your professional account is linked to a Facebook Page and try again."
+            : provider.key === "google-business-profile"
+              ? "Google Business Profile connection was cancelled or did not complete. Try again with an account that manages the profile."
+              : "Connection was cancelled or did not complete. Please try again.";
+        toast.error(hint);
+      }
+      oauthCompletedRef.current = false;
+    });
+  };
+
+  const openInstagramChooser = (provider: IntegrationProviderWithStatus) => {
+    setDialogOpen(false);
+    setInstagramChooserProvider(provider);
+    setInstagramChooserOpen(true);
   };
 
   const openConnect = (provider: IntegrationProviderWithStatus) => {
@@ -292,12 +402,24 @@ export function useBusinessIntegrationsSettings() {
       openManage(provider);
       return;
     }
+    if (isPlatformSmsProvider(provider.key)) {
+      setSelectedProvider(provider);
+      setDialogMode(
+        provider.status === "NOT_CONNECTED" ? "connect" : "manage",
+      );
+      setDialogOpen(true);
+      return;
+    }
     if (usesWhatsAppEmbeddedSignup(provider.key)) {
       if (provider.status === "CONNECTED") {
         openManage(provider);
         return;
       }
       void startWhatsAppEmbeddedSignup(provider);
+      return;
+    }
+    if (provider.key === "instagram" && shouldUseOAuthPopup(provider)) {
+      openInstagramChooser(provider);
       return;
     }
     if (shouldUseOAuthPopup(provider)) {
@@ -366,6 +488,7 @@ export function useBusinessIntegrationsSettings() {
     setPopupBlockedOpen,
     blockedOAuthUrl,
     connectingProviderKey,
+    syncingAssetsProviderKey,
     isLoading,
     filteredProviders,
     integrationDetail,
@@ -376,6 +499,10 @@ export function useBusinessIntegrationsSettings() {
     handleDialogSubmit,
     startWhatsAppEmbeddedSignup,
     startOAuthConnect,
+    openInstagramChooser,
+    instagramChooserOpen,
+    setInstagramChooserOpen,
+    instagramChooserProvider,
     deleteMutation,
   };
 }

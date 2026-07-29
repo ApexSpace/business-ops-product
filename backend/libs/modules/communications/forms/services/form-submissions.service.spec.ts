@@ -34,7 +34,10 @@ describe('FormSubmissionsService', () => {
       total: 1,
     });
 
-    const result = await service.list('biz-1', 'form-1', { page: 1, limit: 25 });
+    const result = await service.list('biz-1', 'form-1', {
+      page: 1,
+      limit: 25,
+    });
 
     expect(result.items).toHaveLength(1);
     expect(result.items[0]).toMatchObject({

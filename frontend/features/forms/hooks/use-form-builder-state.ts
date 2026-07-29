@@ -14,6 +14,7 @@ import {
   createDefaultField,
   createDefaultFormSettings,
 } from "@/features/forms/utils/field-defaults.util";
+import { removeNestedFieldFromColumns } from "@/features/forms/utils/column-fields.util";
 import { normalizeFormDefinition } from "@/features/forms/utils/form-normalize.util";
 
 const MAX_HISTORY = 50;
@@ -51,19 +52,20 @@ function mapFields(
 }
 
 function removeFieldById(fields: FormField[], fieldId: string): FormField[] {
-  return fields
-    .filter((field) => field.id !== fieldId)
-    .map((field) => {
-      if (field.type === "columns" && field.columns) {
-        return {
-          ...field,
-          columns: field.columns.map((column) =>
-            removeFieldById(column, fieldId),
-          ),
-        };
-      }
-      return field;
-    });
+  const nestedContext = fields.some(
+    (field) =>
+      field.type === "columns" &&
+      field.columns?.some((column) => column.some((nested) => nested.id === fieldId)),
+  );
+
+  if (nestedContext) {
+    return removeNestedFieldFromColumns(
+      fields.filter((field) => field.id !== fieldId),
+      fieldId,
+    );
+  }
+
+  return fields.filter((field) => field.id !== fieldId);
 }
 
 export interface UseFormBuilderStateOptions {
@@ -214,14 +216,37 @@ export function useFormBuilderState({
     [setFieldsWithHistory],
   );
 
+  const addFieldToColumn = useCallback(
+    (columnsFieldId: string, columnIndex: number, type: FieldType) => {
+      const added = createDefaultField(type, columnIndex);
+      setFieldsWithHistory((fields) =>
+        mapFields(fields, columnsFieldId, (field) => {
+          if (field.type !== "columns" || !field.columns) return field;
+          const nextColumns = structuredClone(field.columns);
+          if (!nextColumns[columnIndex]) return field;
+          nextColumns[columnIndex] = [...nextColumns[columnIndex], added];
+          return { ...field, columns: nextColumns };
+        }),
+      );
+      setSelectedFieldId(added.id);
+    },
+    [setFieldsWithHistory],
+  );
+
   const updateField = useCallback(
     (fieldId: string, patch: Partial<FormField>) => {
       setDefinition((current) => ({
         ...current,
-        fields: mapFields(current.fields, fieldId, (field) => ({
-          ...field,
-          ...patch,
-        })),
+        fields: mapFields(current.fields, fieldId, (field) => {
+          const next = { ...field, ...patch };
+          if (patch.style) {
+            next.style = { ...field.style, ...patch.style };
+          }
+          if (patch.validation) {
+            next.validation = { ...field.validation, ...patch.validation };
+          }
+          return next;
+        }),
       }));
       markDirty();
     },
@@ -322,6 +347,7 @@ export function useFormBuilderState({
     activeStepIndex,
     setActiveStepIndex,
     addField,
+    addFieldToColumn,
     duplicateField,
     removeField,
     updateField,

@@ -46,7 +46,7 @@ function StateSummary({
           <dd className="text-foreground">{state.subscriptionStatus ?? "—"}</dd>
         </div>
         <div>
-          <dt>Plan tier</dt>
+          <dt>Tier</dt>
           <dd className="text-foreground">{state.planTierName ?? "—"}</dd>
         </div>
         <div>

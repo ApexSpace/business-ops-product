@@ -3,14 +3,17 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Loader2, MessageCircle, Minus, Send, X } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  endPublicChatbotSession,
   getPublicChatbotConfig,
   listPublicChatbotMessages,
   sendPublicChatbotMessage,
   startPublicChatbotSession,
+  updatePublicChatbotSessionProfile,
   type PublicChatbotMessage,
 } from "@/features/public-chatbot/api/public-chatbot.api";
 import {
@@ -35,7 +38,8 @@ export function PublicChatbotWidget({
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [messages, setMessages] = useState<PublicChatbotMessage[]>([]);
   const [composer, setComposer] = useState("");
-  const [phase, setPhase] = useState<"form" | "chat">("form");
+  const [phase, setPhase] = useState<"consent" | "form" | "chat" | "profile">("form");
+  const [profileEmail, setProfileEmail] = useState("");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -61,8 +65,12 @@ export function PublicChatbotWidget({
     if (stored) {
       setSessionId(stored);
       setPhase("chat");
+    } else if (config?.consentEnabled) {
+      setPhase("consent");
     } else if (config && !config.collectContactInfo) {
       setPhase("chat");
+    } else if (config) {
+      setPhase("form");
     }
   }, [publicKey, config]);
 
@@ -112,23 +120,42 @@ export function PublicChatbotWidget({
         visitorPhone: phone.trim() || undefined,
         initialMessage: notes.trim() || undefined,
         pageUrl: typeof window !== "undefined" ? window.location.href : undefined,
+        referrer: typeof document !== "undefined" ? document.referrer || undefined : undefined,
         anonymous: opts.anonymous,
       });
     },
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       storeSessionId(publicKey, data.sessionId);
       setSessionId(data.sessionId);
       setPhase("chat");
-      if (notes.trim()) {
-        setMessages([
-          {
-            id: `local-${Date.now()}`,
-            direction: "INBOUND",
-            senderType: "CONTACT",
-            text: notes.trim(),
-            createdAt: new Date().toISOString(),
-          },
-        ]);
+      try {
+        const items = await listPublicChatbotMessages(data.sessionId);
+        if (items.length > 0) {
+          lastPollRef.current = items[items.length - 1]?.createdAt;
+          mergeMessages(items);
+        } else if (notes.trim()) {
+          setMessages([
+            {
+              id: `local-${Date.now()}`,
+              direction: "INBOUND",
+              senderType: "CONTACT",
+              text: notes.trim(),
+              createdAt: new Date().toISOString(),
+            },
+          ]);
+        }
+      } catch {
+        if (notes.trim()) {
+          setMessages([
+            {
+              id: `local-${Date.now()}`,
+              direction: "INBOUND",
+              senderType: "CONTACT",
+              text: notes.trim(),
+              createdAt: new Date().toISOString(),
+            },
+          ]);
+        }
       }
       setNotes("");
     },
@@ -139,14 +166,44 @@ export function PublicChatbotWidget({
     onSuccess: (msg) => {
       mergeMessages([msg]);
       setComposer("");
+      if (msg.requiresProfile === "email") {
+        setPhase("profile");
+      }
       void listPublicChatbotMessages(sessionId!, lastPollRef.current).then(
         mergeMessages,
       );
     },
   });
 
+  const profileMutation = useMutation({
+    mutationFn: () =>
+      updatePublicChatbotSessionProfile(sessionId!, {
+        visitorEmail: profileEmail.trim(),
+      }),
+    onSuccess: () => {
+      setPhase("chat");
+      setProfileEmail("");
+      toast.success("Thanks — we will follow up by email.");
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
+
   const positionClass =
     config?.position === "BOTTOM_LEFT" ? "left-5" : "right-5";
+
+  const endSessionIfNeeded = useCallback(async () => {
+    if (!sessionId) return;
+    try {
+      await endPublicChatbotSession(sessionId);
+    } catch {
+      /* ignore */
+    }
+  }, [sessionId]);
+
+  const handleCloseWidget = useCallback(() => {
+    void endSessionIfNeeded();
+    setOpen(false);
+  }, [endSessionIfNeeded]);
 
   if (configQuery.isLoading) {
     return (
@@ -209,7 +266,9 @@ export function PublicChatbotWidget({
         <div className="min-w-0 flex-1">
           <p className="truncate font-semibold">{config.widgetTitle}</p>
           <p className="text-xs opacity-90">
-            {config.acknowledgementMessage ?? "We typically reply soon"}
+            {config.isOnline === false
+              ? config.offlineMessage
+              : (config.acknowledgementMessage ?? "We typically reply soon")}
           </p>
         </div>
         {!embedded ? (
@@ -218,7 +277,7 @@ export function PublicChatbotWidget({
               size="icon"
               variant="ghost"
               className="size-8 text-white hover:bg-white/20"
-              onClick={() => setOpen(false)}
+              onClick={handleCloseWidget}
             >
               <Minus className="size-4" />
             </Button>
@@ -226,7 +285,7 @@ export function PublicChatbotWidget({
               size="icon"
               variant="ghost"
               className="size-8 text-white hover:bg-white/20"
-              onClick={() => setOpen(false)}
+              onClick={handleCloseWidget}
             >
               <X className="size-4" />
             </Button>
@@ -234,9 +293,29 @@ export function PublicChatbotWidget({
         ) : null}
       </header>
 
-      {phase === "form" && config.collectContactInfo && !sessionId ? (
+      {phase === "consent" && config.consentEnabled ? (
         <div className="flex flex-1 flex-col gap-3 overflow-y-auto p-4">
-          <p className="text-sm text-muted-foreground">{config.welcomeMessage}</p>
+          <p className="text-sm text-muted-foreground">
+            {config.consentText ||
+              "We use chat to help you. By continuing, you agree to our privacy policy."}
+          </p>
+          <Button
+            style={{ backgroundColor: config.primaryColor }}
+            className="text-white"
+            onClick={() =>
+              setPhase(config.collectContactInfo ? "form" : "chat")
+            }
+          >
+            Continue
+          </Button>
+        </div>
+      ) : phase === "form" && config.collectContactInfo && !sessionId ? (
+        <div className="flex flex-1 flex-col gap-3 overflow-y-auto p-4">
+          <p className="text-sm text-muted-foreground">
+            {config.requiresPhoneCapture
+              ? config.offlineMessage
+              : config.welcomeMessage}
+          </p>
           {config.requireName ? (
             <Input
               placeholder="Your name"
@@ -292,7 +371,7 @@ export function PublicChatbotWidget({
               "Start chat"
             )}
           </Button>
-          {config.allowAnonymous ? (
+          {config.allowAnonymous && !config.requiresPhoneCapture ? (
             <Button
               variant="ghost"
               disabled={startMutation.isPending}
@@ -301,6 +380,30 @@ export function PublicChatbotWidget({
               Continue without details
             </Button>
           ) : null}
+        </div>
+      ) : phase === "profile" ? (
+        <div className="flex flex-1 flex-col gap-3 overflow-y-auto p-4">
+          <p className="text-sm text-muted-foreground">
+            Could you share your email so we can follow up?
+          </p>
+          <Input
+            type="email"
+            placeholder="you@example.com"
+            value={profileEmail}
+            onChange={(e) => setProfileEmail(e.target.value)}
+          />
+          <Button
+            disabled={!profileEmail.trim() || profileMutation.isPending}
+            style={{ backgroundColor: config.primaryColor }}
+            className="text-white"
+            onClick={() => profileMutation.mutate()}
+          >
+            {profileMutation.isPending ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              "Submit email"
+            )}
+          </Button>
         </div>
       ) : (
         <>

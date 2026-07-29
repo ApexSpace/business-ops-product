@@ -20,6 +20,9 @@ export const formSettingsSchema = z.object({
   submitButtonAlign: z.enum(["left", "center", "right"]).optional(),
   submitButtonBgColor: z.string().optional(),
   submitButtonTextColor: z.string().optional(),
+  layoutWidth: z
+    .enum(["full", "compact", "container", "wide", "spacious"])
+    .optional(),
   maxWidth: z.number().optional(),
   padding: z.number().optional(),
   borderRadius: z.enum(["none", "sm", "md", "lg", "full"]).optional(),
@@ -30,7 +33,7 @@ export const formSettingsSchema = z.object({
   inputFont: z.enum(["system", "serif", "sans", "mono"]).optional(),
   multiStep: z.boolean().optional(),
   showProgressBar: z.boolean().optional(),
-  steps: z.array(formStepSchema).optional(),
+  createConversationOnSubmit: z.boolean().optional(),
 });
 
 export const formDefinitionSchema = z.object({

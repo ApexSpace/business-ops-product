@@ -36,7 +36,9 @@ describe('ResendInboundEmailService', () => {
       text: 'Reply body',
     });
 
-    expect(conversationWebhookIngestion.ingestNormalizedInbound).toHaveBeenCalledWith(
+    expect(
+      conversationWebhookIngestion.ingestNormalizedInbound,
+    ).toHaveBeenCalledWith(
       expect.objectContaining({
         channel: 'EMAIL',
         providerKey: 'email',
@@ -71,6 +73,8 @@ describe('ResendInboundEmailService', () => {
       text: 'No routing token',
     });
 
-    expect(conversationWebhookIngestion.ingestNormalizedInbound).not.toHaveBeenCalled();
+    expect(
+      conversationWebhookIngestion.ingestNormalizedInbound,
+    ).not.toHaveBeenCalled();
   });
 });

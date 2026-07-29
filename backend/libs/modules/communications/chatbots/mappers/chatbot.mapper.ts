@@ -19,8 +19,9 @@ import {
 } from '../utils/chatbot-settings.util';
 import {
   buildChatbotScriptUrl,
-  buildChatbotWidgetUrl,
+  buildFrontendChatbotWidgetUrl,
 } from '../utils/chatbot-public-key.util';
+import { isChatbotOnline } from '../utils/chatbot-business-hours.util';
 
 export function toChatbotRuleResponse(
   rule: ChatbotRule,
@@ -71,7 +72,13 @@ function toBotDto(s: ChatbotSettingsView['bot']): ChatbotBotSettingsDto {
 
 export function toChatbotResponse(
   chatbot: Chatbot,
-  extras?: { conversationsCount?: number; lastMessageAt?: Date | null },
+  extras?: {
+    conversationsCount?: number;
+    lastMessageAt?: Date | null;
+    sessionsCount?: number;
+    activeSessionsCount?: number;
+    convertedSessionsCount?: number;
+  },
 ): ChatbotResponseDto {
   const settings = parseChatbotSettings(chatbot);
   return {
@@ -107,10 +114,25 @@ export function toChatbotResponse(
     businessHoursOnly: settings.messaging.businessHoursOnly,
     showBranding: settings.appearance.showBranding,
     embedEnabled: settings.bot.embedEnabled,
+    collectPhoneWhenOffline: settings.form.collectPhoneWhenOffline,
+    allowedDomains: settings.bot.allowedDomains,
+    consentEnabled: settings.appearance.consentEnabled,
+    consentText: settings.appearance.consentText ?? null,
+    launcherIcon: settings.appearance.launcherIcon ?? 'message',
+    welcomeVariants: settings.bot.welcomeVariants ?? [],
+    progressiveProfilingEnabled:
+      settings.form.progressiveProfiling?.enabled ?? false,
+    progressiveProfilingAskAfterMessages:
+      settings.form.progressiveProfiling?.askEmailAfterMessages ?? 2,
+    progressiveProfilingPromptMessage:
+      settings.form.progressiveProfiling?.promptMessage ?? undefined,
     createdAt: chatbot.createdAt.toISOString(),
     updatedAt: chatbot.updatedAt.toISOString(),
     conversationsCount: extras?.conversationsCount,
     lastMessageAt: extras?.lastMessageAt?.toISOString() ?? null,
+    sessionsCount: extras?.sessionsCount,
+    activeSessionsCount: extras?.activeSessionsCount,
+    convertedSessionsCount: extras?.convertedSessionsCount,
   };
 }
 
@@ -119,6 +141,11 @@ export function toPublicChatbotConfig(
   businessName: string,
 ): PublicChatbotConfigDto {
   const settings = parseChatbotSettings(chatbot);
+  const isOnline = isChatbotOnline(settings.businessHours, settings.messaging);
+  const requiresPhoneCapture =
+    !isOnline &&
+    settings.form.collectPhoneWhenOffline &&
+    settings.form.collectContactInfo;
   return {
     publicKey: chatbot.publicKey,
     widgetTitle: settings.chatWindow.title,
@@ -130,22 +157,48 @@ export function toPublicChatbotConfig(
     collectContactInfo: settings.form.collectContactInfo,
     requireName: settings.form.requireName,
     requireEmail: settings.form.requireEmail,
-    requirePhone: settings.form.requirePhone,
+    requirePhone: requiresPhoneCapture || settings.form.requirePhone,
     showNotesField: settings.form.showNotesField,
-    allowAnonymous: settings.form.allowAnonymous,
+    allowAnonymous: requiresPhoneCapture ? false : settings.form.allowAnonymous,
     showBranding: settings.appearance.showBranding,
     acknowledgementMessage: settings.chatWindow.acknowledgementMessage,
     businessName,
+    isOnline,
+    requiresPhoneCapture,
+    consentEnabled: settings.appearance.consentEnabled,
+    consentText: settings.appearance.consentText ?? null,
+    launcherIcon: settings.appearance.launcherIcon ?? 'message',
+    offsetX: settings.appearance.offsetX,
+    offsetY: settings.appearance.offsetY,
   };
 }
 
 export function toChatbotEmbed(
   backendPublicUrl: string,
+  frontendUrl: string,
   publicKey: string,
+  options?: {
+    position?: 'BOTTOM_RIGHT' | 'BOTTOM_LEFT';
+    launcherIcon?: 'message' | 'chat' | 'help';
+    primaryColor?: string;
+  },
 ): ChatbotEmbedResponseDto {
-  const widgetUrl = buildChatbotWidgetUrl(backendPublicUrl, publicKey);
+  const widgetUrl = buildFrontendChatbotWidgetUrl(frontendUrl, publicKey);
   const scriptUrl = buildChatbotScriptUrl(backendPublicUrl);
-  const embedCode = `<script src="${scriptUrl}" data-chatbot-key="${publicKey}" async></script>`;
+  const widgetBase = frontendUrl.replace(/\/$/, '');
+  const position = options?.position === 'BOTTOM_LEFT' ? 'left' : 'right';
+  const launcherIcon = options?.launcherIcon ?? 'message';
+  const primaryColor = options?.primaryColor ?? '#2563eb';
+  const attrs = [
+    `src="${scriptUrl}"`,
+    `data-chatbot-key="${publicKey}"`,
+    `data-widget-base="${widgetBase}"`,
+    `data-position="${position}"`,
+    `data-launcher-icon="${launcherIcon}"`,
+    `data-primary-color="${primaryColor}"`,
+    'async',
+  ].join(' ');
+  const embedCode = `<script ${attrs}></script>`;
   const iframeEmbed = `<iframe src="${widgetUrl}" style="border:0;width:380px;height:600px;position:fixed;bottom:20px;right:20px;z-index:9999;border-radius:16px;" title="Chat"></iframe>`;
   return {
     publicKey,
@@ -163,6 +216,7 @@ export function toPublicChatbotMessage(params: {
   senderType: string;
   text: string | null;
   createdAt: Date;
+  requiresProfile?: 'email' | 'name' | 'phone' | null;
 }): PublicChatbotMessageDto {
   return {
     id: params.id,
@@ -170,5 +224,6 @@ export function toPublicChatbotMessage(params: {
     senderType: params.senderType,
     text: params.text,
     createdAt: params.createdAt.toISOString(),
+    requiresProfile: params.requiresProfile ?? null,
   };
 }

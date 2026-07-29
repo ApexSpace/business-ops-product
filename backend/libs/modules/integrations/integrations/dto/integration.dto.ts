@@ -32,6 +32,8 @@ export class IntegrationProviderResponseDto {
 export class IntegrationProviderWithStatusDto extends IntegrationProviderResponseDto {
   status!: IntegrationStatus | 'NOT_CONNECTED';
   integration!: BusinessIntegrationSummaryDto | null;
+  /** Active IntegrationResource rows for this provider (Pages / IG accounts / etc.). */
+  resourceCount?: number;
 }
 
 export class BusinessIntegrationSummaryDto {
@@ -77,6 +79,7 @@ export class PlatformIntegrationResponseDto {
 export class PlatformIntegrationProviderWithStatusDto extends IntegrationProviderResponseDto {
   status!: IntegrationStatus | 'NOT_CONNECTED';
   integration!: PlatformIntegrationSummaryDto | null;
+  resourceCount?: number;
 }
 
 export class PlatformIntegrationSummaryDto {

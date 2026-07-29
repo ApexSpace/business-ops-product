@@ -9,6 +9,7 @@ import { PrismaService } from '@app/core/database/prisma.service';
 import { StripePlatformApiService } from './stripe-platform-api.service';
 import { StripePlatformMetadataService } from './stripe-platform-metadata.service';
 import { StripePlatformPlanMappingService } from './stripe-platform-plan-mapping.service';
+import { StripePlatformTierPriceSyncService } from './stripe-platform-tier-price-sync.service';
 
 @Injectable()
 export class StripePlatformSubscriptionService {
@@ -19,13 +20,16 @@ export class StripePlatformSubscriptionService {
     private readonly stripeApi: StripePlatformApiService,
     private readonly planMapping: StripePlatformPlanMappingService,
     private readonly metadataService: StripePlatformMetadataService,
+    private readonly tierPriceSync: StripePlatformTierPriceSyncService,
   ) {}
 
   async updateSubscriptionTier(input: {
     businessId: string;
-    planGroupId: string;
+    planGroupId?: string | null;
     planTierId: string;
     billingCycle: BusinessSubscriptionBillingCycle;
+    /** Default create_prorations; use 'none' for catalog price migrations. */
+    prorationBehavior?: 'create_prorations' | 'none' | 'always_invoice';
   }): Promise<void> {
     const subscription = await this.prisma.businessSubscription.findUnique({
       where: { businessId: input.businessId },
@@ -46,46 +50,50 @@ export class StripePlatformSubscriptionService {
       );
     }
 
+    // Fail closed: Stripe Price IDs must exist and be active before remapping.
+    await this.tierPriceSync.assertPriceIdsPresent(input.planTierId);
+
+    const groupId =
+      input.planGroupId ?? subscription.planGroupId ?? undefined;
     const { priceId, productId } =
       await this.planMapping.resolvePublishedTierPrice(
-        input.planGroupId,
+        groupId,
         input.planTierId,
         input.billingCycle,
       );
 
     const stripe = this.stripeApi.getClient();
-    await stripe.subscriptions.update(stripeMeta.subscriptionId, {
-      items: [
-        {
-          id: stripeMeta.subscriptionItemId,
-          price: priceId,
-        },
-      ],
-      proration_behavior: 'create_prorations',
-      metadata: {
-        purpose: 'platform_subscription',
-        businessId: input.businessId,
-        planGroupId: input.planGroupId,
-        planTierId: input.planTierId,
-        billingCycle: input.billingCycle,
-      },
-    });
-
-    await this.prisma.businessSubscription.update({
-      where: { businessId: input.businessId },
-      data: {
-        metadata: this.metadataService.mergeSubscriptionStripeMetadata(
-          subscription.metadata,
+    try {
+      await stripe.subscriptions.update(stripeMeta.subscriptionId, {
+        items: [
           {
-            priceId,
-            productId: productId ?? undefined,
+            id: stripeMeta.subscriptionItemId,
+            price: priceId,
           },
-        ),
-      },
-    });
+        ],
+        proration_behavior: input.prorationBehavior ?? 'create_prorations',
+        metadata: {
+          purpose: 'platform_subscription',
+          businessId: input.businessId,
+          ...(groupId ? { planGroupId: groupId } : {}),
+          planTierId: input.planTierId,
+          billingCycle: input.billingCycle,
+        },
+      });
+    } catch (error) {
+      this.stripeApi.logStripeError('subscription price update', error);
+      throw new AppException(
+        ErrorCode.STRIPE_SUBSCRIPTION_UPDATE_FAILED,
+        `Failed to update Stripe subscription price: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+        HttpStatus.BAD_GATEWAY,
+      );
+    }
 
+    // Do not author local priceId/status — webhook mirror owns STRIPE fields.
     this.logger.log(
-      `Updated Stripe subscription item for business ${input.businessId}`,
+      `Requested Stripe subscription item update for business ${input.businessId} → ${priceId}`,
     );
   }
 
@@ -117,26 +125,14 @@ export class StripePlatformSubscriptionService {
     }
 
     const stripe = this.stripeApi.getClient();
-    const updated = await stripe.subscriptions.update(stripeMeta.subscriptionId, {
+    await stripe.subscriptions.update(stripeMeta.subscriptionId, {
       cancel_at_period_end: true,
       metadata: {
         ...(reason ? { cancelReason: reason.slice(0, 500) } : {}),
       },
     });
 
-    await this.prisma.businessSubscription.update({
-      where: { businessId },
-      data: {
-        metadata: this.metadataService.mergeSubscriptionStripeMetadata(
-          subscription.metadata,
-          {
-            cancelAtPeriodEnd: true,
-            status: updated.status,
-          },
-        ),
-      },
-    });
-
+    // Mirror cancelAtPeriodEnd from webhook only.
     return { cancelAtPeriodEnd: true };
   }
 
@@ -154,6 +150,8 @@ export class StripePlatformSubscriptionService {
 
     const stripe = this.stripeApi.getClient();
     await stripe.subscriptions.cancel(stripeMeta.subscriptionId);
-    this.logger.log(`Canceled Stripe subscription immediately for ${businessId}`);
+    this.logger.log(
+      `Canceled Stripe subscription immediately for ${businessId}`,
+    );
   }
 }

@@ -1,10 +1,7 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import {
-  MembershipStatus,
-  UserStatus,
-} from '@prisma/client';
+import { MembershipStatus, UserStatus } from '@prisma/client';
 import { RequestUser } from '@app/common/decorators/current-user.decorator';
 import { AppException } from '@app/common/exceptions/app.exception';
 import { ErrorCode } from '@app/common/exceptions/error-code.enum';
@@ -47,9 +44,12 @@ export class RealtimeSocketAuthService {
 
     let payload: JwtAccessPayload;
     try {
-      payload = await this.jwtService.verifyAsync<JwtAccessPayload>(trimmedToken, {
-        secret: this.configService.get('jwt.accessSecret', { infer: true }),
-      });
+      payload = await this.jwtService.verifyAsync<JwtAccessPayload>(
+        trimmedToken,
+        {
+          secret: this.configService.get('jwt.accessSecret', { infer: true }),
+        },
+      );
     } catch {
       throw new AppException(
         ErrorCode.UNAUTHORIZED,

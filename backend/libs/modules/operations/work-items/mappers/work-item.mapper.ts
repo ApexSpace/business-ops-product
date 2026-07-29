@@ -38,8 +38,10 @@ export function toWorkItemResponse(
     contact,
     service: workItem.service
       ? {
-          ...workItem.service,
+          id: workItem.service.id,
+          name: workItem.service.name,
           price: workItem.service.price?.toString() ?? null,
+          category: workItem.service.category?.name ?? null,
         }
       : null,
     assignedTo: workItem.assignedTo,

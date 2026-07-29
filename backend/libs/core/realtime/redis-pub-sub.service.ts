@@ -60,9 +60,7 @@ export class RedisPubSubService implements OnModuleDestroy {
 
     const sub = client.duplicate();
     attachRedisErrorHandler(sub, (err) => {
-      this.logger.warn(
-        `Redis subscriber connection error: ${err.message}`,
-      );
+      this.logger.warn(`Redis subscriber connection error: ${err.message}`);
       this.resetSubscriber();
     });
 
@@ -149,7 +147,9 @@ export class RedisPubSubService implements OnModuleDestroy {
         void this.subscriber?.unsubscribe(channel).catch((error) => {
           const message =
             error instanceof Error ? error.message : String(error);
-          this.logger.warn(`Redis unsubscribe failed for ${channel}: ${message}`);
+          this.logger.warn(
+            `Redis unsubscribe failed for ${channel}: ${message}`,
+          );
         });
       }
     };

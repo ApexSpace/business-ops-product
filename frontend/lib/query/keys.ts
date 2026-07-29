@@ -4,7 +4,7 @@
 
 export type ListFilters = Record<
   string,
-  string | number | boolean | undefined | null
+  string | number | boolean | Array<string | number> | undefined | null
 >;
 
 function listKey(
@@ -17,7 +17,9 @@ function listKey(
   for (const key of keys) {
     const value = filters[key];
     if (value === undefined || value === null || value === "") continue;
-    if (typeof value === "boolean") {
+    if (Array.isArray(value)) {
+      if (value.length > 0) parts.push(key, value.join(","));
+    } else if (typeof value === "boolean") {
       parts.push(key, value ? "true" : "false");
     } else {
       parts.push(key, value);
@@ -30,48 +32,92 @@ export const queryKeys = {
   auth: {
     session: () => ["auth", "session"] as const,
   },
+  search: {
+    global: (q: string) => ["search", "global", q] as const,
+  },
   business: {
     current: () => ["business", "current"] as const,
     access: () => ["business", "access"] as const,
     snapshotContext: (businessId: string) =>
       ["business", businessId, "snapshot-context"] as const,
     financialSettings: () => ["business", "financial-settings"] as const,
-    members: (filters?: { page?: number; limit?: number; search?: string }) =>
-      listKey(["business", "members"], filters),
+    members: (
+      filters?: { page?: number; limit?: number; search?: string },
+      apiBase = "businesses/current/members",
+    ) => listKey(["business", "members", apiBase], filters),
+    memberDetail: (userId: string) =>
+      ["business", "members", "detail", userId] as const,
+    memberPermissions: (userId: string) =>
+      ["business", "members", userId, "permissions"] as const,
+    memberNotifications: (userId: string) =>
+      ["business", "members", userId, "notifications"] as const,
+    memberCompensation: (userId: string) =>
+      ["business", "members", userId, "compensation"] as const,
+    memberServices: (userId: string) =>
+      ["business", "members", userId, "services"] as const,
     dashboardStats: () => ["business", "dashboard-stats"] as const,
+    dashboardFeed: () => ["business", "dashboard-feed"] as const,
     planOptions: () => ["business", "plan-options"] as const,
   },
   services: {
-    all: () => ["services"] as const,
-    list: (filters: {
-      page?: number;
-      limit?: number;
-      search?: string;
-      status?: string;
-    }) => listKey(["services", "list"], filters),
-    picker: () => ["services", "picker"] as const,
-    detail: (id: string) => ["services", "detail", id] as const,
+    all: (apiBase = "services") => ["services", apiBase] as const,
+    list: (
+      filters: {
+        page?: number;
+        limit?: number;
+        search?: string;
+        status?: string;
+        categoryId?: string;
+      },
+      apiBase = "services",
+    ) => listKey(["services", apiBase, "list"], filters),
+    picker: (apiBase = "services") => ["services", apiBase, "picker"] as const,
+    detail: (id: string, apiBase = "services") =>
+      ["services", apiBase, "detail", id] as const,
+    tree: () => ["services", "tree"] as const,
+    workspace: (id: string) => ["services", "workspace", id] as const,
+  },
+  serviceCategories: {
+    all: () => ["service-categories"] as const,
+    list: () => ["service-categories", "list"] as const,
   },
   contacts: {
-    all: () => ["contacts"] as const,
-    list: (filters: { page?: number; limit?: number; search?: string }) =>
-      listKey(["contacts", "list"], filters),
-    search: (term: string) => ["contacts", "search", term] as const,
-    picker: () => ["contacts", "picker"] as const,
-    detail: (id: string) => ["contacts", "detail", id] as const,
+    all: (apiBase = "contacts") => ["contacts", apiBase] as const,
+    list: (
+      filters: { page?: number; limit?: number; search?: string },
+      apiBase = "contacts",
+    ) => listKey(["contacts", apiBase, "list"], filters),
+    search: (term: string, apiBase = "contacts") =>
+      ["contacts", apiBase, "search", term] as const,
+    picker: (apiBase = "contacts") => ["contacts", apiBase, "picker"] as const,
+    detail: (id: string, apiBase = "contacts") =>
+      ["contacts", apiBase, "detail", id] as const,
+    timeline: (
+      id: string,
+      filters?: { types?: string[]; page?: number; limit?: number },
+    ) => listKey(["contacts", id, "timeline"], filters),
+    wallet: (id: string) => ["contacts", id, "wallet"] as const,
+    adjustments: (id: string) => ["contacts", id, "adjustments"] as const,
+    memberships: (id: string) => ["contacts", id, "memberships"] as const,
+    printAppointments: (id: string) =>
+      ["contacts", id, "print-appointments"] as const,
   },
   workItems: {
-    all: () => ["work-items"] as const,
-    list: (filters: {
-      page?: number;
-      limit?: number;
-      search?: string;
-      status?: string;
-      serviceId?: string;
-      contactId?: string;
-      assignedToId?: string;
-    }) => listKey(["work-items", "list"], filters),
-    detail: (id: string) => ["work-items", "detail", id] as const,
+    all: (apiBase = "work-items") => ["work-items", apiBase] as const,
+    list: (
+      apiBase: string,
+      filters: {
+        page?: number;
+        limit?: number;
+        search?: string;
+        status?: string;
+        serviceId?: string;
+        contactId?: string;
+        assignedToId?: string;
+      },
+    ) => listKey(["work-items", apiBase, "list"], filters),
+    detail: (apiBase: string, id: string) =>
+      ["work-items", apiBase, "detail", id] as const,
   },
   notes: {
     all: () => ["notes"] as const,
@@ -116,6 +162,9 @@ export const queryKeys = {
   payments: {
     all: () => ["payments"] as const,
     overview: () => ["payments", "overview"] as const,
+    stripeContext: () => ["payments", "stripe-context"] as const,
+    contactMethods: (contactId: string) =>
+      ["payments", "contact-methods", contactId] as const,
     list: (filters: {
       page?: number;
       limit?: number;
@@ -127,6 +176,125 @@ export const queryKeys = {
       paidTo?: string;
     }) => listKey(["payments", "list"], filters),
     detail: (id: string) => ["payments", "detail", id] as const,
+  },
+  checkouts: {
+    all: () => ["checkouts"] as const,
+    list: (filters: {
+      page?: number;
+      limit?: number;
+      search?: string;
+      contactId?: string;
+      status?: string;
+    }) => listKey(["checkouts", "list"], filters),
+    detail: (id: string) => ["checkouts", "detail", id] as const,
+    services: () => ["checkouts", "picker", "services"] as const,
+    serviceStaff: (serviceId: string) =>
+      ["checkouts", "picker", "services", serviceId, "staff"] as const,
+    products: (search?: string) =>
+      ["checkouts", "picker", "products", search ?? ""] as const,
+    staffOffers: () => ["checkouts", "picker", "offers"] as const,
+  },
+  products: {
+    all: () => ["products"] as const,
+    list: (filters: {
+      page?: number;
+      limit?: number;
+      search?: string;
+      status?: string;
+      categoryId?: string;
+      productType?: string;
+    }) => listKey(["products", "list"], filters),
+    detail: (id: string) => ["products", "detail", id] as const,
+    picker: (search?: string) =>
+      ["products", "picker", search ?? ""] as const,
+    categories: () => ["products", "categories"] as const,
+    variants: (productId: string) =>
+      ["products", productId, "variants"] as const,
+    options: (productId: string) =>
+      ["products", productId, "options"] as const,
+    inventory: (productId: string, variantId?: string) =>
+      ["products", productId, "inventory", variantId ?? ""] as const,
+    featuredImageDownload: (productId: string) =>
+      ["products", productId, "images", "featured", "download-url"] as const,
+    featuredImage: (productId: string) =>
+      ["products", productId, "images", "featured"] as const,
+    gallery: (productId: string) =>
+      ["products", productId, "images", "gallery"] as const,
+    galleryImageDownload: (productId: string, imageId: string) =>
+      ["products", productId, "images", imageId, "download-url"] as const,
+  },
+  resources: {
+    all: () => ["resources"] as const,
+    groups: () => ["resources", "groups"] as const,
+    list: (filters: {
+      groupId?: string;
+      resourceType?: string;
+      search?: string;
+    }) => listKey(["resources", "list"], filters),
+    workspace: (id: string) => ["resources", "workspace", id] as const,
+    picker: (search?: string) =>
+      ["resources", "picker", search ?? ""] as const,
+  },
+  timeClock: {
+    all: () => ["time-clock"] as const,
+    cards: {
+      list: (filters?: ListFilters) =>
+        listKey(["time-clock", "cards", "list"], filters),
+      detail: (id: string) => ["time-clock", "cards", "detail", id] as const,
+    },
+  },
+  giftCards: {
+    all: () => ["gift-cards"] as const,
+    list: (filters?: {
+      page?: number;
+      limit?: number;
+      search?: string;
+      redeemableOnly?: boolean;
+    }) => listKey(["gift-cards", "list"], filters),
+    detail: (id: string) => ["gift-cards", "detail", id] as const,
+    settings: () => ["gift-cards", "settings"] as const,
+    onlineSalesShare: () => ["gift-cards", "online-sales-share"] as const,
+    promotions: () => ["gift-cards", "promotions"] as const,
+    contact: (contactId: string) =>
+      ["gift-cards", "contact", contactId] as const,
+  },
+  packages: {
+    all: () => ["packages"] as const,
+    templates: () => ["packages", "templates"] as const,
+    template: (id: string) => ["packages", "template", id] as const,
+    clientList: (filters?: { contactId?: string; search?: string }) =>
+      listKey(["packages", "client-list"], filters),
+    clientDetail: (id: string) => ["packages", "client-detail", id] as const,
+    settings: () => ["packages", "settings"] as const,
+    contact: (contactId: string) =>
+      ["packages", "contact", contactId] as const,
+  },
+  offers: {
+    all: () => ["offers"] as const,
+    list: (search?: string) =>
+      listKey(["offers", "list"], search ? { search } : undefined),
+    detail: (id: string) => ["offers", "detail", id] as const,
+  },
+  memberships: {
+    all: () => ["memberships"] as const,
+    plans: (includeArchived?: boolean) =>
+      includeArchived
+        ? (["memberships", "plans", "archived"] as const)
+        : (["memberships", "plans"] as const),
+    plan: (id: string) => ["memberships", "plan", id] as const,
+    clientList: (filters?: {
+      contactId?: string;
+      search?: string;
+      status?: string;
+      planId?: string;
+      showDifferentVersionsOnly?: boolean;
+      showOlderUnpaid?: boolean;
+    }) => listKey(["memberships", "client-list"], filters),
+    clientDetail: (id: string) =>
+      ["memberships", "client-detail", id] as const,
+    settings: () => ["memberships", "settings"] as const,
+    contact: (contactId: string) =>
+      ["memberships", "contact", contactId] as const,
   },
   estimates: {
     all: () => ["estimates"] as const,
@@ -158,8 +326,12 @@ export const queryKeys = {
   },
   pipelines: {
     all: () => ["pipelines"] as const,
-    list: () => ["pipelines", "list"] as const,
-    detail: (id: string) => ["pipelines", "detail", id] as const,
+    list: (apiBase = "pipelines") =>
+      ["pipelines", apiBase, "list"] as const,
+    detail: (id: string, apiBase = "pipelines") =>
+      ["pipelines", apiBase, "detail", id] as const,
+    lifecycleBoard: (apiBase: string, pipelineId: string) =>
+      ["pipelines", apiBase, "lifecycle-board", pipelineId] as const,
   },
   industries: {
     active: () => ["industries", "active"] as const,
@@ -173,24 +345,47 @@ export const queryKeys = {
     googleSyncStatus: (id: string) => ["calendars", "google-sync-status", id] as const,
   },
   chatbots: {
-    all: () => ["chatbots"] as const,
-    list: () => ["chatbots", "list"] as const,
-    detail: (id: string) => ["chatbots", "detail", id] as const,
-    rules: (id: string) => ["chatbots", id, "rules"] as const,
-    embed: (id: string) => ["chatbots", id, "embed"] as const,
+    all: (apiBase = "chatbots") => ["chatbots", apiBase] as const,
+    list: (apiBase = "chatbots") => ["chatbots", apiBase, "list"] as const,
+    detail: (apiBase: string, id: string) =>
+      ["chatbots", apiBase, "detail", id] as const,
+    rules: (apiBase: string, id: string) =>
+      ["chatbots", apiBase, id, "rules"] as const,
+    embed: (apiBase: string, id: string) =>
+      ["chatbots", apiBase, id, "embed"] as const,
+  },
+  cannedResponses: {
+    all: (apiBase: string = "canned-responses") =>
+      ["canned-responses", apiBase] as const,
+    list: (apiBase: string = "canned-responses") =>
+      ["canned-responses", apiBase, "list"] as const,
   },
   forms: {
     all: () => ["forms"] as const,
-    list: (filters?: {
-      search?: string;
-      status?: string;
-      sort?: string;
-      sortDir?: string;
-    }) => listKey(["forms", "list"], filters),
-    detail: (id: string) => ["forms", "detail", id] as const,
-    embed: (id: string) => ["forms", "embed", id] as const,
-    submissions: (formId: string, filters?: { page?: number; limit?: number }) =>
-      listKey(["forms", formId, "submissions"], filters),
+    list: (
+      apiBase: string,
+      filters?: {
+        search?: string;
+        status?: string;
+        sort?: string;
+        sortDir?: string;
+      },
+    ) => listKey(["forms", apiBase, "list"], filters),
+    detail: (apiBase: string, id: string) =>
+      ["forms", apiBase, "detail", id] as const,
+    embed: (apiBase: string, id: string) =>
+      ["forms", apiBase, "embed", id] as const,
+    submissions: (
+      apiBase: string,
+      formId: string,
+      filters?: { page?: number; limit?: number },
+    ) => listKey(["forms", apiBase, formId, "submissions"], filters),
+    categories: (apiBase: string) =>
+      ["forms", apiBase, "metadata", "categories"] as const,
+    fieldTypes: (apiBase: string, filters?: ListFilters) =>
+      listKey(["forms", apiBase, "metadata", "field-types"], filters),
+    palette: (apiBase: string, filters?: ListFilters) =>
+      listKey(["forms", apiBase, "metadata", "palette"], filters),
   },
   emailNotifications: {
     all: () => ["email-notifications"] as const,
@@ -201,21 +396,82 @@ export const queryKeys = {
     logs: (filters?: ListFilters) =>
       listKey(["email-notifications", "logs"], filters),
   },
+  notificationChannelPreferences: {
+    all: () => ["notification-channel-preferences"] as const,
+    list: () => ["notification-channel-preferences", "list"] as const,
+    detail: (notificationKey: string) =>
+      [
+        "notification-channel-preferences",
+        "detail",
+        notificationKey,
+      ] as const,
+  },
+  automations: {
+    all: () => ["automations"] as const,
+    categories: (apiBase: string, scope?: string) =>
+      listKey(
+        ["automations", apiBase, "categories"],
+        scope ? { scope } : undefined,
+      ),
+    triggers: (apiBase: string, filters?: ListFilters) =>
+      listKey(["automations", apiBase, "triggers"], filters),
+    actions: (apiBase: string, filters?: ListFilters) =>
+      listKey(["automations", apiBase, "actions"], filters),
+    customValues: (apiBase: string, filters?: ListFilters) =>
+      listKey(["automations", apiBase, "custom-values"], filters),
+    conditions: (apiBase: string, filters?: ListFilters) =>
+      listKey(["automations", apiBase, "conditions"], filters),
+    filterOperators: (apiBase: string) =>
+      ["automations", apiBase, "filter-operators"] as const,
+    workflows: {
+      all: (apiBase: string) => ["automations", apiBase, "workflows"] as const,
+      list: (apiBase: string, filters?: ListFilters) =>
+        listKey(["automations", apiBase, "workflows", "list"], filters),
+      detail: (apiBase: string, id: string) =>
+        ["automations", apiBase, "workflows", "detail", id] as const,
+    },
+    workflowRuns: {
+      all: (apiBase: string) =>
+        ["automations", apiBase, "workflow-runs"] as const,
+      list: (apiBase: string, filters?: ListFilters) =>
+        listKey(["automations", apiBase, "workflow-runs", "list"], filters),
+    },
+  },
   conversations: {
-    all: () => ["conversations"] as const,
-    list: (filters?: Record<string, string | number | undefined | null>) =>
-      listKey(["conversations", "list"], filters),
-    unifiedList: (filters?: Record<string, string | number | undefined | null>) =>
-      listKey(["conversations", "unified", "list"], filters),
-    detail: (id: string) => ["conversations", "detail", id] as const,
-    messages: (id: string, page?: number) =>
-      ["conversations", id, "messages", page ?? 1] as const,
-    contactMessages: (contactId: string, page?: number) =>
-      ["conversations", "contacts", contactId, "messages", page ?? 0] as const,
-    replyChannels: (contactId: string) =>
-      ["conversations", "contacts", contactId, "reply-channels"] as const,
-    byContact: (contactId: string) =>
-      ["conversations", "by-contact", contactId] as const,
+    all: (apiBase: string = "conversations") =>
+      ["conversations", apiBase] as const,
+    list: (
+      filters?: Record<string, string | number | undefined | null>,
+      apiBase: string = "conversations",
+    ) => listKey(["conversations", apiBase, "list"], filters),
+    unifiedList: (
+      filters?: Record<string, string | number | undefined | null>,
+      apiBase: string = "conversations",
+    ) => listKey(["conversations", apiBase, "unified", "list"], filters),
+    detail: (id: string, apiBase: string = "conversations") =>
+      ["conversations", apiBase, "detail", id] as const,
+    messages: (id: string, page?: number, apiBase: string = "conversations") =>
+      ["conversations", apiBase, id, "messages", page ?? 1] as const,
+    contactMessages: (
+      contactId: string,
+      page?: number,
+      apiBase: string = "conversations",
+    ) =>
+      [
+        "conversations",
+        apiBase,
+        "contacts",
+        contactId,
+        "messages",
+        page ?? 0,
+      ] as const,
+    replyChannels: (contactId: string, apiBase: string = "conversations") =>
+      ["conversations", apiBase, "contacts", contactId, "reply-channels"] as const,
+    byContact: (contactId: string, apiBase: string = "conversations") =>
+      ["conversations", apiBase, "by-contact", contactId] as const,
+    notes: (conversationId: string, apiBase: string = "conversations") =>
+      ["conversations", apiBase, conversationId, "notes"] as const,
+    opsContext: () => ["conversations", "platform", "ops-context"] as const,
   },
   appointments: {
     all: () => ["appointments"] as const,
@@ -223,16 +479,23 @@ export const queryKeys = {
       listKey(["appointments", "list"], filters),
     detail: (id: string) => ["appointments", "detail", id] as const,
   },
+  waitlist: {
+    all: () => ["waitlist"] as const,
+    summary: () => ["waitlist", "summary"] as const,
+    list: (filters?: ListFilters) =>
+      listKey(["waitlist", "list"], filters),
+    detail: (id: string) => ["waitlist", "detail", id] as const,
+  },
   integrations: {
     all: () => ["integrations"] as const,
     businessProviders: () => ["integrations", "business", "providers"] as const,
     businessList: () => ["integrations", "business", "list"] as const,
     businessDetail: (providerKey: string) =>
       ["integrations", "business", "detail", providerKey] as const,
-    businessResources: (providerKey: string) =>
-      ["integrations", "business", "resources", providerKey] as const,
-    messagingStatus: (providerKey: string) =>
-      ["integrations", "business", "messaging-status", providerKey] as const,
+    businessResources: (providerKey: string, host: "business" | "platform" = "business") =>
+      ["integrations", host, "resources", providerKey] as const,
+    messagingStatus: (providerKey: string, host: "business" | "platform" = "business") =>
+      ["integrations", host, "messaging-status", providerKey] as const,
     platformEmail: () => ["integrations", "business", "platform-email"] as const,
     platformProviders: () => ["integrations", "platform", "providers"] as const,
     platformList: () => ["integrations", "platform", "list"] as const,
@@ -255,6 +518,12 @@ export const queryKeys = {
       detail: (id: string) =>
         ["whatsapp-settings", "templates", "detail", id] as const,
     },
+  },
+  reports: {
+    all: () => ["reports"] as const,
+    catalog: () => ["reports", "catalog"] as const,
+    document: (reportKey: string, filters?: ListFilters) =>
+      listKey(["reports", "document", reportKey], filters),
   },
   platform: {
     businesses: {
@@ -310,6 +579,28 @@ export const queryKeys = {
       list: (filters: { page?: number; limit?: number; status?: string }) =>
         listKey(["platform", "snapshots", "list"], filters),
       detail: (id: string) => ["platform", "snapshots", id] as const,
+    },
+    tiers: {
+      all: () => ["platform", "tiers"] as const,
+      list: (filters: {
+        page?: number;
+        limit?: number;
+        status?: string;
+        search?: string;
+        isPublic?: boolean;
+      }) => listKey(["platform", "tiers", "list"], filters),
+      detail: (id: string) => ["platform", "tiers", id] as const,
+    },
+    addons: {
+      all: () => ["platform", "addons"] as const,
+      list: (filters: {
+        page?: number;
+        limit?: number;
+        status?: string;
+        search?: string;
+        purchaseMode?: string;
+      }) => listKey(["platform", "addons", "list"], filters),
+      detail: (id: string) => ["platform", "addons", id] as const,
     },
     planGroups: {
       all: () => ["platform", "plan-groups"] as const,

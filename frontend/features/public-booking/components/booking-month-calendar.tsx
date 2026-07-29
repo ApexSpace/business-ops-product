@@ -5,15 +5,26 @@ import { DateTime } from "luxon";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { normalizeTimezone } from "@/features/calendars/utils/timezone";
+import {
+  getMonthGridDateKeysInTimezone,
+  normalizeTimezone,
+  parseDateKeyInTimezone,
+} from "@/features/calendars/utils/timezone";
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 interface BookingMonthCalendarProps {
   timezone: string;
+  /** Dates that currently have at least one open time slot (blue dots). */
   bookableDates: Set<string>;
+  /**
+   * Dates within business/staff working hours (may have zero slots).
+   * When waitlist is on, these stay selectable for joining the waitlist.
+   */
+  openDates: Set<string>;
   selectedDate: string | null;
   maxBookingDays: number;
+  waitlistEnabled?: boolean;
   onSelectDate: (dateKey: string) => void;
   accentColor: string;
 }
@@ -21,54 +32,62 @@ interface BookingMonthCalendarProps {
 export function BookingMonthCalendar({
   timezone,
   bookableDates,
+  openDates,
   selectedDate,
   maxBookingDays,
+  waitlistEnabled = false,
   onSelectDate,
   accentColor,
 }: BookingMonthCalendarProps) {
   const tz = normalizeTimezone(timezone);
-  const today = DateTime.now().setZone(tz).startOf("day");
+  const todayKey = DateTime.now().setZone(tz).toFormat("yyyy-MM-dd");
+  const today = parseDateKeyInTimezone(todayKey, tz);
   const maxDay = today.plus({ days: maxBookingDays });
 
-  const [viewMonth, setViewMonth] = useState(() =>
-    today.startOf("month"),
+  const [viewMonthKey, setViewMonthKey] = useState(() =>
+    today.toFormat("yyyy-MM-dd"),
   );
 
+  const viewMonth = parseDateKeyInTimezone(viewMonthKey, tz);
   const monthLabel = viewMonth.toFormat("LLLL yyyy");
 
   const days = useMemo(() => {
-    const start = viewMonth.startOf("month");
-    const end = viewMonth.endOf("month");
-    const gridStart = start.startOf("week");
-    const gridEnd = end.endOf("week");
-    const cells: Array<{
-      dateKey: string;
-      day: number;
-      inMonth: boolean;
-      disabled: boolean;
-      bookable: boolean;
-    }> = [];
-    let cursor = gridStart;
-    while (cursor <= gridEnd) {
-      const dateKey = cursor.toISODate()!;
+    const gridKeys = getMonthGridDateKeysInTimezone(viewMonthKey, tz);
+    return gridKeys.map((dateKey) => {
+      const cursor = parseDateKeyInTimezone(dateKey, tz);
       const inMonth = cursor.month === viewMonth.month;
       const beforeToday = cursor < today;
       const afterMax = cursor > maxDay;
-      const bookable = bookableDates.has(dateKey);
-      cells.push({
+      const inRange = inMonth && !beforeToday && !afterMax;
+      const hasSlots = bookableDates.has(dateKey);
+      const isOpenDay = openDates.has(dateKey);
+      // Waitlist: only working days (openDates). Never enable days outside timetable.
+      const selectable =
+        inRange && (hasSlots || (waitlistEnabled && isOpenDay));
+      return {
         dateKey,
         day: cursor.day,
         inMonth,
-        disabled: beforeToday || afterMax || !bookable || !inMonth,
-        bookable: bookable && inMonth && !beforeToday && !afterMax,
-      });
-      cursor = cursor.plus({ days: 1 });
-    }
-    return cells;
-  }, [viewMonth, today, maxDay, bookableDates]);
+        hasSlots: hasSlots && inRange,
+        selectable,
+        disabled: !inMonth || !selectable,
+      };
+    });
+  }, [
+    viewMonthKey,
+    tz,
+    viewMonth.month,
+    today,
+    maxDay,
+    bookableDates,
+    openDates,
+    waitlistEnabled,
+  ]);
 
   const canPrev = viewMonth > today.startOf("month");
-  const canNext = viewMonth.plus({ months: 1 }).startOf("month") <= maxDay.startOf("month");
+  const canNext =
+    viewMonth.plus({ months: 1 }).startOf("month") <=
+    maxDay.startOf("month");
 
   return (
     <div className="select-none">
@@ -79,7 +98,11 @@ export function BookingMonthCalendar({
           size="icon"
           className="size-10 shrink-0"
           disabled={!canPrev}
-          onClick={() => setViewMonth((m) => m.minus({ months: 1 }))}
+          onClick={() =>
+            setViewMonthKey(
+              viewMonth.minus({ months: 1 }).toFormat("yyyy-MM-dd"),
+            )
+          }
           aria-label="Previous month"
         >
           <ChevronLeft className="size-5" />
@@ -91,7 +114,11 @@ export function BookingMonthCalendar({
           size="icon"
           className="size-10 shrink-0"
           disabled={!canNext}
-          onClick={() => setViewMonth((m) => m.plus({ months: 1 }))}
+          onClick={() =>
+            setViewMonthKey(
+              viewMonth.plus({ months: 1 }).toFormat("yyyy-MM-dd"),
+            )
+          }
           aria-label="Next month"
         >
           <ChevronRight className="size-5" />
@@ -107,48 +134,69 @@ export function BookingMonthCalendar({
         ))}
       </div>
 
-      <div className="mt-1 grid grid-cols-7 gap-1.5 sm:gap-2">
+      <div className="mt-1 grid grid-cols-7 gap-1 sm:gap-1.5">
         {days.map((cell) => {
           const isSelected = selectedDate === cell.dateKey;
           return (
-            <button
+            <div
               key={cell.dateKey}
-              type="button"
-              disabled={cell.disabled}
-              onClick={() => cell.bookable && onSelectDate(cell.dateKey)}
-              aria-label={
-                cell.inMonth
-                  ? `${cell.day}${cell.bookable ? ", available" : ", unavailable"}`
-                  : undefined
-              }
-              aria-pressed={isSelected}
               className={cn(
-                "relative flex aspect-square min-h-[40px] max-h-[52px] w-full items-center justify-center rounded-full text-sm transition-colors sm:min-h-[44px] sm:text-base",
+                "flex items-center justify-center",
                 !cell.inMonth && "invisible",
-                cell.disabled &&
-                  cell.inMonth &&
-                  "cursor-not-allowed text-muted-foreground/40",
-                cell.bookable &&
-                  "font-medium text-foreground hover:bg-muted active:bg-muted/80",
-                isSelected && "text-white hover:opacity-90",
               )}
-              style={
-                isSelected
-                  ? { backgroundColor: accentColor }
-                  : cell.bookable
-                    ? undefined
-                    : undefined
-              }
             >
-              {cell.inMonth ? cell.day : null}
-              {cell.bookable && !isSelected ? (
-                <span
-                  className="absolute bottom-1.5 left-1/2 size-1 -translate-x-1/2 rounded-full"
-                  style={{ backgroundColor: accentColor }}
-                  aria-hidden
-                />
-              ) : null}
-            </button>
+              <button
+                type="button"
+                disabled={cell.disabled}
+                onClick={() => cell.selectable && onSelectDate(cell.dateKey)}
+                aria-label={
+                  cell.inMonth
+                    ? `${cell.day}${
+                        cell.hasSlots
+                          ? ", times available"
+                          : cell.selectable
+                            ? ", join waitlist"
+                            : ", unavailable"
+                      }`
+                    : undefined
+                }
+                aria-pressed={isSelected}
+                className={cn(
+                  "group relative isolate inline-grid size-9 place-items-center border-0 bg-transparent p-0 text-sm leading-none shadow-none outline-none sm:size-10 sm:text-[15px]",
+                  "appearance-none [-webkit-appearance:none]",
+                  cell.disabled &&
+                    cell.inMonth &&
+                    "cursor-not-allowed text-muted-foreground/40",
+                  cell.selectable &&
+                    !isSelected &&
+                    "font-medium text-foreground",
+                  isSelected && "font-semibold text-white",
+                )}
+              >
+                {isSelected ? (
+                  <span
+                    aria-hidden
+                    className="pointer-events-none absolute left-1/2 top-1/2 z-0 block size-7 -translate-x-1/2 -translate-y-1/2 rounded-full sm:size-8"
+                    style={{ backgroundColor: accentColor }}
+                  />
+                ) : cell.selectable ? (
+                  <span
+                    aria-hidden
+                    className="pointer-events-none absolute left-1/2 top-1/2 z-0 block size-7 -translate-x-1/2 -translate-y-1/2 rounded-full group-hover:bg-muted sm:size-8"
+                  />
+                ) : null}
+                <span className="relative z-10">
+                  {cell.inMonth ? cell.day : null}
+                </span>
+                {cell.hasSlots && !isSelected ? (
+                  <span
+                    className="pointer-events-none absolute bottom-1 left-1/2 z-10 size-1 -translate-x-1/2 rounded-full"
+                    style={{ backgroundColor: accentColor }}
+                    aria-hidden
+                  />
+                ) : null}
+              </button>
+            </div>
           );
         })}
       </div>

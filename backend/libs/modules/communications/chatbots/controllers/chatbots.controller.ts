@@ -10,23 +10,47 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { BusinessMemberRole } from '@prisma/client';
+import { ApiBearerAuth, ApiPropertyOptional, ApiTags } from '@nestjs/swagger';
+import {
+  BusinessMemberRole,
+  ChatbotIdentityRefType,
+} from '@prisma/client';
+import { IsEnum, IsOptional, IsUUID } from 'class-validator';
 import { CurrentUser } from '@app/common/decorators/current-user.decorator';
 import type { RequestUser } from '@app/common/decorators/current-user.decorator';
 import { BusinessRoles } from '@app/common/decorators/business-roles.decorator';
 import { RequireModule } from '@app/common/decorators/require-module.decorator';
+import { ConfirmDeleteQueryDto } from '@app/common/dto/confirm-delete-query.dto';
 import { BusinessCapabilityGuard } from '@app/common/guards/business-capability.guard';
 import { BusinessRolesGuard } from '@app/common/guards/business-roles.guard';
 import {
   CreateChatbotDto,
   CreateChatbotRuleDto,
+  ImportChatbotRulesDto,
   ListChatbotsQueryDto,
+  PreviewChatbotRuleDto,
+  ReorderChatbotRulesDto,
   UpdateChatbotDto,
   UpdateChatbotRuleDto,
 } from '../dto/chatbot.dto';
 import { ChatbotRulesService } from '../services/chatbot-rules.service';
+import { ChatbotSessionService } from '../services/chatbot-session.service';
 import { ChatbotsService } from '../services/chatbots.service';
+
+class ListSessionsByIdentityQueryDto {
+  @ApiPropertyOptional()
+  @IsUUID()
+  identityRefId!: string;
+
+  @ApiPropertyOptional({ enum: ChatbotIdentityRefType })
+  @IsEnum(ChatbotIdentityRefType)
+  identityRefType!: ChatbotIdentityRefType;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsUUID()
+  chatbotId?: string;
+}
 
 @ApiTags('chatbots')
 @ApiBearerAuth()
@@ -37,6 +61,7 @@ export class ChatbotsController {
   constructor(
     private readonly chatbotsService: ChatbotsService,
     private readonly rulesService: ChatbotRulesService,
+    private readonly sessionService: ChatbotSessionService,
   ) {}
 
   @Get()
@@ -47,6 +72,19 @@ export class ChatbotsController {
   )
   list(@CurrentUser() user: RequestUser, @Query() query: ListChatbotsQueryDto) {
     return this.chatbotsService.list(user.businessId!, query);
+  }
+
+  @Get('sessions')
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
+  listSessionsByIdentity(
+    @CurrentUser() user: RequestUser,
+    @Query() query: ListSessionsByIdentityQueryDto,
+  ) {
+    return this.sessionService.listByIdentity(user.businessId!, query);
   }
 
   @Post()
@@ -75,7 +113,7 @@ export class ChatbotsController {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateChatbotDto,
   ) {
-    return this.chatbotsService.update(user.businessId!, id, dto);
+    return this.chatbotsService.update(user.businessId!, id, dto, user);
   }
 
   @Delete(':id')
@@ -83,8 +121,9 @@ export class ChatbotsController {
   remove(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
+    @Query() _query: ConfirmDeleteQueryDto,
   ) {
-    return this.chatbotsService.remove(user.businessId!, id);
+    return this.chatbotsService.remove(user.businessId!, id, user);
   }
 
   @Post(':id/duplicate')
@@ -93,7 +132,7 @@ export class ChatbotsController {
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
   ) {
-    return this.chatbotsService.duplicate(user.businessId!, id);
+    return this.chatbotsService.duplicate(user.businessId!, id, user);
   }
 
   @Post(':id/activate')
@@ -102,7 +141,7 @@ export class ChatbotsController {
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
   ) {
-    return this.chatbotsService.activate(user.businessId!, id);
+    return this.chatbotsService.activate(user.businessId!, id, user);
   }
 
   @Post(':id/disable')
@@ -111,7 +150,7 @@ export class ChatbotsController {
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
   ) {
-    return this.chatbotsService.disable(user.businessId!, id);
+    return this.chatbotsService.disable(user.businessId!, id, user);
   }
 
   @Get(':id/embed')
@@ -140,6 +179,49 @@ export class ChatbotsController {
     return this.rulesService.list(user.businessId!, id);
   }
 
+  @Get(':id/rules/export')
+  @BusinessRoles(BusinessMemberRole.OWNER, BusinessMemberRole.ADMIN)
+  exportRules(
+    @CurrentUser() user: RequestUser,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.rulesService.exportRules(user.businessId!, id);
+  }
+
+  @Post(':id/rules/import')
+  @BusinessRoles(BusinessMemberRole.OWNER, BusinessMemberRole.ADMIN)
+  importRules(
+    @CurrentUser() user: RequestUser,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: ImportChatbotRulesDto,
+  ) {
+    return this.rulesService.importRules(user.businessId!, id, dto, user);
+  }
+
+  @Post(':id/rules/preview')
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
+  previewRule(
+    @CurrentUser() user: RequestUser,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: PreviewChatbotRuleDto,
+  ) {
+    return this.rulesService.preview(user.businessId!, id, dto);
+  }
+
+  @Patch(':id/rules/reorder')
+  @BusinessRoles(BusinessMemberRole.OWNER, BusinessMemberRole.ADMIN)
+  reorderRules(
+    @CurrentUser() user: RequestUser,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: ReorderChatbotRulesDto,
+  ) {
+    return this.rulesService.reorder(user.businessId!, id, dto, user);
+  }
+
   @Post(':id/rules')
   @BusinessRoles(BusinessMemberRole.OWNER, BusinessMemberRole.ADMIN)
   createRule(
@@ -147,7 +229,7 @@ export class ChatbotsController {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: CreateChatbotRuleDto,
   ) {
-    return this.rulesService.create(user.businessId!, id, dto);
+    return this.rulesService.create(user.businessId!, id, dto, user);
   }
 
   @Patch(':id/rules/:ruleId')
@@ -158,7 +240,7 @@ export class ChatbotsController {
     @Param('ruleId', ParseUUIDPipe) ruleId: string,
     @Body() dto: UpdateChatbotRuleDto,
   ) {
-    return this.rulesService.update(user.businessId!, id, ruleId, dto);
+    return this.rulesService.update(user.businessId!, id, ruleId, dto, user);
   }
 
   @Delete(':id/rules/:ruleId')
@@ -167,7 +249,38 @@ export class ChatbotsController {
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
     @Param('ruleId', ParseUUIDPipe) ruleId: string,
+    @Query() _query: ConfirmDeleteQueryDto,
   ) {
-    return this.rulesService.remove(user.businessId!, id, ruleId);
+    return this.rulesService.remove(user.businessId!, id, ruleId, user);
+  }
+
+  @Post('sessions/:sessionId/end')
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
+  endSession(
+    @CurrentUser() user: RequestUser,
+    @Param('sessionId', ParseUUIDPipe) sessionId: string,
+  ) {
+    return this.sessionService.endSession(user.businessId!, sessionId, user);
+  }
+
+  @Post('sessions/:sessionId/convert')
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
+  convertSession(
+    @CurrentUser() user: RequestUser,
+    @Param('sessionId', ParseUUIDPipe) sessionId: string,
+  ) {
+    return this.sessionService.convertSession(
+      user.businessId!,
+      sessionId,
+      user,
+    );
   }
 }

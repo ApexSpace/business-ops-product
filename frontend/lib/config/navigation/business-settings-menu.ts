@@ -5,6 +5,7 @@ import {
   ClipboardList,
   CreditCard,
   GitBranch,
+  Globe,
   MessageCircle,
   MessageSquare,
   Palette,
@@ -12,12 +13,16 @@ import {
   Receipt,
   Settings,
   Users,
+  Warehouse,
   Zap,
   FileText,
 } from "lucide-react";
 import type { ShellNavItem, ShellNavSection } from "@/lib/types/shell-nav";
+import { canAccessSettingsHref } from "@/features/team/permissions/staff-permissions";
+import type { BusinessMemberRole } from "@/features/auth/types/auth-dto";
 
 export interface BusinessSettingsNavItem extends ShellNavItem {}
+
 
 const generalItems: BusinessSettingsNavItem[] = [
   {
@@ -34,6 +39,11 @@ const generalItems: BusinessSettingsNavItem[] = [
 
 const operationsItems: BusinessSettingsNavItem[] = [
   {
+    title: "Online Booking",
+    href: "/business/settings/online-booking",
+    icon: Globe,
+  },
+  {
     title: "Calendars",
     href: "/business/settings/calendars",
     icon: Calendar,
@@ -42,6 +52,11 @@ const operationsItems: BusinessSettingsNavItem[] = [
     title: "Services",
     href: "/business/settings/services",
     icon: Briefcase,
+  },
+  {
+    title: "Resources",
+    href: "/business/settings/resources",
+    icon: Warehouse,
   },
   {
     title: "Pipelines",
@@ -137,3 +152,25 @@ export function isBusinessSettingsPath(pathname: string): boolean {
     pathname.startsWith(`${BUSINESS_SETTINGS_BASE}/`)
   );
 }
+
+export function filterBusinessSettingsSections(options: {
+  sections?: ShellNavSection[];
+  businessRole?: BusinessMemberRole;
+  staffPermissions?: Record<string, boolean>;
+  isPlatformAdmin?: boolean;
+}): ShellNavSection[] {
+  const sections = options.sections ?? businessSettingsSections;
+  return sections
+    .map((section) => ({
+      ...section,
+      items: section.items.filter((item) =>
+        canAccessSettingsHref(item.href, {
+          businessRole: options.businessRole,
+          staffPermissions: options.staffPermissions,
+          isPlatformAdmin: options.isPlatformAdmin,
+        }),
+      ),
+    }))
+    .filter((section) => section.items.length > 0);
+}
+

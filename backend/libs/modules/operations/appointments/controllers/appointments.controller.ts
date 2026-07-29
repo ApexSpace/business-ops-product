@@ -16,6 +16,7 @@ import { ConfirmDeleteQueryDto } from '@app/common/dto/confirm-delete-query.dto'
 import { CurrentUser } from '@app/common/decorators/current-user.decorator';
 import type { RequestUser } from '@app/common/decorators/current-user.decorator';
 import { BusinessRoles } from '@app/common/decorators/business-roles.decorator';
+import { StaffPermission } from '@app/common/decorators/staff-permission.decorator';
 import { RequireModule } from '@app/common/decorators/require-module.decorator';
 import { BusinessCapabilityGuard } from '@app/common/guards/business-capability.guard';
 import { BusinessRolesGuard } from '@app/common/guards/business-roles.guard';
@@ -32,6 +33,7 @@ import { AppointmentsService } from '@app/modules/operations/appointments/servic
 @Controller('appointments')
 @UseGuards(BusinessRolesGuard, BusinessCapabilityGuard)
 @RequireModule('appointments')
+@StaffPermission('appointments.access')
 export class AppointmentsController {
   constructor(private readonly appointmentsService: AppointmentsService) {}
 
@@ -45,7 +47,7 @@ export class AppointmentsController {
     @CurrentUser() user: RequestUser,
     @Query() query: ListAppointmentsQueryDto,
   ) {
-    return this.appointmentsService.list(user.businessId!, query);
+    return this.appointmentsService.list(user.businessId!, query, user);
   }
 
   @Post()
@@ -54,8 +56,60 @@ export class AppointmentsController {
     BusinessMemberRole.ADMIN,
     BusinessMemberRole.MEMBER,
   )
+  @StaffPermission(
+    'appointments.manage_own',
+    'appointments.manage_all',
+    'appointments.manage_own_time_blocks',
+    'appointments.manage_all_time_blocks',
+  )
   create(@CurrentUser() user: RequestUser, @Body() dto: CreateAppointmentDto) {
     return this.appointmentsService.create(user.businessId!, dto, user);
+  }
+
+  @Get(':id/activity')
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
+  @StaffPermission('appointments.view_history')
+  getActivity(
+    @CurrentUser() user: RequestUser,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.appointmentsService.getActivity(user.businessId!, id, user);
+  }
+
+  @Post(':id/notify')
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
+  @StaffPermission(
+    'appointments.manage_own',
+    'appointments.manage_all',
+    'appointments.manage_own_time_blocks',
+    'appointments.manage_all_time_blocks',
+  )
+  notifyClient(
+    @CurrentUser() user: RequestUser,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.appointmentsService.notifyClient(user.businessId!, id, user);
+  }
+
+  @Get(':id/photos')
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
+  listPhotos(
+    @CurrentUser() user: RequestUser,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.appointmentsService.listPhotos(user.businessId!, id, user);
   }
 
   @Get(':id')
@@ -68,7 +122,7 @@ export class AppointmentsController {
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
   ) {
-    return this.appointmentsService.getById(user.businessId!, id);
+    return this.appointmentsService.getById(user.businessId!, id, user);
   }
 
   @Patch(':id/status')
@@ -76,6 +130,11 @@ export class AppointmentsController {
     BusinessMemberRole.OWNER,
     BusinessMemberRole.ADMIN,
     BusinessMemberRole.MEMBER,
+  )
+  @StaffPermission(
+    'appointments.change_status',
+    'appointments.manage_own',
+    'appointments.manage_all',
   )
   updateStatus(
     @CurrentUser() user: RequestUser,
@@ -96,6 +155,12 @@ export class AppointmentsController {
     BusinessMemberRole.ADMIN,
     BusinessMemberRole.MEMBER,
   )
+  @StaffPermission(
+    'appointments.manage_own',
+    'appointments.manage_all',
+    'appointments.manage_own_time_blocks',
+    'appointments.manage_all_time_blocks',
+  )
   update(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -111,6 +176,12 @@ export class AppointmentsController {
     BusinessMemberRole.MEMBER,
   )
   @ApiQuery({ name: 'confirm', required: true, type: Boolean })
+  @StaffPermission(
+    'appointments.manage_own',
+    'appointments.manage_all',
+    'appointments.manage_own_time_blocks',
+    'appointments.manage_all_time_blocks',
+  )
   remove(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,

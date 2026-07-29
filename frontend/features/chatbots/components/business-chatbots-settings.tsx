@@ -28,6 +28,7 @@ import {
   type Chatbot,
   type ChatbotStatus,
 } from "@/features/chatbots/api/chatbots.api";
+import { useChatbotsHost } from "@/features/chatbots/chatbots-host-context";
 import { ChatbotCreateDialog } from "@/features/chatbots/components/chatbot-create-dialog";
 import { queryKeys } from "@/lib/query/keys";
 
@@ -43,16 +44,18 @@ function chatbotStatusVariant(
 export function BusinessChatbotsSettings() {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { apiBase, basePath, mode } = useChatbotsHost();
+  const isPlatform = mode === "platform";
   const [createOpen, setCreateOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const { data, isLoading } = useQuery({
-    queryKey: queryKeys.chatbots.list(),
-    queryFn: () => listChatbots({ limit: 50 }),
+    queryKey: queryKeys.chatbots.list(apiBase),
+    queryFn: () => listChatbots({ limit: 50 }, apiBase),
   });
 
   const invalidate = () =>
-    queryClient.invalidateQueries({ queryKey: queryKeys.chatbots.all() });
+    queryClient.invalidateQueries({ queryKey: queryKeys.chatbots.all(apiBase) });
 
   const statusMutation = useMutation({
     mutationFn: async ({
@@ -62,9 +65,9 @@ export function BusinessChatbotsSettings() {
       id: string;
       action: "activate" | "disable" | "duplicate";
     }) => {
-      if (action === "activate") return activateChatbot(id);
-      if (action === "disable") return disableChatbot(id);
-      return duplicateChatbot(id);
+      if (action === "activate") return activateChatbot(id, apiBase);
+      if (action === "disable") return disableChatbot(id, apiBase);
+      return duplicateChatbot(id, apiBase);
     },
     onSuccess: async (_, { action }) => {
       await invalidate();
@@ -76,7 +79,7 @@ export function BusinessChatbotsSettings() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => deleteChatbot(id),
+    mutationFn: (id: string) => deleteChatbot(id, apiBase),
     onSuccess: async () => {
       await invalidate();
       toast.success("Chatbot removed");
@@ -87,7 +90,7 @@ export function BusinessChatbotsSettings() {
 
   const copyEmbed = async (id: string) => {
     try {
-      const embed = await getChatbotEmbed(id);
+      const embed = await getChatbotEmbed(id, apiBase);
       await navigator.clipboard.writeText(embed.embedCode ?? embed.embedScript);
       toast.success("Embed code copied");
     } catch (e) {
@@ -97,7 +100,7 @@ export function BusinessChatbotsSettings() {
 
   const copyWidgetLink = async (id: string) => {
     try {
-      const embed = await getChatbotEmbed(id);
+      const embed = await getChatbotEmbed(id, apiBase);
       await navigator.clipboard.writeText(embed.widgetUrl);
       toast.success("Widget link copied");
     } catch (e) {
@@ -107,7 +110,7 @@ export function BusinessChatbotsSettings() {
 
   const previewWidget = async (id: string) => {
     try {
-      const embed = await getChatbotEmbed(id);
+      const embed = await getChatbotEmbed(id, apiBase);
       window.open(embed.widgetUrl, "_blank", "noopener,noreferrer");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Failed to open preview");
@@ -115,91 +118,145 @@ export function BusinessChatbotsSettings() {
   };
 
   const columns = useMemo<DataTableColumn<Chatbot>[]>(
-    () => [
-      {
-        id: "name",
-        header: "Name",
-        sortable: true,
-        sortValue: (row) => row.name,
-        cell: (row) => (
-          <div className="min-w-[180px]">
-            <Link
-              href={`/business/settings/chatbots/${row.id}/edit`}
-              className="font-medium hover:underline"
-            >
-              {row.name}
-            </Link>
-            {row.description ? (
-              <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">
-                {row.description}
-              </p>
-            ) : null}
-          </div>
-        ),
-      },
-      {
-        id: "status",
-        header: "Status",
-        sortable: true,
-        sortValue: (row) => row.status,
-        cell: (row) => (
-          <Badge variant={chatbotStatusVariant(row.status)}>
-            {chatbotStatusLabel(row.status)}
-          </Badge>
-        ),
-      },
-      {
-        id: "placement",
-        header: "Placement",
-        sortable: true,
-        sortValue: (row) => getChatbotPlacementLabel(row),
-        cell: (row) => (
-          <span className="text-sm text-muted-foreground">
-            {getChatbotPlacementLabel(row)}
-          </span>
-        ),
-      },
-      {
-        id: "conversations",
-        header: "Conversations",
-        sortable: true,
-        sortValue: (row) => row.conversationsCount ?? 0,
-        className: "text-right tabular-nums",
-        cell: (row) => (
-          <span className="tabular-nums text-sm">{row.conversationsCount ?? 0}</span>
-        ),
-      },
-      {
-        id: "lastActivity",
-        header: "Last activity",
-        sortable: true,
-        sortValue: (row) => row.lastMessageAt ?? "",
-        className: "whitespace-nowrap",
-        cell: (row) => (
-          <span className="text-sm text-muted-foreground">
-            {formatChatbotTableDate(row.lastMessageAt)}
-          </span>
-        ),
-      },
-      {
-        id: "updated",
-        header: "Updated",
-        sortable: true,
-        sortValue: (row) => row.updatedAt,
-        className: "whitespace-nowrap",
-        cell: (row) => (
-          <span className="tabular-nums text-sm text-muted-foreground">
-            {formatChatbotTableDate(row.updatedAt)}
-          </span>
-        ),
-      },
-    ],
-    [],
+    () => {
+      const cols: DataTableColumn<Chatbot>[] = [
+        {
+          id: "name",
+          header: "Name",
+          sortable: true,
+          sortValue: (row) => row.name,
+          cell: (row) => (
+            <div className="min-w-[180px]">
+              <Link
+                href={`${basePath}/${row.id}/edit`}
+                className="font-medium hover:underline"
+              >
+                {row.name}
+              </Link>
+              {row.description ? (
+                <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">
+                  {row.description}
+                </p>
+              ) : null}
+            </div>
+          ),
+        },
+        {
+          id: "status",
+          header: "Status",
+          sortable: true,
+          sortValue: (row) => row.status,
+          cell: (row) => (
+            <Badge variant={chatbotStatusVariant(row.status)}>
+              {chatbotStatusLabel(row.status)}
+            </Badge>
+          ),
+        },
+        {
+          id: "placement",
+          header: "Placement",
+          sortable: true,
+          sortValue: (row) => getChatbotPlacementLabel(row),
+          cell: (row) => (
+            <span className="text-sm text-muted-foreground">
+              {getChatbotPlacementLabel(row)}
+            </span>
+          ),
+        },
+      ];
+
+      if (!isPlatform) {
+        cols.push({
+          id: "conversations",
+          header: "Conversations",
+          sortable: true,
+          sortValue: (row) => row.conversationsCount ?? 0,
+          className: "text-right tabular-nums",
+          cell: (row) => (
+            <span className="tabular-nums text-sm">
+              {row.conversationsCount ?? 0}
+            </span>
+          ),
+        });
+      }
+
+      cols.push(
+        {
+          id: "sessions",
+          header: "Sessions",
+          sortable: true,
+          sortValue: (row) => row.sessionsCount ?? 0,
+          className: "text-right tabular-nums",
+          cell: (row) => (
+            <span className="tabular-nums text-sm">
+              {row.sessionsCount ?? 0}
+            </span>
+          ),
+        },
+        {
+          id: "activeSessions",
+          header: "Active",
+          sortable: true,
+          sortValue: (row) => row.activeSessionsCount ?? 0,
+          className: "text-right tabular-nums",
+          cell: (row) => (
+            <span className="tabular-nums text-sm">
+              {row.activeSessionsCount ?? 0}
+            </span>
+          ),
+        },
+        {
+          id: "converted",
+          header: "Converted",
+          sortable: true,
+          sortValue: (row) => row.convertedSessionsCount ?? 0,
+          className: "text-right tabular-nums",
+          cell: (row) => (
+            <span className="tabular-nums text-sm">
+              {row.convertedSessionsCount ?? 0}
+            </span>
+          ),
+        },
+        {
+          id: "lastActivity",
+          header: "Last activity",
+          sortable: true,
+          sortValue: (row) => row.lastMessageAt ?? "",
+          className: "whitespace-nowrap",
+          cell: (row) => (
+            <span className="text-sm text-muted-foreground">
+              {formatChatbotTableDate(row.lastMessageAt)}
+            </span>
+          ),
+        },
+        {
+          id: "updated",
+          header: "Updated",
+          sortable: true,
+          sortValue: (row) => row.updatedAt,
+          className: "whitespace-nowrap",
+          cell: (row) => (
+            <span className="tabular-nums text-sm text-muted-foreground">
+              {formatChatbotTableDate(row.updatedAt)}
+            </span>
+          ),
+        },
+      );
+
+      return cols;
+    },
+    [basePath, isPlatform],
   );
 
   return (
     <div className="space-y-[var(--page-stack-gap)]">
       <PageHeader
+        title={isPlatform ? "Chatbots" : undefined}
+        description={
+          isPlatform
+            ? "Configure AI chatbots for the CodeSol marketing site and ops surfaces."
+            : undefined
+        }
         actions={
           <ActionButton onClick={() => setCreateOpen(true)}>
             <Plus className="mr-2 size-4" />
@@ -214,7 +271,11 @@ export function BusinessChatbotsSettings() {
         getRowId={(row) => row.id}
         isLoading={isLoading}
         emptyTitle="No chatbots yet"
-        emptyDescription="Create a website chatbot to capture leads and conversations from your website."
+        emptyDescription={
+          isPlatform
+            ? "Create a chatbot to engage visitors on the marketing site."
+            : "Create a website chatbot to capture leads and conversations from your website."
+        }
         emptyAction={
           <ActionButton onClick={() => setCreateOpen(true)}>
             <Plus className="mr-2 size-4" />
@@ -227,8 +288,7 @@ export function BusinessChatbotsSettings() {
             actions={[
               {
                 label: "Edit",
-                onClick: () =>
-                  router.push(`/business/settings/chatbots/${bot.id}/edit`),
+                onClick: () => router.push(`${basePath}/${bot.id}/edit`),
               },
               {
                 label: "Preview",
@@ -273,7 +333,7 @@ export function BusinessChatbotsSettings() {
         onOpenChange={setCreateOpen}
         onCreated={(id) => {
           void invalidate();
-          router.push(`/business/settings/chatbots/${id}/edit`);
+          router.push(`${basePath}/${id}/edit`);
         }}
       />
 

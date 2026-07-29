@@ -2,6 +2,9 @@ import { WhatsAppTemplateCategory } from '@prisma/client';
 
 export const WHATSAPP_TEMPLATE_NAME_PATTERN = /^[a-z][a-z0-9_]{0,511}$/;
 
+/** Names reserved by Meta sample/default templates — cannot be submitted for approval. */
+export const META_RESERVED_TEMPLATE_NAMES = ['hello_world'] as const;
+
 export const WHATSAPP_TEMPLATE_LANGUAGES = [
   { code: 'en_US', label: 'English (US)' },
   { code: 'en_GB', label: 'English (UK)' },

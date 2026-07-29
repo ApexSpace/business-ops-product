@@ -15,6 +15,7 @@ import { BusinessMemberRole } from '@prisma/client';
 import { CurrentUser } from '@app/common/decorators/current-user.decorator';
 import type { RequestUser } from '@app/common/decorators/current-user.decorator';
 import { BusinessRoles } from '@app/common/decorators/business-roles.decorator';
+import { StaffPermission } from '@app/common/decorators/staff-permission.decorator';
 import { RequireCapability } from '@app/common/decorators/require-capability.decorator';
 import { RequireModule } from '@app/common/decorators/require-module.decorator';
 import { BusinessCapabilityGuard } from '@app/common/guards/business-capability.guard';
@@ -31,7 +32,8 @@ import { FormsService } from '../services/forms.service';
 @ApiBearerAuth()
 @Controller('forms')
 @UseGuards(BusinessRolesGuard, BusinessCapabilityGuard)
-@RequireModule('settings')
+@RequireModule('forms')
+@StaffPermission('forms.view_own_submissions', 'forms.view_all_submissions', 'forms.manage_templates')
 export class BusinessFormsController {
   constructor(
     private readonly formsService: FormsService,
@@ -39,7 +41,7 @@ export class BusinessFormsController {
   ) {}
 
   @Get()
-  @RequireCapability('settings.forms.list')
+  @RequireCapability('forms.list')
   @BusinessRoles(
     BusinessMemberRole.OWNER,
     BusinessMemberRole.ADMIN,
@@ -50,14 +52,19 @@ export class BusinessFormsController {
   }
 
   @Post()
-  @RequireCapability('settings.forms.create')
-  @BusinessRoles(BusinessMemberRole.OWNER, BusinessMemberRole.ADMIN)
+  @RequireCapability('forms.create')
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
+  @StaffPermission('forms.manage_templates')
   create(@CurrentUser() user: RequestUser, @Body() dto: CreateFormDto) {
     return this.formsService.create(user.businessId!, dto, user);
   }
 
   @Get(':id')
-  @RequireCapability('settings.forms.list')
+  @RequireCapability('forms.list')
   @BusinessRoles(
     BusinessMemberRole.OWNER,
     BusinessMemberRole.ADMIN,
@@ -71,7 +78,7 @@ export class BusinessFormsController {
   }
 
   @Get(':id/embed')
-  @RequireCapability('settings.forms.list')
+  @RequireCapability('forms.list')
   @BusinessRoles(
     BusinessMemberRole.OWNER,
     BusinessMemberRole.ADMIN,
@@ -85,7 +92,7 @@ export class BusinessFormsController {
   }
 
   @Get(':id/submissions')
-  @RequireCapability('settings.forms.list')
+  @RequireCapability('forms.list')
   @BusinessRoles(
     BusinessMemberRole.OWNER,
     BusinessMemberRole.ADMIN,
@@ -100,8 +107,13 @@ export class BusinessFormsController {
   }
 
   @Delete(':id/submissions/:submissionId')
-  @RequireCapability('settings.forms.delete')
-  @BusinessRoles(BusinessMemberRole.OWNER, BusinessMemberRole.ADMIN)
+  @RequireCapability('forms.delete')
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
+  @StaffPermission('forms.view_all_submissions', 'forms.manage_templates')
   removeSubmission(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -115,8 +127,13 @@ export class BusinessFormsController {
   }
 
   @Patch(':id')
-  @RequireCapability('settings.forms.edit')
-  @BusinessRoles(BusinessMemberRole.OWNER, BusinessMemberRole.ADMIN)
+  @RequireCapability('forms.edit')
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
+  @StaffPermission('forms.manage_templates')
   update(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -126,8 +143,13 @@ export class BusinessFormsController {
   }
 
   @Delete(':id')
-  @RequireCapability('settings.forms.delete')
-  @BusinessRoles(BusinessMemberRole.OWNER, BusinessMemberRole.ADMIN)
+  @RequireCapability('forms.delete')
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
+  @StaffPermission('forms.manage_templates')
   remove(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -136,8 +158,13 @@ export class BusinessFormsController {
   }
 
   @Post(':id/duplicate')
-  @RequireCapability('settings.forms.create')
-  @BusinessRoles(BusinessMemberRole.OWNER, BusinessMemberRole.ADMIN)
+  @RequireCapability('forms.create')
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
+  @StaffPermission('forms.manage_templates')
   duplicate(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -147,8 +174,13 @@ export class BusinessFormsController {
   }
 
   @Post(':id/publish')
-  @RequireCapability('settings.forms.edit')
-  @BusinessRoles(BusinessMemberRole.OWNER, BusinessMemberRole.ADMIN)
+  @RequireCapability('forms.edit')
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
+  @StaffPermission('forms.manage_templates')
   publish(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -157,8 +189,13 @@ export class BusinessFormsController {
   }
 
   @Post(':id/move-to-draft')
-  @RequireCapability('settings.forms.edit')
-  @BusinessRoles(BusinessMemberRole.OWNER, BusinessMemberRole.ADMIN)
+  @RequireCapability('forms.edit')
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
+  @StaffPermission('forms.manage_templates')
   moveToDraft(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -167,8 +204,13 @@ export class BusinessFormsController {
   }
 
   @Post(':id/archive')
-  @RequireCapability('settings.forms.edit')
-  @BusinessRoles(BusinessMemberRole.OWNER, BusinessMemberRole.ADMIN)
+  @RequireCapability('forms.edit')
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
+  @StaffPermission('forms.manage_templates')
   archive(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,

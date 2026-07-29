@@ -7,6 +7,6 @@ import { AuditService } from './services/audit.service';
 @Module({
   controllers: [AuditController, PlatformAuditController],
   providers: [AuditLogRepository, AuditService],
-  exports: [AuditService],
+  exports: [AuditService, AuditLogRepository],
 })
 export class AuditModule {}

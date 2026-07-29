@@ -32,8 +32,12 @@ export function assertSyncAllowed(
   const remaining = getSyncCooldownRemainingMs(businessId, providerKey);
   if (remaining > 0) {
     const seconds = Math.ceil(remaining / 1000);
+    const rateLimitHint =
+      providerKey === 'google-business-profile'
+        ? ' Google Business Profile APIs have strict rate limits.'
+        : '';
     throw new SyncCooldownError(
-      `Please wait ${seconds} second${seconds === 1 ? '' : 's'} before syncing again. Google Business Profile APIs have strict rate limits.`,
+      `Please wait ${seconds} second${seconds === 1 ? '' : 's'} before syncing again.${rateLimitHint}`,
       remaining,
     );
   }
@@ -44,6 +48,14 @@ export function recordSyncAttempt(
   providerKey: string,
 ): void {
   lastSyncAt.set(syncKey(businessId, providerKey), Date.now());
+}
+
+/** Clear cooldown after a failed sync so reconnect / retry is not blocked. */
+export function clearSyncAttempt(
+  businessId: string,
+  providerKey: string,
+): void {
+  lastSyncAt.delete(syncKey(businessId, providerKey));
 }
 
 export class SyncCooldownError extends Error {

@@ -58,8 +58,9 @@ export class OutboundMessageDispatchService {
       return;
     }
     if (
-      (process.env.OUTBOUND_MESSAGE_RECOVERY_ON_STARTUP ?? 'true').toLowerCase() ===
-      'false'
+      (
+        process.env.OUTBOUND_MESSAGE_RECOVERY_ON_STARTUP ?? 'true'
+      ).toLowerCase() === 'false'
     ) {
       return;
     }
@@ -75,7 +76,9 @@ export class OutboundMessageDispatchService {
       return;
     }
 
-    this.logger.log(`Recovering ${pending.length} outbound message(s) stuck in PENDING`);
+    this.logger.log(
+      `Recovering ${pending.length} outbound message(s) stuck in PENDING`,
+    );
 
     for (const message of pending) {
       const asyncJob = await this.prisma.asyncJob.findFirst({

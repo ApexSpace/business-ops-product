@@ -1,5 +1,6 @@
-import { Body, Controller, Get, Post } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { Public } from '@app/common/decorators/public.decorator';
 import { CurrentUser } from '@app/common/decorators/current-user.decorator';
 import type { RequestUser } from '@app/common/decorators/current-user.decorator';
@@ -11,6 +12,7 @@ import { RegisterDto } from '../dto/register.dto';
 import { ResetPasswordDto } from '../dto/reset-password.dto';
 import { SwitchContextDto } from '../dto/switch-context.dto';
 import { VerifyEmailDto } from '../dto/verify-email.dto';
+import { AcceptInviteDto } from '../dto/accept-invite.dto';
 import { AuthService } from '@app/modules/platform/auth/services/auth.service';
 
 @ApiTags('auth')
@@ -25,6 +27,7 @@ export class AuthController {
   }
 
   @Public()
+  @Throttle({ default: { limit: 20, ttl: 60000 } })
   @Post('login')
   login(@Body() dto: LoginDto) {
     return this.authService.login(dto.email, dto.password);
@@ -52,12 +55,14 @@ export class AuthController {
   }
 
   @Public()
+  @Throttle({ default: { limit: 5, ttl: 900000 } })
   @Post('forgot-password')
   forgotPassword(@Body() dto: ForgotPasswordDto) {
     return this.authService.forgotPassword(dto.email);
   }
 
   @Public()
+  @Throttle({ default: { limit: 10, ttl: 900000 } })
   @Post('reset-password')
   resetPassword(@Body() dto: ResetPasswordDto) {
     return this.authService.resetPassword(dto.token, dto.password);
@@ -69,6 +74,18 @@ export class AuthController {
     return this.authService.verifyEmail(dto.token);
   }
 
+  @Public()
+  @Get('invite-preview')
+  invitePreview(@Query('token') token: string) {
+    return this.authService.getInvitePreview(token);
+  }
+
+  @Public()
+  @Post('accept-invite')
+  acceptInvite(@Body() dto: AcceptInviteDto) {
+    return this.authService.acceptInvite(dto.token, dto.password);
+  }
+
   @ApiBearerAuth()
   @Post('resend-verification')
   resendVerification(@CurrentUser() user: RequestUser) {
@@ -78,6 +95,6 @@ export class AuthController {
   @ApiBearerAuth()
   @Get('me')
   me(@CurrentUser() user: RequestUser) {
-    return this.authService.getMe(user.id);
+    return this.authService.getMe(user);
   }
 }

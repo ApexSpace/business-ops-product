@@ -106,6 +106,48 @@ export const META_FACEBOOK_INSTAGRAM_SAME_CONFIG_WARNING =
 export const META_INSTAGRAM_NO_ACCOUNTS_MESSAGE =
   'No linked Instagram account was found in the Pages returned by Meta. Please make sure you selected the Facebook Page that is connected to your Instagram Professional Account during authorization.';
 
+export const META_INSTAGRAM_DIRECT_NO_ACCOUNT_MESSAGE =
+  'No Instagram account profile was returned for this Direct Instagram connection. Reconnect with a Business or Creator Instagram account.';
+
+export const META_FACEBOOK_NO_PAGES_MESSAGE =
+  'No Facebook Pages were returned by Meta for this connection. Please make sure you are an admin of the Page and select it during Facebook authorization.';
+
+/** Instagram API with Instagram Login (Direct) — no Facebook Page required. */
+export const META_INSTAGRAM_LOGIN_AUTH_SCOPES = [
+  'instagram_business_basic',
+  'instagram_business_manage_messages',
+] as const;
+
+export type MetaInstagramAuthFlow = 'FACEBOOK_LOGIN' | 'INSTAGRAM_LOGIN';
+
+export const META_INSTAGRAM_AUTH_FLOWS = [
+  'FACEBOOK_LOGIN',
+  'INSTAGRAM_LOGIN',
+] as const;
+
+export function parseMetaInstagramAuthFlow(
+  value: string | undefined | null,
+): MetaInstagramAuthFlow {
+  const normalized = String(value ?? '')
+    .trim()
+    .toLowerCase()
+    .replace(/-/g, '_');
+  if (
+    normalized === 'instagram_login' ||
+    normalized === 'direct' ||
+    normalized === 'instagram'
+  ) {
+    return 'INSTAGRAM_LOGIN';
+  }
+  return 'FACEBOOK_LOGIN';
+}
+
+export function isMetaInstagramAuthFlow(
+  value: unknown,
+): value is MetaInstagramAuthFlow {
+  return value === 'FACEBOOK_LOGIN' || value === 'INSTAGRAM_LOGIN';
+}
+
 /** Shown when META_INSTAGRAM_LOGIN_CONFIG_ID points at Instagram Business Login instead of Facebook Login for Business. */
 export const META_INSTAGRAM_LOGIN_CONFIG_SETUP_HINT =
   'META_INSTAGRAM_LOGIN_CONFIG_ID must be a Facebook Login for Business configuration from Meta dashboard: Instagram product → API setup with Facebook login. Do not use Instagram Business Login or Instagram direct login configuration IDs.';

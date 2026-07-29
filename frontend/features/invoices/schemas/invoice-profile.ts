@@ -14,11 +14,12 @@ export const INVOICE_STATUS_OPTIONS: {
   { value: "PAID", label: "Paid" },
   { value: "OVERDUE", label: "Overdue" },
   { value: "VOID", label: "Void" },
+  { value: "OPEN", label: "Open" },
 ];
 
-/** Statuses users may set manually — OVERDUE is set when the due date passes. */
+/** Statuses users may set manually — OVERDUE/OPEN are system-managed. */
 export const INVOICE_MANUAL_STATUS_OPTIONS = INVOICE_STATUS_OPTIONS.filter(
-  (o) => o.value !== "OVERDUE",
+  (o) => o.value !== "OVERDUE" && o.value !== "OPEN",
 );
 
 type InvoicePaymentEligibility = Pick<
@@ -104,7 +105,15 @@ export const invoiceFormSchema = z.object({
   workItemId: z.string().uuid().optional().or(z.literal("")),
   issueDate: z.string().min(1, "Issue date required"),
   dueDate: z.string().optional(),
-  status: z.enum(["DRAFT", "SENT", "PARTIAL", "PAID", "OVERDUE", "VOID"]),
+  status: z.enum([
+    "DRAFT",
+    "SENT",
+    "PARTIAL",
+    "PAID",
+    "OVERDUE",
+    "VOID",
+    "OPEN",
+  ]),
   taxAmount: z.number().min(0),
   discountAmount: z.number().min(0),
   notes: z.string().max(5000).optional(),

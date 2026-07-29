@@ -44,6 +44,12 @@ export interface ChatbotBusinessHoursSettings {
   schedule: Record<string, { start: string; end: string }[]>;
 }
 
+export interface ChatbotWelcomeVariant {
+  matchType: 'page_url' | 'referrer';
+  pattern: string;
+  message: string;
+}
+
 export interface ChatbotFormSettings {
   collectContactInfo: boolean;
   requireName: boolean;
@@ -51,11 +57,19 @@ export interface ChatbotFormSettings {
   requirePhone: boolean;
   showNotesField: boolean;
   allowAnonymous: boolean;
+  collectPhoneWhenOffline: boolean;
+  progressiveProfiling?: {
+    enabled: boolean;
+    askEmailAfterMessages: number;
+    promptMessage?: string;
+  };
 }
 
 export interface ChatbotBotSettings {
   embedEnabled: boolean;
   knowledgeBaseText?: string | null;
+  allowedDomains: string[];
+  welcomeVariants?: ChatbotWelcomeVariant[];
 }
 
 export interface ChatbotSettingsBundle {

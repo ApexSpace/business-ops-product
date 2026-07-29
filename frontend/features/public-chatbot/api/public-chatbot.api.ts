@@ -18,6 +18,13 @@ export interface PublicChatbotConfig {
   showBranding: boolean;
   acknowledgementMessage?: string;
   businessName: string;
+  isOnline: boolean;
+  requiresPhoneCapture: boolean;
+  consentEnabled: boolean;
+  consentText: string | null;
+  launcherIcon: "message" | "chat" | "help";
+  offsetX: number;
+  offsetY: number;
 }
 
 export interface PublicChatbotSession {
@@ -31,6 +38,7 @@ export interface PublicChatbotMessage {
   senderType: string;
   text: string | null;
   createdAt: string;
+  requiresProfile?: "email" | "name" | "phone" | null;
 }
 
 async function publicFetch<T>(path: string, init?: RequestInit): Promise<T> {
@@ -95,5 +103,22 @@ export function listPublicChatbotMessages(sessionId: string, since?: string) {
   const qs = since ? `?since=${encodeURIComponent(since)}` : "";
   return publicFetch<PublicChatbotMessage[]>(
     `public/chatbots/sessions/${encodeURIComponent(sessionId)}/messages${qs}`,
+  );
+}
+
+export function endPublicChatbotSession(sessionId: string) {
+  return publicFetch<{ sessionId: string; status: string }>(
+    `public/chatbots/sessions/${encodeURIComponent(sessionId)}/end`,
+    { method: "POST", body: JSON.stringify({}) },
+  );
+}
+
+export function updatePublicChatbotSessionProfile(
+  sessionId: string,
+  body: { visitorEmail?: string; visitorName?: string; visitorPhone?: string },
+) {
+  return publicFetch<{ contactId: string | null }>(
+    `public/chatbots/sessions/${encodeURIComponent(sessionId)}/profile`,
+    { method: "PATCH", body: JSON.stringify(body) },
   );
 }

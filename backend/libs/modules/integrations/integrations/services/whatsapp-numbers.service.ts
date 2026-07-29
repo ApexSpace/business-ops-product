@@ -81,10 +81,11 @@ export class WhatsAppNumbersService {
       return selected[0] ?? null;
     }
 
-    const resources = await this.resourceRepository.findManyByBusinessAndProvider(
-      businessId,
-      WHATSAPP_PROVIDER_KEY,
-    );
+    const resources =
+      await this.resourceRepository.findManyByBusinessAndProvider(
+        businessId,
+        WHATSAPP_PROVIDER_KEY,
+      );
 
     return resources.find(isWhatsAppPhoneResource) ?? null;
   }

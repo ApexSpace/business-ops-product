@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Get,
   Param,
   ParseUUIDPipe,
   Post,
@@ -24,6 +25,7 @@ import {
 } from '../dto/stripe-platform-billing.dto';
 import { StripePlatformCheckoutService } from '../services/stripe-platform-checkout.service';
 import { StripePlatformPortalService } from '../services/stripe-platform-portal.service';
+import { StripePlatformPaymentMethodService } from '../services/stripe-platform-payment-method.service';
 
 const PLATFORM_ADMIN_ROLES = [
   PlatformMemberRole.SUPER_ADMIN,
@@ -36,6 +38,7 @@ export class StripePlatformBillingController {
   constructor(
     private readonly checkoutService: StripePlatformCheckoutService,
     private readonly portalService: StripePlatformPortalService,
+    private readonly paymentMethodService: StripePlatformPaymentMethodService,
   ) {}
 
   @Post('platform/billing/stripe/checkout-session')
@@ -46,6 +49,32 @@ export class StripePlatformBillingController {
     @Body() dto: CreatePlatformCheckoutSessionDto,
   ): Promise<CheckoutSessionResponseDto> {
     return this.checkoutService.createCheckoutSession(dto);
+  }
+
+  @Post('businesses/current/billing/setup-intent')
+  @ApiBearerAuth()
+  @UseGuards(BusinessRolesGuard)
+  @BusinessRoles(BusinessMemberRole.OWNER, BusinessMemberRole.ADMIN)
+  createCurrentSetupIntent(@CurrentUser() user: RequestUser) {
+    return this.paymentMethodService.createSetupIntent(user.businessId!);
+  }
+
+  @Get('businesses/current/billing/payment-methods')
+  @ApiBearerAuth()
+  @UseGuards(BusinessRolesGuard)
+  @BusinessRoles(BusinessMemberRole.OWNER, BusinessMemberRole.ADMIN)
+  listCurrentPaymentMethods(@CurrentUser() user: RequestUser) {
+    return this.paymentMethodService.listPaymentMethods(user.businessId!);
+  }
+
+  @Post('platform/businesses/:id/billing/setup-intent')
+  @ApiBearerAuth()
+  @UseGuards(PlatformRolesGuard)
+  @PlatformRoles(...PLATFORM_ADMIN_ROLES)
+  createPlatformBusinessSetupIntent(
+    @Param('id', ParseUUIDPipe) businessId: string,
+  ) {
+    return this.paymentMethodService.createSetupIntent(businessId);
   }
 
   @Post('platform/businesses/:id/billing/stripe/portal-session')

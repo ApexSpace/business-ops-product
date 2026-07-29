@@ -11,7 +11,9 @@ describe('WhatsAppDeliveryStatusBufferService', () => {
 
   it('buffers and replays statuses in timestamp order from memory', async () => {
     const redisService = { isAvailable: () => false, getClient: () => null };
-    const service = new WhatsAppDeliveryStatusBufferService(redisService as never);
+    const service = new WhatsAppDeliveryStatusBufferService(
+      redisService as never,
+    );
 
     await service.buffer({
       ...status,

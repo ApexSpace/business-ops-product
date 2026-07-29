@@ -9,7 +9,7 @@ import {
 import { GOOGLE_OAUTH_TOKEN_URL } from '../constants/google-oauth.constants';
 import { BusinessIntegrationRepository } from '../repositories/business-integration.repository';
 
-interface StoredGoogleCredentials {
+export interface StoredGoogleCredentials {
   accessToken: string;
   refreshToken: string | null;
   expiresAt: string;
@@ -34,6 +34,18 @@ export class GoogleTokenService {
     businessId: string,
     providerKey: string,
   ): Promise<string> {
+    const credentials = await this.getStoredCredentials(businessId, providerKey);
+    return credentials.accessToken;
+  }
+
+  /**
+   * Returns decrypted credentials with a non-expired access token
+   * (refreshing when needed). Includes granted OAuth `scope` for validation.
+   */
+  async getStoredCredentials(
+    businessId: string,
+    providerKey: string,
+  ): Promise<StoredGoogleCredentials> {
     const integration =
       await this.businessIntegrationRepository.findByBusinessAndKey(
         businessId,
@@ -65,6 +77,16 @@ export class GoogleTokenService {
       credentials.encrypted,
     ) as unknown as StoredGoogleCredentials;
 
+    // Fall back to config.scopes when encrypted payload omitted scope.
+    const config = integration.config as {
+      scopes?: unknown;
+    } | null;
+    if (!stored.scope?.trim() && Array.isArray(config?.scopes)) {
+      stored.scope = config.scopes
+        .filter((s): s is string => typeof s === 'string')
+        .join(' ');
+    }
+
     if (this.isTokenExpired(stored.expiresAt)) {
       if (!stored.refreshToken) {
         await this.markExpired(businessId, providerKey);
@@ -91,10 +113,10 @@ export class GoogleTokenService {
         providerKey,
         updatedCredentials,
       );
-      return updatedCredentials.accessToken;
+      return updatedCredentials;
     }
 
-    return stored.accessToken;
+    return stored;
   }
 
   private isTokenExpired(expiresAt: string): boolean {

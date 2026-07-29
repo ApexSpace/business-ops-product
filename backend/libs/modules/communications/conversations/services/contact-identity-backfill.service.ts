@@ -51,6 +51,7 @@ export class ContactIdentityBackfillService {
       ? [options.businessId]
       : (
           await this.prisma.business.findMany({
+            where: { type: 'TENANT', lifecycleStage: 'ACTIVE' },
             select: { id: true },
             orderBy: { createdAt: 'asc' },
           })
@@ -92,11 +93,19 @@ export class ContactIdentityBackfillService {
     for (const group of groupContactsByEmail(contacts).values()) {
       if (group.length < 2) continue;
       result.emailGroupsProcessed += 1;
-      await this.mergeContactGroup(businessId, group, mergedContactIds, options, result);
+      await this.mergeContactGroup(
+        businessId,
+        group,
+        mergedContactIds,
+        options,
+        result,
+      );
     }
 
     if (options.includePhone) {
-      const remaining = contacts.filter((contact) => !mergedContactIds.has(contact.id));
+      const remaining = contacts.filter(
+        (contact) => !mergedContactIds.has(contact.id),
+      );
       for (const group of groupContactsByPhone(remaining).values()) {
         if (group.length < 2) continue;
         result.phoneGroupsProcessed += 1;
@@ -120,15 +129,22 @@ export class ContactIdentityBackfillService {
     options: { dryRun: boolean },
     result: ContactIdentityBackfillBusinessResult,
   ): Promise<void> {
-    const activeGroup = group.filter((contact) => !mergedContactIds.has(contact.id));
+    const activeGroup = group.filter(
+      (contact) => !mergedContactIds.has(contact.id),
+    );
     if (activeGroup.length < 2) {
       return;
     }
 
     const canonical = pickCanonicalContact(activeGroup);
-    const duplicates = activeGroup.filter((contact) => contact.id !== canonical.id);
+    const duplicates = activeGroup.filter(
+      (contact) => contact.id !== canonical.id,
+    );
 
-    const blockReason = await this.findMergeBlockReason(canonical.id, duplicates);
+    const blockReason = await this.findMergeBlockReason(
+      canonical.id,
+      duplicates,
+    );
     if (blockReason) {
       result.skipped.push({
         contactIds: duplicates.map((contact) => contact.id),
@@ -182,7 +198,7 @@ export class ContactIdentityBackfillService {
               ...(asMetadata(duplicate.metadata) ?? {}),
               mergedIntoContactId: canonical.id,
               mergedAt: new Date().toISOString(),
-            } as Prisma.InputJsonValue,
+            },
           },
         });
 
@@ -320,9 +336,11 @@ export class ContactIdentityBackfillService {
   }
 }
 
-function asMetadata(value: Prisma.JsonValue | null): Record<string, unknown> | null {
+function asMetadata(
+  value: Prisma.JsonValue | null,
+): Record<string, unknown> | null {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     return null;
   }
-  return value as Record<string, unknown>;
+  return value;
 }

@@ -1,6 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { AppointmentStatus } from '@prisma/client';
+import { resolveBusinessTimezone } from '@app/common/utils/timezone.util';
 import { PrismaService } from '@app/core/database/prisma.service';
+import type { AppointmentWithRelations } from '../repositories/appointment.repository';
 import {
   DEFAULT_REMINDER_HOURS_BEFORE,
   parseCalendarNotificationSettings,
@@ -8,6 +10,16 @@ import {
 import { AppointmentNotificationService } from './appointment-notification.service';
 
 const REMINDER_CRON_WINDOW_MS = 60 * 60 * 1000;
+
+function readReminderOptIn(metadata: unknown): boolean | null {
+  if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) {
+    return null;
+  }
+  const value = (metadata as Record<string, unknown>).reminderOptIn;
+  if (value === true) return true;
+  if (value === false) return false;
+  return null;
+}
 
 @Injectable()
 export class AppointmentReminderService {
@@ -29,14 +41,17 @@ export class AppointmentReminderService {
       where: {
         deletedAt: null,
         status: {
-          in: [AppointmentStatus.SCHEDULED, AppointmentStatus.CONFIRMED],
+          in: [AppointmentStatus.UNCONFIRMED, AppointmentStatus.CONFIRMED],
         },
         startAt: {
           gt: now,
           lte: lookAheadEnd,
         },
         contact: {
-          email: { not: null },
+          OR: [
+            { email: { not: null } },
+            { phoneNumber: { not: null } },
+          ],
         },
       },
       include: {
@@ -45,7 +60,6 @@ export class AppointmentReminderService {
             id: true,
             name: true,
             color: true,
-            timezone: true,
             notificationSettings: true,
           },
         },
@@ -56,23 +70,115 @@ export class AppointmentReminderService {
             lastName: true,
             displayName: true,
             email: true,
+            phoneNumber: true,
+            phoneCountryCode: true,
+            createdAt: true,
           },
         },
         service: { select: { id: true, name: true } },
+        serviceLines: {
+          orderBy: { sortOrder: 'asc' },
+          include: {
+            service: {
+              select: {
+                id: true,
+                name: true,
+                durationMinutes: true,
+                price: true,
+              },
+            },
+            assignedTo: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+              },
+            },
+          },
+        },
         assignedTo: {
           select: { id: true, firstName: true, lastName: true, email: true },
+        },
+        createdBy: {
+          select: { id: true, firstName: true, lastName: true, email: true },
+        },
+        invoices: {
+          where: { deletedAt: null, kind: 'CHECKOUT' },
+          select: { id: true, kind: true, status: true },
+          orderBy: { createdAt: 'desc' },
+          take: 1,
         },
       },
     });
 
+    const businesses = await this.prisma.business.findMany({
+      where: {
+        id: { in: [...new Set(appointments.map((row) => row.businessId))] },
+      },
+      select: { id: true, timezone: true },
+    });
+    const timezoneByBusinessId = new Map(
+      businesses.map((business) => [
+        business.id,
+        resolveBusinessTimezone(business.timezone),
+      ]),
+    );
+
     let sent = 0;
 
     for (const appointment of appointments) {
+      const businessTimezone =
+        timezoneByBusinessId.get(appointment.businessId) ?? 'UTC';
+      const reminderOptIn = readReminderOptIn(appointment.metadata);
+
+      if (!appointment.calendar) {
+        if (
+          reminderOptIn !== true ||
+          (!appointment.contact?.email && !appointment.contact?.phoneNumber)
+        ) {
+          continue;
+        }
+
+        const reminderHours = DEFAULT_REMINDER_HOURS_BEFORE;
+        const reminderTarget = new Date(
+          appointment.startAt.getTime() - reminderHours * 60 * 60 * 1000,
+        );
+
+        if (
+          now < reminderTarget ||
+          now >= new Date(reminderTarget.getTime() + REMINDER_CRON_WINDOW_MS)
+        ) {
+          continue;
+        }
+
+        try {
+          await this.appointmentNotificationService.sendReminder(
+            appointment.businessId,
+            appointment,
+            reminderHours,
+            businessTimezone,
+          );
+          sent += 1;
+        } catch (error) {
+          this.logger.warn(
+            `Reminder enqueue failed for appointment ${appointment.id}: ${
+              error instanceof Error ? error.message : String(error)
+            }`,
+          );
+        }
+        continue;
+      }
+
       const settings = parseCalendarNotificationSettings(
         appointment.calendar.notificationSettings,
       );
 
       if (settings.reminderEnabled === false) {
+        continue;
+      }
+
+      if (reminderOptIn === false) {
         continue;
       }
 
@@ -94,7 +200,7 @@ export class AppointmentReminderService {
           appointment.businessId,
           appointment,
           reminderHours,
-          appointment.calendar.timezone,
+          businessTimezone,
         );
         sent += 1;
       } catch (error) {

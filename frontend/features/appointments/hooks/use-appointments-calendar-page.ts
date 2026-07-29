@@ -6,29 +6,46 @@ import { toast } from "sonner";
 import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
 import { useListSearchParams } from "@/lib/hooks/use-list-search-params";
 import type { Appointment } from "@/features/appointments/schemas/appointment-profile";
+import { isCheckoutOpen } from "@/features/appointments/schemas/appointment-profile";
 import type { CalendarViewMode } from "@/features/calendars/utils/calendar-dates";
 import { queryKeys } from "@/lib/query/keys";
 import {
   getVisibleUtcRange,
   navigateDateKeyInTimezone,
+  parseDateKeyInTimezone,
   resolveAppointmentDisplayTimezone,
   todayDateKeyInTimezone,
   toIsoRangeBound,
-  utcToLocalDateTimeInputValue,
   wallTimeInTimezoneToUtcIso,
 } from "@/features/calendars/utils/timezone";
-import { deleteAppointment, listAppointments } from "@/features/appointments/api/appointments.api";
+import {
+  deleteAppointment,
+  getAppointment,
+  listAppointments,
+  updateAppointmentStatus,
+} from "@/features/appointments/api/appointments.api";
 import { listCalendars } from "@/features/calendars/api/calendars.api";
 import { getCurrentBusiness, listBusinessMembers } from "@/features/settings/api/business.api";
+import {
+  addCheckoutService,
+  createCheckout,
+} from "@/features/sales/api/checkouts.api";
+import type { StaffMemberOption } from "@/features/appointments/components/calendar/staff-selector";
+import { useAppointmentDrawer } from "@/features/appointments/hooks/use-appointment-drawer";
+import { useAppointmentsWorkingHours } from "@/features/appointments/hooks/use-appointments-working-hours";
+import { useAuth } from "@/lib/auth/provider";
+import { useCalendarStaffPermissions } from "@/features/appointments/hooks/use-calendar-staff-permissions";
 
 export const APPOINTMENTS_CALENDAR_PARAMS = {
   view: { default: "week" },
   date: { default: "" },
   calendarId: { default: "" },
   assignedToId: { default: "" },
+  staffIds: { default: "" },
   status: { default: "" },
   search: { default: "" },
   page: { default: "1" },
+  appointmentId: { default: "" },
 } as const;
 
 const LIST_PAGE_LIMIT = 20;
@@ -53,13 +70,32 @@ function isMobileViewport(): boolean {
   );
 }
 
+function memberLabel(member: {
+  user: {
+    firstName: string | null;
+    lastName: string | null;
+    email: string;
+  };
+}): string {
+  const name = [member.user.firstName, member.user.lastName]
+    .filter(Boolean)
+    .join(" ");
+  return name || member.user.email;
+}
+
 export function useAppointmentsCalendarPage() {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const calendarPerms = useCalendarStaffPermissions();
+  const isMemberOnlyView = calendarPerms.isMemberOnlyView;
   const urlInitDone = useRef(false);
+  const appointmentUrlHandled = useRef(false);
   const [isClient, setIsClient] = useState(false);
   const { params, page, setParams } = useListSearchParams(
     APPOINTMENTS_CALENDAR_PARAMS,
   );
+
+  const drawer = useAppointmentDrawer();
 
   useEffect(() => {
     setIsClient(true);
@@ -68,15 +104,7 @@ export function useAppointmentsCalendarPage() {
   const view = parseView(params.view);
   const debouncedSearch = useDebouncedValue(params.search);
 
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [dialogSessionKey, setDialogSessionKey] = useState("closed");
-  const [editing, setEditing] = useState<Appointment | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [createDefaults, setCreateDefaults] = useState<{
-    startAt: string;
-    endAt: string;
-    calendarId?: string;
-  } | null>(null);
 
   const { data: business } = useQuery({
     queryKey: queryKeys.business.current(),
@@ -100,13 +128,68 @@ export function useAppointmentsCalendarPage() {
 
   const anchorDateKey = params.date || todayDateKeyInTimezone(displayTimezone);
 
+  const { data: members } = useQuery({
+    queryKey: queryKeys.business.members({ page: 1, limit: 100 }),
+    queryFn: () => listBusinessMembers({ page: 1, limit: 100 }),
+  });
+
+  const staffMembers: StaffMemberOption[] = useMemo(() => {
+    const all = (members?.items ?? []).map((m) => ({
+      userId: m.userId,
+      label: memberLabel(m),
+      avatarUrl: null,
+    }));
+    if (isMemberOnlyView && user?.id) {
+      return all.filter((m) => m.userId === user.id);
+    }
+    return all;
+  }, [members?.items, isMemberOnlyView, user?.id]);
+
+  const visibleStaffIds = useMemo(() => {
+    if (params.staffIds) {
+      return params.staffIds.split(",").filter(Boolean);
+    }
+    return staffMembers.map((m) => m.userId);
+  }, [params.staffIds, staffMembers]);
+
+  const visibleStaffMembers = useMemo(
+    () =>
+      staffMembers.filter((m) => visibleStaffIds.includes(m.userId)),
+    [staffMembers, visibleStaffIds],
+  );
+
+  const workingHoursStaffIds = useMemo(() => {
+    if (view === "week" && params.assignedToId) {
+      return [params.assignedToId];
+    }
+    if (view === "day") {
+      return visibleStaffMembers.map((m) => m.userId);
+    }
+    return [];
+  }, [view, params.assignedToId, visibleStaffMembers]);
+
+  const { businessSlots, staffSlotsByUserId } = useAppointmentsWorkingHours(
+    workingHoursStaffIds,
+  );
+
+  useEffect(() => {
+    if (!isClient || !isMemberOnlyView || !user?.id) return;
+    if (params.assignedToId === user.id) return;
+    setParams({ assignedToId: user.id });
+  }, [isClient, isMemberOnlyView, user?.id, params.assignedToId, setParams]);
+
   useEffect(() => {
     if (!isClient || urlInitDone.current) return;
 
     const needsDate = !params.date;
     const needsMobileDayView = params.view === "week" && isMobileViewport();
+    const needsStaffDefault =
+      view === "week" &&
+      isMemberOnlyView &&
+      !params.assignedToId &&
+      Boolean(user?.id);
 
-    if (!needsDate && !needsMobileDayView) {
+    if (!needsDate && !needsMobileDayView && !needsStaffDefault) {
       urlInitDone.current = true;
       return;
     }
@@ -120,17 +203,33 @@ export function useAppointmentsCalendarPage() {
     if (needsMobileDayView) {
       updates.view = "day";
     }
+    if (needsStaffDefault && user?.id) {
+      updates.assignedToId = user.id;
+    }
 
     urlInitDone.current = true;
     if (Object.keys(updates).length > 0) {
       setParams(updates);
     }
-  }, [isClient, params.date, params.view, displayTimezone, setParams]);
+  }, [
+    isClient,
+    params.date,
+    params.view,
+    params.assignedToId,
+    displayTimezone,
+    setParams,
+    view,
+    isMemberOnlyView,
+    user?.id,
+  ]);
 
-  const { data: members } = useQuery({
-    queryKey: queryKeys.business.members({ page: 1, limit: 100 }),
-    queryFn: () => listBusinessMembers({ page: 1, limit: 100 }),
-  });
+  useEffect(() => {
+    if (!isClient || appointmentUrlHandled.current) return;
+    if (!params.appointmentId) return;
+    appointmentUrlHandled.current = true;
+    drawer.openDetail(params.appointmentId);
+    setParams({ appointmentId: "" });
+  }, [isClient, params.appointmentId, drawer, setParams]);
 
   const appointmentRange = useMemo(() => {
     if (view === "list") return null;
@@ -141,13 +240,16 @@ export function useAppointmentsCalendarPage() {
     };
   }, [anchorDateKey, view, displayTimezone]);
 
+  const weekStaffFilter =
+    view === "week" ? params.assignedToId || undefined : undefined;
+
   const calendarQueryFilters = useMemo(
     () => ({
       view,
       startFrom: appointmentRange?.startFrom,
       startTo: appointmentRange?.startTo,
       calendarId: params.calendarId || undefined,
-      assignedToId: params.assignedToId || undefined,
+      assignedToId: weekStaffFilter,
       status: params.status || undefined,
       limit: CALENDAR_FETCH_LIMIT,
       page: 1,
@@ -157,7 +259,7 @@ export function useAppointmentsCalendarPage() {
       appointmentRange?.startFrom,
       appointmentRange?.startTo,
       params.calendarId,
-      params.assignedToId,
+      weekStaffFilter,
       params.status,
     ],
   );
@@ -189,7 +291,7 @@ export function useAppointmentsCalendarPage() {
         startFrom: appointmentRange!.startFrom,
         startTo: appointmentRange!.startTo,
         calendarId: params.calendarId || undefined,
-        assignedToId: params.assignedToId || undefined,
+        assignedToId: weekStaffFilter,
         status: params.status || undefined,
       }),
     enabled: view !== "list" && !!appointmentRange,
@@ -218,11 +320,69 @@ export function useAppointmentsCalendarPage() {
     onSuccess: async () => {
       toast.success("Appointment deleted");
       setDeleteId(null);
+      drawer.close();
       await queryClient.invalidateQueries({
         queryKey: queryKeys.appointments.all(),
       });
     },
-    onError: (err: Error) => toast.error(err.message),
+  });
+
+  const cancelMutation = useMutation({
+    mutationFn: (id: string) => updateAppointmentStatus(id, "CANCELLED"),
+    onSuccess: async () => {
+      toast.success("Appointment cancelled");
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.appointments.all(),
+      });
+    },
+  });
+
+  const checkoutMutation = useMutation({
+    mutationFn: async (appointmentId: string) => {
+      const appointment =
+        appointments.find((a) => a.id === appointmentId) ??
+        (await getAppointment(appointmentId));
+      if (!appointment) {
+        throw new Error("Appointment not found");
+      }
+
+      if (!appointment.contactId) {
+        throw new Error("Appointment has no client for checkout");
+      }
+
+      if (appointment.relatedCheckoutId) {
+        // Open checkout: continue editing. Paid/closed: open view only (no new sale).
+        return {
+          id: appointment.relatedCheckoutId,
+          continued: true as const,
+          viewOnly: !isCheckoutOpen(appointment.relatedCheckoutStatus ?? null),
+        };
+      }
+
+      const checkout = await createCheckout({
+        contactId: appointment.contactId,
+        appointmentId,
+      });
+      for (const line of appointment.services ?? []) {
+        await addCheckoutService(checkout.id, {
+          serviceId: line.serviceId,
+          staffUserId: line.assignedToId ?? appointment.assignedToId ?? undefined,
+        });
+      }
+      if (!appointment.services?.length && appointment.serviceId) {
+        await addCheckoutService(checkout.id, {
+          serviceId: appointment.serviceId,
+          staffUserId: appointment.assignedToId ?? undefined,
+        });
+      }
+      return { ...checkout, continued: false as const };
+    },
+    onSuccess: (checkout) => {
+      if (!checkout.continued) {
+        toast.success("Checkout created");
+      }
+      drawer.openCheckout(checkout.id);
+    },
   });
 
   const resolveDurationMinutes = useCallback(
@@ -235,68 +395,121 @@ export function useAppointmentsCalendarPage() {
     [calendars?.items, params.calendarId],
   );
 
-  const openCreateAtSlot = useCallback(
-    (dateKey: string, hour: number, minute: number) => {
+  const openRebook = useCallback(
+    (appointment: Appointment) => {
+      drawer.openCreate({
+        startAt: new Date().toISOString(),
+        calendarId: appointment.calendarId ?? undefined,
+        assignedToId: appointment.assignedToId ?? undefined,
+        contactId: appointment.contactId ?? undefined,
+        contactLabel: [
+          appointment.contact?.firstName,
+          appointment.contact?.lastName,
+          appointment.contact?.displayName,
+        ]
+          .filter(Boolean)
+          .join(" ") || undefined,
+        services: (appointment.services ?? []).map((line) => ({
+          serviceId: line.serviceId,
+          name: line.service.name,
+          price: line.price ?? line.service.price,
+          assignedToId: line.assignedToId ?? appointment.assignedToId ?? "",
+          startMinutes: 0,
+          occupancyMinutes:
+            line.durationMinutes ?? line.service.durationMinutes ?? 60,
+          clientOccupancyMinutes:
+            line.durationMinutes ?? line.service.durationMinutes ?? 60,
+          staffBlockedMinutes:
+            line.durationMinutes ?? line.service.durationMinutes ?? 60,
+          bufferBeforeMinutes: 0,
+          bufferAfterMinutes: 0,
+        })),
+        notes: appointment.notes ?? undefined,
+      });
+    },
+    [drawer],
+  );
+
+  const openTimeBlockAtSlot = useCallback(
+    (
+      dateKey: string,
+      hour: number,
+      minute: number,
+      assignedToId?: string,
+    ) => {
+      const staffId =
+        assignedToId ??
+        (view === "week" ? params.assignedToId || undefined : undefined);
+      if (!calendarPerms.canManageTimeBlockOnStaff(staffId)) {
+        toast.error("You do not have permission to manage this time block");
+        return;
+      }
       const startIso = wallTimeInTimezoneToUtcIso(
         dateKey,
         hour,
         minute,
         displayTimezone,
       );
-      const duration = resolveDurationMinutes(params.calendarId || undefined);
-      const endIso = new Date(
-        new Date(startIso).getTime() + duration * 60_000,
-      ).toISOString();
-      setEditing(null);
-      setCreateDefaults({
-        startAt: utcToLocalDateTimeInputValue(startIso, displayTimezone),
-        endAt: utcToLocalDateTimeInputValue(endIso, displayTimezone),
+      drawer.openTimeBlock({
+        startAt: startIso,
+        assignedToId: staffId,
         calendarId: params.calendarId || calendars?.items[0]?.id,
       });
-      setDialogSessionKey(`create-${dateKey}-${hour}-${minute}`);
-      setDialogOpen(true);
     },
     [
       displayTimezone,
-      resolveDurationMinutes,
       params.calendarId,
+      params.assignedToId,
       calendars?.items,
+      drawer,
+      view,
+      calendarPerms,
     ],
   );
 
-  const openNewAppointment = useCallback(() => {
-    const startIso = wallTimeInTimezoneToUtcIso(
-      anchorDateKey,
-      9,
-      0,
+  const openCreateAtSlot = useCallback(
+    (
+      dateKey: string,
+      hour: number,
+      minute: number,
+      assignedToId?: string,
+    ) => {
+      const staffId =
+        assignedToId ??
+        (view === "week" ? params.assignedToId || undefined : undefined);
+      if (!calendarPerms.canManageAppointmentOnStaff(staffId)) {
+        toast.error("You do not have permission to book on this calendar");
+        return;
+      }
+      const startIso = wallTimeInTimezoneToUtcIso(
+        dateKey,
+        hour,
+        minute,
+        displayTimezone,
+      );
+      drawer.openCreate({
+        startAt: startIso,
+        assignedToId: staffId,
+        calendarId: params.calendarId || calendars?.items[0]?.id,
+      });
+    },
+    [
       displayTimezone,
-    );
-    const duration = resolveDurationMinutes(params.calendarId || undefined);
-    const endIso = new Date(
-      new Date(startIso).getTime() + duration * 60_000,
-    ).toISOString();
-    setEditing(null);
-    setCreateDefaults({
-      startAt: utcToLocalDateTimeInputValue(startIso, displayTimezone),
-      endAt: utcToLocalDateTimeInputValue(endIso, displayTimezone),
-      calendarId: params.calendarId || calendars?.items[0]?.id,
-    });
-    setDialogSessionKey(`create-toolbar-${anchorDateKey}`);
-    setDialogOpen(true);
-  }, [
-    anchorDateKey,
-    displayTimezone,
-    resolveDurationMinutes,
-    params.calendarId,
-    calendars?.items,
-  ]);
+      params.calendarId,
+      params.assignedToId,
+      calendars?.items,
+      drawer,
+      view,
+      calendarPerms,
+    ],
+  );
 
-  const openEdit = useCallback((appointment: Appointment) => {
-    setCreateDefaults(null);
-    setEditing(appointment);
-    setDialogSessionKey(`edit-${appointment.id}`);
-    setDialogOpen(true);
-  }, []);
+  const openAppointmentDetail = useCallback(
+    (appointment: Appointment) => {
+      drawer.openDetail(appointment.id);
+    },
+    [drawer],
+  );
 
   const handleViewChange = (next: CalendarViewMode) => {
     setParams({ view: next, page: "1" });
@@ -315,6 +528,13 @@ export function useAppointmentsCalendarPage() {
     setParams({ date: next });
   };
 
+  const handleJumpWeeks = (weeks: number) => {
+    const next = parseDateKeyInTimezone(anchorDateKey, displayTimezone)
+      .plus({ weeks })
+      .toFormat("yyyy-MM-dd");
+    setParams({ date: next });
+  };
+
   const handleDateSelect = (dateKey: string) => {
     setParams({ date: dateKey });
   };
@@ -323,11 +543,21 @@ export function useAppointmentsCalendarPage() {
     setParams({ view: "day", date: dateKey });
   };
 
+  const handleVisibleStaffIdsChange = (ids: string[]) => {
+    setParams({ staffIds: ids.join(",") });
+  };
+
+  const handleSelectedStaffIdChange = (userId: string) => {
+    setParams({ assignedToId: userId });
+  };
+
   const invalidateAppointments = () => {
     void queryClient.invalidateQueries({
       queryKey: queryKeys.appointments.all(),
     });
   };
+
+  const showDrawerPanel = drawer.drawerMode === "detail";
 
   return {
     view,
@@ -337,28 +567,36 @@ export function useAppointmentsCalendarPage() {
     business,
     calendars,
     members,
+    staffMembers,
+    visibleStaffMembers,
+    visibleStaffIds,
+    businessSlots,
+    staffSlotsByUserId,
+    isMemberOnlyView,
+    calendarPerms,
     displayTimezone,
     anchorDateKey,
     appointments,
     isLoading,
     listData,
-    dialogOpen,
-    setDialogOpen,
-    dialogSessionKey,
-    editing,
-    setEditing,
+    drawer,
+    showDrawerPanel,
     deleteId,
     setDeleteId,
-    createDefaults,
-    setCreateDefaults,
     deleteMutation,
+    cancelMutation,
+    checkoutMutation,
     openCreateAtSlot,
-    openNewAppointment,
-    openEdit,
+    openTimeBlockAtSlot,
+    openRebook,
+    openAppointmentDetail,
     handleViewChange,
     handleDateNavigate,
+    handleJumpWeeks,
     handleDateSelect,
     handleDayClick,
+    handleVisibleStaffIdsChange,
+    handleSelectedStaffIdChange,
     invalidateAppointments,
   };
 }

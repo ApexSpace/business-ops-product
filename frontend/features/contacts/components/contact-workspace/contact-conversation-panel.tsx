@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { ExternalLink, MessageSquare } from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { ProfileAvatar } from "@/components/ui/profile-avatar";
 import { MessageComposer } from "@/features/conversations/components/inbox/message-composer";
 import { VirtualizedMessageList } from "@/features/conversations/components/virtualized-message-list";
 import { useContactConversationComposer } from "@/features/contacts/hooks/use-contact-conversation-composer";
@@ -14,6 +14,7 @@ const CONTACT_CONVERSATION_PANEL_CLASS =
 interface ContactConversationPanelProps {
   contactId: string;
   contactName: string;
+  contactEmail?: string | null;
   contactAvatarUrl?: string | null;
   businessName?: string | null;
   className?: string;
@@ -22,6 +23,7 @@ interface ContactConversationPanelProps {
 export function ContactConversationPanel({
   contactId,
   contactName,
+  contactEmail,
   contactAvatarUrl,
   businessName,
   className,
@@ -66,14 +68,12 @@ export function ContactConversationPanel({
     <section className={cn(CONTACT_CONVERSATION_PANEL_CLASS, className)}>
       <header className="flex shrink-0 items-center justify-between gap-3 border-b border-border/60 px-4 py-3">
         <div className="flex min-w-0 items-center gap-3">
-          <Avatar className="size-10 shrink-0">
-            {contactAvatarUrl ? (
-              <AvatarImage src={contactAvatarUrl} alt="" />
-            ) : null}
-            <AvatarFallback className="bg-primary/10 text-sm font-medium text-primary">
-              {contactName.slice(0, 2).toUpperCase()}
-            </AvatarFallback>
-          </Avatar>
+          <ProfileAvatar
+            name={contactName}
+            avatarUrl={contactAvatarUrl}
+            className="size-10"
+            fallbackClassName="bg-primary/10 text-sm font-medium text-primary"
+          />
           <h2 className="truncate text-base font-semibold">{contactName}</h2>
         </div>
         <Link
@@ -104,6 +104,8 @@ export function ContactConversationPanel({
           </div>
         ) : (
           <VirtualizedMessageList
+            key={contactId}
+            scrollKey={contactId}
             messages={messages}
             hasMore={hasNextPage}
             isLoadingMore={isFetchingNextPage}
@@ -139,6 +141,7 @@ export function ContactConversationPanel({
           subject={emailSubject}
           onSubjectChange={setEmailSubject}
           showSubject={showEmailSubject}
+          recipientEmail={contactEmail}
           replyChannels={replyChannels}
           selectedReplyChannel={effectiveReplyChannel}
           onReplyChannelChange={handleReplyChannelChange}

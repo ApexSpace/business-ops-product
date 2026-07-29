@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { Suspense, useMemo, useState } from "react";
 import {
-  keepPreviousData,
   useMutation,
   useQuery,
   useQueryClient,
@@ -11,7 +10,7 @@ import {
 import { ArrowLeft, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { CreateLeadDialog } from "@/features/leads/components/create-lead-dialog";
-import { LeadFormDialog } from "@/features/leads/components/lead-form-dialog";
+import { LeadDetailSheet } from "@/features/leads/components/lead-detail-sheet";
 import {
   DataTable,
   type DataTableColumn,
@@ -19,15 +18,20 @@ import {
 import { DataTableRowActions } from "@/components/data-display/data-table-row-actions";
 import { StatusBadge } from "@/components/data-display/status-badge";
 import { ConfirmDeleteDialog } from "@/components/forms/confirm-delete-dialog";
-import { FilterBar } from "@/components/layout/filter-bar";
-import { ListPage, ListPageSkeleton } from "@/components/layout/list-page";
+import { SearchableSelect } from "@/components/forms/searchable-select";
+import { EntityWorkspaceLayout } from "@/components/layout/entity-workspace-layout";
+import { ListPageSkeleton } from "@/components/layout/list-page";
 import { Button } from "@/components/ui/button";
 import { ListPagination } from "@/components/ui/list-pagination";
-import { SearchableSelect } from "@/components/forms/searchable-select";
-import { deleteLead } from "@/features/leads/api/leads.api";
+import { deleteLead, getLead } from "@/features/leads/api/leads.api";
 import { useLeadsList } from "@/features/leads/hooks/use-leads-list";
 import { listPipelines } from "@/features/pipelines/api/pipelines.api";
 import { useListSearchParams } from "@/lib/hooks/use-list-search-params";
+import {
+  WORKSPACE_ACTIVE_ROW_CLASS,
+  WORKSPACE_TABLE_CLASS,
+} from "@/lib/design/workspace-tokens";
+import { useEntitySelection } from "@/lib/routing/use-entity-selection";
 import {
   formatLeadValue,
   getLeadDisplayTitle,
@@ -40,7 +44,7 @@ import {
 import { queryKeys } from "@/lib/query/keys";
 import { leadStatusFilterOptions } from "@/features/leads/utils/select-options";
 import { pipelineSelectOptions } from "@/features/pipelines/utils/select-options";
-import type { Lead, LeadStatus, Pipeline } from "@/features/leads/types";
+import type { Lead, LeadStatus } from "@/features/leads/types";
 
 const LIST_SCHEMA = {
   page: { default: "1" },
@@ -53,8 +57,13 @@ const PAGE_LIMIT = 20;
 function BusinessLeadsPageContent() {
   const queryClient = useQueryClient();
   const { params, page, setParams } = useListSearchParams(LIST_SCHEMA);
+  const {
+    selectedId,
+    isOpen,
+    setSelectedId,
+    clearSelection,
+  } = useEntitySelection();
   const [createOpen, setCreateOpen] = useState(false);
-  const [editing, setEditing] = useState<Lead | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const pipelineFilter = params.pipeline;
@@ -73,6 +82,19 @@ function BusinessLeadsPageContent() {
   };
 
   const { data, isLoading } = useLeadsList(listFilters);
+
+  const detailQuery = useQuery({
+    queryKey: queryKeys.leads.detail(selectedId ?? ""),
+    queryFn: () => getLead(selectedId!),
+    enabled: !!selectedId,
+  });
+
+  const detailPipeline = useMemo(() => {
+    if (!detailQuery.data) return null;
+    return (
+      pipelines?.find((p) => p.id === detailQuery.data.pipelineId) ?? null
+    );
+  }, [pipelines, detailQuery.data]);
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => deleteLead(id),
@@ -153,17 +175,12 @@ function BusinessLeadsPageContent() {
         <ArrowLeft className="size-4" />
         Back to CRM Pipeline
       </Link>
-      <ListPage
+
+      <EntityWorkspaceLayout
         title="All leads (table)"
         description="Advanced list view with filters. Day-to-day work happens on the CRM Pipeline board."
-        actions={
-          <Button onClick={() => setCreateOpen(true)}>
-            <Plus className="mr-2 size-4" />
-            New lead
-          </Button>
-        }
         filters={
-          <FilterBar>
+          <>
             <SearchableSelect
               items={pipelineFilterItems}
               value={pipelineFilter}
@@ -171,7 +188,7 @@ function BusinessLeadsPageContent() {
                 setParams({ pipeline: v ?? "all", page: "1" }, { resetPage: true })
               }
               placeholder="All pipelines"
-              triggerClassName="w-[200px]"
+              triggerClassName="w-[200px] shrink-0"
             />
             <SearchableSelect
               items={leadStatusFilterOptions}
@@ -180,11 +197,17 @@ function BusinessLeadsPageContent() {
                 setParams({ status: v ?? "all", page: "1" }, { resetPage: true })
               }
               placeholder="All statuses"
-              triggerClassName="w-[160px]"
+              triggerClassName="w-[160px] shrink-0"
             />
-          </FilterBar>
+          </>
         }
-        pagination={
+        actions={
+          <Button size="sm" onClick={() => setCreateOpen(true)}>
+            <Plus className="mr-1.5 size-4" />
+            New lead
+          </Button>
+        }
+        footer={
           data?.meta ? (
             <ListPagination
               meta={data.meta}
@@ -192,7 +215,7 @@ function BusinessLeadsPageContent() {
               onPageChange={(p) => setParams({ page: String(p) })}
               label="leads"
             />
-          ) : null
+          ) : undefined
         }
       >
         <DataTable
@@ -200,12 +223,24 @@ function BusinessLeadsPageContent() {
           data={data?.items ?? []}
           getRowId={(row) => row.id}
           isLoading={isLoading}
+          density="compact"
+          activeRowId={selectedId}
+          onRowClick={(row) => setSelectedId(row.id)}
+          getRowClassName={(row) =>
+            selectedId === row.id ? WORKSPACE_ACTIVE_ROW_CLASS : undefined
+          }
           emptyTitle="No leads yet"
           emptyDescription="Create one from a contact or add a new lead."
+          emptyAction={
+            <Button size="sm" onClick={() => setCreateOpen(true)}>
+              <Plus className="mr-1.5 size-4" />
+              New lead
+            </Button>
+          }
           rowActions={(lead) => (
             <DataTableRowActions
               actions={[
-                { label: "Edit", onClick: () => setEditing(lead) },
+                { label: "Edit", onClick: () => setSelectedId(lead.id) },
                 {
                   label: "Delete",
                   onClick: () => setDeleteId(lead.id),
@@ -214,8 +249,9 @@ function BusinessLeadsPageContent() {
               ]}
             />
           )}
+          className={WORKSPACE_TABLE_CLASS}
         />
-      </ListPage>
+      </EntityWorkspaceLayout>
 
       <CreateLeadDialog
         open={createOpen}
@@ -223,10 +259,14 @@ function BusinessLeadsPageContent() {
         onSuccess={invalidate}
       />
 
-      <LeadFormDialog
-        open={!!editing}
-        onOpenChange={(open) => !open && setEditing(null)}
-        lead={editing}
+      <LeadDetailSheet
+        open={isOpen}
+        onOpenChange={(open) => {
+          if (!open) clearSelection();
+        }}
+        lead={detailQuery.data ?? null}
+        pipeline={detailPipeline}
+        isLoading={detailQuery.isLoading}
         onSuccess={invalidate}
       />
 

@@ -1,94 +1,111 @@
 "use client";
 
-import { MailPlus, Search } from "lucide-react";
+import { Plus, Search } from "lucide-react";
 import { VirtualList } from "@/components/data-display/virtual-list";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+} from "@/components/ui/select";
 import type { UnifiedConversationThread } from "@/features/conversations/api/conversations.api";
 import { UnifiedThreadRow } from "@/features/conversations/components/inbox/unified-thread-row";
 import {
   THREAD_ROW_HEIGHT,
   VIRTUALIZE_THRESHOLD,
 } from "@/features/conversations/components/inbox/conversation-inbox-utils";
+import type { InboxStatusFilter } from "@/features/conversations/hooks/use-conversations-inbox-filters";
+import { WORKSPACE_PANEL_CLASS } from "@/features/contacts/workspace/contact-workspace";
+import { cn } from "@/lib/utils";
 
-type InboxFilter =
-  | "all"
-  | "facebook"
-  | "instagram"
-  | "whatsapp"
-  | "email"
-  | "webchat"
-  | "open"
-  | "unread"
-  | "assigned";
+const STATUS_FILTER_LABELS: Record<InboxStatusFilter, string> = {
+  OPEN: "Open",
+  CLOSED: "Closed",
+  SPAM: "Spam",
+};
 
 interface ConversationListPanelProps {
   search: string;
   onSearchChange: (value: string) => void;
-  filter: InboxFilter;
-  onFilterChange: (filter: InboxFilter) => void;
+  statusFilter: InboxStatusFilter;
+  onStatusFilterChange: (value: InboxStatusFilter) => void;
   threads: UnifiedConversationThread[];
   listLoading: boolean;
   selectedThreadKey: string | null;
   onSelectThread: (thread: UnifiedConversationThread) => void;
   useVirtualThreads: boolean;
   onNewEmail?: () => void;
+  className?: string;
 }
 
 export function ConversationListPanel({
   search,
   onSearchChange,
-  filter,
-  onFilterChange,
+  statusFilter,
+  onStatusFilterChange,
   threads,
   listLoading,
   selectedThreadKey,
   onSelectThread,
   useVirtualThreads,
   onNewEmail,
+  className,
 }: ConversationListPanelProps) {
   return (
-    <aside className="flex h-full min-h-0 w-full max-w-sm flex-col overflow-hidden border-r border-border/80">
-      <div className="space-y-3 border-b border-border/80 p-3">
-        <div className="relative">
-          <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
-          <Input
-            value={search}
-            onChange={(e) => onSearchChange(e.target.value)}
-            placeholder="Search conversations…"
-            className="pl-8"
-          />
-        </div>
-        {onNewEmail ? (
-          <Button size="sm" className="w-full" onClick={onNewEmail}>
-            <MailPlus className="mr-2 size-4" />
-            New email
-          </Button>
-        ) : null}
-        <div className="flex flex-wrap gap-1">
-          {(
-            [
-              ["all", "All"],
-              ["facebook", "Facebook"],
-              ["instagram", "Instagram"],
-              ["whatsapp", "WhatsApp"],
-              ["email", "Email"],
-              ["webchat", "Website Chat"],
-              ["open", "Open"],
-              ["unread", "Unread"],
-              ["assigned", "Mine"],
-            ] as const
-          ).map(([key, label]) => (
-            <Button
-              key={key}
+    <aside
+      className={cn(WORKSPACE_PANEL_CLASS, "h-full w-full min-w-0", className)}
+    >
+      <div className="border-b border-border/60 p-3">
+        <div className="mb-2">
+          <Select
+            value={statusFilter}
+            onValueChange={(next) =>
+              onStatusFilterChange(next as InboxStatusFilter)
+            }
+          >
+            <SelectTrigger
               size="sm"
-              variant={filter === key ? "default" : "outline"}
-              className="h-7 px-2 text-xs"
-              onClick={() => onFilterChange(key)}
+              className="h-8 w-full border-border/60 bg-muted/20 text-xs shadow-none"
+              aria-label="Filter conversations by status"
             >
-              {label}
+              <span className="min-w-0 flex-1 truncate text-left">
+                {STATUS_FILTER_LABELS[statusFilter]}
+              </span>
+            </SelectTrigger>
+            <SelectContent align="start">
+              {(Object.keys(STATUS_FILTER_LABELS) as InboxStatusFilter[]).map(
+                (value) => (
+                  <SelectItem key={value} value={value}>
+                    {STATUS_FILTER_LABELS[value]}
+                  </SelectItem>
+                ),
+              )}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="relative min-w-0 flex-1">
+            <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
+            <Input
+              value={search}
+              onChange={(e) => onSearchChange(e.target.value)}
+              placeholder="Search conversations…"
+              className="pl-8"
+            />
+          </div>
+          {onNewEmail ? (
+            <Button
+              type="button"
+              size="icon"
+              className="shrink-0"
+              onClick={onNewEmail}
+              aria-label="New email"
+            >
+              <Plus className="size-4" />
             </Button>
-          ))}
+          ) : null}
         </div>
       </div>
 

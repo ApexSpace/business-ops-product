@@ -196,6 +196,10 @@ export class GoogleCalendarSyncService {
         return { synced: false };
       }
 
+      if (!appointment.calendarId) {
+        return { synced: false };
+      }
+
       const context = await this.resolveContext(
         businessId,
         appointment.calendarId,
@@ -272,12 +276,16 @@ export class GoogleCalendarSyncService {
     businessId: string,
     appointment: {
       id: string;
-      calendarId: string;
+      calendarId: string | null;
       externalEventId: string | null;
       externalProvider: string | null;
     },
     actorUserId: string,
   ): Promise<void> {
+    if (!appointment.calendarId) {
+      return;
+    }
+
     try {
       const context = await this.resolveContext(
         businessId,
@@ -471,7 +479,7 @@ export class GoogleCalendarSyncService {
       description: event.description?.trim() || null,
       startAt,
       endAt,
-      status: AppointmentStatus.SCHEDULED,
+      status: AppointmentStatus.UNCONFIRMED,
       source: AppointmentSource.GOOGLE_SYNC,
       externalEventId: event.id,
       externalProvider: APPOINTMENT_EXTERNAL_PROVIDER,
@@ -512,6 +520,9 @@ export class GoogleCalendarSyncService {
 
     for (const appointment of items) {
       if (appointment.status === AppointmentStatus.CANCELLED) {
+        continue;
+      }
+      if (!appointment.calendarId) {
         continue;
       }
       try {
@@ -557,7 +568,7 @@ export class GoogleCalendarSyncService {
   private buildGoogleEventPayload(
     appointment: {
       id: string;
-      calendarId: string;
+      calendarId: string | null;
       title: string;
       description: string | null;
       notes: string | null;
@@ -568,24 +579,25 @@ export class GoogleCalendarSyncService {
         lastName: string | null;
         displayName: string | null;
         email: string | null;
-      };
+      } | null;
       service: { name: string } | null;
     },
     context: SyncContext,
     businessId: string,
   ) {
-    const contactName =
-      appointment.contact.displayName?.trim() ||
-      [appointment.contact.firstName, appointment.contact.lastName]
-        .filter(Boolean)
-        .join(' ')
-        .trim() ||
-      appointment.contact.email ||
-      'Contact';
+    const contactName = appointment.contact
+      ? appointment.contact.displayName?.trim() ||
+        [appointment.contact.firstName, appointment.contact.lastName]
+          .filter(Boolean)
+          .join(' ')
+          .trim() ||
+        appointment.contact.email ||
+        'Contact'
+      : appointment.title;
 
     const descriptionParts = [
       appointment.description,
-      `Contact: ${contactName}`,
+      appointment.contact ? `Contact: ${contactName}` : null,
       appointment.service ? `Service: ${appointment.service.name}` : null,
       appointment.notes ? `Notes: ${appointment.notes}` : null,
       `Internal appointment ID: ${appointment.id}`,
@@ -606,7 +618,7 @@ export class GoogleCalendarSyncService {
         private: {
           internalAppointmentId: appointment.id,
           businessId,
-          calendarId: appointment.calendarId,
+          calendarId: appointment.calendarId ?? '',
         },
       },
     };

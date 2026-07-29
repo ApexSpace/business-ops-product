@@ -21,6 +21,14 @@ export interface ProcessResendWebhookPayload {
   webhookEventId: string;
 }
 
+export interface ProcessTwilioSmsWebhookPayload {
+  webhookEventId: string;
+}
+
+export interface ProcessTwilioSmsWebhookPayload {
+  webhookEventId: string;
+}
+
 export interface SearchIndexJobPayload {
   businessId: string;
   entityType: string;
@@ -71,4 +79,19 @@ export interface CleanupAsyncJobsJobPayload {
 
 export interface CleanupOrphanFilesJobPayload {
   pendingOlderThanHours: number;
+}
+
+export interface AutomationStepJobPayload {
+  businessId: string;
+  runId: string;
+  stepIndex: number;
+}
+
+export interface GenerateReportJobPayload {
+  businessId: string;
+  reportKey: string;
+  format: 'pdf' | 'xlsx';
+  filters: Record<string, unknown>;
+  actorUserId: string;
+  asyncJobId: string;
 }

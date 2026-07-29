@@ -3,6 +3,7 @@
 import { ContactEstimatesPanel } from "@/features/contacts/components/contact-workspace/contact-estimates-panel";
 import { ContactInvoicesPanel } from "@/features/contacts/components/contact-workspace/contact-invoices-panel";
 import { ContactPaymentsPanel } from "@/features/contacts/components/contact-workspace/contact-payments-panel";
+import { ContactSidebarDetailsFields } from "@/features/contacts/components/contact-workspace/contact-sidebar-details-fields";
 import {
   isPlaceholderSection,
   type ContactRecordsSectionId,
@@ -13,7 +14,11 @@ import { ContactRecordsWorkItemsSection } from "@/features/contacts/workspace/re
 import { ContactRecordsNotesSection } from "@/features/contacts/workspace/records/contact-records-notes-section";
 import { ContactRecordsAppointmentsSection } from "@/features/contacts/workspace/records/contact-records-appointments-section";
 import { ContactRecordsTasksSection } from "@/features/contacts/workspace/records/contact-records-tasks-section";
-import { ContactRecordsActivitySection } from "@/features/contacts/workspace/records/contact-records-activity-section";
+import { ContactRecordsAdjustmentsSection } from "@/features/contacts/workspace/records/contact-records-adjustments-section";
+import { ContactRecordsMembershipsSection } from "@/features/contacts/workspace/records/contact-records-memberships-section";
+import { ContactRecordsSalesSection } from "@/features/contacts/workspace/records/contact-records-sales-section";
+import { ContactRecordsTimelineSection } from "@/features/contacts/workspace/records/contact-records-timeline-section";
+import { ContactRecordsWalletSection } from "@/features/contacts/workspace/records/contact-records-wallet-section";
 import type { ContactRecordsSectionProps } from "@/features/contacts/workspace/records/contact-records-types";
 import type { IndustryLabels } from "@/features/contacts/types";
 
@@ -54,6 +59,18 @@ export function ContactRecordsSectionBody({
   }
 
   switch (activeSection) {
+    case "profile":
+      return <ContactSidebarDetailsFields contact={contact} />;
+    case "timeline":
+      return <ContactRecordsTimelineSection {...props} />;
+    case "wallet":
+      return <ContactRecordsWalletSection {...props} />;
+    case "memberships":
+      return <ContactRecordsMembershipsSection {...props} />;
+    case "adjustments":
+      return <ContactRecordsAdjustmentsSection {...props} />;
+    case "sales":
+      return <ContactRecordsSalesSection contact={contact} />;
     case "leads":
       return <ContactRecordsLeadsSection {...props} />;
     case "work-items":
@@ -65,7 +82,7 @@ export function ContactRecordsSectionBody({
     case "tasks":
       return <ContactRecordsTasksSection {...props} />;
     case "activity":
-      return <ContactRecordsActivitySection {...props} />;
+      return <ContactRecordsTimelineSection {...props} />;
     case "estimates":
       return (
         <ContactEstimatesPanel

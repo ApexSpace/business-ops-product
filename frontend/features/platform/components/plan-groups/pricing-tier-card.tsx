@@ -217,9 +217,9 @@ export function PricingTierCard({
         </p>
       ) : null}
 
-      {settings.showTierFeatures && tier.features.length > 0 ? (
+      {settings.showTierFeatures && (tier.features?.length ?? 0) > 0 ? (
         <ul className="flex flex-1 flex-col gap-[var(--plan-feature-list-gap,0.5em)] text-sm">
-          {tier.features.map((feature, index) => (
+          {(tier.features ?? []).map((feature, index) => (
             <li
               key={`${tier.slug}-feature-${index}`}
               className={cn(

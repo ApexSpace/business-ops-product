@@ -1,25 +1,36 @@
 "use client";
 
-import { Suspense, useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Plus } from "lucide-react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { Plus, Printer, Trash2 } from "lucide-react";
+import { DataTable, type DataTableColumn } from "@/components/data-display/data-table";
+import { EntityDetailDrawer } from "@/components/layout/entity-detail-drawer";
+import { EntityWorkspaceLayout } from "@/components/layout/entity-workspace-layout";
 import { ContactFormDialog } from "@/features/contacts/components/contact-form-dialog";
-import { ContactIdentityCell } from "@/features/contacts/components/contact-identity-cell";
 import {
-  DataTable,
-  type DataTableColumn,
-} from "@/components/data-display/data-table";
+  ContactDetailPanel,
+  isContactDetailTab,
+  type ContactDetailPanelActions,
+  type ContactDetailTabId,
+} from "@/features/contacts/components/contact-detail-panel";
 import { SearchInput } from "@/components/forms/search-input";
-import { FilterBar } from "@/components/layout/filter-bar";
-import { ListPage, ListPageSkeleton } from "@/components/layout/list-page";
 import { ActionButton } from "@/components/ui/action-button";
+import { Button } from "@/components/ui/button";
 import { ListPagination } from "@/components/ui/list-pagination";
-import { Can } from "@/features/auth/permissions/can";
-import { PERMISSIONS } from "@/features/auth/permissions/permissions";
+import { ProfileAvatar } from "@/components/ui/profile-avatar";
+import { Skeleton } from "@/components/ui/skeleton";
+import { ContactMergeDialog } from "@/features/contacts/components/contact-merge-dialog";
+import { useContactDetail } from "@/features/contacts/hooks/use-contact-detail";
 import { useContactsList } from "@/features/contacts/hooks/use-contacts-list";
+import { useContactStaffPermissions } from "@/features/contacts/hooks/use-contact-staff-permissions";
 import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
 import { useListSearchParams } from "@/lib/hooks/use-list-search-params";
-import { formatContactTableDate } from "@/features/contacts/schemas/contact-profile";
+import {
+  WORKSPACE_ACTIVE_ROW_CLASS,
+  WORKSPACE_TABLE_CLASS,
+} from "@/lib/design/workspace-tokens";
+import { useEntitySelection } from "@/lib/routing/use-entity-selection";
 import {
   invalidateContactLists,
   invalidateContactPicker,
@@ -33,11 +44,66 @@ const LIST_SCHEMA = {
 
 const PAGE_LIMIT = 20;
 
+function contactSubline(contact: Contact) {
+  return (
+    contact.phone?.trim() ||
+    contact.email?.trim() ||
+    contact.companyName?.trim() ||
+    "No contact details yet"
+  );
+}
+
 function BusinessContactsPageContent() {
   const queryClient = useQueryClient();
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const contactPerms = useContactStaffPermissions();
   const { params, page, setParams } = useListSearchParams(LIST_SCHEMA);
   const debouncedSearch = useDebouncedValue(params.search);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [mergeOpen, setMergeOpen] = useState(false);
+  const [noteComposerOpen, setNoteComposerOpen] = useState(false);
+  const createFromQuery = searchParams.get("action") === "create";
+  const panelActionsRef = useRef<ContactDetailPanelActions | null>(null);
+
+  const {
+    selectedId,
+    tab,
+    isOpen,
+    setSelectedId,
+    setTab,
+    clearSelection,
+  } = useEntitySelection({
+    legacyIdParams: ["contact"],
+    defaultTab: "timeline",
+  });
+
+  const activeTab: ContactDetailTabId =
+    tab && isContactDetailTab(tab) ? tab : "timeline";
+
+  useEffect(() => {
+    if (!isOpen) {
+      setNoteComposerOpen(false);
+    }
+  }, [isOpen, selectedId]);
+
+  useEffect(() => {
+    if (selectedId && !contactPerms.canOpenProfiles) {
+      clearSelection();
+      setNoteComposerOpen(false);
+    }
+  }, [selectedId, contactPerms.canOpenProfiles, clearSelection]);
+
+  const handleNoteComposerOpenChange = useCallback(
+    (open: boolean) => {
+      if (open) {
+        setTab("timeline");
+      }
+      setNoteComposerOpen(open);
+    },
+    [setTab],
+  );
 
   const listFilters = {
     page,
@@ -46,29 +112,41 @@ function BusinessContactsPageContent() {
   };
 
   const { data, isLoading } = useContactsList(listFilters);
+  const canLoadDetail = Boolean(selectedId && contactPerms.canOpenProfiles);
+  const { isLoading: detailLoading } = useContactDetail(
+    canLoadDetail ? (selectedId ?? "") : "",
+  );
+  const contacts = data?.items ?? [];
+  const total = data?.meta?.total ?? contacts.length;
+  const selectedContact =
+    contacts.find((contact) => contact.id === selectedId) ?? null;
+
+  const handleActionsReady = useCallback((actions: ContactDetailPanelActions) => {
+    panelActionsRef.current = actions;
+  }, []);
 
   const columns = useMemo<DataTableColumn<Contact>[]>(
     () => [
       {
-        id: "name",
-        header: "Name",
+        id: "contact",
+        header: "Contact",
         sortable: true,
         sortValue: (row) => row.label,
         cell: (row) => (
-          <ContactIdentityCell
-            contactId={row.id}
-            label={row.label}
-            avatarUrl={row.avatarUrl}
-          />
-        ),
-      },
-      {
-        id: "phone",
-        header: "Phone",
-        sortable: true,
-        sortValue: (row) => row.phone ?? "",
-        cell: (row) => (
-          <span className="text-muted-foreground">{row.phone ?? "—"}</span>
+          <div className="flex min-w-0 items-center gap-2.5">
+            <ProfileAvatar
+              name={row.label}
+              avatarUrl={row.avatarAssetId ? row.avatarUrl : null}
+              size="sm"
+              className="!size-8 shrink-0"
+            />
+            <div className="min-w-0">
+              <p className="truncate font-medium">{row.label}</p>
+              <p className="truncate text-xs text-muted-foreground">
+                {contactSubline(row)}
+              </p>
+            </div>
+          </div>
         ),
       },
       {
@@ -76,40 +154,22 @@ function BusinessContactsPageContent() {
         header: "Email",
         sortable: true,
         sortValue: (row) => row.email ?? "",
-        cell: (row) => (
-          <span className="text-muted-foreground">{row.email ?? "—"}</span>
-        ),
+        cell: (row) => row.email?.trim() || "—",
+      },
+      {
+        id: "phone",
+        header: "Phone",
+        sortable: true,
+        sortValue: (row) => row.phone ?? "",
+        className: "whitespace-nowrap",
+        cell: (row) => row.phone?.trim() || "—",
       },
       {
         id: "company",
-        header: "Company Name",
+        header: "Company",
         sortable: true,
         sortValue: (row) => row.companyName ?? "",
-        cell: (row) => row.companyName ?? "—",
-      },
-      {
-        id: "created",
-        header: "Created",
-        sortable: true,
-        sortValue: (row) => row.createdAt,
-        className: "whitespace-nowrap",
-        cell: (row) => (
-          <span className="tabular-nums text-muted-foreground">
-            {formatContactTableDate(row.createdAt)}
-          </span>
-        ),
-      },
-      {
-        id: "lastActivity",
-        header: "Last Activity",
-        sortable: true,
-        sortValue: (row) => row.updatedAt,
-        className: "whitespace-nowrap",
-        cell: (row) => (
-          <span className="tabular-nums text-muted-foreground">
-            {formatContactTableDate(row.updatedAt)}
-          </span>
-        ),
+        cell: (row) => row.companyName?.trim() || "—",
       },
     ],
     [],
@@ -117,71 +177,194 @@ function BusinessContactsPageContent() {
 
   return (
     <>
-      <ListPage
+      <EntityWorkspaceLayout
         title="Contacts"
-        description="Manage customers, patients, or clients."
+        description="Select a record to open contact details."
+        search={
+          <SearchInput
+            value={params.search}
+            onChange={(value) =>
+              setParams({ search: value, page: "1" }, { resetPage: true })
+            }
+            placeholder="Search contacts…"
+            className="min-w-0 flex-1"
+          />
+        }
         actions={
-          <Can permission={PERMISSIONS["contacts.create"]}>
-            <ActionButton onClick={() => setDialogOpen(true)}>
-              <Plus className="mr-2 size-4" />
-              Add contact
-            </ActionButton>
-          </Can>
+          contactPerms.canManage ? (
+            <>
+              <Button
+                type="button"
+                size="icon-sm"
+                className="sm:hidden"
+                aria-label="Add contact"
+                onClick={() => setDialogOpen(true)}
+              >
+                <Plus className="size-4" />
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                className="hidden shrink-0 sm:inline-flex"
+                onClick={() => setDialogOpen(true)}
+              >
+                <Plus className="mr-1.5 size-4" />
+                Add contact
+              </Button>
+            </>
+          ) : null
         }
-        filters={
-          <FilterBar>
-            <SearchInput
-              value={params.search}
-              onChange={(value) =>
-                setParams({ search: value, page: "1" }, { resetPage: true })
-              }
-              placeholder="Search contacts…"
-            />
-          </FilterBar>
-        }
-        pagination={
+        footer={
           data?.meta ? (
             <ListPagination
               meta={data.meta}
               page={page}
               onPageChange={(p) => setParams({ page: String(p) })}
               label="contacts"
+              compact
             />
-          ) : null
+          ) : contacts.length > 0 ? (
+            `${contacts.length} of ${total} contact${total === 1 ? "" : "s"}`
+          ) : undefined
         }
       >
         <DataTable
           columns={columns}
-          data={data?.items ?? []}
+          data={contacts}
           getRowId={(row) => row.id}
           isLoading={isLoading}
-          emptyTitle="No contacts yet"
-          emptyDescription="Add your first contact to get started."
-          emptyAction={
-            <ActionButton onClick={() => setDialogOpen(true)}>
-              <Plus className="mr-2 size-4" />
-              Add contact
-            </ActionButton>
+          density="compact"
+          activeRowId={selectedId}
+          onRowClick={(row) => {
+            if (!contactPerms.canOpenProfiles) return;
+            if (row.id !== selectedId) {
+              setTab("timeline");
+            }
+            setSelectedId(row.id);
+          }}
+          getRowClassName={(row) =>
+            contactPerms.canOpenProfiles && selectedId === row.id
+              ? WORKSPACE_ACTIVE_ROW_CLASS
+              : undefined
           }
+          emptyTitle="No contacts yet"
+          emptyDescription="Add your first contact to start building your CRM."
+          emptyAction={
+            contactPerms.canManage ? (
+              <ActionButton onClick={() => setDialogOpen(true)}>
+                <Plus className="mr-2 size-4" />
+                Add contact
+              </ActionButton>
+            ) : undefined
+          }
+          className={WORKSPACE_TABLE_CLASS}
         />
-      </ListPage>
+      </EntityWorkspaceLayout>
+
+      <EntityDetailDrawer
+        open={isOpen && contactPerms.canOpenProfiles}
+        onOpenChange={(open) => {
+          if (!open) {
+            clearSelection();
+            setNoteComposerOpen(false);
+          }
+        }}
+        width="split"
+        title="Contact details"
+        isLoading={detailLoading}
+        fullBleed
+        bodyClassName="flex flex-col !overflow-hidden"
+        overflowActions={
+          selectedId && contactPerms.canOpenProfiles
+            ? [
+                {
+                  id: "print",
+                  label: "Print upcoming appointments",
+                  icon: <Printer className="size-3.5" />,
+                  onSelect: () => panelActionsRef.current?.printAppointments(),
+                },
+                ...(contactPerms.canDeleteMerge
+                  ? [
+                      {
+                        id: "merge",
+                        label: "Merge contact…",
+                        onSelect: () => setMergeOpen(true),
+                      },
+                      {
+                        id: "delete",
+                        label: "Delete",
+                        icon: <Trash2 className="size-3.5" />,
+                        destructive: true,
+                        onSelect: () => panelActionsRef.current?.openDelete(),
+                      },
+                    ]
+                  : []),
+              ]
+            : undefined
+        }
+      >
+        {selectedId && contactPerms.canOpenProfiles ? (
+          <ContactDetailPanel
+            embedded
+            contactId={selectedId}
+            activeSection={activeTab}
+            onSectionChange={(section) => setTab(section)}
+            onActionsReady={handleActionsReady}
+            noteComposerOpen={noteComposerOpen}
+            onNoteComposerOpenChange={handleNoteComposerOpenChange}
+            onContactDeleted={() => {
+              clearSelection();
+              setNoteComposerOpen(false);
+            }}
+          />
+        ) : null}
+      </EntityDetailDrawer>
 
       <ContactFormDialog
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
+        open={dialogOpen || createFromQuery}
+        onOpenChange={(open) => {
+          setDialogOpen(open);
+          if (!open && createFromQuery) {
+            const next = new URLSearchParams(searchParams.toString());
+            next.delete("action");
+            const qs = next.toString();
+            router.replace(qs ? `${pathname}?${qs}` : pathname, {
+              scroll: false,
+            });
+          }
+        }}
         contact={null}
         onSuccess={() => {
           void invalidateContactLists(queryClient);
           void invalidateContactPicker(queryClient);
         }}
       />
+
+      {selectedId && selectedContact ? (
+        <ContactMergeDialog
+          open={mergeOpen}
+          onOpenChange={setMergeOpen}
+          keepContactId={selectedId}
+          keepContactLabel={selectedContact.label}
+          onMerged={() => {
+            void invalidateContactLists(queryClient);
+          }}
+        />
+      ) : null}
     </>
   );
 }
 
 export function ContactsPage() {
   return (
-    <Suspense fallback={<ListPageSkeleton />}>
+    <Suspense
+      fallback={
+        <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden p-6">
+          <Skeleton className="h-10 w-48" />
+          <Skeleton className="mt-4 min-h-0 flex-1 rounded-xl" />
+        </div>
+      }
+    >
       <BusinessContactsPageContent />
     </Suspense>
   );

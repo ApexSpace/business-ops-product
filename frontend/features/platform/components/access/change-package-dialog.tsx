@@ -19,13 +19,9 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Switch } from "@/components/ui/switch";
 import { previewPlatformBusinessAccessAction } from "@/features/platform/api/business-access.api";
+import { listPlatformTiers } from "@/features/platform/api/tiers.api";
 import { ActionImpactPreviewDialog } from "@/features/platform/components/access/action-impact-preview-dialog";
 import { PackageImpactPreview } from "@/features/platform/components/access/package-impact-preview";
-import {
-  getPlatformPlanGroupTierDefaults,
-  listPlatformPlanGroups,
-  listPlatformPlanGroupTiers,
-} from "@/features/platform/api/plan-groups.api";
 import type { BusinessAccess } from "@/features/platform/types/business-access";
 import type { SubscriptionPaymentMethod } from "@/features/platform/types/business-access";
 import type {
@@ -71,7 +67,7 @@ function withCurrentOption(
 
 const PAYMENT_OPTIONS: { value: ChangePackagePaymentOption; label: string }[] = [
   { value: "no_payment", label: "No payment now" },
-  { value: "record_payment", label: "Collect payment now" },
+  { value: "record_payment", label: "Record offline payment now" },
   { value: "move_pending", label: "Mark as awaiting payment" },
   { value: "keep_status", label: "Keep current payment status" },
 ];
@@ -90,9 +86,6 @@ export function ChangePackageDialog({
   onSuccess: () => void;
 }) {
   const [step, setStep] = useState(1);
-  const [planGroupId, setPlanGroupId] = useState<string | null>(
-    access.subscription?.planGroupId ?? null,
-  );
   const [planTierId, setPlanTierId] = useState<string | null>(
     access.subscription?.planTierId ?? null,
   );
@@ -122,7 +115,6 @@ export function ChangePackageDialog({
 
   const resetForm = () => {
     setStep(1);
-    setPlanGroupId(access.subscription?.planGroupId ?? null);
     setPlanTierId(access.subscription?.planTierId ?? null);
     setBillingCycle(
       (access.subscription?.billingCycle as BusinessSubscriptionBillingCycle) ?? "MONTHLY",
@@ -150,29 +142,14 @@ export function ChangePackageDialog({
     onOpenChange(next);
   };
 
-  const { data: planGroups, isLoading: planGroupsLoading } = useQuery({
-    queryKey: queryKeys.platform.planGroups.list({ status: "PUBLISHED", limit: 50 }),
-    queryFn: () =>
-      listPlatformPlanGroups({ page: 1, limit: 50, status: "PUBLISHED" }),
+  const { data: tiersPage, isLoading: tiersLoading } = useQuery({
+    queryKey: queryKeys.platform.tiers.list({ status: "PUBLISHED", limit: 100 }),
+    queryFn: () => listPlatformTiers({ status: "PUBLISHED", limit: 100 }),
     enabled: open,
   });
 
-  const { data: tiers, isLoading: tiersLoading } = useQuery({
-    queryKey: queryKeys.platform.planGroups.tiers(planGroupId ?? ""),
-    queryFn: () => listPlatformPlanGroupTiers(planGroupId!),
-    enabled: open && Boolean(planGroupId),
-  });
-
-  const selectedTier = tiers?.find((tier) => tier.id === planTierId);
-
-  const { data: tierDefaults } = useQuery({
-    queryKey: queryKeys.platform.planGroups.tierDefaults(
-      planGroupId ?? "",
-      planTierId ?? "",
-    ),
-    queryFn: () => getPlatformPlanGroupTierDefaults(planGroupId!, planTierId!),
-    enabled: open && Boolean(planGroupId) && Boolean(planTierId),
-  });
+  const tiers = tiersPage?.items ?? [];
+  const selectedTier = tiers.find((tier) => tier.id === planTierId);
 
   useEffect(() => {
     if (!selectedTier || customPrice) return;
@@ -180,10 +157,10 @@ export function ChangePackageDialog({
     if (resolved != null) {
       setAmount(String(resolved));
     }
-    if (tierDefaults?.currency) {
-      setCurrency(tierDefaults.currency);
+    if (selectedTier.currency) {
+      setCurrency(selectedTier.currency);
     }
-  }, [selectedTier, billingCycle, customPrice, tierDefaults?.currency]);
+  }, [selectedTier, billingCycle, customPrice]);
 
   useEffect(() => {
     if (billingCycle === "CUSTOM") return;
@@ -208,20 +185,29 @@ export function ChangePackageDialog({
     [access.capabilities],
   );
 
+  const nextCapabilities: EffectiveCapability[] = useMemo(
+    () =>
+      (selectedTier?.capabilities ?? []).map((c) => ({
+        key: c.key,
+        name: c.name,
+      })),
+    [selectedTier],
+  );
+
   const { toAdd, toRemove } = useMemo(
     () =>
       computeCapabilityDiff(
         currentCapabilities,
-        tierDefaults?.capabilities ?? [],
+        nextCapabilities,
         preservedKeys,
       ),
-    [currentCapabilities, tierDefaults, preservedKeys],
+    [currentCapabilities, nextCapabilities, preservedKeys],
   );
 
   const buildChangePackageInput = () => {
     const numericAmount = Number(amount);
     const input = {
-      planGroupId: planGroupId!,
+      planGroupId: access.subscription?.planGroupId ?? undefined,
       planTierId: planTierId!,
       billingCycle,
       syncCapabilities,
@@ -274,7 +260,7 @@ export function ChangePackageDialog({
       return executeSubscriptionAction(businessId, "CHANGE_PACKAGE", payload);
     },
     onSuccess: () => {
-      toast.success("Plan updated");
+      toast.success("Tier updated");
       setPreviewOpen(false);
       onOpenChange(false);
       onSuccess();
@@ -282,24 +268,16 @@ export function ChangePackageDialog({
     onError: (err: Error) => toast.error(err.message),
   });
 
-  const planGroupItems = useMemo(
-    () =>
-      withCurrentOption(
-        planGroups?.items.map((g) => ({ value: g.id, label: g.name })) ?? [],
-        access.subscription?.planGroupId,
-        access.subscription?.planGroupName,
-      ),
-    [
-      planGroups?.items,
-      access.subscription?.planGroupId,
-      access.subscription?.planGroupName,
-    ],
-  );
-
   const tierItems = useMemo(
     () =>
       withCurrentOption(
-        tiers?.map((tier) => ({ value: tier.id, label: tier.name })) ?? [],
+        tiers.map((tier) => ({
+          value: tier.id,
+          label:
+            tier.id === access.subscription?.planTierId
+              ? `${tier.name} (current)`
+              : tier.name,
+        })),
         access.subscription?.planTierId,
         access.subscription?.planTierName,
       ),
@@ -342,34 +320,20 @@ export function ChangePackageDialog({
           </DialogHeader>
           <DialogBody className="space-y-4">
             <p className="text-sm text-amber-700 dark:text-amber-400">
-              This plan change applies immediately.
+              This tier change applies immediately.
             </p>
 
             {step === 1 && (
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label>Plan Group</Label>
-                  <SearchableSelect
-                    inDialog
-                    items={planGroupItems}
-                    value={planGroupId}
-                    onValueChange={(v) => {
-                      setPlanGroupId(v);
-                      setPlanTierId(null);
-                    }}
-                    placeholder="Select plan group"
-                    disabled={planGroupsLoading}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Plan Tier</Label>
+                  <Label>Tier</Label>
                   <SearchableSelect
                     inDialog
                     items={tierItems}
                     value={planTierId}
                     onValueChange={setPlanTierId}
-                    placeholder="Select plan tier"
-                    disabled={!planGroupId || tiersLoading}
+                    placeholder="Select tier"
+                    disabled={tiersLoading}
                   />
                 </div>
                 <div className="space-y-2">
@@ -390,7 +354,7 @@ export function ChangePackageDialog({
               <div className="space-y-4">
                 <div className="grid gap-3 rounded-md border p-3 text-sm sm:grid-cols-2">
                   <div>
-                    <p className="text-xs text-muted-foreground">Current plan</p>
+                    <p className="text-xs text-muted-foreground">Current tier</p>
                     <p className="font-medium">
                       {currentSub?.planTierName ?? "—"} ·{" "}
                       {formatBillingCycleLabel(currentSub?.billingCycle)}
@@ -402,7 +366,7 @@ export function ChangePackageDialog({
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs text-muted-foreground">New plan</p>
+                    <p className="text-xs text-muted-foreground">New tier</p>
                     <p className="font-medium">
                       {selectedTier?.name ?? "—"} · {formatBillingCycleLabel(billingCycle)}
                     </p>
@@ -461,13 +425,12 @@ export function ChangePackageDialog({
                   </div>
                 </div>
 
-                {tierDefaults ? (
+                {selectedTier ? (
                   <PackageImpactPreview
-                    snapshotName={tierDefaults.suggestedSnapshotName}
-                    capabilities={tierDefaults.capabilities}
+                    capabilities={nextCapabilities}
                     amount={amount}
                     currency={currency}
-                    trialDays={tierDefaults.trialDays}
+                    trialDays={selectedTier.trialDays}
                     showDiff
                     toAdd={toAdd}
                     toRemove={toRemove}
@@ -505,6 +468,11 @@ export function ChangePackageDialog({
                       </div>
                     ))}
                   </RadioGroup>
+                  {paymentOption === "record_payment" ? (
+                    <p className="text-xs text-muted-foreground">
+                      Records an offline payment ledger entry. Does not charge a card.
+                    </p>
+                  ) : null}
                 </div>
 
                 {paymentOption === "record_payment" ? (
@@ -559,7 +527,7 @@ export function ChangePackageDialog({
             {step < 3 ? (
               <Button
                 type="button"
-                disabled={step === 1 && (!planGroupId || !planTierId)}
+                disabled={step === 1 && !planTierId}
                 onClick={() => setStep(step + 1)}
               >
                 Next

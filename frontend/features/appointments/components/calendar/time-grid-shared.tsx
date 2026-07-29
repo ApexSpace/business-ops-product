@@ -15,9 +15,11 @@ import {
 import {
   dateKeyFromUtcIso,
   isTodayDateKey,
-  resolveTimezoneForAppointment,
 } from "@/features/calendars/utils/timezone";
 import { CALENDAR_GRID } from "@/features/calendars/utils/calendar-grid-styles";
+import { WorkingHoursOverlays } from "@/features/appointments/components/calendar/working-hours-overlays";
+import type { BusinessHoursSlot } from "@/features/business-hours/types";
+import { defaultBusinessHoursSlots } from "@/features/business-hours/utils/default-business-hours";
 import { cn } from "@/lib/utils";
 
 const GRID_HEIGHT = getTimeGridHeight();
@@ -29,9 +31,27 @@ interface TimeGridColumnProps {
   viewTimezone: string;
   calendars?: Calendar[];
   businessTimezone?: string | null;
+  /** When set, only show appointments assigned to this staff member */
+  staffUserId?: string;
   highlightToday?: boolean;
   onAppointmentClick: (appointment: Appointment) => void;
-  onSlotClick: (dateKey: string, hour: number, minute: number) => void;
+  onAppointmentMoveStart?: (
+    appointment: Appointment,
+    event: React.PointerEvent,
+  ) => void;
+  onAppointmentResizeStart?: (
+    appointment: Appointment,
+    event: React.PointerEvent,
+  ) => void;
+  draggingAppointmentId?: string | null;
+  businessHoursSlots?: BusinessHoursSlot[];
+  staffHoursSlots?: BusinessHoursSlot[] | null;
+  onSlotClick: (
+    dateKey: string,
+    hour: number,
+    minute: number,
+    assignedToId?: string,
+  ) => void;
 }
 
 export function TimeGridColumn({
@@ -40,21 +60,31 @@ export function TimeGridColumn({
   viewTimezone,
   calendars,
   businessTimezone,
+  staffUserId,
   highlightToday = true,
   onAppointmentClick,
+  onAppointmentMoveStart,
+  onAppointmentResizeStart,
+  draggingAppointmentId,
+  businessHoursSlots,
+  staffHoursSlots,
   onSlotClick,
 }: TimeGridColumnProps) {
   const slotLabels = getTimeSlotLabels();
-  const appointmentTimezone = (appointment: Appointment) =>
-    resolveTimezoneForAppointment(
-      appointment.calendarId,
-      calendars,
-      businessTimezone,
-    );
+  const resolvedBusinessHours =
+    businessHoursSlots?.length ? businessHoursSlots : defaultBusinessHoursSlots();
 
-  const dayAppointments = appointments.filter(
-    (a) => dateKeyFromUtcIso(a.startAt, appointmentTimezone(a)) === dateKey,
-  );
+  // Bucket appointments into day columns using the grid's view timezone so a
+  // day/column matches the axis, slot clicks, and card positions.
+  const dayAppointments = appointments.filter((a) => {
+    if (dateKeyFromUtcIso(a.startAt, viewTimezone) !== dateKey) {
+      return false;
+    }
+    if (staffUserId && a.assignedToId !== staffUserId) {
+      return false;
+    }
+    return true;
+  });
 
   const handleColumnClick = (event: MouseEvent<HTMLDivElement>) => {
     if (
@@ -72,13 +102,13 @@ export function TimeGridColumn({
     const minutes = slotLabels[slotIndex];
     if (minutes === undefined) return;
 
-    onSlotClick(dateKey, Math.floor(minutes / 60), minutes % 60);
+    onSlotClick(dateKey, Math.floor(minutes / 60), minutes % 60, staffUserId);
   };
 
   return (
     <div
       className={cn(
-        "relative min-w-0 cursor-pointer",
+        "relative min-w-0 cursor-pointer overflow-hidden",
         CALENDAR_GRID.column,
         highlightToday &&
           isTodayDateKey(dateKey, viewTimezone) &&
@@ -93,18 +123,27 @@ export function TimeGridColumn({
           key={minutes}
           className={cn(
             "pointer-events-none w-full hover:bg-muted/30",
-            CALENDAR_GRID.slot,
+            minutes % 60 === 45 ? CALENDAR_GRID.slotHour : CALENDAR_GRID.slot,
           )}
           style={{ height: CALENDAR_SLOT_HEIGHT_PX }}
           aria-hidden
         />
       ))}
+      <WorkingHoursOverlays
+        dateKey={dateKey}
+        timezone={viewTimezone}
+        businessSlots={resolvedBusinessHours}
+        staffSlots={staffHoursSlots}
+      />
       <TimeGridAppointments
         appointments={dayAppointments}
         viewTimezone={viewTimezone}
         calendars={calendars}
         businessTimezone={businessTimezone}
         onAppointmentClick={onAppointmentClick}
+        onAppointmentMoveStart={onAppointmentMoveStart}
+        onAppointmentResizeStart={onAppointmentResizeStart}
+        draggingAppointmentId={draggingAppointmentId}
       />
     </div>
   );
@@ -119,7 +158,7 @@ export function TimeGridGutter() {
           key={minutes}
           className={cn(
             "flex items-start justify-end pr-2 pt-0.5 text-[10px] text-muted-foreground",
-            CALENDAR_GRID.slot,
+            minutes % 60 === 45 ? CALENDAR_GRID.slotHour : CALENDAR_GRID.slot,
           )}
           style={{ height: CALENDAR_SLOT_HEIGHT_PX }}
         >

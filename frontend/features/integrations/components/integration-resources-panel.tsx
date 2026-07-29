@@ -1,5 +1,6 @@
 "use client";
 
+import { Loader2 } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { IntegrationEmptyState } from "@/features/integrations/components/integration-empty-state";
@@ -12,13 +13,11 @@ import {
   selectIntegrationResource,
   syncIntegrationResources,
   unselectIntegrationResource,
+  type IntegrationsHostMode,
 } from "@/features/integrations/api/integrations.api";
 import { getIntegrationManageCopy } from "@/features/integrations/utils/integration-manage-copy";
-import {
-  providerSupportsResources,
-  type IntegrationResourcesListResponse,
-} from "@/features/integrations/utils/integration-resources";
-import { getIntegrationReconnectLabel } from "@/features/integrations/utils/integrations";
+import { providerSupportsResources } from "@/features/integrations/utils/integration-resources";
+import type { InstagramAuthFlow } from "@/features/integrations/utils/integrations";
 import { queryKeys } from "@/lib/query/keys";
 
 export interface IntegrationResourcesPanelProps {
@@ -26,6 +25,12 @@ export interface IntegrationResourcesPanelProps {
   isConnected: boolean;
   canManage?: boolean;
   onReconnect?: () => void;
+  host?: IntegrationsHostMode;
+  /** True while post-OAuth sync job is still running. */
+  isSyncingAssets?: boolean;
+  /** Backend integration errorMessage (e.g. no pages / no IG accounts). */
+  syncErrorMessage?: string | null;
+  authFlow?: InstagramAuthFlow;
 }
 
 export function IntegrationResourcesPanel({
@@ -33,21 +38,31 @@ export function IntegrationResourcesPanel({
   isConnected,
   canManage = false,
   onReconnect,
+  host = "business",
+  isSyncingAssets = false,
+  syncErrorMessage = null,
+  authFlow,
 }: IntegrationResourcesPanelProps) {
   const queryClient = useQueryClient();
   const supportsResources = providerSupportsResources(providerKey);
-  const copy = getIntegrationManageCopy(providerKey);
+  const copy = getIntegrationManageCopy(providerKey, { authFlow });
 
-  const { data, isLoading } = useQuery({
-    queryKey: queryKeys.integrations.businessResources(providerKey),
-    queryFn: () => listIntegrationResources(providerKey),
+  const { data, isLoading, isFetching } = useQuery({
+    queryKey: queryKeys.integrations.businessResources(providerKey, host),
+    queryFn: () => listIntegrationResources(providerKey, host),
     enabled: isConnected && supportsResources,
   });
 
   const invalidateResources = () =>
     queryClient.invalidateQueries({
-      queryKey: queryKeys.integrations.businessResources(providerKey),
+      queryKey: queryKeys.integrations.businessResources(providerKey, host),
     });
+
+  const invalidateMessagingStatus = () => {
+    void queryClient.invalidateQueries({
+      queryKey: queryKeys.integrations.messagingStatus(providerKey, host),
+    });
+  };
 
   const invalidateWhatsAppSettings = () => {
     if (providerKey !== "whatsapp") return;
@@ -60,7 +75,7 @@ export function IntegrationResourcesPanel({
   };
 
   const syncMutation = useMutation({
-    mutationFn: () => syncIntegrationResources(providerKey),
+    mutationFn: () => syncIntegrationResources(providerKey, host),
     onSuccess: async (result) => {
       const count = result.resourceCount;
       if (count > 0) {
@@ -69,6 +84,7 @@ export function IntegrationResourcesPanel({
         toast.message(copy.syncEmptyToast);
       }
       await invalidateResources();
+      invalidateMessagingStatus();
       invalidateWhatsAppSettings();
     },
     onError: (error: Error) => toast.error(error.message),
@@ -76,28 +92,31 @@ export function IntegrationResourcesPanel({
 
   const selectMutation = useMutation({
     mutationFn: (resourceId: string) =>
-      selectIntegrationResource(providerKey, resourceId),
+      selectIntegrationResource(providerKey, resourceId, host),
     onSuccess: async () => {
       await invalidateResources();
+      invalidateMessagingStatus();
     },
     onError: (error: Error) => toast.error(error.message),
   });
 
   const unselectMutation = useMutation({
     mutationFn: (resourceId: string) =>
-      unselectIntegrationResource(providerKey, resourceId),
+      unselectIntegrationResource(providerKey, resourceId, host),
     onSuccess: async () => {
       await invalidateResources();
+      invalidateMessagingStatus();
     },
     onError: (error: Error) => toast.error(error.message),
   });
 
   const makeDefaultMutation = useMutation({
     mutationFn: (resourceId: string) =>
-      makeDefaultIntegrationResource(providerKey, resourceId),
+      makeDefaultIntegrationResource(providerKey, resourceId, host),
     onSuccess: async () => {
       toast.success("Default updated");
       await invalidateResources();
+      invalidateMessagingStatus();
       invalidateWhatsAppSettings();
     },
     onError: (error: Error) => toast.error(error.message),
@@ -113,56 +132,66 @@ export function IntegrationResourcesPanel({
     unselectMutation.isPending ||
     makeDefaultMutation.isPending;
 
-  const syncEnabled = data?.syncEnabled ?? false;
   const resources = data?.resources ?? [];
+  const syncEnabled = data?.syncEnabled === true;
+  const showSyncingState =
+    isSyncingAssets || (isLoading && !data) || (isFetching && !data);
   const isGbp = providerKey === "google-business-profile";
   const isWhatsApp = providerKey === "whatsapp";
   const hasWhatsAppDefault = isWhatsApp && resources.some((r) => r.isDefault);
 
   return (
-    <section className="space-y-4">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+    <div className="space-y-3">
+      <div className="flex items-center justify-between gap-2">
         <h3 className="text-sm font-medium">{copy.resourcesSectionLabel}</h3>
-        {canManage ? (
-          <SyncResourcesButton
-            onSync={() => syncMutation.mutate()}
-            isPending={syncMutation.isPending}
-            disabled={!syncEnabled}
-            label={
-              syncEnabled
+        <SyncResourcesButton
+          label={
+            showSyncingState && !data
+              ? "Syncing…"
+              : syncEnabled
                 ? copy.syncButtonLabel
-                : "Sync unavailable"
-            }
-          />
-        ) : null}
+                : data
+                  ? "Sync unavailable"
+                  : "Syncing…"
+          }
+          disabled={!canManage || !syncEnabled || isPending || showSyncingState}
+          isPending={syncMutation.isPending}
+          onSync={() => syncMutation.mutate()}
+        />
       </div>
 
-      {isGbp ? (
-        <p className="text-xs text-muted-foreground">
-          Google limits how often profiles can be refreshed. Sync once, then wait
-          about a minute before trying again.
-        </p>
-      ) : null}
-
-      {isWhatsApp ? (
-        <p className="text-xs text-muted-foreground">
-          {hasWhatsAppDefault
-            ? "Your default WhatsApp number is used for outbound messaging. Only one number is supported per business for now."
-            : "Select one WhatsApp number as default. Only one number is supported per business for now."}
-        </p>
-      ) : null}
-
-      {isLoading ? (
-        <Skeleton className="h-24 w-full" />
+      {showSyncingState ? (
+        <div className="flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border/70 bg-muted/20 p-6 text-center">
+          <Loader2 className="size-5 animate-spin text-primary" />
+          <p className="text-sm font-medium text-foreground">
+            {copy.syncingAssetsTitle ?? "Finding connected resources…"}
+          </p>
+          <p className="text-sm text-muted-foreground">
+            {copy.syncingAssetsMessage ??
+              "This usually takes a few seconds after you authorize Meta."}
+          </p>
+        </div>
+      ) : isLoading ? (
+        <div className="space-y-2">
+          <Skeleton className="h-16 w-full" />
+          <Skeleton className="h-16 w-full" />
+        </div>
       ) : resources.length === 0 ? (
         <IntegrationEmptyState
-          copy={copy.emptyState}
+          copy={{
+            ...copy.emptyState,
+            message: syncErrorMessage?.trim()
+              ? syncErrorMessage
+              : copy.emptyState.message,
+          }}
           onReconnect={canManage ? onReconnect : undefined}
-          reconnectLabel={getIntegrationReconnectLabel({
-            key: providerKey,
-            name: copy.connectionTitle,
-            connectionType: "OAUTH",
-          })}
+          reconnectLabel={
+            providerKey === "facebook"
+              ? "Reconnect Facebook"
+              : providerKey === "instagram"
+                ? "Reconnect Instagram"
+                : "Reconnect"
+          }
           onSync={
             canManage && syncEnabled
               ? () => syncMutation.mutate()
@@ -170,18 +199,31 @@ export function IntegrationResourcesPanel({
           }
           syncLabel={copy.syncButtonLabel}
           isSyncPending={syncMutation.isPending}
-          syncDisabled={!syncEnabled}
+          syncDisabled={isPending}
         />
       ) : (
-        <IntegrationResourceList
-          resources={resources}
-          canManage={canManage}
-          isPending={isPending}
-          onSelect={(id) => selectMutation.mutate(id)}
-          onUnselect={(id) => unselectMutation.mutate(id)}
-          onMakeDefault={(id) => makeDefaultMutation.mutate(id)}
-        />
+        <>
+          {isWhatsApp && !hasWhatsAppDefault ? (
+            <p className="text-sm text-muted-foreground">
+              Select a default WhatsApp number to send and receive messages.
+            </p>
+          ) : null}
+          {isGbp ? (
+            <p className="text-sm text-muted-foreground">
+              Select the locations your business should use. You can change this
+              later.
+            </p>
+          ) : null}
+          <IntegrationResourceList
+            resources={resources}
+            canManage={canManage}
+            isPending={isPending}
+            onSelect={(id) => selectMutation.mutate(id)}
+            onUnselect={(id) => unselectMutation.mutate(id)}
+            onMakeDefault={(id) => makeDefaultMutation.mutate(id)}
+          />
+        </>
       )}
-    </section>
+    </div>
   );
 }

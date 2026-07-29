@@ -1,10 +1,17 @@
 import { Module } from '@nestjs/common';
 import { CommunicationsWorkerModule } from '@app/modules/communications/communications-worker.module';
+import { AutomationsWorkerModule } from '@app/modules/communications/automations/automations-worker.module';
+import { ReportsWorkerModule } from '@app/modules/reports/reports-worker.module';
 import { SyncProcessorsModule } from './sync-processors.module';
 import { QueueWorkersService } from './queue-workers.service';
 
 @Module({
-  imports: [CommunicationsWorkerModule, SyncProcessorsModule],
+  imports: [
+    CommunicationsWorkerModule,
+    AutomationsWorkerModule,
+    ReportsWorkerModule,
+    SyncProcessorsModule,
+  ],
   providers: [QueueWorkersService],
   exports: [QueueWorkersService],
 })

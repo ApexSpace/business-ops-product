@@ -1,14 +1,14 @@
 "use client";
 
-import { ChevronLeft, Clock } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import type { PublicBookingCalendar } from "@/features/public-booking/schemas/public-booking";
-import { formatDuration } from "@/features/public-booking/utils/booking-format";
+import type { PublicBookingBusiness } from "@/features/public-booking/schemas/public-booking";
 
 export type BookingMobileStep = "date" | "time" | "details" | "success";
 
 interface BookingMobileHeaderProps {
-  calendar: PublicBookingCalendar;
+  business: PublicBookingBusiness;
+  calendar?: PublicBookingBusiness;
   accentColor: string;
   step: BookingMobileStep;
   onBack?: () => void;
@@ -18,6 +18,7 @@ interface BookingMobileHeaderProps {
 }
 
 export function BookingMobileHeader({
+  business,
   calendar,
   accentColor,
   step,
@@ -25,7 +26,7 @@ export function BookingMobileHeader({
   subtitle,
   metaLabel,
 }: BookingMobileHeaderProps) {
-  const durationLabel = formatDuration(calendar.durationMinutes);
+  const data = business ?? calendar!;
   const showSlotMeta = step === "details" || step === "time";
 
   return (
@@ -47,33 +48,23 @@ export function BookingMobileHeader({
 
           <div className="min-w-0 flex-1 space-y-1 text-left">
             <p className="truncate text-xs font-medium leading-none text-muted-foreground">
-              {calendar.businessName}
+              {data.businessName}
             </p>
             <h1 className="truncate text-[0.9375rem] font-semibold leading-tight">
-              {subtitle ?? calendar.title}
+              {subtitle ?? data.title}
             </h1>
             {showSlotMeta && metaLabel ? (
               <p className="truncate text-sm leading-snug text-muted-foreground">
                 {metaLabel}
-                <span className="mx-1.5 text-muted-foreground/50">·</span>
-                <span className="inline-flex items-center gap-1">
-                  <Clock className="size-3.5 shrink-0" aria-hidden />
-                  {durationLabel}
-                </span>
               </p>
-            ) : (
-              <p className="flex items-center gap-1.5 text-sm leading-snug text-muted-foreground">
-                <Clock className="size-3.5 shrink-0" aria-hidden />
-                {durationLabel}
-              </p>
-            )}
+            ) : null}
           </div>
         </div>
 
-        {calendar.logoUrl ? (
+        {data.logoUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={calendar.logoUrl}
+            src={data.logoUrl}
             alt=""
             className="h-10 w-auto max-w-[80px] shrink-0 object-contain"
           />
@@ -83,7 +74,7 @@ export function BookingMobileHeader({
             style={{ backgroundColor: accentColor }}
             aria-hidden
           >
-            {calendar.businessName.charAt(0).toUpperCase()}
+            {data.businessName.charAt(0).toUpperCase()}
           </div>
         )}
       </div>

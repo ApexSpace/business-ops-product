@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { ListPagination } from "@/components/ui/list-pagination";
 import {
   formatAppointmentRange,
-  formatAppointmentStatus,
+  getAppointmentStatusDisplayLabel,
   getContactDisplayName,
   type Appointment,
   type AppointmentStatus,
@@ -23,8 +23,11 @@ const STATUS_VARIANT: Record<
   AppointmentStatus,
   "default" | "secondary" | "destructive" | "outline"
 > = {
-  SCHEDULED: "outline",
+  PENDING_COMPLETION: "outline",
+  UNCONFIRMED: "outline",
   CONFIRMED: "default",
+  WAITING: "default",
+  IN_SERVICE: "default",
   COMPLETED: "secondary",
   CANCELLED: "destructive",
   NO_SHOW: "destructive",
@@ -84,7 +87,11 @@ export function AppointmentListView({
       {
         id: "contact",
         header: "Contact",
-        cell: (row) => getContactDisplayName(row.contact),
+        cell: (row) =>
+          getContactDisplayName(row.contact, {
+            guestFirstName: row.guestFirstName,
+            guestEmail: row.guestEmail,
+          }),
       },
       {
         id: "staff",
@@ -101,7 +108,11 @@ export function AppointmentListView({
         header: "Status",
         cell: (row) => (
           <Badge variant={STATUS_VARIANT[row.status]}>
-            {formatAppointmentStatus(row.status)}
+            {getAppointmentStatusDisplayLabel(
+              row.status,
+              row.relatedCheckoutId ?? null,
+              row.relatedCheckoutStatus ?? null,
+            )}
           </Badge>
         ),
       },

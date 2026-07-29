@@ -54,7 +54,7 @@ export function PageTabsList({
   return (
     <TabsList
       className={cn(
-        "flex h-auto w-full flex-wrap justify-start gap-1",
+        "flex !h-auto w-full flex-wrap justify-start gap-1",
         className,
       )}
     >
@@ -62,7 +62,10 @@ export function PageTabsList({
         <TabsTrigger
           key={tab.value}
           value={tab.value}
-          className={cn("text-xs sm:text-sm", triggerClassName)}
+          className={cn(
+            "text-xs sm:text-sm data-active:after:hidden",
+            triggerClassName,
+          )}
         >
           {tab.label}
         </TabsTrigger>

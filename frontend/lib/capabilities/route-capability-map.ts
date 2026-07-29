@@ -7,7 +7,9 @@ const ROUTE_CAPABILITY_MAP = new Map<string, RouteCapabilityEntry>([
   ["/business/contacts", { moduleKey: "contacts", capabilityKeys: ["contacts.list"] }],
   ["/business/leads", { moduleKey: "leads", capabilityKeys: ["leads.list"] }],
   ["/business/pipelines", { moduleKey: "pipelines", capabilityKeys: ["pipelines.list"] }],
+  ["/business/notes", { moduleKey: "notes", capabilityKeys: ["notes.list"] }],
   ["/business/work-items", { moduleKey: "work_items", capabilityKeys: ["work_items.list"] }],
+  ["/business/tasks", { moduleKey: "tasks", capabilityKeys: ["tasks.list"] }],
   [
     "/business/conversations",
     { moduleKey: "conversations", capabilityKeys: ["conversations.inbox"] },
@@ -17,16 +19,53 @@ const ROUTE_CAPABILITY_MAP = new Map<string, RouteCapabilityEntry>([
     { moduleKey: "appointments", capabilityKeys: ["appointments.list"] },
   ],
   [
+    "/business/time-clock",
+    { moduleKey: "time_clock", capabilityKeys: ["time_clock.kiosk"] },
+  ],
+  [
+    "/business/time-cards",
+    { moduleKey: "time_clock", capabilityKeys: ["time_clock.cards.manage"] },
+  ],
+  [
     "/business/payments",
-    { moduleKey: "payments", capabilityKeys: ["payments.estimates.list"] },
+    {
+      moduleKey: "payments",
+      capabilityKeys: [
+        "payments.transactions.list",
+        "estimates.list",
+        "invoices.list",
+      ],
+    },
+  ],
+  ["/business/sales", { moduleKey: "sales", capabilityKeys: ["sales.access"] }],
+  [
+    "/business/gift-cards",
+    { moduleKey: "gift_cards", capabilityKeys: ["gift_cards.list"] },
+  ],
+  [
+    "/business/packages",
+    { moduleKey: "packages", capabilityKeys: ["packages.list"] },
+  ],
+  [
+    "/business/memberships",
+    { moduleKey: "memberships", capabilityKeys: ["memberships.list"] },
+  ],
+  ["/business/offers", { moduleKey: "offers", capabilityKeys: ["offers.list"] }],
+  [
+    "/business/products",
+    { moduleKey: "products", capabilityKeys: ["products.list"] },
+  ],
+  [
+    "/business/reports",
+    { moduleKey: "reports", capabilityKeys: ["reports.access"] },
   ],
   [
     "/business/invoices",
-    { moduleKey: "payments", capabilityKeys: ["payments.invoices.list"] },
+    { moduleKey: "invoices", capabilityKeys: ["invoices.list"] },
   ],
   [
     "/business/estimates",
-    { moduleKey: "payments", capabilityKeys: ["payments.estimates.list"] },
+    { moduleKey: "estimates", capabilityKeys: ["estimates.list"] },
   ],
   [
     "/business/settings/calendars",
@@ -42,7 +81,35 @@ const ROUTE_CAPABILITY_MAP = new Map<string, RouteCapabilityEntry>([
   ],
   [
     "/business/settings/forms",
-    { moduleKey: "settings", capabilityKeys: ["settings.forms.list"] },
+    { moduleKey: "forms", capabilityKeys: ["forms.list"] },
+  ],
+  [
+    "/business/settings/automations",
+    { moduleKey: "automations", capabilityKeys: ["automations.list"] },
+  ],
+  [
+    "/business/settings/automation-workflows",
+    { moduleKey: "automations", capabilityKeys: ["automations.list"] },
+  ],
+  [
+    "/business/settings/automation-registry",
+    { moduleKey: "automations", capabilityKeys: ["automations.list"] },
+  ],
+  [
+    "/business/automations",
+    { moduleKey: "automations", capabilityKeys: ["automations.list"] },
+  ],
+  [
+    "/business/settings/services",
+    { moduleKey: "services", capabilityKeys: ["services.list"] },
+  ],
+  [
+    "/business/settings/resources",
+    { moduleKey: "resources", capabilityKeys: ["resources.list"] },
+  ],
+  [
+    "/business/settings/online-booking",
+    { moduleKey: "online_booking", capabilityKeys: ["online_booking.settings"] },
   ],
   [
     "/business/settings/integrations",
@@ -69,7 +136,6 @@ const CORE_SAFE_PREFIXES = [
   "/business/settings/appearance",
   "/business/settings/financial",
   "/business/settings/templates",
-  "/business/settings/automations",
   "/business/access-blocked",
   "/business/feature-unavailable",
 ];

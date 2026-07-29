@@ -27,7 +27,11 @@ import { ResendWebhookProcessor } from './workers/processors/resend-webhook.proc
 import { SendEmailProcessor } from './workers/processors/send-email.processor';
 
 @Module({
-  imports: [WebhookEventsModule, IdempotencyModule, forwardRef(() => ConversationsModule)],
+  imports: [
+    WebhookEventsModule,
+    IdempotencyModule,
+    forwardRef(() => ConversationsModule),
+  ],
   controllers: [EmailNotificationsController, ResendWebhookController],
   providers: [
     BusinessEmailPreferenceRepository,
@@ -48,6 +52,8 @@ import { SendEmailProcessor } from './workers/processors/send-email.processor';
   ],
   exports: [
     EmailNotificationService,
+    EmailPreferenceService,
+    EmailTemplateRendererService,
     ResendProviderService,
     SendEmailProcessor,
     ResendWebhookProcessor,

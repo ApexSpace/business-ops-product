@@ -1,7 +1,6 @@
-"use client";
+import { redirect } from "next/navigation";
 
-import { PlatformIndustriesPage } from "@/features/platform/pages/platform-industries-page";
-
-export default function Page() {
-  return <PlatformIndustriesPage />;
+/** Industries UI hidden — MedSpa-only product. */
+export default function IndustriesRedirectPage() {
+  redirect("/platform/tiers");
 }

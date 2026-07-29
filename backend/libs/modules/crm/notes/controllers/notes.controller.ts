@@ -16,6 +16,9 @@ import { ConfirmDeleteQueryDto } from '@app/common/dto/confirm-delete-query.dto'
 import { CurrentUser } from '@app/common/decorators/current-user.decorator';
 import type { RequestUser } from '@app/common/decorators/current-user.decorator';
 import { BusinessRoles } from '@app/common/decorators/business-roles.decorator';
+import { StaffPermission } from '@app/common/decorators/staff-permission.decorator';
+import { RequireModule } from '@app/common/decorators/require-module.decorator';
+import { BusinessCapabilityGuard } from '@app/common/guards/business-capability.guard';
 import { BusinessRolesGuard } from '@app/common/guards/business-roles.guard';
 import { CreateNoteDto } from '../dto/create-note.dto';
 import { ListNotesQueryDto } from '../dto/list-notes-query.dto';
@@ -25,7 +28,9 @@ import { NotesService } from '@app/modules/crm/notes/services/notes.service';
 @ApiTags('notes')
 @ApiBearerAuth()
 @Controller('notes')
-@UseGuards(BusinessRolesGuard)
+@UseGuards(BusinessRolesGuard, BusinessCapabilityGuard)
+@RequireModule('notes')
+@StaffPermission('contacts.access')
 export class NotesController {
   constructor(private readonly notesService: NotesService) {}
 
@@ -35,6 +40,7 @@ export class NotesController {
     BusinessMemberRole.ADMIN,
     BusinessMemberRole.MEMBER,
   )
+  @StaffPermission('contacts.manage')
   create(@CurrentUser() user: RequestUser, @Body() dto: CreateNoteDto) {
     return this.notesService.create(user.businessId!, dto, user);
   }
@@ -68,6 +74,7 @@ export class NotesController {
     BusinessMemberRole.ADMIN,
     BusinessMemberRole.MEMBER,
   )
+  @StaffPermission('contacts.manage')
   update(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -88,6 +95,7 @@ export class NotesController {
     type: Boolean,
     description: 'Must be true to confirm deletion',
   })
+  @StaffPermission('contacts.manage')
   remove(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,

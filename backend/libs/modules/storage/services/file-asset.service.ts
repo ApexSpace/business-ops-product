@@ -30,7 +30,11 @@ export class FileAssetService {
       );
     }
 
-    if (!ALLOWED_MIME_TYPES.includes(dto.mimeType as (typeof ALLOWED_MIME_TYPES)[number])) {
+    if (
+      !ALLOWED_MIME_TYPES.includes(
+        dto.mimeType as (typeof ALLOWED_MIME_TYPES)[number],
+      )
+    ) {
       throw new AppException(
         ErrorCode.BAD_REQUEST,
         `MIME type not allowed: ${dto.mimeType}`,
@@ -71,7 +75,7 @@ export class FileAssetService {
 
   buildPendingAssetData(
     businessId: string,
-    uploadedById: string,
+    uploadedById: string | undefined,
     dto: CreateUploadDto,
     fileAssetId: string,
   ): CreateFileAssetData {

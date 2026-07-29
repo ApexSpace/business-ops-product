@@ -1,14 +1,21 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
 import { usePathname } from "next/navigation";
 import { Building2, Settings } from "lucide-react";
 import { AppShell } from "@/components/shell";
 import { businessSettingsEntry } from "@/lib/config/navigation/business-menu";
 import {
   businessSettingsSections,
+  filterBusinessSettingsSections,
   isBusinessSettingsPath,
 } from "@/lib/config/navigation/business-settings-menu";
+import {
+  ADMIN_DEFAULT_SETTINGS_HREF,
+  MEMBER_DEFAULT_SETTINGS_HREF,
+  canAccessSettingsHref,
+} from "@/features/team/permissions/staff-permissions";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { isFullScreenEditorRoute } from "@/lib/config/navigation/full-screen-editor-routes";
 import {
   platformBrand,
@@ -25,13 +32,12 @@ import { BusinessAccessBanner } from "@/components/business-access/business-acce
 import { BusinessAccessGate } from "@/components/business-access/business-access-gate";
 import { ServiceUnavailableBanner } from "@/components/layout/service-unavailable-banner";
 import { useOptionalBusinessAccess } from "@/lib/business-access/use-business-access";
-import { shouldShowAccountSwitcher } from "@/lib/auth";
-import { getCurrentBusiness } from "@/features/settings/api/business.api";
-import { queryKeys } from "@/lib/query/keys";
+import { useShellCurrentBusiness } from "@/lib/hooks/use-shell-current-business";
 import { useAuth } from "@/lib/auth/provider";
 import { useSnapshotContext } from "@/lib/snapshot/use-snapshot-context";
 import { hasPlatformBusinessAdminAccess } from "@/features/auth/permissions/permissions-legacy";
-import type { ShellNavSection } from "@/lib/types/shell-nav";
+import type { ShellNavItem, ShellNavSection } from "@/lib/types/shell-nav";
+import { resolveBusinessNicheProfile } from "@/lib/config/niche";
 
 interface ShellLayoutProps {
   mode: "platform" | "business";
@@ -40,13 +46,12 @@ interface ShellLayoutProps {
 
 export function AppShellLayout({ mode, children }: ShellLayoutProps) {
   const pathname = usePathname();
-  const { contexts, jwt, user, sessionError, refreshSession } = useAuth();
+  const router = useRouter();
+  const { contexts, jwt, sessionError, refreshSession } = useAuth();
   const { context: snapshotContext, t } = useSnapshotContext();
   const businessAccess = useOptionalBusinessAccess();
 
-  const { data: currentBusiness } = useQuery({
-    queryKey: queryKeys.business.current(),
-    queryFn: getCurrentBusiness,
+  const { data: currentBusiness } = useShellCurrentBusiness({
     enabled: mode === "business",
   });
 
@@ -54,6 +59,32 @@ export function AppShellLayout({ mode, children }: ShellLayoutProps) {
     mode === "business" && isBusinessSettingsPath(pathname);
 
   const isPlatformAdmin = hasPlatformBusinessAdminAccess(jwt, contexts);
+
+  const settingsAccess = {
+    businessRole: jwt?.businessRole,
+    staffPermissions: jwt?.staffPermissions,
+    isPlatformAdmin,
+  };
+
+  useEffect(() => {
+    if (mode !== "business" || !isSettingsMode) return;
+    if (canAccessSettingsHref(pathname, settingsAccess)) return;
+    const fallback =
+      jwt?.businessRole === "OWNER" ||
+      jwt?.businessRole === "ADMIN" ||
+      isPlatformAdmin
+        ? ADMIN_DEFAULT_SETTINGS_HREF
+        : MEMBER_DEFAULT_SETTINGS_HREF;
+    router.replace(fallback);
+  }, [
+    mode,
+    isSettingsMode,
+    pathname,
+    router,
+    jwt?.businessRole,
+    jwt?.staffPermissions,
+    isPlatformAdmin,
+  ]);
 
   const hasModule =
     mode === "business" && businessAccess
@@ -79,21 +110,47 @@ export function AppShellLayout({ mode, children }: ShellLayoutProps) {
       .filter((section) => section.items.length > 0);
   };
 
+  const filterAppsByCapability = (items: ShellNavItem[]): ShellNavItem[] => {
+    if (!capabilityKeys) return items;
+    return items.filter((item) => {
+      if (isCoreSafeBusinessRoute(item.href)) return true;
+      return canAccessBusinessRoute(item.href, capabilityKeys);
+    });
+  };
+
+  const snapshotNavigation =
+    mode === "business" && !isSettingsMode
+      ? resolveSnapshotNavigation({
+          navigation: augmentSnapshotNavigationWithCapabilities(
+            snapshotContext.navigation,
+            hasModule,
+          ),
+          resolveLabel: t,
+          businessRole: jwt?.businessRole,
+          isPlatformAdmin,
+          hasModule,
+          staffPermissions: jwt?.staffPermissions,
+        })
+      : null;
+
+  const settingsSections = filterSectionsByCapability(
+    filterBusinessSettingsSections({
+      sections: businessSettingsSections,
+      ...settingsAccess,
+    }),
+  );
+
   const sections: ShellNavSection[] =
     mode === "platform"
       ? platformOperationalSections
       : isSettingsMode
-        ? filterSectionsByCapability(businessSettingsSections)
-        : resolveSnapshotNavigation({
-            navigation: augmentSnapshotNavigationWithCapabilities(
-              snapshotContext.navigation,
-              hasModule,
-            ),
-            resolveLabel: t,
-            businessRole: jwt?.businessRole,
-            isPlatformAdmin,
-            hasModule,
-          });
+        ? settingsSections
+        : filterSectionsByCapability(snapshotNavigation!.sections);
+
+  const appsItems: ShellNavItem[] =
+    mode === "business" && !isSettingsMode && snapshotNavigation
+      ? filterAppsByCapability(snapshotNavigation.appsItems)
+      : [];
 
   const brandSubtitle =
     snapshotContext.branding.productName ??
@@ -115,13 +172,11 @@ export function AppShellLayout({ mode, children }: ShellLayoutProps) {
             icon: Building2,
           };
 
-  const showAccountSwitcher = shouldShowAccountSwitcher(
-    contexts,
-    jwt,
-    user?.contexts,
-  );
-
   const fullScreenEditor = isFullScreenEditorRoute(pathname);
+  const nicheProfile = resolveBusinessNicheProfile({
+    business: currentBusiness,
+    snapshotContext,
+  });
 
   if (fullScreenEditor) {
     return (
@@ -151,6 +206,7 @@ export function AppShellLayout({ mode, children }: ShellLayoutProps) {
     <AppShell
       brand={brand}
       sections={sections}
+      appsItems={appsItems}
       navMode={isSettingsMode ? "settings" : "main"}
       footerItems={
         mode === "business" && !isSettingsMode
@@ -159,7 +215,12 @@ export function AppShellLayout({ mode, children }: ShellLayoutProps) {
             ? [platformSettingsEntry]
             : undefined
       }
-      showAccountSwitcher={showAccountSwitcher}
+      workspaceName={currentBusiness?.name}
+      productName="CodeSol"
+      shellMode={mode}
+      searchPlaceholder={
+        mode === "business" ? nicheProfile.shell.searchPlaceholder : undefined
+      }
       topbarNotice={mode === "business" ? <BusinessAccessBanner /> : undefined}
       pageMetadataContext={{
         mode,

@@ -14,14 +14,16 @@ describe('AppointmentNotificationService', () => {
       lastName: 'Doe',
       displayName: null,
       email: 'jane@example.com',
+      phoneCountryCode: '+1',
+      phoneNumber: '5551234567',
     },
     service: null,
     assignedTo: null,
   };
 
   function createService() {
-    const emailNotificationService = {
-      enqueueTransactionalEmail: jest.fn().mockResolvedValue(undefined),
+    const notificationDispatch = {
+      dispatch: jest.fn().mockResolvedValue('email'),
     };
     const businessRepository = {
       findById: jest.fn().mockResolvedValue({ name: 'Acme' }),
@@ -35,31 +37,31 @@ describe('AppointmentNotificationService', () => {
     };
 
     const service = new AppointmentNotificationService(
-      emailNotificationService as never,
+      notificationDispatch as never,
       businessRepository as never,
       membershipRepository as never,
     );
 
-    return { service, emailNotificationService, membershipRepository };
+    return { service, notificationDispatch, membershipRepository };
   }
 
-  it('enqueues appointment.cancelled with idempotency key', async () => {
-    const { service, emailNotificationService } = createService();
+  it('dispatches appointment.cancelled with idempotency key', async () => {
+    const { service, notificationDispatch } = createService();
 
     await service.sendCancelled('biz-1', appointment as never);
 
-    expect(
-      emailNotificationService.enqueueTransactionalEmail,
-    ).toHaveBeenCalledWith(
+    expect(notificationDispatch.dispatch).toHaveBeenCalledWith(
       expect.objectContaining({
-        emailType: 'appointment.cancelled',
+        notificationKey: 'appointment.cancelled',
         idempotencyKey: 'appointment-cancelled-appt-1',
+        toEmail: 'jane@example.com',
+        toPhone: '+15551234567',
       }),
     );
   });
 
-  it('enqueues appointment.rescheduled with startAt in idempotency key', async () => {
-    const { service, emailNotificationService } = createService();
+  it('dispatches appointment.rescheduled with startAt in idempotency key', async () => {
+    const { service, notificationDispatch } = createService();
 
     await service.sendRescheduled(
       'biz-1',
@@ -67,11 +69,9 @@ describe('AppointmentNotificationService', () => {
       new Date('2026-06-10T13:00:00Z'),
     );
 
-    expect(
-      emailNotificationService.enqueueTransactionalEmail,
-    ).toHaveBeenCalledWith(
+    expect(notificationDispatch.dispatch).toHaveBeenCalledWith(
       expect.objectContaining({
-        emailType: 'appointment.rescheduled',
+        notificationKey: 'appointment.rescheduled',
         idempotencyKey: `appointment-rescheduled-appt-1-${appointment.startAt.toISOString()}`,
         variables: expect.objectContaining({
           'appointment.previous_start_at': expect.any(String),
@@ -80,16 +80,14 @@ describe('AppointmentNotificationService', () => {
     );
   });
 
-  it('enqueues appointment.reminder with offset in idempotency key', async () => {
-    const { service, emailNotificationService } = createService();
+  it('dispatches appointment.reminder with offset in idempotency key', async () => {
+    const { service, notificationDispatch } = createService();
 
     await service.sendReminder('biz-1', appointment as never, 24);
 
-    expect(
-      emailNotificationService.enqueueTransactionalEmail,
-    ).toHaveBeenCalledWith(
+    expect(notificationDispatch.dispatch).toHaveBeenCalledWith(
       expect.objectContaining({
-        emailType: 'appointment.reminder',
+        notificationKey: 'appointment.reminder',
         idempotencyKey: 'appointment-reminder-appt-1-24h',
       }),
     );

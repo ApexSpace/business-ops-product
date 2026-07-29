@@ -92,7 +92,7 @@ export function BusinessProfileFormFields({
   return (
     <div
       className={cn(
-        "space-y-6",
+        "space-y-5",
         constrainScroll && !activeTab && "max-h-[min(70vh,640px)] overflow-y-auto pr-1",
       )}
     >

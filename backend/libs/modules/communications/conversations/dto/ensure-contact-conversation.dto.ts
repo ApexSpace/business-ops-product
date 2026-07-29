@@ -1,12 +1,19 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { ConversationChannel } from '@prisma/client';
-import { IsEnum, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import {
+  IsEnum,
+  IsOptional,
+  IsString,
+  MaxLength,
+  MinLength,
+} from 'class-validator';
 
 const ENSURE_CHANNELS = [
   ConversationChannel.EMAIL,
   ConversationChannel.WHATSAPP,
   ConversationChannel.FACEBOOK,
   ConversationChannel.INSTAGRAM,
+  ConversationChannel.SMS,
 ] as const;
 
 export class EnsureContactConversationDto {

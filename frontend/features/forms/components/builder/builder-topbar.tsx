@@ -5,7 +5,6 @@ import Link from "next/link";
 import {
   Archive,
   ArrowLeft,
-  Code2,
   ClipboardList,
   Copy,
   Download,
@@ -15,6 +14,7 @@ import {
   Redo2,
   Save,
   Send,
+  Share2,
   Undo2,
 } from "lucide-react";
 import { ActionButton } from "@/components/ui/action-button";
@@ -28,6 +28,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { IconButton } from "@/components/ui/icon-button";
+import { useFormsHost } from "@/features/forms/forms-host-context";
 import type { FormStatus } from "@/features/forms/types";
 import { formStatusLabel, formStatusVariant } from "@/features/forms/utils/form-display.util";
 
@@ -50,7 +51,7 @@ interface BuilderTopbarProps {
   onDuplicate: () => void;
   onArchive: () => void;
   onExport: () => void;
-  onEmbed: () => void;
+  onShare: () => void;
   onDelete: () => void;
 }
 
@@ -147,16 +148,17 @@ export function BuilderTopbar({
   onDuplicate,
   onArchive,
   onExport,
-  onEmbed,
+  onShare,
   onDelete,
 }: BuilderTopbarProps) {
+  const { basePath } = useFormsHost();
   return (
     <header className="sticky top-0 z-20 flex flex-wrap items-center gap-3 border-b bg-background px-[var(--page-padding-x)] py-3">
       <IconButton
         aria-label="Back to forms"
         className="size-9"
         nativeButton={false}
-        render={<Link href="/business/settings/forms" />}
+        render={<Link href={basePath} />}
       >
         <ArrowLeft className="size-4" />
       </IconButton>
@@ -197,7 +199,7 @@ export function BuilderTopbar({
             size="sm"
             nativeButton={false}
             render={
-              <Link href={`/business/settings/forms/${formId}/submissions`} />
+              <Link href={`${basePath}/${formId}/submissions`} />
             }
           >
             <ClipboardList className="mr-2 size-4" />
@@ -214,6 +216,13 @@ export function BuilderTopbar({
           <Save className="mr-2 size-4" />
           {isSaving ? "Saving…" : "Save"}
         </ActionButton>
+
+        {status === "published" ? (
+          <ActionButton size="sm" variant="secondary" onClick={onShare}>
+            <Share2 className="mr-2 size-4" />
+            Share
+          </ActionButton>
+        ) : null}
 
         {status !== "published" ? (
           <ActionButton size="sm" variant="secondary" onClick={onPublish}>
@@ -243,9 +252,9 @@ export function BuilderTopbar({
               <Download className="mr-2 size-4" />
               Export JSON
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={onEmbed}>
-              <Code2 className="mr-2 size-4" />
-              Embed
+            <DropdownMenuItem onClick={onShare}>
+              <Share2 className="mr-2 size-4" />
+              Share & embed
             </DropdownMenuItem>
             {status !== "archived" ? (
               <DropdownMenuItem onClick={onArchive}>

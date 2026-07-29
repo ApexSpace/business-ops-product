@@ -43,7 +43,9 @@ export class EmailConversationsService {
     actor: RequestUser,
   ) {
     const provisioned =
-      await this.platformEmailProvisioning.ensurePlatformDefaultEmail(businessId);
+      await this.platformEmailProvisioning.ensurePlatformDefaultEmail(
+        businessId,
+      );
     if (!provisioned) {
       throw new AppException(
         ErrorCode.CONVERSATION_CHANNEL_NOT_READY,
@@ -101,7 +103,10 @@ export class EmailConversationsService {
     let contact: Contact | null = null;
 
     if (dto.contactId) {
-      contact = await this.contactRepository.findById(businessId, dto.contactId);
+      contact = await this.contactRepository.findById(
+        businessId,
+        dto.contactId,
+      );
       if (!contact) {
         throw new AppException(
           ErrorCode.CONTACT_NOT_FOUND,
@@ -128,14 +133,13 @@ export class EmailConversationsService {
           metadata: {
             emailAddress: toEmail,
             channel: ConversationChannel.EMAIL,
-          } as Prisma.InputJsonValue,
+          },
         },
         SYSTEM_AUDIT_ACTOR_SENTINEL,
       );
     }
 
-    const participantEmail =
-      contact.email?.trim().toLowerCase() || toEmail;
+    const participantEmail = contact.email?.trim().toLowerCase() || toEmail;
 
     const existing =
       await this.conversationsRepository.findByExternalParticipantId(
@@ -194,7 +198,7 @@ export class EmailConversationsService {
       unreadCount: 0,
       metadata: {
         subject: dto.subject?.trim() ?? null,
-      } as Prisma.InputJsonValue,
+      },
     });
 
     if (dto.text?.trim()) {

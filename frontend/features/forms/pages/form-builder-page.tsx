@@ -10,6 +10,7 @@ import { FormBuilderShell } from "@/features/forms/components/builder/form-build
 import { useFormDetail } from "@/features/forms/hooks/use-form-detail";
 import { useFormBuilderState } from "@/features/forms/hooks/use-form-builder-state";
 import { useFormMutations } from "@/features/forms/hooks/use-form-mutations";
+import { useFormsHost } from "@/features/forms/forms-host-context";
 import type { FormRecord } from "@/features/forms/types";
 import {
   createDefaultField,
@@ -31,7 +32,9 @@ interface FormBuilderEditorProps {
 
 function FormBuilderEditor({ mode, initialRecord }: FormBuilderEditorProps) {
   const router = useRouter();
+  const { basePath } = useFormsHost();
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
 
   const builder = useFormBuilderState({
     mode,
@@ -93,7 +96,7 @@ function FormBuilderEditor({ mode, initialRecord }: FormBuilderEditorProps) {
           {
             onSuccess: (updated) => {
               builder.applySavedRecord(updated);
-              router.replace(`/business/settings/forms/${updated.id}/edit`);
+              router.replace(`${basePath}/${updated.id}/edit`);
             },
             onError: () => builder.setIsSaving(false),
           },
@@ -104,9 +107,16 @@ function FormBuilderEditor({ mode, initialRecord }: FormBuilderEditorProps) {
   };
 
   const handlePublish = () => {
+    const openShareWhenPublished = () => setShareOpen(true);
+
     const runPublish = (id: string) => {
       publishMutation.mutate(id, {
-        onSuccess: (record) => builder.setStatus(record.status),
+        onSuccess: (record) => {
+          builder.setStatus(record.status);
+          if (record.status === "published") {
+            openShareWhenPublished();
+          }
+        },
       });
     };
 
@@ -124,7 +134,7 @@ function FormBuilderEditor({ mode, initialRecord }: FormBuilderEditorProps) {
           {
             onSuccess: (updated) => {
               builder.applySavedRecord(updated);
-              router.replace(`/business/settings/forms/${updated.id}/edit`);
+              router.replace(`${basePath}/${updated.id}/edit`);
               runPublish(updated.id);
             },
             onError: () => builder.setIsSaving(false),
@@ -146,7 +156,7 @@ function FormBuilderEditor({ mode, initialRecord }: FormBuilderEditorProps) {
     if (!builder.formId) return;
     duplicateMutation.mutate(builder.formId, {
       onSuccess: (record) => {
-        router.push(`/business/settings/forms/${record.id}/edit`);
+        router.push(`${basePath}/${record.id}/edit`);
       },
     });
   };
@@ -177,7 +187,7 @@ function FormBuilderEditor({ mode, initialRecord }: FormBuilderEditorProps) {
     deleteMutation.mutate(builder.formId, {
       onSuccess: () => {
         setDeleteOpen(false);
-        router.push("/business/settings/forms");
+        router.push(basePath);
       },
     });
   };
@@ -186,6 +196,8 @@ function FormBuilderEditor({ mode, initialRecord }: FormBuilderEditorProps) {
     <>
       <FormBuilderShell
         builder={builder}
+        shareOpen={shareOpen}
+        onShareOpenChange={setShareOpen}
         onSave={handleSave}
         onPublish={handlePublish}
         onMoveToDraft={handleMoveToDraft}
@@ -208,6 +220,7 @@ function FormBuilderEditor({ mode, initialRecord }: FormBuilderEditorProps) {
 }
 
 export function FormBuilderPage({ mode, formId }: FormBuilderPageProps) {
+  const { basePath } = useFormsHost();
   const {
     data: formRecord,
     isLoading,
@@ -219,7 +232,7 @@ export function FormBuilderPage({ mode, formId }: FormBuilderPageProps) {
   if (mode === "edit" && isLoading) {
     return (
       <FullScreenEditorLayout
-        backHref="/business/settings/forms"
+        backHref={basePath}
         backLabel="Back to forms"
         title="Form builder"
       >
@@ -233,7 +246,7 @@ export function FormBuilderPage({ mode, formId }: FormBuilderPageProps) {
   if (mode === "edit" && isError) {
     return (
       <FullScreenEditorLayout
-        backHref="/business/settings/forms"
+        backHref={basePath}
         backLabel="Back to forms"
         title="Form builder"
       >

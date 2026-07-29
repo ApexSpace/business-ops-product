@@ -93,18 +93,19 @@ export function mapMetaTemplateToUpsert(input: {
     wabaId: input.wabaId,
     name: input.meta.name,
     language: input.meta.language,
-    category: normalizeCategory(input.meta.category),
+    category: normalizeTemplateCategory(input.meta.category),
     status: mapMetaTemplateStatus(input.meta.status),
     parameterFormat: input.meta.parameter_format ?? 'POSITIONAL',
     metaTemplateId: input.meta.id ?? null,
     components: componentArray,
-    bodyPreview: extractBodyPreview(componentArray as Record<string, unknown>[]) || null,
+    bodyPreview:
+      extractBodyPreview(componentArray as Record<string, unknown>[]) || null,
     rejectionReason: input.meta.rejected_reason ?? null,
     qualityScore: input.meta.quality_score ?? null,
   };
 }
 
-function normalizeCategory(
+export function normalizeTemplateCategory(
   category: string | undefined,
 ): WhatsAppTemplateCategory {
   const normalized = (category ?? 'UTILITY').toUpperCase();

@@ -19,6 +19,7 @@ interface MonthCalendarViewProps {
   businessTimezone?: string | null;
   appointments: Appointment[];
   isLoading?: boolean;
+  className?: string;
   onAppointmentClick: (appointment: Appointment) => void;
   onDayClick: (dateKey: string) => void;
 }
@@ -30,6 +31,7 @@ export function MonthCalendarView({
   businessTimezone,
   appointments,
   isLoading,
+  className,
   onAppointmentClick,
   onDayClick,
 }: MonthCalendarViewProps) {
@@ -47,6 +49,7 @@ export function MonthCalendarView({
       className={cn(
         "overflow-hidden rounded-xl bg-card shadow-elevation-xs",
         CALENDAR_GRID.card,
+        className,
       )}
     >
       <div className={cn("grid grid-cols-7 bg-muted/20", CALENDAR_GRID.headerRow)}>

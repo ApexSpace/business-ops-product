@@ -1,0 +1,1 @@
+export const MAX_PRODUCT_GALLERY_IMAGES = 10;

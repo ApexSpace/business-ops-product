@@ -11,9 +11,14 @@ export const PAYMENT_METHOD_OPTIONS: {
   { value: "CASH", label: "Cash" },
   { value: "CARD", label: "Card" },
   { value: "BANK_TRANSFER", label: "Bank transfer" },
-  { value: "STRIPE", label: "Stripe" },
+  { value: "WALLET", label: "Wallet" },
+  { value: "GIFT_CARD", label: "Gift card" },
+  { value: "STRIPE", label: "Card (Stripe)" },
   { value: "OTHER", label: "Other" },
 ];
+
+/** Methods supported by POST /payments/collect */
+export const COLLECT_PAYMENT_METHOD_OPTIONS = PAYMENT_METHOD_OPTIONS;
 
 export function formatPaymentMethod(method: PaymentMethod): string {
   return (
@@ -94,6 +99,17 @@ export function canRefundPayment(payment: Payment): boolean {
   return !isPaymentRefunded(payment);
 }
 
+/** Staff sales refund gate: full refund or open-sale-only refund. */
+export function canStaffRefundPayment(
+  payment: Payment,
+  options: { canRefundAll: boolean; canRefundOpen: boolean },
+): boolean {
+  if (!canRefundPayment(payment)) return false;
+  if (options.canRefundAll) return true;
+  if (!options.canRefundOpen) return false;
+  return payment.invoice?.status === "OPEN";
+}
+
 /** Recorded payments are successful until refunded; refunded rows show the amount reversed. */
 export function getTransactionStatusLabel(payment: Payment): string {
   if (!isPaymentRefunded(payment)) {
@@ -122,7 +138,14 @@ export function datetimeLocalToIso(value: string): string {
 export const paymentFormSchema = z.object({
   invoiceId: z.string().uuid("Select an invoice"),
   amount: z.number().min(0.01, "Amount must be greater than zero"),
-  method: z.enum(["CASH", "CARD", "BANK_TRANSFER", "STRIPE", "OTHER"]),
+  method: z.enum([
+    "CASH",
+    "CARD",
+    "BANK_TRANSFER",
+    "WALLET",
+    "STRIPE",
+    "OTHER",
+  ]),
   paidAt: z.string().min(1, "Paid date is required"),
   reference: z.string().max(200).optional(),
   notes: z.string().max(5000).optional(),
@@ -143,8 +166,10 @@ export function paymentToForm(payment: Payment): PaymentFormValues {
   return {
     invoiceId: payment.invoiceId,
     amount: parseFloat(payment.amount),
-    method: payment.method,
-    paidAt: toDatetimeLocalValue(payment.paidAt),
+    method: payment.method === "GIFT_CARD" ? "OTHER" : payment.method,
+    paidAt: payment.paidAt
+      ? toDatetimeLocalValue(payment.paidAt)
+      : toDatetimeLocalValue(new Date().toISOString()),
     reference: payment.reference ?? "",
     notes: payment.notes ?? "",
   };

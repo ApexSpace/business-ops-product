@@ -18,7 +18,9 @@ export class StripePlatformPlanMappingService {
     }
     const root = metadata as Record<string, unknown>;
     const stripe =
-      root.stripe && typeof root.stripe === 'object' && !Array.isArray(root.stripe)
+      root.stripe &&
+      typeof root.stripe === 'object' &&
+      !Array.isArray(root.stripe)
         ? (root.stripe as Record<string, unknown>)
         : null;
     if (!stripe) return null;
@@ -65,6 +67,27 @@ export class StripePlatformPlanMappingService {
     };
   }
 
+  /**
+   * Client metadata must never set Stripe Price/Product IDs — sync owns those.
+   * Preserves existing stripe block when present.
+   */
+  sanitizeClientTierMetadata(
+    incoming: unknown,
+    existing?: unknown,
+  ): Record<string, unknown> | undefined {
+    if (incoming == null) return undefined;
+    const next =
+      incoming && typeof incoming === 'object' && !Array.isArray(incoming)
+        ? { ...(incoming as Record<string, unknown>) }
+        : {};
+    delete next.stripe;
+    const existingStripe = this.parseTierStripeMetadata(existing);
+    if (existingStripe && this.tierHasStripePrice(existingStripe)) {
+      return this.mergeTierMetadata(next, existingStripe);
+    }
+    return next;
+  }
+
   resolvePriceId(
     stripeMeta: PlanTierStripeMetadata | null,
     billingCycle: BusinessSubscriptionBillingCycle,
@@ -86,7 +109,7 @@ export class StripePlatformPlanMappingService {
   }
 
   async resolvePublishedTierPrice(
-    planGroupId: string,
+    planGroupId: string | null | undefined,
     planTierId: string,
     billingCycle: BusinessSubscriptionBillingCycle,
   ): Promise<{
@@ -94,7 +117,7 @@ export class StripePlatformPlanMappingService {
       id: string;
       name: string;
       metadata: unknown;
-      planGroup: { id: string; currency: string };
+      planGroup: { id: string; currency: string } | null;
     };
     stripeMeta: PlanTierStripeMetadata;
     priceId: string;
@@ -103,7 +126,7 @@ export class StripePlatformPlanMappingService {
     const tier = await this.prisma.planTier.findFirst({
       where: {
         id: planTierId,
-        planGroupId,
+        ...(planGroupId ? { planGroupId } : {}),
         deletedAt: null,
         status: PlanTierStatus.PUBLISHED,
       },

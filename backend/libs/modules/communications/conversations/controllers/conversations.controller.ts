@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Headers,
   HttpCode,
@@ -17,7 +18,10 @@ import { BusinessMemberRole } from '@prisma/client';
 import { CurrentUser } from '@app/common/decorators/current-user.decorator';
 import type { RequestUser } from '@app/common/decorators/current-user.decorator';
 import { BusinessRoles } from '@app/common/decorators/business-roles.decorator';
+import { StaffPermission } from '@app/common/decorators/staff-permission.decorator';
 import { RequireModule } from '@app/common/decorators/require-module.decorator';
+import { RequireCapability } from '@app/common/decorators/require-capability.decorator';
+import { ConfirmDeleteQueryDto } from '@app/common/dto/confirm-delete-query.dto';
 import { BusinessCapabilityGuard } from '@app/common/guards/business-capability.guard';
 import { BusinessRolesGuard } from '@app/common/guards/business-roles.guard';
 import { AssignConversationDto } from '../dto/assign-conversation.dto';
@@ -33,12 +37,17 @@ import { EmailConversationsService } from '../services/email-conversations.servi
 import { BackfillContactIdentityQueryDto } from '../dto/backfill-contact-identity-query.dto';
 import { ContactIdentityBackfillService } from '../services/contact-identity-backfill.service';
 import { UnifiedConversationsService } from '../services/unified-conversations.service';
+import { ConversationNotesService } from '../services/conversation-notes.service';
+import { CreateConversationNoteDto } from '../dto/conversation-note.dto';
+import { ChatbotSessionService } from '@app/modules/communications/chatbots/services/chatbot-session.service';
+import { ChatbotSessionStatus } from '@prisma/client';
 
 @ApiTags('conversations')
 @ApiBearerAuth()
 @Controller('conversations')
 @UseGuards(BusinessRolesGuard, BusinessCapabilityGuard)
 @RequireModule('conversations')
+@StaffPermission('conversations.access')
 export class ConversationsController {
   constructor(
     private readonly conversationsService: ConversationsService,
@@ -47,6 +56,8 @@ export class ConversationsController {
     private readonly assignmentService: ConversationAssignmentService,
     private readonly emailConversationsService: EmailConversationsService,
     private readonly contactIdentityBackfillService: ContactIdentityBackfillService,
+    private readonly notesService: ConversationNotesService,
+    private readonly chatbotSessionService: ChatbotSessionService,
   ) {}
 
   @Post('email/start')
@@ -56,6 +67,7 @@ export class ConversationsController {
     BusinessMemberRole.ADMIN,
     BusinessMemberRole.MEMBER,
   )
+  @StaffPermission('conversations.send')
   startEmailConversation(
     @CurrentUser() user: RequestUser,
     @Body() dto: StartEmailConversationDto,
@@ -77,12 +89,13 @@ export class ConversationsController {
     @CurrentUser() user: RequestUser,
     @Query() query: ListConversationsQueryDto,
   ) {
-    return this.conversationsService.list(user.businessId!, query, user.id);
+    return this.conversationsService.list(user.businessId!, query, user);
   }
 
   @Post('admin/backfill-contact-identity')
   @HttpCode(HttpStatus.OK)
   @BusinessRoles(BusinessMemberRole.OWNER, BusinessMemberRole.ADMIN)
+  @StaffPermission('conversations.access')
   backfillContactIdentity(
     @CurrentUser() user: RequestUser,
     @Query() query: BackfillContactIdentityQueryDto,
@@ -107,7 +120,7 @@ export class ConversationsController {
     return this.unifiedConversationsService.list(
       user.businessId!,
       query,
-      user.id,
+      user,
     );
   }
 
@@ -121,7 +134,11 @@ export class ConversationsController {
     @CurrentUser() user: RequestUser,
     @Param('contactId', ParseUUIDPipe) contactId: string,
   ) {
-    return this.conversationsService.listByContact(user.businessId!, contactId);
+    return this.conversationsService.listByContact(
+      user.businessId!,
+      contactId,
+      user,
+    );
   }
 
   @Get(':id')
@@ -134,7 +151,7 @@ export class ConversationsController {
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
   ) {
-    return this.conversationsService.getById(user.businessId!, id);
+    return this.conversationsService.getById(user.businessId!, id, user);
   }
 
   @Get(':id/messages')
@@ -148,7 +165,28 @@ export class ConversationsController {
     @Param('id', ParseUUIDPipe) id: string,
     @Query() query: ListMessagesQueryDto,
   ) {
-    return this.messagesService.list(user.businessId!, id, query);
+    return this.messagesService.list(user.businessId!, id, query, user);
+  }
+
+  @Delete(':id/messages/:messageId')
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
+  @StaffPermission('conversations.access')
+  removeMessage(
+    @CurrentUser() user: RequestUser,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('messageId', ParseUUIDPipe) messageId: string,
+    @Query() _query: ConfirmDeleteQueryDto,
+  ) {
+    return this.messagesService.remove(
+      user.businessId!,
+      id,
+      messageId,
+      user,
+    );
   }
 
   @Post(':id/messages')
@@ -158,6 +196,8 @@ export class ConversationsController {
     BusinessMemberRole.ADMIN,
     BusinessMemberRole.MEMBER,
   )
+  @RequireCapability('conversations.send')
+  @StaffPermission('conversations.send')
   sendMessage(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -173,12 +213,37 @@ export class ConversationsController {
     );
   }
 
+  @Post(':id/messages/:messageId/retry')
+  @HttpCode(HttpStatus.ACCEPTED)
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
+  @RequireCapability('conversations.send')
+  @StaffPermission('conversations.send')
+  retryMessage(
+    @CurrentUser() user: RequestUser,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('messageId', ParseUUIDPipe) messageId: string,
+    @Headers('idempotency-key') idempotencyKey?: string,
+  ) {
+    return this.messagesService.retry(
+      user.businessId!,
+      id,
+      messageId,
+      user,
+      idempotencyKey,
+    );
+  }
+
   @Patch(':id')
   @BusinessRoles(
     BusinessMemberRole.OWNER,
     BusinessMemberRole.ADMIN,
     BusinessMemberRole.MEMBER,
   )
+  @StaffPermission('conversations.access')
   update(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -189,6 +254,7 @@ export class ConversationsController {
 
   @Post(':id/assign')
   @BusinessRoles(BusinessMemberRole.OWNER, BusinessMemberRole.ADMIN)
+  @StaffPermission('conversations.access')
   assign(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -208,6 +274,7 @@ export class ConversationsController {
     BusinessMemberRole.ADMIN,
     BusinessMemberRole.MEMBER,
   )
+  @StaffPermission('conversations.access')
   close(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -221,11 +288,68 @@ export class ConversationsController {
     BusinessMemberRole.ADMIN,
     BusinessMemberRole.MEMBER,
   )
+  @StaffPermission('conversations.access')
   reopen(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
   ) {
     return this.assignmentService.reopen(user.businessId!, id, user);
+  }
+
+  @Post(':id/mark-spam')
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
+  @StaffPermission('conversations.access')
+  markSpam(
+    @CurrentUser() user: RequestUser,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.assignmentService.markSpam(user.businessId!, id, user);
+  }
+
+  @Post(':id/unmark-spam')
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
+  @StaffPermission('conversations.access')
+  unmarkSpam(
+    @CurrentUser() user: RequestUser,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.assignmentService.unmarkSpam(user.businessId!, id, user);
+  }
+
+  @Post(':id/block-contact')
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
+  @StaffPermission('conversations.access')
+  blockContact(
+    @CurrentUser() user: RequestUser,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.assignmentService.blockContact(user.businessId!, id, user);
+  }
+
+  @Post(':id/unblock-contact')
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
+  @StaffPermission('conversations.access')
+  unblockContact(
+    @CurrentUser() user: RequestUser,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.assignmentService.unblockContact(user.businessId!, id, user);
   }
 
   @Post(':id/mark-read')
@@ -234,10 +358,113 @@ export class ConversationsController {
     BusinessMemberRole.ADMIN,
     BusinessMemberRole.MEMBER,
   )
+  @StaffPermission('conversations.access')
   markRead(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
   ) {
     return this.assignmentService.markRead(user.businessId!, id, user);
+  }
+
+  @Get(':id/notes')
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
+  listNotes(
+    @CurrentUser() user: RequestUser,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.notesService.list(user.businessId!, id, user);
+  }
+
+  @Post(':id/notes')
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
+  @StaffPermission('conversations.send')
+  createNote(
+    @CurrentUser() user: RequestUser,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: CreateConversationNoteDto,
+  ) {
+    return this.notesService.create(user.businessId!, id, dto, user);
+  }
+
+  @Post(':id/end-chatbot-session')
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
+  @StaffPermission('conversations.access')
+  endChatbotSession(
+    @CurrentUser() user: RequestUser,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.chatbotSessionService.endActiveSessionForConversation(
+      user.businessId!,
+      id,
+      ChatbotSessionStatus.ENDED,
+      user,
+    );
+  }
+
+  @Post(':id/convert-chatbot-session')
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
+  @StaffPermission('conversations.access')
+  convertChatbotSession(
+    @CurrentUser() user: RequestUser,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.chatbotSessionService.endActiveSessionForConversation(
+      user.businessId!,
+      id,
+      ChatbotSessionStatus.CONVERTED,
+      user,
+    );
+  }
+
+  @Post(':id/pause-chatbot')
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
+  @StaffPermission('conversations.access')
+  pauseChatbot(
+    @CurrentUser() user: RequestUser,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.chatbotSessionService.pauseBotForConversation(
+      user.businessId!,
+      id,
+      user,
+    );
+  }
+
+  @Post(':id/resume-chatbot')
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
+  @StaffPermission('conversations.access')
+  resumeChatbot(
+    @CurrentUser() user: RequestUser,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.chatbotSessionService.resumeBotForConversation(
+      user.businessId!,
+      id,
+      user,
+    );
   }
 }

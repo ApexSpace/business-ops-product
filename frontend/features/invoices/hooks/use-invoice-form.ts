@@ -95,7 +95,7 @@ export function useInvoiceForm({
 
   const contactId = watched.contactId;
   const { data: workItems } = useQuery({
-    queryKey: queryKeys.workItems.list({
+    queryKey: queryKeys.workItems.list("work-items", {
       contactId: contactId || undefined,
       page: 1,
       limit: 50,

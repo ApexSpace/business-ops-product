@@ -7,7 +7,9 @@
   ],
   "scripts": {
     "redis:up": "docker compose up -d redis",
-    "redis:down": "docker compose down",
+    "db:up": "docker compose up -d postgres redis",
+    "db:down": "docker compose down",
+    "db:reset": "docker compose down -v && docker compose up -d postgres redis",
     "dev": "concurrently -n backend,web -c blue,magenta \"npm run dev:backend\" \"wait-on tcp:3000 && npm run dev:frontend\"",
     "dev:mobile": "npm run start --prefix mobile",
     "dev:mobile:ios": "npm run ios --prefix mobile",

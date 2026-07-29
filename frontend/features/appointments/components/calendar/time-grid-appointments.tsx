@@ -11,8 +11,6 @@ import {
   layoutOverlappingAppointments,
   type TimeGridAppointmentLayout,
 } from "@/features/appointments/utils/appointment-overlap";
-import { resolveTimezoneForAppointment } from "@/features/calendars/utils/timezone";
-import { cn } from "@/lib/utils";
 
 interface TimeGridAppointmentsProps {
   appointments: Appointment[];
@@ -20,16 +18,26 @@ interface TimeGridAppointmentsProps {
   calendars?: Calendar[];
   businessTimezone?: string | null;
   onAppointmentClick: (appointment: Appointment) => void;
+  onAppointmentMoveStart?: (
+    appointment: Appointment,
+    event: React.PointerEvent,
+  ) => void;
+  onAppointmentResizeStart?: (
+    appointment: Appointment,
+    event: React.PointerEvent,
+  ) => void;
+  draggingAppointmentId?: string | null;
 }
 
 function layoutStyle(item: TimeGridAppointmentLayout): React.CSSProperties {
   const gap = OVERLAP_LAYOUT_GAP_PX;
   const left = `calc(${item.leftPercent}% + ${gap / 2}px)`;
   const width = `calc(${item.widthPercent}% - ${gap}px)`;
+  const height = Math.max(item.height, CALENDAR_EVENT_MIN_HEIGHT_PX);
 
   return {
     top: item.top,
-    height: Math.max(item.height, CALENDAR_EVENT_MIN_HEIGHT_PX),
+    height,
     left,
     width,
   };
@@ -41,15 +49,13 @@ export function TimeGridAppointments({
   calendars,
   businessTimezone,
   onAppointmentClick,
+  onAppointmentMoveStart,
+  onAppointmentResizeStart,
+  draggingAppointmentId,
 }: TimeGridAppointmentsProps) {
   const resolveEventTimezone = useCallback(
-    (appointment: Appointment) =>
-      resolveTimezoneForAppointment(
-        appointment.calendarId,
-        calendars,
-        businessTimezone,
-      ),
-    [calendars, businessTimezone],
+    (_appointment: Appointment) => viewTimezone,
+    [viewTimezone],
   );
 
   const layouts = useMemo(
@@ -68,18 +74,19 @@ export function TimeGridAppointments({
           return (
             <div
               key={`more-${item.appointments.map((a) => a.id).join("-")}-${item.top}`}
-              className="pointer-events-none absolute z-20"
+              className="pointer-events-none absolute z-10 px-0.5"
               style={layoutStyle(item)}
             >
-              <div className="pointer-events-auto flex h-full min-h-[28px] items-stretch">
+              <div className="pointer-events-auto flex h-full min-h-[36px] items-stretch">
                 <AppointmentMorePopover
                   appointments={item.appointments}
                   calendars={calendars}
                   businessTimezone={businessTimezone}
+                  timezone={viewTimezone}
                   label={`+${item.appointments.length} more`}
                   title="Overlapping appointments"
                   onAppointmentClick={onAppointmentClick}
-                  triggerClassName="flex h-full min-h-[28px] items-center justify-center px-1 text-[10px]"
+                  triggerClassName="flex h-full min-h-[36px] w-full items-center justify-center rounded-md border border-primary/30 bg-primary/10 px-1.5 text-[10px] font-medium text-primary"
                   side="right"
                 />
               </div>
@@ -88,26 +95,34 @@ export function TimeGridAppointments({
         }
 
         const eventTimezone = resolveEventTimezone(item.appointment);
-        const besideMore = item.columnCount > 1;
-        const compact = besideMore || item.height < 60;
-        const ultraCompact = !besideMore && item.height < 48;
+        const height = Math.max(item.height, CALENDAR_EVENT_MIN_HEIGHT_PX);
 
         return (
           <div
             key={item.appointment.id}
-            className="pointer-events-none absolute z-10"
+            className="pointer-events-none absolute z-10 px-0.5 py-0.5"
             style={layoutStyle(item)}
           >
             <div className="pointer-events-auto h-full min-h-0">
               <AppointmentEventCard
                 appointment={item.appointment}
                 timeZone={eventTimezone}
-                compact={compact}
-                ultraCompact={ultraCompact}
-                className={cn(
-                  "h-full min-h-0 shadow-elevation-xs transition-shadow hover:shadow-md",
-                )}
+                variant="grid"
+                eventHeight={height}
+                className="shadow-elevation-xs"
                 onClick={() => onAppointmentClick(item.appointment)}
+                onMoveStart={
+                  onAppointmentMoveStart
+                    ? (event) => onAppointmentMoveStart(item.appointment, event)
+                    : undefined
+                }
+                onResizeStart={
+                  onAppointmentResizeStart
+                    ? (event) =>
+                        onAppointmentResizeStart(item.appointment, event)
+                    : undefined
+                }
+                isDragging={draggingAppointmentId === item.appointment.id}
               />
             </div>
           </div>

@@ -58,6 +58,7 @@ export function toFormListItem(record: FormRecord): FormListItem {
     publicKey: record.publicKey,
     status: record.status,
     fieldCount: record.definition.fields.length,
+    submissionCount: 0,
     createdAt: record.createdAt,
     updatedAt: record.updatedAt,
     publishedAt: record.publishedAt,

@@ -27,7 +27,7 @@ export function BusinessProfileContactFields({
   twoColumnLayout?: boolean;
 }) {
   return (
-    <section className="space-y-4">
+    <section className="space-y-5">
       {showSectionTitle ? (
         <BusinessProfileSectionTitle>Primary contact</BusinessProfileSectionTitle>
       ) : null}
@@ -54,7 +54,7 @@ export function BusinessProfileContactFields({
           <FormItem>
             <FormLabel>Display name</FormLabel>
             <FormControl>
-              <Input {...field} readOnly disabled className="bg-muted" />
+              <Input {...field} readOnly disabled className="bg-muted/50" />
             </FormControl>
             <FormDescription>
               Auto-filled from first and last name.
@@ -65,7 +65,6 @@ export function BusinessProfileContactFields({
       />
       {twoColumnLayout ? (
         <div className="grid gap-4 sm:grid-cols-2">
-          <PhoneField control={form.control} name="phone" disabled={disabled} />
           <TextField
             control={form.control}
             name="email"
@@ -74,6 +73,7 @@ export function BusinessProfileContactFields({
             placeholder="jane@example.com"
             disabled={disabled}
           />
+          <PhoneField control={form.control} name="phone" disabled={disabled} />
         </div>
       ) : (
         <>

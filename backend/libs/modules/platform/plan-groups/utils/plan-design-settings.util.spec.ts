@@ -120,15 +120,15 @@ describe('plan-design-settings.util', () => {
   });
 
   it('migrates legacy feature list gap values', () => {
-    expect(parsePlanGroupDesignSettings({ featureListGap: 'lg' }).featureListGap).toBe(
-      0.75,
-    );
-    expect(parsePlanGroupDesignSettings({ featureListGap: 'sm' }).featureListGap).toBe(
-      0.25,
-    );
-    expect(parsePlanGroupDesignSettings({ featureListGap: 'md' }).featureListGap).toBe(
-      0.5,
-    );
+    expect(
+      parsePlanGroupDesignSettings({ featureListGap: 'lg' }).featureListGap,
+    ).toBe(0.75);
+    expect(
+      parsePlanGroupDesignSettings({ featureListGap: 'sm' }).featureListGap,
+    ).toBe(0.25);
+    expect(
+      parsePlanGroupDesignSettings({ featureListGap: 'md' }).featureListGap,
+    ).toBe(0.5);
   });
 
   it('exports typography CSS variables', () => {
@@ -174,7 +174,9 @@ describe('plan-design-settings.util', () => {
     const resolved = resolvePlanGroupDesignSettings(null);
     expect(resolved.cardWidth).toBe('auto');
 
-    const resolvedMedium = resolvePlanGroupDesignSettings({ cardWidth: 'wide' });
+    const resolvedMedium = resolvePlanGroupDesignSettings({
+      cardWidth: 'wide',
+    });
     expect(resolvedMedium.cardWidth).toBe('wide');
   });
 

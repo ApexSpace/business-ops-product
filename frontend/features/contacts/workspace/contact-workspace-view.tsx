@@ -1,10 +1,9 @@
 "use client";
 
 import { EmptyState } from "@/components/data-display/empty-state";
-import { ContactActionRail } from "@/features/contacts/components/contact-workspace/contact-action-rail";
+import { ContactProfileEditForm } from "@/features/contacts/components/contact-profile-edit-form";
 import { ContactConversationPanel } from "@/features/contacts/components/contact-workspace/contact-conversation-panel";
 import { ContactSidebarPanel } from "@/features/contacts/components/contact-workspace/contact-sidebar-panel";
-import { ContactRecordsPanel } from "@/features/contacts/components/contact-workspace/contact-records-panel";
 import { ContactWorkspaceColumns } from "@/features/contacts/components/contact-workspace/contact-workspace-columns";
 import { ContactWorkspaceShell } from "@/features/contacts/components/contact-workspace/contact-workspace-shell";
 import { ContactWorkspaceDialogs } from "@/features/contacts/workspace/contact-workspace-dialogs";
@@ -17,7 +16,8 @@ import {
   invalidateContactLists,
   invalidateContactPicker,
 } from "@/lib/query/invalidation";
-import { WORKSPACE_DESKTOP_ROW_CLASS } from "@/features/contacts/workspace/contact-workspace";
+import { WORKSPACE_DESKTOP_ROW_CLASS, WORKSPACE_PANEL_CLASS } from "@/features/contacts/workspace/contact-workspace";
+import { useContactStaffPermissions } from "@/features/contacts/hooks/use-contact-staff-permissions";
 import { useAppRouter } from "@/lib/hooks/use-app-router";
 import { cn } from "@/lib/utils";
 import { useQueryClient } from "@tanstack/react-query";
@@ -26,6 +26,7 @@ import type { ContactWorkspaceState } from "@/features/contacts/workspace/use-co
 export function ContactWorkspaceView(state: ContactWorkspaceState) {
   const router = useAppRouter();
   const queryClient = useQueryClient();
+  const contactPerms = useContactStaffPermissions();
   const {
     contactId,
     business,
@@ -33,13 +34,11 @@ export function ContactWorkspaceView(state: ContactWorkspaceState) {
     contact,
     contactLoading,
     contactError,
-    contactTotal,
     canDeleteLead,
     mobilePanel,
     setMobilePanel,
     activeSection,
     setActiveSection,
-    handleRailSelect,
     leads,
     workItems,
     notes,
@@ -72,6 +71,7 @@ export function ContactWorkspaceView(state: ContactWorkspaceState) {
     setEditingTask,
     setDeleteTaskId,
     setEditOpen,
+    editOpen,
     setDeleteContactOpen,
   } = state;
 
@@ -149,12 +149,34 @@ export function ContactWorkspaceView(state: ContactWorkspaceState) {
     className: "h-full w-full min-w-0" as const,
   };
 
-  const sidebarPanel = (
+  const onContactEditSuccess = () => {
+    void invalidateContactDetail(queryClient, contactId);
+    void invalidateContactLists(queryClient);
+    void invalidateContactPicker(queryClient);
+  };
+
+  const sidebarPanel = editOpen ? (
+    <aside className={cn(WORKSPACE_PANEL_CLASS, "h-full w-full min-w-0 p-4")}>
+      <ContactProfileEditForm
+        contact={contact}
+        onCancel={() => setEditOpen(false)}
+        onSuccess={() => {
+          setEditOpen(false);
+          onContactEditSuccess();
+        }}
+        className="h-full"
+      />
+    </aside>
+  ) : (
     <ContactSidebarPanel
       {...recordsPanelProps}
       activeSection={activeSection}
       onEdit={() => setEditOpen(true)}
       onDelete={() => setDeleteContactOpen(true)}
+      showEditButton={contactPerms.canManage}
+      showDeleteButton={contactPerms.canDeleteMerge}
+      showPhone={contactPerms.canViewContactDetails}
+      showEmail={contactPerms.canViewContactDetails}
       className="h-full w-full min-w-0"
     />
   );
@@ -163,17 +185,12 @@ export function ContactWorkspaceView(state: ContactWorkspaceState) {
     <ContactConversationPanel
       contactId={contact.id}
       contactName={contact.label}
+      contactEmail={contact.email}
       contactAvatarUrl={contact.avatarUrl}
       businessName={business?.name}
       className="h-full w-full min-w-0"
     />
   );
-
-  const onContactEditSuccess = () => {
-    void invalidateContactDetail(queryClient, contactId);
-    void invalidateContactLists(queryClient);
-    void invalidateContactPicker(queryClient);
-  };
 
   return (
     <TooltipProvider>
@@ -181,21 +198,12 @@ export function ContactWorkspaceView(state: ContactWorkspaceState) {
         <ContactWorkspaceColumns
           conversation={conversationPanel}
           sidebar={sidebarPanel}
-          rail={
-            <ContactActionRail
-              activeSection={activeSection}
-              onSelect={handleRailSelect}
-              className="h-full w-full min-w-0"
-            />
-          }
         />
 
         <ContactWorkspaceMobileTabs
           mobilePanel={mobilePanel}
           onMobilePanelChange={setMobilePanel}
-          activeSection={activeSection}
           onSectionChange={setActiveSection}
-          onRailSelect={handleRailSelect}
           sidebarPanel={sidebarPanel}
           conversationPanel={conversationPanel}
           recordsPanelProps={recordsPanelProps}
@@ -208,6 +216,7 @@ export function ContactWorkspaceView(state: ContactWorkspaceState) {
         lockedContact={lockedContact}
         onContactDeleted={() => router.push("/business/contacts")}
         onContactEditSuccess={onContactEditSuccess}
+        useInlineContactEdit
       />
     </TooltipProvider>
   );

@@ -13,7 +13,9 @@ describe('conversation-window.util', () => {
   });
 
   it('opens session within 24 hours of last inbound', () => {
-    const recent = new Date(now.getTime() - WHATSAPP_SESSION_WINDOW_MS + 60_000);
+    const recent = new Date(
+      now.getTime() - WHATSAPP_SESSION_WINDOW_MS + 60_000,
+    );
     expect(isWhatsAppSessionOpen(recent, now)).toBe(true);
     expect(requiresWhatsAppTemplate(recent, now)).toBe(false);
   });

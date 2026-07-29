@@ -12,9 +12,9 @@ import { EstimatesService } from './services/estimates.service';
   imports: [
     AuditModule,
     forwardRef(() => BusinessModule),
-    ContactsModule,
+    forwardRef(() => ContactsModule),
     ServicesModule,
-    WorkItemsModule,
+    forwardRef(() => WorkItemsModule),
   ],
   controllers: [EstimatesController],
   providers: [EstimateRepository, EstimatesService],

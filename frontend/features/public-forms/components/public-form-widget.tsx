@@ -116,6 +116,7 @@ export function PublicFormWidget({ publicKey }: PublicFormWidgetProps) {
         isSubmitting={submitMutation.isPending}
         submitError={submitError}
         fieldErrors={fieldErrors}
+        publicKey={publicKey}
         onSubmit={async (data) => {
           setSubmitError(null);
           setFieldErrors({});

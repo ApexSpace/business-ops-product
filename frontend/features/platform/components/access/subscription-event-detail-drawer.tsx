@@ -65,7 +65,7 @@ function StateBlock({
           </dd>
         </div>
         <div>
-          <dt className="text-muted-foreground">Plan tier</dt>
+          <dt className="text-muted-foreground">Tier</dt>
           <dd>{state.planTierName ?? "—"}</dd>
         </div>
         <div>

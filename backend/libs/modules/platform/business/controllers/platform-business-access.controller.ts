@@ -50,6 +50,11 @@ import { BusinessAccessService } from '../services/business-access.service';
 import { BusinessSubscriptionActionService } from '../services/business-subscription-action.service';
 import { BusinessSubscriptionEventService } from '../services/business-subscription-event.service';
 import { BusinessSubscriptionPaymentService } from '../services/business-subscription-payment.service';
+import { BusinessStatusService } from '../services/business-status.service';
+import { BusinessProvisioningService } from '../services/business-provisioning.service';
+import { AddonsService } from '@app/modules/platform/addons/services/addons.service';
+import { MigrateAddonSubscribersDto } from '@app/modules/platform/addons/dto/addon.dto';
+import { BusinessAddonSyncService } from '../services/business-addon-sync.service';
 
 const ADMIN_ROLES = [
   PlatformMemberRole.SUPER_ADMIN,
@@ -62,6 +67,8 @@ const READ_ROLES = [
   PlatformMemberRole.SUPPORT,
 ] as const;
 
+const SUPER_ADMIN_ONLY = [PlatformMemberRole.SUPER_ADMIN] as const;
+
 @ApiTags('platform')
 @ApiBearerAuth()
 @Controller('platform/businesses')
@@ -72,6 +79,10 @@ export class PlatformBusinessAccessController {
     private readonly actionService: BusinessSubscriptionActionService,
     private readonly eventService: BusinessSubscriptionEventService,
     private readonly paymentService: BusinessSubscriptionPaymentService,
+    private readonly statusService: BusinessStatusService,
+    private readonly provisioning: BusinessProvisioningService,
+    private readonly addonsService: AddonsService,
+    private readonly addonSync: BusinessAddonSyncService,
   ) {}
 
   @Get(':id/access')
@@ -80,6 +91,46 @@ export class PlatformBusinessAccessController {
     @Param('id', ParseUUIDPipe) id: string,
   ): Promise<BusinessAccessWithActionsDto> {
     return this.businessAccessService.getAccess(id);
+  }
+
+  @Get(':id/addons')
+  @PlatformRoles(...READ_ROLES)
+  listAddons(@Param('id', ParseUUIDPipe) id: string) {
+    return this.addonsService.listForBusiness(id);
+  }
+
+  @Post(':id/addons/sync-included-from-tier')
+  @PlatformRoles(...ADMIN_ROLES)
+  async syncIncludedFromTier(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: RequestUser,
+  ) {
+    const access = await this.businessAccessService.getAccess(id);
+    const tierId = access.subscription?.planTierId;
+    if (!tierId) {
+      return { success: false, message: 'Business has no tier assigned' };
+    }
+    const grant = await this.addonSync.grantMissingIncludedFromTier(
+      id,
+      tierId,
+    );
+    await this.actionService.syncCapabilities(id, user);
+    return { success: true, ...grant };
+  }
+
+  @Post(':id/addons/:addonId/migrate')
+  @PlatformRoles(...ADMIN_ROLES)
+  migrateBusinessAddon(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('addonId', ParseUUIDPipe) addonId: string,
+    @Body() dto: MigrateAddonSubscribersDto,
+    @CurrentUser() user: RequestUser,
+  ) {
+    return this.addonsService.migrateSubscribers(
+      addonId,
+      { ...dto, businessIds: [id] },
+      user,
+    );
   }
 
   @Post(':id/access/preview-action')
@@ -163,6 +214,59 @@ export class PlatformBusinessAccessController {
     @CurrentUser() user: RequestUser,
   ): Promise<SubscriptionActionResultDto> {
     return this.actionService.suspendBusiness(id, user, dto.reason);
+  }
+
+  @Post(':id/access/preview-tier-change')
+  @PlatformRoles(...ADMIN_ROLES)
+  previewTierChange(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() body: { tierId: string },
+  ) {
+    return this.provisioning.previewTierChange(id, body.tierId);
+  }
+
+  @Post(':id/access/block')
+  @PlatformRoles(...SUPER_ADMIN_ONLY)
+  async block(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: ActionReasonDto,
+    @CurrentUser() user: RequestUser,
+  ) {
+    const business = await this.statusService.block(
+      id,
+      dto.reason || 'Blocked by platform admin',
+      user,
+    );
+    return {
+      success: true,
+      businessId: business.id,
+      status: business.status,
+    };
+  }
+
+  @Post(':id/access/reinstate')
+  @PlatformRoles(...ADMIN_ROLES)
+  async reinstate(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: ActionReasonDto,
+    @CurrentUser() user: RequestUser,
+  ) {
+    const business = await this.statusService.reinstate(
+      id,
+      dto.reason || 'Reinstated by platform admin',
+      user,
+    );
+    return {
+      success: true,
+      businessId: business.id,
+      status: business.status,
+    };
+  }
+
+  @Get(':id/access/status-logs')
+  @PlatformRoles(...READ_ROLES)
+  listStatusLogs(@Param('id', ParseUUIDPipe) id: string) {
+    return this.statusService.listLogs(id);
   }
 
   @Post(':id/access/reactivate')

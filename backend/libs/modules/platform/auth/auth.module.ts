@@ -6,6 +6,7 @@ import { BusinessModule } from '@app/modules/platform/business/business.module';
 import { MembershipModule } from '@app/modules/platform/membership/membership.module';
 import { IndustriesModule } from '@app/modules/crm/industries/industries.module';
 import { SnapshotsModule } from '@app/modules/platform/snapshots/snapshots.module';
+import { TwilioModule } from '@app/modules/integrations/twilio/twilio.module';
 import { AuthController } from './controllers/auth.controller';
 import { PlatformMembershipRepository } from './repositories/platform-membership.repository';
 import { RefreshTokenRepository } from './repositories/refresh-token.repository';
@@ -24,6 +25,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
     IndustriesModule,
     SnapshotsModule,
     EmailModule,
+    TwilioModule,
   ],
   controllers: [AuthController],
   providers: [

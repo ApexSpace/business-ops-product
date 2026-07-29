@@ -33,11 +33,39 @@ describe('PublicFormsService', () => {
     const submissionsRepository = {
       create: jest.fn(),
     };
+    const auditService = {
+      log: jest.fn(),
+    };
+    const storageService = {
+      createBusinessUpload: jest.fn(),
+      confirmBusinessUpload: jest.fn(),
+      failBusinessUpload: jest.fn(),
+      getDownloadUrl: jest.fn(),
+    };
+    const conversationBridge = {
+      maybeCreateConversationFromSubmission: jest.fn(),
+    };
+    const prisma = {
+      business: {
+        findFirst: jest.fn().mockResolvedValue({ type: 'TENANT' }),
+      },
+    };
     const service = new PublicFormsService(
       formsRepository as never,
       submissionsRepository as never,
+      auditService as never,
+      storageService as never,
+      conversationBridge as never,
+      prisma as never,
     );
-    return { service, formsRepository, submissionsRepository };
+    return {
+      service,
+      formsRepository,
+      submissionsRepository,
+      storageService,
+      conversationBridge,
+      prisma,
+    };
   }
 
   it('returns public config for a published form', async () => {

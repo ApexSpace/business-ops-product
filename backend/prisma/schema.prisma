@@ -22,8 +22,25 @@ enum BusinessStatus {
   ACTIVE
   NOT_ACTIVE
   SUSPENDED
+  /// Admin/policy/fraud lock — distinct from SUSPENDED (billing).
+  BLOCKED
   /// Legacy/backward-compat — treated as blocked for workspace access (same as NOT_ACTIVE).
   ARCHIVED
+}
+
+/// TENANT = real customer workspace. INTERNAL = single platform-ops tenant (forms, etc.).
+enum BusinessType {
+  TENANT
+  INTERNAL
+}
+
+/// Sales/funnel progress for TENANT businesses (orthogonal to BusinessStatus / BusinessType).
+enum BusinessLifecycleStage {
+  LEAD
+  CONTACTED
+  TRIAL
+  ACTIVE
+  CHURNED
 }
 
 enum BusinessMemberRole {
@@ -37,6 +54,13 @@ enum MembershipStatus {
   INVITED
   SUSPENDED
   REMOVED
+}
+
+enum StaffGender {
+  FEMALE
+  MALE
+  NON_BINARY
+  PREFER_NOT_TO_SAY
 }
 
 enum AuthContextType {
@@ -71,6 +95,59 @@ enum LeadStatus {
 enum ServiceStatus {
   ACTIVE
   ARCHIVED
+}
+
+enum ServiceCommissionType {
+  FLAT
+  PERCENT
+}
+
+enum ServiceResourceType {
+  ROOM
+  EQUIPMENT
+  CONSUMABLE
+}
+
+enum ResourceStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum ServicePaymentRequirement {
+  NO
+  OPTIONAL
+  REQUIRED
+}
+
+enum ExpressDepositType {
+  FULL
+  PERCENTAGE
+  FIXED
+}
+
+enum ProductType {
+  SIMPLE
+  VARIABLE
+  BUNDLE
+}
+
+enum ProductStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+enum ProductVariantStatus {
+  ACTIVE
+  DISCONTINUED
+}
+
+enum ProductInventoryAdjustmentType {
+  RECEIVED
+  RECOUNT
+  PROFESSIONAL_USE
+  OTHER
+  SALE
+  RETURNED
 }
 
 enum WorkItemStatus {
@@ -154,8 +231,12 @@ enum SubscriptionStatus {
   CANCELED
   EXPIRED
   INTERNAL
-  /// Legacy/backward-compat — treated as blocked; prefer PENDING_PAYMENT for new records.
+  /// Grace period — workspace access retained while payment recovers.
   PAST_DUE
+  /// Stripe unpaid — workspace access cut off.
+  UNPAID
+  /// Stripe incomplete / incomplete_expired — workspace access cut off.
+  INCOMPLETE
 }
 
 enum SubscriptionPaymentMethod {
@@ -199,9 +280,14 @@ enum BusinessSubscriptionEventType {
   EXPIRED
   REACTIVATED
   SUSPENDED
+  BLOCKED
   BUSINESS_STATUS_CHANGED
   CAPABILITIES_SYNCED
   SNAPSHOT_CHANGED
+  ADDON_PURCHASED
+  ADDON_CANCELED
+  ADDON_INCLUDED
+  TIER_VERSION_MIGRATED
   MANUAL_ADJUSTMENT
 }
 
@@ -258,8 +344,81 @@ enum SubscriptionBillingSource {
 
 enum BusinessCapabilitySource {
   PLAN_TIER
+  /// Synced from tier capabilities (alias of PLAN_TIER for new code).
+  TIER
+  /// Granted via included or purchased add-on.
+  ADDON
   CUSTOM
   MANUAL
+}
+
+enum AddonPurchaseMode {
+  INDEPENDENT
+  DEPENDENT
+}
+
+enum AddonStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum BusinessAddonStatus {
+  ACTIVE
+  CANCELED
+  PENDING
+}
+
+enum BusinessAddonSource {
+  /// Independent add-on bought separately (Stripe line item).
+  PURCHASED
+  /// Came from tier (dependent link or independent included) — not charged.
+  INCLUDED
+}
+
+enum EntitlementChangeCampaignType {
+  TIER_PRICE
+  TIER_CAPABILITY
+  CAPABILITY_FEATURE
+  ADDON_PACKAGING
+}
+
+enum EntitlementChangeCampaignStatus {
+  OPEN
+  NOTIFIED
+  DUE
+  COMPLETED
+  CANCELLED
+}
+
+enum EntitlementChangeCampaignPolicy {
+  KEEP_GRANDFATHERED
+  FORCE_REMOVE
+  CONVERT_TO_PURCHASED
+  APPLY_NEW_PRICE
+}
+
+enum EntitlementChangeCampaignMemberStatus {
+  PENDING
+  NOTIFIED
+  EXTENDED
+  MIGRATED
+  EXCLUDED
+}
+
+enum BusinessFeatureGrantSource {
+  GRANDFATHERED
+  MANUAL
+}
+
+enum BusinessFeatureGrantStatus {
+  ACTIVE
+  REVOKED
+}
+
+enum BusinessLocationStatus {
+  ACTIVE
+  INACTIVE
 }
 
 enum BusinessCapabilityAssignmentStatus {
@@ -283,14 +442,49 @@ enum InvoiceStatus {
   PAID
   OVERDUE
   VOID
+  OPEN
+}
+
+enum InvoiceKind {
+  STANDARD
+  CHECKOUT
+}
+
+enum InvoiceLineType {
+  SERVICE
+  PRODUCT
+  ACCOUNT_BALANCE_DEPOSIT
+  GIFT_CARD
+  PACKAGE
+  OFFER
+  CUSTOM
 }
 
 enum PaymentMethod {
   CASH
   CARD
   BANK_TRANSFER
+  WALLET
+  GIFT_CARD
   STRIPE
   OTHER
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+  CANCELLED
+  REFUNDED
+}
+
+enum PayableType {
+  INVOICE
+  BOOKING_DEPOSIT
+  FORM_PAYMENT
+  PRODUCT_ORDER
+  GIFT_CARD_ORDER
+  MEMBERSHIP
 }
 
 enum InvoicePaymentStatus {
@@ -385,8 +579,11 @@ enum CalendarType {
 }
 
 enum AppointmentStatus {
-  SCHEDULED
+  PENDING_COMPLETION
+  UNCONFIRMED
   CONFIRMED
+  WAITING
+  IN_SERVICE
   COMPLETED
   CANCELLED
   NO_SHOW
@@ -396,6 +593,7 @@ enum AppointmentSource {
   INTERNAL
   BOOKING_WIDGET
   PUBLIC_LINK
+  EXPRESS
   GOOGLE_SYNC
   IMPORTED
 }
@@ -417,6 +615,40 @@ enum DayOfWeek {
   FRIDAY
   SATURDAY
   SUNDAY
+}
+
+enum AnyoneAssignmentMode {
+  RANDOM
+  ORDER
+}
+
+enum GapTimeBlockMode {
+  IGNORE
+  SAME_AS_APPOINTMENTS
+}
+
+enum GapEmptyDayMode {
+  ALL_TIMES
+  SHIFT_EDGES_ONLY
+}
+
+enum GapMultiProviderMode {
+  SAME_AS_SINGLE
+  ALLOW_GAPS
+}
+
+enum BookingWaitlistStatus {
+  WAITING
+  MATCHED
+  BOOKED
+  DISMISSED
+  EXPIRED
+  CANCELLED
+}
+
+enum BookingWaitlistSource {
+  ONLINE_BOOKING
+  STAFF_MANUAL
 }
 
 enum ConversationChannel {
@@ -517,16 +749,34 @@ enum ChatbotSessionStatus {
   CONVERTED
 }
 
+enum ChatbotSessionIdentityType {
+  ANONYMOUS
+  ANONYMOUS_WITH_PROFILE
+  AUTHENTICATED
+}
+
+/// Polymorphic claimed identity — single source of truth (not contactId).
+enum ChatbotIdentityRefType {
+  CONTACT
+  PLATFORM_CUSTOMER
+}
+
 enum WebhookEventProvider {
   META
   STRIPE
   GOOGLE
   OTHER
   RESEND
+  TWILIO
 }
 
 enum EmailProvider {
   RESEND
+}
+
+enum NotificationChannel {
+  EMAIL
+  SMS
 }
 
 enum EmailMessageStatus {
@@ -546,16 +796,20 @@ enum WebhookEventStatus {
 }
 
 model User {
-  id              String    @id @default(uuid())
-  email           String    @unique
-  passwordHash    String
-  firstName       String?
-  lastName        String?
-  status          UserStatus @default(ACTIVE)
-  emailVerifiedAt DateTime?
-  lastLoginAt     DateTime?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  id                       String    @id @default(uuid())
+  email                    String    @unique
+  passwordHash             String
+  firstName                String?
+  lastName                 String?
+  status                   UserStatus @default(ACTIVE)
+  emailVerifiedAt          DateTime?
+  lastLoginAt              DateTime?
+  phoneE164                String?
+  phoneVerifiedAt          DateTime?
+  passwordResetTokenHash   String?
+  passwordResetExpiresAt   DateTime?
+  createdAt                DateTime  @default(now())
+  updatedAt                DateTime  @updatedAt
 
   platformMembership   PlatformMembership?
   businessMemberships  BusinessMembership[]
@@ -564,6 +818,8 @@ model User {
   refreshTokens        RefreshToken[]
   invitedMemberships   BusinessMembership[]  @relation("MembershipInvitedBy")
   createdContacts      Contact[]             @relation("ContactCreatedBy")
+  blockedContacts      Contact[]             @relation("ContactBlockedBy")
+  contactWalletTransactionsCreated ContactWalletTransaction[] @relation("ContactWalletTransactionCreatedBy")
   assignedLeads        Lead[]                @relation("LeadAssignedTo")
   createdLeads         Lead[]                @relation("LeadCreatedBy")
   assignedWorkItems    WorkItem[]            @relation("WorkItemAssignedTo")
@@ -571,24 +827,40 @@ model User {
   createdNotes         Note[]                @relation("NoteCreatedBy")
   assignedTasks        Task[]                @relation("TaskAssignedTo")
   createdTasks         Task[]                @relation("TaskCreatedBy")
+  timeCards            TimeCard[]
   createdEstimates     Estimate[]            @relation("EstimateCreatedBy")
   createdInvoices      Invoice[]             @relation("InvoiceCreatedBy")
+  closedCheckouts      Invoice[]             @relation("InvoiceClosedBy")
+  invoiceItemStaff     InvoiceItem[]         @relation("InvoiceItemStaff")
+  productInventoryAdjustments ProductInventoryAdjustment[] @relation("ProductInventoryAdjustmentActor")
   createdPayments      Payment[]             @relation("PaymentCreatedBy")
   calendarStaff        CalendarStaff[]
+  serviceStaffAssignments ServiceStaff[]
   assignedAppointments Appointment[]         @relation("AppointmentAssignedTo")
+  assignedAppointmentServiceLines AppointmentServiceLine[] @relation("AppointmentServiceLineAssignedTo")
   createdCalendars     Calendar[]            @relation("CalendarCreatedBy")
   createdAppointments  Appointment[]         @relation("AppointmentCreatedBy")
   assignedConversations Conversation[]       @relation("ConversationAssignedTo")
+  conversationNotesAuthored ConversationNote[] @relation("ConversationNoteAuthor")
   uploadedFileAssets    FileAsset[]
   asyncJobs             AsyncJob[]             @relation("AsyncJobActor")
   emailTemplatesCreated EmailTemplate[]        @relation("EmailTemplateCreatedBy")
   emailTemplatesUpdated EmailTemplate[]        @relation("EmailTemplateUpdatedBy")
   whatsappMessageTemplatesCreated WhatsAppMessageTemplate[] @relation("WhatsAppTemplateCreatedBy")
+  automationWorkflowsCreated     AutomationWorkflow[]      @relation("AutomationWorkflowCreatedBy")
   snapshotsCreated      Snapshot[]              @relation("SnapshotCreatedBy")
   snapshotsUpdated      Snapshot[]              @relation("SnapshotUpdatedBy")
   subscriptionEventsCreated BusinessSubscriptionEvent[] @relation("SubscriptionEventCreatedBy")
   subscriptionPaymentsCreated BusinessSubscriptionPayment[] @relation("SubscriptionPaymentCreatedBy")
+  businessStatusLogsChanged BusinessStatusLog[] @relation("BusinessStatusLogChangedBy")
+  staffWorkSchedules          StaffWorkSchedule[]           @relation("StaffWorkScheduleUser")
+  staffWorkExceptions         StaffWorkException[]          @relation("StaffWorkExceptionUser")
+  staffCompensationSettings   StaffCompensationSettings[]
+  bookingWaitlistEntries      BookingWaitlistEntry[]        @relation("BookingWaitlistStaff")
+  entitlementChangeCampaignsCreated EntitlementChangeCampaign[] @relation("EntitlementChangeCampaignCreatedBy")
 
+  @@unique([phoneE164])
+  @@index([passwordResetTokenHash])
   @@map("users")
 }
 
@@ -603,6 +875,18 @@ model PlatformMembership {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("platform_memberships")
+}
+
+model TrialSignupSession {
+  id              String    @id @default(uuid())
+  payload         Json      @default("{}")
+  phoneVerifiedAt DateTime?
+  expiresAt       DateTime
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([expiresAt])
+  @@map("trial_signup_sessions")
 }
 
 model Industry {
@@ -669,6 +953,13 @@ model Business {
   snapshotId       String?
   snapshotAppliedAt DateTime?
   status           BusinessStatus @default(ACTIVE)
+  /// Real customer vs single platform-ops workspace. Default TENANT.
+  type             BusinessType   @default(TENANT)
+  /// Funnel progress for TENANT customers. Existing/normal creates default ACTIVE.
+  lifecycleStage   BusinessLifecycleStage @default(ACTIVE)
+  /// Optional placement on an INTERNAL ops campaign pipeline (platform sales board).
+  lifecyclePipelineId      String?
+  lifecyclePipelineStageId String?
   firstName        String?
   lastName         String?
   displayName      String?
@@ -683,6 +974,7 @@ model Business {
   website          String?
   timezone         String?
   settings         Json?
+  signupProfile    Json?
   createdById      String?
   deletedAt        DateTime?
   createdAt        DateTime       @default(now())
@@ -691,6 +983,8 @@ model Business {
   createdBy      User?             @relation("BusinessCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
   industry       Industry?         @relation(fields: [industryId], references: [id], onDelete: SetNull)
   snapshot       Snapshot?         @relation(fields: [snapshotId], references: [id], onDelete: SetNull)
+  lifecyclePipeline      Pipeline?      @relation("BusinessLifecyclePipeline", fields: [lifecyclePipelineId], references: [id], onDelete: SetNull)
+  lifecyclePipelineStage PipelineStage? @relation("BusinessLifecyclePipelineStage", fields: [lifecyclePipelineStageId], references: [id], onDelete: SetNull)
   snapshotProvisions SnapshotProvision[]
   memberships    BusinessMembership[]
   subscription        BusinessSubscription?
@@ -703,6 +997,26 @@ model Business {
   pipelineStages PipelineStage[]
   leads          Lead[]
   services       Service[]
+  serviceCategories ServiceCategory[]
+  serviceStaffAssignments ServiceStaff[]
+  serviceResourceRequirements ServiceResourceRequirement[]
+  serviceProductUsages ServiceProductUsage[]
+  serviceOptionGroups ServiceOptionGroup[]
+  resourceGroups ResourceGroup[]
+  resources Resource[]
+  resourceAvailability ResourceAvailability[]
+  resourceScheduleExceptions ResourceScheduleException[]
+  serviceOptionResourceRequirements ServiceOptionResourceRequirement[]
+  appointmentResourceAssignments AppointmentResourceAssignment[]
+  productCategories ProductCategory[]
+  products Product[]
+  productOptions ProductOption[]
+  productOptionValues ProductOptionValue[]
+  productVariants ProductVariant[]
+  productVariantOptionValues ProductVariantOptionValue[]
+  productBundleItems ProductBundleItem[]
+  productImages ProductImage[]
+  productInventoryAdjustments ProductInventoryAdjustment[]
   workItems      WorkItem[]
   notes          Note[]
   tasks          Task[]
@@ -716,36 +1030,194 @@ model Business {
   calendarAvailability CalendarAvailability[]
   calendarExceptions   CalendarException[]
   appointments         Appointment[]
+  cancellationPolicyAcceptances CancellationPolicyAcceptance[]
   conversations        Conversation[]
   conversationMessages ConversationMessage[]
   conversationParticipants ConversationParticipant[]
+  conversationNotes        ConversationNote[]
+  cannedResponses          CannedResponse[]
   chatbots             Chatbot[]
   forms                Form[]
   formSubmissions      FormSubmission[]
   chatbotRules         ChatbotRule[]
   chatbotSessions      ChatbotSession[]
   webhookEvents            WebhookEvent[]
+  platformSmsSuppressions  PlatformSmsSuppression[]
   asyncJobs                AsyncJob[]
   fileAssets               FileAsset[]
   businessEmailPreferences BusinessEmailPreference[]
+  businessNotificationChannelPreferences BusinessNotificationChannelPreference[]
   emailTemplates           EmailTemplate[]
   whatsappMessageTemplates WhatsAppMessageTemplate[]
   emailMessages            EmailMessage[]
   capabilities             BusinessCapability[]
+  businessAddons           BusinessAddon[]
+  businessFeatureGrants    BusinessFeatureGrant[]
+  businessLocations        BusinessLocation[]
+  businessStripeCustomer   BusinessStripeCustomer?
+  businessPaymentMethods   BusinessPaymentMethod[]
+  businessStatusLogs       BusinessStatusLog[]
+  entitlementChangeCampaignMembers EntitlementChangeCampaignMember[]
+  automationWorkflows      AutomationWorkflow[]
+  automationWorkflowRuns   AutomationWorkflowRun[]
+  contactWalletBalances    ContactWalletBalance[]
+  contactWalletTransactions ContactWalletTransaction[]
+  contactStripeCustomers   ContactStripeCustomer[]
+  contactPaymentMethods    ContactPaymentMethod[]
+  contactServiceAdjustments ContactServiceAdjustment[]
+  giftCards                GiftCard[]
+  giftCardPromotions       GiftCardPromotion[]
+  giftCardSettings         GiftCardSettings?
+  packageTemplates         PackageTemplate[]
+  clientPackages           ClientPackage[]
+  packageSettings          PackageSettings?
+  membershipPlans          MembershipPlan[]
+  clientMemberships        ClientMembership[]
+  membershipSettings       MembershipSettings?
+  offers                   Offer[]
+  offerUsageLogs           OfferUsageLog[]
+  timeCards                TimeCard[]
+  onlineBookingSettings    BusinessOnlineBookingSettings?
+  businessHours            BusinessHours[]
+  businessHourExceptions   BusinessHourException[]
+  staffWorkSchedules       StaffWorkSchedule[]
+  staffWorkExceptions      StaffWorkException[]
+  staffCompensationSettings StaffCompensationSettings[]
+  bookingWaitlistEntries   BookingWaitlistEntry[]
 
   @@index([createdById])
   @@index([industryId])
   @@index([snapshotId])
+  @@index([type])
+  @@index([lifecycleStage])
+  @@index([lifecyclePipelineId, lifecyclePipelineStageId])
   @@map("businesses")
+}
+
+enum ContactWalletTransactionType {
+  MANUAL_CREDIT
+  MANUAL_DEBIT
+  PAYMENT
+  REFUND
+  SALE_PAYMENT
+  SALE_DEPOSIT
+  MEMBERSHIP_CREDIT
+}
+
+model ContactWalletBalance {
+  id         String   @id @default(uuid())
+  businessId String
+  contactId  String   @unique
+  balance    Decimal  @default(0) @db.Decimal(12, 2)
+  currency   String   @default("USD")
+  updatedAt  DateTime @updatedAt
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  contact  Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  @@index([businessId])
+  @@map("contact_wallet_balances")
+}
+
+model ContactWalletTransaction {
+  id          String                     @id @default(uuid())
+  businessId  String
+  contactId   String
+  amount      Decimal                    @db.Decimal(12, 2)
+  type        ContactWalletTransactionType
+  description String?
+  paymentId   String?
+  invoiceId   String?
+  createdById String?
+  createdAt   DateTime                   @default(now())
+
+  business  Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  contact   Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  payment   Payment? @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+  invoice   Invoice? @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
+  createdBy User?    @relation("ContactWalletTransactionCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([businessId])
+  @@index([businessId, contactId])
+  @@index([businessId, contactId, createdAt])
+  @@index([paymentId])
+  @@map("contact_wallet_transactions")
+}
+
+model ContactStripeCustomer {
+  id               String   @id @default(uuid())
+  businessId       String
+  contactId        String
+  stripeCustomerId String
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  contact  Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  @@unique([businessId, contactId])
+  @@index([businessId])
+  @@map("contact_stripe_customers")
+}
+
+model ContactPaymentMethod {
+  id                    String    @id @default(uuid())
+  businessId            String
+  contactId             String
+  stripeCustomerId      String
+  stripePaymentMethodId String
+  brand                 String?
+  last4                 String?
+  expMonth              Int?
+  expYear               Int?
+  isDefault             Boolean   @default(false)
+  deletedAt             DateTime?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  business Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  contact  Contact   @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  payments Payment[]
+
+  @@unique([businessId, stripePaymentMethodId])
+  @@index([businessId, contactId])
+  @@map("contact_payment_methods")
+}
+
+model ContactServiceAdjustment {
+  id              String   @id @default(uuid())
+  businessId      String
+  contactId       String
+  serviceId       String
+  durationMinutes Int
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  contact  Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  service  Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@unique([businessId, contactId, serviceId])
+  @@index([businessId, contactId])
+  @@map("contact_service_adjustments")
 }
 
 model BusinessMembership {
   id          String             @id @default(uuid())
   userId      String
   businessId  String
-  role        BusinessMemberRole
-  status      MembershipStatus   @default(INVITED)
-  invitedById String?
+  role         BusinessMemberRole
+  status       MembershipStatus   @default(INVITED)
+  timeclockPin String?
+  phoneNumber  String?
+  gender       StaffGender?
+  isServiceProvider       Boolean @default(false)
+  onlineBookingEnabled    Boolean @default(true)
+  canAssignProductSales   Boolean @default(false)
+  canManageWaitlist       Boolean @default(false)
+  permissions             Json    @default("{}")
+  notificationSettings    Json    @default("{}")
+  invitedById  String?
   inviteToken String?            @unique
   joinedAt    DateTime?
   deletedAt   DateTime?
@@ -760,6 +1232,31 @@ model BusinessMembership {
   @@index([businessId])
   @@index([userId])
   @@map("business_memberships")
+}
+
+model StaffCompensationSettings {
+  id                              String   @id @default(uuid())
+  businessId                      String
+  userId                          String
+  serviceCommissionEnabled        Boolean  @default(false)
+  serviceCommissionMode           String?
+  serviceCommissionPercent        Decimal? @db.Decimal(5, 2)
+  productCommissionEnabled        Boolean  @default(false)
+  productCommissionPercent        Decimal? @db.Decimal(5, 2)
+  productCommissionOverridesEnabled Boolean  @default(false)
+  hourlyEnabled                   Boolean  @default(false)
+  hourlyRate                      Decimal? @db.Decimal(12, 2)
+  greaterOfEnabled                Boolean  @default(false)
+  createdAt                       DateTime @default(now())
+  updatedAt                       DateTime @updatedAt
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([businessId, userId])
+  @@index([businessId])
+  @@index([userId])
+  @@map("staff_compensation_settings")
 }
 
 model RefreshToken {
@@ -815,15 +1312,20 @@ model Contact {
   country          String?
   zip              String?
   avatarUrl        String?
+  avatarAssetId    String?
   source           String?
+  clientNotes      String?   @db.Text
   metadata         Json?
   createdById      String?
+  blockedAt        DateTime?
+  blockedByUserId  String?
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
   deletedAt        DateTime?
 
   business  Business     @relation(fields: [businessId], references: [id], onDelete: Cascade)
   createdBy User?        @relation("ContactCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  blockedBy User?        @relation("ContactBlockedBy", fields: [blockedByUserId], references: [id], onDelete: SetNull)
   tags      ContactTag[]
   leads     Lead[]
   workItems WorkItem[]
@@ -837,11 +1339,24 @@ model Contact {
   conversationMessages ConversationMessage[]
   conversationParticipants ConversationParticipant[]
   emailMessages EmailMessage[]
+  walletBalance         ContactWalletBalance?
+  walletTransactions    ContactWalletTransaction[]
+  contactStripeCustomers ContactStripeCustomer[]
+  paymentMethods        ContactPaymentMethod[]
+  serviceAdjustments    ContactServiceAdjustment[]
+  ownedGiftCards        GiftCard[] @relation("GiftCardOwner")
+  purchasedGiftCards    GiftCard[] @relation("GiftCardPurchaser")
+  clientPackages        ClientPackage[]
+  clientMemberships     ClientMembership[]
+  offerUsageLogs        OfferUsageLog[]
+  bookingWaitlistEntries BookingWaitlistEntry[]
 
   @@index([businessId])
   @@index([businessId, createdAt])
   @@index([businessId, email])
   @@index([businessId, phoneNumber])
+  @@index([businessId, blockedAt])
+  @@index([avatarAssetId])
   @@map("contacts")
 }
 
@@ -882,6 +1397,7 @@ model Pipeline {
   business Business        @relation(fields: [businessId], references: [id], onDelete: Cascade)
   stages   PipelineStage[]
   leads    Lead[]
+  lifecycleBusinesses Business[] @relation("BusinessLifecyclePipeline")
 
   @@unique([businessId, name])
   @@index([businessId])
@@ -895,12 +1411,15 @@ model PipelineStage {
   name       String
   position   Int
   type       PipelineStageType?
+  /// When set (ops campaign stages), moving a Business card here updates Business.lifecycleStage.
+  mapsToLifecycleStage BusinessLifecycleStage?
   createdAt  DateTime           @default(now())
   updatedAt  DateTime           @updatedAt
 
   business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
   pipeline Pipeline @relation(fields: [pipelineId], references: [id], onDelete: Cascade)
   leads    Lead[]
+  lifecycleBusinesses Business[] @relation("BusinessLifecyclePipelineStage")
 
   @@unique([pipelineId, position])
   @@index([businessId])
@@ -908,27 +1427,552 @@ model PipelineStage {
   @@map("pipeline_stages")
 }
 
-model Service {
+model ServiceCategory {
   id          String        @id @default(uuid())
   businessId  String
   name        String
-  category    String?
+  description String?
+  sortOrder   Int           @default(0)
+  status      ServiceStatus @default(ACTIVE)
+  deletedAt   DateTime?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  business Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  services Service[]
+
+  @@index([businessId, sortOrder])
+  @@map("service_categories")
+}
+
+model Service {
+  id          String        @id @default(uuid())
+  businessId  String
+  categoryId  String
+  name        String
   description String?
   price       Decimal?      @db.Decimal(12, 2)
+  durationMinutes Int         @default(60)
+  sortOrder   Int           @default(0)
+  isDemo      Boolean       @default(false)
+  hasProcessingTime Boolean @default(false)
+  processingDurationMinutes Int @default(0)
+  finishDurationMinutes Int?
+  hasBufferTime Boolean     @default(false)
+  bufferBeforeMinutes Int   @default(0)
+  bufferAfterMinutes Int    @default(0)
+  usesProducts Boolean      @default(false)
+  requiresNoStaff Boolean   @default(false)
+  requiresTwoStaff Boolean  @default(false)
+  hasCommissionDeduction Boolean @default(false)
+  commissionDeductionType ServiceCommissionType?
+  commissionDeductionValue Decimal? @db.Decimal(12, 2)
   status      ServiceStatus @default(ACTIVE)
   deletedAt   DateTime?
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 
   business  Business   @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  category  ServiceCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
   leads         Lead[]
   workItems     WorkItem[]
   estimateItems EstimateItem[]
   invoiceItems  InvoiceItem[]
   appointments  Appointment[]
+  appointmentServiceLines AppointmentServiceLine[]
+  contactAdjustments ContactServiceAdjustment[]
+  staffAssignments ServiceStaff[]
+  onlineBookingSettings ServiceOnlineBookingSettings?
+  resourceRequirements ServiceResourceRequirement[]
+  productUsages ServiceProductUsage[]
+  optionGroups ServiceOptionGroup[]
+  packageServiceGroupItems PackageServiceGroupItem[]
+  packageServiceAllocations PackageServiceAllocation[]
+  membershipServiceGroupItems MembershipServiceGroupItem[]
+  bookingWaitlistEntries BookingWaitlistEntry[]
 
   @@index([businessId])
+  @@index([businessId, categoryId])
   @@map("services")
+}
+
+model ServiceStaff {
+  id         String   @id @default(uuid())
+  businessId String
+  serviceId  String
+  userId     String
+  isEnabled  Boolean  @default(true)
+  durationMinutes Int?
+  price      Decimal? @db.Decimal(12, 2)
+  hasProcessingTime Boolean?
+  processingDurationMinutes Int?
+  finishDurationMinutes Int?
+  hasBufferTime Boolean?
+  bufferBeforeMinutes Int?
+  bufferAfterMinutes Int?
+  commissionType ServiceCommissionType?
+  commissionValue Decimal? @db.Decimal(12, 2)
+  onlineBookingEnabled Boolean @default(true)
+  sortOrder  Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  service  Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([serviceId, userId])
+  @@index([businessId])
+  @@index([serviceId])
+  @@map("service_staff")
+}
+
+model ServiceOnlineBookingSettings {
+  id                    String                    @id @default(uuid())
+  businessId            String
+  serviceId             String                    @unique
+  onlineBookingEnabled  Boolean                   @default(true)
+  calendarId            String?
+  customizePriceDisplay Boolean                   @default(false)
+  showPromptToCall      Boolean                   @default(false)
+  requireHomeAddress    Boolean                   @default(false)
+  requireCreditCard     Boolean                   @default(false)
+  requirePaymentAtBooking ServicePaymentRequirement @default(NO)
+  createdAt             DateTime                  @default(now())
+  updatedAt             DateTime                  @updatedAt
+
+  service  Service   @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  calendar Calendar? @relation(fields: [calendarId], references: [id], onDelete: SetNull)
+
+  @@index([businessId])
+  @@map("service_online_booking_settings")
+}
+
+model ServiceResourceRequirement {
+  id           String              @id @default(uuid())
+  businessId   String
+  serviceId    String
+  label        String
+  resourceType ServiceResourceType
+  resourceId   String?
+  quantity     Int                 @default(1)
+  notes        String?
+  sortOrder    Int                 @default(0)
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  service  Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  resource Resource? @relation(fields: [resourceId], references: [id], onDelete: SetNull)
+
+  @@index([businessId, serviceId])
+  @@index([businessId, resourceId])
+  @@map("service_resource_requirements")
+}
+
+model ServiceProductUsage {
+  id         String   @id @default(uuid())
+  businessId String
+  serviceId  String
+  productId  String?
+  variantId  String?
+  label      String
+  quantity   Decimal  @default(1) @db.Decimal(12, 3)
+  unitCost   Decimal? @db.Decimal(12, 2)
+  sortOrder  Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  business Business        @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  service  Service         @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  product  Product?        @relation(fields: [productId], references: [id], onDelete: SetNull)
+  variant  ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
+
+  @@index([businessId, serviceId])
+  @@index([businessId, productId])
+  @@map("service_product_usages")
+}
+
+model ServiceOptionGroup {
+  id            String   @id @default(uuid())
+  businessId    String
+  serviceId     String
+  name          String
+  description   String?
+  required      Boolean  @default(false)
+  minSelections Int      @default(0)
+  maxSelections Int?
+  sortOrder     Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  business Business       @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  service  Service        @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  options  ServiceOption[]
+
+  @@index([businessId, serviceId])
+  @@map("service_option_groups")
+}
+
+model ServiceOption {
+  id                        String   @id @default(uuid())
+  groupId                   String
+  name                      String
+  priceAdjustment           Decimal  @default(0) @db.Decimal(12, 2)
+  durationAdjustmentMinutes Int      @default(0)
+  isActive                  Boolean  @default(true)
+  sortOrder                 Int      @default(0)
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+
+  group ServiceOptionGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  resourceRequirements ServiceOptionResourceRequirement[]
+
+  @@index([groupId])
+  @@map("service_options")
+}
+
+model ResourceGroup {
+  id         String    @id @default(uuid())
+  businessId String
+  name       String
+  sortOrder  Int       @default(0)
+  deletedAt  DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  business  Business   @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  resources Resource[]
+
+  @@index([businessId, sortOrder])
+  @@map("resource_groups")
+}
+
+model Resource {
+  id           String              @id @default(uuid())
+  businessId   String
+  groupId      String?
+  name         String
+  resourceType ServiceResourceType
+  description  String?
+  status       ResourceStatus      @default(ACTIVE)
+  sortOrder    Int                 @default(0)
+  deletedAt    DateTime?
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+
+  business                 Business                         @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  group                    ResourceGroup?                   @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  availability             ResourceAvailability[]
+  scheduleExceptions       ResourceScheduleException[]
+  serviceRequirements      ServiceResourceRequirement[]
+  optionRequirements       ServiceOptionResourceRequirement[]
+  appointmentAssignments   AppointmentResourceAssignment[]
+
+  @@index([businessId, groupId])
+  @@index([businessId, resourceType])
+  @@index([businessId, name])
+  @@map("resources")
+}
+
+model ResourceAvailability {
+  id         String    @id @default(uuid())
+  businessId String
+  resourceId String
+  dayOfWeek  DayOfWeek
+  startTime  String
+  endTime    String
+  isEnabled  Boolean   @default(true)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  resource Resource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+
+  @@unique([resourceId, dayOfWeek])
+  @@index([businessId])
+  @@map("resource_availability")
+}
+
+model ResourceScheduleException {
+  id            String   @id @default(uuid())
+  businessId    String
+  resourceId    String
+  date          DateTime @db.Date
+  startTime     String?
+  endTime       String?
+  isUnavailable Boolean  @default(true)
+  reason        String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  resource Resource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+
+  @@index([businessId])
+  @@index([resourceId, date])
+  @@map("resource_schedule_exceptions")
+}
+
+model ServiceOptionResourceRequirement {
+  id              String   @id @default(uuid())
+  businessId      String
+  serviceOptionId String
+  resourceId      String
+  quantity        Int      @default(1)
+  notes           String?
+  sortOrder       Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  business      Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  serviceOption ServiceOption @relation(fields: [serviceOptionId], references: [id], onDelete: Cascade)
+  resource      Resource      @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+
+  @@index([businessId, serviceOptionId])
+  @@index([businessId, resourceId])
+  @@map("service_option_resource_requirements")
+}
+
+model AppointmentResourceAssignment {
+  id            String   @id @default(uuid())
+  businessId    String
+  appointmentId String
+  resourceId    String
+  quantity      Int      @default(1)
+  notes         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  business    Business    @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  appointment Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  resource    Resource    @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+
+  @@unique([appointmentId, resourceId])
+  @@index([businessId])
+  @@map("appointment_resource_assignments")
+}
+
+model ProductCategory {
+  id          String        @id @default(uuid())
+  businessId  String
+  name        String
+  isNonRetail Boolean       @default(false)
+  sortOrder   Int           @default(0)
+  status      ProductStatus @default(ACTIVE)
+  deletedAt   DateTime?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  business Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  products Product[]
+
+  @@index([businessId, sortOrder])
+  @@map("product_categories")
+}
+
+model Product {
+  id          String        @id @default(uuid())
+  businessId  String
+  categoryId  String?
+  productType ProductType   @default(SIMPLE)
+  name        String
+  brand       String?
+  description String?
+  supplier    String?
+  unitPrice   Decimal       @default(0) @db.Decimal(12, 2)
+  unitLabel   String?
+  purchaseCost Decimal?     @db.Decimal(12, 2)
+  chargeTax   Boolean       @default(true)
+  trackInventory Boolean    @default(true)
+  sku         String?
+  barcode     String?
+  desiredQuantity Int?
+  stockQuantity Int         @default(0)
+  commissionEnabled Boolean @default(true)
+  assignStaffToSale Boolean @default(false)
+  considerAsSalesRevenue Boolean @default(true)
+  autoAddToNewSales Boolean @default(false)
+  customAttributes Json?
+  featuredImageKey String?
+  featuredImageMimeType String?
+  featuredImageWidth Int?
+  featuredImageHeight Int?
+  status      ProductStatus @default(ACTIVE)
+  sortOrder   Int           @default(0)
+  deletedAt   DateTime?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  business Business         @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  category ProductCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  options  ProductOption[]
+  variants ProductVariant[]
+  images   ProductImage[]
+  inventoryAdjustments ProductInventoryAdjustment[]
+  serviceProductUsages ServiceProductUsage[]
+  invoiceItems InvoiceItem[]
+  bundleItemsAsBundle ProductBundleItem[] @relation("BundleProduct")
+  bundleItemsAsComponent ProductBundleItem[] @relation("BundleComponentProduct")
+
+  @@index([businessId, categoryId])
+  @@index([businessId, name])
+  @@index([businessId, productType])
+  @@index([businessId, status])
+  @@map("products")
+}
+
+model ProductOption {
+  id         String    @id @default(uuid())
+  businessId String
+  productId  String
+  name       String
+  sortOrder  Int       @default(0)
+  deletedAt  DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  business Business            @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  product  Product             @relation(fields: [productId], references: [id], onDelete: Cascade)
+  values   ProductOptionValue[]
+
+  @@index([businessId, productId])
+  @@map("product_options")
+}
+
+model ProductOptionValue {
+  id         String    @id @default(uuid())
+  businessId String
+  optionId   String
+  value      String
+  sortOrder  Int       @default(0)
+  deletedAt  DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  business Business                  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  option   ProductOption             @relation(fields: [optionId], references: [id], onDelete: Cascade)
+  variantLinks ProductVariantOptionValue[]
+
+  @@index([businessId, optionId])
+  @@map("product_option_values")
+}
+
+model ProductVariant {
+  id              String              @id @default(uuid())
+  businessId      String
+  productId       String
+  variantKey      String
+  sku             String?
+  barcode         String?
+  price           Decimal?            @db.Decimal(12, 2)
+  compareAtPrice  Decimal?            @db.Decimal(12, 2)
+  purchaseCost    Decimal?            @db.Decimal(12, 2)
+  stockQuantity   Int                 @default(0)
+  desiredQuantity Int?
+  status          ProductVariantStatus @default(ACTIVE)
+  customAttributes Json?
+  featuredImageKey String?
+  featuredImageMimeType String?
+  featuredImageWidth Int?
+  featuredImageHeight Int?
+  sortOrder       Int                 @default(0)
+  deletedAt       DateTime?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  product  Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  optionValues ProductVariantOptionValue[]
+  inventoryAdjustments ProductInventoryAdjustment[]
+  serviceProductUsages ServiceProductUsage[]
+  invoiceItems InvoiceItem[]
+  bundleItemsAsComponent ProductBundleItem[] @relation("BundleComponentVariant")
+
+  @@unique([productId, variantKey])
+  @@index([businessId, productId])
+  @@index([businessId, sku])
+  @@map("product_variants")
+}
+
+model ProductVariantOptionValue {
+  id            String @id @default(uuid())
+  businessId    String
+  variantId     String
+  optionValueId String
+
+  business    Business           @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  variant     ProductVariant     @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  optionValue ProductOptionValue @relation(fields: [optionValueId], references: [id], onDelete: Cascade)
+
+  @@unique([variantId, optionValueId])
+  @@index([businessId, variantId])
+  @@index([businessId, optionValueId])
+  @@map("product_variant_option_values")
+}
+
+model ProductBundleItem {
+  id                  String  @id @default(uuid())
+  businessId          String
+  bundleProductId     String
+  componentProductId  String
+  componentVariantId  String?
+  quantity            Int     @default(1)
+
+  business         Business        @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  bundleProduct    Product         @relation("BundleProduct", fields: [bundleProductId], references: [id], onDelete: Cascade)
+  componentProduct Product         @relation("BundleComponentProduct", fields: [componentProductId], references: [id], onDelete: Restrict)
+  componentVariant ProductVariant? @relation("BundleComponentVariant", fields: [componentVariantId], references: [id], onDelete: SetNull)
+
+  @@index([businessId, bundleProductId])
+  @@map("product_bundle_items")
+}
+
+model ProductImage {
+  id          String    @id @default(uuid())
+  businessId  String
+  productId   String
+  storageKey  String
+  mimeType    String
+  width       Int
+  height      Int
+  altText     String?
+  sortOrder   Int       @default(0)
+  deletedAt   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  product  Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([businessId, productId])
+  @@map("product_images")
+}
+
+model ProductInventoryAdjustment {
+  id             String                       @id @default(uuid())
+  businessId     String
+  productId      String
+  variantId      String?
+  type           ProductInventoryAdjustmentType
+  quantityChange Int
+  note           String?
+  actorUserId    String?
+  checkoutId     String?
+  invoiceItemId  String?
+  appointmentId  String?
+  serviceId      String?
+  createdAt      DateTime                     @default(now())
+
+  business Business        @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  product  Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  variant  ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
+  actor    User?           @relation("ProductInventoryAdjustmentActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([businessId, productId])
+  @@index([businessId, variantId])
+  @@index([businessId, createdAt])
+  @@map("product_inventory_adjustments")
 }
 
 model Lead {
@@ -1026,6 +2070,25 @@ model Task {
   @@index([businessId, assignedToId])
   @@index([businessId, dueAt])
   @@map("tasks")
+}
+
+model TimeCard {
+  id           String    @id @default(uuid())
+  businessId   String
+  userId       String
+  clockInTime  DateTime
+  clockOutTime DateTime?
+  paidMinutes  Int?
+  notes        String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([businessId, userId])
+  @@index([businessId, clockInTime(sort: Desc)])
+  @@map("time_cards")
 }
 
 model WorkItem {
@@ -1126,7 +2189,10 @@ model Invoice {
   contactId     String
   estimateId    String?
   workItemId    String?
+  appointmentId String?
   invoiceNumber String
+  kind          InvoiceKind   @default(STANDARD)
+  displaySequence Int?
   status        InvoiceStatus @default(DRAFT)
   issueDate     DateTime
   dueDate       DateTime?
@@ -1146,6 +2212,9 @@ model Invoice {
   notes              String?
   paymentTerms       String?
   termsAndConditions String?
+  metadata           Json?
+  closedAt           DateTime?
+  closedById         String?
   createdById        String?
   createdAt          DateTime      @default(now())
   updatedAt          DateTime      @updatedAt
@@ -1155,35 +2224,54 @@ model Invoice {
   contact   Contact       @relation(fields: [contactId], references: [id], onDelete: Restrict)
   estimate  Estimate?     @relation(fields: [estimateId], references: [id], onDelete: SetNull)
   workItem  WorkItem?     @relation(fields: [workItemId], references: [id], onDelete: SetNull)
+  appointment Appointment? @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
   createdBy User?         @relation("InvoiceCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  closedBy  User?         @relation("InvoiceClosedBy", fields: [closedById], references: [id], onDelete: SetNull)
   items     InvoiceItem[]
   payments  Payment[]
+  walletTransactions ContactWalletTransaction[]
+  giftCards          GiftCard[]
+  clientPackages     ClientPackage[]
 
   @@unique([businessId, invoiceNumber])
   @@index([businessId])
   @@index([businessId, contactId])
   @@index([businessId, estimateId])
+  @@index([businessId, appointmentId])
   @@index([businessId, status])
+  @@index([businessId, kind])
+  @@index([businessId, kind, status])
   @@index([businessId, issueDate])
   @@index([publicToken])
   @@map("invoices")
 }
 
 model InvoiceItem {
-  id          String   @id @default(uuid())
+  id          String           @id @default(uuid())
   invoiceId   String
+  lineType    InvoiceLineType  @default(SERVICE)
   serviceId   String?
+  productId   String?
+  variantId   String?
+  staffUserId String?
   title       String
   description String?
-  quantity    Decimal  @db.Decimal(12, 4)
-  unitPrice   Decimal  @db.Decimal(12, 2)
-  totalPrice  Decimal  @db.Decimal(12, 2)
-  createdAt   DateTime @default(now())
+  quantity    Decimal          @db.Decimal(12, 4)
+  unitPrice   Decimal          @db.Decimal(12, 2)
+  totalPrice  Decimal          @db.Decimal(12, 2)
+  sortOrder   Int              @default(0)
+  metadata    Json?
+  createdAt   DateTime         @default(now())
 
-  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
-  service Service? @relation(fields: [serviceId], references: [id], onDelete: SetNull)
+  invoice   Invoice         @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  service   Service?        @relation(fields: [serviceId], references: [id], onDelete: SetNull)
+  product   Product?        @relation(fields: [productId], references: [id], onDelete: SetNull)
+  variant   ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
+  staffUser User?           @relation("InvoiceItemStaff", fields: [staffUserId], references: [id], onDelete: SetNull)
 
   @@index([invoiceId])
+  @@index([productId])
+  @@index([variantId])
   @@map("invoice_items")
 }
 
@@ -1192,17 +2280,23 @@ model Payment {
   businessId  String
   invoiceId   String
   contactId   String
+  payableType PayableType   @default(INVOICE)
+  payableId   String
   amount      Decimal       @db.Decimal(12, 2)
   method      PaymentMethod
+  status      PaymentStatus @default(SUCCEEDED)
   provider              PaymentProvider @default(MANUAL)
   providerMetadata      Json?
-  stripePaymentIntentId String?
+  stripePaymentIntentId String? @unique
   stripeCheckoutSessionId String? @unique
   stripeChargeId        String?
   stripeRefundId        String?
+  walletTransactionId   String?
+  giftCardId            String?
+  contactPaymentMethodId String?
   reference   String?
   notes       String?
-  paidAt      DateTime
+  paidAt      DateTime?
   createdById String?
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
@@ -1211,6 +2305,9 @@ model Payment {
   business  Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
   invoice   Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Restrict)
   contact   Contact  @relation(fields: [contactId], references: [id], onDelete: Restrict)
+  contactPaymentMethod ContactPaymentMethod? @relation(fields: [contactPaymentMethodId], references: [id], onDelete: SetNull)
+  walletTransactions ContactWalletTransaction[]
+  giftCard           GiftCard? @relation(fields: [giftCardId], references: [id], onDelete: SetNull)
   createdBy User?    @relation("PaymentCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
 
   @@index([businessId])
@@ -1218,6 +2315,8 @@ model Payment {
   @@index([businessId, contactId])
   @@index([businessId, method])
   @@index([businessId, paidAt])
+  @@index([businessId, payableType, payableId])
+  @@index([businessId, giftCardId])
   @@index([stripePaymentIntentId])
   @@map("payments")
 }
@@ -1253,15 +2352,24 @@ model PlanGroup {
 
 model PlanTier {
   id           String         @id @default(uuid())
-  planGroupId  String
+  /// Optional legacy parent. New tiers are standalone (CEO model).
+  planGroupId  String?
+  /// Stable unique key for the sellable tier SKU (e.g. starter, growth).
+  key          String?
   slug         String
   name         String
   description  String?
   status       PlanTierStatus @default(DRAFT)
+  isPublic     Boolean        @default(true)
   priceMonthly Decimal?       @db.Decimal(10, 2)
   priceYearly  Decimal?       @db.Decimal(10, 2)
   setupFee     Decimal?       @db.Decimal(10, 2)
   trialDays    Int?
+  /// null = unlimited
+  staffLimit   Int?
+  /// null = unlimited
+  locationLimit Int?
+  currency     String         @default("USD")
   badge        String?
   highlighted  Boolean        @default(false)
   ctaLabel     String?
@@ -1273,15 +2381,216 @@ model PlanTier {
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
 
-  planGroup     PlanGroup              @relation(fields: [planGroupId], references: [id], onDelete: Cascade)
+  planGroup     PlanGroup?             @relation(fields: [planGroupId], references: [id], onDelete: SetNull)
   capabilities  PlanTierCapability[]
   features      PlanTierFeature[]
   subscriptions BusinessSubscription[]
+  versions      TierVersion[]
+  includedAddons TierIncludedAddon[]
+  dependentAddonLinks AddonTierLink[]
+  entitlementChangeCampaigns EntitlementChangeCampaign[]
 
   @@unique([planGroupId, slug])
+  @@unique([key])
   @@index([planGroupId, sortOrder])
   @@index([status])
+  @@index([isPublic])
   @@map("plan_tiers")
+}
+
+/// Immutable published snapshot of a tier (price, limits, capabilities, addon links).
+model TierVersion {
+  id              String   @id @default(uuid())
+  tierId          String
+  version         Int
+  priceMonthly    Decimal? @db.Decimal(10, 2)
+  priceYearly     Decimal? @db.Decimal(10, 2)
+  staffLimit      Int?
+  locationLimit   Int?
+  /// Snapshot of capability IDs at publish time.
+  capabilityIds   Json     @default("[]")
+  /// Snapshot of included independent addon IDs.
+  includedAddonIds Json    @default("[]")
+  /// Snapshot of dependent addon IDs linked to this tier.
+  dependentAddonIds Json   @default("[]")
+  metadata        Json?
+  publishedAt     DateTime @default(now())
+  createdAt       DateTime @default(now())
+
+  tier          PlanTier               @relation(fields: [tierId], references: [id], onDelete: Cascade)
+  subscriptions BusinessSubscription[]
+
+  @@unique([tierId, version])
+  @@index([tierId])
+  @@map("tier_versions")
+}
+
+model Addon {
+  id                String            @id @default(uuid())
+  key               String            @unique
+  name              String
+  description       String?
+  purchaseMode      AddonPurchaseMode
+  status            AddonStatus       @default(DRAFT)
+  isPublic          Boolean           @default(true)
+  /// Required when purchaseMode = INDEPENDENT; null for DEPENDENT.
+  priceMonthly      Decimal?          @db.Decimal(10, 2)
+  priceYearly       Decimal?          @db.Decimal(10, 2)
+  staffLimitDelta   Int?
+  locationLimitDelta Int?
+  capabilityId      String
+  sortOrder         Int               @default(0)
+  metadata          Json?
+  deletedAt         DateTime?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  capability      Capability         @relation(fields: [capabilityId], references: [id], onDelete: Restrict)
+  tierLinks       AddonTierLink[]
+  includedInTiers TierIncludedAddon[]
+  businessAddons  BusinessAddon[]
+  entitlementChangeCampaigns EntitlementChangeCampaign[]
+
+  @@index([status])
+  @@index([purchaseMode])
+  @@index([capabilityId])
+  @@map("addons")
+}
+
+/// Dependent add-on → must link to ≥1 tier.
+model AddonTierLink {
+  id        String   @id @default(uuid())
+  addonId   String
+  tierId    String
+  createdAt DateTime @default(now())
+
+  addon Addon    @relation(fields: [addonId], references: [id], onDelete: Cascade)
+  tier  PlanTier @relation(fields: [tierId], references: [id], onDelete: Cascade)
+
+  @@unique([addonId, tierId])
+  @@index([tierId])
+  @@map("addon_tier_links")
+}
+
+/// Independent add-on optionally included in a tier (price absorbed).
+model TierIncludedAddon {
+  id        String   @id @default(uuid())
+  tierId    String
+  addonId   String
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  tier  PlanTier @relation(fields: [tierId], references: [id], onDelete: Cascade)
+  addon Addon    @relation(fields: [addonId], references: [id], onDelete: Cascade)
+
+  @@unique([tierId, addonId])
+  @@index([addonId])
+  @@map("tier_included_addons")
+}
+
+model BusinessAddon {
+  id                       String              @id @default(uuid())
+  businessId               String
+  addonId                  String
+  status                   BusinessAddonStatus @default(ACTIVE)
+  source                   BusinessAddonSource
+  priceAtPurchase          Decimal?            @db.Decimal(10, 2)
+  billingCycle             BusinessSubscriptionBillingCycle?
+  stripeSubscriptionItemId String?
+  activatedAt              DateTime            @default(now())
+  canceledAt               DateTime?
+  metadata                 Json?
+  createdAt                DateTime            @default(now())
+  updatedAt                DateTime            @updatedAt
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  addon    Addon    @relation(fields: [addonId], references: [id], onDelete: Restrict)
+
+  @@unique([businessId, addonId])
+  @@index([businessId])
+  @@index([addonId])
+  @@index([status])
+  @@index([source])
+  @@map("business_addons")
+}
+
+model BusinessLocation {
+  id               String                 @id @default(uuid())
+  businessId       String
+  name             String
+  address          String?
+  city             String?
+  state            String?
+  country          String?
+  zip              String?
+  timezone         String?
+  status           BusinessLocationStatus @default(ACTIVE)
+  isPrimary        Boolean                @default(false)
+  defaultCalendarId String?
+  deactivatedAt    DateTime?
+  createdAt        DateTime               @default(now())
+  updatedAt        DateTime               @updatedAt
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([businessId])
+  @@index([businessId, status])
+  @@map("business_locations")
+}
+
+model BusinessStripeCustomer {
+  id               String   @id @default(uuid())
+  businessId       String   @unique
+  stripeCustomerId String
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  business        Business                 @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  paymentMethods  BusinessPaymentMethod[]
+
+  @@index([stripeCustomerId])
+  @@map("business_stripe_customers")
+}
+
+model BusinessPaymentMethod {
+  id                     String    @id @default(uuid())
+  businessId             String
+  businessStripeCustomerId String
+  stripePaymentMethodId  String
+  brand                  String?
+  last4                  String?
+  expMonth               Int?
+  expYear                Int?
+  isDefault              Boolean   @default(false)
+  deletedAt              DateTime?
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+
+  business               Business               @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  businessStripeCustomer BusinessStripeCustomer @relation(fields: [businessStripeCustomerId], references: [id], onDelete: Cascade)
+
+  @@unique([businessId, stripePaymentMethodId])
+  @@index([businessId])
+  @@index([businessStripeCustomerId])
+  @@map("business_payment_methods")
+}
+
+model BusinessStatusLog {
+  id              String         @id @default(uuid())
+  businessId      String
+  fromStatus      BusinessStatus?
+  toStatus        BusinessStatus
+  reason          String
+  changedByUserId String?
+  metadata        Json?
+  createdAt       DateTime       @default(now())
+
+  business  Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  changedBy User?    @relation("BusinessStatusLogChangedBy", fields: [changedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([businessId])
+  @@index([createdAt])
+  @@map("business_status_logs")
 }
 
 model PlanTierCapability {
@@ -1378,6 +2687,8 @@ model Capability {
   configSchemas        CapabilityConfigSchema[]
   tierAssignments      PlanTierCapability[]
   businessAssignments  BusinessCapability[]
+  addons               Addon[]
+  entitlementChangeCampaigns EntitlementChangeCampaign[]
 
   @@index([status])
   @@index([sortOrder])
@@ -1593,6 +2904,8 @@ model BusinessSubscription {
   businessId         String                    @unique
   planGroupId        String?
   planTierId         String?
+  /// Locked tier version this business is billed/entitled on.
+  tierVersionId      String?
   status             SubscriptionStatus        @default(TRIALING)
   paymentMethod      SubscriptionPaymentMethod @default(NOT_SELECTED)
   paymentStatus      SubscriptionPaymentStatus @default(NOT_REQUIRED)
@@ -1600,7 +2913,22 @@ model BusinessSubscription {
   billingCycle       BusinessSubscriptionBillingCycle?
   currentPeriodStart DateTime?
   currentPeriodEnd   DateTime?
+  /// Stripe Customer id (mirror — webhook/reconcile owned for STRIPE billing).
+  stripeCustomerId   String?
+  /// Stripe Subscription id (mirror).
+  stripeSubscriptionId String?                 @unique
+  /// Stripe Price id for the base tier line item (mirror).
+  stripePriceId      String?
+  /// Mirror of Stripe cancel_at_period_end.
+  cancelAtPeriodEnd  Boolean                   @default(false)
   amount             Decimal?                  @db.Decimal(10, 2)
+  /// Snapshot of price at assignment / last accepted migration.
+  /// For STRIPE billing this is a display mirror from webhooks only.
+  priceAtPurchase    Decimal?                  @db.Decimal(10, 2)
+  staffLimitAtPurchase Int?
+  locationLimitAtPurchase Int?
+  /// Feature keys snapshot at purchase / last accepted change.
+  capabilitySnapshot Json?
   currency           String?
   notes              String?
   metadata           Json?
@@ -1608,16 +2936,20 @@ model BusinessSubscription {
   createdAt          DateTime                  @default(now())
   updatedAt          DateTime                  @updatedAt
 
-  business  Business   @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  planGroup PlanGroup? @relation(fields: [planGroupId], references: [id], onDelete: SetNull)
-  planTier  PlanTier?  @relation(fields: [planTierId], references: [id], onDelete: SetNull)
-  events    BusinessSubscriptionEvent[]
-  payments  BusinessSubscriptionPayment[]
+  business    Business     @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  planGroup   PlanGroup?   @relation(fields: [planGroupId], references: [id], onDelete: SetNull)
+  planTier    PlanTier?    @relation(fields: [planTierId], references: [id], onDelete: SetNull)
+  tierVersion TierVersion? @relation(fields: [tierVersionId], references: [id], onDelete: SetNull)
+  events      BusinessSubscriptionEvent[]
+  payments    BusinessSubscriptionPayment[]
 
   @@index([planGroupId])
   @@index([planTierId])
+  @@index([tierVersionId])
   @@index([status])
   @@index([paymentStatus])
+  @@index([stripeCustomerId])
+  @@index([stripePriceId])
   @@map("business_subscriptions")
 }
 
@@ -1721,6 +3053,95 @@ model BusinessCapability {
   @@index([capabilityId])
   @@index([source])
   @@map("business_capabilities")
+}
+
+/// Per-business feature pin used when a service is removed from a capability (grandfathering).
+model BusinessFeatureGrant {
+  id         String                     @id @default(uuid())
+  businessId String
+  featureKey String
+  source     BusinessFeatureGrantSource @default(GRANDFATHERED)
+  status     BusinessFeatureGrantStatus @default(ACTIVE)
+  capabilityId String?
+  campaignId String?
+  revokedAt  DateTime?
+  createdAt  DateTime                   @default(now())
+  updatedAt  DateTime                   @updatedAt
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  campaign EntitlementChangeCampaign? @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+
+  @@unique([businessId, featureKey, source])
+  @@index([businessId])
+  @@index([featureKey])
+  @@index([status])
+  @@index([campaignId])
+  @@map("business_feature_grants")
+}
+
+/// Platform ops campaign for packaging / price / capability / feature migrations.
+model EntitlementChangeCampaign {
+  id              String                           @id @default(uuid())
+  type            EntitlementChangeCampaignType
+  status          EntitlementChangeCampaignStatus  @default(OPEN)
+  policy          EntitlementChangeCampaignPolicy  @default(KEEP_GRANDFATHERED)
+  summary         String
+  message         String?
+  tierId          String?
+  addonId         String?
+  capabilityId    String?
+  featureKeys     Json                             @default("[]")
+  fromVersionId   String?
+  toVersionId     String?
+  /// Catalog snapshot / payload for migrate apply (prices, capability ids, etc.).
+  payload         Json?
+  effectiveAt     DateTime?
+  autoForce       Boolean                          @default(true)
+  createdByUserId String?
+  completedAt     DateTime?
+  cancelledAt     DateTime?
+  createdAt       DateTime                         @default(now())
+  updatedAt       DateTime                         @updatedAt
+
+  tier       PlanTier?  @relation(fields: [tierId], references: [id], onDelete: SetNull)
+  addon      Addon?     @relation(fields: [addonId], references: [id], onDelete: SetNull)
+  capability Capability? @relation(fields: [capabilityId], references: [id], onDelete: SetNull)
+  createdBy  User?      @relation("EntitlementChangeCampaignCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  members    EntitlementChangeCampaignMember[]
+  featureGrants BusinessFeatureGrant[]
+
+  @@index([type])
+  @@index([status])
+  @@index([tierId])
+  @@index([addonId])
+  @@index([capabilityId])
+  @@index([effectiveAt])
+  @@index([createdAt])
+  @@map("entitlement_change_campaigns")
+}
+
+model EntitlementChangeCampaignMember {
+  id          String                               @id @default(uuid())
+  campaignId  String
+  businessId  String
+  included    Boolean                              @default(true)
+  status      EntitlementChangeCampaignMemberStatus @default(PENDING)
+  /// Per-business override of campaign effectiveAt (extensions).
+  effectiveAt DateTime?
+  notifiedAt  DateTime?
+  migratedAt  DateTime?
+  createdAt   DateTime                             @default(now())
+  updatedAt   DateTime                             @updatedAt
+
+  campaign EntitlementChangeCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  business Business                 @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@unique([campaignId, businessId])
+  @@index([campaignId])
+  @@index([businessId])
+  @@index([status])
+  @@index([effectiveAt])
+  @@map("entitlement_change_campaign_members")
 }
 
 model PlatformSetting {
@@ -1841,8 +3262,6 @@ model Calendar {
   requireApproval        Boolean              @default(false)
   autoConfirm            Boolean              @default(true)
   capacity               Int                  @default(1)
-  publicSlug             String?              @unique
-  publicBookingEnabled   Boolean              @default(false)
   embedEnabled           Boolean              @default(true)
   formSettings           Json?
   confirmationSettings Json?
@@ -1862,6 +3281,8 @@ model Calendar {
   availability CalendarAvailability[]
   exceptions   CalendarException[]
   appointments Appointment[]
+  bookingWaitlistEntries BookingWaitlistEntry[]
+  serviceOnlineBookingSettings ServiceOnlineBookingSettings[]
 
   @@index([businessId])
   @@index([businessId, status])
@@ -1926,11 +3347,174 @@ model CalendarException {
   @@map("calendar_exceptions")
 }
 
+model BusinessOnlineBookingSettings {
+  id                      String               @id @default(uuid())
+  businessId              String               @unique
+  publicSlug              String?              @unique
+  onlineBookingEnabled    Boolean              @default(false)
+  minimumNoticeMinutes    Int                  @default(60)
+  maxBookingDays          Int                  @default(60)
+  slotIntervalMinutes     Int                  @default(15)
+  bufferBeforeMinutes     Int                  @default(0)
+  bufferAfterMinutes      Int                  @default(0)
+  timezone                String               @default("UTC")
+  locationType            CalendarLocationType @default(PHYSICAL)
+  locationValue           String?
+  requireApproval         Boolean              @default(false)
+  autoConfirm             Boolean              @default(true)
+  avoidGapsEnabled              Boolean              @default(false)
+  avoidGapsMaxGapMinutes        Int?
+  avoidGapsMinGapMinutes        Int?
+  avoidGapsTimeBlockMode        GapTimeBlockMode     @default(SAME_AS_APPOINTMENTS)
+  avoidGapsEmptyDayMode         GapEmptyDayMode      @default(ALL_TIMES)
+  avoidGapsMultiProviderMode    GapMultiProviderMode @default(SAME_AS_SINGLE)
+  allowMultipleServices   Boolean              @default(false)
+  allowDuplicateServices  Boolean              @default(false)
+  singleStaffOnly         Boolean              @default(false)
+  collectPhotosEnabled    Boolean              @default(false)
+  photoUploadPrompt       String?
+  waitlistEnabled         Boolean              @default(false)
+  expressBookingEnabled           Boolean @default(false)
+  expressBookingAutoEnable        Boolean @default(false)
+  expressBookingTimeLimitMinutes  Int     @default(30)
+  expressRequireCard              Boolean @default(false)
+  expressRequireDeposit           Boolean @default(false)
+  expressDepositType              ExpressDepositType @default(FULL)
+  expressAllowPhotoUpload         Boolean @default(false)
+  cancellationPolicyVersion       String  @default("1")
+  randomizeStaffOrder     Boolean              @default(false)
+  showGenderOptions       Boolean              @default(false)
+  showAnyoneOption        Boolean              @default(true)
+  anyoneAssignmentMode    AnyoneAssignmentMode @default(RANDOM)
+  anyoneExcludedStaffIds  Json?
+  embedEnabled            Boolean              @default(true)
+  overlayEnabled          Boolean              @default(true)
+  formSettings            Json?
+  confirmationSettings    Json?
+  widgetSettings          Json?
+  notificationSettings    Json?
+  createdAt               DateTime             @default(now())
+  updatedAt               DateTime             @updatedAt
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([businessId])
+  @@map("business_online_booking_settings")
+}
+
+model BusinessHours {
+  id         String    @id @default(uuid())
+  businessId String
+  dayOfWeek  DayOfWeek
+  startTime  String
+  endTime    String
+  isEnabled  Boolean   @default(true)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@unique([businessId, dayOfWeek])
+  @@index([businessId])
+  @@map("business_hours")
+}
+
+model BusinessHourException {
+  id            String   @id @default(uuid())
+  businessId    String
+  date          DateTime @db.Date
+  startTime     String?
+  endTime       String?
+  isUnavailable Boolean  @default(true)
+  reason        String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([businessId])
+  @@index([businessId, date])
+  @@map("business_hour_exceptions")
+}
+
+model StaffWorkSchedule {
+  id           String    @id @default(uuid())
+  businessId   String
+  userId       String
+  dayOfWeek    DayOfWeek
+  startTime    String
+  endTime      String
+  isEnabled    Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  user     User     @relation("StaffWorkScheduleUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([businessId, userId, dayOfWeek])
+  @@index([businessId])
+  @@index([businessId, userId])
+  @@map("staff_work_schedules")
+}
+
+model StaffWorkException {
+  id            String   @id @default(uuid())
+  businessId    String
+  userId        String
+  date          DateTime @db.Date
+  startTime     String?
+  endTime       String?
+  isUnavailable Boolean  @default(true)
+  reason        String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  user     User     @relation("StaffWorkExceptionUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([businessId])
+  @@index([businessId, userId, date])
+  @@map("staff_work_exceptions")
+}
+
+model BookingWaitlistEntry {
+  id                 String                @id @default(uuid())
+  businessId         String
+  calendarId         String?
+  contactId          String
+  serviceId          String
+  staffId            String?
+  preferredDate      DateTime              @db.Date
+  preferredMorning   Boolean               @default(false)
+  preferredAfternoon Boolean               @default(false)
+  preferredEvening   Boolean               @default(false)
+  comments           String?
+  status             BookingWaitlistStatus @default(WAITING)
+  source             BookingWaitlistSource @default(ONLINE_BOOKING)
+  metadata           Json?
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
+
+  business Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  calendar Calendar? @relation(fields: [calendarId], references: [id], onDelete: SetNull)
+  contact  Contact   @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  service  Service   @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  staff    User?     @relation("BookingWaitlistStaff", fields: [staffId], references: [id], onDelete: SetNull)
+
+  @@index([businessId])
+  @@index([businessId, status])
+  @@index([businessId, serviceId])
+  @@index([businessId, preferredDate])
+  @@index([businessId, staffId])
+  @@index([businessId, calendarId])
+  @@map("booking_waitlist_entries")
+}
+
 model Appointment {
   id               String             @id @default(uuid())
   businessId       String
-  calendarId       String
-  contactId        String
+  calendarId       String?
+  contactId        String?
   serviceId        String?
   workItemId       String?
   assignedToId     String?
@@ -1938,12 +3522,22 @@ model Appointment {
   description      String?
   startAt          DateTime
   endAt            DateTime
-  status           AppointmentStatus  @default(SCHEDULED)
+  status           AppointmentStatus  @default(UNCONFIRMED)
   source           AppointmentSource  @default(INTERNAL)
   locationType     CalendarLocationType?
   locationValue    String?
   notes            String?
   metadata         Json?
+  guestFirstName   String?
+  guestEmail       String?
+  guestPhone       String?
+  guestPhoneCountryCode String?
+  expressBookingToken       String?   @unique
+  expressBookingExpiresAt   DateTime?
+  expressBookingCompletedAt DateTime?
+  expressRequireCard        Boolean?
+  expressRequireDeposit     Boolean?
+  expressTimeLimitMinutes   Int?
   externalProvider String?
   externalEventId  String?
   createdById      String?
@@ -1952,19 +3546,62 @@ model Appointment {
   deletedAt        DateTime?
 
   business   Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  calendar   Calendar  @relation(fields: [calendarId], references: [id], onDelete: Restrict)
-  contact    Contact   @relation(fields: [contactId], references: [id], onDelete: Restrict)
+  calendar   Calendar? @relation(fields: [calendarId], references: [id], onDelete: SetNull)
+  contact    Contact?  @relation(fields: [contactId], references: [id], onDelete: Restrict)
   service    Service?  @relation(fields: [serviceId], references: [id], onDelete: SetNull)
   workItem   WorkItem? @relation(fields: [workItemId], references: [id], onDelete: SetNull)
   assignedTo User?     @relation("AppointmentAssignedTo", fields: [assignedToId], references: [id], onDelete: SetNull)
   createdBy  User?     @relation("AppointmentCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  resourceAssignments AppointmentResourceAssignment[]
+  serviceLines        AppointmentServiceLine[]
+  invoices            Invoice[]
+  cancellationPolicyAcceptance CancellationPolicyAcceptance?
 
   @@index([businessId])
   @@index([businessId, calendarId])
   @@index([businessId, contactId])
   @@index([businessId, startAt])
   @@index([businessId, status])
+  @@index([businessId, status, expressBookingExpiresAt])
   @@map("appointments")
+}
+
+model CancellationPolicyAcceptance {
+  id             String   @id @default(uuid())
+  businessId     String
+  appointmentId  String   @unique
+  policyVersion  String
+  acceptedAt     DateTime @default(now())
+  ipAddress      String?
+  userAgent      String?
+  createdAt      DateTime @default(now())
+
+  business    Business    @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  appointment Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+
+  @@index([businessId])
+  @@map("cancellation_policy_acceptances")
+}
+
+model AppointmentServiceLine {
+  id              String    @id @default(uuid())
+  appointmentId   String
+  serviceId       String
+  assignedToId    String?
+  startAt         DateTime?
+  durationMinutes Int?
+  price           Decimal?  @db.Decimal(12, 2)
+  sortOrder       Int       @default(0)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  appointment Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  service     Service     @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+  assignedTo  User?       @relation("AppointmentServiceLineAssignedTo", fields: [assignedToId], references: [id], onDelete: SetNull)
+
+  @@index([appointmentId])
+  @@index([serviceId])
+  @@map("appointment_service_lines")
 }
 
 model Conversation {
@@ -1993,6 +3630,7 @@ model Conversation {
   assignedTo User?     @relation("ConversationAssignedTo", fields: [assignedToUserId], references: [id], onDelete: SetNull)
   messages   ConversationMessage[]
   participants ConversationParticipant[]
+  notes      ConversationNote[]
 
   @@unique([businessId, channel, externalConversationId])
   @@index([businessId])
@@ -2027,6 +3665,7 @@ model ConversationMessage {
   receivedAt          DateTime?
   createdAt           DateTime              @default(now())
   updatedAt           DateTime              @updatedAt
+  deletedAt           DateTime?
 
   business     Business     @relation(fields: [businessId], references: [id], onDelete: Cascade)
   conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
@@ -2038,6 +3677,7 @@ model ConversationMessage {
   @@index([channel])
   @@index([createdAt])
   @@index([conversationId, createdAt])
+  @@index([conversationId, deletedAt])
   @@map("conversation_messages")
 }
 
@@ -2061,6 +3701,42 @@ model ConversationParticipant {
   @@index([businessId])
   @@index([conversationId])
   @@map("conversation_participants")
+}
+
+model CannedResponse {
+  id         String    @id @default(uuid())
+  businessId String
+  title      String
+  body       String    @default("")
+  sortOrder  Int       @default(0)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  deletedAt  DateTime?
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([businessId])
+  @@map("canned_responses")
+}
+
+model ConversationNote {
+  id             String    @id @default(uuid())
+  businessId     String
+  conversationId String
+  authorUserId   String
+  body           String    @default("")
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+
+  business     Business     @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  author       User         @relation("ConversationNoteAuthor", fields: [authorUserId], references: [id], onDelete: Cascade)
+
+  @@index([businessId])
+  @@index([conversationId])
+  @@index([conversationId, createdAt])
+  @@map("conversation_notes")
 }
 
 model Chatbot {
@@ -2155,24 +3831,28 @@ model ChatbotRule {
 }
 
 model ChatbotSession {
-  id             String               @id @default(uuid())
-  businessId     String
-  chatbotId      String
-  conversationId String?
-  contactId      String?
-  visitorId      String
-  visitorName    String?
-  visitorEmail   String?
-  visitorPhone   String?
-  pageUrl        String?
-  referrer       String?
-  userAgent      String?
-  ipHash         String?
-  status         ChatbotSessionStatus @default(ACTIVE)
-  metadata       Json?
-  createdAt      DateTime             @default(now())
-  updatedAt      DateTime             @updatedAt
-  endedAt        DateTime?
+  id              String                      @id @default(uuid())
+  businessId      String
+  chatbotId       String
+  conversationId  String?
+  /// Derived convenience when identityRefType=CONTACT — never primary SoT for claim.
+  contactId       String?
+  visitorId       String
+  visitorName     String?
+  visitorEmail    String?
+  visitorPhone    String?
+  identityType    ChatbotSessionIdentityType  @default(ANONYMOUS)
+  identityRefId   String?
+  identityRefType ChatbotIdentityRefType?
+  pageUrl         String?
+  referrer        String?
+  userAgent       String?
+  ipHash          String?
+  status          ChatbotSessionStatus        @default(ACTIVE)
+  metadata        Json?
+  createdAt       DateTime                    @default(now())
+  updatedAt       DateTime                    @updatedAt
+  endedAt         DateTime?
 
   business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
   chatbot  Chatbot  @relation(fields: [chatbotId], references: [id], onDelete: Cascade)
@@ -2182,6 +3862,9 @@ model ChatbotSession {
   @@index([visitorId])
   @@index([conversationId])
   @@index([contactId])
+  @@index([chatbotId, visitorId])
+  @@index([identityRefType, identityRefId])
+  @@index([chatbotId, identityRefId])
   @@map("chatbot_sessions")
 }
 
@@ -2208,6 +3891,24 @@ model WebhookEvent {
   @@map("webhook_events")
 }
 
+model PlatformSmsSuppression {
+  id                  String    @id @default(uuid())
+  platformFromNumber  String
+  customerPhoneE164   String
+  businessId          String?
+  optedOutAt          DateTime?
+  optedInAt           DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  business Business? @relation(fields: [businessId], references: [id], onDelete: SetNull)
+
+  @@unique([platformFromNumber, customerPhoneE164], map: "platform_sms_suppressions_from_phone_key")
+  @@index([businessId])
+  @@index([platformFromNumber])
+  @@map("platform_sms_suppressions")
+}
+
 model BusinessEmailPreference {
   id         String   @id @default(uuid())
   businessId String
@@ -2221,6 +3922,21 @@ model BusinessEmailPreference {
   @@unique([businessId, emailType])
   @@index([businessId])
   @@map("business_email_preferences")
+}
+
+model BusinessNotificationChannelPreference {
+  id              String              @id @default(uuid())
+  businessId      String
+  notificationKey String
+  channel         NotificationChannel @default(EMAIL)
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@unique([businessId, notificationKey], map: "bncp_business_notification_key")
+  @@index([businessId])
+  @@map("business_notification_channel_preferences")
 }
 
 model EmailTemplate {
@@ -2354,5 +4070,694 @@ model WhatsAppMessageTemplate {
   @@unique([businessId, name, language])
   @@index([businessId, status])
   @@map("whatsapp_message_templates")
+}
+
+enum AutomationWorkflowStatus {
+  DRAFT
+  ACTIVE
+  INACTIVE
+}
+
+enum AutomationWorkflowRunStatus {
+  RUNNING
+  WAITING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum AutomationWorkflowRunStepStatus {
+  PENDING
+  RUNNING
+  WAITING
+  COMPLETED
+  FAILED
+  SKIPPED
+}
+
+model AutomationWorkflow {
+  id               String                   @id @default(uuid())
+  businessId       String
+  name             String
+  description      String?
+  status           AutomationWorkflowStatus @default(DRAFT)
+  triggerKey       String
+  triggerFilters   Json?
+  steps            Json
+  settings         Json                     @default("{}")
+  isSystemTemplate Boolean                  @default(false)
+  createdById      String?
+  deletedAt        DateTime?
+  createdAt        DateTime                 @default(now())
+  updatedAt        DateTime                 @updatedAt
+
+  business Business               @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  createdBy User?                   @relation("AutomationWorkflowCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  runs      AutomationWorkflowRun[]
+
+  @@index([businessId, deletedAt])
+  @@index([businessId, status])
+  @@index([businessId, triggerKey])
+  @@map("automation_workflows")
+}
+
+model AutomationWorkflowRun {
+  id                String                      @id @default(uuid())
+  businessId        String
+  workflowId        String
+  status            AutomationWorkflowRunStatus @default(RUNNING)
+  triggerKey        String
+  subjectId         String
+  subjectType       String
+  contextEntityId   String?
+  contextEntityType String?
+  contactId         String?
+  currentStepIndex  Int                         @default(0)
+  enrollmentReason  String?
+  startedAt         DateTime                    @default(now())
+  completedAt       DateTime?
+  failedAt          DateTime?
+  errorMessage      String?
+  metadata          Json?
+
+  business Business                    @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  workflow AutomationWorkflow          @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  steps    AutomationWorkflowRunStep[]
+
+  @@index([businessId, workflowId])
+  @@index([businessId, contactId])
+  @@index([businessId, status])
+  @@index([workflowId, status])
+  @@map("automation_workflow_runs")
+}
+
+model AutomationWorkflowRunStep {
+  id           String                          @id @default(uuid())
+  businessId   String
+  runId        String
+  stepIndex    Int
+  actionKey    String
+  status       AutomationWorkflowRunStepStatus @default(PENDING)
+  config       Json
+  input        Json?
+  output       Json?
+  errorMessage String?
+  scheduledFor DateTime?
+  startedAt    DateTime?
+  completedAt  DateTime?
+
+  run AutomationWorkflowRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+
+  @@unique([runId, stepIndex])
+  @@index([runId])
+  @@index([businessId])
+  @@map("automation_workflow_run_steps")
+}
+
+enum GiftCardStatus {
+  ACTIVE
+  DEPLETED
+  VOIDED
+}
+
+enum GiftCardSource {
+  MANUAL
+  POS_SALE
+  ONLINE_PURCHASE
+}
+
+enum GiftCardTransactionType {
+  INITIAL_VALUE
+  REDEMPTION
+  REFUND
+  ADJUSTMENT
+  VOID
+}
+
+model GiftCard {
+  id                   String           @id @default(uuid())
+  businessId           String
+  number               String
+  initialValue         Decimal          @db.Decimal(10, 2)
+  currentBalance       Decimal          @db.Decimal(10, 2)
+  status               GiftCardStatus   @default(ACTIVE)
+  source               GiftCardSource
+  notes                String?
+  purchasingContactId  String?
+  ownerContactId       String
+  promotionId          String?
+  invoiceId            String?
+  artworkUrl           String?
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+
+  business          Business              @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  purchasingContact Contact?              @relation("GiftCardPurchaser", fields: [purchasingContactId], references: [id], onDelete: SetNull)
+  ownerContact      Contact               @relation("GiftCardOwner", fields: [ownerContactId], references: [id], onDelete: Restrict)
+  promotion         GiftCardPromotion?    @relation(fields: [promotionId], references: [id], onDelete: SetNull)
+  invoice           Invoice?              @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
+  transactions      GiftCardTransaction[]
+  payments          Payment[]
+
+  @@unique([businessId, number])
+  @@index([businessId])
+  @@index([ownerContactId])
+  @@index([businessId, status])
+  @@map("gift_cards")
+}
+
+model GiftCardTransaction {
+  id          String                  @id @default(uuid())
+  businessId  String
+  giftCardId  String
+  type        GiftCardTransactionType
+  amount      Decimal                 @db.Decimal(10, 2)
+  invoiceId   String?
+  note        String?
+  createdAt   DateTime                @default(now())
+
+  giftCard GiftCard @relation(fields: [giftCardId], references: [id], onDelete: Cascade)
+
+  @@index([giftCardId])
+  @@index([businessId, giftCardId])
+  @@map("gift_card_transactions")
+}
+
+model GiftCardPromotion {
+  id          String    @id @default(uuid())
+  businessId  String
+  name        String
+  description String?
+  cardValue   Decimal   @db.Decimal(10, 2)
+  salePrice   Decimal   @db.Decimal(10, 2)
+  startDate   DateTime
+  endDate     DateTime?
+  sortOrder   Int       @default(0)
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  business   Business   @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  giftCards  GiftCard[]
+
+  @@index([businessId])
+  @@index([businessId, isActive])
+  @@map("gift_card_promotions")
+}
+
+model GiftCardSettings {
+  id                  String   @id @default(uuid())
+  businessId          String   @unique
+  publicSlug          String?  @unique
+  onlineSalesEnabled  Boolean  @default(false)
+  purchaseDisclaimer  String?
+  selectedArtworkKey  String?
+  autoGenerateNumber  Boolean  @default(false)
+  internalNotifyEmail String?
+  updatedAt           DateTime @updatedAt
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@map("gift_card_settings")
+}
+
+enum PackageExpirationPolicy {
+  NEVER
+  AFTER_PURCHASE
+}
+
+enum PackageCommissionBasis {
+  REGULAR_PRICE
+  DISCOUNTED_PRICE
+}
+
+enum PackageServiceGroupQuantityType {
+  ONE
+  MULTIPLE
+}
+
+enum ClientPackageSource {
+  STAFF
+  ONLINE
+}
+
+enum ClientPackageStatus {
+  ACTIVE
+  EXPIRED
+  DEPLETED
+  TRANSFERRED
+  DELETED
+}
+
+enum PackageHistoryEventType {
+  PURCHASED
+  REDEEMED
+  ADJUSTED
+  TRANSFERRED_IN
+  TRANSFERRED_OUT
+  EXPIRED
+  DELETED
+}
+
+model PackageTemplate {
+  id                 String                   @id @default(uuid())
+  businessId         String
+  name               String
+  emoji              String?
+  totalPrice         Decimal                  @db.Decimal(10, 2)
+  chargeTax          Boolean                  @default(false)
+  expirationPolicy   PackageExpirationPolicy  @default(NEVER)
+  expirationDays     Int?
+  onlineSalesEnabled Boolean                  @default(false)
+  shortDescription   String?
+  description        String?                  @db.Text
+  requireAgreement   Boolean                  @default(false)
+  agreementText      String?                  @db.Text
+  commissionBasis    PackageCommissionBasis   @default(REGULAR_PRICE)
+  sortOrder          Int                      @default(0)
+  createdAt          DateTime                 @default(now())
+  updatedAt          DateTime                 @updatedAt
+
+  business       Business              @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  serviceGroups  PackageServiceGroup[]
+  clientPackages ClientPackage[]
+
+  @@index([businessId])
+  @@map("package_templates")
+}
+
+model PackageServiceGroup {
+  id                String                          @id @default(uuid())
+  packageTemplateId String
+  quantity          Int
+  quantityType      PackageServiceGroupQuantityType @default(ONE)
+  groupPrice        Decimal                         @db.Decimal(10, 2)
+  sortOrder         Int                             @default(0)
+
+  packageTemplate   PackageTemplate           @relation(fields: [packageTemplateId], references: [id], onDelete: Cascade)
+  serviceGroupItems PackageServiceGroupItem[]
+
+  @@index([packageTemplateId])
+  @@map("package_service_groups")
+}
+
+model PackageServiceGroupItem {
+  id             String @id @default(uuid())
+  serviceGroupId String
+  serviceId      String
+
+  serviceGroup PackageServiceGroup @relation(fields: [serviceGroupId], references: [id], onDelete: Cascade)
+  service      Service             @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+
+  @@unique([serviceGroupId, serviceId])
+  @@index([serviceGroupId])
+  @@map("package_service_group_items")
+}
+
+model ClientPackage {
+  id                    String              @id @default(uuid())
+  businessId            String
+  contactId             String
+  packageTemplateId     String
+  purchaseDate          DateTime            @default(now())
+  expirationDate        DateTime?
+  source                ClientPackageSource @default(STAFF)
+  stripePaymentIntentId String?
+  invoiceId             String?
+  status                ClientPackageStatus @default(ACTIVE)
+  isDemo                Boolean             @default(false)
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+
+  business            Business                   @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  contact             Contact                    @relation(fields: [contactId], references: [id], onDelete: Restrict)
+  packageTemplate     PackageTemplate            @relation(fields: [packageTemplateId], references: [id], onDelete: Restrict)
+  invoice             Invoice?                   @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
+  serviceAllocations  PackageServiceAllocation[]
+  history             PackageHistoryEvent[]
+
+  @@index([businessId])
+  @@index([contactId])
+  @@index([packageTemplateId])
+  @@index([businessId, status])
+  @@index([invoiceId])
+  @@map("client_packages")
+}
+
+model PackageServiceAllocation {
+  id              String @id @default(uuid())
+  clientPackageId String
+  serviceId       String
+  remaining       Int
+  initialQty      Int
+
+  clientPackage ClientPackage @relation(fields: [clientPackageId], references: [id], onDelete: Cascade)
+  service       Service       @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+
+  @@unique([clientPackageId, serviceId])
+  @@index([clientPackageId])
+  @@map("package_service_allocations")
+}
+
+model PackageHistoryEvent {
+  id              String                  @id @default(uuid())
+  clientPackageId String
+  eventType       PackageHistoryEventType
+  description     String?
+  staffUserId     String?
+  quantityChange  Int?
+  serviceId       String?
+  createdAt       DateTime                @default(now())
+
+  clientPackage ClientPackage @relation(fields: [clientPackageId], references: [id], onDelete: Cascade)
+
+  @@index([clientPackageId])
+  @@map("package_history_events")
+}
+
+model PackageSettings {
+  id                 String   @id @default(uuid())
+  businessId         String   @unique
+  publicSlug         String?  @unique
+  onlineSalesEnabled Boolean  @default(false)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@map("package_settings")
+}
+
+// ─── MEMBERSHIPS ─────────────────────────────────────────────────────────────
+
+enum MembershipPlanType {
+  SERVICES
+  ACCOUNT_CREDIT
+}
+
+enum MembershipBillingIntervalUnit {
+  WEEK
+  MONTH
+  YEAR
+}
+
+enum MembershipCommissionBasis {
+  REGULAR_PRICE
+  DISCOUNTED_PRICE
+}
+
+enum ClientMembershipStatus {
+  SCHEDULED
+  ACTIVE
+  PAST_DUE
+  UNPAID
+  PAUSED
+  CANCELED
+}
+
+enum MembershipBillingEventType {
+  PAYMENT_SUCCEEDED
+  PAYMENT_FAILED
+  PAYMENT_RETRYING
+  SUBSCRIPTION_CREATED
+  SUBSCRIPTION_CANCELED
+  SUBSCRIPTION_PAUSED
+  SUBSCRIPTION_RESUMED
+  SUBSCRIPTION_RENEWED
+}
+
+model MembershipPlan {
+  id                     String                      @id @default(uuid())
+  businessId             String
+  name                   String
+  emoji                  String?
+  planType               MembershipPlanType          @default(SERVICES)
+  billingIntervalCount   Int                         @default(1)
+  billingIntervalUnit    MembershipBillingIntervalUnit @default(MONTH)
+  price                  Decimal                     @db.Decimal(10, 2)
+  chargeServiceTax       Boolean                     @default(false)
+  servicesExpireAfter    Int?
+  creditAmount           Decimal?                    @db.Decimal(10, 2)
+  productDiscountPercent Decimal                     @default(0) @db.Decimal(5, 2)
+  serviceDiscountPercent Decimal                     @default(0) @db.Decimal(5, 2)
+  requireAgreement       Boolean                     @default(false)
+  agreementText          String?                     @db.Text
+  availableOnline        Boolean                     @default(false)
+  shortDescription       String?
+  description            String?                     @db.Text
+  stripeProductId        String?
+  stripePriceId          String?
+  commissionBasis        MembershipCommissionBasis   @default(REGULAR_PRICE)
+  isArchived             Boolean                     @default(false)
+  sortOrder              Int                         @default(0)
+  createdAt              DateTime                    @default(now())
+  updatedAt              DateTime                    @updatedAt
+
+  business          Business                 @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  serviceGroups     MembershipServiceGroup[]
+  clientMemberships ClientMembership[]
+
+  @@index([businessId])
+  @@index([businessId, isArchived])
+  @@map("membership_plans")
+}
+
+model MembershipServiceGroup {
+  id         String   @id @default(uuid())
+  planId     String
+  quantity   Int
+  groupPrice Decimal? @db.Decimal(10, 2)
+  sortOrder  Int      @default(0)
+
+  plan         MembershipPlan               @relation(fields: [planId], references: [id], onDelete: Cascade)
+  services     MembershipServiceGroupItem[]
+  usageRecords MembershipUsageRecord[]
+
+  @@index([planId])
+  @@map("membership_service_groups")
+}
+
+model MembershipServiceGroupItem {
+  id        String @id @default(uuid())
+  groupId   String
+  serviceId String
+
+  group   MembershipServiceGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  service Service                @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+
+  @@unique([groupId, serviceId])
+  @@index([groupId])
+  @@map("membership_service_group_items")
+}
+
+model ClientMembership {
+  id                     String                 @id @default(uuid())
+  businessId             String
+  contactId              String
+  planId                 String
+  status                 ClientMembershipStatus @default(SCHEDULED)
+  price                  Decimal                @db.Decimal(10, 2)
+  productDiscountPercent Decimal                @default(0) @db.Decimal(5, 2)
+  serviceDiscountPercent Decimal                @default(0) @db.Decimal(5, 2)
+  startDate              DateTime
+  currentPeriodStart     DateTime?
+  currentPeriodEnd       DateTime?
+  nextBillingDate        DateTime?
+  pausedAt               DateTime?
+  canceledAt             DateTime?
+  cancelAtPeriodEnd      Boolean                @default(false)
+  stripeSubscriptionId   String?                @unique
+  stripeCustomerId       String?
+  agreementAcceptedAt    DateTime?
+  planVersion            Int                    @default(1)
+  createdAt              DateTime               @default(now())
+  updatedAt              DateTime               @updatedAt
+
+  business       Business                 @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  contact        Contact                  @relation(fields: [contactId], references: [id], onDelete: Restrict)
+  plan           MembershipPlan           @relation(fields: [planId], references: [id], onDelete: Restrict)
+  usageRecords   MembershipUsageRecord[]
+  billingHistory MembershipBillingEvent[]
+
+  @@index([businessId])
+  @@index([contactId])
+  @@index([planId])
+  @@index([businessId, status])
+  @@map("client_memberships")
+}
+
+model MembershipUsageRecord {
+  id                 String    @id @default(uuid())
+  clientMembershipId String
+  serviceGroupId     String
+  periodStart        DateTime
+  periodEnd          DateTime?
+  totalSlots         Int
+  usedSlots          Int       @default(0)
+  expiresAt          DateTime?
+  saleLineItemId     String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  clientMembership ClientMembership       @relation(fields: [clientMembershipId], references: [id], onDelete: Cascade)
+  serviceGroup     MembershipServiceGroup @relation(fields: [serviceGroupId], references: [id], onDelete: Restrict)
+
+  @@index([clientMembershipId])
+  @@index([serviceGroupId])
+  @@index([expiresAt])
+  @@map("membership_usage_records")
+}
+
+model MembershipBillingEvent {
+  id                    String                   @id @default(uuid())
+  clientMembershipId    String
+  eventType             MembershipBillingEventType
+  amount                Decimal?                 @db.Decimal(10, 2)
+  stripeInvoiceId       String?
+  stripePaymentIntentId String?
+  occurredAt            DateTime                 @default(now())
+  metadata              Json?
+
+  clientMembership ClientMembership @relation(fields: [clientMembershipId], references: [id], onDelete: Cascade)
+
+  @@index([clientMembershipId])
+  @@index([stripeInvoiceId])
+  @@map("membership_billing_events")
+}
+
+model MembershipSettings {
+  id                 String   @id @default(uuid())
+  businessId         String   @unique
+  allowClientCancel  Boolean  @default(true)
+  onlineSalesEnabled Boolean  @default(false)
+  publicSlug         String?  @unique
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@map("membership_settings")
+}
+
+// ─── OFFERS ──────────────────────────────────────────────────────────────────
+
+enum OfferApplicationMode {
+  STAFF_ONLY
+  OFFER_CODE
+  AUTOMATICALLY
+}
+
+enum OfferMembershipScope {
+  ANY
+  SPECIFIC
+}
+
+enum DiscountAppliesTo {
+  SERVICES
+  PRODUCTS
+  ENTIRE_SALE
+}
+
+enum DiscountAmountType {
+  PERCENTAGE
+  FIXED
+}
+
+enum DiscountScope {
+  ALL
+  SPECIFIC
+}
+
+model Offer {
+  id          String   @id @default(uuid())
+  businessId  String
+  name        String
+  description String?
+  isEnabled   Boolean  @default(false)
+  sortOrder   Int      @default(0)
+
+  applicationMode OfferApplicationMode @default(STAFF_ONLY)
+  offerCode       String?
+
+  autoApptDateEnabled    Boolean @default(false)
+  autoApptDateRules      Json?
+  autoBookingDateEnabled Boolean @default(false)
+  autoBookingDateRules   Json?
+  autoSaleDateEnabled    Boolean @default(false)
+  autoSaleDateRules      Json?
+
+  minAmountEnabled Boolean  @default(false)
+  minAmount        Decimal? @db.Decimal(10, 2)
+
+  oncePerClient  Boolean @default(false)
+  newClientsOnly Boolean @default(false)
+
+  membershipRequired        Boolean              @default(false)
+  membershipScope           OfferMembershipScope?
+  specificMembershipPlanIds Json?
+
+  specificProvidersEnabled Boolean @default(false)
+  specificProviderIds      Json?
+
+  commissionBasis MembershipCommissionBasis @default(REGULAR_PRICE)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  business   Business        @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  discounts  OfferDiscount[]
+  usageLog   OfferUsageLog[]
+
+  @@index([businessId])
+  @@index([businessId, isEnabled])
+  @@index([businessId, offerCode])
+  @@map("offers")
+}
+
+model OfferDiscount {
+  id      String @id @default(uuid())
+  offerId String
+
+  appliesTo  DiscountAppliesTo
+  amountType DiscountAmountType
+  amount     Decimal @db.Decimal(10, 2)
+
+  serviceScope DiscountScope @default(ALL)
+  productScope DiscountScope @default(ALL)
+
+  specificServiceCategoryIds Json?
+  specificServiceIds         Json?
+  specificProductCategoryIds Json?
+  specificProductIds         Json?
+
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  offer Offer @relation(fields: [offerId], references: [id], onDelete: Cascade)
+
+  @@index([offerId])
+  @@map("offer_discounts")
+}
+
+model OfferUsageLog {
+  id              String   @id @default(uuid())
+  offerId         String
+  businessId      String
+  contactId       String?
+  saleId          String?
+  discountAmount  Decimal? @db.Decimal(10, 2)
+  offerCodeUsed   String?
+  usedAt          DateTime @default(now())
+
+  offer    Offer    @relation(fields: [offerId], references: [id], onDelete: Cascade)
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  contact  Contact? @relation(fields: [contactId], references: [id], onDelete: SetNull)
+
+  @@index([offerId])
+  @@index([businessId])
+  @@index([contactId])
+  @@index([saleId])
+  @@index([businessId, usedAt])
+  @@map("offer_usage_logs")
 }
 

@@ -8,34 +8,27 @@ import {
 export const REGISTRY_FEATURES: RegistryFeatureDefinition[] =
   flattenRegistryFeatures();
 
-/** Maps legacy per-capability feature keys to global registry keys. */
+/**
+ * Maps legacy / renamed feature keys to current registry keys.
+ * Applied at entitlement resolution and assignment migration.
+ */
 export const LEGACY_FEATURE_KEY_MAP: Record<string, string> = {
+  // Pre-v2 coarse keys
   'crm.contacts': 'contacts.list',
   'crm.pipelines': 'pipelines.list',
   'crm.leads': 'leads.list',
   'crm.work_items': 'work_items.list',
   'calendar.appointments': 'appointments.list',
   'calendar.calendars': 'calendar.list',
-  'payments.invoices': 'payments.invoices.list',
-  'payments.list': 'payments.invoices.list',
-  'payments.create': 'payments.invoices.create',
-  'payments.edit': 'payments.invoices.edit',
-  'payments.delete': 'payments.invoices.delete',
   'ai.chatbots': 'ai_agents.list',
-  'forms.builder': 'settings.forms.list',
-  'forms.submissions': 'settings.forms.list',
-  'forms.list': 'settings.forms.list',
-  'forms.create': 'settings.forms.create',
-  'forms.edit': 'settings.forms.edit',
-  'forms.delete': 'settings.forms.delete',
+  'integrations.manage': 'settings.integrations',
+
   // CRUD rename (view/update → list/edit)
   'contacts.view': 'contacts.list',
   'contacts.update': 'contacts.edit',
   'contacts.manage': 'contacts.workspace',
   'pipelines.view': 'pipelines.list',
-  'pipelines.create': 'pipelines.create',
   'pipelines.update': 'pipelines.edit',
-  'pipelines.delete': 'pipelines.delete',
   'work_items.view': 'work_items.list',
   'work_items.update': 'work_items.edit',
   'leads.view': 'leads.list',
@@ -48,13 +41,60 @@ export const LEGACY_FEATURE_KEY_MAP: Record<string, string> = {
   'appointments.update': 'appointments.edit',
   'calendar.view': 'calendar.list',
   'calendar.update': 'calendar.edit',
-  'payments.view': 'payments.invoices.list',
-  'payments.update': 'payments.invoices.edit',
   'ai_agents.view': 'ai_agents.list',
   'ai_agents.update': 'ai_agents.edit',
-  // Settings integrations — page access retained; per-provider keys are new
-  'integrations.manage': 'settings.integrations',
+
+  // Forms promoted out of settings (v3)
+  'settings.forms.list': 'forms.list',
+  'settings.forms.create': 'forms.create',
+  'settings.forms.edit': 'forms.edit',
+  'settings.forms.delete': 'forms.delete',
+  'forms.builder': 'forms.list',
+  'forms.submissions': 'forms.list',
+
+  // Automations promoted out of settings (v3)
+  'settings.automations.list': 'automations.list',
+  'settings.automations.create': 'automations.create',
+  'settings.automations.edit': 'automations.edit',
+  'settings.automations.delete': 'automations.delete',
+  'settings.automations.read': 'automations.list',
+
+  // Services promoted out of settings (v3)
+  'settings.services': 'services.list',
+
+  // Settings page options removed as duplicates of other modules (v3)
+  'settings.calendars': 'calendar.list',
+  'settings.pipelines': 'pipelines.stages',
+  'settings.chatbots': 'ai_agents.list',
+
+  // Commerce split out of payments (v3)
+  'payments.estimates.list': 'estimates.list',
+  'payments.estimates.create': 'estimates.create',
+  'payments.estimates.edit': 'estimates.edit',
+  'payments.estimates.delete': 'estimates.delete',
+  'payments.invoices.list': 'invoices.list',
+  'payments.invoices.create': 'invoices.create',
+  'payments.invoices.edit': 'invoices.edit',
+  'payments.invoices.delete': 'invoices.delete',
+  'payments.invoices': 'invoices.list',
+  'payments.list': 'invoices.list',
+  'payments.create': 'invoices.create',
+  'payments.edit': 'invoices.edit',
+  'payments.delete': 'invoices.delete',
+  'payments.view': 'invoices.list',
+  'payments.update': 'invoices.edit',
 };
+
+/** Normalize a stored or requested feature key to the current registry key. */
+export function normalizeFeatureKey(featureKey: string): string {
+  let current = featureKey;
+  const seen = new Set<string>();
+  while (LEGACY_FEATURE_KEY_MAP[current] && !seen.has(current)) {
+    seen.add(current);
+    current = LEGACY_FEATURE_KEY_MAP[current];
+  }
+  return current;
+}
 
 export function getRegistryFeatures(): RegistryFeatureDefinition[] {
   return REGISTRY_FEATURES;
@@ -63,7 +103,11 @@ export function getRegistryFeatures(): RegistryFeatureDefinition[] {
 export function getRegistryFeature(
   featureKey: string,
 ): RegistryFeatureDefinition | undefined {
-  return REGISTRY_FEATURES.find((f) => f.featureKey === featureKey);
+  const normalized = normalizeFeatureKey(featureKey);
+  return (
+    REGISTRY_FEATURES.find((f) => f.featureKey === normalized) ??
+    REGISTRY_FEATURES.find((f) => f.featureKey === featureKey)
+  );
 }
 
 export function getAllRegistryFeatureKeys(): Set<string> {

@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
 import {
   BusinessStatus,
   BusinessSubscriptionBillingCycle,
@@ -22,6 +22,7 @@ import { BusinessAccessService } from '@app/modules/platform/business/services/b
 import { BusinessCapabilitySyncService } from '@app/modules/platform/business/services/business-capability-sync.service';
 import { BusinessSubscriptionEventService } from '@app/modules/platform/business/services/business-subscription-event.service';
 import { BusinessSubscriptionPaymentRepository } from '@app/modules/platform/business/repositories/business-subscription-payment.repository';
+import { BusinessAddonSyncService } from '@app/modules/platform/business/services/business-addon-sync.service';
 import {
   PLATFORM_SUBSCRIPTION_PURPOSE,
   type StripeCheckoutSessionObject,
@@ -30,6 +31,9 @@ import {
 } from '../types/stripe-platform-billing.types';
 import { StripePlatformMetadataService } from './stripe-platform-metadata.service';
 import { StripePlatformPlanMappingService } from './stripe-platform-plan-mapping.service';
+import { StripePlatformPaymentMethodService } from './stripe-platform-payment-method.service';
+import { PlatformBillingDunningService } from './platform-billing-dunning.service';
+import { StripeSubscriptionMirrorService } from './stripe-subscription-mirror.service';
 
 const WEBHOOK_ACTOR: RequestUser = {
   id: SYSTEM_AUDIT_ACTOR_SENTINEL,
@@ -39,7 +43,9 @@ const WEBHOOK_ACTOR: RequestUser = {
 
 @Injectable()
 export class StripePlatformWebhookHandlerService {
-  private readonly logger = new Logger(StripePlatformWebhookHandlerService.name);
+  private readonly logger = new Logger(
+    StripePlatformWebhookHandlerService.name,
+  );
 
   constructor(
     private readonly prisma: PrismaService,
@@ -50,6 +56,11 @@ export class StripePlatformWebhookHandlerService {
     private readonly metadataService: StripePlatformMetadataService,
     private readonly planMapping: StripePlatformPlanMappingService,
     private readonly idempotencyService: IdempotencyService,
+    private readonly paymentMethodService: StripePlatformPaymentMethodService,
+    private readonly dunningService: PlatformBillingDunningService,
+    private readonly subscriptionMirror: StripeSubscriptionMirrorService,
+    @Inject(forwardRef(() => BusinessAddonSyncService))
+    private readonly addonSync: BusinessAddonSyncService,
   ) {}
 
   isPlatformSubscriptionMetadata(
@@ -71,9 +82,27 @@ export class StripePlatformWebhookHandlerService {
         return this.handleInvoicePaid(event);
       case 'invoice.payment_failed':
         return this.handleInvoicePaymentFailed(event);
+      case 'setup_intent.succeeded':
+        return this.handleSetupIntentSucceeded(event);
       default:
         return false;
     }
+  }
+
+  private async handleSetupIntentSucceeded(
+    event: StripeWebhookEvent,
+  ): Promise<boolean> {
+    const setupIntent = event.data.object as {
+      id?: string;
+      customer?: string | { id?: string } | null;
+      payment_method?: string | { id?: string } | null;
+      metadata?: Record<string, string>;
+    };
+    if (!this.isPlatformSubscriptionMetadata(setupIntent.metadata)) {
+      return false;
+    }
+    await this.paymentMethodService.syncFromSetupIntent(setupIntent);
+    return true;
   }
 
   private async handleCheckoutSessionCompleted(
@@ -91,7 +120,7 @@ export class StripePlatformWebhookHandlerService {
       | BusinessSubscriptionBillingCycle
       | undefined;
 
-    if (!businessId || !planGroupId || !planTierId || !billingCycle) {
+    if (!businessId || !planTierId || !billingCycle) {
       this.logger.warn(
         `checkout.session.completed missing platform metadata (${event.id})`,
       );
@@ -102,46 +131,17 @@ export class StripePlatformWebhookHandlerService {
     const customerId =
       typeof session.customer === 'string' ? session.customer : null;
 
-    const existing = await this.prisma.businessSubscription.findUnique({
-      where: { businessId },
-    });
-
-    const stripePatch = {
-      customerId: customerId ?? undefined,
-      subscriptionId: subscriptionId ?? undefined,
-      status: 'active',
-    };
-
-    await this.prisma.businessSubscription.upsert({
-      where: { businessId },
-      create: {
-        businessId,
-        planGroupId,
-        planTierId,
-        billingCycle,
-        billingSource: SubscriptionBillingSource.STRIPE,
-        status: SubscriptionStatus.ACTIVE,
-        paymentMethod: SubscriptionPaymentMethod.STRIPE,
-        paymentStatus: SubscriptionPaymentStatus.PAID,
-        metadata: this.metadataService.mergeSubscriptionStripeMetadata(
-          null,
-          stripePatch,
-        ),
-      },
-      update: {
-        planGroupId,
-        planTierId,
-        billingCycle,
-        billingSource: SubscriptionBillingSource.STRIPE,
-        paymentMethod: SubscriptionPaymentMethod.STRIPE,
-        metadata: this.metadataService.mergeSubscriptionStripeMetadata(
-          existing?.metadata,
-          stripePatch,
-        ),
-      },
+    await this.subscriptionMirror.applyCheckoutLink({
+      businessId,
+      planGroupId: planGroupId ?? null,
+      planTierId,
+      billingCycle,
+      customerId,
+      subscriptionId,
     });
 
     await this.capabilitySyncService.syncFromPlanTier(businessId, planTierId);
+    await this.addonSync.syncIncludedFromTier(businessId, planTierId);
     return true;
   }
 
@@ -162,96 +162,10 @@ export class StripePlatformWebhookHandlerService {
     );
     if (!processed) return true;
 
-    const item = subscription.items?.data?.[0];
-    const priceId = item?.price?.id;
-    const productId = this.resolveId(item?.price?.product);
-    const customerId = this.resolveId(subscription.customer);
-
-    const local = await this.prisma.businessSubscription.findUnique({
-      where: { businessId },
-    });
-
-    let planTierId = subscription.metadata?.planTierId ?? local?.planTierId;
-    let planGroupId = subscription.metadata?.planGroupId ?? local?.planGroupId;
-    let billingCycle =
-      (subscription.metadata?.billingCycle as
-        | BusinessSubscriptionBillingCycle
-        | undefined) ?? local?.billingCycle;
-
-    if (priceId && planGroupId) {
-      const resolved = await this.resolveTierFromPrice(planGroupId, priceId);
-      if (resolved) {
-        planTierId = resolved.planTierId;
-        billingCycle = resolved.billingCycle;
-      }
-    }
-
-    const status = this.mapStripeSubscriptionStatus(subscription.status);
-    const periodStart = subscription.current_period_start
-      ? new Date(subscription.current_period_start * 1000)
-      : undefined;
-    const periodEnd = subscription.current_period_end
-      ? new Date(subscription.current_period_end * 1000)
-      : undefined;
-
     const before = await this.eventService.captureState(businessId);
 
-    await this.accessService.updateAccessInternal(
-      this.prisma,
-      businessId,
-      {
-        businessStatus:
-          status === SubscriptionStatus.CANCELED ||
-          status === SubscriptionStatus.EXPIRED
-            ? BusinessStatus.NOT_ACTIVE
-            : BusinessStatus.ACTIVE,
-        subscriptionStatus: status,
-        paymentMethod: SubscriptionPaymentMethod.STRIPE,
-        paymentStatus:
-          status === SubscriptionStatus.PENDING_PAYMENT
-            ? SubscriptionPaymentStatus.PENDING
-            : status === SubscriptionStatus.ACTIVE ||
-                status === SubscriptionStatus.TRIALING
-              ? SubscriptionPaymentStatus.PAID
-              : undefined,
-        planGroupId: planGroupId ?? undefined,
-        planTierId: planTierId ?? undefined,
-        billingCycle: billingCycle ?? undefined,
-        currentPeriodStart: periodStart?.toISOString().slice(0, 10),
-        currentPeriodEnd: periodEnd?.toISOString().slice(0, 10),
-        syncCapabilitiesFromTier: true,
-      },
-      WEBHOOK_ACTOR,
-      { skipAudit: true },
-    );
-
-    await this.prisma.businessSubscription.update({
-      where: { businessId },
-      data: {
-        billingSource: SubscriptionBillingSource.STRIPE,
-        metadata: this.metadataService.mergeSubscriptionStripeMetadata(
-          local?.metadata,
-          {
-            customerId: customerId ?? undefined,
-            subscriptionId: subscription.id,
-            subscriptionItemId: item?.id,
-            priceId,
-            productId: productId ?? undefined,
-            status: subscription.status,
-            cancelAtPeriodEnd: subscription.cancel_at_period_end,
-            cancelAt: subscription.cancel_at
-              ? new Date(subscription.cancel_at * 1000).toISOString()
-              : null,
-            canceledAt: subscription.canceled_at
-              ? new Date(subscription.canceled_at * 1000).toISOString()
-              : null,
-            latestInvoiceId: this.resolveId(subscription.latest_invoice),
-          },
-        ),
-        ...(subscription.canceled_at
-          ? { canceledAt: new Date(subscription.canceled_at * 1000) }
-          : {}),
-      },
+    await this.subscriptionMirror.applyFromStripeSubscription(subscription, {
+      syncCapabilities: true,
     });
 
     const after = await this.eventService.captureState(businessId);
@@ -266,8 +180,8 @@ export class StripePlatformWebhookHandlerService {
       actionKey: 'STRIPE_WEBHOOK',
       correlationId: randomUUID(),
       source: BusinessSubscriptionEventSource.WEBHOOK,
-      fromState: before as unknown as Prisma.InputJsonValue,
-      toState: after as unknown as Prisma.InputJsonValue,
+      fromState: before,
+      toState: after,
       metadata: { stripeEventId: event.id, stripeEventType: event.type },
     });
 
@@ -282,7 +196,13 @@ export class StripePlatformWebhookHandlerService {
       return false;
     }
 
-    const businessId = subscription.metadata?.businessId;
+    const businessId =
+      subscription.metadata?.businessId ??
+      (
+        await this.subscriptionMirror.findByStripeSubscriptionId(
+          subscription.id ?? '',
+        )
+      )?.businessId;
     if (!businessId) return true;
 
     const processed = await this.claimIdempotency(
@@ -293,35 +213,16 @@ export class StripePlatformWebhookHandlerService {
 
     const before = await this.eventService.captureState(businessId);
 
-    await this.accessService.updateAccessInternal(
-      this.prisma,
-      businessId,
+    // Sole STRIPE writer: mirror owns status/IDs/cancel flag + addon item clear.
+    await this.subscriptionMirror.applyFromStripeSubscription(
       {
-        businessStatus: BusinessStatus.NOT_ACTIVE,
-        subscriptionStatus: SubscriptionStatus.CANCELED,
+        ...subscription,
+        status: 'canceled',
+        cancel_at_period_end: false,
+        items: { data: [] },
       },
-      WEBHOOK_ACTOR,
-      { skipAudit: true },
+      { syncCapabilities: false },
     );
-
-    const local = await this.prisma.businessSubscription.findUnique({
-      where: { businessId },
-    });
-
-    await this.prisma.businessSubscription.update({
-      where: { businessId },
-      data: {
-        canceledAt: new Date(),
-        metadata: this.metadataService.mergeSubscriptionStripeMetadata(
-          local?.metadata,
-          {
-            status: 'canceled',
-            canceledAt: new Date().toISOString(),
-            cancelAtPeriodEnd: false,
-          },
-        ),
-      },
-    });
 
     const after = await this.eventService.captureState(businessId);
     const sub = await this.prisma.businessSubscription.findUnique({
@@ -335,8 +236,8 @@ export class StripePlatformWebhookHandlerService {
       actionKey: 'STRIPE_WEBHOOK',
       correlationId: randomUUID(),
       source: BusinessSubscriptionEventSource.WEBHOOK,
-      fromState: before as unknown as Prisma.InputJsonValue,
-      toState: after as unknown as Prisma.InputJsonValue,
+      fromState: before,
+      toState: after,
       metadata: { stripeEventId: event.id },
     });
 
@@ -393,7 +294,19 @@ export class StripePlatformWebhookHandlerService {
       paidAt: new Date(),
       externalProvider: 'stripe',
       externalPaymentId: invoice.id ?? event.id,
-      metadata: { stripeEventId: event.id } as Prisma.InputJsonValue,
+      metadata: { stripeEventId: event.id },
+    });
+
+    // Status/amount/periods come from the subscription snapshot when available;
+    // invoice handler only logs payment + soft-confirm ACTIVE if no retrieve.
+    await this.prisma.businessSubscription.update({
+      where: { businessId: local.businessId },
+      data: {
+        metadata: this.metadataService.mergeSubscriptionStripeMetadata(
+          local.metadata,
+          { latestInvoiceId: invoice.id ?? undefined, status: 'active' },
+        ),
+      },
     });
 
     await this.accessService.updateAccessInternal(
@@ -410,16 +323,6 @@ export class StripePlatformWebhookHandlerService {
       WEBHOOK_ACTOR,
       { skipAudit: true },
     );
-
-    await this.prisma.businessSubscription.update({
-      where: { businessId: local.businessId },
-      data: {
-        metadata: this.metadataService.mergeSubscriptionStripeMetadata(
-          local.metadata,
-          { latestInvoiceId: invoice.id ?? undefined, status: 'active' },
-        ),
-      },
-    });
 
     return true;
   }
@@ -440,12 +343,13 @@ export class StripePlatformWebhookHandlerService {
     );
     if (!processed) return true;
 
+    // PAST_DUE is a webhook-authored mirror write (invoice.payment_failed).
     await this.accessService.updateAccessInternal(
       this.prisma,
       local.businessId,
       {
-        businessStatus: BusinessStatus.NOT_ACTIVE,
-        subscriptionStatus: SubscriptionStatus.PENDING_PAYMENT,
+        businessStatus: BusinessStatus.ACTIVE,
+        subscriptionStatus: SubscriptionStatus.PAST_DUE,
         paymentMethod: SubscriptionPaymentMethod.STRIPE,
         paymentStatus: SubscriptionPaymentStatus.FAILED,
       },
@@ -453,25 +357,28 @@ export class StripePlatformWebhookHandlerService {
       { skipAudit: true },
     );
 
+    await this.prisma.businessSubscription.update({
+      where: { businessId: local.businessId },
+      data: {
+        metadata: this.metadataService.mergeSubscriptionStripeMetadata(
+          local.metadata,
+          { status: 'past_due', latestInvoiceId: invoice.id ?? undefined },
+        ),
+      },
+    });
+
+    await this.dunningService.onPaymentFailed(
+      local.businessId,
+      invoice.id ?? null,
+    );
+
     return true;
   }
 
   private async findSubscriptionByStripeId(stripeSubscriptionId: string) {
-    const rows = await this.prisma.businessSubscription.findMany({
-      where: { billingSource: SubscriptionBillingSource.STRIPE },
-      take: 200,
-      orderBy: { updatedAt: 'desc' },
-    });
-
-    for (const row of rows) {
-      const meta = this.metadataService.parseSubscriptionStripeMetadata(
-        row.metadata,
-      );
-      if (meta?.subscriptionId === stripeSubscriptionId) {
-        return row;
-      }
-    }
-    return null;
+    return this.subscriptionMirror.findByStripeSubscriptionId(
+      stripeSubscriptionId,
+    );
   }
 
   private async resolveTierFromPrice(
@@ -486,7 +393,9 @@ export class StripePlatformWebhookHandlerService {
     });
 
     for (const tier of tiers) {
-      const stripeMeta = this.planMapping.parseTierStripeMetadata(tier.metadata);
+      const stripeMeta = this.planMapping.parseTierStripeMetadata(
+        tier.metadata,
+      );
       if (stripeMeta?.monthlyPriceId === priceId) {
         return {
           planTierId: tier.id,
@@ -501,27 +410,6 @@ export class StripePlatformWebhookHandlerService {
       }
     }
     return null;
-  }
-
-  private mapStripeSubscriptionStatus(
-    status: string | undefined,
-  ): SubscriptionStatus {
-    switch (status) {
-      case 'active':
-        return SubscriptionStatus.ACTIVE;
-      case 'trialing':
-        return SubscriptionStatus.TRIALING;
-      case 'past_due':
-      case 'unpaid':
-        return SubscriptionStatus.PENDING_PAYMENT;
-      case 'canceled':
-        return SubscriptionStatus.CANCELED;
-      case 'incomplete':
-      case 'incomplete_expired':
-        return SubscriptionStatus.PENDING_PAYMENT;
-      default:
-        return SubscriptionStatus.ACTIVE;
-    }
   }
 
   private resolveId(

@@ -15,6 +15,7 @@ import { ConfirmDeleteQueryDto } from '@app/common/dto/confirm-delete-query.dto'
 import { CurrentUser } from '@app/common/decorators/current-user.decorator';
 import type { RequestUser } from '@app/common/decorators/current-user.decorator';
 import { BusinessRoles } from '@app/common/decorators/business-roles.decorator';
+import { StaffPermission } from '@app/common/decorators/staff-permission.decorator';
 import { BusinessRolesGuard } from '@app/common/guards/business-roles.guard';
 import {
   BusinessIntegrationResponseDto,
@@ -30,6 +31,7 @@ import { MetaEmbeddedSignupService } from './meta/services/meta-embedded-signup.
 @ApiBearerAuth()
 @Controller('integrations/business')
 @UseGuards(BusinessRolesGuard)
+@StaffPermission('settings.integrations.manage')
 export class BusinessIntegrationsController {
   constructor(
     private readonly integrationsService: IntegrationsService,
@@ -82,7 +84,11 @@ export class BusinessIntegrationsController {
   }
 
   @Post('whatsapp/embedded-signup/complete')
-  @BusinessRoles(BusinessMemberRole.OWNER, BusinessMemberRole.ADMIN)
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
   async whatsappEmbeddedSignupComplete(
     @CurrentUser() user: RequestUser,
     @Body() dto: WhatsAppEmbeddedSignupCompleteDto,
@@ -96,7 +102,11 @@ export class BusinessIntegrationsController {
   }
 
   @Post(':providerKey/connect')
-  @BusinessRoles(BusinessMemberRole.OWNER, BusinessMemberRole.ADMIN)
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
   connect(
     @CurrentUser() user: RequestUser,
     @Param('providerKey') providerKey: string,
@@ -111,7 +121,11 @@ export class BusinessIntegrationsController {
   }
 
   @Patch(':providerKey')
-  @BusinessRoles(BusinessMemberRole.OWNER, BusinessMemberRole.ADMIN)
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
   update(
     @CurrentUser() user: RequestUser,
     @Param('providerKey') providerKey: string,
@@ -126,7 +140,11 @@ export class BusinessIntegrationsController {
   }
 
   @Delete(':providerKey')
-  @BusinessRoles(BusinessMemberRole.OWNER, BusinessMemberRole.ADMIN)
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
   @ApiQuery({
     name: 'confirm',
     required: true,

@@ -9,6 +9,11 @@ import { UpdateConversationDto } from '../dto/update-conversation.dto';
 import { ConversationResponseDto } from '../dto/conversation-response.dto';
 import { toConversationResponse } from '../mappers/conversation.mapper';
 import { ConversationsRepository } from '../repositories/conversations.repository';
+import {
+  assertCanViewConversation,
+  canViewConversation,
+  resolveAssignedConversationScope,
+} from '../utils/conversation-staff-access.util';
 
 @Injectable()
 export class ConversationsService {
@@ -20,12 +25,15 @@ export class ConversationsService {
   async list(
     businessId: string,
     query: ListConversationsQueryDto,
-    currentUserId: string,
+    user: RequestUser,
   ): Promise<{
     items: ConversationResponseDto[];
     meta: { total: number; page: number; limit: number };
   }> {
     const { page, limit, skip, take } = getPaginationParams(query);
+    const scope = resolveAssignedConversationScope(user, {
+      assignedToMe: query.assignedToMe,
+    });
     const { items, total } = await this.conversationsRepository.findMany(
       businessId,
       {
@@ -33,8 +41,9 @@ export class ConversationsService {
         take,
         channel: query.channel,
         status: query.status,
-        assignedToMe: query.assignedToMe,
-        currentUserId,
+        assignedToMe: scope.assignedToMe,
+        assignedToUserId: scope.assignedToUserId,
+        currentUserId: user.id,
         contactId: query.contactId,
         resourceId: query.resourceId,
         search: query.search?.trim() || undefined,
@@ -50,6 +59,7 @@ export class ConversationsService {
   async getById(
     businessId: string,
     id: string,
+    user: RequestUser,
   ): Promise<ConversationResponseDto> {
     const conversation = await this.conversationsRepository.findById(
       businessId,
@@ -62,18 +72,22 @@ export class ConversationsService {
         HttpStatus.NOT_FOUND,
       );
     }
+    assertCanViewConversation(user, conversation);
     return toConversationResponse(conversation);
   }
 
   async listByContact(
     businessId: string,
     contactId: string,
+    user: RequestUser,
   ): Promise<ConversationResponseDto[]> {
     const items = await this.conversationsRepository.findByContactId(
       businessId,
       contactId,
     );
-    return items.map((row) => toConversationResponse(row));
+    return items
+      .filter((row) => canViewConversation(user, row))
+      .map((row) => toConversationResponse(row));
   }
 
   async update(
@@ -93,6 +107,7 @@ export class ConversationsService {
         HttpStatus.NOT_FOUND,
       );
     }
+    assertCanViewConversation(actor, conversation);
 
     const updated = await this.conversationsRepository.update(conversation.id, {
       ...(dto.status !== undefined ? { status: dto.status } : {}),

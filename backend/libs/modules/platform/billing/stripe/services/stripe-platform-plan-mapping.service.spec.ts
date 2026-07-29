@@ -33,9 +33,43 @@ describe('StripePlatformPlanMappingService', () => {
   });
 
   it('detects stripe price presence', () => {
-    expect(
-      service.tierHasStripePrice({ monthlyPriceId: 'price_m' }),
-    ).toBe(true);
+    expect(service.tierHasStripePrice({ monthlyPriceId: 'price_m' })).toBe(
+      true,
+    );
     expect(service.tierHasStripePrice({})).toBe(false);
+  });
+
+  it('strips client-supplied stripe Price IDs and preserves existing', () => {
+    const sanitized = service.sanitizeClientTierMetadata(
+      {
+        note: 'ok',
+        stripe: {
+          monthlyPriceId: 'price_evil',
+          productId: 'prod_evil',
+        },
+      },
+      {
+        stripe: {
+          productId: 'prod_real',
+          monthlyPriceId: 'price_real',
+        },
+      },
+    );
+
+    expect(sanitized).toEqual({
+      note: 'ok',
+      stripe: {
+        productId: 'prod_real',
+        monthlyPriceId: 'price_real',
+      },
+    });
+  });
+
+  it('drops stripe block from client metadata when none exists yet', () => {
+    const sanitized = service.sanitizeClientTierMetadata({
+      note: 'ok',
+      stripe: { monthlyPriceId: 'price_evil' },
+    });
+    expect(sanitized).toEqual({ note: 'ok' });
   });
 });

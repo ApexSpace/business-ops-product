@@ -1,4 +1,7 @@
-import { WHATSAPP_TEMPLATE_NAME_PATTERN } from '../constants/template.constants';
+import {
+  META_RESERVED_TEMPLATE_NAMES,
+  WHATSAPP_TEMPLATE_NAME_PATTERN,
+} from '../constants/template.constants';
 import { buildHeaderComponent } from './template-header.util';
 
 export type TemplateComponentInput = Record<string, unknown>;
@@ -14,9 +17,21 @@ export function assertValidTemplateName(name: string): void {
       'Template name must start with a letter and contain only lowercase letters, numbers, and underscores.',
     );
   }
+
+  if (
+    META_RESERVED_TEMPLATE_NAMES.includes(
+      normalized as (typeof META_RESERVED_TEMPLATE_NAMES)[number],
+    )
+  ) {
+    throw new Error(
+      'This template name is reserved by Meta. Choose a unique name such as your_business_welcome.',
+    );
+  }
 }
 
-export function extractBodyPreview(components: TemplateComponentInput[]): string {
+export function extractBodyPreview(
+  components: TemplateComponentInput[],
+): string {
   const body = components.find(
     (component) =>
       typeof component.type === 'string' &&
@@ -113,7 +128,9 @@ function normalizeComponent(
   return component;
 }
 
-function readHeaderHandle(component: TemplateComponentInput): string | undefined {
+function readHeaderHandle(
+  component: TemplateComponentInput,
+): string | undefined {
   const example = component.example;
   if (example && typeof example === 'object' && !Array.isArray(example)) {
     const handles = (example as Record<string, unknown>).header_handle;

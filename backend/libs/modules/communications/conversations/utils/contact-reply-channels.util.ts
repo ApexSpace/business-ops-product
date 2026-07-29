@@ -7,23 +7,17 @@ export type ReplyChannelCandidate = {
   conversation: Conversation | null;
 };
 
-const CHANNEL_PROVIDER: Record<
-  ConversationChannel,
-  string | null
-> = {
+const CHANNEL_PROVIDER: Record<ConversationChannel, string | null> = {
   [ConversationChannel.EMAIL]: 'email',
   [ConversationChannel.WHATSAPP]: 'whatsapp',
   [ConversationChannel.FACEBOOK]: 'facebook',
   [ConversationChannel.INSTAGRAM]: 'instagram',
-  [ConversationChannel.SMS]: null,
-  [ConversationChannel.WEBCHAT]: null,
+  [ConversationChannel.SMS]: 'sms',
+  [ConversationChannel.WEBCHAT]: 'webchat',
   [ConversationChannel.LINKEDIN]: null,
 };
 
-function readMetadataString(
-  metadata: unknown,
-  key: string,
-): string | null {
+function readMetadataString(metadata: unknown, key: string): string | null {
   if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) {
     return null;
   }
@@ -69,6 +63,16 @@ export function buildReplyChannelCandidates(
     {
       channel: ConversationChannel.INSTAGRAM,
       hasIdentity: Boolean(readMetadataString(metadata, 'instagramUserId')),
+    },
+    {
+      channel: ConversationChannel.SMS,
+      hasIdentity:
+        contactHasPhone(contact) ||
+        Boolean(readMetadataString(metadata, 'smsPhone')),
+    },
+    {
+      channel: ConversationChannel.WEBCHAT,
+      hasIdentity: Boolean(byChannel.get(ConversationChannel.WEBCHAT)),
     },
   ];
 

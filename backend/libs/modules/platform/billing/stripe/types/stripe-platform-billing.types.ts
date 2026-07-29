@@ -43,7 +43,11 @@ export type StripeSubscriptionObject = {
   items?: {
     data?: Array<{
       id?: string;
-      price?: { id?: string; product?: string | { id?: string } };
+      price?: {
+        id?: string;
+        product?: string | { id?: string };
+        unit_amount?: number | null;
+      };
     }>;
   };
   metadata?: Record<string, string>;

@@ -33,6 +33,7 @@ interface WhatsAppTemplateComposerProps {
   headerMediaUrl: string;
   onHeaderMediaUrlChange: (value: string) => void;
   disabled?: boolean;
+  variant?: "default" | "compact" | "inline" | "extras";
 }
 
 export function WhatsAppTemplateComposer({
@@ -43,6 +44,7 @@ export function WhatsAppTemplateComposer({
   headerMediaUrl,
   onHeaderMediaUrlChange,
   disabled = false,
+  variant = "default",
 }: WhatsAppTemplateComposerProps) {
   const { data: approvedTemplates = [], isLoading: templatesLoading } = useQuery(
     {
@@ -85,66 +87,75 @@ export function WhatsAppTemplateComposer({
       )
     : null;
 
-  return (
-    <div className="space-y-3 rounded-lg border border-border/70 bg-muted/10 p-3">
-      <div className="flex items-center gap-2">
-        <FileText className="size-4 text-muted-foreground" />
-        <p className="text-sm font-medium">Send WhatsApp template</p>
-        <Badge variant="secondary" className="ml-auto text-[10px]">
-          Outside 24h window
-        </Badge>
-      </div>
+  const isCompact = variant === "compact";
+  const isInline = variant === "inline";
+  const isExtras = variant === "extras";
 
-      <div>
-        <p className="mb-1.5 text-xs font-medium text-muted-foreground">
-          Approved template
-        </p>
-        <Select
-          value={selectedTemplateId ?? ""}
-          onValueChange={(value) => onTemplateIdChange(value ? value : null)}
-          disabled={disabled || templatesLoading}
+  const templateSelect = (
+    <Select
+      value={selectedTemplateId ?? ""}
+      onValueChange={(value) => onTemplateIdChange(value ? value : null)}
+      disabled={disabled || templatesLoading}
+    >
+      <SelectTrigger
+        className={
+          isInline
+            ? "h-9 min-w-0 w-full border-0 bg-transparent px-1 text-sm shadow-none focus:ring-0"
+            : isCompact
+              ? "h-9 w-full bg-background text-sm"
+              : "h-10 w-full bg-background"
+        }
+      >
+        <SelectValue
+          placeholder={
+            templatesLoading
+              ? "Loading templates…"
+              : approvedTemplates.length === 0
+                ? "No approved templates"
+                : "Choose a template"
+          }
         >
-          <SelectTrigger className="h-10 w-full bg-background">
-            <SelectValue
-              placeholder={
-                templatesLoading
-                  ? "Loading templates…"
-                  : approvedTemplates.length === 0
-                    ? "No approved templates"
-                    : "Choose a template"
-              }
-            >
-              {selectedListItem
-                ? `${selectedListItem.name} (${selectedListItem.language})`
-                : selectedTemplate
-                  ? `${selectedTemplate.name} (${selectedTemplate.language})`
-                  : null}
-            </SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            {approvedTemplates.map((template: WhatsAppTemplateListItem) => (
-              <SelectItem key={template.id} value={template.id}>
-                <div className="flex flex-col items-start gap-0.5">
-                  <span className="font-medium">
-                    {template.name} ({template.language})
-                  </span>
-                  {template.bodyPreview ? (
-                    <span className="line-clamp-1 text-xs text-muted-foreground">
-                      {template.bodyPreview}
-                    </span>
-                  ) : null}
-                </div>
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+          {selectedListItem
+            ? `${selectedListItem.name} (${selectedListItem.language})`
+            : selectedTemplate
+              ? `${selectedTemplate.name} (${selectedTemplate.language})`
+              : null}
+        </SelectValue>
+      </SelectTrigger>
+      <SelectContent>
+        {approvedTemplates.map((template: WhatsAppTemplateListItem) => (
+          <SelectItem key={template.id} value={template.id}>
+            <div className="flex flex-col items-start gap-0.5">
+              <span className="font-medium">
+                {template.name} ({template.language})
+              </span>
+              {template.bodyPreview ? (
+                <span className="line-clamp-1 text-xs text-muted-foreground">
+                  {template.bodyPreview}
+                </span>
+              ) : null}
+            </div>
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
 
+  const templateExtras = (
+    <>
       {selectedTemplate ? (
-        <div className="rounded-md border border-dashed border-border/70 bg-background px-3 py-2.5">
-          <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-            Preview
-          </p>
+        <div
+          className={
+            isCompact || isExtras
+              ? "rounded-md border border-border/50 bg-muted/20 px-2.5 py-2"
+              : "rounded-md border border-dashed border-border/70 bg-background px-3 py-2.5"
+          }
+        >
+          {!isCompact && !isExtras ? (
+            <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+              Preview
+            </p>
+          ) : null}
           <p className="whitespace-pre-wrap text-sm text-foreground">
             {templateDetailLoading
               ? "Loading template…"
@@ -189,6 +200,39 @@ export function WhatsAppTemplateComposer({
           />
         </div>
       ) : null}
+    </>
+  );
+
+  if (isInline) {
+    return templateSelect;
+  }
+
+  if (isExtras) {
+    return <div className="space-y-2">{templateExtras}</div>;
+  }
+
+  return (
+    <div className={isCompact ? "space-y-2" : "space-y-3 rounded-lg border border-border/70 bg-muted/10 p-3"}>
+      {!isCompact ? (
+        <div className="flex items-center gap-2">
+          <FileText className="size-4 text-muted-foreground" />
+          <p className="text-sm font-medium">Send WhatsApp template</p>
+          <Badge variant="secondary" className="ml-auto text-[10px]">
+            Outside 24h window
+          </Badge>
+        </div>
+      ) : null}
+
+      <div>
+        {!isCompact ? (
+          <p className="mb-1.5 text-xs font-medium text-muted-foreground">
+            Approved template
+          </p>
+        ) : null}
+        {templateSelect}
+      </div>
+
+      {templateExtras}
     </div>
   );
 }

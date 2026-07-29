@@ -29,6 +29,8 @@ export interface EnqueueTransactionalEmailParams {
     htmlBody: string;
     textBody?: string | null;
   };
+  fromEmail?: string;
+  fromName?: string;
 }
 
 @Injectable()
@@ -45,46 +47,67 @@ export class EmailNotificationService {
   ) {}
 
   /**
+   * Whether a business-configurable notification type is enabled.
+   * System-only types are always treated as enabled.
+   */
+  async isNotificationEnabled(
+    businessId: string | null | undefined,
+    notificationKey: string,
+  ): Promise<boolean> {
+    const typeDef = getEmailTypeDefinition(notificationKey);
+    if (!typeDef) {
+      return false;
+    }
+    if (typeDef.systemOnly || !businessId) {
+      return true;
+    }
+    const preference = await this.preferenceRepository.findByBusinessAndType(
+      businessId,
+      notificationKey,
+    );
+    return preference?.enabled ?? typeDef.defaultEnabled;
+  }
+
+  /**
    * Enqueues a transactional email for async delivery.
    *
    * Failure paths:
-   * - EMAIL_ENABLED=false or preference disabled → no-op
-   * - Duplicate idempotency key (non-FAILED) → no-op
-   * - Redis unavailable or enqueue error → EmailMessage marked FAILED
+   * - EMAIL_ENABLED=false or preference disabled → 'disabled'
+   * - Duplicate idempotency key (non-FAILED) → 'skipped'
+   * - Redis unavailable or enqueue error → EmailMessage marked FAILED, returns 'failed'
    */
   async enqueueTransactionalEmail(
     params: EnqueueTransactionalEmailParams,
-  ): Promise<void> {
+  ): Promise<'queued' | 'skipped' | 'disabled' | 'failed'> {
     const emailConfig = this.configService.get('email', { infer: true });
     if (!emailConfig.enabled) {
-      return;
+      return 'disabled';
     }
 
     const typeDef = getEmailTypeDefinition(params.emailType);
     if (!typeDef) {
       this.logger.warn(`Unknown email type skipped: ${params.emailType}`);
-      return;
+      return 'disabled';
     }
 
     const toEmail = params.toEmail?.trim();
     if (!toEmail) {
-      return;
+      return 'disabled';
     }
 
     const businessId = params.businessId ?? null;
     const isSystemEmail = !!typeDef.systemOnly;
 
     if (!isSystemEmail && businessId) {
-      const preference = await this.preferenceRepository.findByBusinessAndType(
+      const enabled = await this.isNotificationEnabled(
         businessId,
         params.emailType,
       );
-      const enabled = preference?.enabled ?? typeDef.defaultEnabled;
       if (!enabled) {
         this.logger.debug(
           `Email skipped by preference: ${params.emailType} for business ${businessId}`,
         );
-        return;
+        return 'disabled';
       }
     }
 
@@ -104,7 +127,7 @@ export class EmailNotificationService {
       this.logger.debug(
         `Duplicate email enqueue skipped (${idempotencyKey}); existing ${existing.id} status=${existing.status}`,
       );
-      return;
+      return 'skipped';
     }
 
     let subject = typeDef.defaultSubject;
@@ -136,7 +159,12 @@ export class EmailNotificationService {
       variables: params.variables,
     });
 
-    const fromEmail = emailConfig.defaultFrom!;
+    const fromEmail = params.fromEmail?.trim() || emailConfig.defaultFrom!;
+    const fromName = params.fromName?.trim() || null;
+    const formattedFrom =
+      fromName && fromEmail
+        ? `${fromName} <${fromEmail.replace(/^.*<([^>]+)>.*$/, '$1').trim() || fromEmail}>`
+        : fromEmail;
     const replyTo = emailConfig.defaultReplyTo ?? null;
 
     const message = await this.messageRepository.create({
@@ -145,7 +173,7 @@ export class EmailNotificationService {
       userId: params.userId,
       emailType: params.emailType,
       toEmail,
-      fromEmail,
+      fromEmail: formattedFrom,
       replyTo,
       subject: rendered.subject,
       entityType: params.entityType,
@@ -176,8 +204,8 @@ export class EmailNotificationService {
       });
 
     if (!jobId) {
-      const existing = await this.messageRepository.findById(message.id);
-      if (existing?.status === EmailMessageStatus.QUEUED) {
+      const existingMsg = await this.messageRepository.findById(message.id);
+      if (existingMsg?.status === EmailMessageStatus.QUEUED) {
         await this.messageRepository.updateStatus(message.id, {
           status: EmailMessageStatus.FAILED,
           errorMessage: 'Failed to enqueue email job: queue unavailable',
@@ -186,7 +214,10 @@ export class EmailNotificationService {
           `EmailMessage ${message.id} marked FAILED: Redis unavailable during enqueue (key=${idempotencyKey})`,
         );
       }
+      return 'failed';
     }
+
+    return 'queued';
   }
 
   private buildDefaultIdempotencyKey(

@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { startEmailConversation } from "@/features/conversations/api/conversations.api";
+import { useConversationsHost } from "@/features/conversations/conversations-host-context";
 
 interface NewEmailDialogProps {
   open: boolean;
@@ -28,17 +29,21 @@ export function NewEmailDialog({
   onOpenChange,
   onCreated,
 }: NewEmailDialogProps) {
+  const { apiBase } = useConversationsHost();
   const [toEmail, setToEmail] = useState("");
   const [subject, setSubject] = useState("");
   const [text, setText] = useState("");
 
   const mutation = useMutation({
     mutationFn: () =>
-      startEmailConversation({
-        toEmail: toEmail.trim(),
-        subject: subject.trim() || undefined,
-        text: text.trim() || undefined,
-      }),
+      startEmailConversation(
+        {
+          toEmail: toEmail.trim(),
+          subject: subject.trim() || undefined,
+          text: text.trim() || undefined,
+        },
+        apiBase,
+      ),
     onSuccess: (conversation) => {
       toast.success("Email conversation started");
       onCreated(conversation.id);

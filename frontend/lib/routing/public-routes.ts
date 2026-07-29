@@ -22,12 +22,16 @@ export type PublicRouteResource = {
 export const PUBLIC_ROUTE_RESOURCES: PublicRouteResource[] = [
   {
     prefix: "/book",
-    description: "Public calendar booking",
+    description: "Public business online booking",
+  },
+  {
+    prefix: "/booking",
+    description: "Public business online booking alias",
   },
   {
     prefix: "/calendar",
     legacyPrefixes: ["/embed"],
-    description: "Public calendar booking (canonical + embed widget)",
+    description: "Legacy public booking paths",
   },
   {
     prefix: "/invoice",
@@ -55,13 +59,24 @@ export const PUBLIC_ROUTE_RESOURCES: PublicRouteResource[] = [
     description: "Public form submissions",
   },
   {
+    prefix: "/express",
+    description: "Public Express Booking completion (token link from email)",
+  },
+  {
     prefix: "/public",
     description: "Generic public pages and assets",
   },
 ];
 
 /** Auth flows that never require a session. */
-export const PUBLIC_AUTH_PATHS = ["/login", "/select-context"] as const;
+export const PUBLIC_AUTH_PATHS = [
+  "/login",
+  "/select-context",
+  "/accept-invite",
+  "/forgot-password",
+  "/reset-password",
+  "/auth/trial-handoff",
+] as const;
 
 /** OAuth and other callback flows that must work logged out. */
 export const PUBLIC_CALLBACK_PATHS = ["/oauth"] as const;
@@ -70,6 +85,11 @@ export const PUBLIC_CALLBACK_PATHS = ["/oauth"] as const;
 export const PUBLIC_API_PATH_PREFIXES = [
   "/api/auth/login",
   "/api/auth/refresh",
+  "/api/auth/accept-invite",
+  "/api/auth/invite-preview",
+  "/api/auth/forgot-password",
+  "/api/auth/reset-password",
+  "/api/auth/trial-handoff",
 ] as const;
 
 function normalizePathname(pathname: string): string {

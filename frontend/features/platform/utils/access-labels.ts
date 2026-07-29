@@ -60,6 +60,8 @@ export function formatSubscriptionStatus(
     EXPIRED: "Expired",
     INTERNAL: "Free/Internal",
     PAST_DUE: "Past Due",
+    UNPAID: "Unpaid",
+    INCOMPLETE: "Incomplete",
   };
   return labels[status] ?? status;
 }
@@ -75,7 +77,7 @@ export function formatPaymentMethod(
     CASH: "Cash",
     JAZZCASH: "JazzCash",
     EASYPAISA: "EasyPaisa",
-    MANUAL_INVOICE: "Manual Invoice",
+    MANUAL_INVOICE: "Manual Invoice (offline)",
     FREE_INTERNAL: "Free/Internal",
     NOT_SELECTED: "Not Selected",
   };
@@ -291,6 +293,8 @@ export function formatAccessReasonCode(code: BusinessAccessReasonCode): string {
     SUBSCRIPTION_EXPIRED: "Expired",
     SUBSCRIPTION_CANCELED: "Canceled",
     SUBSCRIPTION_PAST_DUE: "Past due",
+    SUBSCRIPTION_UNPAID: "Unpaid",
+    SUBSCRIPTION_INCOMPLETE: "Incomplete",
     SUBSCRIPTION_UNKNOWN: "Cannot access",
   };
   return labels[code] ?? code;

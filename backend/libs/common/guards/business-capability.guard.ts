@@ -69,7 +69,10 @@ export class BusinessCapabilityGuard implements CanActivate {
     }
 
     if (moduleKey) {
-      const allowed = await this.capabilityCheck.hasModule(businessId, moduleKey);
+      const allowed = await this.capabilityCheck.hasModule(
+        businessId,
+        moduleKey,
+      );
       if (!allowed) {
         throw new AppException(
           ErrorCode.FEATURE_NOT_AVAILABLE,

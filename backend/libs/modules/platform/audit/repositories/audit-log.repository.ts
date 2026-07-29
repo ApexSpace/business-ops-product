@@ -68,6 +68,20 @@ export class AuditLogRepository {
     ]).then(([items, total]) => ({ items, total }));
   }
 
+  findByEntity(
+    businessId: string,
+    entityType: string,
+    entityId: string,
+    take = 50,
+  ): Promise<AuditLogWithActor[]> {
+    return this.prisma.auditLog.findMany({
+      where: { businessId, entityType, entityId },
+      orderBy: { createdAt: 'asc' },
+      take,
+      include: auditLogActorInclude,
+    });
+  }
+
   findAll(
     skip: number,
     take: number,

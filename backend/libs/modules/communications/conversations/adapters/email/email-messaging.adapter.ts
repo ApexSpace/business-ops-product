@@ -46,10 +46,11 @@ export class EmailMessagingAdapter implements ConversationChannelAdapter {
       );
     }
 
-    const resource = await this.integrationResourceRepository.findByIdAndBusiness(
-      params.resourceId,
-      params.businessId,
-    );
+    const resource =
+      await this.integrationResourceRepository.findByIdAndBusiness(
+        params.resourceId,
+        params.businessId,
+      );
     if (!resource) {
       throw new AppException(
         ErrorCode.CONVERSATION_CHANNEL_NOT_READY,
@@ -89,7 +90,8 @@ export class EmailMessagingAdapter implements ConversationChannelAdapter {
     );
 
     const subject =
-      typeof params.metadata?.subject === 'string' && params.metadata.subject.trim()
+      typeof params.metadata?.subject === 'string' &&
+      params.metadata.subject.trim()
         ? params.metadata.subject.trim()
         : `Message from ${fromName}`;
 

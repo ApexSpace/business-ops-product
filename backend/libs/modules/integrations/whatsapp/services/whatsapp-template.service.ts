@@ -5,6 +5,7 @@ import { AppException } from '@app/common/exceptions/app.exception';
 import { ErrorCode } from '@app/common/exceptions/error-code.enum';
 import { getPaginationParams } from '@app/common/utils/pagination.util';
 import { MetaApiClient } from '../../integrations/meta/services/meta-api-client';
+import { getMetaGraphErrorMessage } from '../../integrations/meta/utils/meta-graph-error.util';
 import {
   CreateWhatsAppTemplateDto,
   CreateWhatsAppTemplateWithHeaderDto,
@@ -30,6 +31,7 @@ import {
   mapMetaTemplateToUpsert,
   mapTemplateDetail,
   mapTemplateListItem,
+  normalizeTemplateCategory,
 } from '../utils/template-mapper.util';
 import { getTemplatePolicy } from '../utils/template-policy.util';
 import { mapMetaTemplateStatus } from '../utils/template-status.util';
@@ -55,6 +57,8 @@ export class WhatsAppTemplateService {
   }
 
   async list(businessId: string, query: ListWhatsAppTemplatesQueryDto) {
+    const context =
+      await this.businessContextService.requireConnectedContext(businessId);
     const { page, limit, skip, take } = getPaginationParams(query);
     const sortBy = this.resolveSortBy(query.sortBy);
     const { items, total } = await this.templateRepository.findMany(
@@ -62,6 +66,7 @@ export class WhatsAppTemplateService {
       {
         skip,
         take,
+        wabaId: context.wabaId,
         search: query.search,
         status: query.status,
         category: query.category,
@@ -77,7 +82,12 @@ export class WhatsAppTemplateService {
   }
 
   async listApproved(businessId: string) {
-    const items = await this.templateRepository.findApproved(businessId);
+    const context =
+      await this.businessContextService.requireConnectedContext(businessId);
+    const items = await this.templateRepository.findApproved(
+      businessId,
+      context.wabaId,
+    );
     return items.map(mapTemplateListItem);
   }
 
@@ -91,46 +101,52 @@ export class WhatsAppTemplateService {
     dto: CreateWhatsAppTemplateDto,
     actor: RequestUser,
   ) {
-    const context = await this.businessContextService.requireConnectedContext(
-      businessId,
-    );
-    const payload = buildMetaCreatePayload({
-      name: dto.name,
-      language: dto.language,
-      category: dto.category,
-      components: dto.components as unknown as TemplateComponentInput[],
-      parameterFormat: dto.parameterFormat,
-    });
+    try {
+      const context =
+        await this.businessContextService.requireConnectedContext(businessId);
+      const payload = buildMetaCreatePayload({
+        name: dto.name,
+        language: dto.language,
+        category: dto.category,
+        components: dto.components as unknown as TemplateComponentInput[],
+        parameterFormat: dto.parameterFormat,
+      });
 
-    const meta = await this.metaApiClient.createMessageTemplate(
-      context.wabaId,
-      context.accessToken,
-      payload,
-    );
+      const meta = await this.metaApiClient.createMessageTemplate(
+        context.wabaId,
+        context.accessToken,
+        payload,
+      );
 
-    const components = payload.components as Prisma.InputJsonValue;
-    const template = await this.templateRepository.create({
-      businessId,
-      wabaId: context.wabaId,
-      name: normalizeTemplateName(dto.name),
-      language: dto.language.trim(),
-      category: dto.category,
-      status: mapMetaTemplateStatus(meta.status),
-      parameterFormat: dto.parameterFormat?.trim() || 'POSITIONAL',
-      metaTemplateId: meta.id ?? null,
-      components,
-      bodyPreview:
-        extractBodyPreview(
-          dto.components as unknown as TemplateComponentInput[],
-        ) || null,
-      rejectionReason: meta.rejected_reason ?? null,
-      qualityScore: meta.quality_score as Prisma.InputJsonValue,
-      submittedAt: new Date(),
-      lastSyncedAt: new Date(),
-      createdByUserId: actor.id ?? null,
-    });
+      const components = payload.components as Prisma.InputJsonValue;
+      const template = await this.templateRepository.create({
+        businessId,
+        wabaId: context.wabaId,
+        name: normalizeTemplateName(dto.name),
+        language: dto.language.trim(),
+        category: normalizeTemplateCategory(meta.category ?? dto.category),
+        status: mapMetaTemplateStatus(meta.status),
+        parameterFormat: dto.parameterFormat?.trim() || 'POSITIONAL',
+        metaTemplateId: meta.id ?? null,
+        components,
+        bodyPreview:
+          extractBodyPreview(
+            dto.components as unknown as TemplateComponentInput[],
+          ) || null,
+        rejectionReason: meta.rejected_reason ?? null,
+        qualityScore: meta.quality_score as Prisma.InputJsonValue,
+        submittedAt: new Date(),
+        lastSyncedAt: new Date(),
+        createdByUserId: actor.id ?? null,
+      });
 
-    return mapTemplateDetail(template);
+      return mapTemplateDetail(template);
+    } catch (err) {
+      this.rethrowMetaTemplateRequestError(
+        err,
+        'Failed to create WhatsApp template.',
+      );
+    }
   }
 
   async createWithHeaderSample(
@@ -153,9 +169,8 @@ export class WhatsAppTemplateService {
       );
     }
 
-    const context = await this.businessContextService.requireConnectedContext(
-      businessId,
-    );
+    const context =
+      await this.businessContextService.requireConnectedContext(businessId);
     const headerHandle = await this.metaUploadService.uploadHeaderSample({
       accessToken: context.accessToken,
       buffer: file.buffer,
@@ -183,89 +198,94 @@ export class WhatsAppTemplateService {
     );
   }
 
-  async update(
-    businessId: string,
-    id: string,
-    dto: UpdateWhatsAppTemplateDto,
-  ) {
-    const template = await this.requireTemplate(businessId, id);
-    const policy = getTemplatePolicy(template.status);
-    if (!policy.canEdit) {
-      throw new AppException(
-        ErrorCode.VALIDATION_ERROR,
-        policy.editBlockedReason ?? 'This template cannot be edited.',
-        HttpStatus.BAD_REQUEST,
+  async update(businessId: string, id: string, dto: UpdateWhatsAppTemplateDto) {
+    try {
+      const template = await this.requireTemplate(businessId, id);
+      const policy = getTemplatePolicy(template.status);
+      if (!policy.canEdit) {
+        throw new AppException(
+          ErrorCode.VALIDATION_ERROR,
+          policy.editBlockedReason ?? 'This template cannot be edited.',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      const context =
+        await this.businessContextService.requireConnectedContext(businessId);
+      const nextComponents =
+        dto.components ?? (template.components as Record<string, unknown>[]);
+      const metaPayload: Record<string, unknown> = {};
+
+      if (dto.category) {
+        metaPayload.category = dto.category;
+      }
+      if (dto.components) {
+        metaPayload.components = buildMetaTemplateComponents(
+          dto.components as unknown as TemplateComponentInput[],
+        );
+      }
+      if (dto.parameterFormat) {
+        metaPayload.parameter_format = dto.parameterFormat;
+      }
+
+      let metaStatus = template.status;
+      let rejectionReason = template.rejectionReason;
+      let metaTemplateId = template.metaTemplateId;
+
+      if (template.metaTemplateId && Object.keys(metaPayload).length > 0) {
+        const meta = await this.metaApiClient.updateMessageTemplate(
+          template.metaTemplateId,
+          context.accessToken,
+          metaPayload,
+        );
+        metaStatus = mapMetaTemplateStatus(meta.status);
+        rejectionReason = meta.rejected_reason ?? null;
+        metaTemplateId = meta.id ?? metaTemplateId;
+      }
+
+      const updated = await this.templateRepository.update(businessId, id, {
+        category: dto.category ?? template.category,
+        components: buildMetaTemplateComponents(
+          nextComponents as Record<string, unknown>[],
+        ) as Prisma.InputJsonValue,
+        parameterFormat: dto.parameterFormat ?? template.parameterFormat,
+        status: metaStatus,
+        rejectionReason,
+        metaTemplateId,
+        bodyPreview:
+          extractBodyPreview(nextComponents as Record<string, unknown>[]) ||
+          template.bodyPreview,
+        submittedAt: new Date(),
+        lastSyncedAt: new Date(),
+      });
+
+      return mapTemplateDetail(updated);
+    } catch (err) {
+      this.rethrowMetaTemplateRequestError(
+        err,
+        'Failed to update WhatsApp template.',
       );
     }
-
-    const context = await this.businessContextService.requireConnectedContext(
-      businessId,
-    );
-    const nextComponents = dto.components ?? (template.components as Record<string, unknown>[]);
-    const metaPayload: Record<string, unknown> = {};
-
-    if (dto.category) {
-      metaPayload.category = dto.category;
-    }
-    if (dto.components) {
-      metaPayload.components = buildMetaTemplateComponents(
-        dto.components as unknown as TemplateComponentInput[],
-      );
-    }
-    if (dto.parameterFormat) {
-      metaPayload.parameter_format = dto.parameterFormat;
-    }
-
-    let metaStatus = template.status;
-    let rejectionReason = template.rejectionReason;
-    let metaTemplateId = template.metaTemplateId;
-
-    if (template.metaTemplateId && Object.keys(metaPayload).length > 0) {
-      const meta = await this.metaApiClient.updateMessageTemplate(
-        template.metaTemplateId,
-        context.accessToken,
-        metaPayload,
-      );
-      metaStatus = mapMetaTemplateStatus(meta.status);
-      rejectionReason = meta.rejected_reason ?? null;
-      metaTemplateId = meta.id ?? metaTemplateId;
-    }
-
-    const updated = await this.templateRepository.update(businessId, id, {
-      category: dto.category ?? template.category,
-      components: buildMetaTemplateComponents(
-        nextComponents as Record<string, unknown>[],
-      ) as Prisma.InputJsonValue,
-      parameterFormat: dto.parameterFormat ?? template.parameterFormat,
-      status: metaStatus,
-      rejectionReason,
-      metaTemplateId,
-      bodyPreview:
-        extractBodyPreview(nextComponents as Record<string, unknown>[]) ||
-        template.bodyPreview,
-      submittedAt: new Date(),
-      lastSyncedAt: new Date(),
-    });
-
-    return mapTemplateDetail(updated);
   }
 
   async syncAll(businessId: string) {
-    const context = await this.businessContextService.requireConnectedContext(
-      businessId,
-    );
+    const context =
+      await this.businessContextService.requireConnectedContext(businessId);
     const remoteTemplates = await this.metaApiClient.listMessageTemplates(
       context.wabaId,
       context.accessToken,
     );
 
     const syncedAt = new Date();
+    const keep: Array<{ name: string; language: string }> = [];
+
     for (const remote of remoteTemplates) {
       const mapped = mapMetaTemplateToUpsert({
         businessId,
         wabaId: context.wabaId,
         meta: remote,
       });
+      keep.push({ name: mapped.name, language: mapped.language });
       await this.templateRepository.upsertByNameLanguage({
         ...mapped,
         components: mapped.components as Prisma.InputJsonValue,
@@ -274,14 +294,20 @@ export class WhatsAppTemplateService {
       });
     }
 
+    await this.templateRepository.deleteByWabaExcept(
+      businessId,
+      context.wabaId,
+      keep,
+    );
+    await this.templateRepository.deleteOtherWabas(businessId, context.wabaId);
+
     return { syncedCount: remoteTemplates.length };
   }
 
   async syncOne(businessId: string, id: string) {
     const template = await this.requireTemplate(businessId, id);
-    const context = await this.businessContextService.requireConnectedContext(
-      businessId,
-    );
+    const context =
+      await this.businessContextService.requireConnectedContext(businessId);
 
     const remote = template.metaTemplateId
       ? await this.metaApiClient.getMessageTemplate(
@@ -332,9 +358,8 @@ export class WhatsAppTemplateService {
       );
     }
 
-    const context = await this.businessContextService.requireConnectedContext(
-      businessId,
-    );
+    const context =
+      await this.businessContextService.requireConnectedContext(businessId);
 
     await this.metaApiClient.deleteMessageTemplate(
       context.wabaId,
@@ -345,8 +370,10 @@ export class WhatsAppTemplateService {
   }
 
   private async requireTemplate(businessId: string, id: string) {
+    const context =
+      await this.businessContextService.requireConnectedContext(businessId);
     const template = await this.templateRepository.findById(businessId, id);
-    if (!template) {
+    if (!template || template.wabaId !== context.wabaId) {
       throw new AppException(
         ErrorCode.NOT_FOUND,
         'WhatsApp template not found.',
@@ -368,5 +395,37 @@ export class WhatsAppTemplateService {
       return sortBy;
     }
     return 'updatedAt';
+  }
+
+  private rethrowMetaTemplateRequestError(
+    err: unknown,
+    fallbackMessage: string,
+  ): never {
+    if (err instanceof AppException) {
+      throw err;
+    }
+
+    const metaMessage = getMetaGraphErrorMessage(err);
+    if (metaMessage) {
+      throw new AppException(
+        ErrorCode.VALIDATION_ERROR,
+        metaMessage,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    if (err instanceof Error && err.message.trim()) {
+      throw new AppException(
+        ErrorCode.VALIDATION_ERROR,
+        err.message,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    throw new AppException(
+      ErrorCode.BAD_REQUEST,
+      fallbackMessage,
+      HttpStatus.BAD_REQUEST,
+    );
   }
 }

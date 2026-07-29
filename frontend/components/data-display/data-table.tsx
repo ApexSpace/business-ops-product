@@ -21,6 +21,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
+import { WORKSPACE_TABLE_ROW_HOVER_CLASS } from "@/lib/design/workspace-tokens";
 import { DataTableColumnHeader } from "@/components/data-display/data-table-column-header";
 import { EmptyState } from "@/components/data-display/empty-state";
 
@@ -51,6 +52,9 @@ export interface DataTableProps<T> {
   density?: DataTableDensity;
   toolbar?: React.ReactNode;
   className?: string;
+  activeRowId?: string | null;
+  onRowClick?: (row: T) => void;
+  getRowClassName?: (row: T) => string | undefined;
 }
 
 const SKELETON_ROWS = 5;
@@ -71,6 +75,9 @@ export function DataTable<T>({
   density = "default",
   toolbar,
   className,
+  activeRowId,
+  onRowClick,
+  getRowClassName,
 }: DataTableProps<T>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [internalSelection, setInternalSelection] = useState<RowSelectionState>(
@@ -152,7 +159,7 @@ export function DataTable<T>({
   return (
     <div
       className={cn(
-        "overflow-hidden rounded-lg bg-card shadow-elevation-xs ring-1 ring-border/70",
+        "overflow-hidden rounded-xl border border-border bg-card shadow-elevation-xs",
         className,
       )}
       style={
@@ -162,16 +169,16 @@ export function DataTable<T>({
       }
     >
       {toolbar ? (
-        <div className="border-b border-border/80 px-3 py-2.5 sm:px-4">
+        <div className="border-b border-border px-3.5 py-3">
           {toolbar}
         </div>
       ) : null}
       <Table>
-        <TableHeader className="sticky top-0 z-10 bg-card/95 backdrop-blur-sm supports-[backdrop-filter]:bg-card/80">
+        <TableHeader className="sticky top-0 z-10 bg-muted/30 supports-[backdrop-filter]:bg-muted/40">
           {table.getHeaderGroups().map((headerGroup) => (
             <TableRow
               key={headerGroup.id}
-              className="h-9 border-b border-border/80 hover:bg-transparent"
+              className="h-9 border-b border-border hover:bg-transparent"
             >
               {headerGroup.headers.map((header) => {
                 const sorted = header.column.getIsSorted();
@@ -230,7 +237,38 @@ export function DataTable<T>({
             table.getRowModel().rows.map((row) => (
               <TableRow
                 key={row.id}
-                data-state={row.getIsSelected() ? "selected" : undefined}
+                data-state={
+                  row.getIsSelected() || activeRowId === row.id
+                    ? "selected"
+                    : undefined
+                }
+                tabIndex={onRowClick ? 0 : undefined}
+                role={onRowClick ? "button" : undefined}
+                className={cn(
+                  onRowClick &&
+                    "cursor-pointer hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset",
+                  WORKSPACE_TABLE_ROW_HOVER_CLASS,
+                  getRowClassName?.(row.original),
+                )}
+                onClick={(event) => {
+                  if (!onRowClick) return;
+                  const target = event.target as HTMLElement;
+                  if (
+                    target.closest(
+                      "a,button,input,textarea,select,label,[role='checkbox'],[data-row-click-ignore='true']",
+                    )
+                  ) {
+                    return;
+                  }
+                  onRowClick(row.original);
+                }}
+                onKeyDown={(event) => {
+                  if (!onRowClick) return;
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    onRowClick(row.original);
+                  }
+                }}
               >
                 {row.getVisibleCells().map((cell) => (
                   <TableCell

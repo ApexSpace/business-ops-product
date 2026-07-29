@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { EstimateStatus, InvoiceStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '@app/core/database/prisma.service';
+import { buildOverdueInvoiceWhere } from '@app/modules/finance/shared/utils/overdue-invoice-where.util';
 import { PaymentsOverviewDto } from '../dto/payments-overview.dto';
 
 @Injectable()
@@ -25,15 +26,8 @@ export class PaymentsOverviewService {
       deletedAt: null,
     };
 
-    const overdueInvoiceWhere: Prisma.InvoiceWhereInput = {
-      ...activeInvoice,
-      balanceDue: { gt: 0 },
-      status: { not: InvoiceStatus.VOID },
-      OR: [
-        { status: InvoiceStatus.OVERDUE },
-        { dueDate: { lt: startOfToday } },
-      ],
-    };
+    const overdueInvoiceWhere: Prisma.InvoiceWhereInput =
+      buildOverdueInvoiceWhere(businessId, startOfToday);
 
     const dueInvoiceWhere: Prisma.InvoiceWhereInput = {
       ...activeInvoice,

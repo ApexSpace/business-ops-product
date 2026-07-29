@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -18,6 +18,7 @@ import { LoadingState } from "@/components/data-display/loading-state";
 import {
   changeBusinessPlanTier,
   getBusinessPlanOptions,
+  previewBusinessTierChange,
   type BusinessPlanTierOption,
 } from "@/features/settings/api/business-billing.api";
 import {
@@ -49,15 +50,24 @@ function resolveChangeDirection(
   return targetIndex > currentIndex ? "upgrade" : "downgrade";
 }
 
+function formatPeriodEnd(iso: string | null | undefined): string {
+  if (!iso) return "the end of the current billing period";
+  return new Date(iso).toLocaleDateString();
+}
+
 export function PlanChangeDialog({
   open,
   onOpenChange,
   mode,
 }: PlanChangeDialogProps) {
+  const queryClient = useQueryClient();
   const [pendingTier, setPendingTier] = useState<{
     option: BusinessPlanTierOption;
     previewTier: PublicPricingTier;
   } | null>(null);
+  const [impactSummary, setImpactSummary] = useState<string | null>(null);
+  const [impactBlocked, setImpactBlocked] = useState(false);
+  const [changeRequested, setChangeRequested] = useState(false);
 
   const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: queryKeys.business.planOptions(),
@@ -84,11 +94,22 @@ export function PlanChangeDialog({
       planTierId: string;
       direction: "upgrade" | "downgrade";
     }) => changeBusinessPlanTier(planTierId),
-    onSuccess: (_, { direction }) => {
+    onSuccess: (result, { direction }) => {
+      setPendingTier(null);
+      setChangeRequested(true);
       toast.success(
-        direction === "upgrade" ? "Plan upgraded" : "Plan downgraded",
+        result?.requested
+          ? direction === "upgrade"
+            ? "Upgrade requested — plan updates when Stripe confirms"
+            : "Downgrade requested — takes effect at period end when Stripe confirms"
+          : direction === "upgrade"
+            ? "Tier upgraded"
+            : "Tier downgraded",
       );
-      window.location.reload();
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.business.planOptions(),
+      });
+      void queryClient.invalidateQueries({ queryKey: ["business", "access"] });
     },
     onError: (err: Error) => toast.error(err.message),
   });
@@ -103,13 +124,63 @@ export function PlanChangeDialog({
     const option = findTierOption(data.tiers, tier.slug);
     if (!option || option.id === data.currentPlanTierId) return;
     setPendingTier({ option, previewTier: tier });
+    setImpactSummary(null);
+    setImpactBlocked(false);
+    void previewBusinessTierChange(option.id)
+      .then((impact) => {
+        const parts: string[] = [];
+        const stripe = impact.stripe;
+        if (stripe?.direction === "upgrade" && stripe.addonsRemovedImmediately.length) {
+          parts.push(
+            `Upgrading to ${stripe.targetTierName} includes ${stripe.addonsRemovedImmediately
+              .map((a) => a.name)
+              .join(", ")}, which you pay separately — it will be removed immediately.`,
+          );
+        }
+        if (stripe?.direction === "downgrade" && stripe.addonsDroppedAtPeriodEnd.length) {
+          parts.push(
+            `Downgrading to ${stripe.targetTierName} removes ${stripe.addonsDroppedAtPeriodEnd
+              .map((a) => a.name)
+              .join(", ")} starting on ${formatPeriodEnd(stripe.currentPeriodEnd)}. You keep it until then.`,
+          );
+        }
+        if (impact.lostDependentAddons.length) {
+          parts.push(
+            `You will lose: ${impact.lostDependentAddons
+              .map((a) => a.name)
+              .join(", ")}.`,
+          );
+        }
+        if (impact.blocked && impact.blockReason) {
+          parts.push(impact.blockReason);
+        }
+        setImpactSummary(parts.join(" ") || null);
+        setImpactBlocked(Boolean(impact.blocked));
+      })
+      .catch(() => {
+        setImpactSummary(null);
+        setImpactBlocked(false);
+      });
   };
 
   return (
     <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
+      <Dialog
+        open={open}
+        onOpenChange={(next) => {
+          if (!next) setChangeRequested(false);
+          onOpenChange(next);
+        }}
+      >
         <DialogContent className="w-auto max-w-[calc(100%-2rem)] overflow-hidden sm:max-w-[calc(100%-2rem)]">
           <DialogBody className="space-y-4 overflow-x-auto">
+            {changeRequested ? (
+              <p className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-100">
+                Change requested. Your plan will update when Stripe confirms —
+                refresh shortly if it has not updated yet.
+              </p>
+            ) : null}
+
             {isLoading ? <LoadingState variant="skeleton" rows={4} /> : null}
 
             {isError ? (
@@ -162,6 +233,7 @@ export function PlanChangeDialog({
               {pendingTier
                 ? `Switch to ${pendingTier.option.name}? Your workspace capabilities will update to match the selected plan.`
                 : "Confirm this plan change."}
+              {impactSummary ? ` ${impactSummary}` : ""}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -169,7 +241,7 @@ export function PlanChangeDialog({
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction
-              disabled={changeMutation.isPending}
+              disabled={changeMutation.isPending || impactBlocked}
               onClick={(event) => {
                 event.preventDefault();
                 if (!pendingTier || !data) return;
@@ -193,7 +265,7 @@ export function PlanChangeDialog({
               }}
             >
               {changeMutation.isPending
-                ? "Updating…"
+                ? "Requesting…"
                 : pendingDirection === "upgrade"
                   ? "Upgrade"
                   : pendingDirection === "downgrade"

@@ -10,6 +10,7 @@ import { PrismaService } from '@app/core/database/prisma.service';
 export interface WhatsAppTemplateListFilters {
   skip: number;
   take: number;
+  wabaId: string;
   search?: string;
   status?: WhatsAppTemplateStatus;
   category?: WhatsAppTemplateCategory;
@@ -38,10 +39,14 @@ export class WhatsAppTemplateRepository {
     ]).then(([items, total]) => ({ items, total }));
   }
 
-  findApproved(businessId: string): Promise<WhatsAppMessageTemplate[]> {
+  findApproved(
+    businessId: string,
+    wabaId: string,
+  ): Promise<WhatsAppMessageTemplate[]> {
     return this.prisma.whatsAppMessageTemplate.findMany({
       where: {
         businessId,
+        wabaId,
         status: 'APPROVED',
       },
       orderBy: { name: 'asc' },
@@ -59,12 +64,16 @@ export class WhatsAppTemplateRepository {
 
   findByNameLanguage(
     businessId: string,
+    wabaId: string,
     name: string,
     language: string,
   ): Promise<WhatsAppMessageTemplate | null> {
-    return this.prisma.whatsAppMessageTemplate.findUnique({
+    return this.prisma.whatsAppMessageTemplate.findFirst({
       where: {
-        businessId_name_language: { businessId, name, language },
+        businessId,
+        wabaId,
+        name,
+        language,
       },
     });
   }
@@ -148,6 +157,46 @@ export class WhatsAppTemplateRepository {
       .then(() => undefined);
   }
 
+  deleteOtherWabas(businessId: string, keepWabaId: string): Promise<number> {
+    return this.prisma.whatsAppMessageTemplate
+      .deleteMany({
+        where: {
+          businessId,
+          wabaId: { not: keepWabaId },
+        },
+      })
+      .then((result) => result.count);
+  }
+
+  deleteByWabaExcept(
+    businessId: string,
+    wabaId: string,
+    keep: Array<{ name: string; language: string }>,
+  ): Promise<number> {
+    const keepKeys = new Set(
+      keep.map((item) => `${item.name}:${item.language}`),
+    );
+
+    return this.prisma.whatsAppMessageTemplate
+      .findMany({
+        where: { businessId, wabaId },
+        select: { id: true, name: true, language: true },
+      })
+      .then((rows) => {
+        const deleteIds = rows
+          .filter((row) => !keepKeys.has(`${row.name}:${row.language}`))
+          .map((row) => row.id);
+
+        if (deleteIds.length === 0) {
+          return 0;
+        }
+
+        return this.prisma.whatsAppMessageTemplate
+          .deleteMany({ where: { id: { in: deleteIds } } })
+          .then((result) => result.count);
+      });
+  }
+
   updateStatusByWebhook(input: {
     wabaId: string;
     name: string;
@@ -177,7 +226,10 @@ export class WhatsAppTemplateRepository {
     businessId: string,
     filters: WhatsAppTemplateListFilters,
   ): Prisma.WhatsAppMessageTemplateWhereInput {
-    const where: Prisma.WhatsAppMessageTemplateWhereInput = { businessId };
+    const where: Prisma.WhatsAppMessageTemplateWhereInput = {
+      businessId,
+      wabaId: filters.wabaId,
+    };
 
     if (filters.status) {
       where.status = filters.status;

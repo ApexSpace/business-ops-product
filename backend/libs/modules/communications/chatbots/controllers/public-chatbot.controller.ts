@@ -5,6 +5,7 @@ import {
   Headers,
   Ip,
   Param,
+  Patch,
   Post,
   Query,
 } from '@nestjs/common';
@@ -12,8 +13,10 @@ import { ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { Public } from '@app/common/decorators/public.decorator';
 import {
+  ClaimChatbotSessionDto,
   SendChatbotMessageDto,
   StartChatbotSessionDto,
+  UpdateChatbotSessionProfileDto,
 } from '../dto/chatbot.dto';
 import { PublicChatbotSessionService } from '../services/public-chatbot-session.service';
 
@@ -39,13 +42,26 @@ export class PublicChatbotController {
     @Body() dto: StartChatbotSessionDto,
     @Headers('user-agent') userAgent?: string,
     @Headers('referer') referer?: string,
+    @Headers('authorization') authorization?: string,
     @Ip() ip?: string,
   ) {
     return this.publicSessionService.startSession(
       publicKey,
       { ...dto, referrer: dto.referrer ?? referer },
-      { userAgent, referer, ip },
+      {
+        userAgent,
+        referer,
+        ip,
+        authToken: bearerToken(authorization) ?? dto.authToken,
+      },
     );
+  }
+
+  @Get('sessions/:sessionId')
+  @Public()
+  @Throttle({ default: { limit: 120, ttl: 60000 } })
+  getSession(@Param('sessionId') sessionId: string) {
+    return this.publicSessionService.getSession(sessionId);
   }
 
   @Post('sessions/:sessionId/messages')
@@ -67,4 +83,42 @@ export class PublicChatbotController {
   ) {
     return this.publicSessionService.listMessages(sessionId, since);
   }
+
+  @Post('sessions/:sessionId/end')
+  @Public()
+  @Throttle({ default: { limit: 30, ttl: 60000 } })
+  endSession(@Param('sessionId') sessionId: string) {
+    return this.publicSessionService.endSession(sessionId);
+  }
+
+  @Patch('sessions/:sessionId/profile')
+  @Public()
+  @Throttle({ default: { limit: 30, ttl: 60000 } })
+  updateSessionProfile(
+    @Param('sessionId') sessionId: string,
+    @Body() dto: UpdateChatbotSessionProfileDto,
+  ) {
+    return this.publicSessionService.updateSessionProfile(sessionId, dto);
+  }
+
+  @Post('sessions/:sessionId/claim')
+  @Public()
+  @Throttle({ default: { limit: 30, ttl: 60000 } })
+  claimSession(
+    @Param('sessionId') sessionId: string,
+    @Body() dto: ClaimChatbotSessionDto,
+    @Headers('authorization') authorization?: string,
+  ) {
+    return this.publicSessionService.claimSession(
+      sessionId,
+      dto,
+      bearerToken(authorization),
+    );
+  }
+}
+
+function bearerToken(authorization?: string): string | undefined {
+  if (!authorization?.startsWith('Bearer ')) return undefined;
+  const token = authorization.slice('Bearer '.length).trim();
+  return token || undefined;
 }

@@ -15,6 +15,8 @@ export interface StoredMetaCredentials {
   tokenType: string;
   metaUserId: string;
   scopes: string[];
+  /** Present for Instagram Direct (INSTAGRAM_LOGIN) connections. */
+  instagramUserId?: string;
 }
 
 @Injectable()

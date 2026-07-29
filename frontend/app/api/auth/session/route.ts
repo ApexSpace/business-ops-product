@@ -35,7 +35,13 @@ export async function GET() {
 
   const response = NextResponse.json({
     authenticated: true,
-    jwt,
+    jwt: {
+      ...jwt,
+      businessRole: user.businessRole ?? jwt?.businessRole,
+      businessId: user.businessId ?? jwt?.businessId,
+      staffPermissions:
+        user.staffPermissions ?? jwt?.staffPermissions ?? undefined,
+    },
     user,
     contexts,
   });
