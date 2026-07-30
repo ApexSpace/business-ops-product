@@ -16,6 +16,10 @@ import {
   parseDateKeyInTimezone,
 } from "@/features/calendars/utils/timezone";
 import { CALENDAR_GRID } from "@/features/calendars/utils/calendar-grid-styles";
+import {
+  CALENDAR_FIGMA_STAFF_COL_MIN_PX,
+  CALENDAR_FIGMA_TIME_GUTTER_PX,
+} from "@/features/calendars/styles/calendar-figma";
 import type { BusinessHoursSlot } from "@/features/business-hours/types";
 import { cn } from "@/lib/utils";
 
@@ -65,26 +69,19 @@ export function WeekCalendarView({
 }: WeekCalendarViewProps) {
   const weekDateKeys = getWeekDateKeysInTimezone(anchorDateKey, timezone);
   const currentTimeTop = useCalendarCurrentTimeTop(timezone, weekDateKeys);
+  const gridTemplate = `${CALENDAR_FIGMA_TIME_GUTTER_PX}px repeat(7, minmax(${CALENDAR_FIGMA_STAFF_COL_MIN_PX}px, 1fr))`;
+  const minWidth = CALENDAR_FIGMA_TIME_GUTTER_PX + 7 * CALENDAR_FIGMA_STAFF_COL_MIN_PX;
 
   return (
-    <div
-      className={cn(
-        "overflow-hidden rounded-xl bg-card shadow-elevation-xs",
-        CALENDAR_GRID.card,
-        className,
-      )}
-    >
+    <div className={cn("overflow-hidden bg-white", CALENDAR_GRID.card, className)}>
       <div className="overflow-x-auto">
-        <div className="min-w-[640px]">
-          <div className="max-h-[min(75vh,840px)] overflow-auto">
+        <div style={{ minWidth }}>
+          <div className="max-h-[min(75vh,844px)] overflow-auto">
             <div
-              className={cn(
-                "sticky top-0 z-30 grid bg-card",
-                CALENDAR_GRID.headerRow,
-              )}
-              style={{ gridTemplateColumns: `56px repeat(7, minmax(0, 1fr))` }}
+              className={cn("sticky top-0 z-30 grid", CALENDAR_GRID.headerRow)}
+              style={{ gridTemplateColumns: gridTemplate }}
             >
-              <div />
+              <div className="w-20 shrink-0" aria-hidden />
               {weekDateKeys.map((dayKey) => {
                 const isToday = isTodayDateKey(dayKey, timezone);
                 const dayNumber = parseDateKeyInTimezone(dayKey, timezone).day;
@@ -94,19 +91,19 @@ export function WeekCalendarView({
                     key={dayKey}
                     className={cn(
                       CALENDAR_GRID.column,
-                      "px-2 py-2.5 text-center",
-                      isToday && "bg-primary/[0.04]",
+                      "flex h-12 flex-col items-center justify-center px-2 py-2 sm:h-14",
+                      isToday && "bg-[#F6F1FE]",
                     )}
                   >
-                    <span className="block text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                    <span className="block text-[10px] font-semibold uppercase tracking-wide text-grey-tertiary-normal">
                       {formatShortWeekdayForDateKey(dayKey, timezone)}
                     </span>
                     <span
                       className={cn(
-                        "mx-auto mt-1 inline-flex size-7 items-center justify-center rounded-full text-sm font-semibold",
+                        "mt-1 inline-flex size-7 items-center justify-center rounded-full text-sm font-semibold",
                         isToday
-                          ? "bg-primary text-primary-foreground"
-                          : "text-foreground",
+                          ? "bg-[#7E3BED] text-white"
+                          : "text-black-secondary-normal",
                       )}
                     >
                       {dayNumber}
@@ -116,18 +113,21 @@ export function WeekCalendarView({
               })}
             </div>
             {isLoading ? (
-              <div className="flex h-48 items-center justify-center text-sm text-muted-foreground">
+              <div className="flex h-48 items-center justify-center text-sm text-grey-tertiary-normal">
                 Loading appointments…
               </div>
             ) : (
-              <div className="relative overflow-hidden" style={{ minHeight: GRID_HEIGHT }}>
+              <div
+                className="relative overflow-hidden"
+                style={{ minHeight: GRID_HEIGHT }}
+              >
                 {currentTimeTop !== null ? (
                   <CalendarCurrentTimeIndicator topPx={currentTimeTop} />
                 ) : null}
                 <div
                   className="grid"
                   style={{
-                    gridTemplateColumns: `56px repeat(7, minmax(0, 1fr))`,
+                    gridTemplateColumns: gridTemplate,
                     minHeight: GRID_HEIGHT,
                   }}
                 >
@@ -158,7 +158,7 @@ export function WeekCalendarView({
       {!isLoading && appointments.length === 0 ? (
         <p
           className={cn(
-            "px-4 py-3 text-center text-sm text-muted-foreground",
+            "px-4 py-3 text-center text-sm text-grey-tertiary-normal",
             CALENDAR_GRID.footer,
           )}
         >

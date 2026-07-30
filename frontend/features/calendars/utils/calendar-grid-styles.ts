@@ -1,19 +1,21 @@
 /**
- * Shared border classes for calendar grids — slightly stronger than default
- * `border-border/30` so day columns and time slots read clearly.
+ * Shared border classes for calendar grids — PandaCue Figma Calendar Table.
+ * Hour / row lines: border-width 1px 0; color #BC9BF6 (primary-300).
  */
 export const CALENDAR_GRID = {
-  /** Card wrapper around each view */
-  card: "border border-border",
-  headerRow: "border-b border-border/75",
-  footer: "border-t border-border/75",
-  /** Vertical separators between days / gutter */
-  column: "border-l border-border/70",
-  timeGutter: "border-r border-border/70",
-  /** Horizontal sub-hour (15/30/45 min) time-slot lines — subtle */
-  slot: "border-b border-border/35",
+  /** Outer calendar table wrapper */
+  card: "border border-[#BC9BF6] bg-white",
+  headerRow: "border-b border-[#BC9BF6] bg-[#F6F1FE]",
+  footer: "border-t border-[#BC9BF6]",
+  /** Vertical separators between staff / day columns */
+  column: "border-l border-[#BC9BF6]",
+  /** Time gutter — no side padding; top/bottom borders only on hour cells */
+  timeGutter:
+    "w-20 shrink-0 border-r border-[#BC9BF6] bg-[#F6F1FE] p-0",
+  /** Horizontal sub-hour (15/30/45 min) lines — softer primary-300 */
+  slot: "border-b border-[#BC9BF6]/35",
   /** Stronger divider at each full-hour boundary */
-  slotHour: "border-b border-border/80",
+  slotHour: "border-b border-[#BC9BF6]",
   /** Month view day cells */
-  monthCell: "border-b border-r border-border/60",
+  monthCell: "border-b border-r border-[#BC9BF6]/60",
 } as const;

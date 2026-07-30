@@ -1,64 +1,63 @@
-import { CONTROL_HEIGHT_CLASS } from "@/lib/ui/control-styles";
 import { cn } from "@/lib/utils";
 
-/** Shared height for every control in the appointments calendar toolbar. */
-export const CALENDAR_TOOLBAR_HEIGHT_CLASS = CONTROL_HEIGHT_CLASS;
+/** Shared height for calendar toolbar controls — Figma 44px */
+export const CALENDAR_TOOLBAR_HEIGHT_CLASS = "h-11";
 
-/** Shared horizontal inset for toolbar labels and text controls. */
-export const CALENDAR_TOOLBAR_INSET_X_CLASS = "px-3";
+export const CALENDAR_TOOLBAR_INSET_X_CLASS = "px-4";
 
-/** Shared typography for toolbar labels. */
-export const CALENDAR_TOOLBAR_TEXT_CLASS = "text-sm font-medium";
+export const CALENDAR_TOOLBAR_TEXT_CLASS =
+  "text-sm font-medium text-black-secondary-normal";
 
-/** Bordered toolbar button (Today, Filters). */
+/** Filter / outline toolbar button — Figma purple border */
 export const CALENDAR_TOOLBAR_OUTLINE_BUTTON_CLASS = cn(
   CALENDAR_TOOLBAR_HEIGHT_CLASS,
   CALENDAR_TOOLBAR_INSET_X_CLASS,
   CALENDAR_TOOLBAR_TEXT_CLASS,
-  "shrink-0 gap-2",
+  "shrink-0 gap-2 rounded-lg border border-[#7E3BED] bg-white text-[#7E3BED] shadow-none",
+  "hover:bg-[#F6F1FE] hover:text-[#7E3BED]",
 );
 
-/** Borderless toolbar control (staff selector). */
+/** Prev / next square nav — Figma light purple rounded squares */
+export const CALENDAR_TOOLBAR_NAV_BUTTON_CLASS = cn(
+  "inline-flex size-11 shrink-0 items-center justify-center rounded-lg",
+  "border-0 bg-[#F6F1FE] text-[#7E3BED] shadow-none",
+  "hover:bg-[#EDE4FC] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7E3BED]/30",
+);
+
+/** Date picker trigger — Figma 44px, border #7E3BED */
+export const CALENDAR_TOOLBAR_DATE_TRIGGER_CLASS = cn(
+  CALENDAR_TOOLBAR_HEIGHT_CLASS,
+  CALENDAR_TOOLBAR_INSET_X_CLASS,
+  CALENDAR_TOOLBAR_TEXT_CLASS,
+  "inline-flex min-w-0 items-center justify-center gap-2.5 rounded-lg border border-[#7E3BED] bg-white",
+  "hover:bg-[#F6F1FE] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7E3BED]/30",
+);
+
+/** @deprecated kept for any leftover imports — prefer NAV + DATE_TRIGGER */
+export const CALENDAR_TOOLBAR_DATE_GROUP_CLASS =
+  "flex min-w-0 items-center gap-[11px]";
+
+export const CALENDAR_TOOLBAR_DATE_LABEL_CLASS =
+  CALENDAR_TOOLBAR_DATE_TRIGGER_CLASS;
+
+export const CALENDAR_TOOLBAR_DATE_ICON_BUTTON_CLASS =
+  CALENDAR_TOOLBAR_NAV_BUTTON_CLASS;
+
 export const CALENDAR_TOOLBAR_GHOST_BUTTON_CLASS = cn(
   CALENDAR_TOOLBAR_HEIGHT_CLASS,
   CALENDAR_TOOLBAR_INSET_X_CLASS,
   CALENDAR_TOOLBAR_TEXT_CLASS,
-  "inline-flex min-w-0 items-center gap-2 transition-colors hover:bg-muted/55",
-  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1",
+  "inline-flex min-w-0 items-center gap-2 rounded-lg transition-colors hover:bg-[#F6F1FE]",
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7E3BED]/30",
 );
 
-/** Date navigation group shell. */
-export const CALENDAR_TOOLBAR_DATE_GROUP_CLASS =
-  "flex min-w-0 items-stretch overflow-hidden rounded-md border border-[color:var(--glass-border)] bg-white shadow-none dark:bg-card";
+/** Day / Week segmented control shell */
+export const CALENDAR_TOOLBAR_SEGMENT_GROUP_CLASS =
+  "flex h-11 shrink-0 items-stretch overflow-hidden rounded-lg border border-[#7E3BED] bg-white";
 
-/** Date label / picker trigger inside the nav group. */
-export const CALENDAR_TOOLBAR_DATE_LABEL_CLASS = cn(
-  CALENDAR_TOOLBAR_HEIGHT_CLASS,
-  CALENDAR_TOOLBAR_INSET_X_CLASS,
-  CALENDAR_TOOLBAR_TEXT_CLASS,
-  "inline-flex min-w-0 flex-1 items-center justify-center gap-1 border-x border-border bg-white transition-colors dark:bg-card",
-  "hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset dark:hover:bg-muted/40",
-);
-
-/** Icon-only control inside the date nav group. */
-export const CALENDAR_TOOLBAR_DATE_ICON_BUTTON_CLASS = cn(
-  CALENDAR_TOOLBAR_HEIGHT_CLASS,
-  "w-[var(--control-height)] shrink-0 rounded-none border-0 bg-white px-0 shadow-none hover:bg-muted/50 dark:bg-card dark:hover:bg-muted/40",
-);
-
-/** Segmented Day / Week switcher shell. */
-export const CALENDAR_TOOLBAR_SEGMENT_GROUP_CLASS = cn(
-  CALENDAR_TOOLBAR_DATE_GROUP_CLASS,
-  "shrink-0",
-);
-
-/** Segment button inside Day / Week switcher. */
 export const CALENDAR_TOOLBAR_SEGMENT_BUTTON_CLASS = cn(
-  CALENDAR_TOOLBAR_HEIGHT_CLASS,
-  CALENDAR_TOOLBAR_INSET_X_CLASS,
-  "inline-flex min-w-[3.25rem] items-center justify-center text-xs font-semibold transition-colors",
+  "inline-flex min-w-[4.5rem] items-center justify-center px-4 text-sm font-semibold transition-colors",
 );
 
-/** Vertical divider between toolbar clusters. */
 export const CALENDAR_TOOLBAR_DIVIDER_CLASS =
-  "hidden h-[var(--control-height)] w-px shrink-0 bg-border/70 sm:block";
+  "hidden h-11 w-px shrink-0 bg-[#BC9BF6]/60 sm:block";

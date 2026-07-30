@@ -167,11 +167,15 @@ export function DrawerShell({
   const stackZ =
     stackLevel === "overlay" ? "z-[60] [&+[data-slot=sheet-overlay]]:z-[55]" : "";
   const resolvedContentClassName = cn(
-    width === "compact" ? DRAWER_COMPACT_CONTENT_CLASS : undefined,
+    width === "compact" || width === "appointment"
+      ? DRAWER_COMPACT_CONTENT_CLASS
+      : undefined,
     contentClassName,
   );
   const resolvedFooterClassName = cn(
-    width === "compact" ? DRAWER_COMPACT_FOOTER_CLASS : undefined,
+    width === "compact" || width === "appointment"
+      ? DRAWER_COMPACT_FOOTER_CLASS
+      : undefined,
     footerClassName,
   );
 

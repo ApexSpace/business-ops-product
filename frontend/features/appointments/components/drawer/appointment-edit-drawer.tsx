@@ -41,12 +41,15 @@ import { listBusinessMembers } from "@/features/settings/api/business.api";
 import { useCurrentBusiness } from "@/features/settings/hooks/use-current-business";
 import { queryKeys } from "@/lib/query/keys";
 import {
-  DRAWER_FIELD_CONTROL_CLASS,
-  DRAWER_FIELD_LABEL_CLASS,
   DRAWER_FORM_ITEM_CLASS,
-  DRAWER_FORM_STACK_CLASS,
-  DRAWER_PRIMARY_FOOTER_BUTTON_CLASS,
 } from "@/lib/design/drawer-shell-tokens";
+import {
+  APPOINTMENT_POPUP_FIELD_CLASS,
+  APPOINTMENT_POPUP_FOOTER_CLASS,
+  APPOINTMENT_POPUP_HEADER_CLASS,
+  APPOINTMENT_POPUP_PRIMARY_BUTTON_CLASS,
+  APPOINTMENT_POPUP_SHELL_CLASS,
+} from "@/features/appointments/styles/appointment-side-popup";
 import { cn } from "@/lib/utils";
 
 const NOTES_MAX_LENGTH = 400;
@@ -242,14 +245,22 @@ export function AppointmentEditDrawer({
       open={open}
       onOpenChange={onOpenChange}
       variant="sheet"
-      width="compact"
+      width="appointment"
+      className={APPOINTMENT_POPUP_SHELL_CLASS}
+      headerClassName={cn(
+        APPOINTMENT_POPUP_HEADER_CLASS,
+        "[&_[data-slot=sheet-title]]:text-[20px] [&_[data-slot=sheet-title]]:font-bold [&_[data-slot=sheet-title]]:text-[#7E3BED]",
+        "[&_button[aria-label=Close]]:size-8 [&_button[aria-label=Close]]:rounded-lg [&_button[aria-label=Close]]:border-0 [&_button[aria-label=Close]]:bg-[#F0F0F0] [&_button[aria-label=Close]]:text-[#6B6B6B] [&_button[aria-label=Close]]:shadow-none [&_button[aria-label=Close]]:hover:bg-[#E9E9E9]",
+      )}
+      contentClassName="!px-0 !py-0"
+      footerClassName={APPOINTMENT_POPUP_FOOTER_CLASS}
       title="Edit Appointment"
       footer={
         <ActionButton
           type="button"
           className={cn(
             DRAWER_FOOTER_BUTTON_CLASS,
-            DRAWER_PRIMARY_FOOTER_BUTTON_CLASS,
+            APPOINTMENT_POPUP_PRIMARY_BUTTON_CLASS,
           )}
           disabled={mutation.isPending || isLoading || !appointment}
           onClick={() => mutation.mutate()}
@@ -259,11 +270,11 @@ export function AppointmentEditDrawer({
       }
     >
       {isLoading || !appointment ? (
-        <div className="flex items-center justify-center py-16 text-muted-foreground">
+        <div className="flex items-center justify-center py-16 text-grey-tertiary-normal">
           <Loader2 className="size-5 animate-spin" />
         </div>
       ) : (
-        <div className={DRAWER_FORM_STACK_CLASS}>
+        <>
           <AppointmentBookingDateTimeFields
             dateKey={dateKey}
             startMinutes={startMinutes}
@@ -272,13 +283,14 @@ export function AppointmentEditDrawer({
             onStartMinutesChange={handleStartMinutesChange}
           />
 
+          <div className="flex flex-col gap-[9px] px-5 py-3">
           <div className={cn(DRAWER_FORM_ITEM_CLASS)}>
             <ContactPicker
               value={contactId}
               onValueChange={setContactId}
               onContactSelect={handleContactSelect}
-              placeholder="Search client…"
-              triggerClassName={DRAWER_FIELD_CONTROL_CLASS}
+              placeholder="Search or create a client"
+              triggerClassName={APPOINTMENT_POPUP_FIELD_CLASS}
             />
           </div>
 
@@ -297,19 +309,19 @@ export function AppointmentEditDrawer({
 
           <div className={cn(DRAWER_FORM_ITEM_CLASS)}>
             <div className="relative">
-              <FileText className="pointer-events-none absolute top-3.5 left-3 size-4 text-muted-foreground" />
+              <FileText className="pointer-events-none absolute top-3.5 left-3 size-4 text-grey-tertiary-normal" />
               <Textarea
                 value={notes}
                 onChange={(event) => setNotes(event.target.value)}
-                placeholder="Add a note…"
+                placeholder="Add notes"
                 rows={4}
                 maxLength={NOTES_MAX_LENGTH}
                 className={cn(
-                  DRAWER_FIELD_CONTROL_CLASS,
+                  APPOINTMENT_POPUP_FIELD_CLASS,
                   "min-h-[110px] resize-none py-3 pl-10",
                 )}
               />
-              <span className="pointer-events-none absolute right-3 bottom-3 text-[11px] text-muted-foreground">
+              <span className="pointer-events-none absolute right-3 bottom-3 text-caption text-grey-tertiary-normal">
                 {notes.length} / {NOTES_MAX_LENGTH}
               </span>
             </div>
@@ -330,7 +342,8 @@ export function AppointmentEditDrawer({
               Send confirmation to client
             </Label>
           </div>
-        </div>
+          </div>
+        </>
       )}
     </DrawerShell>
   );

@@ -47,23 +47,23 @@ export function MonthCalendarView({
   return (
     <div
       className={cn(
-        "overflow-hidden rounded-xl bg-card shadow-elevation-xs",
+        "overflow-hidden bg-white",
         CALENDAR_GRID.card,
         className,
       )}
     >
-      <div className={cn("grid grid-cols-7 bg-muted/20", CALENDAR_GRID.headerRow)}>
+      <div className={cn("grid grid-cols-7", CALENDAR_GRID.headerRow)}>
         {weekdays.map((label) => (
           <div
             key={label}
-            className="px-2 py-2 text-center text-xs font-medium text-muted-foreground"
+            className="px-2 py-2 text-center text-xs font-semibold text-grey-tertiary-normal"
           >
             {label}
           </div>
         ))}
       </div>
       {isLoading ? (
-        <div className="flex h-64 items-center justify-center text-sm text-muted-foreground">
+        <div className="flex h-64 items-center justify-center text-sm text-grey-tertiary-normal">
           Loading appointments…
         </div>
       ) : (
@@ -86,10 +86,10 @@ export function MonthCalendarView({
                   }
                 }}
                 className={cn(
-                  "flex min-h-[100px] cursor-pointer flex-col p-1.5 text-left transition-colors hover:bg-muted/30 sm:min-h-[120px]",
+                  "flex min-h-[100px] cursor-pointer flex-col p-1.5 text-left transition-colors hover:bg-[#F6F1FE]/60 sm:min-h-[120px]",
                   CALENDAR_GRID.monthCell,
-                  !inCurrentMonth && "bg-muted/10 text-muted-foreground",
-                  isTodayDateKey(dayKey, timezone) && "bg-primary/[0.04]",
+                  !inCurrentMonth && "bg-[#FAFAFA] text-grey-tertiary-normal",
+                  isTodayDateKey(dayKey, timezone) && "bg-[#F6F1FE]",
                 )}
               >
                 <span

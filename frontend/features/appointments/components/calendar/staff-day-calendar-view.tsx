@@ -10,12 +10,12 @@ import {
 } from "@/features/appointments/components/calendar/time-grid-shared";
 import type { StaffMemberOption } from "@/features/appointments/components/calendar/staff-selector";
 import { useCalendarCurrentTimeTop } from "@/features/appointments/hooks/use-calendar-current-time";
-import {
-  formatShortWeekdayForDateKey,
-  isTodayDateKey,
-  parseDateKeyInTimezone,
-} from "@/features/calendars/utils/timezone";
+import { isTodayDateKey } from "@/features/calendars/utils/timezone";
 import { CALENDAR_GRID } from "@/features/calendars/utils/calendar-grid-styles";
+import {
+  CALENDAR_FIGMA_STAFF_COL_MIN_PX,
+  CALENDAR_FIGMA_TIME_GUTTER_PX,
+} from "@/features/calendars/styles/calendar-figma";
 import type { BusinessHoursSlot } from "@/features/business-hours/types";
 import { ProfileAvatar } from "@/components/ui/profile-avatar";
 import { cn } from "@/lib/utils";
@@ -67,64 +67,55 @@ export function StaffDayCalendarView({
   onSlotClick,
 }: StaffDayCalendarViewProps) {
   const isToday = isTodayDateKey(dateKey, timezone);
-  const dayNumber = parseDateKeyInTimezone(dateKey, timezone).day;
   const currentTimeTop = useCalendarCurrentTimeTop(timezone, [dateKey]);
   const columnCount = Math.max(staffMembers.length, 1);
-  const gridTemplate = `56px repeat(${columnCount}, minmax(120px, 1fr))`;
+  const gridTemplate = `${CALENDAR_FIGMA_TIME_GUTTER_PX}px repeat(${columnCount}, minmax(${CALENDAR_FIGMA_STAFF_COL_MIN_PX}px, 1fr))`;
+  const minWidth = CALENDAR_FIGMA_TIME_GUTTER_PX + columnCount * CALENDAR_FIGMA_STAFF_COL_MIN_PX;
 
   return (
-    <div
-      className={cn(
-        "overflow-hidden rounded-xl bg-card shadow-elevation-xs",
-        CALENDAR_GRID.card,
-        className,
-      )}
-    >
+    <div className={cn("overflow-hidden bg-white", CALENDAR_GRID.card, className)}>
       <div className="overflow-x-auto">
-        <div className="min-w-[640px]">
-          <div className="max-h-[min(75vh,840px)] overflow-auto">
+        <div style={{ minWidth }}>
+          <div className="max-h-[min(75vh,844px)] overflow-auto">
             <div
               className={cn(
-                "sticky top-0 z-30 grid bg-card",
+                "sticky top-0 z-30 grid",
                 CALENDAR_GRID.headerRow,
               )}
               style={{ gridTemplateColumns: gridTemplate }}
             >
-              <div />
+              <div className="w-20 shrink-0" aria-hidden />
               {staffMembers.map((member) => (
                 <div
                   key={member.userId}
                   className={cn(
                     CALENDAR_GRID.column,
-                    "flex flex-col items-center gap-1 px-2 py-2.5 text-center",
-                    isToday && "bg-primary/[0.04]",
+                    "flex h-12 items-center gap-2 px-3 py-2 sm:h-14 sm:gap-2.5 sm:px-4",
+                    isToday && "bg-[#F6F1FE]",
                   )}
                 >
                   <ProfileAvatar
                     name={member.label}
                     avatarUrl={member.avatarUrl}
-                    className="size-8"
-                    fallbackClassName="text-[10px]"
+                    className="size-7 shrink-0 sm:size-8"
+                    fallbackClassName="bg-[#D1D1D1] text-[10px] font-semibold text-[#6B6B6B]"
                   />
-                  <span className="truncate text-xs font-semibold text-foreground">
-                    {member.label.split(" ")[0]}
+                  <span className="min-w-0 truncate text-xs font-semibold text-black-secondary-normal sm:text-sm">
+                    {member.label}
                   </span>
-                  {isToday ? (
-                    <span className="text-[10px] text-muted-foreground">
-                      {formatShortWeekdayForDateKey(dateKey, timezone)}{" "}
-                      {dayNumber}
-                    </span>
-                  ) : null}
                 </div>
               ))}
             </div>
 
             {isLoading ? (
-              <div className="flex h-48 items-center justify-center text-sm text-muted-foreground">
+              <div className="flex h-48 items-center justify-center text-sm text-grey-tertiary-normal">
                 Loading appointments…
               </div>
             ) : (
-              <div className="relative overflow-hidden" style={{ minHeight: GRID_HEIGHT }}>
+              <div
+                className="relative overflow-hidden"
+                style={{ minHeight: GRID_HEIGHT }}
+              >
                 {currentTimeTop !== null ? (
                   <CalendarCurrentTimeIndicator topPx={currentTimeTop} />
                 ) : null}
@@ -166,7 +157,7 @@ export function StaffDayCalendarView({
       {!isLoading && appointments.length === 0 ? (
         <p
           className={cn(
-            "px-4 py-3 text-center text-sm text-muted-foreground",
+            "px-4 py-3 text-center text-sm text-grey-tertiary-normal",
             CALENDAR_GRID.footer,
           )}
         >

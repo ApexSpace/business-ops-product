@@ -1,7 +1,7 @@
 /** Unified MangoMint-style drawer shell tokens. */
 
 export const DRAWER_SHELL_WIDTH_COMPACT =
-  "[--sheet-width:min(94vw,480px)]";
+  "[--sheet-width:min(94vw,378px)]";
 
 export const DRAWER_SHELL_WIDTH_STANDARD =
   "[--sheet-width:min(94vw,600px)]";
@@ -13,12 +13,17 @@ export const DRAWER_SHELL_WIDTH_CONVERSATION =
 
 export const DRAWER_SHELL_WIDTH_SPLIT = "[--sheet-width:min(94vw,900px)]";
 
+/** Figma appointment Side Popup width (378px). */
+export const DRAWER_SHELL_WIDTH_APPOINTMENT =
+  "[--sheet-width:min(94vw,378px)]";
+
 export type DrawerShellWidthTier =
   | "compact"
   | "standard"
   | "wide"
   | "conversation"
-  | "split";
+  | "split"
+  | "appointment";
 
 export function drawerShellWidthClass(
   width: DrawerShellWidthTier = "standard",
@@ -26,6 +31,8 @@ export function drawerShellWidthClass(
   switch (width) {
     case "compact":
       return DRAWER_SHELL_WIDTH_COMPACT;
+    case "appointment":
+      return DRAWER_SHELL_WIDTH_APPOINTMENT;
     case "wide":
       return DRAWER_SHELL_WIDTH_WIDE;
     case "conversation":

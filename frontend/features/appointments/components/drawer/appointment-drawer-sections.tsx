@@ -1,13 +1,10 @@
 "use client";
 
-import { Clock, MessageSquare, Phone, Mail, User } from "lucide-react";
+import { Clock, MessageSquare, User } from "lucide-react";
 import { ProfileAvatar } from "@/components/ui/profile-avatar";
 import { IconButton } from "@/components/ui/icon-button";
 import { DateTime } from "luxon";
-import {
-  formatDateInTimezone,
-  formatTimeInTimezone,
-} from "@/features/calendars/utils/timezone";
+import { formatTimeInTimezone } from "@/features/calendars/utils/timezone";
 import type {
   Appointment,
   AppointmentServiceLine,
@@ -18,13 +15,22 @@ import {
   getMemberDisplayName,
 } from "@/features/appointments/schemas/appointment-profile";
 import { formatMoney } from "@/features/payments/utils/currencies";
+import {
+  APPOINTMENT_POPUP_CLIENT_CARD_CLASS,
+  APPOINTMENT_POPUP_DATETIME_CELL_CLASS,
+  APPOINTMENT_POPUP_DATETIME_ROW_CLASS,
+} from "@/features/appointments/styles/appointment-side-popup";
 import { cn } from "@/lib/utils";
 
 const SECTION_LABEL_CLASS =
-  "text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground";
+  "text-[11px] font-medium text-grey-tertiary-normal";
 
-const CLICKABLE_BOX_CLASS =
-  "flex min-h-[52px] flex-1 flex-col justify-center rounded-[10px] border-[1.5px] border-border/80 bg-muted/20 px-4 py-3 text-left transition-colors hover:bg-muted/35";
+/** Figma detail date: "16 Jul 2026" */
+function formatAppointmentPopupDate(iso: string, timezone: string): string {
+  return DateTime.fromISO(iso, { zone: "utc" })
+    .setZone(timezone)
+    .toFormat("d LLL yyyy");
+}
 
 function formatDurationMinutes(minutes: number | null | undefined): string {
   if (!minutes || minutes <= 0) return "—";
@@ -61,28 +67,35 @@ export function AppointmentDateTimeBar({
   onTimeClick,
   className,
 }: AppointmentDateTimeBarProps) {
-  const dateLabel = formatDateInTimezone(startAt, timezone);
+  const dateLabel = formatAppointmentPopupDate(startAt, timezone);
   const timeLabel = `${formatTimeInTimezone(startAt, timezone)} – ${formatTimeInTimezone(endAt, timezone)}`;
 
   if (editable) {
     return (
-      <div className={cn("flex gap-3", className)}>
-        <label className={cn(CLICKABLE_BOX_CLASS, "cursor-text")}>
+      <div className={cn(APPOINTMENT_POPUP_DATETIME_ROW_CLASS, className)}>
+        <label
+          className={cn(
+            APPOINTMENT_POPUP_DATETIME_CELL_CLASS,
+            "cursor-text border-r border-[#BC9BF6]",
+          )}
+        >
           <span className={SECTION_LABEL_CLASS}>On</span>
           <input
             type="datetime-local"
             value={startValue ?? ""}
             onChange={(event) => onStartChange?.(event.target.value)}
-            className="mt-1 w-full border-0 bg-transparent p-0 text-[15px] font-semibold text-foreground outline-none"
+            className="mt-0.5 w-full border-0 bg-transparent p-0 text-[14px] font-semibold text-black-secondary-normal outline-none"
           />
         </label>
-        <label className={cn(CLICKABLE_BOX_CLASS, "cursor-text")}>
+        <label
+          className={cn(APPOINTMENT_POPUP_DATETIME_CELL_CLASS, "cursor-text")}
+        >
           <span className={SECTION_LABEL_CLASS}>Until</span>
           <input
             type="datetime-local"
             value={endValue ?? ""}
             onChange={(event) => onEndChange?.(event.target.value)}
-            className="mt-1 w-full border-0 bg-transparent p-0 text-[15px] font-semibold text-foreground outline-none"
+            className="mt-0.5 w-full border-0 bg-transparent p-0 text-[14px] font-semibold text-black-secondary-normal outline-none"
           />
         </label>
       </div>
@@ -90,24 +103,33 @@ export function AppointmentDateTimeBar({
   }
 
   return (
-    <div className={cn("flex gap-3", className)}>
+    <div className={cn(APPOINTMENT_POPUP_DATETIME_ROW_CLASS, className)}>
       <button
         type="button"
         onClick={onDateClick}
-        className={cn(CLICKABLE_BOX_CLASS, onDateClick && "cursor-pointer")}
+        className={cn(
+          APPOINTMENT_POPUP_DATETIME_CELL_CLASS,
+          "border-r border-[#BC9BF6]",
+          onDateClick && "cursor-pointer hover:bg-[#7E3BED]/5",
+          !onDateClick && "cursor-default",
+        )}
       >
         <span className={SECTION_LABEL_CLASS}>On</span>
-        <span className="mt-1 text-[15px] font-semibold text-foreground">
+        <span className="mt-0.5 text-[14px] font-semibold text-black-secondary-normal">
           {dateLabel}
         </span>
       </button>
       <button
         type="button"
         onClick={onTimeClick}
-        className={cn(CLICKABLE_BOX_CLASS, onTimeClick && "cursor-pointer")}
+        className={cn(
+          APPOINTMENT_POPUP_DATETIME_CELL_CLASS,
+          onTimeClick && "cursor-pointer hover:bg-[#7E3BED]/5",
+          !onTimeClick && "cursor-default",
+        )}
       >
         <span className={SECTION_LABEL_CLASS}>At</span>
-        <span className="mt-1 text-[15px] font-semibold text-foreground">
+        <span className="mt-0.5 text-[14px] font-semibold text-black-secondary-normal">
           {timeLabel}
         </span>
       </button>
@@ -177,60 +199,43 @@ export function AppointmentClientBlock({
   const email = contact.email?.trim();
 
   return (
-    <div
-      className={cn(
-        "rounded-[10px] border border-border/60 bg-muted/15 px-3.5 py-3",
-        className,
-      )}
-    >
-      <div className="flex items-start gap-3">
+    <div className={cn(APPOINTMENT_POPUP_CLIENT_CARD_CLASS, className)}>
+      <div className="flex items-center gap-3">
         <ProfileAvatar
           name={name}
-          className="size-10 shrink-0"
-          fallbackClassName="bg-primary/10 text-[13px] font-semibold text-primary"
+          className="size-11 shrink-0"
+          fallbackClassName="bg-[#D1D1D1] text-[13px] font-semibold text-[#6B6B6B]"
         />
         <div className="min-w-0 flex-1">
-          <div className="flex items-start gap-2">
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-[14px] font-semibold leading-tight text-foreground">
-                {name}
-              </p>
-              {email ? (
-                <a
-                  href={`mailto:${email}`}
-                  className="mt-1 flex items-center gap-2 text-[12.5px] font-medium text-foreground/90 hover:text-foreground hover:underline"
-                >
-                  <Mail className="size-3.5 shrink-0 text-muted-foreground" />
-                  <span className="truncate">{email}</span>
-                </a>
-              ) : (
-                <p className="mt-1 flex items-center gap-2 text-[12.5px] text-muted-foreground">
-                  <Mail className="size-3.5 shrink-0" />
-                  <span>no email</span>
-                </p>
-              )}
-            </div>
-            {onMessageClick ? (
-              <IconButton
-                aria-label="Message client"
-                className="size-8 shrink-0 rounded-[8px] border border-border/70 bg-background text-muted-foreground hover:text-foreground"
-                onClick={onMessageClick}
-              >
-                <MessageSquare className="size-3.5" />
-              </IconButton>
-            ) : null}
-          </div>
-
+          <p className="truncate text-[14px] font-bold leading-tight text-black-secondary-normal">
+            {name}
+          </p>
+          {email ? (
+            <a
+              href={`mailto:${email}`}
+              className="mt-0.5 block truncate text-[12px] text-grey-tertiary-normal hover:underline"
+            >
+              {email}
+            </a>
+          ) : null}
           {phone ? (
             <a
               href={`tel:${phone}`}
-              className="mt-2 flex items-center gap-2 text-[12.5px] font-medium text-foreground/90 hover:text-foreground hover:underline"
+              className="mt-0.5 block truncate text-[12px] text-grey-tertiary-normal hover:underline"
             >
-              <Phone className="size-3.5 shrink-0 text-muted-foreground" />
-              <span className="truncate">{phone}</span>
+              {phone}
             </a>
           ) : null}
         </div>
+        {onMessageClick ? (
+          <IconButton
+            aria-label="Message client"
+            className="size-8 shrink-0 rounded-md border border-[#BC9BF6] bg-white text-[#7E3BED] shadow-none hover:bg-[#7E3BED]/10"
+            onClick={onMessageClick}
+          >
+            <MessageSquare className="size-3.5" />
+          </IconButton>
+        ) : null}
       </div>
     </div>
   );
@@ -252,9 +257,8 @@ export function AppointmentServicesList({
   if (!services.length) return null;
 
   return (
-    <div className={cn("space-y-0 border-t border-border/60 pt-5", className)}>
-      <p className={cn("mb-3", SECTION_LABEL_CLASS)}>Services</p>
-      <ul className="divide-y divide-border/50">
+    <div className={cn("space-y-3 pt-1", className)}>
+      <ul className="space-y-4">
         {services.map((line) => {
           const staffName = line.assignedTo
             ? getMemberDisplayName(line.assignedTo)
@@ -267,22 +271,22 @@ export function AppointmentServicesList({
           const price = line.price ?? line.service.price;
 
           return (
-            <li key={line.id} className="flex gap-3 py-4 first:pt-0">
-              <div className="min-w-0 flex-1">
-                <p className="text-[14px] font-semibold text-foreground">
+            <li key={line.id} className="space-y-1">
+              <div className="flex items-start justify-between gap-3">
+                <p className="text-[14px] font-bold text-black-secondary-normal">
                   {line.service.name}
                 </p>
-                <p className="mt-1 text-[13px] text-muted-foreground">
-                  {staffName}
-                  {lineTime ? ` · ${lineTime}` : ""}
-                  {duration ? ` · ${formatDurationMinutes(duration)}` : ""}
-                </p>
+                {price ? (
+                  <p className="shrink-0 text-[14px] font-bold tabular-nums text-black-secondary-normal">
+                    {formatMoney(price, currencyCode)}
+                  </p>
+                ) : null}
               </div>
-              {price ? (
-                <p className="shrink-0 text-[14px] font-semibold tabular-nums text-foreground">
-                  {formatMoney(price, currencyCode)}
-                </p>
-              ) : null}
+              <p className="text-[13px] text-grey-tertiary-normal">
+                with {staffName}
+                {lineTime ? ` · at ${lineTime}` : ""}
+                {duration ? ` for ${formatDurationMinutes(duration)}` : ""}
+              </p>
             </li>
           );
         })}
@@ -359,15 +363,15 @@ export function AppointmentBookingDetailsSummary({
   ];
 
   return (
-    <div className={cn("border-t border-border/60 pt-5", className)}>
+    <div className={cn("pt-2", className)}>
       <p className={cn("mb-3", SECTION_LABEL_CLASS)}>Booking details</p>
       <ul className="space-y-2.5">
         {rows.map((row) => (
           <li
             key={row.label}
-            className="flex items-center gap-3 text-[13px] text-foreground"
+            className="flex items-center gap-3 text-[13px] text-grey-tertiary-normal"
           >
-            <row.icon className="size-4 shrink-0 text-muted-foreground" />
+            <row.icon className="size-4 shrink-0 text-grey-tertiary-normal" />
             <span>{row.label}</span>
           </li>
         ))}

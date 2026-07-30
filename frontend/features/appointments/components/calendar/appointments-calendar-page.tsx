@@ -27,7 +27,7 @@ export function AppointmentsCalendarPage() {
   );
 }
 
-const BARE_VIEW_CLASS = "rounded-none border-0 shadow-none";
+const BARE_VIEW_CLASS = "rounded-none shadow-none";
 
 function AppointmentsCalendarPageContent() {
   const cal = useAppointmentsCalendarPage();
@@ -56,38 +56,38 @@ function AppointmentsCalendarPageContent() {
   });
 
   return (
-    <div className="flex min-h-[calc(100dvh-8rem)] flex-col">
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-border bg-card shadow-elevation-xs">
-        <div className="shrink-0 border-b border-border px-2 py-2 sm:px-3 sm:py-3 md:px-4">
-          <CalendarToolbar
-            view={cal.view}
-            onViewChange={cal.handleViewChange}
-            anchorDateKey={cal.anchorDateKey}
-            timezone={cal.displayTimezone}
-            onPrevious={() => cal.handleDateNavigate(-1)}
-            onToday={() => cal.handleDateNavigate(0)}
-            onNext={() => cal.handleDateNavigate(1)}
-            onDateSelect={cal.handleDateSelect}
-            onJumpWeeks={cal.handleJumpWeeks}
-            staffMembers={cal.staffMembers}
-            selectedStaffId={cal.params.assignedToId}
-            onSelectedStaffIdChange={cal.handleSelectedStaffIdChange}
-            visibleStaffIds={cal.visibleStaffIds}
-            onVisibleStaffIdsChange={cal.handleVisibleStaffIdsChange}
-            showStaffSelector={!cal.isMemberOnlyView}
-            statusFilter={cal.params.status}
-            onStatusFilterChange={(status) =>
-              cal.setParams({ status, page: "1" })
-            }
-            onOpenWaitlist={
-              cal.calendarPerms.canManageWaitlist
-                ? () => setWaitlistOpen(true)
-                : undefined
-            }
-          />
-        </div>
+    <div className="flex min-h-[calc(100dvh-66px-2rem)] flex-col gap-3 sm:gap-4">
+      <div className="shrink-0">
+        <CalendarToolbar
+          view={cal.view}
+          onViewChange={cal.handleViewChange}
+          anchorDateKey={cal.anchorDateKey}
+          timezone={cal.displayTimezone}
+          onPrevious={() => cal.handleDateNavigate(-1)}
+          onToday={() => cal.handleDateNavigate(0)}
+          onNext={() => cal.handleDateNavigate(1)}
+          onDateSelect={cal.handleDateSelect}
+          onJumpWeeks={cal.handleJumpWeeks}
+          staffMembers={cal.staffMembers}
+          selectedStaffId={cal.params.assignedToId}
+          onSelectedStaffIdChange={cal.handleSelectedStaffIdChange}
+          visibleStaffIds={cal.visibleStaffIds}
+          onVisibleStaffIdsChange={cal.handleVisibleStaffIdsChange}
+          showStaffSelector={!cal.isMemberOnlyView}
+          statusFilter={cal.params.status}
+          onStatusFilterChange={(status) =>
+            cal.setParams({ status, page: "1" })
+          }
+          onOpenWaitlist={
+            cal.calendarPerms.canManageWaitlist
+              ? () => setWaitlistOpen(true)
+              : undefined
+          }
+        />
+      </div>
 
-        <div className="min-h-0 flex-1 overflow-auto">
+      <div className="min-h-0 flex-1 overflow-hidden">
+        <div className="h-full min-h-0 overflow-auto">
           {cal.view === "day" ? (
             <StaffDayCalendarView
               dateKey={cal.anchorDateKey}

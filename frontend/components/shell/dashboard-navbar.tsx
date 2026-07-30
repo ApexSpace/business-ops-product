@@ -29,6 +29,10 @@ interface DashboardNavbarProps {
   className?: string;
 }
 
+/**
+ * Full-bleed top navbar — attached to the viewport top (Figma Calendar / shell).
+ * Not floating: no outer margin, no rounded card chrome.
+ */
 export function DashboardNavbar({
   sections,
   appsItems = [],
@@ -41,45 +45,44 @@ export function DashboardNavbar({
   const [appsOpen, setAppsOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  // Exact primary sidebar tabs — not Figma marketing samples
   const navItems = useMemo(() => flattenNavSections(sections), [sections]);
-
   const showApps = appsItems.length > 0;
 
   return (
-    <div className={cn("shrink-0 px-5 pt-5", className)}>
+    <div className={cn("shrink-0", className)}>
       <header
         className={cn(
-          "shell-navbar-gradient mx-auto flex h-[66px] w-full max-w-[1440px] items-center",
-          "rounded-[12px] px-6 shadow-[0_8px_24px_rgba(126,59,237,0.18)]",
+          "shell-navbar-gradient flex h-[66px] w-full items-center",
+          "px-4 sm:px-6 lg:px-10",
         )}
       >
-        <div className="flex min-w-0 flex-1 items-center gap-8">
-          <DashboardNavbarLogo productName={productName} logoUrl={logoUrl} />
-          <DashboardNavbarNav items={navItems} className="hidden xl:flex" />
-        </div>
+        <div className="mx-auto flex h-full w-full max-w-[1440px] items-center">
+          <div className="flex min-w-0 flex-1 items-center gap-4 lg:gap-8">
+            <DashboardNavbarLogo productName={productName} logoUrl={logoUrl} />
+            <DashboardNavbarNav items={navItems} className="hidden xl:flex" />
+          </div>
 
-        <div className="flex shrink-0 items-center gap-2">
-          <DashboardNavbarIconButton
-            label="Open menu"
-            className="xl:hidden"
-            onClick={() => setMobileOpen(true)}
-          >
-            <Menu className="size-5" strokeWidth={1.75} />
-          </DashboardNavbarIconButton>
+          <div className="flex shrink-0 items-center gap-1 sm:gap-2">
+            <DashboardNavbarIconButton
+              label="Open menu"
+              className="xl:hidden"
+              onClick={() => setMobileOpen(true)}
+            >
+              <Menu className="size-5" strokeWidth={1.75} />
+            </DashboardNavbarIconButton>
 
-          <DashboardNavbarActions
-            showApps={showApps}
-            appsOpen={appsOpen}
-            onAppsOpenChange={setAppsOpen}
-            businessName={businessName}
-          />
+            <DashboardNavbarActions
+              showApps={showApps}
+              appsOpen={appsOpen}
+              onAppsOpenChange={setAppsOpen}
+              businessName={businessName}
+            />
+          </div>
         </div>
       </header>
 
-      {notice ? (
-        <div className="mx-auto mt-3 w-full max-w-[1440px]">{notice}</div>
-      ) : null}
+      {/* Banner must own its chrome — a padded wrapper here stays visible when notice returns null. */}
+      {notice}
 
       <AppsLauncherSheet
         items={appsItems}

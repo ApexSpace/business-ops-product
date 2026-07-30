@@ -48,44 +48,39 @@ export function DayCalendarView({
   const currentTimeTop = useCalendarCurrentTimeTop(timezone, [dateKey]);
 
   return (
-    <div
-      className={cn(
-        "overflow-hidden rounded-xl bg-card shadow-elevation-xs",
-        CALENDAR_GRID.card,
-      )}
-    >
+    <div className={cn("overflow-hidden bg-white", CALENDAR_GRID.card)}>
       <div
         className={cn(
-          "grid grid-cols-[56px_1fr] bg-muted/20",
+          "grid grid-cols-[80px_1fr]",
           CALENDAR_GRID.headerRow,
         )}
       >
-        <div />
+        <div className="w-20" aria-hidden />
         <div
           className={cn(
             CALENDAR_GRID.column,
-            "px-3 py-2.5 text-center sm:text-left",
-            isToday && "bg-primary/[0.04]",
+            "flex h-12 items-center justify-center px-3 py-2 sm:h-14 sm:justify-start",
+            isToday && "bg-[#F6F1FE]",
           )}
         >
-          <span className="block text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+          <span className="block text-[10px] font-semibold uppercase tracking-wide text-grey-tertiary-normal">
             {formatShortWeekdayForDateKey(dateKey, timezone)}
           </span>
           <span
             className={cn(
-              "mt-1 inline-flex size-7 items-center justify-center rounded-full text-sm font-semibold",
+              "ml-2 inline-flex size-7 items-center justify-center rounded-full text-sm font-semibold",
               isToday
-                ? "bg-primary text-primary-foreground"
-                : "text-foreground",
+                ? "bg-[#7E3BED] text-white"
+                : "text-black-secondary-normal",
             )}
           >
             {dayNumber}
           </span>
         </div>
       </div>
-      <div className="max-h-[min(75vh,840px)] overflow-auto">
+      <div className="max-h-[min(75vh,844px)] overflow-auto">
         {isLoading ? (
-          <div className="flex h-48 items-center justify-center text-sm text-muted-foreground">
+          <div className="flex h-48 items-center justify-center text-sm text-grey-tertiary-normal">
             Loading appointments…
           </div>
         ) : (
@@ -94,7 +89,7 @@ export function DayCalendarView({
               <CalendarCurrentTimeIndicator topPx={currentTimeTop} />
             ) : null}
             <div
-              className="grid grid-cols-[56px_1fr]"
+              className="grid grid-cols-[80px_1fr]"
               style={{ minHeight: GRID_HEIGHT }}
             >
               <TimeGridGutter />
