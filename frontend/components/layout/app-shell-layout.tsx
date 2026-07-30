@@ -216,7 +216,10 @@ export function AppShellLayout({ mode, children }: ShellLayoutProps) {
             : undefined
       }
       workspaceName={currentBusiness?.name}
-      productName="CodeSol"
+      productName={
+        snapshotContext.branding.productName?.trim() || "PandaCue"
+      }
+      logoUrl={snapshotContext.branding.logoUrl}
       shellMode={mode}
       searchPlaceholder={
         mode === "business" ? nicheProfile.shell.searchPlaceholder : undefined

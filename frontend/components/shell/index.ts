@@ -1,5 +1,6 @@
 export { AppShell } from "./app-shell";
 export { AppSidebar } from "./app-sidebar";
+export { DashboardNavbar } from "./dashboard-navbar";
 export {
   MobileSidebarMenuTrigger,
   SidebarFooterCollapseTrigger,
@@ -14,3 +15,4 @@ export { ShellBrandHeader } from "./shell-brand-header";
 export { WorkspaceSwitcher } from "./workspace-switcher";
 export { AppSearchBar } from "./app-search-bar";
 export { SidebarUserFooter } from "./sidebar-user-footer";
+export { AppsLauncher, AppsLauncherSheet } from "./apps-launcher";

@@ -8,9 +8,65 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-poppins), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-montserrat), ui-sans-serif, system-ui, sans-serif;
   --font-mono: ui-monospace, monospace;
   --font-heading: var(--font-sans);
+
+  /* PandaCue Figma typography scale (Montserrat) */
+  --text-display-xl: 88px;
+  --text-display-xl--line-height: 1;
+  --text-display-xl--font-weight: 700;
+  --text-display-l: 68px;
+  --text-display-l--line-height: 1;
+  --text-display-l--font-weight: 700;
+  --text-display-m: 52px;
+  --text-display-m--line-height: 1;
+  --text-display-m--font-weight: 700;
+  --text-heading-1: 48px;
+  --text-heading-1--line-height: 58px;
+  --text-heading-1--font-weight: 700;
+  --text-heading-2: 40px;
+  --text-heading-2--line-height: 48px;
+  --text-heading-2--font-weight: 700;
+  --text-heading-3: 32px;
+  --text-heading-3--line-height: 38px;
+  --text-heading-3--font-weight: 700;
+  --text-heading-4: 28px;
+  --text-heading-4--line-height: 34px;
+  --text-heading-4--font-weight: 700;
+  --text-heading-5: 24px;
+  --text-heading-5--line-height: 28px;
+  --text-heading-5--font-weight: 700;
+  --text-subtitle: 20px;
+  --text-subtitle--line-height: normal;
+  --text-subtitle--font-weight: 500;
+  --text-lead: 22px;
+  --text-lead--line-height: normal;
+  --text-lead--font-weight: 400;
+  --text-body-large: 18px;
+  --text-body-large--line-height: normal;
+  --text-body-large--font-weight: 400;
+  --text-body: 16px;
+  --text-body--line-height: normal;
+  --text-body--font-weight: 400;
+  --text-body-small: 14px;
+  --text-body-small--line-height: normal;
+  --text-body-small--font-weight: 400;
+  --text-caption: 12px;
+  --text-caption--line-height: normal;
+  --text-caption--font-weight: 500;
+  --text-btn-giant: 18px;
+  --text-btn-giant--line-height: 24px;
+  --text-btn-giant--font-weight: 700;
+  --text-btn-large: 16px;
+  --text-btn-large--line-height: 20px;
+  --text-btn-large--font-weight: 700;
+  --text-btn-medium: 14px;
+  --text-btn-medium--line-height: 16px;
+  --text-btn-medium--font-weight: 700;
+  --text-btn-small: 12px;
+  --text-btn-small--line-height: 16px;
+  --text-btn-small--font-weight: 700;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -37,10 +93,14 @@
   --color-success: var(--success);
   --color-success-foreground: var(--success-foreground);
   --color-success-subtle: var(--success-subtle);
+  --color-success-hover: var(--success-hover);
+  --color-success-active: var(--success-active);
   --color-info: var(--info);
   --color-info-foreground: var(--info-foreground);
   --color-primary-text: var(--primary-text);
   --color-primary-tint: var(--primary-tint);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-active: var(--primary-active);
   --color-foreground-subtle: var(--foreground-subtle);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
@@ -62,6 +122,43 @@
   --color-glass-panel-strong: var(--glass-panel-strong);
   --color-glass-panel-soft: var(--glass-panel-soft);
   --color-glass-border: var(--glass-border);
+
+  /* Figma palettes → Tailwind color utilities (e.g. bg-violet-primary-normal) */
+  --color-violet-primary-light: var(--pc-violet-primary-light);
+  --color-violet-primary-light-hover: var(--pc-violet-primary-light-hover);
+  --color-violet-primary-light-active: var(--pc-violet-primary-light-active);
+  --color-violet-primary-normal: var(--pc-violet-primary-normal);
+  --color-violet-primary-normal-hover: var(--pc-violet-primary-normal-hover);
+  --color-violet-primary-normal-active: var(--pc-violet-primary-normal-active);
+  --color-violet-primary-dark: var(--pc-violet-primary-dark);
+  --color-violet-primary-dark-hover: var(--pc-violet-primary-dark-hover);
+  --color-violet-primary-dark-active: var(--pc-violet-primary-dark-active);
+  --color-violet-primary-darker: var(--pc-violet-primary-darker);
+  --color-black-secondary-light: var(--pc-black-secondary-light);
+  --color-black-secondary-light-hover: var(--pc-black-secondary-light-hover);
+  --color-black-secondary-light-active: var(--pc-black-secondary-light-active);
+  --color-black-secondary-normal: var(--pc-black-secondary-normal);
+  --color-grey-tertiary-light: var(--pc-grey-tertiary-light);
+  --color-grey-tertiary-light-hover: var(--pc-grey-tertiary-light-hover);
+  --color-grey-tertiary-light-active: var(--pc-grey-tertiary-light-active);
+  --color-grey-tertiary-normal: var(--pc-grey-tertiary-normal);
+  --color-grey-tertiary-normal-hover: var(--pc-grey-tertiary-normal-hover);
+  --color-grey-tertiary-normal-active: var(--pc-grey-tertiary-normal-active);
+  --color-grey-tertiary-dark: var(--pc-grey-tertiary-dark);
+  --color-grey-tertiary-dark-hover: var(--pc-grey-tertiary-dark-hover);
+  --color-grey-tertiary-dark-active: var(--pc-grey-tertiary-dark-active);
+  --color-grey-tertiary-darker: var(--pc-grey-tertiary-darker);
+  --color-green-success-light: var(--pc-green-success-light);
+  --color-green-success-light-hover: var(--pc-green-success-light-hover);
+  --color-green-success-light-active: var(--pc-green-success-light-active);
+  --color-green-success-normal: var(--pc-green-success-normal);
+  --color-green-success-normal-hover: var(--pc-green-success-normal-hover);
+  --color-green-success-normal-active: var(--pc-green-success-normal-active);
+  --color-green-success-dark: var(--pc-green-success-dark);
+  --color-green-success-dark-hover: var(--pc-green-success-dark-hover);
+  --color-green-success-dark-active: var(--pc-green-success-dark-active);
+  --color-green-success-darker: var(--pc-green-success-darker);
+
   --radius-sm: calc(var(--radius) * 0.875);
   --radius-md: var(--radius);
   --radius-lg: var(--radius-control);
@@ -80,7 +177,7 @@
   --spacing-stack: var(--stack-gap);
 }
 
-/* ─── Light: CodeSol semantic tokens (mapped from --cs-* in codesol-default-theme.css) ─── */
+/* ─── Light: PandaCue semantic tokens (mapped from Figma palettes in codesol-default-theme.css) ─── */
 :root {
   --background: var(--cs-page);
   --foreground: var(--cs-ink);
@@ -93,6 +190,8 @@
   --primary-foreground: #ffffff;
   --primary-tint: var(--cs-blue-tint);
   --primary-text: var(--cs-blue-text);
+  --primary-hover: var(--pc-violet-primary-normal-hover);
+  --primary-active: var(--pc-violet-primary-normal-active);
   --secondary: color-mix(in srgb, var(--cs-glass-surface-soft) 85%, white);
   --secondary-foreground: var(--cs-ink);
   --muted: color-mix(in srgb, var(--cs-glass-surface-soft) 88%, white);
@@ -108,6 +207,8 @@
   --success: var(--cs-green);
   --success-foreground: var(--cs-green);
   --success-subtle: var(--cs-green-tint);
+  --success-hover: var(--pc-green-success-normal-hover);
+  --success-active: var(--pc-green-success-normal-active);
   --info: var(--cs-blue);
   --info-foreground: var(--cs-blue-text);
   --border: var(--cs-glass-border-strong);
@@ -149,16 +250,16 @@
   --section-gap: 1.5rem;
   --page-stack-gap: 1rem;
   --stack-gap: 0.75rem;
-  --shadow-xs-value: 0 1px 2px rgb(18 23 43 / 4%);
-  --shadow-sm-value: 0 1px 3px rgb(18 23 43 / 6%),
-    0 1px 2px rgb(18 23 43 / 4%);
-  --shadow-md-value: 0 4px 6px -1px rgb(18 23 43 / 6%),
-    0 2px 4px -2px rgb(18 23 43 / 4%);
-  --shadow-lg-value: 0 10px 15px -3px rgb(18 23 43 / 8%),
-    0 4px 6px -4px rgb(18 23 43 / 4%);
+  --shadow-xs-value: 0 1px 2px rgb(0 0 0 / 4%);
+  --shadow-sm-value: 0 1px 3px rgb(0 0 0 / 6%),
+    0 1px 2px rgb(0 0 0 / 4%);
+  --shadow-md-value: 0 4px 6px -1px rgb(0 0 0 / 6%),
+    0 2px 4px -2px rgb(0 0 0 / 4%);
+  --shadow-lg-value: 0 10px 15px -3px rgb(0 0 0 / 8%),
+    0 4px 6px -4px rgb(0 0 0 / 4%);
   --shadow-glass-value:
-    0 20px 40px -24px rgb(18 23 43 / 22%),
-    0 8px 24px -16px rgb(55 91 210 / 18%);
+    0 20px 40px -24px rgb(0 0 0 / 22%),
+    0 8px 24px -16px color-mix(in srgb, var(--pc-violet-primary-normal) 18%, transparent);
   --sidebar: transparent;
   --sidebar-foreground: var(--cs-ink-2);
   --sidebar-group-label: var(--cs-ink-3);
@@ -170,7 +271,7 @@
   --sidebar-ring: var(--cs-blue);
 }
 
-/* ─── Dark: CodeSol navy variants ─── */
+/* ─── Dark: PandaCue violet / grey variants ─── */
 .dark {
   --background: var(--cs-page);
   --foreground: var(--cs-ink);
@@ -183,6 +284,8 @@
   --primary-foreground: #ffffff;
   --primary-tint: var(--cs-blue-tint);
   --primary-text: var(--cs-blue-text);
+  --primary-hover: var(--pc-violet-primary-normal-hover);
+  --primary-active: var(--pc-violet-primary-normal-active);
   --secondary: color-mix(in srgb, var(--cs-glass-surface-soft) 88%, transparent);
   --secondary-foreground: var(--cs-ink);
   --muted: color-mix(in srgb, var(--cs-glass-surface-soft) 82%, transparent);
@@ -198,6 +301,8 @@
   --success: var(--cs-green);
   --success-foreground: var(--cs-green);
   --success-subtle: var(--cs-green-tint);
+  --success-hover: var(--pc-green-success-normal-hover);
+  --success-active: var(--pc-green-success-normal-active);
   --info: var(--cs-blue);
   --info-foreground: var(--cs-blue-text);
   --border: var(--cs-glass-border-strong);
@@ -229,7 +334,7 @@
   --shadow-lg-value: 0 12px 24px rgb(0 0 0 / 40%), 0 4px 8px rgb(0 0 0 / 25%);
   --shadow-glass-value:
     0 24px 48px -28px rgb(0 0 0 / 55%),
-    0 10px 30px -18px rgb(74 110 224 / 26%);
+    0 10px 30px -18px color-mix(in srgb, var(--pc-violet-primary-normal) 26%, transparent);
   --sidebar: var(--cs-navy);
   --sidebar-foreground: var(--cs-sidebar-foreground);
   --sidebar-group-label: var(--cs-sidebar-group-label);
@@ -260,7 +365,8 @@
   }
 
   body {
-    @apply font-sans bg-background text-foreground text-sm leading-normal;
+    @apply font-sans bg-background text-foreground text-body-small;
+    letter-spacing: 0;
     font-feature-settings: "rlig" 1, "calt" 1;
     background-image: var(--cs-page-gradient);
     background-attachment: fixed;
@@ -273,6 +379,7 @@
   h5,
   h6 {
     @apply font-sans;
+    letter-spacing: 0;
   }
 
   button,
@@ -294,64 +401,64 @@
     @apply font-sans;
   }
 
+  /* Semantic aliases → closest Figma Montserrat styles */
   h1,
   .text-page-title {
-    @apply text-xl font-bold tracking-tight text-foreground sm:text-2xl;
+    @apply text-heading-5 text-foreground;
   }
 
   h2,
   .text-section-title {
-    @apply text-base font-medium tracking-tight text-foreground;
+    @apply text-subtitle text-foreground;
   }
 
   h3,
   .text-subsection-title {
-    @apply text-sm font-medium text-foreground;
+    @apply text-body-small font-medium text-foreground;
   }
 
   .text-body {
-    @apply text-sm leading-relaxed text-foreground;
+    @apply text-foreground;
   }
 
   .text-caption {
-    @apply text-xs leading-normal text-muted-foreground;
+    @apply text-muted-foreground;
   }
 
   .text-label {
-    @apply text-xs font-medium text-foreground;
+    @apply text-caption text-foreground;
   }
 
-  /* CodeSol typography scale */
   .text-page-eyebrow {
-    @apply text-[11px] text-foreground-subtle;
+    @apply text-caption text-foreground-subtle;
   }
 
   .text-page-greeting {
-    @apply text-lg font-bold text-foreground;
+    @apply text-heading-5 text-foreground;
   }
 
   .text-metric-hero {
-    @apply text-[32px] font-bold tabular-nums text-foreground;
+    @apply text-heading-3 tabular-nums text-foreground;
   }
 
   .text-metric-kpi {
-    @apply text-[17px] font-bold tabular-nums text-foreground;
+    @apply text-body-large font-bold tabular-nums text-foreground;
   }
 
   .text-nav-group {
-    @apply text-[10.5px] font-medium uppercase tracking-wider text-sidebar-group-label;
+    @apply text-caption uppercase tracking-wider text-sidebar-group-label;
   }
 
   .text-table-header {
-    @apply text-[11px] font-semibold uppercase tracking-wide text-foreground-subtle;
+    @apply text-caption uppercase tracking-wide text-foreground-subtle;
   }
 
   .text-table-cell {
-    @apply text-[13px] text-foreground;
+    @apply text-body-small text-foreground;
   }
 
   .text-drawer-section {
-    @apply text-[11px] font-semibold uppercase tracking-wide text-foreground-subtle;
+    @apply text-caption uppercase tracking-wide text-foreground-subtle;
   }
 }
 
@@ -407,6 +514,17 @@
   .dark .shell-topbar-soft {
     background: transparent;
     box-shadow: none;
+  }
+
+  /* PandaCue dashboard navbar � Figma exact gradient */
+  .shell-navbar-gradient {
+    background-color: #f6f1fe;
+    background-image: var(
+      --shell-navbar-gradient,
+      linear-gradient(135deg, #f6f1fe 0%, #7e3bed 98.24%)
+    );
+    background-repeat: no-repeat;
+    background-size: 100% 100%;
   }
 
   .glass-control {

@@ -1,16 +1,16 @@
-/** Primary sidebar items — flat, no category headers. */
+/** Primary top-navbar items — flat, no category headers. */
 export const BUSINESS_PRIMARY_NAV_KEYS = [
   "dashboard",
   "appointments",
-  "work-items",
-  "pipelines",
   "conversations",
   "contacts",
   "sales",
 ] as const;
 
-/** Secondary apps shown in the Apps launcher (MangoMint-style). */
+/** Secondary apps shown in the Apps launcher. */
 export const BUSINESS_APPS_NAV_KEYS = [
+  "work-items",
+  "pipelines",
   "gift-cards",
   "packages",
   "memberships",

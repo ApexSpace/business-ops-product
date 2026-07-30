@@ -75,6 +75,9 @@ export function buildRedisClientOptions(
   const options: RedisOptions = {
     lazyConnect: true,
     enableOfflineQueue: false,
+    // Prefer IPv4 — remote Dokploy hosts often fail with ENETUNREACH on broken IPv6 paths.
+    family: 4,
+    connectTimeout: 15_000,
     maxRetriesPerRequest: forBullWorker ? null : isDev ? 1 : 3,
     retryStrategy(times) {
       if (times > maxAttempts) {

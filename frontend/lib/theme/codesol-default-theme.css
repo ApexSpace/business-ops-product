@@ -1,39 +1,90 @@
 /**
- * CodeSol raw design tokens.
+ * PandaCue raw design tokens (from Figma color styles).
  * Override these (via applyClientTheme or snapshot branding) for per-client white-labeling.
  * Semantic variables in globals.css map to these values.
+ *
+ * Palettes: Violet-Primary, Black-Secondary, Grey-Tertiary, Green-Success
  */
 :root {
-  --cs-navy: #0b1530;
-  --cs-navy-2: #111d42;
-  --cs-navy-hover: #1b2a58;
-  --cs-blue: #375bd2;
-  --cs-cyan: #17b8ce;
-  --cs-lilac: #a78bfa;
-  --cs-blue-tint: #eef2ff;
-  --cs-blue-text: #2b47a8;
-  --cs-ink: #12172b;
-  --cs-ink-2: #5b6478;
-  --cs-ink-3: #9aa1b2;
-  --cs-border: #e4e7ef;
-  --cs-page: #f7f8fa;
-  --cs-green: #1f9d63;
-  --cs-green-tint: #e7f7ef;
+  /* ─── Violet-Primary ─── */
+  --pc-violet-primary-light: #f2ebfd;
+  --pc-violet-primary-light-hover: #ece2fc;
+  --pc-violet-primary-light-active: #d7c2f9;
+  --pc-violet-primary-normal: #7e3bed;
+  --pc-violet-primary-normal-hover: #7135d5;
+  --pc-violet-primary-normal-active: #652fbe;
+  --pc-violet-primary-dark: #5f2cb2;
+  --pc-violet-primary-dark-hover: #4c238e;
+  --pc-violet-primary-dark-active: #391b6b;
+  --pc-violet-primary-darker: #2c1553;
+
+  /* ─── Black-Secondary ─── */
+  --pc-black-secondary-light: #e6e6e6;
+  --pc-black-secondary-light-hover: #d9d9d9;
+  --pc-black-secondary-light-active: #b0b0b0;
+  --pc-black-secondary-normal: #000000;
+  --pc-black-secondary-normal-hover: #000000;
+  --pc-black-secondary-normal-active: #000000;
+  --pc-black-secondary-dark: #000000;
+  --pc-black-secondary-dark-hover: #000000;
+  --pc-black-secondary-dark-active: #000000;
+  --pc-black-secondary-darker: #000000;
+
+  /* ─── Grey-Tertiary ─── */
+  --pc-grey-tertiary-light: #f0f0f0;
+  --pc-grey-tertiary-light-hover: #e9e9e9;
+  --pc-grey-tertiary-light-active: #d1d1d1;
+  --pc-grey-tertiary-normal: #6b6b6b;
+  --pc-grey-tertiary-normal-hover: #606060;
+  --pc-grey-tertiary-normal-active: #565656;
+  --pc-grey-tertiary-dark: #505050;
+  --pc-grey-tertiary-dark-hover: #404040;
+  --pc-grey-tertiary-dark-active: #303030;
+  --pc-grey-tertiary-darker: #252525;
+
+  /* ─── Green-Success ─── */
+  --pc-green-success-light: #e8f5ef;
+  --pc-green-success-light-hover: #ddf0e6;
+  --pc-green-success-light-active: #b9e0cc;
+  --pc-green-success-normal: #1c9a5b;
+  --pc-green-success-normal-hover: #198b52;
+  --pc-green-success-normal-active: #167b49;
+  --pc-green-success-dark: #157444;
+  --pc-green-success-dark-hover: #115c37;
+  --pc-green-success-dark-active: #0d4529;
+  --pc-green-success-darker: #0a3620;
+
+  /* ─── Legacy --cs-* aliases (mapped to PandaCue) ─── */
+  --cs-navy: var(--pc-violet-primary-darker);
+  --cs-navy-2: var(--pc-violet-primary-dark-active);
+  --cs-navy-hover: var(--pc-violet-primary-dark-hover);
+  --cs-blue: var(--pc-violet-primary-normal);
+  --cs-cyan: var(--pc-violet-primary-normal-hover);
+  --cs-lilac: var(--pc-violet-primary-light-active);
+  --cs-blue-tint: var(--pc-violet-primary-light);
+  --cs-blue-text: var(--pc-violet-primary-dark);
+  --cs-ink: var(--pc-black-secondary-normal);
+  --cs-ink-2: var(--pc-grey-tertiary-normal);
+  --cs-ink-3: var(--pc-black-secondary-light-active);
+  --cs-border: var(--pc-black-secondary-light);
+  --cs-page: var(--pc-grey-tertiary-light);
+  --cs-green: var(--pc-green-success-normal);
+  --cs-green-tint: var(--pc-green-success-light);
   --cs-amber: #b76e00;
   --cs-amber-tint: #fdf1e0;
   --cs-red: #dc3545;
   --cs-red-tint: #fcecec;
-  --cs-sidebar-group-label: #7c89c2;
-  --cs-sidebar-foreground: #c7ceea;
-  --cs-sidebar-muted: #9aa5d6;
+  --cs-sidebar-group-label: var(--pc-grey-tertiary-normal);
+  --cs-sidebar-foreground: var(--pc-grey-tertiary-light-active);
+  --cs-sidebar-muted: var(--pc-grey-tertiary-normal);
   --cs-glass-surface: color-mix(in srgb, white 76%, var(--cs-blue-tint));
   --cs-glass-surface-strong: color-mix(in srgb, white 84%, var(--cs-blue-tint));
   --cs-glass-surface-soft: color-mix(in srgb, white 62%, var(--cs-blue-tint));
-  --cs-glass-border: rgb(18 23 43 / 8%);
-  --cs-glass-border-strong: rgb(18 23 43 / 12%);
+  --cs-glass-border: rgb(0 0 0 / 8%);
+  --cs-glass-border-strong: rgb(0 0 0 / 12%);
   --cs-glass-highlight: rgb(255 255 255 / 58%);
   --cs-control-surface: rgb(255 255 255 / 62%);
-  --cs-control-border: rgb(18 23 43 / 8%);
+  --cs-control-border: rgb(0 0 0 / 8%);
   --cs-shell-sidebar-surface: linear-gradient(
     180deg,
     rgb(255 255 255 / 30%) 0%,
@@ -41,13 +92,32 @@
   );
   --cs-shell-topbar-surface: color-mix(in srgb, white 74%, var(--cs-blue-tint));
   --cs-page-gradient:
-    radial-gradient(circle at top left, rgb(55 91 210 / 20%) 0%, transparent 38%),
-    radial-gradient(circle at top right, rgb(76 124 240 / 12%) 0%, transparent 30%),
-    radial-gradient(circle at 55% 100%, rgb(183 110 0 / 10%) 0%, transparent 30%),
-    linear-gradient(180deg, #f2f6ff 0%, #e8f0ff 100%);
-  --cs-page-orb-1: rgb(55 91 210 / 22%);
-  --cs-page-orb-2: rgb(76 124 240 / 16%);
-  --cs-page-orb-3: rgb(183 110 0 / 12%);
+    radial-gradient(
+      circle at top left,
+      color-mix(in srgb, var(--pc-violet-primary-normal) 20%, transparent) 0%,
+      transparent 38%
+    ),
+    radial-gradient(
+      circle at top right,
+      color-mix(in srgb, var(--pc-violet-primary-normal-hover) 12%, transparent) 0%,
+      transparent 30%
+    ),
+    radial-gradient(
+      circle at 55% 100%,
+      color-mix(in srgb, var(--pc-green-success-normal) 10%, transparent) 0%,
+      transparent 30%
+    ),
+    linear-gradient(
+      180deg,
+      var(--pc-violet-primary-light) 0%,
+      var(--pc-grey-tertiary-light) 100%
+    );
+  --cs-page-orb-1: color-mix(in srgb, var(--pc-violet-primary-normal) 22%, transparent);
+  --cs-page-orb-2: color-mix(in srgb, var(--pc-violet-primary-normal-hover) 16%, transparent);
+  --cs-page-orb-3: color-mix(in srgb, var(--pc-green-success-normal) 12%, transparent);
+
+  /* Figma Dashboard Navbar background (exact) */
+  --shell-navbar-gradient: linear-gradient(135deg, #f6f1fe 0%, #7e3bed 98.24%);
 }
 
 /*
@@ -57,21 +127,21 @@
  */
 .public-booking-surface {
   color-scheme: light;
-  --cs-navy: #0b1530;
-  --cs-navy-2: #111d42;
-  --cs-navy-hover: #1b2a58;
-  --cs-blue: #375bd2;
-  --cs-cyan: #17b8ce;
-  --cs-lilac: #a78bfa;
-  --cs-blue-tint: #eef2ff;
-  --cs-blue-text: #2b47a8;
-  --cs-ink: #12172b;
-  --cs-ink-2: #5b6478;
-  --cs-ink-3: #9aa1b2;
-  --cs-border: #e4e7ef;
-  --cs-page: #f7f8fa;
-  --cs-green: #1f9d63;
-  --cs-green-tint: #e7f7ef;
+  --cs-navy: var(--pc-violet-primary-darker);
+  --cs-navy-2: var(--pc-violet-primary-dark-active);
+  --cs-navy-hover: var(--pc-violet-primary-dark-hover);
+  --cs-blue: var(--pc-violet-primary-normal);
+  --cs-cyan: var(--pc-violet-primary-normal-hover);
+  --cs-lilac: var(--pc-violet-primary-light-active);
+  --cs-blue-tint: var(--pc-violet-primary-light);
+  --cs-blue-text: var(--pc-violet-primary-dark);
+  --cs-ink: var(--pc-black-secondary-normal);
+  --cs-ink-2: var(--pc-grey-tertiary-normal);
+  --cs-ink-3: var(--pc-black-secondary-light-active);
+  --cs-border: var(--pc-black-secondary-light);
+  --cs-page: var(--pc-grey-tertiary-light);
+  --cs-green: var(--pc-green-success-normal);
+  --cs-green-tint: var(--pc-green-success-light);
   --cs-amber: #b76e00;
   --cs-amber-tint: #fdf1e0;
   --cs-red: #dc3545;
@@ -79,11 +149,11 @@
   --cs-glass-surface: color-mix(in srgb, white 76%, var(--cs-blue-tint));
   --cs-glass-surface-strong: color-mix(in srgb, white 84%, var(--cs-blue-tint));
   --cs-glass-surface-soft: color-mix(in srgb, white 62%, var(--cs-blue-tint));
-  --cs-glass-border: rgb(18 23 43 / 8%);
-  --cs-glass-border-strong: rgb(18 23 43 / 12%);
+  --cs-glass-border: rgb(0 0 0 / 8%);
+  --cs-glass-border-strong: rgb(0 0 0 / 12%);
   --cs-glass-highlight: rgb(255 255 255 / 58%);
   --cs-control-surface: rgb(255 255 255 / 62%);
-  --cs-control-border: rgb(18 23 43 / 8%);
+  --cs-control-border: rgb(0 0 0 / 8%);
 
   /* Semantic tokens are computed on html.dark — re-bind them here so children inherit usable light values */
   --background: var(--cs-page);
@@ -97,6 +167,8 @@
   --primary-foreground: #ffffff;
   --primary-tint: var(--cs-blue-tint);
   --primary-text: var(--cs-blue-text);
+  --primary-hover: var(--pc-violet-primary-normal-hover);
+  --primary-active: var(--pc-violet-primary-normal-active);
   --secondary: color-mix(in srgb, var(--cs-glass-surface-soft) 85%, white);
   --secondary-foreground: var(--cs-ink);
   --muted: color-mix(in srgb, var(--cs-glass-surface-soft) 88%, white);
@@ -111,48 +183,64 @@
 }
 
 .dark {
-  --cs-navy: #070d1f;
-  --cs-navy-2: #0b1530;
-  --cs-navy-hover: #111d42;
-  --cs-blue: #4a6ee0;
-  --cs-cyan: #38c7db;
-  --cs-lilac: #b197fc;
-  --cs-blue-tint: #1a2544;
-  --cs-blue-text: #a8b8f0;
-  --cs-ink: #eef0f6;
-  --cs-ink-2: #a8afc0;
-  --cs-ink-3: #6b7289;
-  --cs-border: #2a3555;
-  --cs-page: #0a1020;
-  --cs-green: #2eb872;
-  --cs-green-tint: #152a20;
+  --cs-navy: var(--pc-violet-primary-darker);
+  --cs-navy-2: var(--pc-violet-primary-dark-active);
+  --cs-navy-hover: var(--pc-violet-primary-dark-hover);
+  --cs-blue: var(--pc-violet-primary-normal);
+  --cs-cyan: var(--pc-violet-primary-light-active);
+  --cs-lilac: var(--pc-violet-primary-light-hover);
+  --cs-blue-tint: var(--pc-violet-primary-darker);
+  --cs-blue-text: var(--pc-violet-primary-light-active);
+  --cs-ink: #ffffff;
+  --cs-ink-2: var(--pc-grey-tertiary-light-active);
+  --cs-ink-3: var(--pc-grey-tertiary-normal);
+  --cs-border: var(--pc-grey-tertiary-dark-active);
+  --cs-page: var(--pc-grey-tertiary-darker);
+  --cs-green: var(--pc-green-success-normal);
+  --cs-green-tint: var(--pc-green-success-darker);
   --cs-amber: #d48806;
   --cs-amber-tint: #2a2210;
   --cs-red: #e85563;
   --cs-red-tint: #2a1518;
-  --cs-sidebar-group-label: #6b7aad;
-  --cs-sidebar-foreground: #b8c0e0;
-  --cs-sidebar-muted: #8a94b8;
-  --cs-glass-surface: rgb(11 21 48 / 66%);
-  --cs-glass-surface-strong: rgb(11 21 48 / 82%);
-  --cs-glass-surface-soft: rgb(17 29 66 / 58%);
-  --cs-glass-border: rgb(168 184 240 / 10%);
-  --cs-glass-border-strong: rgb(168 184 240 / 16%);
+  --cs-sidebar-group-label: var(--pc-grey-tertiary-normal);
+  --cs-sidebar-foreground: var(--pc-grey-tertiary-light-active);
+  --cs-sidebar-muted: var(--pc-grey-tertiary-normal);
+  --cs-glass-surface: color-mix(in srgb, var(--pc-violet-primary-darker) 66%, transparent);
+  --cs-glass-surface-strong: color-mix(in srgb, var(--pc-violet-primary-darker) 82%, transparent);
+  --cs-glass-surface-soft: color-mix(in srgb, var(--pc-violet-primary-dark-active) 58%, transparent);
+  --cs-glass-border: color-mix(in srgb, var(--pc-violet-primary-light-active) 10%, transparent);
+  --cs-glass-border-strong: color-mix(in srgb, var(--pc-violet-primary-light-active) 16%, transparent);
   --cs-glass-highlight: rgb(255 255 255 / 8%);
-  --cs-control-surface: rgb(17 29 66 / 68%);
-  --cs-control-border: rgb(168 184 240 / 12%);
+  --cs-control-surface: color-mix(in srgb, var(--pc-violet-primary-dark-active) 68%, transparent);
+  --cs-control-border: color-mix(in srgb, var(--pc-violet-primary-light-active) 12%, transparent);
   --cs-shell-sidebar-surface: linear-gradient(
     180deg,
-    rgb(7 13 31 / 92%) 0%,
-    rgb(11 21 48 / 82%) 100%
+    color-mix(in srgb, var(--pc-violet-primary-darker) 92%, transparent) 0%,
+    color-mix(in srgb, var(--pc-violet-primary-dark-active) 82%, transparent) 100%
   );
-  --cs-shell-topbar-surface: rgb(11 21 48 / 60%);
+  --cs-shell-topbar-surface: color-mix(in srgb, var(--pc-violet-primary-darker) 60%, transparent);
   --cs-page-gradient:
-    radial-gradient(circle at top left, rgb(74 110 224 / 12%) 0%, transparent 34%),
-    radial-gradient(circle at top right, rgb(56 199 219 / 10%) 0%, transparent 28%),
-    radial-gradient(circle at 55% 100%, rgb(212 136 6 / 10%) 0%, transparent 30%),
-    linear-gradient(180deg, #08101f 0%, #0d1427 100%);
-  --cs-page-orb-1: rgb(74 110 224 / 20%);
-  --cs-page-orb-2: rgb(56 199 219 / 18%);
-  --cs-page-orb-3: rgb(212 136 6 / 14%);
+    radial-gradient(
+      circle at top left,
+      color-mix(in srgb, var(--pc-violet-primary-normal) 12%, transparent) 0%,
+      transparent 34%
+    ),
+    radial-gradient(
+      circle at top right,
+      color-mix(in srgb, var(--pc-violet-primary-light-active) 10%, transparent) 0%,
+      transparent 28%
+    ),
+    radial-gradient(
+      circle at 55% 100%,
+      color-mix(in srgb, var(--pc-green-success-normal) 10%, transparent) 0%,
+      transparent 30%
+    ),
+    linear-gradient(
+      180deg,
+      var(--pc-grey-tertiary-darker) 0%,
+      var(--pc-violet-primary-darker) 100%
+    );
+  --cs-page-orb-1: color-mix(in srgb, var(--pc-violet-primary-normal) 20%, transparent);
+  --cs-page-orb-2: color-mix(in srgb, var(--pc-violet-primary-light-active) 18%, transparent);
+  --cs-page-orb-3: color-mix(in srgb, var(--pc-green-success-normal) 14%, transparent);
 }
