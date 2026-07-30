@@ -16,7 +16,7 @@ import type { ShellNavItem } from "@/lib/types/shell-nav";
 import { isNavItemActive } from "./sidebar-nav-utils";
 import { useHydrated } from "@/lib/hooks/use-hydrated";
 
-interface AppsLauncherProps {
+interface AppsLauncherSheetProps {
   items: ShellNavItem[];
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -59,6 +59,51 @@ function AppsLauncherGridItem({
   );
 }
 
+export function AppsLauncherSheet({
+  items,
+  open,
+  onOpenChange,
+}: AppsLauncherSheetProps) {
+  if (items.length === 0) {
+    return null;
+  }
+
+  return (
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent
+        side="right"
+        className="w-full max-w-md gap-0 p-0 [--sheet-width:min(92vw,28rem)]"
+        showCloseButton
+      >
+        <SheetHeader className="border-b border-border/70 px-6 py-5">
+          <SheetTitle className="text-lg font-semibold tracking-tight">
+            Apps
+          </SheetTitle>
+          <SheetDescription className="text-[13px] text-muted-foreground">
+            Catalog, payments, and other business tools
+          </SheetDescription>
+        </SheetHeader>
+        <div className="grid grid-cols-2 gap-3 overflow-y-auto p-6 sm:grid-cols-3">
+          {items.map((item) => (
+            <AppsLauncherGridItem
+              key={item.href}
+              item={item}
+              onNavigate={() => onOpenChange(false)}
+            />
+          ))}
+        </div>
+      </SheetContent>
+    </Sheet>
+  );
+}
+
+interface AppsLauncherProps {
+  items: ShellNavItem[];
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+/** Sidebar trigger + sheet (platform / legacy shell). */
 export function AppsLauncher({ items, open, onOpenChange }: AppsLauncherProps) {
   const pathname = usePathname();
   const hydrated = useHydrated();
@@ -86,38 +131,18 @@ export function AppsLauncher({ items, open, onOpenChange }: AppsLauncherProps) {
           <LayoutGrid
             className={cn(
               "size-4 shrink-0",
-              appsActive ? "text-[#375bd2]" : "text-[#98a1b5]",
+              appsActive ? "text-primary" : "text-[#98a1b5]",
             )}
           />
           <span className="truncate">Apps</span>
         </SidebarMenuButton>
       </SidebarMenuItem>
 
-      <Sheet open={open} onOpenChange={onOpenChange}>
-        <SheetContent
-          side="left"
-          className="w-full max-w-md gap-0 p-0 [--sheet-width:min(92vw,28rem)]"
-          showCloseButton
-        >
-          <SheetHeader className="border-b border-border/70 px-6 py-5">
-            <SheetTitle className="text-lg font-semibold tracking-tight">
-              Apps
-            </SheetTitle>
-            <SheetDescription className="text-[13px] text-muted-foreground">
-              Catalog, payments, and other business tools
-            </SheetDescription>
-          </SheetHeader>
-          <div className="grid grid-cols-2 gap-3 overflow-y-auto p-6 sm:grid-cols-3">
-            {items.map((item) => (
-              <AppsLauncherGridItem
-                key={item.href}
-                item={item}
-                onNavigate={() => onOpenChange(false)}
-              />
-            ))}
-          </div>
-        </SheetContent>
-      </Sheet>
+      <AppsLauncherSheet
+        items={items}
+        open={open}
+        onOpenChange={onOpenChange}
+      />
     </>
   );
 }

@@ -17,6 +17,7 @@ import type {
 } from "@/lib/types/shell-nav";
 import { AppSidebar } from "./app-sidebar";
 import { CommandPaletteProvider } from "./command-palette-provider";
+import { DashboardNavbar } from "./dashboard-navbar";
 import { MobileSidebarCloseOnNavigate } from "./mobile-sidebar-close";
 import { Topbar } from "./topbar";
 
@@ -59,6 +60,39 @@ export function AppShell({
   const fullBleedContent = contactWorkspace || conversationsInbox;
 
   const showSearch = shellMode === "business";
+  const useTopNavbar = shellMode === "business" && navMode === "main";
+
+  if (useTopNavbar) {
+    return (
+      <div className="app-shell-canvas flex h-svh min-h-0 flex-col overflow-hidden bg-transparent">
+        <CommandPaletteProvider
+          enabled={showSearch}
+          searchPlaceholder={searchPlaceholder}
+        >
+          <PageMetadataProvider context={pageMetadataContext}>
+            <DashboardNavbar
+              sections={sections}
+              appsItems={appsItems}
+              productName={productName}
+              logoUrl={logoUrl}
+              businessName={workspaceName}
+              notice={topbarNotice}
+            />
+            <div
+              className={cn(
+                "min-h-0 flex-1",
+                fullBleedContent
+                  ? "flex flex-col overflow-hidden p-0 [&>*]:min-h-0 [&>*]:flex-1"
+                  : "overflow-y-auto overflow-x-hidden px-[var(--page-padding-x)] pb-[var(--page-padding-y)] pt-[var(--page-content-top-gap)]",
+              )}
+            >
+              {children}
+            </div>
+          </PageMetadataProvider>
+        </CommandPaletteProvider>
+      </div>
+    );
+  }
 
   return (
     <SidebarProvider

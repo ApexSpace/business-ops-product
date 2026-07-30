@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { CODESOL_BRAND_LOGO_URL } from "./shell-constants";
+import { CODESOL_BRAND_LOGO_URL, BRAND_LOGO_IS_WORDMARK } from "./shell-constants";
 
 interface ShellBrandHeaderProps {
   productName?: string;
@@ -10,12 +10,13 @@ interface ShellBrandHeaderProps {
 }
 
 export function ShellBrandHeader({
-  productName = "CodeSol",
+  productName = "PandaCue",
   logoUrl = CODESOL_BRAND_LOGO_URL,
   className,
 }: ShellBrandHeaderProps) {
   const resolvedLogoUrl = logoUrl ?? CODESOL_BRAND_LOGO_URL;
-  const isWordmarkLogo = resolvedLogoUrl === CODESOL_BRAND_LOGO_URL;
+  const isDefaultBrand = resolvedLogoUrl === CODESOL_BRAND_LOGO_URL;
+  const isWordmarkLogo = isDefaultBrand && BRAND_LOGO_IS_WORDMARK;
 
   return (
     <div className={cn("flex items-center gap-2.5 px-1 py-1.5", className)}>
@@ -25,7 +26,7 @@ export function ShellBrandHeader({
         alt={productName}
         className={cn(
           "shrink-0 object-contain shadow-none",
-          isWordmarkLogo
+          isDefaultBrand || isWordmarkLogo
             ? "h-8 w-auto max-w-[148px] rounded-none bg-transparent p-0"
             : "size-6 rounded-[7px] bg-[#4c7cf0] p-1.5",
         )}
