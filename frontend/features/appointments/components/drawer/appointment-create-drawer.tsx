@@ -61,11 +61,14 @@ import {
 import { hasPhoneDigits, phoneToApiFields } from "@/lib/forms/phone";
 import { queryKeys } from "@/lib/query/keys";
 import {
-  DRAWER_FIELD_CONTROL_CLASS,
-  DRAWER_FORM_ITEM_CLASS,
-  DRAWER_FORM_STACK_CLASS,
-  DRAWER_PRIMARY_FOOTER_BUTTON_CLASS,
-} from "@/lib/design/drawer-shell-tokens";
+  APPOINTMENT_POPUP_DESCRIPTION_CLASS,
+  APPOINTMENT_POPUP_FIELD_CLASS,
+  APPOINTMENT_POPUP_FOOTER_CLASS,
+  APPOINTMENT_POPUP_HEADER_CLASS,
+  APPOINTMENT_POPUP_PRIMARY_BUTTON_CLASS,
+  APPOINTMENT_POPUP_SHELL_CLASS,
+} from "@/features/appointments/styles/appointment-side-popup";
+import { DRAWER_FORM_ITEM_CLASS } from "@/lib/design/drawer-shell-tokens";
 import { cn } from "@/lib/utils";
 
 const NOTES_MAX_LENGTH = 400;
@@ -458,16 +461,24 @@ export function AppointmentCreateDrawer({
       open={open}
       onOpenChange={onOpenChange}
       variant="sheet"
-      width="compact"
+      width="appointment"
+      className={APPOINTMENT_POPUP_SHELL_CLASS}
       title="New Appointment"
+      headerClassName={cn(
+        APPOINTMENT_POPUP_HEADER_CLASS,
+        "[&_[data-slot=sheet-title]]:text-[20px] [&_[data-slot=sheet-title]]:font-bold [&_[data-slot=sheet-title]]:text-[#7E3BED]",
+        "[&_button[aria-label=Close]]:size-8 [&_button[aria-label=Close]]:rounded-lg [&_button[aria-label=Close]]:border-0 [&_button[aria-label=Close]]:bg-[#F0F0F0] [&_button[aria-label=Close]]:text-[#6B6B6B] [&_button[aria-label=Close]]:shadow-none [&_button[aria-label=Close]]:hover:bg-[#E9E9E9]",
+      )}
+      contentClassName="!px-0 !py-0"
+      footerClassName={APPOINTMENT_POPUP_FOOTER_CLASS}
       description={
         onCreateTimeBlock ? (
           <button
             type="button"
             onClick={onCreateTimeBlock}
-            className="text-[13px] font-medium text-primary hover:underline"
+            className={cn(APPOINTMENT_POPUP_DESCRIPTION_CLASS, "hover:underline")}
           >
-            or create time block
+            Or create time block
           </button>
         ) : undefined
       }
@@ -477,7 +488,7 @@ export function AppointmentCreateDrawer({
             <div className="flex items-center justify-between gap-3 px-0.5">
               <Label
                 htmlFor="use-express-booking"
-                className="text-[13.5px] font-medium text-foreground"
+                className="text-body-small font-medium text-black-secondary-normal"
               >
                 Use Express Booking
               </Label>
@@ -494,7 +505,7 @@ export function AppointmentCreateDrawer({
                         size="icon-sm"
                         aria-label="Express Booking overrides"
                       >
-                        <Settings className="size-4 text-muted-foreground" />
+                        <Settings className="size-4 text-grey-tertiary-normal" />
                       </Button>
                     }
                   />
@@ -502,7 +513,7 @@ export function AppointmentCreateDrawer({
                     <div className={cn(DRAWER_FORM_ITEM_CLASS, "gap-1.5")}>
                       <Label
                         htmlFor="express-time-limit"
-                        className="text-[12.5px] font-medium text-foreground"
+                        className="text-caption font-medium text-foreground"
                       >
                         Time limit (minutes)
                       </Label>
@@ -517,13 +528,13 @@ export function AppointmentCreateDrawer({
                             Number.isFinite(next) && next > 0 ? next : 1,
                           );
                         }}
-                        className={DRAWER_FIELD_CONTROL_CLASS}
+                        className={APPOINTMENT_POPUP_FIELD_CLASS}
                       />
                     </div>
                     <div className="flex items-center justify-between gap-3">
                       <Label
                         htmlFor="express-require-card"
-                        className="text-[12.5px] font-medium text-foreground"
+                        className="text-caption font-medium text-foreground"
                       >
                         Require credit card
                       </Label>
@@ -536,7 +547,7 @@ export function AppointmentCreateDrawer({
                     <div className="flex items-center justify-between gap-3">
                       <Label
                         htmlFor="express-require-deposit"
-                        className="text-[12.5px] font-medium text-foreground"
+                        className="text-caption font-medium text-foreground"
                       >
                         Require deposit/payment
                       </Label>
@@ -560,7 +571,7 @@ export function AppointmentCreateDrawer({
             type="button"
             className={cn(
               DRAWER_FOOTER_BUTTON_CLASS,
-              DRAWER_PRIMARY_FOOTER_BUTTON_CLASS,
+              APPOINTMENT_POPUP_PRIMARY_BUTTON_CLASS,
             )}
             disabled={mutation.isPending}
             onClick={() => mutation.mutate()}
@@ -571,25 +582,25 @@ export function AppointmentCreateDrawer({
                 : "Booking…"
               : useExpressBooking
                 ? "Send completion link"
-                : "Book appointment"}
+                : "Book Appointment"}
           </ActionButton>
         </div>
       }
     >
-      <div className={DRAWER_FORM_STACK_CLASS}>
-        <AppointmentBookingDateTimeFields
-          dateKey={dateKey}
-          startMinutes={startMinutes}
-          slotIntervalMinutes={schedulingConfig.slotIntervalMinutes}
-          onDateChange={setDateKey}
-          onStartMinutesChange={(minutes) => {
-            setStartMinutes(minutes);
-            setServices((current) =>
-              rechainAllServiceLines(current, minutes),
-            );
-          }}
-        />
+      <AppointmentBookingDateTimeFields
+        dateKey={dateKey}
+        startMinutes={startMinutes}
+        slotIntervalMinutes={schedulingConfig.slotIntervalMinutes}
+        onDateChange={setDateKey}
+        onStartMinutesChange={(minutes) => {
+          setStartMinutes(minutes);
+          setServices((current) =>
+            rechainAllServiceLines(current, minutes),
+          );
+        }}
+      />
 
+      <div className="flex flex-col gap-[9px] px-5 py-3">
         {useExpressBooking ? (
           <div className={cn(DRAWER_FORM_ITEM_CLASS, "gap-3")}>
             <Tabs
@@ -599,10 +610,10 @@ export function AppointmentCreateDrawer({
               }
             >
               <TabsList className="grid h-9 w-full grid-cols-2">
-                <TabsTrigger value="existing" className="text-[12.5px]">
+                <TabsTrigger value="existing" className="text-caption">
                   Existing client
                 </TabsTrigger>
-                <TabsTrigger value="new" className="text-[12.5px]">
+                <TabsTrigger value="new" className="text-caption">
                   New client
                 </TabsTrigger>
               </TabsList>
@@ -617,11 +628,11 @@ export function AppointmentCreateDrawer({
                     if (!id) setSelectedContact(null);
                   }}
                   onContactSelect={handleContactSelect}
-                  placeholder="Search client…"
-                  triggerClassName={DRAWER_FIELD_CONTROL_CLASS}
+                  placeholder="Search or create a client"
+                  triggerClassName={APPOINTMENT_POPUP_FIELD_CLASS}
                 />
                 {contactId && expressSendViaSms && !contactHasPhone(selectedContact) ? (
-                  <p className="text-[12px] text-amber-700 dark:text-amber-300">
+                  <p className="text-caption text-amber-700 dark:text-amber-300">
                     This client needs a phone number to receive the completion
                     link by SMS.
                   </p>
@@ -629,7 +640,7 @@ export function AppointmentCreateDrawer({
                 {contactId &&
                 !expressSendViaSms &&
                 !selectedContact?.email?.trim() ? (
-                  <p className="text-[12px] text-amber-700 dark:text-amber-300">
+                  <p className="text-caption text-amber-700 dark:text-amber-300">
                     This client needs an email address to receive the completion
                     link.
                   </p>
@@ -642,7 +653,7 @@ export function AppointmentCreateDrawer({
                   onChange={(event) => setGuestFirstName(event.target.value)}
                   placeholder="First name"
                   maxLength={100}
-                  className={DRAWER_FIELD_CONTROL_CLASS}
+                  className={APPOINTMENT_POPUP_FIELD_CLASS}
                 />
                 {expressSendViaSms ? (
                   <PhoneInput
@@ -650,7 +661,7 @@ export function AppointmentCreateDrawer({
                     onChange={(value) => setGuestPhone(value ?? "")}
                     placeholder="Phone number"
                     showClear={false}
-                    className={DRAWER_FIELD_CONTROL_CLASS}
+                    className={APPOINTMENT_POPUP_FIELD_CLASS}
                   />
                 ) : (
                   <Input
@@ -659,7 +670,7 @@ export function AppointmentCreateDrawer({
                     onChange={(event) => setGuestEmail(event.target.value)}
                     placeholder="Email"
                     maxLength={255}
-                    className={DRAWER_FIELD_CONTROL_CLASS}
+                    className={APPOINTMENT_POPUP_FIELD_CLASS}
                   />
                 )}
               </div>
@@ -674,8 +685,8 @@ export function AppointmentCreateDrawer({
                 if (!id) setSelectedContact(null);
               }}
               onContactSelect={handleContactSelect}
-              placeholder="Search client…"
-              triggerClassName={DRAWER_FIELD_CONTROL_CLASS}
+              placeholder="Search or create a client"
+              triggerClassName={APPOINTMENT_POPUP_FIELD_CLASS}
             />
           </div>
         )}
@@ -699,7 +710,7 @@ export function AppointmentCreateDrawer({
             currencyCode={currencyCode}
           />
           {useExpressBooking ? (
-            <p className="text-[12px] text-muted-foreground">
+            <p className="text-caption text-grey-tertiary-normal">
               Express Booking uses one service. The client can switch staff when
               they open the email link.
             </p>
@@ -709,19 +720,19 @@ export function AppointmentCreateDrawer({
         {!useExpressBooking ? (
           <div className={cn(DRAWER_FORM_ITEM_CLASS)}>
             <div className="relative">
-              <FileText className="pointer-events-none absolute top-3.5 left-3 size-4 text-muted-foreground" />
+              <FileText className="pointer-events-none absolute top-3.5 left-3 size-4 text-grey-tertiary-normal" />
               <Textarea
                 value={notes}
                 onChange={(event) => setNotes(event.target.value)}
-                placeholder="Add a note…"
+                placeholder="Add notes"
                 rows={4}
                 maxLength={NOTES_MAX_LENGTH}
                 className={cn(
-                  DRAWER_FIELD_CONTROL_CLASS,
+                  APPOINTMENT_POPUP_FIELD_CLASS,
                   "min-h-[110px] resize-none py-3 pl-10",
                 )}
               />
-              <span className="pointer-events-none absolute right-3 bottom-3 text-[11px] text-muted-foreground">
+              <span className="pointer-events-none absolute right-3 bottom-3 text-caption text-grey-tertiary-normal">
                 {notes.length} / {NOTES_MAX_LENGTH}
               </span>
             </div>
@@ -739,7 +750,7 @@ export function AppointmentCreateDrawer({
             />
             <Label
               htmlFor="send-confirmation"
-              className="text-[13.5px] font-medium text-foreground"
+              className="text-body-small font-medium text-black-secondary-normal"
             >
               Send confirmation to client
             </Label>
@@ -747,7 +758,7 @@ export function AppointmentCreateDrawer({
         ) : null}
 
         {outsideScheduleWarning ? (
-          <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm text-amber-950 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-100">
+          <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-body-small text-amber-950 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-100">
             <TriangleAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
             <p>{outsideScheduleWarning}</p>
           </div>

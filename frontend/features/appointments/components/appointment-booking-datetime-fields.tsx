@@ -1,6 +1,5 @@
 "use client";
 
-import { Clock } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -13,11 +12,9 @@ import {
   generateAppointmentTimeSlots,
 } from "@/features/appointments/utils/appointment-service-lines";
 import {
-  DRAWER_FIELD_CONTROL_CLASS,
-  DRAWER_FIELD_LABEL_CLASS,
-  DRAWER_FORM_FIELD_CLASS,
-  DRAWER_FORM_ITEM_CLASS,
-} from "@/lib/design/drawer-shell-tokens";
+  APPOINTMENT_POPUP_DATETIME_CELL_CLASS,
+  APPOINTMENT_POPUP_DATETIME_ROW_CLASS,
+} from "@/features/appointments/styles/appointment-side-popup";
 import { cn } from "@/lib/utils";
 
 export interface AppointmentBookingDateTimeFieldsProps {
@@ -28,6 +25,18 @@ export interface AppointmentBookingDateTimeFieldsProps {
   onStartMinutesChange: (minutes: number) => void;
   disabled?: boolean;
   className?: string;
+}
+
+/** Formats YYYY-MM-DD → "Tue, Jul 28" for Figma date cell. */
+function formatDateKeyLabel(dateKey: string): string {
+  if (!dateKey) return "Select date";
+  const date = new Date(`${dateKey}T12:00:00`);
+  if (Number.isNaN(date.getTime())) return dateKey;
+  return date.toLocaleDateString("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  });
 }
 
 export function AppointmentBookingDateTimeFields({
@@ -41,51 +50,60 @@ export function AppointmentBookingDateTimeFields({
 }: AppointmentBookingDateTimeFieldsProps) {
   const timeSlots = generateAppointmentTimeSlots(slotIntervalMinutes);
   const selectedTimeLabel = formatTimeSlotLabel(startMinutes);
+  const dateLabel = formatDateKeyLabel(dateKey);
 
   return (
-    <div className={cn(DRAWER_FORM_ITEM_CLASS, className)}>
-      <div className="grid grid-cols-2 gap-3">
-        <div className={DRAWER_FORM_FIELD_CLASS}>
-          <span className={DRAWER_FIELD_LABEL_CLASS}>Date</span>
-          <Input
-            type="date"
-            value={dateKey}
-            disabled={disabled}
-            className={cn(DRAWER_FIELD_CONTROL_CLASS, "w-full")}
-            onChange={(event) => {
-              const next = event.target.value;
-              if (next) onDateChange(next);
-            }}
-          />
-        </div>
+    <div className={cn(APPOINTMENT_POPUP_DATETIME_ROW_CLASS, className)}>
+      <label
+        className={cn(
+          APPOINTMENT_POPUP_DATETIME_CELL_CLASS,
+          "relative cursor-pointer border-r border-[#BC9BF6]",
+          disabled && "pointer-events-none opacity-60",
+        )}
+      >
+        <span className="text-[11px] font-medium text-grey-tertiary-normal">
+          On
+        </span>
+        <span className="mt-0.5 text-[14px] font-semibold text-black-secondary-normal">
+          {dateLabel}
+        </span>
+        <Input
+          type="date"
+          value={dateKey}
+          disabled={disabled}
+          className="absolute inset-0 cursor-pointer opacity-0"
+          onChange={(event) => {
+            const next = event.target.value;
+            if (next) onDateChange(next);
+          }}
+        />
+      </label>
 
-        <div className={DRAWER_FORM_FIELD_CLASS}>
-          <span className={DRAWER_FIELD_LABEL_CLASS}>Time</span>
-          <Select
-            value={String(startMinutes)}
-            onValueChange={(value) => onStartMinutesChange(Number(value))}
-            disabled={disabled}
-          >
-            <SelectTrigger
-              className={cn(
-                "w-full data-[size=default]:h-11",
-                DRAWER_FIELD_CONTROL_CLASS,
-              )}
-            >
-              <span className="flex min-w-0 flex-1 items-center gap-2 truncate">
-                <Clock className="size-4 shrink-0 text-muted-foreground" />
-                <span className="truncate font-medium">{selectedTimeLabel}</span>
-              </span>
-            </SelectTrigger>
-            <SelectContent className="max-h-60">
-              {timeSlots.map((minutes) => (
-                <SelectItem key={minutes} value={String(minutes)}>
-                  {formatTimeSlotLabel(minutes)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+      <div
+        className={cn(
+          APPOINTMENT_POPUP_DATETIME_CELL_CLASS,
+          disabled && "pointer-events-none opacity-60",
+        )}
+      >
+        <span className="text-[11px] font-medium text-grey-tertiary-normal">
+          At
+        </span>
+        <Select
+          value={String(startMinutes)}
+          onValueChange={(value) => onStartMinutesChange(Number(value))}
+          disabled={disabled}
+        >
+          <SelectTrigger className="mt-0.5 h-auto w-full min-w-0 border-0 bg-transparent p-0 text-[14px] font-semibold text-black-secondary-normal shadow-none hover:bg-transparent focus-visible:ring-0 data-[size=default]:h-auto">
+            <span className="truncate">{selectedTimeLabel}</span>
+          </SelectTrigger>
+          <SelectContent className="max-h-60">
+            {timeSlots.map((minutes) => (
+              <SelectItem key={minutes} value={String(minutes)}>
+                {formatTimeSlotLabel(minutes)}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
     </div>
   );

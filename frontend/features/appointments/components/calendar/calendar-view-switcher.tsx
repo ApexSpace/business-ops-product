@@ -29,24 +29,26 @@ export function CalendarViewSwitcher({
       role="group"
       aria-label="Calendar view"
     >
-      {VIEWS.map((view, index) => (
-        <button
-          key={view.value}
-          type="button"
-          aria-current={value === view.value ? "page" : undefined}
-          aria-label={`${view.label} view`}
-          onClick={() => onChange(view.value)}
-          className={cn(
-            CALENDAR_TOOLBAR_SEGMENT_BUTTON_CLASS,
-            index > 0 && "border-l border-border",
-            value === view.value
-              ? "bg-primary text-primary-foreground shadow-sm"
-              : "bg-white text-muted-foreground hover:bg-muted/50 hover:text-foreground dark:bg-card dark:hover:bg-muted/40",
-          )}
-        >
-          {view.label}
-        </button>
-      ))}
+      {VIEWS.map((view) => {
+        const active = value === view.value;
+        return (
+          <button
+            key={view.value}
+            type="button"
+            aria-current={active ? "page" : undefined}
+            aria-label={`${view.label} view`}
+            onClick={() => onChange(view.value)}
+            className={cn(
+              CALENDAR_TOOLBAR_SEGMENT_BUTTON_CLASS,
+              active
+                ? "bg-[#7E3BED] text-white"
+                : "bg-white text-[#7E3BED] hover:bg-[#F6F1FE]",
+            )}
+          >
+            {view.label}
+          </button>
+        );
+      })}
     </div>
   );
 }

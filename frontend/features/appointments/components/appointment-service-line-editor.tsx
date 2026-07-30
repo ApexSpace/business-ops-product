@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Check, ChevronsUpDown, Plus, Tag, Trash2 } from "lucide-react";
+import { Check, Plus, Trash2 } from "lucide-react";
 import { listServices } from "@/features/settings/api/services.api";
 import type { Service } from "@/lib/types/api";
 import { queryKeys } from "@/lib/query/keys";
@@ -19,7 +19,10 @@ import {
   SelectItem,
   SelectTrigger,
 } from "@/components/ui/select";
-import { DRAWER_FIELD_CONTROL_CLASS } from "@/lib/design/drawer-shell-tokens";
+import {
+  APPOINTMENT_POPUP_FIELD_CLASS,
+  APPOINTMENT_POPUP_PLUS_BUTTON_CLASS,
+} from "@/features/appointments/styles/appointment-side-popup";
 import { cn } from "@/lib/utils";
 import {
   type AppointmentServiceLineSelection,
@@ -292,15 +295,14 @@ export function AppointmentServiceLineEditor({
           <PopoverTrigger
             disabled={disabled}
             className={cn(
-              DRAWER_FIELD_CONTROL_CLASS,
-              "flex w-full items-center justify-between gap-2 border-input bg-transparent px-3 text-[13.5px] font-normal text-muted-foreground hover:bg-muted/30 disabled:cursor-not-allowed disabled:opacity-50",
+              APPOINTMENT_POPUP_FIELD_CLASS,
+              "flex w-full items-center justify-between gap-2 text-[14px] font-normal text-grey-tertiary-normal hover:bg-[#F6F1FE]/40 disabled:cursor-not-allowed disabled:opacity-50",
             )}
           >
-            <span className="flex items-center gap-2">
-              <Tag className="size-4 opacity-60" />
-              Select service
+            <span>Select a service</span>
+            <span className={APPOINTMENT_POPUP_PLUS_BUTTON_CLASS} aria-hidden>
+              <Plus className="size-3.5" strokeWidth={2.5} />
             </span>
-            <ChevronsUpDown className="size-4 opacity-50" />
           </PopoverTrigger>
           <ServicePickerPopoverContent
             search={search}
@@ -318,7 +320,7 @@ export function AppointmentServiceLineEditor({
         <Popover open={open} onOpenChange={setOpen}>
           <PopoverTrigger
             disabled={disabled}
-            className="inline-flex items-center gap-1.5 text-[13px] font-medium text-primary hover:underline disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-[#7E3BED] hover:underline disabled:opacity-50"
           >
             <Plus className="size-4" />
             Add another service

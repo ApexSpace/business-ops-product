@@ -12,7 +12,8 @@ export const CALENDAR_SLOT_MINUTES = 15;
 export const CALENDAR_DAY_START_HOUR = 0;
 /** End of day — last slot 11:00–11:30 PM (exclusive 24:00 bound) */
 export const CALENDAR_DAY_END_HOUR = 24;
-export const CALENDAR_SLOT_HEIGHT_PX = 28;
+/** Figma: 120px/hour → 30px per 15-minute slot */
+export const CALENDAR_SLOT_HEIGHT_PX = 30;
 /** Minimum rendered height for an appointment block in day/week views. */
 export const CALENDAR_EVENT_MIN_HEIGHT_PX = 28;
 export const MONTH_MAX_VISIBLE_EVENTS = 3;

@@ -26,12 +26,16 @@ import { resolveAppointmentDisplayTimezone, wallTimeInTimezoneToUtcIso } from "@
 import { useCurrentBusiness } from "@/features/settings/hooks/use-current-business";
 import { queryKeys } from "@/lib/query/keys";
 import {
-  DRAWER_FIELD_CONTROL_CLASS,
   DRAWER_FIELD_LABEL_CLASS,
   DRAWER_FORM_ITEM_CLASS,
-  DRAWER_FORM_STACK_CLASS,
-  DRAWER_PRIMARY_FOOTER_BUTTON_CLASS,
 } from "@/lib/design/drawer-shell-tokens";
+import {
+  APPOINTMENT_POPUP_FIELD_CLASS,
+  APPOINTMENT_POPUP_FOOTER_CLASS,
+  APPOINTMENT_POPUP_HEADER_CLASS,
+  APPOINTMENT_POPUP_PRIMARY_BUTTON_CLASS,
+  APPOINTMENT_POPUP_SHELL_CLASS,
+} from "@/features/appointments/styles/appointment-side-popup";
 import {
   Select,
   SelectContent,
@@ -183,14 +187,22 @@ export function AppointmentTimeBlockDrawer({
       open={open}
       onOpenChange={onOpenChange}
       variant="sheet"
-      width="compact"
+      width="appointment"
+      className={APPOINTMENT_POPUP_SHELL_CLASS}
+      headerClassName={cn(
+        APPOINTMENT_POPUP_HEADER_CLASS,
+        "[&_[data-slot=sheet-title]]:text-[20px] [&_[data-slot=sheet-title]]:font-bold [&_[data-slot=sheet-title]]:text-[#7E3BED]",
+        "[&_button[aria-label=Close]]:size-8 [&_button[aria-label=Close]]:rounded-lg [&_button[aria-label=Close]]:border-0 [&_button[aria-label=Close]]:bg-[#F0F0F0] [&_button[aria-label=Close]]:text-[#6B6B6B] [&_button[aria-label=Close]]:shadow-none [&_button[aria-label=Close]]:hover:bg-[#E9E9E9]",
+      )}
+      contentClassName="!px-0 !py-0"
+      footerClassName={APPOINTMENT_POPUP_FOOTER_CLASS}
       title="Time Block"
       footer={
         <ActionButton
           type="button"
           className={cn(
             DRAWER_FOOTER_BUTTON_CLASS,
-            DRAWER_PRIMARY_FOOTER_BUTTON_CLASS,
+            APPOINTMENT_POPUP_PRIMARY_BUTTON_CLASS,
           )}
           disabled={mutation.isPending}
           onClick={() => mutation.mutate()}
@@ -199,22 +211,22 @@ export function AppointmentTimeBlockDrawer({
         </ActionButton>
       }
     >
-      <div className={DRAWER_FORM_STACK_CLASS}>
-        <AppointmentBookingDateTimeFields
-          dateKey={dateKey}
-          startMinutes={startMinutes}
-          slotIntervalMinutes={schedulingConfig.slotIntervalMinutes}
-          onDateChange={setDateKey}
-          onStartMinutesChange={setStartMinutes}
-        />
+      <AppointmentBookingDateTimeFields
+        dateKey={dateKey}
+        startMinutes={startMinutes}
+        slotIntervalMinutes={schedulingConfig.slotIntervalMinutes}
+        onDateChange={setDateKey}
+        onStartMinutesChange={setStartMinutes}
+      />
 
+      <div className="flex flex-col gap-[9px] px-5 py-3">
         <div className={cn(DRAWER_FORM_ITEM_CLASS)}>
           <span className={DRAWER_FIELD_LABEL_CLASS}>Duration</span>
           <Select
             value={String(durationMinutes)}
             onValueChange={(value) => setDurationMinutes(Number(value))}
           >
-            <SelectTrigger className={DRAWER_FIELD_CONTROL_CLASS}>
+            <SelectTrigger className={APPOINTMENT_POPUP_FIELD_CLASS}>
               {formatDurationLabel(durationMinutes)}
             </SelectTrigger>
             <SelectContent className="max-h-60">
@@ -233,7 +245,7 @@ export function AppointmentTimeBlockDrawer({
             value={assignedToId}
             onValueChange={(value) => setAssignedToId(value ?? "")}
           >
-            <SelectTrigger className={DRAWER_FIELD_CONTROL_CLASS}>
+            <SelectTrigger className={APPOINTMENT_POPUP_FIELD_CLASS}>
               {staffOptions.find((s) => s.userId === assignedToId)?.label ??
                 "Select staff"}
             </SelectTrigger>
@@ -253,7 +265,7 @@ export function AppointmentTimeBlockDrawer({
             value={title}
             onChange={(event) => setTitle(event.target.value)}
             rows={2}
-            className={cn(DRAWER_FIELD_CONTROL_CLASS, "min-h-[72px] py-3")}
+            className={cn(APPOINTMENT_POPUP_FIELD_CLASS, "min-h-[72px] py-3")}
           />
         </div>
 
@@ -264,7 +276,7 @@ export function AppointmentTimeBlockDrawer({
             onChange={(event) => setNotes(event.target.value)}
             placeholder="Add a note…"
             rows={3}
-            className={cn(DRAWER_FIELD_CONTROL_CLASS, "min-h-[90px] py-3")}
+            className={cn(APPOINTMENT_POPUP_FIELD_CLASS, "min-h-[90px] py-3")}
           />
         </div>
       </div>

@@ -112,7 +112,7 @@ export function TimeGridColumn({
         CALENDAR_GRID.column,
         highlightToday &&
           isTodayDateKey(dateKey, viewTimezone) &&
-          "bg-primary/[0.03]",
+          "bg-[#F6F1FE]/40",
       )}
       style={{ height: GRID_HEIGHT }}
       onClick={handleColumnClick}
@@ -152,19 +152,23 @@ export function TimeGridColumn({
 export function TimeGridGutter() {
   const slotLabels = getTimeSlotLabels();
   return (
-    <div className={cn(CALENDAR_GRID.timeGutter, "bg-muted/20")}>
-      {slotLabels.map((minutes) => (
-        <div
-          key={minutes}
-          className={cn(
-            "flex items-start justify-end pr-2 pt-0.5 text-[10px] text-muted-foreground",
-            minutes % 60 === 45 ? CALENDAR_GRID.slotHour : CALENDAR_GRID.slot,
-          )}
-          style={{ height: CALENDAR_SLOT_HEIGHT_PX }}
-        >
-          {minutes % 60 === 0 ? minutesToTimeLabel(minutes) : ""}
-        </div>
-      ))}
+    <div className={CALENDAR_GRID.timeGutter}>
+      {slotLabels.map((minutes) => {
+        const isHourStart = minutes % 60 === 0;
+        const isHourEnd = minutes % 60 === 45;
+        return (
+          <div
+            key={minutes}
+            className={cn(
+              "box-border flex items-start justify-center px-0 pt-2 text-center text-[11px] font-medium leading-none text-[#6B6B6B]",
+              isHourEnd ? CALENDAR_GRID.slotHour : CALENDAR_GRID.slot,
+            )}
+            style={{ height: CALENDAR_SLOT_HEIGHT_PX }}
+          >
+            {isHourStart ? minutesToTimeLabel(minutes) : ""}
+          </div>
+        );
+      })}
     </div>
   );
 }

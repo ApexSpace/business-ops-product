@@ -8,7 +8,6 @@ import { DrawerFooterPrimaryAction } from "@/components/layout/drawer-footer-pri
 import { AcknowledgementGuardDialog } from "@/components/forms/acknowledgement-guard-dialog";
 import {
   DrawerShell,
-  DRAWER_SHELL_HEADER_ACTION_CLASS,
 } from "@/components/layout/drawer-shell";
 import { IconButton } from "@/components/ui/icon-button";
 import {
@@ -46,10 +45,16 @@ import { useCurrentBusiness } from "@/features/settings/hooks/use-current-busine
 import { listCalendars } from "@/features/calendars/api/calendars.api";
 import { resolveAppointmentDisplayTimezone } from "@/features/calendars/utils/timezone";
 import {
-  DRAWER_FORM_STACK_CLASS,
   DRAWER_SCROLL_CONTENT_INSET_CLASS,
   DRAWER_SCROLL_EDGE_CLASS,
 } from "@/lib/design/drawer-shell-tokens";
+import {
+  APPOINTMENT_POPUP_CLOSE_ACTION_CLASS,
+  APPOINTMENT_POPUP_FOOTER_CLASS,
+  APPOINTMENT_POPUP_HEADER_ACTION_CLASS,
+  APPOINTMENT_POPUP_HEADER_CLASS,
+  APPOINTMENT_POPUP_SHELL_CLASS,
+} from "@/features/appointments/styles/appointment-side-popup";
 import { queryKeys } from "@/lib/query/keys";
 import { cn } from "@/lib/utils";
 import {
@@ -283,7 +288,7 @@ export function AppointmentDetailDrawer({
           render={
             <IconButton
               aria-label="Appointment actions"
-              className={DRAWER_SHELL_HEADER_ACTION_CLASS}
+              className={APPOINTMENT_POPUP_HEADER_ACTION_CLASS}
             >
               <MoreHorizontal className="size-4" />
             </IconButton>
@@ -347,7 +352,7 @@ export function AppointmentDetailDrawer({
         <IconButton
           aria-label="Edit appointment"
           onClick={handleEditClick}
-          className={DRAWER_SHELL_HEADER_ACTION_CLASS}
+          className={APPOINTMENT_POPUP_HEADER_ACTION_CLASS}
         >
           <Pencil className="size-4" />
         </IconButton>
@@ -356,7 +361,7 @@ export function AppointmentDetailDrawer({
         <IconButton
           aria-label="Close appointment details"
           onClick={onClose}
-          className={DRAWER_SHELL_HEADER_ACTION_CLASS}
+          className={APPOINTMENT_POPUP_CLOSE_ACTION_CLASS}
         >
           <X className="size-4" />
         </IconButton>
@@ -368,7 +373,7 @@ export function AppointmentDetailDrawer({
     <IconButton
       aria-label="Back"
       onClick={handleCheckoutBack}
-      className={DRAWER_SHELL_HEADER_ACTION_CLASS}
+      className={APPOINTMENT_POPUP_HEADER_ACTION_CLASS}
     >
       <ChevronLeft className="size-4" />
     </IconButton>
@@ -387,7 +392,14 @@ export function AppointmentDetailDrawer({
 
       <DrawerShell
       variant={variant}
-      width="compact"
+      width="appointment"
+      className={APPOINTMENT_POPUP_SHELL_CLASS}
+      headerClassName={cn(
+        APPOINTMENT_POPUP_HEADER_CLASS,
+        "[&_[data-slot=sheet-title]]:text-[20px] [&_[data-slot=sheet-title]]:font-bold [&_[data-slot=sheet-title]]:text-[#7E3BED]",
+        "[&_button[aria-label=Close]]:size-8 [&_button[aria-label=Close]]:rounded-lg [&_button[aria-label=Close]]:border-0 [&_button[aria-label=Close]]:bg-[#F0F0F0] [&_button[aria-label=Close]]:text-[#6B6B6B] [&_button[aria-label=Close]]:shadow-none [&_button[aria-label=Close]]:hover:bg-[#E9E9E9]",
+      )}
+      footerClassName={APPOINTMENT_POPUP_FOOTER_CLASS}
       open={open}
       onOpenChange={(nextOpen) => {
         onOpenChange?.(nextOpen);
@@ -401,7 +413,7 @@ export function AppointmentDetailDrawer({
       headerActions={showCheckout ? checkoutHeaderActions : detailHeaderActions}
       showCloseButton={variant === "sheet" && !showCheckout}
       footer={drawerFooter}
-      contentClassName="flex min-h-0 flex-1 flex-col !py-5"
+      contentClassName="flex min-h-0 flex-1 flex-col !px-0 !py-0"
       bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden !p-0"
     >
       <div className="relative flex min-h-0 flex-1 overflow-hidden">
@@ -419,7 +431,8 @@ export function AppointmentDetailDrawer({
             </div>
           ) : (
             <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain scrollbar-thin">
-              <div className={DRAWER_FORM_STACK_CLASS}>
+              <div className="flex flex-col py-4">
+                <div className="px-5">
                 <AppointmentStatusBar
                   status={appointment.status}
                   relatedCheckoutId={appointment.relatedCheckoutId ?? null}
@@ -450,13 +463,16 @@ export function AppointmentDetailDrawer({
                     }
                   }}
                 />
+                </div>
 
+                {/* Full-bleed On/At — no side padding on the row; cells pad text */}
                 <AppointmentDateTimeBar
                   startAt={appointment.startAt}
                   endAt={appointment.endAt}
                   timezone={timezone}
                 />
 
+                <div className="mt-5 flex flex-col gap-5 px-5">
                 <AppointmentClientBlock
                   contact={appointment.contact}
                   guestFirstName={appointment.guestFirstName}
@@ -477,11 +493,11 @@ export function AppointmentDetailDrawer({
                 />
 
                 {appointment.notes?.trim() ? (
-                  <div className="border-t border-border/60 pt-5">
-                    <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+                  <div>
+                    <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-grey-tertiary-normal">
                       Notes
                     </p>
-                    <p className="whitespace-pre-wrap text-[13.5px] leading-relaxed text-foreground">
+                    <p className="whitespace-pre-wrap text-[13.5px] leading-relaxed text-black-secondary-normal">
                       {appointment.notes}
                     </p>
                   </div>
@@ -504,6 +520,7 @@ export function AppointmentDetailDrawer({
                     timezone={timezone}
                   />
                 ) : null}
+                </div>
               </div>
             </div>
           )}

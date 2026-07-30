@@ -1,6 +1,6 @@
 "use client";
 
-import { Filter } from "lucide-react";
+import { SlidersHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -52,8 +52,8 @@ export function CalendarFiltersPopover({
               "relative",
             )}
           >
-            <Filter className="size-4 shrink-0" />
-            <span>Filters</span>
+            <SlidersHorizontal className="size-4 shrink-0" strokeWidth={2} />
+            <span>Filter</span>
             {activeCount > 0 ? (
               <span className="inline-flex size-5 items-center justify-center rounded-full bg-primary text-[11px] font-semibold text-primary-foreground sm:ml-0.5">
                 {activeCount}

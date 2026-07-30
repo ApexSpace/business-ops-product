@@ -227,7 +227,8 @@ export function formatDateRangeLabelInTimezone(
 ): string {
   const anchor = parseDateKeyInTimezone(anchorDateKey, timezone);
   if (view === "day") {
-    return anchor.toFormat("cccc, MMMM d, yyyy");
+    // Figma: "Tuesday July, 16"
+    return anchor.toFormat("cccc LLLL, d");
   }
   if (view === "week") {
     const keys = getWeekDateKeysInTimezone(anchorDateKey, timezone);

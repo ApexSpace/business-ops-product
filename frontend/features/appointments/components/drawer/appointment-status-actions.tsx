@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { CheckCircle2 } from "lucide-react";
 import { ActionButton } from "@/components/ui/action-button";
 import {
   Popover,
@@ -13,11 +14,11 @@ import {
   type AppointmentStatus,
 } from "@/features/appointments/schemas/appointment-profile";
 import { getAppointmentStatusDotClass } from "@/features/appointments/utils/appointment-calendar-styles";
+import { APPOINTMENT_POPUP_STATUS_CTA_CLASS } from "@/features/appointments/styles/appointment-side-popup";
 import { useSalesStaffPermissions } from "@/features/sales/hooks/use-sales-staff-permissions";
 import { cn } from "@/lib/utils";
 
-const STATUS_ACTION_BUTTON_CLASS =
-  "h-8 rounded-full border border-border bg-background px-4 text-[11px] font-semibold uppercase tracking-[0.06em] text-foreground shadow-none hover:bg-muted/40";
+const STATUS_ACTION_BUTTON_CLASS = APPOINTMENT_POPUP_STATUS_CTA_CLASS;
 
 function formatRelativeNotified(iso: string): string {
   const notifiedAt = new Date(iso).getTime();
@@ -97,18 +98,27 @@ export function AppointmentStatusBar({
   }, [status, expressBookingExpiresAt]);
 
   return (
-    <div className="rounded-[10px] border border-border/70 bg-muted/15 px-4 py-3">
+    <div className="pb-3 pt-1">
       <div className="flex items-center justify-between gap-3">
-        <div className="flex min-w-0 items-center gap-2.5">
-          <span
-            className={cn(
-              "size-2.5 shrink-0 rounded-full",
-              getAppointmentStatusDotClass(status),
-            )}
-          />
-          <span className="text-[14px] font-semibold text-foreground">
-            {displayLabel}
-          </span>
+        <div className="flex min-w-0 items-center gap-2">
+          {status === "CONFIRMED" ? (
+            <span className="inline-flex items-center gap-1.5 rounded-md bg-[#E8F5EF] px-2.5 py-1 text-[13px] font-semibold text-[#1C9A5B]">
+              <CheckCircle2 className="size-4 shrink-0" strokeWidth={2.25} />
+              {displayLabel}
+            </span>
+          ) : (
+            <div className="flex min-w-0 items-center gap-2.5">
+              <span
+                className={cn(
+                  "size-2.5 shrink-0 rounded-full",
+                  getAppointmentStatusDotClass(status),
+                )}
+              />
+              <span className="text-[14px] font-semibold text-black-secondary-normal">
+                {displayLabel}
+              </span>
+            </div>
+          )}
         </div>
 
         <AppointmentStatusActions
@@ -127,19 +137,19 @@ export function AppointmentStatusBar({
       </div>
 
       {status === "PENDING_COMPLETION" ? (
-        <p className="mt-2 text-[12px] text-muted-foreground">
+        <p className="mt-2 text-caption text-grey-tertiary-normal">
           {countdownLabel}. Client still needs to finish the booking link.
         </p>
       ) : null}
 
       {status === "WAITING" && waitingNotifiedAt ? (
-        <p className="mt-2 text-[12px] text-muted-foreground">
+        <p className="mt-2 text-caption text-grey-tertiary-normal">
           Notified {formatRelativeNotified(waitingNotifiedAt)}.{" "}
           <button
             type="button"
             disabled={disabled}
             onClick={onNotify}
-            className="font-medium text-primary hover:underline disabled:opacity-50"
+            className="font-medium text-[#7E3BED] hover:underline disabled:opacity-50"
           >
             Send Again
           </button>
@@ -220,7 +230,7 @@ function AppointmentStatusActions({
               disabled={disabled}
               className={STATUS_ACTION_BUTTON_CLASS}
             >
-              Check-in
+              CHECK-IN
             </ActionButton>
           }
         />
