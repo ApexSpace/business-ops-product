@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Download,
@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { DateTime } from "luxon";
 import { ApiErrorState } from "@/components/data-display/api-error-state";
 import { DataTable } from "@/components/data-display/data-table";
+import { ListPagination } from "@/components/ui/list-pagination";
 import { EntityDetailDrawer } from "@/components/layout/entity-detail-drawer";
 import { EntityDetailFooter } from "@/components/layout/entity-detail-footer";
 import { EntityWorkspaceLayout } from "@/components/layout/entity-workspace-layout";
@@ -70,6 +71,7 @@ function formatListDate(value: string) {
 
 export function MembershipsWorkspace() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const queryClient = useQueryClient();
   const { canManage } = useMembershipStaffPermissions();
   const {
@@ -79,10 +81,18 @@ export function MembershipsWorkspace() {
     clearSelection,
   } = useEntitySelection({ legacyIdParams: ["selected"] });
 
+  // Deep link from contact details: ?contact=<contactId> means "start membership
+  // for this client", not "open membership detail" (contact is also a legacy
+  // entity-selection param).
+  const contactFilter = searchParams.get("contact");
+
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
   const [addOpen, setAddOpen] = useState(false);
   const [optionsOpen, setOptionsOpen] = useState(false);
-  const [contactId, setContactId] = useState<string | null>(null);
+  const [contactId, setContactId] = useState<string | null>(
+    () => contactFilter,
+  );
   const [planId, setPlanId] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>("all_except_canceled");
   const [planFilter, setPlanFilter] = useState<string>("all");
@@ -90,7 +100,22 @@ export function MembershipsWorkspace() {
     useState(false);
   const [showOlderUnpaid, setShowOlderUnpaid] = useState(false);
 
+  useEffect(() => {
+    if (contactFilter && selectedId === contactFilter) {
+      clearSelection();
+    }
+  }, [contactFilter, selectedId, clearSelection]);
+
+  useEffect(() => {
+    if (contactFilter && canManage) {
+      setContactId(contactFilter);
+      setAddOpen(true);
+    }
+  }, [contactFilter, canManage]);
+
   const filters = {
+    page,
+    limit: 25,
     search: search || undefined,
     status: statusFilter as ClientMembershipStatus | "all_except_canceled",
     planId: planFilter === "all" ? undefined : planFilter,
@@ -103,12 +128,12 @@ export function MembershipsWorkspace() {
     queryFn: () => listClientMemberships(filters),
   });
 
-  const memberships = listQuery.data ?? [];
+  const memberships = listQuery.data?.items ?? [];
 
   const detailQuery = useQuery({
     queryKey: queryKeys.memberships.clientDetail(selectedId ?? ""),
     queryFn: () => getClientMembership(selectedId!),
-    enabled: !!selectedId,
+    enabled: !!selectedId && selectedId !== contactFilter,
   });
 
   const plansQuery = useQuery({
@@ -240,6 +265,8 @@ export function MembershipsWorkspace() {
   );
 
   const detail = detailQuery.data;
+  // Don't treat ?contact=<contactId> as an open membership detail drawer.
+  const drawerOpen = isOpen && selectedId !== contactFilter;
 
   const detailPanelProps = {
     selectedId,
@@ -274,7 +301,10 @@ export function MembershipsWorkspace() {
         search={
           <SearchInput
             value={search}
-            onChange={setSearch}
+            onChange={(value) => {
+              setSearch(value);
+              setPage(1);
+            }}
             placeholder="Search by client or plan…"
             className="min-w-0 flex-1"
           />
@@ -318,9 +348,15 @@ export function MembershipsWorkspace() {
           </>
         }
         footer={
-          memberships.length > 0
-            ? `${memberships.length} membership${memberships.length === 1 ? "" : "s"}`
-            : undefined
+          listQuery.data?.meta && memberships.length > 0 ? (
+            <ListPagination
+              meta={listQuery.data.meta}
+              page={page}
+              onPageChange={setPage}
+              label="memberships"
+              compact
+            />
+          ) : undefined
         }
       >
         {listQuery.isError ? (
@@ -356,14 +392,14 @@ export function MembershipsWorkspace() {
       </EntityWorkspaceLayout>
 
       <EntityDetailDrawer
-        open={isOpen}
+        open={drawerOpen}
         onOpenChange={(open) => {
           if (!open) clearSelection();
         }}
         width="standard"
         title={detail ? membershipPlanLabel(detail) : "Membership"}
         subtitle={detail?.contact.name}
-        isLoading={detailQuery.isLoading}
+        isLoading={drawerOpen && detailQuery.isLoading}
         badges={
           detail ? <MembershipStatusBadge status={detail.status} /> : null
         }
@@ -407,12 +443,29 @@ export function MembershipsWorkspace() {
           ) : null
         }
       >
-        {selectedId && detail ? (
+        {drawerOpen && detail ? (
           <MembershipDetailPanel {...detailPanelProps} embedded />
+        ) : drawerOpen && !detailQuery.isLoading ? (
+          <ApiErrorState
+            error={
+              detailQuery.error ??
+              new Error("This membership could not be found.")
+            }
+            onRetry={() => void detailQuery.refetch()}
+          />
         ) : null}
       </EntityDetailDrawer>
 
-      <Dialog open={addOpen} onOpenChange={setAddOpen}>
+      <Dialog
+        open={addOpen}
+        onOpenChange={(open) => {
+          setAddOpen(open);
+          if (!open) {
+            setPlanId(null);
+            if (!contactFilter) setContactId(null);
+          }
+        }}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>New membership</DialogTitle>
@@ -430,13 +483,42 @@ export function MembershipsWorkspace() {
             </div>
             <div className="space-y-1.5">
               <Label>Membership plan</Label>
-              <SearchableSelect
-                items={planOptions}
-                value={planId}
-                onValueChange={setPlanId}
-                placeholder="Select a plan"
-                inDialog
-              />
+              {plansQuery.isLoading ? (
+                <p className="text-sm text-muted-foreground">Loading plans…</p>
+              ) : planOptions.length === 0 ? (
+                <div className="space-y-3 rounded-lg border border-dashed border-border p-4">
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium">
+                      No membership plans available
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Create a plan first, then you can start a membership for
+                      this client.
+                    </p>
+                  </div>
+                  {canManage ? (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setAddOpen(false);
+                        router.push("/business/memberships/plans");
+                      }}
+                    >
+                      <LayoutTemplate className="mr-1.5 size-4" />
+                      Manage plans
+                    </Button>
+                  ) : null}
+                </div>
+              ) : (
+                <SearchableSelect
+                  items={planOptions}
+                  value={planId}
+                  onValueChange={setPlanId}
+                  placeholder="Select a plan"
+                  inDialog
+                />
+              )}
             </div>
           </div>
           <DialogFooter>
@@ -444,7 +526,12 @@ export function MembershipsWorkspace() {
               Cancel
             </Button>
             <Button
-              disabled={!contactId || !planId || createMutation.isPending}
+              disabled={
+                !contactId ||
+                !planId ||
+                planOptions.length === 0 ||
+                createMutation.isPending
+              }
               onClick={() =>
                 createMutation.mutate({
                   contactId: contactId!,
@@ -468,9 +555,10 @@ export function MembershipsWorkspace() {
               <Label>Status</Label>
               <Select
                 value={statusFilter}
-                onValueChange={(v) =>
-                  setStatusFilter(v ?? "all_except_canceled")
-                }
+                onValueChange={(v) => {
+                  setStatusFilter(v ?? "all_except_canceled");
+                  setPage(1);
+                }}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -492,7 +580,10 @@ export function MembershipsWorkspace() {
               <Label>Membership plan</Label>
               <Select
                 value={planFilter}
-                onValueChange={(v) => setPlanFilter(v ?? "all")}
+                onValueChange={(v) => {
+                  setPlanFilter(v ?? "all");
+                  setPage(1);
+                }}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -511,14 +602,20 @@ export function MembershipsWorkspace() {
               <Label className="font-normal">Show different versions only</Label>
               <Switch
                 checked={showDifferentVersionsOnly}
-                onCheckedChange={setShowDifferentVersionsOnly}
+                onCheckedChange={(checked) => {
+                  setShowDifferentVersionsOnly(checked);
+                  setPage(1);
+                }}
               />
             </div>
             <div className="flex items-center justify-between gap-4">
               <Label className="font-normal">Show older unpaid (over 1 month)</Label>
               <Switch
                 checked={showOlderUnpaid}
-                onCheckedChange={setShowOlderUnpaid}
+                onCheckedChange={(checked) => {
+                  setShowOlderUnpaid(checked);
+                  setPage(1);
+                }}
               />
             </div>
             <Button variant="outline" className="w-full" onClick={handleExport}>

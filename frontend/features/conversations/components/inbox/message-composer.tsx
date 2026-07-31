@@ -25,13 +25,21 @@ import type {
 } from "@/features/conversations/api/conversations.api";
 import { cn } from "@/lib/utils";
 import { CannedResponsesPicker } from "@/features/conversations/components/inbox/canned-responses-picker";
-import { ComposerEmojiPicker } from "@/features/conversations/components/inbox/composer-emoji-picker";
+import dynamic from "next/dynamic";
 import {
   SMS_MAX_SEGMENTS,
   analyzeSmsSegments,
   formatSmsSegmentCounter,
   formatUcs2CostWarning,
 } from "@/features/conversations/utils/sms-segment.util";
+
+const ComposerEmojiPicker = dynamic(
+  () =>
+    import(
+      "@/features/conversations/components/inbox/composer-emoji-picker"
+    ).then((m) => m.ComposerEmojiPicker),
+  { ssr: false },
+);
 
 export interface PendingMessageAttachment {
   type: string;

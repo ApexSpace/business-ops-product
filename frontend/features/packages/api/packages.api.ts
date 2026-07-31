@@ -62,7 +62,7 @@ export function deletePackageServiceGroup(templateId: string, groupId: string) {
 }
 
 export function listClientPackages(filters: ClientPackagesListFilters = {}) {
-  return api.get<ClientPackageListItem[]>("client-packages", {
+  return api.getPaginated<ClientPackageListItem>("client-packages", {
     searchParams: filters,
   });
 }

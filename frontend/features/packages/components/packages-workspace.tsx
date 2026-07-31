@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { DateTime } from "luxon";
 import { ApiErrorState } from "@/components/data-display/api-error-state";
 import { DataTable } from "@/components/data-display/data-table";
+import { ListPagination } from "@/components/ui/list-pagination";
 import { EntityDetailDrawer } from "@/components/layout/entity-detail-drawer";
 import { EntityWorkspaceLayout } from "@/components/layout/entity-workspace-layout";
 import { SearchInput } from "@/components/forms/search-input";
@@ -67,6 +68,7 @@ export function PackagesWorkspace() {
 
   const contactFilter = searchParams.get("contact");
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
   const [addOpen, setAddOpen] = useState(false);
   const [transferOpen, setTransferOpen] = useState(false);
   const [adjustMode, setAdjustMode] = useState(false);
@@ -101,11 +103,22 @@ export function PackagesWorkspace() {
   }, [contactFilter, canManage]);
 
   const listQuery = useQuery({
-    queryKey: queryKeys.packages.clientList({ search }),
-    queryFn: () => listClientPackages({ search: search || undefined }),
+    queryKey: queryKeys.packages.clientList({
+      search: search || undefined,
+      page,
+      limit: 25,
+      contactId: contactFilter ?? undefined,
+    }),
+    queryFn: () =>
+      listClientPackages({
+        search: search || undefined,
+        page,
+        limit: 25,
+        contactId: contactFilter ?? undefined,
+      }),
   });
 
-  const packages = listQuery.data ?? [];
+  const packages = listQuery.data?.items ?? [];
 
   const detailQuery = useQuery({
     queryKey: queryKeys.packages.clientDetail(selectedId ?? ""),
@@ -340,7 +353,10 @@ export function PackagesWorkspace() {
         search={
           <SearchInput
             value={search}
-            onChange={setSearch}
+            onChange={(value) => {
+              setSearch(value);
+              setPage(1);
+            }}
             placeholder="Search by name or client…"
             className="min-w-0 flex-1 sm:max-w-md"
           />
@@ -372,9 +388,15 @@ export function PackagesWorkspace() {
           </>
         }
         footer={
-          packages.length > 0
-            ? `${packages.length} package${packages.length === 1 ? "" : "s"}`
-            : undefined
+          listQuery.data?.meta && packages.length > 0 ? (
+            <ListPagination
+              meta={listQuery.data.meta}
+              page={page}
+              onPageChange={setPage}
+              label="packages"
+              compact
+            />
+          ) : undefined
         }
       >
         {listQuery.isError ? (

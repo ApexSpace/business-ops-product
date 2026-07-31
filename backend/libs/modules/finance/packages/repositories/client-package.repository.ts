@@ -60,8 +60,13 @@ export class ClientPackageRepository {
 
   async findMany(
     businessId: string,
-    opts: { contactId?: string; search?: string },
-  ): Promise<ClientPackageListRow[]> {
+    opts: {
+      skip: number;
+      take: number;
+      contactId?: string;
+      search?: string;
+    },
+  ): Promise<{ items: ClientPackageListRow[]; total: number }> {
     const where = this.activeWhere(businessId);
     if (opts.contactId) {
       where.contactId = opts.contactId;
@@ -87,11 +92,16 @@ export class ClientPackageRepository {
       ];
     }
 
-    return this.prisma.clientPackage.findMany({
-      where,
-      include: listInclude,
-      orderBy: { purchaseDate: 'desc' },
-    });
+    return Promise.all([
+      this.prisma.clientPackage.findMany({
+        where,
+        include: listInclude,
+        orderBy: { purchaseDate: 'desc' },
+        skip: opts.skip,
+        take: opts.take,
+      }),
+      this.prisma.clientPackage.count({ where }),
+    ]).then(([items, total]) => ({ items, total }));
   }
 
   findById(

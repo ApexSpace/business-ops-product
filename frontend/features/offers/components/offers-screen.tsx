@@ -6,6 +6,7 @@ import { Copy, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { ApiErrorState } from "@/components/data-display/api-error-state";
 import { DataTable } from "@/components/data-display/data-table";
+import { ListPagination } from "@/components/ui/list-pagination";
 import { ConfirmDeleteDialog } from "@/components/forms/confirm-delete-dialog";
 import { SearchInput } from "@/components/forms/search-input";
 import { EntityDetailDrawer } from "@/components/layout/entity-detail-drawer";
@@ -48,6 +49,8 @@ import { queryKeys } from "@/lib/query/keys";
 import { useEntitySelection } from "@/lib/routing/use-entity-selection";
 import { cn } from "@/lib/utils";
 
+const PAGE_LIMIT = 25;
+
 export function OffersScreen() {
   const queryClient = useQueryClient();
   const {
@@ -63,6 +66,7 @@ export function OffersScreen() {
   });
 
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
   const [createOpen, setCreateOpen] = useState(false);
   const [newName, setNewName] = useState("");
   const [newDescription, setNewDescription] = useState("");
@@ -71,9 +75,18 @@ export function OffersScreen() {
 
   const activeTab = (tab ?? "details") as OfferTabId;
 
+  const listFilters = useMemo(
+    () => ({
+      page,
+      limit: PAGE_LIMIT,
+      search: search.trim() || undefined,
+    }),
+    [page, search],
+  );
+
   const offersQuery = useQuery({
-    queryKey: queryKeys.offers.list(search.trim() || undefined),
-    queryFn: () => listOffers(search.trim() || undefined),
+    queryKey: queryKeys.offers.list(listFilters),
+    queryFn: () => listOffers(listFilters),
   });
 
   const detailQuery = useQuery({
@@ -82,7 +95,7 @@ export function OffersScreen() {
     enabled: !!selectedId,
   });
 
-  const offers = useMemo(() => offersQuery.data ?? [], [offersQuery.data]);
+  const offers = offersQuery.data?.items ?? [];
   const columns = useOfferListColumns();
   const detail = detailQuery.data;
 
@@ -145,7 +158,10 @@ export function OffersScreen() {
         search={
           <SearchInput
             value={search}
-            onChange={setSearch}
+            onChange={(value) => {
+              setSearch(value);
+              setPage(1);
+            }}
             placeholder="Search offers…"
             className="min-w-0 flex-1 sm:max-w-md"
           />
@@ -173,9 +189,15 @@ export function OffersScreen() {
           ) : null
         }
         footer={
-          offers.length > 0
-            ? `${offers.length} offer${offers.length === 1 ? "" : "s"}`
-            : undefined
+          offersQuery.data?.meta && offers.length > 0 ? (
+            <ListPagination
+              meta={offersQuery.data.meta}
+              page={page}
+              onPageChange={setPage}
+              label="offers"
+              compact
+            />
+          ) : undefined
         }
       >
         {offersQuery.isError ? (

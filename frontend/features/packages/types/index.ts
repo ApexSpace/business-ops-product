@@ -107,6 +107,8 @@ export interface PackageSettings {
 }
 
 export type ClientPackagesListFilters = {
+  page?: number;
+  limit?: number;
   contactId?: string;
   search?: string;
 };

@@ -1,11 +1,23 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useState } from "react";
 import { PageHeader } from "@/components/layout/page-header";
 import { PageTabs, PageTabsPanel } from "@/components/layout/page-tabs";
 import { EmailLogsTab } from "@/features/email-notifications/components/email-logs-tab";
 import { EmailNotificationsTab } from "@/features/email-notifications/components/email-notifications-tab";
-import { EmailTemplatesTab } from "@/features/email-notifications/components/email-templates-tab";
+import { Skeleton } from "@/components/ui/skeleton";
+
+const EmailTemplatesTab = dynamic(
+  () =>
+    import("@/features/email-notifications/components/email-templates-tab").then(
+      (m) => m.EmailTemplatesTab,
+    ),
+  {
+    loading: () => <Skeleton className="min-h-[16rem] w-full" />,
+    ssr: false,
+  },
+);
 
 export function BusinessEmailNotificationsSettings() {
   const [tab, setTab] = useState("notifications");
@@ -30,7 +42,7 @@ export function BusinessEmailNotificationsSettings() {
           <EmailNotificationsTab />
         </PageTabsPanel>
         <PageTabsPanel value="templates">
-          <EmailTemplatesTab />
+          {tab === "templates" ? <EmailTemplatesTab /> : null}
         </PageTabsPanel>
         <PageTabsPanel value="logs">
           <EmailLogsTab />

@@ -1,16 +1,12 @@
 "use client";
 
 import { Suspense, useState } from "react";
+import dynamic from "next/dynamic";
 import { AppointmentListView } from "@/features/appointments/components/calendar/appointment-list-view";
 import { CalendarToolbar } from "@/features/appointments/components/calendar/calendar-toolbar";
 import { MonthCalendarView } from "@/features/appointments/components/calendar/month-calendar-view";
 import { StaffDayCalendarView } from "@/features/appointments/components/calendar/staff-day-calendar-view";
 import { WeekCalendarView } from "@/features/appointments/components/calendar/week-calendar-view";
-import { AppointmentCreateDrawer } from "@/features/appointments/components/drawer/appointment-create-drawer";
-import { AppointmentDetailDrawer } from "@/features/appointments/components/drawer/appointment-detail-drawer";
-import { AppointmentEditDrawer } from "@/features/appointments/components/drawer/appointment-edit-drawer";
-import { AppointmentTimeBlockDrawer } from "@/features/appointments/components/drawer/appointment-time-block-drawer";
-import { ContactConversationDrawer } from "@/features/conversations/components/contact-conversation-drawer";
 import { ConfirmDeleteDialog } from "@/components/forms/confirm-delete-dialog";
 import { ListPageSkeleton } from "@/components/layout/list-page";
 import { useAppointmentsCreateAction } from "@/features/appointments/hooks/use-appointments-create-action";
@@ -18,6 +14,42 @@ import { useAppointmentCalendarDrag } from "@/features/appointments/hooks/use-ap
 import { useAppointmentsCalendarPage } from "@/features/appointments/hooks/use-appointments-calendar-page";
 import { getAppointment } from "@/features/appointments/api/appointments.api";
 import { WaitlistPanel } from "@/features/waitlist/components/waitlist-panel";
+
+const AppointmentCreateDrawer = dynamic(
+  () =>
+    import(
+      "@/features/appointments/components/drawer/appointment-create-drawer"
+    ).then((m) => m.AppointmentCreateDrawer),
+  { ssr: false },
+);
+const AppointmentDetailDrawer = dynamic(
+  () =>
+    import(
+      "@/features/appointments/components/drawer/appointment-detail-drawer"
+    ).then((m) => m.AppointmentDetailDrawer),
+  { ssr: false },
+);
+const AppointmentEditDrawer = dynamic(
+  () =>
+    import(
+      "@/features/appointments/components/drawer/appointment-edit-drawer"
+    ).then((m) => m.AppointmentEditDrawer),
+  { ssr: false },
+);
+const AppointmentTimeBlockDrawer = dynamic(
+  () =>
+    import(
+      "@/features/appointments/components/drawer/appointment-time-block-drawer"
+    ).then((m) => m.AppointmentTimeBlockDrawer),
+  { ssr: false },
+);
+const ContactConversationDrawer = dynamic(
+  () =>
+    import(
+      "@/features/conversations/components/contact-conversation-drawer"
+    ).then((m) => m.ContactConversationDrawer),
+  { ssr: false },
+);
 
 export function AppointmentsCalendarPage() {
   return (

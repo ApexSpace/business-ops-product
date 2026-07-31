@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { Loader2 } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth/provider";
 import { hasPlatformBusinessAdminAccess } from "@/features/auth/permissions/permissions-legacy";
@@ -12,6 +13,9 @@ import {
 /**
  * Blocks MEMBER users from opening app/settings routes that require
  * a staff permission they were not granted.
+ *
+ * Waits for session restore before evaluating permissions so a hard refresh
+ * does not race into the appearance fallback while jwt is still null.
  */
 export function StaffPermissionRouteGuard({
   children,
@@ -20,17 +24,19 @@ export function StaffPermissionRouteGuard({
 }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { jwt, contexts } = useAuth();
+  const { jwt, contexts, isLoading } = useAuth();
   const isPlatformAdmin = hasPlatformBusinessAdminAccess(jwt, contexts);
 
-  const allowed = canAccessBusinessStaffRoute(pathname, {
-    businessRole: jwt?.businessRole,
-    staffPermissions: jwt?.staffPermissions,
-    isPlatformAdmin,
-  });
+  const allowed =
+    !isLoading &&
+    canAccessBusinessStaffRoute(pathname, {
+      businessRole: jwt?.businessRole,
+      staffPermissions: jwt?.staffPermissions,
+      isPlatformAdmin,
+    });
 
   useEffect(() => {
-    if (allowed) return;
+    if (isLoading || allowed) return;
     const fallback = resolveStaffDeniedFallbackHref({
       businessRole: jwt?.businessRole,
       staffPermissions: jwt?.staffPermissions,
@@ -38,7 +44,22 @@ export function StaffPermissionRouteGuard({
     if (fallback !== pathname) {
       router.replace(fallback);
     }
-  }, [allowed, pathname, router, jwt?.businessRole, jwt?.staffPermissions]);
+  }, [
+    allowed,
+    isLoading,
+    pathname,
+    router,
+    jwt?.businessRole,
+    jwt?.staffPermissions,
+  ]);
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-[40vh] items-center justify-center p-8">
+        <Loader2 className="size-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   if (!allowed) {
     return (

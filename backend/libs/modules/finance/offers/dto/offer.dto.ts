@@ -22,6 +22,15 @@ import {
   Min,
   ValidateNested,
 } from 'class-validator';
+import { PaginationQueryDto } from '@app/common/dto/pagination-query.dto';
+
+export class ListOffersQueryDto extends PaginationQueryDto {
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  search?: string;
+}
 
 export class OfferDateRuleDto {
   @ApiProperty({

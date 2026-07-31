@@ -9,9 +9,11 @@ import { AppException } from '@app/common/exceptions/app.exception';
 import { ErrorCode } from '@app/common/exceptions/error-code.enum';
 import type { RequestUser } from '@app/common/decorators/current-user.decorator';
 import { AuditService } from '@app/modules/platform/audit/services/audit.service';
+import { getPaginationParams } from '@app/common/utils/pagination.util';
 import {
   CreateOfferDiscountDto,
   CreateOfferDto,
+  ListOffersQueryDto,
   OfferResponseDto,
   ReorderOfferDiscountsDto,
   ReorderOffersDto,
@@ -36,10 +38,21 @@ export class OffersService {
 
   async listOffers(
     businessId: string,
-    search?: string,
-  ): Promise<OfferResponseDto[]> {
-    const rows = await this.offerRepository.findMany(businessId, search);
-    return rows.map(toOfferListItem);
+    query: ListOffersQueryDto,
+  ): Promise<{
+    items: OfferResponseDto[];
+    meta: { total: number; page: number; limit: number };
+  }> {
+    const { skip, take, page, limit } = getPaginationParams(query);
+    const { items, total } = await this.offerRepository.findMany(businessId, {
+      skip,
+      take,
+      search: query.search,
+    });
+    return {
+      items: items.map(toOfferListItem),
+      meta: { total, page, limit },
+    };
   }
 
   async getOffer(

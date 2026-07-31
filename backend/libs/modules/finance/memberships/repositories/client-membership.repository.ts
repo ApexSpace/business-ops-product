@@ -67,6 +67,8 @@ export class ClientMembershipRepository {
   async findMany(
     businessId: string,
     opts: {
+      skip: number;
+      take: number;
       contactId?: string;
       search?: string;
       status?: ClientMembershipStatus | 'all_except_canceled';
@@ -74,7 +76,7 @@ export class ClientMembershipRepository {
       showDifferentVersionsOnly?: boolean;
       showOlderUnpaid?: boolean;
     },
-  ): Promise<ClientMembershipListRow[]> {
+  ): Promise<{ items: ClientMembershipListRow[]; total: number }> {
     const where = this.baseWhere(businessId);
 
     if (opts.contactId) where.contactId = opts.contactId;
@@ -110,17 +112,20 @@ export class ClientMembershipRepository {
       ];
     }
 
-    const rows = await this.prisma.clientMembership.findMany({
-      where,
-      include: listInclude,
-      orderBy: { startDate: 'desc' },
-    });
-
     if (opts.showDifferentVersionsOnly === true) {
-      return rows.filter((row) => row.planVersion > 1);
+      where.planVersion = { gt: 1 };
     }
 
-    return rows;
+    return Promise.all([
+      this.prisma.clientMembership.findMany({
+        where,
+        include: listInclude,
+        orderBy: { startDate: 'desc' },
+        skip: opts.skip,
+        take: opts.take,
+      }),
+      this.prisma.clientMembership.count({ where }),
+    ]).then(([items, total]) => ({ items, total }));
   }
 
   findById(

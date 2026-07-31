@@ -104,6 +104,8 @@ export interface MembershipSettings {
 }
 
 export interface ClientMembershipsListFilters {
+  page?: number;
+  limit?: number;
   contactId?: string;
   search?: string;
   status?: ClientMembershipStatus | "all_except_canceled";

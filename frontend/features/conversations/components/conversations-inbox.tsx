@@ -20,7 +20,7 @@ import { ContactWorkspaceShell } from "@/features/contacts/components/contact-wo
 import { useConversationInboxContactSidebar } from "@/features/conversations/hooks/use-conversation-inbox-contact-sidebar";
 import { useRetryConversationMessage } from "@/features/conversations/hooks/use-retry-conversation-message";
 import { WORKSPACE_PADDING_CLASS } from "@/features/contacts/workspace/contact-workspace";
-import { NewEmailDialog } from "@/features/conversations/components/inbox/new-email-dialog";
+import { NewConversationDialog } from "@/features/conversations/components/inbox/new-conversation-dialog";
 import { Button } from "@/components/ui/button";
 import { getPlatformDefaultEmail } from "@/features/integrations/api/integrations.api";
 import type { PendingMessageAttachment } from "@/features/conversations/components/inbox/message-composer";
@@ -106,7 +106,7 @@ export function ConversationsInbox() {
   const [pendingAttachment, setPendingAttachment] =
     useState<PendingMessageAttachment | null>(null);
   const [emailSubject, setEmailSubject] = useState("");
-  const [newEmailOpen, setNewEmailOpen] = useState(false);
+  const [newConversationOpen, setNewConversationOpen] = useState(false);
   const [selectedReplyChannel, setSelectedReplyChannel] =
     useState<ConversationChannel | null>(null);
   const [threadChannelFilter, setThreadChannelFilter] =
@@ -751,8 +751,8 @@ export function ConversationsInbox() {
       selectedThreadKey={activeThread?.threadKey ?? null}
       onSelectThread={selectThread}
       useVirtualThreads={useVirtualThreads}
-      onNewEmail={
-        canSendMessages ? () => setNewEmailOpen(true) : undefined
+      onNewConversation={
+        canSendMessages ? () => setNewConversationOpen(true) : undefined
       }
       className="h-full w-full"
     />
@@ -903,9 +903,9 @@ export function ConversationsInbox() {
         </div>
       </div>
 
-      <NewEmailDialog
-        open={newEmailOpen}
-        onOpenChange={setNewEmailOpen}
+      <NewConversationDialog
+        open={newConversationOpen}
+        onOpenChange={setNewConversationOpen}
         onCreated={async (conversationId) => {
           await invalidateAll();
           const refreshed = await listUnifiedConversations(listFilters, apiBase);

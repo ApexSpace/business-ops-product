@@ -31,16 +31,24 @@ export type OfferDetailRow = Prisma.OfferGetPayload<{
 export class OfferRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  findMany(businessId: string, search?: string): Promise<OfferListRow[]> {
+  findMany(
+    businessId: string,
+    params: { skip: number; take: number; search?: string },
+  ): Promise<{ items: OfferListRow[]; total: number }> {
     const where: Prisma.OfferWhereInput = { businessId };
-    if (search?.trim()) {
-      where.name = { contains: search.trim(), mode: 'insensitive' };
+    if (params.search?.trim()) {
+      where.name = { contains: params.search.trim(), mode: 'insensitive' };
     }
-    return this.prisma.offer.findMany({
-      where,
-      include: offerInclude,
-      orderBy: { sortOrder: 'asc' },
-    });
+    return Promise.all([
+      this.prisma.offer.findMany({
+        where,
+        include: offerInclude,
+        orderBy: { sortOrder: 'asc' },
+        skip: params.skip,
+        take: params.take,
+      }),
+      this.prisma.offer.count({ where }),
+    ]).then(([items, total]) => ({ items, total }));
   }
 
   findEnabledWithDiscounts(businessId: string): Promise<OfferDetailRow[]> {

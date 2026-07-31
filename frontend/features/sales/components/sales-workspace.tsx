@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { DataTable, type DataTableColumn } from "@/components/data-display/data-table";
+import { ListPagination } from "@/components/ui/list-pagination";
 import { EntityDetailDrawer } from "@/components/layout/entity-detail-drawer";
 import { EntityDetailFooter } from "@/components/layout/entity-detail-footer";
 import { EntityWorkspaceLayout } from "@/components/layout/entity-workspace-layout";
@@ -90,6 +91,8 @@ import type {
 
 type StatusFilter = "all" | "OPEN" | "PAID" | "VOID";
 
+const PAGE_LIMIT = 25;
+
 export function SalesWorkspace() {
   const searchParams = useSearchParams();
   const contactFilter = searchParams.get("contact");
@@ -102,6 +105,7 @@ export function SalesWorkspace() {
   } = useEntitySelection({ legacyIdParams: ["sale"] });
 
   const [listSearch, setListSearch] = useState("");
+  const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [newSaleOpen, setNewSaleOpen] = useState(false);
   const [newContactId, setNewContactId] = useState<string | null>(
@@ -138,13 +142,13 @@ export function SalesWorkspace() {
 
   const listFilters = useMemo(
     () => ({
-      page: 1,
-      limit: 50,
+      page,
+      limit: PAGE_LIMIT,
       search: listSearch.trim() || undefined,
       status: statusFilter === "all" ? undefined : statusFilter,
       contactId: contactFilter ?? undefined,
     }),
-    [listSearch, statusFilter, contactFilter],
+    [page, listSearch, statusFilter, contactFilter],
   );
 
   const { data: listData, isLoading: listLoading } = useQuery({
@@ -552,7 +556,10 @@ export function SalesWorkspace() {
         search={
           <SearchInput
             value={listSearch}
-            onChange={setListSearch}
+            onChange={(value) => {
+              setListSearch(value);
+              setPage(1);
+            }}
             placeholder="Search client or sale…"
             className="min-w-0 flex-1"
           />
@@ -561,7 +568,10 @@ export function SalesWorkspace() {
           <SearchableSelect
             items={statusFilterItems}
             value={statusFilter}
-            onValueChange={(v) => setStatusFilter(v as StatusFilter)}
+            onValueChange={(v) => {
+              setStatusFilter(v as StatusFilter);
+              setPage(1);
+            }}
             placeholder="Status"
           />
         }
@@ -590,9 +600,15 @@ export function SalesWorkspace() {
           ) : null
         }
         footer={
-          sales.length > 0
-            ? `${sales.length} sale${sales.length === 1 ? "" : "s"}`
-            : undefined
+          listData?.meta && sales.length > 0 ? (
+            <ListPagination
+              meta={listData.meta}
+              page={page}
+              onPageChange={setPage}
+              label="sales"
+              compact
+            />
+          ) : undefined
         }
       >
         <DataTable

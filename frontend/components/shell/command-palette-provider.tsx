@@ -8,11 +8,17 @@ import {
   useMemo,
   useState,
 } from "react";
-import { AppCommandPalette } from "./app-command-palette";
+import dynamic from "next/dynamic";
 import {
   isCommandPaletteShortcut,
   isEditableTarget,
 } from "@/lib/utils/keyboard";
+
+const AppCommandPalette = dynamic(
+  () =>
+    import("./app-command-palette").then((m) => m.AppCommandPalette),
+  { ssr: false },
+);
 
 interface CommandPaletteContextValue {
   open: boolean;
@@ -73,7 +79,7 @@ export function CommandPaletteProvider({
   return (
     <CommandPaletteContext.Provider value={value}>
       {children}
-      {enabled ? (
+      {enabled && open ? (
         <AppCommandPalette
           open={open}
           onOpenChange={setOpen}

@@ -24,6 +24,7 @@ import {
   Min,
   ValidateNested,
 } from 'class-validator';
+import { PaginationQueryDto } from '@app/common/dto/pagination-query.dto';
 
 export class CreatePackageTemplateDto {
   @ApiProperty()
@@ -125,7 +126,7 @@ export class CreateServiceGroupDto {
 
 export class UpdateServiceGroupDto extends CreateServiceGroupDto {}
 
-export class ListClientPackagesQueryDto {
+export class ListClientPackagesQueryDto extends PaginationQueryDto {
   @ApiPropertyOptional()
   @IsOptional()
   @IsUUID()

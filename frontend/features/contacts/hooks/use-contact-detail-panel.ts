@@ -51,7 +51,7 @@ export function useContactDetailPanel(
     isError: contactError,
   } = useContactDetail(contactId);
 
-  const related = useContactRelatedRecords(contactId);
+  const related = useContactRelatedRecords(contactId, activeSection);
   const financial = useContactFinancialRecords(
     contactId,
     isContactFinancialSection(activeSection),

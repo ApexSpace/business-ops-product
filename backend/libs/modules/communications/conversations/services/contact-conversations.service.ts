@@ -6,6 +6,7 @@ import { ErrorCode } from '@app/common/exceptions/error-code.enum';
 import { getPaginationParams } from '@app/common/utils/pagination.util';
 import { ContactRepository } from '@app/modules/crm/contacts/repositories/contact.repository';
 import { MessagingStatusService } from '@app/modules/integrations/integrations/services/messaging-status.service';
+import { BusinessEffectiveCapabilitiesService } from '@app/modules/platform/business/services/business-effective-capabilities.service';
 import { ContactReplyChannelDto } from '../dto/contact-reply-channel-response.dto';
 import { ConversationResponseDto } from '../dto/conversation-response.dto';
 import { EnsureContactConversationDto } from '../dto/ensure-contact-conversation.dto';
@@ -41,6 +42,7 @@ export class ContactConversationsService {
     private readonly smsConversationsService: SmsConversationsService,
     private readonly whatsAppSessionWindowService: WhatsAppSessionWindowService,
     private readonly whatsAppParticipantSyncService: WhatsAppParticipantSyncService,
+    private readonly effectiveCapabilities: BusinessEffectiveCapabilitiesService,
   ) {}
 
   async listMessages(
@@ -137,6 +139,9 @@ export class ContactConversationsService {
         businessId,
         contact,
       );
+    const featureKeys =
+      await this.effectiveCapabilities.resolveFeatureKeys(businessId);
+    const smsTwoWayEnabled = featureKeys.has('sms.two_way');
 
     for (const candidate of candidates) {
       const messagingStatus =
@@ -145,17 +150,29 @@ export class ContactConversationsService {
           candidate.providerKey,
         );
 
+      let readyForMessaging = messagingStatus.readyForMessaging;
+      let unavailableReason = this.resolveUnavailableReason(
+        candidate,
+        readyForMessaging,
+        messagingStatus.warnings,
+      );
+
+      if (
+        candidate.channel === ConversationChannel.SMS &&
+        !smsTwoWayEnabled
+      ) {
+        readyForMessaging = false;
+        unavailableReason =
+          'Two-way SMS is not included in your current package.';
+      }
+
       channels.push({
         channel: candidate.channel,
         providerKey: candidate.providerKey,
         conversationId: candidate.conversation?.id ?? null,
-        readyForMessaging: messagingStatus.readyForMessaging,
+        readyForMessaging,
         messagingStatus,
-        unavailableReason: this.resolveUnavailableReason(
-          candidate,
-          messagingStatus.readyForMessaging,
-          messagingStatus.warnings,
-        ),
+        unavailableReason,
         ...(candidate.channel === ConversationChannel.WHATSAPP
           ? {
               sessionOpen: whatsAppSession.sessionOpen,

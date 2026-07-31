@@ -23,6 +23,7 @@ import {
   Min,
   ValidateNested,
 } from 'class-validator';
+import { PaginationQueryDto } from '@app/common/dto/pagination-query.dto';
 
 export class CreateMembershipPlanDto {
   @ApiProperty()
@@ -185,7 +186,7 @@ export class CreateClientMembershipDto {
   startDate?: string;
 }
 
-export class ListClientMembershipsQueryDto {
+export class ListClientMembershipsQueryDto extends PaginationQueryDto {
   @ApiPropertyOptional()
   @IsOptional()
   @IsUUID('4')

@@ -14,16 +14,18 @@ export class ContactMembershipsService {
     businessId: string,
     contactId: string,
   ): Promise<ContactMembershipsResponseDto> {
-    const [packages, memberships] = await Promise.all([
+    const [packages, membershipsResult] = await Promise.all([
       this.clientPackagesService.findForContact(businessId, contactId),
       this.clientMembershipsService.listClientMemberships(businessId, {
         contactId,
+        page: 1,
+        limit: 100,
       }),
     ]);
 
     return {
       available: true,
-      memberships,
+      memberships: membershipsResult.items,
       packages,
       message: null,
     };

@@ -36,7 +36,7 @@ interface ConversationListPanelProps {
   selectedThreadKey: string | null;
   onSelectThread: (thread: UnifiedConversationThread) => void;
   useVirtualThreads: boolean;
-  onNewEmail?: () => void;
+  onNewConversation?: () => void;
   className?: string;
 }
 
@@ -50,7 +50,7 @@ export function ConversationListPanel({
   selectedThreadKey,
   onSelectThread,
   useVirtualThreads,
-  onNewEmail,
+  onNewConversation,
   className,
 }: ConversationListPanelProps) {
   return (
@@ -95,13 +95,13 @@ export function ConversationListPanel({
               className="pl-8"
             />
           </div>
-          {onNewEmail ? (
+          {onNewConversation ? (
             <Button
               type="button"
               size="icon"
               className="shrink-0"
-              onClick={onNewEmail}
-              aria-label="New email"
+              onClick={onNewConversation}
+              aria-label="New conversation"
             >
               <Plus className="size-4" />
             </Button>

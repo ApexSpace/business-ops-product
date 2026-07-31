@@ -47,7 +47,8 @@ interface ShellLayoutProps {
 export function AppShellLayout({ mode, children }: ShellLayoutProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const { contexts, jwt, sessionError, refreshSession } = useAuth();
+  const { contexts, jwt, sessionError, refreshSession, isLoading: authLoading } =
+    useAuth();
   const { context: snapshotContext, t } = useSnapshotContext();
   const businessAccess = useOptionalBusinessAccess();
 
@@ -68,6 +69,7 @@ export function AppShellLayout({ mode, children }: ShellLayoutProps) {
 
   useEffect(() => {
     if (mode !== "business" || !isSettingsMode) return;
+    if (authLoading) return;
     if (canAccessSettingsHref(pathname, settingsAccess)) return;
     const fallback =
       jwt?.businessRole === "OWNER" ||
@@ -81,6 +83,7 @@ export function AppShellLayout({ mode, children }: ShellLayoutProps) {
     isSettingsMode,
     pathname,
     router,
+    authLoading,
     jwt?.businessRole,
     jwt?.staffPermissions,
     isPlatformAdmin,

@@ -15,6 +15,16 @@ const nextConfig: NextConfig = {
   },
   /** Required for correct standalone output in the npm workspaces monorepo. */
   outputFileTracingRoot: repoRoot,
+  experimental: {
+    optimizePackageImports: [
+      "lucide-react",
+      "luxon",
+      "@dnd-kit/core",
+      "@dnd-kit/sortable",
+      "@dnd-kit/utilities",
+      "@tanstack/react-table",
+    ],
+  },
   /** Expose backend origin to the browser for embed/public pricing URLs (falls back to BACKEND_URL). */
   env: {
     NEXT_PUBLIC_BACKEND_URL:
