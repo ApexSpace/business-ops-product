@@ -1,4 +1,4 @@
-import { InvoiceStatus } from '@prisma/client';
+import { InvoiceKind, InvoiceStatus } from '@prisma/client';
 import type { Prisma } from '@prisma/client';
 import type { PrismaService } from '@app/core/database/prisma.service';
 import { computeInvoicePaymentSyncFields } from './invoice-payment-sync.util';
@@ -44,6 +44,7 @@ export async function loadInvoicePaymentFields(
   invoiceId: string,
   totalAmount: Prisma.Decimal,
   currentStatus: InvoiceStatus,
+  options: { closedAt?: Date | null; kind?: InvoiceKind | null } = {},
 ) {
   const payments = await prisma.payment.findMany({
     where: {
@@ -57,7 +58,12 @@ export async function loadInvoicePaymentFields(
   });
 
   return computeInvoicePaymentSyncFields(
-    { status: currentStatus, totalAmount },
+    {
+      status: currentStatus,
+      totalAmount,
+      closedAt: options.closedAt,
+      kind: options.kind,
+    },
     payments.map((payment) => ({
       amount: payment.amount,
       paidAt: payment.paidAt!,

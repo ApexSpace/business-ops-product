@@ -54,6 +54,13 @@ export class CheckoutCompletionService {
     if (checkout.balanceDue.greaterThan(0)) {
       return;
     }
+    // Empty unpaid checkouts must stay open until staff adds items and closes.
+    if (
+      checkout.paidAmount.lessThanOrEqualTo(0) &&
+      checkout.items.length === 0
+    ) {
+      return;
+    }
 
     await this.applyDepositLines(checkout, actorUserId);
     await this.applyProductSales(checkout, actorUserId);

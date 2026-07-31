@@ -21,6 +21,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import {
   cancelBusinessSubscription,
+  confirmBusinessSetupIntent,
   createBusinessCheckoutSession,
   createBusinessPortalSession,
   createBusinessSetupIntent,
@@ -130,6 +131,17 @@ export function BusinessBillingSettings() {
       }
       setSetupClientSecret(data.clientSecret);
       setSetupPublishableKey(data.publishableKey);
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  const confirmSetupMutation = useMutation({
+    mutationFn: confirmBusinessSetupIntent,
+    onSuccess: async () => {
+      toast.success("Card saved");
+      setSetupClientSecret(null);
+      setSetupPublishableKey(null);
+      await refetchPaymentMethods();
     },
     onError: (err: Error) => toast.error(err.message),
   });
@@ -364,11 +376,13 @@ export function BusinessBillingSettings() {
               mode="setup"
               publishableKey={setupPublishableKey}
               clientSecret={setupClientSecret}
-              onSuccess={() => {
-                toast.success("Card saved");
-                setSetupClientSecret(null);
-                setSetupPublishableKey(null);
-                void refetchPaymentMethods();
+              onSuccess={(result) => {
+                const setupIntentId = result?.setupIntentId;
+                if (!setupIntentId) {
+                  toast.error("Card was saved in Stripe but confirmation failed.");
+                  return;
+                }
+                confirmSetupMutation.mutate(setupIntentId);
               }}
               onError={(message) => toast.error(message)}
             />
@@ -377,10 +391,14 @@ export function BusinessBillingSettings() {
               size="sm"
               variant="outline"
               onClick={() => setupIntentMutation.mutate()}
-              disabled={setupIntentMutation.isPending}
+              disabled={
+                setupIntentMutation.isPending || confirmSetupMutation.isPending
+              }
             >
               <CreditCard className="mr-2 size-4" />
-              {setupIntentMutation.isPending ? "Preparing…" : "Add card"}
+              {setupIntentMutation.isPending || confirmSetupMutation.isPending
+                ? "Preparing…"
+                : "Add card"}
             </ActionButton>
           )}
         </CardContent>

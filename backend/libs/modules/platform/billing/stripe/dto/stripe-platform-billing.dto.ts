@@ -93,3 +93,11 @@ export class CancelStripeSubscriptionDto {
   @IsBoolean()
   immediate?: boolean;
 }
+
+export class ConfirmBusinessSetupIntentDto {
+  @ApiProperty({
+    description: 'Stripe SetupIntent id returned after confirmSetup succeeds',
+  })
+  @IsString()
+  setupIntentId!: string;
+}
