@@ -38,6 +38,13 @@ export const DEFAULT_SNAPSHOT_NAVIGATION = [
     order: 40,
   },
   {
+    key: "social-planner",
+    route: "/business/social-planner",
+    icon: "share-2",
+    labelKey: "nav.socialPlanner",
+    order: 45,
+  },
+  {
     key: "appointments",
     route: "/business/appointments",
     icon: "calendar",

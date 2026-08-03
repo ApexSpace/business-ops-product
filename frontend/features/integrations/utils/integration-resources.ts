@@ -11,6 +11,11 @@ export type IntegrationResourceType =
   | "EMAIL_ACCOUNT"
   | "PHONE_NUMBER"
   | "STRIPE_ACCOUNT"
+  | "LINKEDIN_ORGANIZATION"
+  | "YOUTUBE_CHANNEL"
+  | "TIKTOK_USER"
+  | "PINTEREST_BOARD"
+  | "X_USER"
   | "OTHER";
 
 export interface IntegrationResource {
@@ -56,6 +61,10 @@ export const PROVIDERS_WITH_RESOURCES = new Set([
   "linkedin",
   "stripe",
   "email",
+  "youtube",
+  "x",
+  "pinterest",
+  "tiktok",
 ]);
 
 export const RESOURCE_TYPE_LABELS: Record<IntegrationResourceType, string> = {
@@ -69,6 +78,11 @@ export const RESOURCE_TYPE_LABELS: Record<IntegrationResourceType, string> = {
   EMAIL_ACCOUNT: "Email account",
   PHONE_NUMBER: "Phone number",
   STRIPE_ACCOUNT: "Stripe account",
+  LINKEDIN_ORGANIZATION: "LinkedIn page",
+  YOUTUBE_CHANNEL: "YouTube channel",
+  TIKTOK_USER: "TikTok account",
+  PINTEREST_BOARD: "Pinterest board",
+  X_USER: "X account",
   OTHER: "Other",
 };
 

@@ -31,10 +31,17 @@ export const META_PROVIDER_CONFIG: Record<MetaProviderKey, MetaProviderConfig> =
       scopes: [
         'public_profile',
         'email',
+        // Required for Pages linked to a Meta Business (Graph v17+); without it
+        // /me/accounts often returns [] even when the user selected Pages in OAuth.
+        'business_management',
         'pages_show_list',
         'pages_read_engagement',
         'pages_manage_metadata',
         'pages_messaging',
+        'pages_manage_posts',
+        'pages_manage_engagement',
+        'pages_read_user_content',
+        'publish_video',
       ],
     },
     instagram: {
@@ -45,11 +52,15 @@ export const META_PROVIDER_CONFIG: Record<MetaProviderKey, MetaProviderConfig> =
       /** Instagram API with Facebook Login — authorize via facebook.com/dialog/oauth */
       scopes: [
         'email',
+        'business_management',
         'pages_show_list',
         'pages_read_engagement',
         'pages_manage_metadata',
         'instagram_basic',
         'instagram_manage_messages',
+        'instagram_content_publish',
+        'instagram_manage_comments',
+        'instagram_manage_contents',
       ],
     },
     whatsapp: {
@@ -110,12 +121,14 @@ export const META_INSTAGRAM_DIRECT_NO_ACCOUNT_MESSAGE =
   'No Instagram account profile was returned for this Direct Instagram connection. Reconnect with a Business or Creator Instagram account.';
 
 export const META_FACEBOOK_NO_PAGES_MESSAGE =
-  'No Facebook Pages were returned by Meta for this connection. Please make sure you are an admin of the Page and select it during Facebook authorization.';
+  'No Facebook Pages were returned by Meta for this connection. Select the Page during authorization, ensure you are a Page admin, and that your Facebook Login for Business configuration includes the business_management permission (required for Business-linked Pages). Then reconnect Facebook.';
 
 /** Instagram API with Instagram Login (Direct) — no Facebook Page required. */
 export const META_INSTAGRAM_LOGIN_AUTH_SCOPES = [
   'instagram_business_basic',
   'instagram_business_manage_messages',
+  'instagram_business_content_publish',
+  'instagram_business_manage_comments',
 ] as const;
 
 export type MetaInstagramAuthFlow = 'FACEBOOK_LOGIN' | 'INSTAGRAM_LOGIN';

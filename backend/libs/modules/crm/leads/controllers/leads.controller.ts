@@ -31,7 +31,7 @@ import { LeadsService } from '@app/modules/crm/leads/services/leads.service';
 @ApiBearerAuth()
 @Controller('leads')
 @UseGuards(BusinessRolesGuard, BusinessCapabilityGuard)
-@RequireModule('leads')
+@RequireModule('pipelines', 'leads')
 @StaffPermission('pipelines.access')
 export class LeadsController {
   constructor(private readonly leadsService: LeadsService) {}

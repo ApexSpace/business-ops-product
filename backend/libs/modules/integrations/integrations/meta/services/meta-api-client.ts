@@ -101,6 +101,13 @@ interface MetaResumableUploadResponse {
 const PAGE_LIST_FIELDS =
   'id,name,access_token,category,picture,tasks,instagram_business_account{id,username,name,profile_picture_url}';
 
+/**
+ * Page node lookup (GET /{page-id}) — `tasks` is only valid on /me/accounts edges,
+ * not on the Page node itself (Meta returns (#100) nonexisting field).
+ */
+const PAGE_BY_ID_FIELDS =
+  'id,name,access_token,category,picture,instagram_business_account{id,username,name,profile_picture_url}';
+
 const INSTAGRAM_ACCOUNT_FIELDS = 'id,username,name,profile_picture_url';
 
 @Injectable()
@@ -345,6 +352,9 @@ export class MetaApiClient {
   /**
    * Lists Facebook Pages the user authorized (user access token).
    * Paginates and requests instagram_business_account with nested fields.
+   *
+   * When /me/accounts returns [] (common for Business-linked Pages without
+   * business_management), falls back to page IDs from debug_token granular_scopes.
    */
   async listPages(accessToken: string): Promise<MetaPageAccount[]> {
     const pages: MetaPageAccount[] = [];
@@ -369,6 +379,21 @@ export class MetaApiClient {
       nextUrl = data.paging?.next ?? null;
     }
 
+    if (pages.length === 0) {
+      const fromGranular =
+        await this.listPagesFromGranularScopes(accessToken);
+      if (fromGranular.length > 0) {
+        this.logger.warn(
+          `[Facebook Sync] /me/accounts empty; recovered ${fromGranular.length} Page(s) via debug_token granular_scopes`,
+        );
+        pages.push(...fromGranular);
+      } else {
+        this.logger.warn(
+          `[Facebook Sync] /me/accounts empty and granular_scopes Page recovery returned 0 Pages`,
+        );
+      }
+    }
+
     if (this.isInstagramSyncDebugEnabled()) {
       this.logger.log(`[Instagram Sync] pages count=${pages.length}`);
       for (const page of pages) {
@@ -379,6 +404,116 @@ export class MetaApiClient {
     }
 
     return pages;
+  }
+
+  /**
+   * When /me/accounts is empty, Meta often still exposes authorized Page IDs
+   * on the user token via debug_token.granular_scopes.target_ids.
+   */
+  private async listPagesFromGranularScopes(
+    accessToken: string,
+  ): Promise<MetaPageAccount[]> {
+    const pageIds = await this.getAuthorizedPageIdsFromDebugToken(accessToken);
+    if (pageIds.length === 0) {
+      return [];
+    }
+
+    const pages: MetaPageAccount[] = [];
+    for (const pageId of pageIds) {
+      const page = await this.fetchPageById(pageId, accessToken);
+      if (page) {
+        pages.push(page);
+      }
+    }
+    return pages;
+  }
+
+  private async getAuthorizedPageIdsFromDebugToken(
+    accessToken: string,
+  ): Promise<string[]> {
+    try {
+      const { appId, appSecret } = this.metaConfigService.getMetaAppConfig();
+      const appAccessToken = `${appId}|${appSecret}`;
+      const url = this.buildGraphUrl('/debug_token', {
+        input_token: accessToken,
+        access_token: appAccessToken,
+      });
+
+      const response = await fetch(url);
+      if (!response.ok) {
+        const detail = this.sanitizeGraphError(await response.text());
+        this.logger.warn(
+          `[Facebook Sync] debug_token failed (${response.status}): ${detail}`,
+        );
+        return [];
+      }
+
+      const body = (await response.json()) as {
+        data?: {
+          scopes?: string[];
+          granular_scopes?: Array<{
+            scope?: string;
+            target_ids?: string[];
+          }>;
+        };
+      };
+
+      const scopes = body.data?.scopes ?? [];
+      if (this.isInstagramSyncDebugEnabled()) {
+        this.logger.log(
+          `[Facebook Sync] token scopes=${scopes.join(',') || '(none)'} granular=${JSON.stringify(body.data?.granular_scopes ?? [])}`,
+        );
+      }
+
+      // Only pages_* target_ids are Page IDs. business_management targets are
+      // Business Manager IDs and must not be fetched as Pages.
+      const ids = new Set<string>();
+      for (const entry of body.data?.granular_scopes ?? []) {
+        const scope = entry.scope ?? '';
+        if (!scope.startsWith('pages_')) {
+          continue;
+        }
+        for (const id of entry.target_ids ?? []) {
+          if (id) {
+            ids.add(String(id));
+          }
+        }
+      }
+      return [...ids];
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      this.logger.warn(
+        `[Facebook Sync] debug_token granular lookup failed: ${message}`,
+      );
+      return [];
+    }
+  }
+
+  private async fetchPageById(
+    pageId: string,
+    accessToken: string,
+  ): Promise<MetaPageAccount | null> {
+    const url = this.buildGraphUrl(`/${pageId}`, {
+      fields: PAGE_BY_ID_FIELDS,
+      access_token: accessToken,
+    });
+
+    const response = await fetch(url);
+    if (!response.ok) {
+      const detail = this.sanitizeGraphError(await response.text());
+      this.logger.warn(
+        `[Facebook Sync] fetch page id=${pageId} failed (${response.status}): ${detail}`,
+      );
+      return null;
+    }
+
+    const page = (await response.json()) as MetaPageAccount & {
+      error?: unknown;
+    };
+    if (!page.id || !page.name) {
+      return null;
+    }
+    return page;
   }
 
   /**

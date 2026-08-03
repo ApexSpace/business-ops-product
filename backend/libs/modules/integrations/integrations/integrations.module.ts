@@ -15,6 +15,8 @@ import { IntegrationProvidersController } from './integration-providers.controll
 import { IntegrationsService } from './integrations.service';
 import { LinkedInOAuthController } from './linkedin-oauth.controller';
 import { LinkedInOAuthService } from './linkedin-oauth.service';
+import { SocialOAuthController } from './social-oauth.controller';
+import { SocialOAuthService } from './social-oauth.service';
 import { StripeOAuthController } from './stripe/controllers/stripe-oauth.controller';
 import { StripeWebhookController } from './stripe/controllers/stripe-webhook.controller';
 import { StripeAccountService } from './stripe/services/stripe-account.service';
@@ -51,6 +53,8 @@ import { InstagramResourceSyncHandler } from './providers/resource-sync/instagra
 import { IntegrationResourceSyncRegistry } from './providers/resource-sync/integration-resource-sync.registry';
 import { StripeResourceSyncHandler } from './providers/resource-sync/stripe-resource-sync.handler';
 import { WhatsAppResourceSyncHandler } from './providers/resource-sync/whatsapp-resource-sync.handler';
+import { YouTubeResourceSyncHandler } from './providers/resource-sync/youtube-resource-sync.handler';
+import { LinkedInResourceSyncHandler } from './providers/resource-sync/linkedin-resource-sync.handler';
 import { BusinessIntegrationRepository } from './repositories/business-integration.repository';
 import { IntegrationProviderRepository } from './repositories/integration-provider.repository';
 import { IntegrationResourceRepository } from './repositories/integration-resource.repository';
@@ -84,6 +88,7 @@ import { WhatsAppTemplatesController } from '../whatsapp/controllers/whatsapp-te
     PlatformIntegrationsController,
     GoogleOAuthController,
     LinkedInOAuthController,
+    SocialOAuthController,
     StripeOAuthController,
     StripeWebhookController,
     MetaOAuthController,
@@ -99,6 +104,7 @@ import { WhatsAppTemplatesController } from '../whatsapp/controllers/whatsapp-te
     IntegrationsService,
     GoogleOAuthService,
     LinkedInOAuthService,
+    SocialOAuthService,
     StripeApiService,
     StripeAccountService,
     StripeOAuthService,
@@ -116,6 +122,8 @@ import { WhatsAppTemplatesController } from '../whatsapp/controllers/whatsapp-te
     InstagramResourceSyncHandler,
     WhatsAppResourceSyncHandler,
     StripeResourceSyncHandler,
+    YouTubeResourceSyncHandler,
+    LinkedInResourceSyncHandler,
     IntegrationResourceSyncRegistry,
     MetaConfigService,
     MetaApiClient,

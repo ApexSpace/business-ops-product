@@ -53,6 +53,13 @@ function baseNavigation(): SnapshotAssets['navigation'] {
       order: 6,
     },
     {
+      key: 'social-planner',
+      route: '/business/social-planner',
+      icon: 'share-2',
+      labelKey: 'nav.socialPlanner',
+      order: 6.5,
+    },
+    {
       key: 'appointments',
       route: '/business/appointments',
       icon: 'calendar',

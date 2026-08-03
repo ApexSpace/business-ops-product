@@ -561,7 +561,31 @@ enum IntegrationResourceType {
   EMAIL_ACCOUNT
   PHONE_NUMBER
   STRIPE_ACCOUNT
+  LINKEDIN_ORGANIZATION
+  YOUTUBE_CHANNEL
+  TIKTOK_USER
+  PINTEREST_BOARD
+  X_USER
   OTHER
+}
+
+enum SocialPostStatus {
+  DRAFT
+  SCHEDULED
+  PUBLISHING
+  PUBLISHED
+  PARTIAL
+  FAILED
+  CANCELLED
+}
+
+enum SocialPostTargetStatus {
+  DRAFT
+  SCHEDULED
+  PUBLISHING
+  PUBLISHED
+  FAILED
+  CANCELLED
 }
 
 enum CalendarStatus {
@@ -847,6 +871,7 @@ model User {
   emailTemplatesCreated EmailTemplate[]        @relation("EmailTemplateCreatedBy")
   emailTemplatesUpdated EmailTemplate[]        @relation("EmailTemplateUpdatedBy")
   whatsappMessageTemplatesCreated WhatsAppMessageTemplate[] @relation("WhatsAppTemplateCreatedBy")
+  socialPostsCreated              SocialPost[]              @relation("SocialPostCreatedBy")
   automationWorkflowsCreated     AutomationWorkflow[]      @relation("AutomationWorkflowCreatedBy")
   snapshotsCreated      Snapshot[]              @relation("SnapshotCreatedBy")
   snapshotsUpdated      Snapshot[]              @relation("SnapshotUpdatedBy")
@@ -1045,6 +1070,8 @@ model Business {
   platformSmsSuppressions  PlatformSmsSuppression[]
   asyncJobs                AsyncJob[]
   fileAssets               FileAsset[]
+  socialPosts              SocialPost[]
+  socialComments           SocialComment[]
   businessEmailPreferences BusinessEmailPreference[]
   businessNotificationChannelPreferences BusinessNotificationChannelPreference[]
   emailTemplates           EmailTemplate[]
@@ -3216,6 +3243,7 @@ model IntegrationResource {
 
   businessIntegration BusinessIntegration @relation(fields: [businessIntegrationId], references: [id], onDelete: Cascade)
   business            Business            @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  socialPostTargets   SocialPostTarget[]
 
   @@unique([businessIntegrationId, externalId])
   @@index([businessId, providerKey])
@@ -4037,11 +4065,142 @@ model FileAsset {
   updatedAt    DateTime        @updatedAt
   deletedAt    DateTime?
 
+  socialPostMedia          SocialPostMedia[] @relation("SocialPostMediaFile")
+  socialPostMediaThumbs    SocialPostMedia[] @relation("SocialPostMediaThumbnail")
+
   @@index([businessId])
   @@index([uploadedById])
   @@index([businessId, category])
   @@index([status])
   @@map("file_assets")
+}
+
+model SocialPost {
+  id              String          @id @default(uuid())
+  businessId      String
+  createdByUserId String?
+  status          SocialPostStatus @default(DRAFT)
+  caption         String          @default("")
+  scheduledAt     DateTime?
+  timezone        String?
+  publishedAt     DateTime?
+  category        String?
+  tags            String[]        @default([])
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  deletedAt       DateTime?
+
+  business  Business           @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  createdBy User?              @relation("SocialPostCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  targets   SocialPostTarget[]
+  media     SocialPostMedia[]
+
+  @@index([businessId, status])
+  @@index([businessId, scheduledAt])
+  @@index([businessId, deletedAt])
+  @@map("social_posts")
+}
+
+model SocialPostTarget {
+  id                    String                 @id @default(uuid())
+  socialPostId          String
+  providerKey           String
+  integrationResourceId String?
+  postType              String                 @default("FEED")
+  platformPayload       Json                   @default("{}")
+  status                SocialPostTargetStatus @default(DRAFT)
+  scheduledAt           DateTime?
+  externalPostId        String?
+  permalink             String?
+  errorCode             String?
+  errorMessage          String?
+  attemptCount          Int                    @default(0)
+  bullJobId             String?
+  publishedAt           DateTime?
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+
+  socialPost SocialPost              @relation(fields: [socialPostId], references: [id], onDelete: Cascade)
+  resource   IntegrationResource?    @relation(fields: [integrationResourceId], references: [id], onDelete: SetNull)
+  metrics    SocialPostMetrics?
+  media      SocialPostMedia[]
+  comments   SocialComment[]
+
+  @@index([socialPostId, status])
+  @@index([status, scheduledAt])
+  @@index([providerKey, status])
+  @@index([externalPostId])
+  @@map("social_post_targets")
+}
+
+model SocialPostMedia {
+  id                   String  @id @default(uuid())
+  socialPostId         String
+  socialPostTargetId   String?
+  fileAssetId          String
+  thumbnailFileAssetId String?
+  sortOrder            Int     @default(0)
+  altText              String?
+
+  socialPost       SocialPost        @relation(fields: [socialPostId], references: [id], onDelete: Cascade)
+  socialPostTarget SocialPostTarget? @relation(fields: [socialPostTargetId], references: [id], onDelete: SetNull)
+  fileAsset        FileAsset         @relation("SocialPostMediaFile", fields: [fileAssetId], references: [id], onDelete: Cascade)
+  thumbnailFile    FileAsset?        @relation("SocialPostMediaThumbnail", fields: [thumbnailFileAssetId], references: [id], onDelete: SetNull)
+
+  @@index([socialPostId, sortOrder])
+  @@map("social_post_media")
+}
+
+model SocialPostMetrics {
+  id                String   @id @default(uuid())
+  socialPostTargetId String  @unique
+  likes             Int      @default(0)
+  comments          Int      @default(0)
+  shares            Int      @default(0)
+  reach             Int      @default(0)
+  impressions       Int      @default(0)
+  views             Int      @default(0)
+  rawJson           Json?
+  syncedAt          DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  target SocialPostTarget @relation(fields: [socialPostTargetId], references: [id], onDelete: Cascade)
+
+  @@map("social_post_metrics")
+}
+
+/// Local mirror of provider comments on Social Planner–published targets only.
+model SocialComment {
+  id                      String    @id @default(uuid())
+  businessId              String
+  socialPostTargetId      String
+  providerKey             String
+  externalCommentId       String
+  parentCommentId         String?
+  parentExternalCommentId String?
+  authorName              String?
+  authorExternalId        String?
+  message                 String    @default("")
+  likeCount               Int       @default(0)
+  isRead                  Boolean   @default(false)
+  externalCreatedAt       DateTime?
+  lastSyncedAt            DateTime?
+  deletedAt               DateTime?
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+
+  business Business         @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  target   SocialPostTarget @relation(fields: [socialPostTargetId], references: [id], onDelete: Cascade)
+  parent   SocialComment?   @relation("SocialCommentReplies", fields: [parentCommentId], references: [id], onDelete: SetNull)
+  replies  SocialComment[]  @relation("SocialCommentReplies")
+
+  @@unique([providerKey, externalCommentId])
+  @@index([businessId, isRead])
+  @@index([businessId, deletedAt])
+  @@index([socialPostTargetId, externalCreatedAt])
+  @@index([parentCommentId])
+  @@map("social_comments")
 }
 
 model WhatsAppMessageTemplate {

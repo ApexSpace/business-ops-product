@@ -2,6 +2,7 @@ export const GOOGLE_OAUTH_PROVIDER_KEYS = [
   'google-calendar',
   'google-business-profile',
   'google-lead-ads',
+  'youtube',
 ] as const;
 
 export type GoogleOAuthProviderKey =
@@ -25,6 +26,11 @@ const PROVIDER_SCOPES: Record<GoogleOAuthProviderKey, readonly string[]> = {
   'google-lead-ads': [
     ...BASE_SCOPES,
     'https://www.googleapis.com/auth/adwords',
+  ],
+  youtube: [
+    ...BASE_SCOPES,
+    'https://www.googleapis.com/auth/youtube.upload',
+    'https://www.googleapis.com/auth/youtube.force-ssl',
   ],
 };
 

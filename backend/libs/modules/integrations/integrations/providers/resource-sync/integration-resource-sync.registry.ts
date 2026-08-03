@@ -6,6 +6,8 @@ import { GoogleBusinessProfileResourceSyncHandler } from './google-business-prof
 import { InstagramResourceSyncHandler } from './instagram-resource-sync.handler';
 import { StripeResourceSyncHandler } from './stripe-resource-sync.handler';
 import { WhatsAppResourceSyncHandler } from './whatsapp-resource-sync.handler';
+import { YouTubeResourceSyncHandler } from './youtube-resource-sync.handler';
+import { LinkedInResourceSyncHandler } from './linkedin-resource-sync.handler';
 
 @Injectable()
 export class IntegrationResourceSyncRegistry {
@@ -18,6 +20,8 @@ export class IntegrationResourceSyncRegistry {
     instagramHandler: InstagramResourceSyncHandler,
     whatsappHandler: WhatsAppResourceSyncHandler,
     stripeHandler: StripeResourceSyncHandler,
+    youtubeHandler: YouTubeResourceSyncHandler,
+    linkedInHandler: LinkedInResourceSyncHandler,
   ) {
     this.handlers = new Map(
       [
@@ -27,6 +31,8 @@ export class IntegrationResourceSyncRegistry {
         instagramHandler,
         whatsappHandler,
         stripeHandler,
+        youtubeHandler,
+        linkedInHandler,
       ].map((handler) => [handler.providerKey, handler]),
     );
   }

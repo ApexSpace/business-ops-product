@@ -5,6 +5,8 @@ export const META_MESSAGING_PAGE_WEBHOOK_FIELDS = [
   'message_reads',
   'message_deliveries',
   'messaging_referrals',
+  /** Page feed includes comments/reactions on Page posts (Social Planner engagement). */
+  'feed',
 ] as const;
 
 /** @deprecated Use META_MESSAGING_PAGE_WEBHOOK_FIELDS */
@@ -20,12 +22,15 @@ export const META_INSTAGRAM_APP_WEBHOOK_FIELDS = [
   'messages',
   'messaging_postbacks',
   'messaging_seen',
+  'comments',
+  'live_comments',
 ] as const;
 
-/** App-level webhook fields for the Page object type (Messenger). */
+/** App-level webhook fields for the Page object type (Messenger + feed comments). */
 export const META_PAGE_APP_WEBHOOK_FIELDS = [
   'messages',
   'messaging_postbacks',
   'message_reads',
   'message_deliveries',
+  'feed',
 ] as const;

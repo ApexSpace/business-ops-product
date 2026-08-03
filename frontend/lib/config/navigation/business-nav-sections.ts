@@ -10,6 +10,7 @@ export const BUSINESS_PRIMARY_NAV_KEYS = [
 /** Secondary apps shown in the Apps launcher. */
 export const BUSINESS_APPS_NAV_KEYS = [
   "work-items",
+  "social-planner",
   "pipelines",
   "gift-cards",
   "packages",

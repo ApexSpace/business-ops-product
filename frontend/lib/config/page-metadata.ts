@@ -43,6 +43,24 @@ const businessRoutes: Record<string, RouteEntry> = {
     description:
       "Record customer, service, and work done — visits, jobs, sessions, or cases.",
   },
+  "/business/social-planner": {
+    title: "Social Planner",
+    description: "Compose, schedule, and publish posts across social channels.",
+  },
+  "/business/social-planner/posts": {
+    title: "Social Posts",
+    description: "List and manage scheduled and published social posts.",
+  },
+  "/business/social-planner/new": {
+    title: "Compose post",
+    description: "Create a multi-destination social post.",
+  },
+  "/business/social-planner/comments": {
+    title: "Engagement",
+    description:
+      "Comments and likes on Facebook, Instagram, and YouTube posts published from Social Planner.",
+  },
+
   "/business/notes": {
     title: "Notes",
     description: "Free-form notes linked to contacts and leads.",
@@ -367,6 +385,7 @@ const platformRoutes: Record<string, RouteEntry> = {
 const businessTerminologyKeys: Partial<Record<string, string>> = {
   "/business/contacts": "nav.contacts",
   "/business/work-items": "nav.workItems",
+  "/business/social-planner": "nav.socialPlanner",
   "/business/pipelines": "nav.pipelines",
   "/business/conversations": "nav.conversations",
   "/business/appointments": "nav.appointments",

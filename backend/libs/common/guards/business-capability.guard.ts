@@ -21,16 +21,17 @@ export class BusinessCapabilityGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const moduleKey = this.reflector.getAllAndOverride<string | undefined>(
-      REQUIRE_MODULE_KEY,
-      [context.getHandler(), context.getClass()],
-    );
+    const moduleKeys = this.reflector.getAllAndOverride<
+      string | string[] | undefined
+    >(REQUIRE_MODULE_KEY, [context.getHandler(), context.getClass()]);
     const capabilityKey = this.reflector.getAllAndOverride<string | undefined>(
       REQUIRE_CAPABILITY_KEY,
       [context.getHandler(), context.getClass()],
     );
 
-    if (!moduleKey && !capabilityKey) {
+    const requiredModules = normalizeModuleKeys(moduleKeys);
+
+    if (requiredModules.length === 0 && !capabilityKey) {
       return true;
     }
 
@@ -68,11 +69,14 @@ export class BusinessCapabilityGuard implements CanActivate {
       return true;
     }
 
-    if (moduleKey) {
-      const allowed = await this.capabilityCheck.hasModule(
-        businessId,
-        moduleKey,
-      );
+    if (requiredModules.length > 0) {
+      let allowed = false;
+      for (const moduleKey of requiredModules) {
+        if (await this.capabilityCheck.hasModule(businessId, moduleKey)) {
+          allowed = true;
+          break;
+        }
+      }
       if (!allowed) {
         throw new AppException(
           ErrorCode.FEATURE_NOT_AVAILABLE,
@@ -84,4 +88,12 @@ export class BusinessCapabilityGuard implements CanActivate {
 
     return true;
   }
+}
+
+function normalizeModuleKeys(
+  value: string | string[] | undefined,
+): string[] {
+  if (!value) return [];
+  if (typeof value === 'string') return value.trim() ? [value] : [];
+  return value.filter((key) => typeof key === 'string' && key.trim().length > 0);
 }

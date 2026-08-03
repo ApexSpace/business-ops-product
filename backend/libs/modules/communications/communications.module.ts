@@ -6,6 +6,7 @@ import { EmailModule } from './email/email.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { SmsModule } from './sms/sms.module';
 import { FormsModule } from './forms/forms.module';
+import { SocialPlannerModule } from './social-planner/social-planner.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { FormsModule } from './forms/forms.module';
     SmsModule,
     FormsModule,
     AutomationsModule,
+    SocialPlannerModule,
   ],
   exports: [
     ConversationsModule,
@@ -25,6 +27,7 @@ import { FormsModule } from './forms/forms.module';
     SmsModule,
     FormsModule,
     AutomationsModule,
+    SocialPlannerModule,
   ],
 })
 export class CommunicationsModule {}

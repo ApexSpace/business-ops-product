@@ -114,6 +114,38 @@ export function WorkItemBoard({
       itemId: string;
       status: WorkItemStatus;
     }) => updateWorkItem(itemId, { status }, apiBase),
+    onMutate: async ({ itemId, status }) => {
+      await queryClient.cancelQueries({ queryKey: listQueryKey });
+      const previous =
+        queryClient.getQueryData<PaginatedResult<WorkItem>>(listQueryKey);
+
+      queryClient.setQueryData<PaginatedResult<WorkItem>>(
+        listQueryKey,
+        (old) => {
+          if (!old) return old;
+          if (statusFilter && status !== statusFilter) {
+            return {
+              ...old,
+              items: old.items.filter((i) => i.id !== itemId),
+              meta: {
+                ...old.meta,
+                total: Math.max(0, old.meta.total - 1),
+              },
+            };
+          }
+          return {
+            ...old,
+            items: old.items.map((i) =>
+              i.id === itemId
+                ? { ...i, status, updatedAt: new Date().toISOString() }
+                : i,
+            ),
+          };
+        },
+      );
+
+      return { previous };
+    },
     onSuccess: (updated, { status }) => {
       queryClient.setQueryData<PaginatedResult<WorkItem>>(
         listQueryKey,
@@ -129,11 +161,12 @@ export function WorkItemBoard({
               },
             };
           }
+          const exists = old.items.some((i) => i.id === updated.id);
           return {
             ...old,
-            items: old.items.map((i) =>
-              i.id === updated.id ? updated : i,
-            ),
+            items: exists
+              ? old.items.map((i) => (i.id === updated.id ? updated : i))
+              : old.items,
           };
         },
       );
@@ -149,7 +182,10 @@ export function WorkItemBoard({
       });
       setMovingId(null);
     },
-    onError: (err: Error) => {
+    onError: (err: Error, _vars, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(listQueryKey, context.previous);
+      }
       setStatusOverrides({});
       setMovingId(null);
       toast.error(err.message);
@@ -158,25 +194,14 @@ export function WorkItemBoard({
 
   const moveItem = useCallback(
     (item: WorkItem, newStatus: WorkItemStatus) => {
-      if (!onEdit || item.status === newStatus) return;
+      if (!canManage || item.status === newStatus) return;
 
       setMovingId(item.id);
       applyStatusOverride(item.id, newStatus);
 
-      statusMutation.mutate(
-        { itemId: item.id, status: newStatus },
-        {
-          onError: () => {
-            setStatusOverrides((prev) => {
-              const next = { ...prev };
-              delete next[item.id];
-              return next;
-            });
-          },
-        },
-      );
+      statusMutation.mutate({ itemId: item.id, status: newStatus });
     },
-    [applyStatusOverride, onEdit, statusMutation],
+    [applyStatusOverride, canManage, statusMutation],
   );
 
   const handleDragStart = (event: DragStartEvent) => {
@@ -204,24 +229,35 @@ export function WorkItemBoard({
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
-    setActiveItem(null);
-    setOverStatus(null);
-
     const { active, over } = event;
-    if (!over) return;
 
     const itemId = String(active.id);
     const item = boardItems.find((i) => i.id === itemId);
-    if (!item) return;
 
-    let targetStatus = String(over.id) as WorkItemStatus;
-    if (!WORK_ITEM_STATUS_OPTIONS.some((o) => o.value === targetStatus)) {
-      const overItem = boardItems.find((i) => i.id === targetStatus);
-      if (!overItem) return;
-      targetStatus = overItem.status;
+    let targetStatus: WorkItemStatus | null = null;
+    if (over && item) {
+      let nextStatus = String(over.id) as WorkItemStatus;
+      if (!WORK_ITEM_STATUS_OPTIONS.some((o) => o.value === nextStatus)) {
+        const overItem = boardItems.find((i) => i.id === nextStatus);
+        if (overItem) nextStatus = overItem.status;
+        else nextStatus = item.status;
+      }
+      targetStatus = nextStatus;
     }
 
-    moveItem(item, targetStatus);
+    // Apply destination before clearing the overlay so the card never flashes
+    // back into the source column.
+    if (canManage && item && targetStatus && item.status !== targetStatus) {
+      applyStatusOverride(item.id, targetStatus);
+      setMovingId(item.id);
+    }
+
+    setActiveItem(null);
+    setOverStatus(null);
+
+    if (item && targetStatus) {
+      moveItem(item, targetStatus);
+    }
   };
 
   const handleDragCancel = () => {
@@ -291,7 +327,7 @@ export function WorkItemBoard({
           ))}
         </div>
 
-        <DragOverlay dropAnimation={{ duration: 180, easing: "ease-out" }}>
+        <DragOverlay dropAnimation={null}>
           {activeItem && activeAccent ? (
             <WorkItemBoardCard
               item={activeItem}

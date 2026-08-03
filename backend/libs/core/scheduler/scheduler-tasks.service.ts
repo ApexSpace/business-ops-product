@@ -9,6 +9,9 @@ import { ClientPackagesService } from '@app/modules/finance/packages/services/cl
 import { ClientMembershipsService } from '@app/modules/finance/memberships/services/client-memberships.service';
 import { OperationsCampaignService } from '@app/modules/platform/operations/services/operations-campaign.service';
 import { StripePlatformBillingReconcileService } from '@app/modules/platform/billing/stripe/services/stripe-platform-billing-reconcile.service';
+import { SocialSafetyNetService } from '@app/modules/communications/social-planner/services/social-safety-net.service';
+import { SocialEngagementReconcileService } from '@app/modules/communications/social-planner/services/social-engagement-reconcile.service';
+import { SocialMetricsSyncService } from '@app/modules/communications/social-planner/services/social-metrics-sync.service';
 import {
   JOB_CLEANUP_ASYNC_JOBS,
   JOB_CLEANUP_ORPHAN_FILES,
@@ -30,8 +33,53 @@ export class SchedulerTasksService {
     private readonly clientMembershipsService: ClientMembershipsService,
     private readonly operationsCampaignService: OperationsCampaignService,
     private readonly stripeBillingReconcile: StripePlatformBillingReconcileService,
+    private readonly socialSafetyNetService: SocialSafetyNetService,
+    private readonly socialEngagementReconcileService: SocialEngagementReconcileService,
+    private readonly socialMetricsSyncService: SocialMetricsSyncService,
     private readonly prisma: PrismaService,
   ) {}
+
+  /** Safety net for stranded social publish targets (primary: externalPostId IS NULL). */
+  @Cron('*/15 * * * *')
+  async catchStrandedSocialPublishTargets(): Promise<void> {
+    try {
+      await this.socialSafetyNetService.catchStrandedTargets();
+    } catch (error) {
+      this.logger.error(
+        `Social publish safety-net cron failed: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+    }
+  }
+
+  /** Backstop for missed Meta comment webhooks + YouTube poll. */
+  @Cron('0 */3 * * *')
+  async reconcileSocialEngagementComments(): Promise<void> {
+    try {
+      await this.socialEngagementReconcileService.reconcileDueTargets(40);
+    } catch (error) {
+      this.logger.error(
+        `Social engagement reconcile cron failed: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+    }
+  }
+
+  /** ~24h engagement metrics sync into SocialPostMetrics (analytics DB reads). */
+  @Cron(CronExpression.EVERY_DAY_AT_2AM)
+  async syncSocialPostMetrics(): Promise<void> {
+    try {
+      await this.socialMetricsSyncService.syncDueTargets(50);
+    } catch (error) {
+      this.logger.error(
+        `Social metrics sync cron failed: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+    }
+  }
 
   @Cron(CronExpression.EVERY_HOUR)
   async cleanupExpiredTrialSignupSessions(): Promise<void> {

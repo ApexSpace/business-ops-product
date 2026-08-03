@@ -15,8 +15,10 @@ import {
   JOB_AUTOMATION_STEP,
   JOB_SEND_EMAIL,
   JOB_SEND_OUTBOUND_MESSAGE,
+  JOB_SOCIAL_PUBLISH,
   MESSAGE_QUEUE,
   SEARCH_QUEUE,
+  SOCIAL_PUBLISH_QUEUE,
   SYNC_QUEUE,
   WEBHOOK_QUEUE,
 } from './queue.constants';
@@ -28,6 +30,7 @@ import type {
   SendEmailJobPayload,
   SendOutboundMessagePayload,
   AutomationStepJobPayload,
+  SocialPublishJobPayload,
 } from './queue.types';
 import { resolveEmailConfig } from '../config/email/email.config';
 
@@ -93,6 +96,10 @@ export class QueueService {
 
   emailQueue(): Queue | null {
     return this.getQueue(EMAIL_QUEUE);
+  }
+
+  socialPublishQueue(): Queue | null {
+    return this.getQueue(SOCIAL_PUBLISH_QUEUE);
   }
 
   private emailJobOptions() {
@@ -259,6 +266,50 @@ export class QueueService {
         `Failed to enqueue automation step job ${jobId}: ${message}`,
       );
       throw error;
+    }
+  }
+
+  async enqueueSocialPublish(
+    payload: SocialPublishJobPayload,
+    options?: { delay?: number; jobId?: string },
+  ): Promise<string | null> {
+    const queue = this.socialPublishQueue();
+    // BullMQ rejects custom jobIds that contain ':'.
+    const jobId =
+      options?.jobId ?? `social-publish-${payload.socialPostTargetId}`;
+    if (
+      !this.guardQueueAvailable(queue, `enqueue social publish (${jobId})`)
+    ) {
+      return null;
+    }
+    try {
+      const job = await queue.add(JOB_SOCIAL_PUBLISH, payload, {
+        jobId,
+        ...(options?.delay ? { delay: options.delay } : {}),
+      });
+      return job.id ?? null;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.error(
+        `Failed to enqueue social publish job ${jobId}: ${message}`,
+      );
+      throw error;
+    }
+  }
+
+  async removeSocialPublishJob(jobId: string): Promise<void> {
+    const queue = this.socialPublishQueue();
+    if (!queue) {
+      return;
+    }
+    try {
+      const job = await queue.getJob(jobId);
+      if (job) {
+        await job.remove();
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.warn(`Failed to remove social publish job ${jobId}: ${message}`);
     }
   }
 }

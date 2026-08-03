@@ -119,6 +119,34 @@ export const queryKeys = {
     detail: (apiBase: string, id: string) =>
       ["work-items", apiBase, "detail", id] as const,
   },
+  socialPlanner: {
+    all: () => ["social-planner"] as const,
+    list: (filters: {
+      page?: number;
+      limit?: number;
+      status?: string;
+      providerKey?: string;
+      from?: string;
+      to?: string;
+    }) => listKey(["social-planner", "list"], filters),
+    detail: (id: string) => ["social-planner", "detail", id] as const,
+    calendar: (from: string, to: string) =>
+      ["social-planner", "calendar", from, to] as const,
+    platformSchemas: () => ["social-planner", "platform-schemas"] as const,
+    comments: (filters: {
+      providerKey?: string;
+      socialPostId?: string;
+      unreadOnly?: boolean;
+      search?: string;
+    } = {}) => listKey(["social-planner", "comments"], filters),
+    engagement: (filters: {
+      providerKey?: string;
+      socialPostId?: string;
+      unreadOnly?: boolean;
+      search?: string;
+      refresh?: boolean;
+    } = {}) => listKey(["social-planner", "engagement"], filters),
+  },
   notes: {
     all: () => ["notes"] as const,
     list: (filters: {
