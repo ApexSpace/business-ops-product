@@ -155,11 +155,9 @@ export interface SocialEngagementPostGroup {
 
 export interface SocialEngagementListResult {
   items: SocialEngagementPostGroup[];
-  meta: {
-    totalComments: number;
-    unreadCount: number;
-    warnings: string[];
-  };
+  totalComments: number;
+  unreadCount: number;
+  warnings: string[];
 }
 
 export type SocialEngagementFilters = {

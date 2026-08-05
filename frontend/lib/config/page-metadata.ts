@@ -58,7 +58,7 @@ const businessRoutes: Record<string, RouteEntry> = {
   "/business/social-planner/comments": {
     title: "Engagement",
     description:
-      "Comments and likes on Facebook, Instagram, and YouTube posts published from Social Planner.",
+      "Comments and likes on Facebook, Instagram, and YouTube posts published from Social Planner. TikTok comments are not supported via Login Kit / Content Posting API.",
   },
 
   "/business/notes": {

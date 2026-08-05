@@ -4,6 +4,7 @@ import { ErrorCode } from '@app/common/exceptions/error-code.enum';
 import { SocialCommentRepository } from '../repositories/social-comment.repository';
 import { SocialEngagementAdapterRegistry } from '../engagement/social-engagement.registry';
 import type { SocialEngagementComment } from '../engagement/social-engagement-adapter.interface';
+import { buildCommentForest } from '../utils/build-comment-forest.util';
 import { SocialTokenResolverService } from './social-token-resolver.service';
 
 export interface SocialCommentDto {
@@ -46,11 +47,9 @@ export interface SocialEngagementPostGroupDto {
 
 export interface SocialEngagementListResult {
   items: SocialEngagementPostGroupDto[];
-  meta: {
-    totalComments: number;
-    unreadCount: number;
-    warnings: string[];
-  };
+  totalComments: number;
+  unreadCount: number;
+  warnings: string[];
 }
 
 @Injectable()
@@ -120,49 +119,117 @@ export class SocialCommentsService {
       query.providerKey,
     );
 
-    const groups = new Map<string, SocialEngagementPostGroupDto>();
+    // Group flat rows by target, then rebuild reply trees so reply-to-reply
+    // nesting is preserved (Prisma include.replies is only one level deep).
+    const byTarget = new Map<string, typeof comments>();
     for (const comment of comments) {
-      const target = comment.target;
-      const externalPostId = target.externalPostId ?? '';
-      const adapter = this.engagementRegistry.getAdapter(comment.providerKey);
-      const key = target.id;
-      if (!groups.has(key)) {
-        groups.set(key, {
-          socialPostId: target.socialPostId,
-          socialPostTargetId: target.id,
-          providerKey: comment.providerKey,
-          externalPostId,
-          permalink: target.permalink,
-          resourceName: target.resource?.name ?? null,
-          captionPreview: (target.socialPost.caption ?? '').slice(0, 160),
-          publishedAt: target.publishedAt?.toISOString() ?? null,
-          metrics: target.metrics
-            ? {
-                likes: target.metrics.likes,
-                comments: target.metrics.comments,
-                shares: target.metrics.shares,
-                views: target.metrics.views,
-              }
-            : null,
-          capabilities: {
-            reply: adapter?.capabilities.reply ?? false,
-            likeComment: adapter?.capabilities.likeComment ?? false,
-            deleteComment: adapter?.capabilities.deleteComment ?? false,
-          },
-          comments: [],
-        });
-      }
-      groups.get(key)!.comments.push(this.toDto(comment));
+      const key = comment.socialPostTargetId;
+      const list = byTarget.get(key);
+      if (list) list.push(comment);
+      else byTarget.set(key, [comment]);
     }
 
+    const groups: SocialEngagementPostGroupDto[] = [];
+    for (const targetComments of byTarget.values()) {
+      const sample = targetComments[0]!;
+      const target = sample.target;
+      const externalPostId = target.externalPostId ?? '';
+      const adapter = this.engagementRegistry.getAdapter(sample.providerKey);
+      const forest = buildCommentForest(
+        targetComments.map((c) => ({
+          ...c,
+          parentCommentId: c.parentCommentId,
+        })),
+      );
+
+      groups.push({
+        socialPostId: target.socialPostId,
+        socialPostTargetId: target.id,
+        providerKey: sample.providerKey,
+        externalPostId,
+        permalink: target.permalink,
+        resourceName: target.resource?.name ?? null,
+        captionPreview: (target.socialPost.caption ?? '').slice(0, 160),
+        publishedAt: target.publishedAt?.toISOString() ?? null,
+        metrics: target.metrics
+          ? {
+              likes: target.metrics.likes,
+              comments: target.metrics.comments,
+              shares: target.metrics.shares,
+              views: target.metrics.views,
+            }
+          : null,
+        capabilities: {
+          reply: adapter?.capabilities.reply ?? false,
+          likeComment: adapter?.capabilities.likeComment ?? false,
+          deleteComment: adapter?.capabilities.deleteComment ?? false,
+        },
+        comments: forest.map((node) => this.toDto(node)),
+      });
+    }
+
+    const items = groups;
+    await this.backfillInstagramPermalinks(businessId, items, warnings);
+
     return {
-      items: [...groups.values()],
-      meta: {
-        totalComments: total,
-        unreadCount,
-        warnings,
-      },
+      // Flat shape without a nested `meta` key — TransformInterceptor treats
+      // `{ items, meta }` as a paginated list and would strip the payload.
+      items,
+      totalComments: total,
+      unreadCount,
+      warnings,
     };
+  }
+
+  /**
+   * Older publishes stored `instagram.com/p/{graphMediaId}` which is not a valid
+   * public URL. Fetch the real shortcode permalink and persist it.
+   */
+  private async backfillInstagramPermalinks(
+    businessId: string,
+    items: SocialEngagementPostGroupDto[],
+    warnings: string[],
+  ): Promise<void> {
+    const igAdapter = this.engagementRegistry.getAdapter('instagram');
+    if (!igAdapter?.fetchPermalink) {
+      return;
+    }
+
+    for (const group of items) {
+      if (group.providerKey !== 'instagram' || !group.externalPostId) continue;
+      if (!needsInstagramPermalinkBackfill(group.permalink, group.externalPostId)) {
+        continue;
+      }
+
+      try {
+        const target = await this.commentRepository.findTargetById(
+          businessId,
+          group.socialPostTargetId,
+        );
+        if (!target) continue;
+        const accessToken = await this.tokenResolver.getAccessToken(
+          businessId,
+          'instagram',
+          target.integrationResourceId,
+        );
+        const permalink = await igAdapter.fetchPermalink(
+          group.externalPostId,
+          accessToken,
+        );
+        if (!permalink) continue;
+        await this.commentRepository.updateTargetPermalink(
+          group.socialPostTargetId,
+          permalink,
+        );
+        group.permalink = permalink;
+      } catch (error) {
+        warnings.push(
+          `instagram permalink:${group.externalPostId}: ${
+            error instanceof Error ? error.message : 'backfill failed'
+          }`,
+        );
+      }
+    }
   }
 
   async markRead(businessId: string, ids: string[]) {
@@ -205,12 +272,21 @@ export class SocialCommentsService {
       externalCommentId: resolved.externalCommentId,
       accessToken: resolved.accessToken,
       message,
+    }).catch((error) => {
+      throw new AppException(
+        ErrorCode.SOCIAL_PUBLISH_FAILED,
+        error instanceof Error ? error.message : 'Failed to reply to comment',
+        HttpStatus.BAD_REQUEST,
+      );
     });
 
-    const parent = await this.commentRepository.findByExternalId(
-      providerKey,
-      resolved.externalCommentId,
-    );
+    // Prefer UUID parent from the comment being replied to (already resolved).
+    const parent =
+      (await this.commentRepository.findById(businessId, commentId)) ??
+      (await this.commentRepository.findByExternalId(
+        providerKey,
+        resolved.externalCommentId,
+      ));
 
     await this.commentRepository.upsertComment({
       businessId,
@@ -476,6 +552,7 @@ export class SocialCommentsService {
       externalCommentId,
       targetId,
       accessToken,
+      parentCommentId: byUuid?.id ?? null,
     };
   }
 
@@ -512,8 +589,17 @@ export class SocialCommentsService {
       isRead: boolean;
       providerKey: string;
       socialPostTargetId: string;
+      target?: { externalPostId: string | null; permalink: string | null };
+      replies?: unknown[];
     }>;
   }): SocialCommentDto {
+    const externalPostId =
+      comment.target?.externalPostId ??
+      comment.replies?.[0]?.target?.externalPostId ??
+      '';
+    const permalink =
+      comment.target?.permalink ?? comment.replies?.[0]?.target?.permalink ?? null;
+
     return {
       id: comment.id,
       externalCommentId: comment.externalCommentId,
@@ -523,23 +609,29 @@ export class SocialCommentsService {
       likeCount: comment.likeCount,
       isRead: comment.isRead,
       providerKey: comment.providerKey,
-      externalPostId: comment.target.externalPostId ?? '',
+      externalPostId,
       socialPostTargetId: comment.socialPostTargetId,
-      permalink: comment.target.permalink,
-      replies: (comment.replies ?? []).map((reply) => ({
-        id: reply.id,
-        externalCommentId: reply.externalCommentId,
-        message: reply.message,
-        fromName: reply.authorName,
-        createdTime: reply.externalCreatedAt?.toISOString() ?? null,
-        likeCount: reply.likeCount,
-        isRead: reply.isRead,
-        providerKey: reply.providerKey,
-        externalPostId: comment.target.externalPostId ?? '',
-        socialPostTargetId: reply.socialPostTargetId,
-        permalink: comment.target.permalink,
-        replies: [],
-      })),
+      permalink,
+      // Recurse — do not flatten deeper replies to [].
+      replies: (comment.replies ?? []).map((reply) =>
+        this.toDto({
+          ...reply,
+          target: reply.target ?? comment.target,
+          replies: (reply.replies ?? []) as typeof comment.replies,
+        }),
+      ),
     };
   }
+}
+
+function needsInstagramPermalinkBackfill(
+  permalink: string | null,
+  externalPostId: string,
+): boolean {
+  if (!permalink) return true;
+  const match = permalink.match(/instagram\.com\/(?:p|reel|tv)\/([^/?#]+)/i);
+  if (!match) return true;
+  const slug = match[1];
+  // Graph media ids are numeric; public URLs use alphanumeric shortcodes.
+  return /^\d+$/.test(slug) || slug === externalPostId;
 }

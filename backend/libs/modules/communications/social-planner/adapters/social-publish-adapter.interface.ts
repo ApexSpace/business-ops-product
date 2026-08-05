@@ -2,6 +2,14 @@ export interface SocialPublishMediaInput {
   url: string;
   mimeType: string;
   fileAssetId: string;
+  /** R2 object key — used for FILE_UPLOAD / byte fetch when pull URL is unsuitable. */
+  objectKey?: string;
+  /** Byte size when known (FILE_UPLOAD chunking). */
+  sizeBytes?: number;
+  /** Whether `url` is a stable public CDN URL (vs short-lived signed). */
+  isPublicUrl?: boolean;
+  /** Duration in seconds when known from file metadata. */
+  durationSec?: number;
 }
 
 export interface SocialPublishInput {

@@ -8,6 +8,11 @@ import { YouTubeEngagementAdapter } from './youtube-engagement.adapter';
 export class SocialEngagementAdapterRegistry {
   private readonly adapters: Map<string, SocialEngagementAdapter>;
 
+  /**
+   * Comments are supported for Facebook, Instagram, and YouTube only.
+   * TikTok organic comments require Research API or Ads APIs — not Login Kit /
+   * Content Posting. Register a future adapter here when a product is approved.
+   */
   constructor(
     facebook: FacebookEngagementAdapter,
     instagram: InstagramEngagementAdapter,

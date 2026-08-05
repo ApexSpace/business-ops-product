@@ -36,6 +36,43 @@ describe('mapGraphComment', () => {
     expect(mapped.replies[0].parentExternalCommentId).toBe('parent');
     expect(mapped.replies[0].message).toBe('reply');
   });
+
+  it('maps Instagram text/timestamp/replies fields', () => {
+    const mapped = mapGraphComment({
+      id: 'ig1',
+      text: 'hello ig',
+      timestamp: '2026-08-03T12:00:00+0000',
+      from: { username: 'gothic' },
+      replies: {
+        data: [{ id: 'ig2', text: 'nested', from: { username: 'reply_user' } }],
+      },
+    });
+    expect(mapped.message).toBe('hello ig');
+    expect(mapped.createdTime).toBe('2026-08-03T12:00:00+0000');
+    expect(mapped.authorName).toBe('gothic');
+    expect(mapped.replies[0].message).toBe('nested');
+  });
+
+  it('maps reply-to-reply nesting from Graph', () => {
+    const mapped = mapGraphComment({
+      id: 'top',
+      text: 'Good one',
+      replies: {
+        data: [
+          {
+            id: 'mid',
+            text: 'thanks g',
+            replies: {
+              data: [{ id: 'deep', text: 'goood one this one' }],
+            },
+          },
+        ],
+      },
+    });
+    expect(mapped.replies[0]!.replies).toHaveLength(1);
+    expect(mapped.replies[0]!.replies[0]!.message).toBe('goood one this one');
+    expect(mapped.replies[0]!.replies[0]!.parentExternalCommentId).toBe('mid');
+  });
 });
 
 describe('meta webhook comment helpers', () => {

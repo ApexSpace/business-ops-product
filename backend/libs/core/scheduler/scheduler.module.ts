@@ -6,7 +6,7 @@ import { MembershipsModule } from '@app/modules/finance/memberships/memberships.
 import { AppointmentsModule } from '@app/modules/operations/appointments/appointments.module';
 import { ExpressBookingModule } from '@app/modules/operations/express-booking/express-booking.module';
 import { AutomationsWorkerModule } from '@app/modules/communications/automations/automations-worker.module';
-import { SocialPlannerWorkerModule } from '@app/modules/communications/social-planner/social-planner.module';
+import { SocialPlannerWorkerModule } from '@app/modules/communications/social-planner/social-planner-worker.module';
 import { OperationsModule } from '@app/modules/platform/operations/operations.module';
 import { StripePlatformBillingModule } from '@app/modules/platform/billing/stripe/stripe-platform-billing.module';
 import { SchedulerTasksService } from './scheduler-tasks.service';

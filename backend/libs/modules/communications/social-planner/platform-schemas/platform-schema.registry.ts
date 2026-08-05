@@ -176,8 +176,37 @@ export const PLATFORM_SCHEMA_REGISTRY: Record<string, PlatformSchemaDefinition> 
           options: [
             { value: 'PUBLIC_TO_EVERYONE', label: 'Everyone' },
             { value: 'MUTUAL_FOLLOW_FRIENDS', label: 'Friends' },
+            { value: 'FOLLOWER_OF_CREATOR', label: 'Followers' },
             { value: 'SELF_ONLY', label: 'Only me' },
           ],
+          helpText:
+            'Must be selected manually; options depend on the connected account.',
+        },
+        {
+          key: 'commercialDisclosure',
+          label: 'Disclose commercial content',
+          type: 'boolean',
+          required: false,
+          defaultValue: false,
+          helpText:
+            'Turn on if this content promotes yourself, a brand, product, or service.',
+        },
+        {
+          key: 'brandOrganic',
+          label: 'Your brand',
+          type: 'boolean',
+          required: false,
+          defaultValue: false,
+          helpText: 'You are promoting yourself or your own business.',
+        },
+        {
+          key: 'brandedContent',
+          label: 'Branded content',
+          type: 'boolean',
+          required: false,
+          defaultValue: false,
+          helpText:
+            'You are promoting another brand or third party (Paid partnership). Cannot be Only me.',
         },
         {
           key: 'disableComment',

@@ -19,6 +19,7 @@ import type {
   PlatformSchema,
 } from "@/features/social-planner/types";
 import { uploadSocialMediaFile } from "@/features/social-planner/utils/social-media-upload.util";
+import { TikTokDestinationFields } from "@/features/social-planner/components/tiktok-destination-fields";
 import { StorageUploadError } from "@/lib/storage";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -182,6 +183,17 @@ export function SocialPostComposerPage() {
 
   const selectedTargets = destinations.filter((d) => d.selected);
 
+  const platformTab =
+    selectedTargets.some((d) => d.providerKey === activeTab)
+      ? activeTab
+      : (selectedTargets[0]?.providerKey ?? "");
+
+  useEffect(() => {
+    if (platformTab && platformTab !== activeTab) {
+      setActiveTab(platformTab);
+    }
+  }, [platformTab, activeTab]);
+
   const buildBody = () => ({
     caption,
     timezone,
@@ -315,11 +327,17 @@ export function SocialPostComposerPage() {
                 <button
                   key={`${dest.providerKey}:${dest.integrationResourceId}`}
                   type="button"
-                  onClick={() =>
-                    updateDestination(dest.providerKey, dest.integrationResourceId, {
-                      selected: !dest.selected,
-                    })
-                  }
+                  onClick={() => {
+                    const nextSelected = !dest.selected;
+                    updateDestination(
+                      dest.providerKey,
+                      dest.integrationResourceId,
+                      { selected: nextSelected },
+                    );
+                    if (nextSelected) {
+                      setActiveTab(dest.providerKey);
+                    }
+                  }}
                   className={cn(
                     "rounded-full border px-3 py-1 text-sm",
                     dest.selected
@@ -357,7 +375,15 @@ export function SocialPostComposerPage() {
           <Input
             id="media"
             type="file"
-            accept="image/*,video/*"
+            accept={
+              (() => {
+                const selected = destinations.filter((d) => d.selected);
+                return selected.length > 0 &&
+                  selected.every((d) => d.providerKey === "tiktok")
+                  ? "video/*"
+                  : "image/*,video/*";
+              })()
+            }
             multiple
             disabled={uploading}
             onChange={async (event) => {
@@ -398,8 +424,13 @@ export function SocialPostComposerPage() {
       </section>
 
       {selectedTargets.length > 0 ? (
-        <section className="rounded-lg border p-4">
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <section className="space-y-3 rounded-lg border p-4">
+          <h2 className="font-medium">Platform settings</h2>
+          <p className="text-sm text-muted-foreground">
+            Required options for each selected destination (TikTok privacy,
+            disclosures, etc.).
+          </p>
+          <Tabs value={platformTab || undefined} onValueChange={setActiveTab}>
             <TabsList className="flex h-auto flex-wrap">
               {selectedTargets.map((dest) => {
                 const valid = validation?.targets.find(
@@ -447,7 +478,20 @@ export function SocialPostComposerPage() {
                       </select>
                     </div>
                   ) : null}
-                  {(schema?.fields ?? []).map((field) => (
+                  {dest.providerKey === "tiktok" ? (
+                    <TikTokDestinationFields
+                      resourceId={dest.integrationResourceId}
+                      platformPayload={dest.platformPayload ?? {}}
+                      onChange={(platformPayload) =>
+                        updateDestination(
+                          dest.providerKey,
+                          dest.integrationResourceId,
+                          { platformPayload },
+                        )
+                      }
+                    />
+                  ) : (
+                    (schema?.fields ?? []).map((field) => (
                     <div key={field.key} className="space-y-2">
                       <Label>
                         {field.label}
@@ -526,7 +570,8 @@ export function SocialPostComposerPage() {
                         </p>
                       ) : null}
                     </div>
-                  ))}
+                  ))
+                  )}
                   {issues.length > 0 ? (
                     <ul className="space-y-1 text-sm text-red-600">
                       {issues.map((issue, i) => (

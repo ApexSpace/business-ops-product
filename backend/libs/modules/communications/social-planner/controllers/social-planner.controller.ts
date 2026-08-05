@@ -27,6 +27,7 @@ import { ScheduleSocialPostDto } from '../dto/schedule-social-post.dto';
 import { UpdateSocialPostDto } from '../dto/update-social-post.dto';
 import { ValidateSocialPostDto } from '../dto/validate-social-post.dto';
 import { SocialPostsService } from '../services/social-posts.service';
+import { TikTokCreatorInfoService } from '../services/tiktok-creator-info.service';
 
 @ApiTags('social-planner')
 @ApiBearerAuth()
@@ -35,7 +36,10 @@ import { SocialPostsService } from '../services/social-posts.service';
 @RequireModule('social_planner')
 @StaffPermission('social_planner.access')
 export class SocialPlannerController {
-  constructor(private readonly socialPostsService: SocialPostsService) {}
+  constructor(
+    private readonly socialPostsService: SocialPostsService,
+    private readonly tikTokCreatorInfoService: TikTokCreatorInfoService,
+  ) {}
 
   @Get('platform-schemas')
   @BusinessRoles(
@@ -45,6 +49,22 @@ export class SocialPlannerController {
   )
   platformSchemas() {
     return this.socialPostsService.getPlatformSchemas();
+  }
+
+  @Get('tiktok/creator-info')
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
+  tiktokCreatorInfo(
+    @CurrentUser() user: RequestUser,
+    @Query('resourceId', ParseUUIDPipe) resourceId: string,
+  ) {
+    return this.tikTokCreatorInfoService.getCreatorInfo(
+      user.businessId!,
+      resourceId,
+    );
   }
 
   @Get('calendar')

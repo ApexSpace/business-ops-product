@@ -126,7 +126,8 @@ export class SocialCommentRepository {
     const where: Prisma.SocialCommentWhereInput = {
       businessId,
       deletedAt: null,
-      parentCommentId: null,
+      // Include replies — listForBusiness builds the tree via buildCommentForest.
+      // Filtering parentCommentId: null here drops every nested comment from the API.
       ...(params.providerKey ? { providerKey: params.providerKey } : {}),
       ...(params.unreadOnly ? { isRead: false } : {}),
       ...(params.search
@@ -142,17 +143,16 @@ export class SocialCommentRepository {
         : {}),
     };
 
+    // Flat rows (with parentCommentId) — callers build the reply tree.
+    // Do not include `replies` here: that only loads one level and duplicates
+    // child rows as top-level when the where clause is not parent-scoped.
     return Promise.all([
       this.prisma.socialComment.findMany({
         where,
         skip: params.skip ?? 0,
         take: params.take ?? 100,
-        orderBy: [{ externalCreatedAt: 'desc' }, { createdAt: 'desc' }],
+        orderBy: [{ externalCreatedAt: 'asc' }, { createdAt: 'asc' }],
         include: {
-          replies: {
-            where: { deletedAt: null },
-            orderBy: [{ externalCreatedAt: 'asc' }, { createdAt: 'asc' }],
-          },
           target: {
             include: {
               socialPost: true,
@@ -307,6 +307,13 @@ export class SocialCommentRepository {
         ...data,
         syncedAt: new Date(),
       },
+    });
+  }
+
+  updateTargetPermalink(targetId: string, permalink: string) {
+    return this.prisma.socialPostTarget.update({
+      where: { id: targetId },
+      data: { permalink },
     });
   }
 }

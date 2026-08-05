@@ -19,10 +19,15 @@ interface GraphFrom {
 interface GraphCommentNode {
   id?: string;
   message?: string;
+  /** Instagram Comment uses `text` instead of `message`. */
+  text?: string;
   from?: GraphFrom;
   created_time?: string;
+  /** Instagram Comment uses `timestamp`. */
+  timestamp?: string;
   like_count?: number;
   comments?: { data?: GraphCommentNode[] };
+  replies?: { data?: GraphCommentNode[] };
 }
 
 interface GraphCommentsResponse {
@@ -30,8 +35,30 @@ interface GraphCommentsResponse {
   error?: { message?: string };
 }
 
-const META_COMMENT_FIELDS =
-  'id,message,from{id,name,username},created_time,like_count,comments.limit(50){id,message,from{id,name,username},created_time,like_count}';
+const FACEBOOK_COMMENT_FIELDS =
+  'id,message,from{id,name},created_time,like_count,comments.limit(50){id,message,from{id,name},created_time,like_count,comments.limit(50){id,message,from{id,name},created_time,like_count}}';
+
+/** Instagram IG users expose `username`, not `name` — requesting `name` fails with (#100). */
+export const INSTAGRAM_COMMENT_FIELDS =
+  'id,text,from{id,username},timestamp,like_count,replies.limit(50){id,text,from{id,username},timestamp,like_count,replies.limit(50){id,text,from{id,username},timestamp,like_count}}';
+
+export async function fetchGraphComments(
+  externalPostId: string,
+  accessToken: string,
+  fields: string,
+): Promise<SocialEngagementComment[]> {
+  const base = getMetaGraphBaseUrl();
+  const url = new URL(`${base}/${externalPostId}/comments`);
+  url.searchParams.set('fields', fields);
+  url.searchParams.set('limit', '50');
+  url.searchParams.set('access_token', accessToken);
+  const response = await fetch(url.toString());
+  const data = (await response.json()) as GraphCommentsResponse;
+  if (!response.ok) {
+    throw new Error(data.error?.message ?? 'Failed to fetch comments');
+  }
+  return (data.data ?? []).map((node) => mapGraphComment(node));
+}
 
 @Injectable()
 export class FacebookEngagementAdapter implements SocialEngagementAdapter {
@@ -49,17 +76,11 @@ export class FacebookEngagementAdapter implements SocialEngagementAdapter {
   async listComments(
     input: SocialEngagementListInput,
   ): Promise<SocialEngagementComment[]> {
-    const base = getMetaGraphBaseUrl();
-    const url = new URL(`${base}/${input.externalPostId}/comments`);
-    url.searchParams.set('fields', META_COMMENT_FIELDS);
-    url.searchParams.set('limit', '50');
-    url.searchParams.set('access_token', input.accessToken);
-    const response = await fetch(url.toString());
-    const data = (await response.json()) as GraphCommentsResponse;
-    if (!response.ok) {
-      throw new Error(data.error?.message ?? 'Failed to fetch Facebook comments');
-    }
-    return (data.data ?? []).map((node) => mapGraphComment(node));
+    return fetchGraphComments(
+      input.externalPostId,
+      input.accessToken,
+      FACEBOOK_COMMENT_FIELDS,
+    );
   }
 
   async reply(
@@ -146,15 +167,16 @@ export class FacebookEngagementAdapter implements SocialEngagementAdapter {
 
 export function mapGraphComment(node: GraphCommentNode): SocialEngagementComment {
   const from = node.from;
+  const childNodes = node.comments?.data ?? node.replies?.data ?? [];
   return {
     externalCommentId: node.id ?? '',
     parentExternalCommentId: null,
     authorName: from?.name ?? from?.username ?? null,
     authorExternalId: from?.id ?? null,
-    message: node.message ?? '',
+    message: node.message ?? node.text ?? '',
     likeCount: node.like_count ?? 0,
-    createdTime: node.created_time ?? null,
-    replies: (node.comments?.data ?? []).map((reply) => ({
+    createdTime: node.created_time ?? node.timestamp ?? null,
+    replies: childNodes.map((reply) => ({
       ...mapGraphComment(reply),
       parentExternalCommentId: node.id ?? null,
     })),

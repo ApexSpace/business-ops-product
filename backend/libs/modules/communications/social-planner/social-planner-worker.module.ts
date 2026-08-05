@@ -1,6 +1,5 @@
 import { Module, forwardRef } from '@nestjs/common';
 import { AuditModule } from '@app/modules/platform/audit/audit.module';
-import { BusinessModule } from '@app/modules/platform/business/business.module';
 import { IntegrationsModule } from '@app/modules/integrations/integrations/integrations.module';
 import { StorageModule } from '@app/modules/storage/storage.module';
 import { FacebookPublishAdapter } from './adapters/facebook.adapter';
@@ -17,26 +16,21 @@ import { FacebookEngagementAdapter } from './engagement/facebook-engagement.adap
 import { InstagramEngagementAdapter } from './engagement/instagram-engagement.adapter';
 import { SocialEngagementAdapterRegistry } from './engagement/social-engagement.registry';
 import { YouTubeEngagementAdapter } from './engagement/youtube-engagement.adapter';
-import { SocialPlannerCommentsController } from './controllers/social-planner-comments.controller';
-import { SocialPlannerController } from './controllers/social-planner.controller';
 import { SocialCommentRepository } from './repositories/social-comment.repository';
 import { SocialPostRepository } from './repositories/social-post.repository';
 import { SocialCommentIngestionService } from './services/social-comment-ingestion.service';
 import { SocialCommentsService } from './services/social-comments.service';
 import { SocialEngagementReconcileService } from './services/social-engagement-reconcile.service';
 import { SocialMetricsSyncService } from './services/social-metrics-sync.service';
-import { SocialPostsService } from './services/social-posts.service';
 import { SocialPublishService } from './services/social-publish.service';
 import { SocialSafetyNetService } from './services/social-safety-net.service';
 import { SocialTokenResolverService } from './services/social-token-resolver.service';
-import { TikTokCreatorInfoService } from './services/tiktok-creator-info.service';
 import { SocialPublishProcessor } from './workers/processors/social-publish.processor';
 
 const publishProviders = [
   SocialPostRepository,
   SocialPublishService,
   SocialTokenResolverService,
-  TikTokCreatorInfoService,
   SocialSafetyNetService,
   SocialPublishProcessor,
   FacebookPublishAdapter,
@@ -64,31 +58,24 @@ const engagementProviders = [
 ] as const;
 
 /**
- * API module — HTTP controllers + capability-guarded routes.
- * Imports BusinessModule so BusinessCapabilityGuard can resolve
- * BusinessCapabilityCheckService, matching FormsModule / WorkItemsModule.
+ * Worker / scheduler subset — no HTTP controllers (avoids BusinessCapabilityGuard DI).
+ * Kept in a separate file from SocialPlannerModule so MetaWebhookProcessorModule can
+ * import engagement ingestion without circularly loading the API module (which would
+ * leave BusinessModule undefined in SocialPlannerModule.imports).
  */
 @Module({
   imports: [
     AuditModule,
-    BusinessModule,
     StorageModule,
     forwardRef(() => IntegrationsModule),
   ],
-  controllers: [SocialPlannerController, SocialPlannerCommentsController],
-  providers: [
-    ...publishProviders,
-    ...engagementProviders,
-    SocialPostsService,
-  ],
+  providers: [...publishProviders, ...engagementProviders],
   exports: [
     SocialPostRepository,
-    SocialPostsService,
     SocialPublishService,
     SocialSafetyNetService,
     SocialPublishProcessor,
     SocialPublishAdapterRegistry,
-    TikTokCreatorInfoService,
     SocialCommentRepository,
     SocialCommentsService,
     SocialCommentIngestionService,
@@ -97,4 +84,4 @@ const engagementProviders = [
     SocialEngagementAdapterRegistry,
   ],
 })
-export class SocialPlannerModule {}
+export class SocialPlannerWorkerModule {}

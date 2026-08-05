@@ -60,6 +60,7 @@ import { IntegrationProviderRepository } from './repositories/integration-provid
 import { IntegrationResourceRepository } from './repositories/integration-resource.repository';
 import { PlatformIntegrationRepository } from './repositories/platform-integration.repository';
 import { GoogleTokenService } from './services/google-token.service';
+import { TikTokTokenService } from './services/tiktok-token.service';
 import { IntegrationResourcesService } from './services/integration-resources.service';
 import { MessagingStatusService } from './services/messaging-status.service';
 import { WhatsAppNumbersService } from './services/whatsapp-numbers.service';
@@ -73,7 +74,7 @@ import { WhatsAppTemplatesController } from '../whatsapp/controllers/whatsapp-te
     forwardRef(() => ConversationsModule),
     forwardRef(() => InvoicesModule),
     forwardRef(() => MembershipsModule),
-    MetaWebhookProcessorModule,
+    forwardRef(() => MetaWebhookProcessorModule),
     WhatsAppModule,
     StripePlatformBillingModule,
     TwilioModule,
@@ -115,6 +116,7 @@ import { WhatsAppTemplatesController } from '../whatsapp/controllers/whatsapp-te
     StripeCustomerService,
     StripePaymentIntentService,
     GoogleTokenService,
+    TikTokTokenService,
     IntegrationResourcesService,
     GoogleCalendarResourceSyncHandler,
     GoogleBusinessProfileResourceSyncHandler,
@@ -143,6 +145,7 @@ import { WhatsAppTemplatesController } from '../whatsapp/controllers/whatsapp-te
     IntegrationsService,
     IntegrationResourcesService,
     GoogleTokenService,
+    TikTokTokenService,
     MetaTokenService,
     MetaConfigService,
     StripeApiService,

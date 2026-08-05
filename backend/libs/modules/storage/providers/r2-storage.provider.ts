@@ -15,6 +15,7 @@ import type {
   SignedDownloadResult,
   SignedUploadResult,
 } from '../types/storage.types';
+import { buildPublicObjectUrl } from '../utils/public-object-url.util';
 
 function buildAttachmentContentDisposition(fileName: string): string {
   const safe = fileName.replace(/["\\\r\n]/g, '_');
@@ -100,6 +101,20 @@ export class R2StorageProvider {
 
     const downloadUrl = await getSignedUrl(client, command, { expiresIn });
     return { downloadUrl, expiresIn };
+  }
+
+  /**
+   * Stable public CDN URL when R2_PUBLIC_BASE_URL is set.
+   * Used by pull-based publish adapters (TikTok, Meta, etc.).
+   */
+  getPublicUrl(objectKey: string): string | null {
+    const base = this.config?.publicBaseUrl?.trim();
+    if (!base) return null;
+    return buildPublicObjectUrl(base, objectKey);
+  }
+
+  hasPublicBaseUrl(): boolean {
+    return Boolean(this.config?.publicBaseUrl?.trim());
   }
 
   async deleteObject(objectKey: string): Promise<void> {

@@ -33,6 +33,7 @@ type TokenResponse = {
   access_token: string;
   expires_in?: number;
   refresh_token?: string;
+  refresh_expires_in?: number;
   scope?: string;
   token_type?: string;
   open_id?: string;
@@ -86,9 +87,63 @@ export class SocialOAuthService {
 
     if (providerKey === 'tiktok') {
       params.set('client_key', this.getClientId(providerKey));
+      // Always show TikTok's auth UI so reconnect is not silently auto-approved
+      // for the browser's existing TikTok session (allows switch account).
+      params.set('disable_auto_auth', '1');
     } else {
       params.set('client_id', this.getClientId(providerKey));
     }
+
+    // #region agent log
+    if (providerKey === 'tiktok') {
+      const clientKey = this.getClientId(providerKey);
+      const clientSecret = this.getClientSecret(providerKey);
+      const redirectUri = this.getRedirectUri(providerKey);
+      const authorizeUrl = `${config.authorizeUrl}?${params.toString()}`;
+      const safeUrl = new URL(authorizeUrl);
+      safeUrl.searchParams.set(
+        'client_key',
+        `${clientKey.slice(0, 4)}…${clientKey.slice(-4)}`,
+      );
+      safeUrl.searchParams.set('state', '[redacted]');
+      fetch(
+        'http://127.0.0.1:7562/ingest/925a1149-217c-4daf-b03b-d66e64dfadce',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Debug-Session-Id': '8fdcd5',
+          },
+          body: JSON.stringify({
+            sessionId: '8fdcd5',
+            runId: 'pre-fix',
+            hypothesisId: 'A',
+            location: 'social-oauth.service.ts:redirectToProvider',
+            message: 'TikTok authorize redirect built',
+            data: {
+              clientKeyLen: clientKey.length,
+              clientKeyPrefix: clientKey.slice(0, 4),
+              clientKeySuffix: clientKey.slice(-4),
+              clientKeyHasWhitespace: /\s/.test(clientKey),
+              secretLen: clientSecret.length,
+              secretChar19: clientSecret.charCodeAt(19),
+              secretChar24: clientSecret.charCodeAt(24),
+              redirectUri,
+              scopes: config.scopes,
+              scopeParam: params.get('scope'),
+              authorizeHost: config.authorizeUrl,
+              paramKeys: [...params.keys()],
+              safeAuthorizeUrl: safeUrl.toString(),
+              envKeyPresent: Boolean(process.env.TIKTOK_OAUTH_CLIENT_KEY),
+              envSecretPresent: Boolean(process.env.TIKTOK_OAUTH_CLIENT_SECRET),
+              envRedirectPresent: Boolean(process.env.TIKTOK_OAUTH_REDIRECT_URI),
+            },
+            timestamp: Date.now(),
+          }),
+        },
+      ).catch(() => undefined);
+    }
+    // #endregion
 
     if (providerKey === 'x' && codeVerifier) {
       params.set('code_challenge', createPkceChallenge(codeVerifier));
@@ -216,15 +271,20 @@ export class SocialOAuthService {
   private async fetchProfile(
     providerKey: SocialOAuthProviderKey,
     tokens: TokenResponse,
-  ): Promise<{ id: string; name?: string; email?: string }> {
+  ): Promise<{ id: string; name?: string; email?: string; avatarUrl?: string }> {
     const config = SOCIAL_OAUTH_PROVIDER_CONFIG[providerKey];
     if (!config.userInfoUrl) {
       return { id: tokens.open_id ?? `${providerKey}-user` };
     }
 
-    const response = await fetch(config.userInfoUrl, {
-      headers: { Authorization: `Bearer ${tokens.access_token}` },
-    });
+    const response = await fetch(
+      providerKey === 'tiktok'
+        ? `${config.userInfoUrl}?fields=open_id,union_id,avatar_url,display_name,username`
+        : config.userInfoUrl,
+      {
+        headers: { Authorization: `Bearer ${tokens.access_token}` },
+      },
+    );
     if (!response.ok) {
       return { id: tokens.open_id ?? `${providerKey}-user` };
     }
@@ -249,11 +309,19 @@ export class SocialOAuthService {
     }
     if (providerKey === 'tiktok') {
       const data = (
-        json.data as { user?: { open_id?: string; display_name?: string } }
+        json.data as {
+          user?: {
+            open_id?: string;
+            display_name?: string;
+            username?: string;
+            avatar_url?: string;
+          };
+        }
       )?.user;
       return {
         id: data?.open_id ?? tokens.open_id ?? 'tiktok-user',
-        name: data?.display_name,
+        name: data?.display_name ?? data?.username,
+        avatarUrl: data?.avatar_url,
       };
     }
     return { id: 'unknown' };
@@ -266,10 +334,13 @@ export class SocialOAuthService {
       providerKey: string;
     },
     tokens: TokenResponse,
-    profile: { id: string; name?: string; email?: string },
+    profile: { id: string; name?: string; email?: string; avatarUrl?: string },
   ): Promise<void> {
     const expiresAt = tokens.expires_in
       ? new Date(Date.now() + tokens.expires_in * 1000).toISOString()
+      : null;
+    const refreshExpiresAt = tokens.refresh_expires_in
+      ? new Date(Date.now() + tokens.refresh_expires_in * 1000).toISOString()
       : null;
     const scopes = (tokens.scope ?? '')
       .split(/[\s,]+/)
@@ -282,6 +353,7 @@ export class SocialOAuthService {
         accessToken: tokens.access_token,
         refreshToken: tokens.refresh_token ?? null,
         expiresAt,
+        refreshExpiresAt,
         scope: tokens.scope ?? null,
         tokenType: tokens.token_type ?? 'Bearer',
         externalUserId: profile.id,
@@ -324,7 +396,10 @@ export class SocialOAuthService {
           externalId: profile.id,
           name: profile.name ?? payload.providerKey,
           type: resourceType,
-          metadata: { source: 'oauth' },
+          metadata: {
+            source: 'oauth',
+            ...(profile.avatarUrl ? { avatarUrl: profile.avatarUrl } : {}),
+          },
           lastSyncedAt: now,
           isSelected: true,
           isDefault: true,

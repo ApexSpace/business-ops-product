@@ -145,7 +145,9 @@ export const queryKeys = {
       unreadOnly?: boolean;
       search?: string;
       refresh?: boolean;
-    } = {}) => listKey(["social-planner", "engagement"], filters),
+    } = {}) =>
+      // v2: flat { items, warnings } shape (not nested meta.warnings)
+      listKey(["social-planner", "engagement", "v2"], filters),
   },
   notes: {
     all: () => ["notes"] as const,

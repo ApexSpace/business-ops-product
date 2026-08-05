@@ -6,7 +6,7 @@ import { SmsModule } from './sms/sms.module';
 import { MetaWebhookProcessorModule } from './webhooks/meta-webhook-processor.module';
 import { StripeWebhookProcessor } from './webhooks/workers/processors/stripe-webhook.processor';
 import { SendMessageProcessorModule } from './messages/send-message-processor.module';
-import { SocialPlannerWorkerModule } from './social-planner/social-planner.module';
+import { SocialPlannerWorkerModule } from './social-planner/social-planner-worker.module';
 
 @Module({
   imports: [

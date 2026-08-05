@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
+  isOptimisticCommentId,
   useSocialCommentMutations,
   useSocialEngagement,
 } from "@/features/social-planner/hooks/use-social-comments";
@@ -32,6 +33,10 @@ function CommentThread({
   onReply,
   onLike,
   onDelete,
+  replyPendingId,
+  likePendingId,
+  deletePendingId,
+  likedIds,
   depth = 0,
 }: {
   comment: SocialComment;
@@ -45,14 +50,38 @@ function CommentThread({
   onReply: (comment: SocialComment, message: string) => void;
   onLike: (comment: SocialComment) => void;
   onDelete: (comment: SocialComment) => void;
+  replyPendingId: string | null;
+  likePendingId: string | null;
+  deletePendingId: string | null;
+  likedIds: ReadonlySet<string>;
   depth?: number;
 }) {
+  const optimistic = isOptimisticCommentId(comment.id);
+  const isReplying = replyPendingId === comment.id;
+  const isLiking = likePendingId === comment.id;
+  const isDeleting = deletePendingId === comment.id;
+  const alreadyLiked = likedIds.has(comment.id);
+  const anyMutationBusy =
+    replyPendingId !== null ||
+    likePendingId !== null ||
+    deletePendingId !== null;
+  const busy =
+    optimistic ||
+    isReplying ||
+    isLiking ||
+    isDeleting ||
+    (anyMutationBusy &&
+      (replyPendingId === comment.id ||
+        likePendingId === comment.id ||
+        deletePendingId === comment.id));
+
   return (
     <div className={cn("space-y-3", depth > 0 && "ml-4 border-l pl-3")}>
       <div
         className={cn(
           "rounded-md border p-3",
           !comment.isRead && "border-primary/40 bg-primary/5",
+          optimistic && "opacity-70",
         )}
       >
         <div className="mb-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
@@ -61,51 +90,70 @@ function CommentThread({
             <span>{new Date(comment.createdTime).toLocaleString()}</span>
           ) : null}
           <span>{comment.likeCount} likes</span>
-          {!comment.isRead ? (
+          {optimistic ? (
+            <span className="font-medium text-muted-foreground">Sending…</span>
+          ) : null}
+          {!comment.isRead && !optimistic ? (
             <span className="font-medium text-primary">Unread</span>
           ) : null}
         </div>
         <p className="mb-3 text-sm">{displayMessage(comment.message)}</p>
-        <div className="flex flex-wrap items-center gap-2">
-          {capabilities.reply ? (
-            <>
-              <Input
-                className="max-w-md"
-                placeholder="Reply…"
-                value={drafts[comment.id] ?? ""}
-                onChange={(e) =>
-                  setDrafts((prev) => ({
-                    ...prev,
-                    [comment.id]: e.target.value,
-                  }))
-                }
-              />
+        {!optimistic ? (
+          <div className="flex flex-wrap items-center gap-2">
+            {capabilities.reply ? (
+              <>
+                <Input
+                  className="max-w-md"
+                  placeholder="Reply…"
+                  value={drafts[comment.id] ?? ""}
+                  disabled={busy || anyMutationBusy}
+                  onChange={(e) =>
+                    setDrafts((prev) => ({
+                      ...prev,
+                      [comment.id]: e.target.value,
+                    }))
+                  }
+                  onKeyDown={(e) => {
+                    if (e.key !== "Enter") return;
+                    e.preventDefault();
+                    const message = drafts[comment.id]?.trim();
+                    if (!message || busy || anyMutationBusy) return;
+                    onReply(comment, message);
+                  }}
+                />
+                <Button
+                  size="sm"
+                  disabled={
+                    busy || anyMutationBusy || !drafts[comment.id]?.trim()
+                  }
+                  onClick={() => onReply(comment, drafts[comment.id]!.trim())}
+                >
+                  {isReplying ? "Sending…" : "Reply"}
+                </Button>
+              </>
+            ) : null}
+            {capabilities.likeComment ? (
               <Button
                 size="sm"
-                disabled={!drafts[comment.id]?.trim()}
-                onClick={() =>
-                  onReply(comment, drafts[comment.id]!.trim())
-                }
+                variant="outline"
+                disabled={busy || anyMutationBusy || alreadyLiked}
+                onClick={() => onLike(comment)}
               >
-                Reply
+                {isLiking ? "Liking…" : alreadyLiked ? "Liked" : "Like"}
               </Button>
-            </>
-          ) : null}
-          {capabilities.likeComment ? (
-            <Button size="sm" variant="outline" onClick={() => onLike(comment)}>
-              Like
-            </Button>
-          ) : null}
-          {capabilities.deleteComment ? (
-            <Button
-              size="sm"
-              variant="destructive"
-              onClick={() => onDelete(comment)}
-            >
-              Delete
-            </Button>
-          ) : null}
-        </div>
+            ) : null}
+            {capabilities.deleteComment ? (
+              <Button
+                size="sm"
+                variant="destructive"
+                disabled={busy || anyMutationBusy}
+                onClick={() => onDelete(comment)}
+              >
+                {isDeleting ? "Deleting…" : "Delete"}
+              </Button>
+            ) : null}
+          </div>
+        ) : null}
       </div>
       {(comment.replies ?? []).map((reply) => (
         <CommentThread
@@ -117,6 +165,10 @@ function CommentThread({
           onReply={onReply}
           onLike={onLike}
           onDelete={onDelete}
+          replyPendingId={replyPendingId}
+          likePendingId={likePendingId}
+          deletePendingId={deletePendingId}
+          likedIds={likedIds}
           depth={depth + 1}
         />
       ))}
@@ -131,24 +183,33 @@ export function SocialCommentsPage() {
 
   const [providerKey, setProviderKey] = useState(initialProvider);
   const [drafts, setDrafts] = useState<Record<string, string>>({});
-  const [refresh, setRefresh] = useState(false);
 
   const filters = useMemo(
     () => ({
       ...(providerKey ? { providerKey } : {}),
       ...(socialPostId ? { socialPostId } : {}),
-      ...(refresh ? { refresh: true } : {}),
     }),
-    [providerKey, socialPostId, refresh],
+    [providerKey, socialPostId],
   );
 
-  const { data, isLoading, isFetching, refetch } =
-    useSocialEngagement(filters);
-  const { reply, like, remove, markRead } = useSocialCommentMutations(filters);
+  const { data, isLoading, isFetching } = useSocialEngagement(filters);
+  const {
+    sync,
+    markRead,
+    likedIds,
+    replyPendingId,
+    likePendingId,
+    deletePendingId,
+    replyToComment,
+    likeComment,
+    deleteComment,
+  } = useSocialCommentMutations(filters);
 
+  // Engagement payload is flat: { items, warnings, unreadCount }.
+  // Never use data.meta.warnings — meta is often undefined and that throws.
   const groups = data?.items ?? [];
-  const warnings = data?.meta.warnings ?? [];
-  const unreadCount = data?.meta.unreadCount ?? 0;
+  const warnings = data?.warnings ?? [];
+  const unreadCount = data?.unreadCount ?? 0;
 
   return (
     <div className="space-y-4 p-4 md:p-6">
@@ -164,18 +225,16 @@ export function SocialCommentsPage() {
           <Button
             variant="outline"
             size="sm"
-            disabled={isFetching}
-            onClick={() => {
-              setRefresh(true);
-              void refetch();
-            }}
+            disabled={sync.isPending || isFetching}
+            onClick={() => sync.mutate()}
           >
-            {isFetching ? "Syncing…" : "Sync from channels"}
+            {sync.isPending ? "Syncing…" : "Sync from channels"}
           </Button>
           {unreadCount > 0 ? (
             <Button
               variant="outline"
               size="sm"
+              disabled={markRead.isPending}
               onClick={() =>
                 markRead.mutate({
                   ...(providerKey ? { providerKey } : {}),
@@ -183,7 +242,7 @@ export function SocialCommentsPage() {
                 })
               }
             >
-              Mark all read
+              {markRead.isPending ? "Marking…" : "Mark all read"}
             </Button>
           ) : null}
           <Button
@@ -279,36 +338,40 @@ export function SocialCommentsPage() {
                   capabilities={group.capabilities}
                   drafts={drafts}
                   setDrafts={setDrafts}
+                  replyPendingId={replyPendingId}
+                  likePendingId={likePendingId}
+                  deletePendingId={deletePendingId}
+                  likedIds={likedIds}
                   onReply={(c, message) => {
-                    reply.mutate(
-                      {
-                        commentId: c.id,
-                        message,
-                        providerKey: c.providerKey,
-                        socialPostTargetId: c.socialPostTargetId,
-                      },
-                      {
-                        onSuccess: () =>
-                          setDrafts((prev) => {
-                            const next = { ...prev };
-                            delete next[c.id];
-                            return next;
-                          }),
-                      },
-                    );
+                    setDrafts((prev) => {
+                      const next = { ...prev };
+                      delete next[c.id];
+                      return next;
+                    });
+                    replyToComment({
+                      commentId: c.id,
+                      message,
+                      providerKey: c.providerKey,
+                      socialPostTargetId:
+                        c.socialPostTargetId || group.socialPostTargetId,
+                      externalPostId: c.externalPostId || group.externalPostId,
+                      permalink: c.permalink ?? group.permalink,
+                    });
                   }}
                   onLike={(c) =>
-                    like.mutate({
+                    likeComment({
                       commentId: c.id,
                       providerKey: c.providerKey,
-                      socialPostTargetId: c.socialPostTargetId,
+                      socialPostTargetId:
+                        c.socialPostTargetId || group.socialPostTargetId,
                     })
                   }
                   onDelete={(c) =>
-                    remove.mutate({
+                    deleteComment({
                       commentId: c.id,
                       providerKey: c.providerKey,
-                      socialPostTargetId: c.socialPostTargetId,
+                      socialPostTargetId:
+                        c.socialPostTargetId || group.socialPostTargetId,
                     })
                   }
                 />
@@ -320,7 +383,8 @@ export function SocialCommentsPage() {
         {!isLoading && groups.length === 0 ? (
           <p className="text-sm text-muted-foreground">
             No engagement found on published Facebook, Instagram, or YouTube
-            posts from Social Planner.
+            posts from Social Planner. TikTok organic comments are not available
+            via the Content Posting API.
           </p>
         ) : null}
       </div>

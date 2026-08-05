@@ -34,6 +34,7 @@ import { IntegrationResourceRepository } from './repositories/integration-resour
 import { PlatformIntegrationRepository } from './repositories/platform-integration.repository';
 import { PlatformEmailProvisioningService } from './email/services/platform-email-provisioning.service';
 import { PlatformSmsProvisioningService } from '../twilio/services/platform-sms-provisioning.service';
+import { TikTokTokenService } from './services/tiktok-token.service';
 
 @Injectable()
 export class IntegrationsService {
@@ -45,6 +46,7 @@ export class IntegrationsService {
     private readonly auditService: AuditService,
     private readonly platformEmailProvisioning: PlatformEmailProvisioningService,
     private readonly platformSmsProvisioning: PlatformSmsProvisioningService,
+    private readonly tikTokTokenService: TikTokTokenService,
   ) {}
 
   // ── Business providers ──────────────────────────────────────────────
@@ -203,6 +205,10 @@ export class IntegrationsService {
         'Integration not found',
         HttpStatus.NOT_FOUND,
       );
+    }
+
+    if (providerKey === 'tiktok') {
+      await this.tikTokTokenService.revokeOnDisconnect(businessId);
     }
 
     await this.businessIntegrationRepository.delete(businessId, providerKey);

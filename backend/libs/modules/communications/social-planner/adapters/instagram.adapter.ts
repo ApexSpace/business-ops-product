@@ -35,11 +35,37 @@ export class InstagramPublishAdapter implements SocialPublishAdapter {
       access_token: input.accessToken,
     });
 
+    const mediaId = publishData.id!;
+    const permalink = await this.fetchPermalink(
+      base,
+      mediaId,
+      input.accessToken,
+    );
+
     return {
-      externalPostId: publishData.id!,
-      permalink: `https://www.instagram.com/p/${publishData.id}`,
+      externalPostId: mediaId,
+      permalink:
+        permalink ?? `https://www.instagram.com/p/${mediaId}/`,
       raw: publishData,
     };
+  }
+
+  /** IG Media permalink is a shortcode URL — numeric Graph ids are not valid /p/ paths. */
+  private async fetchPermalink(
+    base: string,
+    mediaId: string,
+    accessToken: string,
+  ): Promise<string | null> {
+    const url = new URL(`${base}/${mediaId}`);
+    url.searchParams.set('fields', 'permalink');
+    url.searchParams.set('access_token', accessToken);
+    const response = await fetch(url.toString());
+    if (!response.ok) return null;
+    const data = (await response.json()) as {
+      permalink?: string;
+      error?: { message?: string };
+    };
+    return data.permalink?.trim() || null;
   }
 
   private async createSingleMediaContainer(

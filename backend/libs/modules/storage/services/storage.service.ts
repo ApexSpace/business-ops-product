@@ -192,6 +192,34 @@ export class StorageService {
     return { downloadUrl, expiresIn };
   }
 
+  /**
+   * Prefer public CDN URL when configured; otherwise fall back to a signed GET.
+   * Pull-based social publishers (TikTok, Meta, …) need a stable HTTPS URL.
+   */
+  async getPublishMediaUrl(
+    objectKey: string,
+    options?: { preferPublic?: boolean },
+  ): Promise<{ url: string; isPublic: boolean; expiresIn?: number }> {
+    const preferPublic = options?.preferPublic !== false;
+    if (preferPublic) {
+      const publicUrl = this.r2StorageProvider.getPublicUrl(objectKey);
+      if (publicUrl) {
+        return { url: publicUrl, isPublic: true };
+      }
+    }
+    const { downloadUrl, expiresIn } =
+      await this.r2StorageProvider.createSignedDownloadUrl(objectKey);
+    return { url: downloadUrl, isPublic: false, expiresIn };
+  }
+
+  getPublicUrl(objectKey: string): string | null {
+    return this.r2StorageProvider.getPublicUrl(objectKey);
+  }
+
+  hasPublicBaseUrl(): boolean {
+    return this.r2StorageProvider.hasPublicBaseUrl();
+  }
+
   async getObjectBytes(objectKey: string): Promise<Buffer> {
     return this.r2StorageProvider.getObjectBytes(objectKey);
   }

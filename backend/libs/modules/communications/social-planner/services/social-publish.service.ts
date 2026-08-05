@@ -1,9 +1,13 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { SocialPostTargetStatus } from '@prisma/client';
+import { Prisma, SocialPostTargetStatus } from '@prisma/client';
 import { StorageService } from '@app/modules/storage/services/storage.service';
 import { FileAssetRepository } from '@app/modules/storage/repositories/file-asset.repository';
 import { SocialPublishAdapterRegistry } from '../adapters/social-publish.registry';
 import type { SocialPublishInput } from '../adapters/social-publish-adapter.interface';
+import {
+  TIKTOK_PUBLISH_ID_PAYLOAD_KEY,
+  TikTokApiError,
+} from '../adapters/tiktok/tiktok.constants';
 import {
   SocialPostRepository,
   SocialPostTargetWithRelations,
@@ -55,6 +59,10 @@ export class SocialPublishService {
       attemptCount: { increment: 1 },
     });
 
+    const platformPayload = {
+      ...((target.platformPayload as Record<string, unknown> | null) ?? {}),
+    };
+
     try {
       const adapter = this.adapterRegistry.getAdapter(target.providerKey);
       if (!adapter) {
@@ -68,7 +76,7 @@ export class SocialPublishService {
         providerKey: target.providerKey,
         postType: target.postType,
         caption: target.socialPost.caption,
-        platformPayload: (target.platformPayload as Record<string, unknown>) ?? {},
+        platformPayload,
         media,
         accessToken: await this.tokenResolver.getAccessToken(
           businessId,
@@ -79,6 +87,15 @@ export class SocialPublishService {
         metadata: {
           socialPostId: target.socialPostId,
           socialPostTargetId: target.id,
+          onTikTokPublishInitiated: async (publishId: string) => {
+            platformPayload[TIKTOK_PUBLISH_ID_PAYLOAD_KEY] = publishId;
+            await this.socialPostRepository.updateTarget(target.id, {
+              platformPayload: platformPayload as Prisma.InputJsonValue,
+            });
+            this.logger.log(
+              `Persisted TikTok publish_id=${publishId} for target=${target.id}`,
+            );
+          },
         },
       };
 
@@ -92,6 +109,8 @@ export class SocialPublishService {
 
       const result = await adapter.publish(input);
 
+      delete platformPayload[TIKTOK_PUBLISH_ID_PAYLOAD_KEY];
+
       await this.socialPostRepository.updateTarget(target.id, {
         status: SocialPostTargetStatus.PUBLISHED,
         externalPostId: result.externalPostId,
@@ -99,9 +118,9 @@ export class SocialPublishService {
         publishedAt: new Date(),
         errorCode: null,
         errorMessage: null,
+        platformPayload: platformPayload as Prisma.InputJsonValue,
       });
 
-      // Seed SocialPostMetrics shortly after publish (analytics reads DB only).
       void this.socialMetricsSyncService
         .syncTargetById(businessId, target.id)
         .catch((metricsError) => {
@@ -116,8 +135,17 @@ export class SocialPublishService {
     } catch (error) {
       const message =
         error instanceof Error ? error.message : 'Social publish failed';
+      const errorCode =
+        error instanceof TikTokApiError
+          ? error.code.slice(0, 64)
+          : 'PUBLISH_FAILED';
+
       this.logger.error(
-        `Failed to publish social post target ${targetId}: ${message}`,
+        `Failed to publish social post target ${targetId}: ${message}${
+          error instanceof TikTokApiError && error.logId
+            ? ` log_id=${error.logId}`
+            : ''
+        }`,
       );
 
       const attemptCount = target.attemptCount + 1;
@@ -127,7 +155,7 @@ export class SocialPublishService {
         status: permanentFailure
           ? SocialPostTargetStatus.FAILED
           : SocialPostTargetStatus.SCHEDULED,
-        errorCode: 'PUBLISH_FAILED',
+        errorCode,
         errorMessage: message.slice(0, 500),
       });
     } finally {
@@ -151,13 +179,32 @@ export class SocialPublishService {
         if (!asset) {
           return null;
         }
-        const { downloadUrl } = await this.storageService.getDownloadUrlForObjectKey(
+        const { url, isPublic } = await this.storageService.getPublishMediaUrl(
           asset.objectKey,
+          { preferPublic: true },
         );
+        const metadata =
+          asset.metadata && typeof asset.metadata === 'object'
+            ? (asset.metadata as Record<string, unknown>)
+            : {};
+        const durationRaw = metadata.durationSec ?? metadata.duration;
+        const durationSec =
+          typeof durationRaw === 'number'
+            ? durationRaw
+            : typeof durationRaw === 'string'
+              ? Number(durationRaw)
+              : undefined;
         return {
-          url: downloadUrl,
+          url,
           mimeType: asset.mimeType,
           fileAssetId: asset.id,
+          objectKey: asset.objectKey,
+          sizeBytes: asset.size,
+          isPublicUrl: isPublic,
+          durationSec:
+            durationSec !== undefined && Number.isFinite(durationSec)
+              ? durationSec
+              : undefined,
         };
       }),
     );

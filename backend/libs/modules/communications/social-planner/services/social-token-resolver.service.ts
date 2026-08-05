@@ -6,6 +6,7 @@ import { decryptIntegrationCredentials } from '@app/common/utils/integration-enc
 import { BusinessIntegrationRepository } from '@app/modules/integrations/integrations/repositories/business-integration.repository';
 import { IntegrationResourceRepository } from '@app/modules/integrations/integrations/repositories/integration-resource.repository';
 import { GoogleTokenService } from '@app/modules/integrations/integrations/services/google-token.service';
+import { TikTokTokenService } from '@app/modules/integrations/integrations/services/tiktok-token.service';
 import { MetaTokenService } from '@app/modules/integrations/integrations/meta/services/meta-token.service';
 
 const META_PROVIDER_KEYS = new Set(['facebook', 'instagram']);
@@ -18,13 +19,8 @@ interface StoredGenericCredentials {
 
 /**
  * Resolves a fresh access token for any supported social publish provider.
- * Meta and Google providers delegate to their dedicated token services
- * (which handle refresh); the remaining providers (LinkedIn, X, Pinterest,
- * TikTok) currently store long-lived tokens without an automated refresh
- * flow, so we decrypt and validate expiry directly.
- *
- * For Facebook/Instagram publish, prefer the page access token stored on
- * IntegrationResource metadata when available (reconnect with publish scopes).
+ * Meta, Google, and TikTok delegate to dedicated token services (refresh);
+ * LinkedIn / X / Pinterest use stored tokens with expiry checks.
  */
 @Injectable()
 export class SocialTokenResolverService {
@@ -33,6 +29,7 @@ export class SocialTokenResolverService {
     private readonly integrationResourceRepository: IntegrationResourceRepository,
     private readonly metaTokenService: MetaTokenService,
     private readonly googleTokenService: GoogleTokenService,
+    private readonly tikTokTokenService: TikTokTokenService,
   ) {}
 
   async getAccessToken(
@@ -50,6 +47,9 @@ export class SocialTokenResolverService {
     }
     if (GOOGLE_PROVIDER_KEYS.has(providerKey)) {
       return this.googleTokenService.getAccessToken(businessId, providerKey);
+    }
+    if (providerKey === 'tiktok') {
+      return this.tikTokTokenService.getAccessToken(businessId);
     }
     return this.getGenericAccessToken(businessId, providerKey);
   }

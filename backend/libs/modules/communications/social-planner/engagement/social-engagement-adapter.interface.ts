@@ -65,4 +65,10 @@ export interface SocialEngagementAdapter {
   syncPostMetrics(
     input: SocialEngagementMetricsInput,
   ): Promise<SocialPostMetricsSnapshot>;
+
+  /** Optional: resolve a public permalink for a published external post id. */
+  fetchPermalink?(
+    externalPostId: string,
+    accessToken: string,
+  ): Promise<string | null>;
 }

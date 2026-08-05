@@ -261,11 +261,28 @@ export class SocialPostsService {
     );
     return assets
       .filter((asset): asset is NonNullable<typeof asset> => asset !== null)
-      .map((asset) => ({
-        url: '',
-        mimeType: asset.mimeType,
-        fileAssetId: asset.id,
-      }));
+      .map((asset) => {
+        const metadata =
+          asset.metadata && typeof asset.metadata === 'object'
+            ? (asset.metadata as Record<string, unknown>)
+            : {};
+        const durationRaw = metadata.durationSec ?? metadata.duration;
+        const durationSec =
+          typeof durationRaw === 'number'
+            ? durationRaw
+            : typeof durationRaw === 'string'
+              ? Number(durationRaw)
+              : undefined;
+        return {
+          url: '',
+          mimeType: asset.mimeType,
+          fileAssetId: asset.id,
+          durationSec:
+            durationSec !== undefined && Number.isFinite(durationSec)
+              ? durationSec
+              : undefined,
+        };
+      });
   }
 
   async schedule(

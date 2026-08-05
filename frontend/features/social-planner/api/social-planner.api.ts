@@ -5,6 +5,7 @@ import type {
   PlatformSchema,
   SocialEngagementFilters,
   SocialEngagementListResult,
+  SocialEngagementPostGroup,
   SocialPost,
 } from "@/features/social-planner/types";
 
@@ -81,9 +82,53 @@ export function getPlatformSchemas() {
 }
 
 export function listSocialEngagement(filters: SocialEngagementFilters = {}) {
-  return api.get<SocialEngagementListResult>("social-planner/comments", {
-    searchParams: filters,
-  });
+  return api
+    .get<SocialEngagementListResult | SocialEngagementPostGroup[]>(
+      "social-planner/comments",
+      { searchParams: filters },
+    )
+    .then(normalizeEngagementResult);
+}
+
+/** Guards against envelope/interceptor shape drift so the UI never crashes on meta. */
+export function normalizeEngagementResult(
+  raw: unknown,
+): SocialEngagementListResult {
+  if (Array.isArray(raw)) {
+    return {
+      items: raw as SocialEngagementPostGroup[],
+      totalComments: raw.length,
+      unreadCount: 0,
+      warnings: [],
+    };
+  }
+
+  if (!raw || typeof raw !== "object") {
+    return { items: [], totalComments: 0, unreadCount: 0, warnings: [] };
+  }
+
+  const record = raw as Record<string, unknown>;
+  const nestedMeta =
+    record.meta && typeof record.meta === "object"
+      ? (record.meta as Record<string, unknown>)
+      : null;
+
+  const items = Array.isArray(record.items)
+    ? (record.items as SocialEngagementPostGroup[])
+    : [];
+
+  const warningsRaw = record.warnings ?? nestedMeta?.warnings;
+  const unreadRaw = record.unreadCount ?? nestedMeta?.unreadCount;
+  const totalRaw = record.totalComments ?? nestedMeta?.totalComments;
+
+  return {
+    items,
+    totalComments: typeof totalRaw === "number" ? totalRaw : items.length,
+    unreadCount: typeof unreadRaw === "number" ? unreadRaw : 0,
+    warnings: Array.isArray(warningsRaw)
+      ? warningsRaw.filter((w): w is string => typeof w === "string")
+      : [],
+  };
 }
 
 /** @deprecated Use listSocialEngagement */
