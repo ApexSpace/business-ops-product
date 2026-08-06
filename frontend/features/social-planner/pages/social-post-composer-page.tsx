@@ -20,6 +20,8 @@ import type {
 } from "@/features/social-planner/types";
 import { uploadSocialMediaFile } from "@/features/social-planner/utils/social-media-upload.util";
 import { TikTokDestinationFields } from "@/features/social-planner/components/tiktok-destination-fields";
+import { YouTubeDestinationFields } from "@/features/social-planner/components/youtube-destination-fields";
+import { PinterestDestinationFields } from "@/features/social-planner/components/pinterest-destination-fields";
 import { StorageUploadError } from "@/lib/storage";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -131,7 +133,14 @@ export function SocialPostComposerPage() {
           integrationResourceId: resource.id,
           resourceName: resource.name,
           postType: schemaByKey.get(providerKey)?.postTypes[0]?.key ?? "FEED",
-          platformPayload: {},
+          platformPayload:
+            providerKey === "youtube"
+              ? {
+                  privacyStatus: "public",
+                  madeForKids: false,
+                  categoryId: "22",
+                }
+              : {},
         });
       }
     }
@@ -378,10 +387,14 @@ export function SocialPostComposerPage() {
             accept={
               (() => {
                 const selected = destinations.filter((d) => d.selected);
-                return selected.length > 0 &&
-                  selected.every((d) => d.providerKey === "tiktok")
-                  ? "video/*"
-                  : "image/*,video/*";
+                const videoOnly =
+                  selected.length > 0 &&
+                  selected.every(
+                    (d) =>
+                      d.providerKey === "tiktok" ||
+                      d.providerKey === "youtube",
+                  );
+                return videoOnly ? "video/*" : "image/*,video/*";
               })()
             }
             multiple
@@ -481,6 +494,31 @@ export function SocialPostComposerPage() {
                   {dest.providerKey === "tiktok" ? (
                     <TikTokDestinationFields
                       resourceId={dest.integrationResourceId}
+                      platformPayload={dest.platformPayload ?? {}}
+                      onChange={(platformPayload) =>
+                        updateDestination(
+                          dest.providerKey,
+                          dest.integrationResourceId,
+                          { platformPayload },
+                        )
+                      }
+                    />
+                  ) : dest.providerKey === "youtube" ? (
+                    <YouTubeDestinationFields
+                      resourceName={dest.resourceName}
+                      postType={dest.postType}
+                      platformPayload={dest.platformPayload ?? {}}
+                      onChange={(platformPayload) =>
+                        updateDestination(
+                          dest.providerKey,
+                          dest.integrationResourceId,
+                          { platformPayload },
+                        )
+                      }
+                    />
+                  ) : dest.providerKey === "pinterest" ? (
+                    <PinterestDestinationFields
+                      resourceName={dest.resourceName}
                       platformPayload={dest.platformPayload ?? {}}
                       onChange={(platformPayload) =>
                         updateDestination(

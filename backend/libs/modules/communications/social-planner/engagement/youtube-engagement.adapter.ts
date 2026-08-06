@@ -40,6 +40,7 @@ export class YouTubeEngagementAdapter implements SocialEngagementAdapter {
   readonly providerKey = 'youtube';
   readonly capabilities: SocialEngagementCapabilities = {
     listComments: true,
+    /** Top-level + one reply level only (YouTube API constraint). */
     nestedReplies: true,
     reply: true,
     likeComment: false,
@@ -51,46 +52,82 @@ export class YouTubeEngagementAdapter implements SocialEngagementAdapter {
   async listComments(
     input: SocialEngagementListInput,
   ): Promise<SocialEngagementComment[]> {
-    const url = new URL(`${YOUTUBE_API}/commentThreads`);
-    url.searchParams.set('part', 'snippet,replies');
-    url.searchParams.set('videoId', input.externalPostId);
-    url.searchParams.set('maxResults', '50');
-    url.searchParams.set('textFormat', 'plainText');
+    const threads: SocialEngagementComment[] = [];
+    let pageToken: string | undefined;
 
-    const response = await fetch(url.toString(), {
-      headers: { Authorization: `Bearer ${input.accessToken}` },
-    });
-    const data = (await response.json()) as {
-      items?: YouTubeCommentThread[];
-      error?: { message?: string };
-    };
-    if (!response.ok) {
-      throw new Error(data.error?.message ?? 'Failed to fetch YouTube comments');
-    }
+    do {
+      const url = new URL(`${YOUTUBE_API}/commentThreads`);
+      url.searchParams.set('part', 'snippet,replies');
+      url.searchParams.set('videoId', input.externalPostId);
+      url.searchParams.set('maxResults', '50');
+      url.searchParams.set('textFormat', 'plainText');
+      if (pageToken) url.searchParams.set('pageToken', pageToken);
 
-    return (data.items ?? []).map((thread) => {
-      const top = thread.snippet?.topLevelComment;
-      const topId = top?.id ?? thread.id ?? '';
-      const topSnippet = top?.snippet;
-      const replies = (thread.replies?.comments ?? []).map((reply) =>
-        mapYouTubeComment(reply, topId),
-      );
-      return {
-        externalCommentId: topId,
-        parentExternalCommentId: null,
-        authorName: topSnippet?.authorDisplayName ?? null,
-        authorExternalId: topSnippet?.authorChannelId?.value ?? null,
-        message: topSnippet?.textOriginal ?? topSnippet?.textDisplay ?? '',
-        likeCount: topSnippet?.likeCount ?? 0,
-        createdTime: topSnippet?.publishedAt ?? null,
-        replies,
+      const response = await fetch(url.toString(), {
+        headers: { Authorization: `Bearer ${input.accessToken}` },
+      });
+      const data = (await response.json()) as {
+        items?: YouTubeCommentThread[];
+        nextPageToken?: string;
+        error?: { message?: string; errors?: Array<{ reason?: string }> };
       };
-    });
+      if (!response.ok) {
+        const reason = data.error?.errors?.[0]?.reason;
+        throw new Error(
+          data.error?.message ??
+            (reason === 'quotaExceeded'
+              ? 'YouTube API quota exceeded while listing comments'
+              : 'Failed to fetch YouTube comments'),
+        );
+      }
+
+      for (const thread of data.items ?? []) {
+        const top = thread.snippet?.topLevelComment;
+        const topId = top?.id ?? thread.id ?? '';
+        if (!topId) continue;
+        const topSnippet = top?.snippet;
+        const totalReplyCount = thread.snippet?.totalReplyCount ?? 0;
+        let replies = (thread.replies?.comments ?? []).map((reply) =>
+          mapYouTubeComment(reply, topId),
+        );
+
+        if (totalReplyCount > replies.length) {
+          const extra = await this.listRepliesForParent(
+            input.accessToken,
+            topId,
+          );
+          const seen = new Set(replies.map((r) => r.externalCommentId));
+          for (const reply of extra) {
+            if (!seen.has(reply.externalCommentId)) {
+              replies.push(reply);
+              seen.add(reply.externalCommentId);
+            }
+          }
+        }
+
+        threads.push({
+          externalCommentId: topId,
+          parentExternalCommentId: null,
+          authorName: topSnippet?.authorDisplayName ?? null,
+          authorExternalId: topSnippet?.authorChannelId?.value ?? null,
+          message: topSnippet?.textOriginal ?? topSnippet?.textDisplay ?? '',
+          likeCount: topSnippet?.likeCount ?? 0,
+          createdTime: topSnippet?.publishedAt ?? null,
+          replies,
+        });
+      }
+
+      pageToken = data.nextPageToken;
+    } while (pageToken);
+
+    return threads;
   }
 
   async reply(
     input: SocialEngagementMutationInput,
   ): Promise<{ id: string }> {
+    // YouTube only allows replies to top-level comments. Callers must pass
+    // the top-level parent id (service remaps nested replies).
     const response = await fetch(`${YOUTUBE_API}/comments?part=snippet`, {
       method: 'POST',
       headers: {
@@ -161,6 +198,41 @@ export class YouTubeEngagementAdapter implements SocialEngagementAdapter {
       views: Number(stats?.viewCount ?? 0),
       raw: stats,
     };
+  }
+
+  private async listRepliesForParent(
+    accessToken: string,
+    parentId: string,
+  ): Promise<SocialEngagementComment[]> {
+    const replies: SocialEngagementComment[] = [];
+    let pageToken: string | undefined;
+    do {
+      const url = new URL(`${YOUTUBE_API}/comments`);
+      url.searchParams.set('part', 'snippet');
+      url.searchParams.set('parentId', parentId);
+      url.searchParams.set('maxResults', '100');
+      url.searchParams.set('textFormat', 'plainText');
+      if (pageToken) url.searchParams.set('pageToken', pageToken);
+
+      const response = await fetch(url.toString(), {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      const data = (await response.json()) as {
+        items?: YouTubeComment[];
+        nextPageToken?: string;
+        error?: { message?: string };
+      };
+      if (!response.ok) {
+        throw new Error(
+          data.error?.message ?? 'Failed to fetch YouTube comment replies',
+        );
+      }
+      for (const item of data.items ?? []) {
+        replies.push(mapYouTubeComment(item, parentId));
+      }
+      pageToken = data.nextPageToken;
+    } while (pageToken);
+    return replies;
   }
 }
 

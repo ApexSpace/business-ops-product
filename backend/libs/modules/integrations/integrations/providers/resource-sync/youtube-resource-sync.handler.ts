@@ -49,8 +49,10 @@ export class YouTubeResourceSyncHandler implements IntegrationResourceSyncHandle
     const data = (await response.json()) as YouTubeChannelsResponse;
     const now = new Date();
 
+    // Omit isSelected/isDefault so re-sync preserves user channel picks;
+    // ensureDefaultResource sets defaults only when none exist.
     const items: UpsertIntegrationResourceInput[] = (data.items ?? []).map(
-      (channel, index) => ({
+      (channel) => ({
         externalId: channel.id,
         name: channel.snippet?.title ?? channel.id,
         type: IntegrationResourceType.YOUTUBE_CHANNEL,
@@ -60,8 +62,6 @@ export class YouTubeResourceSyncHandler implements IntegrationResourceSyncHandle
           thumbnailUrl: channel.snippet?.thumbnails?.default?.url ?? null,
         },
         lastSyncedAt: now,
-        isSelected: index === 0,
-        isDefault: index === 0,
       }),
     );
 

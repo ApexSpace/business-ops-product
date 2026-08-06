@@ -8,6 +8,7 @@ import { StripeResourceSyncHandler } from './stripe-resource-sync.handler';
 import { WhatsAppResourceSyncHandler } from './whatsapp-resource-sync.handler';
 import { YouTubeResourceSyncHandler } from './youtube-resource-sync.handler';
 import { LinkedInResourceSyncHandler } from './linkedin-resource-sync.handler';
+import { PinterestResourceSyncHandler } from './pinterest-resource-sync.handler';
 
 @Injectable()
 export class IntegrationResourceSyncRegistry {
@@ -22,6 +23,7 @@ export class IntegrationResourceSyncRegistry {
     stripeHandler: StripeResourceSyncHandler,
     youtubeHandler: YouTubeResourceSyncHandler,
     linkedInHandler: LinkedInResourceSyncHandler,
+    pinterestHandler: PinterestResourceSyncHandler,
   ) {
     this.handlers = new Map(
       [
@@ -33,6 +35,7 @@ export class IntegrationResourceSyncRegistry {
         stripeHandler,
         youtubeHandler,
         linkedInHandler,
+        pinterestHandler,
       ].map((handler) => [handler.providerKey, handler]),
     );
   }

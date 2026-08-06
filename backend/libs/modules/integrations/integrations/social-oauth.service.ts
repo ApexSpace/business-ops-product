@@ -13,12 +13,15 @@ import { ErrorCode } from '@app/common/exceptions/error-code.enum';
 import { encryptIntegrationCredentials } from '@app/common/utils/integration-encryption.util';
 import { RootConfig } from '@app/core/config/configuration';
 import { resolveOAuthRedirectUri } from '@app/core/config/oauth-redirect-uri.util';
+import { JobEnqueueService } from '@app/core/jobs/job-enqueue.service';
 import { AuditService } from '@app/modules/platform/audit/services/audit.service';
 import {
   SOCIAL_OAUTH_PROVIDER_CONFIG,
+  getSocialOAuthProviderConfig,
   type SocialOAuthProviderKey,
   isSocialOAuthProviderKey,
 } from './constants/social-oauth.constants';
+import { providerSupportsResources } from './constants/integration-resource.constants';
 import { BusinessIntegrationRepository } from './repositories/business-integration.repository';
 import { IntegrationProviderRepository } from './repositories/integration-provider.repository';
 import { IntegrationResourceRepository } from './repositories/integration-resource.repository';
@@ -47,6 +50,7 @@ export class SocialOAuthService {
     private readonly businessIntegrationRepository: BusinessIntegrationRepository,
     private readonly integrationResourceRepository: IntegrationResourceRepository,
     private readonly auditService: AuditService,
+    private readonly jobEnqueueService: JobEnqueueService,
   ) {}
 
   async redirectToProvider(
@@ -62,7 +66,7 @@ export class SocialOAuthService {
       );
     }
 
-    const config = SOCIAL_OAUTH_PROVIDER_CONFIG[providerKey];
+    const config = getSocialOAuthProviderConfig(providerKey);
     this.assertConfigured(providerKey);
     await this.assertOAuthProvider(providerKey);
 
@@ -203,10 +207,23 @@ export class SocialOAuthService {
       const profile = await this.fetchProfile(providerKey, tokens);
       await this.saveBusinessIntegration(payload, tokens, profile);
 
+      let jobId: string | undefined;
+      if (providerSupportsResources(providerKey)) {
+        const asyncJob =
+          await this.jobEnqueueService.enqueueIntegrationResourceSync({
+            businessId: payload.businessId,
+            providerKey,
+            actorUserId: payload.userId,
+            idempotencyKey: `social-oauth-sync-${payload.businessId}-${providerKey}-${Date.now()}`,
+          });
+        jobId = asyncJob.id;
+      }
+
       res.redirect(
         this.buildOAuthCallbackUrl({
           connected: providerKey,
           providerKey,
+          jobId,
         }),
       );
     } catch {
@@ -224,7 +241,7 @@ export class SocialOAuthService {
     code: string,
     codeVerifier?: string,
   ): Promise<TokenResponse> {
-    const config = SOCIAL_OAUTH_PROVIDER_CONFIG[providerKey];
+    const config = getSocialOAuthProviderConfig(providerKey);
     const body = new URLSearchParams({
       grant_type: 'authorization_code',
       code,
@@ -233,9 +250,6 @@ export class SocialOAuthService {
 
     if (providerKey === 'tiktok') {
       body.set('client_key', this.getClientId(providerKey));
-      body.set('client_secret', this.getClientSecret(providerKey));
-    } else if (providerKey !== 'x') {
-      body.set('client_id', this.getClientId(providerKey));
       body.set('client_secret', this.getClientSecret(providerKey));
     }
 
@@ -247,7 +261,8 @@ export class SocialOAuthService {
       'Content-Type': 'application/x-www-form-urlencoded',
     };
 
-    if (providerKey === 'x') {
+    // Pinterest and X require HTTP Basic for token exchange.
+    if (providerKey === 'x' || providerKey === 'pinterest') {
       const basic = Buffer.from(
         `${this.getClientId(providerKey)}:${this.getClientSecret(providerKey)}`,
       ).toString('base64');
@@ -272,7 +287,7 @@ export class SocialOAuthService {
     providerKey: SocialOAuthProviderKey,
     tokens: TokenResponse,
   ): Promise<{ id: string; name?: string; email?: string; avatarUrl?: string }> {
-    const config = SOCIAL_OAUTH_PROVIDER_CONFIG[providerKey];
+    const config = getSocialOAuthProviderConfig(providerKey);
     if (!config.userInfoUrl) {
       return { id: tokens.open_id ?? `${providerKey}-user` };
     }
@@ -372,6 +387,7 @@ export class SocialOAuthService {
         config: {
           scopes,
           externalUserId: profile.id,
+          ...(profile.avatarUrl ? { avatarUrl: profile.avatarUrl } : {}),
         } as Prisma.InputJsonValue,
         connectedAccountName: profile.name ?? null,
         connectedAccountEmail: profile.email ?? null,
@@ -380,32 +396,33 @@ export class SocialOAuthService {
       },
     );
 
-    const resourceType =
-      payload.providerKey === 'x'
-        ? IntegrationResourceType.X_USER
-        : payload.providerKey === 'pinterest'
-          ? IntegrationResourceType.PINTEREST_BOARD
+    // Pinterest boards come from resource sync (GET /v5/boards), not OAuth profile.
+    if (payload.providerKey !== 'pinterest') {
+      const resourceType =
+        payload.providerKey === 'x'
+          ? IntegrationResourceType.X_USER
           : IntegrationResourceType.TIKTOK_USER;
 
-    await this.integrationResourceRepository.upsertMany(
-      integration.id,
-      payload.businessId,
-      payload.providerKey,
-      [
-        {
-          externalId: profile.id,
-          name: profile.name ?? payload.providerKey,
-          type: resourceType,
-          metadata: {
-            source: 'oauth',
-            ...(profile.avatarUrl ? { avatarUrl: profile.avatarUrl } : {}),
+      await this.integrationResourceRepository.upsertMany(
+        integration.id,
+        payload.businessId,
+        payload.providerKey,
+        [
+          {
+            externalId: profile.id,
+            name: profile.name ?? payload.providerKey,
+            type: resourceType,
+            metadata: {
+              source: 'oauth',
+              ...(profile.avatarUrl ? { avatarUrl: profile.avatarUrl } : {}),
+            },
+            lastSyncedAt: now,
+            isSelected: true,
+            isDefault: true,
           },
-          lastSyncedAt: now,
-          isSelected: true,
-          isDefault: true,
-        },
-      ],
-    );
+        ],
+      );
+    }
 
     await this.auditService.log({
       actorUserId: payload.userId,
@@ -488,6 +505,7 @@ export class SocialOAuthService {
     connected?: string;
     error?: string;
     providerKey?: string;
+    jobId?: string;
   }): string {
     const frontendBase = this.configService.get('app.frontendUrl', {
       infer: true,
@@ -497,6 +515,7 @@ export class SocialOAuthService {
     if (params.error) url.searchParams.set('error', params.error);
     if (params.providerKey)
       url.searchParams.set('providerKey', params.providerKey);
+    if (params.jobId) url.searchParams.set('jobId', params.jobId);
     return url.toString();
   }
 }

@@ -9,6 +9,11 @@ import {
   TikTokApiError,
 } from '../adapters/tiktok/tiktok.constants';
 import {
+  YOUTUBE_UPLOAD_SESSION_PAYLOAD_KEY,
+  YOUTUBE_VIDEO_ID_PAYLOAD_KEY,
+  YouTubeApiError,
+} from '../adapters/youtube/youtube.constants';
+import {
   SocialPostRepository,
   SocialPostTargetWithRelations,
 } from '../repositories/social-post.repository';
@@ -96,6 +101,18 @@ export class SocialPublishService {
               `Persisted TikTok publish_id=${publishId} for target=${target.id}`,
             );
           },
+          onYouTubePublishProgress: async (patch: Record<string, unknown>) => {
+            for (const [key, value] of Object.entries(patch)) {
+              if (value === undefined) {
+                delete platformPayload[key];
+              } else {
+                platformPayload[key] = value;
+              }
+            }
+            await this.socialPostRepository.updateTarget(target.id, {
+              platformPayload: platformPayload as Prisma.InputJsonValue,
+            });
+          },
         },
       };
 
@@ -110,6 +127,8 @@ export class SocialPublishService {
       const result = await adapter.publish(input);
 
       delete platformPayload[TIKTOK_PUBLISH_ID_PAYLOAD_KEY];
+      delete platformPayload[YOUTUBE_VIDEO_ID_PAYLOAD_KEY];
+      delete platformPayload[YOUTUBE_UPLOAD_SESSION_PAYLOAD_KEY];
 
       await this.socialPostRepository.updateTarget(target.id, {
         status: SocialPostTargetStatus.PUBLISHED,
@@ -136,8 +155,8 @@ export class SocialPublishService {
       const message =
         error instanceof Error ? error.message : 'Social publish failed';
       const errorCode =
-        error instanceof TikTokApiError
-          ? error.code.slice(0, 64)
+        error instanceof TikTokApiError || error instanceof YouTubeApiError
+          ? (error.code ?? 'PUBLISH_FAILED').slice(0, 64)
           : 'PUBLISH_FAILED';
 
       this.logger.error(

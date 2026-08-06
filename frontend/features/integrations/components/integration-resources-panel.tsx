@@ -3,6 +3,7 @@
 import { Loader2 } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 import { IntegrationEmptyState } from "@/features/integrations/components/integration-empty-state";
 import { IntegrationResourceList } from "@/features/integrations/components/integration-resource-list";
 import { SyncResourcesButton } from "@/features/integrations/components/sync-resources-button";
@@ -18,6 +19,7 @@ import {
 import { getIntegrationManageCopy } from "@/features/integrations/utils/integration-manage-copy";
 import { providerSupportsResources } from "@/features/integrations/utils/integration-resources";
 import type { InstagramAuthFlow } from "@/features/integrations/utils/integrations";
+import { useCreatePinterestBoard } from "@/features/social-planner/hooks/use-create-pinterest-board";
 import { queryKeys } from "@/lib/query/keys";
 
 export interface IntegrationResourcesPanelProps {
@@ -122,6 +124,8 @@ export function IntegrationResourcesPanel({
     onError: (error: Error) => toast.error(error.message),
   });
 
+  const createPinterestBoardMutation = useCreatePinterestBoard();
+
   if (!supportsResources || !isConnected) {
     return null;
   }
@@ -130,7 +134,8 @@ export function IntegrationResourcesPanel({
     syncMutation.isPending ||
     selectMutation.isPending ||
     unselectMutation.isPending ||
-    makeDefaultMutation.isPending;
+    makeDefaultMutation.isPending ||
+    createPinterestBoardMutation.isPending;
 
   const resources = data?.resources ?? [];
   const syncEnabled = data?.syncEnabled === true;
@@ -138,26 +143,46 @@ export function IntegrationResourcesPanel({
     isSyncingAssets || (isLoading && !data) || (isFetching && !data);
   const isGbp = providerKey === "google-business-profile";
   const isWhatsApp = providerKey === "whatsapp";
+  const isPinterest = providerKey === "pinterest";
   const hasWhatsAppDefault = isWhatsApp && resources.some((r) => r.isDefault);
+
+  const handleCreatePinterestBoard = () => {
+    const name = window.prompt("New Pinterest board name");
+    if (!name?.trim()) return;
+    createPinterestBoardMutation.mutate({ name: name.trim() });
+  };
 
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between gap-2">
         <h3 className="text-sm font-medium">{copy.resourcesSectionLabel}</h3>
-        <SyncResourcesButton
-          label={
-            showSyncingState && !data
-              ? "Syncing…"
-              : syncEnabled
-                ? copy.syncButtonLabel
-                : data
-                  ? "Sync unavailable"
-                  : "Syncing…"
-          }
-          disabled={!canManage || !syncEnabled || isPending || showSyncingState}
-          isPending={syncMutation.isPending}
-          onSync={() => syncMutation.mutate()}
-        />
+        <div className="flex items-center gap-2">
+          {isPinterest && canManage ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={isPending}
+              onClick={handleCreatePinterestBoard}
+            >
+              Add board
+            </Button>
+          ) : null}
+          <SyncResourcesButton
+            label={
+              showSyncingState && !data
+                ? "Syncing…"
+                : syncEnabled
+                  ? copy.syncButtonLabel
+                  : data
+                    ? "Sync unavailable"
+                    : "Syncing…"
+            }
+            disabled={!canManage || !syncEnabled || isPending || showSyncingState}
+            isPending={syncMutation.isPending}
+            onSync={() => syncMutation.mutate()}
+          />
+        </div>
       </div>
 
       {showSyncingState ? (

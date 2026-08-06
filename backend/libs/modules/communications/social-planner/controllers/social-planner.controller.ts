@@ -28,6 +28,9 @@ import { UpdateSocialPostDto } from '../dto/update-social-post.dto';
 import { ValidateSocialPostDto } from '../dto/validate-social-post.dto';
 import { SocialPostsService } from '../services/social-posts.service';
 import { TikTokCreatorInfoService } from '../services/tiktok-creator-info.service';
+import { YouTubeCategoriesService } from '../services/youtube-categories.service';
+import { PinterestBoardsService } from '../services/pinterest-boards.service';
+import { CreatePinterestBoardDto } from '../dto/create-pinterest-board.dto';
 
 @ApiTags('social-planner')
 @ApiBearerAuth()
@@ -39,6 +42,8 @@ export class SocialPlannerController {
   constructor(
     private readonly socialPostsService: SocialPostsService,
     private readonly tikTokCreatorInfoService: TikTokCreatorInfoService,
+    private readonly youTubeCategoriesService: YouTubeCategoriesService,
+    private readonly pinterestBoardsService: PinterestBoardsService,
   ) {}
 
   @Get('platform-schemas')
@@ -65,6 +70,29 @@ export class SocialPlannerController {
       user.businessId!,
       resourceId,
     );
+  }
+
+  @Get('youtube/categories')
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
+  youtubeCategories(@CurrentUser() user: RequestUser) {
+    return this.youTubeCategoriesService.listCategories(user.businessId!);
+  }
+
+  @Post('pinterest/boards')
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
+  createPinterestBoard(
+    @CurrentUser() user: RequestUser,
+    @Body() dto: CreatePinterestBoardDto,
+  ) {
+    return this.pinterestBoardsService.createBoard(user.businessId!, dto);
   }
 
   @Get('calendar')

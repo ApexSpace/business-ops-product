@@ -1,3 +1,8 @@
+import {
+  getPinterestOAuthTokenUrl,
+  getPinterestUserAccountUrl,
+} from './pinterest-api.constants';
+
 export const SOCIAL_OAUTH_PROVIDER_KEYS = ['x', 'pinterest', 'tiktok'] as const;
 
 export type SocialOAuthProviderKey = (typeof SOCIAL_OAUTH_PROVIDER_KEYS)[number];
@@ -21,7 +26,7 @@ export type SocialOAuthProviderConfig = {
   userInfoUrl?: string;
 };
 
-export const SOCIAL_OAUTH_PROVIDER_CONFIG: Record<
+const SOCIAL_OAUTH_PROVIDER_CONFIG_BASE: Record<
   SocialOAuthProviderKey,
   SocialOAuthProviderConfig
 > = {
@@ -43,6 +48,7 @@ export const SOCIAL_OAUTH_PROVIDER_CONFIG: Record<
   pinterest: {
     providerKey: 'pinterest',
     authorizeUrl: 'https://www.pinterest.com/oauth/',
+    // Resolved at runtime via getSocialOAuthProviderConfig (sandbox vs production).
     tokenUrl: 'https://api.pinterest.com/v5/oauth/token',
     scopes: [
       'boards:read',
@@ -70,5 +76,23 @@ export const SOCIAL_OAUTH_PROVIDER_CONFIG: Record<
     userInfoUrl: 'https://open.tiktokapis.com/v2/user/info/',
   },
 };
+
+/** Runtime config (Pinterest token/userinfo host follows sandbox env). */
+export function getSocialOAuthProviderConfig(
+  providerKey: SocialOAuthProviderKey,
+): SocialOAuthProviderConfig {
+  const base = SOCIAL_OAUTH_PROVIDER_CONFIG_BASE[providerKey];
+  if (providerKey !== 'pinterest') {
+    return base;
+  }
+  return {
+    ...base,
+    tokenUrl: getPinterestOAuthTokenUrl(),
+    userInfoUrl: getPinterestUserAccountUrl(),
+  };
+}
+
+/** Static base config. Prefer getSocialOAuthProviderConfig for Pinterest. */
+export const SOCIAL_OAUTH_PROVIDER_CONFIG = SOCIAL_OAUTH_PROVIDER_CONFIG_BASE;
 
 export const OAUTH_STATE_TTL_MS = 10 * 60 * 1000;

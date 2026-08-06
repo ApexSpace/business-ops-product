@@ -100,7 +100,8 @@ function CommentThread({
         <p className="mb-3 text-sm">{displayMessage(comment.message)}</p>
         {!optimistic ? (
           <div className="flex flex-wrap items-center gap-2">
-            {capabilities.reply ? (
+            {capabilities.reply &&
+            !(comment.providerKey === "youtube" && depth > 0) ? (
               <>
                 <Input
                   className="max-w-md"

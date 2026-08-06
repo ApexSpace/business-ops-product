@@ -6,6 +6,7 @@ import { decryptIntegrationCredentials } from '@app/common/utils/integration-enc
 import { BusinessIntegrationRepository } from '@app/modules/integrations/integrations/repositories/business-integration.repository';
 import { IntegrationResourceRepository } from '@app/modules/integrations/integrations/repositories/integration-resource.repository';
 import { GoogleTokenService } from '@app/modules/integrations/integrations/services/google-token.service';
+import { PinterestTokenService } from '@app/modules/integrations/integrations/services/pinterest-token.service';
 import { TikTokTokenService } from '@app/modules/integrations/integrations/services/tiktok-token.service';
 import { MetaTokenService } from '@app/modules/integrations/integrations/meta/services/meta-token.service';
 
@@ -19,8 +20,8 @@ interface StoredGenericCredentials {
 
 /**
  * Resolves a fresh access token for any supported social publish provider.
- * Meta, Google, and TikTok delegate to dedicated token services (refresh);
- * LinkedIn / X / Pinterest use stored tokens with expiry checks.
+ * Meta, Google, TikTok, and Pinterest delegate to dedicated token services (refresh);
+ * LinkedIn / X use stored tokens with expiry checks.
  */
 @Injectable()
 export class SocialTokenResolverService {
@@ -30,6 +31,7 @@ export class SocialTokenResolverService {
     private readonly metaTokenService: MetaTokenService,
     private readonly googleTokenService: GoogleTokenService,
     private readonly tikTokTokenService: TikTokTokenService,
+    private readonly pinterestTokenService: PinterestTokenService,
   ) {}
 
   async getAccessToken(
@@ -50,6 +52,9 @@ export class SocialTokenResolverService {
     }
     if (providerKey === 'tiktok') {
       return this.tikTokTokenService.getAccessToken(businessId);
+    }
+    if (providerKey === 'pinterest') {
+      return this.pinterestTokenService.getAccessToken(businessId);
     }
     return this.getGenericAccessToken(businessId, providerKey);
   }

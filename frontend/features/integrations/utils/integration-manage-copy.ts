@@ -167,6 +167,62 @@ const COPY_BY_PROVIDER: Record<string, IntegrationManageCopy> = {
     },
     disconnectLabel: "Disconnect Google Business Profile",
   },
+  youtube: {
+    connectionTitle: "YouTube connection",
+    description:
+      "Connect with Google so Social Planner can upload videos to your YouTube channel and manage comments on published posts.",
+    resourcesSectionLabel: "YouTube channels",
+    syncButtonLabel: "Sync channels",
+    syncSuccessToast: (count) =>
+      count === 1 ? "YouTube channel synced" : `${count} YouTube channels synced`,
+    syncEmptyToast: "No YouTube channel found",
+    syncingAssetsTitle: "Finding your YouTube channels…",
+    syncingAssetsMessage:
+      "Google is returning YouTube channels for the account you authorized.",
+    emptyState: {
+      title: "No YouTube channel found",
+      message:
+        "We could not find a YouTube channel for this Google account. Create a channel on YouTube, then reconnect and sync.",
+      checklist: [
+        "Sign in with the Google account that owns the YouTube channel.",
+        "Approve youtube.upload and youtube.force-ssl when Google asks.",
+        "Confirm YouTube Data API v3 is enabled on the Cloud project.",
+        "If the OAuth app is in Testing, add your Gmail as a test user.",
+        "Try Sync again after reconnecting.",
+      ],
+      learnMoreUrl:
+        "https://developers.google.com/youtube/v3/getting-started",
+      learnMoreLabel: "YouTube Data API getting started",
+    },
+    disconnectLabel: "Disconnect YouTube",
+  },
+  pinterest: {
+    connectionTitle: "Pinterest connection",
+    description:
+      "Connect a Pinterest Business account so Social Planner can sync boards and publish pins.",
+    resourcesSectionLabel: "Pinterest boards",
+    syncButtonLabel: "Sync boards",
+    syncSuccessToast: (count) =>
+      count === 1 ? "Pinterest board synced" : `${count} Pinterest boards synced`,
+    syncEmptyToast: "No Pinterest boards found",
+    syncingAssetsTitle: "Finding your Pinterest boards…",
+    syncingAssetsMessage:
+      "Pinterest is returning boards for the Business account you authorized.",
+    emptyState: {
+      title: "No Pinterest boards found",
+      message:
+        "Trial mode uses Pinterest Sandbox. Boards on pinterest.com do not appear here — click Add board to create a sandbox board for testing (required until Standard Access).",
+      checklist: [
+        "Click Add board to create a sandbox board (Trial cannot list your live pinterest.com boards).",
+        "Approve boards:read, boards:write, pins:read, and pins:write when Pinterest asks.",
+        "Wait ~30 seconds between Sync clicks (cooldown).",
+        "After Standard Access, turn off sandbox and reconnect to sync live boards.",
+      ],
+      learnMoreUrl: "https://developers.pinterest.com/docs/developer-tools/sandbox/",
+      learnMoreLabel: "Pinterest API Sandbox",
+    },
+    disconnectLabel: "Disconnect Pinterest",
+  },
   stripe: {
     connectionTitle: "Stripe connection",
     description:

@@ -30,6 +30,8 @@ import { SocialPublishService } from './services/social-publish.service';
 import { SocialSafetyNetService } from './services/social-safety-net.service';
 import { SocialTokenResolverService } from './services/social-token-resolver.service';
 import { TikTokCreatorInfoService } from './services/tiktok-creator-info.service';
+import { YouTubeCategoriesService } from './services/youtube-categories.service';
+import { PinterestBoardsService } from './services/pinterest-boards.service';
 import { SocialPublishProcessor } from './workers/processors/social-publish.processor';
 
 const publishProviders = [
@@ -37,6 +39,8 @@ const publishProviders = [
   SocialPublishService,
   SocialTokenResolverService,
   TikTokCreatorInfoService,
+  YouTubeCategoriesService,
+  PinterestBoardsService,
   SocialSafetyNetService,
   SocialPublishProcessor,
   FacebookPublishAdapter,
@@ -89,6 +93,8 @@ const engagementProviders = [
     SocialPublishProcessor,
     SocialPublishAdapterRegistry,
     TikTokCreatorInfoService,
+    YouTubeCategoriesService,
+    PinterestBoardsService,
     SocialCommentRepository,
     SocialCommentsService,
     SocialCommentIngestionService,

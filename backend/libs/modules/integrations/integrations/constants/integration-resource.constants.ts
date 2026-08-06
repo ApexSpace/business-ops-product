@@ -65,7 +65,7 @@ export const PROVIDER_RESOURCE_CONFIG: Record<string, ProviderResourceConfig> =
     },
     pinterest: {
       resourceTypes: [IntegrationResourceType.PINTEREST_BOARD],
-      syncEnabled: false,
+      syncEnabled: true,
       label: 'Boards',
     },
     tiktok: {

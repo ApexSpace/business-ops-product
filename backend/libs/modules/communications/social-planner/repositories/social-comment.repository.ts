@@ -112,6 +112,54 @@ export class SocialCommentRepository {
     });
   }
 
+  softDeleteByExternalIdCascade(
+    providerKey: string,
+    externalCommentId: string,
+  ) {
+    return this.prisma.$transaction(async (tx) => {
+      const parent = await tx.socialComment.findUnique({
+        where: {
+          providerKey_externalCommentId: { providerKey, externalCommentId },
+        },
+      });
+      if (!parent || parent.deletedAt) return { count: 0 };
+
+      const now = new Date();
+      const children = await tx.socialComment.updateMany({
+        where: {
+          providerKey,
+          deletedAt: null,
+          OR: [
+            { parentExternalCommentId: externalCommentId },
+            { parentCommentId: parent.id },
+          ],
+        },
+        data: { deletedAt: now, lastSyncedAt: now },
+      });
+      const self = await tx.socialComment.updateMany({
+        where: { id: parent.id, deletedAt: null },
+        data: { deletedAt: now, lastSyncedAt: now },
+      });
+      return { count: children.count + self.count };
+    });
+  }
+
+  softDeleteMissingExternalIds(
+    socialPostTargetId: string,
+    keepExternalIds: string[],
+  ) {
+    return this.prisma.socialComment.updateMany({
+      where: {
+        socialPostTargetId,
+        deletedAt: null,
+        ...(keepExternalIds.length > 0
+          ? { externalCommentId: { notIn: keepExternalIds } }
+          : {}),
+      },
+      data: { deletedAt: new Date(), lastSyncedAt: new Date() },
+    });
+  }
+
   listForBusiness(
     businessId: string,
     params: {

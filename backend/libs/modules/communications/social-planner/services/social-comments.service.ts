@@ -268,8 +268,21 @@ export class SocialCommentsService {
       socialPostTargetId,
     );
 
+    const parentRow =
+      (await this.commentRepository.findById(businessId, commentId)) ??
+      (await this.commentRepository.findByExternalId(
+        providerKey,
+        resolved.externalCommentId,
+      ));
+
+    // YouTube rejects reply-to-reply; always reply under the top-level comment.
+    let replyParentExternalId = resolved.externalCommentId;
+    if (providerKey === 'youtube' && parentRow?.parentExternalCommentId) {
+      replyParentExternalId = parentRow.parentExternalCommentId;
+    }
+
     const result = await adapter.reply({
-      externalCommentId: resolved.externalCommentId,
+      externalCommentId: replyParentExternalId,
       accessToken: resolved.accessToken,
       message,
     }).catch((error) => {
@@ -280,12 +293,11 @@ export class SocialCommentsService {
       );
     });
 
-    // Prefer UUID parent from the comment being replied to (already resolved).
     const parent =
-      (await this.commentRepository.findById(businessId, commentId)) ??
+      parentRow ??
       (await this.commentRepository.findByExternalId(
         providerKey,
-        resolved.externalCommentId,
+        replyParentExternalId,
       ));
 
     await this.commentRepository.upsertComment({
@@ -293,7 +305,7 @@ export class SocialCommentsService {
       socialPostTargetId: resolved.targetId,
       providerKey,
       externalCommentId: result.id,
-      parentExternalCommentId: resolved.externalCommentId,
+      parentExternalCommentId: replyParentExternalId,
       parentCommentId: parent?.id ?? null,
       message,
       authorName: null,
@@ -376,10 +388,17 @@ export class SocialCommentsService {
       accessToken: resolved.accessToken,
     });
 
-    await this.commentRepository.softDeleteByExternalId(
-      providerKey,
-      resolved.externalCommentId,
-    );
+    if (providerKey === 'youtube') {
+      await this.commentRepository.softDeleteByExternalIdCascade(
+        providerKey,
+        resolved.externalCommentId,
+      );
+    } else {
+      await this.commentRepository.softDeleteByExternalId(
+        providerKey,
+        resolved.externalCommentId,
+      );
+    }
 
     return { success: true };
   }
@@ -490,12 +509,22 @@ export class SocialCommentsService {
       externalResourceId: target.resource?.externalId,
     });
 
-    return this.persistCommentTree(
+    const upserted = await this.persistCommentTree(
       target.socialPost.businessId,
       target.id,
       target.providerKey,
       comments,
     );
+
+    if (target.providerKey === 'youtube') {
+      const keepIds = collectExternalCommentIds(comments);
+      await this.commentRepository.softDeleteMissingExternalIds(
+        target.id,
+        keepIds,
+      );
+    }
+
+    return upserted;
   }
 
   private async resolveMutationContext(
@@ -634,4 +663,17 @@ function needsInstagramPermalinkBackfill(
   const slug = match[1];
   // Graph media ids are numeric; public URLs use alphanumeric shortcodes.
   return /^\d+$/.test(slug) || slug === externalPostId;
+}
+
+function collectExternalCommentIds(
+  comments: SocialEngagementComment[],
+): string[] {
+  const ids: string[] = [];
+  for (const comment of comments) {
+    if (comment.externalCommentId) ids.push(comment.externalCommentId);
+    if (comment.replies?.length) {
+      ids.push(...collectExternalCommentIds(comment.replies));
+    }
+  }
+  return ids;
 }

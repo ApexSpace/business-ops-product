@@ -26,6 +26,7 @@ import {
   isSupportedPlatformProviderKey,
   PlatformSchemaDefinition,
 } from '../platform-schemas/platform-schema.registry';
+import { PINTEREST_MAX_BOARDS_PER_POST } from '../adapters/pinterest/pinterest.constants';
 import {
   SocialPostRepository,
   SocialPostWithRelations,
@@ -209,6 +210,8 @@ export class SocialPostsService {
     businessId: string,
     dto: ComposeLikeDto,
   ): Promise<ComposeValidationResult> {
+    this.assertTargetsSupported(dto.targets.map((t) => t.providerKey));
+
     const media = await this.resolveMediaForValidation(
       businessId,
       dto.mediaFileAssetIds ?? [],
@@ -569,7 +572,9 @@ export class SocialPostsService {
       media,
       accessToken: '',
       externalResourceId: '',
-      metadata: {},
+      metadata: {
+        integrationResourceId: target.integrationResourceId ?? '',
+      },
     };
   }
 
@@ -582,6 +587,15 @@ export class SocialPostsService {
           HttpStatus.BAD_REQUEST,
         );
       }
+    }
+
+    const pinterestCount = providerKeys.filter((k) => k === 'pinterest').length;
+    if (pinterestCount > PINTEREST_MAX_BOARDS_PER_POST) {
+      throw new AppException(
+        ErrorCode.BAD_REQUEST,
+        `Pinterest allows at most ${PINTEREST_MAX_BOARDS_PER_POST} boards per post`,
+        HttpStatus.BAD_REQUEST,
+      );
     }
   }
 

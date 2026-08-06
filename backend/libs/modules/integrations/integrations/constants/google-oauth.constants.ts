@@ -11,6 +11,12 @@ export type GoogleOAuthProviderKey =
 export const GOOGLE_BUSINESS_MANAGE_SCOPE =
   'https://www.googleapis.com/auth/business.manage';
 
+export const GOOGLE_YOUTUBE_UPLOAD_SCOPE =
+  'https://www.googleapis.com/auth/youtube.upload';
+
+export const GOOGLE_YOUTUBE_FORCE_SSL_SCOPE =
+  'https://www.googleapis.com/auth/youtube.force-ssl';
+
 const BASE_SCOPES = ['openid', 'email', 'profile'] as const;
 
 const PROVIDER_SCOPES: Record<GoogleOAuthProviderKey, readonly string[]> = {
@@ -29,8 +35,8 @@ const PROVIDER_SCOPES: Record<GoogleOAuthProviderKey, readonly string[]> = {
   ],
   youtube: [
     ...BASE_SCOPES,
-    'https://www.googleapis.com/auth/youtube.upload',
-    'https://www.googleapis.com/auth/youtube.force-ssl',
+    GOOGLE_YOUTUBE_UPLOAD_SCOPE,
+    GOOGLE_YOUTUBE_FORCE_SSL_SCOPE,
   ],
 };
 
@@ -52,6 +58,25 @@ export function googleTokenHasBusinessManageScope(
 
 export const GOOGLE_BUSINESS_MANAGE_SCOPE_MISSING_MESSAGE =
   'Google did not grant Business Profile access (business.manage). In Google Cloud → OAuth consent screen, add the scope https://www.googleapis.com/auth/business.manage, then Disconnect and Reconnect with Google, and approve Business Profile management when prompted.';
+
+export function googleTokenHasYouTubePublishScopes(
+  scope: string | null | undefined,
+): boolean {
+  if (!scope?.trim()) return false;
+  const granted = new Set(
+    scope
+      .split(/[\s,]+/)
+      .map((part) => part.trim().toLowerCase())
+      .filter(Boolean),
+  );
+  return (
+    granted.has(GOOGLE_YOUTUBE_UPLOAD_SCOPE.toLowerCase()) &&
+    granted.has(GOOGLE_YOUTUBE_FORCE_SSL_SCOPE.toLowerCase())
+  );
+}
+
+export const GOOGLE_YOUTUBE_SCOPES_MISSING_MESSAGE =
+  'Google did not grant YouTube upload/comment access (youtube.upload and youtube.force-ssl). In Google Cloud → OAuth consent screen, add those scopes, then Disconnect and Reconnect YouTube and approve all permissions when prompted.';
 
 export function isGoogleOAuthProviderKey(
   providerKey: string,

@@ -24,6 +24,8 @@ import {
   getGoogleScopesForProvider,
   googleTokenHasBusinessManageScope,
   GOOGLE_BUSINESS_MANAGE_SCOPE_MISSING_MESSAGE,
+  googleTokenHasYouTubePublishScopes,
+  GOOGLE_YOUTUBE_SCOPES_MISSING_MESSAGE,
   isGoogleOAuthProviderKey,
 } from './constants/google-oauth.constants';
 import { providerSupportsResources } from './constants/integration-resource.constants';
@@ -160,6 +162,16 @@ export class GoogleOAuthService {
         throw new AppException(
           ErrorCode.BAD_REQUEST,
           GOOGLE_BUSINESS_MANAGE_SCOPE_MISSING_MESSAGE,
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+      if (
+        payload.providerKey === 'youtube' &&
+        !googleTokenHasYouTubePublishScopes(tokens.scope)
+      ) {
+        throw new AppException(
+          ErrorCode.BAD_REQUEST,
+          GOOGLE_YOUTUBE_SCOPES_MISSING_MESSAGE,
           HttpStatus.BAD_REQUEST,
         );
       }

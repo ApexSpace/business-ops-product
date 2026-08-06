@@ -35,6 +35,8 @@ import { PlatformIntegrationRepository } from './repositories/platform-integrati
 import { PlatformEmailProvisioningService } from './email/services/platform-email-provisioning.service';
 import { PlatformSmsProvisioningService } from '../twilio/services/platform-sms-provisioning.service';
 import { TikTokTokenService } from './services/tiktok-token.service';
+import { GoogleTokenService } from './services/google-token.service';
+import { isGoogleOAuthProviderKey } from './constants/google-oauth.constants';
 
 @Injectable()
 export class IntegrationsService {
@@ -47,6 +49,7 @@ export class IntegrationsService {
     private readonly platformEmailProvisioning: PlatformEmailProvisioningService,
     private readonly platformSmsProvisioning: PlatformSmsProvisioningService,
     private readonly tikTokTokenService: TikTokTokenService,
+    private readonly googleTokenService: GoogleTokenService,
   ) {}
 
   // ── Business providers ──────────────────────────────────────────────
@@ -209,6 +212,9 @@ export class IntegrationsService {
 
     if (providerKey === 'tiktok') {
       await this.tikTokTokenService.revokeOnDisconnect(businessId);
+    }
+    if (isGoogleOAuthProviderKey(providerKey)) {
+      await this.googleTokenService.revokeOnDisconnect(businessId, providerKey);
     }
 
     await this.businessIntegrationRepository.delete(businessId, providerKey);

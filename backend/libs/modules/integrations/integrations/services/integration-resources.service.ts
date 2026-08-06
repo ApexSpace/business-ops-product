@@ -28,10 +28,13 @@ import { IntegrationResourceRepository } from '../repositories/integration-resou
 import {
   assertSyncAllowed,
   clearSyncAttempt,
+  getSyncCooldownRemainingMs,
   recordSyncAttempt,
+  sleep,
   SyncCooldownError,
 } from '../utils/sync-cooldown.util';
 import { JobEnqueueService } from '@app/core/jobs/job-enqueue.service';
+import { isPinterestApiSandbox } from '../constants/pinterest-api.constants';
 
 @Injectable()
 export class IntegrationResourcesService {
@@ -161,7 +164,12 @@ export class IntegrationResourcesService {
       };
     }
 
-    assertSyncAllowed(businessId, providerKey);
+    // Wait out cooldown instead of failing — OAuth post-connect sync + manual
+    // Sync can overlap; BullMQ retries of SyncCooldownError made the UI stuck.
+    const cooldownMs = getSyncCooldownRemainingMs(businessId, providerKey);
+    if (cooldownMs > 0) {
+      await sleep(cooldownMs + 100);
+    }
 
     try {
       const result = await handler.sync({
@@ -170,7 +178,7 @@ export class IntegrationResourcesService {
         businessIntegrationId: integration.id,
       });
 
-      // Only burn cooldown after Google was contacted successfully.
+      // Only burn cooldown after the provider was contacted successfully.
       recordSyncAttempt(businessId, providerKey);
 
       const now = new Date();
@@ -201,17 +209,29 @@ export class IntegrationResourcesService {
             integration.id,
           );
         } else {
-          await this.resourceRepository.deactivateMissingExternalIds(
-            integration.id,
-            [],
-          );
-          resources = [];
+          // Trial sandbox often returns an empty board list even after Add board.
+          // Do not deactivate local sandbox boards on empty sync.
+          if (providerKey === 'pinterest' && isPinterestApiSandbox()) {
+            resources = await this.resourceRepository.findManyByIntegration(
+              integration.id,
+            );
+            resources = resources.filter(
+              (resource) =>
+                resource.status === IntegrationResourceStatus.ACTIVE,
+            );
+          } else {
+            await this.resourceRepository.deactivateMissingExternalIds(
+              integration.id,
+              [],
+            );
+            resources = [];
+          }
         }
 
         await this.businessIntegrationRepository.update(businessId, providerKey, {
           lastSyncAt: now,
           errorMessage:
-            result.items.length === 0
+            result.items.length === 0 && resources.length === 0
               ? emptySyncMessageForProvider(providerKey)
               : null,
         });
@@ -508,6 +528,15 @@ function emptySyncMessageForProvider(providerKey: string): string | null {
   }
   if (providerKey === 'google-calendar') {
     return 'No Google calendars were returned for this account.';
+  }
+  if (providerKey === 'youtube') {
+    return 'No YouTube channel was found for this Google account. Confirm the account owns a YouTube channel and that YouTube Data API v3 is enabled.';
+  }
+  if (providerKey === 'pinterest' && isPinterestApiSandbox()) {
+    return 'No sandbox boards found. Boards on pinterest.com are not visible in Trial sandbox — click Add board to create a sandbox board for testing, then Sync again.';
+  }
+  if (providerKey === 'pinterest') {
+    return 'No Pinterest boards were found. Create a board on Pinterest or use Add board, then Sync again.';
   }
   return null;
 }
