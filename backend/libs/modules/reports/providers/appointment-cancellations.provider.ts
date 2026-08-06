@@ -488,25 +488,6 @@ export class AppointmentCancellationsProvider implements ReportDataProvider {
       );
     }
 
-    if (rows.length === 0) {
-      rows.push(
-        row('empty', {
-          date: "Couldn't find any canceled appointments for the selected period.",
-          client: '',
-          phone: '',
-          staff: '',
-          type: '',
-          canceledOn: '',
-          nextAppointment: '',
-          clientEmail: '',
-          service: '',
-          servicePrice: null,
-          notes: '',
-          canceledBy: '',
-        }),
-      );
-    }
-
     return buildDocument(
       buildReportMeta({
         reportKey: this.key,

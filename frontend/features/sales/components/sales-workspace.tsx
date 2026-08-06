@@ -1245,6 +1245,7 @@ function SaleDetail({
                           type="number"
                           min={0}
                           step="0.01"
+                          selectOnFocus
                           value={lineUnitPrice || ""}
                           onChange={(e) =>
                             onLineUnitPriceChange?.(

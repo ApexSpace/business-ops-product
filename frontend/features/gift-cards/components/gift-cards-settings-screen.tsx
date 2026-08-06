@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Copy, ExternalLink, Lock, Pencil } from "lucide-react";
 import { toast } from "sonner";
+import { ApiErrorState } from "@/components/data-display/api-error-state";
 import { PageContainer } from "@/components/layout/page-container";
 import { PageHeader } from "@/components/layout/page-header";
 import { SettingsCard } from "@/components/layout/settings-card";
@@ -21,6 +22,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { queryKeys } from "@/lib/query/keys";
 import { invalidateGiftCards } from "@/lib/query/invalidation";
@@ -35,6 +37,8 @@ import {
   updateGiftCardOnlineSales,
   updateGiftCardPreferences,
 } from "@/features/gift-cards/api/gift-cards.api";
+import { GiftCardsSettingsSkeleton } from "@/features/gift-cards/components/gift-cards-settings-skeleton";
+import type { GiftCardSettings } from "@/features/gift-cards/types";
 
 const TABS = [
   { id: "online-sales", label: "Online Sales" },
@@ -51,6 +55,14 @@ type OnlineSalesForm = {
   internalNotifyEmail: string;
 };
 
+function toOnlineSalesForm(settings: GiftCardSettings): OnlineSalesForm {
+  return {
+    enabled: settings.onlineSalesEnabled,
+    purchaseDisclaimer: settings.purchaseDisclaimer ?? "",
+    internalNotifyEmail: settings.internalNotifyEmail ?? "",
+  };
+}
+
 function isValidEmail(value: string): boolean {
   if (!value.trim()) return true;
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
@@ -58,9 +70,9 @@ function isValidEmail(value: string): boolean {
 
 export function GiftCardsSettingsScreen() {
   const [tab, setTab] = useState<TabId>("online-sales");
-  const [onlineSalesForm, setOnlineSalesForm] = useState<OnlineSalesForm | null>(
-    null,
-  );
+  /** Local edits; falls back to settings query data (no useEffect sync gate). */
+  const [onlineSalesDraft, setOnlineSalesDraft] =
+    useState<OnlineSalesForm | null>(null);
   const [disclaimerDialogOpen, setDisclaimerDialogOpen] = useState(false);
   const [disclaimerDraft, setDisclaimerDraft] = useState("");
   const queryClient = useQueryClient();
@@ -82,20 +94,14 @@ export function GiftCardsSettingsScreen() {
 
   const settings = settingsQuery.data;
   const share = shareQuery.data;
-
-  useEffect(() => {
-    if (!settings) return;
-    setOnlineSalesForm({
-      enabled: settings.onlineSalesEnabled,
-      purchaseDisclaimer: settings.purchaseDisclaimer ?? "",
-      internalNotifyEmail: settings.internalNotifyEmail ?? "",
-    });
-  }, [settings]);
+  const onlineSalesForm =
+    onlineSalesDraft ?? (settings ? toOnlineSalesForm(settings) : null);
 
   const saveOnlineSales = useMutation({
     mutationFn: updateGiftCardOnlineSales,
     onSuccess: async () => {
       toast.success("Settings saved");
+      setOnlineSalesDraft(null);
       await invalidateGiftCards(queryClient);
       await shareQuery.refetch();
     },
@@ -142,9 +148,37 @@ export function GiftCardsSettingsScreen() {
   function saveDisclaimer() {
     if (!onlineSalesForm) return;
     const next = { ...onlineSalesForm, purchaseDisclaimer: disclaimerDraft };
-    setOnlineSalesForm(next);
+    setOnlineSalesDraft(next);
     persistOnlineSales(next);
     setDisclaimerDialogOpen(false);
+  }
+
+  if (settingsQuery.isError) {
+    return (
+      <PageContainer>
+        <PageHeader
+          title="Gift Card Settings"
+          description="Configure online sales, artwork, numbering, and promotions."
+          actions={
+            <Link
+              href="/business/gift-cards"
+              className={buttonVariants({ variant: "outline" })}
+            >
+              <ArrowLeft className="mr-2 size-4" />
+              Back to Gift Cards
+            </Link>
+          }
+        />
+        <ApiErrorState
+          error={settingsQuery.error}
+          onRetry={() => void settingsQuery.refetch()}
+        />
+      </PageContainer>
+    );
+  }
+
+  if (settingsQuery.isLoading && !settings) {
+    return <GiftCardsSettingsSkeleton />;
   }
 
   return (
@@ -183,6 +217,20 @@ export function GiftCardsSettingsScreen() {
         </nav>
 
         <div className="space-y-4">
+          {tab === "online-sales" && !onlineSalesForm ? (
+            <div className="space-y-4">
+              <div className="space-y-3 rounded-lg border border-border p-4">
+                <Skeleton className="h-5 w-32" />
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+              <div className="space-y-3 rounded-lg border border-border p-4">
+                <Skeleton className="h-5 w-40" />
+                <Skeleton className="h-16 w-full" />
+              </div>
+            </div>
+          ) : null}
+
           {tab === "online-sales" && onlineSalesForm ? (
             <>
               <SettingsCard title="Online Sales">
@@ -197,11 +245,15 @@ export function GiftCardsSettingsScreen() {
                       checked={onlineSalesForm.enabled}
                       onCheckedChange={(enabled) => {
                         const next = { ...onlineSalesForm, enabled };
-                        setOnlineSalesForm(next);
+                        setOnlineSalesDraft(next);
                         persistOnlineSales(next);
                       }}
                     />
                   </div>
+
+                  {onlineSalesForm.enabled && shareQuery.isLoading && !share ? (
+                    <Skeleton className="h-20 w-full rounded-lg" />
+                  ) : null}
 
                   {onlineSalesForm.enabled && share?.hostedPageUrl ? (
                     <div className="space-y-2 rounded-lg border bg-muted/30 p-4">
@@ -246,7 +298,9 @@ export function GiftCardsSettingsScreen() {
                     </div>
                   ) : null}
 
-                  {onlineSalesForm.enabled && !share?.stripeReady ? (
+                  {onlineSalesForm.enabled &&
+                  share &&
+                  !share.stripeReady ? (
                     <div className="flex gap-3 rounded-lg border border-violet-500/30 bg-violet-500/10 px-4 py-3 text-sm">
                       <Lock className="mt-0.5 size-4 shrink-0 text-violet-700 dark:text-violet-300" />
                       <div>
@@ -273,12 +327,19 @@ export function GiftCardsSettingsScreen() {
                       type="email"
                       value={onlineSalesForm.internalNotifyEmail}
                       onChange={(e) =>
-                        setOnlineSalesForm({
+                        setOnlineSalesDraft({
                           ...onlineSalesForm,
                           internalNotifyEmail: e.target.value,
                         })
                       }
-                      onBlur={() => persistOnlineSales(onlineSalesForm)}
+                      onBlur={(e) => {
+                        const next = {
+                          ...onlineSalesForm,
+                          internalNotifyEmail: e.target.value,
+                        };
+                        setOnlineSalesDraft(next);
+                        persistOnlineSales(next);
+                      }}
                       placeholder="Optional"
                     />
                   </div>
@@ -375,22 +436,58 @@ export function GiftCardsSettingsScreen() {
 
           {tab === "artwork" && settings ? (
             <SettingsCard title="Selected Artwork">
-              <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
-                {settings.artworkPresets.map((preset) => (
-                  <button
-                    key={preset.key}
-                    type="button"
-                    className={cn(
-                      "rounded-lg border p-4 text-left text-sm",
-                      settings.selectedArtworkKey === preset.key &&
-                        "border-primary ring-2 ring-primary",
-                    )}
-                    onClick={() => saveArtwork.mutate(preset.key)}
-                  >
-                    {preset.label}
-                  </button>
-                ))}
+              <p className="mb-4 text-sm text-muted-foreground">
+                Choose a design shown on online gift cards and in your workspace
+                preview.
+              </p>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {settings.artworkPresets.map((preset) => {
+                  const selected = settings.selectedArtworkKey === preset.key;
+                  return (
+                    <button
+                      key={preset.key}
+                      type="button"
+                      className={cn(
+                        "group overflow-hidden rounded-xl border text-left transition-shadow",
+                        selected
+                          ? "border-primary ring-2 ring-primary"
+                          : "border-border hover:border-foreground/30",
+                      )}
+                      onClick={() => saveArtwork.mutate(preset.key)}
+                    >
+                      <div className="relative aspect-[1.6/1] w-full bg-muted">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={preset.imageUrl}
+                          alt={preset.label}
+                          className="absolute inset-0 size-full object-cover"
+                        />
+                        {selected ? (
+                          <span className="absolute top-2 right-2 rounded-full bg-primary px-2 py-0.5 text-[10px] font-semibold text-primary-foreground">
+                            Selected
+                          </span>
+                        ) : null}
+                      </div>
+                      <div className="border-t border-border/60 bg-background px-3 py-2">
+                        <p className="text-sm font-medium">{preset.label}</p>
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
+              {settings.artworkUrl ? (
+                <div className="mt-6 space-y-2">
+                  <p className="text-sm font-medium">Preview</p>
+                  <div className="relative mx-auto aspect-[1.6/1] w-full max-w-md overflow-hidden rounded-xl border shadow-sm">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={settings.artworkUrl}
+                      alt="Selected gift card artwork"
+                      className="absolute inset-0 size-full object-cover"
+                    />
+                  </div>
+                </div>
+              ) : null}
             </SettingsCard>
           ) : null}
 

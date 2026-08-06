@@ -133,7 +133,7 @@ export function ServiceFormDialog({
           <FormItem>
             <FormLabel>Price (USD, optional)</FormLabel>
             <FormControl>
-              <Input {...field} type="number" min={0} step="0.01" />
+              <Input {...field} type="number" min={0} step="0.01" selectOnFocus />
             </FormControl>
             <FormMessage />
           </FormItem>

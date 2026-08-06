@@ -1,5 +1,6 @@
-"use client";
+﻿"use client";
 
+import Link from "next/link";
 import { Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -36,6 +37,8 @@ export function TopbarUserActions({
         size="icon-lg"
         className="relative size-[42px] shrink-0 rounded-full p-0"
         aria-label="Notifications"
+        nativeButton={false}
+        render={<Link href="/business/settings/notifications" />}
       >
         <Bell className="size-[17px] text-[#5b6478]" />
         <span className="absolute right-[11px] top-[10px] size-[7px] rounded-full bg-destructive" />

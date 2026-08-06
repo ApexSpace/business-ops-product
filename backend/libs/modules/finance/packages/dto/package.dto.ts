@@ -22,6 +22,7 @@ import {
   IsUUID,
   MaxLength,
   Min,
+  ValidateIf,
   ValidateNested,
 } from 'class-validator';
 import { PaginationQueryDto } from '@app/common/dto/pagination-query.dto';
@@ -53,8 +54,13 @@ export class CreatePackageTemplateDto {
   @IsEnum(PackageExpirationPolicy)
   expirationPolicy?: PackageExpirationPolicy;
 
-  @ApiPropertyOptional()
-  @IsOptional()
+  @ApiPropertyOptional({
+    description: 'Required when expirationPolicy is AFTER_PURCHASE',
+  })
+  @ValidateIf(
+    (o: CreatePackageTemplateDto) =>
+      o.expirationPolicy === PackageExpirationPolicy.AFTER_PURCHASE,
+  )
   @IsInt()
   @Min(1)
   expirationDays?: number;

@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import ExcelJS from 'exceljs';
+import { REPORT_NO_DATA_MESSAGE } from '../../constants/report-empty.constants';
 import type {
   ReportColumn,
   ReportDocument,
@@ -49,15 +50,23 @@ export class ReportExcelRenderer {
         headerRow.font = { bold: true };
       }
 
-      for (const row of section.rows) {
-        sheet.addRow(columns.map((c) => this.cellValue(row, c)));
-        if (row.isTotal || row.isGroup) {
-          const excelRow = sheet.lastRow;
-          if (excelRow) {
-            excelRow.font = {
-              bold: true,
-              italic: Boolean(row.isGroup && !row.isTotal),
-            };
+      if (section.rows.length === 0) {
+        sheet.addRow([REPORT_NO_DATA_MESSAGE]);
+        const emptyRow = sheet.lastRow;
+        if (emptyRow) {
+          emptyRow.font = { italic: true, color: { argb: 'FF6B7280' } };
+        }
+      } else {
+        for (const row of section.rows) {
+          sheet.addRow(columns.map((c) => this.cellValue(row, c)));
+          if (row.isTotal || row.isGroup) {
+            const excelRow = sheet.lastRow;
+            if (excelRow) {
+              excelRow.font = {
+                bold: true,
+                italic: Boolean(row.isGroup && !row.isTotal),
+              };
+            }
           }
         }
       }
@@ -82,7 +91,7 @@ export class ReportExcelRenderer {
     if (workbook.worksheets.length === 0) {
       const sheet = workbook.addWorksheet('Report');
       sheet.addRow([document.meta.title]);
-      sheet.addRow(['No data']);
+      sheet.addRow([REPORT_NO_DATA_MESSAGE]);
     }
 
     const arrayBuffer = await workbook.xlsx.writeBuffer();

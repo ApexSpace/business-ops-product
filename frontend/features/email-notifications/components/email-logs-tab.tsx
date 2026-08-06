@@ -19,6 +19,7 @@ import {
   listEmailLogs,
   type EmailLog,
 } from "@/features/email-notifications/api/email-notifications.api";
+import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
 import { queryKeys } from "@/lib/query/keys";
 
 function emailStatusVariant(
@@ -38,9 +39,10 @@ export function EmailLogsTab() {
   const [dateTo, setDateTo] = useState("");
   const [page, setPage] = useState(1);
   const limit = 25;
+  const debouncedSearch = useDebouncedValue(search, 300);
 
   const filters = {
-    search,
+    search: debouncedSearch,
     emailType,
     status,
     dateFrom,
@@ -49,18 +51,19 @@ export function EmailLogsTab() {
     limit,
   };
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isFetching } = useQuery({
     queryKey: queryKeys.emailNotifications.logs(filters),
     queryFn: () =>
       listEmailLogs({
         page,
         limit,
-        search: search || undefined,
+        search: debouncedSearch || undefined,
         emailType: emailType || undefined,
         status: status || undefined,
         dateFrom: dateFrom || undefined,
         dateTo: dateTo ? `${dateTo}T23:59:59.999Z` : undefined,
       }),
+    placeholderData: (previous) => previous,
   });
 
   const columns = useMemo<DataTableColumn<EmailLog>[]>(
@@ -255,8 +258,8 @@ export function EmailLogsTab() {
         columns={columns}
         data={data?.items ?? []}
         getRowId={(row) => row.id}
-        isLoading={isLoading}
-        emptyTitle="No emails sent yet."
+        isLoading={isLoading || (isFetching && !data)}
+        emptyTitle="No email logs for this business."
       />
 
       {data?.meta ? (

@@ -110,9 +110,17 @@ export function DashboardNavbarActions({
           <Settings className="size-5" strokeWidth={1.75} />
         </Link>
 
-        <DashboardNavbarIconButton label="Notifications">
+        <Link
+          href="/business/settings/notifications"
+          aria-label="Notifications"
+          className={cn(
+            "inline-flex size-10 shrink-0 items-center justify-center rounded-lg",
+            "text-black-secondary-normal transition-colors hover:bg-black-secondary-normal/10",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black-secondary-normal/30",
+          )}
+        >
           <Bell className="size-5" strokeWidth={1.75} />
-        </DashboardNavbarIconButton>
+        </Link>
       </div>
 
       <DropdownMenu>

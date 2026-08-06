@@ -520,6 +520,7 @@ export function MembershipPlansScreen() {
                         type="number"
                         min={0}
                         step="0.01"
+                        selectOnFocus
                         value={editForm.price}
                         onChange={(e) =>
                           setEditForm({ ...editForm, price: e.target.value })
@@ -600,6 +601,7 @@ export function MembershipPlansScreen() {
                           type="number"
                           min={0}
                           step="0.01"
+                          selectOnFocus
                           value={editForm.creditAmount ?? ""}
                           onChange={(e) =>
                             setEditForm({

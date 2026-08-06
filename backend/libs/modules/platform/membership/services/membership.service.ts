@@ -16,6 +16,7 @@ import { RootConfig } from '@app/core/config/configuration';
 import { PrismaService } from '@app/core/database/prisma.service';
 import { AuditService } from '@app/modules/platform/audit/services/audit.service';
 import { UserRepository } from '@app/modules/platform/auth/repositories/user.repository';
+import { resolvePlatformBusinessRole } from '@app/modules/platform/auth/utils/platform-business-access.util';
 import { BusinessRepository } from '@app/modules/platform/business/repositories/business.repository';
 import { getPaginationParams } from '@app/common/utils/pagination.util';
 import { InviteMemberDto } from '../dto/invite-member.dto';
@@ -1473,20 +1474,26 @@ export class MembershipService {
     targetUserId: string,
     actor: RequestUser,
   ): Promise<void> {
+    // Anyone may set/remove their own time-clock PIN.
     if (actor.id === targetUserId) return;
+
+    // Match StaffPermissionGuard / JWT: platform admins get an effective ADMIN
+    // role even without a BusinessMembership row in this tenant.
+    const effectiveRole = actor.platformRole
+      ? resolvePlatformBusinessRole(actor.platformRole, actor.businessRole)
+      : actor.businessRole;
+    if (
+      effectiveRole === BusinessMemberRole.OWNER ||
+      effectiveRole === BusinessMemberRole.ADMIN
+    ) {
+      return;
+    }
 
     const actorMembership =
       await this.membershipRepository.findByUserAndBusiness(
         actor.id,
         businessId,
       );
-    if (
-      actorMembership?.role === BusinessMemberRole.OWNER ||
-      actorMembership?.role === BusinessMemberRole.ADMIN
-    ) {
-      return;
-    }
-
     if (
       hasStaffPermission(
         normalizeStaffPermissions(actorMembership?.permissions),

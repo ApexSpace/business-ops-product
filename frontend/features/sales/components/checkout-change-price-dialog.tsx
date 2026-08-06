@@ -79,6 +79,7 @@ export function CheckoutChangePriceDialog({
               type="number"
               min={0}
               step="0.01"
+              selectOnFocus
               value={modifiedPrice || ""}
               onChange={(event) => {
                 setModifiedPrice(parseFloat(event.target.value) || 0);

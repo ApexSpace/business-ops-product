@@ -117,3 +117,6 @@ app-example
 # generated native folders
 /ios
 /android
+
+# Local bug fix notes (not committed)
+.bugs-knowledge-base/

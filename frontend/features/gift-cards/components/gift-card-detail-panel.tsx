@@ -43,6 +43,8 @@ export interface GiftCardDetailPanelProps {
   selectedId: string | null;
   detail: GiftCardDetail | undefined;
   businessName?: string;
+  /** Current business artwork when the card row has no snapshot URL. */
+  fallbackArtworkUrl?: string | null;
   isLoading: boolean;
   isError: boolean;
   error: unknown;
@@ -68,6 +70,7 @@ export function GiftCardDetailPanel({
   selectedId,
   detail,
   businessName,
+  fallbackArtworkUrl,
   isLoading,
   isError,
   error,
@@ -125,6 +128,7 @@ export function GiftCardDetailPanel({
               number={detail.number}
               balance={detail.currentBalance}
               status={detail.status}
+              artworkUrl={detail.artworkUrl ?? fallbackArtworkUrl}
             />
 
             <div className="grid gap-4 sm:grid-cols-2">

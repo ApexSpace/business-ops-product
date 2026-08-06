@@ -37,6 +37,7 @@ import { formatMoney } from "@/features/payments/schemas/payment-profile";
 import {
   createGiftCardManual,
   getGiftCard,
+  getGiftCardOnlineSalesShare,
   getGiftCardSettings,
   listGiftCards,
   previewGiftCardNumber,
@@ -177,6 +178,17 @@ export function GiftCardsWorkspace() {
     }
   };
 
+  const prefetchSettings = () => {
+    void queryClient.prefetchQuery({
+      queryKey: queryKeys.giftCards.settings(),
+      queryFn: getGiftCardSettings,
+    });
+    void queryClient.prefetchQuery({
+      queryKey: queryKeys.giftCards.onlineSalesShare(),
+      queryFn: getGiftCardOnlineSalesShare,
+    });
+  };
+
   const columns = useMemo(
     () => [
       {
@@ -252,6 +264,7 @@ export function GiftCardsWorkspace() {
     selectedId,
     detail,
     businessName: business?.name,
+    fallbackArtworkUrl: settingsQuery.data?.artworkUrl,
     isLoading: detailQuery.isLoading,
     isError: detailQuery.isError,
     error: detailQuery.error,
@@ -298,6 +311,8 @@ export function GiftCardsWorkspace() {
               <Button
                 variant="outline"
                 size="sm"
+                onMouseEnter={prefetchSettings}
+                onFocus={prefetchSettings}
                 onClick={() => router.push("/business/gift-cards/settings")}
               >
                 <Settings className="mr-1.5 size-4" />
@@ -478,6 +493,7 @@ export function GiftCardsWorkspace() {
                 type="number"
                 min="0.01"
                 step="0.01"
+                selectOnFocus
                 value={newAmount}
                 onChange={(e) => setNewAmount(e.target.value)}
               />
