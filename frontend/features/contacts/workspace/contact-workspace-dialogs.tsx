@@ -90,7 +90,10 @@ export interface ContactWorkspaceDialogState {
   deleteContactMutation: { isPending: boolean; mutate: (value: undefined, options?: { onSuccess?: () => void }) => void };
   deleteLeadMutation: { isPending: boolean; mutate: (id: string) => void };
   deleteWorkItemMutation: { isPending: boolean; mutate: (id: string) => void };
-  deleteNoteMutation: { isPending: boolean; mutate: (id: string) => void };
+  deleteNoteMutation: {
+    isPending: boolean;
+    mutate: (id: string, options?: { onSuccess?: () => void }) => void;
+  };
   deleteTaskMutation: { isPending: boolean; mutate: (id: string) => void };
   deleteAppointmentMutation: { isPending: boolean; mutate: (id: string) => void };
 }

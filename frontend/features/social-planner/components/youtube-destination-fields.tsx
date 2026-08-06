@@ -111,7 +111,7 @@ export function YouTubeDestinationFields({
           className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm"
           value={categoryId}
           onChange={(e) => patch({ categoryId: e.target.value })}
-          disabled={isLoading && !categories?.length}
+          disabled={isLoading && categoryOptions === FALLBACK_CATEGORIES}
         >
           {categoryOptions.map((opt) => (
             <option key={opt.id} value={opt.id}>
