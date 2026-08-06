@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Gift, Heart, Loader2, ChevronDown, ChevronUp } from "lucide-react";
 import { toast } from "sonner";
@@ -21,6 +20,7 @@ import {
   GIFT_CARD_ONLINE_MAX_AMOUNT,
   GIFT_CARD_ONLINE_MIN_AMOUNT,
 } from "@/features/gift-cards/utils/gift-card-url";
+import { normalizeGiftCardArtworkUrl } from "@/features/gift-cards/utils/gift-card-artwork";
 
 type PurchaseStep = "details" | "payment" | "success";
 type PurchaseFor = "someone_else" | "yourself";
@@ -41,20 +41,21 @@ function GiftCardArtworkPreview({
   artworkUrl?: string | null;
   businessName: string;
 }) {
-  const src =
-    artworkUrl?.startsWith("http") || artworkUrl?.startsWith("/")
-      ? artworkUrl
+  const src = normalizeGiftCardArtworkUrl(artworkUrl);
+  const usable =
+    src &&
+    (src.startsWith("http") || src.startsWith("/"))
+      ? src
       : null;
 
   return (
     <div className="relative mx-auto aspect-[1.6/1] w-full max-w-sm overflow-hidden rounded-lg shadow-md">
-      {src ? (
-        <Image
-          src={src}
+      {usable ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={usable}
           alt={`${businessName} gift card`}
-          fill
-          className="object-cover"
-          unoptimized
+          className="absolute inset-0 size-full object-cover"
         />
       ) : (
         <div className="flex size-full items-center justify-center bg-gradient-to-br from-emerald-800 to-emerald-950">

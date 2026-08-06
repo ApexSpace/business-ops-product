@@ -21,6 +21,7 @@ import { IntegrationResourceSyncProcessor } from './processors/integration-resou
 import { MetaResourceSyncProcessor } from './processors/meta-resource-sync.processor';
 import { AutomationStepProcessor } from '@app/modules/communications/automations/workers/processors/automation-step.processor';
 import { GenerateReportProcessor } from '@app/modules/reports/workers/processors/generate-report.processor';
+import { SocialPublishProcessor } from '@app/modules/communications/social-planner/workers/processors/social-publish.processor';
 import {
   EMAIL_QUEUE,
   FILE_QUEUE,
@@ -39,7 +40,9 @@ import {
   JOB_PROCESS_STRIPE_WEBHOOK,
   JOB_SEND_EMAIL,
   JOB_SEND_OUTBOUND_MESSAGE,
+  JOB_SOCIAL_PUBLISH,
   MESSAGE_QUEUE,
+  SOCIAL_PUBLISH_QUEUE,
   SYNC_QUEUE,
   WEBHOOK_QUEUE,
   WEBHOOK_QUEUE_CONCURRENCY,
@@ -61,6 +64,7 @@ import type {
   ProcessTwilioSmsWebhookPayload,
   SendEmailJobPayload,
   SendOutboundMessagePayload,
+  SocialPublishJobPayload,
 } from './queue.types';
 
 @Injectable()
@@ -85,6 +89,7 @@ export class QueueWorkersService implements OnModuleInit, OnModuleDestroy {
     private readonly twilioSmsWebhookProcessor: TwilioSmsWebhookProcessor,
     private readonly automationStepProcessor: AutomationStepProcessor,
     private readonly generateReportProcessor: GenerateReportProcessor,
+    private readonly socialPublishProcessor: SocialPublishProcessor,
   ) {}
 
   async onModuleInit(): Promise<void> {
@@ -120,6 +125,14 @@ export class QueueWorkersService implements OnModuleInit, OnModuleDestroy {
         connection,
         concurrency: 2,
       }),
+      new Worker(
+        SOCIAL_PUBLISH_QUEUE,
+        (job) => this.handleSocialPublishJob(job),
+        {
+          connection,
+          concurrency: 3,
+        },
+      ),
     );
 
     for (const worker of this.workers) {
@@ -140,7 +153,7 @@ export class QueueWorkersService implements OnModuleInit, OnModuleDestroy {
     }
 
     this.logger.log(
-      'BullMQ workers started (webhook, message, email, sync, file queues)',
+      'BullMQ workers started (webhook, message, email, sync, file, social-publish queues)',
     );
   }
 
@@ -248,6 +261,16 @@ export class QueueWorkersService implements OnModuleInit, OnModuleDestroy {
       default:
         this.logger.warn(`Unknown file/cleanup job: ${job.name}`);
     }
+  }
+
+  private async handleSocialPublishJob(job: Job): Promise<void> {
+    if (job.name === JOB_SOCIAL_PUBLISH) {
+      await this.socialPublishProcessor.process(
+        job.data as SocialPublishJobPayload,
+      );
+      return;
+    }
+    this.logger.warn(`Unknown social publish job: ${job.name}`);
   }
 
   async onModuleDestroy(): Promise<void> {

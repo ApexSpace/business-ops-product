@@ -45,14 +45,14 @@ function useEntityOptions(field: ReportFilterField, enabled: boolean) {
   const isOffer = field.key === "offerId";
   const query = useQuery({
     queryKey: queryKeys.offers.list(),
-    queryFn: () => listOffers(),
+    queryFn: () => listOffers({ limit: 100 }),
     enabled: enabled && isOffer && !field.options?.length,
   });
 
   return useMemo<ReportFilterOption[]>(() => {
     if (field.options?.length) return field.options;
     if (isOffer) {
-      return (query.data ?? []).map((offer) => ({
+      return (query.data?.items ?? []).map((offer) => ({
         value: offer.id,
         label: offer.name,
       }));

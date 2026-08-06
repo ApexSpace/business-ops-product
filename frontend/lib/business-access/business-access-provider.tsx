@@ -39,7 +39,7 @@ export const BusinessAccessCtx = createContext<BusinessAccessContextValue | null
 );
 
 export function BusinessAccessProvider({ children }: { children: ReactNode }) {
-  const { jwt } = useAuth();
+  const { jwt, isLoading: authLoading } = useAuth();
   const queryClient = useQueryClient();
   const businessId =
     jwt?.context === "business" ? jwt.businessId : undefined;
@@ -52,8 +52,8 @@ export function BusinessAccessProvider({ children }: { children: ReactNode }) {
     queryKey: queryKeys.business.access(),
     queryFn: getCurrentBusinessAccess,
     enabled: Boolean(businessId),
-    staleTime: 0,
-    refetchOnWindowFocus: true,
+    staleTime: 5 * 60_000,
+    refetchOnWindowFocus: false,
   });
 
   const setBlockedFromError = useCallback(
@@ -119,10 +119,14 @@ export function BusinessAccessProvider({ children }: { children: ReactNode }) {
   const value = useMemo<BusinessAccessContextValue>(
     () => ({
       access: data,
-      isLoading: Boolean(businessId) && isLoading,
+      isLoading: authLoading || (Boolean(businessId) && isLoading),
       isError,
       canAccessWorkspace,
-      isBlocked: Boolean(businessId) && !isLoading && !canAccessWorkspace,
+      isBlocked:
+        !authLoading &&
+        Boolean(businessId) &&
+        !isLoading &&
+        !canAccessWorkspace,
       blockedReasonCode: blockedOverride?.code ?? data?.reasonCode,
       capabilityKeys: new Set(
         data?.effectiveCapabilities.map((cap) => cap.key) ?? [],
@@ -134,6 +138,7 @@ export function BusinessAccessProvider({ children }: { children: ReactNode }) {
     }),
     [
       data,
+      authLoading,
       businessId,
       isLoading,
       isError,

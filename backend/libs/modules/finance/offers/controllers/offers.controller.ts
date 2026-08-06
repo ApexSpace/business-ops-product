@@ -26,6 +26,7 @@ import { BusinessRolesGuard } from '@app/common/guards/business-roles.guard';
 import {
   CreateOfferDiscountDto,
   CreateOfferDto,
+  ListOffersQueryDto,
   OfferUsageReportQueryDto,
   ReorderOfferDiscountsDto,
   ReorderOffersDto,
@@ -53,9 +54,9 @@ export class OffersController {
   @BusinessRoles(...MEMBER_ROLES)
   listOffers(
     @CurrentUser() user: RequestUser,
-    @Query('search') search?: string,
+    @Query() query: ListOffersQueryDto,
   ) {
-    return this.offersService.listOffers(user.businessId!, search);
+    return this.offersService.listOffers(user.businessId!, query);
   }
 
   @Get('usage-report')

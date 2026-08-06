@@ -44,6 +44,7 @@ describe('MetaApiClient webhook subscriptions', () => {
     const calledUrl = (fetchMock.mock.calls[0][0] as string).toString();
     expect(calledUrl).toContain('/page-1/subscribed_apps');
     expect(calledUrl).toContain('subscribed_fields=messages');
+    expect(calledUrl).toContain('feed');
     expect(calledUrl).toContain('access_token=page-token');
   });
 
@@ -64,5 +65,6 @@ describe('MetaApiClient webhook subscriptions', () => {
     expect(calledUrl).toContain('callback_url=');
     expect(calledUrl).toContain('verify_token=verify-token');
     expect(calledUrl).toContain('fields=messages');
+    expect(calledUrl).toContain('comments');
   });
 });

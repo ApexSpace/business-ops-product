@@ -5,10 +5,14 @@ export type RouteCapabilityEntry = {
 
 const ROUTE_CAPABILITY_MAP = new Map<string, RouteCapabilityEntry>([
   ["/business/contacts", { moduleKey: "contacts", capabilityKeys: ["contacts.list"] }],
-  ["/business/leads", { moduleKey: "leads", capabilityKeys: ["leads.list"] }],
+  ["/business/leads", { moduleKey: "pipelines", capabilityKeys: ["pipelines.list", "leads.list"] }],
   ["/business/pipelines", { moduleKey: "pipelines", capabilityKeys: ["pipelines.list"] }],
   ["/business/notes", { moduleKey: "notes", capabilityKeys: ["notes.list"] }],
   ["/business/work-items", { moduleKey: "work_items", capabilityKeys: ["work_items.list"] }],
+  [
+    "/business/social-planner",
+    { moduleKey: "social_planner", capabilityKeys: ["social_planner.list"] },
+  ],
   ["/business/tasks", { moduleKey: "tasks", capabilityKeys: ["tasks.list"] }],
   [
     "/business/conversations",
@@ -191,12 +195,26 @@ export function hasModuleForRoute(
 ): boolean {
   const entry = getRouteCapabilityEntry(route);
   if (!entry) return true;
-  const prefix = `${entry.moduleKey}.`;
-  return (
-    capabilityKeys.has(entry.moduleKey) ||
-    entry.capabilityKeys.some((key) => capabilityKeys.has(key)) ||
-    Array.from(capabilityKeys).some((key) => key.startsWith(prefix))
-  );
+
+  if (entry.capabilityKeys.some((key) => capabilityKeys.has(key))) {
+    return true;
+  }
+
+  const moduleKeys = new Set<string>([entry.moduleKey]);
+  for (const key of entry.capabilityKeys) {
+    const moduleFromKey = key.split(".")[0];
+    if (moduleFromKey) moduleKeys.add(moduleFromKey);
+  }
+
+  for (const moduleKey of moduleKeys) {
+    if (capabilityKeys.has(moduleKey)) return true;
+    const prefix = `${moduleKey}.`;
+    for (const key of capabilityKeys) {
+      if (key.startsWith(prefix)) return true;
+    }
+  }
+
+  return false;
 }
 
 /** Nav/route gate aligned with registry feature keys (not permission keys). */

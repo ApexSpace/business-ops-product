@@ -1023,6 +1023,7 @@ export class CheckoutsService {
       checkoutId,
       totals.totalAmount,
       checkout.status,
+      { closedAt: checkout.closedAt, kind: checkout.kind },
     );
 
     await this.checkoutRepository.update(businessId, checkoutId, {

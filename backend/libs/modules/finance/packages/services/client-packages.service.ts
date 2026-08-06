@@ -7,6 +7,7 @@ import {
   PackageServiceGroupQuantityType,
   Prisma,
 } from '@prisma/client';
+import { getPaginationParams } from '@app/common/utils/pagination.util';
 import { AppException } from '@app/common/exceptions/app.exception';
 import { ErrorCode } from '@app/common/exceptions/error-code.enum';
 import type { RequestUser } from '@app/common/decorators/current-user.decorator';
@@ -51,12 +52,24 @@ export class ClientPackagesService {
   async findAll(
     businessId: string,
     query: ListClientPackagesQueryDto,
-  ): Promise<ClientPackageListItemResponseDto[]> {
-    const rows = await this.clientPackageRepository.findMany(businessId, {
-      contactId: query.contactId,
-      search: query.search,
-    });
-    return rows.map(toClientPackageListItem);
+  ): Promise<{
+    items: ClientPackageListItemResponseDto[];
+    meta: { total: number; page: number; limit: number };
+  }> {
+    const { skip, take, page, limit } = getPaginationParams(query);
+    const { items, total } = await this.clientPackageRepository.findMany(
+      businessId,
+      {
+        skip,
+        take,
+        contactId: query.contactId,
+        search: query.search,
+      },
+    );
+    return {
+      items: items.map(toClientPackageListItem),
+      meta: { total, page, limit },
+    };
   }
 
   async findOne(

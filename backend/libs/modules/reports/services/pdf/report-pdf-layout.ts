@@ -1,4 +1,5 @@
 import PDFDocument from 'pdfkit';
+import { REPORT_NO_DATA_MESSAGE } from '../../constants/report-empty.constants';
 import type {
   ReportColumn,
   ReportDocument,
@@ -45,6 +46,18 @@ export class ReportPdfLayout {
 
       this.drawHeaderBar(doc, document);
       this.drawMeta(doc, document);
+
+      if (document.sections.length === 0) {
+        doc.x = PAGE_MARGIN;
+        doc
+          .fontSize(FONT_SIZE)
+          .font('Helvetica-Oblique')
+          .fillColor('#6b7280')
+          .text(REPORT_NO_DATA_MESSAGE, PAGE_MARGIN, doc.y, {
+            width: doc.page.width - PAGE_MARGIN * 2,
+            align: 'center',
+          });
+      }
 
       let footnotesDrawn = false;
       for (let i = 0; i < document.sections.length; i++) {
@@ -214,20 +227,35 @@ export class ReportPdfLayout {
     );
 
     this.drawTableHeader(doc, columns, colWidths, fontSize, rowHeight);
-    for (const dataRow of section.rows) {
-      this.ensureSpace(doc, rowHeight + 4);
-      if (doc.y <= PAGE_MARGIN + 4) {
-        this.drawTableHeader(doc, columns, colWidths, fontSize, rowHeight);
+
+    if (section.rows.length === 0) {
+      this.ensureSpace(doc, rowHeight + 8);
+      doc.x = PAGE_MARGIN;
+      doc
+        .fontSize(fontSize)
+        .font('Helvetica-Oblique')
+        .fillColor('#6b7280')
+        .text(REPORT_NO_DATA_MESSAGE, PAGE_MARGIN, doc.y, {
+          width: tableWidth,
+          align: 'center',
+        });
+      doc.moveDown(0.4);
+    } else {
+      for (const dataRow of section.rows) {
+        this.ensureSpace(doc, rowHeight + 4);
+        if (doc.y <= PAGE_MARGIN + 4) {
+          this.drawTableHeader(doc, columns, colWidths, fontSize, rowHeight);
+        }
+        this.drawTableRow(
+          doc,
+          columns,
+          colWidths,
+          dataRow,
+          currency,
+          fontSize,
+          rowHeight,
+        );
       }
-      this.drawTableRow(
-        doc,
-        columns,
-        colWidths,
-        dataRow,
-        currency,
-        fontSize,
-        rowHeight,
-      );
     }
 
     doc.moveDown(0.8);

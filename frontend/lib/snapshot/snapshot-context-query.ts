@@ -8,9 +8,9 @@ export const SNAPSHOT_CONTEXT_QUERY_CONFIG = {
   // Snapshot context (navigation/terminology/dashboard config) can change when a
   // platform user applies a new snapshot to the business. Avoid "sticky forever"
   // caches so business users see updates without having to hard refresh.
-  staleTime: 0,
+  staleTime: 5 * 60_000,
   gcTime: TWENTY_FOUR_HOURS_MS,
-  refetchOnWindowFocus: true,
+  refetchOnWindowFocus: false,
   refetchOnReconnect: true,
 } as const;
 

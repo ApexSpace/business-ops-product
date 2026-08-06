@@ -60,21 +60,14 @@ export function useWorkItemsPageToolbar() {
     limit: listLimit,
     search: debouncedSearch || undefined,
     status: params.status || undefined,
-    serviceId: mode !== "platform" ? params.serviceId || undefined : undefined,
-    assignedToId: params.assignedToId || undefined,
-    view,
-  };
-
-  const listQueryKey = queryKeys.workItems.list(apiBase, listFilters);
-
-  const { data, isLoading } = useWorkItemsList({
-    page: listPage,
-    limit: listLimit,
-    search: debouncedSearch || undefined,
-    status: params.status || undefined,
     serviceId: params.serviceId || undefined,
     assignedToId: params.assignedToId || undefined,
-  });
+  };
+
+  // Must match useWorkItemsList filters exactly so board drag cache updates hit the live query.
+  const listQueryKey = queryKeys.workItems.list(apiBase, listFilters);
+
+  const { data, isLoading } = useWorkItemsList(listFilters);
 
   const { data: services } = useQuery({
     queryKey: queryKeys.services.picker(servicesApiBase),

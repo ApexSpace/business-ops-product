@@ -6,6 +6,7 @@ import {
   MembershipPlanType,
   Prisma,
 } from '@prisma/client';
+import { getPaginationParams } from '@app/common/utils/pagination.util';
 import { AppException } from '@app/common/exceptions/app.exception';
 import { ErrorCode } from '@app/common/exceptions/error-code.enum';
 import type { RequestUser } from '@app/common/decorators/current-user.decorator';
@@ -53,15 +54,24 @@ export class ClientMembershipsService {
     businessId: string,
     query: ListClientMembershipsQueryDto,
   ) {
-    const rows = await this.clientMembershipRepository.findMany(businessId, {
-      contactId: query.contactId,
-      search: query.search,
-      status: query.status,
-      planId: query.planId,
-      showDifferentVersionsOnly: query.showDifferentVersionsOnly,
-      showOlderUnpaid: query.showOlderUnpaid,
-    });
-    return rows.map(toClientMembershipListItem);
+    const { skip, take, page, limit } = getPaginationParams(query);
+    const { items, total } = await this.clientMembershipRepository.findMany(
+      businessId,
+      {
+        skip,
+        take,
+        contactId: query.contactId,
+        search: query.search,
+        status: query.status,
+        planId: query.planId,
+        showDifferentVersionsOnly: query.showDifferentVersionsOnly,
+        showOlderUnpaid: query.showOlderUnpaid,
+      },
+    );
+    return {
+      items: items.map(toClientMembershipListItem),
+      meta: { total, page, limit },
+    };
   }
 
   async getClientMembership(businessId: string, membershipId: string) {
@@ -344,10 +354,23 @@ export class ClientMembershipsService {
     businessId: string,
     query: ListClientMembershipsQueryDto,
   ): Promise<string> {
-    const rows = await this.listClientMemberships(businessId, query);
+    const { items: rows } = await this.clientMembershipRepository.findMany(
+      businessId,
+      {
+        skip: 0,
+        take: 10_000,
+        contactId: query.contactId,
+        search: query.search,
+        status: query.status,
+        planId: query.planId,
+        showDifferentVersionsOnly: query.showDifferentVersionsOnly,
+        showOlderUnpaid: query.showOlderUnpaid,
+      },
+    );
+    const mapped = rows.map(toClientMembershipListItem);
     const header =
       'Client Name,Email,Plan,Start Date,Price,Status,Next Billing Date';
-    const lines = rows.map((row) =>
+    const lines = mapped.map((row) =>
       [
         this.escapeCsv(row.contact.name),
         this.escapeCsv(row.contact.email ?? ''),

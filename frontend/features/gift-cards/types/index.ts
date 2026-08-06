@@ -58,9 +58,10 @@ export interface GiftCardSettings {
   onlineSalesEnabled: boolean;
   purchaseDisclaimer?: string | null;
   selectedArtworkKey?: string | null;
+  artworkUrl?: string | null;
   autoGenerateNumber: boolean;
   internalNotifyEmail?: string | null;
-  artworkPresets: { key: string; label: string }[];
+  artworkPresets: { key: string; label: string; imageUrl: string }[];
 }
 
 export interface GiftCardPromotion {

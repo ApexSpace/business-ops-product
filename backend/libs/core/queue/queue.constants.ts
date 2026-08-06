@@ -7,6 +7,7 @@ export const EMAIL_QUEUE = 'email-queue';
 export const SYNC_QUEUE = 'sync-queue';
 export const FILE_QUEUE = 'file-queue';
 export const SEARCH_QUEUE = 'search-queue';
+export const SOCIAL_PUBLISH_QUEUE = 'social-publish-queue';
 
 export const JOB_PROCESS_META_WEBHOOK = 'process-meta-webhook';
 export const JOB_PROCESS_STRIPE_WEBHOOK = 'process-stripe-webhook';
@@ -25,3 +26,4 @@ export const JOB_CLEANUP_WEBHOOK_EVENTS = 'cleanup-webhook-events';
 export const JOB_CLEANUP_ASYNC_JOBS = 'cleanup-async-jobs';
 export const JOB_AUTOMATION_STEP = 'automation-step';
 export const JOB_GENERATE_REPORT = 'generate-report';
+export const JOB_SOCIAL_PUBLISH = 'social-publish';

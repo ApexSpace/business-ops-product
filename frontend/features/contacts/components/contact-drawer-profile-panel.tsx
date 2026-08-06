@@ -5,6 +5,7 @@ import type { Contact } from "@/features/contacts/types";
 import { ContactInlineNoteComposer } from "@/features/contacts/components/contact-inline-note-composer";
 import {
   CONTACT_FIELD_LABEL_CLASS,
+  ContactInlineEditableField,
 } from "@/features/contacts/components/contact-workspace/contact-sidebar-details-fields";
 import { Button } from "@/components/ui/button";
 import { ProfileAvatar } from "@/components/ui/profile-avatar";
@@ -23,11 +24,9 @@ interface ContactDrawerProfilePanelProps {
 function ProfileField({
   label,
   value,
-  hrefPrefix,
 }: {
   label: string;
   value?: string | null;
-  hrefPrefix?: "tel" | "mailto";
 }) {
   const trimmed = value?.trim() ?? "";
   if (!trimmed) {
@@ -37,19 +36,9 @@ function ProfileField({
   return (
     <div className="flex flex-col gap-1.5 text-left">
       <span className={cn("block", CONTACT_FIELD_LABEL_CLASS)}>{label}</span>
-      {hrefPrefix ? (
-        <a
-          href={`${hrefPrefix}:${trimmed}`}
-          className={cn(
-            "block text-sm font-medium leading-snug text-foreground hover:underline",
-            hrefPrefix === "mailto" && "break-all",
-          )}
-        >
-          {trimmed}
-        </a>
-      ) : (
-        <p className="text-sm font-medium leading-snug text-foreground">{trimmed}</p>
-      )}
+      <p className="text-sm font-medium leading-snug text-foreground">
+        {trimmed}
+      </p>
     </div>
   );
 }
@@ -64,10 +53,7 @@ export function ContactDrawerProfilePanel({
   onNoteComposerOpenChange,
   className,
 }: ContactDrawerProfilePanelProps) {
-  const phone = contact.phone?.trim();
-  const email = contact.email?.trim();
   const company = contact.companyName?.trim();
-  const hasContactFields = Boolean(phone || email || company);
 
   return (
     <aside className={cn("contacts-drawer-profile-panel", className)}>
@@ -99,15 +85,9 @@ export function ContactDrawerProfilePanel({
       </div>
 
       <div className="mt-5 space-y-5 border-t border-border/70 pt-5 text-left">
-        {hasContactFields ? (
-          <>
-            <ProfileField label="Phone" value={phone} hrefPrefix="tel" />
-            <ProfileField label="Email" value={email} hrefPrefix="mailto" />
-            <ProfileField label="Company" value={company} />
-          </>
-        ) : (
-          <p className="text-sm text-muted-foreground">No contact details yet</p>
-        )}
+        <ContactInlineEditableField contact={contact} kind="phone" />
+        <ContactInlineEditableField contact={contact} kind="email" />
+        <ProfileField label="Company" value={company} />
       </div>
 
       <div className="mt-5 flex flex-col gap-1.5 border-t border-border/70 pt-5 text-left">

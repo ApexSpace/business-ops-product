@@ -119,6 +119,36 @@ export const queryKeys = {
     detail: (apiBase: string, id: string) =>
       ["work-items", apiBase, "detail", id] as const,
   },
+  socialPlanner: {
+    all: () => ["social-planner"] as const,
+    list: (filters: {
+      page?: number;
+      limit?: number;
+      status?: string;
+      providerKey?: string;
+      from?: string;
+      to?: string;
+    }) => listKey(["social-planner", "list"], filters),
+    detail: (id: string) => ["social-planner", "detail", id] as const,
+    calendar: (from: string, to: string) =>
+      ["social-planner", "calendar", from, to] as const,
+    platformSchemas: () => ["social-planner", "platform-schemas"] as const,
+    comments: (filters: {
+      providerKey?: string;
+      socialPostId?: string;
+      unreadOnly?: boolean;
+      search?: string;
+    } = {}) => listKey(["social-planner", "comments"], filters),
+    engagement: (filters: {
+      providerKey?: string;
+      socialPostId?: string;
+      unreadOnly?: boolean;
+      search?: string;
+      refresh?: boolean;
+    } = {}) =>
+      // v2: flat { items, warnings } shape (not nested meta.warnings)
+      listKey(["social-planner", "engagement", "v2"], filters),
+  },
   notes: {
     all: () => ["notes"] as const,
     list: (filters: {
@@ -262,7 +292,7 @@ export const queryKeys = {
     all: () => ["packages"] as const,
     templates: () => ["packages", "templates"] as const,
     template: (id: string) => ["packages", "template", id] as const,
-    clientList: (filters?: { contactId?: string; search?: string }) =>
+    clientList: (filters?: ListFilters) =>
       listKey(["packages", "client-list"], filters),
     clientDetail: (id: string) => ["packages", "client-detail", id] as const,
     settings: () => ["packages", "settings"] as const,
@@ -271,8 +301,8 @@ export const queryKeys = {
   },
   offers: {
     all: () => ["offers"] as const,
-    list: (search?: string) =>
-      listKey(["offers", "list"], search ? { search } : undefined),
+    list: (filters?: ListFilters) =>
+      listKey(["offers", "list"], filters),
     detail: (id: string) => ["offers", "detail", id] as const,
   },
   memberships: {
@@ -282,14 +312,8 @@ export const queryKeys = {
         ? (["memberships", "plans", "archived"] as const)
         : (["memberships", "plans"] as const),
     plan: (id: string) => ["memberships", "plan", id] as const,
-    clientList: (filters?: {
-      contactId?: string;
-      search?: string;
-      status?: string;
-      planId?: string;
-      showDifferentVersionsOnly?: boolean;
-      showOlderUnpaid?: boolean;
-    }) => listKey(["memberships", "client-list"], filters),
+    clientList: (filters?: ListFilters) =>
+      listKey(["memberships", "client-list"], filters),
     clientDetail: (id: string) =>
       ["memberships", "client-detail", id] as const,
     settings: () => ["memberships", "settings"] as const,

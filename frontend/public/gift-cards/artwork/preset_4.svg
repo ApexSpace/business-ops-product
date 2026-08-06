@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="600" viewBox="0 0 960 600" role="img" aria-label="Pink Marble gift card artwork">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f8e8ef"/>
+      <stop offset="40%" stop-color="#f0d0de"/>
+      <stop offset="100%" stop-color="#e4b7c9"/>
+    </linearGradient>
+  </defs>
+  <rect width="960" height="600" fill="url(#bg)"/>
+  <g fill="none" stroke="#c988a4" stroke-width="1.5" opacity="0.55">
+    <path d="M-20 120 C120 90, 180 180, 320 150 S520 60, 680 130 S860 210, 980 160"/>
+    <path d="M-20 220 C140 190, 220 280, 360 250 S560 160, 720 230 S880 310, 980 260"/>
+    <path d="M-20 360 C160 330, 240 420, 390 390 S600 300, 760 370 S900 450, 980 400"/>
+    <path d="M-20 480 C150 450, 230 540, 380 510 S590 420, 750 490 S900 560, 980 520"/>
+  </g>
+  <g fill="none" stroke="#ffffff" stroke-width="1.2" opacity="0.45">
+    <path d="M40 160 C180 140, 260 210, 400 180 S620 110, 800 190"/>
+    <path d="M60 400 C220 370, 300 450, 460 420 S680 350, 900 430"/>
+  </g>
+  <rect x="36" y="36" width="888" height="528" rx="28" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="2"/>
+</svg>

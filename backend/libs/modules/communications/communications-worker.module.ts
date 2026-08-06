@@ -6,6 +6,7 @@ import { SmsModule } from './sms/sms.module';
 import { MetaWebhookProcessorModule } from './webhooks/meta-webhook-processor.module';
 import { StripeWebhookProcessor } from './webhooks/workers/processors/stripe-webhook.processor';
 import { SendMessageProcessorModule } from './messages/send-message-processor.module';
+import { SocialPlannerWorkerModule } from './social-planner/social-planner-worker.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { SendMessageProcessorModule } from './messages/send-message-processor.mo
     SmsModule,
     MetaWebhookProcessorModule,
     SendMessageProcessorModule,
+    SocialPlannerWorkerModule,
     forwardRef(() => IntegrationsModule),
   ],
   providers: [StripeWebhookProcessor],
@@ -23,6 +25,7 @@ import { SendMessageProcessorModule } from './messages/send-message-processor.mo
     StripeWebhookProcessor,
     EmailModule,
     SmsModule,
+    SocialPlannerWorkerModule,
   ],
 })
 export class CommunicationsWorkerModule {}

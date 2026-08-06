@@ -1,10 +1,18 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { PhoneInput } from "@/components/forms/phone-input";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { updateContact } from "@/features/contacts/api/contacts.api";
 import type { Contact } from "@/features/contacts/types";
+import {
+  apiPhoneToFormValue,
+  phoneToApiFields,
+} from "@/lib/forms/phone";
 import { invalidateContactDetail } from "@/lib/query/invalidation";
 import { cn } from "@/lib/utils";
 
@@ -15,18 +23,12 @@ interface ContactDetailFieldProps {
   label: string;
   value: string | null | undefined;
   labelClassName?: string;
-  emptyActionLabel?: string;
-  onEmptyAction?: () => void;
-  hrefPrefix?: "tel" | "mailto";
 }
 
 function ContactDetailField({
   label,
   value,
   labelClassName,
-  emptyActionLabel,
-  onEmptyAction,
-  hrefPrefix,
 }: ContactDetailFieldProps) {
   const trimmed = value?.trim() ?? "";
 
@@ -36,29 +38,160 @@ function ContactDetailField({
         {label}
       </span>
       {trimmed ? (
-        hrefPrefix ? (
-          <a
-            href={`${hrefPrefix}:${trimmed}`}
-            className={cn(
-              "text-sm font-medium text-foreground hover:underline",
-              hrefPrefix === "mailto" && "break-all",
-            )}
-          >
-            {trimmed}
-          </a>
-        ) : (
-          <p className="text-sm font-medium text-foreground">{trimmed}</p>
-        )
-      ) : onEmptyAction && emptyActionLabel ? (
+        <p className="text-sm font-medium text-foreground">{trimmed}</p>
+      ) : (
+        <p className="text-sm text-muted-foreground">—</p>
+      )}
+    </div>
+  );
+}
+
+export type ContactInlineEditableKind = "phone" | "email";
+
+export function ContactInlineEditableField({
+  contact,
+  kind,
+  labelClassName,
+  className,
+}: {
+  contact: Contact;
+  kind: ContactInlineEditableKind;
+  labelClassName?: string;
+  className?: string;
+}) {
+  const queryClient = useQueryClient();
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState("");
+
+  const label = kind === "phone" ? "Phone" : "Email";
+  const displayValue =
+    kind === "phone"
+      ? (contact.phone?.trim() ?? "")
+      : (contact.email?.trim() ?? "");
+  const emptyActionLabel =
+    kind === "phone" ? "+ Add phone" : "+ Add email";
+
+  const initialPhone = apiPhoneToFormValue(
+    contact.phone,
+    contact.phoneCountryCode,
+    contact.phoneNumber,
+  );
+  const initialEmail = contact.email?.trim() ?? "";
+  const initialDraft = kind === "phone" ? initialPhone : initialEmail;
+
+  useEffect(() => {
+    setEditing(false);
+    setDraft("");
+  }, [contact.id]);
+
+  const mutation = useMutation({
+    mutationFn: (body: Record<string, unknown>) =>
+      updateContact(contact.id, body),
+    onSuccess: () => {
+      void invalidateContactDetail(queryClient, contact.id);
+      setEditing(false);
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  function startEditing() {
+    setDraft(initialDraft);
+    setEditing(true);
+  }
+
+  function cancelEditing() {
+    setDraft(initialDraft);
+    setEditing(false);
+  }
+
+  function handleSave() {
+    if (kind === "phone") {
+      const phoneFields = phoneToApiFields(draft);
+      const unchanged =
+        (phoneFields.phoneCountryCode ?? null) ===
+          (contact.phoneCountryCode ?? null) &&
+        (phoneFields.phoneNumber ?? null) === (contact.phoneNumber ?? null);
+      if (unchanged) {
+        setEditing(false);
+        return;
+      }
+      mutation.mutate(phoneFields);
+      return;
+    }
+
+    const nextEmail = draft.trim();
+    if (nextEmail === initialEmail) {
+      setEditing(false);
+      return;
+    }
+    mutation.mutate({ email: nextEmail || null });
+  }
+
+  const labelClass = labelClassName ?? CONTACT_FIELD_LABEL_CLASS;
+
+  return (
+    <div className={cn("space-y-1", className)}>
+      <span className={cn("block", labelClass)}>{label}</span>
+
+      {editing ? (
+        <div className="space-y-2">
+          {kind === "phone" ? (
+            <PhoneInput
+              value={draft || null}
+              onChange={(value) => setDraft(value ?? "")}
+              disabled={mutation.isPending}
+              showClear
+            />
+          ) : (
+            <Input
+              type="email"
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              placeholder="email@example.com"
+              disabled={mutation.isPending}
+              className="break-all"
+              autoFocus
+            />
+          )}
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              size="sm"
+              onClick={handleSave}
+              disabled={mutation.isPending}
+            >
+              {mutation.isPending ? "Saving…" : "Save"}
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={cancelEditing}
+              disabled={mutation.isPending}
+            >
+              Cancel
+            </Button>
+          </div>
+        </div>
+      ) : displayValue ? (
+        <button
+          type="button"
+          onClick={startEditing}
+          className={cn(
+            "block w-full text-left text-sm font-medium text-foreground hover:underline",
+            kind === "email" && "break-all",
+          )}
+        >
+          {displayValue}
+        </button>
+      ) : (
         <button
           type="button"
           className="text-sm text-primary hover:underline"
-          onClick={onEmptyAction}
+          onClick={startEditing}
         >
           {emptyActionLabel}
         </button>
-      ) : (
-        <p className="text-sm text-muted-foreground">—</p>
       )}
     </div>
   );
@@ -118,7 +251,6 @@ export function ContactSidebarDetailsFields({
   showNotes = true,
   showCreated = false,
   createdAt,
-  onRequestEdit,
   className,
   fieldLabelClassName,
   notesTextareaClassName,
@@ -129,6 +261,7 @@ export function ContactSidebarDetailsFields({
   showNotes?: boolean;
   showCreated?: boolean;
   createdAt?: string;
+  /** @deprecated Phone/email use inline edit; kept for call-site compatibility. */
   onRequestEdit?: () => void;
   className?: string;
   fieldLabelClassName?: string;
@@ -139,23 +272,17 @@ export function ContactSidebarDetailsFields({
   return (
     <div className={cn("space-y-4", className)}>
       {showPhone ? (
-        <ContactDetailField
-          label="Phone"
-          value={contact.phone}
+        <ContactInlineEditableField
+          contact={contact}
+          kind="phone"
           labelClassName={labelClass}
-          emptyActionLabel="+ Add phone"
-          onEmptyAction={onRequestEdit}
-          hrefPrefix="tel"
         />
       ) : null}
       {showEmail ? (
-        <ContactDetailField
-          label="Email"
-          value={contact.email}
+        <ContactInlineEditableField
+          contact={contact}
+          kind="email"
           labelClassName={labelClass}
-          emptyActionLabel="+ Add email"
-          onEmptyAction={onRequestEdit}
-          hrefPrefix="mailto"
         />
       ) : null}
       {showCreated && createdAt ? (

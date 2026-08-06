@@ -325,9 +325,11 @@ export class GiftCardSettingsResponseDto {
   onlineSalesEnabled!: boolean;
   purchaseDisclaimer?: string | null;
   selectedArtworkKey?: string | null;
+  /** Resolved URL for the currently selected artwork (preset path or CDN). */
+  artworkUrl?: string | null;
   autoGenerateNumber!: boolean;
   internalNotifyEmail?: string | null;
-  artworkPresets!: { key: string; label: string }[];
+  artworkPresets!: { key: string; label: string; imageUrl: string }[];
 }
 
 export class GiftCardPromotionResponseDto {

@@ -55,6 +55,13 @@ export const DEFAULT_SNAPSHOT_CONTEXT: SnapshotContextResponse = {
       order: 5,
     },
     {
+      key: 'social-planner',
+      route: '/business/social-planner',
+      icon: 'share-2',
+      labelKey: 'nav.socialPlanner',
+      order: 5.5,
+    },
+    {
       key: 'appointments',
       route: '/business/appointments',
       icon: 'calendar',

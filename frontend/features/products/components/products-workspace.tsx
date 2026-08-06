@@ -18,6 +18,7 @@ import { EntityDetailSection } from "@/components/layout/entity-detail-section";
 import { EntityWorkspaceLayout } from "@/components/layout/entity-workspace-layout";
 import { SearchInput } from "@/components/forms/search-input";
 import { DataTable, type DataTableColumn } from "@/components/data-display/data-table";
+import { ListPagination } from "@/components/ui/list-pagination";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -106,6 +107,8 @@ import type {
 } from "@/features/products/types";
 import { listBusinessMembers } from "@/features/settings/api/business.api";
 import { queryKeys } from "@/lib/query/keys";
+
+const PAGE_LIMIT = 25;
 
 const ADJUSTMENT_TYPES: {
   value: ProductInventoryAdjustmentType;
@@ -196,6 +199,7 @@ export function ProductsWorkspace() {
   } = useEntitySelection({ legacyIdParams: ["product"] });
 
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
   const [createOpen, setCreateOpen] = useState(false);
   const [drawerMode, setDrawerMode] = useState<DrawerMode>("view");
   const [editForm, setEditForm] = useState<ProductProfileFormValues>(
@@ -209,11 +213,11 @@ export function ProductsWorkspace() {
 
   const listFilters = useMemo(
     () => ({
-      page: 1,
-      limit: 100,
+      page,
+      limit: PAGE_LIMIT,
       search: search.trim() || undefined,
     }),
-    [search],
+    [page, search],
   );
 
   const { data: listData, isLoading } = useProductsList(listFilters);
@@ -222,7 +226,6 @@ export function ProductsWorkspace() {
   const mutations = useProductMutations();
 
   const products = listData?.items ?? [];
-  const total = listData?.meta?.total ?? products.length;
 
   const openCreate = () => {
     setCreateOpen(true);
@@ -316,7 +319,10 @@ export function ProductsWorkspace() {
         search={
           <SearchInput
             value={search}
-            onChange={setSearch}
+            onChange={(value) => {
+              setSearch(value);
+              setPage(1);
+            }}
             placeholder="Search products…"
             className="min-w-0 flex-1"
           />
@@ -356,9 +362,15 @@ export function ProductsWorkspace() {
           </>
         }
         footer={
-          products.length > 0
-            ? `${products.length} of ${total} product${total === 1 ? "" : "s"}`
-            : undefined
+          listData?.meta && products.length > 0 ? (
+            <ListPagination
+              meta={listData.meta}
+              page={page}
+              onPageChange={setPage}
+              label="products"
+              compact
+            />
+          ) : undefined
         }
       >
         <DataTable

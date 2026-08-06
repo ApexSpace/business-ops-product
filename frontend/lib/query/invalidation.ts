@@ -107,6 +107,12 @@ export function invalidateWorkItemLists(
   });
 }
 
+export function invalidateSocialPlanner(queryClient: QueryClient) {
+  return queryClient.invalidateQueries({
+    queryKey: queryKeys.socialPlanner.all(),
+  });
+}
+
 export function invalidateBusinessDashboardStats(queryClient: QueryClient) {
   return Promise.all([
     queryClient.invalidateQueries({

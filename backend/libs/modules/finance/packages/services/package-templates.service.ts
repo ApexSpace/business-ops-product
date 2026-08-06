@@ -71,6 +71,7 @@ export class PackageTemplatesService {
     dto: CreatePackageTemplateDto,
     actor: RequestUser,
   ): Promise<PackageTemplateResponseDto> {
+    this.assertExpirationPolicy(dto);
     const sortOrder = await this.templateRepository.nextSortOrder(businessId);
     const row = await this.templateRepository.create(businessId, {
       name: dto.name.trim(),
@@ -78,7 +79,11 @@ export class PackageTemplatesService {
       totalPrice: new Prisma.Decimal(dto.totalPrice.toFixed(2)),
       chargeTax: dto.chargeTax ?? false,
       expirationPolicy: dto.expirationPolicy ?? PackageExpirationPolicy.NEVER,
-      expirationDays: dto.expirationDays ?? null,
+      expirationDays:
+        (dto.expirationPolicy ?? PackageExpirationPolicy.NEVER) ===
+        PackageExpirationPolicy.AFTER_PURCHASE
+          ? (dto.expirationDays ?? null)
+          : null,
       onlineSalesEnabled: dto.onlineSalesEnabled ?? false,
       shortDescription: dto.shortDescription?.trim() || null,
       description: dto.description ?? null,
@@ -105,14 +110,20 @@ export class PackageTemplatesService {
     dto: UpdatePackageTemplateDto,
     actor: RequestUser,
   ): Promise<PackageTemplateResponseDto> {
+    this.assertExpirationPolicy(dto);
     await this.assertTemplate(businessId, id);
+    const policy =
+      dto.expirationPolicy ?? PackageExpirationPolicy.NEVER;
     const row = await this.templateRepository.update(businessId, id, {
       name: dto.name.trim(),
       emoji: dto.emoji?.trim() || null,
       totalPrice: new Prisma.Decimal(dto.totalPrice.toFixed(2)),
       chargeTax: dto.chargeTax ?? false,
       expirationPolicy: dto.expirationPolicy,
-      expirationDays: dto.expirationDays ?? null,
+      expirationDays:
+        policy === PackageExpirationPolicy.AFTER_PURCHASE
+          ? (dto.expirationDays ?? null)
+          : null,
       onlineSalesEnabled: dto.onlineSalesEnabled ?? false,
       shortDescription: dto.shortDescription?.trim() || null,
       description: dto.description ?? null,
@@ -314,6 +325,27 @@ export class PackageTemplatesService {
       return this.settingsService.ensurePublicSlug(businessId);
     }
     return settings.publicSlug;
+  }
+
+  private assertExpirationPolicy(dto: {
+    expirationPolicy?: PackageExpirationPolicy;
+    expirationDays?: number | null;
+  }): void {
+    const policy = dto.expirationPolicy ?? PackageExpirationPolicy.NEVER;
+    if (policy !== PackageExpirationPolicy.AFTER_PURCHASE) {
+      return;
+    }
+    if (
+      dto.expirationDays == null ||
+      !Number.isInteger(dto.expirationDays) ||
+      dto.expirationDays < 1
+    ) {
+      throw new AppException(
+        ErrorCode.BAD_REQUEST,
+        'Expiration days are required when the package expires after purchase',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
   }
 
   private async assertTemplate(businessId: string, id: string) {

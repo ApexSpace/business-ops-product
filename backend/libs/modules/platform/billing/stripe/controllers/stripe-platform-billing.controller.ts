@@ -18,6 +18,7 @@ import { BusinessRolesGuard } from '@app/common/guards/business-roles.guard';
 import { PlatformRolesGuard } from '@app/common/guards/platform-roles.guard';
 import {
   CheckoutSessionResponseDto,
+  ConfirmBusinessSetupIntentDto,
   CreateBusinessCheckoutSessionDto,
   CreatePlatformCheckoutSessionDto,
   CreatePublicCheckoutSessionDto,
@@ -57,6 +58,20 @@ export class StripePlatformBillingController {
   @BusinessRoles(BusinessMemberRole.OWNER, BusinessMemberRole.ADMIN)
   createCurrentSetupIntent(@CurrentUser() user: RequestUser) {
     return this.paymentMethodService.createSetupIntent(user.businessId!);
+  }
+
+  @Post('businesses/current/billing/setup-intent/confirm')
+  @ApiBearerAuth()
+  @UseGuards(BusinessRolesGuard)
+  @BusinessRoles(BusinessMemberRole.OWNER, BusinessMemberRole.ADMIN)
+  confirmCurrentSetupIntent(
+    @CurrentUser() user: RequestUser,
+    @Body() dto: ConfirmBusinessSetupIntentDto,
+  ) {
+    return this.paymentMethodService.confirmSetupIntent(
+      user.businessId!,
+      dto.setupIntentId,
+    );
   }
 
   @Get('businesses/current/billing/payment-methods')

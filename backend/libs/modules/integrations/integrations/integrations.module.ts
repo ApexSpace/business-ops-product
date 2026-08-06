@@ -15,6 +15,8 @@ import { IntegrationProvidersController } from './integration-providers.controll
 import { IntegrationsService } from './integrations.service';
 import { LinkedInOAuthController } from './linkedin-oauth.controller';
 import { LinkedInOAuthService } from './linkedin-oauth.service';
+import { SocialOAuthController } from './social-oauth.controller';
+import { SocialOAuthService } from './social-oauth.service';
 import { StripeOAuthController } from './stripe/controllers/stripe-oauth.controller';
 import { StripeWebhookController } from './stripe/controllers/stripe-webhook.controller';
 import { StripeAccountService } from './stripe/services/stripe-account.service';
@@ -51,11 +53,16 @@ import { InstagramResourceSyncHandler } from './providers/resource-sync/instagra
 import { IntegrationResourceSyncRegistry } from './providers/resource-sync/integration-resource-sync.registry';
 import { StripeResourceSyncHandler } from './providers/resource-sync/stripe-resource-sync.handler';
 import { WhatsAppResourceSyncHandler } from './providers/resource-sync/whatsapp-resource-sync.handler';
+import { YouTubeResourceSyncHandler } from './providers/resource-sync/youtube-resource-sync.handler';
+import { LinkedInResourceSyncHandler } from './providers/resource-sync/linkedin-resource-sync.handler';
+import { PinterestResourceSyncHandler } from './providers/resource-sync/pinterest-resource-sync.handler';
 import { BusinessIntegrationRepository } from './repositories/business-integration.repository';
 import { IntegrationProviderRepository } from './repositories/integration-provider.repository';
 import { IntegrationResourceRepository } from './repositories/integration-resource.repository';
 import { PlatformIntegrationRepository } from './repositories/platform-integration.repository';
 import { GoogleTokenService } from './services/google-token.service';
+import { PinterestTokenService } from './services/pinterest-token.service';
+import { TikTokTokenService } from './services/tiktok-token.service';
 import { IntegrationResourcesService } from './services/integration-resources.service';
 import { MessagingStatusService } from './services/messaging-status.service';
 import { WhatsAppNumbersService } from './services/whatsapp-numbers.service';
@@ -69,7 +76,7 @@ import { WhatsAppTemplatesController } from '../whatsapp/controllers/whatsapp-te
     forwardRef(() => ConversationsModule),
     forwardRef(() => InvoicesModule),
     forwardRef(() => MembershipsModule),
-    MetaWebhookProcessorModule,
+    forwardRef(() => MetaWebhookProcessorModule),
     WhatsAppModule,
     StripePlatformBillingModule,
     TwilioModule,
@@ -84,6 +91,7 @@ import { WhatsAppTemplatesController } from '../whatsapp/controllers/whatsapp-te
     PlatformIntegrationsController,
     GoogleOAuthController,
     LinkedInOAuthController,
+    SocialOAuthController,
     StripeOAuthController,
     StripeWebhookController,
     MetaOAuthController,
@@ -99,6 +107,7 @@ import { WhatsAppTemplatesController } from '../whatsapp/controllers/whatsapp-te
     IntegrationsService,
     GoogleOAuthService,
     LinkedInOAuthService,
+    SocialOAuthService,
     StripeApiService,
     StripeAccountService,
     StripeOAuthService,
@@ -109,6 +118,8 @@ import { WhatsAppTemplatesController } from '../whatsapp/controllers/whatsapp-te
     StripeCustomerService,
     StripePaymentIntentService,
     GoogleTokenService,
+    TikTokTokenService,
+    PinterestTokenService,
     IntegrationResourcesService,
     GoogleCalendarResourceSyncHandler,
     GoogleBusinessProfileResourceSyncHandler,
@@ -116,6 +127,9 @@ import { WhatsAppTemplatesController } from '../whatsapp/controllers/whatsapp-te
     InstagramResourceSyncHandler,
     WhatsAppResourceSyncHandler,
     StripeResourceSyncHandler,
+    YouTubeResourceSyncHandler,
+    LinkedInResourceSyncHandler,
+    PinterestResourceSyncHandler,
     IntegrationResourceSyncRegistry,
     MetaConfigService,
     MetaApiClient,
@@ -135,6 +149,8 @@ import { WhatsAppTemplatesController } from '../whatsapp/controllers/whatsapp-te
     IntegrationsService,
     IntegrationResourcesService,
     GoogleTokenService,
+    TikTokTokenService,
+    PinterestTokenService,
     MetaTokenService,
     MetaConfigService,
     StripeApiService,

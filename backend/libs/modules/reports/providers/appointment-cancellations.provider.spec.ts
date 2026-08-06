@@ -305,15 +305,13 @@ describe('AppointmentCancellationsProvider', () => {
     expect(onlyNoShow.sections[0]!.rows[0]!.cells.type).toBe('No Show');
   });
 
-  it('shows empty-state message when nothing matches', async () => {
+  it('returns empty rows when nothing matches', async () => {
     const prisma = makePrisma({ appointments: [] });
     const doc = await new AppointmentCancellationsProvider(prisma).generate(
       businessId,
       filters,
       context,
     );
-    expect(doc.sections[0]!.rows[0]!.cells.date).toContain(
-      "Couldn't find any canceled appointments",
-    );
+    expect(doc.sections[0]!.rows).toEqual([]);
   });
 });

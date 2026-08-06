@@ -13,6 +13,7 @@ import {
   Package,
   Repeat,
   Settings,
+  Share2,
   ShoppingBag,
   Tag,
 } from "lucide-react";
@@ -70,6 +71,13 @@ export const businessOperationalMenuItems: BusinessMenuItem[] = [
     icon: ClipboardList,
     labelKey: "workItems",
     navKey: "work-items",
+    navTier: "apps",
+  },
+  {
+    title: "Social Planner",
+    href: "/business/social-planner",
+    icon: Share2,
+    navKey: "social-planner",
     navTier: "apps",
   },
   {

@@ -429,6 +429,7 @@ export function PackageSetupScreen() {
                         type="number"
                         min={0}
                         step="0.01"
+                        selectOnFocus
                         value={editForm.totalPrice}
                         onChange={(e) =>
                           setEditForm({
@@ -455,6 +456,7 @@ export function PackageSetupScreen() {
                           setEditForm({
                             ...editForm,
                             expirationPolicy: v as PackageExpirationPolicy,
+                            ...(v === "NEVER" ? { expirationDays: null } : {}),
                           })
                         }
                       >
@@ -471,24 +473,56 @@ export function PackageSetupScreen() {
                         </div>
                       </RadioGroup>
                       {editForm.expirationPolicy === "AFTER_PURCHASE" ? (
-                        <Input
-                          type="number"
-                          min={1}
-                          className="mt-2 max-w-[120px]"
-                          placeholder="Days"
-                          value={editForm.expirationDays ?? ""}
-                          onChange={(e) =>
-                            setEditForm({
-                              ...editForm,
-                              expirationDays: Number(e.target.value) || null,
-                            })
-                          }
-                        />
+                        <div className="mt-2 max-w-[160px] space-y-1.5">
+                          <Label htmlFor="exp-days">
+                            Days <span className="text-destructive">*</span>
+                          </Label>
+                          <Input
+                            id="exp-days"
+                            type="number"
+                            min={1}
+                            step={1}
+                            selectOnFocus
+                            placeholder="Days"
+                            aria-required
+                            aria-invalid={
+                              editForm.expirationDays == null ||
+                              editForm.expirationDays < 1
+                            }
+                            value={editForm.expirationDays ?? ""}
+                            onChange={(e) =>
+                              setEditForm({
+                                ...editForm,
+                                expirationDays: e.target.value
+                                  ? Number(e.target.value)
+                                  : null,
+                              })
+                            }
+                          />
+                        </div>
                       ) : null}
                     </div>
                   </div>
                   <div className="mt-4 flex justify-end">
-                    <Button onClick={() => saveTemplate.mutate(editForm)}>
+                    <Button
+                      onClick={() => {
+                        if (editForm.expirationPolicy === "AFTER_PURCHASE") {
+                          const days = editForm.expirationDays;
+                          if (
+                            days == null ||
+                            !Number.isFinite(days) ||
+                            days < 1 ||
+                            !Number.isInteger(days)
+                          ) {
+                            toast.error(
+                              "Enter how many days until the package expires after purchase.",
+                            );
+                            return;
+                          }
+                        }
+                        saveTemplate.mutate(editForm);
+                      }}
+                    >
                       Save
                     </Button>
                   </div>
@@ -668,6 +702,7 @@ export function PackageSetupScreen() {
                             type="number"
                             min={0}
                             step="0.01"
+                            selectOnFocus
                             value={groupPrice}
                             onChange={(e) => setGroupPrice(e.target.value)}
                           />
@@ -926,6 +961,7 @@ export function PackageSetupScreen() {
                 type="number"
                 min={0}
                 step="0.01"
+                selectOnFocus
                 value={newPrice}
                 onChange={(e) => setNewPrice(e.target.value)}
               />

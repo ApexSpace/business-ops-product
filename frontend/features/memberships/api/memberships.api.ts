@@ -93,7 +93,7 @@ export function reorderMembershipPlans(ids: string[]) {
 export function listClientMemberships(
   filters: ClientMembershipsListFilters = {},
 ) {
-  return api.get<ClientMembershipListItem[]>(
+  return api.getPaginated<ClientMembershipListItem>(
     "memberships/client-memberships",
     {
       searchParams: filters as Record<

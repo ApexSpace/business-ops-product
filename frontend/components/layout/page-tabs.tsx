@@ -17,6 +17,8 @@ export interface PageTabsProps {
   className?: string;
   listClassName?: string;
   triggerClassName?: string;
+  /** Fires on mouse enter / focus of a tab trigger (useful for prefetch). */
+  onTabHover?: (value: string) => void;
 }
 
 export function PageTabs({
@@ -27,6 +29,7 @@ export function PageTabs({
   className,
   listClassName,
   triggerClassName,
+  onTabHover,
 }: PageTabsProps) {
   return (
     <Tabs value={value} onValueChange={onValueChange} className={className}>
@@ -34,6 +37,7 @@ export function PageTabs({
         tabs={tabs}
         className={listClassName}
         triggerClassName={triggerClassName}
+        onTabHover={onTabHover}
       />
       {children}
     </Tabs>
@@ -44,12 +48,14 @@ export interface PageTabsListProps {
   tabs: PageTabItem[];
   className?: string;
   triggerClassName?: string;
+  onTabHover?: (value: string) => void;
 }
 
 export function PageTabsList({
   tabs,
   className,
   triggerClassName,
+  onTabHover,
 }: PageTabsListProps) {
   return (
     <TabsList
@@ -66,6 +72,8 @@ export function PageTabsList({
             "text-xs sm:text-sm data-active:after:hidden",
             triggerClassName,
           )}
+          onMouseEnter={() => onTabHover?.(tab.value)}
+          onFocus={() => onTabHover?.(tab.value)}
         >
           {tab.label}
         </TabsTrigger>

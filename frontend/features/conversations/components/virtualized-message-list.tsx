@@ -4,6 +4,12 @@ import { useEffect, useRef } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { MoreHorizontal, RefreshCw, Trash2 } from "lucide-react";
 import { ProfileAvatar } from "@/components/ui/profile-avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import {
   formatMessageDateSeparator,
@@ -522,14 +528,32 @@ function ThreadMessageBubble({
           {outbound && !failed ? (
             <MessageDeliveryStatus status={message.status} />
           ) : null}
-          {!deleteMode ? (
-            <button
-              type="button"
-              className="inline-flex size-5 items-center justify-center rounded-md text-muted-foreground/70 opacity-0 transition-opacity hover:bg-muted/60 hover:text-foreground group-hover/message:opacity-100"
-              aria-label="Message options"
-            >
-              <MoreHorizontal className="size-3.5" />
-            </button>
+          {!deleteMode && onRequestDelete ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                render={
+                  <button
+                    type="button"
+                    className="inline-flex size-5 items-center justify-center rounded-md text-muted-foreground/70 opacity-0 transition-opacity hover:bg-muted/60 hover:text-foreground group-hover/message:opacity-100 data-[popup-open]:opacity-100"
+                    aria-label="Message options"
+                  >
+                    <MoreHorizontal className="size-3.5" />
+                  </button>
+                }
+              />
+              <DropdownMenuContent
+                align={outbound ? "end" : "start"}
+                className="min-w-36"
+              >
+                <DropdownMenuItem
+                  variant="destructive"
+                  onClick={() => onRequestDelete(message)}
+                >
+                  <Trash2 className="size-4" />
+                  Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           ) : null}
         </div>
       </div>

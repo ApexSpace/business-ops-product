@@ -2,12 +2,15 @@
 
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { Pencil, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 import { EmptyState } from "@/components/data-display/empty-state";
 import { EntityDetailLinkFilter } from "@/components/layout/entity-detail-link-filter";
 import {
   EntityDetailTimeline,
   type EntityDetailTimelineItem,
 } from "@/components/layout/entity-detail-timeline";
+import { IconButton } from "@/components/ui/icon-button";
 import {
   getContactTimeline,
   type ContactTimelineEvent,
@@ -15,6 +18,7 @@ import {
 } from "@/features/contacts/api/contact-workspace.api";
 import { formatContactCreatedAt } from "@/features/contacts/workspace/contact-workspace";
 import { RecordListEmpty } from "@/features/contacts/components/contact-workspace/contact-record-section";
+import { getNote } from "@/features/notes/api/notes.api";
 import { queryKeys } from "@/lib/query/keys";
 import type { ContactRecordsSectionProps } from "@/features/contacts/workspace/records/contact-records-types";
 
@@ -85,7 +89,8 @@ function timelineTypeLabel(type: ContactTimelineType) {
 
 function toTimelineItem(
   event: ContactTimelineEvent,
-  businessTimezone?: string,
+  businessTimezone: string | undefined,
+  noteActions: React.ReactNode | undefined,
 ): EntityDetailTimelineItem {
   const meta = `${timelineTypeLabel(event.type)} · ${formatContactCreatedAt(event.occurredAt, businessTimezone)}`;
   const dotVariant = timelineDotVariant(event.type, event.description);
@@ -96,6 +101,7 @@ function toTimelineItem(
       title: event.description.trim(),
       meta,
       dotVariant,
+      actions: noteActions,
     };
   }
 
@@ -123,8 +129,12 @@ function toTimelineItem(
 export function ContactRecordsTimelineSection({
   contact,
   businessTimezone,
+  notes,
+  onEditNote,
+  onDeleteNote,
 }: ContactRecordsSectionProps) {
   const [filter, setFilter] = useState<TimelineFilter>("all");
+  const [loadingNoteId, setLoadingNoteId] = useState<string | null>(null);
 
   const types = useMemo(
     () => FILTER_OPTIONS.find((f) => f.id === filter)?.types,
@@ -138,9 +148,56 @@ export function ContactRecordsTimelineSection({
   });
 
   const events = data?.items ?? [];
+
+  async function handleEditNote(entityId: string) {
+    const cached = notes.find((note) => note.id === entityId);
+    if (cached) {
+      onEditNote(cached);
+      return;
+    }
+
+    setLoadingNoteId(entityId);
+    try {
+      const note = await getNote(entityId);
+      onEditNote(note);
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Could not open note",
+      );
+    } finally {
+      setLoadingNoteId(null);
+    }
+  }
+
   const timelineItems = useMemo(
-    () => events.map((event) => toTimelineItem(event, businessTimezone)),
-    [events, businessTimezone],
+    () =>
+      events.map((event) => {
+        const noteActions =
+          event.type === "note" ? (
+            <>
+              <IconButton
+                aria-label="Edit note"
+                className="size-7"
+                disabled={loadingNoteId === event.entityId}
+                onClick={() => void handleEditNote(event.entityId)}
+              >
+                <Pencil className="size-3.5" />
+              </IconButton>
+              <IconButton
+                aria-label="Delete note"
+                className="size-7 text-destructive"
+                onClick={() => onDeleteNote(event.entityId)}
+              >
+                <Trash2 className="size-3.5" />
+              </IconButton>
+            </>
+          ) : undefined;
+
+        return toTimelineItem(event, businessTimezone, noteActions);
+      }),
+    // handleEditNote closes over notes/onEditNote; include deps used inside.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- stable callbacks from parent
+    [events, businessTimezone, loadingNoteId, notes, onEditNote, onDeleteNote],
   );
 
   return (

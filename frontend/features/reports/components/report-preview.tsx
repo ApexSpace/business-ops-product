@@ -10,6 +10,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
+import { REPORT_NO_DATA_MESSAGE } from "@/features/reports/constants";
 import type {
   ReportColumn,
   ReportDocument,
@@ -122,10 +123,10 @@ function ReportSectionTable({
             {section.rows.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={columns.length}
-                  className="text-center text-muted-foreground"
+                  colSpan={Math.max(columns.length, 1)}
+                  className="py-10 text-center text-sm text-muted-foreground"
                 >
-                  No data for this period.
+                  {REPORT_NO_DATA_MESSAGE}
                 </TableCell>
               </TableRow>
             ) : (
@@ -175,6 +176,25 @@ function ReportSectionTable({
 export function ReportPreview({ document }: { document: ReportDocument }) {
   const { meta, sections } = document;
   const [firstSection, ...restSections] = sections;
+
+  if (sections.length === 0) {
+    return (
+      <div className="space-y-6">
+        <div className="space-y-1">
+          <h2 className="text-lg font-semibold text-foreground">{meta.title}</h2>
+          <p className="text-sm text-muted-foreground">
+            {meta.businessName} · {meta.periodLabel}
+          </p>
+          {meta.description ? (
+            <p className="text-sm text-muted-foreground">{meta.description}</p>
+          ) : null}
+        </div>
+        <div className="rounded-lg border border-border py-10 text-center text-sm text-muted-foreground">
+          {REPORT_NO_DATA_MESSAGE}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

@@ -4,7 +4,7 @@ import { AppException } from '@app/common/exceptions/app.exception';
 import { ErrorCode } from '@app/common/exceptions/error-code.enum';
 import { PrismaService } from '@app/core/database/prisma.service';
 import { R2StorageProvider } from '@app/modules/storage/providers/r2-storage.provider';
-import { GIFT_CARD_ARTWORK_PRESETS } from '../constants/artwork-presets';
+import { GIFT_CARD_ARTWORK_PRESETS, giftCardArtworkPresetUrl } from '../constants/artwork-presets';
 import {
   GiftCardSettingsResponseDto,
   UpdateGiftCardSettingsArtworkDto,
@@ -34,7 +34,7 @@ export class GiftCardSettingsService {
       await this.ensurePublicSlug(businessId);
       row = (await this.settingsRepository.findByBusinessId(businessId)) ?? row;
     }
-    return toGiftCardSettings(row);
+    return this.toSettingsResponse(row);
   }
 
   async updateOnlineSales(
@@ -55,7 +55,7 @@ export class GiftCardSettingsService {
         ? { internalNotifyEmail: dto.internalNotifyEmail?.trim() || null }
         : {}),
     });
-    return toGiftCardSettings(row);
+    return this.toSettingsResponse(row);
   }
 
   async updateArtwork(
@@ -77,7 +77,7 @@ export class GiftCardSettingsService {
     const row = await this.settingsRepository.upsert(businessId, {
       selectedArtworkKey: key,
     });
-    return toGiftCardSettings(row);
+    return this.toSettingsResponse(row);
   }
 
   async updatePreferences(
@@ -87,7 +87,7 @@ export class GiftCardSettingsService {
     const row = await this.settingsRepository.upsert(businessId, {
       autoGenerateNumber: dto.autoGenerateNumber,
     });
-    return toGiftCardSettings(row);
+    return this.toSettingsResponse(row);
   }
 
   async generateArtworkUploadUrl(
@@ -135,16 +135,37 @@ export class GiftCardSettingsService {
   resolveArtworkUrl(settings: GiftCardSettings | null): string | null {
     const key = settings?.selectedArtworkKey;
     if (!key) return null;
-    if (GIFT_CARD_ARTWORK_PRESETS.some((p) => p.key === key)) {
-      return `/gift-cards/artwork/${key}.jpg`;
+
+    const presetUrl = giftCardArtworkPresetUrl(key);
+    if (presetUrl) return presetUrl;
+
+    // Custom uploads are stored as R2 object keys.
+    if (key.startsWith('http://') || key.startsWith('https://') || key.startsWith('/')) {
+      return key;
     }
-    return key;
+    return this.r2StorageProvider.getPublicUrl(key) ?? key;
+  }
+
+  private toSettingsResponse(row: GiftCardSettings): GiftCardSettingsResponseDto {
+    return {
+      ...toGiftCardSettings(row),
+      artworkUrl: this.resolveArtworkUrl(row),
+    };
   }
 
   private async ensureSettings(businessId: string): Promise<GiftCardSettings> {
     const existing = await this.settingsRepository.findByBusinessId(businessId);
-    if (existing) return existing;
-    return this.settingsRepository.upsert(businessId, {});
+    if (existing) {
+      if (!existing.selectedArtworkKey) {
+        return this.settingsRepository.upsert(businessId, {
+          selectedArtworkKey: GIFT_CARD_ARTWORK_PRESETS[0].key,
+        });
+      }
+      return existing;
+    }
+    return this.settingsRepository.upsert(businessId, {
+      selectedArtworkKey: GIFT_CARD_ARTWORK_PRESETS[0].key,
+    });
   }
 
   private async allocateUniqueSlug(

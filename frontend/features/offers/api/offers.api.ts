@@ -31,9 +31,9 @@ async function publicOffersFetch<T>(path: string, init?: RequestInit): Promise<T
   return (body?.data ?? body) as T;
 }
 
-export function listOffers(search?: string) {
-  return api.get<Offer[]>("offers", {
-    searchParams: search ? { search } : undefined,
+export function listOffers(filters: { search?: string; page?: number; limit?: number } = {}) {
+  return api.getPaginated<Offer>("offers", {
+    searchParams: filters,
   });
 }
 

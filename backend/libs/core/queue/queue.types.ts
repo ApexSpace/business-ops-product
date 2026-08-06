@@ -87,6 +87,11 @@ export interface AutomationStepJobPayload {
   stepIndex: number;
 }
 
+export interface SocialPublishJobPayload {
+  businessId: string;
+  socialPostTargetId: string;
+}
+
 export interface GenerateReportJobPayload {
   businessId: string;
   reportKey: string;

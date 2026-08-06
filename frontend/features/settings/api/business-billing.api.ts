@@ -45,6 +45,23 @@ export async function createBusinessSetupIntent(): Promise<{
   );
 }
 
+export async function confirmBusinessSetupIntent(
+  setupIntentId: string,
+): Promise<
+  Array<{
+    id: string;
+    brand: string | null;
+    last4: string | null;
+    expMonth: number | null;
+    expYear: number | null;
+    isDefault: boolean;
+  }>
+> {
+  return api.post("businesses/current/billing/setup-intent/confirm", {
+    setupIntentId,
+  });
+}
+
 export async function listBusinessPaymentMethods(): Promise<
   Array<{
     id: string;

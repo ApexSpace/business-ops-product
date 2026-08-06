@@ -14,6 +14,7 @@ export interface EntityDetailTimelineItem {
   title: React.ReactNode;
   subtitle?: React.ReactNode;
   meta?: React.ReactNode;
+  actions?: React.ReactNode;
   dotVariant?: EntityDetailTimelineDotVariant;
 }
 
@@ -55,8 +56,15 @@ export function EntityDetailTimeline({
               aria-hidden
             />
             <div className="min-w-0 flex-1 pb-1">
-              <div className="text-sm font-semibold text-foreground">
-                {item.title}
+              <div className="flex items-start justify-between gap-2">
+                <div className="text-sm font-semibold text-foreground">
+                  {item.title}
+                </div>
+                {item.actions ? (
+                  <div className="flex shrink-0 items-center gap-0.5">
+                    {item.actions}
+                  </div>
+                ) : null}
               </div>
               {item.subtitle ? (
                 <p className="mt-0.5 text-sm text-muted-foreground">

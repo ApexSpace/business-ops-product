@@ -10,7 +10,7 @@ import type {
   GiftCardTransactionResponseDto,
 } from '../dto/gift-card.dto';
 import type { GiftCardPromotion, GiftCardSettings } from '@prisma/client';
-import { GIFT_CARD_ARTWORK_PRESETS } from '../constants/artwork-presets';
+import { GIFT_CARD_ARTWORK_PRESETS, giftCardArtworkPresetUrl } from '../constants/artwork-presets';
 
 function contactName(contact: {
   firstName: string | null;
@@ -115,6 +115,7 @@ export function toGiftCardSettings(row: GiftCardSettings) {
     artworkPresets: GIFT_CARD_ARTWORK_PRESETS.map((p) => ({
       key: p.key,
       label: p.label,
+      imageUrl: giftCardArtworkPresetUrl(p.key)!,
     })),
   };
 }

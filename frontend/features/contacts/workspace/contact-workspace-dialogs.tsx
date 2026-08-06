@@ -2,15 +2,52 @@
 
 import dynamic from "next/dynamic";
 import { ConfirmDeleteDialog } from "@/components/forms/confirm-delete-dialog";
-import { ContactFormDialog } from "@/features/contacts/components/contact-form-dialog";
-import { CreateLeadDialog } from "@/features/leads/components/create-lead-dialog";
-import { LeadFormDialog } from "@/features/leads/components/lead-form-dialog";
-import { NoteFormDialog } from "@/features/notes/components/note-form-dialog";
-import { TaskFormDialog } from "@/features/tasks/components/task-form-dialog";
-import { WorkItemFormDialog } from "@/features/work-items/components/work-item-form-dialog";
 import type { Appointment } from "@/features/appointments/schemas/appointment-profile";
 import type { Contact } from "@/features/contacts/types";
 import type { Lead, Note, Task, WorkItem } from "@/features/contacts/types";
+
+const ContactFormDialog = dynamic(
+  () =>
+    import("@/features/contacts/components/contact-form-dialog").then(
+      (m) => m.ContactFormDialog,
+    ),
+  { ssr: false },
+);
+const CreateLeadDialog = dynamic(
+  () =>
+    import("@/features/leads/components/create-lead-dialog").then(
+      (m) => m.CreateLeadDialog,
+    ),
+  { ssr: false },
+);
+const LeadFormDialog = dynamic(
+  () =>
+    import("@/features/leads/components/lead-form-dialog").then(
+      (m) => m.LeadFormDialog,
+    ),
+  { ssr: false },
+);
+const NoteFormDialog = dynamic(
+  () =>
+    import("@/features/notes/components/note-form-dialog").then(
+      (m) => m.NoteFormDialog,
+    ),
+  { ssr: false },
+);
+const TaskFormDialog = dynamic(
+  () =>
+    import("@/features/tasks/components/task-form-dialog").then(
+      (m) => m.TaskFormDialog,
+    ),
+  { ssr: false },
+);
+const WorkItemFormDialog = dynamic(
+  () =>
+    import("@/features/work-items/components/work-item-form-dialog").then(
+      (m) => m.WorkItemFormDialog,
+    ),
+  { ssr: false },
+);
 
 export interface ContactWorkspaceDialogState {
   contactId: string;
@@ -53,7 +90,10 @@ export interface ContactWorkspaceDialogState {
   deleteContactMutation: { isPending: boolean; mutate: (value: undefined, options?: { onSuccess?: () => void }) => void };
   deleteLeadMutation: { isPending: boolean; mutate: (id: string) => void };
   deleteWorkItemMutation: { isPending: boolean; mutate: (id: string) => void };
-  deleteNoteMutation: { isPending: boolean; mutate: (id: string) => void };
+  deleteNoteMutation: {
+    isPending: boolean;
+    mutate: (id: string, options?: { onSuccess?: () => void }) => void;
+  };
   deleteTaskMutation: { isPending: boolean; mutate: (id: string) => void };
   deleteAppointmentMutation: { isPending: boolean; mutate: (id: string) => void };
 }
@@ -298,7 +338,12 @@ export function ContactWorkspaceDialogs({
         title="Delete note?"
         description="This action cannot be undone."
         isPending={deleteNoteMutation.isPending}
-        onConfirm={() => deleteNoteId && deleteNoteMutation.mutate(deleteNoteId)}
+        onConfirm={() => {
+          if (!deleteNoteId) return;
+          deleteNoteMutation.mutate(deleteNoteId, {
+            onSuccess: () => setDeleteNoteId(null),
+          });
+        }}
       />
 
       <ConfirmDeleteDialog

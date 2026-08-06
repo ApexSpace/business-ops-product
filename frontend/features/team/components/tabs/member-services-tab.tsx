@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Copy } from "lucide-react";
+import { Copy, Package } from "lucide-react";
 import { toast } from "sonner";
+import { EmptyState } from "@/components/data-display/empty-state";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -74,9 +76,34 @@ export function MemberServicesTab({ userId, canManage }: Props) {
   });
 
   const categories = useMemo(() => data?.categories ?? [], [data]);
+  const hasServices = useMemo(
+    () => categories.some((category) => category.services.length > 0),
+    [categories],
+  );
 
   if (isLoading) {
     return <p className="text-sm text-muted-foreground">Loading…</p>;
+  }
+
+  if (!hasServices) {
+    return (
+      <EmptyState
+        compact
+        icon={
+          <Package className="size-4 text-muted-foreground/70" aria-hidden />
+        }
+        title="No services available"
+        description="Create services in Settings before assigning them to this staff member."
+        action={
+          <Link
+            href="/business/settings/services"
+            className="text-sm font-medium text-primary hover:underline"
+          >
+            Go to Services
+          </Link>
+        }
+      />
+    );
   }
 
   return (

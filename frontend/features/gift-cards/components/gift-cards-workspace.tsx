@@ -7,6 +7,7 @@ import { Pencil, Plus, Settings } from "lucide-react";
 import { toast } from "sonner";
 import { ApiErrorState } from "@/components/data-display/api-error-state";
 import { DataTable } from "@/components/data-display/data-table";
+import { ListPagination } from "@/components/ui/list-pagination";
 import { EntityDetailDrawer } from "@/components/layout/entity-detail-drawer";
 import { EntityDetailFooter } from "@/components/layout/entity-detail-footer";
 import { EntityWorkspaceLayout } from "@/components/layout/entity-workspace-layout";
@@ -36,6 +37,7 @@ import { formatMoney } from "@/features/payments/schemas/payment-profile";
 import {
   createGiftCardManual,
   getGiftCard,
+  getGiftCardOnlineSalesShare,
   getGiftCardSettings,
   listGiftCards,
   previewGiftCardNumber,
@@ -52,6 +54,8 @@ import { useGiftCardStaffPermissions } from "@/features/gift-cards/hooks/use-gif
 import { useCurrentBusiness } from "@/features/settings/hooks/use-current-business";
 import type { GiftCardListItem } from "@/features/gift-cards/types";
 
+const PAGE_LIMIT = 25;
+
 export function GiftCardsWorkspace() {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -65,6 +69,7 @@ export function GiftCardsWorkspace() {
   } = useEntitySelection({ legacyIdParams: ["selected"] });
 
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
   const [addOpen, setAddOpen] = useState(false);
   const [drawerMode, setDrawerMode] = useState<"view" | "edit">("view");
   const [notesDraft, setNotesDraft] = useState("");
@@ -78,13 +83,20 @@ export function GiftCardsWorkspace() {
   const [newNotes, setNewNotes] = useState("");
 
   const listQuery = useQuery({
-    queryKey: queryKeys.giftCards.list({ search: search.trim() || undefined }),
+    queryKey: queryKeys.giftCards.list({
+      search: search.trim() || undefined,
+      page,
+      limit: PAGE_LIMIT,
+    }),
     queryFn: () =>
-      listGiftCards({ search: search.trim() || undefined, limit: 100 }),
+      listGiftCards({
+        search: search.trim() || undefined,
+        page,
+        limit: PAGE_LIMIT,
+      }),
   });
 
   const cards = listQuery.data?.items ?? [];
-  const total = listQuery.data?.meta?.total ?? cards.length;
 
   const detailQuery = useQuery({
     queryKey: queryKeys.giftCards.detail(selectedId ?? ""),
@@ -166,6 +178,17 @@ export function GiftCardsWorkspace() {
     }
   };
 
+  const prefetchSettings = () => {
+    void queryClient.prefetchQuery({
+      queryKey: queryKeys.giftCards.settings(),
+      queryFn: getGiftCardSettings,
+    });
+    void queryClient.prefetchQuery({
+      queryKey: queryKeys.giftCards.onlineSalesShare(),
+      queryFn: getGiftCardOnlineSalesShare,
+    });
+  };
+
   const columns = useMemo(
     () => [
       {
@@ -241,6 +264,7 @@ export function GiftCardsWorkspace() {
     selectedId,
     detail,
     businessName: business?.name,
+    fallbackArtworkUrl: settingsQuery.data?.artworkUrl,
     isLoading: detailQuery.isLoading,
     isError: detailQuery.isError,
     error: detailQuery.error,
@@ -273,7 +297,10 @@ export function GiftCardsWorkspace() {
         search={
           <SearchInput
             value={search}
-            onChange={setSearch}
+            onChange={(value) => {
+              setSearch(value);
+              setPage(1);
+            }}
             placeholder="Search by number or client…"
             className="min-w-0 flex-1 sm:max-w-md"
           />
@@ -284,6 +311,8 @@ export function GiftCardsWorkspace() {
               <Button
                 variant="outline"
                 size="sm"
+                onMouseEnter={prefetchSettings}
+                onFocus={prefetchSettings}
                 onClick={() => router.push("/business/gift-cards/settings")}
               >
                 <Settings className="mr-1.5 size-4" />
@@ -299,9 +328,15 @@ export function GiftCardsWorkspace() {
           </>
         }
         footer={
-          cards.length > 0
-            ? `${cards.length} of ${total} gift cards`
-            : undefined
+          listQuery.data?.meta && cards.length > 0 ? (
+            <ListPagination
+              meta={listQuery.data.meta}
+              page={page}
+              onPageChange={setPage}
+              label="gift cards"
+              compact
+            />
+          ) : undefined
         }
       >
         {listQuery.isError ? (
@@ -458,6 +493,7 @@ export function GiftCardsWorkspace() {
                 type="number"
                 min="0.01"
                 step="0.01"
+                selectOnFocus
                 value={newAmount}
                 onChange={(e) => setNewAmount(e.target.value)}
               />

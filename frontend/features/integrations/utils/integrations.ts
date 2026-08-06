@@ -214,9 +214,17 @@ export function isMetaBusinessProvider(providerKey: string): boolean {
   );
 }
 
+const GOOGLE_OAUTH_PROVIDER_KEYS = new Set([
+  "google-calendar",
+  "google-business-profile",
+  "google-lead-ads",
+  "youtube",
+]);
+
 export function isGoogleOAuthProvider(providerKey: string): boolean {
   return (
-    providerKey.startsWith("google-") && providerKey !== "google-oauth"
+    GOOGLE_OAUTH_PROVIDER_KEYS.has(providerKey) ||
+    (providerKey.startsWith("google-") && providerKey !== "google-oauth")
   );
 }
 
@@ -229,10 +237,14 @@ export const OAUTH_START_ROUTES = {
   "google-business-profile":
     "/api/oauth/google/start?providerKey=google-business-profile",
   "google-lead-ads": "/api/oauth/google/start?providerKey=google-lead-ads",
+  youtube: "/api/oauth/google/start?providerKey=youtube",
   facebook: "/api/oauth/meta/start?providerKey=facebook",
   instagram: "/api/oauth/meta/start?providerKey=instagram",
   whatsapp: "/api/oauth/meta/whatsapp/start",
   linkedin: "/api/oauth/linkedin/start",
+  x: "/api/oauth/x/start",
+  pinterest: "/api/oauth/pinterest/start",
+  tiktok: "/api/oauth/tiktok/start",
   stripe: "/api/oauth/stripe/start",
 } as const;
 
