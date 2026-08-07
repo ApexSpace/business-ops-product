@@ -98,57 +98,6 @@ export class SocialOAuthService {
       params.set('client_id', this.getClientId(providerKey));
     }
 
-    // #region agent log
-    if (providerKey === 'tiktok') {
-      const clientKey = this.getClientId(providerKey);
-      const clientSecret = this.getClientSecret(providerKey);
-      const redirectUri = this.getRedirectUri(providerKey);
-      const authorizeUrl = `${config.authorizeUrl}?${params.toString()}`;
-      const safeUrl = new URL(authorizeUrl);
-      safeUrl.searchParams.set(
-        'client_key',
-        `${clientKey.slice(0, 4)}…${clientKey.slice(-4)}`,
-      );
-      safeUrl.searchParams.set('state', '[redacted]');
-      fetch(
-        'http://127.0.0.1:7562/ingest/925a1149-217c-4daf-b03b-d66e64dfadce',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Debug-Session-Id': '8fdcd5',
-          },
-          body: JSON.stringify({
-            sessionId: '8fdcd5',
-            runId: 'pre-fix',
-            hypothesisId: 'A',
-            location: 'social-oauth.service.ts:redirectToProvider',
-            message: 'TikTok authorize redirect built',
-            data: {
-              clientKeyLen: clientKey.length,
-              clientKeyPrefix: clientKey.slice(0, 4),
-              clientKeySuffix: clientKey.slice(-4),
-              clientKeyHasWhitespace: /\s/.test(clientKey),
-              secretLen: clientSecret.length,
-              secretChar19: clientSecret.charCodeAt(19),
-              secretChar24: clientSecret.charCodeAt(24),
-              redirectUri,
-              scopes: config.scopes,
-              scopeParam: params.get('scope'),
-              authorizeHost: config.authorizeUrl,
-              paramKeys: [...params.keys()],
-              safeAuthorizeUrl: safeUrl.toString(),
-              envKeyPresent: Boolean(process.env.TIKTOK_OAUTH_CLIENT_KEY),
-              envSecretPresent: Boolean(process.env.TIKTOK_OAUTH_CLIENT_SECRET),
-              envRedirectPresent: Boolean(process.env.TIKTOK_OAUTH_REDIRECT_URI),
-            },
-            timestamp: Date.now(),
-          }),
-        },
-      ).catch(() => undefined);
-    }
-    // #endregion
-
     if (providerKey === 'x' && codeVerifier) {
       params.set('code_challenge', createPkceChallenge(codeVerifier));
       params.set('code_challenge_method', 'S256');

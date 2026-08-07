@@ -7,20 +7,18 @@ type Envelope<T> = {
   error?: { message?: string } | null;
 };
 
+/**
+ * Same-origin Next BFF routes. Uses runtime BACKEND_URL on the server so
+ * trial signup works even when NEXT_PUBLIC_BACKEND_URL was missing at build.
+ */
 function trialApiBase(): string {
-  const base = getPublicBackendUrl();
-  if (!base) {
-    throw new Error(
-      "NEXT_PUBLIC_BACKEND_URL is not configured for trial signup",
-    );
+  if (typeof window !== "undefined") {
+    return "";
   }
-  return base;
+  return process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") ?? "";
 }
 
-async function postJson<T>(
-  path: string,
-  body: unknown,
-): Promise<T> {
+async function postJson<T>(path: string, body: unknown): Promise<T> {
   const res = await fetch(`${trialApiBase()}${path}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -73,7 +71,7 @@ export function createOrUpdateTrialSession(input: {
     sessionId: string;
     payload: Record<string, unknown>;
     expiresAt: string;
-  }>("/public/trial/session", {
+  }>("/api/public/trial/session", {
     sessionId: input.sessionId || undefined,
     payload: input.payload,
   });
@@ -83,7 +81,7 @@ export function sendTrialOtp(input: {
   phoneE164: string;
   sessionId?: string | null;
 }) {
-  return postJson<{ sent: boolean }>("/public/trial/phone/send-otp", {
+  return postJson<{ sent: boolean }>("/api/public/trial/phone/send-otp", {
     phoneE164: input.phoneE164,
     sessionId: input.sessionId || undefined,
   });
@@ -91,7 +89,7 @@ export function sendTrialOtp(input: {
 
 export function verifyTrialOtp(input: { phoneE164: string; code: string }) {
   return postJson<{ phoneVerificationToken: string }>(
-    "/public/trial/phone/verify-otp",
+    "/api/public/trial/phone/verify-otp",
     input,
   );
 }
@@ -109,7 +107,7 @@ export function completeTrialSignup(input: {
   phoneVerificationToken: string;
 }) {
   return postJson<{ handoffUrl: string; businessId: string }>(
-    "/public/trial/complete",
+    "/api/public/trial/complete",
     {
       ...input,
       sessionId: input.sessionId || undefined,
@@ -120,14 +118,18 @@ export function completeTrialSignup(input: {
 
 export function fetchTrialEmbedSnippet() {
   return getJson<{ scriptEmbed: string; iframeSrc: string }>(
-    "/public/trial/embed",
+    "/api/public/trial/embed",
   );
 }
 
 export function getTrialEmbedCodeFallback(): string | null {
+  if (typeof window === "undefined") return null;
   const backend = getPublicBackendUrl();
-  if (!backend || typeof window === "undefined") return null;
-  const origin = window.location.origin;
+  const origin =
+    process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") ||
+    window.location.origin;
+  const iframe = `<iframe class="trial-signup-widget" src="${origin}/widget/trial" frameborder="0" scrolling="no" style="min-width:100%;width:100%;border:0;" loading="lazy" title="Start trial"></iframe>`;
+  if (!backend) return iframe;
   return `<script type="text/javascript" src="${backend}/embed/trial-widget.js"></script>
-<iframe class="trial-signup-widget" src="${origin}/widget/trial" frameborder="0" scrolling="no" style="min-width:100%;width:100%;border:0;" loading="lazy" title="Start trial"></iframe>`;
+${iframe}`;
 }

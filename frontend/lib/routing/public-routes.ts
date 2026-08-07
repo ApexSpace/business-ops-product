@@ -90,6 +90,7 @@ export const PUBLIC_API_PATH_PREFIXES = [
   "/api/auth/forgot-password",
   "/api/auth/reset-password",
   "/api/auth/trial-handoff",
+  "/api/public/trial",
 ] as const;
 
 function normalizePathname(pathname: string): string {

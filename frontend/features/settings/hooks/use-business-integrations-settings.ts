@@ -330,34 +330,6 @@ export function useBusinessIntegrationsSettings() {
 
     const { blocked, popup } = openOAuthPopup(url);
 
-    // #region agent log
-    if (provider.key === "tiktok") {
-      fetch(
-        "http://127.0.0.1:7562/ingest/925a1149-217c-4daf-b03b-d66e64dfadce",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "X-Debug-Session-Id": "8fdcd5",
-          },
-          body: JSON.stringify({
-            sessionId: "8fdcd5",
-            runId: "pre-fix",
-            hypothesisId: "D",
-            location: "use-business-integrations-settings.ts:openConnect",
-            message: "TikTok popup open attempt",
-            data: {
-              startUrl: url,
-              blocked,
-              popupOpened: Boolean(popup),
-            },
-            timestamp: Date.now(),
-          }),
-        },
-      ).catch(() => {});
-    }
-    // #endregion
-
     if (blocked || !popup) {
       setConnectingProviderKey(null);
       if (blocked) {
