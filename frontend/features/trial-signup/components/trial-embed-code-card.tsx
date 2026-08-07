@@ -61,7 +61,7 @@ export function TrialEmbedCodeCard() {
           <p className="text-sm text-muted-foreground">Loading embed code…</p>
         ) : query.isError ? (
           <p className="text-sm text-destructive">
-            Could not load embed snippet. Check NEXT_PUBLIC_BACKEND_URL.
+            Could not load embed snippet. Check BACKEND_URL / API connectivity.
           </p>
         ) : (
           <pre className="overflow-x-auto rounded-md border bg-muted/40 p-3 text-xs whitespace-pre-wrap">
