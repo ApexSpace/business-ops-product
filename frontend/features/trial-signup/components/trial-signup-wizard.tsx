@@ -71,11 +71,16 @@ const passwordSchema = z
     path: ["confirmPassword"],
   });
 
-function postResize() {
+function postResize(root?: HTMLElement | null) {
   if (typeof window === "undefined" || !window.parent) return;
-  const height = Math.max(
-    document.documentElement.scrollHeight,
-    document.body.scrollHeight,
+  const contentHeight = root?.getBoundingClientRect().height ?? 0;
+  const height = Math.ceil(
+    Math.max(
+      contentHeight,
+      root?.scrollHeight ?? 0,
+      document.documentElement.scrollHeight,
+      document.body.scrollHeight,
+    ),
   );
   window.parent.postMessage(
     { type: "trial-signup-widget:resize", height },
@@ -134,10 +139,15 @@ export function TrialSignupWizard() {
   });
 
   useEffect(() => {
-    postResize();
-    const observer = new ResizeObserver(() => postResize());
+    const publish = () => postResize(rootRef.current);
+    publish();
+    const raf = requestAnimationFrame(publish);
+    const observer = new ResizeObserver(publish);
     if (rootRef.current) observer.observe(rootRef.current);
-    return () => observer.disconnect();
+    return () => {
+      cancelAnimationFrame(raf);
+      observer.disconnect();
+    };
   }, [step, otpSent]);
 
   useEffect(() => {
@@ -273,23 +283,24 @@ export function TrialSignupWizard() {
   return (
     <div
       ref={rootRef}
-      className="mx-auto w-full max-w-xl bg-background px-4 py-8 text-foreground"
+      data-trial-wizard
+      className="mx-auto w-full max-w-3xl bg-background px-3 py-4 text-foreground sm:px-5 sm:py-5"
     >
-      <p className="mb-2 text-center text-xs font-medium tracking-wide text-muted-foreground uppercase">
+      <p className="mb-1.5 text-center text-[11px] font-medium tracking-wide text-muted-foreground uppercase sm:mb-2 sm:text-xs">
         Step {step} of {TOTAL_STEPS}
       </p>
 
       {step === 1 && (
-        <section className="space-y-6">
-          <header className="space-y-2 text-center">
-            <h1 className="text-2xl font-semibold tracking-tight">
+        <section className="space-y-4">
+          <header className="space-y-1 text-center">
+            <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">
               What services do you offer?
             </h1>
             <p className="text-sm text-muted-foreground">
               Select all that apply. You can change these later.
             </p>
           </header>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+          <div className="grid grid-cols-3 gap-2 sm:gap-2.5">
             {TRIAL_SERVICE_OPTIONS.map((opt) => {
               const selected = state.servicesOffered.includes(opt.value);
               return (
@@ -298,7 +309,7 @@ export function TrialSignupWizard() {
                   type="button"
                   onClick={() => toggleService(opt.value)}
                   className={cn(
-                    "rounded-xl border px-3 py-4 text-sm font-medium transition-colors",
+                    "rounded-lg border px-1.5 py-2.5 text-center text-[11px] leading-snug font-medium transition-colors sm:rounded-xl sm:px-3 sm:py-3 sm:text-sm",
                     selected
                       ? "border-primary bg-primary/10 text-foreground"
                       : "border-border bg-card hover:bg-muted/60",
@@ -309,20 +320,23 @@ export function TrialSignupWizard() {
               );
             })}
           </div>
-          <Button className="w-full" onClick={() => void onServicesContinue()}>
+          <Button
+            className="w-full"
+            onClick={() => void onServicesContinue()}
+          >
             Continue
           </Button>
         </section>
       )}
 
       {step === 2 && (
-        <section className="space-y-6">
-          <header className="space-y-2 text-center">
-            <h1 className="text-2xl font-semibold tracking-tight">
+        <section className="space-y-4">
+          <header className="space-y-1 text-center">
+            <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">
               How many service providers do you have?
             </h1>
           </header>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-2 sm:gap-3">
             {TRIAL_PROVIDER_BANDS.map((band) => {
               const selected = state.providerCountBand === band.value;
               return (
@@ -336,7 +350,7 @@ export function TrialSignupWizard() {
                     }))
                   }
                   className={cn(
-                    "flex flex-col items-center gap-3 rounded-xl border px-3 py-6 transition-colors",
+                    "flex flex-col items-center gap-2 rounded-xl border px-3 py-4 transition-colors sm:gap-3 sm:py-5",
                     selected
                       ? "border-primary bg-primary/10"
                       : "border-border bg-card hover:bg-muted/60",

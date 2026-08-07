@@ -293,7 +293,7 @@ export class TrialSignupService {
     const appBase = (frontendUrl || '').replace(/\/$/, '');
     const iframeSrc = `${appBase}/widget/trial`;
     const scriptEmbed = `<script type="text/javascript" src="${apiBase}/embed/trial-widget.js"></script>
-<iframe class="trial-signup-widget" src="${iframeSrc}" frameborder="0" scrolling="no" style="min-width:100%;width:100%;border:0;" loading="lazy" title="Start trial"></iframe>`;
+<iframe class="trial-signup-widget" src="${iframeSrc}" frameborder="0" scrolling="no" style="min-width:100%;width:100%;min-height:620px;border:0;overflow:hidden;" loading="lazy" title="Start trial"></iframe>`;
     return { scriptEmbed, iframeSrc };
   }
 

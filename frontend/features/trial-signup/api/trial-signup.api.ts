@@ -128,7 +128,7 @@ export function getTrialEmbedCodeFallback(): string | null {
   const origin =
     process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") ||
     window.location.origin;
-  const iframe = `<iframe class="trial-signup-widget" src="${origin}/widget/trial" frameborder="0" scrolling="no" style="min-width:100%;width:100%;border:0;" loading="lazy" title="Start trial"></iframe>`;
+  const iframe = `<iframe class="trial-signup-widget" src="${origin}/widget/trial" frameborder="0" scrolling="no" style="min-width:100%;width:100%;min-height:620px;border:0;overflow:hidden;" loading="lazy" title="Start trial"></iframe>`;
   if (!backend) return iframe;
   return `<script type="text/javascript" src="${backend}/embed/trial-widget.js"></script>
 ${iframe}`;

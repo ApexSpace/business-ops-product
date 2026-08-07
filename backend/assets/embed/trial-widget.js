@@ -6,7 +6,8 @@
     frame.style.minWidth = "100%";
     frame.style.width = "100%";
     if (!frame.style.minHeight) {
-      frame.style.minHeight = "520px";
+      // Tall enough for the services step (3-col grid + Continue) before resize fires.
+      frame.style.minHeight = "620px";
     }
   }
 
@@ -20,8 +21,10 @@
 
     document.querySelectorAll("iframe.trial-signup-widget").forEach(function (frame) {
       if (frame.contentWindow !== event.source) return;
-      var height = Math.max(320, Math.ceil(data.height));
+      var height = Math.max(480, Math.ceil(data.height));
       frame.style.height = height + "px";
+      frame.style.minHeight = height + "px";
+      frame.style.overflow = "hidden";
     });
   });
 })();
