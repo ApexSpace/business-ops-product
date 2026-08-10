@@ -14,6 +14,7 @@ import { SnapshotsModule } from './snapshots/snapshots.module';
 import { StorageModule } from '@app/modules/storage/storage.module';
 import { StripePlatformBillingModule } from './billing/stripe/stripe-platform-billing.module';
 import { TrialSignupModule } from './trial-signup/trial-signup.module';
+import { DataIoModule } from './data-io/data-io.module';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { TrialSignupModule } from './trial-signup/trial-signup.module';
     OperationsModule,
     StripePlatformBillingModule,
     TrialSignupModule,
+    DataIoModule,
   ],
   exports: [
     AuthModule,
@@ -47,6 +49,7 @@ import { TrialSignupModule } from './trial-signup/trial-signup.module';
     OperationsModule,
     StripePlatformBillingModule,
     TrialSignupModule,
+    DataIoModule,
   ],
 })
 export class PlatformModule {}

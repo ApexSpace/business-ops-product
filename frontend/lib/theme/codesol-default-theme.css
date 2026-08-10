@@ -7,6 +7,7 @@
  */
 :root {
   /* ─── Violet-Primary ─── */
+  --pc-violet-primary-surface: #f6f1fe; /* Figma soft surface / navbar gradient start */
   --pc-violet-primary-light: #f2ebfd;
   --pc-violet-primary-light-hover: #ece2fc;
   --pc-violet-primary-light-active: #d7c2f9;
@@ -91,6 +92,30 @@
     rgb(255 255 255 / 12%) 100%
   );
   --cs-shell-topbar-surface: color-mix(in srgb, white 74%, var(--cs-blue-tint));
+  /* Figma Dashboard Navbar — solid fill hsba(262, 80%, 84%, 1) */
+  --cs-shell-navbar-surface: #6a2bd6;
+  --cs-shell-navbar-foreground: #ffffff;
+  --cs-shell-navbar-height: 66px;
+  /* Figma active tab (Mode6): 43px tall, 10/16 padding, 8px radius, 3px gap */
+  --cs-shell-navbar-tab-height: 43px;
+  --cs-shell-navbar-tab-padding-y: 10px;
+  --cs-shell-navbar-tab-padding-x: 16px;
+  --cs-shell-navbar-tab-radius: 8px;
+  --cs-shell-navbar-tab-gap: 3px;
+  /* Figma Rectangle 4307 underline: 70×2, neutral/0 */
+  --cs-shell-navbar-tab-underline-width: 70px;
+  --cs-shell-navbar-tab-underline-height: 2px;
+
+  /* Figma Calendar / Appointment tab */
+  --cs-calendar-primary: var(--pc-violet-primary-normal);
+  --cs-calendar-primary-soft: color-mix(in srgb, var(--pc-violet-primary-normal) 60%, transparent);
+  --cs-calendar-border: #bc9bf6;
+  --cs-calendar-surface: var(--pc-violet-primary-surface);
+  --cs-calendar-toolbar-height: 44px;
+  --cs-calendar-time-gutter: 80px;
+  --cs-calendar-staff-header-height: 64px;
+  --cs-calendar-slot-height: 30px;
+  --cs-calendar-hour-height: 120px;
   --cs-page-gradient:
     radial-gradient(
       circle at top left,
@@ -115,9 +140,6 @@
   --cs-page-orb-1: color-mix(in srgb, var(--pc-violet-primary-normal) 22%, transparent);
   --cs-page-orb-2: color-mix(in srgb, var(--pc-violet-primary-normal-hover) 16%, transparent);
   --cs-page-orb-3: color-mix(in srgb, var(--pc-green-success-normal) 12%, transparent);
-
-  /* Figma Dashboard Navbar background (exact) */
-  --shell-navbar-gradient: linear-gradient(135deg, #f6f1fe 0%, #7e3bed 98.24%);
 }
 
 /*
@@ -219,6 +241,9 @@
     color-mix(in srgb, var(--pc-violet-primary-dark-active) 82%, transparent) 100%
   );
   --cs-shell-topbar-surface: color-mix(in srgb, var(--pc-violet-primary-darker) 60%, transparent);
+  /* Brand navbar keeps Figma solid fill in dark mode */
+  --cs-shell-navbar-surface: #6a2bd6;
+  --cs-shell-navbar-foreground: #ffffff;
   --cs-page-gradient:
     radial-gradient(
       circle at top left,

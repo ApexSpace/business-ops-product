@@ -381,7 +381,7 @@ export class ClientMembershipsService {
         row.nextBillingDate?.toISOString().slice(0, 10) ?? '',
       ].join(','),
     );
-    return [header, ...lines].join('\n');
+    return `\uFEFF${[header, ...lines].join('\r\n')}`;
   }
 
   async createUsageRecordsForPeriod(

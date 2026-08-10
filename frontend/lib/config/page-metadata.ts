@@ -296,6 +296,14 @@ const businessRoutes: Record<string, RouteEntry> = {
       { label: "Integrations" },
     ],
   },
+  "/business/settings/data": {
+    title: "Data import & export",
+    description: "Import CSV/Excel migrations and export business data.",
+    breadcrumbs: [
+      { label: "Settings", href: "/business/settings/profile" },
+      { label: "Data import & export" },
+    ],
+  },
   "/business/settings/whatsapp": {
     title: "WhatsApp",
     description:

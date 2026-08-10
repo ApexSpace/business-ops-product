@@ -11,7 +11,9 @@ import {
   Plus,
   SlidersHorizontal,
   Trash2,
+  Upload,
 } from "lucide-react";
+import { DataImportWizard } from "@/features/data-io/components/data-import-wizard";
 import { EntityDetailDrawer } from "@/components/layout/entity-detail-drawer";
 import { EntityDetailFooter } from "@/components/layout/entity-detail-footer";
 import { EntityDetailSection } from "@/components/layout/entity-detail-section";
@@ -206,6 +208,7 @@ export function ProductsWorkspace() {
     productProfileDefaultValues,
   );
   const [optionsOpen, setOptionsOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [newCategoryName, setNewCategoryName] = useState("");
   const [categoriesOpen, setCategoriesOpen] = useState(false);
@@ -563,6 +566,22 @@ export function ProductsWorkspace() {
                   </span>
                 </span>
               </Button>
+              <Button
+                variant="outline"
+                className="h-auto w-full justify-start gap-3 px-4 py-3"
+                onClick={() => {
+                  setOptionsOpen(false);
+                  setImportOpen(true);
+                }}
+              >
+                <Upload className="size-4 shrink-0 text-muted-foreground" />
+                <span className="text-left">
+                  <span className="block font-medium">Import products</span>
+                  <span className="block text-xs font-normal text-muted-foreground">
+                    Upload CSV or Excel from another platform
+                  </span>
+                </span>
+              </Button>
               <p className="text-xs text-muted-foreground">
                 Use column headers in the table to sort the current list.
               </p>
@@ -707,6 +726,13 @@ export function ProductsWorkspace() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <DataImportWizard
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        entityType="PRODUCT"
+        title="Import products"
+      />
     </>
   );
 }

@@ -713,6 +713,44 @@ enum AsyncJobStatus {
   FAILED
 }
 
+enum DataImportEntityType {
+  CONTACT
+  SERVICE
+  PRODUCT
+  LEAD
+  NOTE
+  GIFT_CARD
+  CLIENT_MEMBERSHIP
+  CLIENT_PACKAGE
+  TASK
+  APPOINTMENT
+  INVOICE
+  ESTIMATE
+  PAYMENT
+  WORK_ITEM
+  OFFER
+  FORM_SUBMISSION
+  TIME_CARD
+}
+
+enum DataImportJobStatus {
+  DRAFT
+  UPLOADED
+  MAPPED
+  VALIDATING
+  IMPORTING
+  COMPLETED
+  COMPLETED_WITH_ERRORS
+  FAILED
+  CANCELLED
+}
+
+enum DataImportDuplicatePolicy {
+  SKIP
+  UPDATE
+  CREATE_ALWAYS
+}
+
 enum FileAssetStatus {
   PENDING
   READY
@@ -868,6 +906,7 @@ model User {
   conversationNotesAuthored ConversationNote[] @relation("ConversationNoteAuthor")
   uploadedFileAssets    FileAsset[]
   asyncJobs             AsyncJob[]             @relation("AsyncJobActor")
+  dataImportJobs        DataImportJob[]        @relation("DataImportJobActor")
   emailTemplatesCreated EmailTemplate[]        @relation("EmailTemplateCreatedBy")
   emailTemplatesUpdated EmailTemplate[]        @relation("EmailTemplateUpdatedBy")
   whatsappMessageTemplatesCreated WhatsAppMessageTemplate[] @relation("WhatsAppTemplateCreatedBy")
@@ -1070,6 +1109,7 @@ model Business {
   platformSmsSuppressions  PlatformSmsSuppression[]
   asyncJobs                AsyncJob[]
   fileAssets               FileAsset[]
+  dataImportJobs           DataImportJob[]
   socialPosts              SocialPost[]
   socialComments           SocialComment[]
   businessEmailPreferences BusinessEmailPreference[]
@@ -4039,11 +4079,43 @@ model AsyncJob {
 
   business  Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
   createdBy User?    @relation("AsyncJobActor", fields: [createdById], references: [id], onDelete: SetNull)
+  dataImportJobs DataImportJob[]
 
   @@index([businessId, status])
   @@index([businessId, createdAt])
   @@unique([businessId, idempotencyKey])
   @@map("async_jobs")
+}
+
+model DataImportJob {
+  id                  String                    @id @default(uuid())
+  businessId          String
+  entityType          DataImportEntityType
+  status              DataImportJobStatus       @default(DRAFT)
+  fileAssetId         String?
+  errorReportAssetId  String?
+  asyncJobId          String?
+  mapping             Json?
+  options             Json?
+  stats               Json?
+  warnings            Json?
+  sheetName           String?
+  headerRowNumber     Int                       @default(1)
+  createdById         String?
+  createdAt           DateTime                  @default(now())
+  updatedAt           DateTime                  @updatedAt
+  completedAt         DateTime?
+
+  business         Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  fileAsset        FileAsset? @relation("DataImportSourceFile", fields: [fileAssetId], references: [id], onDelete: SetNull)
+  errorReportAsset FileAsset? @relation("DataImportErrorReport", fields: [errorReportAssetId], references: [id], onDelete: SetNull)
+  asyncJob         AsyncJob?  @relation(fields: [asyncJobId], references: [id], onDelete: SetNull)
+  createdBy        User?      @relation("DataImportJobActor", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([businessId, status])
+  @@index([businessId, entityType, status])
+  @@index([businessId, createdAt])
+  @@map("data_import_jobs")
 }
 
 model FileAsset {
@@ -4067,6 +4139,8 @@ model FileAsset {
 
   socialPostMedia          SocialPostMedia[] @relation("SocialPostMediaFile")
   socialPostMediaThumbs    SocialPostMedia[] @relation("SocialPostMediaThumbnail")
+  dataImportSourceFiles    DataImportJob[]   @relation("DataImportSourceFile")
+  dataImportErrorReports   DataImportJob[]   @relation("DataImportErrorReport")
 
   @@index([businessId])
   @@index([uploadedById])

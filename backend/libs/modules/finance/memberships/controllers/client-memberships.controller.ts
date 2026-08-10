@@ -2,21 +2,22 @@ import {
   Body,
   Controller,
   Get,
-  Header,
   Param,
   ParseUUIDPipe,
   Patch,
   Post,
   Query,
+  StreamableFile,
   UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiProduces, ApiTags } from '@nestjs/swagger';
 import { BusinessMemberRole } from '@prisma/client';
 import { CurrentUser } from '@app/common/decorators/current-user.decorator';
 import type { RequestUser } from '@app/common/decorators/current-user.decorator';
 import { BusinessRoles } from '@app/common/decorators/business-roles.decorator';
 import { StaffPermission } from '@app/common/decorators/staff-permission.decorator';
 import { RequireModule } from '@app/common/decorators/require-module.decorator';
+import { SkipEnvelope } from '@app/common/decorators/skip-envelope.decorator';
 import { BusinessCapabilityGuard } from '@app/common/guards/business-capability.guard';
 import { BusinessRolesGuard } from '@app/common/guards/business-roles.guard';
 import {
@@ -45,20 +46,21 @@ export class ClientMembershipsController {
   ) {}
 
   @Get('export')
+  @SkipEnvelope()
   @BusinessRoles(...MEMBER_ROLES)
-  @Header('Content-Type', 'text/csv')
-  @Header(
-    'Content-Disposition',
-    'attachment; filename="client-memberships.csv"',
-  )
-  exportMemberships(
+  @ApiProduces('text/csv')
+  async exportMemberships(
     @CurrentUser() user: RequestUser,
     @Query() query: ListClientMembershipsQueryDto,
-  ) {
-    return this.clientMembershipsService.exportClientMemberships(
+  ): Promise<StreamableFile> {
+    const csv = await this.clientMembershipsService.exportClientMemberships(
       user.businessId!,
       query,
     );
+    return new StreamableFile(Buffer.from(csv, 'utf8'), {
+      type: 'text/csv; charset=utf-8',
+      disposition: 'attachment; filename="client-memberships.csv"',
+    });
   }
 
   @Get()

@@ -467,7 +467,8 @@ export function AppointmentCreateDrawer({
       headerClassName={cn(
         APPOINTMENT_POPUP_HEADER_CLASS,
         "[&_[data-slot=sheet-title]]:text-[20px] [&_[data-slot=sheet-title]]:font-bold [&_[data-slot=sheet-title]]:text-[#7E3BED]",
-        "[&_button[aria-label=Close]]:size-8 [&_button[aria-label=Close]]:rounded-lg [&_button[aria-label=Close]]:border-0 [&_button[aria-label=Close]]:bg-[#F0F0F0] [&_button[aria-label=Close]]:text-[#6B6B6B] [&_button[aria-label=Close]]:shadow-none [&_button[aria-label=Close]]:hover:bg-[#E9E9E9]",
+        // Figma close: 44×44, radius 8, padding 10, transparent (no white/grey box)
+        "[&_button[aria-label=Close]]:!size-11 [&_button[aria-label=Close]]:rounded-lg [&_button[aria-label=Close]]:!border-0 [&_button[aria-label=Close]]:!bg-transparent [&_button[aria-label=Close]]:p-2.5 [&_button[aria-label=Close]]:text-[#6B6B6B] [&_button[aria-label=Close]]:!shadow-none [&_button[aria-label=Close]]:hover:!bg-black/5 [&_button[aria-label=Close]]:hover:text-black",
       )}
       contentClassName="!px-0 !py-0"
       footerClassName={APPOINTMENT_POPUP_FOOTER_CLASS}
@@ -602,7 +603,7 @@ export function AppointmentCreateDrawer({
 
       <div className="flex flex-col gap-[9px] px-5 py-3">
         {useExpressBooking ? (
-          <div className={cn(DRAWER_FORM_ITEM_CLASS, "gap-3")}>
+          <div className="flex flex-col gap-4">
             <Tabs
               value={expressClientMode}
               onValueChange={(value) =>
@@ -620,7 +621,7 @@ export function AppointmentCreateDrawer({
             </Tabs>
 
             {expressClientMode === "existing" ? (
-              <>
+              <div className="flex flex-col gap-2.5">
                 <ContactPicker
                   value={contactId}
                   onValueChange={(id) => {
@@ -645,7 +646,7 @@ export function AppointmentCreateDrawer({
                     link.
                   </p>
                 ) : null}
-              </>
+              </div>
             ) : (
               <div className="flex flex-col gap-2.5">
                 <Input
@@ -691,7 +692,7 @@ export function AppointmentCreateDrawer({
           </div>
         )}
 
-        <div className={cn(DRAWER_FORM_ITEM_CLASS)}>
+        <div className="flex flex-col gap-3">
           <AppointmentServiceLineEditor
             value={services}
             onChange={(next) =>
@@ -710,7 +711,7 @@ export function AppointmentCreateDrawer({
             currencyCode={currencyCode}
           />
           {useExpressBooking ? (
-            <p className="text-caption text-grey-tertiary-normal">
+            <p className="text-caption leading-snug text-grey-tertiary-normal">
               Express Booking uses one service. The client can switch staff when
               they open the email link.
             </p>

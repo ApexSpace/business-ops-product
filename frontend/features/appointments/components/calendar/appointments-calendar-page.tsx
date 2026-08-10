@@ -14,6 +14,7 @@ import { useAppointmentCalendarDrag } from "@/features/appointments/hooks/use-ap
 import { useAppointmentsCalendarPage } from "@/features/appointments/hooks/use-appointments-calendar-page";
 import { getAppointment } from "@/features/appointments/api/appointments.api";
 import { WaitlistPanel } from "@/features/waitlist/components/waitlist-panel";
+import { cn } from "@/lib/utils";
 
 const AppointmentCreateDrawer = dynamic(
   () =>
@@ -53,9 +54,11 @@ const ContactConversationDrawer = dynamic(
 
 export function AppointmentsCalendarPage() {
   return (
-    <Suspense fallback={<ListPageSkeleton />}>
-      <AppointmentsCalendarPageContent />
-    </Suspense>
+    <div className="flex h-full min-h-0 flex-col bg-white">
+      <Suspense fallback={<ListPageSkeleton />}>
+        <AppointmentsCalendarPageContent />
+      </Suspense>
+    </div>
   );
 }
 
@@ -88,8 +91,8 @@ function AppointmentsCalendarPageContent() {
   });
 
   return (
-    <div className="flex min-h-[calc(100dvh-66px-2rem)] flex-col gap-3 sm:gap-4">
-      <div className="shrink-0">
+    <div className="flex h-full min-h-0 flex-col gap-3 bg-white px-4 pt-4 sm:gap-4 sm:px-6 sm:pt-4 lg:px-10 lg:pt-5">
+      <div className="shrink-0 bg-white">
         <CalendarToolbar
           view={cal.view}
           onViewChange={cal.handleViewChange}
@@ -118,83 +121,80 @@ function AppointmentsCalendarPageContent() {
         />
       </div>
 
-      <div className="min-h-0 flex-1 overflow-hidden">
-        <div className="h-full min-h-0 overflow-auto">
-          {cal.view === "day" ? (
-            <StaffDayCalendarView
-              dateKey={cal.anchorDateKey}
+      <div className="min-h-0 flex-1 overflow-hidden bg-white pb-4 sm:pb-6 lg:pb-8">
+        {cal.view === "day" ? (
+          <StaffDayCalendarView
+            dateKey={cal.anchorDateKey}
+            timezone={cal.displayTimezone}
+            calendars={cal.calendars?.items}
+            businessTimezone={cal.business?.timezone}
+            staffMembers={cal.visibleStaffMembers}
+            appointments={cal.appointments}
+            isLoading={cal.isLoading}
+            className={cn(BARE_VIEW_CLASS, "h-full")}
+            businessHoursSlots={cal.businessSlots}
+            staffSlotsByUserId={cal.staffSlotsByUserId}
+            onAppointmentClick={cal.openAppointmentDetail}
+            onAppointmentMoveStart={drag.startMove}
+            onAppointmentResizeStart={drag.startResize}
+            draggingAppointmentId={drag.draggingId}
+            onSlotClick={cal.openCreateAtSlot}
+          />
+        ) : null}
+
+        {cal.view === "week" ? (
+          <WeekCalendarView
+            anchorDateKey={cal.anchorDateKey}
+            timezone={cal.displayTimezone}
+            calendars={cal.calendars?.items}
+            businessTimezone={cal.business?.timezone}
+            appointments={cal.appointments}
+            isLoading={cal.isLoading}
+            className={cn(BARE_VIEW_CLASS, "h-full")}
+            businessHoursSlots={cal.businessSlots}
+            weekStaffHoursSlots={
+              cal.params.assignedToId
+                ? (cal.staffSlotsByUserId.get(cal.params.assignedToId) ?? null)
+                : null
+            }
+            onAppointmentClick={cal.openAppointmentDetail}
+            onAppointmentMoveStart={drag.startMove}
+            onAppointmentResizeStart={drag.startResize}
+            draggingAppointmentId={drag.draggingId}
+            onSlotClick={cal.openCreateAtSlot}
+          />
+        ) : null}
+
+        {cal.view === "month" ? (
+          <MonthCalendarView
+            anchorDateKey={cal.anchorDateKey}
+            timezone={cal.displayTimezone}
+            calendars={cal.calendars?.items}
+            businessTimezone={cal.business?.timezone}
+            appointments={cal.appointments}
+            isLoading={cal.isLoading}
+            className={cn(BARE_VIEW_CLASS, "h-full")}
+            onAppointmentClick={cal.openAppointmentDetail}
+            onDayClick={cal.handleDayClick}
+          />
+        ) : null}
+
+        {cal.view === "list" ? (
+          <div className="h-full overflow-auto p-3 sm:p-4">
+            <AppointmentListView
+              appointments={cal.appointments}
               timezone={cal.displayTimezone}
               calendars={cal.calendars?.items}
               businessTimezone={cal.business?.timezone}
-              staffMembers={cal.visibleStaffMembers}
-              appointments={cal.appointments}
               isLoading={cal.isLoading}
-              className={BARE_VIEW_CLASS}
-              businessHoursSlots={cal.businessSlots}
-              staffSlotsByUserId={cal.staffSlotsByUserId}
-              onAppointmentClick={cal.openAppointmentDetail}
-              onAppointmentMoveStart={drag.startMove}
-              onAppointmentResizeStart={drag.startResize}
-              draggingAppointmentId={drag.draggingId}
-              onSlotClick={cal.openCreateAtSlot}
+              page={cal.page}
+              meta={cal.listData?.meta}
+              onPageChange={(p) => cal.setParams({ page: String(p) })}
+              onEdit={cal.openAppointmentDetail}
+              onDelete={cal.setDeleteId}
             />
-          ) : null}
-
-          {cal.view === "week" ? (
-            <WeekCalendarView
-              anchorDateKey={cal.anchorDateKey}
-              timezone={cal.displayTimezone}
-              calendars={cal.calendars?.items}
-              businessTimezone={cal.business?.timezone}
-              appointments={cal.appointments}
-              isLoading={cal.isLoading}
-              className={BARE_VIEW_CLASS}
-              businessHoursSlots={cal.businessSlots}
-              weekStaffHoursSlots={
-                cal.params.assignedToId
-                  ? (cal.staffSlotsByUserId.get(cal.params.assignedToId) ??
-                    null)
-                  : null
-              }
-              onAppointmentClick={cal.openAppointmentDetail}
-              onAppointmentMoveStart={drag.startMove}
-              onAppointmentResizeStart={drag.startResize}
-              draggingAppointmentId={drag.draggingId}
-              onSlotClick={cal.openCreateAtSlot}
-            />
-          ) : null}
-
-          {cal.view === "month" ? (
-            <MonthCalendarView
-              anchorDateKey={cal.anchorDateKey}
-              timezone={cal.displayTimezone}
-              calendars={cal.calendars?.items}
-              businessTimezone={cal.business?.timezone}
-              appointments={cal.appointments}
-              isLoading={cal.isLoading}
-              className={BARE_VIEW_CLASS}
-              onAppointmentClick={cal.openAppointmentDetail}
-              onDayClick={cal.handleDayClick}
-            />
-          ) : null}
-
-          {cal.view === "list" ? (
-            <div className="p-3 sm:p-4">
-              <AppointmentListView
-                appointments={cal.appointments}
-                timezone={cal.displayTimezone}
-                calendars={cal.calendars?.items}
-                businessTimezone={cal.business?.timezone}
-                isLoading={cal.isLoading}
-                page={cal.page}
-                meta={cal.listData?.meta}
-                onPageChange={(p) => cal.setParams({ page: String(p) })}
-                onEdit={cal.openAppointmentDetail}
-                onDelete={cal.setDeleteId}
-              />
-            </div>
-          ) : null}
-        </div>
+          </div>
+        ) : null}
       </div>
 
       <AppointmentCreateDrawer

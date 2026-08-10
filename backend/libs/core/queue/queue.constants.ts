@@ -26,4 +26,5 @@ export const JOB_CLEANUP_WEBHOOK_EVENTS = 'cleanup-webhook-events';
 export const JOB_CLEANUP_ASYNC_JOBS = 'cleanup-async-jobs';
 export const JOB_AUTOMATION_STEP = 'automation-step';
 export const JOB_GENERATE_REPORT = 'generate-report';
+export const JOB_PROCESS_DATA_IMPORT = 'process-data-import';
 export const JOB_SOCIAL_PUBLISH = 'social-publish';

@@ -100,3 +100,10 @@ export interface GenerateReportJobPayload {
   actorUserId: string;
   asyncJobId: string;
 }
+
+export interface DataImportJobPayload {
+  businessId: string;
+  dataImportJobId: string;
+  actorUserId: string;
+  asyncJobId: string;
+}

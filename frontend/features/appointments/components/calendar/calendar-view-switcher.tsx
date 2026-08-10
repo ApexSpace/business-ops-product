@@ -3,8 +3,10 @@
 import { cn } from "@/lib/utils";
 import type { CalendarViewMode } from "@/features/calendars/utils/calendar-dates";
 import {
+  CALENDAR_TOOLBAR_SEGMENT_ACTIVE_CLASS,
   CALENDAR_TOOLBAR_SEGMENT_BUTTON_CLASS,
   CALENDAR_TOOLBAR_SEGMENT_GROUP_CLASS,
+  CALENDAR_TOOLBAR_SEGMENT_INACTIVE_CLASS,
 } from "@/features/appointments/components/calendar/calendar-toolbar-tokens";
 
 const VIEWS: { value: CalendarViewMode; label: string }[] = [
@@ -41,8 +43,8 @@ export function CalendarViewSwitcher({
             className={cn(
               CALENDAR_TOOLBAR_SEGMENT_BUTTON_CLASS,
               active
-                ? "bg-[#7E3BED] text-white"
-                : "bg-white text-[#7E3BED] hover:bg-[#F6F1FE]",
+                ? CALENDAR_TOOLBAR_SEGMENT_ACTIVE_CLASS
+                : CALENDAR_TOOLBAR_SEGMENT_INACTIVE_CLASS,
             )}
           >
             {view.label}

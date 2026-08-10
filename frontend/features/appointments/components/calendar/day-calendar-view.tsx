@@ -59,8 +59,7 @@ export function DayCalendarView({
         <div
           className={cn(
             CALENDAR_GRID.column,
-            "flex h-12 items-center justify-center px-3 py-2 sm:h-14 sm:justify-start",
-            isToday && "bg-[#F6F1FE]",
+            "flex h-12 items-center justify-center bg-white px-3 py-2 sm:h-14 sm:justify-start",
           )}
         >
           <span className="block text-[10px] font-semibold uppercase tracking-wide text-grey-tertiary-normal">
@@ -106,16 +105,6 @@ export function DayCalendarView({
           </div>
         )}
       </div>
-      {!isLoading && appointments.length === 0 ? (
-        <p
-          className={cn(
-            "px-4 py-3 text-center text-sm text-muted-foreground",
-            CALENDAR_GRID.footer,
-          )}
-        >
-          No appointments this day. Click a time slot to schedule one.
-        </p>
-      ) : null}
     </div>
   );
 }

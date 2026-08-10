@@ -6,36 +6,55 @@ export const CALENDAR_TOOLBAR_HEIGHT_CLASS = "h-11";
 export const CALENDAR_TOOLBAR_INSET_X_CLASS = "px-4";
 
 export const CALENDAR_TOOLBAR_TEXT_CLASS =
-  "text-sm font-medium text-black-secondary-normal";
+  "text-body font-semibold leading-none text-black-secondary-normal";
 
-/** Filter / outline toolbar button — Figma purple border */
+/** Today CTA — Figma solid primary; button font Medium 14/16 weight 700 */
+export const CALENDAR_TOOLBAR_TODAY_BUTTON_CLASS = cn(
+  CALENDAR_TOOLBAR_HEIGHT_CLASS,
+  "shrink-0 rounded-[var(--radius-md)] border-0 bg-[#7E3BED] px-[var(--spacing-4)]",
+  "text-[14px] font-bold leading-4 text-white shadow-none",
+  "hover:bg-[#7135D5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7E3BED]/40",
+);
+
+/** Filter icon — Figma: black symbol, no fill/border (page background shows through) */
+export const CALENDAR_TOOLBAR_FILTER_BUTTON_CLASS = cn(
+  "inline-flex size-11 shrink-0 items-center justify-center rounded-[var(--radius-md)]",
+  "!border-0 !bg-transparent p-0 text-black shadow-none",
+  "hover:!bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7E3BED]/30",
+);
+
+/** @deprecated prefer FILTER / TODAY tokens */
 export const CALENDAR_TOOLBAR_OUTLINE_BUTTON_CLASS = cn(
   CALENDAR_TOOLBAR_HEIGHT_CLASS,
   CALENDAR_TOOLBAR_INSET_X_CLASS,
-  CALENDAR_TOOLBAR_TEXT_CLASS,
-  "shrink-0 gap-2 rounded-lg border border-[#7E3BED] bg-white text-[#7E3BED] shadow-none",
+  "shrink-0 gap-2 rounded-[var(--radius-md)] border border-[#7E3BED] bg-white text-sm font-semibold text-[#7E3BED] shadow-none",
   "hover:bg-[#F6F1FE] hover:text-[#7E3BED]",
 );
 
-/** Prev / next square nav — Figma light purple rounded squares */
+/**
+ * Prev / next — Figma `weui:arrow-filled`:
+ * height 44 (fixed), width hug, radius/xs,
+ * padding y = spacing/2, padding x = spacing/4,
+ * border primary/500 1px; parent group gap 10.
+ */
 export const CALENDAR_TOOLBAR_NAV_BUTTON_CLASS = cn(
-  "inline-flex size-11 shrink-0 items-center justify-center rounded-lg",
-  "border-0 bg-[#F6F1FE] text-[#7E3BED] shadow-none",
-  "hover:bg-[#EDE4FC] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7E3BED]/30",
-);
-
-/** Date picker trigger — Figma 44px, border #7E3BED */
-export const CALENDAR_TOOLBAR_DATE_TRIGGER_CLASS = cn(
-  CALENDAR_TOOLBAR_HEIGHT_CLASS,
-  CALENDAR_TOOLBAR_INSET_X_CLASS,
-  CALENDAR_TOOLBAR_TEXT_CLASS,
-  "inline-flex min-w-0 items-center justify-center gap-2.5 rounded-lg border border-[#7E3BED] bg-white",
+  "box-border inline-flex h-11 w-auto shrink-0 items-center justify-center",
+  "rounded-[var(--radius-xs)]",
+  "border border-[#7E3BED] bg-white px-[var(--spacing-4)] py-[var(--spacing-2)] text-[#7E3BED] shadow-none",
   "hover:bg-[#F6F1FE] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7E3BED]/30",
 );
 
-/** @deprecated kept for any leftover imports — prefer NAV + DATE_TRIGGER */
+/** Date picker trigger — Figma Frame 15: h 44, radius/md, gap 11 */
+export const CALENDAR_TOOLBAR_DATE_TRIGGER_CLASS = cn(
+  CALENDAR_TOOLBAR_HEIGHT_CLASS,
+  "inline-flex min-w-0 items-center justify-center gap-[11px] rounded-[var(--radius-md)] border border-[#7E3BED] bg-white px-4",
+  CALENDAR_TOOLBAR_TEXT_CLASS,
+  "hover:bg-[#F6F1FE] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7E3BED]/30",
+);
+
+/** @deprecated kept for leftover imports */
 export const CALENDAR_TOOLBAR_DATE_GROUP_CLASS =
-  "flex min-w-0 items-center gap-[11px]";
+  "flex min-w-0 items-center gap-[10px]";
 
 export const CALENDAR_TOOLBAR_DATE_LABEL_CLASS =
   CALENDAR_TOOLBAR_DATE_TRIGGER_CLASS;
@@ -47,17 +66,31 @@ export const CALENDAR_TOOLBAR_GHOST_BUTTON_CLASS = cn(
   CALENDAR_TOOLBAR_HEIGHT_CLASS,
   CALENDAR_TOOLBAR_INSET_X_CLASS,
   CALENDAR_TOOLBAR_TEXT_CLASS,
-  "inline-flex min-w-0 items-center gap-2 rounded-lg transition-colors hover:bg-[#F6F1FE]",
+  "inline-flex min-w-0 items-center gap-2 rounded-[var(--radius-md)] transition-colors hover:bg-[#F6F1FE]",
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7E3BED]/30",
 );
 
-/** Day / Week segmented control shell */
+/**
+ * Day / Week — Figma joined segmented control, 44px, radius/md, no gap.
+ */
 export const CALENDAR_TOOLBAR_SEGMENT_GROUP_CLASS =
-  "flex h-11 shrink-0 items-stretch overflow-hidden rounded-lg border border-[#7E3BED] bg-white";
+  "inline-flex h-11 shrink-0 items-stretch gap-0 overflow-hidden rounded-[var(--radius-md)] border border-[#7E3BED] bg-white p-0";
 
 export const CALENDAR_TOOLBAR_SEGMENT_BUTTON_CLASS = cn(
-  "inline-flex min-w-[4.5rem] items-center justify-center px-4 text-sm font-semibold transition-colors",
+  "inline-flex h-full min-w-[65px] items-center justify-center rounded-none px-4",
+  "m-0 border-0 text-sm font-semibold transition-colors",
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#7E3BED]/30",
 );
 
+export const CALENDAR_TOOLBAR_SEGMENT_ACTIVE_CLASS =
+  "bg-[#7E3BED] text-white hover:bg-[#7135D5]";
+
+export const CALENDAR_TOOLBAR_SEGMENT_INACTIVE_CLASS =
+  "bg-white text-[#7E3BED] hover:bg-[#F6F1FE]";
+
 export const CALENDAR_TOOLBAR_DIVIDER_CLASS =
-  "hidden h-11 w-px shrink-0 bg-[#BC9BF6]/60 sm:block";
+  "hidden h-11 w-px shrink-0 bg-[color:rgba(126,59,237,0.6)] sm:block";
+
+/** Figma nav cluster gap between < / Today / > */
+export const CALENDAR_TOOLBAR_NAV_GROUP_CLASS =
+  "flex shrink-0 items-center gap-[10px]";

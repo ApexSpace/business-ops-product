@@ -1,7 +1,6 @@
 "use client";
 
 import { SlidersHorizontal } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import {
   Popover,
   PopoverContent,
@@ -10,7 +9,7 @@ import {
 import type { AppointmentStatus } from "@/features/appointments/schemas/appointment-profile";
 import { APPOINTMENT_LIFECYCLE_STATUS_OPTIONS } from "@/features/appointments/schemas/appointment-profile";
 import { getAppointmentStatusDotClass } from "@/features/appointments/utils/appointment-calendar-styles";
-import { CALENDAR_TOOLBAR_OUTLINE_BUTTON_CLASS } from "@/features/appointments/components/calendar/calendar-toolbar-tokens";
+import { CALENDAR_TOOLBAR_FILTER_BUTTON_CLASS } from "@/features/appointments/components/calendar/calendar-toolbar-tokens";
 import { cn } from "@/lib/utils";
 
 interface CalendarFiltersPopoverProps {
@@ -39,27 +38,26 @@ export function CalendarFiltersPopover({
     <Popover>
       <PopoverTrigger
         render={
-          <Button
+          <button
             type="button"
-            variant="outline"
             aria-label={
               activeCount > 0
                 ? `Filters, ${activeCount} active`
                 : "Filters"
             }
-            className={cn(
-              CALENDAR_TOOLBAR_OUTLINE_BUTTON_CLASS,
-              "relative",
-            )}
+            className={cn(CALENDAR_TOOLBAR_FILTER_BUTTON_CLASS, "relative")}
           >
-            <SlidersHorizontal className="size-4 shrink-0" strokeWidth={2} />
-            <span>Filter</span>
+            <SlidersHorizontal
+              className="size-5 shrink-0 text-black"
+              strokeWidth={2}
+            />
+            <span className="sr-only">Filter</span>
             {activeCount > 0 ? (
-              <span className="inline-flex size-5 items-center justify-center rounded-full bg-primary text-[11px] font-semibold text-primary-foreground sm:ml-0.5">
+              <span className="absolute -right-0.5 -top-0.5 inline-flex size-5 items-center justify-center rounded-full bg-[#7E3BED] text-[11px] font-semibold text-white">
                 {activeCount}
               </span>
             ) : null}
-          </Button>
+          </button>
         }
       />
       <PopoverContent align="end" className="w-72 space-y-4 p-4">

@@ -79,23 +79,27 @@ export function AppointmentDateTimeBar({
             "cursor-text border-r border-[#BC9BF6]",
           )}
         >
-          <span className={SECTION_LABEL_CLASS}>On</span>
+          <span className="mr-1.5 shrink-0 text-[14px] font-medium text-[#7E3BED]">
+            On
+          </span>
           <input
             type="datetime-local"
             value={startValue ?? ""}
             onChange={(event) => onStartChange?.(event.target.value)}
-            className="mt-0.5 w-full border-0 bg-transparent p-0 text-[14px] font-semibold text-black-secondary-normal outline-none"
+            className="min-w-0 flex-1 border-0 bg-transparent p-0 text-[14px] font-medium text-[#7E3BED] outline-none"
           />
         </label>
         <label
           className={cn(APPOINTMENT_POPUP_DATETIME_CELL_CLASS, "cursor-text")}
         >
-          <span className={SECTION_LABEL_CLASS}>Until</span>
+          <span className="mr-1.5 shrink-0 text-[14px] font-medium text-[#7E3BED]">
+            Until
+          </span>
           <input
             type="datetime-local"
             value={endValue ?? ""}
             onChange={(event) => onEndChange?.(event.target.value)}
-            className="mt-0.5 w-full border-0 bg-transparent p-0 text-[14px] font-semibold text-black-secondary-normal outline-none"
+            className="min-w-0 flex-1 border-0 bg-transparent p-0 text-[14px] font-medium text-[#7E3BED] outline-none"
           />
         </label>
       </div>
@@ -114,9 +118,8 @@ export function AppointmentDateTimeBar({
           !onDateClick && "cursor-default",
         )}
       >
-        <span className={SECTION_LABEL_CLASS}>On</span>
-        <span className="mt-0.5 text-[14px] font-semibold text-black-secondary-normal">
-          {dateLabel}
+        <span className="truncate text-[14px] font-medium leading-none text-[#7E3BED]">
+          On {dateLabel}
         </span>
       </button>
       <button
@@ -128,9 +131,8 @@ export function AppointmentDateTimeBar({
           !onTimeClick && "cursor-default",
         )}
       >
-        <span className={SECTION_LABEL_CLASS}>At</span>
-        <span className="mt-0.5 text-[14px] font-semibold text-black-secondary-normal">
-          {timeLabel}
+        <span className="truncate text-[14px] font-medium leading-none text-[#7E3BED]">
+          At {timeLabel}
         </span>
       </button>
     </div>

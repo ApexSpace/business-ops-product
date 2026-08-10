@@ -192,7 +192,8 @@ export function AppointmentTimeBlockDrawer({
       headerClassName={cn(
         APPOINTMENT_POPUP_HEADER_CLASS,
         "[&_[data-slot=sheet-title]]:text-[20px] [&_[data-slot=sheet-title]]:font-bold [&_[data-slot=sheet-title]]:text-[#7E3BED]",
-        "[&_button[aria-label=Close]]:size-8 [&_button[aria-label=Close]]:rounded-lg [&_button[aria-label=Close]]:border-0 [&_button[aria-label=Close]]:bg-[#F0F0F0] [&_button[aria-label=Close]]:text-[#6B6B6B] [&_button[aria-label=Close]]:shadow-none [&_button[aria-label=Close]]:hover:bg-[#E9E9E9]",
+        // Figma close: transparent, no grey/white box
+        "[&_button[aria-label=Close]]:!size-11 [&_button[aria-label=Close]]:rounded-lg [&_button[aria-label=Close]]:!border-0 [&_button[aria-label=Close]]:!bg-transparent [&_button[aria-label=Close]]:p-2.5 [&_button[aria-label=Close]]:text-[#6B6B6B] [&_button[aria-label=Close]]:!shadow-none [&_button[aria-label=Close]]:hover:!bg-black/5 [&_button[aria-label=Close]]:hover:text-black",
       )}
       contentClassName="!px-0 !py-0"
       footerClassName={APPOINTMENT_POPUP_FOOTER_CLASS}

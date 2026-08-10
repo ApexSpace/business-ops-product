@@ -4,6 +4,7 @@ import {
   JOB_APPOINTMENT_GOOGLE_SYNC,
   JOB_CALENDAR_SYNC,
   JOB_GENERATE_REPORT,
+  JOB_PROCESS_DATA_IMPORT,
   JOB_INTEGRATION_RESOURCE_SYNC,
   JOB_META_RESOURCE_SYNC,
 } from '../queue/queue.constants';
@@ -12,6 +13,7 @@ import type {
   AppointmentGoogleSyncJobPayload,
   CalendarSyncJobPayload,
   GenerateReportJobPayload,
+  DataImportJobPayload,
   IntegrationResourceSyncJobPayload,
   MetaResourceSyncJobPayload,
   ProcessStripeWebhookPayload,
@@ -286,6 +288,27 @@ export class JobEnqueueService {
         reportKey: params.reportKey,
         format: params.format,
         filters: params.filters,
+        actorUserId: params.actorUserId,
+      },
+    });
+  }
+
+  async enqueueDataImport(params: {
+    businessId: string;
+    dataImportJobId: string;
+    actorUserId: string;
+  }): Promise<AsyncJob> {
+    return this.enqueueWithAsyncJob<DataImportJobPayload>({
+      businessId: params.businessId,
+      type: 'data_import',
+      jobName: JOB_PROCESS_DATA_IMPORT,
+      entityType: 'DataImportJob',
+      entityId: params.dataImportJobId,
+      actorUserId: params.actorUserId,
+      queue: 'file',
+      payload: {
+        businessId: params.businessId,
+        dataImportJobId: params.dataImportJobId,
         actorUserId: params.actorUserId,
       },
     });

@@ -70,101 +70,103 @@ export function WeekCalendarView({
   const weekDateKeys = getWeekDateKeysInTimezone(anchorDateKey, timezone);
   const currentTimeTop = useCalendarCurrentTimeTop(timezone, weekDateKeys);
   const gridTemplate = `${CALENDAR_FIGMA_TIME_GUTTER_PX}px repeat(7, minmax(${CALENDAR_FIGMA_STAFF_COL_MIN_PX}px, 1fr))`;
-  const minWidth = CALENDAR_FIGMA_TIME_GUTTER_PX + 7 * CALENDAR_FIGMA_STAFF_COL_MIN_PX;
+  const minWidth =
+    CALENDAR_FIGMA_TIME_GUTTER_PX + 7 * CALENDAR_FIGMA_STAFF_COL_MIN_PX;
 
   return (
-    <div className={cn("overflow-hidden bg-white", CALENDAR_GRID.card, className)}>
-      <div className="overflow-x-auto">
-        <div style={{ minWidth }}>
-          <div className="max-h-[min(75vh,844px)] overflow-auto">
+    <div
+      className={cn(
+        "flex h-full min-h-0 flex-col bg-white",
+        CALENDAR_GRID.card,
+        className,
+      )}
+    >
+      {/* Single scroll host — avoids stacked horizontal scrollbars */}
+      <div className="min-h-0 flex-1 overflow-auto overscroll-contain bg-white">
+        <div className="min-w-0 bg-white" style={{ minWidth }}>
+          <div
+            className={cn(
+              "sticky top-0 z-30 grid bg-white",
+              CALENDAR_GRID.headerRow,
+            )}
+            style={{ gridTemplateColumns: gridTemplate }}
+          >
             <div
-              className={cn("sticky top-0 z-30 grid", CALENDAR_GRID.headerRow)}
-              style={{ gridTemplateColumns: gridTemplate }}
-            >
-              <div className="w-20 shrink-0" aria-hidden />
-              {weekDateKeys.map((dayKey) => {
-                const isToday = isTodayDateKey(dayKey, timezone);
-                const dayNumber = parseDateKeyInTimezone(dayKey, timezone).day;
+              className="shrink-0 border-b border-r border-[color:rgba(126,59,237,0.6)] bg-white"
+              style={{ width: CALENDAR_FIGMA_TIME_GUTTER_PX, height: 64 }}
+              aria-hidden
+            />
+            {weekDateKeys.map((dayKey) => {
+              const isToday = isTodayDateKey(dayKey, timezone);
+              const dayNumber = parseDateKeyInTimezone(dayKey, timezone).day;
 
-                return (
-                  <div
-                    key={dayKey}
+              return (
+                <div
+                  key={dayKey}
+                  className={cn(
+                    CALENDAR_GRID.column,
+                    "flex h-16 flex-col items-center justify-center bg-white px-2 py-2",
+                  )}
+                >
+                  <span className="block text-[10px] font-semibold uppercase tracking-wide text-grey-tertiary-normal">
+                    {formatShortWeekdayForDateKey(dayKey, timezone)}
+                  </span>
+                  <span
                     className={cn(
-                      CALENDAR_GRID.column,
-                      "flex h-12 flex-col items-center justify-center px-2 py-2 sm:h-14",
-                      isToday && "bg-[#F6F1FE]",
+                      "mt-1 inline-flex size-7 items-center justify-center rounded-full text-sm font-semibold",
+                      isToday
+                        ? "bg-[#7E3BED] text-white"
+                        : "text-black-secondary-normal",
                     )}
                   >
-                    <span className="block text-[10px] font-semibold uppercase tracking-wide text-grey-tertiary-normal">
-                      {formatShortWeekdayForDateKey(dayKey, timezone)}
-                    </span>
-                    <span
-                      className={cn(
-                        "mt-1 inline-flex size-7 items-center justify-center rounded-full text-sm font-semibold",
-                        isToday
-                          ? "bg-[#7E3BED] text-white"
-                          : "text-black-secondary-normal",
-                      )}
-                    >
-                      {dayNumber}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-            {isLoading ? (
-              <div className="flex h-48 items-center justify-center text-sm text-grey-tertiary-normal">
-                Loading appointments…
-              </div>
-            ) : (
-              <div
-                className="relative overflow-hidden"
-                style={{ minHeight: GRID_HEIGHT }}
-              >
-                {currentTimeTop !== null ? (
-                  <CalendarCurrentTimeIndicator topPx={currentTimeTop} />
-                ) : null}
-                <div
-                  className="grid"
-                  style={{
-                    gridTemplateColumns: gridTemplate,
-                    minHeight: GRID_HEIGHT,
-                  }}
-                >
-                  <TimeGridGutter />
-                  {weekDateKeys.map((dayKey) => (
-                    <TimeGridColumn
-                      key={dayKey}
-                      dateKey={dayKey}
-                      appointments={appointments}
-                      viewTimezone={timezone}
-                      calendars={calendars}
-                      businessTimezone={businessTimezone}
-                      onAppointmentClick={onAppointmentClick}
-                      onAppointmentMoveStart={onAppointmentMoveStart}
-                      onAppointmentResizeStart={onAppointmentResizeStart}
-                      draggingAppointmentId={draggingAppointmentId}
-                      businessHoursSlots={businessHoursSlots}
-                      staffHoursSlots={weekStaffHoursSlots}
-                      onSlotClick={onSlotClick}
-                    />
-                  ))}
+                    {dayNumber}
+                  </span>
                 </div>
-              </div>
-            )}
+              );
+            })}
           </div>
+          {isLoading ? (
+            <div className="flex h-48 items-center justify-center text-sm text-grey-tertiary-normal">
+              Loading appointments…
+            </div>
+          ) : (
+            <div
+              className="relative overflow-hidden bg-white"
+              style={{ minHeight: GRID_HEIGHT }}
+            >
+              {currentTimeTop !== null ? (
+                <CalendarCurrentTimeIndicator topPx={currentTimeTop} />
+              ) : null}
+              <div
+                className="grid bg-white"
+                style={{
+                  gridTemplateColumns: gridTemplate,
+                  minHeight: GRID_HEIGHT,
+                }}
+              >
+                <TimeGridGutter />
+                {weekDateKeys.map((dayKey) => (
+                  <TimeGridColumn
+                    key={dayKey}
+                    dateKey={dayKey}
+                    appointments={appointments}
+                    viewTimezone={timezone}
+                    calendars={calendars}
+                    businessTimezone={businessTimezone}
+                    onAppointmentClick={onAppointmentClick}
+                    onAppointmentMoveStart={onAppointmentMoveStart}
+                    onAppointmentResizeStart={onAppointmentResizeStart}
+                    draggingAppointmentId={draggingAppointmentId}
+                    businessHoursSlots={businessHoursSlots}
+                    staffHoursSlots={weekStaffHoursSlots}
+                    onSlotClick={onSlotClick}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
-      {!isLoading && appointments.length === 0 ? (
-        <p
-          className={cn(
-            "px-4 py-3 text-center text-sm text-grey-tertiary-normal",
-            CALENDAR_GRID.footer,
-          )}
-        >
-          No appointments this week. Click a time slot to create one.
-        </p>
-      ) : null}
     </div>
   );
 }

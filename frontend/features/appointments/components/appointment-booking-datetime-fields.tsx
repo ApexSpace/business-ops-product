@@ -61,11 +61,9 @@ export function AppointmentBookingDateTimeFields({
           disabled && "pointer-events-none opacity-60",
         )}
       >
-        <span className="text-[11px] font-medium text-grey-tertiary-normal">
-          On
-        </span>
-        <span className="mt-0.5 text-[14px] font-semibold text-black-secondary-normal">
-          {dateLabel}
+        {/* Figma Subhead: single-line “On Tue, Jul 28” */}
+        <span className="truncate text-[14px] font-medium leading-none text-[#7E3BED]">
+          On {dateLabel}
         </span>
         <Input
           type="date"
@@ -85,16 +83,13 @@ export function AppointmentBookingDateTimeFields({
           disabled && "pointer-events-none opacity-60",
         )}
       >
-        <span className="text-[11px] font-medium text-grey-tertiary-normal">
-          At
-        </span>
         <Select
           value={String(startMinutes)}
           onValueChange={(value) => onStartMinutesChange(Number(value))}
           disabled={disabled}
         >
-          <SelectTrigger className="mt-0.5 h-auto w-full min-w-0 border-0 bg-transparent p-0 text-[14px] font-semibold text-black-secondary-normal shadow-none hover:bg-transparent focus-visible:ring-0 data-[size=default]:h-auto">
-            <span className="truncate">{selectedTimeLabel}</span>
+          <SelectTrigger className="h-auto w-full min-w-0 border-0 bg-transparent p-0 text-[14px] font-medium leading-none text-[#7E3BED] shadow-none hover:bg-transparent focus-visible:ring-0 data-[size=default]:h-auto [&_svg]:text-[#7E3BED]">
+            <span className="truncate">At {selectedTimeLabel}</span>
           </SelectTrigger>
           <SelectContent className="max-h-60">
             {timeSlots.map((minutes) => (

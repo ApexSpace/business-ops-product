@@ -16,6 +16,7 @@ import {
   Warehouse,
   Zap,
   FileText,
+  Database,
 } from "lucide-react";
 import type { ShellNavItem, ShellNavSection } from "@/lib/types/shell-nav";
 import { canAccessSettingsHref } from "@/features/team/permissions/staff-permissions";
@@ -34,6 +35,11 @@ const generalItems: BusinessSettingsNavItem[] = [
     title: "Team Members",
     href: "/business/settings/team",
     icon: Users,
+  },
+  {
+    title: "Data import & export",
+    href: "/business/settings/data",
+    icon: Database,
   },
 ];
 
