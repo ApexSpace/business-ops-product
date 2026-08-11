@@ -55,12 +55,11 @@ export function DayCalendarView({
           CALENDAR_GRID.headerRow,
         )}
       >
-        <div className="w-20" aria-hidden />
+        <div className="sticky left-0 z-40 w-20 bg-white" aria-hidden />
         <div
           className={cn(
             CALENDAR_GRID.column,
-            "flex h-12 items-center justify-center px-3 py-2 sm:h-14 sm:justify-start",
-            isToday && "bg-[#F6F1FE]",
+            "flex h-12 items-center justify-center bg-white px-3 py-2 sm:h-14 sm:justify-start",
           )}
         >
           <span className="block text-[10px] font-semibold uppercase tracking-wide text-grey-tertiary-normal">
@@ -84,7 +83,7 @@ export function DayCalendarView({
             Loading appointments…
           </div>
         ) : (
-          <div className="relative overflow-hidden" style={{ minHeight: GRID_HEIGHT }}>
+          <div className="relative" style={{ minHeight: GRID_HEIGHT }}>
             {currentTimeTop !== null ? (
               <CalendarCurrentTimeIndicator topPx={currentTimeTop} />
             ) : null}
@@ -106,16 +105,6 @@ export function DayCalendarView({
           </div>
         )}
       </div>
-      {!isLoading && appointments.length === 0 ? (
-        <p
-          className={cn(
-            "px-4 py-3 text-center text-sm text-muted-foreground",
-            CALENDAR_GRID.footer,
-          )}
-        >
-          No appointments this day. Click a time slot to schedule one.
-        </p>
-      ) : null}
     </div>
   );
 }

@@ -3,12 +3,27 @@
 import * as React from "react"
 
 import { cn } from "@/lib/utils"
+import {
+  DATA_TABLE_CELL_CLASS,
+  DATA_TABLE_HEAD_CELL_CLASS,
+  DATA_TABLE_ROW_CLASS,
+} from "@/lib/design/data-table-tokens"
 
-function Table({ className, ...props }: React.ComponentProps<"table">) {
+function Table({
+  className,
+  containerClassName,
+  ...props
+}: React.ComponentProps<"table"> & {
+  /** Defaults to overflow-x-auto; pass "" / overflow-visible when a parent owns scrolling (sticky headers). */
+  containerClassName?: string;
+}) {
   return (
     <div
       data-slot="table-container"
-      className="relative w-full overflow-x-auto"
+      className={cn(
+        "relative w-full",
+        containerClassName ?? "overflow-x-auto",
+      )}
     >
       <table
         data-slot="table"
@@ -23,7 +38,7 @@ function TableHeader({ className, ...props }: React.ComponentProps<"thead">) {
   return (
     <thead
       data-slot="table-header"
-      className={cn("[&_tr]:border-b [&_tr]:border-border", className)}
+      className={cn("[&_tr]:border-b-0", className)}
       {...props}
     />
   )
@@ -33,7 +48,7 @@ function TableBody({ className, ...props }: React.ComponentProps<"tbody">) {
   return (
     <tbody
       data-slot="table-body"
-      className={cn("[&_tr:last-child]:border-0", className)}
+      className={cn("[&_tr:last-child]:border-b-0", className)}
       {...props}
     />
   )
@@ -44,7 +59,7 @@ function TableFooter({ className, ...props }: React.ComponentProps<"tfoot">) {
     <tfoot
       data-slot="table-footer"
       className={cn(
-        "border-t border-border/80 bg-muted/30 font-medium [&>tr]:last:border-b-0",
+        "border-t border-[#BC9BF6] bg-[#F3F0F9] font-medium [&>tr]:last:border-b-0",
         className
       )}
       {...props}
@@ -56,10 +71,7 @@ function TableRow({ className, ...props }: React.ComponentProps<"tr">) {
   return (
     <tr
       data-slot="table-row"
-      className={cn(
-        "h-[var(--table-row-height)] border-b border-border transition-colors duration-100 hover:bg-table-row-hover has-[[aria-expanded=true]]:bg-table-row-hover data-[state=selected]:bg-primary-tint/40",
-        className
-      )}
+      className={cn(DATA_TABLE_ROW_CLASS, className)}
       {...props}
     />
   )
@@ -70,7 +82,8 @@ function TableHead({ className, ...props }: React.ComponentProps<"th">) {
     <th
       data-slot="table-head"
       className={cn(
-        "h-9 px-4 text-left align-middle text-table-header whitespace-nowrap [&:has([role=checkbox])]:pr-0 [&:has([role=checkbox])]:pl-3",
+        DATA_TABLE_HEAD_CELL_CLASS,
+        "[&:has([role=checkbox])]:pr-0 [&:has([role=checkbox])]:pl-3",
         className
       )}
       {...props}
@@ -83,7 +96,8 @@ function TableCell({ className, ...props }: React.ComponentProps<"td">) {
     <td
       data-slot="table-cell"
       className={cn(
-        "px-4 py-3 align-middle text-table-cell whitespace-nowrap [&:has([role=checkbox])]:pr-0 [&:has([role=checkbox])]:pl-3",
+        DATA_TABLE_CELL_CLASS,
+        "[&:has([role=checkbox])]:pr-0 [&:has([role=checkbox])]:pl-3",
         className
       )}
       {...props}

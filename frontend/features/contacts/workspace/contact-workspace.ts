@@ -199,6 +199,11 @@ export function isConversationsInboxPath(pathname: string): boolean {
   return pathname === "/business/conversations";
 }
 
+/** Appointments calendar — full-bleed white canvas (PandaCue calendar). */
+export function isAppointmentsCalendarPath(pathname: string): boolean {
+  return pathname === "/business/appointments" || pathname.startsWith("/business/appointments/");
+}
+
 /**
  * Desktop xl+ — list, thread, and contact sidebar (matches contact workspace spacing).
  */

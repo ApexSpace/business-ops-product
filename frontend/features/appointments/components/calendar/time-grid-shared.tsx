@@ -14,7 +14,6 @@ import {
 } from "@/features/calendars/utils/calendar-dates";
 import {
   dateKeyFromUtcIso,
-  isTodayDateKey,
 } from "@/features/calendars/utils/timezone";
 import { CALENDAR_GRID } from "@/features/calendars/utils/calendar-grid-styles";
 import { WorkingHoursOverlays } from "@/features/appointments/components/calendar/working-hours-overlays";
@@ -61,7 +60,7 @@ export function TimeGridColumn({
   calendars,
   businessTimezone,
   staffUserId,
-  highlightToday = true,
+  highlightToday: _highlightToday = true,
   onAppointmentClick,
   onAppointmentMoveStart,
   onAppointmentResizeStart,
@@ -108,11 +107,8 @@ export function TimeGridColumn({
   return (
     <div
       className={cn(
-        "relative min-w-0 cursor-pointer overflow-hidden",
+        "relative min-w-0 cursor-pointer overflow-hidden bg-white",
         CALENDAR_GRID.column,
-        highlightToday &&
-          isTodayDateKey(dateKey, viewTimezone) &&
-          "bg-[#F6F1FE]/40",
       )}
       style={{ height: GRID_HEIGHT }}
       onClick={handleColumnClick}
@@ -122,7 +118,7 @@ export function TimeGridColumn({
         <div
           key={minutes}
           className={cn(
-            "pointer-events-none w-full hover:bg-muted/30",
+            "pointer-events-none w-full hover:bg-[#F6F1FE]/40",
             minutes % 60 === 45 ? CALENDAR_GRID.slotHour : CALENDAR_GRID.slot,
           )}
           style={{ height: CALENDAR_SLOT_HEIGHT_PX }}
@@ -152,7 +148,7 @@ export function TimeGridColumn({
 export function TimeGridGutter() {
   const slotLabels = getTimeSlotLabels();
   return (
-    <div className={CALENDAR_GRID.timeGutter}>
+    <div className={cn(CALENDAR_GRID.timeGutter, "bg-white")}>
       {slotLabels.map((minutes) => {
         const isHourStart = minutes % 60 === 0;
         const isHourEnd = minutes % 60 === 45;
@@ -160,8 +156,9 @@ export function TimeGridGutter() {
           <div
             key={minutes}
             className={cn(
-              "box-border flex items-start justify-center px-0 pt-2 text-center text-[11px] font-medium leading-none text-[#6B6B6B]",
-              isHourEnd ? CALENDAR_GRID.slotHour : CALENDAR_GRID.slot,
+              "box-border flex items-start justify-center bg-transparent px-0 pt-2 text-center text-[11px] font-medium leading-none text-[#6B6B6B]",
+              // Hour separators only — no 15-min grid through the time labels
+              isHourEnd ? CALENDAR_GRID.slotHour : "border-b border-transparent",
             )}
             style={{ height: CALENDAR_SLOT_HEIGHT_PX }}
           >

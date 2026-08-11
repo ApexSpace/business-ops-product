@@ -3,10 +3,11 @@
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Plus, Printer, Trash2 } from "lucide-react";
+import { Download, Plus, Printer, Trash2, Upload } from "lucide-react";
 import { DataTable, type DataTableColumn } from "@/components/data-display/data-table";
 import { EntityDetailDrawer } from "@/components/layout/entity-detail-drawer";
 import { EntityWorkspaceLayout } from "@/components/layout/entity-workspace-layout";
+import { ListPrimaryAction } from "@/components/layout/list-primary-action";
 import { ContactFormDialog } from "@/features/contacts/components/contact-form-dialog";
 import {
   ContactDetailPanel,
@@ -21,6 +22,8 @@ import { ListPagination } from "@/components/ui/list-pagination";
 import { ProfileAvatar } from "@/components/ui/profile-avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ContactMergeDialog } from "@/features/contacts/components/contact-merge-dialog";
+import { DataImportWizard } from "@/features/data-io/components/data-import-wizard";
+import { downloadDataExport } from "@/features/data-io/api/data-io.api";
 import { useContactDetail } from "@/features/contacts/hooks/use-contact-detail";
 import { useContactsList } from "@/features/contacts/hooks/use-contacts-list";
 import { useContactStaffPermissions } from "@/features/contacts/hooks/use-contact-staff-permissions";
@@ -36,6 +39,7 @@ import {
   invalidateContactPicker,
 } from "@/lib/query/invalidation";
 import type { Contact } from "@/features/contacts/types";
+import { toast } from "sonner";
 
 const LIST_SCHEMA = {
   page: { default: "1" },
@@ -63,6 +67,8 @@ function BusinessContactsPageContent() {
   const debouncedSearch = useDebouncedValue(params.search);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [mergeOpen, setMergeOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [noteComposerOpen, setNoteComposerOpen] = useState(false);
   const createFromQuery = searchParams.get("action") === "create";
   const panelActionsRef = useRef<ContactDetailPanelActions | null>(null);
@@ -196,21 +202,75 @@ function BusinessContactsPageContent() {
               <Button
                 type="button"
                 size="icon-sm"
+                variant="outline"
                 className="sm:hidden"
-                aria-label="Add contact"
-                onClick={() => setDialogOpen(true)}
+                aria-label="Import contacts"
+                onClick={() => setImportOpen(true)}
               >
-                <Plus className="size-4" />
+                <Upload className="size-4" />
               </Button>
               <Button
                 type="button"
                 size="sm"
+                variant="outline"
                 className="hidden shrink-0 sm:inline-flex"
-                onClick={() => setDialogOpen(true)}
+                onClick={() => setImportOpen(true)}
               >
-                <Plus className="mr-1.5 size-4" />
-                Add contact
+                <Upload className="mr-1.5 size-4" />
+                Import
               </Button>
+              <Button
+                type="button"
+                size="icon-sm"
+                variant="outline"
+                className="sm:hidden"
+                aria-label="Export contacts"
+                disabled={exporting}
+                onClick={async () => {
+                  try {
+                    setExporting(true);
+                    await downloadDataExport(
+                      "CONTACT",
+                      debouncedSearch || undefined,
+                    );
+                    toast.success("Contacts exported");
+                  } catch {
+                    toast.error("Export failed");
+                  } finally {
+                    setExporting(false);
+                  }
+                }}
+              >
+                <Download className="size-4" />
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="hidden shrink-0 sm:inline-flex"
+                disabled={exporting}
+                onClick={async () => {
+                  try {
+                    setExporting(true);
+                    await downloadDataExport(
+                      "CONTACT",
+                      debouncedSearch || undefined,
+                    );
+                    toast.success("Contacts exported");
+                  } catch {
+                    toast.error("Export failed");
+                  } finally {
+                    setExporting(false);
+                  }
+                }}
+              >
+                <Download className="mr-1.5 size-4" />
+                Export
+              </Button>
+              <ListPrimaryAction
+                label="New Contact"
+                onClick={() => setDialogOpen(true)}
+              />
             </>
           ) : null
         }
@@ -351,6 +411,19 @@ function BusinessContactsPageContent() {
           }}
         />
       ) : null}
+
+      <DataImportWizard
+        open={importOpen}
+        onOpenChange={(open) => {
+          setImportOpen(open);
+          if (!open) {
+            void invalidateContactLists(queryClient);
+            void invalidateContactPicker(queryClient);
+          }
+        }}
+        entityType="CONTACT"
+        title="Import contacts"
+      />
     </>
   );
 }

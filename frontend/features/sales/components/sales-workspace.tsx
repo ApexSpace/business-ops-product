@@ -10,7 +10,6 @@ import {
   Gift,
   Package,
   Pencil,
-  Plus,
   ShoppingBag,
   Tag,
   Trash2,
@@ -22,6 +21,8 @@ import { ListPagination } from "@/components/ui/list-pagination";
 import { EntityDetailDrawer } from "@/components/layout/entity-detail-drawer";
 import { EntityDetailFooter } from "@/components/layout/entity-detail-footer";
 import { EntityWorkspaceLayout } from "@/components/layout/entity-workspace-layout";
+import { ListFiltersPopover } from "@/components/layout/list-filters-popover";
+import { ListPrimaryAction } from "@/components/layout/list-primary-action";
 import { SearchInput } from "@/components/forms/search-input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -49,6 +50,7 @@ import {
   WORKSPACE_ACTIVE_ROW_CLASS,
   WORKSPACE_TABLE_CLASS,
 } from "@/lib/design/workspace-tokens";
+import { DATA_TABLE_STATUS_CLASS } from "@/lib/design/data-table-tokens";
 import { useEntitySelection } from "@/lib/routing/use-entity-selection";
 import { cn } from "@/lib/utils";
 import { queryKeys } from "@/lib/query/keys";
@@ -479,31 +481,21 @@ export function SalesWorkspace() {
     () => [
       {
         id: "saleNumber",
-        header: "Sale",
+        header: "Sale Number",
         sortable: true,
         sortValue: (row) => row.saleNumber,
-        cell: (row) => <span className="font-medium">{row.saleNumber}</span>,
-      },
-      {
-        id: "status",
-        header: "Status",
-        cell: (row) => (
-          <Badge
-            variant={
-              row.status === "VOID"
-                ? "destructive"
-                : row.isOpen
-                  ? "default"
-                  : "secondary"
-            }
-          >
-            {row.status === "VOID"
-              ? "Void"
-              : row.isOpen
-                ? "Open"
-                : "Closed"}
-          </Badge>
-        ),
+        cell: (row) => {
+          // API returns "Sale #36"; Figma shows a single hash + digits (#36).
+          const digits = row.saleNumber.match(/(\d+)\s*$/)?.[1];
+          const display = digits
+            ? `#${digits}`
+            : `#${row.saleNumber.replace(/^#+\s*/, "").trim()}`;
+          return (
+            <span className="text-[14px] font-bold leading-[21px] text-[#4A4A4A]">
+              {display}
+            </span>
+          );
+        },
       },
       {
         id: "client",
@@ -513,14 +505,36 @@ export function SalesWorkspace() {
         cell: (row) => row.contact?.label ?? "Client",
       },
       {
+        id: "date",
+        header: "Date",
+        sortable: true,
+        sortValue: (row) => row.issueDate,
+        cell: (row) => {
+          const raw = row.issueDate?.slice(0, 7);
+          return raw || "—";
+        },
+      },
+      {
         id: "total",
         header: "Total",
         sortable: true,
         sortValue: (row) => parseFloat(row.totalAmount),
-        className: "text-right whitespace-nowrap",
         cell: (row) => (
           <span className="tabular-nums">
             {formatMoney(parseFloat(row.totalAmount))}
+          </span>
+        ),
+      },
+      {
+        id: "status",
+        header: "Status",
+        cell: (row) => (
+          <span className={DATA_TABLE_STATUS_CLASS}>
+            {row.status === "VOID"
+              ? "Void"
+              : row.isOpen
+                ? "Open"
+                : "Closed"}
           </span>
         ),
       },
@@ -560,43 +574,23 @@ export function SalesWorkspace() {
               setListSearch(value);
               setPage(1);
             }}
-            placeholder="Search client or sale…"
-            className="min-w-0 flex-1"
+            placeholder="Search"
           />
         }
         filters={
-          <SearchableSelect
-            items={statusFilterItems}
+          <ListFiltersPopover
+            label="Status"
+            options={statusFilterItems}
             value={statusFilter}
             onValueChange={(v) => {
               setStatusFilter(v as StatusFilter);
               setPage(1);
             }}
-            placeholder="Status"
           />
         }
         actions={
           canCheckout ? (
-            <>
-              <Button
-                type="button"
-                size="icon-sm"
-                className="sm:hidden"
-                onClick={openNewSale}
-                aria-label="New sale"
-              >
-                <Plus className="size-4" />
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                className="hidden shrink-0 sm:inline-flex"
-                onClick={openNewSale}
-              >
-                <Plus className="mr-1.5 size-4" />
-                New sale
-              </Button>
-            </>
+            <ListPrimaryAction label="New Checkout" onClick={openNewSale} />
           ) : null
         }
         footer={
@@ -616,7 +610,7 @@ export function SalesWorkspace() {
           data={sales}
           getRowId={(row) => row.id}
           isLoading={listLoading}
-          density="compact"
+          density="default"
           activeRowId={selectedId}
           onRowClick={(row) => {
             setSaleEditMode(false);
@@ -627,13 +621,10 @@ export function SalesWorkspace() {
             selectedId === row.id ? WORKSPACE_ACTIVE_ROW_CLASS : undefined
           }
           emptyTitle="No sales yet"
-          emptyDescription="Create a new sale to get started."
+          emptyDescription="Create a new checkout to get started."
           emptyAction={
             canCheckout ? (
-              <Button size="sm" onClick={openNewSale}>
-                <Plus className="mr-1.5 size-4" />
-                New sale
-              </Button>
+              <ListPrimaryAction label="New Checkout" onClick={openNewSale} />
             ) : undefined
           }
           className={WORKSPACE_TABLE_CLASS}
@@ -763,7 +754,7 @@ export function SalesWorkspace() {
       <Dialog open={newSaleOpen} onOpenChange={setNewSaleOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>New sale</DialogTitle>
+            <DialogTitle>New Checkout</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <SearchableSelect

@@ -21,7 +21,10 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
-import { WORKSPACE_TABLE_ROW_HOVER_CLASS } from "@/lib/design/workspace-tokens";
+import {
+  DATA_TABLE_HEADER_CLASS,
+  DATA_TABLE_SHELL_CLASS,
+} from "@/lib/design/data-table-tokens";
 import { DataTableColumnHeader } from "@/components/data-display/data-table-column-header";
 import { EmptyState } from "@/components/data-display/empty-state";
 
@@ -158,138 +161,136 @@ export function DataTable<T>({
 
   return (
     <div
-      className={cn(
-        "overflow-hidden rounded-xl border border-border bg-card shadow-elevation-xs",
-        className,
-      )}
+      className={cn(DATA_TABLE_SHELL_CLASS, className)}
       style={
         isCompact
-          ? ({ "--table-row-height": "var(--table-row-height-compact)" } as React.CSSProperties)
-          : undefined
+          ? ({ "--table-row-height": "3.5rem" } as React.CSSProperties)
+          : ({ "--table-row-height": "5rem" } as React.CSSProperties)
       }
     >
       {toolbar ? (
-        <div className="border-b border-border px-3.5 py-3">
+        <div className="shrink-0 border-b border-[#F3F0F9] px-4 py-3">
           {toolbar}
         </div>
       ) : null}
-      <Table>
-        <TableHeader className="sticky top-0 z-10 bg-muted/30 supports-[backdrop-filter]:bg-muted/40">
-          {table.getHeaderGroups().map((headerGroup) => (
-            <TableRow
-              key={headerGroup.id}
-              className="h-9 border-b border-border hover:bg-transparent"
-            >
-              {headerGroup.headers.map((header) => {
-                const sorted = header.column.getIsSorted();
-                return (
-                  <TableHead
-                    key={header.id}
-                    className={cn(
-                      header.column.id === "actions" && "w-[1%] text-right",
-                      (
-                        header.column.columnDef.meta as
-                          | { className?: string }
-                          | undefined
-                      )?.className,
-                    )}
-                  >
-                    {header.isPlaceholder ? null : header.column.getCanSort() ? (
-                      <DataTableColumnHeader
-                        title={String(header.column.columnDef.header)}
-                        sorted={sorted || false}
-                        onSort={header.column.getToggleSortingHandler()}
-                      />
-                    ) : (
-                      flexRender(
-                        header.column.columnDef.header,
-                        header.getContext(),
-                      )
-                    )}
-                  </TableHead>
-                );
-              })}
-            </TableRow>
-          ))}
-        </TableHeader>
-        <TableBody>
-          {isLoading ? (
-            Array.from({ length: SKELETON_ROWS }).map((_, i) => (
-              <TableRow key={`skeleton-${i}`}>
-                {Array.from({ length: colSpan }).map((__, j) => (
-                  <TableCell key={j}>
-                    <Skeleton className="h-4 w-full max-w-[200px]" />
-                  </TableCell>
-                ))}
-              </TableRow>
-            ))
-          ) : table.getRowModel().rows.length === 0 ? (
-            <TableRow className="hover:bg-transparent">
-              <TableCell colSpan={colSpan} className="p-0">
-                <EmptyState
-                  title={emptyTitle}
-                  description={emptyDescription}
-                  action={emptyAction}
-                />
-              </TableCell>
-            </TableRow>
-          ) : (
-            table.getRowModel().rows.map((row) => (
+      <div className="min-h-0 flex-1 overflow-auto">
+        <Table containerClassName="overflow-visible">
+          <TableHeader className={DATA_TABLE_HEADER_CLASS}>
+            {table.getHeaderGroups().map((headerGroup) => (
               <TableRow
-                key={row.id}
-                data-state={
-                  row.getIsSelected() || activeRowId === row.id
-                    ? "selected"
-                    : undefined
-                }
-                tabIndex={onRowClick ? 0 : undefined}
-                role={onRowClick ? "button" : undefined}
-                className={cn(
-                  onRowClick &&
-                    "cursor-pointer hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset",
-                  WORKSPACE_TABLE_ROW_HOVER_CLASS,
-                  getRowClassName?.(row.original),
-                )}
-                onClick={(event) => {
-                  if (!onRowClick) return;
-                  const target = event.target as HTMLElement;
-                  if (
-                    target.closest(
-                      "a,button,input,textarea,select,label,[role='checkbox'],[data-row-click-ignore='true']",
-                    )
-                  ) {
-                    return;
-                  }
-                  onRowClick(row.original);
-                }}
-                onKeyDown={(event) => {
-                  if (!onRowClick) return;
-                  if (event.key === "Enter" || event.key === " ") {
-                    event.preventDefault();
-                    onRowClick(row.original);
-                  }
-                }}
+                key={headerGroup.id}
+                className="h-[59px] border-b-0 bg-[#F3F0F9] hover:bg-[#F3F0F9] data-[state=selected]:bg-[#F3F0F9]"
               >
-                {row.getVisibleCells().map((cell) => (
-                  <TableCell
-                    key={cell.id}
-                    className={cn(
-                      cell.column.id === "actions" && "text-right",
-                      (
-                        cell.column.columnDef.meta as
-                          | { className?: string }
-                          | undefined
-                      )?.className,
-                    )}
-                  >
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </TableCell>
-                ))}
+                {headerGroup.headers.map((header) => {
+                  const sorted = header.column.getIsSorted();
+                  return (
+                    <TableHead
+                      key={header.id}
+                      className={cn(
+                        header.column.id === "actions" && "w-[1%] text-right",
+                        (
+                          header.column.columnDef.meta as
+                            | { className?: string }
+                            | undefined
+                        )?.className,
+                      )}
+                    >
+                      {header.isPlaceholder ? null : header.column.getCanSort() ? (
+                        <DataTableColumnHeader
+                          title={String(header.column.columnDef.header)}
+                          sorted={sorted || false}
+                          onSort={header.column.getToggleSortingHandler()}
+                        />
+                      ) : (
+                        flexRender(
+                          header.column.columnDef.header,
+                          header.getContext(),
+                        )
+                      )}
+                    </TableHead>
+                  );
+                })}
               </TableRow>
-            ))
-          )}
-        </TableBody>
-      </Table>
+            ))}
+          </TableHeader>
+          <TableBody>
+            {isLoading ? (
+              Array.from({ length: SKELETON_ROWS }).map((_, i) => (
+                <TableRow key={`skeleton-${i}`}>
+                  {Array.from({ length: colSpan }).map((__, j) => (
+                    <TableCell key={j}>
+                      <Skeleton className="h-4 w-full max-w-[200px]" />
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
+            ) : table.getRowModel().rows.length === 0 ? (
+              <TableRow className="hover:bg-transparent">
+                <TableCell colSpan={colSpan} className="p-0">
+                  <EmptyState
+                    title={emptyTitle}
+                    description={emptyDescription}
+                    action={emptyAction}
+                  />
+                </TableCell>
+              </TableRow>
+            ) : (
+              table.getRowModel().rows.map((row) => (
+                <TableRow
+                  key={row.id}
+                  data-state={
+                    row.getIsSelected() || activeRowId === row.id
+                      ? "selected"
+                      : undefined
+                  }
+                  tabIndex={onRowClick ? 0 : undefined}
+                  role={onRowClick ? "button" : undefined}
+                  className={cn(
+                    onRowClick &&
+                      "cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7E3BED]/40 focus-visible:ring-inset",
+                    getRowClassName?.(row.original),
+                  )}
+                  onClick={(event) => {
+                    if (!onRowClick) return;
+                    const target = event.target as HTMLElement;
+                    if (
+                      target.closest(
+                        "a,button,input,textarea,select,label,[role='checkbox'],[data-row-click-ignore='true']",
+                      )
+                    ) {
+                      return;
+                    }
+                    onRowClick(row.original);
+                  }}
+                  onKeyDown={(event) => {
+                    if (!onRowClick) return;
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      onRowClick(row.original);
+                    }
+                  }}
+                >
+                  {row.getVisibleCells().map((cell) => (
+                    <TableCell
+                      key={cell.id}
+                      className={cn(
+                        cell.column.id === "actions" && "text-right",
+                        (
+                          cell.column.columnDef.meta as
+                            | { className?: string }
+                            | undefined
+                        )?.className,
+                      )}
+                    >
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   );
 }

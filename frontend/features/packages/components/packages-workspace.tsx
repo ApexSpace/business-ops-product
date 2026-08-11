@@ -11,6 +11,7 @@ import { DataTable } from "@/components/data-display/data-table";
 import { ListPagination } from "@/components/ui/list-pagination";
 import { EntityDetailDrawer } from "@/components/layout/entity-detail-drawer";
 import { EntityWorkspaceLayout } from "@/components/layout/entity-workspace-layout";
+import { ListPrimaryAction } from "@/components/layout/list-primary-action";
 import { SearchInput } from "@/components/forms/search-input";
 import { SearchableSelect } from "@/components/forms/searchable-select";
 import { Badge } from "@/components/ui/badge";
@@ -380,10 +381,10 @@ export function PackagesWorkspace() {
               Settings
             </Button>
             {canManage ? (
-              <Button size="sm" onClick={() => setAddOpen(true)}>
-                <Plus className="mr-1.5 size-4" />
-                Add package
-              </Button>
+              <ListPrimaryAction
+                label="New Package"
+                onClick={() => setAddOpen(true)}
+              />
             ) : null}
           </>
         }

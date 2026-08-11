@@ -21,6 +21,7 @@ import { IntegrationResourceSyncProcessor } from './processors/integration-resou
 import { MetaResourceSyncProcessor } from './processors/meta-resource-sync.processor';
 import { AutomationStepProcessor } from '@app/modules/communications/automations/workers/processors/automation-step.processor';
 import { GenerateReportProcessor } from '@app/modules/reports/workers/processors/generate-report.processor';
+import { ProcessDataImportProcessor } from '@app/modules/platform/data-io/workers/processors/process-data-import.processor';
 import { SocialPublishProcessor } from '@app/modules/communications/social-planner/workers/processors/social-publish.processor';
 import {
   EMAIL_QUEUE,
@@ -32,6 +33,7 @@ import {
   JOB_CLEANUP_ORPHAN_FILES,
   JOB_CLEANUP_WEBHOOK_EVENTS,
   JOB_GENERATE_REPORT,
+  JOB_PROCESS_DATA_IMPORT,
   JOB_INTEGRATION_RESOURCE_SYNC,
   JOB_META_RESOURCE_SYNC,
   JOB_PROCESS_META_WEBHOOK,
@@ -55,6 +57,7 @@ import type {
   CleanupOrphanFilesJobPayload,
   CleanupWebhookEventsJobPayload,
   GenerateReportJobPayload,
+  DataImportJobPayload,
   IntegrationResourceSyncJobPayload,
   MetaResourceSyncJobPayload,
   AutomationStepJobPayload,
@@ -89,6 +92,7 @@ export class QueueWorkersService implements OnModuleInit, OnModuleDestroy {
     private readonly twilioSmsWebhookProcessor: TwilioSmsWebhookProcessor,
     private readonly automationStepProcessor: AutomationStepProcessor,
     private readonly generateReportProcessor: GenerateReportProcessor,
+    private readonly processDataImportProcessor: ProcessDataImportProcessor,
     private readonly socialPublishProcessor: SocialPublishProcessor,
   ) {}
 
@@ -256,6 +260,11 @@ export class QueueWorkersService implements OnModuleInit, OnModuleDestroy {
       case JOB_GENERATE_REPORT:
         await this.generateReportProcessor.process(
           job.data as GenerateReportJobPayload,
+        );
+        return;
+      case JOB_PROCESS_DATA_IMPORT:
+        await this.processDataImportProcessor.process(
+          job.data as DataImportJobPayload,
         );
         return;
       default:

@@ -28,9 +28,9 @@ export const APPOINTMENT_POPUP_DESCRIPTION_CLASS =
 export const APPOINTMENT_POPUP_HEADER_ACTION_CLASS =
   "size-6 shrink-0 rounded-md border-0 bg-transparent p-0 text-[#BC9BF6] shadow-none hover:bg-[#7E3BED]/10 hover:text-[#7E3BED]";
 
-/** Header close — light grey rounded square (Figma) */
+/** Header close — Figma: 44×44, radius 8, padding 10, no fill */
 export const APPOINTMENT_POPUP_CLOSE_ACTION_CLASS =
-  "size-8 shrink-0 rounded-lg border-0 bg-[#F0F0F0] p-0 text-[#6B6B6B] shadow-none hover:bg-[#E9E9E9] hover:text-[#000000]";
+  "size-11 shrink-0 rounded-lg !border-0 !bg-transparent p-2.5 text-[#6B6B6B] !shadow-none hover:!bg-black/5 hover:text-[#000000]";
 
 /** Body: horizontal padding; full-bleed rows use negative margins */
 export const APPOINTMENT_POPUP_BODY_INSET_CLASS =
@@ -46,16 +46,15 @@ export const APPOINTMENT_POPUP_FIELD_CLASS =
   "h-11 min-h-11 rounded-lg border border-[#D1D1D1] bg-white px-3 text-[14px] shadow-none focus-visible:border-[#7E3BED] focus-visible:ring-2 focus-visible:ring-[#7E3BED]/20 data-[size=default]:h-11 data-[size=sm]:h-11";
 
 /**
- * Date/time row — Figma exact:
- * border-width: 1px 0; border-color: #BC9BF6; no side padding on the bar
- * (parent must not inset this row — borders hit drawer edges).
- * Cells carry the horizontal inset so text does not collide with edges.
+ * Date/time Subhead — Figma:
+ * height hug 52px, border-y 1px primary/300 (#BC9BF6), white fill,
+ * cells pad spacing/4 (y) · spacing/6 (x), gap 10, inline “On … / At …”.
  */
 export const APPOINTMENT_POPUP_DATETIME_ROW_CLASS =
-  "flex h-[63px] w-full items-stretch border-y border-x-0 border-solid border-[#BC9BF6] bg-[#F6F1FE]";
+  "flex h-[52px] w-full items-stretch gap-[10px] border-y border-x-0 border-solid border-[#BC9BF6] bg-white";
 
 export const APPOINTMENT_POPUP_DATETIME_CELL_CLASS =
-  "flex h-full flex-1 flex-col justify-center px-4 text-left";
+  "flex h-full min-w-0 flex-1 items-center px-[var(--spacing-6)] py-[var(--spacing-4)] text-left";
 
 /** Status row — padded; not full-bleed */
 export const APPOINTMENT_POPUP_STATUS_ROW_CLASS =

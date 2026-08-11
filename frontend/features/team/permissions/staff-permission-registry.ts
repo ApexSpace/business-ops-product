@@ -641,6 +641,7 @@ export const SETTINGS_HREF_ACCESS: Record<string, SettingsHrefAccessRule> = {
   '/business/settings/billing': 'admin',
   '/business/settings/notifications': 'admin',
   '/business/settings/chatbots': 'admin',
+  '/business/settings/data': 'admin',
 };
 
 export function resolveSettingsHrefAccessRule(

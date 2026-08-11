@@ -43,9 +43,9 @@ export function DashboardNavbarIconButton({
       aria-pressed={active}
       className={cn(
         "inline-flex size-10 shrink-0 items-center justify-center rounded-lg",
-        "text-black-secondary-normal transition-colors hover:bg-black-secondary-normal/10",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black-secondary-normal/30",
-        active && "bg-black-secondary-normal/10",
+        "text-white transition-colors hover:bg-white/10",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40",
+        active && "bg-white/10",
         className,
       )}
       {...props}
@@ -86,8 +86,8 @@ export function DashboardNavbarActions({
   };
 
   return (
-    <div className={cn("flex h-10 shrink-0 items-center gap-6", className)}>
-      <div className="flex items-center gap-3">
+    <div className={cn("flex h-10 shrink-0 items-center gap-2 sm:gap-4 md:gap-6", className)}>
+      <div className="flex items-center gap-1 sm:gap-2 md:gap-3">
         {showApps ? (
           <DashboardNavbarIconButton
             label="Apps"
@@ -103,8 +103,8 @@ export function DashboardNavbarActions({
           aria-label="Settings"
           className={cn(
             "inline-flex size-10 shrink-0 items-center justify-center rounded-lg",
-            "text-black-secondary-normal transition-colors hover:bg-black-secondary-normal/10",
-            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black-secondary-normal/30",
+            "text-white transition-colors hover:bg-white/10",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40",
           )}
         >
           <Settings className="size-5" strokeWidth={1.75} />
@@ -115,8 +115,8 @@ export function DashboardNavbarActions({
           aria-label="Notifications"
           className={cn(
             "inline-flex size-10 shrink-0 items-center justify-center rounded-lg",
-            "text-black-secondary-normal transition-colors hover:bg-black-secondary-normal/10",
-            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black-secondary-normal/30",
+            "text-white transition-colors hover:bg-white/10",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40",
           )}
         >
           <Bell className="size-5" strokeWidth={1.75} />
@@ -128,27 +128,27 @@ export function DashboardNavbarActions({
           render={
             <Button
               variant="ghost"
-              className="flex h-10 items-center gap-3 rounded-lg bg-transparent px-1 py-0 hover:bg-black-secondary-normal/10"
+              className="flex h-10 items-center gap-2 rounded-lg bg-transparent px-1 py-0 text-white sm:gap-3 hover:bg-white/10 hover:text-white"
             />
           }
         >
           {businessName ? (
-            <div className="hidden max-w-[160px] text-right sm:block">
-              <p className="truncate text-caption leading-none text-black-secondary-normal/70">
+            <div className="hidden max-w-[160px] text-right md:block">
+              <p className="truncate text-caption leading-none text-white/70">
                 {businessName}
               </p>
-              <p className="mt-1 truncate text-body-small font-semibold leading-none text-black-secondary-normal">
+              <p className="mt-1 truncate text-body-small font-semibold leading-none text-white">
                 {displayName}
               </p>
             </div>
           ) : null}
           <Avatar size="lg" className="size-10">
-            <AvatarFallback className="bg-violet-primary-dark text-caption font-semibold text-white">
+            <AvatarFallback className="bg-violet-primary-darker text-caption font-semibold text-white">
               {initials}
             </AvatarFallback>
           </Avatar>
           <ChevronDown
-            className="size-5 text-black-secondary-normal"
+            className="size-5 text-white"
             strokeWidth={1.75}
           />
         </DropdownMenuTrigger>

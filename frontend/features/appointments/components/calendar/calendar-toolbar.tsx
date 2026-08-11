@@ -13,7 +13,9 @@ import {
   CALENDAR_TOOLBAR_DATE_TRIGGER_CLASS,
   CALENDAR_TOOLBAR_DIVIDER_CLASS,
   CALENDAR_TOOLBAR_NAV_BUTTON_CLASS,
+  CALENDAR_TOOLBAR_NAV_GROUP_CLASS,
   CALENDAR_TOOLBAR_OUTLINE_BUTTON_CLASS,
+  CALENDAR_TOOLBAR_TODAY_BUTTON_CLASS,
 } from "@/features/appointments/components/calendar/calendar-toolbar-tokens";
 import { Button } from "@/components/ui/button";
 import type { CalendarViewMode } from "@/features/calendars/utils/calendar-dates";
@@ -89,33 +91,36 @@ export function CalendarToolbar({
         className,
       )}
     >
-      {/* Figma Frame 15 — prev/next + date · gap 11–25px · h-44 */}
-      <div className="flex min-w-0 items-center gap-3 sm:gap-[25px]">
+      {/* Figma: < Today > + date frame · gaps 11px / 25px · h-44 */}
+      <div className="flex min-w-0 flex-wrap items-center gap-3 sm:gap-[25px]">
         <div
-          className="flex shrink-0 items-center gap-[11px]"
+          className={CALENDAR_TOOLBAR_NAV_GROUP_CLASS}
           role="group"
           aria-label="Navigate calendar dates"
         >
-          <Button
+          <button
             type="button"
-            variant="ghost"
-            size="icon"
             className={CALENDAR_TOOLBAR_NAV_BUTTON_CLASS}
             onClick={onPrevious}
             aria-label="Previous"
           >
-            <ChevronLeft className="size-5" strokeWidth={2} />
-          </Button>
+            <ChevronLeft className="size-4 shrink-0" strokeWidth={2.5} aria-hidden />
+          </button>
           <Button
             type="button"
-            variant="ghost"
-            size="icon"
+            className={CALENDAR_TOOLBAR_TODAY_BUTTON_CLASS}
+            onClick={onToday}
+          >
+            Today
+          </Button>
+          <button
+            type="button"
             className={CALENDAR_TOOLBAR_NAV_BUTTON_CLASS}
             onClick={onNext}
             aria-label="Next"
           >
-            <ChevronRight className="size-5" strokeWidth={2} />
-          </Button>
+            <ChevronRight className="size-4 shrink-0" strokeWidth={2.5} aria-hidden />
+          </button>
         </div>
 
         <CalendarDatePicker
@@ -132,7 +137,7 @@ export function CalendarToolbar({
               type="button"
               className={cn(
                 CALENDAR_TOOLBAR_DATE_TRIGGER_CLASS,
-                "max-w-[min(100%,240px)] sm:max-w-none",
+                "max-w-[min(100%,280px)] sm:max-w-none",
               )}
               aria-label={`${rangeLabel}. Open date picker`}
               aria-expanded={pickerOpen}
@@ -150,7 +155,7 @@ export function CalendarToolbar({
         />
       </div>
 
-      {/* Figma right cluster — Day/Week + Filter · gap 21px */}
+      {/* Figma right cluster — staff + filter + Day/Week · gap 21px */}
       <div className="flex min-w-0 flex-wrap items-center justify-end gap-3 sm:gap-[21px]">
         {showStaffSelector ? (
           <>
@@ -173,12 +178,12 @@ export function CalendarToolbar({
           </>
         ) : null}
 
-        <CalendarViewSwitcher value={view} onChange={onViewChange} />
-
         <CalendarFiltersPopover
           statusFilter={statusFilter}
           onStatusFilterChange={onStatusFilterChange}
         />
+
+        <CalendarViewSwitcher value={view} onChange={onViewChange} />
 
         {onOpenWaitlist ? (
           <WaitlistToolbarButton

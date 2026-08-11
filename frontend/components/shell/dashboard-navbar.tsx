@@ -30,8 +30,8 @@ interface DashboardNavbarProps {
 }
 
 /**
- * Full-bleed top navbar — attached to the viewport top (Figma Calendar / shell).
- * Not floating: no outer margin, no rounded card chrome.
+ * Full-bleed top navbar — attached to viewport edges.
+ * Solid Figma brand fill; logo/nav left, actions right.
  */
 export function DashboardNavbar({
   sections,
@@ -52,17 +52,22 @@ export function DashboardNavbar({
     <div className={cn("shrink-0", className)}>
       <header
         className={cn(
-          "shell-navbar-gradient flex h-[66px] w-full items-center",
+          "shell-navbar-surface flex w-full items-center rounded-none",
+          "h-[var(--shell-navbar-height)]",
           "px-4 sm:px-6 lg:px-10",
         )}
       >
-        <div className="mx-auto flex h-full w-full max-w-[1440px] items-center">
-          <div className="flex min-w-0 flex-1 items-center gap-4 lg:gap-8">
+        {/* Full-width edge-pinned row — do NOT center with max-width/mx-auto */}
+        <div className="flex h-full w-full min-w-0 items-center gap-2 sm:gap-3">
+          <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-4 lg:gap-8">
             <DashboardNavbarLogo productName={productName} logoUrl={logoUrl} />
-            <DashboardNavbarNav items={navItems} className="hidden xl:flex" />
+            <DashboardNavbarNav
+              items={navItems}
+              className="hidden min-w-0 xl:flex"
+            />
           </div>
 
-          <div className="flex shrink-0 items-center gap-1 sm:gap-2">
+          <div className="ml-auto flex shrink-0 items-center gap-0.5 sm:gap-1 md:gap-2">
             <DashboardNavbarIconButton
               label="Open menu"
               className="xl:hidden"
@@ -99,6 +104,7 @@ export function DashboardNavbar({
             <DashboardNavbarNav
               items={navItems}
               onNavigate={() => setMobileOpen(false)}
+              tone="default"
               className="h-auto flex-col items-stretch gap-1"
             />
             {showApps ? (

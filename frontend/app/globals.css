@@ -123,7 +123,8 @@
   --color-glass-panel-soft: var(--glass-panel-soft);
   --color-glass-border: var(--glass-border);
 
-  /* Figma palettes → Tailwind color utilities (e.g. bg-violet-primary-normal) */
+  /* Figma palettes -> Tailwind color utilities (e.g. bg-violet-primary-normal) */
+  --color-violet-primary-surface: var(--pc-violet-primary-surface);
   --color-violet-primary-light: var(--pc-violet-primary-light);
   --color-violet-primary-light-hover: var(--pc-violet-primary-light-hover);
   --color-violet-primary-light-active: var(--pc-violet-primary-light-active);
@@ -159,6 +160,7 @@
   --color-green-success-dark-active: var(--pc-green-success-dark-active);
   --color-green-success-darker: var(--pc-green-success-darker);
 
+  --radius-xs: calc(var(--radius) * 0.5);
   --radius-sm: calc(var(--radius) * 0.875);
   --radius-md: var(--radius);
   --radius-lg: var(--radius-control);
@@ -177,7 +179,7 @@
   --spacing-stack: var(--stack-gap);
 }
 
-/* ─── Light: PandaCue semantic tokens (mapped from Figma palettes in codesol-default-theme.css) ─── */
+/* --- Light: PandaCue semantic tokens (mapped from Figma palettes in codesol-default-theme.css) ??? */
 :root {
   --background: var(--cs-page);
   --foreground: var(--cs-ink);
@@ -232,16 +234,32 @@
   --control-border: var(--cs-control-border);
   --shell-sidebar-surface: var(--cs-shell-sidebar-surface);
   --shell-topbar-surface: var(--cs-shell-topbar-surface);
+  --shell-navbar-surface: var(--cs-shell-navbar-surface);
+  --shell-navbar-foreground: var(--cs-shell-navbar-foreground);
+  --shell-navbar-height: var(--cs-shell-navbar-height);
+  --shell-navbar-tab-height: var(--cs-shell-navbar-tab-height);
+  --shell-navbar-tab-padding-y: var(--cs-shell-navbar-tab-padding-y);
+  --shell-navbar-tab-padding-x: var(--cs-shell-navbar-tab-padding-x);
+  --shell-navbar-tab-radius: var(--cs-shell-navbar-tab-radius);
+  --shell-navbar-tab-gap: var(--cs-shell-navbar-tab-gap);
+  --shell-navbar-tab-underline-width: var(--cs-shell-navbar-tab-underline-width);
+  --shell-navbar-tab-underline-height: var(--cs-shell-navbar-tab-underline-height);
   --glass-blur: 18px;
   --glass-blur-strong: 26px;
   --radius: 0.5rem;
   --radius-card: 12px;
   --radius-control: 7px;
   --radius-nav: 7px;
+  /* Figma radius/radius/xs — 4px when --radius is 8px */
+  --radius-xs: 0.25rem;
+  /* Figma spacing/spacing scale (4px base): /2=8, /4=16, /6=24 */
+  --spacing-2: 0.5rem;
+  --spacing-4: 1rem;
+  --spacing-6: 1.5rem;
   --sidebar-width: 10.75rem;
   --sheet-width: 400px;
-  --table-row-height: 2.75rem;
-  --table-row-height-compact: 2.375rem;
+  --table-row-height: 5rem;
+  --table-row-height-compact: 3.5rem;
   --control-height: 2rem;
   --control-height-sm: var(--control-height);
   --page-padding-x: 1rem;
@@ -271,7 +289,7 @@
   --sidebar-ring: var(--cs-blue);
 }
 
-/* ─── Dark: PandaCue violet / grey variants ─── */
+/* --- Dark: PandaCue violet / grey variants ??? */
 .dark {
   --background: var(--cs-page);
   --foreground: var(--cs-ink);
@@ -326,6 +344,16 @@
   --control-border: var(--cs-control-border);
   --shell-sidebar-surface: var(--cs-shell-sidebar-surface);
   --shell-topbar-surface: var(--cs-shell-topbar-surface);
+  --shell-navbar-surface: var(--cs-shell-navbar-surface);
+  --shell-navbar-foreground: var(--cs-shell-navbar-foreground);
+  --shell-navbar-height: var(--cs-shell-navbar-height);
+  --shell-navbar-tab-height: var(--cs-shell-navbar-tab-height);
+  --shell-navbar-tab-padding-y: var(--cs-shell-navbar-tab-padding-y);
+  --shell-navbar-tab-padding-x: var(--cs-shell-navbar-tab-padding-x);
+  --shell-navbar-tab-radius: var(--cs-shell-navbar-tab-radius);
+  --shell-navbar-tab-gap: var(--cs-shell-navbar-tab-gap);
+  --shell-navbar-tab-underline-width: var(--cs-shell-navbar-tab-underline-width);
+  --shell-navbar-tab-underline-height: var(--cs-shell-navbar-tab-underline-height);
   --glass-blur: 18px;
   --glass-blur-strong: 24px;
   --shadow-xs-value: 0 1px 2px rgb(0 0 0 / 25%);
@@ -345,6 +373,7 @@
   --sidebar-border: var(--cs-navy-hover);
   --sidebar-ring: var(--cs-blue);
 }
+
 
 @media (min-width: 768px) {
   :root {
@@ -401,7 +430,7 @@
     @apply font-sans;
   }
 
-  /* Semantic aliases → closest Figma Montserrat styles */
+  /* Semantic aliases ? closest Figma Montserrat styles */
   h1,
   .text-page-title {
     @apply text-heading-5 text-foreground;
@@ -450,11 +479,11 @@
   }
 
   .text-table-header {
-    @apply text-caption uppercase tracking-wide text-foreground-subtle;
+    @apply text-[14px] font-bold leading-none tracking-normal text-[#5F2CB2];
   }
 
   .text-table-cell {
-    @apply text-body-small text-foreground;
+    @apply text-[14px] font-normal leading-[21px] text-[#4A4A4A];
   }
 
   .text-drawer-section {
@@ -516,15 +545,10 @@
     box-shadow: none;
   }
 
-  /* PandaCue dashboard navbar � Figma exact gradient */
-  .shell-navbar-gradient {
-    background-color: #f6f1fe;
-    background-image: var(
-      --shell-navbar-gradient,
-      linear-gradient(135deg, #f6f1fe 0%, #7e3bed 98.24%)
-    );
-    background-repeat: no-repeat;
-    background-size: 100% 100%;
+  /* Figma Dashboard Navbar — solid brand fill + light foreground */
+  .shell-navbar-surface {
+    background: var(--shell-navbar-surface);
+    color: var(--shell-navbar-foreground);
   }
 
   .glass-control {

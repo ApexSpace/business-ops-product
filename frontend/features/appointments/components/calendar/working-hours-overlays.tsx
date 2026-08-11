@@ -48,7 +48,7 @@ export function WorkingHoursOverlays({
         return (
           <div
             key={`${block.startMinutes}-${block.endMinutes}`}
-            className="pointer-events-none absolute inset-x-0 z-[2] bg-neutral-200/70 dark:bg-neutral-800/55"
+            className="pointer-events-none absolute inset-x-0 z-[2] bg-[#BC9BF6]/15 dark:bg-neutral-800/40"
             style={{ top, height }}
             aria-hidden
           />

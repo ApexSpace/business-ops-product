@@ -2,20 +2,26 @@ import type { CSSProperties } from "react";
 
 /** Shared workspace and entity drawer design tokens. */
 export const WORKSPACE_ACTIVE_ROW_CLASS =
-  "shadow-[inset_3px_0_0_0_var(--color-primary)]";
+  "shadow-[inset_3px_0_0_0_#7E3BED]";
 
-export const WORKSPACE_TABLE_ROW_HOVER_CLASS = "hover:bg-muted/50";
+export const WORKSPACE_TABLE_ROW_HOVER_CLASS = "hover:bg-[#F6F1FE]/60";
 
+/** Flush toolbar above Figma table — no card chrome */
 export const WORKSPACE_TOOLBAR_CLASS =
-  "rounded-none border-0 border-b bg-transparent p-3 shadow-none sm:px-4";
+  "rounded-none border-0 bg-transparent px-0 py-3 shadow-none sm:px-0";
 
 export const WORKSPACE_TOOLBAR_SURFACE_CLASS =
-  "flex flex-col gap-2 rounded-xl border border-border bg-card p-2 sm:p-3 shadow-elevation-xs";
+  "flex flex-col gap-2 rounded-[var(--radius-md)] border border-[#F3F0F9] bg-white p-2 sm:p-3";
 
-export const WORKSPACE_TABLE_CLASS = "rounded-none border-0 shadow-none";
+/**
+ * Applied on DataTable — keep empty so DATA_TABLE_SHELL_CLASS
+ * (radius/md + primary/200 border) is not overridden.
+ */
+export const WORKSPACE_TABLE_CLASS = "shadow-none";
 
+/** Workspace list surface — page white; table supplies its own border chrome */
 export const WORKSPACE_TABLE_CARD_CLASS =
-  "flex min-h-0 flex-col overflow-hidden rounded-xl border border-border bg-card shadow-elevation-xs";
+  "flex min-h-0 flex-col overflow-hidden rounded-none border-0 bg-white shadow-none";
 
 export const ENTITY_DRAWER_WIDTH_DEFAULT =
   "[--sheet-width:min(92vw,480px)]";

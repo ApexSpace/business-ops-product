@@ -8,17 +8,17 @@ export class ProductExportService {
   async exportCsv(businessId: string): Promise<string> {
     const products = await this.productRepository.findManyForExport(businessId);
     const header = [
-      'id',
-      'name',
-      'productType',
-      'categoryName',
-      'brand',
-      'unitPrice',
-      'sku',
-      'barcode',
-      'stockQuantity',
-      'trackInventory',
-      'status',
+      'ID',
+      'Name',
+      'Product type',
+      'Category',
+      'Brand',
+      'Unit price',
+      'SKU',
+      'Barcode',
+      'Stock quantity',
+      'Track inventory',
+      'Status',
     ];
 
     const rows = products.map((product) => [
@@ -35,11 +35,11 @@ export class ProductExportService {
       product.status,
     ]);
 
-    return [header.join(','), ...rows.map((row) => row.join(','))].join('\n');
+    return `\uFEFF${[header.join(','), ...rows.map((row) => row.join(','))].join('\r\n')}`;
   }
 
   private escapeCsv(value: string): string {
-    if (/[",\n]/.test(value)) {
+    if (/[",\n\r]/.test(value)) {
       return `"${value.replace(/"/g, '""')}"`;
     }
     return value;

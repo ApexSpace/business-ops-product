@@ -11,6 +11,7 @@ import { ListPagination } from "@/components/ui/list-pagination";
 import { EntityDetailDrawer } from "@/components/layout/entity-detail-drawer";
 import { EntityDetailFooter } from "@/components/layout/entity-detail-footer";
 import { EntityWorkspaceLayout } from "@/components/layout/entity-workspace-layout";
+import { ListPrimaryAction } from "@/components/layout/list-primary-action";
 import { SearchInput } from "@/components/forms/search-input";
 import { Button } from "@/components/ui/button";
 import {
@@ -311,6 +312,7 @@ export function GiftCardsWorkspace() {
               <Button
                 variant="outline"
                 size="sm"
+                className="h-11 rounded-[var(--radius-md)]"
                 onMouseEnter={prefetchSettings}
                 onFocus={prefetchSettings}
                 onClick={() => router.push("/business/gift-cards/settings")}
@@ -320,10 +322,10 @@ export function GiftCardsWorkspace() {
               </Button>
             ) : null}
             {canManage ? (
-              <Button size="sm" onClick={() => void openAdd()}>
-                <Plus className="mr-1.5 size-4" />
-                Add gift card
-              </Button>
+              <ListPrimaryAction
+                label="New Gift Card"
+                onClick={() => void openAdd()}
+              />
             ) : null}
           </>
         }
@@ -363,10 +365,10 @@ export function GiftCardsWorkspace() {
             emptyDescription="Create a gift card to get started."
             emptyAction={
               canManage ? (
-                <Button size="sm" onClick={() => void openAdd()}>
-                  <Plus className="mr-1.5 size-4" />
-                  Add gift card
-                </Button>
+                <ListPrimaryAction
+                  label="New Gift Card"
+                  onClick={() => void openAdd()}
+                />
               ) : undefined
             }
             className={WORKSPACE_TABLE_CLASS}
