@@ -15,11 +15,11 @@ export const CALENDAR_GRID = {
   /** Vertical separators between staff / day columns */
   column: "border-l border-[color:rgba(126,59,237,0.6)]",
   /**
-   * Time gutter — Figma 80px.
+   * Time gutter — Figma 80px; sticky on horizontal scroll.
    * Hour separators only (no 15-min grid through labels).
    */
   timeGutter:
-    "relative z-[1] w-20 shrink-0 border-r border-[color:rgba(126,59,237,0.6)] bg-white p-0",
+    "sticky left-0 z-20 w-20 shrink-0 border-r border-[color:rgba(126,59,237,0.6)] bg-white p-0",
   /** Horizontal sub-hour (15/30/45 min) lines — staff/day columns only */
   slot: "border-b border-[#BC9BF6]",
   /** Stronger divider at each full-hour boundary */

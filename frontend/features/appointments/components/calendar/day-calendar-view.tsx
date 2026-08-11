@@ -55,7 +55,7 @@ export function DayCalendarView({
           CALENDAR_GRID.headerRow,
         )}
       >
-        <div className="w-20" aria-hidden />
+        <div className="sticky left-0 z-40 w-20 bg-white" aria-hidden />
         <div
           className={cn(
             CALENDAR_GRID.column,
@@ -83,7 +83,7 @@ export function DayCalendarView({
             Loading appointments…
           </div>
         ) : (
-          <div className="relative overflow-hidden" style={{ minHeight: GRID_HEIGHT }}>
+          <div className="relative" style={{ minHeight: GRID_HEIGHT }}>
             {currentTimeTop !== null ? (
               <CalendarCurrentTimeIndicator topPx={currentTimeTop} />
             ) : null}

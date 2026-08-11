@@ -7,6 +7,7 @@ import { Download, Plus, Printer, Trash2, Upload } from "lucide-react";
 import { DataTable, type DataTableColumn } from "@/components/data-display/data-table";
 import { EntityDetailDrawer } from "@/components/layout/entity-detail-drawer";
 import { EntityWorkspaceLayout } from "@/components/layout/entity-workspace-layout";
+import { ListPrimaryAction } from "@/components/layout/list-primary-action";
 import { ContactFormDialog } from "@/features/contacts/components/contact-form-dialog";
 import {
   ContactDetailPanel,
@@ -266,24 +267,10 @@ function BusinessContactsPageContent() {
                 <Download className="mr-1.5 size-4" />
                 Export
               </Button>
-              <Button
-                type="button"
-                size="icon-sm"
-                className="sm:hidden"
-                aria-label="Add contact"
+              <ListPrimaryAction
+                label="New Contact"
                 onClick={() => setDialogOpen(true)}
-              >
-                <Plus className="size-4" />
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                className="hidden shrink-0 sm:inline-flex"
-                onClick={() => setDialogOpen(true)}
-              >
-                <Plus className="mr-1.5 size-4" />
-                Add contact
-              </Button>
+              />
             </>
           ) : null
         }

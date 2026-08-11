@@ -92,7 +92,7 @@ export function WeekCalendarView({
             style={{ gridTemplateColumns: gridTemplate }}
           >
             <div
-              className="shrink-0 border-b border-r border-[color:rgba(126,59,237,0.6)] bg-white"
+              className="sticky left-0 z-40 shrink-0 border-b border-r border-[color:rgba(126,59,237,0.6)] bg-white"
               style={{ width: CALENDAR_FIGMA_TIME_GUTTER_PX, height: 64 }}
               aria-hidden
             />
@@ -131,7 +131,7 @@ export function WeekCalendarView({
             </div>
           ) : (
             <div
-              className="relative overflow-hidden bg-white"
+              className="relative bg-white"
               style={{ minHeight: GRID_HEIGHT }}
             >
               {currentTimeTop !== null ? (

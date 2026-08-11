@@ -70,7 +70,7 @@ export function AppShell({
 
   if (useTopNavbar) {
     return (
-      <div className="app-shell-canvas flex h-svh min-h-0 flex-col overflow-hidden bg-background">
+      <div className="app-shell-canvas flex h-svh min-h-0 flex-col overflow-hidden bg-white">
         <CommandPaletteProvider
           enabled={showSearch}
           searchPlaceholder={searchPlaceholder}
@@ -86,8 +86,7 @@ export function AppShell({
             />
             <div
               className={cn(
-                "min-h-0 flex-1",
-                appointmentsCalendar ? "bg-white" : "bg-background",
+                "min-h-0 flex-1 bg-white",
                 fullBleedContent
                   ? "flex flex-col overflow-hidden p-0 [&>*]:min-h-0 [&>*]:flex-1"
                   : "overflow-y-auto overflow-x-hidden px-4 pb-4 pt-4 sm:px-6 sm:pb-6 sm:pt-4 lg:px-10 lg:pb-8 lg:pt-5",

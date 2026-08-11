@@ -18,6 +18,7 @@ import { ListPagination } from "@/components/ui/list-pagination";
 import { EntityDetailDrawer } from "@/components/layout/entity-detail-drawer";
 import { EntityDetailFooter } from "@/components/layout/entity-detail-footer";
 import { EntityWorkspaceLayout } from "@/components/layout/entity-workspace-layout";
+import { ListPrimaryAction } from "@/components/layout/list-primary-action";
 import { SearchInput } from "@/components/forms/search-input";
 import { SearchableSelect } from "@/components/forms/searchable-select";
 import { Button } from "@/components/ui/button";
@@ -340,10 +341,10 @@ export function MembershipsWorkspace() {
               <SlidersHorizontal className="size-4" />
             </Button>
             {canManage ? (
-              <Button size="sm" onClick={() => setAddOpen(true)}>
-                <Plus className="mr-1.5 size-4" />
-                New membership
-              </Button>
+              <ListPrimaryAction
+                label="New Membership"
+                onClick={() => setAddOpen(true)}
+              />
             ) : null}
           </>
         }

@@ -18,6 +18,7 @@ import { EntityDetailDrawer } from "@/components/layout/entity-detail-drawer";
 import { EntityDetailFooter } from "@/components/layout/entity-detail-footer";
 import { EntityDetailSection } from "@/components/layout/entity-detail-section";
 import { EntityWorkspaceLayout } from "@/components/layout/entity-workspace-layout";
+import { ListPrimaryAction } from "@/components/layout/list-primary-action";
 import { SearchInput } from "@/components/forms/search-input";
 import { DataTable, type DataTableColumn } from "@/components/data-display/data-table";
 import { ListPagination } from "@/components/ui/list-pagination";
@@ -343,24 +344,7 @@ export function ProductsWorkspace() {
               </Button>
             ) : null}
             {canManage ? (
-              <>
-                <Button
-                  size="icon-sm"
-                  className="sm:hidden"
-                  aria-label="Add product"
-                  onClick={openCreate}
-                >
-                  <Plus className="size-4" />
-                </Button>
-                <Button
-                  size="sm"
-                  className="hidden shrink-0 sm:inline-flex"
-                  onClick={openCreate}
-                >
-                  <Plus className="mr-1.5 size-4" />
-                  Add product
-                </Button>
-              </>
+              <ListPrimaryAction label="New Product" onClick={openCreate} />
             ) : null}
           </>
         }

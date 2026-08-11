@@ -258,8 +258,8 @@
   --spacing-6: 1.5rem;
   --sidebar-width: 10.75rem;
   --sheet-width: 400px;
-  --table-row-height: 2.75rem;
-  --table-row-height-compact: 2.375rem;
+  --table-row-height: 5rem;
+  --table-row-height-compact: 3.5rem;
   --control-height: 2rem;
   --control-height-sm: var(--control-height);
   --page-padding-x: 1rem;
@@ -479,11 +479,11 @@
   }
 
   .text-table-header {
-    @apply text-caption uppercase tracking-wide text-foreground-subtle;
+    @apply text-[14px] font-bold leading-none tracking-normal text-[#5F2CB2];
   }
 
   .text-table-cell {
-    @apply text-body-small text-foreground;
+    @apply text-[14px] font-normal leading-[21px] text-[#4A4A4A];
   }
 
   .text-drawer-section {

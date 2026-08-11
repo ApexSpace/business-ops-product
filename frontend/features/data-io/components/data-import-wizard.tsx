@@ -228,7 +228,12 @@ export function DataImportWizard({
           <div className="space-y-4">
             <div className="space-y-2">
               <Label>Coming from</Label>
-              <Select value={provider} onValueChange={setProvider}>
+              <Select
+                value={provider}
+                onValueChange={(value) => {
+                  if (value != null) setProvider(value);
+                }}
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -292,7 +297,9 @@ export function DataImportWizard({
                 <Label>Excel sheet</Label>
                 <Select
                   value={sheetName ?? sheetNames[0]}
-                  onValueChange={setSheetName}
+                  onValueChange={(value) => {
+                    if (value != null) setSheetName(value);
+                  }}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -311,9 +318,11 @@ export function DataImportWizard({
               <Label>Duplicate policy</Label>
               <Select
                 value={duplicatePolicy}
-                onValueChange={(v) =>
-                  setDuplicatePolicy(v as typeof duplicatePolicy)
-                }
+                onValueChange={(v) => {
+                  if (v != null) {
+                    setDuplicatePolicy(v as typeof duplicatePolicy);
+                  }
+                }}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -341,6 +350,7 @@ export function DataImportWizard({
                           : (m.target ?? "__skip__")
                     }
                     onValueChange={(value) => {
+                      if (value == null) return;
                       setMapping((prev) => {
                         const next = [...prev];
                         if (value === "__skip__") {
