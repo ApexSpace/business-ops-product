@@ -3,12 +3,14 @@
 import type { ReactNode } from "react";
 import { ImageIcon, Timer } from "lucide-react";
 import {
+  getAppointmentServiceSummaryLabel,
   getContactDisplayName,
   getAppointmentSyncIndicator,
   type Appointment,
 } from "@/features/appointments/schemas/appointment-profile";
 import {
-  APPOINTMENT_STATUS_COLORS,
+  formatAppointmentCardTimeRange,
+  getAppointmentCardTheme,
   getAppointmentEventStyle,
 } from "@/features/appointments/utils/appointment-calendar-styles";
 import { formatTime } from "@/features/calendars/utils/calendar-dates";
@@ -52,14 +54,19 @@ export function AppointmentEventCard({
   onResizeStart,
   isDragging = false,
 }: AppointmentEventCardProps) {
+  const theme = getAppointmentCardTheme(appointment);
   const { className: eventClass, style } = getAppointmentEventStyle(appointment);
-  const statusColors = APPOINTMENT_STATUS_COLORS[appointment.status];
-  const start = formatTime(appointment.startAt, timeZone);
-  const end = formatTime(appointment.endAt, timeZone);
   const contactName = getContactDisplayName(appointment.contact, {
     guestFirstName: appointment.guestFirstName,
     guestEmail: appointment.guestEmail,
   });
+  const serviceLabel =
+    getAppointmentServiceSummaryLabel(appointment) ?? appointment.title;
+  const timeRange = formatAppointmentCardTimeRange(
+    appointment.startAt,
+    appointment.endAt,
+    timeZone,
+  );
   const syncIndicator = getAppointmentSyncIndicator(appointment);
   const hasPhotos = Boolean(
     appointment.hasPhotos || (appointment.photoFileIds?.length ?? 0) > 0,
@@ -68,9 +75,13 @@ export function AppointmentEventCard({
   const interactive = Boolean(onClick);
   const draggable = Boolean(onMoveStart);
 
-  const showDetails =
-    variant === "grid" && (eventHeight === undefined || eventHeight >= 72);
-  const showSecondaryLine = variant === "grid";
+  /** Figma: service → client → time; hide lower lines on very short blocks */
+  const showClient =
+    variant === "grid" &&
+    Boolean(contactName) &&
+    (eventHeight === undefined || eventHeight >= 56);
+  const showTime =
+    variant === "grid" && (eventHeight === undefined || eventHeight >= 40);
 
   return (
     <div
@@ -107,16 +118,14 @@ export function AppointmentEventCard({
           : undefined
       }
       className={cn(
-        "relative flex h-full min-h-0 w-full min-w-0 flex-col overflow-hidden rounded-md border text-left",
-        variant === "month"
-          ? "gap-0.5 px-1.5 py-1 text-[10px]"
-          : "gap-0.5 px-2 py-1.5 text-xs",
+        // Figma Cards-Calendar: radius 8, border 1px, pad 8, gap 4, top-aligned
+        "relative flex h-full min-h-0 w-full min-w-0 flex-col overflow-hidden rounded-[8px] border border-solid text-left",
+        variant === "month" ? "gap-0.5 px-1.5 py-1" : "gap-1 p-2",
         interactive &&
           "cursor-pointer transition-[box-shadow,transform] hover:shadow-md active:scale-[0.995]",
         draggable && "cursor-grab active:cursor-grabbing",
-        isDragging && "opacity-80 ring-2 ring-primary/40",
+        isDragging && "opacity-80 ring-2 ring-[#7E3BED]/50",
         eventClass,
-        statusColors.text,
         className,
       )}
       style={style}
@@ -124,11 +133,11 @@ export function AppointmentEventCard({
       <div className="flex min-w-0 items-start gap-1">
         <CardLine
           className={cn(
-            "flex-1 font-semibold",
-            variant === "month" ? "text-[10px]" : "text-xs",
+            "flex-1 font-bold",
+            variant === "month" ? "text-[10px]" : "text-[13px] leading-4",
           )}
         >
-          {appointment.title}
+          {serviceLabel}
         </CardLine>
         {hasPhotos ? (
           <span
@@ -149,7 +158,7 @@ export function AppointmentEventCard({
         {syncIndicator ? (
           <span
             className={cn(
-              "shrink-0 rounded px-1 py-0 text-[9px] font-medium leading-none",
+              "shrink-0 rounded px-1 py-0 text-[9px] font-medium leading-none no-underline",
               syncIndicator.variant === "google-error" &&
                 "bg-destructive/15 text-destructive",
               syncIndicator.variant === "google-import" &&
@@ -164,29 +173,22 @@ export function AppointmentEventCard({
         ) : null}
       </div>
 
-      {showSecondaryLine ? (
-        <CardLine className="text-[10px] opacity-80">
-          {start} – {end}
+      {showClient ? (
+        <CardLine className="text-[12px] font-normal leading-[15px]">
+          <span style={{ color: theme.textMuted }}>{contactName}</span>
         </CardLine>
       ) : null}
 
-      {showDetails && contactName ? (
-        <CardLine className="text-[10px] opacity-75">{contactName}</CardLine>
-      ) : null}
-
-      {showDetails && appointment.assignedTo ? (
-        <CardLine className="text-[10px] opacity-70">
-          {[
-            appointment.assignedTo.firstName,
-            appointment.assignedTo.lastName,
-          ]
-            .filter(Boolean)
-            .join(" ") || appointment.assignedTo.email}
+      {showTime ? (
+        <CardLine className="text-[11px] font-normal leading-[14px]">
+          {timeRange}
         </CardLine>
       ) : null}
 
       {variant === "month" ? (
-        <CardLine className="text-[10px] opacity-75">{start}</CardLine>
+        <CardLine className="text-[10px] opacity-80">
+          {formatTime(appointment.startAt, timeZone)}
+        </CardLine>
       ) : null}
 
       {onResizeStart && variant === "grid" ? (
@@ -194,7 +196,7 @@ export function AppointmentEventCard({
           data-resize-handle=""
           role="presentation"
           onPointerDown={(event) => onResizeStart(event)}
-          className="absolute inset-x-1 bottom-0 h-2 cursor-ns-resize rounded-b-md hover:bg-primary/20"
+          className="absolute inset-x-1 bottom-0 h-2 cursor-ns-resize rounded-b-[8px] hover:bg-black/5"
         />
       ) : null}
     </div>

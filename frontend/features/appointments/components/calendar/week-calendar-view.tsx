@@ -108,12 +108,12 @@ export function WeekCalendarView({
                     "flex h-16 flex-col items-center justify-center bg-white px-2 py-2",
                   )}
                 >
-                  <span className="block text-[10px] font-semibold uppercase tracking-wide text-grey-tertiary-normal">
+                  <span className="block text-[10px] font-semibold uppercase leading-none tracking-wide text-grey-tertiary-normal">
                     {formatShortWeekdayForDateKey(dayKey, timezone)}
                   </span>
                   <span
                     className={cn(
-                      "mt-1 inline-flex size-7 items-center justify-center rounded-full text-sm font-semibold",
+                      "mt-1 inline-flex size-7 shrink-0 items-center justify-center rounded-full text-sm font-semibold leading-none",
                       isToday
                         ? "bg-[#7E3BED] text-white"
                         : "text-black-secondary-normal",

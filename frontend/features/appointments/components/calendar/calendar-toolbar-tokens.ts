@@ -5,15 +5,21 @@ export const CALENDAR_TOOLBAR_HEIGHT_CLASS = "h-11";
 
 export const CALENDAR_TOOLBAR_INSET_X_CLASS = "px-4";
 
+/** Avoid leading-none — it clips descenders (g, y) when paired with truncate */
 export const CALENDAR_TOOLBAR_TEXT_CLASS =
-  "text-body font-semibold leading-none text-black-secondary-normal";
+  "text-body font-semibold leading-5 text-black-secondary-normal";
 
-/** Today CTA — Figma solid primary; button font Medium 14/16 weight 700 */
+/**
+ * Today CTA — Figma Left Buttons center:
+ * h 44 fixed, width hug (~81), radius/md, 1px primary border,
+ * fill primary/500 (#7E3BED), px spacing/4, white Medium 14/16.
+ */
 export const CALENDAR_TOOLBAR_TODAY_BUTTON_CLASS = cn(
-  CALENDAR_TOOLBAR_HEIGHT_CLASS,
-  "shrink-0 rounded-[var(--radius-md)] border-0 bg-[#7E3BED] px-[var(--spacing-4)]",
+  "box-border inline-flex h-11 w-auto shrink-0 items-center justify-center",
+  "rounded-[var(--radius-md)] border border-[#7E3BED] bg-[#7E3BED] px-[var(--spacing-4)]",
   "text-[14px] font-bold leading-4 text-white shadow-none",
-  "hover:bg-[#7135D5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7E3BED]/40",
+  "hover:bg-[#7135D5] hover:border-[#7135D5]",
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7E3BED]/40",
 );
 
 /** Filter icon — Figma: black symbol, no fill/border (page background shows through) */
@@ -32,10 +38,10 @@ export const CALENDAR_TOOLBAR_OUTLINE_BUTTON_CLASS = cn(
 );
 
 /**
- * Prev / next — Figma `weui:arrow-filled`:
- * height 44 (fixed), width hug, radius/xs,
- * padding y = spacing/2, padding x = spacing/4,
- * border primary/500 1px; parent group gap 10.
+ * Prev / next — Figma Left Buttons sides (`weui:arrow-filled`):
+ * height 44 fixed, width hug (~39.36 = spacing/4 + 7.36 + spacing/4),
+ * radius/xs, py spacing/2, px spacing/4,
+ * 1px primary/500 border, white fill; parent gap 10.
  */
 export const CALENDAR_TOOLBAR_NAV_BUTTON_CLASS = cn(
   "box-border inline-flex h-11 w-auto shrink-0 items-center justify-center",
@@ -46,8 +52,8 @@ export const CALENDAR_TOOLBAR_NAV_BUTTON_CLASS = cn(
 
 /** Date picker trigger — Figma Frame 15: h 44, radius/md, gap 11 */
 export const CALENDAR_TOOLBAR_DATE_TRIGGER_CLASS = cn(
-  CALENDAR_TOOLBAR_HEIGHT_CLASS,
-  "inline-flex min-w-0 items-center justify-center gap-[11px] rounded-[var(--radius-md)] border border-[#7E3BED] bg-white px-4",
+  "box-border inline-flex h-11 min-w-0 items-center justify-center gap-[11px]",
+  "overflow-visible rounded-[var(--radius-md)] border border-[#7E3BED] bg-white px-4",
   CALENDAR_TOOLBAR_TEXT_CLASS,
   "hover:bg-[#F6F1FE] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7E3BED]/30",
 );

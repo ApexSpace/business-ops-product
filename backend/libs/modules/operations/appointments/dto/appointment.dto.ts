@@ -302,4 +302,5 @@ export class AppointmentResponseDto {
   /** File asset IDs for customer-uploaded booking photos (max 3). */
   photoFileIds!: string[];
   hasPhotos!: boolean;
+  isTimeBlock!: boolean;
 }

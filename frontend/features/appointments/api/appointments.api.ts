@@ -107,3 +107,10 @@ export function notifyAppointmentClient(id: string) {
 export function deleteAppointment(id: string) {
   return api.delete<void>(`appointments/${id}?confirm=true`);
 }
+
+/** Staff who can provide a service (enabled ServiceStaff rows; all members if none assigned). */
+export function listAppointmentServiceStaff(serviceId: string) {
+  return api.get<{ items: Array<{ id: string; label: string }> }>(
+    `checkouts/picker/services/${serviceId}/staff`,
+  );
+}

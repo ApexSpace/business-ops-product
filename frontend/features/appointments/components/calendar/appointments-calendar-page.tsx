@@ -14,6 +14,7 @@ import { useAppointmentCalendarDrag } from "@/features/appointments/hooks/use-ap
 import { useAppointmentsCalendarPage } from "@/features/appointments/hooks/use-appointments-calendar-page";
 import { getAppointment } from "@/features/appointments/api/appointments.api";
 import { WaitlistPanel } from "@/features/waitlist/components/waitlist-panel";
+import { WaitlistToolbarButton } from "@/features/waitlist/components/waitlist-toolbar-button";
 import { cn } from "@/lib/utils";
 
 const AppointmentCreateDrawer = dynamic(
@@ -28,13 +29,6 @@ const AppointmentDetailDrawer = dynamic(
     import(
       "@/features/appointments/components/drawer/appointment-detail-drawer"
     ).then((m) => m.AppointmentDetailDrawer),
-  { ssr: false },
-);
-const AppointmentEditDrawer = dynamic(
-  () =>
-    import(
-      "@/features/appointments/components/drawer/appointment-edit-drawer"
-    ).then((m) => m.AppointmentEditDrawer),
   { ssr: false },
 );
 const AppointmentTimeBlockDrawer = dynamic(
@@ -106,32 +100,25 @@ function AppointmentsCalendarPageContent() {
           staffMembers={cal.staffMembers}
           selectedStaffId={cal.params.assignedToId}
           onSelectedStaffIdChange={cal.handleSelectedStaffIdChange}
-          visibleStaffIds={cal.visibleStaffIds}
-          onVisibleStaffIdsChange={cal.handleVisibleStaffIdsChange}
           showStaffSelector={!cal.isMemberOnlyView}
           statusFilter={cal.params.status}
           onStatusFilterChange={(status) =>
             cal.setParams({ status, page: "1" })
           }
-          onOpenWaitlist={
-            cal.calendarPerms.canManageWaitlist
-              ? () => setWaitlistOpen(true)
-              : undefined
-          }
         />
       </div>
 
-      <div className="min-h-0 flex-1 overflow-hidden bg-white pb-4 sm:pb-6 lg:pb-8">
+      <div className="relative min-h-0 flex-1 overflow-hidden bg-white">
         {cal.view === "day" ? (
           <StaffDayCalendarView
             dateKey={cal.anchorDateKey}
             timezone={cal.displayTimezone}
             calendars={cal.calendars?.items}
             businessTimezone={cal.business?.timezone}
-            staffMembers={cal.visibleStaffMembers}
+            staffMembers={cal.staffMembers}
             appointments={cal.appointments}
             isLoading={cal.isLoading}
-            className={cn(BARE_VIEW_CLASS, "h-full")}
+            className={cn(BARE_VIEW_CLASS, "absolute inset-0")}
             businessHoursSlots={cal.businessSlots}
             staffSlotsByUserId={cal.staffSlotsByUserId}
             onAppointmentClick={cal.openAppointmentDetail}
@@ -150,7 +137,7 @@ function AppointmentsCalendarPageContent() {
             businessTimezone={cal.business?.timezone}
             appointments={cal.appointments}
             isLoading={cal.isLoading}
-            className={cn(BARE_VIEW_CLASS, "h-full")}
+            className={cn(BARE_VIEW_CLASS, "absolute inset-0")}
             businessHoursSlots={cal.businessSlots}
             weekStaffHoursSlots={
               cal.params.assignedToId
@@ -173,14 +160,14 @@ function AppointmentsCalendarPageContent() {
             businessTimezone={cal.business?.timezone}
             appointments={cal.appointments}
             isLoading={cal.isLoading}
-            className={cn(BARE_VIEW_CLASS, "h-full")}
+            className={cn(BARE_VIEW_CLASS, "absolute inset-0")}
             onAppointmentClick={cal.openAppointmentDetail}
             onDayClick={cal.handleDayClick}
           />
         ) : null}
 
         {cal.view === "list" ? (
-          <div className="h-full overflow-auto p-3 sm:p-4">
+          <div className="absolute inset-0 overflow-auto p-3 sm:p-4">
             <AppointmentListView
               appointments={cal.appointments}
               timezone={cal.displayTimezone}
@@ -195,6 +182,12 @@ function AppointmentsCalendarPageContent() {
             />
           </div>
         ) : null}
+
+        {/* Figma: Waitlist floats bottom-right over the calendar grid */}
+        <WaitlistToolbarButton
+          onClick={() => setWaitlistOpen(true)}
+          className="absolute bottom-4 right-4 z-20 sm:bottom-5 sm:right-5"
+        />
       </div>
 
       <AppointmentCreateDrawer
@@ -221,22 +214,9 @@ function AppointmentsCalendarPageContent() {
         defaults={cal.drawer.createDefaults}
         defaultCalendarId={cal.params.calendarId || cal.calendars?.items[0]?.id}
         timezone={cal.displayTimezone}
-      />
-
-      <AppointmentEditDrawer
-        open={cal.drawer.drawerMode === "edit"}
-        onOpenChange={(open) => {
-          if (!open && cal.drawer.appointmentId) {
-            cal.drawer.openDetail(cal.drawer.appointmentId);
-          } else if (!open) {
-            cal.drawer.close();
-          }
-        }}
-        appointmentId={cal.drawer.appointmentId}
-        timezone={cal.displayTimezone}
-        onSuccess={() => {
-          if (cal.drawer.appointmentId) {
-            cal.drawer.openDetail(cal.drawer.appointmentId);
+        onSwitchToAppointment={() => {
+          if (cal.drawer.createDefaults) {
+            cal.drawer.openCreate(cal.drawer.createDefaults);
           }
         }}
       />
@@ -265,7 +245,6 @@ function AppointmentsCalendarPageContent() {
           if (!open) cal.drawer.close();
         }}
         appointmentId={cal.drawer.appointmentId}
-        onEdit={cal.drawer.openEdit}
         onClose={cal.drawer.close}
         onBackFromCheckout={cal.drawer.closeCheckout}
         onCheckoutComplete={() => {

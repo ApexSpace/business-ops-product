@@ -4,68 +4,175 @@ import type {
   AppointmentStatus,
 } from "@/features/appointments/schemas/appointment-profile";
 
+/**
+ * PandaCue Figma “Cards- Calendar” themes — pastel fill + matching 1px border + text.
+ * Mapped by appointment status (and used for filters / dots).
+ */
+export type AppointmentCardTheme = {
+  /** Solid pastel fill */
+  bg: string;
+  /** 1px border matching theme */
+  border: string;
+  /** Primary text (service + time) */
+  text: string;
+  /** Secondary text (client) — slightly softer */
+  textMuted: string;
+  /** Legend / status dot */
+  dot: string;
+  /** Extra classes (e.g. dashed pending, line-through cancelled) */
+  extraClass?: string;
+};
+
+/** Figma green / mint */
+const THEME_GREEN: AppointmentCardTheme = {
+  bg: "#EAF7F0",
+  border: "#B7DEC8",
+  text: "#1A7A4C",
+  textMuted: "#2D8F5E",
+  dot: "#1C9A5B",
+};
+
+/** Figma purple / lavender */
+const THEME_PURPLE: AppointmentCardTheme = {
+  bg: "#F3EBFE",
+  border: "#C9B0F0",
+  text: "#5C2BB5",
+  textMuted: "#7E3BED",
+  dot: "#7E3BED",
+};
+
+/** Figma orange / peach */
+const THEME_ORANGE: AppointmentCardTheme = {
+  bg: "#FFF4EB",
+  border: "#F0C9A8",
+  text: "#B35A28",
+  textMuted: "#C46D3A",
+  dot: "#E07A3A",
+};
+
+/** Figma blue / sky */
+const THEME_BLUE: AppointmentCardTheme = {
+  bg: "#EBF3FC",
+  border: "#A8C8E8",
+  text: "#2A5FA8",
+  textMuted: "#3D73BC",
+  dot: "#3B82F6",
+};
+
+const THEME_SLATE: AppointmentCardTheme = {
+  bg: "#F4F4F5",
+  border: "#D4D4D8",
+  text: "#52525B",
+  textMuted: "#71717A",
+  dot: "#A1A1AA",
+};
+
+const THEME_CANCELLED: AppointmentCardTheme = {
+  bg: "#F9F5F5",
+  border: "#E8C9C9",
+  text: "#9F3A3A",
+  textMuted: "#B85C5C",
+  dot: "#A1A1AA",
+  extraClass: "line-through opacity-80",
+};
+
+export const APPOINTMENT_STATUS_THEMES: Record<
+  AppointmentStatus,
+  AppointmentCardTheme
+> = {
+  CONFIRMED: THEME_GREEN,
+  WAITING: THEME_PURPLE,
+  IN_SERVICE: THEME_BLUE,
+  UNCONFIRMED: THEME_ORANGE,
+  PENDING_COMPLETION: {
+    ...THEME_ORANGE,
+    extraClass: "border-dashed",
+  },
+  COMPLETED: THEME_SLATE,
+  CANCELLED: THEME_CANCELLED,
+  NO_SHOW: {
+    ...THEME_ORANGE,
+    bg: "#FFF8F0",
+    text: "#8A4B20",
+    textMuted: "#A35C2C",
+    extraClass: "opacity-90",
+  },
+};
+
+/** @deprecated Prefer APPOINTMENT_STATUS_THEMES — kept for filter dots / badges */
 export const APPOINTMENT_STATUS_COLORS: Record<
   AppointmentStatus,
   { bg: string; border: string; text: string; dot: string }
 > = {
   PENDING_COMPLETION: {
-    bg: "bg-amber-500/[0.12]",
-    border: "border-amber-500/50 border-dashed",
-    text: "text-amber-950 dark:text-amber-200",
-    dot: "bg-amber-500",
+    bg: "bg-[#FFF4EB]",
+    border: "border-[#F0C9A8]",
+    text: "text-[#B35A28]",
+    dot: "bg-[#E07A3A]",
   },
   UNCONFIRMED: {
-    bg: "bg-orange-500/[0.1]",
-    border: "border-orange-400/40",
-    text: "text-orange-900 dark:text-orange-200",
-    dot: "bg-orange-400",
+    bg: "bg-[#FFF4EB]",
+    border: "border-[#F0C9A8]",
+    text: "text-[#B35A28]",
+    dot: "bg-[#E07A3A]",
   },
   CONFIRMED: {
-    bg: "bg-teal-500/[0.1]",
-    border: "border-teal-400/40",
-    text: "text-teal-900 dark:text-teal-200",
-    dot: "bg-teal-400",
+    bg: "bg-[#EAF7F0]",
+    border: "border-[#B7DEC8]",
+    text: "text-[#1A7A4C]",
+    dot: "bg-[#1C9A5B]",
   },
   WAITING: {
-    bg: "bg-violet-500/[0.1]",
-    border: "border-violet-400/40",
-    text: "text-violet-900 dark:text-violet-200",
-    dot: "bg-violet-400",
+    bg: "bg-[#F3EBFE]",
+    border: "border-[#C9B0F0]",
+    text: "text-[#5C2BB5]",
+    dot: "bg-[#7E3BED]",
   },
   IN_SERVICE: {
-    bg: "bg-pink-500/[0.1]",
-    border: "border-pink-400/40",
-    text: "text-pink-900 dark:text-pink-200",
-    dot: "bg-pink-400",
+    bg: "bg-[#EBF3FC]",
+    border: "border-[#A8C8E8]",
+    text: "text-[#2A5FA8]",
+    dot: "bg-[#3B82F6]",
   },
   COMPLETED: {
-    bg: "bg-slate-500/[0.08]",
-    border: "border-slate-400/40",
-    text: "text-slate-700 dark:text-slate-300",
-    dot: "bg-slate-400",
+    bg: "bg-[#F4F4F5]",
+    border: "border-[#D4D4D8]",
+    text: "text-[#52525B]",
+    dot: "bg-[#A1A1AA]",
   },
   CANCELLED: {
-    bg: "bg-destructive/[0.06]",
-    border: "border-destructive/30",
-    text: "text-destructive/80 line-through",
-    dot: "bg-muted-foreground",
+    bg: "bg-[#F9F5F5]",
+    border: "border-[#E8C9C9]",
+    text: "text-[#9F3A3A]",
+    dot: "bg-[#A1A1AA]",
   },
   NO_SHOW: {
-    bg: "bg-amber-500/[0.08]",
-    border: "border-amber-500/35",
-    text: "text-amber-900 dark:text-amber-300",
-    dot: "bg-amber-400",
+    bg: "bg-[#FFF8F0]",
+    border: "border-[#F0C9A8]",
+    text: "text-[#8A4B20]",
+    dot: "bg-[#E07A3A]",
   },
 };
+
+export function getAppointmentCardTheme(
+  appointment: Pick<Appointment, "status">,
+): AppointmentCardTheme {
+  return APPOINTMENT_STATUS_THEMES[appointment.status];
+}
 
 export function getAppointmentEventStyle(appointment: Appointment): {
   className: string;
   style?: CSSProperties;
 } {
-  const statusStyle = APPOINTMENT_STATUS_COLORS[appointment.status];
+  const theme = getAppointmentCardTheme(appointment);
 
   return {
-    className: `${statusStyle.bg} ${statusStyle.border} border-l-[3px] ${statusStyle.text}`,
+    className: theme.extraClass ?? "",
+    style: {
+      backgroundColor: theme.bg,
+      borderColor: theme.border,
+      color: theme.text,
+    },
   };
 }
 
@@ -78,4 +185,42 @@ export function getAppointmentStatusBadgeClass(
 ): string {
   const colors = APPOINTMENT_STATUS_COLORS[status];
   return `${colors.bg} ${colors.border} ${colors.text} border`;
+}
+
+/** Figma card time: "8:00AM - 9:00PM" (no space before meridiem). */
+export function formatAppointmentCardTimeRange(
+  startAt: string,
+  endAt: string,
+  timeZone?: string,
+): string {
+  const compact = (iso: string) => {
+    const raw = timeZone
+      ? formatTimeInTimezoneLocal(iso, timeZone)
+      : formatTimeLocal(iso);
+    return raw.replace(/\s+(am|pm)/i, (_, m: string) => m.toUpperCase());
+  };
+  return `${compact(startAt)} - ${compact(endAt)}`;
+}
+
+function formatTimeLocal(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toLocaleString(undefined, {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
+}
+
+function formatTimeInTimezoneLocal(iso: string, timezone: string): string {
+  try {
+    return new Intl.DateTimeFormat(undefined, {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+      timeZone: timezone,
+    }).format(new Date(iso));
+  } catch {
+    return formatTimeLocal(iso);
+  }
 }

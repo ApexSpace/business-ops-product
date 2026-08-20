@@ -1,8 +1,7 @@
 "use client";
 
 import { ActionButton } from "@/components/ui/action-button";
-import { DRAWER_FOOTER_BUTTON_CLASS } from "@/components/forms/drawer-sheet";
-import { DRAWER_PRIMARY_FOOTER_BUTTON_CLASS } from "@/lib/design/drawer-shell-tokens";
+import { APPOINTMENT_DRAWER_PRIMARY_BUTTON_CLASS } from "@/features/appointments/styles/appointment-drawer-tokens";
 import { cn } from "@/lib/utils";
 
 export interface DrawerFooterPrimaryActionProps {
@@ -23,7 +22,7 @@ export function DrawerFooterPrimaryAction({
   className,
 }: DrawerFooterPrimaryActionProps) {
   return (
-    <div className={cn("w-full space-y-3", className)}>
+    <div className={cn("w-full space-y-[15px]", className)}>
       {summaryLabel && summaryValue ? (
         <div className="flex items-center justify-between px-1">
           <span className="text-[13px] font-medium text-muted-foreground">
@@ -36,10 +35,7 @@ export function DrawerFooterPrimaryAction({
       ) : null}
       <ActionButton
         type="button"
-        className={cn(
-          DRAWER_FOOTER_BUTTON_CLASS,
-          DRAWER_PRIMARY_FOOTER_BUTTON_CLASS,
-        )}
+        className={cn(APPOINTMENT_DRAWER_PRIMARY_BUTTON_CLASS, className)}
         disabled={disabled}
         onClick={onClick}
       >

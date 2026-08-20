@@ -114,6 +114,17 @@ export interface Appointment {
   scheduleWarning?: string | null;
   photoFileIds?: string[];
   hasPhotos?: boolean;
+  isTimeBlock?: boolean;
+}
+
+export function isAppointmentTimeBlock(appointment: Appointment): boolean {
+  if (appointment.isTimeBlock === true) return true;
+  if (appointment.isTimeBlock === false) return false;
+  return (
+    !appointment.contactId &&
+    !appointment.serviceId &&
+    (appointment.services?.length ?? 0) === 0
+  );
 }
 
 export function getAppointmentSyncIndicator(appointment: Appointment): {

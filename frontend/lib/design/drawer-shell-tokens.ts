@@ -13,9 +13,9 @@ export const DRAWER_SHELL_WIDTH_CONVERSATION =
 
 export const DRAWER_SHELL_WIDTH_SPLIT = "[--sheet-width:min(94vw,900px)]";
 
-/** Figma appointment Side Popup width (378px). */
+/** Figma New Appointment Sliding Panel — max 409px (30px spine + fluid content), scales with viewport. */
 export const DRAWER_SHELL_WIDTH_APPOINTMENT =
-  "[--sheet-width:min(94vw,378px)]";
+  "[--sheet-width:clamp(280px,94vw,409px)]";
 
 export type DrawerShellWidthTier =
   | "compact"

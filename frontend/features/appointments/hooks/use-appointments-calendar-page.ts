@@ -163,10 +163,10 @@ export function useAppointmentsCalendarPage() {
       return [params.assignedToId];
     }
     if (view === "day") {
-      return visibleStaffMembers.map((m) => m.userId);
+      return staffMembers.map((m) => m.userId);
     }
     return [];
-  }, [view, params.assignedToId, visibleStaffMembers]);
+  }, [view, params.assignedToId, staffMembers]);
 
   const { businessSlots, staffSlotsByUserId } = useAppointmentsWorkingHours(
     workingHoursStaffIds,

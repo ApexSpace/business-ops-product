@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Check, Plus, Trash2 } from "lucide-react";
+import { Plus } from "lucide-react";
 import { listServices } from "@/features/settings/api/services.api";
 import type { Service } from "@/lib/types/api";
 import { queryKeys } from "@/lib/query/keys";
@@ -19,10 +19,19 @@ import {
   SelectItem,
   SelectTrigger,
 } from "@/components/ui/select";
+import { DrawerChevronIcon, DrawerTrashIcon } from "@/components/drawer/drawer-icons";
+import { AppointmentSelectionServiceCard } from "@/features/appointments/components/drawer/appointment-service-card";
+import { useServiceEligibleStaff } from "@/features/appointments/hooks/use-service-eligible-staff";
 import {
-  APPOINTMENT_POPUP_FIELD_CLASS,
-  APPOINTMENT_POPUP_PLUS_BUTTON_CLASS,
-} from "@/features/appointments/styles/appointment-side-popup";
+  APPOINTMENT_DRAWER_FIELD_CLASS,
+  APPOINTMENT_DRAWER_ICON_BUTTON_CLASS,
+  APPOINTMENT_DRAWER_SERVICE_CARD_CLASS,
+  APPOINTMENT_DRAWER_SERVICE_PICKER_CLASS,
+  APPOINTMENT_DRAWER_SERVICE_PICKER_ITEM_CLASS,
+  APPOINTMENT_DRAWER_SERVICE_PICKER_ITEM_META_CLASS,
+  APPOINTMENT_DRAWER_SERVICE_PICKER_ITEM_NAME_CLASS,
+  APPOINTMENT_DRAWER_SERVICE_PICKER_SEARCH_CLASS,
+} from "@/features/appointments/styles/appointment-drawer-tokens";
 import { cn } from "@/lib/utils";
 import {
   type AppointmentServiceLineSelection,
@@ -38,6 +47,15 @@ import {
 
 export type { AppointmentServiceLineSelection, StaffOption };
 
+const APPOINTMENT_SERVICE_PICKER_POPOVER_PROPS = {
+  align: "start" as const,
+  side: "bottom" as const,
+  sideOffset: 6,
+  /** Prefer opening below; shift within viewport instead of flipping over content. */
+  collisionAvoidance: { side: "shift" as const, align: "shift" as const },
+  collisionPadding: 12,
+};
+
 export interface AppointmentServiceLineEditorProps {
   value: AppointmentServiceLineSelection[];
   onChange: (lines: AppointmentServiceLineSelection[]) => void;
@@ -50,10 +68,17 @@ export interface AppointmentServiceLineEditorProps {
   currencyCode?: string;
   disabled?: boolean;
   className?: string;
+  /** Drawer sidebar — single-service select, no “Add another service”. */
+  variant?: "default" | "drawer";
+  /** Figma filled cards (read-only display) instead of inline provider/time editors. */
+  filledDisplay?: boolean;
+  /** Controlled service picker — used when add action lives outside the editor. */
+  pickerOpen?: boolean;
+  onPickerOpenChange?: (open: boolean) => void;
 }
 
 const INLINE_SELECT_TRIGGER_CLASS =
-  "h-auto w-auto min-w-0 border-0 bg-transparent px-1 py-0.5 text-[13.5px] font-semibold text-primary shadow-none hover:bg-primary/5 focus-visible:ring-0";
+  "h-auto w-auto min-w-0 border-0 bg-transparent px-1 py-0.5 text-[13px] font-semibold text-[#7E3BED] shadow-none hover:bg-[#F6F1FE] focus-visible:ring-0";
 
 function ServiceLineCard({
   line,
@@ -74,17 +99,21 @@ function ServiceLineCard({
   onUpdate: (patch: Partial<AppointmentServiceLineSelection>) => void;
   onRemove: () => void;
 }) {
+  const { staffOptions: eligibleStaff } = useServiceEligibleStaff(
+    line.serviceId,
+    staffOptions,
+  );
   const staffLabel =
-    staffOptions.find((s) => s.userId === line.assignedToId)?.label ??
+    eligibleStaff.find((s) => s.userId === line.assignedToId)?.label ??
     "Select provider";
 
   return (
-    <div className="rounded-[10px] border-[1.5px] border-border/80 bg-muted/10 p-4">
-      <div className="mb-3 flex items-start justify-between gap-3">
+    <div className={APPOINTMENT_DRAWER_SERVICE_CARD_CLASS}>
+      <div className="mb-1 flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-[14px] font-semibold text-foreground">{line.name}</p>
+          <p className="text-[14px] font-bold text-[#5C2BB5]">{line.name}</p>
           {line.price ? (
-            <p className="mt-0.5 text-[12.5px] text-muted-foreground">
+            <p className="mt-0.5 text-[14px] font-bold tabular-nums text-[#1A1A1A]">
               {formatMoney(line.price, currencyCode)}
             </p>
           ) : null}
@@ -93,16 +122,16 @@ function ServiceLineCard({
           type="button"
           disabled={disabled}
           onClick={onRemove}
-          className="inline-flex size-8 shrink-0 items-center justify-center rounded-[8px] text-muted-foreground transition-colors hover:bg-muted/50 hover:text-destructive disabled:opacity-50"
+          className={APPOINTMENT_DRAWER_ICON_BUTTON_CLASS}
           aria-label={`Remove ${line.name}`}
         >
-          <Trash2 className="size-4" />
+          <DrawerTrashIcon />
         </button>
       </div>
 
-      <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 text-[13px] text-muted-foreground">
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 text-[13px] text-[#9A9A9A]">
         <span className="inline-flex items-center gap-1">
-          <span>with</span>
+          <span>Provider:</span>
           <Select
             value={line.assignedToId}
             onValueChange={(userId) => {
@@ -115,7 +144,7 @@ function ServiceLineCard({
               {staffLabel}
             </SelectTrigger>
             <SelectContent>
-              {staffOptions.map((staff) => (
+              {eligibleStaff.map((staff) => (
                 <SelectItem key={staff.userId} value={staff.userId}>
                   {staff.label}
                 </SelectItem>
@@ -183,14 +212,21 @@ export function AppointmentServiceLineEditor({
   currencyCode = "USD",
   disabled = false,
   className,
+  variant = "default",
+  filledDisplay = false,
+  pickerOpen: pickerOpenProp,
+  onPickerOpenChange,
 }: AppointmentServiceLineEditorProps) {
-  const [open, setOpen] = useState(false);
+  const isDrawer = variant === "drawer";
+  const [internalPickerOpen, setInternalPickerOpen] = useState(false);
+  const pickerOpen = pickerOpenProp ?? internalPickerOpen;
+  const setPickerOpen = onPickerOpenChange ?? setInternalPickerOpen;
   const [search, setSearch] = useState("");
 
   const { data: servicesPage, isFetching } = useQuery({
     queryKey: queryKeys.services.list({ page: 1, limit: 100, status: "ACTIVE" }),
     queryFn: () => listServices({ page: 1, limit: 100, status: "ACTIVE" }),
-    enabled: open,
+    enabled: pickerOpen,
   });
 
   const selectedIds = useMemo(
@@ -269,55 +305,78 @@ export function AppointmentServiceLineEditor({
       serviceToLineSelection(service, { assignedToId, startMinutes }),
     ]);
     setSearch("");
-    setOpen(false);
+    setPickerOpen(false);
   };
 
+  const servicePicker = (
+    <Popover open={pickerOpen} onOpenChange={setPickerOpen}>
+      {value.length === 0 || !filledDisplay ? (
+        <PopoverTrigger
+          disabled={disabled}
+          className={cn(
+            APPOINTMENT_DRAWER_FIELD_CLASS,
+            "flex w-full items-center justify-between gap-2 text-[14px] font-normal text-[#9A9A9A] hover:bg-[#F6F1FE]/40 disabled:cursor-not-allowed disabled:opacity-50",
+          )}
+        >
+          <span>Select a service</span>
+          <DrawerChevronIcon direction="down" />
+        </PopoverTrigger>
+      ) : (
+        <PopoverTrigger className="sr-only" tabIndex={-1} aria-hidden>
+          Add service
+        </PopoverTrigger>
+      )}
+      <ServicePickerPopoverContent
+        search={search}
+        onSearchChange={setSearch}
+        isFetching={isFetching}
+        availableServices={availableServices}
+        selectedIds={selectedIds}
+        currencyCode={currencyCode}
+        onAdd={handleAdd}
+      />
+    </Popover>
+  );
+
   return (
-    <div className={cn("space-y-3", className)}>
+    <div className={cn(isDrawer ? "space-y-0" : "space-y-3", className)}>
       {value.length > 0 ? (
-        <div className="space-y-3">
-          {value.map((line, index) => (
-            <ServiceLineCard
-              key={`${line.serviceId}-${index}`}
-              line={line}
-              staffOptions={staffOptions}
-              timeSlots={timeSlots}
-              durationOptions={durationOptions}
-              currencyCode={currencyCode}
-              disabled={disabled}
-              onUpdate={(patch) => updateLine(index, patch)}
-              onRemove={() => removeLine(index)}
-            />
-          ))}
+        <div className="flex flex-col gap-3">
+          {value.map((line, index) =>
+            filledDisplay ? (
+              <AppointmentSelectionServiceCard
+                key={`${line.serviceId}-${index}`}
+                line={line}
+                staffOptions={staffOptions}
+                currencyCode={currencyCode}
+                onRemove={disabled ? undefined : () => removeLine(index)}
+                onAssignedToChange={
+                  disabled
+                    ? undefined
+                    : (userId) => updateLine(index, { assignedToId: userId })
+                }
+              />
+            ) : (
+              <ServiceLineCard
+                key={`${line.serviceId}-${index}`}
+                line={line}
+                staffOptions={staffOptions}
+                timeSlots={timeSlots}
+                durationOptions={durationOptions}
+                currencyCode={currencyCode}
+                disabled={disabled}
+                onUpdate={(patch) => updateLine(index, patch)}
+                onRemove={() => removeLine(index)}
+              />
+            ),
+          )}
         </div>
       ) : (
-        <Popover open={open} onOpenChange={setOpen}>
-          <PopoverTrigger
-            disabled={disabled}
-            className={cn(
-              APPOINTMENT_POPUP_FIELD_CLASS,
-              "flex w-full items-center justify-between gap-2 text-[14px] font-normal text-grey-tertiary-normal hover:bg-[#F6F1FE]/40 disabled:cursor-not-allowed disabled:opacity-50",
-            )}
-          >
-            <span>Select a service</span>
-            <span className={APPOINTMENT_POPUP_PLUS_BUTTON_CLASS} aria-hidden>
-              <Plus className="size-3.5" strokeWidth={2.5} />
-            </span>
-          </PopoverTrigger>
-          <ServicePickerPopoverContent
-            search={search}
-            onSearchChange={setSearch}
-            isFetching={isFetching}
-            availableServices={availableServices}
-            selectedIds={selectedIds}
-            currencyCode={currencyCode}
-            onAdd={handleAdd}
-          />
-        </Popover>
+        servicePicker
       )}
 
-      {value.length > 0 ? (
-        <Popover open={open} onOpenChange={setOpen}>
+      {value.length > 0 && !isDrawer ? (
+        <Popover open={pickerOpen} onOpenChange={setPickerOpen}>
           <PopoverTrigger
             disabled={disabled}
             className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-[#7E3BED] hover:underline disabled:opacity-50"
@@ -336,7 +395,72 @@ export function AppointmentServiceLineEditor({
           />
         </Popover>
       ) : null}
+
+      {value.length > 0 && isDrawer && filledDisplay && !onPickerOpenChange
+        ? servicePicker
+        : null}
     </div>
+  );
+}
+
+export interface AppointmentServicePickerProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  trigger: ReactNode;
+  value: AppointmentServiceLineSelection[];
+  onAdd: (service: Service) => void;
+  currencyCode?: string;
+}
+
+/** Service picker anchored to an external trigger (e.g. Add Service row). */
+export function AppointmentServicePicker({
+  open,
+  onOpenChange,
+  trigger,
+  value,
+  onAdd,
+  currencyCode = "USD",
+}: AppointmentServicePickerProps) {
+  const [search, setSearch] = useState("");
+
+  const { data: servicesPage, isFetching } = useQuery({
+    queryKey: queryKeys.services.list({ page: 1, limit: 100, status: "ACTIVE" }),
+    queryFn: () => listServices({ page: 1, limit: 100, status: "ACTIVE" }),
+    enabled: open,
+  });
+
+  const selectedIds = useMemo(
+    () => new Set(value.map((line) => line.serviceId)),
+    [value],
+  );
+
+  const availableServices = useMemo(() => {
+    const items = servicesPage?.items ?? [];
+    const term = search.trim().toLowerCase();
+    return items.filter((service) => {
+      if (selectedIds.has(service.id)) return false;
+      if (!term) return true;
+      return service.name.toLowerCase().includes(term);
+    });
+  }, [servicesPage?.items, search, selectedIds]);
+
+  return (
+    <Popover open={open} onOpenChange={onOpenChange}>
+      <PopoverTrigger asChild>{trigger}</PopoverTrigger>
+      <ServicePickerPopoverContent
+        search={search}
+        onSearchChange={setSearch}
+        isFetching={isFetching}
+        availableServices={availableServices}
+        selectedIds={selectedIds}
+        currencyCode={currencyCode}
+        onAdd={(service) => {
+          onAdd(service);
+          setSearch("");
+          onOpenChange(false);
+        }}
+      />
+    </Popover>
   );
 }
 
@@ -358,48 +482,65 @@ function ServicePickerPopoverContent({
   onAdd: (service: Service) => void;
 }) {
   return (
-    <PopoverContent align="start" className="w-[var(--anchor-width)] p-0">
-      <div className="border-b p-2">
+    <PopoverContent
+      {...APPOINTMENT_SERVICE_PICKER_POPOVER_PROPS}
+      className={APPOINTMENT_DRAWER_SERVICE_PICKER_CLASS}
+    >
+      <div className="border-b border-[#EEEAE6] px-3 py-2">
         <Input
           value={search}
           onChange={(event) => onSearchChange(event.target.value)}
           placeholder="Search services…"
           autoFocus
-          className="h-9"
+          className={APPOINTMENT_DRAWER_SERVICE_PICKER_SEARCH_CLASS}
         />
       </div>
-      <div className="max-h-60 overflow-y-auto p-1" role="listbox">
+      <div
+        className="max-h-52 overflow-y-auto overscroll-contain px-2 py-2"
+        role="listbox"
+        aria-label="Services"
+      >
         {isFetching ? (
-          <p className="px-2 py-6 text-center text-sm text-muted-foreground">
+          <p className="px-2 py-6 text-center text-[14px] text-[#8A8A8A]">
             Loading services…
           </p>
         ) : availableServices.length === 0 ? (
-          <p className="px-2 py-6 text-center text-sm text-muted-foreground">
+          <p className="px-2 py-6 text-center text-[14px] text-[#8A8A8A]">
             No services available
           </p>
         ) : (
-          availableServices.map((service) => (
-            <button
-              key={service.id}
-              type="button"
-              role="option"
-              className="flex w-full items-start gap-2 rounded-sm px-2 py-2 text-left text-sm outline-none hover:bg-accent hover:text-accent-foreground"
-              onClick={() => onAdd(service)}
-            >
-              <span className="min-w-0 flex-1">
-                <span className="block font-medium">{service.name}</span>
-                <span className="block text-xs text-muted-foreground">
-                  {service.clientOccupancyMinutes ?? service.durationMinutes} min
-                  {service.price
-                    ? ` · ${formatMoney(service.price, currencyCode)}`
-                    : ""}
+          availableServices.map((service) => {
+            const duration =
+              service.clientOccupancyMinutes ?? service.durationMinutes ?? 0;
+            const meta = [
+              duration > 0 ? `${duration} min` : null,
+              service.price
+                ? formatMoney(service.price, currencyCode)
+                : null,
+            ]
+              .filter(Boolean)
+              .join(" · ");
+
+            return (
+              <button
+                key={service.id}
+                type="button"
+                role="option"
+                aria-selected={selectedIds.has(service.id)}
+                className={APPOINTMENT_DRAWER_SERVICE_PICKER_ITEM_CLASS}
+                onClick={() => onAdd(service)}
+              >
+                <span className={APPOINTMENT_DRAWER_SERVICE_PICKER_ITEM_NAME_CLASS}>
+                  {service.name}
                 </span>
-              </span>
-              {selectedIds.has(service.id) ? (
-                <Check className="size-4 shrink-0 text-primary" />
-              ) : null}
-            </button>
-          ))
+                {meta ? (
+                  <span className={APPOINTMENT_DRAWER_SERVICE_PICKER_ITEM_META_CLASS}>
+                    {meta}
+                  </span>
+                ) : null}
+              </button>
+            );
+          })
         )}
       </div>
     </PopoverContent>
