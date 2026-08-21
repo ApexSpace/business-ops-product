@@ -1,14 +1,21 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useIsMobile } from "@/lib/hooks/use-mobile";
+
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ChevronLeft, Loader2, MoreHorizontal, Pencil, Trash2, X } from "lucide-react";
+import { DateTime } from "luxon";
+import {
+  ChevronLeft,
+  Loader2,
+  MoreVertical,
+  Pencil,
+  Trash2,
+} from "lucide-react";
 import { toast } from "sonner";
 import { DrawerFooterPrimaryAction } from "@/components/layout/drawer-footer-primary";
 import { AcknowledgementGuardDialog } from "@/components/forms/acknowledgement-guard-dialog";
-import {
-  DrawerShell,
-} from "@/components/layout/drawer-shell";
+import { DrawerShell } from "@/components/layout/drawer-shell";
 import { IconButton } from "@/components/ui/icon-button";
 import {
   DropdownMenu,
@@ -23,13 +30,32 @@ import {
   resendExpressAppointment,
   staffCompleteExpressAppointment,
 } from "@/features/appointments/api/appointments.api";
+import { DrawerCloseIcon } from "@/components/drawer/drawer-icons";
+import { DrawerFooterContent } from "@/components/drawer/drawer-footer-content";
+import { DrawerHeaderContent } from "@/components/drawer/drawer-header-content";
+import { DrawerPrimaryButton } from "@/components/drawer/drawer-primary-button";
 import { AppointmentStatusBar } from "@/features/appointments/components/drawer/appointment-status-actions";
+import {
+  AppointmentUpdateForm,
+  type AppointmentUpdateFormHandle,
+} from "@/features/appointments/components/drawer/appointment-edit-drawer";
+import { AppointmentDateTimeDisplay } from "@/features/appointments/components/drawer/appointment-datetime-fields";
+import {
+  AppointmentClientCard,
+  AppointmentGuestCard,
+} from "@/features/appointments/components/drawer/appointment-client-card";
+import {
+  AppointmentAddActions,
+  AppointmentServiceCard,
+} from "@/features/appointments/components/drawer/appointment-service-card";
+import { AppointmentBookingDetails } from "@/features/appointments/components/drawer/appointment-booking-details";
 import { useAppointmentNotifyMutation } from "@/features/appointments/hooks/use-appointment-notify-mutation";
 import { useAppointmentStatusMutation } from "@/features/appointments/hooks/use-appointment-status-mutation";
 import {
   APPOINTMENT_LIFECYCLE_STATUS_OPTIONS,
   CLOSED_SALE_EDIT_GUARD_COPY,
   getContactDisplayName,
+  isAppointmentTimeBlock,
   requiresClosedSaleEditAcknowledgement,
   type AppointmentStatus,
 } from "@/features/appointments/schemas/appointment-profile";
@@ -43,28 +69,33 @@ import {
 } from "@/features/sales/components/checkout-drawer-panel";
 import { useCurrentBusiness } from "@/features/settings/hooks/use-current-business";
 import { listCalendars } from "@/features/calendars/api/calendars.api";
-import { resolveAppointmentDisplayTimezone } from "@/features/calendars/utils/timezone";
+import {
+  formatTimeInTimezone,
+  resolveAppointmentDisplayTimezone,
+} from "@/features/calendars/utils/timezone";
 import {
   DRAWER_SCROLL_CONTENT_INSET_CLASS,
   DRAWER_SCROLL_EDGE_CLASS,
 } from "@/lib/design/drawer-shell-tokens";
 import {
-  APPOINTMENT_POPUP_CLOSE_ACTION_CLASS,
-  APPOINTMENT_POPUP_FOOTER_CLASS,
-  APPOINTMENT_POPUP_HEADER_ACTION_CLASS,
-  APPOINTMENT_POPUP_HEADER_CLASS,
-  APPOINTMENT_POPUP_SHELL_CLASS,
-} from "@/features/appointments/styles/appointment-side-popup";
+  APPOINTMENT_DRAWER_BODY_INSET_CLASS,
+  APPOINTMENT_DRAWER_CLOSE_ACTION_CLASS,
+  APPOINTMENT_DRAWER_FOOTER_CLASS,
+  APPOINTMENT_DRAWER_HEADER_ACTION_CLASS,
+  APPOINTMENT_DRAWER_MOBILE_HEADER_ACTION_CLASS,
+  APPOINTMENT_DRAWER_SHELL_CLASS,
+  APPOINTMENT_DRAWER_MOBILE_SHELL_CLASS,
+  APPOINTMENT_DRAWER_SHELL_HEADER_CLASS,
+} from "@/features/appointments/styles/appointment-drawer-tokens";
 import { queryKeys } from "@/lib/query/keys";
 import { cn } from "@/lib/utils";
-import {
-  AppointmentBookingDetailsSummary,
-  AppointmentClientBlock,
-  AppointmentDateTimeBar,
-  AppointmentServicesList,
-  resolveAppointmentUpdatedBy,
-} from "./appointment-drawer-sections";
+import { resolveAppointmentUpdatedBy } from "./appointment-drawer-sections";
 import { AppointmentAttachedPhotos } from "./appointment-attached-photos";
+import { TimeBlockDetailView } from "./time-block-detail-view";
+import {
+  TimeBlockUpdateForm,
+  type TimeBlockUpdateFormHandle,
+} from "./time-block-update-form";
 import { useCalendarStaffPermissions } from "@/features/appointments/hooks/use-calendar-staff-permissions";
 
 export type AppointmentDrawerView = "detail" | "checkout";
@@ -76,7 +107,6 @@ export interface AppointmentDetailDrawerProps {
   variant?: "panel" | "sheet";
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
-  onEdit: () => void;
   onClose: () => void;
   onBackFromCheckout?: () => void;
   onCheckoutComplete?: () => void;
@@ -96,7 +126,6 @@ export function AppointmentDetailDrawer({
   variant = "panel",
   open = true,
   onOpenChange,
-  onEdit,
   onClose,
   onBackFromCheckout,
   onCheckoutComplete,
@@ -108,6 +137,7 @@ export function AppointmentDetailDrawer({
   onCancel,
   onDelete,
 }: AppointmentDetailDrawerProps) {
+  const isMobile = useIsMobile();
   const queryClient = useQueryClient();
   const { data: business } = useCurrentBusiness();
   const calendarPerms = useCalendarStaffPermissions();
@@ -145,6 +175,17 @@ export function AppointmentDetailDrawer({
   const [paymentAction, setPaymentAction] =
     useState<CheckoutDrawerSubmitAction | null>(null);
   const [closedSaleEditGuardOpen, setClosedSaleEditGuardOpen] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [updatePending, setUpdatePending] = useState(false);
+  const [editHeaderDate, setEditHeaderDate] = useState("");
+  const updateFormRef = useRef<AppointmentUpdateFormHandle>(null);
+  const timeBlockUpdateFormRef = useRef<TimeBlockUpdateFormHandle>(null);
+
+  useEffect(() => {
+    setIsEditing(false);
+    setUpdatePending(false);
+    setEditHeaderDate("");
+  }, [appointmentId]);
 
   const { data: calendars } = useQuery({
     queryKey: queryKeys.calendars.list({ limit: 100 }),
@@ -199,7 +240,13 @@ export function AppointmentDetailDrawer({
       setClosedSaleEditGuardOpen(true);
       return;
     }
-    onEdit();
+    setIsEditing(true);
+  };
+
+  const exitEditing = () => {
+    setIsEditing(false);
+    setUpdatePending(false);
+    setEditHeaderDate("");
   };
 
   const closedSaleGuardDescription = useMemo(
@@ -216,11 +263,26 @@ export function AppointmentDetailDrawer({
   if (!appointmentId) return null;
 
   const showCheckout = drawerView === "checkout" && Boolean(checkoutId);
+  const isTimeBlockView = appointment ? isAppointmentTimeBlock(appointment) : false;
   const title =
-    showCheckout && checkoutStep === "payment" ? "Payment" : showCheckout ? "Checkout" : "Appointment";
+    showCheckout && checkoutStep === "payment"
+      ? "Payment"
+      : showCheckout
+        ? "Checkout"
+        : isEditing
+          ? isTimeBlockView
+            ? "Update Time Block"
+            : "Update Appointment"
+          : isTimeBlockView
+            ? isMobile
+              ? "Time Block"
+              : "Time Block Detail"
+            : "Appointment Detail";
 
   const canMutateThisAppointment = appointment
-    ? calendarPerms.canManageAppointmentOnStaff(appointment.assignedToId)
+    ? isTimeBlockView
+      ? calendarPerms.canManageTimeBlockOnStaff(appointment.assignedToId)
+      : calendarPerms.canManageAppointmentOnStaff(appointment.assignedToId)
     : false;
   const canChangeThisStatus =
     calendarPerms.canChangeStatus &&
@@ -231,7 +293,8 @@ export function AppointmentDetailDrawer({
       : false);
   const allowCancel = Boolean(onCancel) && canMutateThisAppointment;
   const allowDelete = Boolean(onDelete) && canMutateThisAppointment;
-  const allowEdit = canMutateThisAppointment;
+  const allowEdit = canMutateThisAppointment && !isTimeBlockView;
+  const allowTimeBlockEdit = canMutateThisAppointment && isTimeBlockView;
   const allowStatusMenu = canChangeThisStatus;
 
   const contactHeader = appointment
@@ -259,8 +322,41 @@ export function AppointmentDetailDrawer({
     onBackFromCheckout?.();
   };
 
-  const drawerFooter =
-    showCheckout && checkout?.isOpen
+  const headerDateLabel = appointment?.startAt
+    ? DateTime.fromISO(appointment.startAt, { zone: "utc" })
+        .setZone(timezone)
+        .toFormat("MMMM d, yyyy")
+        .toUpperCase()
+    : "";
+
+  const dateFieldLabel = appointment?.startAt
+    ? DateTime.fromISO(appointment.startAt, { zone: "utc" })
+        .setZone(timezone)
+        .toFormat("LLL d, yyyy")
+    : "";
+
+  const timeFieldLabel = appointment?.startAt
+    ? formatTimeInTimezone(appointment.startAt, timezone)
+    : "";
+
+  const drawerFooter = isEditing
+    ? (
+        <DrawerFooterContent>
+          <DrawerPrimaryButton
+            disabled={updatePending || isLoading || !appointment}
+            onClick={() => {
+              if (isTimeBlockView) {
+                timeBlockUpdateFormRef.current?.save();
+                return;
+              }
+              updateFormRef.current?.save();
+            }}
+          >
+            {updatePending ? "Saving…" : "Save Changes"}
+          </DrawerPrimaryButton>
+        </DrawerFooterContent>
+      )
+    : showCheckout && checkout?.isOpen
       ? checkoutStep === "items"
         ? (
             <DrawerFooterPrimaryAction
@@ -283,76 +379,92 @@ export function AppointmentDetailDrawer({
 
   const detailHeaderActions = (
     <>
-      <DropdownMenu>
-        <DropdownMenuTrigger
-          render={
-            <IconButton
-              aria-label="Appointment actions"
-              className={APPOINTMENT_POPUP_HEADER_ACTION_CLASS}
-            >
-              <MoreHorizontal className="size-4" />
-            </IconButton>
-          }
-        />
-        <DropdownMenuContent align="end" className="w-52">
-          {allowStatusMenu
-            ? APPOINTMENT_LIFECYCLE_STATUS_OPTIONS.map((option) => {
-                const isCurrent = appointment?.status === option.value;
-                return (
-                  <DropdownMenuItem
-                    key={option.value}
-                    disabled={isCurrent || statusMutation.isPending}
-                    onClick={() => handleStatusChange(option.value)}
-                  >
-                    <span
-                      className={cn(
-                        "mr-2 size-2 rounded-full",
-                        getAppointmentStatusDotClass(option.value),
-                      )}
-                    />
-                    {option.label}
-                  </DropdownMenuItem>
-                );
-              })
-            : null}
-          {allowStatusMenu ? <DropdownMenuSeparator /> : null}
-          {appointment?.expressBookingPending ? (
-            <DropdownMenuItem
-              disabled={resendExpressMutation.isPending}
-              onClick={() => resendExpressMutation.mutate()}
-            >
-              Resend completion link
-            </DropdownMenuItem>
-          ) : null}
-          {onRebook && canMutateThisAppointment ? (
-            <DropdownMenuItem onClick={() => onRebook(appointmentId)}>
-              Rebook appointment
-            </DropdownMenuItem>
-          ) : null}
-          {allowCancel && appointment?.status !== "CANCELLED" ? (
-            <DropdownMenuItem
-              onClick={() => onCancel?.(appointmentId)}
-              className="text-destructive focus:text-destructive"
-            >
-              Cancel appointment
-            </DropdownMenuItem>
-          ) : null}
-          {allowDelete ? (
-            <DropdownMenuItem
-              onClick={() => onDelete?.(appointmentId)}
-              className="text-destructive focus:text-destructive"
-            >
-              <Trash2 className="mr-2 size-4" />
-              Delete
-            </DropdownMenuItem>
-          ) : null}
-        </DropdownMenuContent>
-      </DropdownMenu>
-      {allowEdit ? (
+      {!isEditing ? (
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            render={
+              <IconButton
+                aria-label="Appointment actions"
+                className={
+                  isMobile
+                    ? APPOINTMENT_DRAWER_MOBILE_HEADER_ACTION_CLASS
+                    : APPOINTMENT_DRAWER_HEADER_ACTION_CLASS
+                }
+              >
+                <MoreVertical className="size-4" />
+              </IconButton>
+            }
+          />
+          <DropdownMenuContent align="end" className="w-52">
+            {!isTimeBlockView && allowStatusMenu
+              ? APPOINTMENT_LIFECYCLE_STATUS_OPTIONS.map((option) => {
+                  const isCurrent = appointment?.status === option.value;
+                  return (
+                    <DropdownMenuItem
+                      key={option.value}
+                      disabled={isCurrent || statusMutation.isPending}
+                      onClick={() => handleStatusChange(option.value)}
+                    >
+                      <span
+                        className={cn(
+                          "mr-2 size-2 rounded-full",
+                          getAppointmentStatusDotClass(option.value),
+                        )}
+                      />
+                      {option.label}
+                    </DropdownMenuItem>
+                  );
+                })
+              : null}
+            {!isTimeBlockView && allowStatusMenu ? <DropdownMenuSeparator /> : null}
+            {!isTimeBlockView && appointment?.expressBookingPending ? (
+              <DropdownMenuItem
+                disabled={resendExpressMutation.isPending}
+                onClick={() => resendExpressMutation.mutate()}
+              >
+                Resend completion link
+              </DropdownMenuItem>
+            ) : null}
+            {!isTimeBlockView && onRebook && canMutateThisAppointment ? (
+              <DropdownMenuItem onClick={() => onRebook(appointmentId)}>
+                Rebook appointment
+              </DropdownMenuItem>
+            ) : null}
+            {allowTimeBlockEdit ? (
+              <DropdownMenuItem onClick={() => setIsEditing(true)}>
+                Edit
+              </DropdownMenuItem>
+            ) : null}
+            {allowTimeBlockEdit ? <DropdownMenuSeparator /> : null}
+            {allowCancel && appointment?.status !== "CANCELLED" ? (
+              <DropdownMenuItem
+                onClick={() => onCancel?.(appointmentId)}
+                className="text-destructive focus:text-destructive"
+              >
+                {isTimeBlockView ? "Cancel time block" : "Cancel appointment"}
+              </DropdownMenuItem>
+            ) : null}
+            {allowDelete ? (
+              <DropdownMenuItem
+                onClick={() => onDelete?.(appointmentId)}
+                className="text-destructive focus:text-destructive"
+              >
+                <Trash2 className="mr-2 size-4" />
+                Delete
+              </DropdownMenuItem>
+            ) : null}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ) : null}
+      {allowEdit && !isEditing ? (
         <IconButton
           aria-label="Edit appointment"
           onClick={handleEditClick}
-          className={APPOINTMENT_POPUP_HEADER_ACTION_CLASS}
+          className={
+            isMobile
+              ? APPOINTMENT_DRAWER_MOBILE_HEADER_ACTION_CLASS
+              : APPOINTMENT_DRAWER_HEADER_ACTION_CLASS
+          }
         >
           <Pencil className="size-4" />
         </IconButton>
@@ -360,10 +472,16 @@ export function AppointmentDetailDrawer({
       {variant === "panel" ? (
         <IconButton
           aria-label="Close appointment details"
-          onClick={onClose}
-          className={APPOINTMENT_POPUP_CLOSE_ACTION_CLASS}
+          onClick={() => {
+            if (isEditing) {
+              exitEditing();
+              return;
+            }
+            onClose();
+          }}
+          className={APPOINTMENT_DRAWER_CLOSE_ACTION_CLASS}
         >
-          <X className="size-4" />
+          <DrawerCloseIcon />
         </IconButton>
       ) : null}
     </>
@@ -373,7 +491,7 @@ export function AppointmentDetailDrawer({
     <IconButton
       aria-label="Back"
       onClick={handleCheckoutBack}
-      className={APPOINTMENT_POPUP_HEADER_ACTION_CLASS}
+      className={APPOINTMENT_DRAWER_HEADER_ACTION_CLASS}
     >
       <ChevronLeft className="size-4" />
     </IconButton>
@@ -387,174 +505,271 @@ export function AppointmentDetailDrawer({
         title={CLOSED_SALE_EDIT_GUARD_COPY.title}
         description={closedSaleGuardDescription}
         acknowledgementLabel={CLOSED_SALE_EDIT_GUARD_COPY.acknowledgementLabel}
-        onConfirm={onEdit}
+        onConfirm={() => {
+          setClosedSaleEditGuardOpen(false);
+          setIsEditing(true);
+        }}
       />
 
       <DrawerShell
-      variant={variant}
-      width="appointment"
-      className={APPOINTMENT_POPUP_SHELL_CLASS}
-      headerClassName={cn(
-        APPOINTMENT_POPUP_HEADER_CLASS,
-        "[&_[data-slot=sheet-title]]:text-[20px] [&_[data-slot=sheet-title]]:font-bold [&_[data-slot=sheet-title]]:text-[#7E3BED]",
-        // Figma close: 44×44, radius 8, padding 10, transparent (no white/grey box)
-        "[&_button[aria-label=Close]]:!size-11 [&_button[aria-label=Close]]:rounded-lg [&_button[aria-label=Close]]:!border-0 [&_button[aria-label=Close]]:!bg-transparent [&_button[aria-label=Close]]:p-2.5 [&_button[aria-label=Close]]:text-[#6B6B6B] [&_button[aria-label=Close]]:!shadow-none [&_button[aria-label=Close]]:hover:!bg-black/5 [&_button[aria-label=Close]]:hover:text-black",
-      )}
-      footerClassName={APPOINTMENT_POPUP_FOOTER_CLASS}
-      open={open}
-      onOpenChange={(nextOpen) => {
-        onOpenChange?.(nextOpen);
-        if (!nextOpen) {
-          setCheckoutStep("items");
-          setPaymentAction(null);
-          onClose();
+        variant={variant}
+        width="appointment"
+        chrome={isMobile && !showCheckout ? "mobile-brand" : "default"}
+        spineLabel={
+          showCheckout || isMobile
+            ? undefined
+            : isTimeBlockView
+              ? "TIME BLOCK"
+              : "APPOINTMENT DETAIL"
         }
-      }}
-      title={title}
-      headerActions={showCheckout ? checkoutHeaderActions : detailHeaderActions}
-      showCloseButton={variant === "sheet" && !showCheckout}
-      footer={drawerFooter}
-      contentClassName="flex min-h-0 flex-1 flex-col !px-0 !py-0"
-      bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden !p-0"
-    >
-      <div className="relative flex min-h-0 flex-1 overflow-hidden">
-        <div
-          className={cn(
-            "absolute inset-0 flex min-h-0 flex-col transition-all duration-300 ease-out",
-            showCheckout
-              ? "pointer-events-none -translate-x-4 opacity-0"
-              : "translate-x-0 opacity-100",
-          )}
-        >
-          {isLoading || !appointment ? (
-            <div className="flex flex-1 items-center justify-center py-16 text-muted-foreground">
-              <Loader2 className="size-5 animate-spin" />
-            </div>
+        className={
+          isMobile && !showCheckout
+            ? APPOINTMENT_DRAWER_MOBILE_SHELL_CLASS
+            : APPOINTMENT_DRAWER_SHELL_CLASS
+        }
+        headerClassName={
+          isMobile && !showCheckout
+            ? undefined
+            : APPOINTMENT_DRAWER_SHELL_HEADER_CLASS
+        }
+        footerClassName={APPOINTMENT_DRAWER_FOOTER_CLASS}
+        open={open}
+        onOpenChange={(nextOpen) => {
+          if (!nextOpen && isEditing && !showCheckout) {
+            exitEditing();
+            return;
+          }
+          onOpenChange?.(nextOpen);
+          if (!nextOpen) {
+            setCheckoutStep("items");
+            setPaymentAction(null);
+            onClose();
+          }
+        }}
+        title={
+          showCheckout || isMobile ? (
+            title
           ) : (
-            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain scrollbar-thin">
-              <div className="flex flex-col py-4">
-                <div className="px-5">
-                <AppointmentStatusBar
-                  status={appointment.status}
-                  relatedCheckoutId={appointment.relatedCheckoutId ?? null}
-                  relatedCheckoutStatus={appointment.relatedCheckoutStatus ?? null}
-                  waitingNotifiedAt={appointment.waitingNotifiedAt ?? null}
-                  expressBookingExpiresAt={
-                    appointment.expressBookingExpiresAt ?? null
-                  }
-                  disabled={
-                    !allowStatusMenu ||
-                    statusMutation.isPending ||
-                    notifyMutation.isPending ||
-                    staffCompleteExpressMutation.isPending
-                  }
-                  onStatusChange={handleStatusChange}
-                  onNotify={() => {
-                    if (canMutateThisAppointment) notifyMutation.mutate();
-                  }}
-                  onCompleteExpress={
-                    allowStatusMenu
-                      ? () => staffCompleteExpressMutation.mutate()
-                      : undefined
-                  }
-                  onCheckout={() => onCheckout(appointment.id)}
-                  onViewSale={() => {
-                    if (appointment.relatedCheckoutId) {
-                      onOpenCheckoutView(appointment.relatedCheckoutId);
-                    }
-                  }}
-                />
-                </div>
+            <DrawerHeaderContent
+              eyebrow={
+                isEditing
+                  ? editHeaderDate || headerDateLabel || undefined
+                  : headerDateLabel || undefined
+              }
+              title={title}
+            />
+          )
+        }
+        headerActions={showCheckout ? checkoutHeaderActions : detailHeaderActions}
+        showCloseButton={variant === "sheet" && !showCheckout}
+        footer={drawerFooter}
+        contentClassName="flex min-h-0 flex-1 flex-col !px-0 !py-0"
+        bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden !p-0"
+      >
+        <div className="relative flex min-h-0 flex-1 overflow-hidden">
+          <div
+            className={cn(
+              "absolute inset-0 flex min-h-0 flex-col transition-all duration-300 ease-out",
+              showCheckout
+                ? "pointer-events-none -translate-x-4 opacity-0"
+                : "translate-x-0 opacity-100",
+            )}
+          >
+            {isLoading || !appointment ? (
+              <div className="flex flex-1 items-center justify-center py-16 text-muted-foreground">
+                <Loader2 className="size-5 animate-spin" />
+              </div>
+            ) : (
+              <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain scrollbar-thin">
+                <div className={APPOINTMENT_DRAWER_BODY_INSET_CLASS}>
+                  {isEditing && isTimeBlockView ? (
+                    <TimeBlockUpdateForm
+                      ref={timeBlockUpdateFormRef}
+                      appointment={appointment}
+                      timezone={timezone}
+                      onSaved={exitEditing}
+                      onPendingChange={setUpdatePending}
+                      onHeaderDateChange={setEditHeaderDate}
+                    />
+                  ) : isEditing ? (
+                    <AppointmentUpdateForm
+                      ref={updateFormRef}
+                      appointment={appointment}
+                      timezone={timezone}
+                      currencyCode={currencyCode}
+                      updatedBy={updatedBy}
+                      canViewHistory={calendarPerms.canViewHistory}
+                      onSaved={exitEditing}
+                      onPendingChange={setUpdatePending}
+                      onHeaderDateChange={setEditHeaderDate}
+                      onMessageClick={onMessageClick}
+                    />
+                  ) : isTimeBlockView ? (
+                    <TimeBlockDetailView
+                      appointment={appointment}
+                      timezone={timezone}
+                      dateLabel={dateFieldLabel}
+                      timeLabel={timeFieldLabel}
+                      updatedBy={updatedBy}
+                      canViewHistory={calendarPerms.canViewHistory}
+                    />
+                  ) : (
+                    <>
+                      <AppointmentStatusBar
+                        status={appointment.status}
+                        relatedCheckoutId={appointment.relatedCheckoutId ?? null}
+                        relatedCheckoutStatus={
+                          appointment.relatedCheckoutStatus ?? null
+                        }
+                        waitingNotifiedAt={appointment.waitingNotifiedAt ?? null}
+                        expressBookingExpiresAt={
+                          appointment.expressBookingExpiresAt ?? null
+                        }
+                        disabled={
+                          !allowStatusMenu ||
+                          statusMutation.isPending ||
+                          notifyMutation.isPending ||
+                          staffCompleteExpressMutation.isPending
+                        }
+                        onStatusChange={handleStatusChange}
+                        onNotify={() => {
+                          if (canMutateThisAppointment) notifyMutation.mutate();
+                        }}
+                        onCompleteExpress={
+                          allowStatusMenu
+                            ? () => staffCompleteExpressMutation.mutate()
+                            : undefined
+                        }
+                        onCheckout={() => onCheckout(appointment.id)}
+                        onViewSale={() => {
+                          if (appointment.relatedCheckoutId) {
+                            onOpenCheckoutView(appointment.relatedCheckoutId);
+                          }
+                        }}
+                      />
 
-                {/* Full-bleed On/At — no side padding on the row; cells pad text */}
-                <AppointmentDateTimeBar
-                  startAt={appointment.startAt}
-                  endAt={appointment.endAt}
-                  timezone={timezone}
-                />
+                      <AppointmentDateTimeDisplay
+                        dateLabel={dateFieldLabel}
+                        timeLabel={timeFieldLabel}
+                        onDateClick={allowEdit ? handleEditClick : undefined}
+                        onTimeClick={allowEdit ? handleEditClick : undefined}
+                      />
 
-                <div className="mt-5 flex flex-col gap-5 px-5">
-                <AppointmentClientBlock
-                  contact={appointment.contact}
-                  guestFirstName={appointment.guestFirstName}
-                  guestEmail={appointment.guestEmail}
-                  guestPhone={appointment.guestPhone}
-                  pendingExpress={appointment.status === "PENDING_COMPLETION"}
-                  onMessageClick={
-                    appointment.contactId
-                      ? () => onMessageClick(appointment.contactId!)
-                      : undefined
-                  }
-                />
+                      {appointment.contact ? (
+                        <AppointmentClientCard
+                          contact={appointment.contact}
+                          onRemove={allowEdit ? handleEditClick : undefined}
+                          onAddCreditCard={() =>
+                            toast.message(
+                              "Open the client profile to add a payment method",
+                            )
+                          }
+                          onMessageClick={() =>
+                            onMessageClick(appointment.contact!.id)
+                          }
+                        />
+                      ) : appointment.status === "PENDING_COMPLETION" ||
+                        appointment.guestFirstName ||
+                        appointment.guestEmail ? (
+                        <AppointmentGuestCard
+                          name={
+                            appointment.guestFirstName?.trim() ||
+                            appointment.guestEmail?.trim() ||
+                            "Guest"
+                          }
+                          email={appointment.guestEmail}
+                          phone={appointment.guestPhone}
+                        />
+                      ) : null}
 
-                <AppointmentServicesList
-                  services={appointment.services ?? []}
-                  timezone={timezone}
-                  currencyCode={currencyCode}
-                />
+                      {(appointment.services ?? []).length > 0 ? (
+                        <div className="flex flex-col gap-3">
+                          {(appointment.services ?? []).map((line) => (
+                            <AppointmentServiceCard
+                              key={line.id}
+                              line={line}
+                              timezone={timezone}
+                              currencyCode={currencyCode}
+                              onRemove={
+                                allowEdit ? () => handleEditClick() : undefined
+                              }
+                            />
+                          ))}
+                        </div>
+                      ) : null}
 
-                {appointment.notes?.trim() ? (
-                  <div>
-                    <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-grey-tertiary-normal">
-                      Notes
-                    </p>
-                    <p className="whitespace-pre-wrap text-[13.5px] leading-relaxed text-black-secondary-normal">
-                      {appointment.notes}
-                    </p>
-                  </div>
-                ) : null}
+                      {allowEdit ? (
+                        <AppointmentAddActions
+                          variant={isMobile && isEditing ? "outline" : "link"}
+                          onAddService={handleEditClick}
+                          onAddNote={handleEditClick}
+                        />
+                      ) : null}
 
-                <AppointmentAttachedPhotos
-                  appointmentId={appointment.id}
-                  hasPhotos={Boolean(
-                    appointment.hasPhotos ||
-                      (appointment.photoFileIds?.length ?? 0) > 0,
+                      {appointment.notes?.trim() ? (
+                        <div>
+                          <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#9A9A9A]">
+                            Notes
+                          </p>
+                          <p className="whitespace-pre-wrap text-[14px] leading-relaxed text-[#1A1A1A]">
+                            {appointment.notes}
+                          </p>
+                        </div>
+                      ) : null}
+
+                      <AppointmentAttachedPhotos
+                        appointmentId={appointment.id}
+                        hasPhotos={Boolean(
+                          appointment.hasPhotos ||
+                            (appointment.photoFileIds?.length ?? 0) > 0,
+                        )}
+                      />
+
+                      {calendarPerms.canViewHistory ? (
+                        <AppointmentBookingDetails
+                          createdAt={appointment.createdAt}
+                          updatedAt={appointment.updatedAt}
+                          createdBy={appointment.createdBy}
+                          updatedBy={updatedBy}
+                          timezone={timezone}
+                          defaultOpen={false}
+                        />
+                      ) : null}
+                    </>
                   )}
-                />
-
-                {calendarPerms.canViewHistory ? (
-                  <AppointmentBookingDetailsSummary
-                    createdAt={appointment.createdAt}
-                    updatedAt={appointment.updatedAt}
-                    createdBy={appointment.createdBy}
-                    updatedBy={updatedBy}
-                    timezone={timezone}
-                  />
-                ) : null}
                 </div>
               </div>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
 
-        <div
-          className={cn(
-            "absolute inset-0 flex min-h-0 flex-col transition-all duration-300 ease-out",
-            showCheckout
-              ? "translate-x-0 opacity-100"
-              : "pointer-events-none translate-x-4 opacity-0",
-          )}
-        >
-          {checkoutId ? (
-            <div className={DRAWER_SCROLL_EDGE_CLASS}>
-              <div className={DRAWER_SCROLL_CONTENT_INSET_CLASS}>
-                <CheckoutDrawerPanel
-                  checkoutId={checkoutId}
-                  step={checkoutStep}
-                  contactHeader={contactHeader}
-                  onSubmitActionChange={setPaymentAction}
-                  onComplete={() => {
-                    setCheckoutStep("items");
-                    setPaymentAction(null);
-                    onCheckoutComplete?.();
-                  }}
-                />
+          <div
+            className={cn(
+              "absolute inset-0 flex min-h-0 flex-col transition-all duration-300 ease-out",
+              showCheckout
+                ? "translate-x-0 opacity-100"
+                : "pointer-events-none translate-x-4 opacity-0",
+            )}
+          >
+            {checkoutId ? (
+              <div className={DRAWER_SCROLL_EDGE_CLASS}>
+                <div className={DRAWER_SCROLL_CONTENT_INSET_CLASS}>
+                  <CheckoutDrawerPanel
+                    checkoutId={checkoutId}
+                    step={checkoutStep}
+                    contactHeader={contactHeader}
+                    onSubmitActionChange={setPaymentAction}
+                    onComplete={() => {
+                      setCheckoutStep("items");
+                      setPaymentAction(null);
+                      onCheckoutComplete?.();
+                    }}
+                  />
+                </div>
               </div>
-            </div>
-          ) : null}
+            ) : null}
+          </div>
         </div>
-      </div>
-    </DrawerShell>
+      </DrawerShell>
     </>
   );
 }

@@ -1,6 +1,9 @@
 "use client";
 
 import { Plus, Search } from "lucide-react";
+import { ApiErrorState } from "@/components/data-display/api-error-state";
+import { EmptyState } from "@/components/data-display/empty-state";
+import { LoadingState } from "@/components/data-display/loading-state";
 import { VirtualList } from "@/components/data-display/virtual-list";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,6 +36,8 @@ interface ConversationListPanelProps {
   onStatusFilterChange: (value: InboxStatusFilter) => void;
   threads: UnifiedConversationThread[];
   listLoading: boolean;
+  listError?: unknown;
+  onListRetry?: () => void;
   selectedThreadKey: string | null;
   onSelectThread: (thread: UnifiedConversationThread) => void;
   useVirtualThreads: boolean;
@@ -47,6 +52,8 @@ export function ConversationListPanel({
   onStatusFilterChange,
   threads,
   listLoading,
+  listError,
+  onListRetry,
   selectedThreadKey,
   onSelectThread,
   useVirtualThreads,
@@ -110,13 +117,35 @@ export function ConversationListPanel({
       </div>
 
       <div className="min-h-0 flex-1">
-        {listLoading ? (
-          <p className="p-4 text-sm text-muted-foreground">Loading…</p>
+        {listError ? (
+          <div className="p-3">
+            <ApiErrorState
+              compact
+              error={listError}
+              onRetry={onListRetry}
+            />
+          </div>
+        ) : listLoading ? (
+          <LoadingState
+            variant="inline"
+            label="Loading…"
+            className="p-4"
+          />
         ) : threads.length === 0 ? (
-          <p className="p-4 text-sm text-muted-foreground">
-            No conversations yet. Messages from connected Facebook, Instagram,
-            WhatsApp, or website chat channels will appear here.
-          </p>
+          <EmptyState
+            compact
+            title="No conversations yet"
+            description="Messages from connected Facebook, Instagram, WhatsApp, or website chat channels will appear here."
+            className="px-3 py-8"
+            action={
+              onNewConversation ? (
+                <Button size="sm" onClick={onNewConversation}>
+                  <Plus className="mr-1.5 size-4" />
+                  New conversation
+                </Button>
+              ) : undefined
+            }
+          />
         ) : useVirtualThreads ? (
           <VirtualList
             className="h-full"

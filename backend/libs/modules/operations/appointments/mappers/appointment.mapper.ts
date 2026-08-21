@@ -1,3 +1,4 @@
+import { isTimeBlockMetadata } from '@app/modules/operations/online-booking-settings/utils/gap-avoidance.util';
 import { AppointmentResponseDto } from '../dto/appointment.dto';
 import { AppointmentWithRelations } from '../repositories/appointment.repository';
 
@@ -89,6 +90,7 @@ export function toAppointmentResponse(
     expressTimeLimitMinutes: row.expressTimeLimitMinutes ?? null,
     photoFileIds,
     hasPhotos: photoFileIds.length > 0,
+    isTimeBlock: isTimeBlockMetadata(row.metadata),
     ...(options?.googleSyncWarning
       ? { googleSyncWarning: options.googleSyncWarning }
       : {}),

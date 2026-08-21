@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import { CalendarDatePicker } from "@/features/appointments/components/calendar/calendar-date-picker";
+import { CalendarNavArrowIcon } from "@/features/appointments/components/calendar/calendar-nav-arrow-icon";
 import { CalendarViewSwitcher } from "@/features/appointments/components/calendar/calendar-view-switcher";
 import { CalendarFiltersPopover } from "@/features/appointments/components/calendar/calendar-filters-popover";
 import {
@@ -14,14 +15,11 @@ import {
   CALENDAR_TOOLBAR_DIVIDER_CLASS,
   CALENDAR_TOOLBAR_NAV_BUTTON_CLASS,
   CALENDAR_TOOLBAR_NAV_GROUP_CLASS,
-  CALENDAR_TOOLBAR_OUTLINE_BUTTON_CLASS,
   CALENDAR_TOOLBAR_TODAY_BUTTON_CLASS,
 } from "@/features/appointments/components/calendar/calendar-toolbar-tokens";
-import { Button } from "@/components/ui/button";
 import type { CalendarViewMode } from "@/features/calendars/utils/calendar-dates";
 import { formatDateRangeLabelInTimezone } from "@/features/calendars/utils/timezone";
 import { cn } from "@/lib/utils";
-import { WaitlistToolbarButton } from "@/features/waitlist/components/waitlist-toolbar-button";
 
 interface CalendarToolbarProps {
   view: CalendarViewMode;
@@ -36,12 +34,9 @@ interface CalendarToolbarProps {
   staffMembers: StaffMemberOption[];
   selectedStaffId?: string;
   onSelectedStaffIdChange?: (userId: string) => void;
-  visibleStaffIds?: string[];
-  onVisibleStaffIdsChange?: (ids: string[]) => void;
   showStaffSelector?: boolean;
   statusFilter: string;
   onStatusFilterChange: (value: string) => void;
-  onOpenWaitlist?: () => void;
   className?: string;
 }
 
@@ -64,12 +59,9 @@ export function CalendarToolbar({
   staffMembers,
   selectedStaffId,
   onSelectedStaffIdChange,
-  visibleStaffIds,
-  onVisibleStaffIdsChange,
   showStaffSelector: showStaffSelectorProp,
   statusFilter,
   onStatusFilterChange,
-  onOpenWaitlist,
   className,
 }: CalendarToolbarProps) {
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -79,9 +71,10 @@ export function CalendarToolbar({
     navView,
     timezone,
   );
+  // Figma: staff picker only in Week (Day shows every staff as columns)
   const showStaffSelector =
     showStaffSelectorProp !== false &&
-    (view === "week" || view === "day") &&
+    view === "week" &&
     staffMembers.length > 0;
 
   return (
@@ -91,7 +84,7 @@ export function CalendarToolbar({
         className,
       )}
     >
-      {/* Figma: < Today > + date frame · gaps 11px / 25px · h-44 */}
+      {/* Figma Left Buttons: < Today > · gap 10 · h-44 · then date frame gap 25 */}
       <div className="flex min-w-0 flex-wrap items-center gap-3 sm:gap-[25px]">
         <div
           className={CALENDAR_TOOLBAR_NAV_GROUP_CLASS}
@@ -104,22 +97,22 @@ export function CalendarToolbar({
             onClick={onPrevious}
             aria-label="Previous"
           >
-            <ChevronLeft className="size-4 shrink-0" strokeWidth={2.5} aria-hidden />
+            <CalendarNavArrowIcon direction="prev" />
           </button>
-          <Button
+          <button
             type="button"
             className={CALENDAR_TOOLBAR_TODAY_BUTTON_CLASS}
             onClick={onToday}
           >
             Today
-          </Button>
+          </button>
           <button
             type="button"
             className={CALENDAR_TOOLBAR_NAV_BUTTON_CLASS}
             onClick={onNext}
             aria-label="Next"
           >
-            <ChevronRight className="size-4 shrink-0" strokeWidth={2.5} aria-hidden />
+            <CalendarNavArrowIcon direction="next" />
           </button>
         </div>
 
@@ -142,7 +135,9 @@ export function CalendarToolbar({
               aria-label={`${rangeLabel}. Open date picker`}
               aria-expanded={pickerOpen}
             >
-              <span className="min-w-0 truncate">{rangeLabel}</span>
+              <span className="min-w-0 truncate leading-5">
+                {rangeLabel}
+              </span>
               <ChevronDown
                 className={cn(
                   "size-4 shrink-0 text-[#7E3BED] transition-transform",
@@ -155,26 +150,17 @@ export function CalendarToolbar({
         />
       </div>
 
-      {/* Figma right cluster — staff + filter + Day/Week · gap 21px */}
+      {/* Figma right cluster — staff (week only) + filter + Day/Week · gap 21px */}
       <div className="flex min-w-0 flex-wrap items-center justify-end gap-3 sm:gap-[21px]">
         {showStaffSelector ? (
           <>
             <div className={CALENDAR_TOOLBAR_DIVIDER_CLASS} aria-hidden />
-            {view === "week" ? (
-              <StaffSelector
-                mode="single"
-                members={staffMembers}
-                selectedStaffId={selectedStaffId}
-                onSelectedStaffIdChange={onSelectedStaffIdChange}
-              />
-            ) : (
-              <StaffSelector
-                mode="multi"
-                members={staffMembers}
-                visibleStaffIds={visibleStaffIds}
-                onVisibleStaffIdsChange={onVisibleStaffIdsChange}
-              />
-            )}
+            <StaffSelector
+              mode="single"
+              members={staffMembers}
+              selectedStaffId={selectedStaffId}
+              onSelectedStaffIdChange={onSelectedStaffIdChange}
+            />
           </>
         ) : null}
 
@@ -184,13 +170,6 @@ export function CalendarToolbar({
         />
 
         <CalendarViewSwitcher value={view} onChange={onViewChange} />
-
-        {onOpenWaitlist ? (
-          <WaitlistToolbarButton
-            onClick={onOpenWaitlist}
-            className={CALENDAR_TOOLBAR_OUTLINE_BUTTON_CLASS}
-          />
-        ) : null}
       </div>
     </div>
   );

@@ -1,26 +1,30 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { FileText, Loader2 } from "lucide-react";
-import { toast } from "sonner";
 import {
-  DrawerShell,
-  DRAWER_FOOTER_BUTTON_CLASS,
-} from "@/components/layout/drawer-shell";
+  forwardRef,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useState,
+} from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { ActionButton } from "@/components/ui/action-button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
+import { DrawerAddAction } from "@/components/drawer/drawer-add-action";
+import { DrawerCheckboxRow } from "@/components/drawer/drawer-checkbox-row";
+import { DrawerFormFieldGroup } from "@/components/drawer/drawer-form-field-group";
+import { DrawerFormFields } from "@/components/drawer/drawer-form-fields";
+import { DrawerPlusIcon } from "@/components/drawer/drawer-icons";
 import { Textarea } from "@/components/ui/textarea";
 import { ContactPicker } from "@/features/contacts/components/contact-picker";
 import type { Contact } from "@/features/contacts/types";
-import {
-  getAppointment,
-  updateAppointment,
-} from "@/features/appointments/api/appointments.api";
-import { AppointmentBookingDateTimeFields } from "@/features/appointments/components/appointment-booking-datetime-fields";
+import { updateAppointment } from "@/features/appointments/api/appointments.api";
+import { AppointmentDateTimeFields } from "@/features/appointments/components/drawer/appointment-datetime-fields";
+import { AppointmentClientCard } from "@/features/appointments/components/drawer/appointment-client-card";
+import { AppointmentBookingDetails } from "@/features/appointments/components/drawer/appointment-booking-details";
 import {
   AppointmentServiceLineEditor,
+  AppointmentServicePicker,
   type AppointmentServiceLineSelection,
   type StaffOption,
 } from "@/features/appointments/components/appointment-service-line-editor";
@@ -31,37 +35,24 @@ import {
 import {
   appointmentLinesFromResponse,
   buildAppointmentSchedulePayload,
+  getChainedStartMinutes,
   rechainAllServiceLines,
   scheduleFromUtcIso,
+  serviceToLineSelection,
 } from "@/features/appointments/utils/appointment-service-lines";
 import { getCalendarSchedulingConfig } from "@/features/appointments/utils/appointment-scheduling";
 import { listCalendars } from "@/features/calendars/api/calendars.api";
-import { resolveAppointmentDisplayTimezone } from "@/features/calendars/utils/timezone";
 import { listBusinessMembers } from "@/features/settings/api/business.api";
-import { useCurrentBusiness } from "@/features/settings/hooks/use-current-business";
 import { queryKeys } from "@/lib/query/keys";
+import type { Service } from "@/lib/types/api";
 import {
-  DRAWER_FORM_ITEM_CLASS,
-} from "@/lib/design/drawer-shell-tokens";
-import {
-  APPOINTMENT_POPUP_FIELD_CLASS,
-  APPOINTMENT_POPUP_FOOTER_CLASS,
-  APPOINTMENT_POPUP_HEADER_CLASS,
-  APPOINTMENT_POPUP_PRIMARY_BUTTON_CLASS,
-  APPOINTMENT_POPUP_SHELL_CLASS,
-} from "@/features/appointments/styles/appointment-side-popup";
+  APPOINTMENT_DRAWER_ADD_ACTION_CLASS,
+  APPOINTMENT_DRAWER_ADD_ACTION_ICON_CLASS,
+  APPOINTMENT_DRAWER_FIELD_CLASS,
+} from "@/features/appointments/styles/appointment-drawer-tokens";
 import { cn } from "@/lib/utils";
 
 const NOTES_MAX_LENGTH = 400;
-
-export interface AppointmentEditDrawerProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  appointmentId: string | null;
-  /** Authoritative timezone from the calendar grid (keeps displayed time consistent). */
-  timezone?: string;
-  onSuccess?: () => void;
-}
 
 function memberLabel(member: {
   user: {
@@ -89,15 +80,54 @@ function appointmentToServiceSelections(
   );
 }
 
-export function AppointmentEditDrawer({
-  open,
-  onOpenChange,
-  appointmentId,
-  timezone: timezoneProp,
-  onSuccess,
-}: AppointmentEditDrawerProps) {
+function contactToClientCard(
+  contact: Contact,
+): NonNullable<Appointment["contact"]> {
+  return {
+    id: contact.id,
+    firstName: contact.firstName,
+    lastName: contact.lastName,
+    displayName: contact.displayName,
+    email: contact.email,
+    phoneNumber: contact.phoneNumber ?? contact.phone,
+    createdAt: contact.createdAt,
+  };
+}
+
+export interface AppointmentUpdateFormHandle {
+  save: () => void;
+}
+
+export interface AppointmentUpdateFormProps {
+  appointment: Appointment;
+  timezone: string;
+  currencyCode?: string;
+  updatedBy?: string | null;
+  canViewHistory?: boolean;
+  onSaved: () => void;
+  onPendingChange?: (pending: boolean) => void;
+  onHeaderDateChange?: (label: string) => void;
+  onMessageClick?: (contactId: string) => void;
+}
+
+export const AppointmentUpdateForm = forwardRef<
+  AppointmentUpdateFormHandle,
+  AppointmentUpdateFormProps
+>(function AppointmentUpdateForm(
+  {
+    appointment,
+    timezone,
+    currencyCode = "USD",
+    updatedBy = null,
+    canViewHistory = false,
+    onSaved,
+    onPendingChange,
+    onHeaderDateChange,
+    onMessageClick,
+  },
+  ref,
+) {
   const queryClient = useQueryClient();
-  const { data: business } = useCurrentBusiness();
 
   const { data: calendars } = useQuery({
     queryKey: queryKeys.calendars.list({ limit: 100 }),
@@ -109,27 +139,10 @@ export function AppointmentEditDrawer({
     queryFn: () => listBusinessMembers({ page: 1, limit: 100 }),
   });
 
-  const { data: appointment, isLoading } = useQuery({
-    queryKey: queryKeys.appointments.detail(appointmentId ?? ""),
-    queryFn: () => getAppointment(appointmentId!),
-    enabled: open && Boolean(appointmentId),
-  });
-
-  const resolvedTimezone = useMemo(
-    () =>
-      resolveAppointmentDisplayTimezone(
-        business?.timezone,
-        appointment?.calendarId,
-        calendars?.items,
-      ),
-    [business?.timezone, appointment?.calendarId, calendars?.items],
-  );
-  const timezone = timezoneProp ?? resolvedTimezone;
-
   const selectedCalendar = useMemo(
     () =>
-      calendars?.items.find((calendar) => calendar.id === appointment?.calendarId),
-    [calendars?.items, appointment?.calendarId],
+      calendars?.items.find((calendar) => calendar.id === appointment.calendarId),
+    [calendars?.items, appointment.calendarId],
   );
 
   const schedulingConfig = getCalendarSchedulingConfig(selectedCalendar);
@@ -144,18 +157,25 @@ export function AppointmentEditDrawer({
   );
 
   const defaultAssignedToId =
-    appointment?.assignedToId ?? staffOptions[0]?.userId ?? "";
+    appointment.assignedToId ?? staffOptions[0]?.userId ?? "";
 
-  const [contactId, setContactId] = useState("");
-  const [contactLabel, setContactLabel] = useState("");
+  const [contactId, setContactId] = useState(appointment.contactId ?? "");
+  const [contactLabel, setContactLabel] = useState(
+    getContactDisplayName(appointment.contact),
+  );
+  const [pickedContact, setPickedContact] = useState<Contact | null>(null);
   const [dateKey, setDateKey] = useState("");
   const [startMinutes, setStartMinutes] = useState(9 * 60);
-  const [services, setServices] = useState<AppointmentServiceLineSelection[]>([]);
-  const [notes, setNotes] = useState("");
+  const [services, setServices] = useState<AppointmentServiceLineSelection[]>(
+    [],
+  );
+  const [notes, setNotes] = useState(appointment.notes ?? "");
   const [sendConfirmation, setSendConfirmation] = useState(true);
+  const [notesOpen, setNotesOpen] = useState(false);
+  const [draftNotes, setDraftNotes] = useState("");
+  const [servicePickerOpen, setServicePickerOpen] = useState(false);
 
   useEffect(() => {
-    if (!appointment) return;
     const schedule = scheduleFromUtcIso(
       appointment.startAt,
       appointment.endAt,
@@ -163,6 +183,7 @@ export function AppointmentEditDrawer({
     );
     setContactId(appointment.contactId ?? "");
     setContactLabel(getContactDisplayName(appointment.contact));
+    setPickedContact(null);
     setDateKey(schedule.dateKey);
     setStartMinutes(schedule.appointmentStartMinutes);
     setServices(
@@ -174,15 +195,12 @@ export function AppointmentEditDrawer({
     );
     setNotes(appointment.notes ?? "");
     setSendConfirmation(true);
+    setNotesOpen(false);
+    setDraftNotes("");
   }, [appointment, timezone, defaultAssignedToId]);
-
-  const currencyCode = business?.taxesAndCurrency?.currencyCode ?? "USD";
 
   const mutation = useMutation({
     mutationFn: () => {
-      if (!appointment) {
-        throw new Error("Appointment not found");
-      }
       if (!contactId) {
         throw new Error("Select a client");
       }
@@ -226,13 +244,55 @@ export function AppointmentEditDrawer({
       void queryClient.invalidateQueries({
         queryKey: queryKeys.appointments.all(),
       });
-      onOpenChange(false);
-      onSuccess?.();
+      onSaved();
+    },
+    onError: (error) => {
+      toast.error(
+        error instanceof Error ? error.message : "Could not update appointment",
+      );
     },
   });
 
+  useImperativeHandle(
+    ref,
+    () => ({
+      save: () => mutation.mutate(),
+    }),
+    [mutation],
+  );
+
+  useEffect(() => {
+    onPendingChange?.(mutation.isPending);
+  }, [mutation.isPending, onPendingChange]);
+
+  const headerDateLabel = useMemo(() => {
+    if (!dateKey) return "";
+    const date = new Date(`${dateKey}T12:00:00`);
+    if (Number.isNaN(date.getTime())) return "";
+    return date
+      .toLocaleDateString("en-US", {
+        month: "long",
+        day: "numeric",
+        year: "numeric",
+      })
+      .toUpperCase();
+  }, [dateKey]);
+
+  useEffect(() => {
+    onHeaderDateChange?.(headerDateLabel);
+  }, [headerDateLabel, onHeaderDateChange]);
+
+  const clientCardContact = pickedContact
+    ? contactToClientCard(pickedContact)
+    : appointment.contact && contactId === appointment.contact.id
+      ? appointment.contact
+      : null;
+
+  const hasFilledServices = services.length > 0;
+
   const handleContactSelect = (contact: Contact) => {
     setContactLabel(contact.label);
+    setPickedContact(contact);
   };
 
   const handleStartMinutesChange = (minutes: number) => {
@@ -240,112 +300,205 @@ export function AppointmentEditDrawer({
     setServices((current) => rechainAllServiceLines(current, minutes));
   };
 
+  const handleAddService = (service: Service) => {
+    const nextStartMinutes = getChainedStartMinutes(
+      services,
+      services.length,
+      startMinutes,
+    );
+    const assignedToId =
+      services[services.length - 1]?.assignedToId || defaultAssignedToId;
+    setServices((current) => [
+      ...current,
+      serviceToLineSelection(service, {
+        assignedToId,
+        startMinutes: nextStartMinutes,
+      }),
+    ]);
+  };
+
+  const openNotesEditor = () => {
+    setDraftNotes(notes);
+    setNotesOpen(true);
+  };
+
+  const confirmNotes = () => {
+    setNotes(draftNotes.trim());
+    setNotesOpen(false);
+    setDraftNotes("");
+  };
+
+  const cancelNotes = () => {
+    setNotesOpen(false);
+    setDraftNotes("");
+  };
+
   return (
-    <DrawerShell
-      open={open}
-      onOpenChange={onOpenChange}
-      variant="sheet"
-      width="appointment"
-      className={APPOINTMENT_POPUP_SHELL_CLASS}
-      headerClassName={cn(
-        APPOINTMENT_POPUP_HEADER_CLASS,
-        "[&_[data-slot=sheet-title]]:text-[20px] [&_[data-slot=sheet-title]]:font-bold [&_[data-slot=sheet-title]]:text-[#7E3BED]",
-        // Figma close: transparent, no grey/white box
-        "[&_button[aria-label=Close]]:!size-11 [&_button[aria-label=Close]]:rounded-lg [&_button[aria-label=Close]]:!border-0 [&_button[aria-label=Close]]:!bg-transparent [&_button[aria-label=Close]]:p-2.5 [&_button[aria-label=Close]]:text-[#6B6B6B] [&_button[aria-label=Close]]:!shadow-none [&_button[aria-label=Close]]:hover:!bg-black/5 [&_button[aria-label=Close]]:hover:text-black",
-      )}
-      contentClassName="!px-0 !py-0"
-      footerClassName={APPOINTMENT_POPUP_FOOTER_CLASS}
-      title="Edit Appointment"
-      footer={
-        <ActionButton
-          type="button"
-          className={cn(
-            DRAWER_FOOTER_BUTTON_CLASS,
-            APPOINTMENT_POPUP_PRIMARY_BUTTON_CLASS,
-          )}
-          disabled={mutation.isPending || isLoading || !appointment}
-          onClick={() => mutation.mutate()}
-        >
-          {mutation.isPending ? "Saving…" : "Save changes"}
-        </ActionButton>
-      }
-    >
-      {isLoading || !appointment ? (
-        <div className="flex items-center justify-center py-16 text-grey-tertiary-normal">
-          <Loader2 className="size-5 animate-spin" />
-        </div>
+    <DrawerFormFields>
+      <AppointmentDateTimeFields
+        dateKey={dateKey}
+        startMinutes={startMinutes}
+        slotIntervalMinutes={schedulingConfig.slotIntervalMinutes}
+        onDateChange={setDateKey}
+        onStartMinutesChange={handleStartMinutesChange}
+      />
+
+      {clientCardContact ? (
+        <AppointmentClientCard
+          contact={clientCardContact}
+          onRemove={() => {
+            setContactId("");
+            setContactLabel("");
+            setPickedContact(null);
+          }}
+          onAddCreditCard={() =>
+            toast.message("Open the client profile to add a payment method")
+          }
+          onMessageClick={
+            onMessageClick && contactId
+              ? () => onMessageClick(contactId)
+              : undefined
+          }
+        />
       ) : (
-        <>
-          <AppointmentBookingDateTimeFields
-            dateKey={dateKey}
-            startMinutes={startMinutes}
-            slotIntervalMinutes={schedulingConfig.slotIntervalMinutes}
-            onDateChange={setDateKey}
-            onStartMinutesChange={handleStartMinutesChange}
-          />
-
-          <div className="flex flex-col gap-[9px] px-5 py-3">
-          <div className={cn(DRAWER_FORM_ITEM_CLASS)}>
-            <ContactPicker
-              value={contactId}
-              onValueChange={setContactId}
-              onContactSelect={handleContactSelect}
-              placeholder="Search or create a client"
-              triggerClassName={APPOINTMENT_POPUP_FIELD_CLASS}
-            />
-          </div>
-
-          <div className={cn(DRAWER_FORM_ITEM_CLASS)}>
-            <AppointmentServiceLineEditor
-              value={services}
-              onChange={setServices}
-              staffOptions={staffOptions}
-              defaultAssignedToId={defaultAssignedToId}
-              appointmentStartMinutes={startMinutes}
-              onAppointmentStartMinutesChange={handleStartMinutesChange}
-              slotIntervalMinutes={schedulingConfig.slotIntervalMinutes}
-              currencyCode={currencyCode}
-            />
-          </div>
-
-          <div className={cn(DRAWER_FORM_ITEM_CLASS)}>
-            <div className="relative">
-              <FileText className="pointer-events-none absolute top-3.5 left-3 size-4 text-grey-tertiary-normal" />
-              <Textarea
-                value={notes}
-                onChange={(event) => setNotes(event.target.value)}
-                placeholder="Add notes"
-                rows={4}
-                maxLength={NOTES_MAX_LENGTH}
-                className={cn(
-                  APPOINTMENT_POPUP_FIELD_CLASS,
-                  "min-h-[110px] resize-none py-3 pl-10",
-                )}
-              />
-              <span className="pointer-events-none absolute right-3 bottom-3 text-caption text-grey-tertiary-normal">
-                {notes.length} / {NOTES_MAX_LENGTH}
-              </span>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2.5">
-            <Checkbox
-              id="edit-send-confirmation"
-              checked={sendConfirmation}
-              onCheckedChange={(checked) =>
-                setSendConfirmation(checked === true)
+        <DrawerFormFieldGroup label="Client">
+          <ContactPicker
+            value={contactId}
+            onValueChange={(id) => {
+              setContactId(id);
+              if (!id) {
+                setPickedContact(null);
+                setContactLabel("");
               }
-            />
-            <Label
-              htmlFor="edit-send-confirmation"
-              className="text-[13.5px] font-medium text-foreground"
-            >
-              Send confirmation to client
-            </Label>
-          </div>
-          </div>
-        </>
+            }}
+            onContactSelect={handleContactSelect}
+            placeholder="Search or create a client"
+            variant="drawer"
+          />
+        </DrawerFormFieldGroup>
       )}
-    </DrawerShell>
+
+      {hasFilledServices ? (
+        <AppointmentServiceLineEditor
+          value={services}
+          onChange={setServices}
+          staffOptions={staffOptions}
+          defaultAssignedToId={defaultAssignedToId}
+          appointmentStartMinutes={startMinutes}
+          onAppointmentStartMinutesChange={handleStartMinutesChange}
+          slotIntervalMinutes={schedulingConfig.slotIntervalMinutes}
+          currencyCode={currencyCode}
+          variant="drawer"
+          filledDisplay
+          pickerOpen={servicePickerOpen}
+          onPickerOpenChange={setServicePickerOpen}
+        />
+      ) : (
+        <DrawerFormFieldGroup label="Service">
+          <AppointmentServiceLineEditor
+            value={services}
+            onChange={setServices}
+            staffOptions={staffOptions}
+            defaultAssignedToId={defaultAssignedToId}
+            appointmentStartMinutes={startMinutes}
+            onAppointmentStartMinutesChange={handleStartMinutesChange}
+            slotIntervalMinutes={schedulingConfig.slotIntervalMinutes}
+            currencyCode={currencyCode}
+            variant="drawer"
+            filledDisplay
+          />
+        </DrawerFormFieldGroup>
+      )}
+
+      {hasFilledServices ? (
+        <div className="flex flex-wrap items-center gap-6">
+          <AppointmentServicePicker
+            open={servicePickerOpen}
+            onOpenChange={setServicePickerOpen}
+            value={services}
+            currencyCode={currencyCode}
+            onAdd={handleAddService}
+            trigger={
+              <button type="button" className={APPOINTMENT_DRAWER_ADD_ACTION_CLASS}>
+                <span className={APPOINTMENT_DRAWER_ADD_ACTION_ICON_CLASS}>
+                  <DrawerPlusIcon className="size-4 text-white" />
+                </span>
+                Add Service
+              </button>
+            }
+          />
+          {!notesOpen ? (
+            <DrawerAddAction label="Add Note" onClick={openNotesEditor} />
+          ) : null}
+        </div>
+      ) : !notesOpen ? (
+        <DrawerAddAction label="Add Note" onClick={openNotesEditor} />
+      ) : null}
+
+      {notesOpen ? (
+        <div className="flex flex-col gap-2">
+          <Textarea
+            value={draftNotes}
+            onChange={(event) => setDraftNotes(event.target.value)}
+            placeholder="Add a description to the client"
+            rows={3}
+            maxLength={NOTES_MAX_LENGTH}
+            className={cn(
+              APPOINTMENT_DRAWER_FIELD_CLASS,
+              "min-h-[88px] resize-none py-3",
+            )}
+          />
+          <div className="flex items-center justify-end gap-2">
+            <ActionButton
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-9 min-w-[72px] px-4"
+              onClick={cancelNotes}
+            >
+              Cancel
+            </ActionButton>
+            <ActionButton
+              type="button"
+              size="sm"
+              className="h-9 min-w-[72px] border-0 bg-violet-primary-normal px-4 text-white hover:bg-violet-primary-normal-hover"
+              onClick={confirmNotes}
+            >
+              Add
+            </ActionButton>
+          </div>
+        </div>
+      ) : notes.trim() ? (
+        <Textarea
+          value={notes}
+          onChange={(event) => setNotes(event.target.value)}
+          placeholder="Add a description to the client"
+          rows={3}
+          maxLength={NOTES_MAX_LENGTH}
+          className={cn(
+            APPOINTMENT_DRAWER_FIELD_CLASS,
+            "min-h-[88px] resize-none py-3",
+          )}
+        />
+      ) : null}
+
+      <DrawerCheckboxRow
+        id="edit-send-confirmation"
+        label="Send confirmation to the client"
+        checked={sendConfirmation}
+        onCheckedChange={setSendConfirmation}
+      />
+
+      {canViewHistory ? (
+        <AppointmentBookingDetails
+          createdAt={appointment.createdAt}
+          updatedAt={appointment.updatedAt}
+          createdBy={appointment.createdBy}
+          updatedBy={updatedBy}
+          timezone={timezone}
+          defaultOpen={false}
+        />
+      ) : null}
+    </DrawerFormFields>
   );
-}
+});

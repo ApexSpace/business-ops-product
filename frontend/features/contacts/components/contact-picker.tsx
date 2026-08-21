@@ -4,7 +4,11 @@ import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, ChevronsUpDown, Loader2, Plus, User } from "lucide-react";
 import { QuickCreateContactDialog } from "@/features/contacts/components/quick-create-contact-dialog";
+import { DrawerPlusSquareButton } from "@/components/drawer/drawer-icons";
 import { Input } from "@/components/ui/input";
+import {
+  APPOINTMENT_DRAWER_FIELD_CLASS,
+} from "@/features/appointments/styles/appointment-drawer-tokens";
 import {
   Popover,
   PopoverContent,
@@ -42,6 +46,10 @@ export interface ContactPickerProps {
   lockedContact?: ContactPickerSelection;
   id?: string;
   triggerClassName?: string;
+  /**
+   * `drawer` — hide User / ChevronsUpDown; purple plus only (appointment sidebar).
+   */
+  variant?: "default" | "drawer";
   /** Contacts API path prefix (business `contacts` or `platform/contacts`). */
   apiBase?: string;
 }
@@ -103,9 +111,11 @@ export function ContactPicker({
   lockedContact,
   id,
   triggerClassName,
+  variant = "default",
   apiBase = "contacts",
 }: ContactPickerProps) {
   const queryClient = useQueryClient();
+  const isDrawer = variant === "drawer";
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [createOpen, setCreateOpen] = useState(false);
@@ -199,93 +209,130 @@ export function ContactPicker({
     );
   }
 
+  const createButton =
+    !locked && !disabled ? (
+      isDrawer ? (
+        <DrawerPlusSquareButton
+          aria-label="Create new client"
+          stopPropagation
+          onClick={() => setCreateOpen(true)}
+        />
+      ) : (
+        <button
+          type="button"
+          aria-label="Create new client"
+          className="inline-flex size-6 shrink-0 items-center justify-center rounded-[4px] bg-[#7E3BED] text-white hover:bg-[#7135D5]"
+          onClick={() => setCreateOpen(true)}
+        >
+          <Plus className="size-3.5" strokeWidth={2.5} aria-hidden />
+        </button>
+      )
+    ) : null;
+
   return (
     <>
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger
-          id={id}
-          disabled={disabled}
-          className={cn(
-            "flex h-11 w-full items-center justify-between gap-2 rounded-[10px] border-[1.5px] border-input bg-transparent px-3 text-[13.5px] font-normal shadow-none outline-none transition-[border-color,box-shadow] hover:bg-muted/30 focus-visible:border-ring focus-visible:ring-[4px] focus-visible:ring-ring/15 disabled:cursor-not-allowed disabled:opacity-50",
-            !displaySelection && "text-muted-foreground",
-            triggerClassName,
-          )}
-        >
-          <span className="flex min-w-0 flex-1 items-center gap-2 text-left">
-            <User className="size-4 shrink-0 opacity-60" />
-            <span className="truncate">
-              {displaySelection
-                ? formatContactPickerLine(displaySelection).primary
-                : placeholder}
-            </span>
-          </span>
-          <ChevronsUpDown className="size-4 shrink-0 opacity-50" />
-        </PopoverTrigger>
-        <PopoverContent
-          align="start"
-          className="w-[var(--anchor-width)] min-w-[min(100%,320px)] p-0"
-        >
-          <div className="border-b p-2">
-            <Input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search by name, email, or phone…"
-              autoFocus
-              className="h-9"
-            />
-          </div>
-          <div
-            className="max-h-60 overflow-y-auto p-1"
-            role="listbox"
-            aria-label="Contacts"
-          >
-            {isFetching ? (
-              <div className="flex items-center justify-center gap-2 py-8 text-sm text-muted-foreground">
-                <Loader2 className="size-4 animate-spin" />
-                Searching…
-              </div>
-            ) : contacts.length === 0 && !debouncedSearch ? (
-              <p className="px-2 py-6 text-center text-sm text-muted-foreground">
-                Type to search contacts
-              </p>
-            ) : contacts.length === 0 ? (
-              <p className="px-2 py-4 text-center text-sm text-muted-foreground">
-                No matching contacts
-              </p>
-            ) : (
-              contacts.map((contact) => {
-                const picked = contactToSelection(contact);
-                return (
-                  <ContactPickerOption
-                    key={contact.id}
-                    contact={picked}
-                    selected={value === contact.id}
-                    onSelect={() => {
-                      handleSelect(picked);
-                      onContactSelect?.(contact);
-                    }}
-                  />
-                );
-              })
+      <div className={cn("flex w-full min-w-0 items-center", !isDrawer && "gap-2")}>
+        <Popover open={open} onOpenChange={setOpen}>
+          <PopoverTrigger
+            id={id}
+            disabled={disabled}
+            className={cn(
+              isDrawer
+                ? cn(
+                    APPOINTMENT_DRAWER_FIELD_CLASS,
+                    "flex w-full min-w-0 flex-1 items-center justify-between gap-2 font-normal",
+                    !displaySelection && "text-muted-foreground",
+                  )
+                : cn(
+                    "flex h-11 w-full min-w-0 flex-1 items-center justify-between gap-2 rounded-[10px] border-[1.5px] border-input bg-transparent px-3 text-[13.5px] font-normal shadow-none outline-none transition-[border-color,box-shadow] hover:bg-muted/30 focus-visible:border-ring focus-visible:ring-[4px] focus-visible:ring-ring/15 disabled:cursor-not-allowed disabled:opacity-50",
+                    !displaySelection && "text-muted-foreground",
+                  ),
+              triggerClassName,
             )}
-          </div>
-          <div className="border-t p-1">
-            <button
-              type="button"
-              className="flex w-full items-center gap-2 rounded-sm px-2 py-2 text-left text-sm font-medium text-primary outline-none hover:bg-accent"
-              onClick={() => {
-                setCreateOpen(true);
-                setOpen(false);
-              }}
+          >
+            <span className="flex min-w-0 flex-1 items-center gap-2 text-left">
+              {!isDrawer ? (
+                <User className="size-4 shrink-0 opacity-60" />
+              ) : null}
+              <span className="truncate">
+                {displaySelection
+                  ? formatContactPickerLine(displaySelection).primary
+                  : placeholder}
+              </span>
+            </span>
+            {isDrawer ? (
+              createButton
+            ) : (
+              <ChevronsUpDown className="size-4 shrink-0 opacity-50" />
+            )}
+          </PopoverTrigger>
+          <PopoverContent
+            align="start"
+            className="w-[var(--anchor-width)] min-w-[min(100%,320px)] p-0"
+          >
+            <div className="border-b p-2">
+              <Input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search by name, email, or phone…"
+                autoFocus
+                className="h-9"
+              />
+            </div>
+            <div
+              className="max-h-60 overflow-y-auto p-1"
+              role="listbox"
+              aria-label="Contacts"
             >
-              <Plus className="size-4 shrink-0" />
-              {search.trim()
-                ? `Create ${createLabel} as new contact`
-                : "Create new contact"}
-            </button>
-          </div>
-        </PopoverContent>
-      </Popover>
+              {isFetching ? (
+                <div className="flex items-center justify-center gap-2 py-8 text-sm text-muted-foreground">
+                  <Loader2 className="size-4 animate-spin" />
+                  Searching…
+                </div>
+              ) : contacts.length === 0 && !debouncedSearch ? (
+                <p className="px-2 py-6 text-center text-sm text-muted-foreground">
+                  Type to search contacts
+                </p>
+              ) : contacts.length === 0 ? (
+                <p className="px-2 py-4 text-center text-sm text-muted-foreground">
+                  No matching contacts
+                </p>
+              ) : (
+                contacts.map((contact) => {
+                  const picked = contactToSelection(contact);
+                  return (
+                    <ContactPickerOption
+                      key={contact.id}
+                      contact={picked}
+                      selected={value === contact.id}
+                      onSelect={() => {
+                        handleSelect(picked);
+                        onContactSelect?.(contact);
+                      }}
+                    />
+                  );
+                })
+              )}
+            </div>
+            <div className="border-t p-1">
+              <button
+                type="button"
+                className="flex w-full items-center gap-2 rounded-sm px-2 py-2 text-left text-sm font-medium text-primary outline-none hover:bg-accent"
+                onClick={() => {
+                  setCreateOpen(true);
+                  setOpen(false);
+                }}
+              >
+                <Plus className="size-4 shrink-0" />
+                {search.trim()
+                  ? `Create ${createLabel} as new contact`
+                  : "Create new contact"}
+              </button>
+            </div>
+          </PopoverContent>
+        </Popover>
+        {!isDrawer ? createButton : null}
+      </div>
 
       <QuickCreateContactDialog
         key={search.trim() || "new-contact"}

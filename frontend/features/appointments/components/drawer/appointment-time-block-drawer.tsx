@@ -1,16 +1,21 @@
 "use client";
 
+import { useIsMobile } from "@/lib/hooks/use-mobile";
+
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import {
-  DrawerShell,
-  DRAWER_FOOTER_BUTTON_CLASS,
-} from "@/components/layout/drawer-shell";
-import { ActionButton } from "@/components/ui/action-button";
-import { Textarea } from "@/components/ui/textarea";
+import { DrawerFooterContent } from "@/components/drawer/drawer-footer-content";
+import { DrawerFormFieldGroup } from "@/components/drawer/drawer-form-field-group";
+import { DrawerFormFields } from "@/components/drawer/drawer-form-fields";
+import { DrawerHeaderContent } from "@/components/drawer/drawer-header-content";
+import { DrawerPrimaryButton } from "@/components/drawer/drawer-primary-button";
+import { DrawerSelectField } from "@/components/drawer/drawer-select-field";
+import { DrawerShell } from "@/components/layout/drawer-shell";
+import { Input } from "@/components/ui/input";
 import { createAppointment } from "@/features/appointments/api/appointments.api";
-import { AppointmentBookingDateTimeFields } from "@/features/appointments/components/appointment-booking-datetime-fields";
+import { AppointmentDateTimeFields } from "@/features/appointments/components/drawer/appointment-datetime-fields";
+import { AppointmentTypeTabs } from "@/features/appointments/components/drawer/appointment-type-tabs";
 import type { AppointmentCreateDefaults } from "@/features/appointments/hooks/use-appointment-drawer";
 import {
   formatDurationLabel,
@@ -19,29 +24,22 @@ import {
 } from "@/features/appointments/utils/appointment-service-lines";
 import { getCalendarSchedulingConfig } from "@/features/appointments/utils/appointment-scheduling";
 import { listCalendars } from "@/features/calendars/api/calendars.api";
+import { listBusinessMembers } from "@/features/settings/api/business.api";
 import {
-  listBusinessMembers,
-} from "@/features/settings/api/business.api";
-import { resolveAppointmentDisplayTimezone, wallTimeInTimezoneToUtcIso } from "@/features/calendars/utils/timezone";
+  resolveAppointmentDisplayTimezone,
+  wallTimeInTimezoneToUtcIso,
+} from "@/features/calendars/utils/timezone";
 import { useCurrentBusiness } from "@/features/settings/hooks/use-current-business";
+import {
+  APPOINTMENT_DRAWER_BODY_INSET_CLASS,
+  APPOINTMENT_DRAWER_FIELD_CLASS,
+  APPOINTMENT_DRAWER_FOOTER_CLASS,
+  APPOINTMENT_DRAWER_SHELL_CLASS,
+  APPOINTMENT_DRAWER_MOBILE_SHELL_CLASS,
+  APPOINTMENT_DRAWER_SHELL_HEADER_CLASS,
+  APPOINTMENT_DRAWER_STACKED_FIELD_GROUP_CLASS,
+} from "@/features/appointments/styles/appointment-drawer-tokens";
 import { queryKeys } from "@/lib/query/keys";
-import {
-  DRAWER_FIELD_LABEL_CLASS,
-  DRAWER_FORM_ITEM_CLASS,
-} from "@/lib/design/drawer-shell-tokens";
-import {
-  APPOINTMENT_POPUP_FIELD_CLASS,
-  APPOINTMENT_POPUP_FOOTER_CLASS,
-  APPOINTMENT_POPUP_HEADER_CLASS,
-  APPOINTMENT_POPUP_PRIMARY_BUTTON_CLASS,
-  APPOINTMENT_POPUP_SHELL_CLASS,
-} from "@/features/appointments/styles/appointment-side-popup";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 
 export interface AppointmentTimeBlockDrawerProps {
@@ -49,9 +47,9 @@ export interface AppointmentTimeBlockDrawerProps {
   onOpenChange: (open: boolean) => void;
   defaults: AppointmentCreateDefaults | null;
   defaultCalendarId?: string;
-  /** Authoritative timezone from the calendar grid (keeps clicked slot time consistent). */
   timezone?: string;
   onSuccess?: () => void;
+  onSwitchToAppointment?: () => void;
 }
 
 function memberLabel(member: {
@@ -74,7 +72,9 @@ export function AppointmentTimeBlockDrawer({
   defaultCalendarId,
   timezone: timezoneProp,
   onSuccess,
+  onSwitchToAppointment,
 }: AppointmentTimeBlockDrawerProps) {
+  const isMobile = useIsMobile();
   const queryClient = useQueryClient();
   const { data: business } = useCurrentBusiness();
 
@@ -108,23 +108,29 @@ export function AppointmentTimeBlockDrawer({
   const timezone = timezoneProp ?? resolvedTimezone;
 
   const schedulingConfig = getCalendarSchedulingConfig(selectedCalendar);
-  const durationOptions = useMemo(() => generateDurationOptions(), []);
+  const durationOptions = useMemo(
+    () =>
+      generateDurationOptions().map((minutes) => ({
+        value: String(minutes),
+        label: formatDurationLabel(minutes),
+      })),
+    [],
+  );
 
   const staffOptions = useMemo(
     () =>
       (members?.items ?? []).map((member) => ({
-        userId: member.userId,
+        value: member.userId,
         label: memberLabel(member),
       })),
     [members?.items],
   );
 
-  const [title, setTitle] = useState("Time block");
   const [dateKey, setDateKey] = useState("");
   const [startMinutes, setStartMinutes] = useState(9 * 60);
-  const [durationMinutes, setDurationMinutes] = useState(60);
+  const [durationMinutes, setDurationMinutes] = useState("");
   const [assignedToId, setAssignedToId] = useState("");
-  const [notes, setNotes] = useState("");
+  const [reason, setReason] = useState("");
 
   useEffect(() => {
     if (!open || !defaults) return;
@@ -133,27 +139,28 @@ export function AppointmentTimeBlockDrawer({
       defaults.endAt ?? defaults.startAt,
       timezone,
     );
-    setTitle("Time block");
     setDateKey(schedule.dateKey);
     setStartMinutes(schedule.appointmentStartMinutes);
-    setDurationMinutes(60);
-    setAssignedToId(defaults.assignedToId ?? staffOptions[0]?.userId ?? "");
-    setNotes("");
-  }, [open, defaults, timezone, staffOptions]);
+    setDurationMinutes("");
+    setAssignedToId(defaults.assignedToId ?? "");
+    setReason("");
+  }, [open, defaults, timezone]);
 
   const mutation = useMutation({
     mutationFn: () => {
       if (!calendarId) throw new Error("No calendar available");
       if (!assignedToId) throw new Error("Select a staff member");
+      if (!durationMinutes) throw new Error("Select a duration");
       if (!dateKey) throw new Error("Select a date");
 
+      const duration = Number(durationMinutes);
       const startAt = wallTimeInTimezoneToUtcIso(
         dateKey,
         Math.floor(startMinutes / 60),
         startMinutes % 60,
         timezone,
       );
-      const endMinutes = startMinutes + durationMinutes;
+      const endMinutes = startMinutes + duration;
       const endAt = wallTimeInTimezoneToUtcIso(
         dateKey,
         Math.floor(endMinutes / 60),
@@ -164,10 +171,10 @@ export function AppointmentTimeBlockDrawer({
       return createAppointment({
         calendarId,
         assignedToId,
-        title: title.trim() || "Time block",
+        title: "Time block",
         startAt,
         endAt,
-        notes: notes.trim() || undefined,
+        notes: reason.trim() || undefined,
         isTimeBlock: true,
         sendConfirmation: false,
       });
@@ -180,7 +187,25 @@ export function AppointmentTimeBlockDrawer({
       onOpenChange(false);
       onSuccess?.();
     },
+    onError: (error) => {
+      toast.error(
+        error instanceof Error ? error.message : "Could not create time block",
+      );
+    },
   });
+
+  const headerDateLabel = useMemo(() => {
+    if (!dateKey) return "";
+    const date = new Date(`${dateKey}T12:00:00`);
+    if (Number.isNaN(date.getTime())) return "";
+    return date
+      .toLocaleDateString("en-US", {
+        month: "long",
+        day: "numeric",
+        year: "numeric",
+      })
+      .toUpperCase();
+  }, [dateKey]);
 
   return (
     <DrawerShell
@@ -188,98 +213,89 @@ export function AppointmentTimeBlockDrawer({
       onOpenChange={onOpenChange}
       variant="sheet"
       width="appointment"
-      className={APPOINTMENT_POPUP_SHELL_CLASS}
-      headerClassName={cn(
-        APPOINTMENT_POPUP_HEADER_CLASS,
-        "[&_[data-slot=sheet-title]]:text-[20px] [&_[data-slot=sheet-title]]:font-bold [&_[data-slot=sheet-title]]:text-[#7E3BED]",
-        // Figma close: transparent, no grey/white box
-        "[&_button[aria-label=Close]]:!size-11 [&_button[aria-label=Close]]:rounded-lg [&_button[aria-label=Close]]:!border-0 [&_button[aria-label=Close]]:!bg-transparent [&_button[aria-label=Close]]:p-2.5 [&_button[aria-label=Close]]:text-[#6B6B6B] [&_button[aria-label=Close]]:!shadow-none [&_button[aria-label=Close]]:hover:!bg-black/5 [&_button[aria-label=Close]]:hover:text-black",
-      )}
+      chrome={isMobile ? "mobile-brand" : "default"}
+      spineLabel={isMobile ? undefined : "TIME BLOCK"}
+      className={
+        isMobile
+          ? APPOINTMENT_DRAWER_MOBILE_SHELL_CLASS
+          : APPOINTMENT_DRAWER_SHELL_CLASS
+      }
+      title={
+        isMobile ? (
+          "New Time Block"
+        ) : (
+          <DrawerHeaderContent
+            eyebrow={headerDateLabel || undefined}
+            title="New Time Block"
+          />
+        )
+      }
+      headerClassName={
+        isMobile ? undefined : APPOINTMENT_DRAWER_SHELL_HEADER_CLASS
+      }
       contentClassName="!px-0 !py-0"
-      footerClassName={APPOINTMENT_POPUP_FOOTER_CLASS}
-      title="Time Block"
+      footerClassName={APPOINTMENT_DRAWER_FOOTER_CLASS}
       footer={
-        <ActionButton
-          type="button"
-          className={cn(
-            DRAWER_FOOTER_BUTTON_CLASS,
-            APPOINTMENT_POPUP_PRIMARY_BUTTON_CLASS,
-          )}
-          disabled={mutation.isPending}
-          onClick={() => mutation.mutate()}
-        >
-          {mutation.isPending ? "Saving…" : "Create time block"}
-        </ActionButton>
+        <DrawerFooterContent>
+          <DrawerPrimaryButton
+            disabled={mutation.isPending}
+            onClick={() => mutation.mutate()}
+          >
+            {mutation.isPending ? "Saving…" : "Create Time Block"}
+          </DrawerPrimaryButton>
+        </DrawerFooterContent>
       }
     >
-      <AppointmentBookingDateTimeFields
-        dateKey={dateKey}
-        startMinutes={startMinutes}
-        slotIntervalMinutes={schedulingConfig.slotIntervalMinutes}
-        onDateChange={setDateKey}
-        onStartMinutesChange={setStartMinutes}
-      />
+      <div className={APPOINTMENT_DRAWER_BODY_INSET_CLASS}>
+        <AppointmentTypeTabs
+          value="time-block"
+          onAppointmentClick={onSwitchToAppointment}
+        />
 
-      <div className="flex flex-col gap-[9px] px-5 py-3">
-        <div className={cn(DRAWER_FORM_ITEM_CLASS)}>
-          <span className={DRAWER_FIELD_LABEL_CLASS}>Duration</span>
-          <Select
-            value={String(durationMinutes)}
-            onValueChange={(value) => setDurationMinutes(Number(value))}
-          >
-            <SelectTrigger className={APPOINTMENT_POPUP_FIELD_CLASS}>
-              {formatDurationLabel(durationMinutes)}
-            </SelectTrigger>
-            <SelectContent className="max-h-60">
-              {durationOptions.map((minutes) => (
-                <SelectItem key={minutes} value={String(minutes)}>
-                  {formatDurationLabel(minutes)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        <DrawerFormFields>
+          <AppointmentDateTimeFields
+            dateKey={dateKey}
+            startMinutes={startMinutes}
+            slotIntervalMinutes={schedulingConfig.slotIntervalMinutes}
+            onDateChange={setDateKey}
+            onStartMinutesChange={setStartMinutes}
+          />
 
-        <div className={cn(DRAWER_FORM_ITEM_CLASS)}>
-          <span className={DRAWER_FIELD_LABEL_CLASS}>Staff</span>
-          <Select
+          <DrawerSelectField
+            id="time-block-duration"
+            label="Duration"
+            value={durationMinutes}
+            onValueChange={setDurationMinutes}
+            placeholder="Select duration"
+            options={durationOptions}
+          />
+
+          <DrawerSelectField
+            id="time-block-staff"
+            label="Staff"
             value={assignedToId}
-            onValueChange={(value) => setAssignedToId(value ?? "")}
+            onValueChange={setAssignedToId}
+            placeholder="Select staff member"
+            options={staffOptions}
+          />
+
+          <DrawerFormFieldGroup
+            label="Reason"
+            htmlFor="time-block-reason"
+            className={APPOINTMENT_DRAWER_STACKED_FIELD_GROUP_CLASS}
           >
-            <SelectTrigger className={APPOINTMENT_POPUP_FIELD_CLASS}>
-              {staffOptions.find((s) => s.userId === assignedToId)?.label ??
-                "Select staff"}
-            </SelectTrigger>
-            <SelectContent>
-              {staffOptions.map((staff) => (
-                <SelectItem key={staff.userId} value={staff.userId}>
-                  {staff.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className={cn(DRAWER_FORM_ITEM_CLASS)}>
-          <span className={DRAWER_FIELD_LABEL_CLASS}>Title</span>
-          <Textarea
-            value={title}
-            onChange={(event) => setTitle(event.target.value)}
-            rows={2}
-            className={cn(APPOINTMENT_POPUP_FIELD_CLASS, "min-h-[72px] py-3")}
-          />
-        </div>
-
-        <div className={cn(DRAWER_FORM_ITEM_CLASS)}>
-          <span className={DRAWER_FIELD_LABEL_CLASS}>Notes</span>
-          <Textarea
-            value={notes}
-            onChange={(event) => setNotes(event.target.value)}
-            placeholder="Add a note…"
-            rows={3}
-            className={cn(APPOINTMENT_POPUP_FIELD_CLASS, "min-h-[90px] py-3")}
-          />
-        </div>
+            <Input
+              id="time-block-reason"
+              value={reason}
+              onChange={(event) => setReason(event.target.value)}
+              placeholder="Add reason"
+              className={cn(
+                APPOINTMENT_DRAWER_FIELD_CLASS,
+                "placeholder:text-[#9A9A9A]",
+              )}
+            />
+          </DrawerFormFieldGroup>
+        </DrawerFormFields>
       </div>
     </DrawerShell>
   );

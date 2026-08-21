@@ -8,7 +8,6 @@ export type DrawerMode =
   | "closed"
   | "detail"
   | "create"
-  | "edit"
   | "conversation"
   | "timeBlock"
   | "checkout";
@@ -56,11 +55,6 @@ export function useAppointmentDrawer() {
     setDrawerMode("timeBlock");
   }, []);
 
-  const openEdit = useCallback(() => {
-    setConversationContactId(null);
-    setDrawerMode("edit");
-  }, []);
-
   const openConversation = useCallback((contactId: string) => {
     setConversationContactId(contactId);
     setDrawerMode("conversation");
@@ -98,7 +92,6 @@ export function useAppointmentDrawer() {
     openDetail,
     openCreate,
     openTimeBlock,
-    openEdit,
     openConversation,
     openCheckout,
     closeCheckout,

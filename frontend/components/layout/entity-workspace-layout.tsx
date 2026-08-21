@@ -62,7 +62,7 @@ export function EntityWorkspaceLayout({
           {children}
         </div>
         {footer ? (
-          <div className="shrink-0 border-t border-[#BC9BF6] bg-white px-4 py-3 text-sm text-grey-tertiary-normal">
+          <div className="shrink-0 border-t border-[#F3F0F9] bg-white px-4 py-3 text-sm text-muted-foreground">
             {footer}
           </div>
         ) : null}

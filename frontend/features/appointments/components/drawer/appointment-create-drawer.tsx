@@ -1,16 +1,25 @@
 "use client";
 
+import { useIsMobile } from "@/lib/hooks/use-mobile";
+
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { FileText, Settings, TriangleAlert } from "lucide-react";
+import { TriangleAlert } from "lucide-react";
 import { toast } from "sonner";
+import { DrawerAddAction } from "@/components/drawer/drawer-add-action";
+import { DrawerPlusIcon } from "@/components/drawer/drawer-icons";
+import { DrawerCheckboxRow } from "@/components/drawer/drawer-checkbox-row";
+import { DrawerExpressRow } from "@/components/drawer/drawer-express-row";
+import { DrawerFooterContent } from "@/components/drawer/drawer-footer-content";
+import { DrawerFormFieldGroup } from "@/components/drawer/drawer-form-field-group";
+import { DrawerFormFields } from "@/components/drawer/drawer-form-fields";
+import { DrawerHeaderContent } from "@/components/drawer/drawer-header-content";
+import { DrawerPrimaryButton } from "@/components/drawer/drawer-primary-button";
+import { DrawerSettingsIcon } from "@/components/drawer/drawer-icons";
+import { ActionButton } from "@/components/ui/action-button";
 import {
   DrawerShell,
-  DRAWER_FOOTER_BUTTON_CLASS,
 } from "@/components/layout/drawer-shell";
-import { ActionButton } from "@/components/ui/action-button";
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -19,26 +28,29 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Switch } from "@/components/ui/switch";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { PhoneInput } from "@/components/forms/phone-input";
 import { ContactPicker } from "@/features/contacts/components/contact-picker";
 import type { Contact } from "@/features/contacts/types";
 import {
   createAppointment,
   createExpressAppointment,
 } from "@/features/appointments/api/appointments.api";
-import { AppointmentBookingDateTimeFields } from "@/features/appointments/components/appointment-booking-datetime-fields";
+import { AppointmentDateTimeFields } from "@/features/appointments/components/drawer/appointment-datetime-fields";
+import { AppointmentClientCard } from "@/features/appointments/components/drawer/appointment-client-card";
+import { AppointmentTypeTabs } from "@/features/appointments/components/drawer/appointment-type-tabs";
 import {
   AppointmentServiceLineEditor,
+  AppointmentServicePicker,
   type AppointmentServiceLineSelection,
   type StaffOption,
 } from "@/features/appointments/components/appointment-service-line-editor";
 import type { AppointmentCreateDefaults } from "@/features/appointments/hooks/use-appointment-drawer";
 import {
   buildAppointmentSchedulePayload,
+  getChainedStartMinutes,
   rechainAllServiceLines,
   scheduleFromUtcIso,
+  serviceToLineSelection,
 } from "@/features/appointments/utils/appointment-service-lines";
 import { getCalendarSchedulingConfig } from "@/features/appointments/utils/appointment-scheduling";
 import { listCalendars } from "@/features/calendars/api/calendars.api";
@@ -58,22 +70,24 @@ import {
   APPOINTMENT_EXPRESS_COMPLETE_KEY,
   getNotificationChannelPreference,
 } from "@/features/notifications/api/notification-channel-preferences.api";
-import { hasPhoneDigits, phoneToApiFields } from "@/lib/forms/phone";
+import { hasPhoneDigits } from "@/lib/forms/phone";
 import { queryKeys } from "@/lib/query/keys";
+import type { Service } from "@/lib/types/api";
 import {
-  APPOINTMENT_POPUP_DESCRIPTION_CLASS,
-  APPOINTMENT_POPUP_FIELD_CLASS,
-  APPOINTMENT_POPUP_FOOTER_CLASS,
-  APPOINTMENT_POPUP_HEADER_CLASS,
-  APPOINTMENT_POPUP_PRIMARY_BUTTON_CLASS,
-  APPOINTMENT_POPUP_SHELL_CLASS,
-} from "@/features/appointments/styles/appointment-side-popup";
-import { DRAWER_FORM_ITEM_CLASS } from "@/lib/design/drawer-shell-tokens";
+  APPOINTMENT_DRAWER_ADD_ACTION_CLASS,
+  APPOINTMENT_DRAWER_ADD_ACTION_ICON_CLASS,
+  APPOINTMENT_DRAWER_BODY_INSET_CLASS,
+  APPOINTMENT_DRAWER_FIELD_CLASS,
+  APPOINTMENT_DRAWER_FOOTER_CLASS,
+  APPOINTMENT_DRAWER_SETTINGS_ICON_BUTTON_CLASS,
+  APPOINTMENT_DRAWER_SHELL_CLASS,
+  APPOINTMENT_DRAWER_MOBILE_SHELL_CLASS,
+  APPOINTMENT_DRAWER_SHELL_HEADER_CLASS,
+  APPOINTMENT_DRAWER_SWITCH_CLASS,
+} from "@/features/appointments/styles/appointment-drawer-tokens";
 import { cn } from "@/lib/utils";
 
 const NOTES_MAX_LENGTH = 400;
-
-type ExpressClientMode = "existing" | "new";
 
 function contactHasPhone(contact: Contact | null | undefined): boolean {
   if (!contact) return false;
@@ -116,6 +130,7 @@ export function AppointmentCreateDrawer({
   onSuccess,
   onCreateTimeBlock,
 }: AppointmentCreateDrawerProps) {
+  const isMobile = useIsMobile();
   const queryClient = useQueryClient();
   const { data: business } = useCurrentBusiness();
 
@@ -165,11 +180,6 @@ export function AppointmentCreateDrawer({
   const [contactId, setContactId] = useState("");
   const [contactLabel, setContactLabel] = useState("");
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
-  const [expressClientMode, setExpressClientMode] =
-    useState<ExpressClientMode>("existing");
-  const [guestFirstName, setGuestFirstName] = useState("");
-  const [guestEmail, setGuestEmail] = useState("");
-  const [guestPhone, setGuestPhone] = useState("");
   const [dateKey, setDateKey] = useState("");
   const [startMinutes, setStartMinutes] = useState(9 * 60);
   const [services, setServices] = useState<AppointmentServiceLineSelection[]>([]);
@@ -180,6 +190,9 @@ export function AppointmentCreateDrawer({
   const [expressRequireCard, setExpressRequireCard] = useState(false);
   const [expressRequireDeposit, setExpressRequireDeposit] = useState(false);
   const [expressOverridesOpen, setExpressOverridesOpen] = useState(false);
+  const [notesOpen, setNotesOpen] = useState(false);
+  const [draftNotes, setDraftNotes] = useState("");
+  const [servicePickerOpen, setServicePickerOpen] = useState(false);
 
   const { data: onlineBookingSettings } = useQuery({
     queryKey: ["online-booking-settings"],
@@ -251,11 +264,10 @@ export function AppointmentCreateDrawer({
 
   useEffect(() => {
     if (!open) return;
-    setExpressClientMode("existing");
-    setGuestFirstName("");
-    setGuestEmail("");
-    setGuestPhone("");
     setExpressOverridesOpen(false);
+    setNotesOpen(false);
+    setDraftNotes("");
+    setServicePickerOpen(false);
   }, [open]);
 
   useEffect(() => {
@@ -284,9 +296,7 @@ export function AppointmentCreateDrawer({
 
   useEffect(() => {
     if (!open) return;
-    setUseExpressBooking(
-      onlineBookingSettings?.expressBookingAutoEnable === true,
-    );
+    setUseExpressBooking(false);
     setExpressTimeLimitMinutes(
       onlineBookingSettings?.expressBookingTimeLimitMinutes ?? 30,
     );
@@ -296,7 +306,6 @@ export function AppointmentCreateDrawer({
     );
   }, [
     open,
-    onlineBookingSettings?.expressBookingAutoEnable,
     onlineBookingSettings?.expressBookingTimeLimitMinutes,
     onlineBookingSettings?.expressRequireCard,
     onlineBookingSettings?.expressRequireDeposit,
@@ -333,53 +342,6 @@ export function AppointmentCreateDrawer({
           throw new Error("Express Booking supports one service at a time");
         }
 
-        const expressOverrides = {
-          expressRequireCard,
-          expressRequireDeposit,
-          expressTimeLimitMinutes,
-        };
-
-        if (expressClientMode === "new") {
-          const firstName = guestFirstName.trim();
-          if (!firstName) {
-            throw new Error("Enter the client's first name");
-          }
-
-          if (expressSendViaSms) {
-            const phoneFields = phoneToApiFields(guestPhone);
-            if (!phoneFields.phoneNumber) {
-              throw new Error("Enter the client's phone number");
-            }
-            return createExpressAppointment({
-              guestFirstName: firstName,
-              guestPhone: phoneFields.phoneNumber,
-              guestPhoneCountryCode:
-                phoneFields.phoneCountryCode ?? undefined,
-              serviceId: schedule.services[0]!.serviceId,
-              startAt: schedule.startAt,
-              endAt: schedule.endAt,
-              assignedToId,
-              calendarId,
-              ...expressOverrides,
-            });
-          }
-
-          const email = guestEmail.trim();
-          if (!email) {
-            throw new Error("Enter the client's email");
-          }
-          return createExpressAppointment({
-            guestFirstName: firstName,
-            guestEmail: email,
-            serviceId: schedule.services[0]!.serviceId,
-            startAt: schedule.startAt,
-            endAt: schedule.endAt,
-            assignedToId,
-            calendarId,
-            ...expressOverrides,
-          });
-        }
-
         if (!contactId) {
           throw new Error("Select a client");
         }
@@ -401,7 +363,9 @@ export function AppointmentCreateDrawer({
           endAt: schedule.endAt,
           assignedToId,
           calendarId,
-          ...expressOverrides,
+          expressRequireCard,
+          expressRequireDeposit,
+          expressTimeLimitMinutes,
         });
       }
 
@@ -456,62 +420,119 @@ export function AppointmentCreateDrawer({
     setSelectedContact(contact);
   };
 
+  const clientCardContact = selectedContact
+    ? {
+        id: selectedContact.id,
+        firstName: selectedContact.firstName,
+        lastName: selectedContact.lastName,
+        displayName: selectedContact.displayName,
+        email: selectedContact.email,
+        phoneNumber: selectedContact.phoneNumber ?? selectedContact.phone,
+        createdAt: selectedContact.createdAt,
+      }
+    : null;
+
+  const hasFilledServices = services.length > 0;
+
+  const openNotesEditor = () => {
+    setDraftNotes(notes);
+    setNotesOpen(true);
+  };
+
+  const confirmNotes = () => {
+    setNotes(draftNotes.trim());
+    setNotesOpen(false);
+    setDraftNotes("");
+  };
+
+  const cancelNotes = () => {
+    setNotesOpen(false);
+    setDraftNotes("");
+  };
+
+  const handleAddService = (service: Service) => {
+    const nextStartMinutes = getChainedStartMinutes(
+      services,
+      services.length,
+      startMinutes,
+    );
+    const assignedToId =
+      services[services.length - 1]?.assignedToId || defaultAssignedToId;
+    setServices((current) => [
+      ...current,
+      serviceToLineSelection(service, {
+        assignedToId,
+        startMinutes: nextStartMinutes,
+      }),
+    ]);
+  };
+
+  const headerDateLabel = useMemo(() => {
+    if (!dateKey) return "";
+    const date = new Date(`${dateKey}T12:00:00`);
+    if (Number.isNaN(date.getTime())) return "";
+    return date
+      .toLocaleDateString("en-US", {
+        month: "long",
+        day: "numeric",
+        year: "numeric",
+      })
+      .toUpperCase();
+  }, [dateKey]);
+
   return (
     <DrawerShell
       open={open}
       onOpenChange={onOpenChange}
       variant="sheet"
       width="appointment"
-      className={APPOINTMENT_POPUP_SHELL_CLASS}
-      title="New Appointment"
-      headerClassName={cn(
-        APPOINTMENT_POPUP_HEADER_CLASS,
-        "[&_[data-slot=sheet-title]]:text-[20px] [&_[data-slot=sheet-title]]:font-bold [&_[data-slot=sheet-title]]:text-[#7E3BED]",
-        // Figma close: 44×44, radius 8, padding 10, transparent (no white/grey box)
-        "[&_button[aria-label=Close]]:!size-11 [&_button[aria-label=Close]]:rounded-lg [&_button[aria-label=Close]]:!border-0 [&_button[aria-label=Close]]:!bg-transparent [&_button[aria-label=Close]]:p-2.5 [&_button[aria-label=Close]]:text-[#6B6B6B] [&_button[aria-label=Close]]:!shadow-none [&_button[aria-label=Close]]:hover:!bg-black/5 [&_button[aria-label=Close]]:hover:text-black",
-      )}
-      contentClassName="!px-0 !py-0"
-      footerClassName={APPOINTMENT_POPUP_FOOTER_CLASS}
-      description={
-        onCreateTimeBlock ? (
-          <button
-            type="button"
-            onClick={onCreateTimeBlock}
-            className={cn(APPOINTMENT_POPUP_DESCRIPTION_CLASS, "hover:underline")}
-          >
-            Or create time block
-          </button>
-        ) : undefined
+      chrome={isMobile ? "mobile-brand" : "default"}
+      spineLabel={isMobile ? undefined : "NEW APPOINTMENT"}
+      className={
+        isMobile
+          ? APPOINTMENT_DRAWER_MOBILE_SHELL_CLASS
+          : APPOINTMENT_DRAWER_SHELL_CLASS
       }
+      title={
+        isMobile ? (
+          "New Appointment"
+        ) : (
+          <DrawerHeaderContent
+            eyebrow={headerDateLabel || undefined}
+            title="New Appointment"
+          />
+        )
+      }
+      headerClassName={
+        isMobile ? undefined : APPOINTMENT_DRAWER_SHELL_HEADER_CLASS
+      }
+      contentClassName="!px-0 !py-0"
+      footerClassName={APPOINTMENT_DRAWER_FOOTER_CLASS}
       footer={
-        <div className="flex w-full flex-col gap-3">
+        <DrawerFooterContent>
           {expressEnabled ? (
-            <div className="flex items-center justify-between gap-3 px-0.5">
-              <Label
-                htmlFor="use-express-booking"
-                className="text-body-small font-medium text-black-secondary-normal"
-              >
-                Use Express Booking
-              </Label>
-              <div className="flex items-center gap-1">
+            <DrawerExpressRow
+              id="use-express-booking"
+              checked={useExpressBooking}
+              onCheckedChange={setUseExpressBooking}
+              settings={
                 <Popover
                   open={expressOverridesOpen}
                   onOpenChange={setExpressOverridesOpen}
                 >
                   <PopoverTrigger
                     render={
-                      <Button
+                      <button
                         type="button"
-                        variant="ghost"
-                        size="icon-sm"
                         aria-label="Express Booking overrides"
+                        className={APPOINTMENT_DRAWER_SETTINGS_ICON_BUTTON_CLASS}
                       >
-                        <Settings className="size-4 text-grey-tertiary-normal" />
-                      </Button>
+                        <DrawerSettingsIcon className="size-6" />
+                      </button>
                     }
                   />
                   <PopoverContent align="end" className="w-72 gap-3 p-3">
-                    <div className={cn(DRAWER_FORM_ITEM_CLASS, "gap-1.5")}>
+                    <div className="flex flex-col gap-1.5">
                       <Label
                         htmlFor="express-time-limit"
                         className="text-caption font-medium text-foreground"
@@ -529,7 +550,7 @@ export function AppointmentCreateDrawer({
                             Number.isFinite(next) && next > 0 ? next : 1,
                           );
                         }}
-                        className={APPOINTMENT_POPUP_FIELD_CLASS}
+                        className={APPOINTMENT_DRAWER_FIELD_CLASS}
                       />
                     </div>
                     <div className="flex items-center justify-between gap-3">
@@ -543,6 +564,7 @@ export function AppointmentCreateDrawer({
                         id="express-require-card"
                         checked={expressRequireCard}
                         onCheckedChange={setExpressRequireCard}
+                        className={APPOINTMENT_DRAWER_SWITCH_CLASS}
                       />
                     </div>
                     <div className="flex items-center justify-between gap-3">
@@ -556,24 +578,15 @@ export function AppointmentCreateDrawer({
                         id="express-require-deposit"
                         checked={expressRequireDeposit}
                         onCheckedChange={setExpressRequireDeposit}
+                        className={APPOINTMENT_DRAWER_SWITCH_CLASS}
                       />
                     </div>
                   </PopoverContent>
                 </Popover>
-                <Switch
-                  id="use-express-booking"
-                  checked={useExpressBooking}
-                  onCheckedChange={setUseExpressBooking}
-                />
-              </div>
-            </div>
+              }
+            />
           ) : null}
-          <ActionButton
-            type="button"
-            className={cn(
-              DRAWER_FOOTER_BUTTON_CLASS,
-              APPOINTMENT_POPUP_PRIMARY_BUTTON_CLASS,
-            )}
+          <DrawerPrimaryButton
             disabled={mutation.isPending}
             onClick={() => mutation.mutate()}
           >
@@ -584,182 +597,204 @@ export function AppointmentCreateDrawer({
               : useExpressBooking
                 ? "Send completion link"
                 : "Book Appointment"}
-          </ActionButton>
-        </div>
+          </DrawerPrimaryButton>
+        </DrawerFooterContent>
       }
     >
-      <AppointmentBookingDateTimeFields
-        dateKey={dateKey}
-        startMinutes={startMinutes}
-        slotIntervalMinutes={schedulingConfig.slotIntervalMinutes}
-        onDateChange={setDateKey}
-        onStartMinutesChange={(minutes) => {
-          setStartMinutes(minutes);
-          setServices((current) =>
-            rechainAllServiceLines(current, minutes),
-          );
-        }}
-      />
+      <div className={APPOINTMENT_DRAWER_BODY_INSET_CLASS}>
+        {onCreateTimeBlock ? (
+          <AppointmentTypeTabs onTimeBlockClick={onCreateTimeBlock} />
+        ) : null}
 
-      <div className="flex flex-col gap-[9px] px-5 py-3">
-        {useExpressBooking ? (
-          <div className="flex flex-col gap-4">
-            <Tabs
-              value={expressClientMode}
-              onValueChange={(value) =>
-                setExpressClientMode(value as ExpressClientMode)
-              }
-            >
-              <TabsList className="grid h-9 w-full grid-cols-2">
-                <TabsTrigger value="existing" className="text-caption">
-                  Existing client
-                </TabsTrigger>
-                <TabsTrigger value="new" className="text-caption">
-                  New client
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
-
-            {expressClientMode === "existing" ? (
-              <div className="flex flex-col gap-2.5">
-                <ContactPicker
-                  value={contactId}
-                  onValueChange={(id) => {
-                    setContactId(id);
-                    if (!id) setSelectedContact(null);
-                  }}
-                  onContactSelect={handleContactSelect}
-                  placeholder="Search or create a client"
-                  triggerClassName={APPOINTMENT_POPUP_FIELD_CLASS}
-                />
-                {contactId && expressSendViaSms && !contactHasPhone(selectedContact) ? (
-                  <p className="text-caption text-amber-700 dark:text-amber-300">
-                    This client needs a phone number to receive the completion
-                    link by SMS.
-                  </p>
-                ) : null}
-                {contactId &&
-                !expressSendViaSms &&
-                !selectedContact?.email?.trim() ? (
-                  <p className="text-caption text-amber-700 dark:text-amber-300">
-                    This client needs an email address to receive the completion
-                    link.
-                  </p>
-                ) : null}
-              </div>
-            ) : (
-              <div className="flex flex-col gap-2.5">
-                <Input
-                  value={guestFirstName}
-                  onChange={(event) => setGuestFirstName(event.target.value)}
-                  placeholder="First name"
-                  maxLength={100}
-                  className={APPOINTMENT_POPUP_FIELD_CLASS}
-                />
-                {expressSendViaSms ? (
-                  <PhoneInput
-                    value={guestPhone || null}
-                    onChange={(value) => setGuestPhone(value ?? "")}
-                    placeholder="Phone number"
-                    showClear={false}
-                    className={APPOINTMENT_POPUP_FIELD_CLASS}
-                  />
-                ) : (
-                  <Input
-                    type="email"
-                    value={guestEmail}
-                    onChange={(event) => setGuestEmail(event.target.value)}
-                    placeholder="Email"
-                    maxLength={255}
-                    className={APPOINTMENT_POPUP_FIELD_CLASS}
-                  />
-                )}
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className={cn(DRAWER_FORM_ITEM_CLASS)}>
-            <ContactPicker
-              value={contactId}
-              onValueChange={(id) => {
-                setContactId(id);
-                if (!id) setSelectedContact(null);
-              }}
-              onContactSelect={handleContactSelect}
-              placeholder="Search or create a client"
-              triggerClassName={APPOINTMENT_POPUP_FIELD_CLASS}
-            />
-          </div>
-        )}
-
-        <div className="flex flex-col gap-3">
-          <AppointmentServiceLineEditor
-            value={services}
-            onChange={(next) =>
-              setServices(useExpressBooking ? next.slice(0, 1) : next)
-            }
-            staffOptions={staffOptions}
-            defaultAssignedToId={defaultAssignedToId}
-            appointmentStartMinutes={startMinutes}
-            onAppointmentStartMinutesChange={(minutes) => {
+        <DrawerFormFields>
+          <AppointmentDateTimeFields
+            dateKey={dateKey}
+            startMinutes={startMinutes}
+            slotIntervalMinutes={schedulingConfig.slotIntervalMinutes}
+            onDateChange={setDateKey}
+            onStartMinutesChange={(minutes) => {
               setStartMinutes(minutes);
               setServices((current) =>
                 rechainAllServiceLines(current, minutes),
               );
             }}
-            slotIntervalMinutes={schedulingConfig.slotIntervalMinutes}
-            currencyCode={currencyCode}
           />
-          {useExpressBooking ? (
-            <p className="text-caption leading-snug text-grey-tertiary-normal">
-              Express Booking uses one service. The client can switch staff when
-              they open the email link.
-            </p>
-          ) : null}
-        </div>
 
-        {!useExpressBooking ? (
-          <div className={cn(DRAWER_FORM_ITEM_CLASS)}>
-            <div className="relative">
-              <FileText className="pointer-events-none absolute top-3.5 left-3 size-4 text-grey-tertiary-normal" />
+          {clientCardContact ? (
+            <AppointmentClientCard
+              contact={clientCardContact}
+              onRemove={() => {
+                setContactId("");
+                setContactLabel("");
+                setSelectedContact(null);
+              }}
+            />
+          ) : (
+            <DrawerFormFieldGroup label="Client">
+              <ContactPicker
+                value={contactId}
+                onValueChange={(id) => {
+                  setContactId(id);
+                  if (!id) setSelectedContact(null);
+                }}
+                onContactSelect={handleContactSelect}
+                placeholder="Search or create a client"
+                variant="drawer"
+              />
+            </DrawerFormFieldGroup>
+          )}
+
+          {hasFilledServices ? (
+            <AppointmentServiceLineEditor
+              value={services}
+              onChange={(next) =>
+                setServices(useExpressBooking ? next.slice(0, 1) : next)
+              }
+              staffOptions={staffOptions}
+              defaultAssignedToId={defaultAssignedToId}
+              appointmentStartMinutes={startMinutes}
+              onAppointmentStartMinutesChange={(minutes) => {
+                setStartMinutes(minutes);
+                setServices((current) =>
+                  rechainAllServiceLines(current, minutes),
+                );
+              }}
+              slotIntervalMinutes={schedulingConfig.slotIntervalMinutes}
+              currencyCode={currencyCode}
+              variant="drawer"
+              filledDisplay
+              pickerOpen={servicePickerOpen}
+              onPickerOpenChange={setServicePickerOpen}
+            />
+          ) : (
+            <DrawerFormFieldGroup label="Service">
+              <AppointmentServiceLineEditor
+                value={services}
+                onChange={(next) =>
+                  setServices(useExpressBooking ? next.slice(0, 1) : next)
+                }
+                staffOptions={staffOptions}
+                defaultAssignedToId={defaultAssignedToId}
+                appointmentStartMinutes={startMinutes}
+                onAppointmentStartMinutesChange={(minutes) => {
+                  setStartMinutes(minutes);
+                  setServices((current) =>
+                    rechainAllServiceLines(current, minutes),
+                  );
+                }}
+                slotIntervalMinutes={schedulingConfig.slotIntervalMinutes}
+                currencyCode={currencyCode}
+                variant="drawer"
+                filledDisplay
+              />
+            </DrawerFormFieldGroup>
+          )}
+
+          {hasFilledServices ? (
+            <div className="flex flex-wrap items-center gap-6">
+              {!useExpressBooking ? (
+                <AppointmentServicePicker
+                  open={servicePickerOpen}
+                  onOpenChange={setServicePickerOpen}
+                  value={services}
+                  currencyCode={currencyCode}
+                  onAdd={handleAddService}
+                  trigger={
+                    <button
+                      type="button"
+                      className={APPOINTMENT_DRAWER_ADD_ACTION_CLASS}
+                    >
+                      <span className={APPOINTMENT_DRAWER_ADD_ACTION_ICON_CLASS}>
+                        <DrawerPlusIcon className="size-4 text-white" />
+                      </span>
+                      Add Service
+                    </button>
+                  }
+                />
+              ) : null}
+              {!notesOpen ? (
+                <DrawerAddAction label="Add Note" onClick={openNotesEditor} />
+              ) : null}
+            </div>
+          ) : !notesOpen ? (
+            <DrawerAddAction label="Add Note" onClick={openNotesEditor} />
+          ) : null}
+
+          {notesOpen ? (
+            <div className="flex flex-col gap-2">
               <Textarea
-                value={notes}
-                onChange={(event) => setNotes(event.target.value)}
-                placeholder="Add notes"
-                rows={4}
+                value={draftNotes}
+                onChange={(event) => setDraftNotes(event.target.value)}
+                placeholder="Add a description to the client"
+                rows={3}
                 maxLength={NOTES_MAX_LENGTH}
                 className={cn(
-                  APPOINTMENT_POPUP_FIELD_CLASS,
-                  "min-h-[110px] resize-none py-3 pl-10",
+                  APPOINTMENT_DRAWER_FIELD_CLASS,
+                  "min-h-[88px] resize-none py-3",
                 )}
               />
-              <span className="pointer-events-none absolute right-3 bottom-3 text-caption text-grey-tertiary-normal">
-                {notes.length} / {NOTES_MAX_LENGTH}
-              </span>
+              <div className="flex items-center justify-end gap-2">
+                <ActionButton
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-9 min-w-[72px] px-4"
+                  onClick={cancelNotes}
+                >
+                  Cancel
+                </ActionButton>
+                <ActionButton
+                  type="button"
+                  size="sm"
+                  className="h-9 min-w-[72px] border-0 bg-violet-primary-normal px-4 text-white hover:bg-violet-primary-normal-hover"
+                  onClick={confirmNotes}
+                >
+                  Add
+                </ActionButton>
+              </div>
             </div>
-          </div>
-        ) : null}
-
-        {!useExpressBooking ? (
-          <div className="flex items-center gap-2.5">
-            <Checkbox
-              id="send-confirmation"
-              checked={sendConfirmation}
-              onCheckedChange={(checked) =>
-                setSendConfirmation(checked === true)
-              }
+          ) : notes.trim() ? (
+            <Textarea
+              value={notes}
+              onChange={(event) => setNotes(event.target.value)}
+              placeholder="Add a description to the client"
+              rows={3}
+              maxLength={NOTES_MAX_LENGTH}
+              className={cn(
+                APPOINTMENT_DRAWER_FIELD_CLASS,
+                "min-h-[88px] resize-none py-3",
+              )}
             />
-            <Label
-              htmlFor="send-confirmation"
-              className="text-body-small font-medium text-black-secondary-normal"
-            >
-              Send confirmation to client
-            </Label>
-          </div>
+          ) : null}
+
+          <DrawerCheckboxRow
+            id="send-confirmation"
+            label="Send confirmation to the client"
+            checked={sendConfirmation}
+            onCheckedChange={setSendConfirmation}
+          />
+        </DrawerFormFields>
+
+        {useExpressBooking &&
+        contactId &&
+        expressSendViaSms &&
+        !contactHasPhone(selectedContact) ? (
+          <p className="text-[12px] text-amber-700">
+            This client needs a phone number to receive the completion link by
+            SMS.
+          </p>
+        ) : null}
+        {useExpressBooking &&
+        contactId &&
+        !expressSendViaSms &&
+        !selectedContact?.email?.trim() ? (
+          <p className="text-[12px] text-amber-700">
+            This client needs an email address to receive the completion link.
+          </p>
         ) : null}
 
         {outsideScheduleWarning ? (
-          <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-body-small text-amber-950 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-100">
+          <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-[13px] text-amber-950">
             <TriangleAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
             <p>{outsideScheduleWarning}</p>
           </div>

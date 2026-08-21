@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
   Bell,
   ChevronDown,
@@ -20,6 +21,7 @@ import {
 import { DarkModeMenuItem } from "@/components/theme/dark-mode-toggle";
 import { useAuth } from "@/lib/auth/provider";
 import { getUserDisplayName } from "@/lib/auth";
+import { isBusinessSettingsPath } from "@/lib/config/navigation/business-settings-menu";
 import { useAppRouter } from "@/lib/hooks/use-app-router";
 import { cn } from "@/lib/utils";
 
@@ -71,6 +73,7 @@ export function DashboardNavbarActions({
   className,
 }: DashboardNavbarActionsProps) {
   const router = useAppRouter();
+  const pathname = usePathname();
   const { user, logout } = useAuth();
   const displayName = user ? getUserDisplayName(user) : "Account";
   const initials = displayName
@@ -79,6 +82,7 @@ export function DashboardNavbarActions({
     .join("")
     .slice(0, 2)
     .toUpperCase();
+  const settingsActive = isBusinessSettingsPath(pathname);
 
   const handleLogout = async () => {
     await logout();
@@ -101,10 +105,12 @@ export function DashboardNavbarActions({
         <Link
           href="/business/settings"
           aria-label="Settings"
+          aria-current={settingsActive ? "page" : undefined}
           className={cn(
             "inline-flex size-10 shrink-0 items-center justify-center rounded-lg",
             "text-white transition-colors hover:bg-white/10",
             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40",
+            settingsActive && "bg-white/10",
           )}
         >
           <Settings className="size-5" strokeWidth={1.75} />

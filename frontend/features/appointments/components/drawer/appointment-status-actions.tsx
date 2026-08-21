@@ -1,8 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CheckCircle2 } from "lucide-react";
-import { ActionButton } from "@/components/ui/action-button";
 import {
   Popover,
   PopoverContent,
@@ -13,12 +11,16 @@ import {
   isCheckoutOpen,
   type AppointmentStatus,
 } from "@/features/appointments/schemas/appointment-profile";
-import { getAppointmentStatusDotClass } from "@/features/appointments/utils/appointment-calendar-styles";
-import { APPOINTMENT_POPUP_STATUS_CTA_CLASS } from "@/features/appointments/styles/appointment-side-popup";
+import { APPOINTMENT_STATUS_COLORS } from "@/features/appointments/utils/appointment-calendar-styles";
+import {
+  APPOINTMENT_DRAWER_STATUS_CTA_CLASS,
+  APPOINTMENT_DRAWER_STATUS_PILL_CLASS,
+  APPOINTMENT_DRAWER_STATUS_ROW_CLASS,
+} from "@/features/appointments/styles/appointment-drawer-tokens";
 import { useSalesStaffPermissions } from "@/features/sales/hooks/use-sales-staff-permissions";
 import { cn } from "@/lib/utils";
 
-const STATUS_ACTION_BUTTON_CLASS = APPOINTMENT_POPUP_STATUS_CTA_CLASS;
+const STATUS_ACTION_BUTTON_CLASS = APPOINTMENT_DRAWER_STATUS_CTA_CLASS;
 
 function formatRelativeNotified(iso: string): string {
   const notifiedAt = new Date(iso).getTime();
@@ -87,6 +89,7 @@ export function AppointmentStatusBar({
     relatedCheckoutStatus,
   );
   const checkoutOpen = isCheckoutOpen(relatedCheckoutStatus);
+  const colors = APPOINTMENT_STATUS_COLORS[status];
 
   useEffect(() => {
     if (status !== "PENDING_COMPLETION") return;
@@ -98,42 +101,35 @@ export function AppointmentStatusBar({
   }, [status, expressBookingExpiresAt]);
 
   return (
-    <div className="pb-3 pt-1">
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex min-w-0 items-center gap-2">
-          {status === "CONFIRMED" ? (
-            <span className="inline-flex items-center gap-1.5 rounded-md bg-[#E8F5EF] px-2.5 py-1 text-[13px] font-semibold text-[#1C9A5B]">
-              <CheckCircle2 className="size-4 shrink-0" strokeWidth={2.25} />
-              {displayLabel}
-            </span>
-          ) : (
-            <div className="flex min-w-0 items-center gap-2.5">
-              <span
-                className={cn(
-                  "size-2.5 shrink-0 rounded-full",
-                  getAppointmentStatusDotClass(status),
-                )}
-              />
-              <span className="text-[14px] font-semibold text-black-secondary-normal">
-                {displayLabel}
-              </span>
-            </div>
+    <div>
+      <div className={APPOINTMENT_DRAWER_STATUS_ROW_CLASS}>
+        <span
+          className={cn(
+            APPOINTMENT_DRAWER_STATUS_PILL_CLASS,
+            colors.bg,
+            colors.border,
+            colors.text,
           )}
-        </div>
+        >
+          <span className={cn("size-2 shrink-0 rounded-full", colors.dot)} />
+          {displayLabel}
+        </span>
 
-        <AppointmentStatusActions
-          status={status}
-          relatedCheckoutId={relatedCheckoutId}
-          relatedCheckoutStatus={relatedCheckoutStatus}
-          disabled={disabled}
-          checkInOpen={checkInOpen}
-          onCheckInOpenChange={setCheckInOpen}
-          onStatusChange={onStatusChange}
-          onNotify={onNotify}
-          onCheckout={onCheckout}
-          onViewSale={onViewSale}
-          onCompleteExpress={onCompleteExpress}
-        />
+        <div className="ml-auto flex max-w-full min-w-0 justify-end">
+          <AppointmentStatusActions
+            status={status}
+            relatedCheckoutId={relatedCheckoutId}
+            relatedCheckoutStatus={relatedCheckoutStatus}
+            disabled={disabled}
+            checkInOpen={checkInOpen}
+            onCheckInOpenChange={setCheckInOpen}
+            onStatusChange={onStatusChange}
+            onNotify={onNotify}
+            onCheckout={onCheckout}
+            onViewSale={onViewSale}
+            onCompleteExpress={onCompleteExpress}
+          />
+        </div>
       </div>
 
       {status === "PENDING_COMPLETION" ? (
@@ -193,29 +189,27 @@ function AppointmentStatusActions({
   if (status === "PENDING_COMPLETION") {
     if (!onCompleteExpress) return null;
     return (
-      <ActionButton
+      <button
         type="button"
-        variant="outline"
         disabled={disabled}
         onClick={onCompleteExpress}
         className={STATUS_ACTION_BUTTON_CLASS}
       >
         Complete
-      </ActionButton>
+      </button>
     );
   }
 
   if (status === "UNCONFIRMED") {
     return (
-      <ActionButton
+      <button
         type="button"
-        variant="outline"
         disabled={disabled}
         onClick={() => onStatusChange("CONFIRMED")}
         className={STATUS_ACTION_BUTTON_CLASS}
       >
         Confirm
-      </ActionButton>
+      </button>
     );
   }
 
@@ -224,14 +218,13 @@ function AppointmentStatusActions({
       <Popover open={checkInOpen} onOpenChange={onCheckInOpenChange}>
         <PopoverTrigger
           render={
-            <ActionButton
+            <button
               type="button"
-              variant="outline"
               disabled={disabled}
               className={STATUS_ACTION_BUTTON_CLASS}
             >
-              CHECK-IN
-            </ActionButton>
+              Check In
+            </button>
           }
         />
         <PopoverContent align="end" className="w-44 p-1.5">
@@ -264,25 +257,23 @@ function AppointmentStatusActions({
 
   if (status === "WAITING") {
     return (
-      <div className="flex shrink-0 items-center gap-2">
-        <ActionButton
+      <div className="flex max-w-full min-w-0 flex-wrap items-center justify-end gap-2">
+        <button
           type="button"
-          variant="outline"
           disabled={disabled}
           onClick={onNotify}
           className={STATUS_ACTION_BUTTON_CLASS}
         >
           Notify
-        </ActionButton>
-        <ActionButton
+        </button>
+        <button
           type="button"
-          variant="outline"
           disabled={disabled}
           onClick={() => onStatusChange("IN_SERVICE")}
           className={STATUS_ACTION_BUTTON_CLASS}
         >
           In service
-        </ActionButton>
+        </button>
       </div>
     );
   }
@@ -291,57 +282,53 @@ function AppointmentStatusActions({
     if (!canCheckout) {
       if (checkoutOpen && relatedCheckoutId && canViewAttachedSale) {
         return (
-          <ActionButton
+          <button
             type="button"
-            variant="outline"
             disabled={disabled}
             onClick={onViewSale}
             className={STATUS_ACTION_BUTTON_CLASS}
           >
             View sale
-          </ActionButton>
+          </button>
         );
       }
       return null;
     }
     if (checkoutOpen && relatedCheckoutId) {
       return (
-        <ActionButton
+        <button
           type="button"
-          variant="outline"
           disabled={disabled}
           onClick={onCheckout}
           className={STATUS_ACTION_BUTTON_CLASS}
         >
           Continue
-        </ActionButton>
+        </button>
       );
     }
 
     return (
-      <ActionButton
+      <button
         type="button"
-        variant="outline"
         disabled={disabled}
         onClick={onCheckout}
         className={STATUS_ACTION_BUTTON_CLASS}
       >
         Checkout
-      </ActionButton>
+      </button>
     );
   }
 
   if (status === "COMPLETED" && relatedCheckoutId && canViewAttachedSale) {
     return (
-      <ActionButton
+      <button
         type="button"
-        variant="outline"
         disabled={disabled}
         onClick={onViewSale}
         className={STATUS_ACTION_BUTTON_CLASS}
       >
         View sale
-      </ActionButton>
+      </button>
     );
   }
 

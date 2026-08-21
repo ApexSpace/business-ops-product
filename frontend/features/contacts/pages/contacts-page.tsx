@@ -4,6 +4,7 @@ import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "rea
 import { useQueryClient } from "@tanstack/react-query";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Download, Plus, Printer, Trash2, Upload } from "lucide-react";
+import { ApiErrorState } from "@/components/data-display/api-error-state";
 import { DataTable, type DataTableColumn } from "@/components/data-display/data-table";
 import { EntityDetailDrawer } from "@/components/layout/entity-detail-drawer";
 import { EntityWorkspaceLayout } from "@/components/layout/entity-workspace-layout";
@@ -117,7 +118,8 @@ function BusinessContactsPageContent() {
     search: debouncedSearch || undefined,
   };
 
-  const { data, isLoading } = useContactsList(listFilters);
+  const { data, isLoading, isError, error, refetch } =
+    useContactsList(listFilters);
   const canLoadDetail = Boolean(selectedId && contactPerms.canOpenProfiles);
   const { isLoading: detailLoading } = useContactDetail(
     canLoadDetail ? (selectedId ?? "") : "",
@@ -288,6 +290,9 @@ function BusinessContactsPageContent() {
           ) : undefined
         }
       >
+        {isError ? (
+          <ApiErrorState error={error} onRetry={() => void refetch()} />
+        ) : (
         <DataTable
           columns={columns}
           data={contacts}
@@ -319,6 +324,7 @@ function BusinessContactsPageContent() {
           }
           className={WORKSPACE_TABLE_CLASS}
         />
+        )}
       </EntityWorkspaceLayout>
 
       <EntityDetailDrawer

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ExternalLink, Pencil, Plus } from "lucide-react";
 import { toast } from "sonner";
+import { ApiErrorState } from "@/components/data-display/api-error-state";
 import { DataTable } from "@/components/data-display/data-table";
 import { StatusBadge } from "@/components/data-display/status-badge";
 import { SearchInput } from "@/components/forms/search-input";
@@ -87,7 +88,7 @@ export function PaymentsInvoicesTab() {
     issueTo: params.issueTo || undefined,
   };
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: queryKeys.invoices.list(listFilters),
     queryFn: () => listInvoices(listFilters),
   });
@@ -202,6 +203,9 @@ export function PaymentsInvoicesTab() {
           ) : null
         }
       >
+        {isError ? (
+          <ApiErrorState error={error} onRetry={() => void refetch()} />
+        ) : (
         <DataTable
           className="min-w-[60rem]"
           density="compact"
@@ -248,6 +252,7 @@ export function PaymentsInvoicesTab() {
             />
           )}
         />
+        )}
       </FinancialTabPanel>
 
       <EntityDetailDrawer

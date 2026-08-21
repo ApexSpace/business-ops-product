@@ -3,6 +3,11 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { ApiErrorState } from "@/components/data-display/api-error-state";
+import { EmptyState } from "@/components/data-display/empty-state";
+import { LoadingState } from "@/components/data-display/loading-state";
+import { PageContainer } from "@/components/layout/page-container";
+import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -193,7 +198,8 @@ export function SocialCommentsPage() {
     [providerKey, socialPostId],
   );
 
-  const { data, isLoading, isFetching } = useSocialEngagement(filters);
+  const { data, isLoading, isFetching, isError, error, refetch } =
+    useSocialEngagement(filters);
   const {
     sync,
     markRead,
@@ -213,48 +219,50 @@ export function SocialCommentsPage() {
   const unreadCount = data?.unreadCount ?? 0;
 
   return (
-    <div className="space-y-4 p-4 md:p-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Engagement</h1>
-          <p className="text-sm text-muted-foreground">
-            Comments and likes on posts published from Social Planner
-            {unreadCount > 0 ? ` · ${unreadCount} unread` : ""}
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={sync.isPending || isFetching}
-            onClick={() => sync.mutate()}
-          >
-            {sync.isPending ? "Syncing…" : "Sync from channels"}
-          </Button>
-          {unreadCount > 0 ? (
+    <PageContainer>
+      <PageHeader
+        title="Engagement"
+        description={
+          unreadCount > 0
+            ? `Comments and likes on posts published from Social Planner · ${unreadCount} unread`
+            : "Comments and likes on posts published from Social Planner"
+        }
+        actions={
+          <>
             <Button
               variant="outline"
               size="sm"
-              disabled={markRead.isPending}
-              onClick={() =>
-                markRead.mutate({
-                  ...(providerKey ? { providerKey } : {}),
-                  ...(socialPostId ? { socialPostId } : {}),
-                })
-              }
+              disabled={sync.isPending || isFetching}
+              onClick={() => sync.mutate()}
             >
-              {markRead.isPending ? "Marking…" : "Mark all read"}
+              {sync.isPending ? "Syncing…" : "Sync from channels"}
             </Button>
-          ) : null}
-          <Button
-            variant="outline"
-            nativeButton={false}
-            render={<Link href="/business/social-planner" />}
-          >
-            Calendar
-          </Button>
-        </div>
-      </div>
+            {unreadCount > 0 ? (
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={markRead.isPending}
+                onClick={() =>
+                  markRead.mutate({
+                    ...(providerKey ? { providerKey } : {}),
+                    ...(socialPostId ? { socialPostId } : {}),
+                  })
+                }
+              >
+                {markRead.isPending ? "Marking…" : "Mark all read"}
+              </Button>
+            ) : null}
+            <Button
+              variant="outline"
+              size="sm"
+              nativeButton={false}
+              render={<Link href="/business/social-planner" />}
+            >
+              Calendar
+            </Button>
+          </>
+        }
+      />
 
       <div className="flex flex-wrap gap-2">
         {CHANNELS.map((channel) => (
@@ -275,120 +283,122 @@ export function SocialCommentsPage() {
         </div>
       ) : null}
 
-      {isLoading ? (
-        <p className="text-sm text-muted-foreground">Loading engagement…</p>
-      ) : null}
-
-      <div className="space-y-6">
-        {groups.map((group) => (
-          <section
-            key={group.socialPostTargetId}
-            className="space-y-3 rounded-lg border p-4"
-          >
-            <header className="flex flex-wrap items-start justify-between gap-2">
-              <div>
-                <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                  <span className="uppercase">{group.providerKey}</span>
-                  <span>{group.resourceName ?? "Account"}</span>
-                  {group.publishedAt ? (
-                    <span>
-                      {new Date(group.publishedAt).toLocaleString()}
-                    </span>
+      {isError ? (
+        <ApiErrorState error={error} onRetry={() => void refetch()} />
+      ) : isLoading ? (
+        <LoadingState variant="skeleton" rows={4} />
+      ) : groups.length === 0 ? (
+        <EmptyState
+          title="No engagement found"
+          description="No engagement found on published Facebook, Instagram, or YouTube posts from Social Planner. TikTok organic comments are not available via the Content Posting API."
+        />
+      ) : (
+        <div className="space-y-6">
+          {groups.map((group) => (
+            <section
+              key={group.socialPostTargetId}
+              className="space-y-3 rounded-lg border p-4"
+            >
+              <header className="flex flex-wrap items-start justify-between gap-2">
+                <div>
+                  <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                    <span className="uppercase">{group.providerKey}</span>
+                    <span>{group.resourceName ?? "Account"}</span>
+                    {group.publishedAt ? (
+                      <span>
+                        {new Date(group.publishedAt).toLocaleString()}
+                      </span>
+                    ) : null}
+                  </div>
+                  <p className="mt-1 text-sm font-medium">
+                    {group.captionPreview || "(no caption)"}
+                  </p>
+                  {group.metrics ? (
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {group.metrics.likes} likes · {group.metrics.comments}{" "}
+                      comments
+                      {group.metrics.views
+                        ? ` · ${group.metrics.views} views`
+                        : ""}
+                    </p>
                   ) : null}
                 </div>
-                <p className="mt-1 text-sm font-medium">
-                  {group.captionPreview || "(no caption)"}
-                </p>
-                {group.metrics ? (
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {group.metrics.likes} likes · {group.metrics.comments}{" "}
-                    comments
-                    {group.metrics.views
-                      ? ` · ${group.metrics.views} views`
-                      : ""}
-                  </p>
+                {group.permalink ? (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    nativeButton={false}
+                    render={
+                      <a
+                        href={group.permalink}
+                        target="_blank"
+                        rel="noreferrer"
+                      />
+                    }
+                  >
+                    Open post
+                  </Button>
                 ) : null}
-              </div>
-              {group.permalink ? (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  nativeButton={false}
-                  render={
-                    <a
-                      href={group.permalink}
-                      target="_blank"
-                      rel="noreferrer"
-                    />
-                  }
-                >
-                  Open post
-                </Button>
-              ) : null}
-            </header>
+              </header>
 
-            {group.comments.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                No comments on this post yet.
-              </p>
-            ) : (
-              group.comments.map((comment) => (
-                <CommentThread
-                  key={comment.id}
-                  comment={comment}
-                  capabilities={group.capabilities}
-                  drafts={drafts}
-                  setDrafts={setDrafts}
-                  replyPendingId={replyPendingId}
-                  likePendingId={likePendingId}
-                  deletePendingId={deletePendingId}
-                  likedIds={likedIds}
-                  onReply={(c, message) => {
-                    setDrafts((prev) => {
-                      const next = { ...prev };
-                      delete next[c.id];
-                      return next;
-                    });
-                    replyToComment({
-                      commentId: c.id,
-                      message,
-                      providerKey: c.providerKey,
-                      socialPostTargetId:
-                        c.socialPostTargetId || group.socialPostTargetId,
-                      externalPostId: c.externalPostId || group.externalPostId,
-                      permalink: c.permalink ?? group.permalink,
-                    });
-                  }}
-                  onLike={(c) =>
-                    likeComment({
-                      commentId: c.id,
-                      providerKey: c.providerKey,
-                      socialPostTargetId:
-                        c.socialPostTargetId || group.socialPostTargetId,
-                    })
-                  }
-                  onDelete={(c) =>
-                    deleteComment({
-                      commentId: c.id,
-                      providerKey: c.providerKey,
-                      socialPostTargetId:
-                        c.socialPostTargetId || group.socialPostTargetId,
-                    })
-                  }
+              {group.comments.length === 0 ? (
+                <EmptyState
+                  compact
+                  title="No comments on this post yet"
+                  className="py-6"
                 />
-              ))
-            )}
-          </section>
-        ))}
-
-        {!isLoading && groups.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            No engagement found on published Facebook, Instagram, or YouTube
-            posts from Social Planner. TikTok organic comments are not available
-            via the Content Posting API.
-          </p>
-        ) : null}
-      </div>
-    </div>
+              ) : (
+                group.comments.map((comment) => (
+                  <CommentThread
+                    key={comment.id}
+                    comment={comment}
+                    capabilities={group.capabilities}
+                    drafts={drafts}
+                    setDrafts={setDrafts}
+                    replyPendingId={replyPendingId}
+                    likePendingId={likePendingId}
+                    deletePendingId={deletePendingId}
+                    likedIds={likedIds}
+                    onReply={(c, message) => {
+                      setDrafts((prev) => {
+                        const next = { ...prev };
+                        delete next[c.id];
+                        return next;
+                      });
+                      replyToComment({
+                        commentId: c.id,
+                        message,
+                        providerKey: c.providerKey,
+                        socialPostTargetId:
+                          c.socialPostTargetId || group.socialPostTargetId,
+                        externalPostId:
+                          c.externalPostId || group.externalPostId,
+                        permalink: c.permalink ?? group.permalink,
+                      });
+                    }}
+                    onLike={(c) =>
+                      likeComment({
+                        commentId: c.id,
+                        providerKey: c.providerKey,
+                        socialPostTargetId:
+                          c.socialPostTargetId || group.socialPostTargetId,
+                      })
+                    }
+                    onDelete={(c) =>
+                      deleteComment({
+                        commentId: c.id,
+                        providerKey: c.providerKey,
+                        socialPostTargetId:
+                          c.socialPostTargetId || group.socialPostTargetId,
+                      })
+                    }
+                  />
+                ))
+              )}
+            </section>
+          ))}
+        </div>
+      )}
+    </PageContainer>
   );
 }

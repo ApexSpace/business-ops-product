@@ -13,6 +13,7 @@ import {
 import { usePathname, useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { FinancialSummaryCard } from "@/features/payments/components/financial-summary-card";
+import { ApiErrorState } from "@/components/data-display/api-error-state";
 import { EmptyState } from "@/components/data-display/empty-state";
 import { LoadingState } from "@/components/data-display/loading-state";
 import { Button } from "@/components/ui/button";
@@ -50,7 +51,7 @@ export function PaymentsOverviewTab() {
   const router = useRouter();
   const pathname = usePathname();
 
-  const { data, isLoading, isError, refetch } = useQuery({
+  const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: queryKeys.payments.overview(),
     queryFn: () => getPaymentsOverview(),
   });
@@ -72,14 +73,10 @@ export function PaymentsOverviewTab() {
 
   if (isError || !data) {
     return (
-      <EmptyState
+      <ApiErrorState
+        error={error}
         title="Could not load summary"
-        description="Refresh to try again."
-        action={
-          <Button size="sm" variant="outline" onClick={() => void refetch()}>
-            Retry
-          </Button>
-        }
+        onRetry={() => void refetch()}
       />
     );
   }

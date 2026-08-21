@@ -1,14 +1,10 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { Building2, Settings } from "lucide-react";
+import { Building2 } from "lucide-react";
 import { AppShell } from "@/components/shell";
 import { businessSettingsEntry } from "@/lib/config/navigation/business-menu";
-import {
-  businessSettingsSections,
-  filterBusinessSettingsSections,
-  isBusinessSettingsPath,
-} from "@/lib/config/navigation/business-settings-menu";
+import { isBusinessSettingsPath } from "@/lib/config/navigation/business-settings-menu";
 import {
   ADMIN_DEFAULT_SETTINGS_HREF,
   MEMBER_DEFAULT_SETTINGS_HREF,
@@ -122,7 +118,7 @@ export function AppShellLayout({ mode, children }: ShellLayoutProps) {
   };
 
   const snapshotNavigation =
-    mode === "business" && !isSettingsMode
+    mode === "business"
       ? resolveSnapshotNavigation({
           navigation: augmentSnapshotNavigationWithCapabilities(
             snapshotContext.navigation,
@@ -136,22 +132,13 @@ export function AppShellLayout({ mode, children }: ShellLayoutProps) {
         })
       : null;
 
-  const settingsSections = filterSectionsByCapability(
-    filterBusinessSettingsSections({
-      sections: businessSettingsSections,
-      ...settingsAccess,
-    }),
-  );
-
   const sections: ShellNavSection[] =
     mode === "platform"
       ? platformOperationalSections
-      : isSettingsMode
-        ? settingsSections
-        : filterSectionsByCapability(snapshotNavigation!.sections);
+      : filterSectionsByCapability(snapshotNavigation!.sections);
 
   const appsItems: ShellNavItem[] =
-    mode === "business" && !isSettingsMode && snapshotNavigation
+    mode === "business" && snapshotNavigation
       ? filterAppsByCapability(snapshotNavigation.appsItems)
       : [];
 
@@ -163,17 +150,11 @@ export function AppShellLayout({ mode, children }: ShellLayoutProps) {
   const brand =
     mode === "platform"
       ? platformBrand
-      : isSettingsMode
-        ? {
-            title: currentBusiness?.name ?? "Business",
-            subtitle: "Settings",
-            icon: Settings,
-          }
-        : {
-            title: currentBusiness?.name ?? "Business",
-            subtitle: brandSubtitle,
-            icon: Building2,
-          };
+      : {
+          title: currentBusiness?.name ?? "Business",
+          subtitle: brandSubtitle,
+          icon: Building2,
+        };
 
   const fullScreenEditor = isFullScreenEditorRoute(pathname);
   const nicheProfile = resolveBusinessNicheProfile({
@@ -210,9 +191,9 @@ export function AppShellLayout({ mode, children }: ShellLayoutProps) {
       brand={brand}
       sections={sections}
       appsItems={appsItems}
-      navMode={isSettingsMode ? "settings" : "main"}
+      navMode="main"
       footerItems={
-        mode === "business" && !isSettingsMode
+        mode === "business"
           ? [businessSettingsEntry]
           : mode === "platform"
             ? [platformSettingsEntry]

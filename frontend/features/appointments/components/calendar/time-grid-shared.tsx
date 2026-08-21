@@ -145,10 +145,10 @@ export function TimeGridColumn({
   );
 }
 
-export function TimeGridGutter() {
+export function TimeGridGutter({ className }: { className?: string }) {
   const slotLabels = getTimeSlotLabels();
   return (
-    <div className={cn(CALENDAR_GRID.timeGutter, "bg-white")}>
+    <div className={cn(CALENDAR_GRID.timeGutter, "bg-white", className)}>
       {slotLabels.map((minutes) => {
         const isHourStart = minutes % 60 === 0;
         const isHourEnd = minutes % 60 === 45;
