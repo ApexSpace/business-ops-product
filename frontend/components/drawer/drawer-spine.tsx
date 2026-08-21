@@ -1,9 +1,9 @@
 "use client";
 
 import {
-  APPOINTMENT_DRAWER_SPINE_CLASS,
-  APPOINTMENT_DRAWER_SPINE_LABEL_CLASS,
-} from "@/features/appointments/styles/appointment-drawer-tokens";
+  DRAWER_SPINE_CLASS,
+  DRAWER_SPINE_LABEL_CLASS,
+} from "@/lib/design/drawer-shell-tokens";
 import { cn } from "@/lib/utils";
 
 export interface DrawerSpineProps {
@@ -12,14 +12,14 @@ export interface DrawerSpineProps {
 }
 
 /**
- * Left vertical label strip — separate from the white content panel.
- * Figma: 30px wide, primary/500 (#7E3BED), rounded left corners only.
+ * Left vertical purpose strip — shared by appointment + sales drawers.
+ * Figma: 30px wide, primary/500, border-radius on top-left + bottom-left only.
  */
 export function DrawerSpine({ label, className }: DrawerSpineProps) {
   return (
-    <div className={cn(APPOINTMENT_DRAWER_SPINE_CLASS, className)} aria-hidden>
+    <div className={cn(DRAWER_SPINE_CLASS, className)} aria-hidden>
       <span
-        className={APPOINTMENT_DRAWER_SPINE_LABEL_CLASS}
+        className={DRAWER_SPINE_LABEL_CLASS}
         style={{ writingMode: "vertical-rl", transform: "rotate(180deg)" }}
       >
         {label}

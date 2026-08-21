@@ -34,9 +34,18 @@ import {
 import {
   APPOINTMENT_DRAWER_CLOSE_ACTION_CLASS,
   APPOINTMENT_DRAWER_CONTENT_PANEL_CLASS,
+  APPOINTMENT_DRAWER_MOBILE_CLOSE_ACTION_CLASS,
+  APPOINTMENT_DRAWER_MOBILE_HEADER_ACTIONS_CLASS,
+  APPOINTMENT_DRAWER_MOBILE_HEADER_CLASS,
+  APPOINTMENT_DRAWER_MOBILE_HEADER_ROW_CLASS,
+  APPOINTMENT_DRAWER_MOBILE_SHEET_CONTENT_CLASS,
+  APPOINTMENT_DRAWER_MOBILE_SHELL_CLASS,
+  APPOINTMENT_DRAWER_MOBILE_TITLE_CLASS,
   APPOINTMENT_DRAWER_SHEET_CONTENT_CLASS,
 } from "@/features/appointments/styles/appointment-drawer-tokens";
 import { cn } from "@/lib/utils";
+
+export type DrawerShellChrome = "default" | "mobile-brand";
 
 export interface DrawerShellProps {
   open?: boolean;
@@ -48,6 +57,11 @@ export interface DrawerShellProps {
   description?: React.ReactNode;
   /** Optional vertical spine label (e.g. “NEW APPOINTMENT”). */
   spineLabel?: string;
+  /**
+   * Visual chrome. `mobile-brand` matches Figma mobile sidebars:
+   * full-bleed purple header, close on the left, no spine.
+   */
+  chrome?: DrawerShellChrome;
   headerActions?: React.ReactNode;
   footer?: React.ReactNode;
   showCloseButton?: boolean;
@@ -70,6 +84,7 @@ function DrawerShellInner({
   bodyClassName,
   contentClassName,
   footerClassName,
+  chrome = "default",
   inSheet = true,
   showCloseButton = false,
   onRequestClose,
@@ -85,6 +100,7 @@ function DrawerShellInner({
   | "bodyClassName"
   | "contentClassName"
   | "footerClassName"
+  | "chrome"
   | "children"
 > & {
   inSheet?: boolean;
@@ -96,49 +112,98 @@ function DrawerShellInner({
   const isRichDescription =
     description != null && typeof description !== "string";
   const Description = inSheet ? SheetDescription : isRichDescription ? "div" : "p";
+  const isMobileBrand = chrome === "mobile-brand";
 
   return (
     <>
       {title ? (
-        <SheetHeader className={cn(DRAWER_SHELL_HEADER_CLASS, headerClassName)}>
-          <div
-            data-slot="sheet-header-row"
-            className={DRAWER_SHELL_HEADER_ROW_CLASS}
+        isMobileBrand ? (
+          <SheetHeader
+            className={cn(
+              APPOINTMENT_DRAWER_MOBILE_HEADER_CLASS,
+              headerClassName,
+            )}
           >
-            <div className="min-w-0 flex-1">
-              <Title className={DRAWER_SHELL_TITLE_CLASS}>{title}</Title>
-              {description ? (
-                <Description
-                  className={DRAWER_SHELL_DESCRIPTION_CLASS}
-                  {...(inSheet && isRichDescription
-                    ? { render: <div /> }
-                    : {})}
-                >
-                  {description}
-                </Description>
-              ) : null}
-            </div>
-            {headerActions || (inSheet && showCloseButton) ? (
-              <div className="flex shrink-0 items-center gap-1.5">
-                {headerActions}
+            <div
+              data-slot="sheet-header-row"
+              className={APPOINTMENT_DRAWER_MOBILE_HEADER_ROW_CLASS}
+            >
+              <div className="flex items-center justify-start">
                 {inSheet && showCloseButton && onRequestClose ? (
                   <IconButton
                     type="button"
                     variant="ghost"
                     aria-label="Close"
-                    className={cn(
-                      DRAWER_SHELL_HEADER_ACTION_CLASS,
-                      APPOINTMENT_DRAWER_CLOSE_ACTION_CLASS,
-                    )}
+                    className={APPOINTMENT_DRAWER_MOBILE_CLOSE_ACTION_CLASS}
                     onClick={onRequestClose}
                   >
                     <DrawerCloseIcon />
                   </IconButton>
+                ) : (
+                  <span className="size-11" aria-hidden />
+                )}
+              </div>
+              <div className="min-w-0">
+                <Title className={APPOINTMENT_DRAWER_MOBILE_TITLE_CLASS}>
+                  {title}
+                </Title>
+                {description ? (
+                  <Description
+                    className="mt-1 truncate text-center text-[12px] font-medium leading-none text-white/80"
+                    {...(inSheet && isRichDescription
+                      ? { render: <div /> }
+                      : {})}
+                  >
+                    {description}
+                  </Description>
                 ) : null}
               </div>
-            ) : null}
-          </div>
-        </SheetHeader>
+              <div className={APPOINTMENT_DRAWER_MOBILE_HEADER_ACTIONS_CLASS}>
+                {headerActions ?? <span className="size-11" aria-hidden />}
+              </div>
+            </div>
+          </SheetHeader>
+        ) : (
+          <SheetHeader className={cn(DRAWER_SHELL_HEADER_CLASS, headerClassName)}>
+            <div
+              data-slot="sheet-header-row"
+              className={DRAWER_SHELL_HEADER_ROW_CLASS}
+            >
+              <div className="min-w-0 flex-1">
+                <Title className={DRAWER_SHELL_TITLE_CLASS}>{title}</Title>
+                {description ? (
+                  <Description
+                    className={DRAWER_SHELL_DESCRIPTION_CLASS}
+                    {...(inSheet && isRichDescription
+                      ? { render: <div /> }
+                      : {})}
+                  >
+                    {description}
+                  </Description>
+                ) : null}
+              </div>
+              {headerActions || (inSheet && showCloseButton) ? (
+                <div className="flex shrink-0 items-center gap-1.5">
+                  {headerActions}
+                  {inSheet && showCloseButton && onRequestClose ? (
+                    <IconButton
+                      type="button"
+                      variant="ghost"
+                      aria-label="Close"
+                      className={cn(
+                        DRAWER_SHELL_HEADER_ACTION_CLASS,
+                        APPOINTMENT_DRAWER_CLOSE_ACTION_CLASS,
+                      )}
+                      onClick={onRequestClose}
+                    >
+                      <DrawerCloseIcon />
+                    </IconButton>
+                  ) : null}
+                </div>
+              ) : null}
+            </div>
+          </SheetHeader>
+        )
       ) : null}
       <SheetBody className={cn(DRAWER_SHELL_BODY_CLASS, bodyClassName)}>
         <div className={cn(DRAWER_SHELL_CONTENT_INSET_CLASS, contentClassName)}>
@@ -161,6 +226,7 @@ function DrawerShellInner({
 
 function DrawerShellLayout({
   spineLabel,
+  chrome = "default",
   className,
   widthClass,
   stackZ,
@@ -180,6 +246,7 @@ function DrawerShellLayout({
   children,
 }: {
   spineLabel?: string;
+  chrome?: DrawerShellChrome;
   className?: string;
   widthClass: string;
   stackZ?: string;
@@ -198,7 +265,8 @@ function DrawerShellLayout({
   useAppointmentFooter?: boolean;
   children: React.ReactNode;
 }) {
-  const hasSpine = Boolean(spineLabel);
+  const isMobileBrand = chrome === "mobile-brand";
+  const hasSpine = Boolean(spineLabel) && !isMobileBrand;
 
   return (
     <div
@@ -207,13 +275,15 @@ function DrawerShellLayout({
         hasSpine && cn("overflow-hidden", className),
         hasSpine && widthClass,
         hasSpine && stackZ,
+        isMobileBrand && APPOINTMENT_DRAWER_MOBILE_SHELL_CLASS,
       )}
     >
       {hasSpine && spineLabel ? <DrawerSpine label={spineLabel} /> : null}
       <div
         className={cn(
           "flex min-h-0 min-w-0 flex-1 flex-col",
-          hasSpine && cn(APPOINTMENT_DRAWER_CONTENT_PANEL_CLASS, "overflow-hidden"),
+          hasSpine &&
+            cn(APPOINTMENT_DRAWER_CONTENT_PANEL_CLASS, "overflow-hidden"),
           !hasSpine && className,
           !hasSpine && widthClass,
           !hasSpine && stackZ,
@@ -228,6 +298,7 @@ function DrawerShellLayout({
           bodyClassName={bodyClassName}
           contentClassName={resolvedContentClassName}
           footerClassName={resolvedFooterClassName}
+          chrome={chrome}
           inSheet={inSheet}
           showCloseButton={showCloseButton}
           onRequestClose={onRequestClose}
@@ -248,6 +319,7 @@ export function DrawerShell({
   title,
   description,
   spineLabel,
+  chrome = "default",
   headerActions,
   footer,
   showCloseButton = true,
@@ -259,18 +331,31 @@ export function DrawerShell({
   footerClassName,
   children,
 }: DrawerShellProps) {
-  const widthClass = drawerShellWidthClass(width);
+  const isMobileBrand = chrome === "mobile-brand";
+  const effectiveWidth: DrawerShellWidthTier =
+    isMobileBrand &&
+    (width === "appointment" || width === "appointment-mobile")
+      ? "appointment-mobile"
+      : width;
+  const effectiveSpineLabel = isMobileBrand ? undefined : spineLabel;
+  const widthClass = drawerShellWidthClass(effectiveWidth);
   const stackZ =
-    stackLevel === "overlay" ? "z-[60] [&+[data-slot=sheet-overlay]]:z-[55]" : "";
+    stackLevel === "overlay"
+      ? "z-[60] [&+[data-slot=sheet-overlay]]:z-[55]"
+      : "";
   const resolvedContentClassName = cn(
-    width === "compact" || width === "appointment"
+    effectiveWidth === "compact" ||
+      effectiveWidth === "appointment" ||
+      effectiveWidth === "appointment-mobile"
       ? DRAWER_COMPACT_CONTENT_CLASS
       : undefined,
     contentClassName,
   );
-  const isAppointmentDrawer = width === "appointment";
+  const isAppointmentDrawer =
+    effectiveWidth === "appointment" ||
+    effectiveWidth === "appointment-mobile";
   const resolvedFooterClassName = cn(
-    width === "compact" ? DRAWER_COMPACT_FOOTER_CLASS : undefined,
+    effectiveWidth === "compact" ? DRAWER_COMPACT_FOOTER_CLASS : undefined,
     footerClassName,
   );
 
@@ -282,11 +367,12 @@ export function DrawerShell({
         className={cn(
           "relative flex h-full min-h-0 w-full max-w-[var(--sheet-width)] shrink-0 flex-col border-l border-border bg-background",
           widthClass,
-          !spineLabel && className,
+          !effectiveSpineLabel && className,
         )}
       >
         <DrawerShellLayout
-          spineLabel={spineLabel}
+          spineLabel={effectiveSpineLabel}
+          chrome={chrome}
           className={className}
           widthClass={widthClass}
           resolvedContentClassName={resolvedContentClassName}
@@ -316,17 +402,20 @@ export function DrawerShell({
         showCloseButton={false}
         className={cn(
           "gap-0 p-0",
-          spineLabel
-            ? APPOINTMENT_DRAWER_SHEET_CONTENT_CLASS
-            : "shadow-elevation-lg",
+          isMobileBrand
+            ? APPOINTMENT_DRAWER_MOBILE_SHEET_CONTENT_CLASS
+            : effectiveSpineLabel
+              ? APPOINTMENT_DRAWER_SHEET_CONTENT_CLASS
+              : "shadow-elevation-lg",
           widthClass,
           stackZ,
-          !spineLabel && className,
+          !effectiveSpineLabel && className,
         )}
       >
         <DrawerShellLayout
-          spineLabel={spineLabel}
-          className={spineLabel ? className : undefined}
+          spineLabel={effectiveSpineLabel}
+          chrome={chrome}
+          className={effectiveSpineLabel ? className : undefined}
           resolvedContentClassName={resolvedContentClassName}
           resolvedFooterClassName={resolvedFooterClassName}
           headerClassName={headerClassName}

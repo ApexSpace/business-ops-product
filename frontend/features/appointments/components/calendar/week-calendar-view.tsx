@@ -20,6 +20,11 @@ import {
   CALENDAR_FIGMA_STAFF_COL_MIN_PX,
   CALENDAR_FIGMA_TIME_GUTTER_PX,
 } from "@/features/calendars/styles/calendar-figma";
+import {
+  MOBILE_CAL_COL_WIDTH_PX,
+  MOBILE_CAL_TIME_GUTTER_PX,
+  MOBILE_CAL_WEEK_VISIBLE_DAYS,
+} from "@/features/appointments/styles/mobile-calendar-tokens";
 import type { BusinessHoursSlot } from "@/features/business-hours/types";
 import { cn } from "@/lib/utils";
 
@@ -49,6 +54,8 @@ interface WeekCalendarViewProps {
     minute: number,
     assignedToId?: string,
   ) => void;
+  /** Figma phone week — Mon–Wed columns only. */
+  density?: "desktop" | "mobile";
 }
 
 export function WeekCalendarView({
@@ -66,12 +73,26 @@ export function WeekCalendarView({
   businessHoursSlots,
   weekStaffHoursSlots,
   onSlotClick,
+  density = "desktop",
 }: WeekCalendarViewProps) {
-  const weekDateKeys = getWeekDateKeysInTimezone(anchorDateKey, timezone);
+  const isMobile = density === "mobile";
+  const allWeekKeys = getWeekDateKeysInTimezone(anchorDateKey, timezone);
+  // Sunday-start week → Mon–Wed = indexes 1..3 (Figma mobile week)
+  const weekDateKeys = isMobile
+    ? allWeekKeys.slice(1, 1 + MOBILE_CAL_WEEK_VISIBLE_DAYS)
+    : allWeekKeys;
   const currentTimeTop = useCalendarCurrentTimeTop(timezone, weekDateKeys);
-  const gridTemplate = `${CALENDAR_FIGMA_TIME_GUTTER_PX}px repeat(7, minmax(${CALENDAR_FIGMA_STAFF_COL_MIN_PX}px, 1fr))`;
-  const minWidth =
-    CALENDAR_FIGMA_TIME_GUTTER_PX + 7 * CALENDAR_FIGMA_STAFF_COL_MIN_PX;
+  const timeGutterPx = isMobile
+    ? MOBILE_CAL_TIME_GUTTER_PX
+    : CALENDAR_FIGMA_TIME_GUTTER_PX;
+  const colMin = isMobile
+    ? MOBILE_CAL_COL_WIDTH_PX
+    : CALENDAR_FIGMA_STAFF_COL_MIN_PX;
+  const columnCount = weekDateKeys.length;
+  const gridTemplate = isMobile
+    ? `${timeGutterPx}px repeat(${columnCount}, ${colMin}px)`
+    : `${timeGutterPx}px repeat(${columnCount}, minmax(${colMin}px, 1fr))`;
+  const minWidth = timeGutterPx + columnCount * colMin;
 
   return (
     <div
@@ -93,7 +114,7 @@ export function WeekCalendarView({
           >
             <div
               className="sticky left-0 z-40 shrink-0 border-b border-r border-[color:rgba(126,59,237,0.6)] bg-white"
-              style={{ width: CALENDAR_FIGMA_TIME_GUTTER_PX, height: 64 }}
+              style={{ width: timeGutterPx, height: isMobile ? 48 : 64 }}
               aria-hidden
             />
             {weekDateKeys.map((dayKey) => {
@@ -144,7 +165,7 @@ export function WeekCalendarView({
                   minHeight: GRID_HEIGHT,
                 }}
               >
-                <TimeGridGutter />
+                <TimeGridGutter className={isMobile ? "w-[52px]" : undefined} />
                 {weekDateKeys.map((dayKey) => (
                   <TimeGridColumn
                     key={dayKey}

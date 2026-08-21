@@ -1,5 +1,7 @@
 "use client";
 
+import { useIsMobile } from "@/lib/hooks/use-mobile";
+
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { TriangleAlert } from "lucide-react";
@@ -79,6 +81,7 @@ import {
   APPOINTMENT_DRAWER_FOOTER_CLASS,
   APPOINTMENT_DRAWER_SETTINGS_ICON_BUTTON_CLASS,
   APPOINTMENT_DRAWER_SHELL_CLASS,
+  APPOINTMENT_DRAWER_MOBILE_SHELL_CLASS,
   APPOINTMENT_DRAWER_SHELL_HEADER_CLASS,
   APPOINTMENT_DRAWER_SWITCH_CLASS,
 } from "@/features/appointments/styles/appointment-drawer-tokens";
@@ -127,6 +130,7 @@ export function AppointmentCreateDrawer({
   onSuccess,
   onCreateTimeBlock,
 }: AppointmentCreateDrawerProps) {
+  const isMobile = useIsMobile();
   const queryClient = useQueryClient();
   const { data: business } = useCurrentBusiness();
 
@@ -482,15 +486,26 @@ export function AppointmentCreateDrawer({
       onOpenChange={onOpenChange}
       variant="sheet"
       width="appointment"
-      spineLabel="NEW APPOINTMENT"
-      className={APPOINTMENT_DRAWER_SHELL_CLASS}
-      title={
-        <DrawerHeaderContent
-          eyebrow={headerDateLabel || undefined}
-          title="New Appointment"
-        />
+      chrome={isMobile ? "mobile-brand" : "default"}
+      spineLabel={isMobile ? undefined : "NEW APPOINTMENT"}
+      className={
+        isMobile
+          ? APPOINTMENT_DRAWER_MOBILE_SHELL_CLASS
+          : APPOINTMENT_DRAWER_SHELL_CLASS
       }
-      headerClassName={APPOINTMENT_DRAWER_SHELL_HEADER_CLASS}
+      title={
+        isMobile ? (
+          "New Appointment"
+        ) : (
+          <DrawerHeaderContent
+            eyebrow={headerDateLabel || undefined}
+            title="New Appointment"
+          />
+        )
+      }
+      headerClassName={
+        isMobile ? undefined : APPOINTMENT_DRAWER_SHELL_HEADER_CLASS
+      }
       contentClassName="!px-0 !py-0"
       footerClassName={APPOINTMENT_DRAWER_FOOTER_CLASS}
       footer={

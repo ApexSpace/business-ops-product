@@ -13,9 +13,16 @@ export const DRAWER_SHELL_WIDTH_CONVERSATION =
 
 export const DRAWER_SHELL_WIDTH_SPLIT = "[--sheet-width:min(94vw,900px)]";
 
-/** Figma New Appointment Sliding Panel — max 409px (30px spine + fluid content), scales with viewport. */
+/**
+ * Figma New Appointment Sliding Panel — max 409px (30px spine + content).
+ * Fluid across phones/tablets; floors at 280px, caps at 409px, uses dvw on small screens.
+ */
 export const DRAWER_SHELL_WIDTH_APPOINTMENT =
-  "[--sheet-width:clamp(280px,94vw,409px)]";
+  "[--sheet-width:clamp(280px,min(94vw,100dvw),409px)]";
+
+/** Mobile appointment/time-block sidebars — edge-to-edge (Figma 390 frames). */
+export const DRAWER_SHELL_WIDTH_APPOINTMENT_MOBILE =
+  "[--sheet-width:100dvw]";
 
 export type DrawerShellWidthTier =
   | "compact"
@@ -23,7 +30,8 @@ export type DrawerShellWidthTier =
   | "wide"
   | "conversation"
   | "split"
-  | "appointment";
+  | "appointment"
+  | "appointment-mobile";
 
 export function drawerShellWidthClass(
   width: DrawerShellWidthTier = "standard",
@@ -33,6 +41,8 @@ export function drawerShellWidthClass(
       return DRAWER_SHELL_WIDTH_COMPACT;
     case "appointment":
       return DRAWER_SHELL_WIDTH_APPOINTMENT;
+    case "appointment-mobile":
+      return DRAWER_SHELL_WIDTH_APPOINTMENT_MOBILE;
     case "wide":
       return DRAWER_SHELL_WIDTH_WIDE;
     case "conversation":
@@ -99,6 +109,17 @@ export const DRAWER_SCROLL_EDGE_CLASS =
 
 /** Right inset inside an edge-aligned scroll region — clears the scrollbar track. */
 export const DRAWER_SCROLL_CONTENT_INSET_CLASS = "pr-4";
+
+
+/**
+ * Shared drawer purpose spine — Figma: 30px · primary/500 · rounded top-left + bottom-left only.
+ * Used by appointments (NEW APPOINTMENT, …) and sales (SALE, OPTIONS, CHECKOUT, PAYMENT).
+ */
+export const DRAWER_SPINE_CLASS =
+  "flex w-[30px] shrink-0 flex-col items-center justify-center self-stretch rounded-l-[12px] bg-violet-primary-normal";
+
+export const DRAWER_SPINE_LABEL_CLASS =
+  "pointer-events-none select-none text-[10px] font-bold uppercase tracking-[0.14em] text-white";
 
 /** Full-width primary CTA sizing — pair with `DRAWER_FOOTER_BUTTON_CLASS`. */
 export const DRAWER_PRIMARY_FOOTER_BUTTON_CLASS = "h-14 min-h-14 w-full";

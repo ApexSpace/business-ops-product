@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { useQueries } from "@tanstack/react-query";
+import { PageContainer } from "@/components/layout/page-container";
+import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -291,24 +293,21 @@ export function SocialPostComposerPage() {
   };
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6 p-4 md:p-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">
-            {postId ? "Edit post" : "Compose post"}
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Shared caption and media, customize per destination
-          </p>
-        </div>
-        <Button
-          variant="outline"
-          nativeButton={false}
-          render={<Link href="/business/social-planner" />}
-        >
-          Back to calendar
-        </Button>
-      </div>
+    <PageContainer className="mx-auto max-w-4xl">
+      <PageHeader
+        title={postId ? "Edit post" : "Compose post"}
+        description="Shared caption and media, customize per destination"
+        actions={
+          <Button
+            variant="outline"
+            size="sm"
+            nativeButton={false}
+            render={<Link href="/business/social-planner" />}
+          >
+            Back to calendar
+          </Button>
+        }
+      />
 
       <section className="space-y-3 rounded-lg border p-4">
         <h2 className="font-medium">Destinations</h2>
@@ -678,6 +677,6 @@ export function SocialPostComposerPage() {
           </Button>
         </div>
       </section>
-    </div>
+    </PageContainer>
   );
 }

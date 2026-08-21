@@ -11,6 +11,7 @@ import {
   isConversationsInboxPath,
 } from "@/features/contacts/workspace/contact-workspace";
 import { PageMetadataProvider } from "@/lib/runtime/page-metadata-context";
+import { useIsMobile } from "@/lib/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 import type { PageMetadataContext } from "@/lib/config/page-metadata";
 import type {
@@ -23,6 +24,7 @@ import { AppSidebar } from "./app-sidebar";
 import { CommandPaletteProvider } from "./command-palette-provider";
 import { DashboardNavbar } from "./dashboard-navbar";
 import { MobileSidebarCloseOnNavigate } from "./mobile-sidebar-close";
+import { ShellAppsProvider } from "./shell-apps-context";
 import { Topbar } from "./topbar";
 
 interface AppShellProps {
@@ -59,6 +61,7 @@ export function AppShell({
   children,
 }: AppShellProps) {
   const pathname = usePathname();
+  const isMobile = useIsMobile();
   const contactWorkspace = isContactWorkspacePath(pathname);
   const conversationsInbox = isConversationsInboxPath(pathname);
   const appointmentsCalendar = isAppointmentsCalendarPath(pathname);
@@ -69,6 +72,7 @@ export function AppShell({
   const useTopNavbar = shellMode === "business" && navMode === "main";
 
   if (useTopNavbar) {
+    const hideDesktopNavbar = appointmentsCalendar && isMobile;
     return (
       <div className="app-shell-canvas flex h-svh min-h-0 flex-col overflow-hidden bg-white">
         <CommandPaletteProvider
@@ -76,24 +80,28 @@ export function AppShell({
           searchPlaceholder={searchPlaceholder}
         >
           <PageMetadataProvider context={pageMetadataContext}>
-            <DashboardNavbar
-              sections={sections}
-              appsItems={appsItems}
-              productName={productName}
-              logoUrl={logoUrl}
-              businessName={workspaceName}
-              notice={topbarNotice}
-            />
-            <div
-              className={cn(
-                "min-h-0 flex-1 bg-white",
-                fullBleedContent
-                  ? "flex flex-col overflow-hidden p-0 [&>*]:min-h-0 [&>*]:flex-1"
-                  : "overflow-y-auto overflow-x-hidden px-4 pb-4 pt-4 sm:px-6 sm:pb-6 sm:pt-4 lg:px-10 lg:pb-8 lg:pt-5",
-              )}
-            >
-              {children}
-            </div>
+            <ShellAppsProvider appsItems={appsItems ?? []}>
+              {!hideDesktopNavbar ? (
+                <DashboardNavbar
+                  sections={sections}
+                  appsItems={appsItems}
+                  productName={productName}
+                  logoUrl={logoUrl}
+                  businessName={workspaceName}
+                  notice={topbarNotice}
+                />
+              ) : null}
+              <div
+                className={cn(
+                  "min-h-0 flex-1 bg-white",
+                  fullBleedContent
+                    ? "flex flex-col overflow-hidden p-0 [&>*]:min-h-0 [&>*]:flex-1"
+                    : "overflow-y-auto overflow-x-hidden px-4 pb-4 pt-4 sm:px-6 sm:pb-6 sm:pt-4 lg:px-10 lg:pb-8 lg:pt-5",
+                )}
+              >
+                {children}
+              </div>
+            </ShellAppsProvider>
           </PageMetadataProvider>
         </CommandPaletteProvider>
       </div>

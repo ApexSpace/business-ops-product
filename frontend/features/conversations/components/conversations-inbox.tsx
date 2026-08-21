@@ -126,7 +126,13 @@ export function ConversationsInbox() {
     enabled: mode === "business",
   });
 
-  const { data: listData, isLoading: listLoading } = useQuery({
+  const {
+    data: listData,
+    isLoading: listLoading,
+    isError: listIsError,
+    error: listError,
+    refetch: refetchList,
+  } = useQuery({
     queryKey: queryKeys.conversations.unifiedList(listFilters, apiBase),
     queryFn: () => listUnifiedConversations(listFilters, apiBase),
     placeholderData: keepPreviousData,
@@ -748,6 +754,8 @@ export function ConversationsInbox() {
       onStatusFilterChange={setStatusFilter}
       threads={threads}
       listLoading={listLoading}
+      listError={listIsError ? listError : undefined}
+      onListRetry={() => void refetchList()}
       selectedThreadKey={activeThread?.threadKey ?? null}
       onSelectThread={selectThread}
       useVirtualThreads={useVirtualThreads}

@@ -7,6 +7,9 @@ import { CalendarToolbar } from "@/features/appointments/components/calendar/cal
 import { MonthCalendarView } from "@/features/appointments/components/calendar/month-calendar-view";
 import { StaffDayCalendarView } from "@/features/appointments/components/calendar/staff-day-calendar-view";
 import { WeekCalendarView } from "@/features/appointments/components/calendar/week-calendar-view";
+import { MobileCalendarHeader } from "@/features/appointments/components/calendar/mobile/mobile-calendar-header";
+import { MobileCalendarDateStrip } from "@/features/appointments/components/calendar/mobile/mobile-calendar-date-strip";
+import { AppointmentsMobileBottomNav } from "@/features/appointments/components/calendar/mobile/appointments-mobile-bottom-nav";
 import { ConfirmDeleteDialog } from "@/components/forms/confirm-delete-dialog";
 import { ListPageSkeleton } from "@/components/layout/list-page";
 import { useAppointmentsCreateAction } from "@/features/appointments/hooks/use-appointments-create-action";
@@ -15,6 +18,7 @@ import { useAppointmentsCalendarPage } from "@/features/appointments/hooks/use-a
 import { getAppointment } from "@/features/appointments/api/appointments.api";
 import { WaitlistPanel } from "@/features/waitlist/components/waitlist-panel";
 import { WaitlistToolbarButton } from "@/features/waitlist/components/waitlist-toolbar-button";
+import { useIsMobile } from "@/lib/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 
 const AppointmentCreateDrawer = dynamic(
@@ -60,6 +64,7 @@ const BARE_VIEW_CLASS = "rounded-none shadow-none";
 
 function AppointmentsCalendarPageContent() {
   const cal = useAppointmentsCalendarPage();
+  const isMobile = useIsMobile();
   const [waitlistOpen, setWaitlistOpen] = useState(false);
   const drag = useAppointmentCalendarDrag({
     timezone: cal.displayTimezone,
@@ -84,29 +89,73 @@ function AppointmentsCalendarPageContent() {
     });
   });
 
+  const openCreateFromHeader = () => {
+    if (!cal.calendarPerms.canCreateAnyAppointment) return;
+    const startIso = new Date().toISOString();
+    const assignedToId = cal.params.assignedToId || undefined;
+    if (!cal.calendarPerms.canManageAppointmentOnStaff(assignedToId)) return;
+    cal.drawer.openCreate({
+      startAt: startIso,
+      calendarId: cal.params.calendarId || cal.calendars?.items[0]?.id,
+      assignedToId,
+    });
+  };
+
   return (
-    <div className="flex h-full min-h-0 flex-col gap-3 bg-white px-4 pt-4 sm:gap-4 sm:px-6 sm:pt-4 lg:px-10 lg:pt-5">
-      <div className="shrink-0 bg-white">
-        <CalendarToolbar
-          view={cal.view}
-          onViewChange={cal.handleViewChange}
-          anchorDateKey={cal.anchorDateKey}
-          timezone={cal.displayTimezone}
-          onPrevious={() => cal.handleDateNavigate(-1)}
-          onToday={() => cal.handleDateNavigate(0)}
-          onNext={() => cal.handleDateNavigate(1)}
-          onDateSelect={cal.handleDateSelect}
-          onJumpWeeks={cal.handleJumpWeeks}
-          staffMembers={cal.staffMembers}
-          selectedStaffId={cal.params.assignedToId}
-          onSelectedStaffIdChange={cal.handleSelectedStaffIdChange}
-          showStaffSelector={!cal.isMemberOnlyView}
-          statusFilter={cal.params.status}
-          onStatusFilterChange={(status) =>
-            cal.setParams({ status, page: "1" })
-          }
-        />
-      </div>
+    <div
+      className={cn(
+        "flex h-full min-h-0 flex-col bg-white",
+        isMobile ? "gap-0 p-0" : "gap-3 px-4 pt-4 sm:gap-4 sm:px-6 sm:pt-4 lg:px-10 lg:pt-5",
+      )}
+    >
+      {isMobile ? (
+        <>
+          <MobileCalendarHeader
+            anchorDateKey={cal.anchorDateKey}
+            timezone={cal.displayTimezone}
+            view={cal.view}
+            onDateSelect={cal.handleDateSelect}
+            onToday={() => cal.handleDateNavigate(0)}
+            onJumpWeeks={cal.handleJumpWeeks}
+            statusFilter={cal.params.status}
+            onStatusFilterChange={(status) =>
+              cal.setParams({ status, page: "1" })
+            }
+            onCreate={openCreateFromHeader}
+            canCreate={cal.calendarPerms.canCreateAnyAppointment}
+          />
+          <MobileCalendarDateStrip
+            anchorDateKey={cal.anchorDateKey}
+            timezone={cal.displayTimezone}
+            view={cal.view}
+            onDateSelect={cal.handleDateSelect}
+            onPrevious={() => cal.handleDateNavigate(-1)}
+            onNext={() => cal.handleDateNavigate(1)}
+          />
+        </>
+      ) : (
+        <div className="shrink-0 bg-white">
+          <CalendarToolbar
+            view={cal.view}
+            onViewChange={cal.handleViewChange}
+            anchorDateKey={cal.anchorDateKey}
+            timezone={cal.displayTimezone}
+            onPrevious={() => cal.handleDateNavigate(-1)}
+            onToday={() => cal.handleDateNavigate(0)}
+            onNext={() => cal.handleDateNavigate(1)}
+            onDateSelect={cal.handleDateSelect}
+            onJumpWeeks={cal.handleJumpWeeks}
+            staffMembers={cal.staffMembers}
+            selectedStaffId={cal.params.assignedToId}
+            onSelectedStaffIdChange={cal.handleSelectedStaffIdChange}
+            showStaffSelector={!cal.isMemberOnlyView}
+            statusFilter={cal.params.status}
+            onStatusFilterChange={(status) =>
+              cal.setParams({ status, page: "1" })
+            }
+          />
+        </div>
+      )}
 
       <div className="relative min-h-0 flex-1 overflow-hidden bg-white">
         {cal.view === "day" ? (
@@ -126,6 +175,7 @@ function AppointmentsCalendarPageContent() {
             onAppointmentResizeStart={drag.startResize}
             draggingAppointmentId={drag.draggingId}
             onSlotClick={cal.openCreateAtSlot}
+            density={isMobile ? "mobile" : "desktop"}
           />
         ) : null}
 
@@ -149,6 +199,7 @@ function AppointmentsCalendarPageContent() {
             onAppointmentResizeStart={drag.startResize}
             draggingAppointmentId={drag.draggingId}
             onSlotClick={cal.openCreateAtSlot}
+            density={isMobile ? "mobile" : "desktop"}
           />
         ) : null}
 
@@ -186,9 +237,16 @@ function AppointmentsCalendarPageContent() {
         {/* Figma: Waitlist floats bottom-right over the calendar grid */}
         <WaitlistToolbarButton
           onClick={() => setWaitlistOpen(true)}
-          className="absolute bottom-4 right-4 z-20 sm:bottom-5 sm:right-5"
+          className={cn(
+            "absolute z-20",
+            isMobile
+              ? "bottom-3 right-3"
+              : "bottom-4 right-4 sm:bottom-5 sm:right-5",
+          )}
         />
       </div>
+
+      {isMobile ? <AppointmentsMobileBottomNav /> : null}
 
       <AppointmentCreateDrawer
         open={cal.drawer.drawerMode === "create"}

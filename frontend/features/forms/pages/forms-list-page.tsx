@@ -4,6 +4,7 @@ import { Suspense, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Plus } from "lucide-react";
+import { ApiErrorState } from "@/components/data-display/api-error-state";
 import {
   DataTable,
   type DataTableColumn,
@@ -65,7 +66,7 @@ function FormsListPageContent() {
     sortDir: params.sortDir as "asc" | "desc",
   };
 
-  const { data, isLoading } = useFormsList(filters);
+  const { data, isLoading, isError, error, refetch } = useFormsList(filters);
   const {
     deleteMutation,
     duplicateMutation,
@@ -188,6 +189,9 @@ function FormsListPageContent() {
           </FilterBar>
         }
       >
+        {isError ? (
+          <ApiErrorState error={error} onRetry={() => void refetch()} />
+        ) : (
         <DataTable
           columns={columns}
           data={data?.items ?? []}
@@ -270,6 +274,7 @@ function FormsListPageContent() {
             />
           )}
         />
+        )}
       </ListPage>
 
       {canManageTemplates ? (

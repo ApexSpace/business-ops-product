@@ -5,7 +5,6 @@ import { useSearchParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSalesStaffPermissions } from "@/features/sales/hooks/use-sales-staff-permissions";
 import {
-  Check,
   CreditCard,
   Gift,
   Package,
@@ -14,14 +13,17 @@ import {
   Tag,
   Trash2,
   Wrench,
+  MoreHorizontal,
+  SlidersHorizontal,
 } from "lucide-react";
 import { toast } from "sonner";
 import { DataTable, type DataTableColumn } from "@/components/data-display/data-table";
 import { ListPagination } from "@/components/ui/list-pagination";
-import { EntityDetailDrawer } from "@/components/layout/entity-detail-drawer";
-import { EntityDetailFooter } from "@/components/layout/entity-detail-footer";
+import { DrawerShell } from "@/components/layout/drawer-shell";
+import { DrawerHeaderContent } from "@/components/drawer/drawer-header-content";
+import { DrawerPrimaryButton } from "@/components/drawer/drawer-primary-button";
+import { IconButton } from "@/components/ui/icon-button";
 import { EntityWorkspaceLayout } from "@/components/layout/entity-workspace-layout";
-import { ListFiltersPopover } from "@/components/layout/list-filters-popover";
 import { ListPrimaryAction } from "@/components/layout/list-primary-action";
 import { SearchInput } from "@/components/forms/search-input";
 import { Badge } from "@/components/ui/badge";
@@ -50,7 +52,8 @@ import {
   WORKSPACE_ACTIVE_ROW_CLASS,
   WORKSPACE_TABLE_CLASS,
 } from "@/lib/design/workspace-tokens";
-import { DATA_TABLE_STATUS_CLASS } from "@/lib/design/data-table-tokens";
+import { DATA_TABLE_SALE_NUMBER_CLASS,
+  DATA_TABLE_STATUS_CLASS } from "@/lib/design/data-table-tokens";
 import { useEntitySelection } from "@/lib/routing/use-entity-selection";
 import { cn } from "@/lib/utils";
 import { queryKeys } from "@/lib/query/keys";
@@ -79,6 +82,29 @@ import {
   voidCheckout,
 } from "@/features/sales/api/checkouts.api";
 import { SaleClosePanel } from "@/features/sales/components/sale-close-panel";
+import {
+  CheckoutDrawerPanel,
+  type CheckoutDrawerStep,
+  type CheckoutDrawerSubmitAction,
+} from "@/features/sales/components/checkout-drawer-panel";
+import {
+  SaleClosedDrawerContent,
+  saleDrawerTitle,
+} from "@/features/sales/components/sale-closed-drawer-content";
+import {
+  EMPTY_SALES_OPTIONS,
+  SalesOptionsDrawer,
+  type SalesOptionsValues,
+} from "@/features/sales/components/sales-options-drawer";
+import { NewCheckoutDrawer } from "@/features/sales/components/new-checkout-drawer";
+import {
+  SALES_DRAWER_FOOTER_CLASS,
+  SALES_DRAWER_FOOTER_INNER_CLASS,
+  SALES_DRAWER_HEADER_ACTION_CLASS,
+  SALES_DRAWER_SHELL_CLASS,
+  SALES_DRAWER_SHELL_HEADER_CLASS,
+  SALES_DRAWER_SPINE_LABELS,
+} from "@/features/sales/styles/sales-drawer-tokens";
 import {
   CheckoutMembershipField,
   parseMembershipRedemptionSelection,
@@ -109,11 +135,18 @@ export function SalesWorkspace() {
   const [listSearch, setListSearch] = useState("");
   const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [optionsOpen, setOptionsOpen] = useState(false);
+  const [optionsValues, setOptionsValues] =
+    useState<SalesOptionsValues>(EMPTY_SALES_OPTIONS);
   const [newSaleOpen, setNewSaleOpen] = useState(false);
   const [newContactId, setNewContactId] = useState<string | null>(
     contactFilter,
   );
   const [closeOpen, setCloseOpen] = useState(false);
+  const [checkoutStep, setCheckoutStep] =
+    useState<CheckoutDrawerStep>("items");
+  const [paymentAction, setPaymentAction] =
+    useState<CheckoutDrawerSubmitAction | null>(null);
   const [saleEditMode, setSaleEditMode] = useState(false);
   const [voidOpen, setVoidOpen] = useState(false);
   const [addServiceOpen, setAddServiceOpen] = useState(false);
@@ -149,8 +182,16 @@ export function SalesWorkspace() {
       search: listSearch.trim() || undefined,
       status: statusFilter === "all" ? undefined : statusFilter,
       contactId: contactFilter ?? undefined,
+      issueFrom: optionsValues.saleDate || undefined,
+      issueTo: optionsValues.saleDate || undefined,
     }),
-    [page, listSearch, statusFilter, contactFilter],
+    [
+      page,
+      listSearch,
+      statusFilter,
+      contactFilter,
+      optionsValues.saleDate,
+    ],
   );
 
   const { data: listData, isLoading: listLoading } = useQuery({
@@ -291,6 +332,10 @@ export function SalesWorkspace() {
   };
 
   const openNewSale = () => {
+    clearSelection();
+    setSaleEditMode(false);
+    setCheckoutStep("items");
+    setPaymentAction(null);
     setNewContactId(contactFilter);
     setNewSaleOpen(true);
   };
@@ -305,6 +350,9 @@ export function SalesWorkspace() {
       toast.success("Sale created");
       setNewSaleOpen(false);
       setNewContactId(contactFilter);
+      setCheckoutStep("items");
+      setPaymentAction(null);
+      setSaleEditMode(false);
       void invalidateCheckouts(queryClient);
       setSelectedId(created.id);
     },
@@ -470,12 +518,6 @@ export function SalesWorkspace() {
 
   const balanceDue = sale ? parseFloat(sale.balanceDue) : 0;
 
-  const statusFilterItems = [
-    { value: "all", label: "All" },
-    { value: "OPEN", label: "Open" },
-    { value: "PAID", label: "Closed" },
-    { value: "VOID", label: "Void" },
-  ];
 
   const columns = useMemo<DataTableColumn<Checkout>[]>(
     () => [
@@ -491,7 +533,7 @@ export function SalesWorkspace() {
             ? `#${digits}`
             : `#${row.saleNumber.replace(/^#+\s*/, "").trim()}`;
           return (
-            <span className="text-[14px] font-bold leading-[21px] text-[#4A4A4A]">
+            <span className={DATA_TABLE_SALE_NUMBER_CLASS}>
               {display}
             </span>
           );
@@ -562,6 +604,28 @@ export function SalesWorkspace() {
       }
     : null;
 
+
+  const saleSpineLabel = !sale
+    ? SALES_DRAWER_SPINE_LABELS.sale
+    : saleEditMode
+      ? SALES_DRAWER_SPINE_LABELS.sale
+      : !sale.isOpen
+        ? SALES_DRAWER_SPINE_LABELS.sale
+        : checkoutStep === "payment"
+          ? SALES_DRAWER_SPINE_LABELS.payment
+          : SALES_DRAWER_SPINE_LABELS.checkout;
+
+  const saleDrawerHeading = !sale
+    ? "Sale"
+    : saleEditMode
+      ? "Edit sale"
+      : !sale.isOpen
+        ? saleDrawerTitle(sale)
+        : checkoutStep === "payment"
+          ? "Payment"
+          : "Checkout";
+
+
   return (
   <>
       <EntityWorkspaceLayout
@@ -578,19 +642,19 @@ export function SalesWorkspace() {
           />
         }
         filters={
-          <ListFiltersPopover
-            label="Status"
-            options={statusFilterItems}
-            value={statusFilter}
-            onValueChange={(v) => {
-              setStatusFilter(v as StatusFilter);
-              setPage(1);
-            }}
-          />
+          <IconButton
+            type="button"
+            variant="outline"
+            aria-label="Sale options"
+            className="size-11 shrink-0"
+            onClick={() => setOptionsOpen(true)}
+          >
+            <SlidersHorizontal className="size-4" />
+          </IconButton>
         }
         actions={
           canCheckout ? (
-            <ListPrimaryAction label="New Checkout" onClick={openNewSale} />
+            <ListPrimaryAction label="New Checkout" showIcon={false} onClick={openNewSale} />
           ) : null
         }
         footer={
@@ -600,7 +664,6 @@ export function SalesWorkspace() {
               page={page}
               onPageChange={setPage}
               label="sales"
-              compact
             />
           ) : undefined
         }
@@ -615,6 +678,8 @@ export function SalesWorkspace() {
           onRowClick={(row) => {
             setSaleEditMode(false);
             setEditingLine(null);
+            setCheckoutStep("items");
+            setPaymentAction(null);
             setSelectedId(row.id);
           }}
           getRowClassName={(row) =>
@@ -624,156 +689,209 @@ export function SalesWorkspace() {
           emptyDescription="Create a new checkout to get started."
           emptyAction={
             canCheckout ? (
-              <ListPrimaryAction label="New Checkout" onClick={openNewSale} />
+              <ListPrimaryAction label="New Checkout" showIcon={false} onClick={openNewSale} />
             ) : undefined
           }
           className={WORKSPACE_TABLE_CLASS}
         />
       </EntityWorkspaceLayout>
 
-      <EntityDetailDrawer
+      <DrawerShell
         open={isOpen}
         onOpenChange={(open) => {
           if (!open) {
             clearSelection();
             setSaleEditMode(false);
             setEditingLine(null);
+            setCheckoutStep("items");
+            setPaymentAction(null);
           }
         }}
-        width="wide"
-        title={
-          saleEditMode ? "Edit sale" : sale?.saleNumber ?? "Sale"
-        }
-        subtitle={saleEditMode ? undefined : sale?.contact?.label}
-        isLoading={detailLoading}
-        badges={
-          !saleEditMode && sale ? (
-            <SaleStatusPill status={sale.status} isOpen={sale.isOpen} />
-          ) : null
-        }
-        headerActions={
-          sale?.isOpen && saleDetailProps && canCheckout && !saleEditMode ? (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={saleDetailProps.onEdit}
-            >
-              <Pencil className="mr-1 size-3.5" />
-              Edit
-            </Button>
-          ) : null
-        }
-        overflowActions={
-          sale?.isOpen && saleDetailProps && canCheckout && !saleEditMode
-            ? [
-                {
-                  id: "void",
-                  label: "Void sale",
-                  icon: <Trash2 className="size-3.5" />,
-                  destructive: true,
-                  onSelect: saleDetailProps.onVoid,
-                },
-              ]
+        variant="sheet"
+        width="appointment"
+        spineLabel={saleSpineLabel}
+        className={SALES_DRAWER_SHELL_CLASS}
+        headerClassName={SALES_DRAWER_SHELL_HEADER_CLASS}
+        contentClassName="!px-0 !py-0"
+        footerClassName={
+          sale?.isOpen && saleDetailProps && canCheckout
+            ? SALES_DRAWER_FOOTER_CLASS
             : undefined
         }
-        toolbar={
-          sale?.isOpen && saleDetailProps && canCheckout && !saleEditMode ? (
-            <SaleAddItemsToolbar
-              onAddDeposit={saleDetailProps.onAddDeposit}
-              onAddService={saleDetailProps.onAddService}
-              onAddProduct={saleDetailProps.onAddProduct}
-              onAddGiftCard={saleDetailProps.onAddGiftCard}
-              onAddPackage={saleDetailProps.onAddPackage}
-              onApplyOffer={saleDetailProps.onApplyOffer}
-            />
-          ) : null
+        title={
+          <DrawerHeaderContent
+            eyebrow={
+              sale?.isOpen && !saleEditMode && sale.issueDate
+                ? new Date(sale.issueDate)
+                    .toLocaleDateString("en-US", {
+                      month: "long",
+                      day: "numeric",
+                      year: "numeric",
+                    })
+                    .toUpperCase()
+                : undefined
+            }
+            title={saleDrawerHeading}
+          />
+        }
+        headerActions={
+          <>
+            {sale?.isOpen && saleDetailProps && canCheckout && !saleEditMode ? (
+              <IconButton
+                type="button"
+                variant="ghost"
+                aria-label="Edit sale"
+                className={SALES_DRAWER_HEADER_ACTION_CLASS}
+                onClick={saleDetailProps.onEdit}
+              >
+                <Pencil className="size-4" />
+              </IconButton>
+            ) : null}
+            {sale?.isOpen && saleDetailProps && canCheckout && !saleEditMode ? (
+              <IconButton
+                type="button"
+                variant="ghost"
+                aria-label="Void sale"
+                className={SALES_DRAWER_HEADER_ACTION_CLASS}
+                onClick={saleDetailProps.onVoid}
+              >
+                <Trash2 className="size-4" />
+              </IconButton>
+            ) : (
+              <IconButton
+                type="button"
+                variant="ghost"
+                aria-label="More actions"
+                className={SALES_DRAWER_HEADER_ACTION_CLASS}
+              >
+                <MoreHorizontal className="size-4" />
+              </IconButton>
+            )}
+          </>
         }
         footer={
           sale?.isOpen && saleDetailProps && canCheckout ? (
             saleEditMode ? (
-              <EntityDetailFooter>
+              <div className={SALES_DRAWER_FOOTER_INNER_CLASS}>
+                <div className="flex w-full gap-2">
+                  <Button
+                    variant="outline"
+                    className="min-h-12 flex-1"
+                    disabled={updateSaleMutation.isPending}
+                    onClick={cancelEditSale}
+                  >
+                    Cancel
+                  </Button>
+                  <DrawerPrimaryButton
+                    disabled={!editContactId || updateSaleMutation.isPending}
+                    onClick={() => updateSaleMutation.mutate()}
+                  >
+                    {updateSaleMutation.isPending ? "Saving…" : "Save changes"}
+                  </DrawerPrimaryButton>
+                </div>
+              </div>
+            ) : checkoutStep === "payment" && paymentAction ? (
+              <div className={SALES_DRAWER_FOOTER_INNER_CLASS}>
                 <Button
-                  variant="outline"
-                  className="min-h-[2.75rem] w-full sm:w-auto sm:min-w-[10rem]"
-                  disabled={updateSaleMutation.isPending}
-                  onClick={cancelEditSale}
+                  type="button"
+                  variant="ghost"
+                  className="w-full text-muted-foreground"
+                  onClick={() => {
+                    setCheckoutStep("items");
+                    setPaymentAction(null);
+                  }}
                 >
-                  Cancel
+                  Back to items
                 </Button>
-                <Button
-                  className="min-h-[2.75rem] w-full sm:w-auto sm:min-w-[10rem]"
-                  disabled={
-                    !editContactId || updateSaleMutation.isPending
-                  }
-                  onClick={() => updateSaleMutation.mutate()}
+                <DrawerPrimaryButton
+                  disabled={paymentAction.disabled}
+                  onClick={paymentAction.onClick}
                 >
-                  {updateSaleMutation.isPending ? "Saving…" : "Save changes"}
-                </Button>
-              </EntityDetailFooter>
+                  {paymentAction.label}
+                </DrawerPrimaryButton>
+              </div>
             ) : (
-              <EntityDetailFooter>
-                <Button
-                  className="min-h-[2.75rem] flex-1 sm:flex-none sm:min-w-[12rem]"
-                  onClick={saleDetailProps.onClose}
-                >
+              <div className={SALES_DRAWER_FOOTER_INNER_CLASS}>
+                <DrawerPrimaryButton onClick={() => setCheckoutStep("payment")}>
                   Go to payments
-                  <Check className="ml-1.5 size-4" />
-                </Button>
-              </EntityDetailFooter>
+                </DrawerPrimaryButton>
+              </div>
             )
           ) : null
         }
       >
-        {selectedId && sale && saleDetailProps ? (
-          <SaleDetail
-            embedded
-            {...saleDetailProps}
-            canModify={canCheckout}
-            saleEditMode={saleEditMode}
-            editContactId={editContactId}
-            editNotes={editNotes}
-            contactItems={contactItems}
-            onEditContactIdChange={setEditContactId}
-            onEditNotesChange={setEditNotes}
-            editingLine={editingLine}
-            lineQty={lineQty}
-            lineUnitPrice={lineUnitPrice}
-            lineStaffId={lineStaffId}
-            lineStaffItems={lineStaffItems}
-            onLineQtyChange={setLineQty}
-            onLineUnitPriceChange={setLineUnitPrice}
-            onLineStaffIdChange={setLineStaffId}
-            onCancelLineEdit={() => setEditingLine(null)}
-            onSaveLineEdit={() => updateLineMutation.mutate()}
-            lineSavePending={updateLineMutation.isPending}
-          />
-        ) : null}
-      </EntityDetailDrawer>
-
-      <Dialog open={newSaleOpen} onOpenChange={setNewSaleOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>New Checkout</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <SearchableSelect
-              inDialog
-              items={contactItems}
-              value={newContactId}
-              onValueChange={setNewContactId}
-              placeholder="Select client…"
-            />
-            <Button
-              className="w-full"
-              disabled={!newContactId || createMutation.isPending}
-              onClick={() => createMutation.mutate()}
-            >
-              Create open sale
-            </Button>
+        {detailLoading ? (
+          <div className="flex flex-1 items-center justify-center py-16 text-sm text-muted-foreground">
+            Loading sale…
           </div>
-        </DialogContent>
-      </Dialog>
+        ) : selectedId && sale && saleDetailProps ? (
+          saleEditMode ? (
+            <SaleDetail
+              embedded
+              {...saleDetailProps}
+              canModify={canCheckout}
+              saleEditMode={saleEditMode}
+              editContactId={editContactId}
+              editNotes={editNotes}
+              contactItems={contactItems}
+              onEditContactIdChange={setEditContactId}
+              onEditNotesChange={setEditNotes}
+              editingLine={editingLine}
+              lineQty={lineQty}
+              lineUnitPrice={lineUnitPrice}
+              lineStaffId={lineStaffId}
+              lineStaffItems={lineStaffItems}
+              onLineQtyChange={setLineQty}
+              onLineUnitPriceChange={setLineUnitPrice}
+              onLineStaffIdChange={setLineStaffId}
+              onCancelLineEdit={() => setEditingLine(null)}
+              onSaveLineEdit={() => updateLineMutation.mutate()}
+              lineSavePending={updateLineMutation.isPending}
+            />
+          ) : !sale.isOpen ? (
+            <SaleClosedDrawerContent sale={sale} />
+          ) : (
+            <CheckoutDrawerPanel
+              checkoutId={selectedId}
+              step={checkoutStep}
+              contactHeader={{
+                name: sale.contact?.label ?? "Client",
+              }}
+              onSubmitActionChange={setPaymentAction}
+              onComplete={() => {
+                setCheckoutStep("items");
+                setPaymentAction(null);
+                void invalidateCheckouts(queryClient);
+                clearSelection();
+              }}
+            />
+          )
+        ) : null}
+      </DrawerShell>
+
+      <SalesOptionsDrawer
+        open={optionsOpen}
+        onOpenChange={setOptionsOpen}
+        values={optionsValues}
+        onApply={(next) => {
+          setOptionsValues(next);
+          setStatusFilter(next.status === "all" ? "all" : next.status);
+          setListSearch(next.saleNumber.trim() || next.clientQuery.trim());
+          setPage(1);
+          toast.success("Filters applied");
+        }}
+      />
+
+
+      <NewCheckoutDrawer
+        open={newSaleOpen}
+        onOpenChange={setNewSaleOpen}
+        contactItems={contactItems}
+        contactId={newContactId}
+        onContactIdChange={setNewContactId}
+        onCreate={() => createMutation.mutate()}
+        isPending={createMutation.isPending}
+      />
 
       <Dialog open={addProductOpen} onOpenChange={setAddProductOpen}>
         <DialogContent>

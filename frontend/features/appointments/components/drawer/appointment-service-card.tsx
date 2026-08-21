@@ -16,7 +16,6 @@ import { formatTimeInTimezone } from "@/features/calendars/utils/timezone";
 import type { AppointmentServiceLine } from "@/features/appointments/schemas/appointment-profile";
 import { getMemberDisplayName } from "@/features/appointments/schemas/appointment-profile";
 import {
-  formatDurationLabel,
   formatTimeSlotLabel,
   type AppointmentServiceLineSelection,
   type StaffOption,
@@ -25,6 +24,7 @@ import { useServiceEligibleStaff } from "@/features/appointments/hooks/use-servi
 import { formatMoney } from "@/features/payments/utils/currencies";
 import {
   APPOINTMENT_DRAWER_ADD_ACTION_CLASS,
+  APPOINTMENT_DRAWER_ADD_ACTION_OUTLINE_CLASS,
   APPOINTMENT_DRAWER_ADD_ACTION_ICON_CLASS,
   APPOINTMENT_DRAWER_ICON_BUTTON_CLASS,
   APPOINTMENT_DRAWER_PROVIDER_SELECT_TRIGGER_CLASS,
@@ -141,7 +141,8 @@ export function AppointmentSelectionServiceCard({
     eligibleStaff.find((staff) => staff.userId === line.assignedToId)?.label ??
     "Select provider";
   const lineTime = formatTimeSlotLabel(line.startMinutes);
-  const timeDuration = `${lineTime} (${formatDurationLabel(line.occupancyMinutes)})`;
+  // Figma service meta uses total minutes, e.g. "10:30 AM (120 min)".
+  const timeDuration = `${lineTime} (${line.occupancyMinutes} min)`;
   const canChangeProvider =
     Boolean(onAssignedToChange) && eligibleStaff.length > 0;
 
@@ -226,39 +227,61 @@ export function AppointmentSelectionServiceCard({
 export interface AppointmentAddActionsProps {
   onAddService?: () => void;
   onAddNote?: () => void;
+  /** Figma: link row (default) or outlined secondary buttons (update mobile). */
+  variant?: "link" | "outline";
   className?: string;
 }
 
 export function AppointmentAddActions({
   onAddService,
   onAddNote,
+  variant = "link",
   className,
 }: AppointmentAddActionsProps) {
   if (!onAddService && !onAddNote) return null;
+  const isOutline = variant === "outline";
   return (
-    <div className={cn("flex w-full flex-wrap items-center gap-6", className)}>
+    <div
+      className={cn(
+        "flex w-full flex-wrap items-center",
+        isOutline ? "gap-3" : "gap-6",
+        className,
+      )}
+    >
       {onAddService ? (
         <button
           type="button"
-          className={APPOINTMENT_DRAWER_ADD_ACTION_CLASS}
+          className={
+            isOutline
+              ? APPOINTMENT_DRAWER_ADD_ACTION_OUTLINE_CLASS
+              : APPOINTMENT_DRAWER_ADD_ACTION_CLASS
+          }
           onClick={onAddService}
         >
-          <span className={APPOINTMENT_DRAWER_ADD_ACTION_ICON_CLASS}>
-            <DrawerPlusIcon className="size-4 text-white" />
-          </span>
-          Add Service
+          {isOutline ? null : (
+            <span className={APPOINTMENT_DRAWER_ADD_ACTION_ICON_CLASS}>
+              <DrawerPlusIcon className="size-4 text-white" />
+            </span>
+          )}
+          {isOutline ? "+ Add Service" : "Add Service"}
         </button>
       ) : null}
       {onAddNote ? (
         <button
           type="button"
-          className={APPOINTMENT_DRAWER_ADD_ACTION_CLASS}
+          className={
+            isOutline
+              ? APPOINTMENT_DRAWER_ADD_ACTION_OUTLINE_CLASS
+              : APPOINTMENT_DRAWER_ADD_ACTION_CLASS
+          }
           onClick={onAddNote}
         >
-          <span className={APPOINTMENT_DRAWER_ADD_ACTION_ICON_CLASS}>
-            <DrawerPlusIcon className="size-4 text-white" />
-          </span>
-          Add Note
+          {isOutline ? null : (
+            <span className={APPOINTMENT_DRAWER_ADD_ACTION_ICON_CLASS}>
+              <DrawerPlusIcon className="size-4 text-white" />
+            </span>
+          )}
+          {isOutline ? "+ Add Note" : "Add Note"}
         </button>
       ) : null}
     </div>

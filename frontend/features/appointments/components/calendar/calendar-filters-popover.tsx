@@ -15,11 +15,18 @@ import { cn } from "@/lib/utils";
 interface CalendarFiltersPopoverProps {
   statusFilter: string;
   onStatusFilterChange: (value: string) => void;
+  /** Override trigger button classes (e.g. purple mobile header). */
+  triggerClassName?: string;
+  iconClassName?: string;
+  contentAlign?: "start" | "center" | "end";
 }
 
 export function CalendarFiltersPopover({
   statusFilter,
   onStatusFilterChange,
+  triggerClassName,
+  iconClassName,
+  contentAlign = "end",
 }: CalendarFiltersPopoverProps) {
   const selectedStatuses = statusFilter
     ? statusFilter.split(",").filter(Boolean)
@@ -45,10 +52,17 @@ export function CalendarFiltersPopover({
                 ? `Filters, ${activeCount} active`
                 : "Filters"
             }
-            className={cn(CALENDAR_TOOLBAR_FILTER_BUTTON_CLASS, "relative")}
+            className={cn(
+              CALENDAR_TOOLBAR_FILTER_BUTTON_CLASS,
+              "relative",
+              triggerClassName,
+            )}
           >
             <SlidersHorizontal
-              className="size-5 shrink-0 text-black"
+              className={cn(
+                "size-5 shrink-0 text-black",
+                iconClassName,
+              )}
               strokeWidth={2}
             />
             <span className="sr-only">Filter</span>
@@ -60,7 +74,7 @@ export function CalendarFiltersPopover({
           </button>
         }
       />
-      <PopoverContent align="end" className="w-72 space-y-4 p-4">
+      <PopoverContent align={contentAlign} className="w-72 space-y-4 p-4">
         <div className="space-y-2">
           <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             Status

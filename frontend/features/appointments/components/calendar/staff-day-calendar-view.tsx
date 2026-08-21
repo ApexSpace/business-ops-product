@@ -18,6 +18,11 @@ import {
   CALENDAR_FIGMA_STAFF_COL_MIN_PX,
   CALENDAR_FIGMA_TIME_GUTTER_PX,
 } from "@/features/calendars/styles/calendar-figma";
+import {
+  MOBILE_CAL_COL_WIDTH_PX,
+  MOBILE_CAL_STAFF_HEADER_HEIGHT_PX,
+  MOBILE_CAL_TIME_GUTTER_PX,
+} from "@/features/appointments/styles/mobile-calendar-tokens";
 import type { BusinessHoursSlot } from "@/features/business-hours/types";
 import { ProfileAvatar } from "@/components/ui/profile-avatar";
 import { cn } from "@/lib/utils";
@@ -68,6 +73,8 @@ interface StaffDayCalendarViewProps {
     minute: number,
     assignedToId?: string,
   ) => void;
+  /** Figma phone layout — narrow columns, avatar above name, no % badge. */
+  density?: "desktop" | "mobile";
 }
 
 export function StaffDayCalendarView({
@@ -86,16 +93,25 @@ export function StaffDayCalendarView({
   businessHoursSlots,
   staffSlotsByUserId,
   onSlotClick,
+  density = "desktop",
 }: StaffDayCalendarViewProps) {
+  const isMobile = density === "mobile";
   const isToday = isTodayDateKey(dateKey, timezone);
   const currentTimeTop = useCalendarCurrentTimeTop(timezone, [dateKey]);
   const columnCount = Math.max(staffMembers.length, 1);
-  const colMin = Math.min(
-    CALENDAR_FIGMA_STAFF_COL_IDEAL_PX,
-    Math.max(CALENDAR_FIGMA_STAFF_COL_MIN_PX, 200),
-  );
-  const gridTemplate = `${CALENDAR_FIGMA_TIME_GUTTER_PX}px repeat(${columnCount}, minmax(${colMin}px, 1fr))`;
-  const minWidth = CALENDAR_FIGMA_TIME_GUTTER_PX + columnCount * colMin;
+  const timeGutterPx = isMobile
+    ? MOBILE_CAL_TIME_GUTTER_PX
+    : CALENDAR_FIGMA_TIME_GUTTER_PX;
+  const colMin = isMobile
+    ? MOBILE_CAL_COL_WIDTH_PX
+    : Math.min(
+        CALENDAR_FIGMA_STAFF_COL_IDEAL_PX,
+        Math.max(CALENDAR_FIGMA_STAFF_COL_MIN_PX, 200),
+      );
+  const gridTemplate = isMobile
+    ? `${timeGutterPx}px repeat(${columnCount}, ${colMin}px)`
+    : `${timeGutterPx}px repeat(${columnCount}, minmax(${colMin}px, 1fr))`;
+  const minWidth = timeGutterPx + columnCount * colMin;
 
   const utilizationByStaff = useMemo(() => {
     const map = new Map<string, number>();
@@ -113,8 +129,11 @@ export function StaffDayCalendarView({
       className={cn(
         "flex h-full min-h-0 flex-col bg-white",
         CALENDAR_GRID.card,
+        isMobile &&
+          "[&_[data-calendar-appointment]]:rounded-[3px] [&_[data-calendar-appointment]]:gap-1 [&_[data-calendar-appointment]]:p-[5px]",
         className,
       )}
+      data-calendar-density={density}
     >
       {/* Single scroll host — avoids stacked horizontal scrollbars */}
       <div className="min-h-0 flex-1 overflow-auto overscroll-contain bg-white">
@@ -128,11 +147,30 @@ export function StaffDayCalendarView({
           >
             <div
               className="sticky left-0 z-40 shrink-0 border-b border-r border-[color:rgba(126,59,237,0.6)] bg-white"
-              style={{ width: CALENDAR_FIGMA_TIME_GUTTER_PX }}
+              style={{ width: timeGutterPx, height: isMobile ? MOBILE_CAL_STAFF_HEADER_HEIGHT_PX : undefined }}
               aria-hidden
             />
             {staffMembers.map((member) => {
               const utilization = utilizationByStaff.get(member.userId) ?? 0;
+              if (isMobile) {
+                return (
+                  <div
+                    key={member.userId}
+                    className="flex flex-col items-center justify-center gap-1 border-b border-l border-[color:rgba(126,59,237,0.6)] bg-white px-1"
+                    style={{ height: MOBILE_CAL_STAFF_HEADER_HEIGHT_PX }}
+                  >
+                    <ProfileAvatar
+                      name={member.label}
+                      avatarUrl={member.avatarUrl}
+                      className="size-6 shrink-0"
+                      fallbackClassName="bg-[#FFD9E5] text-[9px] font-semibold text-[#703253]"
+                    />
+                    <span className="line-clamp-2 max-w-full text-center text-[11px] font-semibold leading-tight text-violet-primary-normal">
+                      {member.label}
+                    </span>
+                  </div>
+                );
+              }
               return (
                 <div
                   key={member.userId}
@@ -179,7 +217,7 @@ export function StaffDayCalendarView({
                   minHeight: GRID_HEIGHT,
                 }}
               >
-                <TimeGridGutter />
+                <TimeGridGutter className={isMobile ? "w-[52px]" : undefined} />
                 {staffMembers.map((member) => (
                   <TimeGridColumn
                     key={member.userId}

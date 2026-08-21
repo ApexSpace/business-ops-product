@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type ReactNode } from "react";
+import { useMemo, useState, type ReactElement } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
 import { listServices } from "@/features/settings/api/services.api";
@@ -406,7 +406,7 @@ export function AppointmentServiceLineEditor({
 export interface AppointmentServicePickerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  trigger: ReactNode;
+  trigger: ReactElement;
   value: AppointmentServiceLineSelection[];
   onAdd: (service: Service) => void;
   currencyCode?: string;
@@ -446,7 +446,7 @@ export function AppointmentServicePicker({
 
   return (
     <Popover open={open} onOpenChange={onOpenChange}>
-      <PopoverTrigger asChild>{trigger}</PopoverTrigger>
+      <PopoverTrigger render={trigger} />
       <ServicePickerPopoverContent
         search={search}
         onSearchChange={setSearch}

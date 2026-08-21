@@ -1,5 +1,7 @@
 "use client";
 
+import { useIsMobile } from "@/lib/hooks/use-mobile";
+
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -33,6 +35,7 @@ import {
   APPOINTMENT_DRAWER_FIELD_CLASS,
   APPOINTMENT_DRAWER_FOOTER_CLASS,
   APPOINTMENT_DRAWER_SHELL_CLASS,
+  APPOINTMENT_DRAWER_MOBILE_SHELL_CLASS,
   APPOINTMENT_DRAWER_SHELL_HEADER_CLASS,
   APPOINTMENT_DRAWER_STACKED_FIELD_GROUP_CLASS,
 } from "@/features/appointments/styles/appointment-drawer-tokens";
@@ -71,6 +74,7 @@ export function AppointmentTimeBlockDrawer({
   onSuccess,
   onSwitchToAppointment,
 }: AppointmentTimeBlockDrawerProps) {
+  const isMobile = useIsMobile();
   const queryClient = useQueryClient();
   const { data: business } = useCurrentBusiness();
 
@@ -209,15 +213,26 @@ export function AppointmentTimeBlockDrawer({
       onOpenChange={onOpenChange}
       variant="sheet"
       width="appointment"
-      spineLabel="TIME BLOCK"
-      className={APPOINTMENT_DRAWER_SHELL_CLASS}
-      title={
-        <DrawerHeaderContent
-          eyebrow={headerDateLabel || undefined}
-          title="New Time Block"
-        />
+      chrome={isMobile ? "mobile-brand" : "default"}
+      spineLabel={isMobile ? undefined : "TIME BLOCK"}
+      className={
+        isMobile
+          ? APPOINTMENT_DRAWER_MOBILE_SHELL_CLASS
+          : APPOINTMENT_DRAWER_SHELL_CLASS
       }
-      headerClassName={APPOINTMENT_DRAWER_SHELL_HEADER_CLASS}
+      title={
+        isMobile ? (
+          "New Time Block"
+        ) : (
+          <DrawerHeaderContent
+            eyebrow={headerDateLabel || undefined}
+            title="New Time Block"
+          />
+        )
+      }
+      headerClassName={
+        isMobile ? undefined : APPOINTMENT_DRAWER_SHELL_HEADER_CLASS
+      }
       contentClassName="!px-0 !py-0"
       footerClassName={APPOINTMENT_DRAWER_FOOTER_CLASS}
       footer={
@@ -226,7 +241,7 @@ export function AppointmentTimeBlockDrawer({
             disabled={mutation.isPending}
             onClick={() => mutation.mutate()}
           >
-            {mutation.isPending ? "Saving…" : "Create Timeblock"}
+            {mutation.isPending ? "Saving…" : "Create Time Block"}
           </DrawerPrimaryButton>
         </DrawerFooterContent>
       }

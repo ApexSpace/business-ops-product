@@ -1,5 +1,7 @@
 "use client";
 
+import { useIsMobile } from "@/lib/hooks/use-mobile";
+
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { DateTime } from "luxon";
@@ -80,7 +82,9 @@ import {
   APPOINTMENT_DRAWER_CLOSE_ACTION_CLASS,
   APPOINTMENT_DRAWER_FOOTER_CLASS,
   APPOINTMENT_DRAWER_HEADER_ACTION_CLASS,
+  APPOINTMENT_DRAWER_MOBILE_HEADER_ACTION_CLASS,
   APPOINTMENT_DRAWER_SHELL_CLASS,
+  APPOINTMENT_DRAWER_MOBILE_SHELL_CLASS,
   APPOINTMENT_DRAWER_SHELL_HEADER_CLASS,
 } from "@/features/appointments/styles/appointment-drawer-tokens";
 import { queryKeys } from "@/lib/query/keys";
@@ -133,6 +137,7 @@ export function AppointmentDetailDrawer({
   onCancel,
   onDelete,
 }: AppointmentDetailDrawerProps) {
+  const isMobile = useIsMobile();
   const queryClient = useQueryClient();
   const { data: business } = useCurrentBusiness();
   const calendarPerms = useCalendarStaffPermissions();
@@ -269,7 +274,9 @@ export function AppointmentDetailDrawer({
             ? "Update Time Block"
             : "Update Appointment"
           : isTimeBlockView
-            ? "Time Block Detail"
+            ? isMobile
+              ? "Time Block"
+              : "Time Block Detail"
             : "Appointment Detail";
 
   const canMutateThisAppointment = appointment
@@ -378,7 +385,11 @@ export function AppointmentDetailDrawer({
             render={
               <IconButton
                 aria-label="Appointment actions"
-                className={APPOINTMENT_DRAWER_HEADER_ACTION_CLASS}
+                className={
+                  isMobile
+                    ? APPOINTMENT_DRAWER_MOBILE_HEADER_ACTION_CLASS
+                    : APPOINTMENT_DRAWER_HEADER_ACTION_CLASS
+                }
               >
                 <MoreVertical className="size-4" />
               </IconButton>
@@ -449,7 +460,11 @@ export function AppointmentDetailDrawer({
         <IconButton
           aria-label="Edit appointment"
           onClick={handleEditClick}
-          className={APPOINTMENT_DRAWER_HEADER_ACTION_CLASS}
+          className={
+            isMobile
+              ? APPOINTMENT_DRAWER_MOBILE_HEADER_ACTION_CLASS
+              : APPOINTMENT_DRAWER_HEADER_ACTION_CLASS
+          }
         >
           <Pencil className="size-4" />
         </IconButton>
@@ -499,11 +514,24 @@ export function AppointmentDetailDrawer({
       <DrawerShell
         variant={variant}
         width="appointment"
+        chrome={isMobile && !showCheckout ? "mobile-brand" : "default"}
         spineLabel={
-          showCheckout ? undefined : isTimeBlockView ? "TIME BLOCK" : "APPOINTMENT DETAIL"
+          showCheckout || isMobile
+            ? undefined
+            : isTimeBlockView
+              ? "TIME BLOCK"
+              : "APPOINTMENT DETAIL"
         }
-        className={APPOINTMENT_DRAWER_SHELL_CLASS}
-        headerClassName={APPOINTMENT_DRAWER_SHELL_HEADER_CLASS}
+        className={
+          isMobile && !showCheckout
+            ? APPOINTMENT_DRAWER_MOBILE_SHELL_CLASS
+            : APPOINTMENT_DRAWER_SHELL_CLASS
+        }
+        headerClassName={
+          isMobile && !showCheckout
+            ? undefined
+            : APPOINTMENT_DRAWER_SHELL_HEADER_CLASS
+        }
         footerClassName={APPOINTMENT_DRAWER_FOOTER_CLASS}
         open={open}
         onOpenChange={(nextOpen) => {
@@ -519,7 +547,7 @@ export function AppointmentDetailDrawer({
           }
         }}
         title={
-          showCheckout ? (
+          showCheckout || isMobile ? (
             title
           ) : (
             <DrawerHeaderContent
@@ -672,6 +700,7 @@ export function AppointmentDetailDrawer({
 
                       {allowEdit ? (
                         <AppointmentAddActions
+                          variant={isMobile && isEditing ? "outline" : "link"}
                           onAddService={handleEditClick}
                           onAddNote={handleEditClick}
                         />
