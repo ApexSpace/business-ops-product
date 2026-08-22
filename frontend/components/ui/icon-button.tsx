@@ -12,7 +12,7 @@ export interface IconButtonProps
 export function IconButton({
   className,
   variant = "ghost",
-  size = "icon-sm",
+  size = "icon",
   children,
   ...props
 }: IconButtonProps) {

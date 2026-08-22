@@ -10,13 +10,6 @@ import { ContactFormFields } from "@/features/contacts/components/contact-form-f
 import {
   DRAWER_FOOTER_ACTIONS_CLASS,
   DRAWER_FOOTER_BUTTON_CLASS,
-  DRAWER_SHEET_CLASS,
-  DRAWER_SHEET_CONTENT_CLASS,
-  DRAWER_SHEET_DESCRIPTION_CLASS,
-  DRAWER_SHEET_FOOTER_CLASS,
-  DRAWER_SHEET_HEADER_CLASS,
-  DRAWER_SHEET_TITLE_CLASS,
-  DRAWER_SHEET_WIDE_CLASS,
 } from "@/components/forms/drawer-sheet";
 import { queryKeys } from "@/lib/query/keys";
 import { FormSheet } from "@/components/forms/form-sheet";
@@ -109,12 +102,7 @@ export function ContactFormDialog({
           ? "Update contact details and profile information."
           : "Add a new contact to your workspace."
       }
-      className={isEdit ? DRAWER_SHEET_WIDE_CLASS : DRAWER_SHEET_CLASS}
-      headerClassName={DRAWER_SHEET_HEADER_CLASS}
-      titleClassName={DRAWER_SHEET_TITLE_CLASS}
-      descriptionClassName={DRAWER_SHEET_DESCRIPTION_CLASS}
-      contentClassName={DRAWER_SHEET_CONTENT_CLASS}
-      footerClassName={DRAWER_SHEET_FOOTER_CLASS}
+      width={isEdit ? "wide" : "compact"}
       form={form}
       schema={contactProfileSchema}
       onSubmit={(v) => mutation.mutate(v)}

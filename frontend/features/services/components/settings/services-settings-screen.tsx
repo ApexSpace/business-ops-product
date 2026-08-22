@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus, Search } from "lucide-react";
 import { toast } from "sonner";
 import { ApiErrorState } from "@/components/data-display/api-error-state";
+import { LoadingState } from "@/components/data-display/loading-state";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -148,7 +149,7 @@ export function ServicesSettingsScreen() {
 
         <div className="flex-1 overflow-y-auto p-2">
           {isLoading || isRefetching ? (
-            <p className="p-2 text-sm text-muted-foreground">Loading…</p>
+            <LoadingState variant="inline" className="p-2" />
           ) : isError ? (
             <ApiErrorState
               compact

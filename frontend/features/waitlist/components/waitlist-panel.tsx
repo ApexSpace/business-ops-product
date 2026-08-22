@@ -50,7 +50,7 @@ function WaitlistEntryRow({
       type="button"
       onClick={onSelect}
       className={cn(
-        "w-full rounded-[12px] border border-transparent px-3.5 py-3 text-left transition-colors",
+        "w-full rounded-[var(--radius-xl)] border border-transparent px-3.5 py-3 text-left transition-colors",
         "hover:bg-muted/50",
         selected && "border-border bg-muted/40 shadow-sm",
       )}

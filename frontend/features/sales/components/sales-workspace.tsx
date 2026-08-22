@@ -1,7 +1,9 @@
 "use client";
 
+import { DRAWER_PRIMARY_BUTTON_CLASS } from "@/lib/design/drawer-tokens";
+
 import { useCallback, useMemo, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSalesStaffPermissions } from "@/features/sales/hooks/use-sales-staff-permissions";
 import {
@@ -13,8 +15,7 @@ import {
   Tag,
   Trash2,
   Wrench,
-  MoreHorizontal,
-  SlidersHorizontal,
+  MoreVertical,
 } from "lucide-react";
 import { toast } from "sonner";
 import { DataTable, type DataTableColumn } from "@/components/data-display/data-table";
@@ -22,11 +23,15 @@ import { ListPagination } from "@/components/ui/list-pagination";
 import { DrawerShell } from "@/components/layout/drawer-shell";
 import { DrawerHeaderContent } from "@/components/drawer/drawer-header-content";
 import { DrawerPrimaryButton } from "@/components/drawer/drawer-primary-button";
+import { ListFilterButton } from "@/components/layout/list-filter-button";
 import { IconButton } from "@/components/ui/icon-button";
 import { EntityWorkspaceLayout } from "@/components/layout/entity-workspace-layout";
 import { ListPrimaryAction } from "@/components/layout/list-primary-action";
 import { SearchInput } from "@/components/forms/search-input";
-import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/data-display/status-badge";
+import {
+  saleStatusLabel,
+} from "@/features/sales/utils/sales-list-format";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -55,12 +60,18 @@ import {
 import { DATA_TABLE_SALE_NUMBER_CLASS,
   DATA_TABLE_STATUS_CLASS } from "@/lib/design/data-table-tokens";
 import { useEntitySelection } from "@/lib/routing/use-entity-selection";
+import { useIsMobile } from "@/lib/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 import { queryKeys } from "@/lib/query/keys";
 import { invalidateCheckouts } from "@/lib/query/invalidation";
 import { listContacts } from "@/features/contacts/api/contacts.api";
 import { listBusinessMembers } from "@/features/settings/api/business.api";
 import { formatMoney } from "@/features/payments/schemas/payment-profile";
+import { SalesMobileList } from "@/features/sales/components/mobile/sales-mobile-list";
+import {
+  formatSaleNumberDisplay,
+  formatSalesListDate,
+} from "@/features/sales/utils/sales-list-format";
 import {
   addCheckoutProduct,
   addCheckoutService,
@@ -87,6 +98,7 @@ import {
   type CheckoutDrawerStep,
   type CheckoutDrawerSubmitAction,
 } from "@/features/sales/components/checkout-drawer-panel";
+import { SaleEditDrawerContent } from "@/features/sales/components/sale-edit-drawer-content";
 import {
   SaleClosedDrawerContent,
   saleDrawerTitle,
@@ -97,13 +109,30 @@ import {
   type SalesOptionsValues,
 } from "@/features/sales/components/sales-options-drawer";
 import { NewCheckoutDrawer } from "@/features/sales/components/new-checkout-drawer";
+import type { InlineAddMode } from "@/features/sales/hooks/use-checkout-panel";
 import {
+  SALES_DIALOG_BODY_CLASS,
+  SALES_DIALOG_CONTENT_CLASS,
+  SALES_DIALOG_DESTRUCTIVE_BUTTON_CLASS,
+  SALES_DIALOG_DESCRIPTION_CLASS,
+  SALES_DIALOG_FIELD_CLASS,
+  SALES_DIALOG_FOOTER_CLASS,
+  SALES_DIALOG_FOOTER_STACK_CLASS,
+  SALES_DIALOG_HEADER_CLASS,
+  SALES_DIALOG_LABEL_CLASS,
+  SALES_DIALOG_SECONDARY_BUTTON_CLASS,
+  SALES_DIALOG_TITLE_CLASS,
+  SALES_DRAWER_FIELD_CLASS,
   SALES_DRAWER_FOOTER_CLASS,
   SALES_DRAWER_FOOTER_INNER_CLASS,
   SALES_DRAWER_HEADER_ACTION_CLASS,
+  SALES_DRAWER_MOBILE_HEADER_ACTION_CLASS,
+  SALES_DRAWER_MOBILE_SHELL_CLASS,
+  SALES_DRAWER_SELECT_TRIGGER_CLASS,
   SALES_DRAWER_SHELL_CLASS,
   SALES_DRAWER_SHELL_HEADER_CLASS,
   SALES_DRAWER_SPINE_LABELS,
+  SALES_DRAWER_SUBTOTAL_ROW_CLASS,
 } from "@/features/sales/styles/sales-drawer-tokens";
 import {
   CheckoutMembershipField,
@@ -122,6 +151,7 @@ type StatusFilter = "all" | "OPEN" | "PAID" | "VOID";
 const PAGE_LIMIT = 25;
 
 export function SalesWorkspace() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const contactFilter = searchParams.get("contact");
   const queryClient = useQueryClient();
@@ -147,6 +177,11 @@ export function SalesWorkspace() {
     useState<CheckoutDrawerStep>("items");
   const [paymentAction, setPaymentAction] =
     useState<CheckoutDrawerSubmitAction | null>(null);
+  const [pendingInlineAddMode, setPendingInlineAddMode] =
+    useState<InlineAddMode>(null);
+  const [checkoutSubtotalLabel, setCheckoutSubtotalLabel] = useState<
+    string | null
+  >(null);
   const [saleEditMode, setSaleEditMode] = useState(false);
   const [voidOpen, setVoidOpen] = useState(false);
   const [addServiceOpen, setAddServiceOpen] = useState(false);
@@ -174,6 +209,7 @@ export function SalesWorkspace() {
   const [lineUnitPrice, setLineUnitPrice] = useState(0);
   const [lineStaffId, setLineStaffId] = useState<string | null>(null);
   const { canCheckout } = useSalesStaffPermissions();
+  const isMobile = useIsMobile();
 
   const listFilters = useMemo(
     () => ({
@@ -345,18 +381,23 @@ export function SalesWorkspace() {
   }, [queryClient, selectedId]);
 
   const createMutation = useMutation({
-    mutationFn: () => createCheckout({ contactId: newContactId! }),
-    onSuccess: (created) => {
+    mutationFn: (intent?: InlineAddMode) =>
+      createCheckout({ contactId: newContactId! }),
+    onSuccess: (created, intent) => {
       toast.success("Sale created");
       setNewSaleOpen(false);
       setNewContactId(contactFilter);
       setCheckoutStep("items");
       setPaymentAction(null);
       setSaleEditMode(false);
+      setPendingInlineAddMode(intent ?? null);
       void invalidateCheckouts(queryClient);
       setSelectedId(created.id);
     },
-    onError: (err: Error) => toast.error(err.message),
+    onError: (err: Error) => {
+      setPendingInlineAddMode(null);
+      toast.error(err.message);
+    },
   });
 
   const addServiceMutation = useMutation({
@@ -527,11 +568,7 @@ export function SalesWorkspace() {
         sortable: true,
         sortValue: (row) => row.saleNumber,
         cell: (row) => {
-          // API returns "Sale #36"; Figma shows a single hash + digits (#36).
-          const digits = row.saleNumber.match(/(\d+)\s*$/)?.[1];
-          const display = digits
-            ? `#${digits}`
-            : `#${row.saleNumber.replace(/^#+\s*/, "").trim()}`;
+          const display = formatSaleNumberDisplay(row.saleNumber);
           return (
             <span className={DATA_TABLE_SALE_NUMBER_CLASS}>
               {display}
@@ -551,10 +588,7 @@ export function SalesWorkspace() {
         header: "Date",
         sortable: true,
         sortValue: (row) => row.issueDate,
-        cell: (row) => {
-          const raw = row.issueDate?.slice(0, 7);
-          return raw || "—";
-        },
+        cell: (row) => formatSalesListDate(row.issueDate),
       },
       {
         id: "total",
@@ -625,9 +659,45 @@ export function SalesWorkspace() {
           ? "Payment"
           : "Checkout";
 
+  const openSaleRow = (row: Checkout) => {
+    setSaleEditMode(false);
+    setEditingLine(null);
+    setCheckoutStep("items");
+    setPaymentAction(null);
+    setSelectedId(row.id);
+  };
+
+  const headerActionClass = isMobile
+    ? SALES_DRAWER_MOBILE_HEADER_ACTION_CLASS
+    : SALES_DRAWER_HEADER_ACTION_CLASS;
 
   return (
   <>
+      {isMobile ? (
+        <SalesMobileList
+          sales={sales}
+          isLoading={listLoading}
+          search={listSearch}
+          onSearchChange={(value) => {
+            setListSearch(value);
+            setPage(1);
+          }}
+          selectedId={selectedId}
+          onSelect={openSaleRow}
+          onOpenOptions={() => setOptionsOpen(true)}
+          onCreate={openNewSale}
+          canCreate={canCheckout}
+          pagination={
+            listData?.meta && sales.length > 0
+              ? {
+                  meta: listData.meta,
+                  page,
+                  onPageChange: setPage,
+                }
+              : undefined
+          }
+        />
+      ) : (
       <EntityWorkspaceLayout
         title="Sales"
         description="Point-of-sale checkouts — open sales, add services, and collect payment."
@@ -642,15 +712,10 @@ export function SalesWorkspace() {
           />
         }
         filters={
-          <IconButton
-            type="button"
-            variant="outline"
+          <ListFilterButton
             aria-label="Sale options"
-            className="size-11 shrink-0"
             onClick={() => setOptionsOpen(true)}
-          >
-            <SlidersHorizontal className="size-4" />
-          </IconButton>
+          />
         }
         actions={
           canCheckout ? (
@@ -675,13 +740,7 @@ export function SalesWorkspace() {
           isLoading={listLoading}
           density="default"
           activeRowId={selectedId}
-          onRowClick={(row) => {
-            setSaleEditMode(false);
-            setEditingLine(null);
-            setCheckoutStep("items");
-            setPaymentAction(null);
-            setSelectedId(row.id);
-          }}
+          onRowClick={openSaleRow}
           getRowClassName={(row) =>
             selectedId === row.id ? WORKSPACE_ACTIVE_ROW_CLASS : undefined
           }
@@ -695,6 +754,7 @@ export function SalesWorkspace() {
           className={WORKSPACE_TABLE_CLASS}
         />
       </EntityWorkspaceLayout>
+      )}
 
       <DrawerShell
         open={isOpen}
@@ -705,13 +765,20 @@ export function SalesWorkspace() {
             setEditingLine(null);
             setCheckoutStep("items");
             setPaymentAction(null);
+            setCheckoutSubtotalLabel(null);
+            setPendingInlineAddMode(null);
           }
         }}
         variant="sheet"
         width="appointment"
-        spineLabel={saleSpineLabel}
-        className={SALES_DRAWER_SHELL_CLASS}
-        headerClassName={SALES_DRAWER_SHELL_HEADER_CLASS}
+        chrome={isMobile ? "mobile-brand" : "default"}
+        spineLabel={isMobile ? undefined : saleSpineLabel}
+        className={
+          isMobile ? SALES_DRAWER_MOBILE_SHELL_CLASS : SALES_DRAWER_SHELL_CLASS
+        }
+        headerClassName={
+          isMobile ? undefined : SALES_DRAWER_SHELL_HEADER_CLASS
+        }
         contentClassName="!px-0 !py-0"
         footerClassName={
           sale?.isOpen && saleDetailProps && canCheckout
@@ -719,9 +786,12 @@ export function SalesWorkspace() {
             : undefined
         }
         title={
+          isMobile ? (
+            saleDrawerHeading
+          ) : (
           <DrawerHeaderContent
             eyebrow={
-              sale?.isOpen && !saleEditMode && sale.issueDate
+              sale?.isOpen && sale.issueDate
                 ? new Date(sale.issueDate)
                     .toLocaleDateString("en-US", {
                       month: "long",
@@ -733,26 +803,35 @@ export function SalesWorkspace() {
             }
             title={saleDrawerHeading}
           />
+          )
         }
         headerActions={
           <>
-            {sale?.isOpen && saleDetailProps && canCheckout && !saleEditMode ? (
+            {sale?.isOpen &&
+            saleDetailProps &&
+            canCheckout &&
+            !saleEditMode &&
+            checkoutStep !== "payment" ? (
               <IconButton
                 type="button"
                 variant="ghost"
                 aria-label="Edit sale"
-                className={SALES_DRAWER_HEADER_ACTION_CLASS}
+                className={headerActionClass}
                 onClick={saleDetailProps.onEdit}
               >
                 <Pencil className="size-4" />
               </IconButton>
             ) : null}
-            {sale?.isOpen && saleDetailProps && canCheckout && !saleEditMode ? (
+            {sale?.isOpen &&
+            saleDetailProps &&
+            canCheckout &&
+            !saleEditMode &&
+            checkoutStep !== "payment" ? (
               <IconButton
                 type="button"
                 variant="ghost"
                 aria-label="Void sale"
-                className={SALES_DRAWER_HEADER_ACTION_CLASS}
+                className={headerActionClass}
                 onClick={saleDetailProps.onVoid}
               >
                 <Trash2 className="size-4" />
@@ -762,9 +841,9 @@ export function SalesWorkspace() {
                 type="button"
                 variant="ghost"
                 aria-label="More actions"
-                className={SALES_DRAWER_HEADER_ACTION_CLASS}
+                className={headerActionClass}
               >
-                <MoreHorizontal className="size-4" />
+                <MoreVertical className="size-4" />
               </IconButton>
             )}
           </>
@@ -773,10 +852,10 @@ export function SalesWorkspace() {
           sale?.isOpen && saleDetailProps && canCheckout ? (
             saleEditMode ? (
               <div className={SALES_DRAWER_FOOTER_INNER_CLASS}>
-                <div className="flex w-full gap-2">
+                <div className="grid w-full grid-cols-2 gap-3">
                   <Button
                     variant="outline"
-                    className="min-h-12 flex-1"
+                    className={SALES_DIALOG_SECONDARY_BUTTON_CLASS}
                     disabled={updateSaleMutation.isPending}
                     onClick={cancelEditSale}
                   >
@@ -792,17 +871,16 @@ export function SalesWorkspace() {
               </div>
             ) : checkoutStep === "payment" && paymentAction ? (
               <div className={SALES_DRAWER_FOOTER_INNER_CLASS}>
-                <Button
+                <button
                   type="button"
-                  variant="ghost"
-                  className="w-full text-muted-foreground"
+                  className="w-full py-1 text-center text-[14px] font-medium text-[#8A8A8A] hover:text-violet-primary-darker hover:underline"
                   onClick={() => {
                     setCheckoutStep("items");
                     setPaymentAction(null);
                   }}
                 >
                   Back to items
-                </Button>
+                </button>
                 <DrawerPrimaryButton
                   disabled={paymentAction.disabled}
                   onClick={paymentAction.onClick}
@@ -812,8 +890,15 @@ export function SalesWorkspace() {
               </div>
             ) : (
               <div className={SALES_DRAWER_FOOTER_INNER_CLASS}>
+                <div className={SALES_DRAWER_SUBTOTAL_ROW_CLASS}>
+                  <span>Subtotal</span>
+                  <span className="tabular-nums">
+                    {checkoutSubtotalLabel ??
+                      formatMoney(parseFloat(sale.subtotal))}
+                  </span>
+                </div>
                 <DrawerPrimaryButton onClick={() => setCheckoutStep("payment")}>
-                  Go to payments
+                  Go to Payments
                 </DrawerPrimaryButton>
               </div>
             )
@@ -826,16 +911,23 @@ export function SalesWorkspace() {
           </div>
         ) : selectedId && sale && saleDetailProps ? (
           saleEditMode ? (
-            <SaleDetail
-              embedded
-              {...saleDetailProps}
-              canModify={canCheckout}
-              saleEditMode={saleEditMode}
+            <SaleEditDrawerContent
+              sale={sale}
               editContactId={editContactId}
               editNotes={editNotes}
-              contactItems={contactItems}
               onEditContactIdChange={setEditContactId}
               onEditNotesChange={setEditNotes}
+              onAddService={saleDetailProps.onAddService}
+              onAddProduct={saleDetailProps.onAddProduct}
+              onAddGiftCard={saleDetailProps.onAddGiftCard}
+              onAddPackage={saleDetailProps.onAddPackage}
+              onApplyOffer={saleDetailProps.onApplyOffer}
+              onAddDeposit={() => saleDetailProps.onAddDeposit(25)}
+              onRemoveOffer={saleDetailProps.onRemoveOffer}
+              removeOfferPending={saleDetailProps.removeOfferPending}
+              onEditLine={saleDetailProps.onEditLine}
+              onRemoveLine={saleDetailProps.onRemoveLine}
+              lineRemovePending={saleDetailProps.lineRemovePending}
               editingLine={editingLine}
               lineQty={lineQty}
               lineUnitPrice={lineUnitPrice}
@@ -857,10 +949,14 @@ export function SalesWorkspace() {
               contactHeader={{
                 name: sale.contact?.label ?? "Client",
               }}
+              initialAddMode={pendingInlineAddMode}
+              onInitialAddModeConsumed={() => setPendingInlineAddMode(null)}
               onSubmitActionChange={setPaymentAction}
+              onSubtotalChange={setCheckoutSubtotalLabel}
               onComplete={() => {
                 setCheckoutStep("items");
                 setPaymentAction(null);
+                setPendingInlineAddMode(null);
                 void invalidateCheckouts(queryClient);
                 clearSelection();
               }}
@@ -880,49 +976,60 @@ export function SalesWorkspace() {
           setPage(1);
           toast.success("Filters applied");
         }}
+        onViewTransactions={() => {
+          setOptionsOpen(false);
+          router.push("/business/payments?tab=transactions");
+        }}
       />
 
 
       <NewCheckoutDrawer
         open={newSaleOpen}
         onOpenChange={setNewSaleOpen}
-        contactItems={contactItems}
         contactId={newContactId}
         onContactIdChange={setNewContactId}
-        onCreate={() => createMutation.mutate()}
+        onCreate={() => createMutation.mutate(undefined)}
+        onCreateAndAdd={(mode) => createMutation.mutate(mode)}
         isPending={createMutation.isPending}
       />
 
       <Dialog open={addProductOpen} onOpenChange={setAddProductOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add product</DialogTitle>
+        <DialogContent size="md" className={SALES_DIALOG_CONTENT_CLASS}>
+          <DialogHeader className={SALES_DIALOG_HEADER_CLASS}>
+            <DialogTitle className={SALES_DIALOG_TITLE_CLASS}>
+              Add product
+            </DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
-            <SearchableSelect
-              inDialog
-              items={productItems}
-              value={selectedProductKey}
-              onValueChange={(key) => {
-                setSelectedProductKey(key);
-                setSelectedProductStaffId(null);
-              }}
-              placeholder="Select product…"
-            />
+          <div className={SALES_DIALOG_BODY_CLASS}>
+            <div className={SALES_DIALOG_FIELD_CLASS}>
+              <Label className={SALES_DIALOG_LABEL_CLASS}>Product</Label>
+              <SearchableSelect
+                inDialog
+                items={productItems}
+                value={selectedProductKey}
+                onValueChange={(key) => {
+                  setSelectedProductKey(key);
+                  setSelectedProductStaffId(null);
+                }}
+                placeholder="Select product…"
+                triggerClassName={SALES_DRAWER_SELECT_TRIGGER_CLASS}
+              />
+            </div>
             {selectedProduct?.assignStaffToSale ? (
-              <div className="space-y-2">
-                <Label>Staff</Label>
+              <div className={SALES_DIALOG_FIELD_CLASS}>
+                <Label className={SALES_DIALOG_LABEL_CLASS}>Provider</Label>
                 <SearchableSelect
                   inDialog
                   items={productStaffItems}
                   value={selectedProductStaffId}
                   onValueChange={setSelectedProductStaffId}
-                  placeholder="Select staff…"
+                  placeholder="Select provider…"
+                  triggerClassName={SALES_DRAWER_SELECT_TRIGGER_CLASS}
                 />
               </div>
             ) : null}
-            <div className="space-y-2">
-              <Label>Quantity</Label>
+            <div className={SALES_DIALOG_FIELD_CLASS}>
+              <Label className={SALES_DIALOG_LABEL_CLASS}>Quantity</Label>
               <Input
                 type="number"
                 min={0.0001}
@@ -931,10 +1038,15 @@ export function SalesWorkspace() {
                 onChange={(e) =>
                   setProductQty(parseFloat(e.target.value) || 0)
                 }
+                className={SALES_DRAWER_FIELD_CLASS}
               />
             </div>
+          </div>
+          <div className={SALES_DIALOG_FOOTER_STACK_CLASS}>
             <Button
-              className="w-full"
+              type="button"
+              variant="brand"
+              className={DRAWER_PRIMARY_BUTTON_CLASS}
               disabled={
                 !selectedProductKey ||
                 productQty <= 0 ||
@@ -943,7 +1055,7 @@ export function SalesWorkspace() {
               }
               onClick={() => addProductMutation.mutate()}
             >
-              Add to sale
+              {addProductMutation.isPending ? "Adding…" : "Add to sale"}
             </Button>
           </div>
         </DialogContent>
@@ -960,30 +1072,40 @@ export function SalesWorkspace() {
           }
         }}
       >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add service</DialogTitle>
+        <DialogContent size="md" className={SALES_DIALOG_CONTENT_CLASS}>
+          <DialogHeader className={SALES_DIALOG_HEADER_CLASS}>
+            <DialogTitle className={SALES_DIALOG_TITLE_CLASS}>
+              Add service
+            </DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
-            <SearchableSelect
-              inDialog
-              items={serviceItems}
-              value={selectedServiceId}
-              onValueChange={(id) => {
-                setSelectedServiceId(id);
-                setSelectedStaffId(null);
-                setSelectedMembershipKey("");
-              }}
-              placeholder="Select service…"
-            />
-            {selectedServiceId && staffItems.length > 0 ? (
+          <div className={SALES_DIALOG_BODY_CLASS}>
+            <div className={SALES_DIALOG_FIELD_CLASS}>
+              <Label className={SALES_DIALOG_LABEL_CLASS}>Service</Label>
               <SearchableSelect
                 inDialog
-                items={staffItems}
-                value={selectedStaffId}
-                onValueChange={setSelectedStaffId}
-                placeholder="Staff (optional)"
+                items={serviceItems}
+                value={selectedServiceId}
+                onValueChange={(id) => {
+                  setSelectedServiceId(id);
+                  setSelectedStaffId(null);
+                  setSelectedMembershipKey("");
+                }}
+                placeholder="Select service…"
+                triggerClassName={SALES_DRAWER_SELECT_TRIGGER_CLASS}
               />
+            </div>
+            {selectedServiceId && staffItems.length > 0 ? (
+              <div className={SALES_DIALOG_FIELD_CLASS}>
+                <Label className={SALES_DIALOG_LABEL_CLASS}>Provider</Label>
+                <SearchableSelect
+                  inDialog
+                  items={staffItems}
+                  value={selectedStaffId}
+                  onValueChange={setSelectedStaffId}
+                  placeholder="Provider (optional)"
+                  triggerClassName={SALES_DRAWER_SELECT_TRIGGER_CLASS}
+                />
+              </div>
             ) : null}
             <CheckoutMembershipField
               contactId={sale?.contactId ?? null}
@@ -991,12 +1113,16 @@ export function SalesWorkspace() {
               value={selectedMembershipKey}
               onValueChange={setSelectedMembershipKey}
             />
+          </div>
+          <div className={SALES_DIALOG_FOOTER_STACK_CLASS}>
             <Button
-              className="w-full"
+              type="button"
+              variant="brand"
+              className={DRAWER_PRIMARY_BUTTON_CLASS}
               disabled={!selectedServiceId || addServiceMutation.isPending}
               onClick={() => addServiceMutation.mutate()}
             >
-              Add to sale
+              {addServiceMutation.isPending ? "Adding…" : "Add to sale"}
             </Button>
           </div>
         </DialogContent>
@@ -1019,76 +1145,117 @@ export function SalesWorkspace() {
       />
 
       <Dialog open={applyOfferOpen} onOpenChange={setApplyOfferOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Apply offer</DialogTitle>
+        <DialogContent size="md" className={SALES_DIALOG_CONTENT_CLASS}>
+          <DialogHeader className={SALES_DIALOG_HEADER_CLASS}>
+            <DialogTitle className={SALES_DIALOG_TITLE_CLASS}>
+              Apply offer
+            </DialogTitle>
+            <p className={SALES_DIALOG_DESCRIPTION_CLASS}>
+              Choose a staff offer to discount this checkout.
+            </p>
           </DialogHeader>
-          <div className="space-y-4">
-            <SearchableSelect
-              inDialog
-              items={(staffOffersQuery.data ?? []).map((offer) => ({
-                value: offer.id,
-                label: offer.name,
-              }))}
-              value={selectedOfferId}
-              onValueChange={setSelectedOfferId}
-              placeholder="Select a staff offer…"
-            />
+          <div className={SALES_DIALOG_BODY_CLASS}>
+            <div className={SALES_DIALOG_FIELD_CLASS}>
+              <Label className={SALES_DIALOG_LABEL_CLASS}>Offer</Label>
+              <SearchableSelect
+                inDialog
+                items={(staffOffersQuery.data ?? []).map((offer) => ({
+                  value: offer.id,
+                  label: offer.name,
+                }))}
+                value={selectedOfferId}
+                onValueChange={setSelectedOfferId}
+                placeholder="Select a staff offer…"
+                triggerClassName={SALES_DRAWER_SELECT_TRIGGER_CLASS}
+              />
+            </div>
+          </div>
+          <div className={SALES_DIALOG_FOOTER_STACK_CLASS}>
             <Button
-              className="w-full"
+              type="button"
+              variant="brand"
+              className={DRAWER_PRIMARY_BUTTON_CLASS}
               disabled={!selectedOfferId || applyOfferMutation.isPending}
               onClick={() =>
                 selectedOfferId && applyOfferMutation.mutate(selectedOfferId)
               }
             >
-              Apply offer
+              {applyOfferMutation.isPending ? "Applying…" : "Apply offer"}
             </Button>
           </div>
         </DialogContent>
       </Dialog>
 
       <Dialog open={closeOpen} onOpenChange={setCloseOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Close sale — collect payment</DialogTitle>
+        <DialogContent size="lg" className={SALES_DIALOG_CONTENT_CLASS}>
+          <DialogHeader className={SALES_DIALOG_HEADER_CLASS}>
+            <DialogTitle className={SALES_DIALOG_TITLE_CLASS}>
+              Collect payment
+            </DialogTitle>
+            <p className={SALES_DIALOG_DESCRIPTION_CLASS}>
+              Close this sale by recording payment.
+            </p>
           </DialogHeader>
-          {sale && sale.isOpen ? (
-            <SaleClosePanel
-              checkoutId={sale.id}
-              contactId={sale.contactId}
-              balanceDue={balanceDue}
-              onComplete={() => {
-                setCloseOpen(false);
-                refreshSale();
-                void invalidateCheckouts(queryClient);
-              }}
-            />
-          ) : null}
+          <div className={SALES_DIALOG_BODY_CLASS}>
+            {sale && sale.isOpen ? (
+              <SaleClosePanel
+                checkoutId={sale.id}
+                contactId={sale.contactId}
+                balanceDue={balanceDue}
+                subtotal={parseFloat(sale.subtotal)}
+                embedInDrawer
+                onComplete={() => {
+                  setCloseOpen(false);
+                  refreshSale();
+                  void invalidateCheckouts(queryClient);
+                }}
+              />
+            ) : null}
+          </div>
         </DialogContent>
       </Dialog>
 
       <AlertDialog open={voidOpen} onOpenChange={setVoidOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Void this sale?</AlertDialogTitle>
-            <AlertDialogDescription>
+        <AlertDialogContent
+          className={cn(
+            SALES_DIALOG_CONTENT_CLASS,
+            "max-w-[calc(100%-2rem)] gap-0 p-0 sm:max-w-sm",
+          )}
+        >
+          <AlertDialogHeader className={SALES_DIALOG_HEADER_CLASS}>
+            <AlertDialogTitle className={SALES_DIALOG_TITLE_CLASS}>
+              Void this sale?
+            </AlertDialogTitle>
+            <AlertDialogDescription className={SALES_DIALOG_DESCRIPTION_CLASS}>
               This open sale will be voided and cannot be collected. This action
               cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogFooter className={SALES_DIALOG_FOOTER_CLASS}>
+            <AlertDialogCancel className={SALES_DIALOG_SECONDARY_BUTTON_CLASS}>
+              Cancel
+            </AlertDialogCancel>
             <AlertDialogAction
+              className={SALES_DIALOG_DESTRUCTIVE_BUTTON_CLASS}
               onClick={() => voidMutation.mutate()}
               disabled={voidMutation.isPending}
             >
-              Void sale
+              {voidMutation.isPending ? "Voiding…" : "Void sale"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
     </>
   );
+}
+
+function saleStatusKey(args: {
+  status: string;
+  isOpen: boolean;
+}): "VOID" | "OPEN" | "CLOSED" {
+  if (args.status === "VOID") return "VOID";
+  if (args.isOpen) return "OPEN";
+  return "CLOSED";
 }
 
 function SaleStatusPill({
@@ -1098,13 +1265,13 @@ function SaleStatusPill({
   status: Checkout["status"];
   isOpen: boolean;
 }) {
-  if (status === "VOID") {
-    return <Badge variant="destructive">Void</Badge>;
-  }
-  if (isOpen) {
-    return <Badge>Open</Badge>;
-  }
-  return <Badge variant="secondary">Closed</Badge>;
+  return (
+    <StatusBadge
+      domain="sale"
+      status={saleStatusKey({ status, isOpen })}
+      label={saleStatusLabel({ status, isOpen })}
+    />
+  );
 }
 
 function SaleAddItemsToolbar({

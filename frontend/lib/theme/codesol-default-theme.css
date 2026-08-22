@@ -1,5 +1,9 @@
 /**
  * PandaCue raw design tokens (from Figma color styles).
+ *
+ * Ownership: this file + frontend/app/globals.css = visual-value source of truth.
+ * lib/design = recipes only. Features must not add raw color / radius / height.
+ *
  * Override these (via applyClientTheme or snapshot branding) for per-client white-labeling.
  * Semantic variables in globals.css map to these values.
  *
@@ -11,7 +15,7 @@
   --pc-violet-primary-light: #f2ebfd;
   --pc-violet-primary-light-hover: #ece2fc;
   --pc-violet-primary-light-active: #d7c2f9;
-  --pc-violet-primary-normal: #7e3bed;
+  --pc-violet-primary-normal: #73a98b;
   --pc-violet-primary-normal-hover: #7135d5;
   --pc-violet-primary-normal-active: #652fbe;
   --pc-violet-primary-dark: #5f2cb2;
@@ -54,6 +58,45 @@
   --pc-green-success-dark-hover: #115c37;
   --pc-green-success-dark-active: #0d4529;
   --pc-green-success-darker: #0a3620;
+
+  /* ─── Drawer / sliding-panel surface neutrals (Figma) ─── */
+  --drawer-field-border: #e8e4dc;
+  --drawer-divider: #ede9e3;
+  --drawer-header-border: #eeeae6;
+  --drawer-tab-track: #f3f0f7;
+  --drawer-tab-track-border: rgba(232, 228, 220, 0.5);
+  --drawer-tab-inactive-fg: #3d3d3d;
+  --drawer-confirmed-bg: #e8f5ef;
+  --drawer-confirmed-fg: #1c9a5b;
+  --drawer-divider-accent: #bc9bf6;
+  --drawer-icon-muted: #8a7378;
+  --drawer-icon-gear: #9a9a9a;
+  --drawer-avatar-bg: #ffe4ec;
+  --drawer-avatar-fg: #c45b7a;
+  --drawer-client-avatar-bg: #ffd9e5;
+  --drawer-client-avatar-fg: #703253;
+  --drawer-text-primary: #1a1a1a;
+  --drawer-text-secondary: #8a8a8a;
+  --drawer-text-body: #4a4a4a;
+  --drawer-text-label: #524346;
+  --drawer-text-meta: #6b6b6b;
+  --drawer-action-ink: #2f1261;
+  --drawer-switch-off: #b0b0b0;
+  --drawer-picker-hover: #f6f1fe;
+  --drawer-panel-shadow: 0 8px 24px rgba(44, 27, 21, 0.05);
+
+  /* ─── Mobile entity-list surfaces ─── */
+  --mobile-list-border: #d4d0db;
+  --mobile-list-meta: #554666;
+  --mobile-list-search-border: var(--drawer-field-border);
+  --mobile-status-closed-bg: #d8f7ea;
+  --mobile-status-closed-fg: #0f6b4c;
+  --mobile-status-open-bg: #ffe8d1;
+  --mobile-status-open-fg: #8a4b16;
+  --mobile-status-void-bg: #fce8e8;
+  --mobile-status-void-fg: #b42318;
+  --mobile-status-neutral-bg: #f0eef2;
+  --mobile-status-neutral-fg: var(--mobile-list-meta);
 
   /* ─── Legacy --cs-* aliases (mapped to PandaCue) ─── */
   --cs-navy: var(--pc-violet-primary-darker);

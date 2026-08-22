@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import type { UseFormReturn } from "react-hook-form";
+import { LoadingState } from "@/components/data-display/loading-state";
 import { Button } from "@/components/ui/button";
 import { triggerGoogleCalendarSync } from "@/features/calendars/api/calendar-sync.api";
 import type { CalendarFormValues } from "@/features/calendars/schemas/calendar-profile";
@@ -66,7 +67,7 @@ export function CalendarGoogleSyncPanel({
         <div>
           <p className="text-sm font-medium">Sync status</p>
           {statusLoading ? (
-            <p className="text-sm text-muted-foreground">Loading…</p>
+            <LoadingState variant="inline" />
           ) : syncStatus ? (
             <dl className="mt-2 space-y-1 text-sm text-muted-foreground">
               <div>

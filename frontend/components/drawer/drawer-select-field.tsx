@@ -9,9 +9,9 @@ import {
 import { DrawerChevronIcon } from "@/components/drawer/drawer-icons";
 import { DrawerFormFieldGroup } from "@/components/drawer/drawer-form-field-group";
 import {
-  APPOINTMENT_DRAWER_SELECT_TRIGGER_CLASS,
-  APPOINTMENT_DRAWER_STACKED_FIELD_GROUP_CLASS,
-} from "@/features/appointments/styles/appointment-drawer-tokens";
+  DRAWER_SELECT_TRIGGER_CLASS,
+  DRAWER_STACKED_FIELD_GROUP_CLASS,
+} from "@/lib/design/drawer-tokens";
 import { cn } from "@/lib/utils";
 
 export interface DrawerSelectOption {
@@ -49,7 +49,7 @@ export function DrawerSelectField({
     <DrawerFormFieldGroup
       label={label}
       htmlFor={id}
-      className={cn(APPOINTMENT_DRAWER_STACKED_FIELD_GROUP_CLASS, className)}
+      className={cn(DRAWER_STACKED_FIELD_GROUP_CLASS, className)}
     >
       <Select
         value={value || undefined}
@@ -59,7 +59,7 @@ export function DrawerSelectField({
         <SelectTrigger
           id={id}
           className={cn(
-            APPOINTMENT_DRAWER_SELECT_TRIGGER_CLASS,
+            DRAWER_SELECT_TRIGGER_CLASS,
             "flex w-full items-center gap-2 [&>svg]:hidden",
           )}
         >

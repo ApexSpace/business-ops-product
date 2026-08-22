@@ -287,6 +287,7 @@ export function ContactDetailPanel({
                 contactId={contact.id}
                 onEdit={() => setEditOpen(true)}
                 showEditButton={contactPerms.canManage}
+                showContactDetails={contactPerms.canViewContactDetails}
                 noteComposerOpen={noteComposerOpen}
                 onNoteComposerOpenChange={onNoteComposerOpenChange}
               />
@@ -310,7 +311,7 @@ export function ContactDetailPanel({
                       )}
                       onClick={() => onSectionChange(tab.id)}
                     >
-                      {tab.id === "memberships" ? "Memberships" : tab.label}
+                      {tab.label}
                     </button>
                   ))}
                 </div>

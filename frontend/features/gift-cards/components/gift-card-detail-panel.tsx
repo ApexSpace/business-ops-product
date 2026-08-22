@@ -3,6 +3,7 @@
 import { CreditCard, Gift, MessageSquare, Pencil } from "lucide-react";
 import { ApiErrorState } from "@/components/data-display/api-error-state";
 import { EmptyState } from "@/components/data-display/empty-state";
+import { LoadingState } from "@/components/data-display/loading-state";
 import { EntityDetailField } from "@/components/layout/entity-detail-section";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -295,7 +296,7 @@ export function GiftCardDetailPanel({
           />
         </div>
       ) : isLoading || !detail ? (
-        <p className="p-6 text-sm text-muted-foreground">Loading gift card…</p>
+        <LoadingState label="Loading gift card…" className="p-6 py-10" />
       ) : (
         body
       )}

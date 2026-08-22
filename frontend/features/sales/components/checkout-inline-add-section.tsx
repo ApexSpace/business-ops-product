@@ -1,9 +1,12 @@
 "use client";
 
+import { DRAWER_PRIMARY_BUTTON_CLASS } from "@/lib/design/drawer-tokens";
+
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ScanLine, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { IconButton } from "@/components/ui/icon-button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,7 +20,12 @@ import { listPackageTemplates } from "@/features/packages/api/packages.api";
 import { CheckoutMembershipField } from "@/features/sales/components/checkout-membership-field";
 import type { InlineAddMode } from "@/features/sales/hooks/use-checkout-panel";
 import {
-  DRAWER_FIELD_CONTROL_CLASS,
+  SALES_DRAWER_FIELD_CLASS,
+  SALES_DRAWER_INLINE_ADD_PANEL_CLASS,
+  SALES_DRAWER_INLINE_ADD_TITLE_CLASS,
+  SALES_DRAWER_SELECT_TRIGGER_CLASS,
+} from "@/features/sales/styles/sales-drawer-tokens";
+import {
   DRAWER_FIELD_LABEL_CLASS,
   DRAWER_FORM_FIELD_CLASS,
   DRAWER_FORM_STACK_CLASS,
@@ -184,19 +192,20 @@ export function CheckoutInlineAddSection({
     giftCardSettingsQuery.data?.autoGenerateNumber ?? false;
 
   return (
-    <div className="rounded-[10px] border border-border/60 bg-muted/15 p-3.5">
+    <div className={SALES_DRAWER_INLINE_ADD_PANEL_CLASS}>
       <div className="mb-3 flex items-center justify-between gap-2">
-        <p className="text-[12px] font-semibold uppercase tracking-[0.06em] text-muted-foreground">
+        <p className={SALES_DRAWER_INLINE_ADD_TITLE_CLASS}>
           {MODE_LABELS[mode]}
         </p>
-        <button
-          type="button"
+        <IconButton
+          variant="ghost"
+          size="icon-sm"
           onClick={onClose}
-          className="text-muted-foreground hover:text-foreground"
           aria-label="Close add panel"
+          className="text-[#8A8A8A] hover:bg-white/70 hover:text-violet-primary-darker"
         >
           <X className="size-4" />
-        </button>
+        </IconButton>
       </div>
 
       <div className={DRAWER_FORM_STACK_CLASS}>
@@ -207,17 +216,17 @@ export function CheckoutInlineAddSection({
               value={selectedServiceId}
               onValueChange={onServiceChange}
               placeholder="Select service…"
-              triggerClassName={DRAWER_FIELD_CONTROL_CLASS}
+              triggerClassName={SALES_DRAWER_SELECT_TRIGGER_CLASS}
             />
             {selectedServiceId && staffItems.length > 0 ? (
               <div className={DRAWER_FORM_FIELD_CLASS}>
-                <Label className={DRAWER_FIELD_LABEL_CLASS}>Staff</Label>
+                <Label className={DRAWER_FIELD_LABEL_CLASS}>Provider</Label>
                 <SearchableSelect
                   items={staffItems}
                   value={selectedStaffId}
                   onValueChange={onStaffChange}
-                  placeholder="Staff (optional)"
-                  triggerClassName={DRAWER_FIELD_CONTROL_CLASS}
+                  placeholder="Provider (optional)"
+                  triggerClassName={SALES_DRAWER_SELECT_TRIGGER_CLASS}
                 />
               </div>
             ) : null}
@@ -229,11 +238,12 @@ export function CheckoutInlineAddSection({
             />
             <Button
               type="button"
-              className="w-full"
+              variant="brand"
+              className={DRAWER_PRIMARY_BUTTON_CLASS}
               disabled={!selectedServiceId || servicePending}
               onClick={onAddService}
             >
-              Add to checkout
+              {servicePending ? "Adding…" : "Add to checkout"}
             </Button>
           </>
         ) : null}
@@ -245,7 +255,7 @@ export function CheckoutInlineAddSection({
               value={selectedProductKey}
               onValueChange={onProductChange}
               placeholder="Select product…"
-              triggerClassName={DRAWER_FIELD_CONTROL_CLASS}
+              triggerClassName={SALES_DRAWER_SELECT_TRIGGER_CLASS}
             />
             <div className={DRAWER_FORM_FIELD_CLASS}>
               <Label className={DRAWER_FIELD_LABEL_CLASS}>Quantity</Label>
@@ -257,12 +267,13 @@ export function CheckoutInlineAddSection({
                 onChange={(event) =>
                   onProductQtyChange(parseFloat(event.target.value) || 0)
                 }
-                className={DRAWER_FIELD_CONTROL_CLASS}
+                className={SALES_DRAWER_FIELD_CLASS}
               />
             </div>
             <Button
               type="button"
-              className="w-full"
+              variant="brand"
+              className={DRAWER_PRIMARY_BUTTON_CLASS}
               disabled={
                 !selectedProductKey ||
                 productQty <= 0 ||
@@ -270,7 +281,7 @@ export function CheckoutInlineAddSection({
               }
               onClick={onAddProduct}
             >
-              Add to checkout
+              {productPending ? "Adding…" : "Add to checkout"}
             </Button>
           </>
         ) : null}
@@ -282,15 +293,16 @@ export function CheckoutInlineAddSection({
               value={selectedOfferId}
               onValueChange={onOfferChange}
               placeholder="Select a staff offer…"
-              triggerClassName={DRAWER_FIELD_CONTROL_CLASS}
+              triggerClassName={SALES_DRAWER_SELECT_TRIGGER_CLASS}
             />
             <Button
               type="button"
-              className="w-full"
+              variant="brand"
+              className={DRAWER_PRIMARY_BUTTON_CLASS}
               disabled={!selectedOfferId || offerPending}
               onClick={onApplyOffer}
             >
-              Apply offer
+              {offerPending ? "Applying…" : "Apply offer"}
             </Button>
           </>
         ) : null}
@@ -307,16 +319,17 @@ export function CheckoutInlineAddSection({
                 onChange={(event) =>
                   onDepositAmountChange(parseFloat(event.target.value) || 0)
                 }
-                className={DRAWER_FIELD_CONTROL_CLASS}
+                className={SALES_DRAWER_FIELD_CLASS}
               />
             </div>
             <Button
               type="button"
-              className="w-full"
+              variant="brand"
+              className={DRAWER_PRIMARY_BUTTON_CLASS}
               disabled={depositAmount <= 0 || depositPending}
               onClick={onAddDeposit}
             >
-              Add to checkout
+              {depositPending ? "Adding…" : "Add to checkout"}
             </Button>
           </>
         ) : null}
@@ -327,12 +340,12 @@ export function CheckoutInlineAddSection({
               <Label className={DRAWER_FIELD_LABEL_CLASS}>Gift card number</Label>
               <div className="relative">
                 {!autoGenerateGiftCardNumber ? (
-                  <ScanLine className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
+                  <ScanLine className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[#8A8A8A]" />
                 ) : null}
                 <Input
                   className={cn(
-                    DRAWER_FIELD_CONTROL_CLASS,
-                    !autoGenerateGiftCardNumber && "pl-8",
+                    SALES_DRAWER_FIELD_CLASS,
+                    !autoGenerateGiftCardNumber && "pl-9",
                   )}
                   value={giftCardNumber}
                   onChange={(event) => setGiftCardNumber(event.target.value)}
@@ -349,7 +362,7 @@ export function CheckoutInlineAddSection({
                 step="0.01"
                 value={giftCardAmount}
                 onChange={(event) => setGiftCardAmount(event.target.value)}
-                className={DRAWER_FIELD_CONTROL_CLASS}
+                className={SALES_DRAWER_FIELD_CLASS}
               />
             </div>
             <div className={DRAWER_FORM_FIELD_CLASS}>
@@ -359,22 +372,24 @@ export function CheckoutInlineAddSection({
                 value={giftCardOwnerId}
                 onValueChange={setGiftCardOwnerId}
                 placeholder="Who will receive this gift card"
-                triggerClassName={DRAWER_FIELD_CONTROL_CLASS}
+                triggerClassName={SALES_DRAWER_SELECT_TRIGGER_CLASS}
               />
             </div>
-            <div className="flex items-center gap-2">
+            <label className="flex min-h-11 cursor-pointer items-center gap-2.5 rounded-[var(--radius-md)] border border-[#E8E4DC] bg-white px-3">
               <Checkbox
                 id="inline-send-digital"
                 checked={sendDigital}
                 onCheckedChange={(checked) => setSendDigital(checked === true)}
+                className="size-5 rounded-[4px] border-violet-primary-normal data-[checked]:border-violet-primary-normal data-[checked]:bg-violet-primary-normal"
               />
-              <Label htmlFor="inline-send-digital" className="font-normal">
+              <span className="text-[13px] font-medium leading-snug text-[#524346]">
                 Email this gift card to the owner after checkout
-              </Label>
-            </div>
+              </span>
+            </label>
             <Button
               type="button"
-              className="w-full"
+              variant="brand"
+              className={DRAWER_PRIMARY_BUTTON_CLASS}
               disabled={
                 !giftCardOwnerId ||
                 !giftCardAmount ||
@@ -391,7 +406,7 @@ export function CheckoutInlineAddSection({
                 })
               }
             >
-              Add to checkout
+              {giftCardPending ? "Adding…" : "Add to checkout"}
             </Button>
           </>
         ) : null}
@@ -405,7 +420,7 @@ export function CheckoutInlineAddSection({
                 value={packageTemplateId}
                 onValueChange={setPackageTemplateId}
                 placeholder="Select package template"
-                triggerClassName={DRAWER_FIELD_CONTROL_CLASS}
+                triggerClassName={SALES_DRAWER_SELECT_TRIGGER_CLASS}
               />
             </div>
             <div className={DRAWER_FORM_FIELD_CLASS}>
@@ -415,22 +430,24 @@ export function CheckoutInlineAddSection({
                 value={packageOwnerId}
                 onValueChange={setPackageOwnerId}
                 placeholder="Select client"
-                triggerClassName={DRAWER_FIELD_CONTROL_CLASS}
+                triggerClassName={SALES_DRAWER_SELECT_TRIGGER_CLASS}
               />
             </div>
-            <div className="flex items-center gap-2">
+            <label className="flex min-h-11 cursor-pointer items-center gap-2.5 rounded-[var(--radius-md)] border border-[#E8E4DC] bg-white px-3">
               <Checkbox
                 id="inline-demo-package"
                 checked={isDemoPackage}
                 onCheckedChange={(checked) => setIsDemoPackage(checked === true)}
+                className="size-5 rounded-[4px] border-violet-primary-normal data-[checked]:border-violet-primary-normal data-[checked]:bg-violet-primary-normal"
               />
-              <Label htmlFor="inline-demo-package" className="font-normal">
+              <span className="text-[13px] font-medium leading-snug text-[#524346]">
                 Mark as demo
-              </Label>
-            </div>
+              </span>
+            </label>
             <Button
               type="button"
-              className="w-full"
+              variant="brand"
+              className={DRAWER_PRIMARY_BUTTON_CLASS}
               disabled={!packageTemplateId || !packageOwnerId || packagePending}
               onClick={() =>
                 onAddPackage({
@@ -440,7 +457,7 @@ export function CheckoutInlineAddSection({
                 })
               }
             >
-              Add to checkout
+              {packagePending ? "Adding…" : "Add to checkout"}
             </Button>
           </>
         ) : null}

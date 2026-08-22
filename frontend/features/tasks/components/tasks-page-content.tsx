@@ -13,12 +13,14 @@ import { SearchInput } from "@/components/forms/search-input";
 import { SearchableSelect } from "@/components/forms/searchable-select";
 import { EntityWorkspaceLayout } from "@/components/layout/entity-workspace-layout";
 import { TaskFormDialog } from "@/features/tasks/components/task-form-dialog";
+import { TasksMobileList } from "@/features/tasks/components/mobile/tasks-mobile-list";
 import { useTasksPageColumns } from "@/features/tasks/hooks/use-tasks-page-columns";
 import { Button } from "@/components/ui/button";
 import { ListPagination } from "@/components/ui/list-pagination";
 import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
 import { useListSearchParams } from "@/lib/hooks/use-list-search-params";
 import { useEntitySelection } from "@/lib/routing/use-entity-selection";
+import { useIsMobile } from "@/lib/hooks/use-mobile";
 import {
   WORKSPACE_ACTIVE_ROW_CLASS,
   WORKSPACE_TABLE_CLASS,
@@ -57,6 +59,7 @@ const priorityFilterItems = [
 
 export function TasksPageContent() {
   const queryClient = useQueryClient();
+  const isMobile = useIsMobile();
   const canAssign = useCan(PERMISSIONS["members.invite"]);
   const { params, page, setParams } = useListSearchParams(LIST_SCHEMA);
   const debouncedSearch = useDebouncedValue(params.search);
@@ -135,6 +138,29 @@ export function TasksPageContent() {
 
   return (
     <>
+      {isMobile ? (
+        <TasksMobileList
+          tasks={data?.items ?? []}
+          isLoading={isLoading}
+          search={params.search}
+          onSearchChange={(search) => setParams({ search, page: "1" })}
+          selectedId={selectedId}
+          onSelect={openTask}
+          onCreate={() => {
+            setEditing(null);
+            setDialogOpen(true);
+          }}
+          pagination={
+            data?.meta
+              ? {
+                  meta: data.meta,
+                  page,
+                  onPageChange: (p) => setParams({ page: String(p) }),
+                }
+              : undefined
+          }
+        />
+      ) : (
       <EntityWorkspaceLayout
         title="Tasks"
         description="Follow-up actions with due dates, linked to contacts and leads."
@@ -254,6 +280,7 @@ export function TasksPageContent() {
           className={WORKSPACE_TABLE_CLASS}
         />
       </EntityWorkspaceLayout>
+      )}
 
       <TaskFormDialog
         open={dialogOpen}

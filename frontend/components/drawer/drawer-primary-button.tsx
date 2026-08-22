@@ -1,7 +1,7 @@
 "use client";
 
-import { ActionButton } from "@/components/ui/action-button";
-import { APPOINTMENT_DRAWER_PRIMARY_BUTTON_CLASS } from "@/features/appointments/styles/appointment-drawer-tokens";
+import { Button } from "@/components/ui/button";
+import { DRAWER_PRIMARY_BUTTON_CLASS } from "@/lib/design/drawer-tokens";
 import { cn } from "@/lib/utils";
 
 export interface DrawerPrimaryButtonProps {
@@ -12,6 +12,10 @@ export interface DrawerPrimaryButtonProps {
   className?: string;
 }
 
+/**
+ * Full-width brand primary for drawer/dialog footers.
+ * Uses Button `variant="brand"` + `--control-height`.
+ */
 export function DrawerPrimaryButton({
   children,
   disabled,
@@ -20,13 +24,14 @@ export function DrawerPrimaryButton({
   className,
 }: DrawerPrimaryButtonProps) {
   return (
-    <ActionButton
+    <Button
       type={type}
-      className={cn(APPOINTMENT_DRAWER_PRIMARY_BUTTON_CLASS, className)}
+      variant="brand"
+      className={cn(DRAWER_PRIMARY_BUTTON_CLASS, className)}
       disabled={disabled}
       onClick={onClick}
     >
       {children}
-    </ActionButton>
+    </Button>
   );
 }

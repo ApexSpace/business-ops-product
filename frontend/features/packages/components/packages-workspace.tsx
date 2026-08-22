@@ -31,6 +31,7 @@ import {
   WORKSPACE_TABLE_CLASS,
 } from "@/lib/design/workspace-tokens";
 import { useEntitySelection } from "@/lib/routing/use-entity-selection";
+import { useIsMobile } from "@/lib/hooks/use-mobile";
 import { queryKeys } from "@/lib/query/keys";
 import { invalidatePackages } from "@/lib/query/invalidation";
 import { listContacts } from "@/features/contacts/api/contacts.api";
@@ -48,6 +49,7 @@ import {
   PackageDetailPanel,
   packageDisplayName,
 } from "@/features/packages/components/package-detail-panel";
+import { PackagesMobileList } from "@/features/packages/components/mobile/packages-mobile-list";
 import { usePackageStaffPermissions } from "@/features/packages/hooks/use-package-staff-permissions";
 import type { ClientPackageListItem } from "@/features/packages/types";
 
@@ -60,6 +62,7 @@ export function PackagesWorkspace() {
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
   const { canManage } = usePackageStaffPermissions();
+  const isMobile = useIsMobile();
   const {
     selectedId,
     isOpen,
@@ -348,6 +351,37 @@ export function PackagesWorkspace() {
 
   return (
     <>
+      {isMobile ? (
+        listQuery.isError ? (
+          <ApiErrorState
+            error={listQuery.error}
+            onRetry={() => void listQuery.refetch()}
+          />
+        ) : (
+          <PackagesMobileList
+            packages={packages}
+            isLoading={listQuery.isLoading}
+            search={search}
+            onSearchChange={(value) => {
+              setSearch(value);
+              setPage(1);
+            }}
+            selectedId={selectedId}
+            onSelect={(row) => setSelectedId(row.id)}
+            onCreate={canManage ? () => setAddOpen(true) : undefined}
+            canCreate={canManage}
+            pagination={
+              listQuery.data?.meta && packages.length > 0
+                ? {
+                    meta: listQuery.data.meta,
+                    page,
+                    onPageChange: setPage,
+                  }
+                : undefined
+            }
+          />
+        )
+      ) : (
       <EntityWorkspaceLayout
         title="Packages"
         description="Assign prepaid service packages to clients."
@@ -431,6 +465,7 @@ export function PackagesWorkspace() {
           />
         )}
       </EntityWorkspaceLayout>
+      )}
 
       <EntityDetailDrawer
         open={isOpen}

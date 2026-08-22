@@ -14,7 +14,7 @@ function primaryLineItemTitle(
 
 /** Display name for estimates table (quote name column). */
 export function getEstimateQuoteName(estimate: Estimate): string {
-  const fromLines = primaryLineItemTitle(estimate.items);
+  const fromLines = primaryLineItemTitle(estimate.items ?? []);
   if (fromLines) return fromLines;
   if (estimate.workItem?.title?.trim()) return estimate.workItem.title.trim();
   if (estimate.contact?.label?.trim()) return estimate.contact.label.trim();
@@ -23,7 +23,7 @@ export function getEstimateQuoteName(estimate: Estimate): string {
 
 /** Display name for invoices table (invoice name column). */
 export function getInvoiceDisplayName(invoice: Invoice): string {
-  const fromLines = primaryLineItemTitle(invoice.items);
+  const fromLines = primaryLineItemTitle(invoice.items ?? []);
   if (fromLines) return fromLines;
   if (invoice.workItem?.title?.trim()) return invoice.workItem.title.trim();
   if (invoice.contact?.label?.trim()) return invoice.contact.label.trim();

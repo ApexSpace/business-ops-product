@@ -4,6 +4,7 @@ import { Boxes, MoreHorizontal, Pencil } from "lucide-react";
 import { DateTime } from "luxon";
 import { ApiErrorState } from "@/components/data-display/api-error-state";
 import { EmptyState } from "@/components/data-display/empty-state";
+import { LoadingState } from "@/components/data-display/loading-state";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -366,7 +367,7 @@ export function PackageDetailPanel({
           />
         </div>
       ) : isLoading || !detail ? (
-        <p className="p-6 text-sm text-muted-foreground">Loading package…</p>
+        <LoadingState label="Loading package…" className="p-6 py-10" />
       ) : isError ? (
         <ApiErrorState error={error} onRetry={onRetry} />
       ) : (

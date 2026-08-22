@@ -1,10 +1,10 @@
 import { cn } from "@/lib/utils";
 import {
-  APPOINTMENT_DRAWER_ICON_CHEVRON,
-  APPOINTMENT_DRAWER_ICON_GEAR,
-  APPOINTMENT_DRAWER_ICON_MUTED,
-  APPOINTMENT_DRAWER_PLUS_BUTTON_CLASS,
-} from "@/features/appointments/styles/appointment-drawer-tokens";
+  DRAWER_ICON_CHEVRON,
+  DRAWER_ICON_GEAR,
+  DRAWER_ICON_MUTED,
+  DRAWER_PLUS_BUTTON_CLASS,
+} from "@/lib/design/drawer-tokens";
 
 type IconProps = {
   className?: string;
@@ -20,7 +20,7 @@ export function DrawerCalendarIcon({ className }: IconProps) {
       xmlns="http://www.w3.org/2000/svg"
       aria-hidden
       className={cn("block size-[18px] h-5 w-[18px] shrink-0", className)}
-      style={{ color: APPOINTMENT_DRAWER_ICON_MUTED }}
+      style={{ color: DRAWER_ICON_MUTED }}
     >
       <path
         d="M14.5 2.5h-1V1.25a.75.75 0 0 0-1.5 0V2.5h-5.5V1.25a.75.75 0 0 0-1.5 0V2.5h-1A2.5 2.5 0 0 0 1.5 5v11.5A2.5 2.5 0 0 0 4 19h10a2.5 2.5 0 0 0 2.5-2.5V5A2.5 2.5 0 0 0 14.5 2.5Zm1 14A1 1 0 0 1 14.5 17.5h-11A1 1 0 0 1 2.5 16.5V8h13v8.5Zm0-10h-13V5A1 1 0 0 1 3.5 4h1v.75a.75.75 0 0 0 1.5 0V4h5.5v.75a.75.75 0 0 0 1.5 0V4h1A1 1 0 0 1 15.5 5v1.5Z"
@@ -39,7 +39,7 @@ export function DrawerClockIcon({ className }: IconProps) {
       xmlns="http://www.w3.org/2000/svg"
       aria-hidden
       className={cn("block size-[18px] shrink-0", className)}
-      style={{ color: APPOINTMENT_DRAWER_ICON_MUTED }}
+      style={{ color: DRAWER_ICON_MUTED }}
     >
       <path
         d="M9 1.5a7.5 7.5 0 1 0 0 15a7.5 7.5 0 0 0 0-15Zm0 13.5A6 6 0 1 1 9 3a6 6 0 0 1 0 12Zm.75-9.25a.75.75 0 0 0-1.5 0V9c0 .2.08.39.22.53l2.25 2.25a.75.75 0 1 0 1.06-1.06L9.75 8.69V5.75Z"
@@ -68,7 +68,7 @@ export function DrawerChevronIcon({
       xmlns="http://www.w3.org/2000/svg"
       aria-hidden
       className={cn("block shrink-0", rotate, className)}
-      style={{ color: APPOINTMENT_DRAWER_ICON_CHEVRON }}
+      style={{ color: DRAWER_ICON_CHEVRON }}
     >
       <path
         d="M1.5 1.5L6.5 7L1.5 12.5"
@@ -106,7 +106,7 @@ export function DrawerSettingsIcon({ className }: IconProps) {
       xmlns="http://www.w3.org/2000/svg"
       aria-hidden
       className={cn("block size-5 shrink-0", className)}
-      style={{ color: APPOINTMENT_DRAWER_ICON_GEAR }}
+      style={{ color: DRAWER_ICON_GEAR }}
     >
       <path
         d="M19.14 12.94c.04-.31.06-.63.06-.94s-.02-.63-.06-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.48.48 0 0 0-.48-.41h-3.84a.48.48 0 0 0-.48.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96a.49.49 0 0 0-.59.22L2.74 8.87a.48.48 0 0 0 .12.61l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94L2.86 14.52a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.48-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32a.49.49 0 0 0-.12-.61l-2.01-1.58ZM12 15.6A3.6 3.6 0 1 1 12 8.4a3.6 3.6 0 0 1 0 7.2Z"
@@ -164,7 +164,7 @@ export function DrawerPhoneIcon({ className }: IconProps) {
       xmlns="http://www.w3.org/2000/svg"
       aria-hidden
       className={cn("block shrink-0", className)}
-      style={{ color: APPOINTMENT_DRAWER_ICON_MUTED }}
+      style={{ color: DRAWER_ICON_MUTED }}
     >
       <path
         d="M4.4 1.75c.3-.55.98-.74 1.5-.42l1.7 1.05c.48.3.66.91.42 1.4L7.3 5.4a.75.75 0 0 0 .08.8l1.42 1.9a.75.75 0 0 0 .8.27l1.82-.6c.52-.17 1.08.1 1.3.6l.85 1.9c.25.55.05 1.2-.47 1.48l-1.55.85a3.5 3.5 0 0 1-1.7.2A9.3 9.3 0 0 1 2.5 5.9a3.5 3.5 0 0 1 .2-1.7l.85-1.55c.2-.37.55-.6.95-.7.13-.03.26-.05.4-.05.17 0 .33.02.5.1Z"
@@ -184,7 +184,7 @@ export function DrawerMailIcon({ className }: IconProps) {
       xmlns="http://www.w3.org/2000/svg"
       aria-hidden
       className={cn("block shrink-0", className)}
-      style={{ color: APPOINTMENT_DRAWER_ICON_MUTED }}
+      style={{ color: DRAWER_ICON_MUTED }}
     >
       <path
         d="M2.5 3.5A1.5 1.5 0 0 0 1 5v6a1.5 1.5 0 0 0 1.5 1.5h11A1.5 1.5 0 0 0 15 11V5a1.5 1.5 0 0 0-1.5-1.5h-11Zm.3 1.5 5.05 3.37a.75.75 0 0 0 .8 0L13.7 5H2.8Zm11.2 1.12-4.9 3.28a2.25 2.25 0 0 1-2.4 0L1.8 6.62V11c0 .28.22.5.5.5h11a.5.5 0 0 0 .5-.5V6.62Z"
@@ -254,7 +254,7 @@ export function DrawerPlusSquareButton({
         }
         onClick?.();
       }}
-      className={cn(APPOINTMENT_DRAWER_PLUS_BUTTON_CLASS, className)}
+      className={cn(DRAWER_PLUS_BUTTON_CLASS, className)}
     >
       <DrawerPlusIcon className="size-4 text-white" />
     </button>

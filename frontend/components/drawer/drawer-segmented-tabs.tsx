@@ -2,10 +2,10 @@
 
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  APPOINTMENT_DRAWER_TYPE_TAB_ACTIVE_CLASS,
-  APPOINTMENT_DRAWER_TYPE_TAB_INACTIVE_CLASS,
-  APPOINTMENT_DRAWER_TYPE_TABS_CLASS,
-} from "@/features/appointments/styles/appointment-drawer-tokens";
+  DRAWER_TYPE_TAB_ACTIVE_CLASS,
+  DRAWER_TYPE_TAB_INACTIVE_CLASS,
+  DRAWER_TYPE_TABS_CLASS,
+} from "@/lib/design/drawer-tokens";
 import { cn } from "@/lib/utils";
 
 export interface DrawerSegmentedTabOption {
@@ -31,7 +31,7 @@ export function DrawerSegmentedTabs({
 
   return (
     <Tabs value={value} className={cn("w-full gap-0", className)}>
-      <TabsList className={APPOINTMENT_DRAWER_TYPE_TABS_CLASS}>
+      <TabsList className={DRAWER_TYPE_TABS_CLASS}>
         {options.map((option) => (
           <TabsTrigger
             key={option.value}
@@ -39,8 +39,8 @@ export function DrawerSegmentedTabs({
             className={cn(
               textClass,
               value === option.value
-                ? APPOINTMENT_DRAWER_TYPE_TAB_ACTIVE_CLASS
-                : APPOINTMENT_DRAWER_TYPE_TAB_INACTIVE_CLASS,
+                ? DRAWER_TYPE_TAB_ACTIVE_CLASS
+                : DRAWER_TYPE_TAB_INACTIVE_CLASS,
             )}
             onClick={option.onClick}
           >

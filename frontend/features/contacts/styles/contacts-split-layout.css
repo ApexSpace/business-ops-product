@@ -1,45 +1,34 @@
-/* Layout styles for contact detail/profile panels. Colors/typography use global theme tokens. */
+/* Layout styles for contact detail/profile panels.
+ * Brand accents use locked violet-primary tokens (not per-business --primary).
+ */
 
 .contacts-panel-card,
 .contacts-detail-card {
-  --cs-line: var(--border);
-  --cs-surface: var(--card);
-  --cs-canvas: var(--muted);
-  --cs-brand: var(--primary);
-  --cs-brand-soft: var(--primary-tint);
+  --cs-line: #eee8e0;
+  --cs-surface: #ffffff;
+  --cs-canvas: #f8f7fc;
+  --cs-brand: var(--pc-violet-primary-normal);
+  --cs-brand-soft: var(--pc-violet-primary-surface);
   --cs-danger: var(--destructive);
   --cs-danger-soft: var(--destructive-subtle);
   --cs-amber: var(--warning);
   --cs-green: var(--success);
-  --cs-radius: var(--radius-card, 0.75rem);
-  --cs-shadow: var(--shadow-sm-value);
+  --cs-radius: 12px;
+  --cs-shadow: 0 4px 12px rgba(28, 27, 46, 0.04);
 }
 
 .contacts-panel-card {
-
   overflow: hidden;
-
   border: 1px solid var(--cs-line);
-
   border-radius: var(--cs-radius);
-
   background: var(--cs-surface);
-
   box-shadow: var(--cs-shadow);
-
 }
-
-
 
 .contacts-profile-card [data-slot="avatar-fallback"] {
-
   background: var(--cs-brand-soft);
-
   color: var(--cs-brand);
-
 }
-
-
 
 .contacts-detail-card {
   display: flex;
@@ -51,24 +40,14 @@
 }
 
 .contacts-detail-empty {
-
   display: flex;
-
   min-height: 560px;
-
   min-width: 0;
-
   flex: 1;
-
   align-items: center;
-
   justify-content: center;
-
   padding: 24px;
-
 }
-
-
 
 .contacts-profile-card {
   display: flex;
@@ -83,230 +62,121 @@
   border-right: 1px solid var(--cs-line);
 }
 
-
-
 .contacts-profile-identity {
-
   display: flex;
-
   flex-direction: column;
-
   align-items: stretch;
-
   gap: 0;
-
 }
-
-
 
 .contacts-profile-actions {
-
   display: flex;
-
   gap: 6px;
-
   margin-top: 0;
-
   width: auto;
-
 }
-
-
 
 .contacts-profile-facts {
-
   display: flex;
-
   width: 100%;
-
   flex-direction: column;
-
   gap: 16px;
-
   margin-top: 20px;
-
   border-top: 1px solid var(--cs-line);
-
   padding-top: 20px;
-
 }
-
-
 
 .contacts-profile-notes {
-
   width: 100%;
-
   margin-top: 20px;
-
   border-top: 1px solid var(--cs-line);
-
   padding-top: 20px;
-
 }
-
-
 
 .contacts-records-card {
-
   display: flex;
-
   min-width: 0;
-
   flex: 1;
-
   flex-direction: column;
-
   overflow: hidden;
-
   padding: 24px;
-
 }
-
-
 
 .contacts-d2-tabbar-wrap {
-
   position: relative;
-
   min-width: 0;
-
   flex-shrink: 0;
-
-  margin: 0 -8px 18px;
-
+  margin: 0 -8px 16px;
   padding: 0 8px;
-
 }
-
-
 
 .contacts-d2-tabbar-wrap::before,
-
 .contacts-d2-tabbar-wrap::after {
-
   content: "";
-
   position: absolute;
-
   top: 0;
-
   bottom: 12px;
-
   z-index: 1;
-
   width: 20px;
-
   pointer-events: none;
-
 }
-
-
 
 .contacts-d2-tabbar-wrap::before {
-
   left: 0;
-
   background: linear-gradient(to right, var(--cs-surface), transparent);
-
 }
-
-
 
 .contacts-d2-tabbar-wrap::after {
-
   right: 0;
-
   background: linear-gradient(to left, var(--cs-surface), transparent);
-
 }
-
-
 
 .contacts-d2-tabbar {
-
   display: flex;
-
   gap: 20px;
-
   overflow-x: auto;
-
-  border-bottom: 1px solid var(--cs-line);
-
+  border-bottom: 1px solid #e3e3e3;
   padding-bottom: 0;
-
   scrollbar-width: none;
-
   -webkit-overflow-scrolling: touch;
-
 }
-
-
 
 .contacts-d2-tabbar::-webkit-scrollbar {
-
   display: none;
-
 }
-
-
 
 .contacts-d2-tab {
-
   flex-shrink: 0;
-
   border: none;
-
   border-bottom: 2px solid transparent;
-
   background: transparent;
-
-  padding: 0 0 12px;
-
-  color: var(--muted-foreground);
-
+  padding: 0 0 10px;
+  color: #6b6b6b;
   cursor: pointer;
-
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1;
   white-space: nowrap;
-
   transition:
-
     color 0.15s ease,
-
     border-color 0.15s ease;
-
 }
-
-
 
 .contacts-d2-tab.active {
-
   border-color: var(--cs-brand);
-
   color: var(--cs-brand);
-
+  font-weight: 600;
 }
-
-
 
 .contacts-d2-tabpanel {
-
   min-height: 0;
-
   min-width: 0;
-
   flex: 1;
-
   overflow-y: auto;
-
   overflow-x: hidden;
-
 }
 
-
-
 @media (max-width: 900px) {
-
   .contacts-detail-card {
     flex-direction: column;
     min-height: auto;
@@ -325,18 +195,12 @@
 }
 
 @media (max-width: 640px) {
-
   .contacts-d2-tabbar {
-
     gap: 16px;
-
   }
-
 }
 
-
-
-/* Drawer split — profile left, records right (Mangomint-style) */
+/* ── Drawer split — Figma Client Details + Timeline ── */
 .contacts-detail-card--drawer-split {
   display: flex;
   min-height: 0;
@@ -347,18 +211,60 @@
   background: transparent;
 }
 
+/* Left profile — Figma ~360 content width, pad 16/24, gap 24 */
 .contacts-drawer-profile-panel {
   display: flex;
-  width: 260px;
-  min-width: 240px;
+  width: min(100%, 360px);
+  min-width: 280px;
   flex-shrink: 0;
   flex-direction: column;
+  gap: 24px;
   overflow-x: hidden;
   overflow-y: auto;
   border-right: 1px solid var(--cs-line);
-  background: var(--background);
-  padding: 20px 18px 24px;
+  background: #ffffff;
+  padding: 16px 24px 24px;
   scrollbar-width: thin;
+}
+
+.contacts-drawer-profile-identity {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 4px;
+}
+
+.contacts-drawer-profile-fields {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.contacts-drawer-profile-fields > *:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.contacts-drawer-profile-field-row {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.375rem;
+  border-bottom: 1px solid var(--cs-line);
+  padding-top: 0.5rem;
+  padding-bottom: 0.375rem;
+}
+
+.contacts-drawer-profile-note {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  align-items: flex-start;
+  padding-top: 0;
 }
 
 .contacts-drawer-records-panel {
@@ -368,14 +274,23 @@
   flex: 1;
   flex-direction: column;
   overflow: hidden;
-  background: color-mix(in oklch, var(--muted) 28%, var(--background));
+  background: var(--cs-canvas);
 }
 
 .contacts-drawer-records-panel .contacts-d2-tabbar-wrap {
   flex-shrink: 0;
   margin: 0;
-  padding: 16px 20px 0;
-  background: color-mix(in oklch, var(--muted) 28%, var(--background));
+  padding: 8px 24px 0;
+  background: var(--cs-canvas);
+}
+
+.contacts-drawer-records-panel .contacts-d2-tabbar-wrap::before,
+.contacts-drawer-records-panel .contacts-d2-tabbar-wrap::after {
+  background: linear-gradient(to right, var(--cs-canvas), transparent);
+}
+
+.contacts-drawer-records-panel .contacts-d2-tabbar-wrap::after {
+  background: linear-gradient(to left, var(--cs-canvas), transparent);
 }
 
 .contacts-drawer-records-panel .contacts-d2-tabpanel {
@@ -394,11 +309,36 @@
   flex-direction: column;
 }
 
+.contacts-drawer-timeline-composer {
+  display: flex;
+  flex-shrink: 0;
+  flex-direction: column;
+  gap: 10px;
+  border-bottom: 1px solid var(--cs-line);
+  background: var(--cs-canvas);
+  padding: 14px 24px 12px;
+}
+
+.contacts-drawer-timeline-date {
+  display: inline-flex;
+  width: fit-content;
+  max-width: 100%;
+  align-items: center;
+  gap: 6px;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  color: #1a1a1a;
+  cursor: default;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
 .contacts-drawer-records-filter {
   flex-shrink: 0;
-  border-bottom: 1px solid var(--cs-line);
-  background: color-mix(in oklch, var(--muted) 28%, var(--background));
-  padding: 10px 20px 14px;
+  background: var(--cs-canvas);
+  padding: 10px 24px 2px;
 }
 
 .contacts-drawer-tab-scroll {
@@ -409,7 +349,7 @@
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding: 12px 20px 24px;
+  padding: 12px 24px 24px;
   scrollbar-width: thin;
 }
 
@@ -428,18 +368,32 @@
   .contacts-drawer-profile-panel {
     width: 100%;
     min-width: 0;
-    max-height: min(40vh, 360px);
+    max-height: min(42vh, 380px);
     border-right: none;
     border-bottom: 1px solid var(--cs-line);
+    padding: 16px 20px 20px;
+    gap: 20px;
+  }
+
+  .contacts-drawer-timeline-composer,
+  .contacts-drawer-records-filter,
+  .contacts-drawer-tab-scroll {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .contacts-drawer-records-panel .contacts-d2-tabbar-wrap {
+    padding-left: 16px;
+    padding-right: 16px;
   }
 }
 
 /* Drawer variant — single-column layout inside FormSheet */
 .contacts-detail-card--drawer {
-  --cs-line: var(--border);
-  --cs-surface: var(--card);
-  --cs-brand: var(--primary);
-  --cs-brand-soft: var(--primary-tint);
+  --cs-line: #eee8e0;
+  --cs-surface: #ffffff;
+  --cs-brand: var(--pc-violet-primary-normal);
+  --cs-brand-soft: var(--pc-violet-primary-surface);
 
   display: flex;
   min-height: 0;
@@ -494,4 +448,3 @@
   padding-bottom: 28px;
   scrollbar-width: thin;
 }
-

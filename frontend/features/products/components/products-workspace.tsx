@@ -9,7 +9,6 @@ import {
   Package,
   Pencil,
   Plus,
-  SlidersHorizontal,
   Trash2,
   Upload,
 } from "lucide-react";
@@ -18,9 +17,11 @@ import { EntityDetailDrawer } from "@/components/layout/entity-detail-drawer";
 import { EntityDetailFooter } from "@/components/layout/entity-detail-footer";
 import { EntityDetailSection } from "@/components/layout/entity-detail-section";
 import { EntityWorkspaceLayout } from "@/components/layout/entity-workspace-layout";
+import { ListFilterButton } from "@/components/layout/list-filter-button";
 import { ListPrimaryAction } from "@/components/layout/list-primary-action";
 import { SearchInput } from "@/components/forms/search-input";
 import { DataTable, type DataTableColumn } from "@/components/data-display/data-table";
+import { LoadingState } from "@/components/data-display/loading-state";
 import { ListPagination } from "@/components/ui/list-pagination";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -40,29 +41,17 @@ import { FormSheetSection } from "@/components/forms/form-sheet-section";
 import {
   DRAWER_FOOTER_ACTIONS_CLASS,
   DRAWER_FOOTER_BUTTON_CLASS,
-  DRAWER_SHEET_CLASS,
-  DRAWER_SHEET_CONTENT_CLASS,
-  DRAWER_SHEET_DESCRIPTION_CLASS,
-  DRAWER_SHEET_HEADER_CLASS,
-  DRAWER_SHEET_TITLE_CLASS,
 } from "@/components/forms/drawer-sheet";
 import {
-  FINANCIAL_DRAWER_CONTENT_CLASS,
-  FINANCIAL_DRAWER_DESCRIPTION_CLASS,
-  FINANCIAL_DRAWER_FOOTER_CLASS,
-  FINANCIAL_DRAWER_HEADER_CLASS,
-  FINANCIAL_DRAWER_SHEET_CLASS,
-  FINANCIAL_DRAWER_TITLE_CLASS,
-} from "@/features/payments/components/financial-form-drawer-shell";
+  FORM_DRAWER_CONTENT_COMPACT_CLASS,
+  FORM_DRAWER_DESCRIPTION_CLASS,
+  FORM_DRAWER_FOOTER_CLASS,
+  FORM_DRAWER_HEADER_COMPACT_CLASS,
+  FORM_DRAWER_SHEET_FINANCIAL_CLASS,
+  FORM_DRAWER_TITLE_COMPACT_CLASS,
+} from "@/components/forms/form-drawer-shell";
 import { ActionButton } from "@/components/ui/action-button";
-import {
-  Sheet,
-  SheetBody,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
+import { DrawerShell } from "@/components/layout/drawer-shell";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -81,8 +70,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { cn } from "@/lib/utils";
 import { useEntitySelection } from "@/lib/routing/use-entity-selection";
+import { useIsMobile } from "@/lib/hooks/use-mobile";
 import {
   WORKSPACE_ACTIVE_ROW_CLASS,
   WORKSPACE_TABLE_CLASS,
@@ -93,6 +82,7 @@ import { useProductDetail } from "@/features/products/hooks/use-product-detail";
 import { useProductCategories } from "@/features/products/hooks/use-product-categories";
 import { useProductMutations } from "@/features/products/hooks/use-product-mutations";
 import { useProductStaffPermissions } from "@/features/products/hooks/use-product-staff-permissions";
+import { ProductsMobileList } from "@/features/products/components/mobile/products-mobile-list";
 import { ProductOptionsEditor } from "@/features/products/components/product-options-editor";
 import { ProductImagesPanel } from "@/features/products/components/product-images-panel";
 import {
@@ -214,6 +204,7 @@ export function ProductsWorkspace() {
   const [newCategoryName, setNewCategoryName] = useState("");
   const [categoriesOpen, setCategoriesOpen] = useState(false);
   const { canManage } = useProductStaffPermissions();
+  const isMobile = useIsMobile();
 
   const listFilters = useMemo(
     () => ({
@@ -317,6 +308,34 @@ export function ProductsWorkspace() {
 
   return (
     <>
+      {isMobile ? (
+        <ProductsMobileList
+          products={products}
+          isLoading={isLoading}
+          search={search}
+          onSearchChange={(value) => {
+            setSearch(value);
+            setPage(1);
+          }}
+          selectedId={selectedId}
+          onSelect={(row) => {
+            setDrawerMode("view");
+            setSelectedId(row.id);
+          }}
+          onOpenOptions={canManage ? () => setOptionsOpen(true) : undefined}
+          onCreate={canManage ? openCreate : undefined}
+          canCreate={canManage}
+          pagination={
+            listData?.meta && products.length > 0
+              ? {
+                  meta: listData.meta,
+                  page,
+                  onPageChange: setPage,
+                }
+              : undefined
+          }
+        />
+      ) : (
       <EntityWorkspaceLayout
         title="Products"
         description="Manage catalog products, pricing, and inventory."
@@ -331,22 +350,18 @@ export function ProductsWorkspace() {
             className="min-w-0 flex-1"
           />
         }
+        filters={
+          canManage ? (
+            <ListFilterButton
+              aria-label="Product options"
+              onClick={() => setOptionsOpen(true)}
+            />
+          ) : undefined
+        }
         actions={
-          <>
-            {canManage ? (
-              <Button
-                variant="outline"
-                size="icon-sm"
-                aria-label="Options"
-                onClick={() => setOptionsOpen(true)}
-              >
-                <SlidersHorizontal className="size-4" />
-              </Button>
-            ) : null}
-            {canManage ? (
-              <ListPrimaryAction label="New Product" onClick={openCreate} />
-            ) : null}
-          </>
+          canManage ? (
+            <ListPrimaryAction label="New Product" onClick={openCreate} />
+          ) : null
         }
         footer={
           listData?.meta && products.length > 0 ? (
@@ -387,6 +402,7 @@ export function ProductsWorkspace() {
           className={WORKSPACE_TABLE_CLASS}
         />
       </EntityWorkspaceLayout>
+      )}
 
       <EntityDetailDrawer
         open={isOpen}
@@ -501,25 +517,14 @@ export function ProductsWorkspace() {
         createPending={mutations.create.isPending}
       />
 
-      <Sheet open={optionsOpen} onOpenChange={setOptionsOpen}>
-        <SheetContent
-          side="right"
-          className={cn(
-            "flex h-[100dvh] max-h-[100dvh] flex-col gap-0 p-0",
-            DRAWER_SHEET_CLASS,
-          )}
-        >
-          <SheetHeader className={DRAWER_SHEET_HEADER_CLASS}>
-            <SheetTitle className={DRAWER_SHEET_TITLE_CLASS}>
-              Product options
-            </SheetTitle>
-            <SheetDescription className={DRAWER_SHEET_DESCRIPTION_CLASS}>
-              Manage categories and export your catalog.
-            </SheetDescription>
-          </SheetHeader>
-          <SheetBody className="min-h-0 flex-1 overflow-y-auto !p-0">
-            <div className={DRAWER_SHEET_CONTENT_CLASS}>
-            <div className="space-y-3">
+      <DrawerShell
+        open={optionsOpen}
+        onOpenChange={setOptionsOpen}
+        width="compact"
+        title="Product options"
+        description="Manage categories and export your catalog."
+      >
+        <div className="space-y-3">
               <Button
                 variant="outline"
                 className="h-auto w-full justify-start gap-3 px-4 py-3"
@@ -570,30 +575,16 @@ export function ProductsWorkspace() {
                 Use column headers in the table to sort the current list.
               </p>
             </div>
-            </div>
-          </SheetBody>
-        </SheetContent>
-      </Sheet>
+      </DrawerShell>
 
-      <Sheet open={categoriesOpen} onOpenChange={setCategoriesOpen}>
-        <SheetContent
-          side="right"
-          className={cn(
-            "flex h-[100dvh] max-h-[100dvh] flex-col gap-0 p-0",
-            DRAWER_SHEET_CLASS,
-          )}
-        >
-          <SheetHeader className={DRAWER_SHEET_HEADER_CLASS}>
-            <SheetTitle className={DRAWER_SHEET_TITLE_CLASS}>
-              Product categories
-            </SheetTitle>
-            <SheetDescription className={DRAWER_SHEET_DESCRIPTION_CLASS}>
-              Add, reorder, or remove product categories.
-            </SheetDescription>
-          </SheetHeader>
-          <SheetBody className="min-h-0 flex-1 overflow-y-auto !p-0">
-            <div className={DRAWER_SHEET_CONTENT_CLASS}>
-            <div className="space-y-4">
+      <DrawerShell
+        open={categoriesOpen}
+        onOpenChange={setCategoriesOpen}
+        width="compact"
+        title="Product categories"
+        description="Add, reorder, or remove product categories."
+      >
+        <div className="space-y-4">
               <div className="flex gap-2">
                 <Input
                   placeholder="New category name"
@@ -667,10 +658,7 @@ export function ProductsWorkspace() {
                 ))}
               </ul>
             </div>
-            </div>
-          </SheetBody>
-        </SheetContent>
-      </Sheet>
+      </DrawerShell>
 
       <AlertDialog
         open={!!deleteId}
@@ -1151,7 +1139,11 @@ function ProductProfileFormFields({
               members:
             </p>
             {teamLoading ? (
-              <p className="text-xs text-muted-foreground">Loading team…</p>
+              <LoadingState
+                variant="inline"
+                label="Loading team…"
+                className="text-xs"
+              />
             ) : activeTeamMembers.length > 0 ? (
               <ul className="space-y-1 text-sm">
                 {activeTeamMembers.map((member) => {
@@ -1290,12 +1282,13 @@ function ProductFormSheet({
       onOpenChange={handleOpenChange}
       title="Add product"
       description="Create a new product for your catalog."
-      className={FINANCIAL_DRAWER_SHEET_CLASS}
-      headerClassName={FINANCIAL_DRAWER_HEADER_CLASS}
-      titleClassName={FINANCIAL_DRAWER_TITLE_CLASS}
-      descriptionClassName={FINANCIAL_DRAWER_DESCRIPTION_CLASS}
-      bodyClassName={FINANCIAL_DRAWER_CONTENT_CLASS}
-      footerClassName={FINANCIAL_DRAWER_FOOTER_CLASS}
+      className={FORM_DRAWER_SHEET_FINANCIAL_CLASS}
+      width="wide"
+      headerClassName={FORM_DRAWER_HEADER_COMPACT_CLASS}
+      titleClassName={FORM_DRAWER_TITLE_COMPACT_CLASS}
+      descriptionClassName={FORM_DRAWER_DESCRIPTION_CLASS}
+      bodyClassName={FORM_DRAWER_CONTENT_COMPACT_CLASS}
+      footerClassName={FORM_DRAWER_FOOTER_CLASS}
       footer={
         <div className={DRAWER_FOOTER_ACTIONS_CLASS}>
           <ActionButton

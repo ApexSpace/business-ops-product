@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { LoadingState } from "@/components/data-display/loading-state";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -52,7 +53,7 @@ export function MemberWorkHoursTab({ userId, canManage }: Props) {
   });
 
   if (scheduleQuery.isLoading) {
-    return <p className="text-sm text-muted-foreground">Loading…</p>;
+    return <LoadingState variant="inline" />;
   }
 
   return (

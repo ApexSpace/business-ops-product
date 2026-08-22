@@ -33,6 +33,7 @@ import {
   listOffers,
 } from "@/features/offers/api/offers.api";
 import { OfferDetailPanel } from "@/features/offers/components/offer-detail-panel";
+import { OffersMobileList } from "@/features/offers/components/mobile/offers-mobile-list";
 import { useOfferListColumns } from "@/features/offers/components/offer-list-columns";
 import { useOfferStaffPermissions } from "@/features/offers/hooks/use-offer-staff-permissions";
 import {
@@ -47,12 +48,14 @@ import {
 import { invalidateOffers } from "@/lib/query/invalidation";
 import { queryKeys } from "@/lib/query/keys";
 import { useEntitySelection } from "@/lib/routing/use-entity-selection";
+import { useIsMobile } from "@/lib/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 
 const PAGE_LIMIT = 25;
 
 export function OffersScreen() {
   const queryClient = useQueryClient();
+  const isMobile = useIsMobile();
   const {
     selectedId,
     tab,
@@ -152,6 +155,37 @@ export function OffersScreen() {
 
   return (
     <>
+      {isMobile ? (
+        offersQuery.isError ? (
+          <ApiErrorState
+            error={offersQuery.error}
+            onRetry={() => void offersQuery.refetch()}
+          />
+        ) : (
+          <OffersMobileList
+            offers={offers}
+            isLoading={offersQuery.isLoading}
+            search={search}
+            onSearchChange={(value) => {
+              setSearch(value);
+              setPage(1);
+            }}
+            selectedId={selectedId}
+            onSelect={(offer) => setSelectedId(offer.id)}
+            onCreate={canManage ? () => setCreateOpen(true) : undefined}
+            canCreate={canManage}
+            pagination={
+              offersQuery.data?.meta && offers.length > 0
+                ? {
+                    meta: offersQuery.data.meta,
+                    page,
+                    onPageChange: setPage,
+                  }
+                : undefined
+            }
+          />
+        )
+      ) : (
       <EntityWorkspaceLayout
         title="Offers"
         description="Create and manage promotional offers and discounts."
@@ -231,6 +265,7 @@ export function OffersScreen() {
           />
         )}
       </EntityWorkspaceLayout>
+      )}
 
       <EntityDetailDrawer
         open={isOpen}

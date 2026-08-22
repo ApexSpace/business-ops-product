@@ -8,11 +8,11 @@ import {
 } from "@/components/ui/select";
 import { DrawerChevronIcon, DrawerClockIcon } from "@/components/drawer/drawer-icons";
 import {
-  APPOINTMENT_DRAWER_BOOKING_DATETIME_CELL_CLASS,
-  APPOINTMENT_DRAWER_FIELD_CLASS,
-  APPOINTMENT_DRAWER_FIELD_LABEL_CLASS,
-  APPOINTMENT_DRAWER_SELECT_TRIGGER_CLASS,
-} from "@/features/appointments/styles/appointment-drawer-tokens";
+  DRAWER_BOOKING_DATETIME_CELL_CLASS,
+  DRAWER_FIELD_CLASS,
+  DRAWER_FIELD_LABEL_CLASS,
+  DRAWER_SELECT_TRIGGER_CLASS,
+} from "@/lib/design/drawer-tokens";
 import { cn } from "@/lib/utils";
 
 export interface DrawerTimeFieldProps {
@@ -42,14 +42,14 @@ export function DrawerTimeField({
 }: DrawerTimeFieldProps) {
   if (readOnly || !onValueChange) {
     return (
-      <div className={cn(APPOINTMENT_DRAWER_BOOKING_DATETIME_CELL_CLASS, className)}>
-        <span className={APPOINTMENT_DRAWER_FIELD_LABEL_CLASS}>Time</span>
+      <div className={cn(DRAWER_BOOKING_DATETIME_CELL_CLASS, className)}>
+        <span className={DRAWER_FIELD_LABEL_CLASS}>Time</span>
         <button
           type="button"
           onClick={onClick}
           disabled={!onClick}
           className={cn(
-            APPOINTMENT_DRAWER_FIELD_CLASS,
+            DRAWER_FIELD_CLASS,
             "flex w-full items-center gap-2 text-left",
             onClick ? "cursor-pointer hover:bg-violet-primary-surface/40" : "cursor-default",
           )}
@@ -64,8 +64,8 @@ export function DrawerTimeField({
   }
 
   return (
-    <div className={cn(APPOINTMENT_DRAWER_BOOKING_DATETIME_CELL_CLASS, className)}>
-      <span className={APPOINTMENT_DRAWER_FIELD_LABEL_CLASS}>Time</span>
+    <div className={cn(DRAWER_BOOKING_DATETIME_CELL_CLASS, className)}>
+      <span className={DRAWER_FIELD_LABEL_CLASS}>Time</span>
       <Select
         value={String(value)}
         onValueChange={(next) => onValueChange(Number(next))}
@@ -74,7 +74,7 @@ export function DrawerTimeField({
         <SelectTrigger
           id={id}
           className={cn(
-            APPOINTMENT_DRAWER_SELECT_TRIGGER_CLASS,
+            DRAWER_SELECT_TRIGGER_CLASS,
             "flex w-full items-center gap-2 [&>svg]:hidden",
           )}
         >

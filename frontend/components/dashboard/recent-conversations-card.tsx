@@ -83,7 +83,7 @@ export function RecentConversationsCard({
             <Link
               key={conversation.id}
               href={conversation.href}
-              className="glass-hover flex items-start gap-3 rounded-[12px] px-1 py-1 hover:bg-white/28 dark:hover:bg-white/6"
+              className="glass-hover flex items-start gap-3 rounded-[var(--radius-xl)] px-1 py-1 hover:bg-white/28 dark:hover:bg-white/6"
             >
               <div
                 className={`flex size-[26px] shrink-0 items-center justify-center rounded-full text-[10px] font-semibold ${avatarTone(conversation.channel)}`}

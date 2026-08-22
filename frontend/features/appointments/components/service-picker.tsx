@@ -13,6 +13,9 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
+import { IconButton } from "@/components/ui/icon-button";
+import { EmptyState } from "@/components/data-display/empty-state";
+import { LoadingState } from "@/components/data-display/loading-state";
 import { DRAWER_FIELD_CONTROL_CLASS } from "@/lib/design/drawer-shell-tokens";
 import { cn } from "@/lib/utils";
 
@@ -84,7 +87,7 @@ export function ServicePicker({
   return (
     <div className={cn("space-y-3", className)}>
       {value.length > 0 ? (
-        <ul className="divide-y divide-border/50 rounded-[10px] border-[1.5px] border-border/80">
+        <ul className="divide-y divide-border/50 rounded-[var(--radius-md)] border-[1.5px] border-border/80">
           {value.map((line) => (
             <li
               key={line.serviceId}
@@ -101,15 +104,16 @@ export function ServicePicker({
                     : ""}
                 </p>
               </div>
-              <button
-                type="button"
+              <IconButton
+                variant="ghost"
+                size="icon-sm"
                 disabled={disabled}
                 onClick={() => handleRemove(line.serviceId)}
-                className="inline-flex size-8 shrink-0 items-center justify-center rounded-[8px] text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground disabled:opacity-50"
                 aria-label={`Remove ${line.name}`}
+                className="rounded-[var(--radius-md)] text-muted-foreground hover:bg-muted/50 hover:text-foreground"
               >
                 <X className="size-4" />
-              </button>
+              </IconButton>
             </li>
           ))}
         </ul>
@@ -143,13 +147,11 @@ export function ServicePicker({
           </div>
           <div className="max-h-60 overflow-y-auto p-1" role="listbox">
             {isFetching ? (
-              <p className="px-2 py-6 text-center text-sm text-muted-foreground">
-                Loading services…
-              </p>
+              <div className="flex justify-center px-2 py-6">
+                <LoadingState variant="inline" label="Loading services…" />
+              </div>
             ) : availableServices.length === 0 ? (
-              <p className="px-2 py-6 text-center text-sm text-muted-foreground">
-                No services available
-              </p>
+              <EmptyState compact title="No services available" className="py-6" />
             ) : (
               availableServices.map((service) => (
                 <button

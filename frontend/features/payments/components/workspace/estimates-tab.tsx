@@ -17,12 +17,14 @@ import { InvoiceFormDialog } from "@/features/invoices/components/invoice-form-d
 import { EstimateDetailPanel } from "@/features/payments/components/workspace/estimate-detail-panel";
 import { FinancialRowActionsMenu } from "@/features/payments/components/workspace/financial-row-actions-menu";
 import { FinancialTabPanel } from "@/features/payments/components/workspace/financial-tab-panel";
+import { EstimatesMobileList } from "@/features/payments/components/mobile/estimates-mobile-list";
 import { Button } from "@/components/ui/button";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { ListPagination } from "@/components/ui/list-pagination";
 import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
 import { useListSearchParams } from "@/lib/hooks/use-list-search-params";
+import { useIsMobile } from "@/lib/hooks/use-mobile";
 import {
   WORKSPACE_ACTIVE_ROW_CLASS,
 } from "@/lib/design/workspace-tokens";
@@ -61,6 +63,7 @@ const statusFilterItems = [
 
 export function PaymentsEstimatesTab() {
   const queryClient = useQueryClient();
+  const isMobile = useIsMobile();
   const { params, page, setParams } = useListSearchParams(LIST_SCHEMA);
   const debouncedSearch = useDebouncedValue(params.search);
   const {
@@ -150,6 +153,32 @@ export function PaymentsEstimatesTab() {
 
   return (
     <>
+      {isMobile ? (
+        isError ? (
+          <ApiErrorState error={error} onRetry={() => void refetch()} />
+        ) : (
+          <EstimatesMobileList
+            estimates={data?.items ?? []}
+            isLoading={isLoading}
+            search={params.search}
+            onSearchChange={(search) =>
+              setParams({ search, page: "1" }, { resetPage: true })
+            }
+            selectedId={selectedId}
+            onSelect={(row) => setSelectedId(row.id)}
+            onCreate={openCreate}
+            pagination={
+              data?.meta
+                ? {
+                    meta: data.meta,
+                    page,
+                    onPageChange: (p) => setParams({ page: String(p) }),
+                  }
+                : undefined
+            }
+          />
+        )
+      ) : (
       <FinancialTabPanel
         actions={
           <Button size="sm" onClick={openCreate}>
@@ -258,6 +287,7 @@ export function PaymentsEstimatesTab() {
         />
         )}
       </FinancialTabPanel>
+      )}
 
       <EntityDetailDrawer
         open={isOpen}

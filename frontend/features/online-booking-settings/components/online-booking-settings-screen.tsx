@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Copy, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { LoadingState } from "@/components/data-display/loading-state";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -68,7 +69,7 @@ export function OnlineBookingSettingsScreen() {
   });
 
   if (isLoading || !data) {
-    return <p className="text-sm text-muted-foreground">Loading…</p>;
+    return <LoadingState variant="inline" />;
   }
 
   const widget = (data.widgetSettings ?? {}) as Record<string, unknown>;

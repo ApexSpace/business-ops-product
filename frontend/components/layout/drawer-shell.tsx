@@ -23,26 +23,24 @@ import {
   DRAWER_SHELL_BODY_CLASS,
   DRAWER_SHELL_CONTENT_INSET_CLASS,
   DRAWER_SHELL_FOOTER_CLASS,
-  DRAWER_SHELL_HEADER_CLASS,
   DRAWER_SHELL_HEADER_ROW_CLASS,
   DRAWER_SHELL_HEADER_ACTION_CLASS,
   DRAWER_SHELL_TITLE_CLASS,
   DRAWER_SHELL_DESCRIPTION_CLASS,
+  DRAWER_SHELL_HEADER_CLASS,
+  DRAWER_CLOSE_ACTION_CLASS,
+  DRAWER_CONTENT_PANEL_CLASS,
+  DRAWER_MOBILE_CLOSE_ACTION_CLASS,
+  DRAWER_MOBILE_HEADER_ACTIONS_CLASS,
+  DRAWER_MOBILE_HEADER_CLASS,
+  DRAWER_MOBILE_HEADER_ROW_CLASS,
+  DRAWER_MOBILE_SHEET_CONTENT_CLASS,
+  DRAWER_MOBILE_SHELL_CLASS,
+  DRAWER_MOBILE_TITLE_CLASS,
+  DRAWER_SHEET_CONTENT_CLASS,
   drawerShellWidthClass,
   type DrawerShellWidthTier,
-} from "@/lib/design/drawer-shell-tokens";
-import {
-  APPOINTMENT_DRAWER_CLOSE_ACTION_CLASS,
-  APPOINTMENT_DRAWER_CONTENT_PANEL_CLASS,
-  APPOINTMENT_DRAWER_MOBILE_CLOSE_ACTION_CLASS,
-  APPOINTMENT_DRAWER_MOBILE_HEADER_ACTIONS_CLASS,
-  APPOINTMENT_DRAWER_MOBILE_HEADER_CLASS,
-  APPOINTMENT_DRAWER_MOBILE_HEADER_ROW_CLASS,
-  APPOINTMENT_DRAWER_MOBILE_SHEET_CONTENT_CLASS,
-  APPOINTMENT_DRAWER_MOBILE_SHELL_CLASS,
-  APPOINTMENT_DRAWER_MOBILE_TITLE_CLASS,
-  APPOINTMENT_DRAWER_SHEET_CONTENT_CLASS,
-} from "@/features/appointments/styles/appointment-drawer-tokens";
+} from "@/lib/design/drawer-tokens";
 import { cn } from "@/lib/utils";
 
 export type DrawerShellChrome = "default" | "mobile-brand";
@@ -113,6 +111,7 @@ function DrawerShellInner({
     description != null && typeof description !== "string";
   const Description = inSheet ? SheetDescription : isRichDescription ? "div" : "p";
   const isMobileBrand = chrome === "mobile-brand";
+  const defaultHeaderClass = DRAWER_SHELL_HEADER_CLASS;
 
   return (
     <>
@@ -120,13 +119,13 @@ function DrawerShellInner({
         isMobileBrand ? (
           <SheetHeader
             className={cn(
-              APPOINTMENT_DRAWER_MOBILE_HEADER_CLASS,
+              DRAWER_MOBILE_HEADER_CLASS,
               headerClassName,
             )}
           >
             <div
               data-slot="sheet-header-row"
-              className={APPOINTMENT_DRAWER_MOBILE_HEADER_ROW_CLASS}
+              className={DRAWER_MOBILE_HEADER_ROW_CLASS}
             >
               <div className="flex items-center justify-start">
                 {inSheet && showCloseButton && onRequestClose ? (
@@ -134,7 +133,7 @@ function DrawerShellInner({
                     type="button"
                     variant="ghost"
                     aria-label="Close"
-                    className={APPOINTMENT_DRAWER_MOBILE_CLOSE_ACTION_CLASS}
+                    className={DRAWER_MOBILE_CLOSE_ACTION_CLASS}
                     onClick={onRequestClose}
                   >
                     <DrawerCloseIcon />
@@ -144,7 +143,7 @@ function DrawerShellInner({
                 )}
               </div>
               <div className="min-w-0">
-                <Title className={APPOINTMENT_DRAWER_MOBILE_TITLE_CLASS}>
+                <Title className={DRAWER_MOBILE_TITLE_CLASS}>
                   {title}
                 </Title>
                 {description ? (
@@ -158,13 +157,13 @@ function DrawerShellInner({
                   </Description>
                 ) : null}
               </div>
-              <div className={APPOINTMENT_DRAWER_MOBILE_HEADER_ACTIONS_CLASS}>
+              <div className={DRAWER_MOBILE_HEADER_ACTIONS_CLASS}>
                 {headerActions ?? <span className="size-11" aria-hidden />}
               </div>
             </div>
           </SheetHeader>
         ) : (
-          <SheetHeader className={cn(DRAWER_SHELL_HEADER_CLASS, headerClassName)}>
+          <SheetHeader className={cn(defaultHeaderClass, headerClassName)}>
             <div
               data-slot="sheet-header-row"
               className={DRAWER_SHELL_HEADER_ROW_CLASS}
@@ -190,10 +189,7 @@ function DrawerShellInner({
                       type="button"
                       variant="ghost"
                       aria-label="Close"
-                      className={cn(
-                        DRAWER_SHELL_HEADER_ACTION_CLASS,
-                        APPOINTMENT_DRAWER_CLOSE_ACTION_CLASS,
-                      )}
+                      className={DRAWER_CLOSE_ACTION_CLASS}
                       onClick={onRequestClose}
                     >
                       <DrawerCloseIcon />
@@ -275,7 +271,7 @@ function DrawerShellLayout({
         hasSpine && cn("overflow-hidden", className),
         hasSpine && widthClass,
         hasSpine && stackZ,
-        isMobileBrand && APPOINTMENT_DRAWER_MOBILE_SHELL_CLASS,
+        isMobileBrand && DRAWER_MOBILE_SHELL_CLASS,
       )}
     >
       {hasSpine && spineLabel ? <DrawerSpine label={spineLabel} /> : null}
@@ -283,7 +279,7 @@ function DrawerShellLayout({
         className={cn(
           "flex min-h-0 min-w-0 flex-1 flex-col",
           hasSpine &&
-            cn(APPOINTMENT_DRAWER_CONTENT_PANEL_CLASS, "overflow-hidden"),
+            cn(DRAWER_CONTENT_PANEL_CLASS, "overflow-hidden"),
           !hasSpine && className,
           !hasSpine && widthClass,
           !hasSpine && stackZ,
@@ -403,9 +399,9 @@ export function DrawerShell({
         className={cn(
           "gap-0 p-0",
           isMobileBrand
-            ? APPOINTMENT_DRAWER_MOBILE_SHEET_CONTENT_CLASS
+            ? DRAWER_MOBILE_SHEET_CONTENT_CLASS
             : effectiveSpineLabel
-              ? APPOINTMENT_DRAWER_SHEET_CONTENT_CLASS
+              ? DRAWER_SHEET_CONTENT_CLASS
               : "shadow-elevation-lg",
           widthClass,
           stackZ,

@@ -6,6 +6,7 @@ import {
   type DataTableColumn,
 } from "@/components/data-display/data-table";
 import { DataTableRowActions } from "@/components/data-display/data-table-row-actions";
+import { LoadingState } from "@/components/data-display/loading-state";
 import { Badge } from "@/components/ui/badge";
 import { ListPagination } from "@/components/ui/list-pagination";
 import {
@@ -138,9 +139,10 @@ export function AppointmentListView({
 
   if (isLoading && appointments.length === 0) {
     return (
-      <div className="flex h-48 items-center justify-center rounded-xl border border-dashed text-sm text-muted-foreground">
-        Loading appointments…
-      </div>
+      <LoadingState
+        label="Loading appointments…"
+        className="h-48 rounded-[var(--radius-xl)] border border-dashed py-0"
+      />
     );
   }
 
@@ -150,12 +152,8 @@ export function AppointmentListView({
         columns={columns}
         data={appointments}
         getRowId={(row) => row.id}
+        emptyTitle="No appointments match your filters."
       />
-      {appointments.length === 0 ? (
-        <p className="text-center text-sm text-muted-foreground">
-          No appointments match your filters.
-        </p>
-      ) : null}
       {meta ? (
         <ListPagination
           meta={meta}

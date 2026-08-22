@@ -16,10 +16,7 @@ import {
 } from "@/features/appointments/schemas/appointment-profile";
 import type { Calendar } from "@/features/calendars/schemas/calendar-profile";
 import { resolveTimezoneForAppointment } from "@/features/calendars/utils/timezone";
-import {
-  getAppointmentStatusBadgeClass,
-  getAppointmentStatusDotClass,
-} from "@/features/appointments/utils/appointment-calendar-styles";
+import { StatusBadge } from "@/components/data-display/status-badge";
 import { cn } from "@/lib/utils";
 
 interface AppointmentMorePopoverProps {
@@ -102,25 +99,16 @@ export function AppointmentMorePopover({
                     <span className="min-w-0 truncate text-sm font-semibold text-foreground">
                       {clientLabel}
                     </span>
-                    <span
-                      className={cn(
-                        "inline-flex h-5 shrink-0 items-center gap-1.5 rounded-full px-2 text-[10px] font-medium",
-                        getAppointmentStatusBadgeClass(apt.status),
-                      )}
-                    >
-                      <span
-                        className={cn(
-                          "size-1.5 shrink-0 rounded-full",
-                          getAppointmentStatusDotClass(apt.status),
-                        )}
-                        aria-hidden
-                      />
-                      {getAppointmentStatusDisplayLabel(
+                    <StatusBadge
+                      domain="appointment"
+                      status={apt.status}
+                      label={getAppointmentStatusDisplayLabel(
                         apt.status,
                         apt.relatedCheckoutId ?? null,
                         apt.relatedCheckoutStatus ?? null,
                       )}
-                    </span>
+                      showDot
+                    />
                   </div>
 
                   <span className="text-xs text-muted-foreground">

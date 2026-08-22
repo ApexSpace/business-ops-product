@@ -1,6 +1,7 @@
 "use client";
 
 import { Plus, Search } from "lucide-react";
+import { LoadingState } from "@/components/data-display/loading-state";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ProfileAvatar } from "@/components/ui/profile-avatar";
@@ -61,7 +62,11 @@ export function TeamMemberList({
       </div>
       <div className="flex-1 overflow-y-auto">
         {isLoading ? (
-          <p className="px-3 py-4 text-sm text-muted-foreground">Loading staff…</p>
+          <LoadingState
+            variant="inline"
+            label="Loading staff…"
+            className="px-3 py-4"
+          />
         ) : isError ? (
           <p className="px-3 py-4 text-sm text-destructive">
             {errorMessage ?? "Could not load staff members."}

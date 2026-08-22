@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { LoadingState } from "@/components/data-display/loading-state";
 import { BusinessHoursEditor } from "@/features/business-hours/components/business-hours-editor";
 import {
   defaultBusinessHoursSlots,
@@ -51,7 +52,7 @@ export function BusinessHoursSettingsPanel({
   });
 
   if (isLoading) {
-    return <p className="text-sm text-muted-foreground">Loading hours…</p>;
+    return <LoadingState variant="inline" label="Loading hours…" />;
   }
 
   return (

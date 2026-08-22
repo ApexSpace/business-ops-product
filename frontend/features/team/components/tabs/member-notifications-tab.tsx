@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { LoadingState } from "@/components/data-display/loading-state";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -52,7 +53,7 @@ export function MemberNotificationsTab({ userId, canManage }: Props) {
   });
 
   if (isLoading || !data) {
-    return <p className="text-sm text-muted-foreground">Loading…</p>;
+    return <LoadingState variant="inline" />;
   }
 
   return (

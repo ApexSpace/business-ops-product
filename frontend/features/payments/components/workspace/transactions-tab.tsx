@@ -15,25 +15,30 @@ import { SearchInput } from "@/components/forms/search-input";
 import { SearchableSelect } from "@/components/forms/searchable-select";
 import { EntityDetailDrawer } from "@/components/layout/entity-detail-drawer";
 import { EntityDetailFooter } from "@/components/layout/entity-detail-footer";
+import { DrawerShell } from "@/components/layout/drawer-shell";
+import { DrawerPrimaryButton } from "@/components/drawer/drawer-primary-button";
 import { PaymentFormDrawer } from "@/features/payments/components/payment-form-drawer";
 import { FinancialTabPanel } from "@/features/payments/components/workspace/financial-tab-panel";
 import { TransactionDetailPanel } from "@/features/payments/components/workspace/transaction-detail-panel";
 import { TransactionTableRowActions } from "@/features/payments/components/workspace/transaction-table-row-actions";
+import { TransactionsMobileList } from "@/features/payments/components/mobile/transactions-mobile-list";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { ListPagination } from "@/components/ui/list-pagination";
 import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
 import { useListSearchParams } from "@/lib/hooks/use-list-search-params";
+import { useIsMobile } from "@/lib/hooks/use-mobile";
 import {
   WORKSPACE_ACTIVE_ROW_CLASS,
 } from "@/lib/design/workspace-tokens";
 import { useEntitySelection } from "@/lib/routing/use-entity-selection";
 import { usePaymentsTabCreateAction } from "@/features/payments/hooks/use-payments-tab-action";
-import { formatMoney } from "@/features/invoices/schemas/invoice-profile";
 import {
   PAYMENT_METHOD_OPTIONS,
   canRefundPayment,
   canStaffRefundPayment,
+  formatMoney,
   formatTransactionDate,
   formatTransactionProvider,
   formatTransactionSource,
@@ -43,6 +48,14 @@ import { getPayment } from "@/features/payments/api/payments.api";
 import { invalidateFinancialLists } from "@/features/payments/workspace/payments-workspace";
 import { viewTransactionInvoicePublic } from "@/features/payments/utils/transaction-invoice-view";
 import { useSalesStaffPermissions } from "@/features/sales/hooks/use-sales-staff-permissions";
+import {
+  SALES_DRAWER_BODY_INSET_CLASS,
+  SALES_DRAWER_FIELD_CLASS,
+  SALES_DRAWER_FOOTER_CLASS,
+  SALES_DRAWER_FOOTER_INNER_CLASS,
+  SALES_DRAWER_FORM_FIELDS_CLASS,
+  SALES_DRAWER_MOBILE_SHELL_CLASS,
+} from "@/features/sales/styles/sales-drawer-tokens";
 import { queryKeys } from "@/lib/query/keys";
 import type { Payment } from "@/features/payments/types";
 import { listPayments, refundPayment } from "@/features/payments/api/payments.api";
@@ -64,6 +77,7 @@ const methodFilterItems = [
 
 export function PaymentsTransactionsTab() {
   const queryClient = useQueryClient();
+  const isMobile = useIsMobile();
   const { params, page, setParams } = useListSearchParams(LIST_SCHEMA);
   const debouncedSearch = useDebouncedValue(params.search);
   const { canRefundAll, canRefundOpen } = useSalesStaffPermissions();
@@ -75,6 +89,7 @@ export function PaymentsTransactionsTab() {
   } = useEntitySelection();
 
   const [createOpen, setCreateOpen] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [refundId, setRefundId] = useState<string | null>(null);
 
   const canRefundRow = (payment: Payment) =>
@@ -192,9 +207,37 @@ export function PaymentsTransactionsTab() {
   );
 
   const drawerPayment = detail ?? selectedListItem;
+  const transactions = data?.items ?? [];
 
   return (
     <>
+      {isMobile ? (
+        isError ? (
+          <ApiErrorState error={error} onRetry={() => void refetch()} />
+        ) : (
+          <TransactionsMobileList
+            transactions={transactions}
+            isLoading={isLoading}
+            search={params.search}
+            onSearchChange={(search) =>
+              setParams({ search, page: "1" }, { resetPage: true })
+            }
+            selectedId={selectedId}
+            onSelect={(row) => setSelectedId(row.id)}
+            onOpenFilters={() => setFiltersOpen(true)}
+            onCreate={() => setCreateOpen(true)}
+            pagination={
+              data?.meta
+                ? {
+                    meta: data.meta,
+                    page,
+                    onPageChange: (p) => setParams({ page: String(p) }),
+                  }
+                : undefined
+            }
+          />
+        )
+      ) : (
       <FinancialTabPanel
         actions={
           <Button size="sm" onClick={() => setCreateOpen(true)}>
@@ -261,7 +304,7 @@ export function PaymentsTransactionsTab() {
           className="min-w-[48rem]"
           density="compact"
           columns={columns}
-          data={data?.items ?? []}
+          data={transactions}
           getRowId={(row) => row.id}
           isLoading={isLoading}
           activeRowId={selectedId}
@@ -291,6 +334,70 @@ export function PaymentsTransactionsTab() {
         />
         )}
       </FinancialTabPanel>
+      )}
+
+      <DrawerShell
+        open={filtersOpen}
+        onOpenChange={setFiltersOpen}
+        variant="sheet"
+        width="appointment"
+        chrome="mobile-brand"
+        className={SALES_DRAWER_MOBILE_SHELL_CLASS}
+        contentClassName="!px-0 !py-0"
+        footerClassName={SALES_DRAWER_FOOTER_CLASS}
+        title="Options"
+        footer={
+          <div className={SALES_DRAWER_FOOTER_INNER_CLASS}>
+            <DrawerPrimaryButton onClick={() => setFiltersOpen(false)}>
+              Apply
+            </DrawerPrimaryButton>
+          </div>
+        }
+      >
+        <div className={SALES_DRAWER_BODY_INSET_CLASS}>
+          <div className={SALES_DRAWER_FORM_FIELDS_CLASS}>
+            <div className="space-y-1.5">
+              <Label htmlFor="tx-method">Provider</Label>
+              <SearchableSelect
+                items={methodFilterItems}
+                value={params.method}
+                onValueChange={(method) =>
+                  setParams(
+                    { method: method ?? "", page: "1" },
+                    { resetPage: true },
+                  )
+                }
+                placeholder="Select method"
+                triggerClassName={SALES_DRAWER_FIELD_CLASS}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="tx-from">From date</Label>
+              <Input
+                id="tx-from"
+                type="date"
+                className={SALES_DRAWER_FIELD_CLASS}
+                value={params.paidFrom}
+                onChange={(e) =>
+                  setParams({ paidFrom: e.target.value, page: "1" })
+                }
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="tx-to">To date</Label>
+              <Input
+                id="tx-to"
+                type="date"
+                className={SALES_DRAWER_FIELD_CLASS}
+                value={params.paidTo}
+                onChange={(e) =>
+                  setParams({ paidTo: e.target.value, page: "1" })
+                }
+              />
+            </div>
+          </div>
+        </div>
+      </DrawerShell>
 
       <EntityDetailDrawer
         open={isOpen}

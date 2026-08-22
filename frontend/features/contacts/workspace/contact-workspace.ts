@@ -189,23 +189,17 @@ export const WORKSPACE_TABLET_BOTTOM_ROW_CLASS =
 export const WORKSPACE_TABLET_RECORDS_COL_CLASS =
   WORKSPACE_COLUMN_CELL_CLASS;
 
-/** Legacy per-contact workspace route (`/business/contacts/[id]`). List page uses standard shell padding. */
-export function isContactWorkspacePath(pathname: string): boolean {
-  return /^\/business\/contacts\/[^/]+$/.test(pathname);
-}
-
-/** Conversations inbox — same full-bleed shell treatment as contact workspace. */
-export function isConversationsInboxPath(pathname: string): boolean {
-  return pathname === "/business/conversations";
-}
-
-/** Appointments calendar — full-bleed white canvas (PandaCue calendar). */
-export function isAppointmentsCalendarPath(pathname: string): boolean {
-  return pathname === "/business/appointments" || pathname.startsWith("/business/appointments/");
-}
+/** @deprecated Prefer `@/components/shell/shell-full-bleed-paths`. */
+export {
+  isContactWorkspacePath,
+  isConversationsInboxPath,
+  isAppointmentsCalendarPath,
+  isSalesWorkspacePath,
+  isPaymentsWorkspacePath,
+} from "@/components/shell/shell-full-bleed-paths";
 
 /**
- * Desktop xl+ — list, thread, and contact sidebar (matches contact workspace spacing).
+ * Desktop xl+ — conversation fills left; contact sidebar on the right.
  */
 export const INBOX_DESKTOP_ROW_CLASS = [
   "hidden h-full min-h-0 w-full max-w-full flex-1 items-stretch overflow-x-auto overflow-y-hidden xl:grid",

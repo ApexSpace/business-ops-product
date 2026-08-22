@@ -31,6 +31,7 @@ import {
   WORKSPACE_TABLE_CLASS,
 } from "@/lib/design/workspace-tokens";
 import { useEntitySelection } from "@/lib/routing/use-entity-selection";
+import { useIsMobile } from "@/lib/hooks/use-mobile";
 import { queryKeys } from "@/lib/query/keys";
 import { invalidateGiftCards } from "@/lib/query/invalidation";
 import { listContacts } from "@/features/contacts/api/contacts.api";
@@ -47,6 +48,7 @@ import {
   voidGiftCard,
 } from "@/features/gift-cards/api/gift-cards.api";
 import { GiftCardDetailPanel } from "@/features/gift-cards/components/gift-card-detail-panel";
+import { GiftCardsMobileList } from "@/features/gift-cards/components/mobile/gift-cards-mobile-list";
 import {
   GiftCardMiniIcon,
   GiftCardStatusBadge,
@@ -62,6 +64,7 @@ export function GiftCardsWorkspace() {
   const queryClient = useQueryClient();
   const { data: business } = useCurrentBusiness();
   const { canManage } = useGiftCardStaffPermissions();
+  const isMobile = useIsMobile();
   const {
     selectedId,
     isOpen,
@@ -292,6 +295,40 @@ export function GiftCardsWorkspace() {
 
   return (
     <>
+      {isMobile ? (
+        listQuery.isError ? (
+          <ApiErrorState
+            error={listQuery.error}
+            onRetry={() => void listQuery.refetch()}
+          />
+        ) : (
+          <GiftCardsMobileList
+            cards={cards}
+            isLoading={listQuery.isLoading}
+            search={search}
+            onSearchChange={(value) => {
+              setSearch(value);
+              setPage(1);
+            }}
+            selectedId={selectedId}
+            onSelect={(card) => {
+              setDrawerMode("view");
+              setSelectedId(card.id);
+            }}
+            onCreate={canManage ? () => void openAdd() : undefined}
+            canCreate={canManage}
+            pagination={
+              listQuery.data?.meta && cards.length > 0
+                ? {
+                    meta: listQuery.data.meta,
+                    page,
+                    onPageChange: setPage,
+                  }
+                : undefined
+            }
+          />
+        )
+      ) : (
       <EntityWorkspaceLayout
         title="Gift cards"
         description="Issue, track, and redeem gift cards."
@@ -375,6 +412,7 @@ export function GiftCardsWorkspace() {
           />
         )}
       </EntityWorkspaceLayout>
+      )}
 
       <EntityDetailDrawer
         open={isOpen}

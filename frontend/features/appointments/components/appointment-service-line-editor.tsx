@@ -13,6 +13,8 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
+import { EmptyState } from "@/components/data-display/empty-state";
+import { LoadingState } from "@/components/data-display/loading-state";
 import {
   Select,
   SelectContent,
@@ -501,13 +503,11 @@ function ServicePickerPopoverContent({
         aria-label="Services"
       >
         {isFetching ? (
-          <p className="px-2 py-6 text-center text-[14px] text-[#8A8A8A]">
-            Loading services…
-          </p>
+          <div className="flex justify-center px-2 py-6">
+            <LoadingState variant="inline" label="Loading services…" />
+          </div>
         ) : availableServices.length === 0 ? (
-          <p className="px-2 py-6 text-center text-[14px] text-[#8A8A8A]">
-            No services available
-          </p>
+          <EmptyState compact title="No services available" className="py-6" />
         ) : (
           availableServices.map((service) => {
             const duration =

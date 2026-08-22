@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { Plus, Search, Warehouse } from "lucide-react";
 import { toast } from "sonner";
 import { ApiErrorState } from "@/components/data-display/api-error-state";
+import { LoadingState } from "@/components/data-display/loading-state";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -139,7 +140,7 @@ export function ResourcesSettingsScreen() {
 
         <div className="flex-1 overflow-y-auto p-2">
           {isLoading ? (
-            <p className="p-2 text-sm text-muted-foreground">Loading…</p>
+            <LoadingState variant="inline" className="p-2" />
           ) : isError ? (
             <ApiErrorState
               compact

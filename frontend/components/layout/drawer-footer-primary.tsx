@@ -1,7 +1,6 @@
 "use client";
 
-import { ActionButton } from "@/components/ui/action-button";
-import { APPOINTMENT_DRAWER_PRIMARY_BUTTON_CLASS } from "@/features/appointments/styles/appointment-drawer-tokens";
+import { DrawerPrimaryButton } from "@/components/drawer/drawer-primary-button";
 import { cn } from "@/lib/utils";
 
 export interface DrawerFooterPrimaryActionProps {
@@ -33,14 +32,14 @@ export function DrawerFooterPrimaryAction({
           </span>
         </div>
       ) : null}
-      <ActionButton
+      <DrawerPrimaryButton
         type="button"
-        className={cn(APPOINTMENT_DRAWER_PRIMARY_BUTTON_CLASS, className)}
         disabled={disabled}
         onClick={onClick}
+        className={className}
       >
         {label}
-      </ActionButton>
+      </DrawerPrimaryButton>
     </div>
   );
 }

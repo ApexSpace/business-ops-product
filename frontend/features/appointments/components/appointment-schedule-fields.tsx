@@ -4,10 +4,10 @@ import { useMemo } from "react";
 import { CalendarDays } from "lucide-react";
 import { useFormContext, useWatch } from "react-hook-form";
 import {
-  APPOINTMENT_FIELD_CONTROL_CLASS,
-  APPOINTMENT_FIELD_LABEL_CLASS,
-  APPOINTMENT_FORM_ITEM_CLASS,
-} from "@/features/appointments/components/appointment-form-drawer-shell";
+  FORM_DRAWER_FIELD_CONTROL_CLASS,
+  FORM_DRAWER_FIELD_LABEL_CLASS,
+  FORM_DRAWER_FORM_ITEM_CLASS,
+} from "@/components/forms/form-drawer-shell";
 import { FormItem } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -111,9 +111,9 @@ export function AppointmentScheduleFields({
         )
       : null;
 
-  const fieldControlClass = APPOINTMENT_FIELD_CONTROL_CLASS;
-  const fieldLabelClass = APPOINTMENT_FIELD_LABEL_CLASS;
-  const formItemClass = APPOINTMENT_FORM_ITEM_CLASS;
+  const fieldControlClass = FORM_DRAWER_FIELD_CONTROL_CLASS;
+  const fieldLabelClass = FORM_DRAWER_FIELD_LABEL_CLASS;
+  const formItemClass = FORM_DRAWER_FORM_ITEM_CLASS;
 
   return (
     <div className="mb-4">

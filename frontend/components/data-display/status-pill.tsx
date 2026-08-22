@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import { MOBILE_LIST_STATUS_PILL_BASE_CLASS } from "@/lib/design/mobile-list-tokens";
 
 export type StatusPillVariant =
   | "success"
@@ -8,6 +9,9 @@ export type StatusPillVariant =
   | "info"
   | "neutral"
   | "danger";
+
+/** Shared status capsule chrome — single shape/size for desktop + mobile. */
+export const STATUS_PILL_BASE_CLASS = MOBILE_LIST_STATUS_PILL_BASE_CLASS;
 
 const variantStyles: Record<StatusPillVariant, string> = {
   success: "bg-success-subtle text-success",
@@ -17,25 +21,45 @@ const variantStyles: Record<StatusPillVariant, string> = {
   danger: "bg-destructive-subtle text-destructive",
 };
 
+const variantDotStyles: Record<StatusPillVariant, string> = {
+  success: "bg-success",
+  warning: "bg-warning",
+  info: "bg-primary",
+  neutral: "bg-muted-foreground/55",
+  danger: "bg-destructive",
+};
+
 interface StatusPillProps {
   label: string;
   variant?: StatusPillVariant;
+  showDot?: boolean;
   className?: string;
 }
 
 export function StatusPill({
   label,
   variant = "neutral",
+  showDot = false,
   className,
 }: StatusPillProps) {
   return (
     <span
       className={cn(
-        "inline-flex max-w-full items-center rounded-full px-2 py-0.5 text-[11px] font-medium",
+        STATUS_PILL_BASE_CLASS,
         variantStyles[variant],
         className,
       )}
+      title={label}
     >
+      {showDot ? (
+        <span
+          className={cn(
+            "size-1.5 shrink-0 rounded-full",
+            variantDotStyles[variant],
+          )}
+          aria-hidden
+        />
+      ) : null}
       <span className="truncate">{label}</span>
     </span>
   );

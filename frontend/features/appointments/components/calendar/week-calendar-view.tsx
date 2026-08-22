@@ -16,6 +16,7 @@ import {
   parseDateKeyInTimezone,
 } from "@/features/calendars/utils/timezone";
 import { CALENDAR_GRID } from "@/features/calendars/utils/calendar-grid-styles";
+import { LoadingState } from "@/components/data-display/loading-state";
 import {
   CALENDAR_FIGMA_STAFF_COL_MIN_PX,
   CALENDAR_FIGMA_TIME_GUTTER_PX,
@@ -147,8 +148,8 @@ export function WeekCalendarView({
             })}
           </div>
           {isLoading ? (
-            <div className="flex h-48 items-center justify-center text-sm text-grey-tertiary-normal">
-              Loading appointments…
+            <div className="flex h-48 items-center justify-center">
+              <LoadingState variant="inline" label="Loading appointments…" />
             </div>
           ) : (
             <div

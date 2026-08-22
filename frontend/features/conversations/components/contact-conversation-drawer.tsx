@@ -3,7 +3,9 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { ExternalLink, Loader2, MessageSquare } from "lucide-react";
+import { ExternalLink, MessageSquare } from "lucide-react";
+import { EmptyState } from "@/components/data-display/empty-state";
+import { LoadingState } from "@/components/data-display/loading-state";
 import { DrawerShell } from "@/components/layout/drawer-shell";
 import { ProfileAvatar } from "@/components/ui/profile-avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -134,13 +136,13 @@ export function ContactConversationDrawer({
       description={contactLoading ? "Loading…" : description}
     >
       {contactLoading || !contactId ? (
-        <div className="flex h-full min-h-[320px] items-center justify-center text-muted-foreground">
-          <Loader2 className="size-5 animate-spin" />
-        </div>
+        <LoadingState label="Loading…" className="h-full min-h-[320px] py-0" />
       ) : !contact ? (
-        <div className="flex h-full min-h-[320px] items-center justify-center text-muted-foreground">
-          Contact not found
-        </div>
+        <EmptyState
+          compact
+          className="h-full min-h-[320px] justify-center"
+          title="Contact not found"
+        />
       ) : (
         <Tabs
           value={activeTab}
@@ -154,27 +156,39 @@ export function ContactConversationDrawer({
 
           <TabsContent
             value="reply"
-            className="mt-0 flex min-h-0 flex-1 flex-col overflow-hidden rounded-[12px] border border-border/60"
+            className="mt-0 flex min-h-0 flex-1 flex-col overflow-hidden rounded-[var(--radius-xl)] border border-border/60"
           >
             <div className="min-h-0 flex-1 overflow-hidden bg-muted/10">
               {messagesLoading ? (
-                <p className="px-4 py-3 text-sm text-muted-foreground">
-                  Loading messages…
-                </p>
+                <LoadingState
+                  variant="inline"
+                  label="Loading messages…"
+                  className="px-4 py-3"
+                />
               ) : !hasChannels ? (
-                <div className="flex h-full min-h-[240px] flex-col items-center justify-center gap-3 px-4 text-center">
-                  <MessageSquare className="size-8 text-muted-foreground/60" />
-                  <p className="text-sm text-muted-foreground">
-                    Add a phone number or email to {contactName} to start messaging.
-                  </p>
-                </div>
+                <EmptyState
+                  compact
+                  className="h-full min-h-[240px] justify-center px-4"
+                  icon={
+                    <MessageSquare
+                      className="size-4 text-muted-foreground/70"
+                      aria-hidden
+                    />
+                  }
+                  title={`Add a phone number or email to ${contactName} to start messaging.`}
+                />
               ) : messages.length === 0 ? (
-                <div className="flex h-full min-h-[240px] flex-col items-center justify-center gap-3 px-4 text-center">
-                  <MessageSquare className="size-8 text-muted-foreground/60" />
-                  <p className="text-sm text-muted-foreground">
-                    No messages yet. Choose a channel below and send the first message.
-                  </p>
-                </div>
+                <EmptyState
+                  compact
+                  className="h-full min-h-[240px] justify-center px-4"
+                  icon={
+                    <MessageSquare
+                      className="size-4 text-muted-foreground/70"
+                      aria-hidden
+                    />
+                  }
+                  title="No messages yet. Choose a channel below and send the first message."
+                />
               ) : (
                 <VirtualizedMessageList
                   key={contactId}
@@ -255,7 +269,7 @@ export function ContactConversationDrawer({
           <TabsContent
             value="note"
             className={cn(
-              "mt-0 min-h-0 flex-1 overflow-hidden rounded-[12px] border border-border/60",
+              "mt-0 min-h-0 flex-1 overflow-hidden rounded-[var(--radius-xl)] border border-border/60",
             )}
           >
             <ConversationInternalNotesPanel

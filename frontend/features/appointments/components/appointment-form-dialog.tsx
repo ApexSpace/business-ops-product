@@ -9,14 +9,6 @@ import {
 import { ActionButton } from "@/components/ui/action-button";
 import { AppointmentFormFields } from "@/features/appointments/components/appointment-form-fields";
 import {
-  APPOINTMENT_DRAWER_CONTENT_CLASS,
-  APPOINTMENT_DRAWER_DESCRIPTION_CLASS,
-  APPOINTMENT_DRAWER_FOOTER_CLASS,
-  APPOINTMENT_DRAWER_HEADER_CLASS,
-  APPOINTMENT_DRAWER_SHEET_CLASS,
-  APPOINTMENT_DRAWER_TITLE_CLASS,
-} from "@/features/appointments/components/appointment-form-drawer-shell";
-import {
   useAppointmentForm,
   type UseAppointmentFormOptions,
 } from "@/features/appointments/hooks/use-appointment-form";
@@ -47,12 +39,6 @@ export function AppointmentFormDialog({
       onOpenChange={onOpenChange}
       title={isEdit ? "Edit appointment" : "New appointment"}
       description="Schedule or update an appointment for a contact."
-      className={APPOINTMENT_DRAWER_SHEET_CLASS}
-      headerClassName={APPOINTMENT_DRAWER_HEADER_CLASS}
-      titleClassName={APPOINTMENT_DRAWER_TITLE_CLASS}
-      descriptionClassName={APPOINTMENT_DRAWER_DESCRIPTION_CLASS}
-      contentClassName={APPOINTMENT_DRAWER_CONTENT_CLASS}
-      footerClassName={APPOINTMENT_DRAWER_FOOTER_CLASS}
       schema={appointmentFormSchema}
       form={form}
       onSubmit={(values) => mutation.mutate(values)}
