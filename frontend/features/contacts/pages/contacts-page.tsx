@@ -3,13 +3,18 @@
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Download, Plus, Printer, Trash2, Upload } from "lucide-react";
+import { Plus, Printer, Trash2 } from "lucide-react";
 import { ApiErrorState } from "@/components/data-display/api-error-state";
 import { DataTable, type DataTableColumn } from "@/components/data-display/data-table";
 import { EntityDetailDrawer } from "@/components/layout/entity-detail-drawer";
 import { EntityWorkspaceLayout } from "@/components/layout/entity-workspace-layout";
 import { ListPrimaryAction } from "@/components/layout/list-primary-action";
-import { ContactFormDialog } from "@/features/contacts/components/contact-form-dialog";
+import { ClientDetailsDrawer } from "@/features/contacts/components/client-details-drawer";
+import {
+  ContactsOptionsDrawer,
+  EMPTY_CONTACTS_OPTIONS,
+  type ContactsOptionsValues,
+} from "@/features/contacts/components/contacts-options-drawer";
 import {
   ContactDetailPanel,
   isContactDetailTab,
@@ -18,8 +23,8 @@ import {
 } from "@/features/contacts/components/contact-detail-panel";
 import { SearchInput } from "@/components/forms/search-input";
 import { ActionButton } from "@/components/ui/action-button";
-import { Button } from "@/components/ui/button";
 import { ListPagination } from "@/components/ui/list-pagination";
+import { ListFilterButton } from "@/components/layout/list-filter-button";
 import { ProfileAvatar } from "@/components/ui/profile-avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ContactMergeDialog } from "@/features/contacts/components/contact-merge-dialog";
@@ -29,6 +34,7 @@ import { useContactDetail } from "@/features/contacts/hooks/use-contact-detail";
 import { useContactsList } from "@/features/contacts/hooks/use-contacts-list";
 import { useContactStaffPermissions } from "@/features/contacts/hooks/use-contact-staff-permissions";
 import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
+import { useIsMobile } from "@/lib/hooks/use-mobile";
 import { useListSearchParams } from "@/lib/hooks/use-list-search-params";
 import {
   WORKSPACE_ACTIVE_ROW_CLASS,
@@ -40,6 +46,7 @@ import {
   invalidateContactPicker,
 } from "@/lib/query/invalidation";
 import type { Contact } from "@/features/contacts/types";
+import { ContactsMobileList } from "@/features/contacts/components/mobile/contacts-mobile-list";
 import { toast } from "sonner";
 
 const LIST_SCHEMA = {
@@ -49,24 +56,20 @@ const LIST_SCHEMA = {
 
 const PAGE_LIMIT = 20;
 
-function contactSubline(contact: Contact) {
-  return (
-    contact.phone?.trim() ||
-    contact.email?.trim() ||
-    contact.companyName?.trim() ||
-    "No contact details yet"
-  );
-}
-
 function BusinessContactsPageContent() {
   const queryClient = useQueryClient();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const contactPerms = useContactStaffPermissions();
+  const isMobile = useIsMobile();
   const { params, page, setParams } = useListSearchParams(LIST_SCHEMA);
   const debouncedSearch = useDebouncedValue(params.search);
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [optionsOpen, setOptionsOpen] = useState(false);
+  const [optionsValues, setOptionsValues] = useState<ContactsOptionsValues>(
+    EMPTY_CONTACTS_OPTIONS,
+  );
   const [mergeOpen, setMergeOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
@@ -125,7 +128,6 @@ function BusinessContactsPageContent() {
     canLoadDetail ? (selectedId ?? "") : "",
   );
   const contacts = data?.items ?? [];
-  const total = data?.meta?.total ?? contacts.length;
   const selectedContact =
     contacts.find((contact) => contact.id === selectedId) ?? null;
 
@@ -133,11 +135,25 @@ function BusinessContactsPageContent() {
     panelActionsRef.current = actions;
   }, []);
 
+  const openCreate = useCallback(() => setCreateOpen(true), []);
+
+  const handleExport = useCallback(async () => {
+    try {
+      setExporting(true);
+      await downloadDataExport("CONTACT", debouncedSearch || undefined);
+      toast.success("Contacts exported");
+    } catch {
+      toast.error("Export failed");
+    } finally {
+      setExporting(false);
+    }
+  }, [debouncedSearch]);
+
   const columns = useMemo<DataTableColumn<Contact>[]>(
     () => [
       {
         id: "contact",
-        header: "Contact",
+        header: "Name",
         sortable: true,
         sortValue: (row) => row.label,
         cell: (row) => (
@@ -148,12 +164,7 @@ function BusinessContactsPageContent() {
               size="sm"
               className="!size-8 shrink-0"
             />
-            <div className="min-w-0">
-              <p className="truncate font-medium">{row.label}</p>
-              <p className="truncate text-xs text-muted-foreground">
-                {contactSubline(row)}
-              </p>
-            </div>
+            <p className="truncate font-medium text-[#4A4A4A]">{row.label}</p>
           </div>
         ),
       },
@@ -162,7 +173,11 @@ function BusinessContactsPageContent() {
         header: "Email",
         sortable: true,
         sortValue: (row) => row.email ?? "",
-        cell: (row) => row.email?.trim() || "—",
+        cell: (row) => (
+          <span className="truncate text-[#4A4A4A]">
+            {row.email?.trim() || "—"}
+          </span>
+        ),
       },
       {
         id: "phone",
@@ -170,14 +185,9 @@ function BusinessContactsPageContent() {
         sortable: true,
         sortValue: (row) => row.phone ?? "",
         className: "whitespace-nowrap",
-        cell: (row) => row.phone?.trim() || "—",
-      },
-      {
-        id: "company",
-        header: "Company",
-        sortable: true,
-        sortValue: (row) => row.companyName ?? "",
-        cell: (row) => row.companyName?.trim() || "—",
+        cell: (row) => (
+          <span className="text-[#4A4A4A]">{row.phone?.trim() || "—"}</span>
+        ),
       },
     ],
     [],
@@ -185,6 +195,37 @@ function BusinessContactsPageContent() {
 
   return (
     <>
+      {isMobile ? (
+        <ContactsMobileList
+          contacts={contacts}
+          isLoading={isLoading}
+          search={params.search}
+          onSearchChange={(value) =>
+            setParams({ search: value, page: "1" }, { resetPage: true })
+          }
+          selectedId={selectedId}
+          onSelect={(row) => {
+            if (!contactPerms.canOpenProfiles) return;
+            if (row.id !== selectedId) {
+              setTab("timeline");
+            }
+            setSelectedId(row.id);
+          }}
+          onOpenOptions={() => setOptionsOpen(true)}
+          onCreate={openCreate}
+          canCreate={contactPerms.canManage}
+          canOpenProfiles={contactPerms.canOpenProfiles}
+          pagination={
+            data?.meta && contacts.length > 0
+              ? {
+                  meta: data.meta,
+                  page,
+                  onPageChange: (p) => setParams({ page: String(p) }),
+                }
+              : undefined
+          }
+        />
+      ) : (
       <EntityWorkspaceLayout
         title="Contacts"
         description="Select a record to open contact details."
@@ -194,86 +235,19 @@ function BusinessContactsPageContent() {
             onChange={(value) =>
               setParams({ search: value, page: "1" }, { resetPage: true })
             }
-            placeholder="Search contacts…"
+            placeholder="Search"
             className="min-w-0 flex-1"
+          />
+        }
+        filters={
+          <ListFilterButton
+            aria-label="Contact options"
+            onClick={() => setOptionsOpen(true)}
           />
         }
         actions={
           contactPerms.canManage ? (
-            <>
-              <Button
-                type="button"
-                size="icon-sm"
-                variant="outline"
-                className="sm:hidden"
-                aria-label="Import contacts"
-                onClick={() => setImportOpen(true)}
-              >
-                <Upload className="size-4" />
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                className="hidden shrink-0 sm:inline-flex"
-                onClick={() => setImportOpen(true)}
-              >
-                <Upload className="mr-1.5 size-4" />
-                Import
-              </Button>
-              <Button
-                type="button"
-                size="icon-sm"
-                variant="outline"
-                className="sm:hidden"
-                aria-label="Export contacts"
-                disabled={exporting}
-                onClick={async () => {
-                  try {
-                    setExporting(true);
-                    await downloadDataExport(
-                      "CONTACT",
-                      debouncedSearch || undefined,
-                    );
-                    toast.success("Contacts exported");
-                  } catch {
-                    toast.error("Export failed");
-                  } finally {
-                    setExporting(false);
-                  }
-                }}
-              >
-                <Download className="size-4" />
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                className="hidden shrink-0 sm:inline-flex"
-                disabled={exporting}
-                onClick={async () => {
-                  try {
-                    setExporting(true);
-                    await downloadDataExport(
-                      "CONTACT",
-                      debouncedSearch || undefined,
-                    );
-                    toast.success("Contacts exported");
-                  } catch {
-                    toast.error("Export failed");
-                  } finally {
-                    setExporting(false);
-                  }
-                }}
-              >
-                <Download className="mr-1.5 size-4" />
-                Export
-              </Button>
-              <ListPrimaryAction
-                label="New Contact"
-                onClick={() => setDialogOpen(true)}
-              />
-            </>
+            <ListPrimaryAction label="New Contact" onClick={openCreate} />
           ) : null
         }
         footer={
@@ -283,49 +257,47 @@ function BusinessContactsPageContent() {
               page={page}
               onPageChange={(p) => setParams({ page: String(p) })}
               label="contacts"
-              compact
             />
-          ) : contacts.length > 0 ? (
-            `${contacts.length} of ${total} contact${total === 1 ? "" : "s"}`
           ) : undefined
         }
       >
         {isError ? (
           <ApiErrorState error={error} onRetry={() => void refetch()} />
         ) : (
-        <DataTable
-          columns={columns}
-          data={contacts}
-          getRowId={(row) => row.id}
-          isLoading={isLoading}
-          density="compact"
-          activeRowId={selectedId}
-          onRowClick={(row) => {
-            if (!contactPerms.canOpenProfiles) return;
-            if (row.id !== selectedId) {
-              setTab("timeline");
+          <DataTable
+            columns={columns}
+            data={contacts}
+            getRowId={(row) => row.id}
+            isLoading={isLoading}
+            density="compact"
+            activeRowId={selectedId}
+            onRowClick={(row) => {
+              if (!contactPerms.canOpenProfiles) return;
+              if (row.id !== selectedId) {
+                setTab("timeline");
+              }
+              setSelectedId(row.id);
+            }}
+            getRowClassName={(row) =>
+              contactPerms.canOpenProfiles && selectedId === row.id
+                ? WORKSPACE_ACTIVE_ROW_CLASS
+                : undefined
             }
-            setSelectedId(row.id);
-          }}
-          getRowClassName={(row) =>
-            contactPerms.canOpenProfiles && selectedId === row.id
-              ? WORKSPACE_ACTIVE_ROW_CLASS
-              : undefined
-          }
-          emptyTitle="No contacts yet"
-          emptyDescription="Add your first contact to start building your CRM."
-          emptyAction={
-            contactPerms.canManage ? (
-              <ActionButton onClick={() => setDialogOpen(true)}>
-                <Plus className="mr-2 size-4" />
-                Add contact
-              </ActionButton>
-            ) : undefined
-          }
-          className={WORKSPACE_TABLE_CLASS}
-        />
+            emptyTitle="No contacts yet"
+            emptyDescription="Add your first contact to start building your CRM."
+            emptyAction={
+              contactPerms.canManage ? (
+                <ActionButton onClick={openCreate}>
+                  <Plus className="mr-2 size-4" />
+                  Add contact
+                </ActionButton>
+              ) : undefined
+            }
+            className={WORKSPACE_TABLE_CLASS}
+          />
         )}
       </EntityWorkspaceLayout>
+      )}
 
       <EntityDetailDrawer
         open={isOpen && contactPerms.canOpenProfiles}
@@ -336,7 +308,7 @@ function BusinessContactsPageContent() {
           }
         }}
         width="split"
-        title="Contact details"
+        title="Client Details"
         isLoading={detailLoading}
         fullBleed
         bodyClassName="flex flex-col !overflow-hidden"
@@ -386,10 +358,10 @@ function BusinessContactsPageContent() {
         ) : null}
       </EntityDetailDrawer>
 
-      <ContactFormDialog
-        open={dialogOpen || createFromQuery}
+      <ClientDetailsDrawer
+        open={createOpen || createFromQuery}
         onOpenChange={(open) => {
-          setDialogOpen(open);
+          setCreateOpen(open);
           if (!open && createFromQuery) {
             const next = new URLSearchParams(searchParams.toString());
             next.delete("action");
@@ -399,11 +371,29 @@ function BusinessContactsPageContent() {
             });
           }
         }}
-        contact={null}
         onSuccess={() => {
           void invalidateContactLists(queryClient);
           void invalidateContactPicker(queryClient);
         }}
+      />
+
+      <ContactsOptionsDrawer
+        open={optionsOpen}
+        onOpenChange={setOptionsOpen}
+        values={optionsValues}
+        downloadPending={exporting}
+        onApply={(next) => {
+          setOptionsValues(next);
+          if (next.tag.trim() || next.referredBy.trim()) {
+            const q = next.tag.trim() || next.referredBy.trim();
+            setParams({ search: q, page: "1" }, { resetPage: true });
+          }
+          toast.success("Filters applied");
+        }}
+        onDownload={() => {
+          void handleExport();
+        }}
+        onImport={() => setImportOpen(true)}
       />
 
       {selectedId && selectedContact ? (

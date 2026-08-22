@@ -1,9 +1,12 @@
 "use client";
 
+import { DRAWER_PRIMARY_BUTTON_CLASS } from "@/lib/design/drawer-tokens";
+
 import { useEffect, useMemo, useState } from "react";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -13,10 +16,22 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { formatMoney } from "@/features/payments/utils/currencies";
 import {
-  DRAWER_FIELD_CONTROL_CLASS,
-  DRAWER_FIELD_LABEL_CLASS,
-  DRAWER_FORM_FIELD_CLASS,
-} from "@/lib/design/drawer-shell-tokens";
+  SALES_DIALOG_BODY_CLASS,
+  SALES_DIALOG_CONTENT_CLASS,
+  SALES_DIALOG_DESCRIPTION_CLASS,
+  SALES_DIALOG_FIELD_CLASS,
+  SALES_DIALOG_FOOTER_CLASS,
+  SALES_DIALOG_HEADER_CLASS,
+  SALES_DIALOG_LABEL_CLASS,
+  SALES_DIALOG_META_LABEL_CLASS,
+  SALES_DIALOG_META_ROW_CLASS,
+  SALES_DIALOG_META_VALUE_CLASS,
+  SALES_DIALOG_SECONDARY_BUTTON_CLASS,
+  SALES_DIALOG_TITLE_CLASS,
+  SALES_DIALOG_TOTAL_ROW_CLASS,
+  SALES_DRAWER_FIELD_CLASS,
+} from "@/features/sales/styles/sales-drawer-tokens";
+import { cn } from "@/lib/utils";
 
 export interface CheckoutChangePriceDialogProps {
   open: boolean;
@@ -58,24 +73,37 @@ export function CheckoutChangePriceDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="z-[70] max-w-md gap-5">
-        <DialogHeader className="text-center sm:text-center">
-          <DialogTitle className="text-[17px] font-semibold">
+      <DialogContent
+        size="md"
+        className={SALES_DIALOG_CONTENT_CLASS}
+        showCloseButton
+      >
+        <DialogHeader className={SALES_DIALOG_HEADER_CLASS}>
+          <DialogTitle className={SALES_DIALOG_TITLE_CLASS}>
             Change price
           </DialogTitle>
+          <DialogDescription className={SALES_DIALOG_DESCRIPTION_CLASS}>
+            Adjust the line price or apply a discount percentage.
+          </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
-          <div className="flex items-center justify-between text-[13px]">
-            <span className="text-muted-foreground">Regular price</span>
-            <span className="font-medium tabular-nums">
+        <div className={SALES_DIALOG_BODY_CLASS}>
+          <div className={SALES_DIALOG_META_ROW_CLASS}>
+            <span className={SALES_DIALOG_META_LABEL_CLASS}>Regular price</span>
+            <span className={SALES_DIALOG_META_VALUE_CLASS}>
               {formatMoney(regularPrice)}
             </span>
           </div>
 
-          <div className={DRAWER_FORM_FIELD_CLASS}>
-            <Label className={DRAWER_FIELD_LABEL_CLASS}>Modified price</Label>
+          <div className={SALES_DIALOG_FIELD_CLASS}>
+            <Label
+              htmlFor="checkout-modified-price"
+              className={SALES_DIALOG_LABEL_CLASS}
+            >
+              Modified price
+            </Label>
             <Input
+              id="checkout-modified-price"
               type="number"
               min={0}
               step="0.01"
@@ -85,37 +113,46 @@ export function CheckoutChangePriceDialog({
                 setModifiedPrice(parseFloat(event.target.value) || 0);
                 setDiscountPercent("");
               }}
-              className={DRAWER_FIELD_CONTROL_CLASS}
+              className={SALES_DRAWER_FIELD_CLASS}
             />
           </div>
 
-          <div className={DRAWER_FORM_FIELD_CLASS}>
-            <Label className={DRAWER_FIELD_LABEL_CLASS}>Discount</Label>
-            <Input
-              type="number"
-              min={0}
-              max={100}
-              step="0.01"
-              placeholder="e.g. 10%"
-              value={discountPercent}
-              onChange={(event) => setDiscountPercent(event.target.value)}
-              className={DRAWER_FIELD_CONTROL_CLASS}
-            />
+          <div className={SALES_DIALOG_FIELD_CLASS}>
+            <Label
+              htmlFor="checkout-discount-percent"
+              className={SALES_DIALOG_LABEL_CLASS}
+            >
+              Discount
+            </Label>
+            <div className="relative">
+              <Input
+                id="checkout-discount-percent"
+                type="number"
+                min={0}
+                max={100}
+                step="0.01"
+                placeholder="e.g. 10"
+                value={discountPercent}
+                onChange={(event) => setDiscountPercent(event.target.value)}
+                className={cn(SALES_DRAWER_FIELD_CLASS, "pr-9")}
+              />
+              <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-[13px] font-medium text-[#8A8A8A]">
+                %
+              </span>
+            </div>
           </div>
 
-          <div className="flex items-center justify-between border-t border-border/60 pt-4 text-[13px]">
-            <span className="font-medium text-foreground">Final price</span>
-            <span className="text-[15px] font-semibold tabular-nums">
-              {formatMoney(finalPrice)}
-            </span>
+          <div className={SALES_DIALOG_TOTAL_ROW_CLASS}>
+            <span>Final price</span>
+            <span className="tabular-nums">{formatMoney(finalPrice)}</span>
           </div>
         </div>
 
-        <DialogFooter className="grid grid-cols-2 gap-3 border-0 bg-transparent p-0 sm:grid-cols-2">
+        <DialogFooter className={SALES_DIALOG_FOOTER_CLASS} sticky={false}>
           <Button
             type="button"
             variant="outline"
-            className="h-11 w-full uppercase tracking-[0.04em]"
+            className={SALES_DIALOG_SECONDARY_BUTTON_CLASS}
             onClick={() => onOpenChange(false)}
             disabled={isPending}
           >
@@ -123,11 +160,12 @@ export function CheckoutChangePriceDialog({
           </Button>
           <Button
             type="button"
-            className="h-11 w-full uppercase tracking-[0.04em]"
+            variant="brand"
+            className={DRAWER_PRIMARY_BUTTON_CLASS}
             disabled={isPending || finalPrice < 0}
             onClick={() => onApply(finalPrice)}
           >
-            Apply
+            {isPending ? "Applying…" : "Apply"}
           </Button>
         </DialogFooter>
       </DialogContent>

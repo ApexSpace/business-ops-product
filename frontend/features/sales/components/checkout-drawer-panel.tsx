@@ -1,21 +1,27 @@
 "use client";
 
 import { useEffect } from "react";
-import { Loader2, MoreHorizontal, Plus } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { ProfileAvatar } from "@/components/ui/profile-avatar";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { CheckoutAddActions } from "@/features/sales/components/checkout-add-actions";
 import { CheckoutChangePriceDialog } from "@/features/sales/components/checkout-change-price-dialog";
 import { CheckoutInlineAddSection } from "@/features/sales/components/checkout-inline-add-section";
 import { CheckoutLineItemRow } from "@/features/sales/components/checkout-line-item-row";
 import { SaleClosePanel } from "@/features/sales/components/sale-close-panel";
-import { useCheckoutPanel } from "@/features/sales/hooks/use-checkout-panel";
+import {
+  useCheckoutPanel,
+  type InlineAddMode,
+} from "@/features/sales/hooks/use-checkout-panel";
 import { formatMoney } from "@/features/payments/utils/currencies";
-import { DRAWER_FORM_STACK_CLASS } from "@/lib/design/drawer-shell-tokens";
+import {
+  SALES_DRAWER_BODY_INSET_CLASS,
+  SALES_DRAWER_CLIENT_AVATAR_CLASS,
+  SALES_DRAWER_CLIENT_AVATAR_FALLBACK_CLASS,
+  SALES_DRAWER_CLIENT_CARD_CLASS,
+  SALES_DRAWER_CLIENT_NAME_CLASS,
+  SALES_DRAWER_CLIENT_SINCE_CLASS,
+  SALES_DRAWER_FORM_FIELDS_CLASS,
+} from "@/features/sales/styles/sales-drawer-tokens";
 
 export type CheckoutDrawerStep = "items" | "payment";
 
@@ -34,7 +40,10 @@ export interface CheckoutDrawerPanelProps {
   checkoutId: string;
   step: CheckoutDrawerStep;
   contactHeader?: CheckoutDrawerContactHeader | null;
+  initialAddMode?: InlineAddMode;
+  onInitialAddModeConsumed?: () => void;
   onSubmitActionChange?: (action: CheckoutDrawerSubmitAction | null) => void;
+  onSubtotalChange?: (subtotalLabel: string | null) => void;
   onComplete: () => void;
 }
 
@@ -42,7 +51,10 @@ export function CheckoutDrawerPanel({
   checkoutId,
   step,
   contactHeader,
+  initialAddMode = null,
+  onInitialAddModeConsumed,
   onSubmitActionChange,
+  onSubtotalChange,
   onComplete,
 }: CheckoutDrawerPanelProps) {
   const panel = useCheckoutPanel(checkoutId);
@@ -52,6 +64,22 @@ export function CheckoutDrawerPanel({
       onSubmitActionChange?.(null);
     }
   }, [step, onSubmitActionChange]);
+
+  useEffect(() => {
+    if (!panel.checkout || step !== "items") {
+      onSubtotalChange?.(null);
+      return;
+    }
+    onSubtotalChange?.(formatMoney(parseFloat(panel.checkout.subtotal)));
+  }, [panel.checkout, step, onSubtotalChange]);
+
+  useEffect(() => {
+    if (!initialAddMode || !panel.canEdit) return;
+    panel.setInlineAddMode(initialAddMode);
+    onInitialAddModeConsumed?.();
+    // Apply once when the panel mounts with a pending add intent.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [checkoutId, initialAddMode, panel.canEdit]);
 
   if (panel.isLoading) {
     return (
@@ -74,11 +102,12 @@ export function CheckoutDrawerPanel({
 
   if (step === "payment") {
     return (
-      <div className={DRAWER_FORM_STACK_CLASS}>
+      <div className={SALES_DRAWER_BODY_INSET_CLASS}>
         <SaleClosePanel
           checkoutId={checkout.id}
           contactId={checkout.contactId}
           balanceDue={parseFloat(checkout.balanceDue)}
+          subtotal={parseFloat(checkout.subtotal)}
           embedInDrawer
           hideSubmitButton
           onSubmitActionChange={onSubmitActionChange}
@@ -93,28 +122,30 @@ export function CheckoutDrawerPanel({
 
   return (
     <>
-      <div className={DRAWER_FORM_STACK_CLASS}>
-        <div className="flex min-w-0 items-center gap-3">
-          <ProfileAvatar name={contactName} className="size-11 shrink-0 text-sm" />
-          <div className="min-w-0">
-            <p className="truncate text-[15px] font-semibold text-foreground">
-              {contactName}
-            </p>
-            {contactHeader?.sinceLabel ? (
-              <p className="text-[12px] text-muted-foreground">
-                {contactHeader.sinceLabel}
-              </p>
-            ) : null}
+      <div className={SALES_DRAWER_BODY_INSET_CLASS}>
+        <div className={SALES_DRAWER_FORM_FIELDS_CLASS}>
+          <div className={SALES_DRAWER_CLIENT_CARD_CLASS}>
+            <div className="flex min-h-12 items-start justify-between gap-3">
+              <div className="flex min-w-0 flex-1 items-center gap-4">
+                <ProfileAvatar
+                  name={contactName}
+                  className={SALES_DRAWER_CLIENT_AVATAR_CLASS}
+                  fallbackClassName={SALES_DRAWER_CLIENT_AVATAR_FALLBACK_CLASS}
+                />
+                <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                  <p className={SALES_DRAWER_CLIENT_NAME_CLASS}>{contactName}</p>
+                  {contactHeader?.sinceLabel ? (
+                    <p className={SALES_DRAWER_CLIENT_SINCE_CLASS}>
+                      {contactHeader.sinceLabel}
+                    </p>
+                  ) : null}
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
 
-        <div className="space-y-0">
-          {checkout.items.length === 0 ? (
-            <p className="py-6 text-center text-[13px] text-muted-foreground">
-              No items yet. Add a service or product below.
-            </p>
-          ) : (
-            checkout.items.map((item) => (
+          <div className="flex w-full min-w-0 flex-col gap-3">
+            {checkout.items.map((item) => (
               <CheckoutLineItemRow
                 key={item.id}
                 item={item}
@@ -134,106 +165,58 @@ export function CheckoutDrawerPanel({
                   panel.updateLineMutation.mutate({ lineId: item.id, body })
                 }
               />
-            ))
-          )}
+            ))}
+          </div>
+
+          {panel.canEdit ? (
+            <>
+              <CheckoutAddActions
+                onAddService={() => panel.setInlineAddMode("service")}
+                onAddProduct={() => panel.setInlineAddMode("product")}
+                onMoreSelect={(mode) => panel.setInlineAddMode(mode)}
+              />
+
+              <CheckoutInlineAddSection
+                mode={panel.inlineAddMode}
+                contactId={checkout.contactId}
+                onClose={panel.closeInlineAdd}
+                serviceItems={panel.serviceItems}
+                selectedServiceId={panel.selectedServiceId}
+                onServiceChange={panel.setSelectedServiceId}
+                staffItems={panel.staffItems}
+                selectedStaffId={panel.selectedStaffId}
+                onStaffChange={panel.setSelectedStaffId}
+                selectedMembershipKey={panel.selectedMembershipKey}
+                onMembershipChange={panel.setSelectedMembershipKey}
+                onAddService={() => panel.addServiceMutation.mutate()}
+                servicePending={panel.addServiceMutation.isPending}
+                productItems={panel.productItems}
+                selectedProductKey={panel.selectedProductKey}
+                onProductChange={panel.setSelectedProductKey}
+                productQty={panel.productQty}
+                onProductQtyChange={panel.setProductQty}
+                onAddProduct={() => panel.addProductMutation.mutate()}
+                productPending={panel.addProductMutation.isPending}
+                offerItems={panel.offerItems}
+                selectedOfferId={panel.selectedOfferId}
+                onOfferChange={panel.setSelectedOfferId}
+                onApplyOffer={() =>
+                  panel.selectedOfferId &&
+                  panel.applyOfferMutation.mutate(panel.selectedOfferId)
+                }
+                offerPending={panel.applyOfferMutation.isPending}
+                depositAmount={panel.depositAmount}
+                onDepositAmountChange={panel.setDepositAmount}
+                onAddDeposit={() => panel.depositMutation.mutate()}
+                depositPending={panel.depositMutation.isPending}
+                onAddGiftCard={(values) => panel.giftCardMutation.mutate(values)}
+                giftCardPending={panel.giftCardMutation.isPending}
+                onAddPackage={(values) => panel.packageMutation.mutate(values)}
+                packagePending={panel.packageMutation.isPending}
+              />
+            </>
+          ) : null}
         </div>
-
-        {panel.canEdit ? (
-          <>
-            <div className="flex w-full flex-wrap items-center justify-center gap-x-5 gap-y-2 pt-1">
-              <button
-                type="button"
-                onClick={() => panel.setInlineAddMode("service")}
-                className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.06em] text-primary hover:underline"
-              >
-                <Plus className="size-3.5" />
-                Add service
-              </button>
-              <button
-                type="button"
-                onClick={() => panel.setInlineAddMode("product")}
-                className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.06em] text-primary hover:underline"
-              >
-                <Plus className="size-3.5" />
-                Add product
-              </button>
-              <DropdownMenu>
-                <DropdownMenuTrigger
-                  render={
-                    <button
-                      type="button"
-                      className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.06em] text-primary hover:underline"
-                    >
-                      <MoreHorizontal className="size-3.5" />
-                      More
-                    </button>
-                  }
-                />
-                <DropdownMenuContent align="center" className="w-44">
-                  <DropdownMenuItem
-                    onClick={() => panel.setInlineAddMode("giftCard")}
-                  >
-                    Gift card
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => panel.setInlineAddMode("package")}
-                  >
-                    Package
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => panel.setInlineAddMode("offer")}
-                  >
-                    Offer
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => panel.setInlineAddMode("accountBalance")}
-                  >
-                    Account balance
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-
-            <CheckoutInlineAddSection
-              mode={panel.inlineAddMode}
-              contactId={checkout.contactId}
-              onClose={panel.closeInlineAdd}
-              serviceItems={panel.serviceItems}
-              selectedServiceId={panel.selectedServiceId}
-              onServiceChange={panel.setSelectedServiceId}
-              staffItems={panel.staffItems}
-              selectedStaffId={panel.selectedStaffId}
-              onStaffChange={panel.setSelectedStaffId}
-              selectedMembershipKey={panel.selectedMembershipKey}
-              onMembershipChange={panel.setSelectedMembershipKey}
-              onAddService={() => panel.addServiceMutation.mutate()}
-              servicePending={panel.addServiceMutation.isPending}
-              productItems={panel.productItems}
-              selectedProductKey={panel.selectedProductKey}
-              onProductChange={panel.setSelectedProductKey}
-              productQty={panel.productQty}
-              onProductQtyChange={panel.setProductQty}
-              onAddProduct={() => panel.addProductMutation.mutate()}
-              productPending={panel.addProductMutation.isPending}
-              offerItems={panel.offerItems}
-              selectedOfferId={panel.selectedOfferId}
-              onOfferChange={panel.setSelectedOfferId}
-              onApplyOffer={() =>
-                panel.selectedOfferId &&
-                panel.applyOfferMutation.mutate(panel.selectedOfferId)
-              }
-              offerPending={panel.applyOfferMutation.isPending}
-              depositAmount={panel.depositAmount}
-              onDepositAmountChange={panel.setDepositAmount}
-              onAddDeposit={() => panel.depositMutation.mutate()}
-              depositPending={panel.depositMutation.isPending}
-              onAddGiftCard={(values) => panel.giftCardMutation.mutate(values)}
-              giftCardPending={panel.giftCardMutation.isPending}
-              onAddPackage={(values) => panel.packageMutation.mutate(values)}
-              packagePending={panel.packageMutation.isPending}
-            />
-          </>
-        ) : null}
       </div>
 
       <CheckoutChangePriceDialog

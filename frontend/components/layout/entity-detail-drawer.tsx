@@ -1,22 +1,19 @@
 "use client";
 
-import {
-  Sheet,
-  SheetBody,
-  SheetContent,
-} from "@/components/ui/sheet";
 import { LoadingState } from "@/components/data-display/loading-state";
-import { cn } from "@/lib/utils";
+import { DrawerShell } from "@/components/layout/drawer-shell";
+import { EntityDetailHeader } from "@/components/layout/entity-detail-header";
 import {
-  ENTITY_DRAWER_BODY_CLASS,
-  ENTITY_DRAWER_CONTENT_INSET_CLASS,
-  ENTITY_DRAWER_FOOTER_CLASS,
+  EntityDetailTabs,
+  type EntityDetailTabItem,
+} from "@/components/layout/entity-detail-tabs";
+import { DRAWER_SHELL_CONTENT_INSET_CLASS } from "@/lib/design/drawer-tokens";
+import {
+  ENTITY_DRAWER_SUMMARY_CLASS,
   ENTITY_DRAWER_TOOLBAR_CLASS,
-  entityDrawerWidthClass,
   type EntityDrawerWidthTier,
 } from "@/lib/design/workspace-tokens";
-import { EntityDetailHeader } from "./entity-detail-header";
-import { EntityDetailTabs, type EntityDetailTabItem } from "./entity-detail-tabs";
+import { cn } from "@/lib/utils";
 
 /** @deprecated Use `compact` instead */
 type LegacyDrawerWidth = "default";
@@ -47,6 +44,9 @@ interface EntityDetailDrawerProps {
   className?: string;
   bodyClassName?: string;
   contentClassName?: string;
+  headerClassName?: string;
+  /** @deprecated Spine title chrome comes from DrawerShell. */
+  titleClassName?: string;
   /** Full-bleed body (e.g. split contacts layout manages its own column padding). */
   fullBleed?: boolean;
 }
@@ -78,81 +78,75 @@ export function EntityDetailDrawer({
   className,
   bodyClassName,
   contentClassName,
+  headerClassName,
   fullBleed = false,
 }: EntityDetailDrawerProps) {
-  const widthClass = entityDrawerWidthClass(resolveWidth(width));
+  const resolvedWidth = resolveWidth(width);
+  const headerCluster = (
+    <>
+      {badges}
+      <EntityDetailHeader
+        actions={headerActions}
+        overflowActions={overflowActions}
+      />
+    </>
+  );
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent
-        side="right"
-        showCloseButton
-        className={cn(
-          "flex h-full max-h-svh flex-col gap-0 p-0",
-          widthClass,
-          className,
-        )}
-      >
-        <EntityDetailHeader
-          title={title}
-          subtitle={subtitle}
-          badges={badges}
-          actions={headerActions}
-          overflowActions={overflowActions}
+    <DrawerShell
+      open={open}
+      onOpenChange={onOpenChange}
+      variant="sheet"
+      width={resolvedWidth}
+      title={title}
+      description={subtitle}
+      headerActions={headerCluster}
+      footer={footer}
+      className={className}
+      headerClassName={headerClassName}
+      bodyClassName={cn(
+        fullBleed && "flex flex-col overflow-hidden",
+        bodyClassName,
+      )}
+      contentClassName={cn(
+        "flex min-h-0 flex-1 flex-col !px-0 !py-0 space-y-0",
+        contentClassName,
+      )}
+    >
+      {tabs && tabs.length > 1 && activeTab && onTabChange ? (
+        <EntityDetailTabs
+          value={activeTab}
+          onValueChange={onTabChange}
+          tabs={tabs}
         />
+      ) : null}
 
-        {tabs && tabs.length > 1 && activeTab && onTabChange ? (
-          <EntityDetailTabs
-            value={activeTab}
-            onValueChange={onTabChange}
-            tabs={tabs}
-          />
-        ) : null}
+      {summary ? (
+        <div className={ENTITY_DRAWER_SUMMARY_CLASS}>{summary}</div>
+      ) : null}
 
-        {summary ? <div className="shrink-0">{summary}</div> : null}
+      {toolbar ? (
+        <div className={ENTITY_DRAWER_TOOLBAR_CLASS}>{toolbar}</div>
+      ) : null}
 
-        {toolbar ? (
-          <div className={ENTITY_DRAWER_TOOLBAR_CLASS}>{toolbar}</div>
-        ) : null}
-
-        <SheetBody
+      {isLoading ? (
+        <div className={cn(!fullBleed && DRAWER_SHELL_CONTENT_INSET_CLASS)}>
+          <LoadingState variant="skeleton" rows={4} />
+        </div>
+      ) : fullBleed ? (
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+          {children}
+        </div>
+      ) : (
+        <div
           className={cn(
-            ENTITY_DRAWER_BODY_CLASS,
-            "!p-0",
-            fullBleed && "flex flex-col overflow-hidden",
-            bodyClassName,
+            "flex min-h-0 flex-1 flex-col gap-3",
+            DRAWER_SHELL_CONTENT_INSET_CLASS,
           )}
         >
-          {isLoading ? (
-            <div
-              className={cn(
-                !fullBleed && ENTITY_DRAWER_CONTENT_INSET_CLASS,
-                contentClassName,
-              )}
-            >
-              <LoadingState variant="skeleton" rows={4} />
-            </div>
-          ) : fullBleed ? (
-            <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-              {children}
-            </div>
-          ) : (
-            <div
-              className={cn(
-                "flex min-h-0 flex-1 flex-col gap-3",
-                ENTITY_DRAWER_CONTENT_INSET_CLASS,
-                contentClassName,
-              )}
-            >
-              {children}
-            </div>
-          )}
-        </SheetBody>
-
-        {footer ? (
-          <footer className={ENTITY_DRAWER_FOOTER_CLASS}>{footer}</footer>
-        ) : null}
-      </SheetContent>
-    </Sheet>
+          {children}
+        </div>
+      )}
+    </DrawerShell>
   );
 }

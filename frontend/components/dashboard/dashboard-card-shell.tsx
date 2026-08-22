@@ -34,7 +34,7 @@ export function DashboardCardShell({
   return (
     <Card
       className={cn(
-        "rounded-[14px] border-[#d8e5ff] bg-[linear-gradient(180deg,rgba(255,255,255,0.9),rgba(240,246,255,0.98))] p-0 shadow-[0_20px_44px_-28px_rgba(55,91,210,0.28)] dark:border-[#243a73] dark:bg-[linear-gradient(180deg,rgba(11,21,48,0.88),rgba(18,34,72,0.95))]",
+        "rounded-[var(--radius-2xl)] border-[#d8e5ff] bg-[linear-gradient(180deg,rgba(255,255,255,0.9),rgba(240,246,255,0.98))] p-0 shadow-[0_20px_44px_-28px_rgba(55,91,210,0.28)] dark:border-[#243a73] dark:bg-[linear-gradient(180deg,rgba(11,21,48,0.88),rgba(18,34,72,0.95))]",
         className,
       )}
       tone="glass"

@@ -4,7 +4,8 @@ import { Crown } from "lucide-react";
 import { DateTime } from "luxon";
 import { ApiErrorState } from "@/components/data-display/api-error-state";
 import { EmptyState } from "@/components/data-display/empty-state";
-import { Badge } from "@/components/ui/badge";
+import { LoadingState } from "@/components/data-display/loading-state";
+import { StatusBadge } from "@/components/data-display/status-badge";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -35,21 +36,7 @@ export function MembershipStatusBadge({
 }: {
   status: ClientMembershipStatus;
 }) {
-  const label = status.replace(/_/g, " ");
-  switch (status) {
-    case "ACTIVE":
-    case "SCHEDULED":
-      return <Badge variant="success">{label}</Badge>;
-    case "PAST_DUE":
-      return <Badge variant="warning">{label}</Badge>;
-    case "UNPAID":
-    case "CANCELED":
-      return <Badge variant="destructive">{label}</Badge>;
-    case "PAUSED":
-      return <Badge variant="neutral">{label}</Badge>;
-    default:
-      return <Badge variant="secondary">{label}</Badge>;
-  }
+  return <StatusBadge domain="clientMembership" status={status} />;
 }
 
 export function formatMembershipPrice(
@@ -285,7 +272,7 @@ export function MembershipDetailPanel({
           />
         </div>
       ) : isLoading || !detail ? (
-        <p className="p-6 text-sm text-muted-foreground">Loading membership…</p>
+        <LoadingState label="Loading membership…" className="p-6 py-10" />
       ) : isError ? (
         <ApiErrorState error={error} onRetry={onRetry} />
       ) : (

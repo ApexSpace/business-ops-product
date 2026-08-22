@@ -1,44 +1,55 @@
 "use client";
 
 import { useMemo } from "react";
-import { MoreHorizontal } from "lucide-react";
+import { MoreVertical } from "lucide-react";
 import { DrawerHeaderContent } from "@/components/drawer/drawer-header-content";
 import { DrawerPrimaryButton } from "@/components/drawer/drawer-primary-button";
-import { SearchableSelect } from "@/components/forms/searchable-select";
 import { DrawerShell } from "@/components/layout/drawer-shell";
 import { IconButton } from "@/components/ui/icon-button";
 import { Label } from "@/components/ui/label";
+import { ContactPicker } from "@/features/contacts/components/contact-picker";
+import {
+  CheckoutAddActions,
+  type CheckoutMoreMode,
+} from "@/features/sales/components/checkout-add-actions";
 import {
   SALES_DRAWER_BODY_INSET_CLASS,
-  SALES_DRAWER_FIELD_CLASS,
+  SALES_DRAWER_FIELD_GROUP_CLASS,
   SALES_DRAWER_FOOTER_CLASS,
   SALES_DRAWER_FOOTER_INNER_CLASS,
   SALES_DRAWER_FORM_FIELDS_CLASS,
   SALES_DRAWER_HEADER_ACTION_CLASS,
+  SALES_DRAWER_MOBILE_HEADER_ACTION_CLASS,
+  SALES_DRAWER_MOBILE_SHELL_CLASS,
   SALES_DRAWER_SHELL_CLASS,
   SALES_DRAWER_SHELL_HEADER_CLASS,
   SALES_DRAWER_SPINE_LABELS,
+  SALES_DRAWER_SUBTOTAL_ROW_CLASS,
 } from "@/features/sales/styles/sales-drawer-tokens";
+import { formatMoney } from "@/features/payments/utils/currencies";
+import { useIsMobile } from "@/lib/hooks/use-mobile";
+import { toast } from "sonner";
 
 export interface NewCheckoutDrawerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  contactItems: Array<{ value: string; label: string }>;
   contactId: string | null;
   onContactIdChange: (id: string | null) => void;
   onCreate: () => void;
+  onCreateAndAdd?: (mode: "service" | "product" | CheckoutMoreMode) => void;
   isPending?: boolean;
 }
 
 export function NewCheckoutDrawer({
   open,
   onOpenChange,
-  contactItems,
   contactId,
   onContactIdChange,
   onCreate,
+  onCreateAndAdd,
   isPending = false,
 }: NewCheckoutDrawerProps) {
+  const isMobile = useIsMobile();
   const dateEyebrow = useMemo(
     () =>
       new Date()
@@ -51,55 +62,98 @@ export function NewCheckoutDrawer({
     [],
   );
 
+  const requireClientThen = (action: () => void) => {
+    if (!contactId) {
+      toast.error("Select a client first");
+      return;
+    }
+    action();
+  };
+
   return (
     <DrawerShell
       open={open}
       onOpenChange={onOpenChange}
       variant="sheet"
       width="appointment"
-      spineLabel={SALES_DRAWER_SPINE_LABELS.checkout}
-      className={SALES_DRAWER_SHELL_CLASS}
-      headerClassName={SALES_DRAWER_SHELL_HEADER_CLASS}
+      chrome={isMobile ? "mobile-brand" : "default"}
+      spineLabel={isMobile ? undefined : SALES_DRAWER_SPINE_LABELS.checkout}
+      className={
+        isMobile ? SALES_DRAWER_MOBILE_SHELL_CLASS : SALES_DRAWER_SHELL_CLASS
+      }
+      headerClassName={
+        isMobile ? undefined : SALES_DRAWER_SHELL_HEADER_CLASS
+      }
       contentClassName="!px-0 !py-0"
       footerClassName={SALES_DRAWER_FOOTER_CLASS}
       title={
-        <DrawerHeaderContent eyebrow={dateEyebrow} title="Checkout" />
+        isMobile ? (
+          "Checkout"
+        ) : (
+          <DrawerHeaderContent eyebrow={dateEyebrow} title="Checkout" />
+        )
       }
       headerActions={
         <IconButton
           type="button"
           variant="ghost"
           aria-label="More actions"
-          className={SALES_DRAWER_HEADER_ACTION_CLASS}
+          className={
+            isMobile
+              ? SALES_DRAWER_MOBILE_HEADER_ACTION_CLASS
+              : SALES_DRAWER_HEADER_ACTION_CLASS
+          }
         >
-          <MoreHorizontal className="size-4" />
+          <MoreVertical className="size-4" />
         </IconButton>
       }
       footer={
         <div className={SALES_DRAWER_FOOTER_INNER_CLASS}>
+          <div className={SALES_DRAWER_SUBTOTAL_ROW_CLASS}>
+            <span>Subtotal</span>
+            <span className="tabular-nums">{formatMoney(0)}</span>
+          </div>
           <DrawerPrimaryButton
             disabled={!contactId || isPending}
             onClick={onCreate}
           >
-            {isPending ? "Creating…" : "Start checkout"}
+            {isPending ? "Creating…" : "Go to Payments"}
           </DrawerPrimaryButton>
         </div>
       }
     >
       <div className={SALES_DRAWER_BODY_INSET_CLASS}>
         <div className={SALES_DRAWER_FORM_FIELDS_CLASS}>
-          <div className="flex flex-col gap-2">
-            <Label className="text-[12.5px] font-semibold text-muted-foreground">
+          <div className={SALES_DRAWER_FIELD_GROUP_CLASS}>
+            <Label className="text-[14px] font-medium leading-none text-[#524346]">
               Client
             </Label>
-            <SearchableSelect
-              items={contactItems}
-              value={contactId}
-              onValueChange={onContactIdChange}
+            <ContactPicker
+              value={contactId ?? ""}
+              onValueChange={(id) => onContactIdChange(id || null)}
               placeholder="Search or create a client"
-              triggerClassName={SALES_DRAWER_FIELD_CLASS}
+              variant="drawer"
             />
           </div>
+
+          <CheckoutAddActions
+            disabled={isPending}
+            onAddService={() =>
+              requireClientThen(() =>
+                onCreateAndAdd ? onCreateAndAdd("service") : onCreate(),
+              )
+            }
+            onAddProduct={() =>
+              requireClientThen(() =>
+                onCreateAndAdd ? onCreateAndAdd("product") : onCreate(),
+              )
+            }
+            onMoreSelect={(mode) =>
+              requireClientThen(() =>
+                onCreateAndAdd ? onCreateAndAdd(mode) : onCreate(),
+              )
+            }
+          />
         </div>
       </div>
     </DrawerShell>

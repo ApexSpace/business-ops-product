@@ -17,6 +17,7 @@ interface ListPrimaryActionProps {
 /**
  * Universal list primary CTA — Figma “New Checkout” position/style.
  * Place via ListToolbar `actions` (renders on the left).
+ * Uses Button `variant="brand"` + `--control-height`.
  */
 export function ListPrimaryAction({
   label,
@@ -29,11 +30,12 @@ export function ListPrimaryAction({
     <>
       <Button
         type="button"
+        variant="brand"
         size="icon"
         disabled={disabled}
         className={cn(
           DATA_TABLE_PRIMARY_ACTION_CLASS,
-          "!size-11 px-0 sm:hidden",
+          "!min-w-0 !size-[var(--control-height)] px-0 sm:hidden",
           className,
         )}
         onClick={onClick}
@@ -43,6 +45,7 @@ export function ListPrimaryAction({
       </Button>
       <Button
         type="button"
+        variant="brand"
         disabled={disabled}
         className={cn(
           DATA_TABLE_PRIMARY_ACTION_CLASS,

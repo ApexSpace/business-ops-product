@@ -1,23 +1,4 @@
-/** Shared slide-in shell styling for entity edit/create drawers. */
-import { ENTITY_DRAWER_CONTENT_INSET_CLASS } from "@/lib/design/workspace-tokens";
-
-export const DRAWER_SHEET_CLASS =
-  "[--sheet-width:min(92vw,480px)] shadow-elevation-lg";
-
-/** Matches `EntityDetailDrawer` `width="wide"` for stacked edit-over-detail flows. */
-export const DRAWER_SHEET_WIDE_CLASS =
-  "[--sheet-width:min(92vw,640px)] shadow-elevation-lg";
-
-export const DRAWER_SHEET_HEADER_CLASS =
-  "border-b border-border/70 px-6 py-5 pr-14";
-
-export const DRAWER_SHEET_TITLE_CLASS =
-  "text-lg font-semibold tracking-tight";
-
-export const DRAWER_SHEET_DESCRIPTION_CLASS =
-  "mt-1 text-[13px] leading-relaxed text-muted-foreground";
-
-export const DRAWER_SHEET_CONTENT_CLASS = `space-y-4 scrollbar-thin ${ENTITY_DRAWER_CONTENT_INSET_CLASS}`;
+/** Shared drawer footer action recipes. Width/header chrome lives on FormDrawerShell. */
 
 /** Standard action button sizing for all drawer footers. */
 export const DRAWER_FOOTER_BUTTON_CLASS =
@@ -29,8 +10,8 @@ export const DRAWER_FOOTER_ACTIONS_CLASS =
 
 /** Standard drawer footer — actions pinned bottom-right. */
 export const DRAWER_SHEET_FOOTER_CLASS =
-  "flex-row flex-wrap items-center justify-end gap-2.5 border-t border-border/70 bg-background px-6 py-4";
+  "flex-row flex-wrap items-center justify-end gap-2.5 border-t border-[var(--drawer-header-border)] bg-white px-6 py-4";
 
 /** Wider drawer footer padding (financial, appointment, work-item sheets). */
 export const DRAWER_SHEET_FOOTER_WIDE_CLASS =
-  "flex-row flex-wrap items-center justify-end gap-2.5 border-t border-border/70 bg-background px-7 py-4";
+  "flex-row flex-wrap items-center justify-end gap-2.5 border-t border-[var(--drawer-header-border)] bg-white px-7 py-4";

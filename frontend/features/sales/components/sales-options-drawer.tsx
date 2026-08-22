@@ -1,11 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { MoreHorizontal } from "lucide-react";
-import { DrawerHeaderContent } from "@/components/drawer/drawer-header-content";
-import { DrawerPrimaryButton } from "@/components/drawer/drawer-primary-button";
-import { DrawerShell } from "@/components/layout/drawer-shell";
-import { IconButton } from "@/components/ui/icon-button";
+import { OptionsFilterDrawer } from "@/components/layout/options-filter-drawer";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -16,17 +12,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  SALES_DRAWER_BODY_INSET_CLASS,
-  SALES_DRAWER_FIELD_CLASS,
-  SALES_DRAWER_FOOTER_CLASS,
-  SALES_DRAWER_FOOTER_INNER_CLASS,
-  SALES_DRAWER_FORM_FIELDS_CLASS,
-  SALES_DRAWER_HEADER_ACTION_CLASS,
-  SALES_DRAWER_SELECT_TRIGGER_CLASS,
-  SALES_DRAWER_SHELL_CLASS,
-  SALES_DRAWER_SHELL_HEADER_CLASS,
-  SALES_DRAWER_SPINE_LABELS,
-} from "@/features/sales/styles/sales-drawer-tokens";
+  DRAWER_FIELD_CLASS,
+  DRAWER_FORM_FIELDS_CLASS,
+  DRAWER_SELECT_TRIGGER_CLASS,
+} from "@/lib/design/drawer-tokens";
 import { cn } from "@/lib/utils";
 
 export type SalesOptionsStatus = "all" | "OPEN" | "PAID" | "VOID";
@@ -83,162 +72,135 @@ export function SalesOptionsDrawer({
   ) => setDraft((prev) => ({ ...prev, [key]: value }));
 
   return (
-    <DrawerShell
+    <OptionsFilterDrawer
       open={open}
       onOpenChange={handleOpenChange}
-      variant="sheet"
-      width="appointment"
-      spineLabel={SALES_DRAWER_SPINE_LABELS.options}
-      className={SALES_DRAWER_SHELL_CLASS}
-      headerClassName={SALES_DRAWER_SHELL_HEADER_CLASS}
-      contentClassName="!px-0 !py-0"
-      footerClassName={SALES_DRAWER_FOOTER_CLASS}
-      title={<DrawerHeaderContent title="Options" />}
-      headerActions={
-        <IconButton
-          type="button"
-          variant="ghost"
-          aria-label="More options"
-          className={SALES_DRAWER_HEADER_ACTION_CLASS}
-        >
-          <MoreHorizontal className="size-4" />
-        </IconButton>
-      }
-      footer={
-        <div className={SALES_DRAWER_FOOTER_INNER_CLASS}>
-          <DrawerPrimaryButton
-            onClick={() => {
-              onApply(draft);
-              onOpenChange(false);
-              onDownload?.();
-            }}
-          >
-            Apply
-          </DrawerPrimaryButton>
-        </div>
-      }
-    >
-      <div className={cn(SALES_DRAWER_BODY_INSET_CLASS, "pb-2")}>
-        {onViewTransactions ? (
+      spineLabel="OPTIONS"
+      onApply={() => {
+        onApply(draft);
+        onDownload?.();
+      }}
+      leading={
+        onViewTransactions ? (
           <button
             type="button"
             onClick={onViewTransactions}
             className={cn(
-              SALES_DRAWER_FIELD_CLASS,
+              DRAWER_FIELD_CLASS,
               "inline-flex items-center justify-center border-violet-primary-normal font-semibold text-violet-primary-normal",
             )}
           >
             View Transactions
           </button>
-        ) : null}
+        ) : null
+      }
+    >
+      <div className={DRAWER_FORM_FIELDS_CLASS}>
+        <Field label="Type">
+          <Select defaultValue="sale">
+            <SelectTrigger className={DRAWER_SELECT_TRIGGER_CLASS}>
+              <SelectValue placeholder="Select type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="sale">Sale</SelectItem>
+              <SelectItem value="refund">Refund</SelectItem>
+            </SelectContent>
+          </Select>
+        </Field>
 
-        <div className={SALES_DRAWER_FORM_FIELDS_CLASS}>
-          <Field label="Type">
-            <Select defaultValue="sale">
-              <SelectTrigger className={SALES_DRAWER_SELECT_TRIGGER_CLASS}>
-                <SelectValue placeholder="Select type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="sale">Sale</SelectItem>
-                <SelectItem value="refund">Refund</SelectItem>
-              </SelectContent>
-            </Select>
-          </Field>
+        <Field label="Sales or Refund #">
+          <Input
+            className={DRAWER_FIELD_CLASS}
+            placeholder="Enter sales and refund #"
+            value={draft.saleNumber}
+            onChange={(e) => update("saleNumber", e.target.value)}
+          />
+        </Field>
 
-          <Field label="Sales or Refund #">
+        <Field label="Client">
+          <Input
+            className={DRAWER_FIELD_CLASS}
+            placeholder="Search for client"
+            value={draft.clientQuery}
+            onChange={(e) => update("clientQuery", e.target.value)}
+          />
+        </Field>
+
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="From Amount">
             <Input
-              className={SALES_DRAWER_FIELD_CLASS}
-              placeholder="Enter sales and refund #"
-              value={draft.saleNumber}
-              onChange={(e) => update("saleNumber", e.target.value)}
+              className={DRAWER_FIELD_CLASS}
+              placeholder="Enter amount"
+              inputMode="decimal"
+              value={draft.amountFrom}
+              onChange={(e) => update("amountFrom", e.target.value)}
             />
           </Field>
-
-          <Field label="Client">
+          <Field label="To Amount">
             <Input
-              className={SALES_DRAWER_FIELD_CLASS}
-              placeholder="Search for client"
-              value={draft.clientQuery}
-              onChange={(e) => update("clientQuery", e.target.value)}
-            />
-          </Field>
-
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="From Amount">
-              <Input
-                className={SALES_DRAWER_FIELD_CLASS}
-                placeholder="Enter amount"
-                inputMode="decimal"
-                value={draft.amountFrom}
-                onChange={(e) => update("amountFrom", e.target.value)}
-              />
-            </Field>
-            <Field label="To Amount">
-              <Input
-                className={SALES_DRAWER_FIELD_CLASS}
-                placeholder="Enter amount"
-                inputMode="decimal"
-                value={draft.amountTo}
-                onChange={(e) => update("amountTo", e.target.value)}
-              />
-            </Field>
-          </div>
-
-          <Field label="Status">
-            <Select
-              value={draft.status}
-              onValueChange={(v) =>
-                update("status", (v ?? "all") as SalesOptionsStatus)
-              }
-            >
-              <SelectTrigger className={SALES_DRAWER_SELECT_TRIGGER_CLASS}>
-                <SelectValue placeholder="Select status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                <SelectItem value="OPEN">Open</SelectItem>
-                <SelectItem value="PAID">Closed</SelectItem>
-                <SelectItem value="VOID">Void</SelectItem>
-              </SelectContent>
-            </Select>
-          </Field>
-
-          <Field label="Sale Payment Method">
-            <Select
-              value={draft.paymentMethod || undefined}
-              onValueChange={(v) => update("paymentMethod", v ?? "")}
-            >
-              <SelectTrigger className={SALES_DRAWER_SELECT_TRIGGER_CLASS}>
-                <SelectValue placeholder="Select sale payment method" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="CASH">Cash</SelectItem>
-                <SelectItem value="CARD">Card</SelectItem>
-                <SelectItem value="OTHER">Other</SelectItem>
-              </SelectContent>
-            </Select>
-          </Field>
-
-          <Field label="Sale Date">
-            <Input
-              type="date"
-              className={SALES_DRAWER_FIELD_CLASS}
-              value={draft.saleDate}
-              onChange={(e) => update("saleDate", e.target.value)}
-            />
-          </Field>
-
-          <Field label="Includes Staff Member">
-            <Input
-              className={SALES_DRAWER_FIELD_CLASS}
-              placeholder="Select staff member"
-              value={draft.staffQuery}
-              onChange={(e) => update("staffQuery", e.target.value)}
+              className={DRAWER_FIELD_CLASS}
+              placeholder="Enter amount"
+              inputMode="decimal"
+              value={draft.amountTo}
+              onChange={(e) => update("amountTo", e.target.value)}
             />
           </Field>
         </div>
+
+        <Field label="Status">
+          <Select
+            value={draft.status}
+            onValueChange={(v) =>
+              update("status", (v ?? "all") as SalesOptionsStatus)
+            }
+          >
+            <SelectTrigger className={DRAWER_SELECT_TRIGGER_CLASS}>
+              <SelectValue placeholder="Select status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All</SelectItem>
+              <SelectItem value="OPEN">Open</SelectItem>
+              <SelectItem value="PAID">Closed</SelectItem>
+              <SelectItem value="VOID">Void</SelectItem>
+            </SelectContent>
+          </Select>
+        </Field>
+
+        <Field label="Sale Payment Method">
+          <Select
+            value={draft.paymentMethod || undefined}
+            onValueChange={(v) => update("paymentMethod", v ?? "")}
+          >
+            <SelectTrigger className={DRAWER_SELECT_TRIGGER_CLASS}>
+              <SelectValue placeholder="Select sale payment method" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="CASH">Cash</SelectItem>
+              <SelectItem value="CARD">Card</SelectItem>
+              <SelectItem value="OTHER">Other</SelectItem>
+            </SelectContent>
+          </Select>
+        </Field>
+
+        <Field label="Sale Date">
+          <Input
+            type="date"
+            className={DRAWER_FIELD_CLASS}
+            value={draft.saleDate}
+            onChange={(e) => update("saleDate", e.target.value)}
+          />
+        </Field>
+
+        <Field label="Includes Staff Member">
+          <Input
+            className={DRAWER_FIELD_CLASS}
+            placeholder="Select staff member"
+            value={draft.staffQuery}
+            onChange={(e) => update("staffQuery", e.target.value)}
+          />
+        </Field>
       </div>
-    </DrawerShell>
+    </OptionsFilterDrawer>
   );
 }
 

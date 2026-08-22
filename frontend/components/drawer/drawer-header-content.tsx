@@ -2,10 +2,10 @@
 
 import type { ReactNode } from "react";
 import {
-  APPOINTMENT_DRAWER_DATE_EYEBROW_CLASS,
-  APPOINTMENT_DRAWER_HEADER_CONTENT_CLASS,
-  APPOINTMENT_DRAWER_TITLE_CLASS,
-} from "@/features/appointments/styles/appointment-drawer-tokens";
+  DRAWER_DATE_EYEBROW_CLASS,
+  DRAWER_HEADER_CONTENT_CLASS,
+  DRAWER_TITLE_CLASS,
+} from "@/lib/design/drawer-tokens";
 import { cn } from "@/lib/utils";
 
 export interface DrawerHeaderContentProps {
@@ -20,11 +20,11 @@ export function DrawerHeaderContent({
   className,
 }: DrawerHeaderContentProps) {
   return (
-    <div className={cn(APPOINTMENT_DRAWER_HEADER_CONTENT_CLASS, className)}>
+    <div className={cn(DRAWER_HEADER_CONTENT_CLASS, className)}>
       {eyebrow ? (
-        <p className={APPOINTMENT_DRAWER_DATE_EYEBROW_CLASS}>{eyebrow}</p>
+        <p className={DRAWER_DATE_EYEBROW_CLASS}>{eyebrow}</p>
       ) : null}
-      <span className={APPOINTMENT_DRAWER_TITLE_CLASS}>{title}</span>
+      <span className={DRAWER_TITLE_CLASS}>{title}</span>
     </div>
   );
 }

@@ -13,6 +13,7 @@ import type { StaffMemberOption } from "@/features/appointments/components/calen
 import { useCalendarCurrentTimeTop } from "@/features/appointments/hooks/use-calendar-current-time";
 import { isTodayDateKey } from "@/features/calendars/utils/timezone";
 import { CALENDAR_GRID } from "@/features/calendars/utils/calendar-grid-styles";
+import { LoadingState } from "@/components/data-display/loading-state";
 import {
   CALENDAR_FIGMA_STAFF_COL_IDEAL_PX,
   CALENDAR_FIGMA_STAFF_COL_MIN_PX,
@@ -199,8 +200,8 @@ export function StaffDayCalendarView({
           </div>
 
           {isLoading ? (
-            <div className="flex h-48 items-center justify-center text-sm text-grey-tertiary-normal">
-              Loading appointments…
+            <div className="flex h-48 items-center justify-center">
+              <LoadingState variant="inline" label="Loading appointments…" />
             </div>
           ) : (
             <div

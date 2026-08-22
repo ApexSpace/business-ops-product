@@ -17,11 +17,13 @@ import { InvoiceDetailPanel } from "@/features/payments/components/workspace/inv
 import { PaymentFormDrawer } from "@/features/payments/components/payment-form-drawer";
 import { InvoiceTableRowActions } from "@/features/payments/components/workspace/invoice-table-row-actions";
 import { FinancialTabPanel } from "@/features/payments/components/workspace/financial-tab-panel";
+import { InvoicesMobileList } from "@/features/payments/components/mobile/invoices-mobile-list";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ListPagination } from "@/components/ui/list-pagination";
 import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
 import { useListSearchParams } from "@/lib/hooks/use-list-search-params";
+import { useIsMobile } from "@/lib/hooks/use-mobile";
 import {
   WORKSPACE_ACTIVE_ROW_CLASS,
 } from "@/lib/design/workspace-tokens";
@@ -60,6 +62,7 @@ const statusFilterItems = [
 
 export function PaymentsInvoicesTab() {
   const queryClient = useQueryClient();
+  const isMobile = useIsMobile();
   const { params, page, setParams } = useListSearchParams(LIST_SCHEMA);
   const debouncedSearch = useDebouncedValue(params.search);
   const {
@@ -144,6 +147,32 @@ export function PaymentsInvoicesTab() {
 
   return (
     <>
+      {isMobile ? (
+        isError ? (
+          <ApiErrorState error={error} onRetry={() => void refetch()} />
+        ) : (
+          <InvoicesMobileList
+            invoices={data?.items ?? []}
+            isLoading={isLoading}
+            search={params.search}
+            onSearchChange={(search) =>
+              setParams({ search, page: "1" }, { resetPage: true })
+            }
+            selectedId={selectedId}
+            onSelect={(row) => setSelectedId(row.id)}
+            onCreate={openCreate}
+            pagination={
+              data?.meta
+                ? {
+                    meta: data.meta,
+                    page,
+                    onPageChange: (p) => setParams({ page: String(p) }),
+                  }
+                : undefined
+            }
+          />
+        )
+      ) : (
       <FinancialTabPanel
         actions={
           <Button size="sm" onClick={openCreate}>
@@ -254,6 +283,7 @@ export function PaymentsInvoicesTab() {
         />
         )}
       </FinancialTabPanel>
+      )}
 
       <EntityDetailDrawer
         open={isOpen}

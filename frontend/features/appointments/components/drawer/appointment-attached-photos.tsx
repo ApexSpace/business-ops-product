@@ -2,9 +2,12 @@
 
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Loader2, X } from "lucide-react";
+import { X } from "lucide-react";
 import { getAppointmentPhotos } from "@/features/appointments/api/appointments.api";
+import { LoadingState } from "@/components/data-display/loading-state";
+import { EmptyState } from "@/components/data-display/empty-state";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { IconButton } from "@/components/ui/icon-button";
 import { cn } from "@/lib/utils";
 
 const SECTION_LABEL_CLASS =
@@ -37,12 +40,9 @@ export function AppointmentAttachedPhotos({
     <div className={cn("border-t border-border/60 pt-5", className)}>
       <p className={cn("mb-3", SECTION_LABEL_CLASS)}>Attached photos</p>
       {isLoading ? (
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Loader2 className="size-4 animate-spin" />
-          Loading photos…
-        </div>
+        <LoadingState variant="inline" label="Loading photos…" />
       ) : items.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No photos available.</p>
+        <EmptyState compact title="No photos available." className="py-4" />
       ) : (
         <div className="flex flex-wrap gap-2.5">
           {items.map((photo) => (
@@ -84,9 +84,10 @@ export function AppointmentAttachedPhotos({
             {previewName ?? "Attached photo"}
           </DialogTitle>
           <div className="relative rounded-xl bg-black/90 p-2 sm:p-3">
-            <button
-              type="button"
-              className="absolute right-3 top-3 z-10 rounded-full bg-black/60 p-1.5 text-white hover:bg-black/80"
+            <IconButton
+              variant="ghost"
+              size="icon-sm"
+              className="absolute right-3 top-3 z-10 rounded-full bg-black/60 text-white hover:bg-black/80 hover:text-white"
               aria-label="Close photo"
               onClick={() => {
                 setPreviewUrl(null);
@@ -94,7 +95,7 @@ export function AppointmentAttachedPhotos({
               }}
             >
               <X className="size-4" />
-            </button>
+            </IconButton>
             {previewUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img

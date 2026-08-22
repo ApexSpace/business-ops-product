@@ -11,6 +11,7 @@ import { ArrowLeft, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { CreateLeadDialog } from "@/features/leads/components/create-lead-dialog";
 import { LeadDetailSheet } from "@/features/leads/components/lead-detail-sheet";
+import { LeadsMobileList } from "@/features/leads/components/mobile/leads-mobile-list";
 import {
   DataTable,
   type DataTableColumn,
@@ -27,6 +28,7 @@ import { deleteLead, getLead } from "@/features/leads/api/leads.api";
 import { useLeadsList } from "@/features/leads/hooks/use-leads-list";
 import { listPipelines } from "@/features/pipelines/api/pipelines.api";
 import { useListSearchParams } from "@/lib/hooks/use-list-search-params";
+import { useIsMobile } from "@/lib/hooks/use-mobile";
 import {
   WORKSPACE_ACTIVE_ROW_CLASS,
   WORKSPACE_TABLE_CLASS,
@@ -56,6 +58,7 @@ const PAGE_LIMIT = 20;
 
 function BusinessLeadsPageContent() {
   const queryClient = useQueryClient();
+  const isMobile = useIsMobile();
   const { params, page, setParams } = useListSearchParams(LIST_SCHEMA);
   const {
     selectedId,
@@ -168,6 +171,25 @@ function BusinessLeadsPageContent() {
 
   return (
     <>
+      {isMobile ? (
+        <LeadsMobileList
+          leads={data?.items ?? []}
+          isLoading={isLoading}
+          selectedId={selectedId}
+          onSelect={(lead) => setSelectedId(lead.id)}
+          onCreate={() => setCreateOpen(true)}
+          pagination={
+            data?.meta
+              ? {
+                  meta: data.meta,
+                  page,
+                  onPageChange: (p) => setParams({ page: String(p) }),
+                }
+              : undefined
+          }
+        />
+      ) : (
+      <>
       <Link
         href="/business/pipelines"
         className="mb-4 inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
@@ -252,6 +274,8 @@ function BusinessLeadsPageContent() {
           className={WORKSPACE_TABLE_CLASS}
         />
       </EntityWorkspaceLayout>
+      </>
+      )}
 
       <CreateLeadDialog
         open={createOpen}

@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { ExternalLink, MessageSquare } from "lucide-react";
+import { EmptyState } from "@/components/data-display/empty-state";
+import { LoadingState } from "@/components/data-display/loading-state";
 import { ProfileAvatar } from "@/components/ui/profile-avatar";
 import { MessageComposer } from "@/features/conversations/components/inbox/message-composer";
 import { VirtualizedMessageList } from "@/features/conversations/components/virtualized-message-list";
@@ -9,7 +11,7 @@ import { useContactConversationComposer } from "@/features/contacts/hooks/use-co
 import { cn } from "@/lib/utils";
 
 const CONTACT_CONVERSATION_PANEL_CLASS =
-  "flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-border/60 bg-background shadow-elevation-xs";
+  "flex h-full min-h-0 flex-col overflow-hidden rounded-[var(--radius-2xl)] border border-border/60 bg-background shadow-elevation-xs";
 
 interface ContactConversationPanelProps {
   contactId: string;
@@ -87,21 +89,29 @@ export function ContactConversationPanel({
 
       <div className="min-h-0 flex-1 overflow-hidden bg-muted/15">
         {messagesLoading ? (
-          <p className="px-4 py-3 text-sm text-muted-foreground">Loading messages…</p>
+          <LoadingState
+            variant="inline"
+            label="Loading messages…"
+            className="px-4 py-3"
+          />
         ) : !hasChannels ? (
-          <div className="flex h-full flex-col items-center justify-center gap-3 px-4 text-center">
-            <MessageSquare className="size-8 text-muted-foreground/60" />
-            <p className="text-sm text-muted-foreground">
-              Add a phone number or email to {contactName} to start messaging.
-            </p>
-          </div>
+          <EmptyState
+            compact
+            className="h-full justify-center px-4"
+            icon={
+              <MessageSquare className="size-4 text-muted-foreground/70" aria-hidden />
+            }
+            title={`Add a phone number or email to ${contactName} to start messaging.`}
+          />
         ) : messages.length === 0 ? (
-          <div className="flex h-full flex-col items-center justify-center gap-3 px-4 text-center">
-            <MessageSquare className="size-8 text-muted-foreground/60" />
-            <p className="text-sm text-muted-foreground">
-              No messages yet. Choose a channel below and send the first message.
-            </p>
-          </div>
+          <EmptyState
+            compact
+            className="h-full justify-center px-4"
+            icon={
+              <MessageSquare className="size-4 text-muted-foreground/70" aria-hidden />
+            }
+            title="No messages yet. Choose a channel below and send the first message."
+          />
         ) : (
           <VirtualizedMessageList
             key={contactId}

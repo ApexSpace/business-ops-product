@@ -1,5 +1,5 @@
 import { Gift } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/data-display/status-badge";
 import { cn } from "@/lib/utils";
 import { formatMoney } from "@/features/payments/schemas/payment-profile";
 import type { GiftCardListItem } from "@/features/gift-cards/types";
@@ -10,13 +10,7 @@ export function GiftCardStatusBadge({
 }: {
   status: GiftCardListItem["status"];
 }) {
-  if (status === "VOIDED") {
-    return <Badge variant="destructive">Voided</Badge>;
-  }
-  if (status === "DEPLETED") {
-    return <Badge variant="neutral">Depleted</Badge>;
-  }
-  return <Badge variant="success">Active</Badge>;
+  return <StatusBadge domain="giftCard" status={status} />;
 }
 
 export function maskGiftCardNumber(number: string) {

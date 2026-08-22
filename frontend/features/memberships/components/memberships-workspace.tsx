@@ -8,7 +8,6 @@ import {
   LayoutTemplate,
   Plus,
   Settings,
-  SlidersHorizontal,
 } from "lucide-react";
 import { toast } from "sonner";
 import { DateTime } from "luxon";
@@ -18,7 +17,9 @@ import { ListPagination } from "@/components/ui/list-pagination";
 import { EntityDetailDrawer } from "@/components/layout/entity-detail-drawer";
 import { EntityDetailFooter } from "@/components/layout/entity-detail-footer";
 import { EntityWorkspaceLayout } from "@/components/layout/entity-workspace-layout";
+import { ListFilterButton } from "@/components/layout/list-filter-button";
 import { ListPrimaryAction } from "@/components/layout/list-primary-action";
+import { LoadingState } from "@/components/data-display/loading-state";
 import { SearchInput } from "@/components/forms/search-input";
 import { SearchableSelect } from "@/components/forms/searchable-select";
 import { Button } from "@/components/ui/button";
@@ -43,6 +44,7 @@ import {
   WORKSPACE_TABLE_CLASS,
 } from "@/lib/design/workspace-tokens";
 import { useEntitySelection } from "@/lib/routing/use-entity-selection";
+import { useIsMobile } from "@/lib/hooks/use-mobile";
 import { queryKeys } from "@/lib/query/keys";
 import { invalidateMemberships } from "@/lib/query/invalidation";
 import { listContacts } from "@/features/contacts/api/contacts.api";
@@ -60,6 +62,7 @@ import {
   formatMembershipPrice,
   membershipPlanLabel,
 } from "@/features/memberships/components/membership-detail-panel";
+import { MembershipsMobileList } from "@/features/memberships/components/mobile/memberships-mobile-list";
 import { useMembershipStaffPermissions } from "@/features/memberships/hooks/use-membership-staff-permissions";
 import type {
   ClientMembershipListItem,
@@ -75,6 +78,7 @@ export function MembershipsWorkspace() {
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
   const { canManage } = useMembershipStaffPermissions();
+  const isMobile = useIsMobile();
   const {
     selectedId,
     isOpen,
@@ -296,6 +300,38 @@ export function MembershipsWorkspace() {
 
   return (
     <>
+      {isMobile ? (
+        listQuery.isError ? (
+          <ApiErrorState
+            error={listQuery.error}
+            onRetry={() => void listQuery.refetch()}
+          />
+        ) : (
+          <MembershipsMobileList
+            memberships={memberships}
+            isLoading={listQuery.isLoading}
+            search={search}
+            onSearchChange={(value) => {
+              setSearch(value);
+              setPage(1);
+            }}
+            selectedId={drawerOpen ? selectedId : null}
+            onSelect={(row) => setSelectedId(row.id)}
+            onOpenOptions={() => setOptionsOpen(true)}
+            onCreate={canManage ? () => setAddOpen(true) : undefined}
+            canCreate={canManage}
+            pagination={
+              listQuery.data?.meta && memberships.length > 0
+                ? {
+                    meta: listQuery.data.meta,
+                    page,
+                    onPageChange: setPage,
+                  }
+                : undefined
+            }
+          />
+        )
+      ) : (
       <EntityWorkspaceLayout
         title="Memberships"
         description="Manage client subscriptions and billing."
@@ -308,6 +344,12 @@ export function MembershipsWorkspace() {
             }}
             placeholder="Search by client or plan…"
             className="min-w-0 flex-1"
+          />
+        }
+        filters={
+          <ListFilterButton
+            aria-label="Membership options"
+            onClick={() => setOptionsOpen(true)}
           />
         }
         actions={
@@ -332,14 +374,6 @@ export function MembershipsWorkspace() {
                 Settings
               </Button>
             ) : null}
-            <Button
-              variant="outline"
-              size="icon-sm"
-              aria-label="Options"
-              onClick={() => setOptionsOpen(true)}
-            >
-              <SlidersHorizontal className="size-4" />
-            </Button>
             {canManage ? (
               <ListPrimaryAction
                 label="New Membership"
@@ -391,6 +425,7 @@ export function MembershipsWorkspace() {
           />
         )}
       </EntityWorkspaceLayout>
+      )}
 
       <EntityDetailDrawer
         open={drawerOpen}
@@ -485,7 +520,7 @@ export function MembershipsWorkspace() {
             <div className="space-y-1.5">
               <Label>Membership plan</Label>
               {plansQuery.isLoading ? (
-                <p className="text-sm text-muted-foreground">Loading plans…</p>
+                <LoadingState variant="inline" label="Loading plans…" />
               ) : planOptions.length === 0 ? (
                 <div className="space-y-3 rounded-lg border border-dashed border-border p-4">
                   <div className="space-y-1">

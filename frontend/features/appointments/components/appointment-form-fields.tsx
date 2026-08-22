@@ -6,11 +6,11 @@ import { AppointmentMeetingLocationFields } from "@/features/appointments/compon
 import { AppointmentPackageField } from "@/features/appointments/components/appointment-package-field";
 import { AppointmentScheduleFields } from "@/features/appointments/components/appointment-schedule-fields";
 import {
-  APPOINTMENT_FIELD_CONTROL_CLASS,
-  APPOINTMENT_FIELD_LABEL_CLASS,
-  APPOINTMENT_FORM_DIVIDER_CLASS,
-  APPOINTMENT_FORM_ITEM_CLASS,
-} from "@/features/appointments/components/appointment-form-drawer-shell";
+  FORM_DRAWER_FIELD_CONTROL_CLASS,
+  FORM_DRAWER_FIELD_LABEL_CLASS,
+  FORM_DRAWER_FORM_DIVIDER_CLASS,
+  FORM_DRAWER_FORM_ITEM_CLASS,
+} from "@/components/forms/form-drawer-shell";
 import {
   AppointmentColorDot,
   AppointmentFormAddButton,
@@ -79,9 +79,9 @@ export function AppointmentFormFields({
     (option) => option.value === watchedCalendarId,
   );
 
-  const fieldLabelClass = APPOINTMENT_FIELD_LABEL_CLASS;
-  const fieldControlClass = APPOINTMENT_FIELD_CONTROL_CLASS;
-  const formItemClass = APPOINTMENT_FORM_ITEM_CLASS;
+  const fieldLabelClass = FORM_DRAWER_FIELD_LABEL_CLASS;
+  const fieldControlClass = FORM_DRAWER_FIELD_CONTROL_CLASS;
+  const formItemClass = FORM_DRAWER_FORM_ITEM_CLASS;
 
   return (
     <div>
@@ -248,7 +248,7 @@ export function AppointmentFormFields({
         />
       ) : null}
 
-      <div className={APPOINTMENT_FORM_DIVIDER_CLASS} aria-hidden />
+      <div className={FORM_DRAWER_FORM_DIVIDER_CLASS} aria-hidden />
 
       <AppointmentMeetingLocationFields
         selectedCalendar={selectedCalendar}
@@ -259,7 +259,7 @@ export function AppointmentFormFields({
 
       {!showDescription || !showNotes ? (
         <>
-          <div className={APPOINTMENT_FORM_DIVIDER_CLASS} aria-hidden />
+          <div className={FORM_DRAWER_FORM_DIVIDER_CLASS} aria-hidden />
           <div className="space-y-2.5">
             {!showDescription ? (
               <AppointmentFormAddButton

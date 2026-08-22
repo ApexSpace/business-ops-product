@@ -43,7 +43,7 @@ export function HeroMetricCard({
   return (
     <Card
       className={cn(
-        "glass-hover relative overflow-hidden rounded-[14px] p-0",
+        "glass-hover relative overflow-hidden rounded-[var(--radius-2xl)] p-0",
         className,
       )}
       tone="glass"

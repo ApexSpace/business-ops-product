@@ -26,6 +26,7 @@ import {
 import { useStripeConnectStatus } from "@/features/payments/hooks/use-stripe-connect-status";
 import { GiftCardPaymentPicker } from "@/features/gift-cards/components/gift-card-payment-picker";
 import type { GiftCardListItem } from "@/features/gift-cards/types";
+import { SalesPaymentDrawerForm } from "@/features/sales/components/sales-payment-drawer-form";
 import { queryKeys } from "@/lib/query/keys";
 import { invalidateGiftCards } from "@/lib/query/invalidation";
 import {
@@ -35,7 +36,10 @@ import {
   DRAWER_FORM_STACK_CLASS,
 } from "@/lib/design/drawer-shell-tokens";
 import { useDrawerFooterSubmitAction } from "@/lib/hooks/use-drawer-footer-submit-action";
-import { cn } from "@/lib/utils";
+import {
+  SALES_DRAWER_FIELD_CLASS,
+  SALES_DRAWER_VIEW_FIELD_LABEL_CLASS,
+} from "@/features/sales/styles/sales-drawer-tokens";
 
 export interface CollectTenderInput {
   method: PaymentMethod;
@@ -48,6 +52,8 @@ export interface InvoiceCollectPaymentPanelProps {
   invoiceId: string;
   contactId: string;
   balanceDue: number;
+  /** Used for payment summary / tip base in sales drawer layout. */
+  subtotal?: number;
   onComplete: () => void;
   /** When set (e.g. sales close), replaces POST /payments/collect */
   collectOverride?: (tenders: CollectTenderInput[]) => Promise<{
@@ -70,6 +76,7 @@ export function InvoiceCollectPaymentPanel({
   invoiceId,
   contactId,
   balanceDue,
+  subtotal,
   onComplete,
   collectOverride,
   awaitSettlement,
@@ -378,6 +385,104 @@ export function InvoiceCollectPaymentPanel({
     );
   }
 
+  const savedCardSlot =
+    primaryMethod === "STRIPE" && stripeReady ? (
+      <div className="space-y-2">
+        {savedCards.length > 0 ? (
+          <>
+            <Label
+              className={
+                embedInDrawer
+                  ? SALES_DRAWER_VIEW_FIELD_LABEL_CLASS
+                  : fieldLabelClass
+              }
+            >
+              Saved card
+            </Label>
+            <SearchableSelect
+              inDialog
+              items={savedCardItems}
+              value={savedCardId ?? "new"}
+              onValueChange={(v) => setSavedCardId(v === "new" ? null : v)}
+              placeholder="Card"
+              triggerClassName={
+                embedInDrawer ? SALES_DRAWER_FIELD_CLASS : fieldControlClass
+              }
+            />
+          </>
+        ) : null}
+        <p className="text-[12px] font-medium text-[#8A8A8A]">
+          {(!savedCardId || savedCardId === "new") && savedCards.length > 0
+            ? "Or enter a new card on the next step."
+            : "Card details are collected on the next step via Stripe."}
+        </p>
+      </div>
+    ) : null;
+
+  if (embedInDrawer) {
+    return (
+      <SalesPaymentDrawerForm
+        balanceDue={balanceDue}
+        subtotal={subtotal}
+        primaryMethod={primaryMethod}
+        onPrimaryMethodChange={(method) => {
+          setPrimaryMethod(method);
+          if (method !== "GIFT_CARD") {
+            setPrimaryGiftCardId(null);
+            setPrimaryGiftCard(null);
+          }
+        }}
+        primaryAmount={primaryAmount}
+        onPrimaryAmountChange={setPrimaryAmount}
+        splitEnabled={splitEnabled}
+        onSplitEnabledChange={setSplitEnabled}
+        secondaryMethod={secondaryMethod}
+        onSecondaryMethodChange={(method) => {
+          setSecondaryMethod(method);
+          if (method !== "GIFT_CARD") {
+            setSecondaryGiftCardId(null);
+            setSecondaryGiftCard(null);
+          }
+        }}
+        secondaryAmount={secondaryAmount}
+        onSecondaryAmountChange={setSecondaryAmount}
+        methodItems={methodItems}
+        stripeReady={stripeReady}
+        contactGiftCardCount={contactGiftCardCount}
+        walletBalance={walletBalance}
+        contactId={contactId}
+        primaryGiftCardId={primaryGiftCardId}
+        onPrimaryGiftCardSelect={(id, card) => {
+          setPrimaryGiftCardId(id);
+          setPrimaryGiftCard(card);
+          if (card) {
+            const bal = parseFloat(card.currentBalance);
+            setPrimaryAmount(Math.min(balanceDue, bal));
+          }
+        }}
+        secondaryGiftCardId={secondaryGiftCardId}
+        onSecondaryGiftCardSelect={(id, card) => {
+          setSecondaryGiftCardId(id);
+          setSecondaryGiftCard(card);
+          if (card) {
+            const remainder = Math.max(
+              0,
+              Math.round((balanceDue - primaryAmount) * 100) / 100,
+            );
+            const bal = parseFloat(card.currentBalance);
+            setSecondaryAmount(Math.min(remainder, bal));
+          }
+        }}
+        savedCardSlot={savedCardSlot}
+        tenderTotal={tenderTotal}
+        hideSubmitButton={hideSubmitButton}
+        submitLabel={submitLabel}
+        submitDisabled={submitDisabled}
+        onSubmit={() => void handleCollect()}
+      />
+    );
+  }
+
   return (
     <div className={rootClass}>
       <div className="grid gap-4 sm:grid-cols-2">
@@ -421,35 +526,7 @@ export function InvoiceCollectPaymentPanel({
         </div>
       </div>
 
-      {primaryMethod === "STRIPE" && stripeReady ? (
-        <div className={fieldWrapClass}>
-          {savedCards.length > 0 ? (
-            <>
-              <Label className={fieldLabelClass}>Saved card</Label>
-              <SearchableSelect
-                inDialog
-                items={savedCardItems}
-                value={savedCardId ?? "new"}
-                onValueChange={(v) =>
-                  setSavedCardId(v === "new" ? null : v)
-                }
-                placeholder="Card"
-                triggerClassName={fieldControlClass}
-              />
-            </>
-          ) : null}
-          {(!savedCardId || savedCardId === "new") && savedCards.length > 0 ? (
-            <p className="text-xs text-muted-foreground">
-              Or enter a new card on the next step.
-            </p>
-          ) : (
-            <p className="text-xs text-muted-foreground">
-              Card details are collected on the next step via Stripe (test card{" "}
-              <span className="font-mono">4242 4242 4242 4242</span>).
-            </p>
-          )}
-        </div>
-      ) : null}
+      {savedCardSlot}
 
       {primaryMethod === "WALLET" && walletBalance != null ? (
         <p className="text-xs text-muted-foreground">

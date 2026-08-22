@@ -119,7 +119,7 @@ export function AppointmentEventCard({
       }
       className={cn(
         // Figma Cards-Calendar: radius 8, border 1px, pad 8, gap 4, top-aligned
-        "relative flex h-full min-h-0 w-full min-w-0 flex-col overflow-hidden rounded-[8px] border border-solid text-left",
+        "relative flex h-full min-h-0 w-full min-w-0 flex-col overflow-hidden rounded-[var(--radius-md)] border border-solid text-left",
         variant === "month" ? "gap-0.5 px-1.5 py-1" : "gap-1 p-2",
         interactive &&
           "cursor-pointer transition-[box-shadow,transform] hover:shadow-md active:scale-[0.995]",

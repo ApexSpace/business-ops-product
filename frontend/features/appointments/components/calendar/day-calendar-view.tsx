@@ -15,6 +15,7 @@ import {
   parseDateKeyInTimezone,
 } from "@/features/calendars/utils/timezone";
 import { CALENDAR_GRID } from "@/features/calendars/utils/calendar-grid-styles";
+import { LoadingState } from "@/components/data-display/loading-state";
 import { cn } from "@/lib/utils";
 
 interface DayCalendarViewProps {
@@ -79,8 +80,8 @@ export function DayCalendarView({
       </div>
       <div className="max-h-[min(75vh,844px)] overflow-auto">
         {isLoading ? (
-          <div className="flex h-48 items-center justify-center text-sm text-grey-tertiary-normal">
-            Loading appointments…
+          <div className="flex h-48 items-center justify-center">
+            <LoadingState variant="inline" label="Loading appointments…" />
           </div>
         ) : (
           <div className="relative" style={{ minHeight: GRID_HEIGHT }}>

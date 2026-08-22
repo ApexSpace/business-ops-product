@@ -20,6 +20,15 @@ export interface ContactTimelineEvent {
   occurredAt: string;
   entityType: string;
   entityId: string;
+  lineTitle?: string | null;
+  amount?: string | null;
+  subtotal?: string | null;
+  total?: string | null;
+  paymentSummary?: string | null;
+  statusCode?: string | null;
+  subtitle?: string | null;
+  footer?: string | null;
+  requested?: boolean | null;
 }
 
 export interface ContactWalletTransaction {

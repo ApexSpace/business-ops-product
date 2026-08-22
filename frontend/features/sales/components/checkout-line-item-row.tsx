@@ -1,18 +1,26 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ChevronDown, ChevronRight, Trash2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Pencil } from "lucide-react";
+import {
+  DrawerChevronIcon,
+  DrawerTrashIcon,
+} from "@/components/drawer/drawer-icons";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ProfileAvatar } from "@/components/ui/profile-avatar";
 import { SearchableSelect } from "@/components/forms/searchable-select";
 import type { CheckoutItem } from "@/features/sales/types/checkout";
 import { formatMoney } from "@/features/payments/utils/currencies";
 import {
-  DRAWER_FIELD_CONTROL_CLASS,
-  DRAWER_FIELD_LABEL_CLASS,
-  DRAWER_FORM_FIELD_CLASS,
-} from "@/lib/design/drawer-shell-tokens";
+  SALES_DRAWER_FIELD_CLASS,
+  SALES_DRAWER_ICON_BUTTON_CLASS,
+  SALES_DRAWER_LINE_CARD_CLASS,
+  SALES_DRAWER_LINE_CARD_EXPANDED_CLASS,
+  SALES_DRAWER_PROVIDER_PILL_CLASS,
+  SALES_DRAWER_SELECT_TRIGGER_CLASS,
+  SALES_DRAWER_VIEW_FIELD_LABEL_CLASS,
+} from "@/features/sales/styles/sales-drawer-tokens";
 import { cn } from "@/lib/utils";
 
 export interface CheckoutLineItemRowProps {
@@ -55,30 +63,29 @@ export function CheckoutLineItemRow({
   }, [item.id, item.quantity, item.staffUserId]);
 
   const isProduct = item.lineType === "PRODUCT";
-  const showStaff = Boolean(item.serviceId && staffItems.length > 0);
-  const staffLabel = item.staff?.label ?? "no staff";
-
-  const commitQuantity = (nextQty: number) => {
-    if (nextQty <= 0 || nextQty === parseFloat(item.quantity)) return;
-    onUpdate({ quantity: nextQty });
-  };
-
+  const showStaff = Boolean(item.serviceId);
+  const staffLabel = item.staff?.label ?? null;
   const unitPriceLabel = formatMoney(parseFloat(item.unitPrice));
+  const lineTotalLabel = formatMoney(parseFloat(item.totalPrice));
+  const busy = removePending || updatePending;
 
   return (
-    <div className="border-b border-border/60 py-3 last:border-b-0">
-      <div className="flex items-start gap-2">
+    <div
+      className={cn(
+        expanded
+          ? SALES_DRAWER_LINE_CARD_EXPANDED_CLASS
+          : SALES_DRAWER_LINE_CARD_CLASS,
+      )}
+    >
+      <div className="flex items-start gap-2.5">
         <button
           type="button"
           onClick={onToggle}
-          className="mt-0.5 shrink-0 text-muted-foreground/70 hover:text-foreground"
+          className="mt-1 inline-flex size-5 shrink-0 items-center justify-center text-[#8A8A8A] hover:text-violet-primary-darker"
           aria-label={expanded ? "Collapse line item" : "Expand line item"}
+          aria-expanded={expanded}
         >
-          {expanded ? (
-            <ChevronDown className="size-4" />
-          ) : (
-            <ChevronRight className="size-4" />
-          )}
+          <DrawerChevronIcon direction={expanded ? "down" : "right"} />
         </button>
 
         <button
@@ -86,42 +93,58 @@ export function CheckoutLineItemRow({
           onClick={onToggle}
           className="min-w-0 flex-1 text-left"
         >
-          <p className="text-[14px] font-semibold text-foreground">
+          <p className="truncate text-[15px] font-bold leading-[19px] text-violet-primary-darker">
             {item.title}
           </p>
-          {!expanded ? (
-            <p className="mt-0.5 text-[12px] text-muted-foreground">
-              {item.staff ? `with ${item.staff.label}` : `sold by ${staffLabel}`}
+          {!expanded && staffLabel ? (
+            <div className="mt-1.5">
+              <span className={SALES_DRAWER_PROVIDER_PILL_CLASS}>
+                <ProfileAvatar
+                  name={staffLabel}
+                  className="size-4 text-[8px]"
+                />
+                <span className="min-w-0 truncate">{staffLabel}</span>
+              </span>
+            </div>
+          ) : null}
+          {!expanded && !staffLabel && showStaff ? (
+            <p className="mt-1 text-[12px] font-medium leading-[15px] text-[#8A8A8A]">
+              sold by no staff
             </p>
           ) : null}
         </button>
 
-        <div className="flex shrink-0 items-center gap-2">
-          <span className="text-[14px] font-semibold tabular-nums">
-            {formatMoney(parseFloat(item.totalPrice))}
-          </span>
+        <div className="flex shrink-0 items-center gap-2 pt-0.5">
+          {!expanded ? (
+            <span className="text-[14px] font-bold tabular-nums leading-[18px] text-violet-primary-darker">
+              {lineTotalLabel}
+            </span>
+          ) : null}
           {canEdit ? (
-            <Button
+            <button
               type="button"
-              variant="ghost"
-              size="icon-sm"
-              className="size-8 text-muted-foreground hover:text-destructive"
-              disabled={removePending || updatePending}
-              onClick={onRemove}
               aria-label="Remove item"
+              disabled={busy}
+              className={cn(
+                SALES_DRAWER_ICON_BUTTON_CLASS,
+                "size-6 text-violet-primary-darker disabled:opacity-50 [&>svg]:size-5",
+              )}
+              onClick={onRemove}
             >
-              <Trash2 className="size-3.5" />
-            </Button>
+              <DrawerTrashIcon className="size-5" />
+            </button>
           ) : null}
         </div>
       </div>
 
       {expanded ? (
-        <div className="mt-2.5 ml-6 rounded-[10px] border border-border/70 bg-muted/10 p-3.5">
+        <div className="mt-3 space-y-3 pl-7">
           {isProduct ? (
             <div className="grid grid-cols-2 gap-3">
-              <div className={DRAWER_FORM_FIELD_CLASS}>
-                <Label className={DRAWER_FIELD_LABEL_CLASS}>Quantity</Label>
+              <div className="flex flex-col gap-2">
+                <Label className={SALES_DRAWER_VIEW_FIELD_LABEL_CLASS}>
+                  Quantity
+                </Label>
                 <Input
                   type="number"
                   min={0.0001}
@@ -131,69 +154,88 @@ export function CheckoutLineItemRow({
                   onChange={(event) =>
                     setQuantity(parseFloat(event.target.value) || 0)
                   }
-                  onBlur={() => commitQuantity(quantity)}
-                  className={DRAWER_FIELD_CONTROL_CLASS}
+                  onBlur={() => {
+                    if (quantity <= 0 || quantity === parseFloat(item.quantity)) {
+                      return;
+                    }
+                    onUpdate({ quantity });
+                  }}
+                  className={SALES_DRAWER_FIELD_CLASS}
                 />
               </div>
-
-              <div className={DRAWER_FORM_FIELD_CLASS}>
-                <Label className={DRAWER_FIELD_LABEL_CLASS}>Unit price</Label>
-                <div className="flex h-11 items-center justify-between gap-2 rounded-[10px] border-[1.5px] border-border/80 bg-background px-3">
+              <div className="flex flex-col gap-2">
+                <Label className={SALES_DRAWER_VIEW_FIELD_LABEL_CLASS}>
+                  Price
+                </Label>
+                <button
+                  type="button"
+                  disabled={!canEdit}
+                  onClick={onChangePrice}
+                  className={cn(
+                    SALES_DRAWER_FIELD_CLASS,
+                    "flex items-center justify-between gap-2 text-left",
+                    canEdit && "cursor-pointer hover:border-violet-primary-normal",
+                  )}
+                >
                   <span className="text-[14px] font-semibold tabular-nums text-foreground">
                     {unitPriceLabel}
                   </span>
                   {canEdit ? (
-                    <button
-                      type="button"
-                      onClick={onChangePrice}
-                      className="shrink-0 text-[12px] font-medium text-primary hover:underline"
-                    >
-                      Change
-                    </button>
+                    <Pencil
+                      className="size-3.5 shrink-0 text-violet-primary-normal"
+                      aria-hidden
+                    />
                   ) : null}
-                </div>
+                </button>
               </div>
             </div>
           ) : (
-            <div className="flex items-center justify-between gap-3">
-              <span className="shrink-0 text-[12.5px] font-medium text-muted-foreground">
-                Price
-              </span>
-              <div className="flex min-w-0 items-center justify-end gap-2.5">
-                <span className="text-[15px] font-semibold tabular-nums text-foreground">
+            <div className="flex flex-col gap-2">
+              <Label className={SALES_DRAWER_VIEW_FIELD_LABEL_CLASS}>Price</Label>
+              <button
+                type="button"
+                disabled={!canEdit}
+                onClick={onChangePrice}
+                className={cn(
+                  SALES_DRAWER_FIELD_CLASS,
+                  "flex items-center justify-between gap-2 text-left",
+                  canEdit && "cursor-pointer hover:border-violet-primary-normal",
+                )}
+              >
+                <span className="text-[14px] font-semibold tabular-nums text-foreground">
                   {unitPriceLabel}
                 </span>
                 {canEdit ? (
-                  <button
-                    type="button"
-                    onClick={onChangePrice}
-                    className="shrink-0 text-[12px] font-medium text-primary hover:underline"
-                  >
-                    Change price
-                  </button>
+                  <Pencil
+                    className="size-3.5 shrink-0 text-violet-primary-normal"
+                    aria-hidden
+                  />
                 ) : null}
-              </div>
+              </button>
             </div>
           )}
 
           {showStaff ? (
-            <div
-              className={cn(
-                DRAWER_FORM_FIELD_CLASS,
-                isProduct ? "mt-3" : "mt-3 border-t border-border/50 pt-3",
-              )}
-            >
-              <Label className={DRAWER_FIELD_LABEL_CLASS}>Staff</Label>
+            <div className="flex flex-col gap-2">
+              <Label className={SALES_DRAWER_VIEW_FIELD_LABEL_CLASS}>
+                Provider
+              </Label>
               <SearchableSelect
-                items={staffItems}
+                items={
+                  staffItems.length > 0
+                    ? staffItems
+                    : staffLabel
+                      ? [{ value: staffUserId ?? "", label: staffLabel }]
+                      : []
+                }
                 value={staffUserId}
-                disabled={!canEdit || updatePending}
+                disabled={!canEdit || updatePending || staffItems.length === 0}
                 onValueChange={(value) => {
                   setStaffUserId(value);
                   onUpdate({ staffUserId: value });
                 }}
-                placeholder="Select staff"
-                triggerClassName={DRAWER_FIELD_CONTROL_CLASS}
+                placeholder="Select provider"
+                triggerClassName={SALES_DRAWER_SELECT_TRIGGER_CLASS}
               />
             </div>
           ) : null}

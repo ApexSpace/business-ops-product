@@ -1,3 +1,12 @@
+/*
+ * Design-token ownership
+ * - This file + frontend/lib/theme/* = single source of truth for visual values
+ *   (color, radius, --control-height, typography).
+ * - frontend/lib/design/* = recipes and component contracts only
+ *   (Tailwind class compositions that reference these variables).
+ * - Features must not introduce new raw color / radius / height values.
+ */
+
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
@@ -260,8 +269,9 @@
   --sheet-width: 400px;
   --table-row-height: 5rem;
   --table-row-height-compact: 3.5rem;
-  --control-height: 2rem;
-  --control-height-sm: var(--control-height);
+  /* Default ≥44px touch target; sm remains dense for compact chrome */
+  --control-height: 2.75rem;
+  --control-height-sm: 2rem;
   --page-padding-x: 1rem;
   --page-padding-y: 1rem;
   --page-content-top-gap: 0.375rem;

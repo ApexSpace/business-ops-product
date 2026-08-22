@@ -4,10 +4,10 @@ import { Input } from "@/components/ui/input";
 import { DrawerField } from "@/components/drawer/drawer-field";
 import { DrawerCalendarIcon } from "@/components/drawer/drawer-icons";
 import {
-  APPOINTMENT_DRAWER_BOOKING_DATETIME_CELL_CLASS,
-  APPOINTMENT_DRAWER_FIELD_CLASS,
-  APPOINTMENT_DRAWER_FIELD_LABEL_CLASS,
-} from "@/features/appointments/styles/appointment-drawer-tokens";
+  DRAWER_BOOKING_DATETIME_CELL_CLASS,
+  DRAWER_FIELD_CLASS,
+  DRAWER_FIELD_LABEL_CLASS,
+} from "@/lib/design/drawer-tokens";
 import { cn } from "@/lib/utils";
 
 function formatDateKeyShort(dateKey: string): string {
@@ -47,14 +47,14 @@ export function DrawerDateField({
 
   if (readOnly || !onDateChange) {
     return (
-      <div className={cn(APPOINTMENT_DRAWER_BOOKING_DATETIME_CELL_CLASS, className)}>
-        <span className={APPOINTMENT_DRAWER_FIELD_LABEL_CLASS}>Date</span>
+      <div className={cn(DRAWER_BOOKING_DATETIME_CELL_CLASS, className)}>
+        <span className={DRAWER_FIELD_LABEL_CLASS}>Date</span>
         <button
           type="button"
           onClick={onClick}
           disabled={!onClick}
           className={cn(
-            APPOINTMENT_DRAWER_FIELD_CLASS,
+            DRAWER_FIELD_CLASS,
             "flex w-full items-center gap-2 text-left",
             onClick ? "cursor-pointer hover:bg-violet-primary-surface/40" : "cursor-default",
           )}
@@ -69,7 +69,7 @@ export function DrawerDateField({
   }
 
   return (
-    <div className={cn(APPOINTMENT_DRAWER_BOOKING_DATETIME_CELL_CLASS, className)}>
+    <div className={cn(DRAWER_BOOKING_DATETIME_CELL_CLASS, className)}>
       <DrawerField
         label="Date"
         htmlFor={id}

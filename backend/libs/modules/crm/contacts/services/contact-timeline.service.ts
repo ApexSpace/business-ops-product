@@ -1,10 +1,9 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
-import { InvoiceKind } from '@prisma/client';
+import { InvoiceKind, PaymentStatus, type PaymentMethod } from '@prisma/client';
 import { AppException } from '@app/common/exceptions/app.exception';
 import { ErrorCode } from '@app/common/exceptions/error-code.enum';
 import { getPaginationParams } from '@app/common/utils/pagination.util';
 import { PrismaService } from '@app/core/database/prisma.service';
-import { resolveContactLabel } from '../mappers/contact.mapper';
 import { ContactRepository } from '../repositories/contact.repository';
 import {
   CONTACT_TIMELINE_TYPES,
@@ -14,6 +13,59 @@ import {
 import { ContactTimelineEventDto } from '../dto/contact-timeline-response.dto';
 
 const ALL_TYPES = new Set<string>(CONTACT_TIMELINE_TYPES);
+
+function formatPersonName(
+  user?: {
+    firstName?: string | null;
+    lastName?: string | null;
+    email?: string | null;
+  } | null,
+): string | null {
+  if (!user) return null;
+  const name = [user.firstName, user.lastName].filter(Boolean).join(' ').trim();
+  return name || user.email?.trim() || null;
+}
+
+function formatMoney(value: { toString(): string } | string | number): string {
+  const num = Number(value.toString());
+  if (!Number.isFinite(num)) return `$${value.toString()}`;
+  return `$${num.toFixed(2)}`;
+}
+
+function formatPaymentMethod(method: PaymentMethod): string {
+  switch (method) {
+    case 'CASH':
+      return 'cash';
+    case 'CARD':
+      return 'card';
+    case 'BANK_TRANSFER':
+      return 'bank transfer';
+    case 'WALLET':
+      return 'wallet';
+    case 'GIFT_CARD':
+      return 'gift card';
+    case 'STRIPE':
+      return 'card';
+    default:
+      return method.toLowerCase().replace(/_/g, ' ');
+  }
+}
+
+function formatDurationMinutes(totalMinutes: number): string {
+  if (totalMinutes <= 0) return '';
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  if (hours > 0 && minutes > 0) return `${hours} hr ${minutes} min`;
+  if (hours > 0) return hours === 1 ? '1 hr' : `${hours} hr`;
+  return `${minutes} min`;
+}
+
+function formatClockTime(date: Date): string {
+  return new Intl.DateTimeFormat('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+  }).format(date);
+}
 
 @Injectable()
 export class ContactTimelineService {
@@ -49,8 +101,8 @@ export class ContactTimelineService {
       events.push({
         id: `contact-${contact.id}-created`,
         type: 'contact_created',
-        title: 'Contact created',
-        description: resolveContactLabel(contact),
+        title: 'Client Created',
+        description: `Created by system`,
         occurredAt: contact.createdAt,
         entityType: 'Contact',
         entityId: contact.id,
@@ -70,18 +122,33 @@ export class ContactTimelineService {
             },
             include: {
               service: { select: { name: true } },
+              assignedTo: {
+                select: { firstName: true, lastName: true, email: true },
+              },
             },
             orderBy: { startAt: 'desc' },
             take: 200,
           })
           .then((rows) => {
             for (const row of rows) {
+              const staffName = formatPersonName(row.assignedTo);
+              const durationMs =
+                row.endAt.getTime() - row.startAt.getTime();
+              const durationLabel = formatDurationMinutes(
+                Math.max(0, Math.round(durationMs / 60_000)),
+              );
+              const timeLabel = formatClockTime(row.startAt);
+              const metadata = row.metadata as Record<string, unknown> | null;
+              const requested =
+                metadata?.requestedStaff === true ||
+                metadata?.preferredStaff === true ||
+                metadata?.requestedThisPerson === true;
               events.push({
                 id: `appointment-${row.id}`,
                 type: 'appointment',
-                title: row.title,
+                title: row.service?.name?.trim() || row.title,
                 description: [
-                  row.service?.name,
+                  staffName ? `with ${staffName}` : null,
                   row.status.toLowerCase().replace(/_/g, ' '),
                 ]
                   .filter(Boolean)
@@ -89,6 +156,9 @@ export class ContactTimelineService {
                 occurredAt: row.startAt,
                 entityType: 'Appointment',
                 entityId: row.id,
+                subtitle: staffName ? `with ${staffName}` : null,
+                footer: [timeLabel, durationLabel].filter(Boolean).join(' · '),
+                requested,
               });
             }
           }),
@@ -174,6 +244,25 @@ export class ContactTimelineService {
               kind: InvoiceKind.CHECKOUT,
               deletedAt: null,
             },
+            include: {
+              items: {
+                orderBy: { sortOrder: 'asc' },
+                take: 3,
+                select: {
+                  title: true,
+                  totalPrice: true,
+                  staffUser: {
+                    select: { firstName: true, lastName: true, email: true },
+                  },
+                },
+              },
+              payments: {
+                where: { deletedAt: null, status: PaymentStatus.SUCCEEDED },
+                orderBy: { paidAt: 'desc' },
+                take: 3,
+                select: { method: true, amount: true },
+              },
+            },
             orderBy: { createdAt: 'desc' },
             take: 200,
           })
@@ -183,14 +272,40 @@ export class ContactTimelineService {
                 row.displaySequence != null
                   ? `Sale #${row.displaySequence}`
                   : row.invoiceNumber;
+              const firstItem = row.items[0];
+              const staffName = formatPersonName(firstItem?.staffUser);
+              const lineTitle = firstItem
+                ? staffName
+                  ? `${firstItem.title} — with ${staffName}`
+                  : firstItem.title
+                : null;
+              const total = formatMoney(row.totalAmount);
+              const subtotal = formatMoney(row.subtotal);
+              const payment = row.payments[0];
+              const paymentSummary = payment
+                ? `Paid with ${formatPaymentMethod(payment.method)} — ${formatMoney(payment.amount)}`
+                : row.paymentStatus === 'PAID' || row.status === 'PAID'
+                  ? `Paid — ${total}`
+                  : null;
+              const isClosed =
+                row.closedAt != null ||
+                row.status === 'PAID' ||
+                row.paymentStatus === 'PAID';
+              const statusCode = isClosed ? 'closed' : row.status.toLowerCase();
               events.push({
                 id: `checkout-${row.id}`,
                 type: 'sale',
                 title: saleNumber,
-                description: `${row.status.toLowerCase()} · ${row.totalAmount.toString()}`,
+                description: [statusCode, total].filter(Boolean).join(' · '),
                 occurredAt: row.issueDate,
                 entityType: 'Invoice',
                 entityId: row.id,
+                lineTitle,
+                amount: firstItem ? formatMoney(firstItem.totalPrice) : total,
+                subtotal,
+                total,
+                paymentSummary,
+                statusCode,
               });
             }
           }),

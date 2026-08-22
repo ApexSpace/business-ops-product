@@ -2,9 +2,9 @@
 
 import { DrawerPlusIcon } from "@/components/drawer/drawer-icons";
 import {
-  APPOINTMENT_DRAWER_ADD_ACTION_CLASS,
-  APPOINTMENT_DRAWER_ADD_ACTION_ICON_CLASS,
-} from "@/features/appointments/styles/appointment-drawer-tokens";
+  DRAWER_ADD_ACTION_CLASS,
+  DRAWER_ADD_ACTION_ICON_CLASS,
+} from "@/lib/design/drawer-tokens";
 import { cn } from "@/lib/utils";
 
 export interface DrawerAddActionProps {
@@ -17,10 +17,10 @@ export function DrawerAddAction({ label, onClick, className }: DrawerAddActionPr
   return (
     <button
       type="button"
-      className={cn(APPOINTMENT_DRAWER_ADD_ACTION_CLASS, className)}
+      className={cn(DRAWER_ADD_ACTION_CLASS, className)}
       onClick={onClick}
     >
-      <span className={APPOINTMENT_DRAWER_ADD_ACTION_ICON_CLASS}>
+      <span className={DRAWER_ADD_ACTION_ICON_CLASS}>
         <DrawerPlusIcon className="size-4 text-white" />
       </span>
       {label}

@@ -5,11 +5,11 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { DrawerSettingsIcon } from "@/components/drawer/drawer-icons";
 import {
-  APPOINTMENT_DRAWER_EXPRESS_LABEL_CLASS,
-  APPOINTMENT_DRAWER_EXPRESS_ROW_CLASS,
-  APPOINTMENT_DRAWER_SETTINGS_ICON_BUTTON_CLASS,
-  APPOINTMENT_DRAWER_SWITCH_CLASS,
-} from "@/features/appointments/styles/appointment-drawer-tokens";
+  DRAWER_EXPRESS_LABEL_CLASS,
+  DRAWER_EXPRESS_ROW_CLASS,
+  DRAWER_SETTINGS_ICON_BUTTON_CLASS,
+  DRAWER_SWITCH_CLASS,
+} from "@/lib/design/drawer-tokens";
 import { cn } from "@/lib/utils";
 
 export interface DrawerExpressRowProps {
@@ -30,8 +30,8 @@ export function DrawerExpressRow({
   className,
 }: DrawerExpressRowProps) {
   return (
-    <div className={cn(APPOINTMENT_DRAWER_EXPRESS_ROW_CLASS, className)}>
-      <Label htmlFor={id} className={APPOINTMENT_DRAWER_EXPRESS_LABEL_CLASS}>
+    <div className={cn(DRAWER_EXPRESS_ROW_CLASS, className)}>
+      <Label htmlFor={id} className={DRAWER_EXPRESS_LABEL_CLASS}>
         {label}
       </Label>
       <div className="flex shrink-0 items-center gap-2">
@@ -39,10 +39,10 @@ export function DrawerExpressRow({
           id={id}
           checked={checked}
           onCheckedChange={onCheckedChange}
-          className={APPOINTMENT_DRAWER_SWITCH_CLASS}
+          className={DRAWER_SWITCH_CLASS}
         />
         {settings ?? (
-          <span className={APPOINTMENT_DRAWER_SETTINGS_ICON_BUTTON_CLASS}>
+          <span className={DRAWER_SETTINGS_ICON_BUTTON_CLASS}>
             <DrawerSettingsIcon className="size-6" />
           </span>
         )}

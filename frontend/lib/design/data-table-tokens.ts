@@ -1,39 +1,18 @@
 /**
- * PandaCue Figma “Sales Table” — universal list table + toolbar tokens.
+ * Design-token ownership
+ * - Visual values: frontend/app/globals.css and frontend/lib/theme/*
+ * - This file: list table / toolbar / pagination recipes only
+ * - Features must not introduce new raw color / radius / height values
  *
- * Used by DataTable, ListToolbar, SearchInput, ListPagination, and entity workspaces.
- * Typography inherits global Montserrat (--font-sans).
+ * PandaCue Figma “Sales Table” — used by DataTable, ListToolbar, SearchInput,
+ * ListPagination, and entity workspaces. Colors reference CSS variables.
  */
-
-/** primary/200 — header fill / table border · hsba(262, 22%, 98%) */
-export const DATA_TABLE_HEADER_BG = "#F3F0F9";
-
-/** primary/300 — row separators · hsba(262, 37%, 96%) */
-export const DATA_TABLE_ROW_BORDER = "#BC9BF6";
-
-/** border/subtle — search field outline · hsba(0, 0%, 89%) */
-export const DATA_TABLE_SEARCH_BORDER = "#E3E3E3";
 
 /**
- * primary/800 — column header text · Figma hsba(263, 81%, 53%)
- * Matches `--pc-violet-primary-dark` / `#5F2CB2`
+ * primary/800 — column header text
+ * Matches `--pc-violet-primary-dark`
  */
-export const DATA_TABLE_HEADER_TEXT = "#5F2CB2";
-
-/** primary/500 — CTA / status accent */
-export const DATA_TABLE_ACCENT = "#7E3BED";
-
-/** Primary CTA fill (New Checkout, New Gift Card, …) */
-export const DATA_TABLE_PRIMARY_CTA = "#7E3BED";
-
-/** neutral/700 — body cell text · hsba(0, 0%, 29%) */
-export const DATA_TABLE_CELL_TEXT = "#4A4A4A";
-
-/** Figma row height */
-export const DATA_TABLE_ROW_HEIGHT_PX = 80;
-
-/** Figma header row height */
-export const DATA_TABLE_HEADER_HEIGHT_PX = 59;
+export const DATA_TABLE_HEADER_TEXT = "var(--pc-violet-primary-dark)";
 
 /**
  * Outer table shell — Figma Sales Table:
@@ -41,73 +20,76 @@ export const DATA_TABLE_HEADER_HEIGHT_PX = 59;
  * Flex column so the body scrolls under a sticky header.
  */
 export const DATA_TABLE_SHELL_CLASS =
-  "flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-[var(--radius-md)] border border-[#F3F0F9] bg-white shadow-none";
+  "flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-[var(--radius-md)] border border-[var(--drawer-tab-track)] bg-white shadow-none";
 
 /**
  * Sticky header — sticks within the DataTable scroll host.
  * Opaque th backgrounds so rows don’t show through while scrolling.
  */
 export const DATA_TABLE_HEADER_CLASS =
-  "sticky top-0 z-20 bg-[#F3F0F9] [&_tr]:border-b-0 [&_th]:sticky [&_th]:top-0 [&_th]:z-20 [&_th]:bg-[#F3F0F9]";
+  "sticky top-0 z-20 bg-[var(--drawer-tab-track)] [&_tr]:border-b-0 [&_th]:sticky [&_th]:top-0 [&_th]:z-20 [&_th]:bg-[var(--drawer-tab-track)]";
 
 /** Header cell typography — primary/800, 14px bold (Montserrat) */
 export const DATA_TABLE_HEAD_CELL_CLASS =
-  "h-[59px] px-4 text-left align-middle text-[14px] font-bold leading-none tracking-normal text-[#5F2CB2] whitespace-nowrap";
+  "h-[59px] px-4 text-left align-middle text-[14px] font-bold leading-none tracking-normal text-violet-primary-dark whitespace-nowrap";
 
 /** Body row — 80px, 2px primary/300 bottom border only */
 export const DATA_TABLE_ROW_CLASS =
-  "h-20 border-b-2 border-[#BC9BF6] bg-white transition-colors hover:bg-[#F6F1FE]/60 data-[state=selected]:bg-[#F6F1FE]";
+  "h-20 border-b-2 border-[var(--drawer-divider-accent)] bg-white transition-colors hover:bg-violet-primary-surface/60 data-[state=selected]:bg-violet-primary-surface";
 
 /** Body cell — Figma pad 8 / 16 · neutral/700 */
 export const DATA_TABLE_CELL_CLASS =
-  "px-4 py-2 align-middle text-[14px] font-normal leading-[21px] text-[#4A4A4A] whitespace-nowrap";
+  "px-4 py-2 align-middle text-[14px] font-normal leading-[21px] text-[var(--drawer-text-body)] whitespace-nowrap";
 
 /**
  * List toolbar — Figma: primary CTA left, search + standalone filter right, h 44.
  */
 export const DATA_TABLE_TOOLBAR_CLASS =
-  "flex min-h-11 w-full flex-row flex-wrap items-center gap-3 border-0 bg-transparent p-0 shadow-none sm:gap-8";
+  "flex min-h-[var(--control-height)] w-full flex-row flex-wrap items-center gap-3 border-0 bg-transparent p-0 shadow-none sm:gap-8";
 
 /**
- * Primary “New …” CTA — Figma h 44 × min 157, radius/sm, primary/500.
+ * Primary “New …” CTA layout extras — fill/hover come from Button `variant="brand"`.
+ * Height uses `--control-height` via Button size default.
  */
 export const DATA_TABLE_PRIMARY_ACTION_CLASS =
-  "inline-flex h-11 min-h-11 w-auto min-w-[157px] shrink-0 items-center justify-center gap-2 rounded-[var(--radius-sm)] border-0 bg-[#7E3BED] px-4 text-[14px] font-bold leading-4 text-white shadow-none hover:bg-[#7135D5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7E3BED]/40 disabled:opacity-60";
+  "min-w-[157px] gap-2 rounded-[var(--radius-sm)] px-4";
 
-/** Standalone search field — Figma h 44, max ~355, radius 8, border #E3E3E3 */
+/** Standalone search field — Figma h 44, max ~355, radius/md */
 export const DATA_TABLE_SEARCH_STANDALONE_CLASS =
-  "h-11 w-full min-w-0 max-w-[min(100%,355px)] rounded-[8px] border border-[#E3E3E3] bg-white px-4 py-2 text-[14px] shadow-none placeholder:text-grey-tertiary-normal focus-visible:border-[#7E3BED] focus-visible:ring-2 focus-visible:ring-[#7E3BED]/20";
-
-/** Alias used by older imports */
-export const DATA_TABLE_SEARCH_CLASS = DATA_TABLE_SEARCH_STANDALONE_CLASS;
+  "h-[var(--control-height)] w-full min-w-0 max-w-[min(100%,355px)] rounded-[var(--radius-md)] border border-[var(--pc-black-secondary-light)] bg-white px-4 py-2 text-[14px] shadow-none placeholder:text-grey-tertiary-normal focus-visible:border-violet-primary-normal focus-visible:ring-2 focus-visible:ring-violet-primary-normal/20";
 
 /**
- * Filter-with Icon — Figma: 56×44, radius 8, 1px border/subtle, white fill.
+ * Filter-with Icon — Figma: 56×44, radius/md, 1px border/subtle, white fill.
  * Sits beside search with a clear gap (not joined into one control).
+ * Important width/height beat Button `size="icon"` square sizing.
  */
 export const DATA_TABLE_FILTER_ICON_CLASS =
-  "inline-flex h-11 w-14 shrink-0 items-center justify-center rounded-[8px] border border-[#E3E3E3] bg-white p-0 text-black shadow-none hover:bg-[#F6F1FE] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7E3BED]/30";
+  "inline-flex !h-[var(--control-height)] !w-14 !min-h-[var(--control-height)] !min-w-14 shrink-0 items-center justify-center rounded-[var(--radius-md)] border border-[var(--pc-black-secondary-light)] bg-white p-0 text-foreground shadow-none hover:bg-violet-primary-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-primary-normal/30";
 
 /** Status cell text — purple accent (not a badge pill) */
 export const DATA_TABLE_STATUS_CLASS =
-  "text-[14px] font-bold leading-none text-[#7E3BED]";
+  "text-[14px] font-bold leading-none text-violet-primary-normal";
 
 /** Sale number cell — Figma Spline/body bold 14 · neutral/700 */
 export const DATA_TABLE_SALE_NUMBER_CLASS =
-  "text-[14px] font-bold leading-[21px] text-[#4A4A4A]";
+  "text-[14px] font-bold leading-[21px] text-[var(--drawer-text-body)]";
 
 /**
- * Numbered pagination row — Figma Sales footer:
- * centered, gap 8, Previous/Next + page squares (active = primary/500).
+ * Numbered pagination row — Figma Contacts/Sales footer:
+ * centered, gap 8, Previous/Next + circular page pills (active = primary/500).
+ * Default size uses --control-height (≥44px); dense lists can override.
  */
 export const DATA_TABLE_PAGINATION_CLASS =
   "flex w-full flex-wrap items-center justify-center gap-2";
 
 export const DATA_TABLE_PAGINATION_BTN_CLASS =
-  "inline-flex h-8 min-w-8 shrink-0 items-center justify-center gap-1 rounded-[6px] border-0 bg-transparent px-2 text-[14px] font-medium text-[#4A4A4A] shadow-none hover:bg-[#F3F0F9] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7E3BED]/30 disabled:pointer-events-none disabled:opacity-50";
+  "inline-flex h-[var(--control-height)] min-h-[var(--control-height)] min-w-[var(--control-height)] shrink-0 cursor-pointer items-center justify-center gap-1 rounded-full border-0 bg-transparent px-2 text-[14px] font-medium text-[var(--drawer-text-body)] shadow-none transition-colors duration-150 hover:bg-[var(--drawer-tab-track)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-primary-normal/30 disabled:pointer-events-none disabled:opacity-40";
 
 export const DATA_TABLE_PAGINATION_PAGE_CLASS =
-  "inline-flex size-8 shrink-0 items-center justify-center rounded-[6px] border-0 bg-transparent text-[14px] font-medium text-[#4A4A4A] shadow-none hover:bg-[#F3F0F9] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7E3BED]/30";
+  "inline-flex size-[var(--control-height)] shrink-0 cursor-pointer items-center justify-center rounded-full border-0 bg-transparent text-[14px] font-medium text-[var(--drawer-text-body)] shadow-none transition-colors duration-150 hover:bg-[var(--drawer-tab-track)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-primary-normal/30";
 
 export const DATA_TABLE_PAGINATION_PAGE_ACTIVE_CLASS =
-  "inline-flex size-8 shrink-0 items-center justify-center rounded-[6px] border-0 bg-[#7E3BED] text-[14px] font-bold text-white shadow-none hover:bg-[#7135D5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7E3BED]/40";
+  "inline-flex size-[var(--control-height)] shrink-0 cursor-pointer items-center justify-center rounded-full border-0 bg-violet-primary-normal text-[14px] font-bold text-white shadow-none transition-colors duration-150 hover:bg-violet-primary-normal-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-primary-normal/40";
+
+/** Figma pagination chevron ~9.33px */
+export const DATA_TABLE_PAGINATION_ICON_CLASS = "size-2.5 shrink-0";

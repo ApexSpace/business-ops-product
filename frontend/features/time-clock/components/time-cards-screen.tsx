@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { DateTime } from "luxon";
-import { Clock, Filter, MoreHorizontal, Pencil, Plus, Trash2 } from "lucide-react";
+import { Clock, MoreHorizontal, Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { ApiErrorState } from "@/components/data-display/api-error-state";
 import {
@@ -14,6 +14,7 @@ import {
 import { EntityDetailDrawer } from "@/components/layout/entity-detail-drawer";
 import { EntityDetailFooter } from "@/components/layout/entity-detail-footer";
 import { EntityWorkspaceLayout } from "@/components/layout/entity-workspace-layout";
+import { ListFilterButton } from "@/components/layout/list-filter-button";
 import {
   EntityDetailField,
   EntityDetailFieldGrid,
@@ -50,6 +51,7 @@ import {
   WORKSPACE_TABLE_CLASS,
 } from "@/lib/design/workspace-tokens";
 import { useEntitySelection } from "@/lib/routing/use-entity-selection";
+import { useIsMobile } from "@/lib/hooks/use-mobile";
 import { queryKeys } from "@/lib/query/keys";
 import { invalidateTimeCardLists } from "@/lib/query/invalidation";
 import { listBusinessMembers } from "@/features/settings/api/business.api";
@@ -62,6 +64,7 @@ import {
   updateTimeCard,
 } from "@/features/time-clock/api/time-cards.api";
 import { TimePickerField } from "@/features/time-clock/components/time-picker-field";
+import { TimeCardsMobileList } from "@/features/time-clock/components/mobile/time-cards-mobile-list";
 import type {
   TimeCardListItem,
   TimeCardsListFilters,
@@ -87,6 +90,7 @@ function memberLabel(member: {
 
 export function TimeCardsScreen() {
   const queryClient = useQueryClient();
+  const isMobile = useIsMobile();
   const { data: business } = useCurrentBusiness();
   const timezone = business?.timezone ?? "UTC";
 
@@ -288,18 +292,31 @@ export function TimeCardsScreen() {
 
   return (
     <>
+      {isMobile ? (
+        isError ? (
+          <ApiErrorState error={error} onRetry={() => void refetch()} />
+        ) : (
+          <TimeCardsMobileList
+            cards={data?.items ?? []}
+            isLoading={isLoading}
+            selectedId={selectedId}
+            onSelect={(row) => {
+              setDrawerMode("view");
+              setSelectedId(row.id);
+            }}
+            onOpenOptions={() => setOptionsOpen(true)}
+            onCreate={openAdd}
+          />
+        )
+      ) : (
       <EntityWorkspaceLayout
         title="Time cards"
         description="Review and manage staff clock-in and clock-out records."
         filters={
-          <Button
-            variant="outline"
-            size="sm"
+          <ListFilterButton
+            aria-label="Time card options"
             onClick={() => setOptionsOpen(true)}
-          >
-            <Filter className="mr-1.5 size-4" />
-            Options
-          </Button>
+          />
         }
         actions={
           <>
@@ -352,6 +369,7 @@ export function TimeCardsScreen() {
           />
         )}
       </EntityWorkspaceLayout>
+      )}
 
       <EntityDetailDrawer
         open={isOpen}

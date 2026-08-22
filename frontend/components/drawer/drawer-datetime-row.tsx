@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { APPOINTMENT_DRAWER_BOOKING_DATETIME_ROW_CLASS } from "@/features/appointments/styles/appointment-drawer-tokens";
+import { DRAWER_BOOKING_DATETIME_ROW_CLASS } from "@/lib/design/drawer-tokens";
 import { cn } from "@/lib/utils";
 
 export function DrawerDateTimeRow({
@@ -12,7 +12,7 @@ export function DrawerDateTimeRow({
   className?: string;
 }) {
   return (
-    <div className={cn(APPOINTMENT_DRAWER_BOOKING_DATETIME_ROW_CLASS, className)}>
+    <div className={cn(DRAWER_BOOKING_DATETIME_ROW_CLASS, className)}>
       {children}
     </div>
   );

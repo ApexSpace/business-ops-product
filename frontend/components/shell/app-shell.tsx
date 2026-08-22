@@ -1,6 +1,6 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import {
   SidebarInset,
   SidebarProvider,
@@ -8,8 +8,12 @@ import {
 import {
   isAppointmentsCalendarPath,
   isContactWorkspacePath,
+  isContactsListPath,
   isConversationsInboxPath,
-} from "@/features/contacts/workspace/contact-workspace";
+  isMobileEntityListPath,
+  isPaymentsMobileListPath,
+  isSalesWorkspacePath,
+} from "@/components/shell/shell-full-bleed-paths";
 import { PageMetadataProvider } from "@/lib/runtime/page-metadata-context";
 import { useIsMobile } from "@/lib/hooks/use-mobile";
 import { cn } from "@/lib/utils";
@@ -61,18 +65,38 @@ export function AppShell({
   children,
 }: AppShellProps) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const isMobile = useIsMobile();
   const contactWorkspace = isContactWorkspacePath(pathname);
   const conversationsInbox = isConversationsInboxPath(pathname);
   const appointmentsCalendar = isAppointmentsCalendarPath(pathname);
+  const salesWorkspace = isSalesWorkspacePath(pathname);
+  const paymentsMobileList = isPaymentsMobileListPath(
+    pathname,
+    searchParams.toString(),
+  );
+  const contactsList = isContactsListPath(pathname);
+  const entityList = isMobileEntityListPath(pathname);
   const fullBleedContent =
-    contactWorkspace || conversationsInbox || appointmentsCalendar;
+    contactWorkspace ||
+    conversationsInbox ||
+    appointmentsCalendar ||
+    (salesWorkspace && isMobile) ||
+    (paymentsMobileList && isMobile) ||
+    (contactsList && isMobile) ||
+    (entityList && isMobile);
 
   const showSearch = shellMode === "business";
   const useTopNavbar = shellMode === "business" && navMode === "main";
 
   if (useTopNavbar) {
-    const hideDesktopNavbar = appointmentsCalendar && isMobile;
+    const hideDesktopNavbar =
+      (appointmentsCalendar ||
+        salesWorkspace ||
+        paymentsMobileList ||
+        contactsList ||
+        entityList) &&
+      isMobile;
     return (
       <div className="app-shell-canvas flex h-svh min-h-0 flex-col overflow-hidden bg-white">
         <CommandPaletteProvider

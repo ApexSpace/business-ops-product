@@ -3,10 +3,10 @@
 import { useEffect, useRef } from "react";
 import { useFormContext } from "react-hook-form";
 import {
-  APPOINTMENT_FIELD_CONTROL_CLASS,
-  APPOINTMENT_FIELD_LABEL_CLASS,
-  APPOINTMENT_FORM_ITEM_CLASS,
-} from "@/features/appointments/components/appointment-form-drawer-shell";
+  FORM_DRAWER_FIELD_CONTROL_CLASS,
+  FORM_DRAWER_FIELD_LABEL_CLASS,
+  FORM_DRAWER_FORM_ITEM_CLASS,
+} from "@/components/forms/form-drawer-shell";
 import {
   FormControl,
   FormField,
@@ -123,9 +123,9 @@ export function AppointmentMeetingLocationFields({
     ? formatCalendarMeetingLocation(selectedCalendar)
     : null;
 
-  const fieldControlClass = APPOINTMENT_FIELD_CONTROL_CLASS;
-  const fieldLabelClass = APPOINTMENT_FIELD_LABEL_CLASS;
-  const formItemClass = APPOINTMENT_FORM_ITEM_CLASS;
+  const fieldControlClass = FORM_DRAWER_FIELD_CONTROL_CLASS;
+  const fieldLabelClass = FORM_DRAWER_FIELD_LABEL_CLASS;
+  const formItemClass = FORM_DRAWER_FORM_ITEM_CLASS;
 
   return (
     <div className={cn(formItemClass, "mb-0")}>

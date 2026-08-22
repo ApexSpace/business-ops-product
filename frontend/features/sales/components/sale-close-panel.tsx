@@ -1,5 +1,6 @@
 "use client";
 
+import { DRAWER_PRIMARY_BUTTON_CLASS } from "@/lib/design/drawer-tokens";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -9,10 +10,12 @@ import {
   waitForCheckoutSettled,
 } from "@/features/sales/api/checkouts.api";
 import { useDrawerFooterSubmitAction } from "@/lib/hooks/use-drawer-footer-submit-action";
+
 interface SaleClosePanelProps {
   checkoutId: string;
   contactId: string;
   balanceDue: number;
+  subtotal?: number;
   onComplete: () => void;
   embedInDrawer?: boolean;
   hideSubmitButton?: boolean;
@@ -25,6 +28,7 @@ export function SaleClosePanel({
   checkoutId,
   contactId,
   balanceDue,
+  subtotal,
   onComplete,
   embedInDrawer = false,
   hideSubmitButton = false,
@@ -58,19 +62,21 @@ export function SaleClosePanel({
     onSubmitActionChange,
   );
 
-  if (balanceDue <= 0) {    return (
+  if (balanceDue <= 0) {
+    return (
       <div className="space-y-4">
-        <p className="text-sm text-muted-foreground">
-          Nothing to collect. Complete the sale to finalize membership redemptions
-          and inventory updates.
+        <p className="text-[13px] font-medium leading-relaxed text-[#8A8A8A]">
+          Nothing to collect. Complete the sale to finalize membership
+          redemptions and inventory updates.
         </p>
         {!hideSubmitButton ? (
           <Button
-            className="w-full"
+            variant="brand"
+            className={DRAWER_PRIMARY_BUTTON_CLASS}
             disabled={zeroCloseMutation.isPending}
             onClick={() => zeroCloseMutation.mutate()}
           >
-            Complete sale
+            {zeroCloseMutation.isPending ? "Completing…" : "Complete sale"}
           </Button>
         ) : null}
       </div>
@@ -82,6 +88,7 @@ export function SaleClosePanel({
       invoiceId={checkoutId}
       contactId={contactId}
       balanceDue={balanceDue}
+      subtotal={subtotal}
       embedInDrawer={embedInDrawer}
       hideSubmitButton={hideSubmitButton}
       onSubmitActionChange={onSubmitActionChange}

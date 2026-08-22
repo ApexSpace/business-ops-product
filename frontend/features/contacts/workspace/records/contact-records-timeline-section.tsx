@@ -2,20 +2,21 @@
 
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Pencil, Trash2 } from "lucide-react";
+import { ChevronDown, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { EmptyState } from "@/components/data-display/empty-state";
-import { EntityDetailLinkFilter } from "@/components/layout/entity-detail-link-filter";
-import {
-  EntityDetailTimeline,
-  type EntityDetailTimelineItem,
-} from "@/components/layout/entity-detail-timeline";
 import { IconButton } from "@/components/ui/icon-button";
 import {
   getContactTimeline,
   type ContactTimelineEvent,
   type ContactTimelineType,
 } from "@/features/contacts/api/contact-workspace.api";
+import { ContactInlineNoteComposer } from "@/features/contacts/components/contact-inline-note-composer";
+import { ContactTimelineChipFilter } from "@/features/contacts/components/contact-timeline-chip-filter";
+import {
+  ContactTimelineFeed,
+  type ContactTimelineCardItem,
+} from "@/features/contacts/components/contact-timeline-feed";
 import { formatContactCreatedAt } from "@/features/contacts/workspace/contact-workspace";
 import { RecordListEmpty } from "@/features/contacts/components/contact-workspace/contact-record-section";
 import { getNote } from "@/features/notes/api/notes.api";
@@ -36,38 +37,15 @@ const FILTER_OPTIONS: {
   { id: "forms", label: "Forms", types: ["form"] },
 ];
 
-const LINK_FILTER_OPTIONS = FILTER_OPTIONS.map((option) => ({
+const CHIP_OPTIONS = FILTER_OPTIONS.map((option) => ({
   value: option.id,
   label: option.label,
 }));
 
-function timelineDotVariant(
-  type: ContactTimelineType,
-  description?: string | null,
-): EntityDetailTimelineItem["dotVariant"] {
-  if (type === "note") return "note";
-  if (type === "contact_created") return "system";
-  if (type === "appointment") {
-    const desc = (description ?? "").toLowerCase();
-    if (
-      desc.includes("confirm") ||
-      desc.includes("completed") ||
-      desc.includes("complete") ||
-      desc.includes("done") ||
-      desc.includes("checked in") ||
-      desc.includes("checked_in")
-    ) {
-      return "confirmed";
-    }
-    return "appointment";
-  }
-  return "system";
-}
-
 function timelineTypeLabel(type: ContactTimelineType) {
   switch (type) {
     case "contact_created":
-      return "Contact";
+      return "Created";
     case "appointment":
       return "Appointment";
     case "note":
@@ -87,42 +65,124 @@ function timelineTypeLabel(type: ContactTimelineType) {
   }
 }
 
-function toTimelineItem(
+function isClosedSale(event: ContactTimelineEvent) {
+  const code = (event.statusCode ?? event.description ?? "").toLowerCase();
+  return (
+    code.includes("closed") ||
+    code.includes("paid") ||
+    code.includes("complete")
+  );
+}
+
+function formatTimelineWhen(
+  iso: string,
+  businessTimezone: string | undefined,
+  withTime: boolean,
+) {
+  try {
+    return new Intl.DateTimeFormat(undefined, {
+      month: "long",
+      day: "numeric",
+      ...(withTime
+        ? { hour: "numeric", minute: "2-digit" as const }
+        : undefined),
+      timeZone: businessTimezone || undefined,
+    }).format(new Date(iso));
+  } catch {
+    return formatContactCreatedAt(iso, businessTimezone);
+  }
+}
+
+function toTimelineCard(
   event: ContactTimelineEvent,
   businessTimezone: string | undefined,
   noteActions: React.ReactNode | undefined,
-): EntityDetailTimelineItem {
-  const meta = `${timelineTypeLabel(event.type)} · ${formatContactCreatedAt(event.occurredAt, businessTimezone)}`;
-  const dotVariant = timelineDotVariant(event.type, event.description);
+): ContactTimelineCardItem {
+  const typeLabel = timelineTypeLabel(event.type);
 
-  if (event.type === "note" && event.description?.trim()) {
+  if (event.type === "sale") {
+    const when = formatTimelineWhen(event.occurredAt, businessTimezone, false);
+    const saleLabel = event.title?.trim() || "Sale";
     return {
       id: event.id,
-      title: event.description.trim(),
-      meta,
-      dotVariant,
+      meta: `${when} · ${saleLabel}`,
+      title: event.lineTitle?.trim() || saleLabel,
+      amount: event.amount ?? event.total ?? undefined,
+      badge: isClosedSale(event) ? { kind: "closed" } : undefined,
+      moneyRows:
+        event.subtotal || event.total
+          ? [
+              ...(event.subtotal
+                ? [
+                    {
+                      label: "Subtotal",
+                      value: event.subtotal,
+                    },
+                  ]
+                : []),
+              ...(event.total
+                ? [
+                    {
+                      label: "Total",
+                      value: event.total,
+                      emphasize: true,
+                      bordered: true,
+                    },
+                  ]
+                : []),
+            ]
+          : undefined,
+      paymentLine: event.paymentSummary ?? undefined,
       actions: noteActions,
     };
   }
 
   if (event.type === "appointment") {
-    const parts = event.description?.split(" · ") ?? [];
-    const action = parts[parts.length - 1]?.trim() || "scheduled";
+    const when = formatTimelineWhen(event.occurredAt, businessTimezone, true);
     return {
       id: event.id,
+      meta: `${when} · Appointment`,
       title: event.title,
-      subtitle: action,
+      subtitle:
+        event.subtitle?.trim() ||
+        event.description
+          ?.split(" · ")
+          .find((p) => /^with\s+/i.test(p.trim()))
+          ?.trim() ||
+        undefined,
+      badge: event.requested ? { kind: "requested" } : undefined,
+      footer: event.footer ?? undefined,
+      actions: noteActions,
+    };
+  }
+
+  const when = formatContactCreatedAt(event.occurredAt, businessTimezone);
+  const meta = `${when} · ${typeLabel}`;
+
+  if (event.type === "note" && event.description?.trim()) {
+    return {
+      id: event.id,
       meta,
-      dotVariant,
+      title: event.description.trim(),
+      actions: noteActions,
+    };
+  }
+
+  if (event.type === "contact_created") {
+    return {
+      id: event.id,
+      meta: `${when} · ${event.description?.trim() || "System"}`,
+      title: event.title?.trim() || "Client Created",
+      actions: noteActions,
     };
   }
 
   return {
     id: event.id,
+    meta,
     title: event.title,
     subtitle: event.description?.trim() || undefined,
-    meta,
-    dotVariant,
+    actions: noteActions,
   };
 }
 
@@ -142,7 +202,11 @@ export function ContactRecordsTimelineSection({
   );
 
   const { data, isLoading } = useQuery({
-    queryKey: queryKeys.contacts.timeline(contact.id, { types, page: 1, limit: 100 }),
+    queryKey: queryKeys.contacts.timeline(contact.id, {
+      types,
+      page: 1,
+      limit: 100,
+    }),
     queryFn: () =>
       getContactTimeline(contact.id, { types, page: 1, limit: 100 }),
   });
@@ -193,18 +257,49 @@ export function ContactRecordsTimelineSection({
             </>
           ) : undefined;
 
-        return toTimelineItem(event, businessTimezone, noteActions);
+        return toTimelineCard(event, businessTimezone, noteActions);
       }),
-    // handleEditNote closes over notes/onEditNote; include deps used inside.
     // eslint-disable-next-line react-hooks/exhaustive-deps -- stable callbacks from parent
     [events, businessTimezone, loadingNoteId, notes, onEditNote, onDeleteNote],
   );
 
+  const todayLabel = useMemo(() => {
+    try {
+      return new Intl.DateTimeFormat(undefined, {
+        month: "long",
+        day: "numeric",
+        timeZone: businessTimezone || undefined,
+      }).format(new Date());
+    } catch {
+      return new Intl.DateTimeFormat(undefined, {
+        month: "long",
+        day: "numeric",
+      }).format(new Date());
+    }
+  }, [businessTimezone]);
+
   return (
     <div className="contacts-drawer-timeline">
+      <div className="contacts-drawer-timeline-composer">
+        <button
+          type="button"
+          className="contacts-drawer-timeline-date"
+          aria-label={`Timeline date ${todayLabel}`}
+        >
+          <span>{todayLabel}</span>
+          <ChevronDown className="size-4 shrink-0 opacity-60" aria-hidden />
+        </button>
+        <ContactInlineNoteComposer
+          contactId={contact.id}
+          onCancel={() => undefined}
+          variant="timeline"
+          showLabel={false}
+        />
+      </div>
+
       <div className="contacts-drawer-records-filter">
-        <EntityDetailLinkFilter
-          options={LINK_FILTER_OPTIONS}
+        <ContactTimelineChipFilter
+          options={CHIP_OPTIONS}
           value={filter}
           onChange={(value) => setFilter(value as TimelineFilter)}
         />
@@ -221,7 +316,7 @@ export function ContactRecordsTimelineSection({
             className="py-6"
           />
         ) : (
-          <EntityDetailTimeline items={timelineItems} />
+          <ContactTimelineFeed items={timelineItems} />
         )}
       </div>
     </div>

@@ -16,10 +16,17 @@ import { Form, FormSchemaProvider } from "@/components/ui/form";
 import {
   DRAWER_FOOTER_ACTIONS_CLASS,
   DRAWER_FOOTER_BUTTON_CLASS,
-  DRAWER_SHEET_FOOTER_CLASS,
 } from "@/components/forms/drawer-sheet";
+import {
+  FORM_DRAWER_CONTENT_CLASS,
+  FORM_DRAWER_DESCRIPTION_CLASS,
+  FORM_DRAWER_FOOTER_CLASS,
+  FORM_DRAWER_HEADER_CLASS,
+  FORM_DRAWER_TITLE_CLASS,
+  formDrawerSheetClass,
+  type FormDrawerShellWidth,
+} from "@/components/forms/form-drawer-shell";
 import { cn } from "@/lib/utils";
-import { ENTITY_DRAWER_CONTENT_INSET_CLASS } from "@/lib/design/workspace-tokens";
 
 export interface FormSheetProps<T extends FieldValues> {
   open: boolean;
@@ -52,6 +59,8 @@ export interface FormSheetProps<T extends FieldValues> {
   children: React.ReactNode;
   className?: string;
   contentClassName?: string;
+  /** Width tier from the shared drawer map. Default medium (600). */
+  width?: FormDrawerShellWidth;
 }
 
 export function FormSheet<T extends FieldValues>({
@@ -84,9 +93,10 @@ export function FormSheet<T extends FieldValues>({
   children,
   className,
   contentClassName,
+  width = "standard",
 }: FormSheetProps<T>) {
   const resolvedFooterClassName = cn(
-    DRAWER_SHEET_FOOTER_CLASS,
+    FORM_DRAWER_FOOTER_CLASS,
     footerClassName,
   );
 
@@ -152,7 +162,7 @@ export function FormSheet<T extends FieldValues>({
         <div
           className={cn(
             "space-y-4",
-            ENTITY_DRAWER_CONTENT_INSET_CLASS,
+            !(bodyClassName || contentClassName) && FORM_DRAWER_CONTENT_CLASS,
             bodyClassName,
             contentClassName,
           )}
@@ -170,11 +180,18 @@ export function FormSheet<T extends FieldValues>({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className={cn("gap-0 p-0", className)}>
-        <SheetHeader className={headerClassName}>
-          <SheetTitle className={titleClassName}>{title}</SheetTitle>
+      <SheetContent
+        side="right"
+        className={cn("gap-0 p-0", formDrawerSheetClass(width), className)}
+      >
+        <SheetHeader className={cn(FORM_DRAWER_HEADER_CLASS, headerClassName)}>
+          <SheetTitle className={cn(FORM_DRAWER_TITLE_CLASS, titleClassName)}>
+            {title}
+          </SheetTitle>
           {description ? (
-            <SheetDescription className={descriptionClassName}>
+            <SheetDescription
+              className={cn(FORM_DRAWER_DESCRIPTION_CLASS, descriptionClassName)}
+            >
               {description}
             </SheetDescription>
           ) : null}

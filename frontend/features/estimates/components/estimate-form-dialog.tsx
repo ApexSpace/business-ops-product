@@ -2,13 +2,13 @@
 
 import { FormSheet } from "@/components/forms/form-sheet";
 import {
-  FINANCIAL_DRAWER_CONTENT_CLASS,
-  FINANCIAL_DRAWER_DESCRIPTION_CLASS,
-  FINANCIAL_DRAWER_FOOTER_CLASS,
-  FINANCIAL_DRAWER_HEADER_CLASS,
-  FINANCIAL_DRAWER_SHEET_CLASS,
-  FINANCIAL_DRAWER_TITLE_CLASS,
-} from "@/features/payments/components/financial-form-drawer-shell";
+  FORM_DRAWER_CONTENT_COMPACT_CLASS,
+  FORM_DRAWER_DESCRIPTION_CLASS,
+  FORM_DRAWER_FOOTER_CLASS,
+  FORM_DRAWER_HEADER_COMPACT_CLASS,
+  FORM_DRAWER_SHEET_FINANCIAL_CLASS,
+  FORM_DRAWER_TITLE_COMPACT_CLASS,
+} from "@/components/forms/form-drawer-shell";
 import { estimateFormSchema } from "@/features/estimates/schemas/estimate-profile";
 import {
   EstimateBasicFields,
@@ -69,12 +69,13 @@ export function EstimateFormDialog({
       onOpenChange={onOpenChange}
       title={isEdit ? `Edit ${editingEstimate?.estimateNumber}` : "New estimate"}
       description="Create a quote to send to your customer for approval."
-      className={FINANCIAL_DRAWER_SHEET_CLASS}
-      headerClassName={FINANCIAL_DRAWER_HEADER_CLASS}
-      titleClassName={FINANCIAL_DRAWER_TITLE_CLASS}
-      descriptionClassName={FINANCIAL_DRAWER_DESCRIPTION_CLASS}
-      contentClassName={FINANCIAL_DRAWER_CONTENT_CLASS}
-      footerClassName={FINANCIAL_DRAWER_FOOTER_CLASS}
+      className={FORM_DRAWER_SHEET_FINANCIAL_CLASS}
+      width="wide"
+      headerClassName={FORM_DRAWER_HEADER_COMPACT_CLASS}
+      titleClassName={FORM_DRAWER_TITLE_COMPACT_CLASS}
+      descriptionClassName={FORM_DRAWER_DESCRIPTION_CLASS}
+      contentClassName={FORM_DRAWER_CONTENT_COMPACT_CLASS}
+      footerClassName={FORM_DRAWER_FOOTER_CLASS}
       form={form}
       schema={estimateFormSchema}
       onSubmit={(values) => mutation.mutate(values)}

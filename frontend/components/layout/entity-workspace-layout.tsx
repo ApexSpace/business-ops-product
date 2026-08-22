@@ -15,14 +15,23 @@ export interface EntityWorkspaceLayoutProps {
   search?: React.ReactNode;
   filters?: React.ReactNode;
   actions?: React.ReactNode;
+  /** Full custom toolbar — when set, search/filters/actions are ignored. */
   toolbar?: React.ReactNode;
   footer?: React.ReactNode;
+  /** Optional detail/create drawer rendered beside the workspace card. */
+  drawer?: React.ReactNode;
   children: React.ReactNode;
   className?: string;
   dense?: boolean;
   fullHeight?: boolean;
+  /** Hide the page header when the shell already provides chrome (e.g. mobile). */
+  hideHeader?: boolean;
 }
 
+/**
+ * Standard entity list workspace:
+ * PageHeader → table card (toolbar + content + footer) + optional drawer slot.
+ */
 export function EntityWorkspaceLayout({
   title,
   description,
@@ -31,10 +40,12 @@ export function EntityWorkspaceLayout({
   actions,
   toolbar,
   footer,
+  drawer,
   children,
   className,
   dense = true,
   fullHeight = true,
+  hideHeader = false,
 }: EntityWorkspaceLayoutProps) {
   const toolbarNode =
     toolbar ??
@@ -55,18 +66,21 @@ export function EntityWorkspaceLayout({
         className,
       )}
     >
-      <PageHeader title={title} description={description} />
+      {hideHeader ? null : (
+        <PageHeader title={title} description={description} />
+      )}
       <section className={cn(WORKSPACE_TABLE_CARD_CLASS, "min-h-0 flex-1")}>
         {toolbarNode}
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
           {children}
         </div>
         {footer ? (
-          <div className="shrink-0 border-t border-[#F3F0F9] bg-white px-4 py-3 text-sm text-muted-foreground">
+          <div className="shrink-0 border-t border-[var(--drawer-header-border)] bg-white px-4 py-3 text-sm text-muted-foreground">
             {footer}
           </div>
         ) : null}
       </section>
+      {drawer}
     </PageContainer>
   );
 }

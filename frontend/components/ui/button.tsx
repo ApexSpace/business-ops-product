@@ -10,6 +10,9 @@ const buttonVariants = cva(
       variant: {
         default:
           "bg-primary text-primary-foreground hover:bg-primary/90 active:bg-primary/95",
+        /** Brand violet CTA — list, drawer, and dialog primaries. */
+        brand:
+          "border-0 bg-violet-primary-normal text-sm font-bold text-white shadow-none hover:bg-violet-primary-normal-hover active:bg-violet-primary-normal-active focus-visible:ring-violet-primary-normal/40 disabled:opacity-60",
         outline:
           "glass-control border-[color:var(--glass-border)] text-foreground shadow-none hover:bg-white/65 hover:text-foreground aria-expanded:bg-white/70 aria-expanded:text-foreground dark:hover:bg-white/10",
         secondary:
@@ -26,16 +29,16 @@ const buttonVariants = cva(
       },
       size: {
         default:
-          "h-[var(--control-height)] gap-1.5 px-3 text-xs font-medium has-data-[icon=inline-end]:pr-2.5 has-data-[icon=inline-start]:pl-2.5",
-        xs: "h-7 gap-1 rounded-[calc(var(--radius)*0.75)] px-2 text-xs in-data-[slot=button-group]:rounded-md has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3",
-        sm: "h-[var(--control-height-sm)] gap-1 rounded-[calc(var(--radius)*0.75)] px-2.5 text-[0.8125rem] in-data-[slot=button-group]:rounded-md has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2 [&_svg:not([class*='size-'])]:size-3.5",
-        lg: "h-10 gap-2 px-4 has-data-[icon=inline-end]:pr-3 has-data-[icon=inline-start]:pl-3",
-        icon: "size-[var(--control-height)]",
+          "h-[var(--control-height)] min-h-[var(--control-height)] gap-1.5 px-3 text-sm font-medium has-data-[icon=inline-end]:pr-2.5 has-data-[icon=inline-start]:pl-2.5",
+        xs: "h-7 min-h-7 gap-1 rounded-[calc(var(--radius)*0.75)] px-2 text-xs in-data-[slot=button-group]:rounded-md has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3",
+        sm: "h-[var(--control-height-sm)] min-h-[var(--control-height-sm)] gap-1 rounded-[calc(var(--radius)*0.75)] px-2.5 text-[0.8125rem] in-data-[slot=button-group]:rounded-md has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2 [&_svg:not([class*='size-'])]:size-3.5",
+        lg: "h-12 min-h-12 gap-2 px-4 text-sm has-data-[icon=inline-end]:pr-3 has-data-[icon=inline-start]:pl-3",
+        icon: "size-[var(--control-height)] min-h-[var(--control-height)] min-w-[var(--control-height)]",
         "icon-xs":
-          "size-7 rounded-[calc(var(--radius)*0.75)] in-data-[slot=button-group]:rounded-md [&_svg:not([class*='size-'])]:size-3",
+          "size-7 min-h-7 min-w-7 rounded-[calc(var(--radius)*0.75)] in-data-[slot=button-group]:rounded-md [&_svg:not([class*='size-'])]:size-3",
         "icon-sm":
-          "size-[var(--control-height-sm)] rounded-[calc(var(--radius)*0.75)] in-data-[slot=button-group]:rounded-md",
-        "icon-lg": "size-10",
+          "size-[var(--control-height-sm)] min-h-[var(--control-height-sm)] min-w-[var(--control-height-sm)] rounded-[calc(var(--radius)*0.75)] in-data-[slot=button-group]:rounded-md",
+        "icon-lg": "size-12 min-h-12 min-w-12",
       },
     },
     defaultVariants: {

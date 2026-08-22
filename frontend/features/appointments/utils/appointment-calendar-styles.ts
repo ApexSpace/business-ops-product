@@ -7,6 +7,7 @@ import type {
 /**
  * PandaCue Figma “Cards- Calendar” themes — pastel fill + matching 1px border + text.
  * Mapped by appointment status (and used for filters / dots).
+ * Colors use theme CSS variables (no hardcoded brand hex).
  */
 export type AppointmentCardTheme = {
   /** Solid pastel fill */
@@ -23,56 +24,56 @@ export type AppointmentCardTheme = {
   extraClass?: string;
 };
 
-/** Figma green / mint */
+/** Green / mint — success tokens */
 const THEME_GREEN: AppointmentCardTheme = {
-  bg: "#EAF7F0",
-  border: "#B7DEC8",
-  text: "#1A7A4C",
-  textMuted: "#2D8F5E",
-  dot: "#1C9A5B",
+  bg: "var(--pc-green-success-light)",
+  border: "var(--pc-green-success-light-active)",
+  text: "var(--pc-green-success-dark)",
+  textMuted: "var(--pc-green-success-normal-hover)",
+  dot: "var(--pc-green-success-normal)",
 };
 
-/** Figma purple / lavender */
+/** Purple / lavender — violet primary tokens */
 const THEME_PURPLE: AppointmentCardTheme = {
-  bg: "#F3EBFE",
-  border: "#C9B0F0",
-  text: "#5C2BB5",
-  textMuted: "#7E3BED",
-  dot: "#7E3BED",
+  bg: "var(--pc-violet-primary-light)",
+  border: "var(--pc-violet-primary-light-active)",
+  text: "var(--pc-violet-primary-dark)",
+  textMuted: "var(--pc-violet-primary-normal)",
+  dot: "var(--pc-violet-primary-normal)",
 };
 
-/** Figma orange / peach */
+/** Orange / peach — amber / open-status tokens */
 const THEME_ORANGE: AppointmentCardTheme = {
-  bg: "#FFF4EB",
-  border: "#F0C9A8",
-  text: "#B35A28",
-  textMuted: "#C46D3A",
-  dot: "#E07A3A",
+  bg: "var(--cs-amber-tint)",
+  border: "color-mix(in srgb, var(--cs-amber) 35%, white)",
+  text: "var(--cs-amber)",
+  textMuted: "color-mix(in srgb, var(--cs-amber) 85%, black)",
+  dot: "var(--cs-amber)",
 };
 
-/** Figma blue / sky */
+/** Blue / sky — info semantic (brand-aligned) */
 const THEME_BLUE: AppointmentCardTheme = {
-  bg: "#EBF3FC",
-  border: "#A8C8E8",
-  text: "#2A5FA8",
-  textMuted: "#3D73BC",
-  dot: "#3B82F6",
+  bg: "color-mix(in srgb, var(--info) 12%, white)",
+  border: "color-mix(in srgb, var(--info) 35%, white)",
+  text: "var(--info)",
+  textMuted: "color-mix(in srgb, var(--info) 75%, black)",
+  dot: "var(--info)",
 };
 
 const THEME_SLATE: AppointmentCardTheme = {
-  bg: "#F4F4F5",
-  border: "#D4D4D8",
-  text: "#52525B",
-  textMuted: "#71717A",
-  dot: "#A1A1AA",
+  bg: "var(--pc-grey-tertiary-light)",
+  border: "var(--pc-grey-tertiary-light-active)",
+  text: "var(--pc-grey-tertiary-dark)",
+  textMuted: "var(--pc-grey-tertiary-normal)",
+  dot: "var(--pc-black-secondary-light-active)",
 };
 
 const THEME_CANCELLED: AppointmentCardTheme = {
-  bg: "#F9F5F5",
-  border: "#E8C9C9",
-  text: "#9F3A3A",
-  textMuted: "#B85C5C",
-  dot: "#A1A1AA",
+  bg: "var(--cs-red-tint)",
+  border: "color-mix(in srgb, var(--destructive) 35%, white)",
+  text: "var(--destructive)",
+  textMuted: "color-mix(in srgb, var(--destructive) 75%, black)",
+  dot: "var(--pc-black-secondary-light-active)",
   extraClass: "line-through opacity-80",
 };
 
@@ -92,9 +93,9 @@ export const APPOINTMENT_STATUS_THEMES: Record<
   CANCELLED: THEME_CANCELLED,
   NO_SHOW: {
     ...THEME_ORANGE,
-    bg: "#FFF8F0",
-    text: "#8A4B20",
-    textMuted: "#A35C2C",
+    bg: "var(--mobile-status-open-bg)",
+    text: "var(--mobile-status-open-fg)",
+    textMuted: "color-mix(in srgb, var(--mobile-status-open-fg) 85%, black)",
     extraClass: "opacity-90",
   },
 };
@@ -105,52 +106,52 @@ export const APPOINTMENT_STATUS_COLORS: Record<
   { bg: string; border: string; text: string; dot: string }
 > = {
   PENDING_COMPLETION: {
-    bg: "bg-[#FFF4EB]",
-    border: "border-[#F0C9A8]",
-    text: "text-[#B35A28]",
-    dot: "bg-[#E07A3A]",
+    bg: "bg-[var(--cs-amber-tint)]",
+    border: "border-[color-mix(in_srgb,var(--cs-amber)_35%,white)]",
+    text: "text-[var(--cs-amber)]",
+    dot: "bg-[var(--cs-amber)]",
   },
   UNCONFIRMED: {
-    bg: "bg-[#FFF4EB]",
-    border: "border-[#F0C9A8]",
-    text: "text-[#B35A28]",
-    dot: "bg-[#E07A3A]",
+    bg: "bg-[var(--cs-amber-tint)]",
+    border: "border-[color-mix(in_srgb,var(--cs-amber)_35%,white)]",
+    text: "text-[var(--cs-amber)]",
+    dot: "bg-[var(--cs-amber)]",
   },
   CONFIRMED: {
-    bg: "bg-[#EAF7F0]",
-    border: "border-[#B7DEC8]",
-    text: "text-[#1A7A4C]",
-    dot: "bg-[#1C9A5B]",
+    bg: "bg-[var(--pc-green-success-light)]",
+    border: "border-[var(--pc-green-success-light-active)]",
+    text: "text-[var(--pc-green-success-dark)]",
+    dot: "bg-[var(--pc-green-success-normal)]",
   },
   WAITING: {
-    bg: "bg-[#F3EBFE]",
-    border: "border-[#C9B0F0]",
-    text: "text-[#5C2BB5]",
-    dot: "bg-[#7E3BED]",
+    bg: "bg-violet-primary-light",
+    border: "border-violet-primary-light-active",
+    text: "text-violet-primary-dark",
+    dot: "bg-violet-primary-normal",
   },
   IN_SERVICE: {
-    bg: "bg-[#EBF3FC]",
-    border: "border-[#A8C8E8]",
-    text: "text-[#2A5FA8]",
-    dot: "bg-[#3B82F6]",
+    bg: "bg-[color-mix(in_srgb,var(--info)_12%,white)]",
+    border: "border-[color-mix(in_srgb,var(--info)_35%,white)]",
+    text: "text-[var(--info)]",
+    dot: "bg-[var(--info)]",
   },
   COMPLETED: {
-    bg: "bg-[#F4F4F5]",
-    border: "border-[#D4D4D8]",
-    text: "text-[#52525B]",
-    dot: "bg-[#A1A1AA]",
+    bg: "bg-grey-tertiary-light",
+    border: "border-grey-tertiary-light-active",
+    text: "text-grey-tertiary-dark",
+    dot: "bg-black-secondary-light-active",
   },
   CANCELLED: {
-    bg: "bg-[#F9F5F5]",
-    border: "border-[#E8C9C9]",
-    text: "text-[#9F3A3A]",
-    dot: "bg-[#A1A1AA]",
+    bg: "bg-[var(--cs-red-tint)]",
+    border: "border-[color-mix(in_srgb,var(--destructive)_35%,white)]",
+    text: "text-destructive",
+    dot: "bg-black-secondary-light-active",
   },
   NO_SHOW: {
-    bg: "bg-[#FFF8F0]",
-    border: "border-[#F0C9A8]",
-    text: "text-[#8A4B20]",
-    dot: "bg-[#E07A3A]",
+    bg: "bg-[var(--mobile-status-open-bg)]",
+    border: "border-[color-mix(in_srgb,var(--cs-amber)_35%,white)]",
+    text: "text-[var(--mobile-status-open-fg)]",
+    dot: "bg-[var(--cs-amber)]",
   },
 };
 
@@ -180,11 +181,12 @@ export function getAppointmentStatusDotClass(status: AppointmentStatus): string 
   return APPOINTMENT_STATUS_COLORS[status].dot;
 }
 
+/** @deprecated Prefer `<StatusBadge domain="appointment" showDot />`. */
 export function getAppointmentStatusBadgeClass(
   status: AppointmentStatus,
 ): string {
   const colors = APPOINTMENT_STATUS_COLORS[status];
-  return `${colors.bg} ${colors.border} ${colors.text} border`;
+  return `${colors.bg} ${colors.border} ${colors.text}`;
 }
 
 /** Figma card time: "8:00AM - 9:00PM" (no space before meridiem). */

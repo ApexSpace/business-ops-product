@@ -1,11 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { FileUp } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { createNote } from "@/features/notes/api/notes.api";
+import {
+  CONTACTS_ENTRY_ADD_BTN_CLASS,
+  CONTACTS_ENTRY_COMPOSER_CLASS,
+  CONTACTS_ENTRY_TEXTAREA_CLASS,
+  CONTACTS_ENTRY_UPLOAD_CLASS,
+} from "@/features/contacts/styles/contacts-drawer-tokens";
 import {
   invalidateContactWorkspace,
   invalidateNoteLists,
@@ -17,6 +24,8 @@ interface ContactInlineNoteComposerProps {
   onCancel: () => void;
   onSuccess?: () => void;
   showLabel?: boolean;
+  /** `timeline` = Figma entry box; `compact` = sidebar Add Note expand */
+  variant?: "default" | "timeline" | "compact";
   className?: string;
 }
 
@@ -33,9 +42,11 @@ export function ContactInlineNoteComposer({
   onCancel,
   onSuccess,
   showLabel = true,
+  variant = "default",
   className,
 }: ContactInlineNoteComposerProps) {
   const queryClient = useQueryClient();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [body, setBody] = useState("");
 
   const mutation = useMutation({
@@ -62,6 +73,63 @@ export function ContactInlineNoteComposer({
     onError: (err: Error) => toast.error(err.message),
   });
 
+  const attachFileName = (file: File) => {
+    const marker = `[File: ${file.name}]`;
+    setBody((prev) => (prev.trim() ? `${prev.trim()}\n${marker}` : marker));
+  };
+
+  if (variant === "timeline") {
+    return (
+      <div className={cn(CONTACTS_ENTRY_COMPOSER_CLASS, className)}>
+        <input
+          ref={fileInputRef}
+          type="file"
+          className="sr-only"
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            e.target.value = "";
+            if (file) attachFileName(file);
+          }}
+        />
+        <Textarea
+          value={body}
+          onChange={(event) => setBody(event.target.value)}
+          placeholder="Write an entry or drag in a file..."
+          rows={3}
+          className={CONTACTS_ENTRY_TEXTAREA_CLASS}
+          onDragOver={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+          onDrop={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const file = e.dataTransfer.files?.[0];
+            if (file) attachFileName(file);
+          }}
+        />
+        <div className="flex items-center justify-between gap-3">
+          <button
+            type="button"
+            className={CONTACTS_ENTRY_UPLOAD_CLASS}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <FileUp className="size-4 shrink-0" strokeWidth={1.75} aria-hidden />
+            Upload file
+          </button>
+          <button
+            type="button"
+            className={CONTACTS_ENTRY_ADD_BTN_CLASS}
+            disabled={!body.trim() || mutation.isPending}
+            onClick={() => mutation.mutate()}
+          >
+            {mutation.isPending ? "Adding…" : "Add"}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={cn("space-y-2", className)}>
       {showLabel ? (
@@ -71,15 +139,16 @@ export function ContactInlineNoteComposer({
         value={body}
         onChange={(event) => setBody(event.target.value)}
         placeholder="Enter a note…"
-        rows={4}
+        rows={variant === "compact" ? 3 : 4}
         autoFocus
-        className="min-h-[5.5rem] resize-y bg-background text-sm"
+        className="min-h-[4.5rem] resize-y border-[#E8E4DC] bg-background text-sm focus-visible:border-violet-primary-normal focus-visible:ring-violet-primary-normal/20"
       />
       <div className="flex justify-end gap-2">
         <Button
           type="button"
           variant="outline"
           size="sm"
+          className="h-8"
           onClick={onCancel}
           disabled={mutation.isPending}
         >
@@ -88,6 +157,7 @@ export function ContactInlineNoteComposer({
         <Button
           type="button"
           size="sm"
+          className="h-8 bg-violet-primary-normal hover:bg-violet-primary-normal-hover"
           disabled={!body.trim() || mutation.isPending}
           onClick={() => mutation.mutate()}
         >

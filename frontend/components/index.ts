@@ -36,6 +36,7 @@ export { FormActions } from "@/components/layout/form-actions";
 export { PageBreadcrumbs } from "@/components/layout/page-breadcrumbs";
 export { DataToolbar } from "@/components/layout/data-toolbar";
 export { FilterBar } from "@/components/layout/filter-bar";
+export { ListFilterButton } from "@/components/layout/list-filter-button";
 export {
   ListPage,
   ListPageSkeleton,

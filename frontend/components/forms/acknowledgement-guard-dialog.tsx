@@ -68,7 +68,7 @@ export function AcknowledgementGuardDialog({
         </AlertDialogHeader>
 
         {requireAcknowledgement ? (
-          <div className="flex items-start gap-3 rounded-[10px] border border-border/60 bg-muted/20 px-3.5 py-3">
+          <div className="flex items-start gap-3 rounded-[var(--radius-md)] border border-border/60 bg-muted/20 px-3.5 py-3">
             <Switch
               id="acknowledgement-guard"
               checked={acknowledged}
@@ -85,12 +85,12 @@ export function AcknowledgementGuardDialog({
         ) : null}
 
         <AlertDialogFooter className="grid grid-cols-2 gap-3 border-0 bg-transparent p-0 sm:grid-cols-2 sm:justify-stretch">
-          <AlertDialogCancel className="h-11 w-full rounded-[10px] text-[13px] font-semibold uppercase tracking-[0.04em]">
+          <AlertDialogCancel className="h-11 w-full rounded-[var(--radius-md)] text-[13px] font-semibold uppercase tracking-[0.04em]">
             {cancelLabel}
           </AlertDialogCancel>
           <ActionButton
             type="button"
-            className="h-11 w-full rounded-[10px] text-[13px] font-semibold uppercase tracking-[0.04em]"
+            className="h-11 w-full rounded-[var(--radius-md)] text-[13px] font-semibold uppercase tracking-[0.04em]"
             disabled={!canConfirm}
             onClick={() => {
               if (!canConfirm) return;

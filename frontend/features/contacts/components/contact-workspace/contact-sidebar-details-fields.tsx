@@ -51,19 +51,25 @@ export type ContactInlineEditableKind = "phone" | "email";
 export function ContactInlineEditableField({
   contact,
   kind,
+  label: labelOverride,
   labelClassName,
   className,
+  valueClassName,
 }: {
   contact: Contact;
   kind: ContactInlineEditableKind;
+  /** Override default label (e.g. Figma "Phone Number"). */
+  label?: string;
   labelClassName?: string;
   className?: string;
+  valueClassName?: string;
 }) {
   const queryClient = useQueryClient();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState("");
 
-  const label = kind === "phone" ? "Phone" : "Email";
+  const label =
+    labelOverride ?? (kind === "phone" ? "Phone Number" : "Email");
   const displayValue =
     kind === "phone"
       ? (contact.phone?.trim() ?? "")
@@ -180,6 +186,7 @@ export function ContactInlineEditableField({
           className={cn(
             "block w-full text-left text-sm font-medium text-foreground hover:underline",
             kind === "email" && "break-all",
+            valueClassName,
           )}
         >
           {displayValue}
@@ -187,7 +194,10 @@ export function ContactInlineEditableField({
       ) : (
         <button
           type="button"
-          className="text-sm text-primary hover:underline"
+          className={cn(
+            "text-sm text-violet-primary-normal hover:underline",
+            valueClassName,
+          )}
           onClick={startEditing}
         >
           {emptyActionLabel}

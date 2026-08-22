@@ -6,6 +6,7 @@ import type { PaginatedMeta } from "@/lib/types/shared";
 import {
   DATA_TABLE_PAGINATION_BTN_CLASS,
   DATA_TABLE_PAGINATION_CLASS,
+  DATA_TABLE_PAGINATION_ICON_CLASS,
   DATA_TABLE_PAGINATION_PAGE_ACTIVE_CLASS,
   DATA_TABLE_PAGINATION_PAGE_CLASS,
 } from "@/lib/design/data-table-tokens";
@@ -16,7 +17,7 @@ interface ListPaginationProps {
   onPageChange: (page: number) => void;
   label?: string;
   /**
-   * `numbered` — Figma Sales pagination (Previous · pages · Next).
+   * `numbered` — Figma Contacts/Sales pagination (Previous · pages · Next).
    * `simple` — compact prev/next for narrow panels.
    */
   variant?: "numbered" | "simple";
@@ -25,27 +26,44 @@ interface ListPaginationProps {
   className?: string;
 }
 
-function buildPageItems(current: number, totalPages: number): Array<number | "ellipsis"> {
+/** Figma pattern: 1 2 3 … 67 68 with a small window around the current page. */
+function buildPageItems(
+  current: number,
+  totalPages: number,
+): Array<number | "ellipsis"> {
   if (totalPages <= 7) {
     return Array.from({ length: totalPages }, (_, i) => i + 1);
   }
 
-  const items: Array<number | "ellipsis"> = [1];
-  const windowStart = Math.max(2, current - 1);
-  const windowEnd = Math.min(totalPages - 1, current + 1);
-
-  if (windowStart > 2) items.push("ellipsis");
-  for (let p = windowStart; p <= windowEnd; p += 1) {
-    items.push(p);
+  const pages = new Set<number>([1, totalPages]);
+  for (let p = current - 1; p <= current + 1; p += 1) {
+    if (p >= 1 && p <= totalPages) pages.add(p);
   }
-  if (windowEnd < totalPages - 1) items.push("ellipsis");
-  items.push(totalPages);
+  if (current <= 3) {
+    pages.add(2);
+    pages.add(3);
+  }
+  if (current >= totalPages - 2) {
+    pages.add(totalPages - 1);
+    pages.add(totalPages - 2);
+  }
+
+  const sorted = [...pages].sort((a, b) => a - b);
+  const items: Array<number | "ellipsis"> = [];
+  for (let i = 0; i < sorted.length; i += 1) {
+    const pageNum = sorted[i]!;
+    if (i > 0) {
+      const prev = sorted[i - 1]!;
+      if (pageNum - prev > 1) items.push("ellipsis");
+    }
+    items.push(pageNum);
+  }
   return items;
 }
 
 /**
- * Universal list pagination — Figma Sales numbered control by default.
- * Reusable across Sales, Contacts, Products, and other entity lists.
+ * Universal list pagination — Figma numbered control by default.
+ * Reuse on Contacts, Sales, Products, Payments, and other entity lists.
  */
 export function ListPagination({
   meta,
@@ -87,7 +105,7 @@ export function ListPagination({
             aria-label="Previous page"
             onClick={() => onPageChange(page - 1)}
           >
-            <ChevronLeft className="size-4" />
+            <ChevronLeft className={DATA_TABLE_PAGINATION_ICON_CLASS} strokeWidth={2.5} />
             Previous
           </button>
           <button
@@ -98,11 +116,15 @@ export function ListPagination({
             onClick={() => onPageChange(page + 1)}
           >
             Next
-            <ChevronRight className="size-4" />
+            <ChevronRight className={DATA_TABLE_PAGINATION_ICON_CLASS} strokeWidth={2.5} />
           </button>
         </div>
       </div>
     );
+  }
+
+  if (totalPages <= 1) {
+    return null;
   }
 
   const pages = buildPageItems(page, totalPages);
@@ -119,7 +141,7 @@ export function ListPagination({
         aria-label="Previous page"
         onClick={() => onPageChange(page - 1)}
       >
-        <ChevronLeft className="size-4" />
+        <ChevronLeft className={DATA_TABLE_PAGINATION_ICON_CLASS} strokeWidth={2.5} />
         Previous
       </button>
 
@@ -158,7 +180,7 @@ export function ListPagination({
         onClick={() => onPageChange(page + 1)}
       >
         Next
-        <ChevronRight className="size-4" />
+        <ChevronRight className={DATA_TABLE_PAGINATION_ICON_CLASS} strokeWidth={2.5} />
       </button>
     </nav>
   );

@@ -19,6 +19,7 @@ import {
 } from "@/features/appointments/components/calendar/calendar-toolbar-tokens";
 import type { CalendarViewMode } from "@/features/calendars/utils/calendar-dates";
 import { formatDateRangeLabelInTimezone } from "@/features/calendars/utils/timezone";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 interface CalendarToolbarProps {
@@ -99,13 +100,14 @@ export function CalendarToolbar({
           >
             <CalendarNavArrowIcon direction="prev" />
           </button>
-          <button
+          <Button
             type="button"
+            variant="brand"
             className={CALENDAR_TOOLBAR_TODAY_BUTTON_CLASS}
             onClick={onToday}
           >
             Today
-          </button>
+          </Button>
           <button
             type="button"
             className={CALENDAR_TOOLBAR_NAV_BUTTON_CLASS}

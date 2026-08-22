@@ -7,12 +7,8 @@ import {
   type ContactDetailTabId,
 } from "@/features/contacts/components/contact-detail-panel";
 import {
-  CONTACT_PROFILE_DRAWER_BODY_CLASS,
-  CONTACT_PROFILE_DRAWER_DESCRIPTION_CLASS,
-  CONTACT_PROFILE_DRAWER_HEADER_CLASS,
-  CONTACT_PROFILE_DRAWER_SHEET_CLASS,
-  CONTACT_PROFILE_DRAWER_TITLE_CLASS,
-} from "@/features/contacts/components/contact-full-profile-drawer-shell";
+  FORM_DRAWER_BODY_FLEX_CLASS,
+} from "@/components/forms/form-drawer-shell";
 import { useContactDetail } from "@/features/contacts/hooks/use-contact-detail";
 import "@/features/contacts/styles/contacts-split-layout.css";
 
@@ -50,12 +46,8 @@ export function ContactFullProfileDrawer({
           : "View and manage contact details."
       }
       hideFooter
-      className={CONTACT_PROFILE_DRAWER_SHEET_CLASS}
-      headerClassName={CONTACT_PROFILE_DRAWER_HEADER_CLASS}
-      titleClassName={CONTACT_PROFILE_DRAWER_TITLE_CLASS}
-      descriptionClassName={CONTACT_PROFILE_DRAWER_DESCRIPTION_CLASS}
+      bodyClassName={FORM_DRAWER_BODY_FLEX_CLASS}
       contentClassName="min-h-0 flex-1"
-      bodyClassName={CONTACT_PROFILE_DRAWER_BODY_CLASS}
     >
       {contactId ? (
         <ContactDetailPanel

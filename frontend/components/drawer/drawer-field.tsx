@@ -3,10 +3,10 @@
 import type { ReactNode } from "react";
 import { Label } from "@/components/ui/label";
 import {
-  APPOINTMENT_DRAWER_FIELD_CLASS,
-  APPOINTMENT_DRAWER_FIELD_GROUP_CLASS,
-  APPOINTMENT_DRAWER_FIELD_LABEL_CLASS,
-} from "@/features/appointments/styles/appointment-drawer-tokens";
+  DRAWER_FIELD_CLASS,
+  DRAWER_FIELD_GROUP_CLASS,
+  DRAWER_FIELD_LABEL_CLASS,
+} from "@/lib/design/drawer-tokens";
 import { cn } from "@/lib/utils";
 
 export interface DrawerFieldProps {
@@ -38,9 +38,9 @@ export function DrawerField({
   const Comp = onClick ? "button" : "div";
 
   return (
-    <div className={cn(APPOINTMENT_DRAWER_FIELD_GROUP_CLASS, className)}>
+    <div className={cn(DRAWER_FIELD_GROUP_CLASS, className)}>
       {label ? (
-        <Label htmlFor={htmlFor} className={APPOINTMENT_DRAWER_FIELD_LABEL_CLASS}>
+        <Label htmlFor={htmlFor} className={DRAWER_FIELD_LABEL_CLASS}>
           {label}
         </Label>
       ) : null}
@@ -49,7 +49,7 @@ export function DrawerField({
         disabled={onClick ? disabled : undefined}
         onClick={onClick}
         className={cn(
-          APPOINTMENT_DRAWER_FIELD_CLASS,
+          DRAWER_FIELD_CLASS,
           "relative flex w-full items-center gap-2 text-left",
           onClick && "cursor-pointer hover:bg-violet-primary-surface/40",
           disabled && "pointer-events-none opacity-60",

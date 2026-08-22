@@ -10,6 +10,7 @@ import {
   parseDateKeyInTimezone,
 } from "@/features/calendars/utils/timezone";
 import { CALENDAR_GRID } from "@/features/calendars/utils/calendar-grid-styles";
+import { LoadingState } from "@/components/data-display/loading-state";
 import { cn } from "@/lib/utils";
 
 interface MonthCalendarViewProps {
@@ -63,8 +64,8 @@ export function MonthCalendarView({
         ))}
       </div>
       {isLoading ? (
-        <div className="flex h-64 items-center justify-center text-sm text-grey-tertiary-normal">
-          Loading appointments…
+        <div className="flex h-64 items-center justify-center">
+          <LoadingState variant="inline" label="Loading appointments…" />
         </div>
       ) : (
         <div className="grid grid-cols-7">

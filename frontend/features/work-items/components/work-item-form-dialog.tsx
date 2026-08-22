@@ -11,15 +11,7 @@ import { FormSheet } from "@/components/forms/form-sheet";
 import {
   DRAWER_FOOTER_ACTIONS_CLASS,
   DRAWER_FOOTER_BUTTON_CLASS,
-  DRAWER_SHEET_CLASS,
-  DRAWER_SHEET_CONTENT_CLASS,
-  DRAWER_SHEET_DESCRIPTION_CLASS,
-  DRAWER_SHEET_HEADER_CLASS,
-  DRAWER_SHEET_TITLE_CLASS,
 } from "@/components/forms/drawer-sheet";
-import {
-  WORK_ITEM_DRAWER_FOOTER_CLASS,
-} from "@/features/work-items/components/work-item-form-drawer-shell";
 import { SearchableSelect } from "@/components/forms/searchable-select";
 import { ActionButton } from "@/components/ui/action-button";
 import {
@@ -182,12 +174,7 @@ export function WorkItemFormDialog({
           ? "Update customer, service, and work details."
           : "Record customer, service, and work details."
       }
-      className={DRAWER_SHEET_CLASS}
-      headerClassName={DRAWER_SHEET_HEADER_CLASS}
-      titleClassName={DRAWER_SHEET_TITLE_CLASS}
-      descriptionClassName={DRAWER_SHEET_DESCRIPTION_CLASS}
-      contentClassName={DRAWER_SHEET_CONTENT_CLASS}
-      footerClassName={WORK_ITEM_DRAWER_FOOTER_CLASS}
+      width="compact"
       form={form}
       schema={workItemFormSchema}
       onSubmit={(v) => mutation.mutate(v)}

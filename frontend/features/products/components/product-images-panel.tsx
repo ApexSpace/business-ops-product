@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { ImagePlus, Loader2, Star, Trash2 } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { LoadingState } from "@/components/data-display/loading-state";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
@@ -444,10 +445,7 @@ export function ProductImagesPanel({
           Gallery ({galleryImages.length}/{MAX_GALLERY_IMAGES})
         </p>
         {galleryQuery.isLoading ? (
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <Loader2 className="size-4 animate-spin" />
-            Loading gallery…
-          </div>
+          <LoadingState variant="inline" label="Loading gallery…" />
         ) : galleryImages.length > 0 ? (
           <div className="grid grid-cols-3 gap-2">
             {galleryImages.map((image) => (
