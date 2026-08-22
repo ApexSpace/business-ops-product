@@ -38,6 +38,20 @@ export const ENTITY_DRAWER_TOOLBAR_CLASS =
 export const ENTITY_DRAWER_SUMMARY_CLASS =
   "shrink-0 border-b border-border/70 bg-background px-6 py-3";
 
+/**
+ * Discrete filter pills (Figma Client Details timeline).
+ * Height 30px / radius-sm / px 16 / py 6 / gap 8 — values already used
+ * by contacts timeline chips; promoted here for shared reuse.
+ */
+export const ENTITY_FILTER_PILL_ROW_CLASS =
+  "flex w-full min-w-0 flex-wrap items-center justify-center gap-2";
+
+export const ENTITY_FILTER_PILL_CLASS =
+  "relative box-border inline-flex h-[30px] max-h-[30px] min-h-[30px] shrink-0 cursor-pointer items-center justify-center whitespace-nowrap rounded-[var(--radius-sm)] border border-[var(--mobile-list-border)] bg-white px-4 py-1.5 text-[12px] font-medium leading-none text-[var(--drawer-text-primary)] shadow-none transition-colors duration-150 after:absolute after:-inset-y-2 after:inset-x-0 after:content-[''] hover:bg-violet-primary-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-primary-normal/25";
+
+export const ENTITY_FILTER_PILL_ACTIVE_CLASS =
+  "relative box-border inline-flex h-[30px] max-h-[30px] min-h-[30px] shrink-0 cursor-pointer items-center justify-center whitespace-nowrap rounded-[var(--radius-sm)] border border-violet-primary-normal bg-violet-primary-normal px-4 py-1.5 text-[12px] font-semibold leading-none text-white shadow-none transition-colors duration-150 after:absolute after:-inset-y-2 after:inset-x-0 after:content-[''] hover:bg-violet-primary-normal-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-primary-normal/25";
+
 /** CSS custom properties for workspace shells (set on layout root when needed). */
 export const WORKSPACE_CSS_VARS = {
   "--workspace-toolbar-height": "3rem",

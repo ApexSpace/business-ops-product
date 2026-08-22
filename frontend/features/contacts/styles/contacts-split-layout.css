@@ -206,24 +206,25 @@
   min-height: 0;
   height: 100%;
   flex: 1 1 auto;
-  flex-direction: row;
+  flex-direction: column;
   overflow: hidden;
   background: transparent;
 }
 
-/* Left profile — Figma ~360 content width, pad 16/24, gap 24 */
+/* Left profile — Figma 409px column, pad 16/24, gap 40 */
 .contacts-drawer-profile-panel {
   display: flex;
-  width: min(100%, 360px);
-  min-width: 280px;
+  width: 100%;
+  min-width: 0;
   flex-shrink: 0;
   flex-direction: column;
-  gap: 24px;
+  gap: 40px;
   overflow-x: hidden;
   overflow-y: auto;
-  border-right: 1px solid var(--cs-line);
-  background: #ffffff;
+  border-bottom: 1px solid var(--drawer-header-border);
+  background: white;
   padding: 16px 24px 24px;
+  max-height: min(42vh, 380px);
   scrollbar-width: thin;
 }
 
@@ -253,10 +254,10 @@
   width: 100%;
   min-width: 0;
   flex-direction: column;
-  gap: 0.375rem;
-  border-bottom: 1px solid var(--cs-line);
-  padding-top: 0.5rem;
-  padding-bottom: 0.375rem;
+  gap: 4px;
+  border-bottom: 1px solid var(--drawer-header-border);
+  padding-top: 8px;
+  padding-bottom: 6px;
 }
 
 .contacts-drawer-profile-note {
@@ -274,23 +275,7 @@
   flex: 1;
   flex-direction: column;
   overflow: hidden;
-  background: var(--cs-canvas);
-}
-
-.contacts-drawer-records-panel .contacts-d2-tabbar-wrap {
-  flex-shrink: 0;
-  margin: 0;
-  padding: 8px 24px 0;
-  background: var(--cs-canvas);
-}
-
-.contacts-drawer-records-panel .contacts-d2-tabbar-wrap::before,
-.contacts-drawer-records-panel .contacts-d2-tabbar-wrap::after {
-  background: linear-gradient(to right, var(--cs-canvas), transparent);
-}
-
-.contacts-drawer-records-panel .contacts-d2-tabbar-wrap::after {
-  background: linear-gradient(to left, var(--cs-canvas), transparent);
+  background: var(--drawer-tab-track);
 }
 
 .contacts-drawer-records-panel .contacts-d2-tabpanel {
@@ -314,21 +299,21 @@
   flex-shrink: 0;
   flex-direction: column;
   gap: 10px;
-  border-bottom: 1px solid var(--cs-line);
-  background: var(--cs-canvas);
-  padding: 14px 24px 12px;
+  background: var(--drawer-tab-track);
+  padding: 14px 16px 12px;
 }
 
 .contacts-drawer-timeline-date {
   display: inline-flex;
   width: fit-content;
   max-width: 100%;
+  min-height: 32px;
   align-items: center;
   gap: 6px;
   border: 0;
   background: transparent;
   padding: 0;
-  color: #1a1a1a;
+  color: var(--drawer-text-primary);
   cursor: default;
   font-size: 15px;
   font-weight: 700;
@@ -337,8 +322,8 @@
 
 .contacts-drawer-records-filter {
   flex-shrink: 0;
-  background: var(--cs-canvas);
-  padding: 10px 24px 2px;
+  background: var(--drawer-tab-track);
+  padding: 10px 16px 2px;
 }
 
 .contacts-drawer-tab-scroll {
@@ -349,7 +334,7 @@
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding: 12px 24px 24px;
+  padding: 12px 16px max(24px, env(safe-area-inset-bottom, 0px));
   scrollbar-width: thin;
 }
 
@@ -360,31 +345,29 @@
   flex-direction: column;
 }
 
-@media (max-width: 720px) {
+@media (min-width: 640px) {
+  .contacts-drawer-timeline-composer,
+  .contacts-drawer-records-filter {
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+
+  .contacts-drawer-tab-scroll {
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+}
+
+@media (min-width: 1024px) {
   .contacts-detail-card--drawer-split {
-    flex-direction: column;
+    flex-direction: row;
   }
 
   .contacts-drawer-profile-panel {
-    width: 100%;
-    min-width: 0;
-    max-height: min(42vh, 380px);
-    border-right: none;
-    border-bottom: 1px solid var(--cs-line);
-    padding: 16px 20px 20px;
-    gap: 20px;
-  }
-
-  .contacts-drawer-timeline-composer,
-  .contacts-drawer-records-filter,
-  .contacts-drawer-tab-scroll {
-    padding-left: 16px;
-    padding-right: 16px;
-  }
-
-  .contacts-drawer-records-panel .contacts-d2-tabbar-wrap {
-    padding-left: 16px;
-    padding-right: 16px;
+    width: min(100%, 409px);
+    max-height: none;
+    border-right: 1px solid var(--drawer-header-border);
+    border-bottom: none;
   }
 }
 

@@ -1,12 +1,14 @@
 "use client";
 
 import { Star } from "lucide-react";
-import { MobileStatusPill } from "@/components/mobile/mobile-status-pill";
+import { StatusBadge } from "@/components/data-display/status-badge";
 import {
   CONTACTS_STATUS_REQUESTED_CLASS,
   CONTACTS_TIMELINE_CARD_CLASS,
   CONTACTS_TIMELINE_DOT_CLASS,
   CONTACTS_TIMELINE_META_CLASS,
+  CONTACTS_TIMELINE_MONEY_DIVIDER_CLASS,
+  CONTACTS_TIMELINE_MONEY_LABEL_CLASS,
   CONTACTS_TIMELINE_RAIL_CLASS,
   CONTACTS_TIMELINE_SUBTITLE_CLASS,
   CONTACTS_TIMELINE_TITLE_CLASS,
@@ -46,10 +48,10 @@ interface ContactTimelineFeedProps {
 function TimelineBadge({ badge }: { badge: ContactTimelineBadge }) {
   if (badge.kind === "closed") {
     return (
-      <MobileStatusPill
-        tone="closed"
-        label={badge.label ?? "Closed"}
-        className="uppercase tracking-wide"
+      <StatusBadge
+        domain="sale"
+        status="CLOSED"
+        label={badge.label ?? "CLOSED"}
       />
     );
   }
@@ -85,7 +87,7 @@ function TimelineCard({ item }: { item: ContactTimelineCardItem }) {
       <div
         className={cn(
           "flex w-full min-w-0 items-start justify-between gap-3",
-          hasMoney && "border-b border-[#D4D0E0]/50 pb-3",
+          hasMoney && cn("border-b pb-3", CONTACTS_TIMELINE_MONEY_DIVIDER_CLASS),
         )}
       >
         <div className="min-w-0 flex-1 space-y-0.5">
@@ -116,12 +118,12 @@ function TimelineCard({ item }: { item: ContactTimelineCardItem }) {
           key={`${item.id}-${row.label}`}
           className={cn(
             "flex w-full min-w-0 items-center justify-between gap-3 py-2",
-            row.bordered && "border-t border-[#D4D0E0]/50",
+            row.bordered && cn("border-t", CONTACTS_TIMELINE_MONEY_DIVIDER_CLASS),
           )}
         >
           <span
             className={cn(
-              "text-[13px] leading-5 text-[#1A1A1A]",
+              CONTACTS_TIMELINE_MONEY_LABEL_CLASS,
               row.emphasize ? "font-semibold" : "font-normal",
             )}
           >
@@ -129,7 +131,8 @@ function TimelineCard({ item }: { item: ContactTimelineCardItem }) {
           </span>
           <span
             className={cn(
-              "shrink-0 tabular-nums text-[13px] leading-5 text-[#1A1A1A]",
+              CONTACTS_TIMELINE_MONEY_LABEL_CLASS,
+              "shrink-0 tabular-nums",
               row.emphasize ? "font-semibold" : "font-normal",
             )}
           >

@@ -9,11 +9,17 @@ import {
 import { ContactInlineNoteComposer } from "@/features/contacts/components/contact-inline-note-composer";
 import { ContactInlineEditableField } from "@/features/contacts/components/contact-workspace/contact-sidebar-details-fields";
 import {
+  CONTACTS_AVATAR_FALLBACK_CLASS,
   CONTACTS_AVATAR_VIEW_CLASS,
   CONTACTS_DETAIL_FIELD_LABEL_CLASS,
   CONTACTS_DETAIL_FIELD_VALUE_CLASS,
+  CONTACTS_DRAWER_PROFILE_COL_CLASS,
+  CONTACTS_DRAWER_PROFILE_FIELDS_CLASS,
+  CONTACTS_DRAWER_PROFILE_FIELD_ROW_CLASS,
+  CONTACTS_DRAWER_PROFILE_IDENTITY_CLASS,
+  CONTACTS_DRAWER_PROFILE_NOTE_CLASS,
 } from "@/features/contacts/styles/contacts-drawer-tokens";
-import { Button } from "@/components/ui/button";
+import { IconButton } from "@/components/ui/icon-button";
 import { ProfileAvatar } from "@/components/ui/profile-avatar";
 import { cn } from "@/lib/utils";
 
@@ -45,32 +51,32 @@ export function ContactDrawerProfilePanel({
   const company = contact.companyName?.trim() ?? "";
 
   return (
-    <aside className={cn("contacts-drawer-profile-panel", className)}>
-      <div className="contacts-drawer-profile-identity">
+    <aside className={cn(CONTACTS_DRAWER_PROFILE_COL_CLASS, className)}>
+      <div className={CONTACTS_DRAWER_PROFILE_IDENTITY_CLASS}>
         <div className="relative mx-auto w-fit">
           <ProfileAvatar
             name={contact.label}
             avatarUrl={contact.avatarAssetId ? contact.avatarUrl : null}
             size="lg"
-            className={cn(CONTACTS_AVATAR_VIEW_CLASS, "!size-[92px]")}
-            fallbackClassName="bg-[#3B82F6] text-[28px] font-bold text-white"
+            className={CONTACTS_AVATAR_VIEW_CLASS}
+            fallbackClassName={CONTACTS_AVATAR_FALLBACK_CLASS}
           />
           {showEditButton ? (
-            <Button
+            <IconButton
               type="button"
               variant="outline"
               size="icon-sm"
-              className="absolute -right-1 -top-1 size-7 rounded-full border-[#E8E4DC] bg-white text-violet-primary-normal shadow-sm hover:bg-violet-primary-surface"
+              className="absolute -right-1 -top-1 size-7 rounded-full border-[var(--drawer-field-border)] bg-white text-violet-primary-normal shadow-sm hover:bg-violet-primary-surface"
               onClick={onEdit}
               aria-label="Edit contact"
             >
               <Pencil className="size-3.5" strokeWidth={1.75} aria-hidden />
-            </Button>
+            </IconButton>
           ) : null}
         </div>
       </div>
 
-      <div className="contacts-drawer-profile-fields">
+      <div className={CONTACTS_DRAWER_PROFILE_FIELDS_CLASS}>
         <ContactDetailField label="First Name" value={contact.firstName} />
         <ContactDetailField label="Last Name" value={contact.lastName} />
 
@@ -82,7 +88,7 @@ export function ContactDrawerProfilePanel({
               label="Email"
               labelClassName={CONTACTS_DETAIL_FIELD_LABEL_CLASS}
               valueClassName={CONTACTS_DETAIL_FIELD_VALUE_CLASS}
-              className="contacts-drawer-profile-field-row"
+              className={CONTACTS_DRAWER_PROFILE_FIELD_ROW_CLASS}
             />
             <ContactInlineEditableField
               contact={contact}
@@ -90,7 +96,7 @@ export function ContactDrawerProfilePanel({
               label="Phone Number"
               labelClassName={CONTACTS_DETAIL_FIELD_LABEL_CLASS}
               valueClassName={CONTACTS_DETAIL_FIELD_VALUE_CLASS}
-              className="contacts-drawer-profile-field-row"
+              className={CONTACTS_DRAWER_PROFILE_FIELD_ROW_CLASS}
             />
           </>
         ) : null}
@@ -98,7 +104,7 @@ export function ContactDrawerProfilePanel({
         {company ? <ContactDetailField label="Company" value={company} /> : null}
       </div>
 
-      <div className="contacts-drawer-profile-note">
+      <div className={CONTACTS_DRAWER_PROFILE_NOTE_CLASS}>
         {!noteComposerOpen ? (
           <ContactAddNoteAction
             onClick={() => onNoteComposerOpenChange?.(true)}

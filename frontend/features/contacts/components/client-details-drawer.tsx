@@ -106,9 +106,9 @@ function AccordionRow({
           <span className="truncate">{label}</span>
         </span>
         {open ? (
-          <ChevronDown className="size-4 shrink-0 text-[#8A8A8A]" aria-hidden />
+          <ChevronDown className="size-4 shrink-0 text-[var(--drawer-text-secondary)]" aria-hidden />
         ) : (
-          <ChevronRight className="size-4 shrink-0 text-[#8A8A8A]" aria-hidden />
+          <ChevronRight className="size-4 shrink-0 text-[var(--drawer-text-secondary)]" aria-hidden />
         )}
       </button>
       {open && children ? (
@@ -179,7 +179,7 @@ function ClientAvatarUpload({
   };
 
   return (
-    <div className="flex flex-col items-center gap-2 border-b border-[#EEE8E0] px-6 pb-4 pt-6">
+    <div className="flex flex-col items-center gap-2 border-b border-[var(--drawer-header-border)] px-6 pb-4 pt-6">
       <input
         ref={inputRef}
         type="file"
@@ -197,7 +197,7 @@ function ClientAvatarUpload({
           // eslint-disable-next-line @next/next/no-img-element
           <img src={previewUrl} alt="" className="size-full object-cover" />
         ) : (
-          <User className="size-10 text-[#8A8A8A]" aria-hidden />
+          <User className="size-10 text-[var(--drawer-text-secondary)]" aria-hidden />
         )}
         <button
           type="button"
@@ -387,7 +387,7 @@ export function ClientDetailsDrawer({
 
               {noteOpen ? (
                 <div className="space-y-1.5">
-                  <Label className="text-[13px] font-medium text-[#4A4A4A]">
+                  <Label className="text-[13px] font-medium text-[var(--drawer-text-body)]">
                     Note
                   </Label>
                   <Textarea
@@ -415,7 +415,7 @@ export function ClientDetailsDrawer({
                 onToggle={toggle}
               >
                 <div className="space-y-1.5">
-                  <Label className="text-[13px] font-medium text-[#4A4A4A]">
+                  <Label className="text-[13px] font-medium text-[var(--drawer-text-body)]">
                     Facebook
                   </Label>
                   <Input
@@ -427,7 +427,7 @@ export function ClientDetailsDrawer({
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-[13px] font-medium text-[#4A4A4A]">
+                  <Label className="text-[13px] font-medium text-[var(--drawer-text-body)]">
                     Instagram
                   </Label>
                   <Input

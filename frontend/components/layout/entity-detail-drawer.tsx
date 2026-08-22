@@ -1,7 +1,10 @@
 "use client";
 
 import { LoadingState } from "@/components/data-display/loading-state";
-import { DrawerShell } from "@/components/layout/drawer-shell";
+import {
+  DrawerShell,
+  type DrawerShellChrome,
+} from "@/components/layout/drawer-shell";
 import { EntityDetailHeader } from "@/components/layout/entity-detail-header";
 import {
   EntityDetailTabs,
@@ -49,6 +52,9 @@ interface EntityDetailDrawerProps {
   titleClassName?: string;
   /** Full-bleed body (e.g. split contacts layout manages its own column padding). */
   fullBleed?: boolean;
+  /** Vertical purpose strip (e.g. “CLIENT DETAILS”). Hidden on mobile-brand chrome. */
+  spineLabel?: string;
+  chrome?: DrawerShellChrome;
 }
 
 function resolveWidth(width: EntityDetailDrawerWidth): EntityDrawerWidthTier {
@@ -80,6 +86,8 @@ export function EntityDetailDrawer({
   contentClassName,
   headerClassName,
   fullBleed = false,
+  spineLabel,
+  chrome = "default",
 }: EntityDetailDrawerProps) {
   const resolvedWidth = resolveWidth(width);
   const headerCluster = (
@@ -88,6 +96,7 @@ export function EntityDetailDrawer({
       <EntityDetailHeader
         actions={headerActions}
         overflowActions={overflowActions}
+        tone={chrome === "mobile-brand" ? "on-brand" : "default"}
       />
     </>
   );
@@ -98,6 +107,8 @@ export function EntityDetailDrawer({
       onOpenChange={onOpenChange}
       variant="sheet"
       width={resolvedWidth}
+      chrome={chrome}
+      spineLabel={spineLabel}
       title={title}
       description={subtitle}
       headerActions={headerCluster}

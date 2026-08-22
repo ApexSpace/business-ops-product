@@ -1,5 +1,10 @@
 "use client";
 
+import {
+  ENTITY_FILTER_PILL_ACTIVE_CLASS,
+  ENTITY_FILTER_PILL_CLASS,
+  ENTITY_FILTER_PILL_ROW_CLASS,
+} from "@/lib/design/workspace-tokens";
 import { cn } from "@/lib/utils";
 
 export interface EntityDetailSegmentOption {
@@ -12,6 +17,11 @@ interface EntityDetailSegmentedFilterProps {
   value: string;
   onChange: (value: string) => void;
   label?: string;
+  /**
+   * `default` — connected muted track.
+   * `pills` — discrete Figma filter chips (30px, radius/sm).
+   */
+  variant?: "default" | "pills";
   className?: string;
 }
 
@@ -20,8 +30,38 @@ export function EntityDetailSegmentedFilter({
   value,
   onChange,
   label = "Filter by",
+  variant = "default",
   className,
 }: EntityDetailSegmentedFilterProps) {
+  if (variant === "pills") {
+    return (
+      <div
+        className={cn(ENTITY_FILTER_PILL_ROW_CLASS, className)}
+        role="group"
+        aria-label={label}
+      >
+        {options.map((option) => {
+          const active = option.value === value;
+          return (
+            <button
+              key={option.value}
+              type="button"
+              aria-pressed={active}
+              onClick={() => onChange(option.value)}
+              className={
+                active
+                  ? ENTITY_FILTER_PILL_ACTIVE_CLASS
+                  : ENTITY_FILTER_PILL_CLASS
+              }
+            >
+              {option.label}
+            </button>
+          );
+        })}
+      </div>
+    );
+  }
+
   return (
     <div
       className={cn("flex min-w-0 flex-wrap items-center gap-2", className)}

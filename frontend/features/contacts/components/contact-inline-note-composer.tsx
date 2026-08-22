@@ -8,8 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { createNote } from "@/features/notes/api/notes.api";
 import {
-  CONTACTS_ENTRY_ADD_BTN_CLASS,
   CONTACTS_ENTRY_COMPOSER_CLASS,
+  CONTACTS_ENTRY_FOOTER_CLASS,
   CONTACTS_ENTRY_TEXTAREA_CLASS,
   CONTACTS_ENTRY_UPLOAD_CLASS,
 } from "@/features/contacts/styles/contacts-drawer-tokens";
@@ -108,7 +108,7 @@ export function ContactInlineNoteComposer({
             if (file) attachFileName(file);
           }}
         />
-        <div className="flex items-center justify-between gap-3">
+        <div className={CONTACTS_ENTRY_FOOTER_CLASS}>
           <button
             type="button"
             className={CONTACTS_ENTRY_UPLOAD_CLASS}
@@ -117,14 +117,15 @@ export function ContactInlineNoteComposer({
             <FileUp className="size-4 shrink-0" strokeWidth={1.75} aria-hidden />
             Upload file
           </button>
-          <button
+          <Button
             type="button"
-            className={CONTACTS_ENTRY_ADD_BTN_CLASS}
+            variant="brand"
+            size="sm"
             disabled={!body.trim() || mutation.isPending}
             onClick={() => mutation.mutate()}
           >
             {mutation.isPending ? "Adding…" : "Add"}
-          </button>
+          </Button>
         </div>
       </div>
     );
@@ -141,7 +142,7 @@ export function ContactInlineNoteComposer({
         placeholder="Enter a note…"
         rows={variant === "compact" ? 3 : 4}
         autoFocus
-        className="min-h-[4.5rem] resize-y border-[#E8E4DC] bg-background text-sm focus-visible:border-violet-primary-normal focus-visible:ring-violet-primary-normal/20"
+        className="min-h-[4.5rem] resize-y border-[var(--drawer-field-border)] bg-background text-sm focus-visible:border-violet-primary-normal focus-visible:ring-violet-primary-normal/20"
       />
       <div className="flex justify-end gap-2">
         <Button
@@ -156,8 +157,8 @@ export function ContactInlineNoteComposer({
         </Button>
         <Button
           type="button"
+          variant="brand"
           size="sm"
-          className="h-8 bg-violet-primary-normal hover:bg-violet-primary-normal-hover"
           disabled={!body.trim() || mutation.isPending}
           onClick={() => mutation.mutate()}
         >
