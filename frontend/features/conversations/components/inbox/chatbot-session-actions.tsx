@@ -5,7 +5,6 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Bot,
   CheckCircle2,
-  ChevronDown,
   Loader2,
   PauseCircle,
   PlayCircle,
@@ -13,6 +12,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { NavArrowIcon } from "@/components/ui/nav-arrow-icon";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -130,7 +130,7 @@ export function ChatbotSessionActions({
                 <Bot className="size-3.5" />
               )}
               <span className="hidden min-[420px]:inline">Bot</span>
-              <ChevronDown className="size-3 opacity-70" />
+              <NavArrowIcon direction="down" size="md" className="opacity-70" />
             </Button>
           }
         />

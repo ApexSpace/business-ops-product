@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ChevronDown, Loader2, StickyNote } from "lucide-react";
+import { Loader2, StickyNote } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { NavArrowIcon } from "@/components/ui/nav-arrow-icon";
 import { Textarea } from "@/components/ui/textarea";
 import {
   createConversationNote,
@@ -84,11 +85,10 @@ export function ConversationInternalNotesPanel({
             </span>
           ) : null}
         </span>
-        <ChevronDown
-          className={cn(
-            "size-4 shrink-0 text-muted-foreground transition-transform",
-            expanded && "rotate-180",
-          )}
+        <NavArrowIcon
+          direction={expanded ? "up" : "down"}
+          size="lg"
+          className="text-muted-foreground"
         />
       </button>
 

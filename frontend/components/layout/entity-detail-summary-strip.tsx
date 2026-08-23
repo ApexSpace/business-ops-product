@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown } from "lucide-react";
+import { NavArrowIcon } from "@/components/ui/nav-arrow-icon";
 import { cn } from "@/lib/utils";
 import { ENTITY_DRAWER_SUMMARY_CLASS } from "@/lib/design/workspace-tokens";
 
@@ -27,12 +27,10 @@ export function EntityDetailSummaryStrip({
         aria-expanded={open}
       >
         <span>Details</span>
-        <ChevronDown
-          className={cn(
-            "size-4 shrink-0 text-muted-foreground transition-transform",
-            open && "rotate-180",
-          )}
-          aria-hidden
+        <NavArrowIcon
+          direction={open ? "up" : "down"}
+          size="lg"
+          className="text-muted-foreground"
         />
       </button>
       {open ? <div className="mt-3 space-y-3">{children}</div> : null}

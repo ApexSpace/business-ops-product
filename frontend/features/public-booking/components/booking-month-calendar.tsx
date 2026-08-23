@@ -2,8 +2,8 @@
 
 import { useMemo, useState } from "react";
 import { DateTime } from "luxon";
-import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { NavArrowIcon } from "@/components/ui/nav-arrow-icon";
 import { cn } from "@/lib/utils";
 import {
   getMonthGridDateKeysInTimezone,
@@ -105,7 +105,7 @@ export function BookingMonthCalendar({
           }
           aria-label="Previous month"
         >
-          <ChevronLeft className="size-5" />
+          <NavArrowIcon direction="left" size={20} />
         </Button>
         <span className="text-base font-semibold">{monthLabel}</span>
         <Button
@@ -121,7 +121,7 @@ export function BookingMonthCalendar({
           }
           aria-label="Next month"
         >
-          <ChevronRight className="size-5" />
+          <NavArrowIcon direction="right" size={20} />
         </Button>
       </div>
 

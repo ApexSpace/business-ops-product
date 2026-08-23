@@ -1,7 +1,7 @@
 "use client";
 
-import { ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { NavArrowIcon } from "@/components/ui/nav-arrow-icon";
 import { cn } from "@/lib/utils";
 import type {
   PublicBookingCatalogCategory,
@@ -44,7 +44,7 @@ export function BookingServiceCart({
     <div className="flex flex-col">
       <div className="flex items-center gap-2 border-b px-4 py-3 sm:px-6">
         <Button type="button" variant="ghost" size="sm" onClick={onBack}>
-          <ChevronLeft className="mr-1 size-4" />
+          <NavArrowIcon direction="left" size="lg" className="mr-1" />
           Back
         </Button>
         <span className="text-sm text-muted-foreground">/</span>

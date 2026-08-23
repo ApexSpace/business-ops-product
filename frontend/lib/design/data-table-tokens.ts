@@ -33,9 +33,9 @@ export const DATA_TABLE_HEADER_CLASS =
 export const DATA_TABLE_HEAD_CELL_CLASS =
   "h-[59px] px-4 text-left align-middle text-[14px] font-bold leading-none tracking-normal text-violet-primary-dark whitespace-nowrap";
 
-/** Body row — 80px, 2px primary/300 bottom border only */
+/** Body row — `--table-row-height` (56px default / 52px compact), 2px primary/300 bottom border only */
 export const DATA_TABLE_ROW_CLASS =
-  "h-20 border-b-2 border-[var(--drawer-divider-accent)] bg-white transition-colors hover:bg-violet-primary-surface/60 data-[state=selected]:bg-violet-primary-surface";
+  "h-[var(--table-row-height)] border-b-2 border-[var(--drawer-divider-accent)] bg-white transition-colors hover:bg-violet-primary-surface/60 data-[state=selected]:bg-violet-primary-surface";
 
 /** Body cell — Figma pad 8 / 16 · neutral/700 */
 export const DATA_TABLE_CELL_CLASS =

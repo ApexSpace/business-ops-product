@@ -6,7 +6,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { DateTime } from "luxon";
 import {
-  ChevronLeft,
   Loader2,
   MoreVertical,
   Pencil,
@@ -17,6 +16,7 @@ import { DrawerFooterPrimaryAction } from "@/components/layout/drawer-footer-pri
 import { AcknowledgementGuardDialog } from "@/components/forms/acknowledgement-guard-dialog";
 import { DrawerShell } from "@/components/layout/drawer-shell";
 import { IconButton } from "@/components/ui/icon-button";
+import { NavArrowIcon } from "@/components/ui/nav-arrow-icon";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -493,7 +493,7 @@ export function AppointmentDetailDrawer({
       onClick={handleCheckoutBack}
       className={APPOINTMENT_DRAWER_HEADER_ACTION_CLASS}
     >
-      <ChevronLeft className="size-4" />
+      <NavArrowIcon direction="left" size="lg" />
     </IconButton>
   );
 

@@ -164,8 +164,10 @@ export function DataTable<T>({
       className={cn(DATA_TABLE_SHELL_CLASS, className)}
       style={
         isCompact
-          ? ({ "--table-row-height": "3.5rem" } as React.CSSProperties)
-          : ({ "--table-row-height": "5rem" } as React.CSSProperties)
+          ? ({
+              "--table-row-height": "var(--table-row-height-compact)",
+            } as React.CSSProperties)
+          : undefined
       }
     >
       {toolbar ? (

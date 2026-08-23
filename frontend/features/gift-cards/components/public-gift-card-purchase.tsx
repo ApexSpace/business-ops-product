@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { Gift, Heart, Loader2, ChevronDown, ChevronUp } from "lucide-react";
+import { Gift, Heart, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { NavArrowIcon } from "@/components/ui/nav-arrow-icon";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -255,9 +256,9 @@ export function PublicGiftCardPurchase({
           >
             Gift card details
             {showDetails ? (
-              <ChevronUp className="size-4" />
+              <NavArrowIcon direction="up" size="lg" />
             ) : (
-              <ChevronDown className="size-4" />
+              <NavArrowIcon direction="down" size="lg" />
             )}
           </button>
           {showDetails ? (

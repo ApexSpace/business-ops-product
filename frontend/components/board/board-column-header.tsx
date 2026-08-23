@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { NavArrowIcon } from "@/components/ui/nav-arrow-icon";
 import { formatBoardColumnTotal, pluralizeCount } from "@/components/board/board-utils";
 import { IconButton } from "@/components/ui/icon-button";
 import { cn } from "@/lib/utils";
@@ -53,9 +53,9 @@ export function BoardColumnHeader({
             onClick={onToggleCollapse}
           >
             {collapsed ? (
-              <ChevronDown className="size-4" />
+              <NavArrowIcon direction="down" size="lg" />
             ) : (
-              <ChevronUp className="size-4" />
+              <NavArrowIcon direction="up" size="lg" />
             )}
           </IconButton>
         ) : null}

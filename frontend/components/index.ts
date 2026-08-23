@@ -50,3 +50,9 @@ export { StatsCard } from "@/components/layout/stats-card";
 
 export { IconButton } from "@/components/ui/icon-button";
 export { ListPagination } from "@/components/ui/list-pagination";
+export {
+  NavArrowIcon,
+  type NavArrowDirection,
+  type NavArrowIconProps,
+  type NavArrowSize,
+} from "@/components/ui/nav-arrow-icon";

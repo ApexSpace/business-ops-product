@@ -1,8 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ChevronDown, Play } from "lucide-react";
+import { Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { NavArrowIcon } from "@/components/ui/nav-arrow-icon";
 import {
   Popover,
   PopoverContent,
@@ -56,7 +57,7 @@ export function ActionPicker({
               <Play className="size-4 shrink-0 text-muted-foreground" />
               <span className="truncate">{selected?.label ?? placeholder}</span>
             </span>
-            <ChevronDown className="size-4 shrink-0 text-muted-foreground" />
+            <NavArrowIcon direction="down" size="lg" className="text-muted-foreground" />
           </Button>
         }
       />

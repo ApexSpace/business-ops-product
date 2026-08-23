@@ -1,8 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ChevronDown, Zap } from "lucide-react";
+import { Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { NavArrowIcon } from "@/components/ui/nav-arrow-icon";
 import {
   Popover,
   PopoverContent,
@@ -58,7 +59,7 @@ export function TriggerPicker({
                 {selected?.label ?? placeholder}
               </span>
             </span>
-            <ChevronDown className="size-4 shrink-0 text-muted-foreground" />
+            <NavArrowIcon direction="down" size="lg" className="text-muted-foreground" />
           </Button>
         }
       />

@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { NavArrowIcon } from "@/components/ui/nav-arrow-icon";
 import type { CalendarViewMode } from "@/features/calendars/utils/calendar-dates";
 import {
   formatShortWeekdayForDateKey,
@@ -80,7 +80,7 @@ export function MobileCalendarDateStrip({
         onClick={onPrevious}
         className="inline-flex size-9 shrink-0 items-center justify-center rounded-md border border-[#D6D0C8] bg-white text-[#5A5A5A] hover:bg-[#F7F4F0]"
       >
-        <ChevronLeft className="size-4" aria-hidden />
+        <NavArrowIcon direction="left" size="lg" />
       </button>
 
       <div className="flex min-w-0 flex-1 items-stretch justify-between gap-1">
@@ -129,7 +129,7 @@ export function MobileCalendarDateStrip({
         onClick={onNext}
         className="inline-flex size-9 shrink-0 items-center justify-center rounded-md border border-[#D6D0C8] bg-white text-[#5A5A5A] hover:bg-[#F7F4F0]"
       >
-        <ChevronRight className="size-4" aria-hidden />
+        <NavArrowIcon direction="right" size="lg" />
       </button>
     </div>
   );

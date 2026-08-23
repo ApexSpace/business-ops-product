@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
+import { NavArrowIcon } from "@/components/ui/nav-arrow-icon";
 import { CalendarDatePicker } from "@/features/appointments/components/calendar/calendar-date-picker";
 import { CalendarFiltersPopover } from "@/features/appointments/components/calendar/calendar-filters-popover";
 import type { CalendarViewMode } from "@/features/calendars/utils/calendar-dates";
@@ -77,7 +78,7 @@ export function MobileCalendarHeader({
             aria-expanded={pickerOpen}
           >
             {monthLabel}
-            <ChevronDown className="size-4 shrink-0 opacity-90" aria-hidden />
+            <NavArrowIcon direction="down" size="lg" className="opacity-90" />
           </button>
         }
       />

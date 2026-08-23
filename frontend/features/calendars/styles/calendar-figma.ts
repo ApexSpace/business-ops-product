@@ -35,7 +35,11 @@ export const CALENDAR_FIGMA_FILTER_WIDTH_PX = 56;
 export const CALENDAR_FIGMA_VIEW_SEGMENT_MIN_PX = 65;
 export const CALENDAR_FIGMA_VIEW_GROUP_GAP_PX = 21;
 
-/** Staff column — Figma fill ~320px; min keeps scroll usable on narrow viewports */
+/**
+ * Staff column — Figma fill ~320px; min keeps Day-view scroll usable when many
+ * staff tracks are shown. Week view uses the shared `fluid` grid recipe instead
+ * (`minmax(0, 1fr)`) so 7 days share leftover width without a forced min-width.
+ */
 export const CALENDAR_FIGMA_STAFF_COL_MIN_PX = 240;
 export const CALENDAR_FIGMA_STAFF_COL_IDEAL_PX = 320;
 

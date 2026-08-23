@@ -1,6 +1,7 @@
 "use client";
 
-import { Check, ChevronDown } from "lucide-react";
+import { Check } from "lucide-react";
+import { NavArrowIcon } from "@/components/ui/nav-arrow-icon";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -48,7 +49,7 @@ export function SettingSelect({
             >
               {selected?.label ?? placeholder}
             </span>
-            <ChevronDown className="size-4 shrink-0 text-muted-foreground" />
+            <NavArrowIcon direction="down" size="lg" className="text-muted-foreground" />
           </button>
         }
       />

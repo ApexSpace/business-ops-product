@@ -5,8 +5,6 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
-  ChevronDown,
-  ChevronRight,
   Globe,
   Info,
   Loader2,
@@ -20,6 +18,7 @@ import { toast } from "sonner";
 import { DrawerHeaderContent } from "@/components/drawer/drawer-header-content";
 import { DrawerPrimaryButton } from "@/components/drawer/drawer-primary-button";
 import { DrawerShell } from "@/components/layout/drawer-shell";
+import { NavArrowIcon } from "@/components/ui/nav-arrow-icon";
 import { PhoneField } from "@/components/forms/phone-field";
 import { TextField } from "@/components/forms/text-field";
 import { Form } from "@/components/ui/form";
@@ -106,9 +105,9 @@ function AccordionRow({
           <span className="truncate">{label}</span>
         </span>
         {open ? (
-          <ChevronDown className="size-4 shrink-0 text-[var(--drawer-text-secondary)]" aria-hidden />
+          <NavArrowIcon direction="down" size="lg" className="text-[var(--drawer-text-secondary)]" />
         ) : (
-          <ChevronRight className="size-4 shrink-0 text-[var(--drawer-text-secondary)]" aria-hidden />
+          <NavArrowIcon direction="right" size="lg" className="text-[var(--drawer-text-secondary)]" />
         )}
       </button>
       {open && children ? (

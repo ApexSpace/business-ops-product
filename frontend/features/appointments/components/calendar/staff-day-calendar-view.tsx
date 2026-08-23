@@ -13,6 +13,7 @@ import type { StaffMemberOption } from "@/features/appointments/components/calen
 import { useCalendarCurrentTimeTop } from "@/features/appointments/hooks/use-calendar-current-time";
 import { isTodayDateKey } from "@/features/calendars/utils/timezone";
 import { CALENDAR_GRID } from "@/features/calendars/utils/calendar-grid-styles";
+import { calendarTimeGridLayout } from "@/features/calendars/utils/calendar-time-grid-layout";
 import { LoadingState } from "@/components/data-display/loading-state";
 import {
   CALENDAR_FIGMA_STAFF_COL_IDEAL_PX,
@@ -109,10 +110,12 @@ export function StaffDayCalendarView({
         CALENDAR_FIGMA_STAFF_COL_IDEAL_PX,
         Math.max(CALENDAR_FIGMA_STAFF_COL_MIN_PX, 200),
       );
-  const gridTemplate = isMobile
-    ? `${timeGutterPx}px repeat(${columnCount}, ${colMin}px)`
-    : `${timeGutterPx}px repeat(${columnCount}, minmax(${colMin}px, 1fr))`;
-  const minWidth = timeGutterPx + columnCount * colMin;
+  const { gridTemplateColumns, frameStyle } = calendarTimeGridLayout({
+    gutterPx: timeGutterPx,
+    columnCount,
+    columnMinPx: colMin,
+    mode: isMobile ? "fixed" : "fill",
+  });
 
   const utilizationByStaff = useMemo(() => {
     const map = new Map<string, number>();
@@ -138,13 +141,13 @@ export function StaffDayCalendarView({
     >
       {/* Single scroll host — avoids stacked horizontal scrollbars */}
       <div className="min-h-0 flex-1 overflow-auto overscroll-contain bg-white">
-        <div className="min-w-0 bg-white" style={{ minWidth }}>
+        <div className="min-w-0 bg-white" style={frameStyle}>
           <div
             className={cn(
-              "sticky top-0 z-30 grid bg-white",
+              "sticky top-0 z-30 grid w-full bg-white",
               CALENDAR_GRID.headerRow,
             )}
-            style={{ gridTemplateColumns: gridTemplate }}
+            style={{ gridTemplateColumns }}
           >
             <div
               className="sticky left-0 z-40 shrink-0 border-b border-r border-[color:rgba(126,59,237,0.6)] bg-white"
@@ -212,9 +215,9 @@ export function StaffDayCalendarView({
                 <CalendarCurrentTimeIndicator topPx={currentTimeTop} />
               ) : null}
               <div
-                className="grid bg-white"
+                className="grid w-full bg-white"
                 style={{
-                  gridTemplateColumns: gridTemplate,
+                  gridTemplateColumns,
                   minHeight: GRID_HEIGHT,
                 }}
               >

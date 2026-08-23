@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { ArrowLeft, ChevronDown, ChevronUp, Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { NavArrowIcon } from "@/components/ui/nav-arrow-icon";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -184,9 +185,9 @@ export function PublicPackagePurchase({
               >
                 Show details
                 {showDetails ? (
-                  <ChevronUp className="size-3" />
+                  <NavArrowIcon direction="up" size="md" />
                 ) : (
-                  <ChevronDown className="size-3" />
+                  <NavArrowIcon direction="down" size="md" />
                 )}
               </button>
               {showDetails ? (

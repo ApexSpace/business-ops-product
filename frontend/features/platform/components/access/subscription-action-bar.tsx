@@ -1,6 +1,7 @@
 "use client";
 
-import { AlertTriangle, ChevronDown } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
+import { NavArrowIcon } from "@/components/ui/nav-arrow-icon";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -91,7 +92,7 @@ export function SubscriptionActionBar({
               render={
                 <Button type="button" size="sm" variant="outline" disabled={isLoading}>
                   More actions
-                  <ChevronDown className="ml-1 size-4" />
+                  <NavArrowIcon direction="down" size="lg" className="ml-1" />
                 </Button>
               }
             />

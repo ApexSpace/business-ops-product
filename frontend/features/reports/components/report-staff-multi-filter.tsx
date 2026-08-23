@@ -2,8 +2,8 @@
 
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronDownIcon } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { NavArrowIcon } from "@/components/ui/nav-arrow-icon";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -149,7 +149,7 @@ export function ReportStaffMultiFilter({
           )}
         >
           <span className="min-w-0 flex-1 truncate text-left">{triggerText}</span>
-          <ChevronDownIcon className="size-4 shrink-0 text-muted-foreground" />
+          <NavArrowIcon direction="down" size="lg" className="text-muted-foreground" />
         </PopoverTrigger>
         <PopoverContent
           align="start"

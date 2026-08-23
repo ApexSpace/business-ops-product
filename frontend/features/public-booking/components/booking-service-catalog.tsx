@@ -1,6 +1,7 @@
 "use client";
 
-import { ChevronRight, Gift, Layers } from "lucide-react";
+import { Gift, Layers } from "lucide-react";
+import { NavArrowIcon } from "@/components/ui/nav-arrow-icon";
 import { cn } from "@/lib/utils";
 import type {
   PublicBookingBusiness,
@@ -67,7 +68,7 @@ export function BookingServiceCatalog({
                 <span className="font-medium">{service.name}</span>
                 <span className="flex shrink-0 items-center gap-2 text-sm text-muted-foreground">
                   {service.price ? `$${service.price}` : null}
-                  <ChevronRight className="size-4" />
+                  <NavArrowIcon direction="right" size="lg" />
                 </span>
               </button>
             ))}

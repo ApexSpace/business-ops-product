@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
+import { NavArrowIcon } from "@/components/ui/nav-arrow-icon";
 import {
   FormControl,
   FormField,
@@ -14,7 +14,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { cn } from "@/lib/utils";
 import type { CalendarEditSectionProps } from "@/features/calendars/components/edit/calendar-edit-types";
 import { CalendarEditPaymentsSection } from "@/features/calendars/components/edit/calendar-edit-payments-section";
 import { CalendarEditNotificationsSection } from "@/features/calendars/components/edit/calendar-edit-notifications-section";
@@ -89,11 +88,9 @@ export function CalendarEditAdvancedTabSection(
           onClick={() => setPoliciesOpen((o) => !o)}
         >
           Policies & payments
-          <ChevronDown
-            className={cn(
-              "size-4 transition-transform",
-              policiesOpen && "rotate-180",
-            )}
+          <NavArrowIcon
+            direction={policiesOpen ? "up" : "down"}
+            size="lg"
           />
         </Button>
         {policiesOpen ? (

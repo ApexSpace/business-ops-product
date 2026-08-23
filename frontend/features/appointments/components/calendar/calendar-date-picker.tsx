@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { NavArrowIcon } from "@/components/ui/nav-arrow-icon";
 import {
   Popover,
   PopoverContent,
@@ -108,7 +108,7 @@ export function CalendarDatePicker({
               )
             }
           >
-            <ChevronLeft className="size-4" />
+            <NavArrowIcon direction="left" size="lg" />
           </Button>
           <span className="min-w-[8rem] text-center text-sm font-medium">
             {monthLabel}
@@ -124,7 +124,7 @@ export function CalendarDatePicker({
               )
             }
           >
-            <ChevronRight className="size-4" />
+            <NavArrowIcon direction="right" size="lg" />
           </Button>
         </div>
 

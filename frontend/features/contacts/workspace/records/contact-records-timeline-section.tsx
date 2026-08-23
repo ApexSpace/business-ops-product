@@ -2,11 +2,12 @@
 
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronDown, Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { EmptyState } from "@/components/data-display/empty-state";
 import { LoadingState } from "@/components/data-display/loading-state";
 import { IconButton } from "@/components/ui/icon-button";
+import { NavArrowIcon } from "@/components/ui/nav-arrow-icon";
 import {
   getContactTimeline,
   type ContactTimelineEvent,
@@ -294,7 +295,7 @@ export function ContactRecordsTimelineSection({
           aria-label={`Timeline date ${todayLabel}`}
         >
           <span>{todayLabel}</span>
-          <ChevronDown className="size-4 shrink-0 opacity-60" aria-hidden />
+          <NavArrowIcon direction="down" size="lg" className="opacity-60" />
         </button>
         <ContactInlineNoteComposer
           contactId={contact.id}
