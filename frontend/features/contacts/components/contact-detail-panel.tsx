@@ -4,9 +4,10 @@ import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Pencil, Trash2 } from "lucide-react";
 import { ApiErrorState } from "@/components/data-display/api-error-state";
+import { LoadingState } from "@/components/data-display/loading-state";
+import { EntityDetailTabs } from "@/components/layout/entity-detail-tabs";
 import { Button } from "@/components/ui/button";
 import { ProfileAvatar } from "@/components/ui/profile-avatar";
-import { Skeleton } from "@/components/ui/skeleton";
 import { ContactDrawerProfilePanel } from "@/features/contacts/components/contact-drawer-profile-panel";
 import { ContactProfileEditForm } from "@/features/contacts/components/contact-profile-edit-form";
 import { ContactSidebarDetailsFields } from "@/features/contacts/components/contact-workspace/contact-sidebar-details-fields";
@@ -23,6 +24,14 @@ import {
   invalidateContactPicker,
 } from "@/lib/query/invalidation";
 import { cn } from "@/lib/utils";
+import {
+  CONTACTS_DRAWER_PROFILE_COL_CLASS,
+  CONTACTS_DRAWER_RECORDS_CLASS,
+  CONTACTS_DRAWER_SPLIT_CLASS,
+  CONTACTS_DRAWER_TABPANEL_CLASS,
+  CONTACTS_DRAWER_TABPANEL_TIMELINE_CLASS,
+  CONTACTS_DRAWER_TAB_SCROLL_CLASS,
+} from "@/features/contacts/styles/contacts-drawer-tokens";
 import "@/features/contacts/styles/contacts-split-layout.css";
 
 const CONTACT_DETAIL_TABS = [
@@ -37,11 +46,30 @@ const CONTACT_DETAIL_TABS = [
 
 export const CONTACT_DETAIL_DRAWER_TABS = CONTACT_DETAIL_TABS.map((tab) => ({
   value: tab.id,
-  label:
-    tab.id === "memberships" ? "Memberships" : tab.label,
+  label: tab.label,
 }));
 
 type ContactDetailTabId = (typeof CONTACT_DETAIL_TABS)[number]["id"];
+
+function ContactRecordsTabs({
+  activeSection,
+  onSectionChange,
+}: {
+  activeSection: ContactDetailTabId;
+  onSectionChange: (section: ContactDetailTabId) => void;
+}) {
+  return (
+    <EntityDetailTabs
+      variant="panel"
+      value={activeSection}
+      onValueChange={(value) => {
+        if (isContactDetailTab(value)) onSectionChange(value);
+      }}
+      tabs={CONTACT_DETAIL_DRAWER_TABS}
+      aria-label="Contact records"
+    />
+  );
+}
 
 export function isContactDetailTab(
   value: string,
@@ -86,21 +114,10 @@ function ContactDetailPanelLoading({
       )}
     >
       <aside className="contacts-profile-card">
-        <div className="contacts-profile-identity">
-          <div className="flex items-center gap-3">
-            <Skeleton className="size-16 shrink-0 rounded-full" />
-            <Skeleton className="h-5 w-32 flex-1" />
-          </div>
-          <div className="contacts-profile-actions mt-2 flex w-16 justify-center">
-            <Skeleton className="size-8 rounded-[var(--radius-control)]" />
-            <Skeleton className="size-8 rounded-[var(--radius-control)]" />
-          </div>
-        </div>
+        <LoadingState variant="skeleton" rows={3} />
       </aside>
       <div className="contacts-records-card">
-        <Skeleton className="mb-5 h-8 w-full" />
-        <Skeleton className="mb-4 h-10 w-80 rounded-full" />
-        <Skeleton className="h-24 w-full rounded-lg" />
+        <LoadingState variant="skeleton" rows={5} />
       </div>
     </div>
   );
@@ -273,13 +290,13 @@ export function ContactDetailPanel({
     return (
       <>
         <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
-          <div className="contacts-detail-card contacts-detail-card--drawer-split">
+          <div className={CONTACTS_DRAWER_SPLIT_CLASS}>
             {editOpen ? (
               <ContactProfileEditForm
                 contact={contact}
                 onCancel={() => setEditOpen(false)}
                 onSuccess={onContactEditSuccess}
-                className="contacts-drawer-profile-panel"
+                className={CONTACTS_DRAWER_PROFILE_COL_CLASS}
               />
             ) : (
               <ContactDrawerProfilePanel
@@ -292,35 +309,16 @@ export function ContactDetailPanel({
                 onNoteComposerOpenChange={onNoteComposerOpenChange}
               />
             )}
-            <div className="contacts-drawer-records-panel">
-              <div className="contacts-d2-tabbar-wrap">
-                <div
-                  className="contacts-d2-tabbar"
-                  role="tablist"
-                  aria-label="Contact records"
-                >
-                  {CONTACT_DETAIL_TABS.map((tab) => (
-                    <button
-                      key={tab.id}
-                      type="button"
-                      role="tab"
-                      aria-selected={activeSection === tab.id}
-                      className={cn(
-                        "contacts-d2-tab",
-                        activeSection === tab.id && "active",
-                      )}
-                      onClick={() => onSectionChange(tab.id)}
-                    >
-                      {tab.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
+            <div className={CONTACTS_DRAWER_RECORDS_CLASS}>
+              <ContactRecordsTabs
+                activeSection={activeSection}
+                onSectionChange={onSectionChange}
+              />
               <div
                 className={cn(
-                  "contacts-d2-tabpanel",
+                  CONTACTS_DRAWER_TABPANEL_CLASS,
                   activeSection === "timeline" &&
-                    "contacts-drawer-tabpanel-inner--timeline",
+                    CONTACTS_DRAWER_TABPANEL_TIMELINE_CLASS,
                 )}
               >
                 {activeSection === "timeline" ? (
@@ -329,7 +327,7 @@ export function ContactDetailPanel({
                     {...recordsPanelProps}
                   />
                 ) : (
-                  <div className="contacts-drawer-tab-scroll">
+                  <div className={CONTACTS_DRAWER_TAB_SCROLL_CLASS}>
                     <ContactRecordsSectionBody
                       activeSection={activeSection}
                       {...recordsPanelProps}
@@ -443,25 +441,10 @@ export function ContactDetailPanel({
         )}
 
         <div className="contacts-records-card">
-          <div className="contacts-d2-tabbar-wrap">
-            <div className="contacts-d2-tabbar" role="tablist" aria-label="Contact records">
-              {CONTACT_DETAIL_TABS.map((tab) => (
-                <button
-                  key={tab.id}
-                  type="button"
-                  role="tab"
-                  aria-selected={activeSection === tab.id}
-                  className={cn(
-                    "contacts-d2-tab text-sm font-medium",
-                    activeSection === tab.id && "active",
-                  )}
-                  onClick={() => onSectionChange(tab.id)}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </div>
-          </div>
+          <ContactRecordsTabs
+            activeSection={activeSection}
+            onSectionChange={onSectionChange}
+          />
 
           <div className="contacts-d2-tabpanel" role="tabpanel">
             <ContactRecordsSectionBody

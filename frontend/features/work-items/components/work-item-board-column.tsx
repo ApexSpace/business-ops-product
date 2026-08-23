@@ -1,7 +1,8 @@
 "use client";
 
 import { useDroppable } from "@dnd-kit/core";
-import { ChevronDown, ChevronUp, Inbox, Plus } from "lucide-react";
+import { Inbox, Plus } from "lucide-react";
+import { NavArrowIcon } from "@/components/ui/nav-arrow-icon";
 import { formatBoardColumnTotal } from "@/components/board";
 import { WorkItemBoardCard } from "@/features/work-items/components/work-item-board-card";
 import { sumWorkItemColumnAmount } from "@/features/work-items/components/work-item-board-utils";
@@ -77,9 +78,9 @@ export function WorkItemBoardColumn({
             onClick={onToggleCollapse}
           >
             {collapsed ? (
-              <ChevronDown className="size-3.5" />
+              <NavArrowIcon direction="down" size={14} />
             ) : (
-              <ChevronUp className="size-3.5" />
+              <NavArrowIcon direction="up" size={14} />
             )}
           </IconButton>
         </div>

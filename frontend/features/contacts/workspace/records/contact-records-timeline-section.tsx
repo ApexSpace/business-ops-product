@@ -2,10 +2,12 @@
 
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronDown, Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { EmptyState } from "@/components/data-display/empty-state";
+import { LoadingState } from "@/components/data-display/loading-state";
 import { IconButton } from "@/components/ui/icon-button";
+import { NavArrowIcon } from "@/components/ui/nav-arrow-icon";
 import {
   getContactTimeline,
   type ContactTimelineEvent,
@@ -18,7 +20,13 @@ import {
   type ContactTimelineCardItem,
 } from "@/features/contacts/components/contact-timeline-feed";
 import { formatContactCreatedAt } from "@/features/contacts/workspace/contact-workspace";
-import { RecordListEmpty } from "@/features/contacts/components/contact-workspace/contact-record-section";
+import {
+  CONTACTS_DRAWER_TAB_SCROLL_CLASS,
+  CONTACTS_TIMELINE_COMPOSER_WRAP_CLASS,
+  CONTACTS_TIMELINE_DATE_CLASS,
+  CONTACTS_TIMELINE_FILTER_WRAP_CLASS,
+  CONTACTS_TIMELINE_WRAP_CLASS,
+} from "@/features/contacts/styles/contacts-drawer-tokens";
 import { getNote } from "@/features/notes/api/notes.api";
 import { queryKeys } from "@/lib/query/keys";
 import type { ContactRecordsSectionProps } from "@/features/contacts/workspace/records/contact-records-types";
@@ -279,15 +287,15 @@ export function ContactRecordsTimelineSection({
   }, [businessTimezone]);
 
   return (
-    <div className="contacts-drawer-timeline">
-      <div className="contacts-drawer-timeline-composer">
+    <div className={CONTACTS_TIMELINE_WRAP_CLASS}>
+      <div className={CONTACTS_TIMELINE_COMPOSER_WRAP_CLASS}>
         <button
           type="button"
-          className="contacts-drawer-timeline-date"
+          className={CONTACTS_TIMELINE_DATE_CLASS}
           aria-label={`Timeline date ${todayLabel}`}
         >
           <span>{todayLabel}</span>
-          <ChevronDown className="size-4 shrink-0 opacity-60" aria-hidden />
+          <NavArrowIcon direction="down" size="lg" className="opacity-60" />
         </button>
         <ContactInlineNoteComposer
           contactId={contact.id}
@@ -297,7 +305,7 @@ export function ContactRecordsTimelineSection({
         />
       </div>
 
-      <div className="contacts-drawer-records-filter">
+      <div className={CONTACTS_TIMELINE_FILTER_WRAP_CLASS}>
         <ContactTimelineChipFilter
           options={CHIP_OPTIONS}
           value={filter}
@@ -305,9 +313,9 @@ export function ContactRecordsTimelineSection({
         />
       </div>
 
-      <div className="contacts-drawer-tab-scroll !pt-3">
+      <div className={CONTACTS_DRAWER_TAB_SCROLL_CLASS}>
         {isLoading ? (
-          <RecordListEmpty message="Loading timeline…" />
+          <LoadingState variant="skeleton" rows={4} className="py-4" />
         ) : timelineItems.length === 0 ? (
           <EmptyState
             compact

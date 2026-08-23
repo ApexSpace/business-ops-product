@@ -2,8 +2,6 @@
 
 import {
   ArrowLeft,
-  ChevronLeft,
-  ChevronRight,
   Pencil,
   Trash2,
 } from "lucide-react";
@@ -11,6 +9,7 @@ import { ProfileAvatar } from "@/components/ui/profile-avatar";
 import { ActionButton } from "@/components/ui/action-button";
 import { Button } from "@/components/ui/button";
 import { IconButton } from "@/components/ui/icon-button";
+import { NavArrowIcon } from "@/components/ui/nav-arrow-icon";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
@@ -140,13 +139,13 @@ export function ContactDetailsPanel({
         {contactTotal != null && contactTotal > 0 ? (
           <div className="flex items-center gap-0.5 text-xs text-muted-foreground">
             <IconButton aria-label="Previous contact" className="size-7" disabled>
-              <ChevronLeft className="size-4" />
+              <NavArrowIcon direction="left" size="lg" />
             </IconButton>
             <span className="tabular-nums">
               {contactIndex != null ? contactIndex + 1 : "—"} / {contactTotal}
             </span>
             <IconButton aria-label="Next contact" className="size-7" disabled>
-              <ChevronRight className="size-4" />
+              <NavArrowIcon direction="right" size="lg" />
             </IconButton>
           </div>
         ) : null}

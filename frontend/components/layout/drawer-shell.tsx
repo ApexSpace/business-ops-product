@@ -328,11 +328,9 @@ export function DrawerShell({
   children,
 }: DrawerShellProps) {
   const isMobileBrand = chrome === "mobile-brand";
-  const effectiveWidth: DrawerShellWidthTier =
-    isMobileBrand &&
-    (width === "appointment" || width === "appointment-mobile")
-      ? "appointment-mobile"
-      : width;
+  const effectiveWidth: DrawerShellWidthTier = isMobileBrand
+    ? "appointment-mobile"
+    : width;
   const effectiveSpineLabel = isMobileBrand ? undefined : spineLabel;
   const widthClass = drawerShellWidthClass(effectiveWidth);
   const stackZ =

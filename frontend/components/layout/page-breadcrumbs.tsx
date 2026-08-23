@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Fragment } from "react";
-import { ChevronRight } from "lucide-react";
+import { NavArrowIcon } from "@/components/ui/nav-arrow-icon";
 import { useHydrated } from "@/lib/hooks/use-hydrated";
 import { usePageMetadata } from "@/lib/runtime/page-metadata-context";
 import { cn } from "@/lib/utils";
@@ -37,9 +37,10 @@ export function PageBreadcrumbs({
       {breadcrumbs.map((crumb, i) => (
         <Fragment key={`${crumb.label}-${i}`}>
           {i > 0 ? (
-            <ChevronRight
-              className="size-3.5 shrink-0 text-muted-foreground/50"
-              aria-hidden
+            <NavArrowIcon
+              direction="right"
+              size={14}
+              className="text-muted-foreground/50"
             />
           ) : null}
           {crumb.href && i < breadcrumbs.length - 1 ? (

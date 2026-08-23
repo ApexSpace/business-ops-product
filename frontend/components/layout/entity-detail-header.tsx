@@ -1,7 +1,7 @@
 "use client";
 
 import { MoreHorizontal } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { IconButton } from "@/components/ui/icon-button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -9,6 +9,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  DRAWER_HEADER_ACTION_CLASS,
+  DRAWER_MOBILE_HEADER_ACTION_CLASS,
+} from "@/lib/design/drawer-tokens";
 import { cn } from "@/lib/utils";
 
 export interface EntityDetailOverflowAction {
@@ -22,6 +26,8 @@ export interface EntityDetailOverflowAction {
 interface EntityDetailHeaderProps {
   actions?: React.ReactNode;
   overflowActions?: EntityDetailOverflowAction[];
+  /** `on-brand` — white ghost control for mobile-brand drawer headers. */
+  tone?: "default" | "on-brand";
   className?: string;
 }
 
@@ -32,6 +38,7 @@ interface EntityDetailHeaderProps {
 export function EntityDetailHeader({
   actions,
   overflowActions,
+  tone = "default",
   className,
 }: EntityDetailHeaderProps) {
   const hasOverflow = overflowActions && overflowActions.length > 0;
@@ -46,10 +53,18 @@ export function EntityDetailHeader({
         <DropdownMenu>
           <DropdownMenuTrigger
             render={
-              <Button variant="outline" size="sm">
+              <IconButton
+                variant="ghost"
+                size={tone === "on-brand" ? "icon" : "icon-sm"}
+                aria-label="More actions"
+                className={
+                  tone === "on-brand"
+                    ? DRAWER_MOBILE_HEADER_ACTION_CLASS
+                    : DRAWER_HEADER_ACTION_CLASS
+                }
+              >
                 <MoreHorizontal className="size-4" />
-                <span className="sr-only">More actions</span>
-              </Button>
+              </IconButton>
             }
           />
           <DropdownMenuContent align="end" className="w-48">

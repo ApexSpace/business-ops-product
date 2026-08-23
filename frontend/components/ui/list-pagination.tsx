@@ -1,12 +1,11 @@
 "use client";
 
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { NavArrowIcon } from "@/components/ui/nav-arrow-icon";
 import { cn } from "@/lib/utils";
 import type { PaginatedMeta } from "@/lib/types/shared";
 import {
   DATA_TABLE_PAGINATION_BTN_CLASS,
   DATA_TABLE_PAGINATION_CLASS,
-  DATA_TABLE_PAGINATION_ICON_CLASS,
   DATA_TABLE_PAGINATION_PAGE_ACTIVE_CLASS,
   DATA_TABLE_PAGINATION_PAGE_CLASS,
 } from "@/lib/design/data-table-tokens";
@@ -105,7 +104,7 @@ export function ListPagination({
             aria-label="Previous page"
             onClick={() => onPageChange(page - 1)}
           >
-            <ChevronLeft className={DATA_TABLE_PAGINATION_ICON_CLASS} strokeWidth={2.5} />
+            <NavArrowIcon direction="left" size={9.33} />
             Previous
           </button>
           <button
@@ -116,7 +115,7 @@ export function ListPagination({
             onClick={() => onPageChange(page + 1)}
           >
             Next
-            <ChevronRight className={DATA_TABLE_PAGINATION_ICON_CLASS} strokeWidth={2.5} />
+            <NavArrowIcon direction="right" size={9.33} />
           </button>
         </div>
       </div>
@@ -141,7 +140,7 @@ export function ListPagination({
         aria-label="Previous page"
         onClick={() => onPageChange(page - 1)}
       >
-        <ChevronLeft className={DATA_TABLE_PAGINATION_ICON_CLASS} strokeWidth={2.5} />
+        <NavArrowIcon direction="left" size={9.33} />
         Previous
       </button>
 
@@ -180,7 +179,7 @@ export function ListPagination({
         onClick={() => onPageChange(page + 1)}
       >
         Next
-        <ChevronRight className={DATA_TABLE_PAGINATION_ICON_CLASS} strokeWidth={2.5} />
+        <NavArrowIcon direction="right" size={9.33} />
       </button>
     </nav>
   );

@@ -12,14 +12,22 @@ interface EntityDetailTabsProps {
   value: string;
   onValueChange: (value: string) => void;
   tabs: EntityDetailTabItem[];
+  /**
+   * `default` — full-width entity drawer tabs.
+   * `panel` — nested Figma underline tabs (Client Details timeline column).
+   */
+  variant?: "default" | "panel";
   className?: string;
+  "aria-label"?: string;
 }
 
 export function EntityDetailTabs({
   value,
   onValueChange,
   tabs,
+  variant = "default",
   className,
+  "aria-label": ariaLabel = "Sections",
 }: EntityDetailTabsProps) {
   useEffect(() => {
     if (tabs.length <= 1) {
@@ -63,13 +71,18 @@ export function EntityDetailTabs({
     return null;
   }
 
+  const isPanel = variant === "panel";
+
   return (
     <div
       className={cn(
-        "flex shrink-0 gap-1 overflow-x-auto border-b border-border/70 px-6 scrollbar-thin",
+        isPanel
+          ? "flex min-h-14 shrink-0 items-end gap-6 overflow-x-auto border-b border-[var(--drawer-header-border)] bg-white px-4 pt-2 scrollbar-thin sm:px-6"
+          : "flex shrink-0 gap-1 overflow-x-auto border-b border-border/70 px-6 scrollbar-thin",
         className,
       )}
       role="tablist"
+      aria-label={ariaLabel}
     >
       {tabs.map((tab, index) => {
         const active = tab.value === value;
@@ -82,14 +95,24 @@ export function EntityDetailTabs({
             aria-keyshortcuts={`Alt+${index + 1}`}
             onClick={() => onValueChange(tab.value)}
             className={cn(
-              "relative shrink-0 px-3 py-3 text-[13px] font-medium transition-colors",
-              active
-                ? "text-foreground"
-                : "text-muted-foreground hover:text-foreground",
+              "relative shrink-0 whitespace-nowrap transition-colors",
+              isPanel
+                ? cn(
+                    "min-h-11 border-b-2 px-0 pb-3 text-[14px] leading-none",
+                    active
+                      ? "border-violet-primary-normal font-semibold text-violet-primary-normal"
+                      : "border-transparent font-medium text-[var(--drawer-text-meta)] hover:text-violet-primary-normal",
+                  )
+                : cn(
+                    "px-3 py-3 text-[13px] font-medium",
+                    active
+                      ? "text-foreground"
+                      : "text-muted-foreground hover:text-foreground",
+                  ),
             )}
           >
             {tab.label}
-            {active ? (
+            {!isPanel && active ? (
               <span
                 className="absolute inset-x-2 bottom-0 h-0.5 rounded-full bg-primary"
                 aria-hidden

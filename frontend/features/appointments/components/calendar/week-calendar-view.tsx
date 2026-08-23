@@ -16,11 +16,9 @@ import {
   parseDateKeyInTimezone,
 } from "@/features/calendars/utils/timezone";
 import { CALENDAR_GRID } from "@/features/calendars/utils/calendar-grid-styles";
+import { calendarTimeGridLayout } from "@/features/calendars/utils/calendar-time-grid-layout";
 import { LoadingState } from "@/components/data-display/loading-state";
-import {
-  CALENDAR_FIGMA_STAFF_COL_MIN_PX,
-  CALENDAR_FIGMA_TIME_GUTTER_PX,
-} from "@/features/calendars/styles/calendar-figma";
+import { CALENDAR_FIGMA_TIME_GUTTER_PX } from "@/features/calendars/styles/calendar-figma";
 import {
   MOBILE_CAL_COL_WIDTH_PX,
   MOBILE_CAL_TIME_GUTTER_PX,
@@ -86,14 +84,13 @@ export function WeekCalendarView({
   const timeGutterPx = isMobile
     ? MOBILE_CAL_TIME_GUTTER_PX
     : CALENDAR_FIGMA_TIME_GUTTER_PX;
-  const colMin = isMobile
-    ? MOBILE_CAL_COL_WIDTH_PX
-    : CALENDAR_FIGMA_STAFF_COL_MIN_PX;
   const columnCount = weekDateKeys.length;
-  const gridTemplate = isMobile
-    ? `${timeGutterPx}px repeat(${columnCount}, ${colMin}px)`
-    : `${timeGutterPx}px repeat(${columnCount}, minmax(${colMin}px, 1fr))`;
-  const minWidth = timeGutterPx + columnCount * colMin;
+  const { gridTemplateColumns, frameStyle } = calendarTimeGridLayout({
+    gutterPx: timeGutterPx,
+    columnCount,
+    columnMinPx: MOBILE_CAL_COL_WIDTH_PX,
+    mode: isMobile ? "fixed" : "fluid",
+  });
 
   return (
     <div
@@ -104,14 +101,19 @@ export function WeekCalendarView({
       )}
     >
       {/* Single scroll host — avoids stacked horizontal scrollbars */}
-      <div className="min-h-0 flex-1 overflow-auto overscroll-contain bg-white">
-        <div className="min-w-0 bg-white" style={{ minWidth }}>
+      <div
+        className={cn(
+          "min-h-0 flex-1 overscroll-contain bg-white",
+          isMobile ? "overflow-auto" : "overflow-x-hidden overflow-y-auto",
+        )}
+      >
+        <div className="min-w-0 bg-white" style={frameStyle}>
           <div
             className={cn(
-              "sticky top-0 z-30 grid bg-white",
+              "sticky top-0 z-30 grid w-full bg-white",
               CALENDAR_GRID.headerRow,
             )}
-            style={{ gridTemplateColumns: gridTemplate }}
+            style={{ gridTemplateColumns }}
           >
             <div
               className="sticky left-0 z-40 shrink-0 border-b border-r border-[color:rgba(126,59,237,0.6)] bg-white"
@@ -127,10 +129,10 @@ export function WeekCalendarView({
                   key={dayKey}
                   className={cn(
                     CALENDAR_GRID.column,
-                    "flex h-16 flex-col items-center justify-center bg-white px-2 py-2",
+                    "flex h-16 min-w-0 flex-col items-center justify-center bg-white px-2 py-2",
                   )}
                 >
-                  <span className="block text-[10px] font-semibold uppercase leading-none tracking-wide text-grey-tertiary-normal">
+                  <span className="block min-w-0 max-w-full truncate text-[10px] font-semibold uppercase leading-none tracking-wide text-grey-tertiary-normal">
                     {formatShortWeekdayForDateKey(dayKey, timezone)}
                   </span>
                   <span
@@ -160,9 +162,9 @@ export function WeekCalendarView({
                 <CalendarCurrentTimeIndicator topPx={currentTimeTop} />
               ) : null}
               <div
-                className="grid bg-white"
+                className="grid w-full bg-white"
                 style={{
-                  gridTemplateColumns: gridTemplate,
+                  gridTemplateColumns,
                   minHeight: GRID_HEIGHT,
                 }}
               >

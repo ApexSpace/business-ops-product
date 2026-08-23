@@ -44,11 +44,14 @@ export const CONTACTS_AVATAR_SIZE_CLASS = "size-[92px]";
 
 /** Create drawer — dashed upload ring */
 export const CONTACTS_AVATAR_RING_CLASS =
-  "relative mx-auto flex size-[92px] shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-dashed border-[var(--mobile-list-border)] bg-violet-primary-surface";
+  "relative mx-auto flex !size-[92px] shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-dashed border-[var(--mobile-list-border)] bg-violet-primary-surface after:hidden";
 
 /** View drawer — solid initials avatar (Figma Client Details) */
 export const CONTACTS_AVATAR_VIEW_CLASS =
-  "relative mx-auto flex size-[92px] shrink-0 items-center justify-center overflow-hidden rounded-full bg-[var(--info)] text-[28px] font-bold leading-none text-white ring-0";
+  "relative mx-auto flex !size-[92px] shrink-0 items-center justify-center overflow-hidden rounded-full bg-[var(--info)] text-[28px] font-bold leading-none text-white ring-0 after:hidden";
+
+export const CONTACTS_AVATAR_FALLBACK_CLASS =
+  "bg-[var(--info)] text-[28px] font-bold leading-none text-white";
 
 export const CONTACTS_AVATAR_UPLOAD_BTN_CLASS =
   "absolute -bottom-0.5 -right-0.5 inline-flex size-8 cursor-pointer items-center justify-center rounded-full border-2 border-white bg-white text-violet-primary-normal shadow-sm hover:bg-violet-primary-surface";
@@ -61,29 +64,56 @@ export const CONTACTS_DETAIL_FIELD_LABEL_CLASS =
 export const CONTACTS_DETAIL_FIELD_VALUE_CLASS =
   "text-[14px] font-normal leading-5 text-[var(--drawer-text-primary)] break-words";
 
-/** Field row — fill × hug, 8px stack gap, 6px bottom pad (Figma) */
+/** Field row — fill × hug, 4px stack gap (Figma) */
 export const CONTACTS_DETAIL_FIELD_ROW_CLASS =
-  "flex w-full min-w-0 flex-col gap-1.5 border-b border-[var(--drawer-header-border)] pb-1.5 pt-2";
+  "flex w-full min-w-0 flex-col gap-1 border-b border-[var(--drawer-header-border)] pb-1.5 pt-2";
 
 /** Profile field stack — vertical (parent drops final divider) */
 export const CONTACTS_DETAIL_FIELD_STACK_CLASS =
   "flex w-full min-w-0 flex-col gap-2";
 
-/** Timeline filter chip — inactive: white, soft border, dark text, pad 6/16 */
-export const CONTACTS_TIMELINE_CHIP_CLASS =
-  "inline-flex h-[30px] min-h-[30px] max-h-[30px] shrink-0 cursor-pointer items-center justify-center whitespace-nowrap rounded-full border border-[var(--mobile-list-border)] bg-white px-4 text-[13px] font-medium leading-none text-[var(--drawer-text-primary)] transition-colors duration-150 hover:bg-violet-primary-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-primary-normal/25";
+/** Two-column Client Details body (profile | tabs). Stacks below lg. */
+export const CONTACTS_DRAWER_SPLIT_CLASS =
+  "contacts-detail-card--drawer-split";
 
-/** Timeline filter chip — active: solid violet */
-export const CONTACTS_TIMELINE_CHIP_ACTIVE_CLASS =
-  "inline-flex h-[30px] min-h-[30px] max-h-[30px] shrink-0 cursor-pointer items-center justify-center whitespace-nowrap rounded-full border border-violet-primary-normal bg-violet-primary-normal px-4 text-[13px] font-medium leading-none text-white transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-primary-normal/25";
+export const CONTACTS_DRAWER_PROFILE_COL_CLASS =
+  "contacts-drawer-profile-panel";
 
-/** Timeline chips row — Figma gap 8 */
-export const CONTACTS_TIMELINE_CHIPS_ROW_CLASS =
-  "flex w-full min-w-0 flex-wrap items-center gap-2";
+export const CONTACTS_DRAWER_PROFILE_IDENTITY_CLASS =
+  "contacts-drawer-profile-identity";
 
-/** Timeline event card — 12px radius, 16px pad (compact), soft shadow */
+export const CONTACTS_DRAWER_PROFILE_FIELDS_CLASS =
+  "contacts-drawer-profile-fields";
+
+export const CONTACTS_DRAWER_PROFILE_FIELD_ROW_CLASS =
+  "contacts-drawer-profile-field-row";
+
+export const CONTACTS_DRAWER_PROFILE_NOTE_CLASS =
+  "contacts-drawer-profile-note";
+
+export const CONTACTS_DRAWER_RECORDS_CLASS =
+  "contacts-drawer-records-panel";
+
+export const CONTACTS_DRAWER_TABPANEL_CLASS = "contacts-d2-tabpanel";
+
+export const CONTACTS_DRAWER_TABPANEL_TIMELINE_CLASS =
+  "contacts-drawer-tabpanel-inner--timeline";
+
+export const CONTACTS_TIMELINE_WRAP_CLASS = "contacts-drawer-timeline";
+
+export const CONTACTS_TIMELINE_COMPOSER_WRAP_CLASS =
+  "contacts-drawer-timeline-composer";
+
+export const CONTACTS_TIMELINE_DATE_CLASS = "contacts-drawer-timeline-date";
+
+export const CONTACTS_TIMELINE_FILTER_WRAP_CLASS =
+  "contacts-drawer-records-filter";
+
+export const CONTACTS_DRAWER_TAB_SCROLL_CLASS = "contacts-drawer-tab-scroll";
+
+/** Timeline event card — 12px radius, 20px pad, 4px gap */
 export const CONTACTS_TIMELINE_CARD_CLASS =
-  "flex w-full min-w-0 flex-col gap-1 rounded-xl border border-[var(--drawer-divider)] bg-white p-4 shadow-[0_4px_12px_rgba(28,27,46,0.04)] sm:p-5";
+  "flex w-full min-w-0 flex-col gap-1 rounded-[var(--radius-xl)] border border-[var(--drawer-divider)] bg-white p-4 shadow-[var(--drawer-panel-shadow)] sm:p-5";
 
 /** Timeline meta line */
 export const CONTACTS_TIMELINE_META_CLASS =
@@ -97,6 +127,12 @@ export const CONTACTS_TIMELINE_TITLE_CLASS =
 export const CONTACTS_TIMELINE_SUBTITLE_CLASS =
   "text-[13px] font-normal leading-5 text-[var(--drawer-text-meta)]";
 
+export const CONTACTS_TIMELINE_MONEY_LABEL_CLASS =
+  "text-[13px] leading-5 text-[var(--drawer-text-primary)]";
+
+export const CONTACTS_TIMELINE_MONEY_DIVIDER_CLASS =
+  "border-[var(--drawer-divider)]";
+
 /** Highlight badge — requested staff (not a lifecycle status). */
 export const CONTACTS_STATUS_REQUESTED_CLASS =
   "inline-flex max-w-full shrink-0 items-center gap-1 rounded border border-[color-mix(in_srgb,var(--cs-amber)_35%,white)] bg-[var(--cs-amber-tint)] px-2 py-0.5 text-[11px] font-medium leading-none text-[var(--cs-amber)] whitespace-nowrap";
@@ -108,15 +144,15 @@ export const CONTACTS_TIMELINE_DOT_CLASS =
 export const CONTACTS_TIMELINE_RAIL_CLASS =
   "absolute bottom-4 left-[7px] top-4 w-px -translate-x-1/2 bg-[var(--mobile-list-border)]";
 
-/** Entry composer shell */
+/** Entry composer shell — Figma 12px radius, card shadow */
 export const CONTACTS_ENTRY_COMPOSER_CLASS =
-  "flex w-full min-w-0 flex-col gap-3 rounded-xl border border-[var(--drawer-field-border)] bg-white p-3.5 sm:p-4";
+  "flex w-full min-w-0 flex-col overflow-hidden rounded-[var(--radius-xl)] border border-[var(--drawer-field-border)] bg-white shadow-[var(--drawer-panel-shadow)]";
 
 export const CONTACTS_ENTRY_TEXTAREA_CLASS =
-  "min-h-[64px] w-full resize-none border-0 bg-transparent p-0 text-[14px] leading-5 text-[var(--drawer-text-primary)] shadow-none placeholder:text-[var(--drawer-icon-gear)] focus-visible:ring-0";
+  "min-h-20 w-full resize-none border-0 bg-transparent px-5 pb-2 pt-5 text-[14px] leading-5 text-[var(--drawer-text-primary)] shadow-none placeholder:text-[var(--drawer-icon-gear)] focus-visible:ring-0";
+
+export const CONTACTS_ENTRY_FOOTER_CLASS =
+  "flex min-h-11 w-full items-center justify-between gap-3 border-t border-[var(--mobile-list-border)] bg-white px-3 py-3";
 
 export const CONTACTS_ENTRY_UPLOAD_CLASS =
-  "inline-flex h-5 items-center gap-2 text-[13px] font-medium leading-none text-violet-primary-normal hover:underline";
-
-export const CONTACTS_ENTRY_ADD_BTN_CLASS =
-  "inline-flex h-8 min-h-8 max-h-8 shrink-0 items-center justify-center rounded-[var(--radius-sm)] border-0 bg-violet-primary-normal px-4 text-[13px] font-semibold leading-none text-white shadow-none hover:bg-violet-primary-normal-hover disabled:opacity-50";
+  "relative inline-flex min-h-11 items-center gap-2 text-[13px] font-medium leading-none text-violet-primary-normal hover:underline sm:min-h-0 sm:h-5 after:absolute after:-inset-y-2 after:-inset-x-1 after:content-[''] sm:after:content-none";

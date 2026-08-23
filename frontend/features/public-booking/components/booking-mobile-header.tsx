@@ -1,7 +1,7 @@
 "use client";
 
-import { ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { NavArrowIcon } from "@/components/ui/nav-arrow-icon";
 import type { PublicBookingBusiness } from "@/features/public-booking/schemas/public-booking";
 
 export type BookingMobileStep = "date" | "time" | "details" | "success";
@@ -42,7 +42,7 @@ export function BookingMobileHeader({
               onClick={onBack}
               aria-label="Go back"
             >
-              <ChevronLeft className="size-4" />
+              <NavArrowIcon direction="left" size="lg" />
             </Button>
           ) : null}
 

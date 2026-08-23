@@ -4,12 +4,12 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Bell,
-  ChevronDown,
   LayoutGrid,
   LogOut,
   Settings,
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { NavArrowIcon } from "@/components/ui/nav-arrow-icon";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -153,10 +153,7 @@ export function DashboardNavbarActions({
               {initials}
             </AvatarFallback>
           </Avatar>
-          <ChevronDown
-            className="size-5 text-white"
-            strokeWidth={1.75}
-          />
+          <NavArrowIcon direction="down" size={20} className="text-white" />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-56">
           <div className="px-2 py-1.5 text-sm">

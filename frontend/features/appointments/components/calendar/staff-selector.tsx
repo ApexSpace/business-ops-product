@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo } from "react";
-import { Check, ChevronDown } from "lucide-react";
+import { Check } from "lucide-react";
+import { NavArrowIcon } from "@/components/ui/nav-arrow-icon";
 import { ProfileAvatar } from "@/components/ui/profile-avatar";
 import {
   Popover,
@@ -88,9 +89,10 @@ function StaffAvatarStack({
 
 function StaffTriggerChevron({ className }: { className?: string }) {
   return (
-    <ChevronDown
-      className={cn("size-3.5 shrink-0 text-muted-foreground/80", className)}
-      aria-hidden
+    <NavArrowIcon
+      direction="down"
+      size={14}
+      className={cn("text-muted-foreground/80", className)}
     />
   );
 }

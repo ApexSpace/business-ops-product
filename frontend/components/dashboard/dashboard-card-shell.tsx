@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ChevronRight } from "lucide-react";
+import { NavArrowIcon } from "@/components/ui/nav-arrow-icon";
 import {
   Card,
   CardAction,
@@ -57,7 +57,7 @@ export function DashboardCardShell({
               className="inline-flex items-center gap-1 text-[11.5px] font-semibold text-primary transition-colors hover:text-primary/80"
             >
               {actionLabel}
-              <ChevronRight className="size-3.5" />
+              <NavArrowIcon direction="right" size={14} />
             </Link>
           </CardAction>
         ) : null}

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ChevronRight } from "lucide-react";
+import { NavArrowIcon } from "@/components/ui/nav-arrow-icon";
 import { cn } from "@/lib/utils";
 
 export interface AttentionItem {
@@ -40,7 +40,7 @@ export function AttentionList({ items, className }: AttentionListProps) {
                     </p>
                   ) : null}
                 </div>
-                <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+                <NavArrowIcon direction="right" size="lg" className="text-muted-foreground" />
               </Link>
             </li>
           ))}

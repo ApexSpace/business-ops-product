@@ -5,7 +5,8 @@ import { Select as SelectPrimitive } from "@base-ui/react/select"
 
 import { cn } from "@/lib/utils"
 import { Input } from "@/components/ui/input"
-import { ChevronDownIcon, CheckIcon, ChevronUpIcon, Search } from "lucide-react"
+import { NavArrowIcon } from "@/components/ui/nav-arrow-icon"
+import { CheckIcon, Search } from "lucide-react"
 
 const Select = SelectPrimitive.Root
 
@@ -50,7 +51,7 @@ function SelectTrigger({
       {children}
       <SelectPrimitive.Icon
         render={
-          <ChevronDownIcon className="pointer-events-none size-4 text-muted-foreground" />
+          <NavArrowIcon direction="down" size="lg" className="pointer-events-none text-muted-foreground" />
         }
       />
     </SelectPrimitive.Trigger>
@@ -167,8 +168,7 @@ function SelectScrollUpButton({
       )}
       {...props}
     >
-      <ChevronUpIcon
-      />
+      <NavArrowIcon direction="up" size="lg" />
     </SelectPrimitive.ScrollUpArrow>
   )
 }
@@ -221,8 +221,7 @@ function SelectScrollDownButton({
       )}
       {...props}
     >
-      <ChevronDownIcon
-      />
+      <NavArrowIcon direction="down" size="lg" />
     </SelectPrimitive.ScrollDownArrow>
   )
 }

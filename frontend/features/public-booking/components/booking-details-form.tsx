@@ -1,8 +1,9 @@
 "use client";
 
-import { ChevronLeft, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { PhoneInput } from "@/components/forms/phone-input";
 import { Button } from "@/components/ui/button";
+import { NavArrowIcon } from "@/components/ui/nav-arrow-icon";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -157,7 +158,7 @@ export function BookingDetailsForm({
           className={cn("-ml-2 h-9 w-fit", compact ? "mb-1.5" : "mb-3")}
           onClick={onBack}
         >
-          <ChevronLeft className="mr-1 size-4" />
+          <NavArrowIcon direction="left" size="lg" className="mr-1" />
           Back
         </Button>
 
@@ -198,7 +199,7 @@ export function BookingDetailsForm({
         className={cn("-ml-2 h-9 w-fit", compact ? "mb-1.5" : "mb-3")}
         onClick={onBack}
       >
-        <ChevronLeft className="mr-1 size-4" />
+        <NavArrowIcon direction="left" size="lg" className="mr-1" />
         Back
       </Button>
 

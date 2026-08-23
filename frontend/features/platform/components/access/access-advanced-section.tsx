@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { NavArrowIcon } from "@/components/ui/nav-arrow-icon";
 import { toast } from "sonner";
 import { SearchableSelect } from "@/components/forms/searchable-select";
 import { Button } from "@/components/ui/button";
@@ -141,9 +141,9 @@ export function AccessAdvancedSection({
           <div className="flex items-center justify-between">
             <CardTitle className="text-base">Advanced</CardTitle>
             {open ? (
-              <ChevronDown className="size-4" />
+              <NavArrowIcon direction="down" size="lg" />
             ) : (
-              <ChevronRight className="size-4" />
+              <NavArrowIcon direction="right" size="lg" />
             )}
           </div>
         </CardHeader>

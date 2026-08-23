@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
+import { NavArrowIcon } from "@/components/ui/nav-arrow-icon";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -345,7 +346,7 @@ export function CreateSnapshotWizard() {
                 disabled={step === 1 || mutation.isPending}
                 onClick={() => setStep((s) => Math.max(1, s - 1))}
               >
-                <ChevronLeft className="mr-1 size-4" />
+                <NavArrowIcon direction="left" size="lg" className="mr-1" />
                 Back
               </Button>
               <div className="flex gap-2">
@@ -364,7 +365,7 @@ export function CreateSnapshotWizard() {
                     onClick={() => void handleNext()}
                   >
                     Next
-                    <ChevronRight className="ml-1 size-4" />
+                    <NavArrowIcon direction="right" size="lg" className="ml-1" />
                   </Button>
                 ) : (
                   <Button

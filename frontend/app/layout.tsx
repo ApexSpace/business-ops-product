@@ -15,6 +15,10 @@ const montserrat = Montserrat({
 export const metadata: Metadata = {
   title: "CodeSol Business Automation",
   description: "Platform and business automation for app.codesoltech.com",
+  icons: {
+    icon: "/branding/favicon_logo.png",
+    apple: "/branding/favicon_logo.png",
+  },
 };
 
 export default function RootLayout({

@@ -5,6 +5,7 @@ import { PageHeader } from "@/components/layout/page-header";
 import { ListToolbar } from "@/components/layout/list-toolbar";
 import { cn } from "@/lib/utils";
 import {
+  WORKSPACE_FOOTER_CLASS,
   WORKSPACE_TABLE_CARD_CLASS,
   WORKSPACE_TOOLBAR_CLASS,
 } from "@/lib/design/workspace-tokens";
@@ -74,11 +75,7 @@ export function EntityWorkspaceLayout({
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
           {children}
         </div>
-        {footer ? (
-          <div className="shrink-0 border-t border-[var(--drawer-header-border)] bg-white px-4 py-3 text-sm text-muted-foreground">
-            {footer}
-          </div>
-        ) : null}
+        {footer ? <div className={WORKSPACE_FOOTER_CLASS}>{footer}</div> : null}
       </section>
       {drawer}
     </PageContainer>

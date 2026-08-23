@@ -5,12 +5,12 @@ import { DateTime } from "luxon";
 import {
   CalendarPlus,
   CheckCircle2,
-  ChevronDown,
   Copy,
   ExternalLink,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { NavArrowIcon } from "@/components/ui/nav-arrow-icon";
 import { cn } from "@/lib/utils";
 import type {
   PublicBookingBusiness,
@@ -246,11 +246,9 @@ export function BookingSuccessView({
           >
             <CalendarPlus className="size-4" />
             {showExtras ? "Hide calendar options" : "Add to calendar or copy details"}
-            <ChevronDown
-              className={cn(
-                "size-4 transition-transform",
-                showExtras && "rotate-180",
-              )}
+            <NavArrowIcon
+              direction={showExtras ? "up" : "down"}
+              size="lg"
             />
           </Button>
 

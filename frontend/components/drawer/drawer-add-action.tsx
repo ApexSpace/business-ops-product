@@ -10,14 +10,25 @@ import { cn } from "@/lib/utils";
 export interface DrawerAddActionProps {
   label: string;
   onClick: () => void;
+  disabled?: boolean;
   className?: string;
 }
 
-export function DrawerAddAction({ label, onClick, className }: DrawerAddActionProps) {
+export function DrawerAddAction({
+  label,
+  onClick,
+  disabled,
+  className,
+}: DrawerAddActionProps) {
   return (
     <button
       type="button"
-      className={cn(DRAWER_ADD_ACTION_CLASS, className)}
+      disabled={disabled}
+      className={cn(
+        DRAWER_ADD_ACTION_CLASS,
+        "disabled:pointer-events-none disabled:opacity-50",
+        className,
+      )}
       onClick={onClick}
     >
       <span className={DRAWER_ADD_ACTION_ICON_CLASS}>

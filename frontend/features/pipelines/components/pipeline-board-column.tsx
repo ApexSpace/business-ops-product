@@ -1,7 +1,8 @@
 "use client";
 
 import { useDroppable } from "@dnd-kit/core";
-import { ChevronDown, ChevronUp, Inbox, Plus } from "lucide-react";
+import { Inbox, Plus } from "lucide-react";
+import { NavArrowIcon } from "@/components/ui/nav-arrow-icon";
 import { formatBoardColumnTotal } from "@/components/board";
 import { PipelineLeadCard } from "@/features/pipelines/components/pipeline-lead-card";
 import { sumLeadColumnValue } from "@/features/pipelines/components/pipeline-board-utils";
@@ -75,9 +76,9 @@ export function PipelineBoardColumn({
             onClick={onToggleCollapse}
           >
             {collapsed ? (
-              <ChevronDown className="size-3.5" />
+              <NavArrowIcon direction="down" size={14} />
             ) : (
-              <ChevronUp className="size-3.5" />
+              <NavArrowIcon direction="up" size={14} />
             )}
           </IconButton>
         </div>

@@ -11,6 +11,11 @@ import { EntityWorkspaceLayout } from "@/components/layout/entity-workspace-layo
 import { ListPrimaryAction } from "@/components/layout/list-primary-action";
 import { ClientDetailsDrawer } from "@/features/contacts/components/client-details-drawer";
 import {
+  CONTACTS_DRAWER_MOBILE_SHELL_CLASS,
+  CONTACTS_DRAWER_SHELL_CLASS,
+  CONTACTS_DRAWER_SPINE_LABELS,
+} from "@/features/contacts/styles/contacts-drawer-tokens";
+import {
   ContactsOptionsDrawer,
   EMPTY_CONTACTS_OPTIONS,
   type ContactsOptionsValues,
@@ -308,6 +313,13 @@ function BusinessContactsPageContent() {
           }
         }}
         width="split"
+        chrome={isMobile ? "mobile-brand" : "default"}
+        spineLabel={
+          isMobile ? undefined : CONTACTS_DRAWER_SPINE_LABELS.clientDetails
+        }
+        className={
+          isMobile ? CONTACTS_DRAWER_MOBILE_SHELL_CLASS : CONTACTS_DRAWER_SHELL_CLASS
+        }
         title="Client Details"
         isLoading={detailLoading}
         fullBleed

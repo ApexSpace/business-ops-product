@@ -34,15 +34,36 @@ export const CALENDAR_TOOLBAR_OUTLINE_BUTTON_CLASS = cn(
 );
 
 /**
+ * ── TUNE PREV / NEXT HERE (both chevrons) ──────────────────────────
+ * Visual box only. `after:` expands the tap target to ≥44px on every breakpoint.
+ *
+ * Try:
+ *   width  — w-6 (24) · w-7 (28) · w-8 (32) · w-9 (36)
+ *   height — h-9 (36) · h-10 (40) · h-11 (44, matches Today)
+ */
+export const CALENDAR_TOOLBAR_NAV_BUTTON_SIZE_CLASS = "h-11 w-8";
+
+/**
+ * ── TUNE PREV / NEXT CHEVRON GLYPH HERE ────────────────────────────
+ * Edit these two numbers only. Both < and > use them.
+ * Independent of the button box above. Values are pixels.
+ * Figma default: 7.36 × 12.73
+ */
+export const CALENDAR_TOOLBAR_NAV_ICON_SIZE = {
+  width: 7.36,
+  height: 12.73,
+};
+
+/**
  * Prev / next — Figma Left Buttons sides (`weui:arrow-filled`):
- * height 44 fixed, width hug (~39.36 = spacing/4 + 7.36 + spacing/4),
- * radius/xs, py spacing/2, px spacing/4,
- * 1px primary/500 border, white fill; parent gap 10.
+ * radius/xs, 1px primary/500 border, white fill; parent gap 10.
  */
 export const CALENDAR_TOOLBAR_NAV_BUTTON_CLASS = cn(
-  "box-border inline-flex h-11 w-auto shrink-0 items-center justify-center",
+  "relative box-border inline-flex shrink-0 items-center justify-center p-0",
+  CALENDAR_TOOLBAR_NAV_BUTTON_SIZE_CLASS,
   "rounded-[var(--radius-xs)]",
-  "border border-violet-primary-normal bg-white px-[var(--spacing-4)] py-[var(--spacing-2)] text-violet-primary-normal shadow-none",
+  "border border-violet-primary-normal bg-white text-violet-primary-normal shadow-none",
+  "after:absolute after:-inset-x-2 after:inset-y-0 after:content-['']",
   "hover:bg-violet-primary-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-primary-normal/30",
 );
 
@@ -89,9 +110,6 @@ export const CALENDAR_TOOLBAR_SEGMENT_ACTIVE_CLASS =
 
 export const CALENDAR_TOOLBAR_SEGMENT_INACTIVE_CLASS =
   "bg-white text-violet-primary-normal hover:bg-violet-primary-surface";
-
-export const CALENDAR_TOOLBAR_DIVIDER_CLASS =
-  "hidden h-11 w-px shrink-0 bg-violet-primary-normal/60 sm:block";
 
 /** Figma nav cluster gap between < / Today / > */
 export const CALENDAR_TOOLBAR_NAV_GROUP_CLASS =

@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ChevronDown, X } from "lucide-react";
+import { NavArrowIcon } from "@/components/ui/nav-arrow-icon";
+import { X } from "lucide-react";
 import { IconButton } from "@/components/ui/icon-button";
 import { Input } from "@/components/ui/input";
 import {
@@ -77,7 +78,7 @@ function CountryDialSelect({
           {country.flag}
         </span>
         <span className="tabular-nums text-foreground">{country.dialCode}</span>
-        <ChevronDown className="size-3.5 text-muted-foreground" aria-hidden />
+        <NavArrowIcon direction="down" size={14} className="text-muted-foreground" />
       </PopoverTrigger>
       <PopoverContent
         align="start"

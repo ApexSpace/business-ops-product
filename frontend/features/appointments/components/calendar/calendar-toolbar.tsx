@@ -1,9 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown } from "lucide-react";
 import { CalendarDatePicker } from "@/features/appointments/components/calendar/calendar-date-picker";
-import { CalendarNavArrowIcon } from "@/features/appointments/components/calendar/calendar-nav-arrow-icon";
 import { CalendarViewSwitcher } from "@/features/appointments/components/calendar/calendar-view-switcher";
 import { CalendarFiltersPopover } from "@/features/appointments/components/calendar/calendar-filters-popover";
 import {
@@ -12,14 +10,15 @@ import {
 } from "@/features/appointments/components/calendar/staff-selector";
 import {
   CALENDAR_TOOLBAR_DATE_TRIGGER_CLASS,
-  CALENDAR_TOOLBAR_DIVIDER_CLASS,
   CALENDAR_TOOLBAR_NAV_BUTTON_CLASS,
   CALENDAR_TOOLBAR_NAV_GROUP_CLASS,
+  CALENDAR_TOOLBAR_NAV_ICON_SIZE,
   CALENDAR_TOOLBAR_TODAY_BUTTON_CLASS,
 } from "@/features/appointments/components/calendar/calendar-toolbar-tokens";
 import type { CalendarViewMode } from "@/features/calendars/utils/calendar-dates";
 import { formatDateRangeLabelInTimezone } from "@/features/calendars/utils/timezone";
 import { Button } from "@/components/ui/button";
+import { NavArrowIcon } from "@/components/ui/nav-arrow-icon";
 import { cn } from "@/lib/utils";
 
 interface CalendarToolbarProps {
@@ -98,7 +97,11 @@ export function CalendarToolbar({
             onClick={onPrevious}
             aria-label="Previous"
           >
-            <CalendarNavArrowIcon direction="prev" />
+            <NavArrowIcon
+              direction="left"
+              width={CALENDAR_TOOLBAR_NAV_ICON_SIZE.width}
+              height={CALENDAR_TOOLBAR_NAV_ICON_SIZE.height}
+            />
           </button>
           <Button
             type="button"
@@ -114,7 +117,11 @@ export function CalendarToolbar({
             onClick={onNext}
             aria-label="Next"
           >
-            <CalendarNavArrowIcon direction="next" />
+            <NavArrowIcon
+              direction="right"
+              width={CALENDAR_TOOLBAR_NAV_ICON_SIZE.width}
+              height={CALENDAR_TOOLBAR_NAV_ICON_SIZE.height}
+            />
           </button>
         </div>
 
@@ -140,12 +147,10 @@ export function CalendarToolbar({
               <span className="min-w-0 truncate leading-5">
                 {rangeLabel}
               </span>
-              <ChevronDown
-                className={cn(
-                  "size-4 shrink-0 text-[#7E3BED] transition-transform",
-                  pickerOpen && "rotate-180",
-                )}
-                aria-hidden
+              <NavArrowIcon
+                direction={pickerOpen ? "up" : "down"}
+                size="lg"
+                className="shrink-0 text-violet-primary-normal"
               />
             </button>
           }
@@ -155,15 +160,12 @@ export function CalendarToolbar({
       {/* Figma right cluster — staff (week only) + filter + Day/Week · gap 21px */}
       <div className="flex min-w-0 flex-wrap items-center justify-end gap-3 sm:gap-[21px]">
         {showStaffSelector ? (
-          <>
-            <div className={CALENDAR_TOOLBAR_DIVIDER_CLASS} aria-hidden />
-            <StaffSelector
-              mode="single"
-              members={staffMembers}
-              selectedStaffId={selectedStaffId}
-              onSelectedStaffIdChange={onSelectedStaffIdChange}
-            />
-          </>
+          <StaffSelector
+            mode="single"
+            members={staffMembers}
+            selectedStaffId={selectedStaffId}
+            onSelectedStaffIdChange={onSelectedStaffIdChange}
+          />
         ) : null}
 
         <CalendarFiltersPopover
