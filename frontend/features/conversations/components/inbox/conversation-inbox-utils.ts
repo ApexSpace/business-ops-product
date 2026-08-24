@@ -50,3 +50,13 @@ export { displayInitials as initials } from "@/lib/ui/display-initials";
 
 export const THREAD_ROW_HEIGHT = 72;
 export const VIRTUALIZE_THRESHOLD = 30;
+
+export function formatClientSince(iso?: string | null): string | null {
+  if (!iso) return null;
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return null;
+  return `Client since ${date.toLocaleDateString(undefined, {
+    month: "long",
+    year: "numeric",
+  })}`;
+}

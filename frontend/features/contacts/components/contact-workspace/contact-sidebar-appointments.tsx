@@ -94,12 +94,85 @@ function AppointmentSection({
   );
 }
 
+function AppointmentTicketCard({
+  kind,
+  appointment,
+  timezone,
+}: {
+  kind: "next" | "last";
+  appointment: Appointment | null;
+  timezone: string;
+}) {
+  const isNext = kind === "next";
+  const title = appointment
+    ? appointmentTitle(appointment)
+    : isNext
+      ? "No upcoming appointment"
+      : "No past appointment";
+  const staff = appointment?.assignedTo
+    ? getMemberDisplayName(appointment.assignedTo)
+    : "—";
+  const when = appointment
+    ? DateTime.fromISO(appointment.startAt, { zone: "utc" })
+        .setZone(timezone)
+        .toFormat(isNext ? "cccc, h:mm a" : "MMM d, yyyy")
+    : "—";
+
+  const inner = (
+    <div
+      className={cn(
+        "rounded-lg border border-border bg-card p-4",
+        !appointment && "opacity-70",
+      )}
+    >
+      <p
+        className={cn(
+          "text-xs font-semibold uppercase tracking-wide",
+          isNext ? "text-primary" : "text-muted-foreground",
+        )}
+      >
+        {isNext ? "Next appointment" : "Last appointment"}
+      </p>
+      <p className="mt-1 text-sm font-semibold text-foreground">{title}</p>
+      <div className="mt-3 border-t border-dashed border-border pt-3">
+        <div className="flex justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              {isNext ? "Date & time" : "Date"}
+            </p>
+            <p className="mt-0.5 truncate text-sm text-foreground">{when}</p>
+          </div>
+          <div className="min-w-0 text-right">
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Stylist
+            </p>
+            <p className="mt-0.5 truncate text-sm text-foreground">{staff}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  if (!appointment) return inner;
+
+  return (
+    <Link
+      href={`/business/appointments?appointmentId=${appointment.id}`}
+      className="block rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-ring"
+    >
+      {inner}
+    </Link>
+  );
+}
+
 export function ContactSidebarAppointments({
   contactId,
   className,
+  variant = "default",
 }: {
   contactId: string;
   className?: string;
+  variant?: "default" | "ticket";
 }) {
   const { data: business } = useCurrentBusiness();
   const timezone = resolveAppointmentDisplayTimezone(business?.timezone);
@@ -125,6 +198,23 @@ export function ContactSidebarAppointments({
     return (
       <div className={cn(className)}>
         <AppointmentEmptyCard message="Couldn't load appointments" />
+      </div>
+    );
+  }
+
+  if (variant === "ticket") {
+    return (
+      <div className={cn("space-y-3", className)}>
+        <AppointmentTicketCard
+          kind="next"
+          appointment={nextAppointment}
+          timezone={timezone}
+        />
+        <AppointmentTicketCard
+          kind="last"
+          appointment={lastAppointment}
+          timezone={timezone}
+        />
       </div>
     );
   }

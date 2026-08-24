@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { ImagePlus, Info, Paperclip, Send, X } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -16,6 +16,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ReplyChannelSelector } from "@/features/conversations/components/inbox/reply-channel-selector";
 import { ConversationChannelBar } from "@/features/conversations/components/inbox/conversation-channel-bar";
 import { WhatsAppTemplateComposer } from "@/features/conversations/components/inbox/whatsapp-template-composer";
@@ -79,6 +81,7 @@ interface MessageComposerProps {
   onSend: () => void;
   variant?: "default" | "thread";
   showCannedResponses?: boolean;
+  notesPanel?: ReactNode;
 }
 
 function ComposerStatusBanner({ message }: { message: string }) {

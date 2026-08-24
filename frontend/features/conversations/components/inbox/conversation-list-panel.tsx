@@ -1,18 +1,12 @@
 "use client";
 
-import { Plus, Search } from "lucide-react";
+import { Plus } from "lucide-react";
 import { ApiErrorState } from "@/components/data-display/api-error-state";
 import { EmptyState } from "@/components/data-display/empty-state";
 import { LoadingState } from "@/components/data-display/loading-state";
 import { VirtualList } from "@/components/data-display/virtual-list";
+import { SearchInput } from "@/components/forms/search-input";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-} from "@/components/ui/select";
 import type { UnifiedConversationThread } from "@/features/conversations/api/conversations.api";
 import { UnifiedThreadRow } from "@/features/conversations/components/inbox/unified-thread-row";
 import {
@@ -23,11 +17,12 @@ import type { InboxStatusFilter } from "@/features/conversations/hooks/use-conve
 import { WORKSPACE_PANEL_CLASS } from "@/features/contacts/workspace/contact-workspace";
 import { cn } from "@/lib/utils";
 
-const STATUS_FILTER_LABELS: Record<InboxStatusFilter, string> = {
-  OPEN: "Open",
-  CLOSED: "Closed",
-  SPAM: "Spam",
-};
+const STATUS_FILTER_CHIPS: { value: InboxStatusFilter; label: string }[] = [
+  { value: "ALL", label: "All" },
+  { value: "OPEN", label: "Open" },
+  { value: "CLOSED", label: "Closed" },
+  { value: "SPAM", label: "Spam" },
+];
 
 interface ConversationListPanelProps {
   search: string;
@@ -64,49 +59,16 @@ export function ConversationListPanel({
     <aside
       className={cn(WORKSPACE_PANEL_CLASS, "h-full w-full min-w-0", className)}
     >
-      <div className="border-b border-border/60 p-3">
-        <div className="mb-2">
-          <Select
-            value={statusFilter}
-            onValueChange={(next) =>
-              onStatusFilterChange(next as InboxStatusFilter)
-            }
-          >
-            <SelectTrigger
-              size="sm"
-              className="h-8 w-full border-border/60 bg-muted/20 text-xs shadow-none"
-              aria-label="Filter conversations by status"
-            >
-              <span className="min-w-0 flex-1 truncate text-left">
-                {STATUS_FILTER_LABELS[statusFilter]}
-              </span>
-            </SelectTrigger>
-            <SelectContent align="start">
-              {(Object.keys(STATUS_FILTER_LABELS) as InboxStatusFilter[]).map(
-                (value) => (
-                  <SelectItem key={value} value={value}>
-                    {STATUS_FILTER_LABELS[value]}
-                  </SelectItem>
-                ),
-              )}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="relative min-w-0 flex-1">
-            <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
-            <Input
-              value={search}
-              onChange={(e) => onSearchChange(e.target.value)}
-              placeholder="Search conversations…"
-              className="pl-8"
-            />
-          </div>
+      <div className="space-y-3 border-b border-border p-4">
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="text-base font-semibold text-foreground">
+            Conversation
+          </h2>
           {onNewConversation ? (
             <Button
               type="button"
-              size="icon"
-              className="shrink-0"
+              variant="brand"
+              size="icon-sm"
               onClick={onNewConversation}
               aria-label="New conversation"
             >
@@ -114,23 +76,45 @@ export function ConversationListPanel({
             </Button>
           ) : null}
         </div>
+
+        <SearchInput
+          value={search}
+          onChange={onSearchChange}
+          placeholder="Search"
+          className="max-w-none"
+        />
+
+        <div
+          className="flex flex-wrap gap-2"
+          role="group"
+          aria-label="Filter conversations by status"
+        >
+          {STATUS_FILTER_CHIPS.map((chip) => {
+            const selected = statusFilter === chip.value;
+            return (
+              <Button
+                key={chip.value}
+                type="button"
+                size="sm"
+                variant={selected ? "brand" : "outline"}
+                className="rounded-full"
+                aria-pressed={selected}
+                onClick={() => onStatusFilterChange(chip.value)}
+              >
+                {chip.label}
+              </Button>
+            );
+          })}
+        </div>
       </div>
 
       <div className="min-h-0 flex-1">
         {listError ? (
           <div className="p-3">
-            <ApiErrorState
-              compact
-              error={listError}
-              onRetry={onListRetry}
-            />
+            <ApiErrorState compact error={listError} onRetry={onListRetry} />
           </div>
         ) : listLoading ? (
-          <LoadingState
-            variant="inline"
-            label="Loading…"
-            className="p-4"
-          />
+          <LoadingState variant="inline" label="Loading…" className="p-4" />
         ) : threads.length === 0 ? (
           <EmptyState
             compact
@@ -139,7 +123,7 @@ export function ConversationListPanel({
             className="px-3 py-8"
             action={
               onNewConversation ? (
-                <Button size="sm" onClick={onNewConversation}>
+                <Button variant="brand" size="sm" onClick={onNewConversation}>
                   <Plus className="mr-1.5 size-4" />
                   New conversation
                 </Button>
@@ -161,7 +145,7 @@ export function ConversationListPanel({
             )}
           />
         ) : (
-          <ul className="divide-y divide-border/60 overflow-auto h-full">
+          <ul className="h-full divide-y divide-border overflow-auto">
             {threads.map((thread) => (
               <UnifiedThreadRow
                 key={thread.threadKey}
