@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  Download,
   LayoutTemplate,
   Plus,
   Settings,
@@ -31,14 +30,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
+import { MembershipsOptionsDrawer } from "@/features/memberships/components/memberships-options-drawer";
 import {
   WORKSPACE_ACTIVE_ROW_CLASS,
   WORKSPACE_TABLE_CLASS,
@@ -203,9 +195,27 @@ export function MembershipsWorkspace() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  async function handleExport() {
+  async function handleExport(override?: {
+    status: string;
+    planId: string;
+    showDifferentVersionsOnly: boolean;
+    showOlderUnpaid: boolean;
+  }) {
+    const exportFilters = override
+      ? {
+          page: 1,
+          limit: 25,
+          search: search || undefined,
+          status: override.status as ClientMembershipStatus | "all_except_canceled",
+          planId: override.planId === "all" ? undefined : override.planId,
+          ...(override.showDifferentVersionsOnly
+            ? { showDifferentVersionsOnly: true }
+            : {}),
+          ...(override.showOlderUnpaid ? { showOlderUnpaid: true } : {}),
+        }
+      : filters;
     try {
-      const blob = await exportClientMemberships(filters);
+      const blob = await exportClientMemberships(exportFilters);
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -581,86 +591,25 @@ export function MembershipsWorkspace() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={optionsOpen} onOpenChange={setOptionsOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Options</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-1.5">
-              <Label>Status</Label>
-              <Select
-                value={statusFilter}
-                onValueChange={(v) => {
-                  setStatusFilter(v ?? "all_except_canceled");
-                  setPage(1);
-                }}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all_except_canceled">
-                    All (except canceled)
-                  </SelectItem>
-                  <SelectItem value="ACTIVE">Active</SelectItem>
-                  <SelectItem value="SCHEDULED">Scheduled</SelectItem>
-                  <SelectItem value="PAST_DUE">Past due</SelectItem>
-                  <SelectItem value="UNPAID">Unpaid</SelectItem>
-                  <SelectItem value="PAUSED">Paused</SelectItem>
-                  <SelectItem value="CANCELED">Canceled</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label>Membership plan</Label>
-              <Select
-                value={planFilter}
-                onValueChange={(v) => {
-                  setPlanFilter(v ?? "all");
-                  setPage(1);
-                }}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All</SelectItem>
-                  {(plansQuery.data ?? []).map((p) => (
-                    <SelectItem key={p.id} value={p.id}>
-                      {p.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex items-center justify-between gap-4">
-              <Label className="font-normal">Show different versions only</Label>
-              <Switch
-                checked={showDifferentVersionsOnly}
-                onCheckedChange={(checked) => {
-                  setShowDifferentVersionsOnly(checked);
-                  setPage(1);
-                }}
-              />
-            </div>
-            <div className="flex items-center justify-between gap-4">
-              <Label className="font-normal">Show older unpaid (over 1 month)</Label>
-              <Switch
-                checked={showOlderUnpaid}
-                onCheckedChange={(checked) => {
-                  setShowOlderUnpaid(checked);
-                  setPage(1);
-                }}
-              />
-            </div>
-            <Button variant="outline" className="w-full" onClick={handleExport}>
-              <Download className="mr-1.5 size-4" />
-              Download CSV
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <MembershipsOptionsDrawer
+        open={optionsOpen}
+        onOpenChange={setOptionsOpen}
+        values={{
+          status: statusFilter,
+          planId: planFilter,
+          showDifferentVersionsOnly,
+          showOlderUnpaid,
+        }}
+        plans={(plansQuery.data ?? []).map((p) => ({ id: p.id, name: p.name }))}
+        onApply={(next) => {
+          setStatusFilter(next.status);
+          setPlanFilter(next.planId);
+          setShowDifferentVersionsOnly(next.showDifferentVersionsOnly);
+          setShowOlderUnpaid(next.showOlderUnpaid);
+          setPage(1);
+        }}
+        onDownload={(next) => void handleExport(next)}
+      />
     </>
   );
 }

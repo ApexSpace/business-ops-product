@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { AuthPanel } from "@/features/auth/components/auth-panel";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth/provider";
 import { useNavigationLoading } from "@/lib/runtime/navigation-loading";
@@ -52,11 +53,12 @@ function ContextCard({
 
   return (
     <Card
+      tone="solid"
       className={cn(
         "transition-colors",
         isDisabled
           ? "cursor-not-allowed opacity-60"
-          : "hover:border-primary",
+          : "hover:border-violet-primary-normal",
       )}
     >
       <button
@@ -67,12 +69,12 @@ function ContextCard({
         aria-disabled={isDisabled}
       >
         <CardHeader className="grid grid-cols-[auto_1fr_auto] items-center gap-3 space-y-0">
-          <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-muted">
-            <Icon className="size-5" />
+          <div className="flex size-10 shrink-0 items-center justify-center rounded-[var(--radius-control)] bg-violet-primary-surface text-violet-primary-dark">
+            <Icon className="size-5" aria-hidden />
           </div>
           <div className="min-w-0 space-y-1">
             <div className="flex flex-wrap items-center gap-2">
-              <CardTitle className="truncate text-base">
+              <CardTitle className="truncate text-body-small font-semibold">
                 {getContextShortLabel(ctx)}
               </CardTitle>
               {blockedCopy ? (
@@ -85,11 +87,11 @@ function ContextCard({
                 : getContextRoleLabel(ctx)}
             </CardDescription>
           </div>
-          <div className="flex size-8 shrink-0 items-center justify-center text-muted-foreground">
+          <div className="flex size-[var(--control-height)] shrink-0 items-center justify-center text-muted-foreground">
             {loading ? (
-              <Loader2 className="size-4 animate-spin" />
+              <Loader2 className="size-4 animate-spin" aria-hidden />
             ) : isDisabled ? null : (
-              <ArrowRight className="size-4" />
+              <ArrowRight className="size-4" aria-hidden />
             )}
           </div>
         </CardHeader>
@@ -114,12 +116,12 @@ function ContextSection({
   if (contexts.length === 0) return null;
 
   return (
-    <section className="space-y-3">
+    <section className="flex flex-col gap-[var(--stack-gap)]">
       <div>
-        <h2 className="text-sm font-medium">{title}</h2>
-        <p className="text-xs text-muted-foreground">{description}</p>
+        <h2>{title}</h2>
+        <p className="text-body-small text-muted-foreground">{description}</p>
       </div>
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid gap-[var(--stack-gap)] sm:grid-cols-2">
         {contexts.map((ctx) => (
           <ContextCard
             key={contextKey(ctx)}
@@ -186,16 +188,10 @@ export function SelectContextPage() {
 
   if (contexts.length === 0) {
     return (
-      <div className="flex min-h-screen items-center justify-center p-4">
-        <Card className="max-w-md">
-          <CardHeader>
-            <CardTitle>No access</CardTitle>
-            <CardDescription>
-              Your account is not linked to any platform or business.
-            </CardDescription>
-          </CardHeader>
-        </Card>
-      </div>
+      <AuthPanel
+        title="No access"
+        description="Your account is not linked to any platform or business."
+      />
     );
   }
 
@@ -203,33 +199,36 @@ export function SelectContextPage() {
     platformContexts.length === 0 && accessibleBusinessCount === 0;
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-muted/30 p-4">
-      <div className="mb-8 text-center">
-        <h1 className="text-2xl font-semibold">Choose an account</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
+    <div className="mx-auto flex w-full max-w-3xl flex-col gap-[var(--section-gap)]">
+      <header className="text-center">
+        <h1 className="text-heading-5">Choose an account</h1>
+        <p className="mt-[var(--spacing-2)] text-body-small text-muted-foreground">
           {user?.email
             ? `Signed in as ${user.email}`
             : "Select where you want to work"}
         </p>
-      </div>
+      </header>
 
       <div
         className={cn(
-          "flex w-full max-w-2xl flex-col gap-8",
+          "flex w-full flex-col gap-[var(--section-gap)]",
           platformContexts.length > 0 &&
             businessContexts.length > 0 &&
             "max-w-3xl",
         )}
       >
         {noAccessibleWorkspace ? (
-          <Card className="border-destructive/30">
-            <CardHeader className="space-y-3">
-              <CardTitle>No accessible workspace</CardTitle>
+          <Card tone="solid" className="border-destructive/30">
+            <CardHeader className="gap-[var(--stack-gap)] px-[var(--spacing-6)] pt-[var(--spacing-6)]">
+              <CardTitle className="text-heading-5">
+                No accessible workspace
+              </CardTitle>
               <CardDescription>
-                None of your business workspaces are accessible right now. Review
-                the reasons below or contact support for help.
+                None of your business workspaces are accessible right now.
+                Review the reasons below or contact support for help.
               </CardDescription>
               <Button
+                variant="brand"
                 className="w-fit"
                 nativeButton={false}
                 render={<a href={getSupportHref()} />}

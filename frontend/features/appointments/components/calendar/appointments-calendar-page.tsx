@@ -4,6 +4,11 @@ import { Suspense, useState } from "react";
 import dynamic from "next/dynamic";
 import { AppointmentListView } from "@/features/appointments/components/calendar/appointment-list-view";
 import { CalendarToolbar } from "@/features/appointments/components/calendar/calendar-toolbar";
+import {
+  CALENDAR_TOOLBAR_BAR_CLASS,
+  CALENDAR_WORKSPACE_CLASS,
+  CALENDAR_WORKSPACE_MOBILE_CLASS,
+} from "@/features/appointments/components/calendar/calendar-toolbar-tokens";
 import { MonthCalendarView } from "@/features/appointments/components/calendar/month-calendar-view";
 import { StaffDayCalendarView } from "@/features/appointments/components/calendar/staff-day-calendar-view";
 import { WeekCalendarView } from "@/features/appointments/components/calendar/week-calendar-view";
@@ -104,8 +109,7 @@ function AppointmentsCalendarPageContent() {
   return (
     <div
       className={cn(
-        "flex h-full min-h-0 flex-col bg-white",
-        isMobile ? "gap-0 p-0" : "gap-3 px-4 pt-4 sm:gap-4 sm:px-6 sm:pt-4 lg:px-10 lg:pt-5",
+        isMobile ? CALENDAR_WORKSPACE_MOBILE_CLASS : CALENDAR_WORKSPACE_CLASS,
       )}
     >
       {isMobile ? (
@@ -134,7 +138,7 @@ function AppointmentsCalendarPageContent() {
           />
         </>
       ) : (
-        <div className="shrink-0 bg-white">
+        <div className={CALENDAR_TOOLBAR_BAR_CLASS}>
           <CalendarToolbar
             view={cal.view}
             onViewChange={cal.handleViewChange}

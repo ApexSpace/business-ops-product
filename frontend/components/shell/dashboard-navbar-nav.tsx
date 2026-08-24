@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import type { ShellNavItem } from "@/lib/types/shell-nav";
 import { useHydrated } from "@/lib/hooks/use-hydrated";
 import { isNavItemActive } from "./sidebar-nav-utils";
+import { navbarPriorityVisibilityClass } from "@/lib/config/navigation/business-nav-catalog";
 
 type NavbarTone = "onBrand" | "default";
 
@@ -33,15 +34,15 @@ export function DashboardNavbarLink({
       onClick={onNavigate}
       aria-current={active ? "page" : undefined}
       className={cn(
-        "inline-flex shrink-0 items-center justify-center",
+        "group shrink-0 items-center justify-center",
+        navbarPriorityVisibilityClass(item.navbarPriority),
         "text-body-small font-semibold tracking-normal transition-colors",
         onBrand
           ? cn(
-              // Figma Mode6: 43px tall, py 10, px 16, radius 8
               "h-[var(--shell-navbar-tab-height)]",
               "rounded-[var(--shell-navbar-tab-radius)]",
               "px-[var(--shell-navbar-tab-padding-x)] py-[var(--shell-navbar-tab-padding-y)]",
-              "text-[var(--shell-navbar-foreground)] hover:bg-white/10",
+              "text-[var(--shell-navbar-foreground)]",
             )
           : cn(
               "h-10 rounded-lg px-4 text-foreground hover:bg-muted",
@@ -57,10 +58,10 @@ export function DashboardNavbarLink({
           <span
             aria-hidden
             className={cn(
-              "absolute inset-x-0 top-full mt-[var(--shell-navbar-tab-gap)] block h-[var(--shell-navbar-tab-underline-height)]",
+              "absolute inset-x-0 top-full mt-[var(--shell-navbar-tab-gap)] block h-[var(--shell-navbar-tab-underline-height)] transition-colors duration-150",
               active
                 ? "bg-[var(--shell-navbar-foreground)]"
-                : "bg-transparent",
+                : "bg-transparent group-hover:bg-[var(--shell-navbar-foreground)] group-focus-visible:bg-[var(--shell-navbar-foreground)]",
             )}
           />
         ) : null}
@@ -88,7 +89,7 @@ export function DashboardNavbarNav({
     <nav
       aria-label="Primary"
       className={cn(
-        "flex items-center gap-[19px]",
+        "flex items-center gap-[var(--spacing-2)]",
         tone === "onBrand" ? "h-[var(--shell-navbar-tab-height)]" : "h-10",
         className,
       )}

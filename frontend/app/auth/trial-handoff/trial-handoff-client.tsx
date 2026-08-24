@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { AuthStatus } from "@/features/auth/components/auth-status";
 import { useAuth } from "@/lib/auth/provider";
 import { useAppRouter } from "@/lib/hooks/use-app-router";
 import {
@@ -62,5 +63,5 @@ export function TrialHandoffClient() {
     };
   }, [code, refreshSession, router]);
 
-  return <p className="text-sm text-muted-foreground">{message}</p>;
+  return <AuthStatus message={message} />;
 }

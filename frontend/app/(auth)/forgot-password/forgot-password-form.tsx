@@ -5,15 +5,9 @@ import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { Button, buttonVariants } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
@@ -24,7 +18,15 @@ import {
   FormSchemaProvider,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { cn } from "@/lib/utils";
+import { AuthFieldGroup } from "@/features/auth/components/auth-field-group";
+import { AuthPanel } from "@/features/auth/components/auth-panel";
+import { AuthTextLink } from "@/features/auth/components/auth-text-link";
+import {
+  AUTH_FIELD_INPUT_CLASS,
+  AUTH_FIELD_ROW_CLASS,
+  AUTH_FOOTER_LINK_CLASS,
+  AUTH_FORM_STACK_CLASS,
+} from "@/lib/design/auth-tokens";
 
 const forgotPasswordSchema = z.object({
   email: z.string().email(),
@@ -75,50 +77,46 @@ export function ForgotPasswordForm() {
 
   if (submitted) {
     return (
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl">Check your email</CardTitle>
-          <CardDescription>
-            If an account exists for that email, we sent a password reset link.
-            The link expires in 1 hour.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="text-center">
-          <Link
-            href="/login"
-            className={cn(buttonVariants({ variant: "outline" }))}
-          >
-            Back to sign in
-          </Link>
-        </CardContent>
-      </Card>
+      <AuthPanel
+        title="Check your email"
+        description="If an account exists for that email, we sent a password reset link. The link expires in 1 hour."
+      >
+        <Button
+          variant="outline"
+          className="w-full"
+          nativeButton={false}
+          render={<Link href="/login" />}
+        >
+          Back to sign in
+        </Button>
+      </AuthPanel>
     );
   }
 
   return (
-    <Card className="w-full max-w-md">
-      <CardHeader className="text-center">
-        <CardTitle className="text-2xl">Forgot password</CardTitle>
-        <CardDescription>
-          Enter your email and we&apos;ll send you a link to reset your
-          password.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <Form {...form}>
-          <FormSchemaProvider schema={forgotPasswordSchema}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+    <AuthPanel
+      title="Forgot password"
+      description="Enter your email and we'll send you a link to reset your password."
+    >
+      <Form {...form}>
+        <FormSchemaProvider schema={forgotPasswordSchema}>
+          <form
+            onSubmit={form.handleSubmit(onSubmit)}
+            className={AUTH_FORM_STACK_CLASS}
+          >
+            <AuthFieldGroup>
               <FormField
                 control={form.control}
                 name="email"
                 render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email</FormLabel>
+                  <FormItem className={AUTH_FIELD_ROW_CLASS}>
+                    <FormLabel className="sr-only">Email address</FormLabel>
                     <FormControl>
                       <Input
                         type="email"
                         autoComplete="email"
-                        placeholder="you@company.com"
+                        placeholder="Email address"
+                        className={AUTH_FIELD_INPUT_CLASS}
                         {...field}
                       />
                     </FormControl>
@@ -126,21 +124,27 @@ export function ForgotPasswordForm() {
                   </FormItem>
                 )}
               />
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? "Sending…" : "Send reset link"}
-              </Button>
-              <p className="text-center text-sm text-muted-foreground">
-                <Link
-                  href="/login"
-                  className="underline-offset-4 hover:underline"
-                >
-                  Back to sign in
-                </Link>
-              </p>
-            </form>
-          </FormSchemaProvider>
-        </Form>
-      </CardContent>
-    </Card>
+            </AuthFieldGroup>
+            <Button
+              type="submit"
+              variant="brand"
+              className="w-full"
+              disabled={loading}
+              aria-busy={loading}
+            >
+              {loading ? (
+                <Loader2 className="size-4 animate-spin" aria-hidden />
+              ) : null}
+              {loading ? "Sending…" : "Send reset link"}
+            </Button>
+            <p className="text-center">
+              <AuthTextLink href="/login" className={AUTH_FOOTER_LINK_CLASS}>
+                Back to sign in
+              </AuthTextLink>
+            </p>
+          </form>
+        </FormSchemaProvider>
+      </Form>
+    </AuthPanel>
   );
 }

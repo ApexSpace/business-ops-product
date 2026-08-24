@@ -1,21 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Eye, EyeOff } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import {
   Form,
   FormControl,
@@ -26,6 +18,17 @@ import {
   FormSchemaProvider,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { AuthCallout } from "@/features/auth/components/auth-callout";
+import { AuthFieldGroup } from "@/features/auth/components/auth-field-group";
+import { AuthPanel } from "@/features/auth/components/auth-panel";
+import { AuthPasswordInput } from "@/features/auth/components/auth-password-input";
+import { AuthTextLink } from "@/features/auth/components/auth-text-link";
+import {
+  AUTH_FIELD_INPUT_CLASS,
+  AUTH_FIELD_ROW_CLASS,
+  AUTH_FOOTER_LINK_CLASS,
+  AUTH_FORM_STACK_CLASS,
+} from "@/lib/design/auth-tokens";
 import { useAuth } from "@/lib/auth/provider";
 import { useNavigationLoading } from "@/lib/runtime/navigation-loading";
 import { useAppRouter } from "@/lib/hooks/use-app-router";
@@ -76,101 +79,95 @@ export function LoginForm() {
   };
 
   return (
-    <Card className="w-full max-w-md">
-      <CardHeader className="text-center">
-        <CardTitle className="text-2xl">CodeSol</CardTitle>
-        <CardDescription>Sign in to app.codesoltech.com</CardDescription>
-      </CardHeader>
-      <CardContent>
-        {reasonParam === "subscription-canceled" ? (
-          <p className="mb-4 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-100">
-            Your subscription was canceled and your workspace access has been
-            removed. Sign in again to open another workspace.
-          </p>
-        ) : null}
-        {reasonParam === "trial-handoff-expired" ? (
-          <p className="mb-4 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-100">
-            Your signup handoff expired. If you just created an account, sign
-            in with the email and password you set.
-          </p>
-        ) : null}
-        {errorParam === "no_access" ? (
-          <p className="mb-4 text-sm text-destructive">
-            Your account has no active platform or business access.
-          </p>
-        ) : null}
-        <Form {...form}>
-          <FormSchemaProvider schema={loginSchema}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Email</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="email"
-                      autoComplete="email"
-                      placeholder="you@company.com"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="password"
-              render={({ field }) => (
-                <FormItem>
-                  <div className="flex items-center justify-between gap-2">
-                    <FormLabel>Password</FormLabel>
-                    <Link
-                      href="/forgot-password"
-                      className="text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
-                    >
-                      Forgot password?
-                    </Link>
-                  </div>
-                  <FormControl>
-                    <div className="relative">
+    <AuthPanel>
+      <h1 className="sr-only">Sign in</h1>
+      {reasonParam === "subscription-canceled" ? (
+        <AuthCallout tone="warning">
+          Your subscription was canceled and your workspace access has been
+          removed. Sign in again to open another workspace.
+        </AuthCallout>
+      ) : null}
+      {reasonParam === "trial-handoff-expired" ? (
+        <AuthCallout tone="warning">
+          Your signup handoff expired. If you just created an account, sign in
+          with the email and password you set.
+        </AuthCallout>
+      ) : null}
+      {errorParam === "no_access" ? (
+        <AuthCallout tone="error">
+          Your account has no active platform or business access.
+        </AuthCallout>
+      ) : null}
+      <Form {...form}>
+        <FormSchemaProvider schema={loginSchema}>
+          <form
+            onSubmit={form.handleSubmit(onSubmit)}
+            className={AUTH_FORM_STACK_CLASS}
+          >
+            <AuthFieldGroup>
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem className={AUTH_FIELD_ROW_CLASS}>
+                    <FormLabel className="sr-only">Email address</FormLabel>
+                    <FormControl>
                       <Input
-                        type={showPassword ? "text" : "password"}
-                        autoComplete="current-password"
-                        className="pr-9"
+                        type="email"
+                        autoComplete="email"
+                        placeholder="Email address"
+                        className={AUTH_FIELD_INPUT_CLASS}
                         {...field}
                       />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon-sm"
-                        className="absolute top-1/2 right-1 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                        aria-label={
-                          showPassword ? "Hide password" : "Show password"
-                        }
-                        onClick={() => setShowPassword((v) => !v)}
-                      >
-                        {showPassword ? (
-                          <EyeOff className="size-4" />
-                        ) : (
-                          <Eye className="size-4" />
-                        )}
-                      </Button>
-                    </div>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <Button type="submit" className="w-full" disabled={loading}>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem className={AUTH_FIELD_ROW_CLASS}>
+                    <FormLabel className="sr-only">Password</FormLabel>
+                    <FormControl>
+                      <AuthPasswordInput
+                        visible={showPassword}
+                        onToggleVisibility={() => setShowPassword((v) => !v)}
+                        autoComplete="current-password"
+                        placeholder="Password"
+                        className={AUTH_FIELD_INPUT_CLASS}
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </AuthFieldGroup>
+            <Button
+              type="submit"
+              variant="brand"
+              className="w-full"
+              disabled={loading}
+              aria-busy={loading}
+            >
+              {loading ? (
+                <Loader2 className="size-4 animate-spin" aria-hidden />
+              ) : null}
               {loading ? "Signing in…" : "Sign in"}
             </Button>
-            </form>
-          </FormSchemaProvider>
-        </Form>
-      </CardContent>
-    </Card>
+            <p className="text-center">
+              <AuthTextLink
+                href="/forgot-password"
+                className={AUTH_FOOTER_LINK_CLASS}
+              >
+                Forgot password?
+              </AuthTextLink>
+            </p>
+          </form>
+        </FormSchemaProvider>
+      </Form>
+    </AuthPanel>
   );
 }

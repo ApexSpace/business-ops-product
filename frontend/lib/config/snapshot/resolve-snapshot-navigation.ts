@@ -17,6 +17,7 @@ import {
   groupShellNavItemsIntoSections,
   resolveAppsNavItems,
 } from "@/lib/config/navigation/group-shell-nav-sections";
+import { decorateShellNavItem } from "@/lib/config/navigation/business-nav-catalog";
 
 export type TerminologyResolver = (key: string, fallback: string) => string;
 
@@ -109,12 +110,14 @@ function resolveNavItems(
       ),
     )
     .sort((a, b) => a.order - b.order)
-    .map((item) => ({
-      title: resolveLabel(item.labelKey, item.key),
-      href: item.route,
-      icon: resolveSnapshotIcon(item.icon),
-      navKey: item.key,
-    }));
+    .map((item) =>
+      decorateShellNavItem({
+        title: resolveLabel(item.labelKey, item.key),
+        href: item.route,
+        icon: resolveSnapshotIcon(item.icon),
+        navKey: item.key,
+      }),
+    );
 }
 
 export function resolveSnapshotNavigation(

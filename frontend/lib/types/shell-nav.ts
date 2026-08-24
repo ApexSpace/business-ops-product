@@ -1,6 +1,8 @@
 import type { LucideIcon } from "lucide-react";
 
 export type ShellNavTier = "primary" | "apps";
+export type AppsCategoryId = "core" | "marketing" | "setup";
+export type NavbarPriority = 1 | 2 | 3 | 4 | 5;
 
 export interface ShellNavItem {
   title: string;
@@ -12,6 +14,12 @@ export interface ShellNavItem {
   navTier?: ShellNavTier;
   /** Highlight when pathname is under this href's section (e.g. Settings footer). */
   matchPrefix?: boolean;
+  /** Apps panel category. */
+  appsCategory?: AppsCategoryId;
+  /** Lower number stays visible in the top navbar longer. */
+  navbarPriority?: NavbarPriority;
+  /** Featured in the Apps panel "Frequently used" row. */
+  frequentlyUsed?: boolean;
 }
 
 export interface ShellNavSection {

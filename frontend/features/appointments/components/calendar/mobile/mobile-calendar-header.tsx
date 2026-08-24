@@ -55,7 +55,6 @@ export function MobileCalendarHeader({
         <CalendarFiltersPopover
           statusFilter={statusFilter}
           onStatusFilterChange={onStatusFilterChange}
-          contentAlign="start"
           triggerClassName="!size-10 !min-h-10 !w-10 !rounded-md !border-0 !bg-transparent !shadow-none hover:!bg-white/15"
           iconClassName="!text-white"
         />

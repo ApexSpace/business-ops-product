@@ -15,9 +15,14 @@ import type { DrawerShellWidthTier } from "@/lib/design/drawer-tokens";
 export const WORKSPACE_ACTIVE_ROW_CLASS =
   "shadow-[inset_3px_0_0_0_var(--pc-violet-primary-normal)]";
 
-/** Flush toolbar above Figma table — no card chrome */
+/**
+ * Flush toolbar above the Figma table — no card chrome.
+ * Vertical rhythm is `--cs-list-toolbar-gap` on the workspace card (equal
+ * above and below the toolbar). Do not add extra py here or the shell
+ * `--page-content-top-gap` stacks and the top gap looks larger.
+ */
 export const WORKSPACE_TOOLBAR_CLASS =
-  "rounded-none border-0 bg-transparent px-0 py-2 shadow-none sm:px-0";
+  "rounded-none border-0 bg-transparent px-0 py-0 shadow-none sm:px-0";
 
 export const WORKSPACE_TOOLBAR_SURFACE_CLASS =
   "flex flex-col gap-2 rounded-[var(--radius-md)] border border-[var(--drawer-tab-track)] bg-white p-2 sm:p-3";
@@ -30,7 +35,7 @@ export const WORKSPACE_TABLE_CLASS = "shadow-none";
 
 /** Workspace list surface — page white; table supplies its own border chrome */
 export const WORKSPACE_TABLE_CARD_CLASS =
-  "flex min-h-0 flex-col overflow-hidden rounded-none border-0 bg-white shadow-none";
+  "flex min-h-0 flex-col gap-[var(--cs-list-toolbar-gap)] overflow-hidden rounded-none border-0 bg-white shadow-none";
 
 /** Pagination / footer strip under the table — tight so the grid can grow */
 export const WORKSPACE_FOOTER_CLASS =

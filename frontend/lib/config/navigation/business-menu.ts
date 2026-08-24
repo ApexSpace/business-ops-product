@@ -1,24 +1,9 @@
-import {
-  Boxes,
-  Calendar,
-  ClipboardList,
-  Clock,
-  Contact,
-  CreditCard,
-  FileBarChart,
-  Gift,
-  GitBranch,
-  LayoutDashboard,
-  MessageSquare,
-  Package,
-  Repeat,
-  Settings,
-  Share2,
-  ShoppingBag,
-  Tag,
-} from "lucide-react";
 import type { IndustryLabels } from "@/lib/types/shared";
 import type { ShellNavItem, ShellNavSection } from "@/lib/types/shell-nav";
+import {
+  BUSINESS_NAV_CATALOG,
+  type BusinessNavCatalogEntry,
+} from "./business-nav-catalog";
 
 export interface BusinessMenuItem extends ShellNavItem {
   labelKey?: keyof IndustryLabels;
@@ -26,132 +11,25 @@ export interface BusinessMenuItem extends ShellNavItem {
   navTier: "primary" | "apps";
 }
 
-export const businessOperationalMenuItems: BusinessMenuItem[] = [
-  {
-    title: "Dashboard",
-    href: "/business/dashboard",
-    icon: LayoutDashboard,
-    navKey: "dashboard",
-    navTier: "primary",
-  },
-  {
-    title: "Appointments",
-    href: "/business/appointments",
-    icon: Calendar,
-    labelKey: "appointments",
-    navKey: "appointments",
-    navTier: "primary",
-  },
-  {
-    title: "Conversations",
-    href: "/business/conversations",
-    icon: MessageSquare,
-    labelKey: "conversations",
-    navKey: "conversations",
-    navTier: "primary",
-  },
-  {
-    title: "Contacts",
-    href: "/business/contacts",
-    icon: Contact,
-    labelKey: "contacts",
-    navKey: "contacts",
-    navTier: "primary",
-  },
-  {
-    title: "Sales",
-    href: "/business/sales",
-    icon: ShoppingBag,
-    navKey: "sales",
-    navTier: "primary",
-  },
-  {
-    title: "Work Items",
-    href: "/business/work-items",
-    icon: ClipboardList,
-    labelKey: "workItems",
-    navKey: "work-items",
-    navTier: "apps",
-  },
-  {
-    title: "Social Planner",
-    href: "/business/social-planner",
-    icon: Share2,
-    navKey: "social-planner",
-    navTier: "apps",
-  },
-  {
-    title: "CRM Pipeline",
-    href: "/business/pipelines",
-    icon: GitBranch,
-    labelKey: "pipelines",
-    navKey: "pipelines",
-    navTier: "apps",
-  },
-  {
-    title: "Gift Cards",
-    href: "/business/gift-cards",
-    icon: Gift,
-    navKey: "gift-cards",
-    navTier: "apps",
-  },
-  {
-    title: "Packages",
-    href: "/business/packages",
-    icon: Boxes,
-    navKey: "packages",
-    navTier: "apps",
-  },
-  {
-    title: "Memberships",
-    href: "/business/memberships",
-    icon: Repeat,
-    navKey: "memberships",
-    navTier: "apps",
-  },
-  {
-    title: "Products",
-    href: "/business/products",
-    icon: Package,
-    navKey: "products",
-    navTier: "apps",
-  },
-  {
-    title: "Offers",
-    href: "/business/offers",
-    icon: Tag,
-    navKey: "offers",
-    navTier: "apps",
-  },
-  {
-    title: "Payments",
-    href: "/business/payments",
-    icon: CreditCard,
-    navKey: "payments",
-    navTier: "apps",
-  },
-  {
-    title: "Time Clock",
-    href: "/business/time-clock",
-    icon: Clock,
-    navKey: "time-clock",
-    navTier: "apps",
-  },
-  {
-    title: "Time Cards",
-    href: "/business/time-cards",
-    icon: Clock,
-    navKey: "time-cards",
-    navTier: "apps",
-  },
-  {
-    title: "Reports",
-    href: "/business/reports",
-    icon: FileBarChart,
-    navKey: "reports",
-    navTier: "apps",
-  },
-];
+function toMenuItem(entry: BusinessNavCatalogEntry): BusinessMenuItem {
+  return {
+    title: entry.title,
+    href: entry.href,
+    icon: entry.icon,
+    navKey: entry.navKey,
+    navTier:
+      entry.navbarPriority != null && entry.navbarPriority <= 3
+        ? "primary"
+        : "apps",
+    ...(entry.labelKey ? { labelKey: entry.labelKey } : {}),
+    ...(entry.matchPrefix ? { matchPrefix: true } : {}),
+  };
+}
+
+export const businessOperationalMenuItems: BusinessMenuItem[] =
+  BUSINESS_NAV_CATALOG.filter((entry) => entry.origin === "operational").map(
+    toMenuItem,
+  );
 
 export const businessOperationalSections: Array<{
   id: string;
@@ -175,7 +53,8 @@ export const businessAppsMenuItems: BusinessMenuItem[] =
 export const businessSettingsEntry = {
   title: "Settings",
   href: "/business/settings",
-  icon: Settings,
+  icon: BUSINESS_NAV_CATALOG.find((entry) => entry.navKey === "settings")!
+    .icon,
   matchPrefix: true,
 } as const satisfies ShellNavItem;
 

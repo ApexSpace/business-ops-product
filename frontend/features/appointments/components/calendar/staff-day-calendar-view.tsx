@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useRef } from "react";
 import type { Appointment } from "@/features/appointments/schemas/appointment-profile";
 import type { Calendar } from "@/features/calendars/schemas/calendar-profile";
 import { CalendarCurrentTimeIndicator } from "@/features/appointments/components/calendar/calendar-current-time-indicator";
@@ -11,6 +11,7 @@ import {
 } from "@/features/appointments/components/calendar/time-grid-shared";
 import type { StaffMemberOption } from "@/features/appointments/components/calendar/staff-selector";
 import { useCalendarCurrentTimeTop } from "@/features/appointments/hooks/use-calendar-current-time";
+import { useScrollTimeGridToNow } from "@/features/appointments/hooks/use-scroll-time-grid-to-now";
 import { isTodayDateKey } from "@/features/calendars/utils/timezone";
 import { CALENDAR_GRID } from "@/features/calendars/utils/calendar-grid-styles";
 import { calendarTimeGridLayout } from "@/features/calendars/utils/calendar-time-grid-layout";
@@ -18,6 +19,7 @@ import { LoadingState } from "@/components/data-display/loading-state";
 import {
   CALENDAR_FIGMA_STAFF_COL_IDEAL_PX,
   CALENDAR_FIGMA_STAFF_COL_MIN_PX,
+  CALENDAR_FIGMA_STAFF_HEADER_HEIGHT_PX,
   CALENDAR_FIGMA_TIME_GUTTER_PX,
 } from "@/features/calendars/styles/calendar-figma";
 import {
@@ -100,6 +102,16 @@ export function StaffDayCalendarView({
   const isMobile = density === "mobile";
   const isToday = isTodayDateKey(dateKey, timezone);
   const currentTimeTop = useCalendarCurrentTimeTop(timezone, [dateKey]);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const stickyHeaderHeight = isMobile
+    ? MOBILE_CAL_STAFF_HEADER_HEIGHT_PX
+    : CALENDAR_FIGMA_STAFF_HEADER_HEIGHT_PX;
+  useScrollTimeGridToNow(scrollRef, {
+    currentTimeTopPx: currentTimeTop,
+    stickyHeaderHeight,
+    enabled: !isLoading,
+    resetKey: `${density}:${dateKey}`,
+  });
   const columnCount = Math.max(staffMembers.length, 1);
   const timeGutterPx = isMobile
     ? MOBILE_CAL_TIME_GUTTER_PX
@@ -140,7 +152,10 @@ export function StaffDayCalendarView({
       data-calendar-density={density}
     >
       {/* Single scroll host — avoids stacked horizontal scrollbars */}
-      <div className="min-h-0 flex-1 overflow-auto overscroll-contain bg-white">
+      <div
+        ref={scrollRef}
+        className="min-h-0 flex-1 overflow-auto overscroll-contain bg-white"
+      >
         <div className="min-w-0 bg-white" style={frameStyle}>
           <div
             className={cn(

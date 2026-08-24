@@ -12,12 +12,14 @@ const montserrat = Montserrat({
   display: "swap",
 });
 
+const FAVICON_HREF = "/branding/favicon_logo.png";
+
 export const metadata: Metadata = {
   title: "CodeSol Business Automation",
   description: "Platform and business automation for app.codesoltech.com",
   icons: {
-    icon: "/branding/favicon_logo.png",
-    apple: "/branding/favicon_logo.png",
+    icon: [{ url: FAVICON_HREF, type: "image/png" }],
+    apple: [{ url: FAVICON_HREF, type: "image/png" }],
   },
 };
 

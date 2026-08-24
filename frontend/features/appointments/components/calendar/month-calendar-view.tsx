@@ -57,7 +57,10 @@ export function MonthCalendarView({
         {weekdays.map((label) => (
           <div
             key={label}
-            className="px-2 py-2 text-center text-xs font-semibold text-grey-tertiary-normal"
+            className={cn(
+              CALENDAR_GRID.dayHeaderWeekdayCell,
+              CALENDAR_GRID.dayHeaderWeekday,
+            )}
           >
             {label}
           </div>
