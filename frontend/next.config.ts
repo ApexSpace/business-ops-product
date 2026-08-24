@@ -41,6 +41,16 @@ const nextConfig: NextConfig = {
       process.env.NEXT_PUBLIC_REALTIME_TRANSPORT?.trim() || "",
   },
   output: "standalone",
+  async rewrites() {
+    // Browsers still request /favicon.ico by default. Serve the branding PNG
+    // instead of shipping a second icon file that fights metadata.icons.
+    return [
+      {
+        source: "/favicon.ico",
+        destination: "/branding/favicon_logo.png",
+      },
+    ];
+  },
   allowedDevOrigins: [
     "ops.codesoltech.com",
     "app.codesoltech.com",

@@ -19,6 +19,9 @@ export const CALENDAR_FIGMA_TIME_GUTTER_PX = 80;
 /** Staff header row — Figma 64px */
 export const CALENDAR_FIGMA_STAFF_HEADER_HEIGHT_PX = 64;
 
+/** Week/day date headers (WED 26) — compact; matches --cs-calendar-day-header-height */
+export const CALENDAR_FIGMA_DAY_HEADER_HEIGHT_PX = 48;
+
 /** Hour row height — Figma 120px (4 × 15-min slots) */
 export const CALENDAR_FIGMA_HOUR_HEIGHT_PX = 120;
 

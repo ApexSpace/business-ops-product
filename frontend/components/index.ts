@@ -37,6 +37,8 @@ export { PageBreadcrumbs } from "@/components/layout/page-breadcrumbs";
 export { DataToolbar } from "@/components/layout/data-toolbar";
 export { FilterBar } from "@/components/layout/filter-bar";
 export { ListFilterButton } from "@/components/layout/list-filter-button";
+export { EntityListLayout } from "@/components/layout/entity-list-layout";
+export type { EntityListLayoutProps } from "@/components/layout/entity-list-layout";
 export {
   ListPage,
   ListPageSkeleton,

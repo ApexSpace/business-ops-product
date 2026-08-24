@@ -1,9 +1,23 @@
 import { cn } from "@/lib/utils";
 
+/**
+ * Calendar page chrome — full-bleed grid (no page gutters).
+ * Horizontal inset lives on the toolbar only so day columns can use 100% width.
+ */
+export const CALENDAR_WORKSPACE_CLASS =
+  "flex h-full min-h-0 flex-col bg-white gap-[var(--cs-calendar-workspace-gap)] px-[var(--cs-calendar-workspace-padding-x)] pt-[var(--cs-calendar-workspace-padding-y)]";
+
+export const CALENDAR_WORKSPACE_MOBILE_CLASS =
+  "flex h-full min-h-0 flex-col bg-white gap-0 p-0";
+
+export const CALENDAR_TOOLBAR_BAR_CLASS =
+  "shrink-0 bg-white px-[var(--cs-calendar-toolbar-padding-x)]";
+
 /** Shared height for calendar toolbar controls — Figma 44px */
 export const CALENDAR_TOOLBAR_HEIGHT_CLASS = "h-11";
 
-export const CALENDAR_TOOLBAR_INSET_X_CLASS = "px-4";
+export const CALENDAR_TOOLBAR_INSET_X_CLASS =
+  "px-[var(--cs-calendar-toolbar-padding-x)]";
 
 /** Avoid leading-none — it clips descenders (g, y) when paired with truncate */
 export const CALENDAR_TOOLBAR_TEXT_CLASS =

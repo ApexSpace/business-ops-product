@@ -1,16 +1,14 @@
 import { Suspense } from "react";
+import { AuthLayout } from "@/features/auth/components/auth-layout";
+import { AuthStatus } from "@/features/auth/components/auth-status";
 import { TrialHandoffClient } from "./trial-handoff-client";
 
 export default function TrialHandoffPage() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted/30 p-4">
-      <Suspense
-        fallback={
-          <p className="text-sm text-muted-foreground">Signing you in…</p>
-        }
-      >
+    <AuthLayout>
+      <Suspense fallback={<AuthStatus message="Signing you in…" />}>
         <TrialHandoffClient />
       </Suspense>
-    </div>
+    </AuthLayout>
   );
 }

@@ -5,16 +5,9 @@ import { useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Eye, EyeOff } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import {
   Form,
   FormControl,
@@ -24,8 +17,17 @@ import {
   FormMessage,
   FormSchemaProvider,
 } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Skeleton } from "@/components/ui/skeleton";
+import { AuthFieldGroup } from "@/features/auth/components/auth-field-group";
+import {
+  AuthPanel,
+  AuthPanelSkeleton,
+} from "@/features/auth/components/auth-panel";
+import { AuthPasswordInput } from "@/features/auth/components/auth-password-input";
+import {
+  AUTH_FIELD_INPUT_CLASS,
+  AUTH_FIELD_ROW_CLASS,
+  AUTH_FORM_STACK_CLASS,
+} from "@/lib/design/auth-tokens";
 import { useAuth } from "@/lib/auth/provider";
 import { useNavigationLoading } from "@/lib/runtime/navigation-loading";
 import { useAppRouter } from "@/lib/hooks/use-app-router";
@@ -147,31 +149,15 @@ export function AcceptInviteForm() {
 
   if (!token || loadError) {
     return (
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl">Invalid invite</CardTitle>
-          <CardDescription>
-            {loadError ?? "This invite link is not valid."}
-          </CardDescription>
-        </CardHeader>
-      </Card>
+      <AuthPanel
+        title="Invalid invite"
+        description={loadError ?? "This invite link is not valid."}
+      />
     );
   }
 
   if (!preview) {
-    return (
-      <Card className="w-full max-w-md">
-        <CardHeader className="space-y-2">
-          <Skeleton className="mx-auto h-8 w-48" />
-          <Skeleton className="mx-auto h-4 w-64" />
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <Skeleton className="h-10 w-full" />
-          <Skeleton className="h-10 w-full" />
-          <Skeleton className="h-10 w-full" />
-        </CardContent>
-      </Card>
-    );
+    return <AuthPanelSkeleton />;
   }
 
   const displayName =
@@ -179,59 +165,46 @@ export function AcceptInviteForm() {
     preview.email;
 
   return (
-    <Card className="w-full max-w-md">
-      <CardHeader className="text-center">
-        <CardTitle className="text-2xl">Welcome!</CardTitle>
-        <CardDescription>
-          {preview.requiresPassword
-            ? `Set your password to join ${preview.businessName}.`
-            : `Activate your access to ${preview.businessName}.`}
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <p className="mb-4 text-center text-sm text-muted-foreground">
-          Hi {displayName}, you were invited
-          {preview.inviterName ? ` by ${preview.inviterName}` : ""} to join{" "}
-          <span className="font-medium text-foreground">
-            {preview.businessName}
-          </span>
-          .
-        </p>
+    <AuthPanel
+      title="Welcome"
+      description={
+        preview.requiresPassword
+          ? `Set your password to join ${preview.businessName}.`
+          : `Activate your access to ${preview.businessName}.`
+      }
+    >
+      <p className="mb-[var(--spacing-4)] text-center text-body-small text-muted-foreground">
+        Hi {displayName}, you were invited
+        {preview.inviterName ? ` by ${preview.inviterName}` : ""} to join{" "}
+        <span className="font-medium text-foreground">
+          {preview.businessName}
+        </span>
+        .
+      </p>
 
-        {preview.requiresPassword ? (
-          <FormSchemaProvider schema={passwordSchema}>
-            <Form {...form}>
-              <form
-                onSubmit={form.handleSubmit(onSubmit)}
-                className="space-y-4"
-              >
+      {preview.requiresPassword ? (
+        <FormSchemaProvider schema={passwordSchema}>
+          <Form {...form}>
+            <form
+              onSubmit={form.handleSubmit(onSubmit)}
+              className={AUTH_FORM_STACK_CLASS}
+            >
+              <AuthFieldGroup>
                 <FormField
                   control={form.control}
                   name="password"
                   render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Password</FormLabel>
+                    <FormItem className={AUTH_FIELD_ROW_CLASS}>
+                      <FormLabel className="sr-only">Password</FormLabel>
                       <FormControl>
-                        <div className="relative">
-                          <Input
-                            type={showPassword ? "text" : "password"}
-                            autoComplete="new-password"
-                            {...field}
-                          />
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="absolute top-0 right-0 h-full px-3"
-                            onClick={() => setShowPassword((v) => !v)}
-                          >
-                            {showPassword ? (
-                              <EyeOff className="size-4" />
-                            ) : (
-                              <Eye className="size-4" />
-                            )}
-                          </Button>
-                        </div>
+                        <AuthPasswordInput
+                          visible={showPassword}
+                          onToggleVisibility={() => setShowPassword((v) => !v)}
+                          autoComplete="new-password"
+                          placeholder="Password"
+                          className={AUTH_FIELD_INPUT_CLASS}
+                          {...field}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -241,51 +214,53 @@ export function AcceptInviteForm() {
                   control={form.control}
                   name="confirmPassword"
                   render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Confirm password</FormLabel>
+                    <FormItem className={AUTH_FIELD_ROW_CLASS}>
+                      <FormLabel className="sr-only">Confirm password</FormLabel>
                       <FormControl>
-                        <div className="relative">
-                          <Input
-                            type={showConfirm ? "text" : "password"}
-                            autoComplete="new-password"
-                            {...field}
-                          />
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="absolute top-0 right-0 h-full px-3"
-                            onClick={() => setShowConfirm((v) => !v)}
-                          >
-                            {showConfirm ? (
-                              <EyeOff className="size-4" />
-                            ) : (
-                              <Eye className="size-4" />
-                            )}
-                          </Button>
-                        </div>
+                        <AuthPasswordInput
+                          visible={showConfirm}
+                          onToggleVisibility={() => setShowConfirm((v) => !v)}
+                          autoComplete="new-password"
+                          placeholder="Confirm password"
+                          className={AUTH_FIELD_INPUT_CLASS}
+                          {...field}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? "Activating…" : "Activate account"}
-                </Button>
-              </form>
-            </Form>
-          </FormSchemaProvider>
-        ) : (
-          <Button
-            type="button"
-            className="w-full"
-            disabled={loading}
-            onClick={() => void completeActivation()}
-          >
-            {loading ? "Activating…" : "Activate account"}
-          </Button>
-        )}
-      </CardContent>
-    </Card>
+              </AuthFieldGroup>
+              <Button
+                type="submit"
+                variant="brand"
+                className="w-full"
+                disabled={loading}
+                aria-busy={loading}
+              >
+                {loading ? (
+                  <Loader2 className="size-4 animate-spin" aria-hidden />
+                ) : null}
+                {loading ? "Activating…" : "Activate account"}
+              </Button>
+            </form>
+          </Form>
+        </FormSchemaProvider>
+      ) : (
+        <Button
+          type="button"
+          variant="brand"
+          className="w-full"
+          disabled={loading}
+          aria-busy={loading}
+          onClick={() => void completeActivation()}
+        >
+          {loading ? (
+            <Loader2 className="size-4 animate-spin" aria-hidden />
+          ) : null}
+          {loading ? "Activating…" : "Activate account"}
+        </Button>
+      )}
+    </AuthPanel>
   );
 }

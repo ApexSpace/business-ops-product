@@ -4,6 +4,11 @@ import { usePathname } from "next/navigation";
 import { Building2 } from "lucide-react";
 import { AppShell } from "@/components/shell";
 import { businessSettingsEntry } from "@/lib/config/navigation/business-menu";
+import {
+  collectOperationalNavItems,
+  mergeAppsPanelItems,
+  resolveSettingsAppsItems,
+} from "@/lib/config/navigation/business-nav-catalog";
 import { isBusinessSettingsPath } from "@/lib/config/navigation/business-settings-menu";
 import {
   ADMIN_DEFAULT_SETTINGS_HREF,
@@ -139,7 +144,19 @@ export function AppShellLayout({ mode, children }: ShellLayoutProps) {
 
   const appsItems: ShellNavItem[] =
     mode === "business" && snapshotNavigation
-      ? filterAppsByCapability(snapshotNavigation.appsItems)
+      ? mergeAppsPanelItems(
+          collectOperationalNavItems(
+            sections,
+            filterAppsByCapability(snapshotNavigation.appsItems),
+          ),
+          resolveSettingsAppsItems({
+            resolveLabel: t,
+            businessRole: jwt?.businessRole,
+            staffPermissions: jwt?.staffPermissions,
+            isPlatformAdmin,
+            capabilityKeys,
+          }),
+        )
       : [];
 
   const brandSubtitle =

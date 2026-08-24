@@ -5,10 +5,9 @@ import { useQueryClient } from "@tanstack/react-query";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Plus, Printer, Trash2 } from "lucide-react";
 import { ApiErrorState } from "@/components/data-display/api-error-state";
-import { DataTable, type DataTableColumn } from "@/components/data-display/data-table";
+import { type DataTableColumn } from "@/components/data-display/data-table";
 import { EntityDetailDrawer } from "@/components/layout/entity-detail-drawer";
-import { EntityWorkspaceLayout } from "@/components/layout/entity-workspace-layout";
-import { ListPrimaryAction } from "@/components/layout/list-primary-action";
+import { EntityListLayout } from "@/components/layout/entity-list-layout";
 import { ClientDetailsDrawer } from "@/features/contacts/components/client-details-drawer";
 import {
   CONTACTS_DRAWER_MOBILE_SHELL_CLASS,
@@ -26,10 +25,8 @@ import {
   type ContactDetailPanelActions,
   type ContactDetailTabId,
 } from "@/features/contacts/components/contact-detail-panel";
-import { SearchInput } from "@/components/forms/search-input";
 import { ActionButton } from "@/components/ui/action-button";
 import { ListPagination } from "@/components/ui/list-pagination";
-import { ListFilterButton } from "@/components/layout/list-filter-button";
 import { ProfileAvatar } from "@/components/ui/profile-avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ContactMergeDialog } from "@/features/contacts/components/contact-merge-dialog";
@@ -41,10 +38,7 @@ import { useContactStaffPermissions } from "@/features/contacts/hooks/use-contac
 import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
 import { useIsMobile } from "@/lib/hooks/use-mobile";
 import { useListSearchParams } from "@/lib/hooks/use-list-search-params";
-import {
-  WORKSPACE_ACTIVE_ROW_CLASS,
-  WORKSPACE_TABLE_CLASS,
-} from "@/lib/design/workspace-tokens";
+import { WORKSPACE_ACTIVE_ROW_CLASS } from "@/lib/design/workspace-tokens";
 import { useEntitySelection } from "@/lib/routing/use-entity-selection";
 import {
   invalidateContactLists,
@@ -231,30 +225,18 @@ function BusinessContactsPageContent() {
           }
         />
       ) : (
-      <EntityWorkspaceLayout
+      <EntityListLayout
         title="Contacts"
         description="Select a record to open contact details."
-        search={
-          <SearchInput
-            value={params.search}
-            onChange={(value) =>
-              setParams({ search: value, page: "1" }, { resetPage: true })
-            }
-            placeholder="Search"
-            className="min-w-0 flex-1"
-          />
+        addButtonLabel="New Contact"
+        onAdd={contactPerms.canManage ? openCreate : undefined}
+        searchPlaceholder="Search"
+        searchValue={params.search}
+        onSearchChange={(value) =>
+          setParams({ search: value, page: "1" }, { resetPage: true })
         }
-        filters={
-          <ListFilterButton
-            aria-label="Contact options"
-            onClick={() => setOptionsOpen(true)}
-          />
-        }
-        actions={
-          contactPerms.canManage ? (
-            <ListPrimaryAction label="New Contact" onClick={openCreate} />
-          ) : null
-        }
+        filterAriaLabel="Contact options"
+        onFilterClick={() => setOptionsOpen(true)}
         footer={
           data?.meta ? (
             <ListPagination
@@ -265,43 +247,40 @@ function BusinessContactsPageContent() {
             />
           ) : undefined
         }
-      >
-        {isError ? (
-          <ApiErrorState error={error} onRetry={() => void refetch()} />
-        ) : (
-          <DataTable
-            columns={columns}
-            data={contacts}
-            getRowId={(row) => row.id}
-            isLoading={isLoading}
-            density="compact"
-            activeRowId={selectedId}
-            onRowClick={(row) => {
-              if (!contactPerms.canOpenProfiles) return;
-              if (row.id !== selectedId) {
-                setTab("timeline");
-              }
-              setSelectedId(row.id);
-            }}
-            getRowClassName={(row) =>
-              contactPerms.canOpenProfiles && selectedId === row.id
-                ? WORKSPACE_ACTIVE_ROW_CLASS
-                : undefined
-            }
-            emptyTitle="No contacts yet"
-            emptyDescription="Add your first contact to start building your CRM."
-            emptyAction={
-              contactPerms.canManage ? (
-                <ActionButton onClick={openCreate}>
-                  <Plus className="mr-2 size-4" />
-                  Add contact
-                </ActionButton>
-              ) : undefined
-            }
-            className={WORKSPACE_TABLE_CLASS}
-          />
-        )}
-      </EntityWorkspaceLayout>
+        error={
+          isError ? (
+            <ApiErrorState error={error} onRetry={() => void refetch()} />
+          ) : undefined
+        }
+        columns={columns}
+        data={contacts}
+        getRowId={(row) => row.id}
+        isLoading={isLoading}
+        density="compact"
+        activeRowId={selectedId}
+        onRowClick={(row) => {
+          if (!contactPerms.canOpenProfiles) return;
+          if (row.id !== selectedId) {
+            setTab("timeline");
+          }
+          setSelectedId(row.id);
+        }}
+        getRowClassName={(row) =>
+          contactPerms.canOpenProfiles && selectedId === row.id
+            ? WORKSPACE_ACTIVE_ROW_CLASS
+            : undefined
+        }
+        emptyTitle="No contacts yet"
+        emptyDescription="Add your first contact to start building your CRM."
+        emptyAction={
+          contactPerms.canManage ? (
+            <ActionButton onClick={openCreate}>
+              <Plus className="mr-2 size-4" />
+              Add contact
+            </ActionButton>
+          ) : undefined
+        }
+      />
       )}
 
       <EntityDetailDrawer

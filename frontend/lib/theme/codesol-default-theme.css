@@ -139,10 +139,10 @@
   --cs-shell-navbar-surface: #6a2bd6;
   --cs-shell-navbar-foreground: #ffffff;
   --cs-shell-navbar-height: 66px;
-  /* Figma active tab (Mode6): 43px tall, 10/16 padding, 8px radius, 3px gap */
+  /* Figma active tab (Mode6): 43px tall, 10px y-padding, 8px radius, 3px underline gap */
   --cs-shell-navbar-tab-height: 43px;
   --cs-shell-navbar-tab-padding-y: 10px;
-  --cs-shell-navbar-tab-padding-x: 16px;
+  --cs-shell-navbar-tab-padding-x: 8px;
   --cs-shell-navbar-tab-radius: 8px;
   --cs-shell-navbar-tab-gap: 3px;
   /* Figma Rectangle 4307 underline: 70×2, neutral/0 */
@@ -155,10 +155,20 @@
   --cs-calendar-border: #bc9bf6;
   --cs-calendar-surface: var(--pc-violet-primary-surface);
   --cs-calendar-toolbar-height: 44px;
+  /* Workspace is full-bleed; toolbar keeps a modest control inset */
+  --cs-calendar-workspace-padding-x: 0px;
+  --cs-calendar-workspace-padding-y: var(--spacing-4);
+  --cs-calendar-workspace-gap: var(--spacing-4);
+  --cs-calendar-toolbar-padding-x: var(--spacing-4);
   --cs-calendar-time-gutter: 80px;
   --cs-calendar-staff-header-height: 64px;
+  /* Week/day column headers (WED 26) — compact strip, not the 64px staff row */
+  --cs-calendar-day-header-height: 48px;
+  --cs-calendar-day-header-padding-y: 4px;
   --cs-calendar-slot-height: 30px;
   --cs-calendar-hour-height: 120px;
+  /* Same as shell `--page-content-top-gap` so toolbar has equal space above & below */
+  --cs-list-toolbar-gap: var(--page-content-top-gap, var(--spacing-2));
   --cs-page-gradient:
     radial-gradient(
       circle at top left,

@@ -1,14 +1,17 @@
 "use client";
 
+import { useRef } from "react";
 import type { Appointment } from "@/features/appointments/schemas/appointment-profile";
 import type { Calendar } from "@/features/calendars/schemas/calendar-profile";
 import { CalendarCurrentTimeIndicator } from "@/features/appointments/components/calendar/calendar-current-time-indicator";
+import { CalendarDayColumnHeader } from "@/features/appointments/components/calendar/calendar-day-column-header";
 import {
   GRID_HEIGHT,
   TimeGridColumn,
   TimeGridGutter,
 } from "@/features/appointments/components/calendar/time-grid-shared";
 import { useCalendarCurrentTimeTop } from "@/features/appointments/hooks/use-calendar-current-time";
+import { useScrollTimeGridToNow } from "@/features/appointments/hooks/use-scroll-time-grid-to-now";
 import {
   formatShortWeekdayForDateKey,
   getWeekDateKeysInTimezone,
@@ -18,7 +21,10 @@ import {
 import { CALENDAR_GRID } from "@/features/calendars/utils/calendar-grid-styles";
 import { calendarTimeGridLayout } from "@/features/calendars/utils/calendar-time-grid-layout";
 import { LoadingState } from "@/components/data-display/loading-state";
-import { CALENDAR_FIGMA_TIME_GUTTER_PX } from "@/features/calendars/styles/calendar-figma";
+import {
+  CALENDAR_FIGMA_DAY_HEADER_HEIGHT_PX,
+  CALENDAR_FIGMA_TIME_GUTTER_PX,
+} from "@/features/calendars/styles/calendar-figma";
 import {
   MOBILE_CAL_COL_WIDTH_PX,
   MOBILE_CAL_TIME_GUTTER_PX,
@@ -81,6 +87,14 @@ export function WeekCalendarView({
     ? allWeekKeys.slice(1, 1 + MOBILE_CAL_WEEK_VISIBLE_DAYS)
     : allWeekKeys;
   const currentTimeTop = useCalendarCurrentTimeTop(timezone, weekDateKeys);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const stickyHeaderHeight = CALENDAR_FIGMA_DAY_HEADER_HEIGHT_PX;
+  useScrollTimeGridToNow(scrollRef, {
+    currentTimeTopPx: currentTimeTop,
+    stickyHeaderHeight,
+    enabled: !isLoading,
+    resetKey: `${density}:${weekDateKeys.join(",")}`,
+  });
   const timeGutterPx = isMobile
     ? MOBILE_CAL_TIME_GUTTER_PX
     : CALENDAR_FIGMA_TIME_GUTTER_PX;
@@ -102,6 +116,7 @@ export function WeekCalendarView({
     >
       {/* Single scroll host — avoids stacked horizontal scrollbars */}
       <div
+        ref={scrollRef}
         className={cn(
           "min-h-0 flex-1 overscroll-contain bg-white",
           isMobile ? "overflow-auto" : "overflow-x-hidden overflow-y-auto",
@@ -116,38 +131,18 @@ export function WeekCalendarView({
             style={{ gridTemplateColumns }}
           >
             <div
-              className="sticky left-0 z-40 shrink-0 border-b border-r border-[color:rgba(126,59,237,0.6)] bg-white"
-              style={{ width: timeGutterPx, height: isMobile ? 48 : 64 }}
+              className={CALENDAR_GRID.dayHeaderCorner}
+              style={{ width: timeGutterPx }}
               aria-hidden
             />
-            {weekDateKeys.map((dayKey) => {
-              const isToday = isTodayDateKey(dayKey, timezone);
-              const dayNumber = parseDateKeyInTimezone(dayKey, timezone).day;
-
-              return (
-                <div
-                  key={dayKey}
-                  className={cn(
-                    CALENDAR_GRID.column,
-                    "flex h-16 min-w-0 flex-col items-center justify-center bg-white px-2 py-2",
-                  )}
-                >
-                  <span className="block min-w-0 max-w-full truncate text-[10px] font-semibold uppercase leading-none tracking-wide text-grey-tertiary-normal">
-                    {formatShortWeekdayForDateKey(dayKey, timezone)}
-                  </span>
-                  <span
-                    className={cn(
-                      "mt-1 inline-flex size-7 shrink-0 items-center justify-center rounded-full text-sm font-semibold leading-none",
-                      isToday
-                        ? "bg-[#7E3BED] text-white"
-                        : "text-black-secondary-normal",
-                    )}
-                  >
-                    {dayNumber}
-                  </span>
-                </div>
-              );
-            })}
+            {weekDateKeys.map((dayKey) => (
+              <CalendarDayColumnHeader
+                key={dayKey}
+                weekday={formatShortWeekdayForDateKey(dayKey, timezone)}
+                dayNumber={parseDateKeyInTimezone(dayKey, timezone).day}
+                isToday={isTodayDateKey(dayKey, timezone)}
+              />
+            ))}
           </div>
           {isLoading ? (
             <div className="flex h-48 items-center justify-center">

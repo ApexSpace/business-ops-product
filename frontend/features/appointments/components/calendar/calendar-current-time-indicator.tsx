@@ -13,6 +13,7 @@ export function CalendarCurrentTimeIndicator({
 }: CalendarCurrentTimeIndicatorProps) {
   return (
     <div
+      data-calendar-now=""
       className={cn("pointer-events-none absolute inset-x-0 z-10", className)}
       style={{ top: topPx }}
       aria-hidden

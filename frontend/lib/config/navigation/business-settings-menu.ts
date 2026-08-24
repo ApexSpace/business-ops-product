@@ -1,10 +1,7 @@
 import {
   Bell,
-  Briefcase,
   Calendar,
-  ClipboardList,
   CreditCard,
-  GitBranch,
   Globe,
   MessageCircle,
   MessageSquare,
@@ -12,9 +9,7 @@ import {
   Plug,
   Receipt,
   Settings,
-  Users,
   Warehouse,
-  Zap,
   FileText,
   Database,
 } from "lucide-react";
@@ -30,11 +25,6 @@ const generalItems: BusinessSettingsNavItem[] = [
     title: "Business Profile",
     href: "/business/settings/profile",
     icon: Settings,
-  },
-  {
-    title: "Team Members",
-    href: "/business/settings/team",
-    icon: Users,
   },
   {
     title: "Data import & export",
@@ -55,19 +45,9 @@ const operationsItems: BusinessSettingsNavItem[] = [
     icon: Calendar,
   },
   {
-    title: "Services",
-    href: "/business/settings/services",
-    icon: Briefcase,
-  },
-  {
     title: "Resources",
     href: "/business/settings/resources",
     icon: Warehouse,
-  },
-  {
-    title: "Pipelines",
-    href: "/business/settings/pipelines",
-    icon: GitBranch,
   },
   {
     title: "Financial Settings",
@@ -86,19 +66,6 @@ const websiteItems: BusinessSettingsNavItem[] = [
     title: "Chatbots",
     href: "/business/settings/chatbots",
     icon: MessageSquare,
-  },
-  {
-    title: "Forms",
-    href: "/business/settings/forms",
-    icon: ClipboardList,
-  },
-];
-
-const automationItems: BusinessSettingsNavItem[] = [
-  {
-    title: "Automations",
-    href: "/business/settings/automations",
-    icon: Zap,
   },
 ];
 
@@ -137,7 +104,6 @@ export const businessSettingsSections: ShellNavSection[] = [
   { id: "general", label: "General", items: generalItems },
   { id: "website", label: "Website", items: websiteItems },
   { id: "operations", label: "Operations", items: operationsItems },
-  { id: "automation", label: "Automation", items: automationItems },
   {
     id: "billing",
     label: "Billing & Integrations",

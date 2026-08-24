@@ -2,25 +2,25 @@
 export const BUSINESS_PRIMARY_NAV_KEYS = [
   "dashboard",
   "appointments",
-  "conversations",
   "contacts",
+  "conversations",
   "sales",
 ] as const;
 
 /** Secondary apps shown in the Apps launcher. */
 export const BUSINESS_APPS_NAV_KEYS = [
+  "reports",
+  "products",
   "work-items",
-  "social-planner",
   "pipelines",
   "gift-cards",
   "packages",
   "memberships",
-  "products",
-  "offers",
   "payments",
   "time-clock",
   "time-cards",
-  "reports",
+  "social-planner",
+  "offers",
 ] as const;
 
 export type BusinessPrimaryNavKey = (typeof BUSINESS_PRIMARY_NAV_KEYS)[number];

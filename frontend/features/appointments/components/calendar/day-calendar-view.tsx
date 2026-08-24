@@ -1,14 +1,17 @@
 "use client";
 
+import { useRef } from "react";
 import type { Appointment } from "@/features/appointments/schemas/appointment-profile";
 import type { Calendar } from "@/features/calendars/schemas/calendar-profile";
 import { CalendarCurrentTimeIndicator } from "@/features/appointments/components/calendar/calendar-current-time-indicator";
+import { CalendarDayColumnHeader } from "@/features/appointments/components/calendar/calendar-day-column-header";
 import {
   GRID_HEIGHT,
   TimeGridColumn,
   TimeGridGutter,
 } from "@/features/appointments/components/calendar/time-grid-shared";
 import { useCalendarCurrentTimeTop } from "@/features/appointments/hooks/use-calendar-current-time";
+import { useScrollTimeGridToNow } from "@/features/appointments/hooks/use-scroll-time-grid-to-now";
 import {
   formatShortWeekdayForDateKey,
   isTodayDateKey,
@@ -47,6 +50,13 @@ export function DayCalendarView({
   const isToday = isTodayDateKey(dateKey, timezone);
   const dayNumber = parseDateKeyInTimezone(dateKey, timezone).day;
   const currentTimeTop = useCalendarCurrentTimeTop(timezone, [dateKey]);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  useScrollTimeGridToNow(scrollRef, {
+    currentTimeTopPx: currentTimeTop,
+    stickyHeaderHeight: 0,
+    enabled: !isLoading,
+    resetKey: dateKey,
+  });
 
   return (
     <div className={cn("overflow-hidden bg-white", CALENDAR_GRID.card)}>
@@ -56,29 +66,18 @@ export function DayCalendarView({
           CALENDAR_GRID.headerRow,
         )}
       >
-        <div className="sticky left-0 z-40 w-20 bg-white" aria-hidden />
         <div
-          className={cn(
-            CALENDAR_GRID.column,
-            "flex h-12 items-center justify-center bg-white px-3 py-2 sm:h-14 sm:justify-start",
-          )}
-        >
-          <span className="block text-[10px] font-semibold uppercase tracking-wide text-grey-tertiary-normal">
-            {formatShortWeekdayForDateKey(dateKey, timezone)}
-          </span>
-          <span
-            className={cn(
-              "ml-2 inline-flex size-7 items-center justify-center rounded-full text-sm font-semibold",
-              isToday
-                ? "bg-[#7E3BED] text-white"
-                : "text-black-secondary-normal",
-            )}
-          >
-            {dayNumber}
-          </span>
-        </div>
+          className={cn(CALENDAR_GRID.dayHeaderCorner, "w-20")}
+          aria-hidden
+        />
+        <CalendarDayColumnHeader
+          orientation="row"
+          weekday={formatShortWeekdayForDateKey(dateKey, timezone)}
+          dayNumber={dayNumber}
+          isToday={isToday}
+        />
       </div>
-      <div className="max-h-[min(75vh,844px)] overflow-auto">
+      <div ref={scrollRef} className="max-h-[min(75vh,844px)] overflow-auto">
         {isLoading ? (
           <div className="flex h-48 items-center justify-center">
             <LoadingState variant="inline" label="Loading appointments…" />

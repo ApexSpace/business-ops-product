@@ -29,4 +29,24 @@ export const CALENDAR_GRID = {
   /** Staff header cell — Figma 64px, px 16, space-between */
   staffHeaderCell:
     "flex h-16 min-w-0 items-center justify-between gap-2 border-b border-[color:rgba(126,59,237,0.6)] bg-white px-4",
+  /**
+   * Week-view day/date column header (WED + 26).
+   * Height/padding from --cs-calendar-day-header-*; weight is font-bold (700).
+   */
+  dayHeaderCell:
+    "flex h-[var(--cs-calendar-day-header-height)] min-w-0 flex-col items-center justify-center gap-0.5 bg-white px-2 py-[var(--cs-calendar-day-header-padding-y)]",
+  /** Single-day header — same type + height, row layout */
+  dayHeaderCellRow:
+    "flex h-[var(--cs-calendar-day-header-height)] min-w-0 items-center justify-center gap-2 bg-white px-3 py-[var(--cs-calendar-day-header-padding-y)] sm:justify-start",
+  dayHeaderWeekday:
+    "block min-w-0 max-w-full truncate text-[10px] font-bold uppercase leading-none tracking-wide text-grey-tertiary-normal",
+  dayHeaderDate:
+    "inline-flex size-7 shrink-0 items-center justify-center rounded-full text-sm font-bold leading-none text-black-secondary-normal",
+  dayHeaderDateToday: "bg-violet-primary-normal text-white",
+  /** Month weekday labels (Sun–Sat) — same weight + vertical padding as day/date headers */
+  dayHeaderWeekdayCell:
+    "flex items-center justify-center px-2 py-[var(--cs-calendar-day-header-padding-y)] text-center",
+  /** Empty time-gutter corner — same height as day headers */
+  dayHeaderCorner:
+    "sticky left-0 z-40 shrink-0 border-b border-r border-[color:rgba(126,59,237,0.6)] bg-white h-[var(--cs-calendar-day-header-height)]",
 } as const;
