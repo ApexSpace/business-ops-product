@@ -89,27 +89,24 @@ interface MessageComposerProps {
   notePending?: boolean;
 }
 
-function ComposerStatusBanner({ message }: { message: string }) {
+function ComposerFooterHint({ message }: { message: string | null | undefined }) {
+  if (!message) return null;
   return (
-    <div
-      className="flex items-start gap-2 border-b border-border/50 bg-muted/30 px-3 py-2"
+    <p
+      className="flex items-start gap-2.5 pt-4 text-xs leading-snug text-muted-foreground"
       role="status"
     >
-      <Info className="mt-0.5 size-3.5 shrink-0 text-muted-foreground/80" aria-hidden />
-      <p className="min-w-0 flex-1 text-xs leading-snug text-muted-foreground">
-        {message}
-      </p>
-    </div>
+      <Info className="mt-0.5 size-3.5 shrink-0" aria-hidden />
+      {message}
+    </p>
   );
 }
 
 function ComposerInputCard({
-  statusMessage,
   children,
   className,
   layout = "row",
 }: {
-  statusMessage?: string | null;
   children: React.ReactNode;
   className?: string;
   layout?: "row" | "stack";
@@ -121,7 +118,6 @@ function ComposerInputCard({
         className,
       )}
     >
-      {statusMessage ? <ComposerStatusBanner message={statusMessage} /> : null}
       <div
         className={cn(
           layout === "row"
@@ -240,7 +236,7 @@ export function MessageComposer({
   const smsLimitHint = smsOverLimit
     ? `SMS exceeds ${SMS_MAX_SEGMENTS} segments. Shorten the message to send.`
     : null;
-  const inlineStatusHint =
+  const composerHint =
     sendDisabledReason ?? smsLimitHint ?? smsInsertWarning ?? channelHint;
 
   const requestSend = () => {
@@ -493,7 +489,7 @@ export function MessageComposer({
   );
 
   const emailThreadComposer = (
-    <ComposerInputCard statusMessage={inlineStatusHint} layout="stack">
+    <ComposerInputCard layout="stack">
       {recipientEmail ? (
         <ComposerFieldRow label="To">
           <span className="truncate text-xs text-foreground/90">{recipientEmail}</span>
@@ -524,7 +520,7 @@ export function MessageComposer({
   );
 
   const threadComposeRow = (
-    <ComposerInputCard statusMessage={inlineStatusHint} layout="stack">
+    <ComposerInputCard layout="stack">
       {showReplyChannelSelector ? (
         <div className="flex items-center gap-2 border-b border-border/40 px-2 py-1.5">
           <ReplyChannelSelector
@@ -636,9 +632,7 @@ export function MessageComposer({
     const footerHint =
       composerTab === "note"
         ? "Internal notes are not visible to the client."
-        : activeReplyChannel === "EMAIL"
-          ? "Sent from your business address."
-          : channelHint;
+        : composerHint;
 
     const addNoteButton = (
       <Button
@@ -656,9 +650,6 @@ export function MessageComposer({
 
     const replyFields = (
       <>
-        {inlineStatusHint ? (
-          <ComposerStatusBanner message={inlineStatusHint} />
-        ) : null}
         {isEmailComposer && recipientEmail ? (
           <ComposerFieldRow label="To">
             <span className="inline-flex max-w-full truncate rounded-full bg-muted px-2.5 py-0.5 text-xs text-foreground">
@@ -809,12 +800,7 @@ export function MessageComposer({
               />
             </div>
           ) : null}
-          {footerHint ? (
-            <p className="flex items-center gap-2.5 pt-4 text-xs text-muted-foreground">
-              <Info className="size-3.5 shrink-0" aria-hidden />
-              {footerHint}
-            </p>
-          ) : null}
+          <ComposerFooterHint message={footerHint} />
         </footer>
         {smsConfirmDialog}
       </>
@@ -843,6 +829,7 @@ export function MessageComposer({
       <>
         <footer className="shrink-0 border-t border-border/80 bg-card p-3">
           {emailThreadComposer}
+          <ComposerFooterHint message={composerHint} />
         </footer>
         {smsConfirmDialog}
       </>
@@ -854,7 +841,7 @@ export function MessageComposer({
       <footer className="shrink-0 border-t border-border/80 bg-card p-3">
         {showWhatsAppTemplateComposer ? (
           <div className="space-y-2">
-            <ComposerInputCard statusMessage={inlineStatusHint}>
+            <ComposerInputCard>
               <WhatsAppTemplateComposer
                 selectedTemplateId={selectedTemplateId}
                 onTemplateIdChange={onTemplateIdChange}
@@ -881,7 +868,7 @@ export function MessageComposer({
         ) : (
           <div className="space-y-2">
             {defaultAttachmentSection}
-            <ComposerInputCard statusMessage={inlineStatusHint} layout="stack">
+            <ComposerInputCard layout="stack">
               {showReplyChannelSelector ? (
                 <div className="flex items-center gap-2 border-b border-border/40 px-2 py-1.5">
                   <ReplyChannelSelector
@@ -904,6 +891,7 @@ export function MessageComposer({
             </ComposerInputCard>
           </div>
         )}
+        <ComposerFooterHint message={composerHint} />
       </footer>
       {smsConfirmDialog}
     </>
