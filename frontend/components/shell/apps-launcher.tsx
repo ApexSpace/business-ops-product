@@ -23,6 +23,7 @@ interface AppsLauncherSheetProps {
   items: ShellNavItem[];
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  manageHref?: string;
 }
 
 function AppsIconWell({
@@ -78,6 +79,7 @@ export function AppsLauncherSheet({
   items,
   open,
   onOpenChange,
+  manageHref = APPS_MANAGE_HREF,
 }: AppsLauncherSheetProps) {
   const [query, setQuery] = useState("");
   const searchRef = useRef<HTMLInputElement>(null);
@@ -116,7 +118,7 @@ export function AppsLauncherSheet({
       footerClassName="justify-center"
       footer={
         <Link
-          href={APPS_MANAGE_HREF}
+          href={manageHref}
           onClick={() => onOpenChange(false)}
           className={cn(
             buttonVariants({ variant: "outline" }),

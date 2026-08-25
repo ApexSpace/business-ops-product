@@ -33,15 +33,15 @@ export const AUTH_CALLOUT_CLASS =
 export const AUTH_LOGO_BANNER_CLASS =
   "h-32 w-auto max-h-32 max-w-[min(100%,16rem)] object-contain";
 
-/** Grouped email/password block. `.dark` keeps light input text on the dark well. */
+/** Grouped email/password block — light surface to match the auth page. */
 export const AUTH_FIELD_GROUP_CLASS =
-  "dark scheme-dark divide-y divide-grey-tertiary-dark-active overflow-hidden rounded-[var(--radius-control)] bg-grey-tertiary-darker focus-within:ring-[3px] focus-within:ring-violet-primary-normal/40";
+  "divide-y divide-border overflow-hidden rounded-[var(--radius-control)] border border-input bg-card text-foreground focus-within:ring-[3px] focus-within:ring-primary-tint";
 
 export const AUTH_FIELD_ROW_CLASS = "px-[var(--spacing-4)] py-[var(--spacing-2)]";
 
 /** Borderless control inside AUTH_FIELD_GROUP_CLASS (overrides glass-control). */
 export const AUTH_FIELD_INPUT_CLASS =
-  "h-[var(--control-height)] min-h-[var(--control-height)] rounded-none !border-0 !bg-transparent px-0 !shadow-none ring-0 ![backdrop-filter:none] placeholder:text-muted-foreground focus-visible:!border-0 focus-visible:!ring-0 [&:-webkit-autofill]:[-webkit-text-fill-color:var(--foreground)] [&:-webkit-autofill]:[box-shadow:inset_0_0_0_1000px_var(--pc-grey-tertiary-darker)]";
+  "h-[var(--control-height)] min-h-[var(--control-height)] rounded-none !border-0 !bg-transparent px-0 !shadow-none ring-0 ![backdrop-filter:none] text-foreground placeholder:text-muted-foreground focus-visible:!border-0 focus-visible:!ring-0 [&:-webkit-autofill]:[-webkit-text-fill-color:var(--foreground)] [&:-webkit-autofill]:[box-shadow:inset_0_0_0_1000px_var(--card)]";
 
 export const AUTH_FOOTER_LINK_CLASS =
-  "font-semibold text-foreground no-underline hover:text-violet-primary-light hover:underline";
+  "font-semibold text-foreground no-underline hover:text-violet-primary-normal hover:underline";

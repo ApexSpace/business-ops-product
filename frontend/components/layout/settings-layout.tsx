@@ -23,15 +23,16 @@ export function SettingsLayout({
   return (
     <div
       className={cn(
-        "flex min-h-0 w-full min-w-0 flex-1 flex-col gap-4",
+        "flex h-full min-h-0 w-full min-w-0 flex-1 flex-col overflow-hidden",
+        toolbar && "gap-4",
         className,
       )}
     >
       {toolbar}
-      <div className="flex min-h-0 min-w-0 flex-1">
+      <div className="flex min-h-0 min-w-0 flex-1 overflow-hidden">
         <aside
           className={cn(
-            "min-h-0 min-w-0 flex-col border-border bg-background",
+            "min-h-0 min-w-0 flex-col overflow-hidden border-border bg-background",
             browseMode
               ? "flex w-full"
               : "hidden w-72 shrink-0 border-r lg:flex",

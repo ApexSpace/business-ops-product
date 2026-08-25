@@ -77,7 +77,7 @@ export default function PlatformSettingsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader />
+      <PageHeader showTitle />
 
       <Form {...form}>
         <FormSchemaProvider schema={schema}>

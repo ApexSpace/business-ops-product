@@ -31,9 +31,14 @@ import {
   canAccessBusinessRoute,
   isCoreSafeBusinessRoute,
 } from "@/lib/capabilities/route-capability-map";
+import {
+  findPlatformNavCatalogEntry,
+  PLATFORM_NAV_CATALOG,
+} from "@/lib/config/navigation/platform-nav-catalog";
+import { isNavbarCorePriority } from "@/lib/config/navigation/navbar-overflow";
 
 export type AppsCategoryId = "core" | "marketing" | "setup";
-export type NavbarPriority = 1 | 2 | 3 | 4 | 5;
+export type NavbarPriority = number;
 export type NavCatalogOrigin = "operational" | "settings";
 
 export interface BusinessNavCatalogEntry {
@@ -143,6 +148,7 @@ export const BUSINESS_NAV_CATALOG: BusinessNavCatalogEntry[] = [
     icon: ClipboardList,
     title: "Work Items",
     labelKey: "workItems",
+    navbarPriority: 6,
     appsCategory: "core",
     origin: "operational",
   },
@@ -152,6 +158,7 @@ export const BUSINESS_NAV_CATALOG: BusinessNavCatalogEntry[] = [
     icon: GitBranch,
     title: "CRM Pipeline",
     labelKey: "pipelines",
+    navbarPriority: 7,
     appsCategory: "core",
     origin: "operational",
   },
@@ -160,6 +167,7 @@ export const BUSINESS_NAV_CATALOG: BusinessNavCatalogEntry[] = [
     href: "/business/gift-cards",
     icon: Gift,
     title: "Gift Cards",
+    navbarPriority: 8,
     appsCategory: "core",
     origin: "operational",
   },
@@ -168,6 +176,7 @@ export const BUSINESS_NAV_CATALOG: BusinessNavCatalogEntry[] = [
     href: "/business/packages",
     icon: Boxes,
     title: "Packages",
+    navbarPriority: 9,
     appsCategory: "core",
     origin: "operational",
   },
@@ -176,6 +185,7 @@ export const BUSINESS_NAV_CATALOG: BusinessNavCatalogEntry[] = [
     href: "/business/memberships",
     icon: Repeat,
     title: "Memberships",
+    navbarPriority: 10,
     appsCategory: "core",
     origin: "operational",
   },
@@ -184,6 +194,7 @@ export const BUSINESS_NAV_CATALOG: BusinessNavCatalogEntry[] = [
     href: "/business/payments",
     icon: CreditCard,
     title: "Payments",
+    navbarPriority: 11,
     appsCategory: "core",
     origin: "operational",
   },
@@ -192,6 +203,7 @@ export const BUSINESS_NAV_CATALOG: BusinessNavCatalogEntry[] = [
     href: "/business/time-clock",
     icon: Clock,
     title: "Time Clock",
+    navbarPriority: 12,
     appsCategory: "core",
     origin: "operational",
   },
@@ -200,6 +212,7 @@ export const BUSINESS_NAV_CATALOG: BusinessNavCatalogEntry[] = [
     href: "/business/time-cards",
     icon: Clock,
     title: "Time Cards",
+    navbarPriority: 13,
     appsCategory: "core",
     origin: "operational",
   },
@@ -208,6 +221,7 @@ export const BUSINESS_NAV_CATALOG: BusinessNavCatalogEntry[] = [
     href: "/business/settings/forms",
     icon: ClipboardList,
     title: "Forms",
+    navbarPriority: 16,
     appsCategory: "core",
     origin: "settings",
   },
@@ -216,6 +230,7 @@ export const BUSINESS_NAV_CATALOG: BusinessNavCatalogEntry[] = [
     href: "/business/social-planner",
     icon: Share2,
     title: "Social Planner",
+    navbarPriority: 14,
     appsCategory: "marketing",
     origin: "operational",
   },
@@ -224,6 +239,7 @@ export const BUSINESS_NAV_CATALOG: BusinessNavCatalogEntry[] = [
     href: "/business/offers",
     icon: Tag,
     title: "Offers",
+    navbarPriority: 15,
     appsCategory: "marketing",
     origin: "operational",
   },
@@ -232,6 +248,7 @@ export const BUSINESS_NAV_CATALOG: BusinessNavCatalogEntry[] = [
     href: "/business/settings/automations",
     icon: Zap,
     title: "Automations",
+    navbarPriority: 17,
     appsCategory: "marketing",
     origin: "settings",
   },
@@ -240,6 +257,7 @@ export const BUSINESS_NAV_CATALOG: BusinessNavCatalogEntry[] = [
     href: "/business/settings",
     icon: Settings,
     title: "Settings",
+    navbarPriority: 18,
     appsCategory: "setup",
     origin: "settings",
     matchPrefix: true,
@@ -249,6 +267,7 @@ export const BUSINESS_NAV_CATALOG: BusinessNavCatalogEntry[] = [
     href: "/business/settings/team",
     icon: Users,
     title: "Team Members",
+    navbarPriority: 19,
     appsCategory: "setup",
     origin: "settings",
   },
@@ -257,6 +276,7 @@ export const BUSINESS_NAV_CATALOG: BusinessNavCatalogEntry[] = [
     href: "/business/settings/services",
     icon: Briefcase,
     title: "Services",
+    navbarPriority: 20,
     appsCategory: "setup",
     origin: "settings",
   },
@@ -266,6 +286,7 @@ export const BUSINESS_NAV_CATALOG: BusinessNavCatalogEntry[] = [
     icon: GitBranch,
     title: "Pipelines",
     labelKey: "pipelines",
+    navbarPriority: 21,
     appsCategory: "setup",
     origin: "settings",
   },
@@ -274,6 +295,7 @@ export const BUSINESS_NAV_CATALOG: BusinessNavCatalogEntry[] = [
     href: "/business/settings/resources",
     icon: Warehouse,
     title: "Resources",
+    navbarPriority: 22,
     appsCategory: "setup",
     origin: "settings",
   },
@@ -282,6 +304,7 @@ export const BUSINESS_NAV_CATALOG: BusinessNavCatalogEntry[] = [
     href: "/business/settings/integrations",
     icon: Plug,
     title: "Integrations",
+    navbarPriority: 23,
     appsCategory: "setup",
     origin: "settings",
   },
@@ -310,7 +333,9 @@ export function findNavCatalogEntry(
 }
 
 export function decorateShellNavItem(item: ShellNavItem): ShellNavItem {
-  const entry = findNavCatalogEntry(item.navKey, item.href);
+  const entry = item.href.startsWith("/platform/")
+    ? findPlatformNavCatalogEntry(item.navKey, item.href)
+    : findNavCatalogEntry(item.navKey, item.href);
   if (!entry) {
     return {
       ...item,
@@ -323,9 +348,7 @@ export function decorateShellNavItem(item: ShellNavItem): ShellNavItem {
     navKey: item.navKey ?? entry.navKey,
     navTier:
       item.navTier ??
-      (entry.navbarPriority != null && entry.navbarPriority <= 3
-        ? "primary"
-        : "apps"),
+      (isNavbarCorePriority(entry.navbarPriority) ? "primary" : "apps"),
     matchPrefix: item.matchPrefix ?? entry.matchPrefix,
     appsCategory: entry.appsCategory,
     navbarPriority: entry.navbarPriority,
@@ -334,6 +357,10 @@ export function decorateShellNavItem(item: ShellNavItem): ShellNavItem {
   };
 }
 
+/**
+ * SSR fallback for core items only. Overflow visibility is measured in JS so
+ * the bar can keep adding items after Products.
+ */
 export function navbarPriorityVisibilityClass(
   priority?: NavbarPriority,
 ): string {
@@ -344,10 +371,6 @@ export function navbarPriorityVisibilityClass(
       return "hidden md:inline-flex";
     case 3:
       return "hidden lg:inline-flex";
-    case 4:
-      return "hidden xl:inline-flex";
-    case 5:
-      return "hidden 2xl:inline-flex";
     default:
       return "hidden";
   }
@@ -500,6 +523,11 @@ export function mergeAppsPanelItems(
 export { LayoutGrid as AppsManageIcon };
 
 function catalogIndex(item: ShellNavItem): number {
+  if (item.href.startsWith("/platform/")) {
+    const platform = findPlatformNavCatalogEntry(item.navKey, item.href);
+    if (!platform) return PLATFORM_NAV_CATALOG.length;
+    return PLATFORM_NAV_CATALOG.indexOf(platform);
+  }
   const entry = findNavCatalogEntry(item.navKey, item.href);
   if (!entry) return BUSINESS_NAV_CATALOG.length;
   return BUSINESS_NAV_CATALOG.indexOf(entry);

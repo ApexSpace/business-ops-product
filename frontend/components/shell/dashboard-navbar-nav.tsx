@@ -1,20 +1,30 @@
 "use client";
 
 import Link from "next/link";
+import { useLayoutEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import type { ShellNavItem } from "@/lib/types/shell-nav";
 import { useHydrated } from "@/lib/hooks/use-hydrated";
 import { isNavItemActive } from "./sidebar-nav-utils";
-import { navbarPriorityVisibilityClass } from "@/lib/config/navigation/business-nav-catalog";
+import {
+  countCoreNavbarItems,
+  countFittingNavbarItems,
+  NAVBAR_EXTRAS_MIN_VIEWPORT_PX,
+  readFlexGapPx,
+} from "@/lib/config/navigation/navbar-overflow";
 
 type NavbarTone = "onBrand" | "default";
+
+const NAVBAR_TAB_LAYOUT_CLASS =
+  "h-[var(--shell-navbar-tab-height)] rounded-[var(--shell-navbar-tab-radius)] px-[var(--shell-navbar-tab-padding-x)] py-[var(--shell-navbar-tab-padding-y)]";
 
 interface DashboardNavbarLinkProps {
   item: ShellNavItem;
   onNavigate?: () => void;
   tone?: NavbarTone;
   className?: string;
+  tabIndex?: number;
 }
 
 export function DashboardNavbarLink({
@@ -22,6 +32,7 @@ export function DashboardNavbarLink({
   onNavigate,
   tone = "onBrand",
   className,
+  tabIndex,
 }: DashboardNavbarLinkProps) {
   const pathname = usePathname();
   const hydrated = useHydrated();
@@ -32,16 +43,14 @@ export function DashboardNavbarLink({
     <Link
       href={item.href}
       onClick={onNavigate}
+      tabIndex={tabIndex}
       aria-current={active ? "page" : undefined}
       className={cn(
-        "group shrink-0 items-center justify-center",
-        navbarPriorityVisibilityClass(item.navbarPriority),
+        "group inline-flex shrink-0 items-center justify-center",
         "text-body-small font-semibold tracking-normal transition-colors",
         onBrand
           ? cn(
-              "h-[var(--shell-navbar-tab-height)]",
-              "rounded-[var(--shell-navbar-tab-radius)]",
-              "px-[var(--shell-navbar-tab-padding-x)] py-[var(--shell-navbar-tab-padding-y)]",
+              NAVBAR_TAB_LAYOUT_CLASS,
               "text-[var(--shell-navbar-foreground)]",
             )
           : cn(
@@ -51,7 +60,6 @@ export function DashboardNavbarLink({
         className,
       )}
     >
-      {/* Underline matches label text width only (Figma dynamic length) */}
       <span className="relative inline-block leading-none whitespace-nowrap">
         {item.title}
         {onBrand ? (
@@ -70,6 +78,20 @@ export function DashboardNavbarLink({
   );
 }
 
+function NavbarItemWidthProbe({ title }: { title: string }) {
+  return (
+    <span
+      className={cn(
+        "inline-flex shrink-0 items-center justify-center",
+        "text-body-small font-semibold tracking-normal",
+        NAVBAR_TAB_LAYOUT_CLASS,
+      )}
+    >
+      <span className="whitespace-nowrap">{title}</span>
+    </span>
+  );
+}
+
 interface DashboardNavbarNavProps {
   items: ShellNavItem[];
   onNavigate?: () => void;
@@ -83,25 +105,84 @@ export function DashboardNavbarNav({
   tone = "onBrand",
   className,
 }: DashboardNavbarNavProps) {
+  const containerRef = useRef<HTMLElement>(null);
+  const measureRef = useRef<HTMLDivElement>(null);
+  const coreCount = countCoreNavbarItems(
+    items.map((item) => item.navbarPriority),
+  );
+  const [visibleCount, setVisibleCount] = useState(coreCount);
+
+  useLayoutEffect(() => {
+    const container = containerRef.current;
+    const measure = measureRef.current;
+    if (!container || !measure) return;
+
+    const media = window.matchMedia(
+      `(min-width: ${NAVBAR_EXTRAS_MIN_VIEWPORT_PX}px)`,
+    );
+
+    const update = () => {
+      const probes = [...measure.children] as HTMLElement[];
+      const itemWidths = probes.map((el) => el.getBoundingClientRect().width);
+      const nextCount = countFittingNavbarItems({
+        availableWidth: container.clientWidth,
+        itemWidths,
+        gap: readFlexGapPx(measure),
+        coreCount,
+        extrasUnlocked: media.matches,
+      });
+      setVisibleCount(nextCount);
+    };
+
+    const observer = new ResizeObserver(update);
+    observer.observe(container);
+    observer.observe(measure);
+    media.addEventListener("change", update);
+    update();
+
+    return () => {
+      observer.disconnect();
+      media.removeEventListener("change", update);
+    };
+  }, [items, coreCount]);
+
   if (items.length === 0) return null;
+
+  const visibleItems = items.slice(0, visibleCount);
 
   return (
     <nav
+      ref={containerRef}
       aria-label="Primary"
       className={cn(
-        "flex items-center gap-[var(--spacing-2)]",
+        "relative min-w-0",
         tone === "onBrand" ? "h-[var(--shell-navbar-tab-height)]" : "h-10",
         className,
       )}
     >
-      {items.map((item) => (
-        <DashboardNavbarLink
-          key={item.href}
-          item={item}
-          onNavigate={onNavigate}
-          tone={tone}
-        />
-      ))}
+      <div
+        ref={measureRef}
+        aria-hidden
+        className="pointer-events-none invisible absolute top-0 left-0 flex items-center gap-[var(--spacing-2)] whitespace-nowrap"
+      >
+        {items.map((item) => (
+          <NavbarItemWidthProbe key={item.href} title={item.title} />
+        ))}
+      </div>
+      <div
+        className={cn(
+          "flex h-full min-w-0 items-center gap-[var(--spacing-2)] overflow-hidden",
+        )}
+      >
+        {visibleItems.map((item) => (
+          <DashboardNavbarLink
+            key={item.href}
+            item={item}
+            onNavigate={onNavigate}
+            tone={tone}
+          />
+        ))}
+      </div>
     </nav>
   );
 }

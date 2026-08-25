@@ -28,5 +28,8 @@ export function isNavItemActive(pathname: string, item: ShellNavItem): boolean {
       pathname === item.href || pathname.startsWith(`${item.href}/`)
     );
   }
+  if (item.href === "/platform/settings") {
+    return pathname === "/platform/settings";
+  }
   return pathname === item.href || pathname.startsWith(`${item.href}/`);
 }

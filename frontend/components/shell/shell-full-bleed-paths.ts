@@ -10,7 +10,10 @@ export function isContactWorkspacePath(pathname: string): boolean {
 
 /** Conversations inbox — same full-bleed shell treatment as contact workspace. */
 export function isConversationsInboxPath(pathname: string): boolean {
-  return pathname === "/business/conversations";
+  return (
+    pathname === "/business/conversations" ||
+    pathname === "/platform/conversations"
+  );
 }
 
 /** Appointments calendar — full-bleed white canvas. */
@@ -76,4 +79,12 @@ const MOBILE_ENTITY_LIST_PATHS = new Set([
 /** Major entity list workspaces that use MobileEntityListScreen on mobile. */
 export function isMobileEntityListPath(pathname: string): boolean {
   return MOBILE_ENTITY_LIST_PATHS.has(pathname);
+}
+
+/** Business Settings two-pane workspace — full-bleed below the top navbar. */
+export function isBusinessSettingsWorkspacePath(pathname: string): boolean {
+  return (
+    pathname === "/business/settings" ||
+    pathname.startsWith("/business/settings/")
+  );
 }

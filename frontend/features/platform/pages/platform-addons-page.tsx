@@ -17,10 +17,10 @@ export function PlatformAddonsPage() {
   });
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-6">
       <div className="flex items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Add-ons</h1>
+          <h1 className="text-page-title">Add-ons</h1>
           <p className="text-sm text-muted-foreground">
             Independent add-ons can be purchased separately. Dependent add-ons
             must be linked to one or more tiers and are never sold alone.
