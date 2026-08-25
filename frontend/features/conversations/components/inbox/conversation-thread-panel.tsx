@@ -128,6 +128,7 @@ interface ConversationThreadPanelProps {
   canRetryMessages?: boolean;
   onBackToList?: () => void;
   onOpenContactDetails?: () => void;
+  clientSinceLabel?: string | null;
   className?: string;
 }
 
@@ -175,6 +176,7 @@ export function ConversationThreadPanel({
   canRetryMessages = true,
   onBackToList,
   onOpenContactDetails,
+  clientSinceLabel,
   className,
 }: ConversationThreadPanelProps) {
   const { apiBase } = useConversationsHost();
@@ -331,9 +333,16 @@ export function ConversationThreadPanel({
               />
 
               <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-hidden">
-                <p className="truncate text-sm font-semibold leading-none">
-                  {threadDisplayName}
-                </p>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-semibold leading-tight">
+                    {threadDisplayName}
+                  </p>
+                  {clientSinceLabel ? (
+                    <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                      {clientSinceLabel}
+                    </p>
+                  ) : null}
+                </div>
                 <DropdownMenu>
                   <DropdownMenuTrigger
                     render={
@@ -446,7 +455,7 @@ export function ConversationThreadPanel({
                 {onOpenContactDetails ? (
                   <IconButton
                     aria-label="Contact details"
-                    className="size-7 shrink-0 md:hidden"
+                    className="size-7 shrink-0 lg:hidden"
                     onClick={onOpenContactDetails}
                   >
                     <UserRound className="size-3.5" />
@@ -509,10 +518,14 @@ export function ConversationThreadPanel({
             </div>
 
             <div className="shrink-0 border-t border-border/60 bg-background">
-              <ConversationInternalNotesPanel conversationId={selectedId} />
-
               <MessageComposer
                 variant="thread"
+                notesPanel={
+                  <ConversationInternalNotesPanel
+                    conversationId={selectedId}
+                    variant="embedded"
+                  />
+                }
                 composer={composer}
                 onComposerChange={onComposerChange}
                 attachmentUrl={attachmentUrl}

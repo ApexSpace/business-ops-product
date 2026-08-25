@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Tags } from "lucide-react";
+import { Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { QuickRepliesDialog } from "@/features/conversations/components/inbox/quick-replies-dialog";
 import { cn } from "@/lib/utils";
@@ -23,17 +23,17 @@ export function CannedResponsesPicker({
     <>
       <Button
         type="button"
-        size="icon"
+        size="icon-sm"
         variant="ghost"
         className={cn(
-          "size-8 shrink-0 rounded-md text-muted-foreground",
+          "shrink-0 rounded-full text-muted-foreground",
           className,
         )}
         disabled={disabled}
         onClick={() => setOpen(true)}
         aria-label="Quick replies"
       >
-        <Tags className="size-4" />
+        <Zap className="size-4" />
       </Button>
 
       <QuickRepliesDialog

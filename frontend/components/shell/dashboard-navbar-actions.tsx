@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import {
   Bell,
+  CreditCard,
   LayoutGrid,
   LogOut,
   Settings,
@@ -19,9 +19,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { DarkModeMenuItem } from "@/components/theme/dark-mode-toggle";
+import { hasPlatformBusinessAdminAccess } from "@/features/auth/permissions/permissions-legacy";
+import { canAccessSettingsHref } from "@/features/team/permissions/staff-permissions";
 import { useAuth } from "@/lib/auth/provider";
 import { getUserDisplayName } from "@/lib/auth";
-import { isBusinessSettingsPath } from "@/lib/config/navigation/business-settings-menu";
 import { useAppRouter } from "@/lib/hooks/use-app-router";
 import { cn } from "@/lib/utils";
 
@@ -73,8 +74,7 @@ export function DashboardNavbarActions({
   className,
 }: DashboardNavbarActionsProps) {
   const router = useAppRouter();
-  const pathname = usePathname();
-  const { user, logout } = useAuth();
+  const { user, jwt, contexts, logout } = useAuth();
   const displayName = user ? getUserDisplayName(user) : "Account";
   const initials = displayName
     .split(" ")
@@ -82,7 +82,12 @@ export function DashboardNavbarActions({
     .join("")
     .slice(0, 2)
     .toUpperCase();
-  const settingsActive = isBusinessSettingsPath(pathname);
+  const canViewBilling = canAccessSettingsHref("/business/settings/billing", {
+    businessRole: jwt?.businessRole ?? user?.businessRole ?? undefined,
+    staffPermissions:
+      jwt?.staffPermissions ?? user?.staffPermissions ?? undefined,
+    isPlatformAdmin: hasPlatformBusinessAdminAccess(jwt, contexts),
+  });
 
   const handleLogout = async () => {
     await logout();
@@ -101,20 +106,6 @@ export function DashboardNavbarActions({
             <LayoutGrid className="size-5" strokeWidth={1.75} />
           </DashboardNavbarIconButton>
         ) : null}
-
-        <Link
-          href="/business/settings"
-          aria-label="Settings"
-          aria-current={settingsActive ? "page" : undefined}
-          className={cn(
-            "inline-flex size-10 shrink-0 items-center justify-center rounded-lg",
-            "text-white transition-colors hover:bg-white/10",
-            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40",
-            settingsActive && "bg-white/10",
-          )}
-        >
-          <Settings className="size-5" strokeWidth={1.75} />
-        </Link>
 
         <Link
           href="/business/settings/notifications"
@@ -168,6 +159,14 @@ export function DashboardNavbarActions({
             <Settings className="size-4" />
             Settings
           </DropdownMenuItem>
+          {canViewBilling ? (
+            <DropdownMenuItem
+              render={<Link href="/business/settings/billing" />}
+            >
+              <CreditCard className="size-4" />
+              Plan & Billing
+            </DropdownMenuItem>
+          ) : null}
           <DarkModeMenuItem />
           <DropdownMenuItem onClick={handleLogout}>
             <LogOut className="size-4" />

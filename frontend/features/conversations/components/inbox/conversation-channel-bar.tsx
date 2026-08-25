@@ -20,6 +20,8 @@ interface ConversationChannelBarProps {
   onChange?: (channel: ConversationChannel) => void;
   /** When true, always show a read-only badge (channel filter locked). */
   readOnly?: boolean;
+  /** Icon/select only — for the composer tab row. */
+  compact?: boolean;
   className?: string;
 }
 
@@ -71,6 +73,7 @@ export function ConversationChannelBar({
   value,
   onChange,
   readOnly = false,
+  compact = false,
   className,
 }: ConversationChannelBarProps) {
   const only = channels[0];
@@ -82,6 +85,23 @@ export function ConversationChannelBar({
 
   const canSwitch =
     !readOnly && channels.length > 1 && onChange && value != null;
+
+  if (compact) {
+    return (
+      <div className={cn("shrink-0", className)}>
+        {canSwitch ? (
+          <ChannelSelectDropdown
+            channels={channels}
+            value={activeChannel}
+            onChange={onChange}
+            triggerClassName="h-[var(--control-height-sm)] border-violet-primary-normal text-violet-primary-normal"
+          />
+        ) : (
+          <ConversationChannelBadge channel={activeChannel} />
+        )}
+      </div>
+    );
+  }
 
   return (
     <div

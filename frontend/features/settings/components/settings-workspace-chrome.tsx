@@ -1,19 +1,20 @@
 "use client";
 
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useMemo } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
+import { ArrowLeft, Menu } from "lucide-react";
+import { SettingsLayout } from "@/components/layout/settings-layout";
 import { PageBreadcrumbs } from "@/components/layout/page-breadcrumbs";
+import { Button } from "@/components/ui/button";
 import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { ScrollArea } from "@/components/ui/scroll-area";
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetBody,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import { DRAWER_SHELL_WIDTH_COMPACT } from "@/lib/design/drawer-tokens";
 import {
   businessSettingsSections,
   filterBusinessSettingsSections,
@@ -26,10 +27,15 @@ import {
   isCoreSafeBusinessRoute,
 } from "@/lib/capabilities/route-capability-map";
 import { usePageMetadata } from "@/lib/runtime/page-metadata-context";
-import { isNavItemActive } from "@/components/shell/sidebar-nav-utils";
 import { useHydrated } from "@/lib/hooks/use-hydrated";
-import { cn } from "@/lib/utils";
-import type { ShellNavItem, ShellNavSection } from "@/lib/types/shell-nav";
+import { SettingsNavPanel } from "@/features/settings/components/settings-nav-panel";
+import type { ShellNavSection } from "@/lib/types/shell-nav";
+
+const LG_QUERY = "(min-width: 1024px)";
+
+function isSettingsIndexPath(pathname: string): boolean {
+  return pathname === "/business/settings" || pathname === "/business/settings/";
+}
 
 function useFilteredSettingsSections(): ShellNavSection[] {
   const { contexts, jwt } = useAuth();
@@ -41,7 +47,7 @@ function useFilteredSettingsSections(): ShellNavSection[] {
     const roleFiltered = filterBusinessSettingsSections({
       sections: businessSettingsSections,
       businessRole: jwt?.businessRole,
-      staffPermissions: jwt?.staffPermissions,
+      staffPermissions: jwt?.staffPermissions ?? undefined,
       isPlatformAdmin,
     });
 
@@ -64,130 +70,34 @@ function useFilteredSettingsSections(): ShellNavSection[] {
   ]);
 }
 
-function flattenSettingsItems(sections: ShellNavSection[]): ShellNavItem[] {
-  return sections.flatMap((section) => section.items);
-}
-
-function SettingsNavLink({ item }: { item: ShellNavItem }) {
-  const pathname = usePathname();
+function useIsLg(): boolean {
   const hydrated = useHydrated();
-  const active = hydrated && isNavItemActive(pathname, item);
-  const Icon = item.icon;
+  const [isLg, setIsLg] = useState(false);
 
-  return (
-    <Link
-      href={item.href}
-      aria-current={active ? "page" : undefined}
-      className={cn(
-        "flex min-w-0 items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-        active
-          ? "bg-white font-medium text-foreground shadow-sm ring-1 ring-border/60"
-          : "text-muted-foreground hover:bg-white/70 hover:text-foreground",
-      )}
-    >
-      <Icon
-        className={cn(
-          "size-4 shrink-0",
-          active ? "text-primary" : "text-muted-foreground",
-        )}
-        aria-hidden
-      />
-      <span className="min-w-0 break-words leading-snug">{item.title}</span>
-    </Link>
-  );
+  useEffect(() => {
+    const mq = window.matchMedia(LG_QUERY);
+    const onChange = () => setIsLg(mq.matches);
+    onChange();
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
+
+  return hydrated && isLg;
 }
 
-function SettingsDesktopNav({ sections }: { sections: ShellNavSection[] }) {
-  return (
-    <nav
-      aria-label="Settings"
-      className="hidden w-56 shrink-0 lg:block xl:w-60"
-    >
-      <ScrollArea className="h-full max-h-[calc(100svh-var(--shell-navbar-height)-3rem)] pr-2">
-        <div className="space-y-5 pb-4">
-          {sections.map((section) => (
-            <div key={section.id} className="space-y-1">
-              {section.label ? (
-                <p className="px-3 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground/80">
-                  {section.label}
-                </p>
-              ) : null}
-              <ul className="space-y-0.5">
-                {section.items.map((item) => (
-                  <li key={item.href}>
-                    <SettingsNavLink item={item} />
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
-        </div>
-      </ScrollArea>
-    </nav>
-  );
-}
-
-function SettingsMobileNav({ sections }: { sections: ShellNavSection[] }) {
-  const pathname = usePathname();
-  const router = useRouter();
-  const hydrated = useHydrated();
-  const items = useMemo(() => flattenSettingsItems(sections), [sections]);
-
-  const activeItem = hydrated
-    ? items.find((item) => isNavItemActive(pathname, item))
-    : undefined;
-
-  return (
-    <div className="lg:hidden">
-      <Select
-        value={activeItem?.href}
-        onValueChange={(href) => {
-          if (href) router.push(href);
-        }}
-      >
-        <SelectTrigger
-          className="h-10 w-full bg-white"
-          aria-label="Settings section"
-        >
-          <SelectValue placeholder="Choose a settings page" />
-        </SelectTrigger>
-        <SelectContent align="start" className="max-h-80">
-          {sections.map((section) => (
-            <SelectGroup key={section.id}>
-              {section.label ? (
-                <SelectLabel>{section.label}</SelectLabel>
-              ) : null}
-              {section.items.map((item) => (
-                <SelectItem key={item.href} value={item.href}>
-                  {item.title}
-                </SelectItem>
-              ))}
-            </SelectGroup>
-          ))}
-        </SelectContent>
-      </Select>
-    </div>
-  );
-}
-
-function SettingsPageHeading() {
+function SettingsContentHeader() {
   const metadata = usePageMetadata();
 
-  if (!metadata?.title) {
-    return null;
-  }
+  if (!metadata?.title) return null;
 
   return (
     <div className="min-w-0 space-y-1">
       <PageBreadcrumbs />
-      <h1 className="text-page-title font-bold tracking-tight text-foreground">
+      <h1 className="text-lg font-semibold tracking-tight text-foreground">
         {metadata.title}
       </h1>
       {metadata.description ? (
-        <p className="text-caption max-w-2xl text-muted-foreground">
-          {metadata.description}
-        </p>
+        <p className="text-sm text-muted-foreground">{metadata.description}</p>
       ) : null}
     </div>
   );
@@ -198,16 +108,69 @@ export function SettingsWorkspaceChrome({
 }: {
   children: React.ReactNode;
 }) {
+  const pathname = usePathname();
   const sections = useFilteredSettingsSections();
+  const isLg = useIsLg();
+  const browseMode = isSettingsIndexPath(pathname) && !isLg;
+  const [navOpen, setNavOpen] = useState(false);
+
+  useEffect(() => {
+    setNavOpen(false);
+  }, [pathname]);
+
+  const nav = (
+    <SettingsNavPanel
+      sections={sections}
+      onNavigate={() => setNavOpen(false)}
+    />
+  );
+
+  const toolbar = browseMode ? (
+    <h1 className="px-1 text-lg font-semibold text-foreground">Settings</h1>
+  ) : (
+    <div className="flex items-center gap-2 lg:hidden">
+      <Button
+        variant="ghost"
+        size="sm"
+        render={<Link href="/business/settings" />}
+      >
+        <ArrowLeft className="size-4" />
+        Settings
+      </Button>
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        className="ml-auto hidden md:inline-flex lg:hidden"
+        onClick={() => setNavOpen(true)}
+      >
+        <Menu className="size-4" />
+        Browse
+      </Button>
+    </div>
+  );
 
   return (
-    <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col gap-5">
-      <SettingsPageHeading />
-      <SettingsMobileNav sections={sections} />
-      <div className="flex min-h-0 min-w-0 flex-1 gap-6 lg:gap-8">
-        <SettingsDesktopNav sections={sections} />
-        <div className="min-w-0 flex-1">{children}</div>
-      </div>
-    </div>
+    <>
+      <SettingsLayout browseMode={browseMode} sidebar={nav} toolbar={toolbar}>
+        <div className="flex min-h-0 min-w-0 flex-col gap-6 p-4 lg:p-6">
+          <SettingsContentHeader />
+          {children}
+        </div>
+      </SettingsLayout>
+
+      <Sheet open={navOpen} onOpenChange={setNavOpen}>
+        <SheetContent
+          side="left"
+          className={DRAWER_SHELL_WIDTH_COMPACT}
+          showCloseButton
+        >
+          <SheetHeader>
+            <SheetTitle>Settings</SheetTitle>
+          </SheetHeader>
+          <SheetBody className="p-0">{nav}</SheetBody>
+        </SheetContent>
+      </Sheet>
+    </>
   );
 }

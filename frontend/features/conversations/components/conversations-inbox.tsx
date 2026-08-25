@@ -22,12 +22,18 @@ import { useRetryConversationMessage } from "@/features/conversations/hooks/use-
 import { WORKSPACE_PADDING_CLASS } from "@/features/contacts/workspace/contact-workspace";
 import { NewConversationDialog } from "@/features/conversations/components/inbox/new-conversation-dialog";
 import { Button } from "@/components/ui/button";
+import {
+  Sheet,
+  SheetContent,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { getPlatformDefaultEmail } from "@/features/integrations/api/integrations.api";
 import type { PendingMessageAttachment } from "@/features/conversations/components/inbox/message-composer";
 import { mergeConversationMessagePages } from "@/features/conversations/utils/merge-message-pages";
 import {
   isWebchatConversation,
   VIRTUALIZE_THRESHOLD,
+  formatClientSince,
 } from "@/features/conversations/components/inbox/conversation-inbox-utils";
 import {
   ensureContactConversation,
@@ -112,6 +118,7 @@ export function ConversationsInbox() {
   const [threadChannelFilter, setThreadChannelFilter] =
     useState<ThreadChannelFilterValue>("ALL");
   const [mobilePane, setMobilePane] = useState<InboxMobilePane>("list");
+  const [detailsSheetOpen, setDetailsSheetOpen] = useState(false);
   const businessAccess = useOptionalBusinessAccess();
   const conversationPerms = useConversationStaffPermissions();
   const canSendMessages =
@@ -356,6 +363,21 @@ export function ConversationsInbox() {
   const sidebarContactId =
     activeThread?.contactId ?? threadConversation?.contactId ?? null;
   const contactSidebar = useConversationInboxContactSidebar(sidebarContactId);
+
+  const openContactDetails = useCallback(() => {
+    if (
+      typeof window !== "undefined" &&
+      window.matchMedia("(min-width: 768px)").matches
+    ) {
+      setDetailsSheetOpen(true);
+      return;
+    }
+    setMobilePane("contact");
+  }, []);
+
+  useEffect(() => {
+    setDetailsSheetOpen(false);
+  }, [sidebarContactId]);
 
   const {
     whatsAppMode,
@@ -831,12 +853,13 @@ export function ConversationsInbox() {
       retryingMessageId={retryingMessageId}
       canRetryMessages={canSendMessages}
       onBackToList={() => setMobilePane("list")}
-      onOpenContactDetails={() => setMobilePane("contact")}
+      onOpenContactDetails={openContactDetails}
+      clientSinceLabel={formatClientSince(contactSidebar.contact?.createdAt)}
       className="h-full w-full"
     />
   );
 
-  const contactSidebarPanel = (
+  const renderContactSidebar = () => (
     <ConversationInboxContactSidebar
       sidebarState={contactSidebar}
       selected={threadConversation}
@@ -853,9 +876,19 @@ export function ConversationsInbox() {
           className="min-h-0 flex-1"
           list={listPanel}
           thread={threadPanel}
-          sidebar={contactSidebarPanel}
+          sidebar={renderContactSidebar()}
         />
       </div>
+
+      <Sheet open={detailsSheetOpen} onOpenChange={setDetailsSheetOpen}>
+        <SheetContent
+          side="right"
+          className="w-full p-0 sm:max-w-md lg:hidden"
+        >
+          <SheetTitle className="sr-only">Contact details</SheetTitle>
+          <div className="h-full min-h-0">{renderContactSidebar()}</div>
+        </SheetContent>
+      </Sheet>
 
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden md:hidden">
         <div
