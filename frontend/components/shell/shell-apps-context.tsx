@@ -22,9 +22,11 @@ const ShellAppsContext = createContext<ShellAppsContextValue | null>(null);
 
 export function ShellAppsProvider({
   appsItems,
+  manageHref,
   children,
 }: {
   appsItems: ShellNavItem[];
+  manageHref?: string;
   children: ReactNode;
 }) {
   const [appsOpen, setAppsOpen] = useState(false);
@@ -42,6 +44,7 @@ export function ShellAppsProvider({
         items={appsItems}
         open={appsOpen}
         onOpenChange={setAppsOpen}
+        manageHref={manageHref}
       />
     </ShellAppsContext.Provider>
   );

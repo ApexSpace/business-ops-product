@@ -2,7 +2,8 @@ import type { LucideIcon } from "lucide-react";
 
 export type ShellNavTier = "primary" | "apps";
 export type AppsCategoryId = "core" | "marketing" | "setup";
-export type NavbarPriority = 1 | 2 | 3 | 4 | 5;
+/** Lower number stays in the top navbar longer. Unbounded so overflow can keep packing. */
+export type NavbarPriority = number;
 
 export interface ShellNavItem {
   title: string;

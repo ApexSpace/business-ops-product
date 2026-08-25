@@ -179,9 +179,9 @@ export function PlatformOperationsPage({
     ) ?? [];
 
   return (
-    <div className="flex h-full min-h-[70vh] flex-col gap-4 p-6">
+    <div className="flex h-full min-h-[70vh] flex-col gap-4">
       <div className="flex items-center justify-between gap-4">
-        <h1 className="text-2xl font-semibold tracking-tight">Operations</h1>
+        <h1 className="text-page-title">Operations</h1>
         <div className="flex flex-wrap gap-1 rounded-md border bg-muted/40 p-1">
           {TABS.map((t) => (
             <Button

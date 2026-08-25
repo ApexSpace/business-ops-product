@@ -217,9 +217,9 @@ export function PlatformAddonDetailPage({ isNew = false }: { isNew?: boolean }) 
     purchaseMode === "INDEPENDENT" && Boolean(priceMonthly);
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6 p-6">
+    <div className="mx-auto max-w-3xl space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold">
+        <h1 className="text-page-title">
           {isNew ? "New add-on" : addon?.name ?? "Add-on"}
         </h1>
       </div>

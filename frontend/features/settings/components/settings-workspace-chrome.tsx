@@ -151,8 +151,12 @@ export function SettingsWorkspaceChrome({
   );
 
   return (
-    <>
-      <SettingsLayout browseMode={browseMode} sidebar={nav} toolbar={toolbar}>
+    <div className="flex h-full min-h-0 w-full min-w-0 flex-1 flex-col overflow-hidden">
+      <SettingsLayout
+        browseMode={browseMode}
+        sidebar={nav}
+        toolbar={isLg ? undefined : toolbar}
+      >
         <div className="flex min-h-0 min-w-0 flex-col gap-6 p-4 lg:p-6">
           <SettingsContentHeader />
           {children}
@@ -171,6 +175,6 @@ export function SettingsWorkspaceChrome({
           <SheetBody className="p-0">{nav}</SheetBody>
         </SheetContent>
       </Sheet>
-    </>
+    </div>
   );
 }

@@ -7,6 +7,7 @@ import {
 } from "@/components/ui/sidebar";
 import {
   isAppointmentsCalendarPath,
+  isBusinessSettingsWorkspacePath,
   isContactWorkspacePath,
   isContactsListPath,
   isConversationsInboxPath,
@@ -30,6 +31,8 @@ import { DashboardNavbar } from "./dashboard-navbar";
 import { MobileSidebarCloseOnNavigate } from "./mobile-sidebar-close";
 import { ShellAppsProvider } from "./shell-apps-context";
 import { Topbar } from "./topbar";
+import { APPS_MANAGE_HREF } from "@/lib/config/navigation/business-nav-catalog";
+import { PLATFORM_APPS_MANAGE_HREF, PLATFORM_HOME_HREF } from "@/lib/config/navigation/platform-nav-catalog";
 
 interface AppShellProps {
   brand: ShellBrand;
@@ -77,17 +80,21 @@ export function AppShell({
   );
   const contactsList = isContactsListPath(pathname);
   const entityList = isMobileEntityListPath(pathname);
+  const settingsWorkspace = isBusinessSettingsWorkspacePath(pathname);
   const fullBleedContent =
     contactWorkspace ||
     conversationsInbox ||
     appointmentsCalendar ||
+    settingsWorkspace ||
     (salesWorkspace && isMobile) ||
     (paymentsMobileList && isMobile) ||
     (contactsList && isMobile) ||
     (entityList && isMobile);
 
   const showSearch = shellMode === "business";
-  const useTopNavbar = shellMode === "business" && navMode === "main";
+  const useTopNavbar = navMode === "main";
+  const homeHref =
+    shellMode === "platform" ? PLATFORM_HOME_HREF : "/business/dashboard";
 
   if (useTopNavbar) {
     const hideDesktopNavbar =
@@ -104,7 +111,14 @@ export function AppShell({
           searchPlaceholder={searchPlaceholder}
         >
           <PageMetadataProvider context={pageMetadataContext}>
-            <ShellAppsProvider appsItems={appsItems ?? []}>
+            <ShellAppsProvider
+              appsItems={appsItems ?? []}
+              manageHref={
+                shellMode === "platform"
+                  ? PLATFORM_APPS_MANAGE_HREF
+                  : APPS_MANAGE_HREF
+              }
+            >
               {!hideDesktopNavbar ? (
                 <DashboardNavbar
                   sections={sections}
@@ -112,6 +126,8 @@ export function AppShell({
                   productName={productName}
                   logoUrl={logoUrl}
                   businessName={workspaceName}
+                  homeHref={homeHref}
+                  shellMode={shellMode}
                   notice={topbarNotice}
                 />
               ) : null}

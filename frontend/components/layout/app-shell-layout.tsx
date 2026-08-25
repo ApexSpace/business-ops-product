@@ -23,6 +23,7 @@ import {
   platformOperationalSections,
   platformSettingsEntry,
 } from "@/lib/config/navigation/platform-menu";
+import { resolvePlatformAppsItems } from "@/lib/config/navigation/platform-nav-catalog";
 import { augmentSnapshotNavigationWithCapabilities } from "@/lib/capabilities/augment-snapshot-navigation";
 import { resolveSnapshotNavigation } from "@/lib/config/snapshot/resolve-snapshot-navigation";
 import {
@@ -143,21 +144,23 @@ export function AppShellLayout({ mode, children }: ShellLayoutProps) {
       : filterSectionsByCapability(snapshotNavigation!.sections);
 
   const appsItems: ShellNavItem[] =
-    mode === "business" && snapshotNavigation
-      ? mergeAppsPanelItems(
-          collectOperationalNavItems(
-            sections,
-            filterAppsByCapability(snapshotNavigation.appsItems),
-          ),
-          resolveSettingsAppsItems({
-            resolveLabel: t,
-            businessRole: jwt?.businessRole,
-            staffPermissions: jwt?.staffPermissions,
-            isPlatformAdmin,
-            capabilityKeys,
-          }),
-        )
-      : [];
+    mode === "platform"
+      ? resolvePlatformAppsItems()
+      : mode === "business" && snapshotNavigation
+        ? mergeAppsPanelItems(
+            collectOperationalNavItems(
+              sections,
+              filterAppsByCapability(snapshotNavigation.appsItems),
+            ),
+            resolveSettingsAppsItems({
+              resolveLabel: t,
+              businessRole: jwt?.businessRole,
+              staffPermissions: jwt?.staffPermissions,
+              isPlatformAdmin,
+              capabilityKeys,
+            }),
+          )
+        : [];
 
   const brandSubtitle =
     snapshotContext.branding.productName ??
@@ -216,7 +219,9 @@ export function AppShellLayout({ mode, children }: ShellLayoutProps) {
             ? [platformSettingsEntry]
             : undefined
       }
-      workspaceName={currentBusiness?.name}
+      workspaceName={
+        mode === "platform" ? platformBrand.subtitle : currentBusiness?.name
+      }
       productName={
         snapshotContext.branding.productName?.trim() || "PandaCue"
       }

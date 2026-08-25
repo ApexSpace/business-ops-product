@@ -4,6 +4,7 @@ import {
   BUSINESS_NAV_CATALOG,
   type BusinessNavCatalogEntry,
 } from "./business-nav-catalog";
+import { isNavbarCorePriority } from "./navbar-overflow";
 
 export interface BusinessMenuItem extends ShellNavItem {
   labelKey?: keyof IndustryLabels;
@@ -17,10 +18,7 @@ function toMenuItem(entry: BusinessNavCatalogEntry): BusinessMenuItem {
     href: entry.href,
     icon: entry.icon,
     navKey: entry.navKey,
-    navTier:
-      entry.navbarPriority != null && entry.navbarPriority <= 3
-        ? "primary"
-        : "apps",
+    navTier: isNavbarCorePriority(entry.navbarPriority) ? "primary" : "apps",
     ...(entry.labelKey ? { labelKey: entry.labelKey } : {}),
     ...(entry.matchPrefix ? { matchPrefix: true } : {}),
   };

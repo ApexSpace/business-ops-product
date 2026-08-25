@@ -17,10 +17,10 @@ export function PlatformTiersPage() {
   });
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-6">
       <div className="flex items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Tiers</h1>
+          <h1 className="text-page-title">Tiers</h1>
           <p className="text-sm text-muted-foreground">
             Fixed packages with price, staff/location limits, capabilities, and
             included add-ons. No per-seat overage.

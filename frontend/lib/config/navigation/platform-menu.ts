@@ -1,23 +1,18 @@
-import {
-  Bot,
-  Building2,
-  ClipboardList,
-  FileText,
-  Layers,
-  LayoutDashboard,
-  ListTodo,
-  MessageSquare,
-  PackagePlus,
-  Plug,
-  Settings,
-  Shield,
-  TableProperties,
-  Users,
-  Workflow,
-} from "lucide-react";
+import { Shield } from "lucide-react";
 import type { ShellNavItem, ShellNavSection } from "@/lib/types/shell-nav";
+import {
+  PLATFORM_NAV_CATALOG,
+  platformCatalogToShellNavItem,
+  resolvePlatformAppsItems,
+} from "./platform-nav-catalog";
+import { NAVBAR_CORE_PRIORITY_MAX } from "./navbar-overflow";
 
-export interface PlatformMenuItem extends ShellNavItem {}
+export {
+  PLATFORM_NAV_CATALOG,
+  PLATFORM_APPS_MANAGE_HREF,
+  PLATFORM_HOME_HREF,
+  resolvePlatformAppsItems,
+} from "./platform-nav-catalog";
 
 export const platformBrand = {
   title: "CodeSol Platform",
@@ -25,104 +20,24 @@ export const platformBrand = {
   icon: Shield,
 };
 
+const platformItems = resolvePlatformAppsItems();
+
 export const platformOperationalSections: ShellNavSection[] = [
   {
-    id: "overview",
-    label: "Overview",
-    items: [
-      {
-        title: "Dashboard",
-        href: "/platform/dashboard",
-        icon: LayoutDashboard,
-      },
-      {
-        title: "Operations",
-        href: "/platform/operations",
-        icon: Workflow,
-      },
-    ],
-  },
-  {
-    id: "directory",
-    label: "Directory",
-    items: [
-      {
-        title: "Businesses",
-        href: "/platform/businesses",
-        icon: Building2,
-      },
-      {
-        title: "Tiers",
-        href: "/platform/tiers",
-        icon: TableProperties,
-      },
-      {
-        title: "Add-ons",
-        href: "/platform/addons",
-        icon: PackagePlus,
-      },
-      {
-        title: "Capabilities",
-        href: "/platform/capabilities",
-        icon: Layers,
-      },
-      { title: "Users", href: "/platform/users", icon: Users },
-    ],
-  },
-  {
-    id: "system",
-    label: "System",
-    items: [
-      {
-        title: "Forms",
-        href: "/platform/forms",
-        icon: ClipboardList,
-      },
-      {
-        title: "Automations",
-        href: "/platform/automations",
-        icon: Workflow,
-      },
-      {
-        title: "Pipelines",
-        href: "/platform/pipelines",
-        icon: Layers,
-      },
-      {
-        title: "Chatbots",
-        href: "/platform/chatbots",
-        icon: Bot,
-      },
-      {
-        title: "Work Items",
-        href: "/platform/work-items",
-        icon: ListTodo,
-      },
-      {
-        title: "Inbox",
-        href: "/platform/conversations",
-        icon: MessageSquare,
-      },
-      {
-        title: "Integrations",
-        href: "/platform/settings/integrations",
-        icon: Plug,
-      },
-      {
-        title: "Audit Logs",
-        href: "/platform/audit-logs",
-        icon: FileText,
-      },
-    ],
+    id: "primary",
+    label: "",
+    hideLabel: true,
+    items: platformItems.filter(
+      (item) =>
+        item.navbarPriority != null &&
+        item.navbarPriority <= NAVBAR_CORE_PRIORITY_MAX,
+    ),
   },
 ];
 
-export const platformSettingsEntry = {
-  title: "Settings",
-  href: "/platform/settings",
-  icon: Settings,
-} as const satisfies ShellNavItem;
+export const platformSettingsEntry = platformCatalogToShellNavItem(
+  PLATFORM_NAV_CATALOG.find((entry) => entry.navKey === "settings")!,
+);
 
 /** @deprecated Use platformOperationalSections */
-export const platformMenu: PlatformMenuItem[] =
-  platformOperationalSections.flatMap((s) => s.items);
+export const platformMenu: ShellNavItem[] = platformItems;

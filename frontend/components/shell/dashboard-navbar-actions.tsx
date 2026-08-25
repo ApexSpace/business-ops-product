@@ -63,6 +63,7 @@ interface DashboardNavbarActionsProps {
   onAppsOpenChange?: (open: boolean) => void;
   showApps?: boolean;
   businessName?: string;
+  shellMode?: "platform" | "business";
   className?: string;
 }
 
@@ -71,6 +72,7 @@ export function DashboardNavbarActions({
   onAppsOpenChange,
   showApps = true,
   businessName,
+  shellMode = "business",
   className,
 }: DashboardNavbarActionsProps) {
   const router = useAppRouter();
@@ -82,12 +84,19 @@ export function DashboardNavbarActions({
     .join("")
     .slice(0, 2)
     .toUpperCase();
-  const canViewBilling = canAccessSettingsHref("/business/settings/billing", {
-    businessRole: jwt?.businessRole ?? user?.businessRole ?? undefined,
-    staffPermissions:
-      jwt?.staffPermissions ?? user?.staffPermissions ?? undefined,
-    isPlatformAdmin: hasPlatformBusinessAdminAccess(jwt, contexts),
-  });
+  const isPlatform = shellMode === "platform";
+  const settingsHref = isPlatform
+    ? "/platform/settings"
+    : "/business/settings";
+  const notificationsHref = "/business/settings/notifications";
+  const canViewBilling =
+    !isPlatform &&
+    canAccessSettingsHref("/business/settings/billing", {
+      businessRole: jwt?.businessRole ?? user?.businessRole ?? undefined,
+      staffPermissions:
+        jwt?.staffPermissions ?? user?.staffPermissions ?? undefined,
+      isPlatformAdmin: hasPlatformBusinessAdminAccess(jwt, contexts),
+    });
 
   const handleLogout = async () => {
     await logout();
@@ -107,17 +116,19 @@ export function DashboardNavbarActions({
           </DashboardNavbarIconButton>
         ) : null}
 
-        <Link
-          href="/business/settings/notifications"
-          aria-label="Notifications"
-          className={cn(
-            "inline-flex size-10 shrink-0 items-center justify-center rounded-lg",
-            "text-white transition-colors hover:bg-white/10",
-            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40",
-          )}
-        >
-          <Bell className="size-5" strokeWidth={1.75} />
-        </Link>
+        {!isPlatform ? (
+          <Link
+            href={notificationsHref}
+            aria-label="Notifications"
+            className={cn(
+              "inline-flex size-10 shrink-0 items-center justify-center rounded-lg",
+              "text-white transition-colors hover:bg-white/10",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40",
+            )}
+          >
+            <Bell className="size-5" strokeWidth={1.75} />
+          </Link>
+        ) : null}
       </div>
 
       <DropdownMenu>
@@ -155,7 +166,7 @@ export function DashboardNavbarActions({
             <p className="text-xs text-muted-foreground">{user?.email}</p>
           </div>
           <DropdownMenuSeparator />
-          <DropdownMenuItem render={<Link href="/business/settings" />}>
+          <DropdownMenuItem render={<Link href={settingsHref} />}>
             <Settings className="size-4" />
             Settings
           </DropdownMenuItem>

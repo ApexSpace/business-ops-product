@@ -15,6 +15,8 @@ interface DashboardNavbarProps {
   productName?: string;
   logoUrl?: string | null;
   businessName?: string;
+  homeHref?: string;
+  shellMode?: "platform" | "business";
   notice?: React.ReactNode;
   className?: string;
 }
@@ -28,6 +30,8 @@ export function DashboardNavbar({
   productName = "PandaCue",
   logoUrl,
   businessName,
+  homeHref,
+  shellMode = "business",
   notice,
   className,
 }: DashboardNavbarProps) {
@@ -48,10 +52,14 @@ export function DashboardNavbar({
       >
         <div className="flex h-full w-full min-w-0 items-center gap-2 sm:gap-3">
           <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-4 lg:gap-8">
-            <DashboardNavbarLogo productName={productName} logoUrl={logoUrl} />
+            <DashboardNavbarLogo
+              productName={productName}
+              logoUrl={logoUrl}
+              href={homeHref}
+            />
             <DashboardNavbarNav
               items={navItems}
-              className="hidden min-w-0 sm:flex flex-nowrap overflow-hidden"
+              className="hidden min-w-0 flex-1 sm:flex"
             />
           </div>
 
@@ -61,6 +69,7 @@ export function DashboardNavbar({
               appsOpen={appsOpen}
               onAppsOpenChange={setAppsOpen}
               businessName={businessName}
+              shellMode={shellMode}
             />
           </div>
         </div>

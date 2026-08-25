@@ -115,15 +115,39 @@ describe("business nav catalog", () => {
       "sales",
       "reports",
       "products",
+      "work-items",
+      "pipelines",
+      "gift-cards",
+      "packages",
+      "memberships",
+      "payments",
+      "time-clock",
+      "time-cards",
+      "social-planner",
+      "offers",
+      "forms",
+      "automations",
+      "settings",
+      "team",
+      "services",
+      "pipeline-settings",
+      "resources",
+      "integrations",
     ]);
   });
 
-  it("maps navbar priorities to existing breakpoint utilities", () => {
+  it("does not treat Reports as a core navbar item", () => {
+    const reports = BUSINESS_NAV_CATALOG.find((entry) => entry.navKey === "reports");
+    expect(reports?.navbarPriority).toBe(4);
+  });
+
+  it("maps core navbar priorities to existing breakpoint utilities", () => {
     expect(navbarPriorityVisibilityClass(1)).toBe("inline-flex");
     expect(navbarPriorityVisibilityClass(2)).toBe("hidden md:inline-flex");
     expect(navbarPriorityVisibilityClass(3)).toBe("hidden lg:inline-flex");
-    expect(navbarPriorityVisibilityClass(4)).toBe("hidden xl:inline-flex");
-    expect(navbarPriorityVisibilityClass(5)).toBe("hidden 2xl:inline-flex");
+    expect(navbarPriorityVisibilityClass(4)).toBe("hidden");
+    expect(navbarPriorityVisibilityClass(5)).toBe("hidden");
+    expect(navbarPriorityVisibilityClass(6)).toBe("hidden");
   });
 
   it("filters the apps panel by title", () => {
