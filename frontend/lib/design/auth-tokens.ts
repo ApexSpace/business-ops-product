@@ -1,17 +1,16 @@
 /**
  * Design-token ownership
  * - Visual values: frontend/app/globals.css and frontend/lib/theme/*
- * - This file: auth-shell recipes only (centered dark layout, field group)
+ * - This file: auth-shell recipes only (centered layout, field group)
  * - Features must not introduce new raw color / radius / height values
  */
 
 /**
  * Full-viewport auth shell.
- * Forced `.dark` so semantic text/input tokens stay light on the black canvas,
- * independent of the rest of the app theme.
+ * Uses the same light page surface as the rest of the product (`--background` → `--cs-page`).
  */
 export const AUTH_SHELL_CLASS =
-  "dark relative flex min-h-svh flex-col overflow-x-hidden bg-black-secondary-normal text-foreground scheme-dark";
+  "relative flex min-h-svh flex-col overflow-x-hidden bg-background text-foreground";
 
 export const AUTH_MAIN_CLASS =
   "flex flex-1 flex-col items-center justify-center px-[var(--page-padding-x)] pt-[max(var(--spacing-6),env(safe-area-inset-top))] pb-[max(var(--spacing-6),env(safe-area-inset-bottom))]";
@@ -30,13 +29,13 @@ export const AUTH_FORM_STACK_CLASS = "flex flex-col gap-[var(--spacing-4)]";
 export const AUTH_CALLOUT_CLASS =
   "rounded-[var(--radius-control)] border px-[var(--spacing-4)] py-[var(--spacing-2)] text-body-small";
 
-/** Wordmark sits on the black page — no extra fill behind the PNG. */
+/** Wordmark sits on the light page surface — no extra fill behind the PNG. */
 export const AUTH_LOGO_BANNER_CLASS =
   "h-32 w-auto max-h-32 max-w-[min(100%,16rem)] object-contain";
 
-/** Grouped email/password block (Mangomint-style stack, our colors). */
+/** Grouped email/password block. `.dark` keeps light input text on the dark well. */
 export const AUTH_FIELD_GROUP_CLASS =
-  "divide-y divide-grey-tertiary-dark-active overflow-hidden rounded-[var(--radius-control)] bg-grey-tertiary-darker focus-within:ring-[3px] focus-within:ring-violet-primary-normal/40";
+  "dark scheme-dark divide-y divide-grey-tertiary-dark-active overflow-hidden rounded-[var(--radius-control)] bg-grey-tertiary-darker focus-within:ring-[3px] focus-within:ring-violet-primary-normal/40";
 
 export const AUTH_FIELD_ROW_CLASS = "px-[var(--spacing-4)] py-[var(--spacing-2)]";
 

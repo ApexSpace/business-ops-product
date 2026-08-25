@@ -489,8 +489,8 @@ function ThreadMessageBubble({
             className={cn(
               "min-w-0 flex-1 rounded-xl border px-3.5 py-2.5 text-sm shadow-elevation-xs",
               outbound
-                ? "border-primary/15 bg-primary/[0.06]"
-                : "border-border/60 bg-card",
+                ? "border-transparent bg-violet-primary-normal text-white"
+                : "border-border bg-card text-foreground",
               failed &&
                 "border-destructive/40 bg-destructive/8 text-destructive",
             )}
@@ -526,7 +526,11 @@ function ThreadMessageBubble({
             />
           ) : null}
           {outbound && !failed ? (
-            <MessageDeliveryStatus status={message.status} />
+            <MessageDeliveryStatus
+              status={message.status}
+              showLabel
+              tone="onBrand"
+            />
           ) : null}
           {!deleteMode && onRequestDelete ? (
             <DropdownMenu>
@@ -578,17 +582,17 @@ function MessageBody({
   const isThread = variant === "thread";
 
   return (
-    <div className={cn(isThread && "space-y-2")}>
+    <div className={cn(isThread && "space-y-2", isThread && "text-inherit")}>
       {isTemplate && templateDisplay ? (
         <div className="space-y-1">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground/75">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-current/75">
             Template
           </p>
-          <p className="font-medium leading-snug text-foreground text-sm">
+          <p className="font-medium leading-snug text-sm">
             {templateDisplay.templateName}
           </p>
           {templateDisplay.body ? (
-            <p className="text-sm leading-relaxed break-words whitespace-pre-wrap text-foreground/90">
+            <p className="text-sm leading-relaxed break-words whitespace-pre-wrap text-current/90">
               {templateDisplay.body}
             </p>
           ) : null}
@@ -639,7 +643,7 @@ function MessageBody({
         </div>
       ) : null}
       {!isTemplate && displayText ? (
-        <p className="text-sm leading-relaxed break-words whitespace-pre-wrap text-foreground">
+        <p className="text-sm leading-relaxed break-words whitespace-pre-wrap text-inherit">
           {displayText}
         </p>
       ) : null}

@@ -27,41 +27,33 @@ interface AppsLauncherSheetProps {
 
 function AppsIconWell({
   icon: Icon,
-  featured = false,
   active = false,
 }: {
   icon: ShellNavItem["icon"];
-  featured?: boolean;
   active?: boolean;
 }) {
   return (
     <span
       className={cn(
-        "flex shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-primary/10 text-primary",
-        featured
-          ? "size-[var(--control-height)]"
-          : "size-[var(--control-height-sm)]",
+        "flex size-[var(--control-height-sm)] shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-primary/10 text-primary",
         active && "bg-primary/15",
       )}
     >
-      <Icon className={featured ? "size-5" : "size-4"} aria-hidden />
+      <Icon className="size-4" aria-hidden />
     </span>
   );
 }
 
 function AppsPanelItem({
   item,
-  layout,
   onNavigate,
 }: {
   item: ShellNavItem;
-  layout: "featured" | "grid";
   onNavigate: () => void;
 }) {
   const pathname = usePathname();
   const hydrated = useHydrated();
   const active = hydrated && isNavItemActive(pathname, item);
-  const featured = layout === "featured";
 
   return (
     <Link
@@ -69,21 +61,13 @@ function AppsPanelItem({
       onClick={onNavigate}
       aria-current={active ? "page" : undefined}
       className={cn(
-        "min-h-[var(--control-height)] rounded-[var(--radius-md)] transition-colors",
+        "flex min-h-[var(--control-height)] min-w-0 items-center gap-[var(--spacing-2)] rounded-[var(--radius-md)] px-[var(--spacing-2)] py-[var(--spacing-2)] transition-colors",
         "hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
         active && "bg-primary/5",
-        featured
-          ? "flex flex-col items-center justify-center gap-[var(--spacing-2)] px-[var(--spacing-2)] py-[var(--spacing-4)] text-center"
-          : "flex items-center gap-[var(--spacing-2)] px-[var(--spacing-2)] py-[var(--spacing-2)]",
       )}
     >
-      <AppsIconWell icon={item.icon} featured={featured} active={active} />
-      <span
-        className={cn(
-          "text-body-small text-foreground",
-          featured ? "line-clamp-2 font-medium" : "truncate font-medium",
-        )}
-      >
+      <AppsIconWell icon={item.icon} active={active} />
+      <span className="truncate text-body-small font-medium text-foreground">
         {item.title}
       </span>
     </Link>
@@ -110,11 +94,9 @@ export function AppsLauncherSheet({
 
   const sections = useMemo(() => {
     const filtered = filterAppsPanelItems(items, query);
-    const grouped = groupAppsPanelSections(filtered);
-    if (query.trim()) {
-      return grouped.filter((section) => section.id !== "frequently-used");
-    }
-    return grouped;
+    return groupAppsPanelSections(filtered).filter(
+      (section) => section.id !== "frequently-used",
+    );
   }, [items, query]);
 
   const hasResults = sections.some((section) => section.items.length > 0);
@@ -123,12 +105,13 @@ export function AppsLauncherSheet({
     <DrawerShell
       open={open}
       onOpenChange={onOpenChange}
-      width="split"
+      width="conversation"
       title="Apps"
       showCloseButton
+      headerClassName="!px-[var(--spacing-4)] !pt-[var(--spacing-4)] !pb-[var(--spacing-2)] sm:!px-[var(--spacing-6)]"
       contentClassName={cn(
-        "flex flex-col gap-[var(--spacing-6)]",
-        "px-[var(--spacing-6)] py-[var(--spacing-4)]",
+        "flex flex-col gap-[var(--spacing-4)]",
+        "!px-[var(--spacing-4)] !py-[var(--spacing-2)] sm:!px-[var(--spacing-6)]",
       )}
       footerClassName="justify-center"
       footer={
@@ -166,25 +149,18 @@ export function AppsLauncherSheet({
       </div>
 
       {hasResults ? (
-        <div className="flex flex-col gap-[var(--spacing-6)]">
+        <div className="flex flex-col gap-[var(--spacing-4)]">
           {sections.map((section) => (
             <section
               key={section.id}
               className="flex flex-col gap-[var(--spacing-2)]"
             >
               <h2 className="text-nav-group">{section.label}</h2>
-              <div
-                className={
-                  section.layout === "featured"
-                    ? "grid grid-cols-3 gap-[var(--spacing-2)] sm:grid-cols-4 lg:grid-cols-5"
-                    : "grid grid-cols-1 gap-[var(--spacing-2)] sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
-                }
-              >
+              <div className="grid grid-cols-1 gap-x-[var(--spacing-2)] gap-y-[var(--spacing-2)] sm:grid-cols-2 lg:grid-cols-4">
                 {section.items.map((item) => (
                   <AppsPanelItem
                     key={`${section.id}:${item.href}`}
                     item={item}
-                    layout={section.layout}
                     onNavigate={() => onOpenChange(false)}
                   />
                 ))}

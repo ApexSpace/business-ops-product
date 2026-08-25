@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { ImagePlus, Info, Paperclip, Send, X } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -16,6 +16,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ReplyChannelSelector } from "@/features/conversations/components/inbox/reply-channel-selector";
 import { ConversationChannelBar } from "@/features/conversations/components/inbox/conversation-channel-bar";
 import { WhatsAppTemplateComposer } from "@/features/conversations/components/inbox/whatsapp-template-composer";
@@ -79,6 +81,7 @@ interface MessageComposerProps {
   onSend: () => void;
   variant?: "default" | "thread";
   showCannedResponses?: boolean;
+  notesPanel?: ReactNode;
 }
 
 function ComposerStatusBanner({ message }: { message: string }) {
@@ -180,8 +183,10 @@ export function MessageComposer({
   onSend,
   variant = "default",
   showCannedResponses = true,
+  notesPanel,
 }: MessageComposerProps) {
   const [attachmentOpen, setAttachmentOpen] = useState(false);
+  const [composerTab, setComposerTab] = useState<"reply" | "note">("reply");
   const [smsConfirmOpen, setSmsConfirmOpen] = useState(false);
   const [smsInsertWarning, setSmsInsertWarning] = useState<string | null>(null);
 
@@ -237,18 +242,23 @@ export function MessageComposer({
     onTemplateHeaderMediaUrlChange;
 
   const messageInput = (
-    <Input
+    <Textarea
       value={composer}
       onChange={(e) => onComposerChange(e.target.value)}
-      placeholder="Type a message…"
+      placeholder="Type a message..."
+      rows={variant === "thread" ? 2 : 1}
       className={
         variant === "thread"
-          ? "h-9 min-h-9 min-w-0 flex-1 border-0 bg-transparent px-1 py-0 text-sm shadow-none focus-visible:ring-0"
-          : "h-9 min-h-9 min-w-0 flex-1 border-0 bg-transparent px-2 py-0 text-sm shadow-none focus-visible:ring-0"
+          ? "min-h-8 max-h-32 min-w-0 flex-1 resize-none border-0 bg-transparent px-1 py-0 text-sm shadow-none focus-visible:ring-0"
+          : "min-h-9 min-w-0 flex-1 resize-none border-0 bg-transparent px-2 py-0 text-sm shadow-none focus-visible:ring-0"
       }
       disabled={composerDisabled}
       onKeyDown={(e) => {
-        if (e.key === "Enter") {
+        if (e.key === "Enter" && !e.shiftKey && variant !== "thread") {
+          e.preventDefault();
+          requestSend();
+        }
+        if (e.key === "Enter" && (e.metaKey || e.ctrlKey) && variant === "thread") {
           e.preventDefault();
           requestSend();
         }
@@ -273,18 +283,33 @@ export function MessageComposer({
     />
   );
 
-  const sendButton = (
-    <Button
-      type="button"
-      size="icon"
-      className="size-9 shrink-0 rounded-full"
-      disabled={!effectiveCanSend}
-      onClick={requestSend}
-      aria-label={showWhatsAppTemplateComposer ? "Send template" : "Send message"}
-    >
-      <Send className="size-4" />
-    </Button>
-  );
+  const sendButton =
+    variant === "thread" ? (
+      <Button
+        type="button"
+        size="sm"
+        variant="brand"
+        className="shrink-0"
+        disabled={!effectiveCanSend}
+        onClick={requestSend}
+      >
+        <Send className="size-4" />
+        Send
+      </Button>
+    ) : (
+      <Button
+        type="button"
+        size="icon"
+        className="size-9 shrink-0 rounded-full"
+        disabled={!effectiveCanSend}
+        onClick={requestSend}
+        aria-label={
+          showWhatsAppTemplateComposer ? "Send template" : "Send message"
+        }
+      >
+        <Send className="size-4" />
+      </Button>
+    );
 
   const smsSegmentFooter =
     isSmsChannel && smsSegmentInfo && !showWhatsAppTemplateComposer ? (
@@ -312,10 +337,10 @@ export function MessageComposer({
   const attachmentToggle = (
     <Button
       type="button"
-      size="icon"
+      size="icon-sm"
       variant="ghost"
       className={cn(
-        "size-8 shrink-0 rounded-md text-muted-foreground",
+        "shrink-0 rounded-full text-muted-foreground",
         attachmentOpen && "bg-muted/60 text-foreground",
       )}
       disabled={composerDisabled}
@@ -488,11 +513,14 @@ export function MessageComposer({
         </div>
         <div className="flex items-center gap-0.5">
           {emojiPickerButton}
+          {attachmentToggle}
           {quickRepliesButton}
           <div className="ml-auto">{sendButton}</div>
         </div>
       </div>
       {smsSegmentFooter}
+      {attachmentUrlRow}
+      {pendingAttachmentChip}
     </ComposerInputCard>
   );
 
@@ -566,32 +594,71 @@ export function MessageComposer({
   if (variant === "thread") {
     return (
       <>
-        <footer className="shrink-0 border-t border-border/60 bg-background">
-          {showChannelBar ? (
-            <ConversationChannelBar
-              channels={channelBarChannels!}
-              value={channelBarValue ?? channelBarChannels![0]?.channel ?? null}
-              onChange={onChannelBarChange}
-              readOnly={channelBarReadOnly || !onChannelBarChange}
-            />
-          ) : null}
-          <div className="px-3 py-2.5">
-            {isEmailComposer ? emailThreadComposer : threadComposeRow}
-            {showWhatsAppTemplateComposer ? (
-              <div className="mt-2">
-                <WhatsAppTemplateComposer
-                  selectedTemplateId={selectedTemplateId}
-                  onTemplateIdChange={onTemplateIdChange}
-                  variableValues={templateVariableValues}
-                  onVariableValueChange={onTemplateVariableValueChange}
-                  headerMediaUrl={templateHeaderMediaUrl}
-                  onHeaderMediaUrlChange={onTemplateHeaderMediaUrlChange}
-                  disabled={!canSend && Boolean(sendDisabledReason)}
-                  variant="extras"
+        <footer className="shrink-0 bg-background">
+          <Tabs
+            value={composerTab}
+            onValueChange={(value) =>
+              setComposerTab(value === "note" ? "note" : "reply")
+            }
+            className="gap-0"
+          >
+            <div className="flex items-center justify-between gap-2 border-b border-border/60 px-3">
+              <TabsList variant="line" className="h-10 bg-transparent p-0">
+                <TabsTrigger
+                  value="reply"
+                  className="px-3 data-active:text-violet-primary-normal group-data-[variant=line]/tabs-list:data-active:after:bg-violet-primary-normal"
+                >
+                  Reply
+                </TabsTrigger>
+                {notesPanel ? (
+                  <TabsTrigger
+                    value="note"
+                    className="px-3 data-active:text-violet-primary-normal group-data-[variant=line]/tabs-list:data-active:after:bg-violet-primary-normal"
+                  >
+                    Note
+                  </TabsTrigger>
+                ) : null}
+              </TabsList>
+              {showChannelBar && composerTab === "reply" ? (
+                <ConversationChannelBar
+                  channels={channelBarChannels!}
+                  value={
+                    channelBarValue ?? channelBarChannels![0]?.channel ?? null
+                  }
+                  onChange={onChannelBarChange}
+                  readOnly={channelBarReadOnly || !onChannelBarChange}
+                  compact
                 />
-              </div>
-            ) : null}
-          </div>
+              ) : null}
+            </div>
+          </Tabs>
+          {composerTab === "note" && notesPanel ? (
+            <div className="px-1 pb-2">{notesPanel}</div>
+          ) : (
+            <div className="px-3 py-2.5">
+              {isEmailComposer ? emailThreadComposer : threadComposeRow}
+              {showWhatsAppTemplateComposer ? (
+                <div className="mt-2">
+                  <WhatsAppTemplateComposer
+                    selectedTemplateId={selectedTemplateId}
+                    onTemplateIdChange={onTemplateIdChange}
+                    variableValues={templateVariableValues}
+                    onVariableValueChange={onTemplateVariableValueChange}
+                    headerMediaUrl={templateHeaderMediaUrl}
+                    onHeaderMediaUrlChange={onTemplateHeaderMediaUrlChange}
+                    disabled={!canSend && Boolean(sendDisabledReason)}
+                    variant="extras"
+                  />
+                </div>
+              ) : null}
+              {channelHint ? (
+                <p className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
+                  <Info className="size-3.5 shrink-0" aria-hidden />
+                  {channelHint}
+                </p>
+              ) : null}
+            </div>
+          )}
         </footer>
         {smsConfirmDialog}
       </>

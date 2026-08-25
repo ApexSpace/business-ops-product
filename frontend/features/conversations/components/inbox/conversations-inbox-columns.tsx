@@ -9,7 +9,6 @@ import {
   WORKSPACE_COLUMN_CELL_CLASS,
   WORKSPACE_GAP_CLASS,
   WORKSPACE_PADDING_CLASS,
-  WORKSPACE_TABLET_SIDEBAR_COL_CLASS,
 } from "@/features/contacts/workspace/contact-workspace";
 
 interface ConversationsInboxColumnsProps {
@@ -27,17 +26,17 @@ export function ConversationsInboxColumns({
 }: ConversationsInboxColumnsProps) {
   return (
     <>
-      {/* Desktop xl+: three equal-height workspace columns */}
+      {/* Desktop lg+: three equal-height workspace columns */}
       <div className={cn(INBOX_DESKTOP_ROW_CLASS, className)}>
         <div className={WORKSPACE_COLUMN_CELL_CLASS}>{list}</div>
         <div className={WORKSPACE_COLUMN_CELL_CLASS}>{thread}</div>
         <div className={WORKSPACE_COLUMN_CELL_CLASS}>{sidebar}</div>
       </div>
 
-      {/* Tablet md–xl */}
+      {/* Tablet md–lg: list + thread; details are a sheet */}
       <div
         className={cn(
-          "hidden min-h-0 flex-1 overflow-hidden md:flex xl:hidden",
+          "hidden min-h-0 flex-1 overflow-hidden md:flex lg:hidden",
           WORKSPACE_PADDING_CLASS,
           WORKSPACE_GAP_CLASS,
           className,
@@ -46,7 +45,6 @@ export function ConversationsInboxColumns({
         <div className={INBOX_TABLET_MAIN_ROW_CLASS}>
           <div className={INBOX_TABLET_LIST_COL_CLASS}>{list}</div>
           <div className={INBOX_TABLET_THREAD_COL_CLASS}>{thread}</div>
-          <div className={WORKSPACE_TABLET_SIDEBAR_COL_CLASS}>{sidebar}</div>
         </div>
       </div>
     </>

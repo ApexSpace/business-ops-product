@@ -88,10 +88,10 @@ export function ComposerEmojiPicker({
         render={
           <Button
             type="button"
-            size="icon"
+            size="icon-sm"
             variant="ghost"
             className={cn(
-              "size-8 shrink-0 rounded-md text-muted-foreground",
+              "shrink-0 rounded-full text-muted-foreground",
               open && "bg-muted/60 text-foreground",
               className,
             )}

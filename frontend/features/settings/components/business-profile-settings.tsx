@@ -7,11 +7,10 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { BusinessProfileFormFields } from "@/features/platform/components/business-profile-form-fields";
-import { FormActions } from "@/components/layout/form-actions";
+import { SettingsFormActions } from "@/components/layout/settings-form-actions";
 import { PageHeader } from "@/components/layout/page-header";
 import { PageTabs, PageTabsPanel } from "@/components/layout/page-tabs";
 import { SettingsCard } from "@/components/layout/settings-card";
-import { Button } from "@/components/ui/button";
 import { Form, FormSchemaProvider } from "@/components/ui/form";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -117,11 +116,11 @@ export function BusinessProfileSettings() {
   if (isLoading) return <Skeleton className="h-48 w-full" />;
 
   const profileSaveFooter = canEdit ? (
-    <FormActions>
-      <Button type="submit" disabled={mutation.isPending}>
-        {mutation.isPending ? "Saving…" : "Save changes"}
-      </Button>
-    </FormActions>
+    <SettingsFormActions
+      onDiscard={() => form.reset()}
+      isDirty={form.formState.isDirty}
+      isSubmitting={mutation.isPending}
+    />
   ) : (
     <p className="text-sm text-muted-foreground">
       Only owners, admins, and platform administrators can edit the business

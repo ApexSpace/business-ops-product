@@ -1,17 +1,15 @@
 import {
   Bell,
+  Building2,
   Calendar,
   CreditCard,
+  Database,
+  FileText,
   Globe,
   MessageCircle,
   MessageSquare,
   Palette,
-  Plug,
   Receipt,
-  Settings,
-  Warehouse,
-  FileText,
-  Database,
 } from "lucide-react";
 import type { ShellNavItem, ShellNavSection } from "@/lib/types/shell-nav";
 import { canAccessSettingsHref } from "@/features/team/permissions/staff-permissions";
@@ -19,12 +17,16 @@ import type { BusinessMemberRole } from "@/features/auth/types/auth-dto";
 
 export interface BusinessSettingsNavItem extends ShellNavItem {}
 
-
-const generalItems: BusinessSettingsNavItem[] = [
+const businessSetupItems: BusinessSettingsNavItem[] = [
   {
     title: "Business Profile",
     href: "/business/settings/profile",
-    icon: Settings,
+    icon: Building2,
+  },
+  {
+    title: "Appearance",
+    href: "/business/settings/appearance",
+    icon: Palette,
   },
   {
     title: "Data import & export",
@@ -33,26 +35,50 @@ const generalItems: BusinessSettingsNavItem[] = [
   },
 ];
 
-const operationsItems: BusinessSettingsNavItem[] = [
-  {
-    title: "Online Booking",
-    href: "/business/settings/online-booking",
-    icon: Globe,
-  },
+const calendarItems: BusinessSettingsNavItem[] = [
   {
     title: "Calendars",
     href: "/business/settings/calendars",
     icon: Calendar,
   },
-  {
-    title: "Resources",
-    href: "/business/settings/resources",
-    icon: Warehouse,
-  },
+];
+
+const paymentsItems: BusinessSettingsNavItem[] = [
   {
     title: "Financial Settings",
     href: "/business/settings/financial",
     icon: Receipt,
+  },
+  {
+    title: "Plan & Billing",
+    href: "/business/settings/billing",
+    icon: CreditCard,
+  },
+];
+
+const onlineBookingItems: BusinessSettingsNavItem[] = [
+  {
+    title: "Online Booking",
+    href: "/business/settings/online-booking",
+    icon: Globe,
+  },
+];
+
+const automatedMessagesItems: BusinessSettingsNavItem[] = [
+  {
+    title: "Notifications",
+    href: "/business/settings/notifications",
+    icon: Bell,
+  },
+  {
+    title: "WhatsApp",
+    href: "/business/settings/whatsapp",
+    icon: MessageCircle,
+  },
+  {
+    title: "Chatbots",
+    href: "/business/settings/chatbots",
+    icon: MessageSquare,
   },
   {
     title: "Templates",
@@ -61,55 +87,28 @@ const operationsItems: BusinessSettingsNavItem[] = [
   },
 ];
 
-const websiteItems: BusinessSettingsNavItem[] = [
-  {
-    title: "Chatbots",
-    href: "/business/settings/chatbots",
-    icon: MessageSquare,
-  },
-];
-
-const billingItems: BusinessSettingsNavItem[] = [
-  {
-    title: "Plan & Billing",
-    href: "/business/settings/billing",
-    icon: CreditCard,
-  },
-  {
-    title: "Integrations",
-    href: "/business/settings/integrations",
-    icon: Plug,
-  },
-  {
-    title: "WhatsApp",
-    href: "/business/settings/whatsapp",
-    icon: MessageCircle,
-  },
-];
-
-const preferencesItems: BusinessSettingsNavItem[] = [
-  {
-    title: "Notifications",
-    href: "/business/settings/notifications",
-    icon: Bell,
-  },
-  {
-    title: "Appearance",
-    href: "/business/settings/appearance",
-    icon: Palette,
-  },
-];
-
 export const businessSettingsSections: ShellNavSection[] = [
-  { id: "general", label: "General", items: generalItems },
-  { id: "website", label: "Website", items: websiteItems },
-  { id: "operations", label: "Operations", items: operationsItems },
+  { id: "business-setup", label: "Business Setup", items: businessSetupItems },
   {
-    id: "billing",
-    label: "Billing & Integrations",
-    items: billingItems,
+    id: "calendar-appointments",
+    label: "Calendar & Appointments",
+    items: calendarItems,
   },
-  { id: "preferences", label: "Preferences", items: preferencesItems },
+  {
+    id: "payments-checkout",
+    label: "Payments & Checkout",
+    items: paymentsItems,
+  },
+  {
+    id: "online-booking",
+    label: "Online Booking",
+    items: onlineBookingItems,
+  },
+  {
+    id: "automated-messages",
+    label: "Automated Messages",
+    items: automatedMessagesItems,
+  },
 ];
 
 /** Flat list for backwards compatibility */
@@ -145,4 +144,3 @@ export function filterBusinessSettingsSections(options: {
     }))
     .filter((section) => section.items.length > 0);
 }
-

@@ -199,17 +199,17 @@ export {
 } from "@/components/shell/shell-full-bleed-paths";
 
 /**
- * Desktop xl+ — conversation fills left; contact sidebar on the right.
+ * Desktop lg+ — list, thread, and contact sidebar in three columns.
  */
 export const INBOX_DESKTOP_ROW_CLASS = [
-  "hidden h-full min-h-0 w-full max-w-full flex-1 items-stretch overflow-x-auto overflow-y-hidden xl:grid",
+  "hidden h-full min-h-0 w-full max-w-full flex-1 items-stretch overflow-x-auto overflow-y-hidden lg:grid",
   WORKSPACE_GAP_CLASS,
   WORKSPACE_PADDING_CLASS,
-  "xl:grid-cols-[minmax(240px,280px)_minmax(420px,2.2fr)_minmax(260px,300px)]",
+  "lg:grid-cols-[minmax(240px,280px)_minmax(420px,2.2fr)_minmax(260px,300px)]",
   "2xl:grid-cols-[260px_minmax(520px,2.4fr)_300px]",
 ].join(" ");
 
-/** Tablet md–xl: list + thread + sidebar in one row */
+/** Tablet md–lg: list + thread; details open in a sheet */
 export const INBOX_TABLET_MAIN_ROW_CLASS = [
   "flex h-full min-h-0 w-full flex-1 overflow-hidden",
   WORKSPACE_GAP_CLASS,

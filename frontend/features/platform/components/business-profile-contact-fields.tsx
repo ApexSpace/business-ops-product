@@ -68,24 +68,34 @@ export function BusinessProfileContactFields({
           <TextField
             control={form.control}
             name="email"
-            label="Email"
+            label="Email address"
             type="email"
             placeholder="jane@example.com"
             disabled={disabled}
           />
-          <PhoneField control={form.control} name="phone" disabled={disabled} />
+          <PhoneField
+            control={form.control}
+            name="phone"
+            label="Phone number"
+            disabled={disabled}
+          />
         </div>
       ) : (
         <>
           <TextField
             control={form.control}
             name="email"
-            label="Email"
+            label="Email address"
             type="email"
             placeholder="jane@example.com"
             disabled={disabled}
           />
-          <PhoneField control={form.control} name="phone" disabled={disabled} />
+          <PhoneField
+            control={form.control}
+            name="phone"
+            label="Phone number"
+            disabled={disabled}
+          />
         </>
       )}
     </section>

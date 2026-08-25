@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { ContactCompactContextPanel } from "@/features/contacts/components/contact-workspace/contact-compact-context-panel";
+import { ConversationDetailsSidebar } from "@/features/conversations/components/inbox/conversation-details-sidebar";
 import { ContactFullProfileDrawer } from "@/features/contacts/components/contact-full-profile-drawer";
 import { WORKSPACE_PANEL_CLASS } from "@/features/contacts/workspace/contact-workspace";
 import { useConversationsHost } from "@/features/conversations/conversations-host-context";
@@ -137,7 +137,7 @@ export function ConversationInboxContactSidebar({
 
   return (
     <>
-      <ContactCompactContextPanel
+      <ConversationDetailsSidebar
         contact={sidebar.contact}
         onViewFullProfile={sidebar.onViewFullProfile}
         className={cn("h-full w-full", className)}
