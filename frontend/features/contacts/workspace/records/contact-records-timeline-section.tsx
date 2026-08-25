@@ -295,7 +295,7 @@ export function ContactRecordsTimelineSection({
           aria-label={`Timeline date ${todayLabel}`}
         >
           <span>{todayLabel}</span>
-          <NavArrowIcon direction="down" size="lg" className="opacity-60" />
+          <NavArrowIcon direction="down" size="sm" className="opacity-60" />
         </button>
         <ContactInlineNoteComposer
           contactId={contact.id}

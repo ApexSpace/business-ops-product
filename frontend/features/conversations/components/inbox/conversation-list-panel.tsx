@@ -1,12 +1,13 @@
 "use client";
 
-import { Plus } from "lucide-react";
+import { SquarePen } from "lucide-react";
 import { ApiErrorState } from "@/components/data-display/api-error-state";
 import { EmptyState } from "@/components/data-display/empty-state";
 import { LoadingState } from "@/components/data-display/loading-state";
 import { VirtualList } from "@/components/data-display/virtual-list";
 import { SearchInput } from "@/components/forms/search-input";
 import { Button } from "@/components/ui/button";
+import { IconButton } from "@/components/ui/icon-button";
 import type { UnifiedConversationThread } from "@/features/conversations/api/conversations.api";
 import { UnifiedThreadRow } from "@/features/conversations/components/inbox/unified-thread-row";
 import {
@@ -14,14 +15,14 @@ import {
   VIRTUALIZE_THRESHOLD,
 } from "@/features/conversations/components/inbox/conversation-inbox-utils";
 import type { InboxStatusFilter } from "@/features/conversations/hooks/use-conversations-inbox-filters";
-import { WORKSPACE_PANEL_CLASS } from "@/features/contacts/workspace/contact-workspace";
+import { INBOX_LIST_PANEL_CLASS } from "@/features/contacts/workspace/contact-workspace";
 import { cn } from "@/lib/utils";
 
 const STATUS_FILTER_CHIPS: { value: InboxStatusFilter; label: string }[] = [
-  { value: "ALL", label: "All" },
-  { value: "OPEN", label: "Open" },
-  { value: "CLOSED", label: "Closed" },
-  { value: "SPAM", label: "Spam" },
+  { value: "ALL", label: "ALL" },
+  { value: "OPEN", label: "OPEN" },
+  { value: "CLOSED", label: "CLOSED" },
+  { value: "SPAM", label: "SPAM" },
 ];
 
 interface ConversationListPanelProps {
@@ -56,31 +57,28 @@ export function ConversationListPanel({
   className,
 }: ConversationListPanelProps) {
   return (
-    <aside
-      className={cn(WORKSPACE_PANEL_CLASS, "h-full w-full min-w-0", className)}
-    >
-      <div className="space-y-3 border-b border-border p-4">
+    <aside className={cn(INBOX_LIST_PANEL_CLASS, className)}>
+      <div className="flex shrink-0 flex-col gap-4 border-b border-border px-6 py-6">
         <div className="flex items-center justify-between gap-2">
-          <h2 className="text-base font-semibold text-foreground">
+          <h2 className="text-heading-5 font-bold tracking-tight text-violet-primary-dark">
             Conversation
           </h2>
           {onNewConversation ? (
-            <Button
-              type="button"
-              variant="brand"
+            <IconButton
+              variant="ghost"
               size="icon-sm"
               onClick={onNewConversation}
               aria-label="New conversation"
             >
-              <Plus className="size-4" />
-            </Button>
+              <SquarePen className="size-4" />
+            </IconButton>
           ) : null}
         </div>
 
         <SearchInput
           value={search}
           onChange={onSearchChange}
-          placeholder="Search"
+          placeholder="Search clients..."
           className="max-w-none"
         />
 
@@ -95,9 +93,9 @@ export function ConversationListPanel({
               <Button
                 key={chip.value}
                 type="button"
-                size="sm"
+                size="xs"
                 variant={selected ? "brand" : "outline"}
-                className="rounded-full"
+                className="rounded-full px-3 uppercase tracking-wide"
                 aria-pressed={selected}
                 onClick={() => onStatusFilterChange(chip.value)}
               >
@@ -124,7 +122,6 @@ export function ConversationListPanel({
             action={
               onNewConversation ? (
                 <Button variant="brand" size="sm" onClick={onNewConversation}>
-                  <Plus className="mr-1.5 size-4" />
                   New conversation
                 </Button>
               ) : undefined
@@ -145,7 +142,7 @@ export function ConversationListPanel({
             )}
           />
         ) : (
-          <ul className="h-full divide-y divide-border overflow-auto">
+          <div className="h-full overflow-auto">
             {threads.map((thread) => (
               <UnifiedThreadRow
                 key={thread.threadKey}
@@ -154,7 +151,7 @@ export function ConversationListPanel({
                 onSelect={onSelectThread}
               />
             ))}
-          </ul>
+          </div>
         )}
       </div>
     </aside>

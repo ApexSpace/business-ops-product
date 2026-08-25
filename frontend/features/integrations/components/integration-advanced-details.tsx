@@ -69,7 +69,7 @@ export function IntegrationAdvancedDetails({
     >
       <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-4 py-3 text-sm font-medium text-muted-foreground marker:content-none [&::-webkit-details-marker]:hidden">
         <span>Advanced details</span>
-        <NavArrowIcon direction="down" size="lg" className="transition-transform group-open:rotate-180" />
+        <NavArrowIcon direction="down" size="sm" className="transition-transform group-open:rotate-180" />
       </summary>
       <div className="space-y-4 border-t border-border/60 px-4 py-3 text-xs text-muted-foreground">
         <div className="space-y-1">

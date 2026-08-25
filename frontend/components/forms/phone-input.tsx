@@ -1,15 +1,16 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { NavArrowIcon } from "@/components/ui/nav-arrow-icon";
 import { X } from "lucide-react";
 import { IconButton } from "@/components/ui/icon-button";
-import { Input } from "@/components/ui/input";
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+  Combobox,
+  ComboboxFieldInput,
+  ComboboxItemIndicator,
+  ComboboxPopup,
+  COMBOBOX_EMPTY_CLASS,
+  COMBOBOX_ITEM_CLASS,
+} from "@/components/ui/combobox";
 import { cn } from "@/lib/utils";
 import {
   DEFAULT_PHONE_DIAL_CODE,
@@ -41,99 +42,60 @@ function CountryDialSelect({
   onChange: (dialCode: string) => void;
   disabled?: boolean;
 }) {
-  const [open, setOpen] = useState(false);
-  const [search, setSearch] = useState("");
   const country = getPhoneCountry(value);
 
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    if (!q) return PHONE_COUNTRIES;
-    return PHONE_COUNTRIES.filter(
-      (c) =>
-        c.dialCode.includes(q) ||
-        c.label.toLowerCase().includes(q) ||
-        c.flag.includes(q),
-    );
-  }, [search]);
-
-  const pick = (c: PhoneCountry) => {
-    onChange(c.dialCode);
-    setOpen(false);
-    setSearch("");
-  };
-
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger
-        type="button"
+    <Combobox.Root
+      items={PHONE_COUNTRIES}
+      value={country}
+      onValueChange={(next) => {
+        if (next) onChange(next.dialCode);
+      }}
+      disabled={disabled}
+      modal={false}
+      autoHighlight
+      autoComplete="off"
+      itemToStringLabel={(item) => `${item.flag} ${item.dialCode}`}
+      isItemEqualToValue={(left, right) => left.dialCode === right.dialCode}
+      filter={(item, query) => {
+        const q = query.trim().toLowerCase();
+        if (!q) return true;
+        return (
+          item.dialCode.includes(q) ||
+          item.label.toLowerCase().includes(q) ||
+          item.flag.includes(q)
+        );
+      }}
+    >
+      <ComboboxFieldInput
         disabled={disabled}
-        className={cn(
-          "flex h-full shrink-0 items-center gap-0.5 rounded-none border-0 bg-transparent px-2.5 text-sm font-medium outline-none",
-          "hover:bg-muted/50 focus-visible:bg-muted/50",
-          "disabled:pointer-events-none disabled:opacity-50",
-        )}
         aria-label={`Country code ${country.dialCode}`}
-      >
-        <span className="text-base leading-none" aria-hidden>
-          {country.flag}
-        </span>
-        <span className="tabular-nums text-foreground">{country.dialCode}</span>
-        <NavArrowIcon direction="down" size={14} className="text-muted-foreground" />
-      </PopoverTrigger>
-      <PopoverContent
-        align="start"
-        className="flex w-72 flex-col gap-0 overflow-hidden p-0"
-      >
-        <div className="shrink-0 border-b border-border/80 p-2">
-          <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search country…"
-            className="h-8"
-            autoFocus
-          />
-        </div>
-        <div
-          className="max-h-56 min-h-0 overflow-x-hidden overflow-y-auto overscroll-contain"
-          role="listbox"
-          aria-label="Country codes"
-        >
-          <ul className="p-1">
-            {filtered.length === 0 ? (
-              <li className="px-2 py-6 text-center text-sm text-muted-foreground">
-                No countries found
-              </li>
-            ) : (
-              filtered.map((c) => (
-                <li key={c.dialCode}>
-                  <button
-                    type="button"
-                    role="option"
-                    aria-selected={c.dialCode === value}
-                    className={cn(
-                      "flex w-full min-w-0 items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm",
-                      "hover:bg-accent hover:text-accent-foreground",
-                      c.dialCode === value && "bg-accent/80",
-                    )}
-                    onClick={() => pick(c)}
-                  >
-                    <span className="shrink-0 text-base leading-none">
-                      {c.flag}
-                    </span>
-                    <span className="shrink-0 font-medium tabular-nums">
-                      {c.dialCode}
-                    </span>
-                    <span className="min-w-0 flex-1 truncate text-muted-foreground">
-                      {c.label}
-                    </span>
-                  </button>
-                </li>
-              ))
-            )}
-          </ul>
-        </div>
-      </PopoverContent>
-    </Popover>
+        className="h-full min-w-[5.75rem] rounded-none border-0 bg-transparent px-2.5 pr-7 shadow-none focus-visible:border-transparent focus-visible:ring-0"
+      />
+      <ComboboxPopup align="start" className="w-72 min-w-72">
+        <Combobox.Empty className={COMBOBOX_EMPTY_CLASS}>
+          No countries found
+        </Combobox.Empty>
+        <Combobox.List>
+          {(item: PhoneCountry) => (
+            <Combobox.Item
+              key={item.dialCode}
+              value={item}
+              className={COMBOBOX_ITEM_CLASS}
+            >
+              <span className="shrink-0 text-base leading-none">{item.flag}</span>
+              <span className="shrink-0 font-medium tabular-nums">
+                {item.dialCode}
+              </span>
+              <span className="min-w-0 flex-1 truncate text-muted-foreground">
+                {item.label}
+              </span>
+              <ComboboxItemIndicator />
+            </Combobox.Item>
+          )}
+        </Combobox.List>
+      </ComboboxPopup>
+    </Combobox.Root>
   );
 }
 

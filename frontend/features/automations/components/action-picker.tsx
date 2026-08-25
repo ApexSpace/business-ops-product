@@ -1,20 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { Play } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { NavArrowIcon } from "@/components/ui/nav-arrow-icon";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { useMemo } from "react";
+import { SearchableSelect } from "@/components/forms/searchable-select";
 import { cn } from "@/lib/utils";
-import { CategorizedRegistryList, registryPickerPopoverClassName } from "@/features/automations/components/categorized-registry-list";
-import {
-  useAutomationActions,
-  useAutomationCategories,
-} from "@/features/automations/hooks/use-automation-metadata";
+import { useAutomationActions, useAutomationCategories } from "@/features/automations/hooks/use-automation-metadata";
 
 type ActionPickerProps = {
   value?: string | null;
@@ -31,52 +20,39 @@ export function ActionPicker({
   placeholder = "Select action",
   className,
 }: ActionPickerProps) {
-  const [open, setOpen] = useState(false);
-  const [search, setSearch] = useState("");
   const categoriesQuery = useAutomationCategories("action");
   const actionsQuery = useAutomationActions();
 
-  const selected = useMemo(
-    () => actionsQuery.data?.find((action) => action.key === value),
-    [actionsQuery.data, value],
-  );
+  const items = useMemo(() => {
+    const categoryByKey = new Map(
+      (categoriesQuery.data ?? []).map((category) => [category.key, category.label]),
+    );
+    return (actionsQuery.data ?? []).map((action) => ({
+      value: action.key,
+      label: action.label,
+      description: [
+        categoryByKey.get(action.category),
+        action.description,
+      ]
+        .filter(Boolean)
+        .join(" · "),
+      disabled: action.activatable === false,
+    }));
+  }, [categoriesQuery.data, actionsQuery.data]);
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger
-        disabled={disabled}
-        className={cn("w-full", className)}
-        render={
-          <Button
-            type="button"
-            variant="outline"
-            className="w-full justify-between font-normal"
-            disabled={disabled || actionsQuery.isLoading}
-          >
-            <span className="flex min-w-0 items-center gap-2">
-              <Play className="size-4 shrink-0 text-muted-foreground" />
-              <span className="truncate">{selected?.label ?? placeholder}</span>
-            </span>
-            <NavArrowIcon direction="down" size="lg" className="text-muted-foreground" />
-          </Button>
-        }
-      />
-      <PopoverContent align="start" className={registryPickerPopoverClassName}>
-        <CategorizedRegistryList
-          className="min-h-0 flex-1"
-          listClassName="min-h-0 flex-1"
-          items={actionsQuery.data ?? []}
-          categories={categoriesQuery.data ?? []}
-          search={search}
-          onSearchChange={setSearch}
-          selectedKey={value}
-          onSelect={(key) => {
-            onValueChange(key);
-            setOpen(false);
-          }}
-          searchPlaceholder='Search actions, e.g. "email"'
-        />
-      </PopoverContent>
-    </Popover>
+    <SearchableSelect
+      items={items}
+      value={value ?? null}
+      onValueChange={(next) => {
+        if (next) onValueChange(next);
+      }}
+      placeholder={placeholder}
+      disabled={disabled || actionsQuery.isLoading}
+      emptyMessage={
+        actionsQuery.isLoading ? "Loading actions…" : "No matching actions"
+      }
+      triggerClassName={cn("w-full font-normal", className)}
+    />
   );
 }

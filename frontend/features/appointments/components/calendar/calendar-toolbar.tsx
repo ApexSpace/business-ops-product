@@ -12,7 +12,6 @@ import {
   CALENDAR_TOOLBAR_DATE_TRIGGER_CLASS,
   CALENDAR_TOOLBAR_NAV_BUTTON_CLASS,
   CALENDAR_TOOLBAR_NAV_GROUP_CLASS,
-  CALENDAR_TOOLBAR_NAV_ICON_SIZE,
   CALENDAR_TOOLBAR_TODAY_BUTTON_CLASS,
 } from "@/features/appointments/components/calendar/calendar-toolbar-tokens";
 import type { CalendarViewMode } from "@/features/calendars/utils/calendar-dates";
@@ -97,11 +96,7 @@ export function CalendarToolbar({
             onClick={onPrevious}
             aria-label="Previous"
           >
-            <NavArrowIcon
-              direction="left"
-              width={CALENDAR_TOOLBAR_NAV_ICON_SIZE.width}
-              height={CALENDAR_TOOLBAR_NAV_ICON_SIZE.height}
-            />
+            <NavArrowIcon direction="left" size="lg" />
           </button>
           <Button
             type="button"
@@ -117,11 +112,7 @@ export function CalendarToolbar({
             onClick={onNext}
             aria-label="Next"
           >
-            <NavArrowIcon
-              direction="right"
-              width={CALENDAR_TOOLBAR_NAV_ICON_SIZE.width}
-              height={CALENDAR_TOOLBAR_NAV_ICON_SIZE.height}
-            />
+            <NavArrowIcon direction="right" size="lg" />
           </button>
         </div>
 
@@ -149,7 +140,7 @@ export function CalendarToolbar({
               </span>
               <NavArrowIcon
                 direction={pickerOpen ? "up" : "down"}
-                size="lg"
+                size="sm"
                 className="shrink-0 text-violet-primary-normal"
               />
             </button>

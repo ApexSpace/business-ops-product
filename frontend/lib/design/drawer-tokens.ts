@@ -77,7 +77,7 @@ export const DRAWER_SHELL_HEADER_ACTION_CLASS =
   "size-[34px] shrink-0 rounded-[9px] border border-border bg-background text-muted-foreground shadow-none hover:bg-muted/40 hover:text-foreground";
 
 export const DRAWER_SHELL_HEADER_ROW_CLASS =
-  "flex items-center justify-between gap-3";
+  "grid w-full grid-cols-[minmax(0,1fr)_auto] items-end gap-x-3 gap-y-1";
 
 export const DRAWER_SHELL_TITLE_CLASS =
   "text-[21px] font-semibold tracking-tight";
@@ -177,7 +177,7 @@ export const DRAWER_CONTENT_PANEL_CLASS =
 
 /** Header — Figma: pt 24 · px 24 · pb 16 · bottom border var(--drawer-header-border). */
 export const DRAWER_HEADER_CLASS =
-  "relative shrink-0 border-x-0 border-t-0 border-b border-solid border-[var(--drawer-header-border)] !bg-white px-4 pb-4 pt-6 [background-image:none] sm:px-6 [&_[data-slot=sheet-header-row]]:items-start";
+  "relative shrink-0 border-x-0 border-t-0 border-b border-solid border-[var(--drawer-header-border)] !bg-white px-4 pb-4 pt-6 [background-image:none] sm:px-6";
 
 export const DRAWER_HEADER_CLOSE_OVERRIDES =
   "[&_button[aria-label=Close]]:relative [&_button[aria-label=Close]]:!size-[22px] [&_button[aria-label=Close]]:rounded-full [&_button[aria-label=Close]]:!border-0 [&_button[aria-label=Close]]:!bg-transparent [&_button[aria-label=Close]]:p-0 [&_button[aria-label=Close]]:text-muted-foreground [&_button[aria-label=Close]]:!shadow-none [&_button[aria-label=Close]]:hover:!bg-transparent [&_button[aria-label=Close]]:hover:text-violet-primary-normal [&_button[aria-label=Close]]:after:absolute [&_button[aria-label=Close]]:after:-inset-2.5 [&_button[aria-label=Close]]:after:content-['']";
@@ -211,6 +211,13 @@ export const DRAWER_HEADER_ACTION_CLASS =
 
 export const DRAWER_CLOSE_ACTION_CLASS =
   "relative !size-[22px] shrink-0 rounded-full !border-0 !bg-transparent p-0 text-muted-foreground !shadow-none hover:!bg-transparent hover:text-violet-primary-normal [&>svg]:size-[14px] after:absolute after:-inset-2.5 after:content-['']";
+
+/** Shared sheet/drawer header: title row + optional description below. */
+export const SHEET_HEADER_CLASS =
+  "flex shrink-0 flex-col gap-1 border-b border-border px-4 py-3.5";
+
+export const SHEET_HEADER_ROW_CLASS =
+  "flex min-h-[var(--control-height-sm)] w-full items-center justify-between gap-3";
 
 export const DRAWER_BODY_INSET_CLASS =
   "flex w-full min-w-0 flex-col gap-6 px-4 py-4 scrollbar-thin sm:px-6";

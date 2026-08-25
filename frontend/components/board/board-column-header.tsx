@@ -53,9 +53,9 @@ export function BoardColumnHeader({
             onClick={onToggleCollapse}
           >
             {collapsed ? (
-              <NavArrowIcon direction="down" size="lg" />
+              <NavArrowIcon direction="down" size="sm" />
             ) : (
-              <NavArrowIcon direction="up" size="lg" />
+              <NavArrowIcon direction="up" size="sm" />
             )}
           </IconButton>
         ) : null}

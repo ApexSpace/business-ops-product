@@ -14,6 +14,8 @@ export interface SelectOption {
   /** Use `null` for a clearable / placeholder list entry (Base UI convention). */
   value: string | null;
   label: string;
+  description?: string;
+  disabled?: boolean;
 }
 
 export interface SelectFieldProps<T extends FieldValues> {

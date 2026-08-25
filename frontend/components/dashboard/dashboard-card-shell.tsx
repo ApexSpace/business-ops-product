@@ -57,7 +57,7 @@ export function DashboardCardShell({
               className="inline-flex items-center gap-1 text-[11.5px] font-semibold text-primary transition-colors hover:text-primary/80"
             >
               {actionLabel}
-              <NavArrowIcon direction="right" size={14} />
+              <NavArrowIcon direction="right" size="md" />
             </Link>
           </CardAction>
         ) : null}

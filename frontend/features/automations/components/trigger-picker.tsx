@@ -1,20 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { Zap } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { NavArrowIcon } from "@/components/ui/nav-arrow-icon";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { useMemo } from "react";
+import { SearchableSelect } from "@/components/forms/searchable-select";
 import { cn } from "@/lib/utils";
-import { CategorizedRegistryList, registryPickerPopoverClassName } from "@/features/automations/components/categorized-registry-list";
-import {
-  useAutomationCategories,
-  useAutomationTriggers,
-} from "@/features/automations/hooks/use-automation-metadata";
+import { useAutomationCategories, useAutomationTriggers } from "@/features/automations/hooks/use-automation-metadata";
 
 type TriggerPickerProps = {
   value?: string | null;
@@ -31,54 +20,39 @@ export function TriggerPicker({
   placeholder = "Select trigger",
   className,
 }: TriggerPickerProps) {
-  const [open, setOpen] = useState(false);
-  const [search, setSearch] = useState("");
   const categoriesQuery = useAutomationCategories("trigger");
   const triggersQuery = useAutomationTriggers();
 
-  const selected = useMemo(
-    () => triggersQuery.data?.find((trigger) => trigger.key === value),
-    [triggersQuery.data, value],
-  );
+  const items = useMemo(() => {
+    const categoryByKey = new Map(
+      (categoriesQuery.data ?? []).map((category) => [category.key, category.label]),
+    );
+    return (triggersQuery.data ?? []).map((trigger) => ({
+      value: trigger.key,
+      label: trigger.label,
+      description: [
+        categoryByKey.get(trigger.category),
+        trigger.description,
+      ]
+        .filter(Boolean)
+        .join(" · "),
+      disabled: trigger.activatable === false,
+    }));
+  }, [categoriesQuery.data, triggersQuery.data]);
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger
-        disabled={disabled}
-        className={cn("w-full", className)}
-        render={
-          <Button
-            type="button"
-            variant="outline"
-            className="w-full justify-between font-normal"
-            disabled={disabled || triggersQuery.isLoading}
-          >
-            <span className="flex min-w-0 items-center gap-2">
-              <Zap className="size-4 shrink-0 text-muted-foreground" />
-              <span className="truncate">
-                {selected?.label ?? placeholder}
-              </span>
-            </span>
-            <NavArrowIcon direction="down" size="lg" className="text-muted-foreground" />
-          </Button>
-        }
-      />
-      <PopoverContent align="start" className={registryPickerPopoverClassName}>
-        <CategorizedRegistryList
-          className="min-h-0 flex-1"
-          listClassName="min-h-0 flex-1"
-          items={triggersQuery.data ?? []}
-          categories={categoriesQuery.data ?? []}
-          search={search}
-          onSearchChange={setSearch}
-          selectedKey={value}
-          onSelect={(key) => {
-            onValueChange(key);
-            setOpen(false);
-          }}
-          searchPlaceholder='Search triggers, e.g. "appointment"'
-        />
-      </PopoverContent>
-    </Popover>
+    <SearchableSelect
+      items={items}
+      value={value ?? null}
+      onValueChange={(next) => {
+        if (next) onValueChange(next);
+      }}
+      placeholder={placeholder}
+      disabled={disabled || triggersQuery.isLoading}
+      emptyMessage={
+        triggersQuery.isLoading ? "Loading triggers…" : "No matching triggers"
+      }
+      triggerClassName={cn("w-full font-normal", className)}
+    />
   );
 }

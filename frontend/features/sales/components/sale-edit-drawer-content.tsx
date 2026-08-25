@@ -7,6 +7,7 @@ import {
   DrawerChevronIcon,
   DrawerTrashIcon,
 } from "@/components/drawer/drawer-icons";
+import { DrawerItemAddLayout } from "@/components/drawer/drawer-item-add-layout";
 import { ContactPicker } from "@/features/contacts/components/contact-picker";
 import { CheckoutAddActions } from "@/features/sales/components/checkout-add-actions";
 import { formatMoney } from "@/features/payments/utils/currencies";
@@ -119,13 +120,15 @@ export function SaleEditDrawerContent({
           />
         </div>
 
-        <div className="flex w-full min-w-0 flex-col gap-3">
-          {sale.items.length === 0 ? (
-            <p className="rounded-[10px] border border-dashed border-[#E8E4DC] bg-violet-primary-surface/40 px-4 py-6 text-center text-[13px] font-medium text-[#8A8A8A]">
-              No line items yet. Add a service or product below.
-            </p>
-          ) : (
-            sale.items.map((item) => {
+        <DrawerItemAddLayout
+          items={
+            <div className="flex w-full min-w-0 flex-col gap-3">
+              {sale.items.length === 0 ? (
+                <p className="rounded-[10px] border border-dashed border-[#E8E4DC] bg-violet-primary-surface/40 px-4 py-6 text-center text-[13px] font-medium text-[#8A8A8A]">
+                  No line items yet. Add a service or product below.
+                </p>
+              ) : (
+                sale.items.map((item) => {
               const isEditing = editingLine?.id === item.id;
               return (
                 <div
@@ -270,18 +273,21 @@ export function SaleEditDrawerContent({
               );
             })
           )}
-        </div>
-
-        <CheckoutAddActions
-          onAddService={onAddService}
-          onAddProduct={onAddProduct}
-          onMoreSelect={(mode) => {
-            if (mode === "giftCard") onAddGiftCard();
-            else if (mode === "package") onAddPackage();
-            else if (mode === "offer") onApplyOffer();
-            else if (mode === "accountBalance") onAddDeposit?.();
-            else onAddGiftCard();
-          }}
+            </div>
+          }
+          actions={
+            <CheckoutAddActions
+              onAddService={onAddService}
+              onAddProduct={onAddProduct}
+              onMoreSelect={(mode) => {
+                if (mode === "giftCard") onAddGiftCard();
+                else if (mode === "package") onAddPackage();
+                else if (mode === "offer") onApplyOffer();
+                else if (mode === "accountBalance") onAddDeposit?.();
+                else onAddGiftCard();
+              }}
+            />
+          }
         />
 
         <div className={SALES_DRAWER_SUMMARY_BLOCK_CLASS}>

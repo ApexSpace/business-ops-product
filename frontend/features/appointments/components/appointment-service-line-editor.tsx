@@ -1,38 +1,26 @@
 "use client";
 
-import { useMemo, useState, type ReactElement } from "react";
+import { cloneElement, useMemo, useState, type MouseEvent, type ReactElement } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
 import { listServices } from "@/features/settings/api/services.api";
+import { SearchableSelect } from "@/components/forms/searchable-select";
 import type { Service } from "@/lib/types/api";
 import { queryKeys } from "@/lib/query/keys";
 import { formatMoney } from "@/features/payments/utils/currencies";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { Input } from "@/components/ui/input";
-import { EmptyState } from "@/components/data-display/empty-state";
-import { LoadingState } from "@/components/data-display/loading-state";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
 } from "@/components/ui/select";
-import { DrawerChevronIcon, DrawerTrashIcon } from "@/components/drawer/drawer-icons";
+import { DrawerTrashIcon } from "@/components/drawer/drawer-icons";
 import { AppointmentSelectionServiceCard } from "@/features/appointments/components/drawer/appointment-service-card";
 import { useServiceEligibleStaff } from "@/features/appointments/hooks/use-service-eligible-staff";
 import {
   APPOINTMENT_DRAWER_FIELD_CLASS,
   APPOINTMENT_DRAWER_ICON_BUTTON_CLASS,
   APPOINTMENT_DRAWER_SERVICE_CARD_CLASS,
-  APPOINTMENT_DRAWER_SERVICE_PICKER_CLASS,
-  APPOINTMENT_DRAWER_SERVICE_PICKER_ITEM_CLASS,
-  APPOINTMENT_DRAWER_SERVICE_PICKER_ITEM_META_CLASS,
-  APPOINTMENT_DRAWER_SERVICE_PICKER_ITEM_NAME_CLASS,
-  APPOINTMENT_DRAWER_SERVICE_PICKER_SEARCH_CLASS,
 } from "@/features/appointments/styles/appointment-drawer-tokens";
 import { cn } from "@/lib/utils";
 import {
@@ -48,15 +36,6 @@ import {
 } from "@/features/appointments/utils/appointment-service-lines";
 
 export type { AppointmentServiceLineSelection, StaffOption };
-
-const APPOINTMENT_SERVICE_PICKER_POPOVER_PROPS = {
-  align: "start" as const,
-  side: "bottom" as const,
-  sideOffset: 6,
-  /** Prefer opening below; shift within viewport instead of flipping over content. */
-  collisionAvoidance: { side: "shift" as const, align: "shift" as const },
-  collisionPadding: 12,
-};
 
 export interface AppointmentServiceLineEditorProps {
   value: AppointmentServiceLineSelection[];
@@ -223,28 +202,11 @@ export function AppointmentServiceLineEditor({
   const [internalPickerOpen, setInternalPickerOpen] = useState(false);
   const pickerOpen = pickerOpenProp ?? internalPickerOpen;
   const setPickerOpen = onPickerOpenChange ?? setInternalPickerOpen;
-  const [search, setSearch] = useState("");
-
-  const { data: servicesPage, isFetching } = useQuery({
-    queryKey: queryKeys.services.list({ page: 1, limit: 100, status: "ACTIVE" }),
-    queryFn: () => listServices({ page: 1, limit: 100, status: "ACTIVE" }),
-    enabled: pickerOpen,
-  });
 
   const selectedIds = useMemo(
     () => new Set(value.map((line) => line.serviceId)),
     [value],
   );
-
-  const availableServices = useMemo(() => {
-    const items = servicesPage?.items ?? [];
-    const term = search.trim().toLowerCase();
-    return items.filter((service) => {
-      if (selectedIds.has(service.id)) return false;
-      if (!term) return true;
-      return service.name.toLowerCase().includes(term);
-    });
-  }, [servicesPage?.items, search, selectedIds]);
 
   const timeSlots = useMemo(
     () => generateAppointmentTimeSlots(slotIntervalMinutes),
@@ -306,39 +268,8 @@ export function AppointmentServiceLineEditor({
       ...value,
       serviceToLineSelection(service, { assignedToId, startMinutes }),
     ]);
-    setSearch("");
     setPickerOpen(false);
   };
-
-  const servicePicker = (
-    <Popover open={pickerOpen} onOpenChange={setPickerOpen}>
-      {value.length === 0 || !filledDisplay ? (
-        <PopoverTrigger
-          disabled={disabled}
-          className={cn(
-            APPOINTMENT_DRAWER_FIELD_CLASS,
-            "flex w-full items-center justify-between gap-2 text-[14px] font-normal text-[#9A9A9A] hover:bg-[#F6F1FE]/40 disabled:cursor-not-allowed disabled:opacity-50",
-          )}
-        >
-          <span>Select a service</span>
-          <DrawerChevronIcon direction="down" />
-        </PopoverTrigger>
-      ) : (
-        <PopoverTrigger className="sr-only" tabIndex={-1} aria-hidden>
-          Add service
-        </PopoverTrigger>
-      )}
-      <ServicePickerPopoverContent
-        search={search}
-        onSearchChange={setSearch}
-        isFetching={isFetching}
-        availableServices={availableServices}
-        selectedIds={selectedIds}
-        currencyCode={currencyCode}
-        onAdd={handleAdd}
-      />
-    </Popover>
-  );
 
   return (
     <div className={cn(isDrawer ? "space-y-0" : "space-y-3", className)}>
@@ -374,33 +305,51 @@ export function AppointmentServiceLineEditor({
           )}
         </div>
       ) : (
-        servicePicker
+        <AppointmentServiceCombobox
+          excludedIds={selectedIds}
+          onAdd={handleAdd}
+          currencyCode={currencyCode}
+          disabled={disabled}
+          placeholder="Select a service"
+          triggerClassName={cn(APPOINTMENT_DRAWER_FIELD_CLASS, "font-normal")}
+          onOpenChange={setPickerOpen}
+        />
       )}
 
       {value.length > 0 && !isDrawer ? (
-        <Popover open={pickerOpen} onOpenChange={setPickerOpen}>
-          <PopoverTrigger
+        pickerOpen ? (
+          <AppointmentServiceCombobox
+            excludedIds={selectedIds}
+            onAdd={handleAdd}
+            currencyCode={currencyCode}
+            disabled={disabled}
+            placeholder="Search services…"
+            onOpenChange={setPickerOpen}
+          />
+        ) : (
+          <button
+            type="button"
             disabled={disabled}
             className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-[#7E3BED] hover:underline disabled:opacity-50"
+            onClick={() => setPickerOpen(true)}
           >
             <Plus className="size-4" />
             Add another service
-          </PopoverTrigger>
-          <ServicePickerPopoverContent
-            search={search}
-            onSearchChange={setSearch}
-            isFetching={isFetching}
-            availableServices={availableServices}
-            selectedIds={selectedIds}
-            currencyCode={currencyCode}
-            onAdd={handleAdd}
-          />
-        </Popover>
+          </button>
+        )
       ) : null}
 
-      {value.length > 0 && isDrawer && filledDisplay && !onPickerOpenChange
-        ? servicePicker
-        : null}
+      {value.length > 0 && isDrawer && filledDisplay && !onPickerOpenChange && pickerOpen ? (
+        <AppointmentServiceCombobox
+          excludedIds={selectedIds}
+          onAdd={handleAdd}
+          currencyCode={currencyCode}
+          disabled={disabled}
+          placeholder="Search services…"
+          triggerClassName={cn(APPOINTMENT_DRAWER_FIELD_CLASS, "font-normal")}
+          onOpenChange={setPickerOpen}
+        />
+      ) : null}
     </div>
   );
 }
@@ -408,141 +357,92 @@ export function AppointmentServiceLineEditor({
 export interface AppointmentServicePickerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  trigger: ReactElement;
+  trigger: ReactElement<{ onClick?: (event: MouseEvent<HTMLElement>) => void }>;
   value: AppointmentServiceLineSelection[];
   onAdd: (service: Service) => void;
   currencyCode?: string;
 }
 
-/** Service picker anchored to an external trigger (e.g. Add Service row). */
+/** Add-service control. The searchable list is rendered by the parent, not a nested popover. */
 export function AppointmentServicePicker({
   open,
   onOpenChange,
   trigger,
-  value,
+}: AppointmentServicePickerProps) {
+  return cloneElement(trigger, {
+    onClick: (event: MouseEvent<HTMLElement>) => {
+      trigger.props.onClick?.(event);
+      onOpenChange(!open);
+    },
+  });
+}
+
+export function AppointmentServiceCombobox({
+  excludedIds,
   onAdd,
   currencyCode = "USD",
-}: AppointmentServicePickerProps) {
-  const [search, setSearch] = useState("");
+  disabled = false,
+  placeholder = "Select a service",
+  triggerClassName,
+  onOpenChange,
+  defaultOpen = false,
+}: {
+  excludedIds: Set<string> | readonly string[];
+  onAdd: (service: Service) => void;
+  currencyCode?: string;
+  disabled?: boolean;
+  placeholder?: string;
+  triggerClassName?: string;
+  onOpenChange?: (open: boolean) => void;
+  defaultOpen?: boolean;
+}) {
+  const excluded = useMemo(
+    () => (excludedIds instanceof Set ? excludedIds : new Set(excludedIds)),
+    [excludedIds],
+  );
 
   const { data: servicesPage, isFetching } = useQuery({
     queryKey: queryKeys.services.list({ page: 1, limit: 100, status: "ACTIVE" }),
     queryFn: () => listServices({ page: 1, limit: 100, status: "ACTIVE" }),
-    enabled: open,
   });
 
-  const selectedIds = useMemo(
-    () => new Set(value.map((line) => line.serviceId)),
-    [value],
+  const items = useMemo(
+    () =>
+      (servicesPage?.items ?? [])
+        .filter((service) => !excluded.has(service.id))
+        .map((service) => ({
+          value: service.id,
+          label: servicePickerLabel(service, currencyCode),
+        })),
+    [servicesPage?.items, excluded, currencyCode],
   );
 
-  const availableServices = useMemo(() => {
-    const items = servicesPage?.items ?? [];
-    const term = search.trim().toLowerCase();
-    return items.filter((service) => {
-      if (selectedIds.has(service.id)) return false;
-      if (!term) return true;
-      return service.name.toLowerCase().includes(term);
-    });
-  }, [servicesPage?.items, search, selectedIds]);
-
   return (
-    <Popover open={open} onOpenChange={onOpenChange}>
-      <PopoverTrigger render={trigger} />
-      <ServicePickerPopoverContent
-        search={search}
-        onSearchChange={setSearch}
-        isFetching={isFetching}
-        availableServices={availableServices}
-        selectedIds={selectedIds}
-        currencyCode={currencyCode}
-        onAdd={(service) => {
-          onAdd(service);
-          setSearch("");
-          onOpenChange(false);
-        }}
-      />
-    </Popover>
+    <SearchableSelect
+      items={items}
+      value={null}
+      onValueChange={(id) => {
+        const service = (servicesPage?.items ?? []).find((item) => item.id === id);
+        if (service) onAdd(service);
+      }}
+      placeholder={placeholder}
+      emptyMessage={isFetching ? "Loading services…" : "No services available"}
+      disabled={disabled}
+      triggerClassName={triggerClassName}
+      onOpenChange={onOpenChange}
+      defaultOpen={defaultOpen}
+    />
   );
 }
 
-function ServicePickerPopoverContent({
-  search,
-  onSearchChange,
-  isFetching,
-  availableServices,
-  selectedIds,
-  currencyCode,
-  onAdd,
-}: {
-  search: string;
-  onSearchChange: (value: string) => void;
-  isFetching: boolean;
-  availableServices: Service[];
-  selectedIds: Set<string>;
-  currencyCode: string;
-  onAdd: (service: Service) => void;
-}) {
-  return (
-    <PopoverContent
-      {...APPOINTMENT_SERVICE_PICKER_POPOVER_PROPS}
-      className={APPOINTMENT_DRAWER_SERVICE_PICKER_CLASS}
-    >
-      <div className="border-b border-[#EEEAE6] px-3 py-2">
-        <Input
-          value={search}
-          onChange={(event) => onSearchChange(event.target.value)}
-          placeholder="Search services…"
-          autoFocus
-          className={APPOINTMENT_DRAWER_SERVICE_PICKER_SEARCH_CLASS}
-        />
-      </div>
-      <div
-        className="max-h-52 overflow-y-auto overscroll-contain px-2 py-2"
-        role="listbox"
-        aria-label="Services"
-      >
-        {isFetching ? (
-          <div className="flex justify-center px-2 py-6">
-            <LoadingState variant="inline" label="Loading services…" />
-          </div>
-        ) : availableServices.length === 0 ? (
-          <EmptyState compact title="No services available" className="py-6" />
-        ) : (
-          availableServices.map((service) => {
-            const duration =
-              service.clientOccupancyMinutes ?? service.durationMinutes ?? 0;
-            const meta = [
-              duration > 0 ? `${duration} min` : null,
-              service.price
-                ? formatMoney(service.price, currencyCode)
-                : null,
-            ]
-              .filter(Boolean)
-              .join(" · ");
-
-            return (
-              <button
-                key={service.id}
-                type="button"
-                role="option"
-                aria-selected={selectedIds.has(service.id)}
-                className={APPOINTMENT_DRAWER_SERVICE_PICKER_ITEM_CLASS}
-                onClick={() => onAdd(service)}
-              >
-                <span className={APPOINTMENT_DRAWER_SERVICE_PICKER_ITEM_NAME_CLASS}>
-                  {service.name}
-                </span>
-                {meta ? (
-                  <span className={APPOINTMENT_DRAWER_SERVICE_PICKER_ITEM_META_CLASS}>
-                    {meta}
-                  </span>
-                ) : null}
-              </button>
-            );
-          })
-        )}
-      </div>
-    </PopoverContent>
-  );
+function servicePickerLabel(service: Service, currencyCode: string) {
+  const duration =
+    service.clientOccupancyMinutes ?? service.durationMinutes ?? 0;
+  const meta = [
+    duration > 0 ? `${duration} min` : null,
+    service.price ? formatMoney(service.price, currencyCode) : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+  return meta ? `${service.name} — ${meta}` : service.name;
 }

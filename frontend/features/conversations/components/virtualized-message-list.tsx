@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { MoreHorizontal, RefreshCw, Trash2 } from "lucide-react";
 import { ProfileAvatar } from "@/components/ui/profile-avatar";
@@ -17,7 +17,9 @@ import {
   formatRelativeTime,
   isSameMessageDay,
 } from "@/lib/ui/relative-time";
+import type { ConversationNote } from "@/features/conversations/api/conversation-notes.api";
 import type { ConversationMessage } from "@/features/conversations/api/conversations.api";
+import { ConversationChannelGlyph } from "@/features/conversations/components/inbox/conversation-channel-display";
 import { MessageDeliveryStatus } from "@/features/conversations/components/message-delivery-status";
 import { displayInboundEmailBody } from "@/features/conversations/utils/email-reply-body";
 import {
@@ -26,6 +28,7 @@ import {
 } from "@/features/conversations/utils/message-attachments";
 import { isConversationActivityMessage } from "@/features/conversations/utils/conversation-activity.util";
 import { isDeletableConversationMessage } from "@/features/conversations/utils/message-delete.util";
+import { buildThreadTimeline } from "@/features/conversations/utils/thread-timeline";
 
 const NEAR_BOTTOM_THRESHOLD_PX = 120;
 
@@ -37,6 +40,8 @@ export type MessageListThreadContext = {
 
 type VirtualizedMessageListProps = {
   messages: ConversationMessage[];
+  /** Staff-only internal notes, interleaved into the thread timeline. */
+  notes?: ConversationNote[];
   onLoadMore?: () => void;
   hasMore?: boolean;
   isLoadingMore?: boolean;
@@ -53,6 +58,7 @@ type VirtualizedMessageListProps = {
 
 export function VirtualizedMessageList({
   messages,
+  notes = [],
   onLoadMore,
   hasMore,
   isLoadingMore,
@@ -67,14 +73,26 @@ export function VirtualizedMessageList({
 }: VirtualizedMessageListProps) {
   const parentRef = useRef<HTMLDivElement>(null);
   const isNearBottomRef = useRef(true);
-  const previousCountRef = useRef(messages.length);
+  const timeline = useMemo(
+    () =>
+      variant === "thread"
+        ? buildThreadTimeline(messages, notes)
+        : messages.map((message) => ({
+            kind: "message" as const,
+            id: `message:${message.id}`,
+            createdAt: message.createdAt,
+            message,
+          })),
+    [messages, notes, variant],
+  );
+  const previousCountRef = useRef(timeline.length);
   const paginationReadyRef = useRef(false);
   const loadMoreLockRef = useRef(false);
 
   const virtualizer = useVirtualizer({
-    count: messages.length,
+    count: timeline.length,
     getScrollElement: () => parentRef.current,
-    estimateSize: () => (variant === "thread" ? 132 : 72),
+    estimateSize: () => (variant === "thread" ? 148 : 72),
     overscan: 8,
   });
 
@@ -103,10 +121,10 @@ export function VirtualizedMessageList({
   }, [scrollKey]);
 
   useEffect(() => {
-    if (messages.length === 0 || paginationReadyRef.current) return;
+    if (timeline.length === 0 || paginationReadyRef.current) return;
 
     const frame = requestAnimationFrame(() => {
-      virtualizer.scrollToIndex(messages.length - 1, { align: "end" });
+      virtualizer.scrollToIndex(timeline.length - 1, { align: "end" });
       requestAnimationFrame(() => {
         const parent = parentRef.current;
         if (parent) {
@@ -114,22 +132,22 @@ export function VirtualizedMessageList({
         }
         paginationReadyRef.current = true;
         isNearBottomRef.current = true;
-        previousCountRef.current = messages.length;
+        previousCountRef.current = timeline.length;
       });
     });
 
     return () => cancelAnimationFrame(frame);
-  }, [scrollKey, messages.length, messages[messages.length - 1]?.id, virtualizer]);
+  }, [scrollKey, timeline.length, timeline[timeline.length - 1]?.id, virtualizer]);
 
   useEffect(() => {
-    const grew = messages.length > previousCountRef.current;
+    const grew = timeline.length > previousCountRef.current;
     const prepended =
       grew &&
       paginationReadyRef.current &&
       !isNearBottomRef.current;
-    previousCountRef.current = messages.length;
+    previousCountRef.current = timeline.length;
 
-    if (!grew || messages.length === 0) {
+    if (!grew || timeline.length === 0) {
       return;
     }
 
@@ -142,9 +160,9 @@ export function VirtualizedMessageList({
     }
 
     requestAnimationFrame(() => {
-      virtualizer.scrollToIndex(messages.length - 1, { align: "end" });
+      virtualizer.scrollToIndex(timeline.length - 1, { align: "end" });
     });
-  }, [messages.length, virtualizer]);
+  }, [timeline.length, virtualizer]);
 
   useEffect(() => {
     if (!isLoadingMore) {
@@ -157,7 +175,7 @@ export function VirtualizedMessageList({
       ref={parentRef}
       className={cn(
         "scrollbar-thin h-full min-h-0 overflow-y-auto",
-        variant === "thread" ? "px-4 py-3" : "px-1",
+        variant === "thread" ? "px-6 py-6" : "px-1",
       )}
       onScroll={(e) => {
         const el = e.currentTarget;
@@ -182,20 +200,17 @@ export function VirtualizedMessageList({
         }}
       >
         {items.map((virtualRow) => {
-          const message = messages[virtualRow.index];
-          const previousMessage =
-            virtualRow.index > 0 ? messages[virtualRow.index - 1] : null;
+          const entry = timeline[virtualRow.index];
+          const previousEntry =
+            virtualRow.index > 0 ? timeline[virtualRow.index - 1] : null;
           const showDateSeparator =
             variant === "thread" &&
-            (!previousMessage ||
-              !isSameMessageDay(
-                previousMessage.createdAt,
-                message.createdAt,
-              ));
+            (!previousEntry ||
+              !isSameMessageDay(previousEntry.createdAt, entry.createdAt));
 
           return (
             <div
-              key={message.id}
+              key={entry.id}
               data-index={virtualRow.index}
               ref={virtualizer.measureElement}
               style={{
@@ -205,30 +220,34 @@ export function VirtualizedMessageList({
                 width: "100%",
                 transform: `translateY(${virtualRow.start}px)`,
               }}
-              className={cn(variant === "thread" ? "px-0 py-2.5" : "px-2 py-1.5")}
+              className={cn(variant === "thread" ? "px-0 py-3" : "px-2 py-1.5")}
             >
               {showDateSeparator ? (
-                <DateSeparator label={formatMessageDateSeparator(message.createdAt)} />
+                <DateSeparator
+                  label={formatMessageDateSeparator(entry.createdAt)}
+                />
               ) : null}
-              {variant === "thread" && threadContext ? (
-                isConversationActivityMessage(message) ? (
-                  <ActivityTimelineRow message={message} />
+              {entry.kind === "note" ? (
+                <InternalNoteBubble note={entry.note} />
+              ) : variant === "thread" && threadContext ? (
+                isConversationActivityMessage(entry.message) ? (
+                  <ActivityTimelineRow message={entry.message} />
                 ) : (
                   <ThreadMessageBubble
-                    message={message}
+                    message={entry.message}
                     threadContext={threadContext}
                     deleteMode={messageDeleteMode}
                     onRequestDelete={onRequestDeleteMessage}
                     onRetry={onRetryMessage}
-                    isRetrying={retryingMessageId === message.id}
+                    isRetrying={retryingMessageId === entry.message.id}
                     canRetry={canRetryMessages}
                   />
                 )
               ) : (
                 <MessageBubble
-                  message={message}
+                  message={entry.message}
                   onRetry={onRetryMessage}
-                  isRetrying={retryingMessageId === message.id}
+                  isRetrying={retryingMessageId === entry.message.id}
                   canRetry={canRetryMessages}
                 />
               )}
@@ -315,12 +334,44 @@ function parseTemplateDisplay(message: ConversationMessage): {
 
 function DateSeparator({ label }: { label: string }) {
   return (
-    <div className="mb-4 flex items-center gap-3">
-      <div className="h-px flex-1 bg-border/50" />
-      <span className="shrink-0 rounded-full border border-border/60 bg-muted/30 px-2.5 py-0.5 text-[11px] font-medium text-muted-foreground">
+    <div className="mb-6 flex items-center justify-center">
+      <span className="rounded-full bg-violet-primary-surface px-3 py-0.5 text-xs font-medium text-violet-primary-normal">
         {label}
       </span>
-      <div className="h-px flex-1 bg-border/50" />
+    </div>
+  );
+}
+
+function noteAuthorLabel(note: ConversationNote): string {
+  const name = [note.author.firstName, note.author.lastName]
+    .filter(Boolean)
+    .join(" ")
+    .trim();
+  return name || note.author.email;
+}
+
+function InternalNoteBubble({ note }: { note: ConversationNote }) {
+  return (
+    <div className="flex justify-center">
+      <div
+        className="flex w-full max-w-[min(90%,36rem)] flex-col gap-1.5 rounded-[var(--radius-xl)] border border-warning/25 bg-warning-subtle px-3.5 py-2.5"
+        role="note"
+      >
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-[11px] font-semibold tracking-wide text-warning uppercase">
+            Internal Note
+          </p>
+          <p className="text-[11px] text-muted-foreground">
+            {noteAuthorLabel(note)} · {formatMessageTime(note.createdAt)}
+          </p>
+        </div>
+        <p className="text-sm leading-relaxed break-words whitespace-pre-wrap text-foreground">
+          {note.body}
+        </p>
+        <p className="text-[11px] text-muted-foreground">
+          Not visible to the client
+        </p>
+      </div>
     </div>
   );
 }
@@ -338,8 +389,8 @@ function MessageAvatar({
     return (
       <ProfileAvatar
         name={name}
-        className="mt-0.5 size-8"
-        fallbackClassName="bg-primary/12 text-[11px] font-semibold text-primary"
+        className="size-8"
+        fallbackClassName="bg-violet-primary-surface text-[11px] font-semibold text-violet-primary-normal"
       />
     );
   }
@@ -348,19 +399,19 @@ function MessageAvatar({
     <ProfileAvatar
       name={name}
       avatarUrl={avatarUrl}
-      className="mt-0.5 size-8"
-      fallbackClassName="bg-muted text-[11px] font-semibold text-foreground"
+      className="size-8"
+      fallbackClassName="bg-[var(--drawer-avatar-bg)] text-[11px] font-semibold text-[var(--drawer-avatar-fg)]"
     />
   );
 }
 
 function outboundSenderLabel(
   message: ConversationMessage,
-  businessName?: string | null,
+  _businessName?: string | null,
 ): string {
   if (message.senderType === "SYSTEM") return "Bot";
   if (message.senderType === "AI_AGENT") return "AI Assistant";
-  return businessName?.trim() || "You";
+  return "Staff (You)";
 }
 
 function ActivityTimelineRow({ message }: { message: ConversationMessage }) {
@@ -442,126 +493,175 @@ function ThreadMessageBubble({
   return (
     <div
       className={cn(
-        "group/message flex gap-3",
-        outbound ? "flex-row-reverse" : "flex-row",
+        "group/message flex w-full flex-col gap-1.5",
+        outbound ? "items-end" : "items-start",
       )}
     >
-      <MessageAvatar
-        name={senderName}
-        avatarUrl={avatarUrl}
-        outbound={outbound}
-      />
-      <div
-        className={cn(
-          "flex min-w-0 max-w-[min(78%,540px)] flex-col gap-1.5",
-          outbound ? "items-end" : "items-start",
-        )}
-      >
-        <p
-          className={cn(
-            "px-0.5 text-[11px] font-medium tracking-wide text-muted-foreground",
-            outbound ? "text-right" : "text-left",
-          )}
-        >
-          {senderName}
-        </p>
-        <div
-          className={cn(
-            "flex w-full items-start gap-2",
-            outbound ? "flex-row-reverse" : "flex-row",
-          )}
-        >
-          {deleteMode ? (
-            <button
-              type="button"
-              className="mt-2 inline-flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-destructive"
-              aria-label={
-                canDelete
-                  ? "Delete message"
-                  : "Automated message cannot be deleted"
-              }
-              onClick={() => onRequestDelete?.(message)}
-            >
-              <Trash2 className="size-3.5" />
-            </button>
-          ) : null}
-          <div
-            className={cn(
-              "min-w-0 flex-1 rounded-xl border px-3.5 py-2.5 text-sm shadow-elevation-xs",
-              outbound
-                ? "border-transparent bg-violet-primary-normal text-white"
-                : "border-border bg-card text-foreground",
-              failed &&
-                "border-destructive/40 bg-destructive/8 text-destructive",
-            )}
-          >
-            <MessageBody
-              message={message}
-              attachments={attachments}
-              displayText={displayText}
-              templateDisplay={templateDisplay}
-              variant="thread"
-            />
-          </div>
-        </div>
-        <div
-          className={cn(
-            "flex items-center gap-1.5 px-0.5 text-[11px] tabular-nums text-muted-foreground/80",
-            outbound ? "flex-row-reverse" : "flex-row",
-          )}
-        >
-          <span>{formatMessageTime(message.createdAt)}</span>
-          {failed ? (
-            <span
-              className="text-destructive"
-              title={message.errorMessage ?? undefined}
-            >
-              · Failed to send
-            </span>
-          ) : null}
-          {showRetry ? (
-            <FailedMessageRetryButton
-              onRetry={() => onRetry?.(message)}
-              isRetrying={isRetrying}
-            />
-          ) : null}
-          {outbound && !failed ? (
-            <MessageDeliveryStatus
-              status={message.status}
-              showLabel
-              tone="onBrand"
-            />
-          ) : null}
-          {!deleteMode && onRequestDelete ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger
-                render={
-                  <button
-                    type="button"
-                    className="inline-flex size-5 items-center justify-center rounded-md text-muted-foreground/70 opacity-0 transition-opacity hover:bg-muted/60 hover:text-foreground group-hover/message:opacity-100 data-[popup-open]:opacity-100"
-                    aria-label="Message options"
-                  >
-                    <MoreHorizontal className="size-3.5" />
-                  </button>
-                }
-              />
-              <DropdownMenuContent
-                align={outbound ? "end" : "start"}
-                className="min-w-36"
-              >
-                <DropdownMenuItem
-                  variant="destructive"
-                  onClick={() => onRequestDelete(message)}
+      {outbound ? (
+        <div className="flex max-w-[min(78%,34rem)] items-start gap-2">
+          <div className="flex min-w-0 flex-1 flex-col items-end gap-1.5">
+            <p className="flex flex-wrap items-center justify-end gap-1.5 px-0.5 text-[11px] text-muted-foreground">
+              <ConversationChannelGlyph channel={message.channel} />
+              <span className="tabular-nums">
+                {formatMessageTime(message.createdAt)}
+              </span>
+              <span className="font-medium text-foreground">{senderName}</span>
+            </p>
+            <div className="flex w-full items-start justify-end gap-2">
+              {deleteMode ? (
+                <button
+                  type="button"
+                  className="mt-1 inline-flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-destructive"
+                  aria-label={
+                    canDelete
+                      ? "Delete message"
+                      : "Automated message cannot be deleted"
+                  }
+                  onClick={() => onRequestDelete?.(message)}
                 >
-                  <Trash2 className="size-4" />
-                  Delete
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                  <Trash2 className="size-3.5" />
+                </button>
+              ) : null}
+              <div
+                className={cn(
+                  "min-w-0 rounded-[var(--radius-xl)] px-3.5 py-2.5 text-sm shadow-none",
+                  failed
+                    ? "border border-destructive/40 bg-destructive/8 text-destructive"
+                    : "bg-violet-primary-normal text-white",
+                )}
+              >
+                <MessageBody
+                  message={message}
+                  attachments={attachments}
+                  displayText={displayText}
+                  templateDisplay={templateDisplay}
+                  variant="thread"
+                />
+              </div>
+            </div>
+            <div className="flex items-center gap-1.5 px-0.5 text-[11px] tabular-nums text-muted-foreground">
+              {failed ? (
+                <span
+                  className="text-destructive"
+                  title={message.errorMessage ?? undefined}
+                >
+                  Failed to send
+                </span>
+              ) : (
+                <MessageDeliveryStatus
+                  status={message.status}
+                  showLabel
+                />
+              )}
+              {showRetry ? (
+                <FailedMessageRetryButton
+                  onRetry={() => onRetry?.(message)}
+                  isRetrying={isRetrying}
+                />
+              ) : null}
+              {!deleteMode && onRequestDelete ? (
+                <MessageOptionsMenu
+                  align="end"
+                  onDelete={() => onRequestDelete(message)}
+                />
+              ) : null}
+            </div>
+          </div>
+          <MessageAvatar
+            name={senderName}
+            avatarUrl={avatarUrl}
+            outbound={outbound}
+          />
+        </div>
+      ) : (
+        <div className="flex max-w-[min(78%,34rem)] flex-col items-start gap-1.5">
+          <div className="flex items-center gap-2">
+            <MessageAvatar
+              name={senderName}
+              avatarUrl={avatarUrl}
+              outbound={outbound}
+            />
+            <p className="flex min-w-0 flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">
+              <span className="font-medium text-foreground">{senderName}</span>
+              <span className="tabular-nums">
+                {formatMessageTime(message.createdAt)}
+              </span>
+              <ConversationChannelGlyph channel={message.channel} />
+            </p>
+          </div>
+          <div className="flex w-full items-start gap-2 ps-10">
+            {deleteMode ? (
+              <button
+                type="button"
+                className="mt-1 inline-flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-destructive"
+                aria-label={
+                  canDelete
+                    ? "Delete message"
+                    : "Automated message cannot be deleted"
+                }
+                onClick={() => onRequestDelete?.(message)}
+              >
+                <Trash2 className="size-3.5" />
+              </button>
+            ) : null}
+            <div
+              className={cn(
+                "min-w-0 rounded-[var(--radius-xl)] border px-3.5 py-2.5 text-sm shadow-none",
+                failed
+                  ? "border-destructive/40 bg-destructive/8 text-destructive"
+                  : "border-border bg-white text-foreground",
+              )}
+            >
+              <MessageBody
+                message={message}
+                attachments={attachments}
+                displayText={displayText}
+                templateDisplay={templateDisplay}
+                variant="thread"
+              />
+            </div>
+          </div>
+          {!deleteMode && onRequestDelete ? (
+            <div className="flex items-center gap-1.5 ps-10">
+              <MessageOptionsMenu
+                align="start"
+                onDelete={() => onRequestDelete(message)}
+              />
+            </div>
           ) : null}
         </div>
-      </div>
+      )}
     </div>
+  );
+}
+
+function MessageOptionsMenu({
+  align,
+  onDelete,
+}: {
+  align: "start" | "end";
+  onDelete: () => void;
+}) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        render={
+          <button
+            type="button"
+            className="inline-flex size-5 items-center justify-center rounded-md text-muted-foreground/70 opacity-0 transition-opacity hover:bg-muted/60 hover:text-foreground group-hover/message:opacity-100 data-[popup-open]:opacity-100"
+            aria-label="Message options"
+          >
+            <MoreHorizontal className="size-3.5" />
+          </button>
+        }
+      />
+      <DropdownMenuContent align={align} className="min-w-36">
+        <DropdownMenuItem variant="destructive" onClick={onDelete}>
+          <Trash2 className="size-4" />
+          Delete
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 

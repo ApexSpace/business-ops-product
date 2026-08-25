@@ -90,7 +90,7 @@ export function CalendarEditAdvancedTabSection(
           Policies & payments
           <NavArrowIcon
             direction={policiesOpen ? "up" : "down"}
-            size="lg"
+            size="sm"
           />
         </Button>
         {policiesOpen ? (

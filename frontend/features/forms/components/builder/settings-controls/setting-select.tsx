@@ -49,7 +49,7 @@ export function SettingSelect({
             >
               {selected?.label ?? placeholder}
             </span>
-            <NavArrowIcon direction="down" size="lg" className="text-muted-foreground" />
+            <NavArrowIcon direction="down" size="sm" className="text-muted-foreground" />
           </button>
         }
       />

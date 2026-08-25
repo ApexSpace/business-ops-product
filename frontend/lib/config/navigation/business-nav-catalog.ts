@@ -358,8 +358,8 @@ export function decorateShellNavItem(item: ShellNavItem): ShellNavItem {
 }
 
 /**
- * SSR fallback for core items only. Overflow visibility is measured in JS so
- * the bar can keep adding items after Products.
+ * SSR fallback for core items only. Overflow items pack from measured
+ * extra capacity in the navbar, not from CSS breakpoints.
  */
 export function navbarPriorityVisibilityClass(
   priority?: NavbarPriority,

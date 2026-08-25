@@ -200,23 +200,42 @@ export {
 
 /**
  * Desktop lg+ — list, thread, and contact sidebar in three columns.
+ * List track is a stable rem width (Figma ~339px → 21.25rem), not a raw px lock.
  */
 export const INBOX_DESKTOP_ROW_CLASS = [
-  "hidden h-full min-h-0 w-full max-w-full flex-1 items-stretch overflow-x-auto overflow-y-hidden lg:grid",
-  WORKSPACE_GAP_CLASS,
-  WORKSPACE_PADDING_CLASS,
-  "lg:grid-cols-[minmax(240px,280px)_minmax(420px,2.2fr)_minmax(260px,300px)]",
-  "2xl:grid-cols-[260px_minmax(520px,2.4fr)_300px]",
+  "hidden h-full min-h-0 w-full max-w-full flex-1 items-stretch overflow-hidden lg:grid",
+  "lg:grid-cols-[minmax(16rem,21.25rem)_minmax(0,1fr)_minmax(16rem,22.5rem)]",
+  "2xl:grid-cols-[21.25rem_minmax(0,1fr)_22.5rem]",
 ].join(" ");
+
+/** Conversation list pane — flush white column with a tokenized right divider. */
+export const INBOX_LIST_PANEL_CLASS =
+  "flex h-full min-h-0 w-full min-w-0 flex-col overflow-hidden border-r border-border bg-white";
+
+/** Conversation thread pane — flush white column between list and details. */
+export const INBOX_THREAD_PANEL_CLASS =
+  "flex h-full min-h-0 w-full min-w-0 flex-col overflow-hidden bg-white";
+
+export const INBOX_THREAD_HEADER_CLASS =
+  "flex min-h-[var(--control-height)] shrink-0 items-center gap-3 border-b border-border bg-white px-6 py-3";
+
+/** Details pane — Figma ~360px → 22.5rem, flush white with a left divider on desktop. */
+export const INBOX_DETAILS_PANEL_CLASS =
+  "flex h-full min-h-0 w-full min-w-0 flex-col overflow-hidden bg-white lg:border-l lg:border-border";
+
+/** Same rhythm as the thread header; hidden on mobile where a Back bar already exists. */
+export const INBOX_DETAILS_HEADER_CLASS =
+  `${INBOX_THREAD_HEADER_CLASS} max-md:hidden max-lg:pr-12`;
+
+export const INBOX_DETAILS_SECTION_CLASS =
+  "flex flex-col gap-2.5 border-b border-border px-6 py-6 last:border-b-0";
 
 /** Tablet md–lg: list + thread; details open in a sheet */
-export const INBOX_TABLET_MAIN_ROW_CLASS = [
-  "flex h-full min-h-0 w-full flex-1 overflow-hidden",
-  WORKSPACE_GAP_CLASS,
-].join(" ");
+export const INBOX_TABLET_MAIN_ROW_CLASS =
+  "flex h-full min-h-0 w-full flex-1 overflow-hidden";
 
 export const INBOX_TABLET_LIST_COL_CLASS =
-  "flex h-full min-h-0 w-[min(32%,260px)] min-w-[220px] max-w-[280px] shrink-0 overflow-hidden";
+  "flex h-full min-h-0 w-[min(40%,21.25rem)] min-w-[16rem] max-w-[21.25rem] shrink-0 overflow-hidden";
 
 export const INBOX_TABLET_THREAD_COL_CLASS =
   "flex h-full min-h-0 min-w-[300px] flex-[1.6] basis-0 overflow-hidden";

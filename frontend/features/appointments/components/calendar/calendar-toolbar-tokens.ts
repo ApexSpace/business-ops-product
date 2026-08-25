@@ -58,17 +58,6 @@ export const CALENDAR_TOOLBAR_OUTLINE_BUTTON_CLASS = cn(
 export const CALENDAR_TOOLBAR_NAV_BUTTON_SIZE_CLASS = "h-11 w-8";
 
 /**
- * ── TUNE PREV / NEXT CHEVRON GLYPH HERE ────────────────────────────
- * Edit these two numbers only. Both < and > use them.
- * Independent of the button box above. Values are pixels.
- * Figma default: 7.36 × 12.73
- */
-export const CALENDAR_TOOLBAR_NAV_ICON_SIZE = {
-  width: 7.36,
-  height: 12.73,
-};
-
-/**
  * Prev / next — Figma Left Buttons sides (`weui:arrow-filled`):
  * radius/xs, 1px primary/500 border, white fill; parent gap 10.
  */

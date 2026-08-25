@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, type ReactNode } from "react";
-import { ImagePlus, Info, Paperclip, Send, X } from "lucide-react";
+import { ImagePlus, Info, Loader2, Paperclip, Send, X } from "lucide-react";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -70,7 +70,6 @@ interface MessageComposerProps {
   channelBarChannels?: ContactReplyChannel[];
   channelBarValue?: ConversationChannel | null;
   onChannelBarChange?: (channel: ConversationChannel) => void;
-  channelBarReadOnly?: boolean;
   whatsAppRequiresTemplate?: boolean;
   selectedTemplateId?: string | null;
   onTemplateIdChange?: (templateId: string | null) => void;
@@ -80,8 +79,14 @@ interface MessageComposerProps {
   onTemplateHeaderMediaUrlChange?: (value: string) => void;
   onSend: () => void;
   variant?: "default" | "thread";
+  composerTab?: "reply" | "note";
+  onComposerTabChange?: (tab: "reply" | "note") => void;
   showCannedResponses?: boolean;
   notesPanel?: ReactNode;
+  noteDraft?: string;
+  onNoteDraftChange?: (value: string) => void;
+  onCreateNote?: () => void;
+  notePending?: boolean;
 }
 
 function ComposerStatusBanner({ message }: { message: string }) {
@@ -138,7 +143,7 @@ function ComposerFieldRow({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex min-w-0 items-center gap-2 border-b border-border/40 px-3 py-1.5">
+    <div className="flex min-h-11 min-w-0 items-center gap-2 border-b border-border px-3 py-1.5">
       <span className="w-12 shrink-0 text-[11px] font-medium text-muted-foreground">
         {label}
       </span>
@@ -172,7 +177,6 @@ export function MessageComposer({
   channelBarChannels,
   channelBarValue,
   onChannelBarChange,
-  channelBarReadOnly = false,
   whatsAppRequiresTemplate = false,
   selectedTemplateId = null,
   onTemplateIdChange,
@@ -182,11 +186,26 @@ export function MessageComposer({
   onTemplateHeaderMediaUrlChange,
   onSend,
   variant = "default",
+  composerTab: composerTabProp,
+  onComposerTabChange,
   showCannedResponses = true,
   notesPanel,
+  noteDraft = "",
+  onNoteDraftChange,
+  onCreateNote,
+  notePending = false,
 }: MessageComposerProps) {
   const [attachmentOpen, setAttachmentOpen] = useState(false);
-  const [composerTab, setComposerTab] = useState<"reply" | "note">("reply");
+  const [internalComposerTab, setInternalComposerTab] = useState<
+    "reply" | "note"
+  >("reply");
+  const composerTab = composerTabProp ?? internalComposerTab;
+  const setComposerTab = (tab: "reply" | "note") => {
+    onComposerTabChange?.(tab);
+    if (composerTabProp === undefined) {
+      setInternalComposerTab(tab);
+    }
+  };
   const [smsConfirmOpen, setSmsConfirmOpen] = useState(false);
   const [smsInsertWarning, setSmsInsertWarning] = useState<string | null>(null);
 
@@ -283,18 +302,22 @@ export function MessageComposer({
     />
   );
 
+  const composerToolButtonClass =
+    "size-[var(--control-height-sm)] shrink-0 rounded-full text-muted-foreground";
+  const showNoteTab = Boolean(notesPanel || onCreateNote);
+
   const sendButton =
     variant === "thread" ? (
       <Button
         type="button"
         size="sm"
         variant="brand"
-        className="shrink-0"
+        className="shrink-0 rounded-[var(--radius-sm)]"
         disabled={!effectiveCanSend}
         onClick={requestSend}
       >
-        <Send className="size-4" />
         Send
+        <Send className="size-4" />
       </Button>
     ) : (
       <Button
@@ -340,7 +363,7 @@ export function MessageComposer({
       size="icon-sm"
       variant="ghost"
       className={cn(
-        "shrink-0 rounded-full text-muted-foreground",
+        composerToolButtonClass,
         attachmentOpen && "bg-muted/60 text-foreground",
       )}
       disabled={composerDisabled}
@@ -440,6 +463,7 @@ export function MessageComposer({
     <ComposerEmojiPicker
       onSelect={insertEmoji}
       disabled={composerDisabled}
+      className={composerToolButtonClass}
     />
   ) : null;
 
@@ -448,8 +472,25 @@ export function MessageComposer({
       <CannedResponsesPicker
         onSelect={insertQuickReply}
         disabled={composerDisabled}
+        className={composerToolButtonClass}
       />
     ) : null;
+
+  const composerToolbar = (action: ReactNode) => (
+    <div className="flex items-center justify-between gap-3 border-t border-border/50 px-4 py-2">
+      <div className="flex items-center gap-1">
+        {emojiPickerButton}
+        {attachmentToggle}
+        {quickRepliesButton ? (
+          <>
+            <Separator orientation="vertical" className="mx-0.5 h-4" />
+            {quickRepliesButton}
+          </>
+        ) : null}
+      </div>
+      {action}
+    </div>
+  );
 
   const emailThreadComposer = (
     <ComposerInputCard statusMessage={inlineStatusHint} layout="stack">
@@ -592,73 +633,188 @@ export function MessageComposer({
     ) : null;
 
   if (variant === "thread") {
+    const footerHint =
+      composerTab === "note"
+        ? "Internal notes are not visible to the client."
+        : activeReplyChannel === "EMAIL"
+          ? "Sent from your business address."
+          : channelHint;
+
+    const addNoteButton = (
+      <Button
+        type="button"
+        size="sm"
+        variant="brand"
+        className="shrink-0 rounded-[var(--radius-sm)]"
+        disabled={!noteDraft.trim() || notePending || !onCreateNote}
+        onClick={() => onCreateNote?.()}
+      >
+        {notePending ? <Loader2 className="size-4 animate-spin" /> : "Add Note"}
+        {notePending ? null : <Send className="size-4" />}
+      </Button>
+    );
+
+    const replyFields = (
+      <>
+        {inlineStatusHint ? (
+          <ComposerStatusBanner message={inlineStatusHint} />
+        ) : null}
+        {isEmailComposer && recipientEmail ? (
+          <ComposerFieldRow label="To">
+            <span className="inline-flex max-w-full truncate rounded-full bg-muted px-2.5 py-0.5 text-xs text-foreground">
+              {recipientEmail}
+            </span>
+          </ComposerFieldRow>
+        ) : null}
+        {isEmailComposer ? (
+          <ComposerFieldRow label="Subject">
+            <Input
+              value={subject ?? ""}
+              onChange={(e) => onSubjectChange?.(e.target.value)}
+              placeholder="Subject"
+              className={borderlessFieldClass}
+              disabled={composerDisabled}
+            />
+          </ComposerFieldRow>
+        ) : null}
+        <div className="min-w-0">
+          {showWhatsAppTemplateComposer ? (
+            <div className="px-4 pt-4">
+              <WhatsAppTemplateComposer
+                selectedTemplateId={selectedTemplateId}
+                onTemplateIdChange={onTemplateIdChange}
+                variableValues={templateVariableValues}
+                onVariableValueChange={onTemplateVariableValueChange}
+                headerMediaUrl={templateHeaderMediaUrl}
+                onHeaderMediaUrlChange={onTemplateHeaderMediaUrlChange}
+                disabled={!canSend && Boolean(sendDisabledReason)}
+                variant="inline"
+              />
+            </div>
+          ) : (
+            <Textarea
+              value={composer}
+              onChange={(e) => onComposerChange(e.target.value)}
+              placeholder="Type a message..."
+              rows={3}
+              disabled={composerDisabled}
+              className="min-h-24 max-h-40 w-full resize-none border-0 bg-transparent px-4 pt-4 pb-6 text-sm shadow-none focus-visible:ring-0"
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+                  e.preventDefault();
+                  requestSend();
+                }
+              }}
+            />
+          )}
+        </div>
+        {smsSegmentFooter}
+        {attachmentUrlRow}
+        {pendingAttachmentChip}
+        {composerToolbar(sendButton)}
+      </>
+    );
+
+    const noteFields = onCreateNote ? (
+      <>
+        <Textarea
+          value={noteDraft}
+          onChange={(e) => onNoteDraftChange?.(e.target.value)}
+          placeholder="Add an internal note for your team…"
+          rows={3}
+          className="min-h-24 max-h-40 w-full resize-none border-0 bg-transparent px-4 pt-4 pb-6 text-sm shadow-none focus-visible:ring-0"
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+              e.preventDefault();
+              if (noteDraft.trim()) onCreateNote();
+            }
+          }}
+        />
+        <div className="flex items-center justify-between gap-3 border-t border-warning/20 px-4 py-2">
+          <ComposerEmojiPicker
+            onSelect={(emoji) => onNoteDraftChange?.(`${noteDraft}${emoji}`)}
+            className={composerToolButtonClass}
+          />
+          {addNoteButton}
+        </div>
+      </>
+    ) : (
+      notesPanel
+    );
+
     return (
       <>
-        <footer className="shrink-0 bg-background">
-          <Tabs
-            value={composerTab}
-            onValueChange={(value) =>
-              setComposerTab(value === "note" ? "note" : "reply")
-            }
-            className="gap-0"
+        <footer className="shrink-0 bg-white px-4 pb-4">
+          <div
+            className={cn(
+              "overflow-hidden rounded-[var(--radius-xl)] border",
+              composerTab === "note"
+                ? "border-warning/25 bg-warning-subtle"
+                : "border-border bg-background",
+            )}
           >
-            <div className="flex items-center justify-between gap-2 border-b border-border/60 px-3">
-              <TabsList variant="line" className="h-10 bg-transparent p-0">
-                <TabsTrigger
-                  value="reply"
-                  className="px-3 data-active:text-violet-primary-normal group-data-[variant=line]/tabs-list:data-active:after:bg-violet-primary-normal"
-                >
-                  Reply
-                </TabsTrigger>
-                {notesPanel ? (
+            <Tabs
+              value={composerTab}
+              onValueChange={(value) =>
+                setComposerTab(value === "note" ? "note" : "reply")
+              }
+              className="gap-0"
+            >
+              <div
+                className={cn(
+                  "flex items-center justify-between gap-2 border-b px-4 py-2",
+                  composerTab === "note" ? "border-warning/20" : "border-border",
+                )}
+              >
+                <TabsList variant="line" className="h-8 bg-transparent p-0">
                   <TabsTrigger
-                    value="note"
+                    value="reply"
                     className="px-3 data-active:text-violet-primary-normal group-data-[variant=line]/tabs-list:data-active:after:bg-violet-primary-normal"
                   >
-                    Note
+                    Reply
                   </TabsTrigger>
-                ) : null}
-              </TabsList>
-              {showChannelBar && composerTab === "reply" ? (
-                <ConversationChannelBar
-                  channels={channelBarChannels!}
-                  value={
-                    channelBarValue ?? channelBarChannels![0]?.channel ?? null
-                  }
-                  onChange={onChannelBarChange}
-                  readOnly={channelBarReadOnly || !onChannelBarChange}
-                  compact
-                />
-              ) : null}
-            </div>
-          </Tabs>
-          {composerTab === "note" && notesPanel ? (
-            <div className="px-1 pb-2">{notesPanel}</div>
-          ) : (
-            <div className="px-3 py-2.5">
-              {isEmailComposer ? emailThreadComposer : threadComposeRow}
-              {showWhatsAppTemplateComposer ? (
-                <div className="mt-2">
-                  <WhatsAppTemplateComposer
-                    selectedTemplateId={selectedTemplateId}
-                    onTemplateIdChange={onTemplateIdChange}
-                    variableValues={templateVariableValues}
-                    onVariableValueChange={onTemplateVariableValueChange}
-                    headerMediaUrl={templateHeaderMediaUrl}
-                    onHeaderMediaUrlChange={onTemplateHeaderMediaUrlChange}
-                    disabled={!canSend && Boolean(sendDisabledReason)}
-                    variant="extras"
+                  {showNoteTab ? (
+                    <TabsTrigger
+                      value="note"
+                      className="px-3 data-active:text-violet-primary-normal group-data-[variant=line]/tabs-list:data-active:after:bg-violet-primary-normal"
+                    >
+                      Note
+                    </TabsTrigger>
+                  ) : null}
+                </TabsList>
+                {showChannelBar && composerTab === "reply" ? (
+                  <ConversationChannelBar
+                    channels={channelBarChannels!}
+                    value={
+                      channelBarValue ?? channelBarChannels![0]?.channel ?? null
+                    }
+                    onChange={onChannelBarChange}
                   />
-                </div>
-              ) : null}
-              {channelHint ? (
-                <p className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
-                  <Info className="size-3.5 shrink-0" aria-hidden />
-                  {channelHint}
-                </p>
-              ) : null}
+                ) : null}
+              </div>
+            </Tabs>
+            {composerTab === "note" ? noteFields : replyFields}
+          </div>
+          {showWhatsAppTemplateComposer && composerTab === "reply" ? (
+            <div className="mt-2">
+              <WhatsAppTemplateComposer
+                selectedTemplateId={selectedTemplateId}
+                onTemplateIdChange={onTemplateIdChange}
+                variableValues={templateVariableValues}
+                onVariableValueChange={onTemplateVariableValueChange}
+                headerMediaUrl={templateHeaderMediaUrl}
+                onHeaderMediaUrlChange={onTemplateHeaderMediaUrlChange}
+                disabled={!canSend && Boolean(sendDisabledReason)}
+                variant="extras"
+              />
             </div>
-          )}
+          ) : null}
+          {footerHint ? (
+            <p className="flex items-center gap-2.5 pt-4 text-xs text-muted-foreground">
+              <Info className="size-3.5 shrink-0" aria-hidden />
+              {footerHint}
+            </p>
+          ) : null}
         </footer>
         {smsConfirmDialog}
       </>

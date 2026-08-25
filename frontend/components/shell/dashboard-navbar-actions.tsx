@@ -155,7 +155,7 @@ export function DashboardNavbarActions({
               {initials}
             </AvatarFallback>
           </Avatar>
-          <NavArrowIcon direction="down" size={20} className="text-white" />
+          <NavArrowIcon direction="down" size="md" className="text-white" />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-56">
           <div className="px-2 py-1.5 text-sm">

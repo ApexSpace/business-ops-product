@@ -15,8 +15,8 @@ const montserrat = Montserrat({
 const FAVICON_HREF = "/branding/favicon_logo.png";
 
 export const metadata: Metadata = {
-  title: "CodeSol Business Automation",
-  description: "Platform and business automation for app.codesoltech.com",
+  title: "PandaCue App",
+  description: "Everything you need to power your salon and spa",
   icons: {
     icon: [{ url: FAVICON_HREF, type: "image/png" }],
     apple: [{ url: FAVICON_HREF, type: "image/png" }],

@@ -1,5 +1,6 @@
 "use client";
 
+import { ListFilter } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -16,10 +17,9 @@ export type ThreadChannelFilterValue = ConversationChannel | "ALL";
 
 export function threadChannelFilterLabel(
   value: ThreadChannelFilterValue,
-  options?: { compact?: boolean },
 ): string {
   if (value === "ALL") {
-    return options?.compact ? "All" : "All channels";
+    return "All channels";
   }
   return channelLabel(value);
 }
@@ -47,14 +47,13 @@ export function ThreadChannelFilter({
       onValueChange={(next) => onChange(next as ThreadChannelFilterValue)}
     >
       <SelectTrigger
-        className={cn(
-          "h-7 w-[4.75rem] shrink-0 border-border/60 bg-muted/30 px-1.5 text-[10px] shadow-none sm:w-[5.5rem] sm:text-[11px]",
-          className,
-        )}
-        aria-label="Filter messages by channel"
+        size="compact"
+        className={cn("leading-none text-foreground", className)}
+        aria-label="Filter notes by channel"
       >
-        <span className="min-w-0 flex-1 truncate text-left normal-case">
-          {threadChannelFilterLabel(value, { compact: true })}
+        <span className="flex min-w-0 items-center gap-1 text-left normal-case">
+          <ListFilter className="size-3 shrink-0" aria-hidden />
+          {threadChannelFilterLabel(value)}
         </span>
       </SelectTrigger>
       <SelectContent align="end">

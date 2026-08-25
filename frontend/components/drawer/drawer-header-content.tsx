@@ -24,7 +24,14 @@ export function DrawerHeaderContent({
       {eyebrow ? (
         <p className={DRAWER_DATE_EYEBROW_CLASS}>{eyebrow}</p>
       ) : null}
-      <span className={DRAWER_TITLE_CLASS}>{title}</span>
+      <span
+        className={cn(
+          DRAWER_TITLE_CLASS,
+          "flex min-h-[var(--control-height-sm)] items-center",
+        )}
+      >
+        {title}
+      </span>
     </div>
   );
 }

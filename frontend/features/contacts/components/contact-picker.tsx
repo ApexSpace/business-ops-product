@@ -2,18 +2,20 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, ChevronsUpDown, Loader2, Plus, User } from "lucide-react";
+import { Check, Loader2, Plus, User } from "lucide-react";
 import { QuickCreateContactDialog } from "@/features/contacts/components/quick-create-contact-dialog";
 import { DrawerPlusSquareButton } from "@/components/drawer/drawer-icons";
-import { Input } from "@/components/ui/input";
+import {
+  Combobox,
+  ComboboxFieldInput,
+  COMBOBOX_EMPTY_CLASS,
+  COMBOBOX_ITEM_CLASS,
+  COMBOBOX_STATUS_CLASS,
+  ComboboxPopup,
+} from "@/components/ui/combobox";
 import {
   APPOINTMENT_DRAWER_FIELD_CLASS,
 } from "@/features/appointments/styles/appointment-drawer-tokens";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import {
   formatContactPickerLine,
@@ -25,7 +27,7 @@ import {
   invalidateContactPicker,
 } from "@/lib/query/invalidation";
 import { queryKeys } from "@/lib/query/keys";
-import type { Contact, PaginatedResult } from "@/features/contacts/types";
+import type { Contact } from "@/features/contacts/types";
 import { getContact, listContacts } from "@/features/contacts/api/contacts.api";
 
 export interface ContactPickerSelection {
@@ -61,44 +63,6 @@ function contactToSelection(contact: Contact): ContactPickerSelection {
     email: contact.email,
     phone: contact.phone,
   };
-}
-
-function ContactPickerOption({
-  contact,
-  selected,
-  onSelect,
-}: {
-  contact: ContactPickerSelection;
-  selected: boolean;
-  onSelect: () => void;
-}) {
-  const { primary, secondary } = formatContactPickerLine(contact);
-
-  return (
-    <button
-      type="button"
-      role="option"
-      aria-selected={selected}
-      className={cn(
-        "flex w-full items-start gap-2 rounded-sm px-2 py-2 text-left text-sm outline-none hover:bg-accent hover:text-accent-foreground",
-        selected && "bg-accent/60",
-      )}
-      onClick={onSelect}
-    >
-      <User className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-      <span className="min-w-0 flex-1">
-        <span className="block font-medium leading-snug">{primary}</span>
-        {secondary ? (
-          <span className="block truncate text-xs text-muted-foreground">
-            {secondary}
-          </span>
-        ) : null}
-      </span>
-      {selected ? (
-        <Check className="size-4 shrink-0 text-primary" aria-hidden />
-      ) : null}
-    </button>
-  );
 }
 
 export function ContactPicker({
@@ -158,6 +122,10 @@ export function ContactPicker({
   }, [value]);
 
   const contacts = searchResults?.items ?? [];
+  const contactItems = useMemo(
+    () => contacts.map(contactToSelection),
+    [contacts],
+  );
 
   const createPrefill = useMemo(
     () => parseContactSearchQuery(search),
@@ -232,88 +200,103 @@ export function ContactPicker({
   return (
     <>
       <div className={cn("flex w-full min-w-0 items-center", !isDrawer && "gap-2")}>
-        <Popover open={open} onOpenChange={setOpen}>
-          <PopoverTrigger
-            id={id}
-            disabled={disabled}
-            className={cn(
-              isDrawer
-                ? cn(
-                    APPOINTMENT_DRAWER_FIELD_CLASS,
-                    "flex w-full min-w-0 flex-1 items-center justify-between gap-2 font-normal",
-                    !displaySelection && "text-muted-foreground",
-                  )
-                : cn(
-                    "flex h-11 w-full min-w-0 flex-1 items-center justify-between gap-2 rounded-[10px] border-[1.5px] border-input bg-transparent px-3 text-[13.5px] font-normal shadow-none outline-none transition-[border-color,box-shadow] hover:bg-muted/30 focus-visible:border-ring focus-visible:ring-[4px] focus-visible:ring-ring/15 disabled:cursor-not-allowed disabled:opacity-50",
-                    !displaySelection && "text-muted-foreground",
-                  ),
-              triggerClassName,
-            )}
-          >
-            <span className="flex min-w-0 flex-1 items-center gap-2 text-left">
-              {!isDrawer ? (
-                <User className="size-4 shrink-0 opacity-60" />
-              ) : null}
-              <span className="truncate">
-                {displaySelection
-                  ? formatContactPickerLine(displaySelection).primary
-                  : placeholder}
-              </span>
-            </span>
+        <Combobox.Root
+          items={contactItems}
+          filteredItems={contactItems}
+          filter={null}
+          value={displaySelection}
+          onValueChange={(next) => {
+            if (!next) return;
+            handleSelect(next);
+            const full = contacts.find((contact) => contact.id === next.id);
+            if (full) onContactSelect?.(full);
+          }}
+          disabled={disabled}
+          modal={false}
+          autoHighlight
+          autoComplete="off"
+          open={open}
+          onOpenChange={(next) => {
+            setOpen(next);
+            if (!next) setSearch("");
+          }}
+          onInputValueChange={(next) => {
+            setSearch(next);
+            if (!open) setOpen(true);
+          }}
+          itemToStringLabel={(item) =>
+            formatContactPickerLine(item).primary
+          }
+          itemToStringValue={(item) => item.id}
+          isItemEqualToValue={(left, right) => left.id === right.id}
+        >
+          <div className="relative w-full min-w-0 flex-1">
+            {!isDrawer ? (
+              <User className="pointer-events-none absolute top-1/2 left-3 z-10 size-4 -translate-y-1/2 opacity-60" />
+            ) : null}
+            <ComboboxFieldInput
+              id={id}
+              disabled={disabled}
+              placeholder={placeholder}
+              showIcon={!isDrawer}
+              className={cn(
+                isDrawer
+                  ? cn(APPOINTMENT_DRAWER_FIELD_CLASS, "pr-10 font-normal")
+                  : "pl-9",
+                triggerClassName,
+              )}
+            />
             {isDrawer ? (
-              createButton
-            ) : (
-              <ChevronsUpDown className="size-4 shrink-0 opacity-50" />
-            )}
-          </PopoverTrigger>
-          <PopoverContent
-            align="start"
-            className="w-[var(--anchor-width)] min-w-[min(100%,320px)] p-0"
-          >
-            <div className="border-b p-2">
-              <Input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search by name, email, or phone…"
-                autoFocus
-                className="h-9"
-              />
-            </div>
-            <div
-              className="max-h-60 overflow-y-auto p-1"
-              role="listbox"
-              aria-label="Contacts"
-            >
-              {isFetching ? (
-                <div className="flex items-center justify-center gap-2 py-8 text-sm text-muted-foreground">
+              <div className="absolute top-1/2 right-1.5 z-10 -translate-y-1/2">
+                {createButton}
+              </div>
+            ) : null}
+          </div>
+          <ComboboxPopup>
+            {isFetching ? (
+              <Combobox.Status className={COMBOBOX_STATUS_CLASS}>
+                <span className="inline-flex items-center gap-2">
                   <Loader2 className="size-4 animate-spin" />
                   Searching…
-                </div>
-              ) : contacts.length === 0 && !debouncedSearch ? (
-                <p className="px-2 py-6 text-center text-sm text-muted-foreground">
-                  Type to search contacts
-                </p>
-              ) : contacts.length === 0 ? (
-                <p className="px-2 py-4 text-center text-sm text-muted-foreground">
-                  No matching contacts
-                </p>
-              ) : (
-                contacts.map((contact) => {
-                  const picked = contactToSelection(contact);
-                  return (
-                    <ContactPickerOption
-                      key={contact.id}
-                      contact={picked}
-                      selected={value === contact.id}
-                      onSelect={() => {
-                        handleSelect(picked);
-                        onContactSelect?.(contact);
-                      }}
-                    />
-                  );
-                })
-              )}
-            </div>
+                </span>
+              </Combobox.Status>
+            ) : (
+              <Combobox.Empty className={COMBOBOX_EMPTY_CLASS}>
+                {debouncedSearch
+                  ? "No matching contacts"
+                  : "Type to search contacts"}
+              </Combobox.Empty>
+            )}
+            <Combobox.List>
+              {(item: ContactPickerSelection) => {
+                const { primary, secondary } = formatContactPickerLine(item);
+                return (
+                  <Combobox.Item
+                    key={item.id}
+                    value={item}
+                    className={cn(COMBOBOX_ITEM_CLASS, "items-start pr-8")}
+                  >
+                    <User className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+                    <span className="min-w-0 flex-1">
+                      <span className="block font-medium leading-snug">
+                        {primary}
+                      </span>
+                      {secondary ? (
+                        <span className="block truncate text-xs text-muted-foreground">
+                          {secondary}
+                        </span>
+                      ) : null}
+                    </span>
+                    {value === item.id ? (
+                      <Check
+                        className="mt-0.5 size-4 shrink-0 text-primary"
+                        aria-hidden
+                      />
+                    ) : null}
+                  </Combobox.Item>
+                );
+              }}
+            </Combobox.List>
             <div className="border-t p-1">
               <button
                 type="button"
@@ -329,8 +312,8 @@ export function ContactPicker({
                   : "Create new contact"}
               </button>
             </div>
-          </PopoverContent>
-        </Popover>
+          </ComboboxPopup>
+        </Combobox.Root>
         {!isDrawer ? createButton : null}
       </div>
 

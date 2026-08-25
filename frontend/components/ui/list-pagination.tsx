@@ -104,7 +104,7 @@ export function ListPagination({
             aria-label="Previous page"
             onClick={() => onPageChange(page - 1)}
           >
-            <NavArrowIcon direction="left" size={9.33} />
+            <NavArrowIcon direction="left" size="sm" />
             Previous
           </button>
           <button
@@ -115,7 +115,7 @@ export function ListPagination({
             onClick={() => onPageChange(page + 1)}
           >
             Next
-            <NavArrowIcon direction="right" size={9.33} />
+            <NavArrowIcon direction="right" size="sm" />
           </button>
         </div>
       </div>
@@ -140,7 +140,7 @@ export function ListPagination({
         aria-label="Previous page"
         onClick={() => onPageChange(page - 1)}
       >
-        <NavArrowIcon direction="left" size={9.33} />
+        <NavArrowIcon direction="left" size="sm" />
         Previous
       </button>
 
@@ -179,7 +179,7 @@ export function ListPagination({
         onClick={() => onPageChange(page + 1)}
       >
         Next
-        <NavArrowIcon direction="right" size={9.33} />
+        <NavArrowIcon direction="right" size="sm" />
       </button>
     </nav>
   );

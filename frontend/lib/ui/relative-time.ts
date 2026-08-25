@@ -39,6 +39,33 @@ export function isSameMessageDay(a: string, b: string): boolean {
   return toDayKey(a) === toDayKey(b);
 }
 
+/** Compact list timestamp: 2m, 1hr, Yesterday — matches conversation list density. */
+export function formatCompactRelativeTime(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "";
+
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const minutes = Math.round(Math.abs(diffMs) / 60_000);
+
+  if (minutes < 1) return "now";
+  if (minutes < 60) return `${minutes}m`;
+
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) return `${hours}hr`;
+
+  const yesterday = new Date(now);
+  yesterday.setDate(yesterday.getDate() - 1);
+  if (toDayKey(iso) === toDayKey(yesterday.toISOString())) {
+    return "Yesterday";
+  }
+
+  return date.toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+  });
+}
+
 export function formatRelativeTime(iso: string): string {
   const date = new Date(iso);
   const diffMs = date.getTime() - Date.now();

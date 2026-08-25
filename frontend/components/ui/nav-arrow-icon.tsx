@@ -10,8 +10,8 @@ export interface NavArrowIconProps
   /** Glyph faces this way. Default matches the source path (forward / next). */
   direction?: NavArrowDirection;
   /**
-   * Height of the glyph. Width follows the source aspect ratio (7.36 × 12.73).
-   * `md` is the default chevron. A number is height in px.
+   * Side length of the square icon box in px.
+   * `sm` 8 · `md` 10 (default) · `lg` 12. A number is an explicit box size.
    * Ignored for an axis when `width` / `height` is passed.
    */
   size?: NavArrowSize;
@@ -28,16 +28,19 @@ export interface NavArrowIconProps
 const ARROW_PATH =
   "M10.157 12.711L4.5 18.368l-1.414-1.414l4.95-4.95l-4.95-4.95L4.5 5.64l5.657 5.657a1 1 0 0 1 0 1.414";
 
-/** Cropped to the filled chevron path (matches Figma vector bounds). */
-const VIEW_BOX = "3.086 5.64 7.071 12.728";
+/**
+ * Square crop around the filled chevron so CSS rotation never overflows
+ * a tall/narrow layout box (the previous 7.36×12.73 viewBox).
+ */
+const VIEW_BOX_SIZE = 12.728;
+const VIEW_BOX_X = 3.086 - (VIEW_BOX_SIZE - 7.071) / 2;
+const VIEW_BOX = `${VIEW_BOX_X} 5.64 ${VIEW_BOX_SIZE} ${VIEW_BOX_SIZE}`;
 
-const GLYPH_WIDTH = 7.36;
-const GLYPH_HEIGHT = 12.73;
-
-const SIZE_HEIGHT: Record<NavArrowSizeToken, number> = {
-  sm: 10,
-  md: GLYPH_HEIGHT,
-  lg: 16,
+/** Token box sizes. Old defaults were sm 10 / md 12.73 / lg 16. */
+export const NAV_ARROW_SIZE_PX: Record<NavArrowSizeToken, number> = {
+  sm: 8,
+  md: 10,
+  lg: 12,
 };
 
 const ROTATE_CLASS: Record<NavArrowDirection, string> = {
@@ -52,11 +55,11 @@ function resolveDimensions(
   width?: number,
   height?: number,
 ): { width: number; height: number } {
-  const fromSize = typeof size === "number" ? size : SIZE_HEIGHT[size];
-  const resolvedHeight = height ?? fromSize;
-  const resolvedWidth =
-    width ?? (resolvedHeight * GLYPH_WIDTH) / GLYPH_HEIGHT;
-  return { width: resolvedWidth, height: resolvedHeight };
+  const box = typeof size === "number" ? size : NAV_ARROW_SIZE_PX[size];
+  return {
+    width: width ?? box,
+    height: height ?? box,
+  };
 }
 
 export function NavArrowIcon({
@@ -80,7 +83,8 @@ export function NavArrowIcon({
       height={height}
       style={{ width, height, ...style }}
       className={cn(
-        "block shrink-0 origin-center text-current",
+        // `size-auto` opts out of parent `[&_svg:not([class*='size-'])]:size-4` rules.
+        "size-auto block shrink-0 origin-center overflow-visible text-current",
         ROTATE_CLASS[direction],
         className,
       )}

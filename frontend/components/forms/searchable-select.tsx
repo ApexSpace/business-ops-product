@@ -1,15 +1,22 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
+import {
+  Combobox,
+  ComboboxFieldInput,
+  ComboboxItemIndicator,
+  ComboboxPopup,
+  COMBOBOX_EMPTY_CLASS,
+  COMBOBOX_ITEM_CLASS,
+} from "@/components/ui/combobox";
 import {
   Select,
   SelectContent,
   SelectItem,
-  SelectSearch,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { filterSelectItems } from "@/lib/forms/filter-select-items";
+import { selectItemMatchesQuery } from "@/lib/forms/filter-select-items";
 import { CONTROL_HEIGHT_CLASS } from "@/lib/ui/control-styles";
 import { cn } from "@/lib/utils";
 import type { SelectOption } from "@/components/forms/select-field";
@@ -21,6 +28,7 @@ export interface SearchableSelectProps {
   placeholder?: string;
   disabled?: boolean;
   searchable?: boolean;
+  /** @deprecated Search happens in the trigger input; kept for call-site compatibility. */
   searchPlaceholder?: string;
   emptyMessage?: string;
   triggerClassName?: string;
@@ -36,6 +44,9 @@ export interface SearchableSelectProps {
    * (never into dialog content — overflow clipping breaks the popup).
    */
   inDialog?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  /** Open the list as soon as the field mounts (inline add flows). */
+  defaultOpen?: boolean;
 }
 
 function normalizeSelectValue(value: string | null): string | null {
@@ -56,85 +67,120 @@ export function SearchableSelect({
   placeholder,
   disabled,
   searchable = true,
-  searchPlaceholder = "Search…",
   emptyMessage = "No results found",
   triggerClassName,
   contentClassName,
   id,
   contentSide = "bottom",
   contentAlign = "center",
-  alignItemWithTrigger = true,
   modal = true,
   inDialog = false,
+  onOpenChange,
+  defaultOpen = false,
 }: SearchableSelectProps) {
-  const [search, setSearch] = useState("");
   const selectValue = normalizeSelectValue(value);
 
-  // Callers frequently pass a freshly-built `items` array on every render
-  // (e.g. `[{ value: null, label }, ...options]`). Deriving from the array
-  // identity would hand Base UI's Select a new `items` reference each render,
-  // which re-triggers its internal sync effect and causes an update loop.
-  // Key on the *contents* so the reference is stable when nothing changed.
   const itemsKey = items
     .map((item) => `${item.value ?? "\u0000"}:${item.label}`)
     .join("|");
 
-  const filteredItems = useMemo(
-    () => (searchable ? filterSelectItems(items, search) : items),
-    // `items` identity intentionally omitted; `itemsKey` captures content changes.
+  const selectedItem = useMemo(
+    () => items.find((item) => item.value === selectValue) ?? null,
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [itemsKey, search, searchable],
+    [itemsKey, selectValue],
   );
 
+  if (!searchable) {
+    return (
+      <Select
+        items={items}
+        value={selectValue}
+        onValueChange={onValueChange}
+        disabled={disabled}
+        modal={inDialog ? false : modal}
+        onOpenChange={onOpenChange}
+      >
+        <SelectTrigger
+          id={id}
+          disabled={disabled}
+          className={cn(CONTROL_HEIGHT_CLASS, "w-full text-sm", triggerClassName)}
+        >
+          <SelectValue placeholder={placeholder} />
+        </SelectTrigger>
+        <SelectContent
+          side={contentSide}
+          align={contentAlign}
+          className={cn("max-h-64", contentClassName)}
+        >
+          {items.length === 0 ? (
+            <p className={COMBOBOX_EMPTY_CLASS}>{emptyMessage}</p>
+          ) : (
+            items.map((item) => (
+              <SelectItem
+                key={optionKey(item.value)}
+                value={item.value}
+                label={item.label}
+              >
+                {item.label}
+              </SelectItem>
+            ))
+          )}
+        </SelectContent>
+      </Select>
+    );
+  }
+
   return (
-    <Select
-      items={filteredItems}
-      value={selectValue}
-      onValueChange={onValueChange}
+    <Combobox.Root
+      items={items}
+      value={selectedItem}
+      onValueChange={(next) => onValueChange(next?.value ?? null)}
       disabled={disabled}
-      modal={inDialog ? false : modal}
-      onOpenChange={(open) => {
-        if (!open) {
-          setSearch("");
-        }
-      }}
+      modal={false}
+      autoHighlight
+      autoComplete="off"
+      itemToStringLabel={(item) => item.label}
+      itemToStringValue={(item) => item.value ?? ""}
+      isItemEqualToValue={(left, right) => left.value === right.value}
+      filter={(item, query) => selectItemMatchesQuery(item, query)}
+      onOpenChange={onOpenChange}
+      defaultOpen={defaultOpen}
     >
-      <SelectTrigger
+      <ComboboxFieldInput
         id={id}
         disabled={disabled}
-        className={cn(CONTROL_HEIGHT_CLASS, "w-full text-sm", triggerClassName)}
-      >
-        <SelectValue placeholder={placeholder} />
-      </SelectTrigger>
-      <SelectContent
+        placeholder={placeholder}
+        className={triggerClassName}
+      />
+      <ComboboxPopup
         side={contentSide}
         align={contentAlign}
-        alignItemWithTrigger={alignItemWithTrigger}
-        className={cn("max-h-64", contentClassName)}
+        className={contentClassName}
       >
-        {searchable ? (
-          <SelectSearch
-            value={search}
-            onValueChange={setSearch}
-            placeholder={searchPlaceholder}
-          />
-        ) : null}
-        {filteredItems.length === 0 ? (
-          <p className="px-2 py-6 text-center text-sm text-muted-foreground normal-case">
-            {emptyMessage}
-          </p>
-        ) : (
-          filteredItems.map((item) => (
-            <SelectItem
+        <Combobox.Empty className={COMBOBOX_EMPTY_CLASS}>
+          {emptyMessage}
+        </Combobox.Empty>
+        <Combobox.List>
+          {(item: SelectOption) => (
+            <Combobox.Item
               key={optionKey(item.value)}
-              value={item.value}
-              label={item.label}
+              value={item}
+              disabled={item.disabled}
+              className={cn(COMBOBOX_ITEM_CLASS, item.description && "items-start")}
             >
-              {item.label}
-            </SelectItem>
-          ))
-        )}
-      </SelectContent>
-    </Select>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate">{item.label}</span>
+                {item.description ? (
+                  <span className="mt-0.5 block truncate text-xs text-muted-foreground">
+                    {item.description}
+                  </span>
+                ) : null}
+              </span>
+              <ComboboxItemIndicator />
+            </Combobox.Item>
+          )}
+        </Combobox.List>
+      </ComboboxPopup>
+    </Combobox.Root>
   );
 }
