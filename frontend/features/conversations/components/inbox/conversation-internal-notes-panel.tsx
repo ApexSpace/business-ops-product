@@ -140,7 +140,7 @@ export function ConversationInternalNotesPanel({
         </span>
         <NavArrowIcon
           direction={expanded ? "up" : "down"}
-          size="lg"
+          size="sm"
           className="text-muted-foreground"
         />
       </button>

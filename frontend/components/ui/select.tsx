@@ -4,9 +4,8 @@ import * as React from "react"
 import { Select as SelectPrimitive } from "@base-ui/react/select"
 
 import { cn } from "@/lib/utils"
-import { Input } from "@/components/ui/input"
 import { NavArrowIcon } from "@/components/ui/nav-arrow-icon"
-import { CheckIcon, Search } from "lucide-react"
+import { CheckIcon } from "lucide-react"
 
 const Select = SelectPrimitive.Root
 
@@ -36,14 +35,14 @@ function SelectTrigger({
   children,
   ...props
 }: SelectPrimitive.Trigger.Props & {
-  size?: "sm" | "default"
+  size?: "sm" | "default" | "compact"
 }) {
   return (
     <SelectPrimitive.Trigger
       data-slot="select-trigger"
       data-size={size}
       className={cn(
-        "glass-control flex w-full min-w-0 items-center justify-between gap-1.5 rounded-[var(--radius-control)] border border-input px-3 text-sm transition-[border-color,box-shadow,background-color] duration-150 outline-none select-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-primary-tint disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-[3px] aria-invalid:ring-destructive/25 data-placeholder:text-muted-foreground data-[size=default]:h-[var(--control-height)] data-[size=sm]:h-[var(--control-height-sm)] data-[size=sm]:rounded-[calc(var(--radius-control)*0.85)] *:data-[slot=select-value]:line-clamp-1 *:data-[slot=select-value]:flex *:data-[slot=select-value]:min-w-0 *:data-[slot=select-value]:flex-1 *:data-[slot=select-value]:items-center *:data-[slot=select-value]:gap-1.5 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/30 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+        "glass-control flex w-full min-w-0 items-center justify-between gap-1.5 rounded-[var(--radius-control)] border border-input px-3 text-sm transition-[border-color,box-shadow,background-color] duration-150 outline-none select-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-primary-tint disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-[3px] aria-invalid:ring-destructive/25 data-placeholder:text-muted-foreground data-[size=default]:h-[var(--control-height)] data-[size=sm]:h-[var(--control-height-sm)] data-[size=sm]:rounded-[calc(var(--radius-control)*0.85)] data-[size=compact]:h-auto data-[size=compact]:min-h-0 data-[size=compact]:w-fit data-[size=compact]:gap-1 data-[size=compact]:rounded-[var(--radius-xs)] data-[size=compact]:border-border data-[size=compact]:bg-white data-[size=compact]:px-2 data-[size=compact]:py-1 data-[size=compact]:text-xs data-[size=compact]:font-medium data-[size=compact]:shadow-none *:data-[slot=select-value]:line-clamp-1 *:data-[slot=select-value]:flex *:data-[slot=select-value]:min-w-0 *:data-[slot=select-value]:flex-1 *:data-[slot=select-value]:items-center *:data-[slot=select-value]:gap-1.5 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/30 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
         className
       )}
       {...props}
@@ -51,7 +50,7 @@ function SelectTrigger({
       {children}
       <SelectPrimitive.Icon
         render={
-          <NavArrowIcon direction="down" size="lg" className="pointer-events-none text-muted-foreground" />
+          <NavArrowIcon direction="down" size="sm" className="pointer-events-none" />
         }
       />
     </SelectPrimitive.Trigger>
@@ -168,43 +167,8 @@ function SelectScrollUpButton({
       )}
       {...props}
     >
-      <NavArrowIcon direction="up" size="lg" />
+      <NavArrowIcon direction="up" size="sm" />
     </SelectPrimitive.ScrollUpArrow>
-  )
-}
-
-function SelectSearch({
-  value,
-  onValueChange,
-  placeholder = "Search…",
-  className,
-}: {
-  value: string
-  onValueChange: (value: string) => void
-  placeholder?: string
-  className?: string
-}) {
-  return (
-    <div
-      className={cn(
-        "sticky top-0 z-10 border-b bg-popover p-2",
-        className,
-      )}
-      onPointerDown={(event) => event.stopPropagation()}
-    >
-      <div className="relative">
-        <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          type="search"
-          value={value}
-          onChange={(event) => onValueChange(event.target.value)}
-          onKeyDown={(event) => event.stopPropagation()}
-          placeholder={placeholder}
-          className="h-9 pl-8 normal-case"
-          autoComplete="off"
-        />
-      </div>
-    </div>
   )
 }
 
@@ -221,7 +185,7 @@ function SelectScrollDownButton({
       )}
       {...props}
     >
-      <NavArrowIcon direction="down" size="lg" />
+      <NavArrowIcon direction="down" size="sm" />
     </SelectPrimitive.ScrollDownArrow>
   )
 }
@@ -234,7 +198,6 @@ export {
   SelectLabel,
   SelectScrollDownButton,
   SelectScrollUpButton,
-  SelectSearch,
   SelectSeparator,
   SelectTrigger,
   SelectValue,

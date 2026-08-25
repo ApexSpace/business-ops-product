@@ -120,7 +120,7 @@ function DropdownMenuSubTrigger({
       {...props}
     >
       {children}
-      <NavArrowIcon direction="right" size="lg" className="ml-auto" />
+      <NavArrowIcon direction="right" size="sm" className="ml-auto" />
     </MenuPrimitive.SubmenuTrigger>
   )
 }

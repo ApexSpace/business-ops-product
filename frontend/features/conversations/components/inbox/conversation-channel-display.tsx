@@ -42,6 +42,30 @@ export function getConversationChannelIcon(
   return CHANNEL_ICON[channel] ?? MessageCircle;
 }
 
+export function ConversationChannelGlyph({
+  channel,
+  className,
+}: {
+  channel: ConversationChannel;
+  className?: string;
+}) {
+  const Icon = getConversationChannelIcon(channel);
+
+  return (
+    <span
+      className={cn(
+        "inline-flex shrink-0 p-0",
+        CHANNEL_TONE[channel],
+        "bg-transparent",
+        className,
+      )}
+      title={channelLabel(channel)}
+    >
+      <Icon className="size-3.5" aria-hidden />
+    </span>
+  );
+}
+
 interface ConversationChannelBadgeProps {
   channel: ConversationChannel;
   className?: string;

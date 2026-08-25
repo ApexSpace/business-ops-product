@@ -92,7 +92,7 @@ export function SubscriptionActionBar({
               render={
                 <Button type="button" size="sm" variant="outline" disabled={isLoading}>
                   More actions
-                  <NavArrowIcon direction="down" size="lg" className="ml-1" />
+                  <NavArrowIcon direction="down" size="sm" className="ml-1" />
                 </Button>
               }
             />

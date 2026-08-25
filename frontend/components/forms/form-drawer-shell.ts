@@ -24,8 +24,8 @@ import { DRAWER_SHEET_FOOTER_WIDE_CLASS } from "@/components/forms/drawer-sheet"
 
 /** Sheet close control — Figma transparent circle (matches DrawerShell default). */
 export const FORM_DRAWER_CLOSE_CLASS = [
-  "[&_[data-slot=sheet-close]]:top-[22px]",
-  "[&_[data-slot=sheet-close]]:right-6",
+  "[&_[data-slot=sheet-close]]:relative",
+  "[&_[data-slot=sheet-close]]:static",
   "[&_[data-slot=sheet-close]]:!size-[22px]",
   "[&_[data-slot=sheet-close]]:rounded-full",
   "[&_[data-slot=sheet-close]]:!border-0",
@@ -57,12 +57,12 @@ export const FORM_DRAWER_SHEET_CLASS = formDrawerSheetClass("standard");
 /** Full-height financial sheet (pinned right edge). Width comes from `formDrawerSheetClass`. */
 export const FORM_DRAWER_SHEET_FINANCIAL_CLASS = `!top-0 !right-0 !bottom-0 !left-auto !h-full !max-h-none !w-full !max-w-[var(--sheet-width)] !translate-x-0 !translate-y-0 rounded-none border-l shadow-elevation-lg ${FORM_DRAWER_CLOSE_CLASS}`;
 
-/** Figma white header — room for sheet close. */
-export const FORM_DRAWER_HEADER_CLASS = `${DRAWER_HEADER_CLASS} pr-14`;
+/** Figma white header — title and close share one row. */
+export const FORM_DRAWER_HEADER_CLASS = DRAWER_HEADER_CLASS;
 
 /** Wider horizontal padding for financial forms. */
 export const FORM_DRAWER_HEADER_COMPACT_CLASS =
-  "relative shrink-0 border-x-0 border-t-0 border-b border-solid border-[var(--drawer-header-border)] !bg-white px-7 pb-5 pt-6 pr-14 [background-image:none]";
+  "relative shrink-0 border-x-0 border-t-0 border-b border-solid border-[var(--drawer-header-border)] !bg-white px-7 pb-5 pt-6 [background-image:none]";
 
 export const FORM_DRAWER_TITLE_CLASS = DRAWER_TITLE_CLASS;
 

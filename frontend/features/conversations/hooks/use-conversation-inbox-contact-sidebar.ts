@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import type { ContactDetailTabId } from "@/features/contacts/components/contact-detail-panel";
 import { useContactDetail } from "@/features/contacts/hooks/use-contact-detail";
 import { useConversationsHost } from "@/features/conversations/conversations-host-context";
 
@@ -11,6 +12,8 @@ export type ConversationInboxContactSidebarState = ReturnType<
 export function useConversationInboxContactSidebar(contactId: string | null) {
   const { mode } = useConversationsHost();
   const [fullProfileOpen, setFullProfileOpen] = useState(false);
+  const [profileSection, setProfileSection] =
+    useState<ContactDetailTabId>("timeline");
   const isPlatform = mode === "platform";
 
   const {
@@ -26,6 +29,14 @@ export function useConversationInboxContactSidebar(contactId: string | null) {
     contactError: isPlatform ? false : contactError,
     fullProfileOpen,
     setFullProfileOpen,
-    onViewFullProfile: () => setFullProfileOpen(true),
+    profileSection,
+    onViewFullProfile: () => {
+      setProfileSection("timeline");
+      setFullProfileOpen(true);
+    },
+    onAddCreditCard: () => {
+      setProfileSection("wallet");
+      setFullProfileOpen(true);
+    },
   };
 }

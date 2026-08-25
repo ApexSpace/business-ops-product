@@ -2,20 +2,13 @@
 
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Check, ChevronsUpDown, Plus, X } from "lucide-react";
+import { Plus, X } from "lucide-react";
 import { listServices } from "@/features/settings/api/services.api";
 import type { Service } from "@/features/settings/types";
 import { queryKeys } from "@/lib/query/keys";
 import { formatMoney } from "@/features/payments/utils/currencies";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { Input } from "@/components/ui/input";
+import { SearchableSelect } from "@/components/forms/searchable-select";
 import { IconButton } from "@/components/ui/icon-button";
-import { EmptyState } from "@/components/data-display/empty-state";
-import { LoadingState } from "@/components/data-display/loading-state";
 import { DRAWER_FIELD_CONTROL_CLASS } from "@/lib/design/drawer-shell-tokens";
 import { cn } from "@/lib/utils";
 
@@ -43,6 +36,16 @@ function serviceToSelection(service: Service): ServicePickerSelection {
   };
 }
 
+function servicePickerLabel(service: Service, currencyCode: string) {
+  const meta = [
+    `${service.durationMinutes} min`,
+    service.price ? formatMoney(service.price, currencyCode) : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+  return meta ? `${service.name} — ${meta}` : service.name;
+}
+
 export function ServicePicker({
   value,
   onChange,
@@ -50,13 +53,12 @@ export function ServicePicker({
   currencyCode = "USD",
   className,
 }: ServicePickerProps) {
-  const [open, setOpen] = useState(false);
-  const [search, setSearch] = useState("");
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   const { data: servicesPage, isFetching } = useQuery({
     queryKey: queryKeys.services.list({ page: 1, limit: 100, status: "ACTIVE" }),
     queryFn: () => listServices({ page: 1, limit: 100, status: "ACTIVE" }),
-    enabled: open,
+    enabled: pickerOpen || value.length === 0,
   });
 
   const selectedIds = useMemo(
@@ -64,20 +66,22 @@ export function ServicePicker({
     [value],
   );
 
-  const availableServices = useMemo(() => {
-    const items = servicesPage?.items ?? [];
-    const term = search.trim().toLowerCase();
-    return items.filter((service) => {
-      if (selectedIds.has(service.id)) return false;
-      if (!term) return true;
-      return service.name.toLowerCase().includes(term);
-    });
-  }, [servicesPage?.items, search, selectedIds]);
+  const items = useMemo(
+    () =>
+      (servicesPage?.items ?? [])
+        .filter((service) => !selectedIds.has(service.id))
+        .map((service) => ({
+          value: service.id,
+          label: servicePickerLabel(service, currencyCode),
+        })),
+    [servicesPage?.items, selectedIds, currencyCode],
+  );
 
-  const handleAdd = (service: Service) => {
+  const handleAdd = (serviceId: string | null) => {
+    if (!serviceId) return;
+    const service = (servicesPage?.items ?? []).find((item) => item.id === serviceId);
+    if (!service) return;
     onChange([...value, serviceToSelection(service)]);
-    setSearch("");
-    setOpen(false);
   };
 
   const handleRemove = (serviceId: string) => {
@@ -121,64 +125,37 @@ export function ServicePicker({
         <p className="text-[13px] text-muted-foreground">No services selected</p>
       )}
 
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger
+      {pickerOpen ? (
+        <SearchableSelect
+          items={items}
+          value={null}
+          onValueChange={(id) => {
+            handleAdd(id);
+            setPickerOpen(false);
+          }}
+          placeholder="Search services…"
+          emptyMessage={isFetching ? "Loading services…" : "No services available"}
+          disabled={disabled}
+          triggerClassName={cn(DRAWER_FIELD_CONTROL_CLASS, "font-normal")}
+          defaultOpen
+          onOpenChange={(open) => {
+            if (!open) setPickerOpen(false);
+          }}
+        />
+      ) : (
+        <button
+          type="button"
           disabled={disabled}
           className={cn(
             DRAWER_FIELD_CONTROL_CLASS,
-            "flex w-full items-center justify-between gap-2 border-input bg-transparent px-3 text-[13.5px] font-medium text-primary hover:bg-muted/30 disabled:cursor-not-allowed disabled:opacity-50",
+            "flex w-full items-center gap-2 border-input bg-transparent px-3 text-[13.5px] font-medium text-primary hover:bg-muted/30 disabled:cursor-not-allowed disabled:opacity-50",
           )}
+          onClick={() => setPickerOpen(true)}
         >
-          <span className="flex items-center gap-2">
-            <Plus className="size-4" />
-            Add service
-          </span>
-          <ChevronsUpDown className="size-4 opacity-50" />
-        </PopoverTrigger>
-        <PopoverContent align="start" className="w-[var(--anchor-width)] p-0">
-          <div className="border-b p-2">
-            <Input
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search services…"
-              autoFocus
-              className="h-9"
-            />
-          </div>
-          <div className="max-h-60 overflow-y-auto p-1" role="listbox">
-            {isFetching ? (
-              <div className="flex justify-center px-2 py-6">
-                <LoadingState variant="inline" label="Loading services…" />
-              </div>
-            ) : availableServices.length === 0 ? (
-              <EmptyState compact title="No services available" className="py-6" />
-            ) : (
-              availableServices.map((service) => (
-                <button
-                  key={service.id}
-                  type="button"
-                  role="option"
-                  className="flex w-full items-start gap-2 rounded-sm px-2 py-2 text-left text-sm outline-none hover:bg-accent hover:text-accent-foreground"
-                  onClick={() => handleAdd(service)}
-                >
-                  <span className="min-w-0 flex-1">
-                    <span className="block font-medium">{service.name}</span>
-                    <span className="block text-xs text-muted-foreground">
-                      {service.durationMinutes} min
-                      {service.price
-                        ? ` · ${formatMoney(service.price, currencyCode)}`
-                        : ""}
-                    </span>
-                  </span>
-                  {selectedIds.has(service.id) ? (
-                    <Check className="size-4 shrink-0 text-primary" />
-                  ) : null}
-                </button>
-              ))
-            )}
-          </div>
-        </PopoverContent>
-      </Popover>
+          <Plus className="size-4" />
+          Add service
+        </button>
+      )}
     </div>
   );
 }

@@ -248,7 +248,7 @@ export function BookingSuccessView({
             {showExtras ? "Hide calendar options" : "Add to calendar or copy details"}
             <NavArrowIcon
               direction={showExtras ? "up" : "down"}
-              size="lg"
+              size="sm"
             />
           </Button>
 

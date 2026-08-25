@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { Loader2 } from "lucide-react";
 import { ProfileAvatar } from "@/components/ui/profile-avatar";
+import { DrawerItemAddLayout } from "@/components/drawer/drawer-item-add-layout";
 import { CheckoutAddActions } from "@/features/sales/components/checkout-add-actions";
 import { CheckoutChangePriceDialog } from "@/features/sales/components/checkout-change-price-dialog";
 import { CheckoutInlineAddSection } from "@/features/sales/components/checkout-inline-add-section";
@@ -144,78 +145,86 @@ export function CheckoutDrawerPanel({
             </div>
           </div>
 
-          <div className="flex w-full min-w-0 flex-col gap-3">
-            {checkout.items.map((item) => (
-              <CheckoutLineItemRow
-                key={item.id}
-                item={item}
-                expanded={panel.expandedLineId === item.id}
-                canEdit={panel.canEdit}
-                staffItems={
-                  item.serviceId && panel.expandedLineId === item.id
-                    ? panel.expandedLineStaffItems
-                    : []
-                }
-                removePending={panel.removeLineMutation.isPending}
-                updatePending={panel.updateLineMutation.isPending}
-                onToggle={() => panel.toggleExpandedLine(item.id)}
-                onRemove={() => panel.removeLineMutation.mutate(item.id)}
-                onChangePrice={() => panel.setChangePriceItem(item)}
-                onUpdate={(body) =>
-                  panel.updateLineMutation.mutate({ lineId: item.id, body })
-                }
-              />
-            ))}
-          </div>
-
-          {panel.canEdit ? (
-            <>
-              <CheckoutAddActions
-                onAddService={() => panel.setInlineAddMode("service")}
-                onAddProduct={() => panel.setInlineAddMode("product")}
-                onMoreSelect={(mode) => panel.setInlineAddMode(mode)}
-              />
-
-              <CheckoutInlineAddSection
-                mode={panel.inlineAddMode}
-                contactId={checkout.contactId}
-                onClose={panel.closeInlineAdd}
-                serviceItems={panel.serviceItems}
-                selectedServiceId={panel.selectedServiceId}
-                onServiceChange={panel.setSelectedServiceId}
-                staffItems={panel.staffItems}
-                selectedStaffId={panel.selectedStaffId}
-                onStaffChange={panel.setSelectedStaffId}
-                selectedMembershipKey={panel.selectedMembershipKey}
-                onMembershipChange={panel.setSelectedMembershipKey}
-                onAddService={() => panel.addServiceMutation.mutate()}
-                servicePending={panel.addServiceMutation.isPending}
-                productItems={panel.productItems}
-                selectedProductKey={panel.selectedProductKey}
-                onProductChange={panel.setSelectedProductKey}
-                productQty={panel.productQty}
-                onProductQtyChange={panel.setProductQty}
-                onAddProduct={() => panel.addProductMutation.mutate()}
-                productPending={panel.addProductMutation.isPending}
-                offerItems={panel.offerItems}
-                selectedOfferId={panel.selectedOfferId}
-                onOfferChange={panel.setSelectedOfferId}
-                onApplyOffer={() =>
-                  panel.selectedOfferId &&
-                  panel.applyOfferMutation.mutate(panel.selectedOfferId)
-                }
-                offerPending={panel.applyOfferMutation.isPending}
-                depositAmount={panel.depositAmount}
-                onDepositAmountChange={panel.setDepositAmount}
-                onAddDeposit={() => panel.depositMutation.mutate()}
-                depositPending={panel.depositMutation.isPending}
-                onAddGiftCard={(values) => panel.giftCardMutation.mutate(values)}
-                giftCardPending={panel.giftCardMutation.isPending}
-                onAddPackage={(values) => panel.packageMutation.mutate(values)}
-                packagePending={panel.packageMutation.isPending}
-              />
-            </>
-          ) : null}
+          <DrawerItemAddLayout
+            items={
+              <div className="flex w-full min-w-0 flex-col gap-3">
+                {checkout.items.map((item) => (
+                  <CheckoutLineItemRow
+                    key={item.id}
+                    item={item}
+                    expanded={panel.expandedLineId === item.id}
+                    canEdit={panel.canEdit}
+                    staffItems={
+                      item.serviceId && panel.expandedLineId === item.id
+                        ? panel.expandedLineStaffItems
+                        : []
+                    }
+                    removePending={panel.removeLineMutation.isPending}
+                    updatePending={panel.updateLineMutation.isPending}
+                    onToggle={() => panel.toggleExpandedLine(item.id)}
+                    onRemove={() => panel.removeLineMutation.mutate(item.id)}
+                    onChangePrice={() => panel.setChangePriceItem(item)}
+                    onUpdate={(body) =>
+                      panel.updateLineMutation.mutate({ lineId: item.id, body })
+                    }
+                  />
+                ))}
+              </div>
+            }
+            editor={
+              panel.canEdit ? (
+                <CheckoutInlineAddSection
+                  mode={panel.inlineAddMode}
+                  contactId={checkout.contactId}
+                  onClose={panel.closeInlineAdd}
+                  serviceItems={panel.serviceItems}
+                  selectedServiceId={panel.selectedServiceId}
+                  onServiceChange={panel.setSelectedServiceId}
+                  staffItems={panel.staffItems}
+                  selectedStaffId={panel.selectedStaffId}
+                  onStaffChange={panel.setSelectedStaffId}
+                  selectedMembershipKey={panel.selectedMembershipKey}
+                  onMembershipChange={panel.setSelectedMembershipKey}
+                  onAddService={() => panel.addServiceMutation.mutate()}
+                  servicePending={panel.addServiceMutation.isPending}
+                  productItems={panel.productItems}
+                  selectedProductKey={panel.selectedProductKey}
+                  onProductChange={panel.setSelectedProductKey}
+                  productQty={panel.productQty}
+                  onProductQtyChange={panel.setProductQty}
+                  onAddProduct={() => panel.addProductMutation.mutate()}
+                  productPending={panel.addProductMutation.isPending}
+                  offerItems={panel.offerItems}
+                  selectedOfferId={panel.selectedOfferId}
+                  onOfferChange={panel.setSelectedOfferId}
+                  onApplyOffer={() =>
+                    panel.selectedOfferId &&
+                    panel.applyOfferMutation.mutate(panel.selectedOfferId)
+                  }
+                  offerPending={panel.applyOfferMutation.isPending}
+                  depositAmount={panel.depositAmount}
+                  onDepositAmountChange={panel.setDepositAmount}
+                  onAddDeposit={() => panel.depositMutation.mutate()}
+                  depositPending={panel.depositMutation.isPending}
+                  onAddGiftCard={(values) =>
+                    panel.giftCardMutation.mutate(values)
+                  }
+                  giftCardPending={panel.giftCardMutation.isPending}
+                  onAddPackage={(values) => panel.packageMutation.mutate(values)}
+                  packagePending={panel.packageMutation.isPending}
+                />
+              ) : null
+            }
+            actions={
+              panel.canEdit ? (
+                <CheckoutAddActions
+                  onAddService={() => panel.setInlineAddMode("service")}
+                  onAddProduct={() => panel.setInlineAddMode("product")}
+                  onMoreSelect={(mode) => panel.setInlineAddMode(mode)}
+                />
+              ) : null
+            }
+          />
         </div>
       </div>
 

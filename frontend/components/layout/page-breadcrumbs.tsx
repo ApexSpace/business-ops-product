@@ -39,7 +39,7 @@ export function PageBreadcrumbs({
           {i > 0 ? (
             <NavArrowIcon
               direction="right"
-              size={14}
+              size="sm"
               className="text-muted-foreground/50"
             />
           ) : null}

@@ -105,9 +105,9 @@ function AccordionRow({
           <span className="truncate">{label}</span>
         </span>
         {open ? (
-          <NavArrowIcon direction="down" size="lg" className="text-[var(--drawer-text-secondary)]" />
+          <NavArrowIcon direction="down" size="sm" className="text-[var(--drawer-text-secondary)]" />
         ) : (
-          <NavArrowIcon direction="right" size="lg" className="text-[var(--drawer-text-secondary)]" />
+          <NavArrowIcon direction="right" size="sm" className="text-[var(--drawer-text-secondary)]" />
         )}
       </button>
       {open && children ? (

@@ -1,16 +1,16 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Input } from "@/components/ui/input";
-import { NavArrowIcon } from "@/components/ui/nav-arrow-icon";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+  Combobox,
+  ComboboxFieldInput,
+  ComboboxItemIndicator,
+  ComboboxPopup,
+  COMBOBOX_EMPTY_CLASS,
+  COMBOBOX_ITEM_CLASS,
+} from "@/components/ui/combobox";
 import { listBusinessMembers } from "@/features/settings/api/business.api";
 import { CONTROL_HEIGHT_CLASS } from "@/lib/ui/control-styles";
 import { cn } from "@/lib/utils";
@@ -95,25 +95,17 @@ export function ReportStaffMultiFilter({
   onChange,
 }: ReportStaffMultiFilterProps) {
   const { options, isLoading, isError } = useReportStaffOptions(true);
-  const [open, setOpen] = useState(false);
-  const [search, setSearch] = useState("");
   const selected = Array.isArray(values[field.key])
     ? (values[field.key] as string[])
     : [];
 
-  const filteredOptions = useMemo(() => {
-    const query = search.trim().toLowerCase();
-    if (!query) return options;
-    return options.filter((option) =>
-      option.label.toLowerCase().includes(query),
-    );
-  }, [options, search]);
+  const selectedItems = useMemo(
+    () => options.filter((option) => selected.includes(option.value)),
+    [options, selected],
+  );
 
-  function toggle(value: string, checked: boolean) {
-    const next = checked
-      ? [...selected, value]
-      : selected.filter((id) => id !== value);
-    onChange(field.key, next);
+  function toggleAllClear() {
+    onChange(field.key, []);
   }
 
   const disabled = isLoading || isError || options.length === 0;
@@ -128,74 +120,55 @@ export function ReportStaffMultiFilter({
   return (
     <div className="space-y-1.5">
       <Label>{field.label}</Label>
-      <Popover
-        open={open}
-        onOpenChange={(next) => {
-          setOpen(next);
-          if (!next) setSearch("");
-        }}
+      <Combobox.Root
+        multiple
+        items={options}
+        value={selectedItems}
+        onValueChange={(next) =>
+          onChange(
+            field.key,
+            next.map((option) => option.value),
+          )
+        }
+        disabled={disabled}
+        modal={false}
+        autoHighlight
+        autoComplete="off"
+        itemToStringLabel={(item) => item.label}
+        isItemEqualToValue={(left, right) => left.value === right.value}
       >
-        <PopoverTrigger
-          type="button"
+        <ComboboxFieldInput
           disabled={disabled}
-          className={cn(
-            "glass-control flex w-full min-w-0 items-center justify-between gap-1.5 rounded-[var(--radius-control)] border border-input px-3 text-sm outline-none transition-[border-color,box-shadow,background-color] duration-150 select-none",
-            CONTROL_HEIGHT_CLASS,
-            "focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-primary-tint",
-            "disabled:cursor-not-allowed disabled:opacity-50",
-            selected.length === 0 && !isLoading && !isError
-              ? "text-muted-foreground"
-              : "text-foreground",
-          )}
-        >
-          <span className="min-w-0 flex-1 truncate text-left">{triggerText}</span>
-          <NavArrowIcon direction="down" size="lg" className="text-muted-foreground" />
-        </PopoverTrigger>
-        <PopoverContent
-          align="start"
-          className="w-(--anchor-width) min-w-[16rem] gap-2 p-2"
-        >
-          {options.length > 6 ? (
-            <Input
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search staff…"
-              className="h-8"
-            />
-          ) : null}
-          <div className="max-h-56 space-y-0.5 overflow-y-auto">
-            {filteredOptions.length === 0 ? (
-              <p className="px-2 py-4 text-center text-sm text-muted-foreground">
-                No matching staff
-              </p>
-            ) : (
-              filteredOptions.map((option) => (
-                <label
-                  key={option.value}
-                  className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-accent"
-                >
-                  <Checkbox
-                    checked={selected.includes(option.value)}
-                    onCheckedChange={(checked) =>
-                      toggle(option.value, checked === true)
-                    }
-                  />
-                  <span className="min-w-0 flex-1 truncate">{option.label}</span>
-                </label>
-              ))
+          placeholder={triggerText}
+          className={cn(CONTROL_HEIGHT_CLASS, "w-full")}
+        />
+        <ComboboxPopup align="start" className="min-w-[16rem]">
+          <Combobox.Empty className={COMBOBOX_EMPTY_CLASS}>
+            No matching staff
+          </Combobox.Empty>
+          <Combobox.List>
+            {(option: ReportFilterOption) => (
+              <Combobox.Item
+                key={option.value}
+                value={option}
+                className={COMBOBOX_ITEM_CLASS}
+              >
+                <span className="min-w-0 flex-1 truncate">{option.label}</span>
+                <ComboboxItemIndicator />
+              </Combobox.Item>
             )}
-          </div>
+          </Combobox.List>
           {selected.length > 0 ? (
             <button
               type="button"
               className="w-full rounded-md px-2 py-1.5 text-left text-xs text-muted-foreground hover:bg-accent hover:text-foreground"
-              onClick={() => onChange(field.key, [])}
+              onClick={toggleAllClear}
             >
               Clear selection (all staff)
             </button>
           ) : null}
-        </PopoverContent>
-      </Popover>
+        </ComboboxPopup>
+      </Combobox.Root>
     </div>
   );
 }

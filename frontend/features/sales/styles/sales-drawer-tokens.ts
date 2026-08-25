@@ -63,7 +63,7 @@ export const SALES_DRAWER_SUBTOTAL_ROW_CLASS =
 export const SALES_DRAWER_PROVIDER_PILL_CLASS =
   "inline-flex max-w-full items-center gap-1.5 rounded-full bg-[var(--mobile-status-neutral-bg)] px-2 py-0.5 text-[12px] font-medium leading-[15px] text-[var(--drawer-text-meta)]";
 
-/** Inline add panel under Add Service / Product / More. */
+/** Inline add panel above Add Service / Product / More. */
 export const SALES_DRAWER_INLINE_ADD_PANEL_CLASS =
   "rounded-[var(--radius-md)] border border-[var(--drawer-field-border)] bg-violet-primary-surface/60 p-4";
 

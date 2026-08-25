@@ -91,7 +91,7 @@ function StaffTriggerChevron({ className }: { className?: string }) {
   return (
     <NavArrowIcon
       direction="down"
-      size={14}
+      size="md"
       className={cn("text-muted-foreground/80", className)}
     />
   );

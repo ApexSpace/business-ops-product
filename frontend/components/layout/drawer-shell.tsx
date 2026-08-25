@@ -168,21 +168,16 @@ function DrawerShellInner({
               data-slot="sheet-header-row"
               className={DRAWER_SHELL_HEADER_ROW_CLASS}
             >
-              <div className="min-w-0 flex-1">
-                <Title className={DRAWER_SHELL_TITLE_CLASS}>{title}</Title>
-                {description ? (
-                  <Description
-                    className={DRAWER_SHELL_DESCRIPTION_CLASS}
-                    {...(inSheet && isRichDescription
-                      ? { render: <div /> }
-                      : {})}
-                  >
-                    {description}
-                  </Description>
-                ) : null}
-              </div>
+              <Title
+                className={cn(
+                  DRAWER_SHELL_TITLE_CLASS,
+                  "flex min-h-[var(--control-height-sm)] min-w-0 items-center",
+                )}
+              >
+                {title}
+              </Title>
               {headerActions || (inSheet && showCloseButton) ? (
-                <div className="flex shrink-0 items-center gap-1.5">
+                <div className="flex h-[var(--control-height-sm)] shrink-0 items-center gap-1.5 self-end">
                   {headerActions}
                   {inSheet && showCloseButton && onRequestClose ? (
                     <IconButton
@@ -196,6 +191,16 @@ function DrawerShellInner({
                     </IconButton>
                   ) : null}
                 </div>
+              ) : null}
+              {description ? (
+                <Description
+                  className={cn(DRAWER_SHELL_DESCRIPTION_CLASS, "col-start-1")}
+                  {...(inSheet && isRichDescription
+                    ? { render: <div /> }
+                    : {})}
+                >
+                  {description}
+                </Description>
               ) : null}
             </div>
           </SheetHeader>

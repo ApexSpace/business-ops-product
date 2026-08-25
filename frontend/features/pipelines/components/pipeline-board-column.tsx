@@ -76,9 +76,9 @@ export function PipelineBoardColumn({
             onClick={onToggleCollapse}
           >
             {collapsed ? (
-              <NavArrowIcon direction="down" size={14} />
+              <NavArrowIcon direction="down" size="md" />
             ) : (
-              <NavArrowIcon direction="up" size={14} />
+              <NavArrowIcon direction="up" size="md" />
             )}
           </IconButton>
         </div>

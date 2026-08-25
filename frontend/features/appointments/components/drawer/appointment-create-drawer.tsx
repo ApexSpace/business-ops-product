@@ -7,6 +7,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { TriangleAlert } from "lucide-react";
 import { toast } from "sonner";
 import { DrawerAddAction } from "@/components/drawer/drawer-add-action";
+import { DrawerItemAddLayout } from "@/components/drawer/drawer-item-add-layout";
 import { DrawerPlusIcon } from "@/components/drawer/drawer-icons";
 import { DrawerCheckboxRow } from "@/components/drawer/drawer-checkbox-row";
 import { DrawerExpressRow } from "@/components/drawer/drawer-express-row";
@@ -41,6 +42,7 @@ import { AppointmentTypeTabs } from "@/features/appointments/components/drawer/a
 import {
   AppointmentServiceLineEditor,
   AppointmentServicePicker,
+  AppointmentServiceCombobox,
   type AppointmentServiceLineSelection,
   type StaffOption,
 } from "@/features/appointments/components/appointment-service-line-editor";
@@ -690,82 +692,113 @@ export function AppointmentCreateDrawer({
             </DrawerFormFieldGroup>
           )}
 
-          {hasFilledServices ? (
-            <div className="flex flex-wrap items-center gap-6">
-              {!useExpressBooking ? (
-                <AppointmentServicePicker
-                  open={servicePickerOpen}
-                  onOpenChange={setServicePickerOpen}
-                  value={services}
-                  currencyCode={currencyCode}
-                  onAdd={handleAddService}
-                  trigger={
-                    <button
-                      type="button"
-                      className={APPOINTMENT_DRAWER_ADD_ACTION_CLASS}
-                    >
-                      <span className={APPOINTMENT_DRAWER_ADD_ACTION_ICON_CLASS}>
-                        <DrawerPlusIcon className="size-4 text-white" />
-                      </span>
-                      Add Service
-                    </button>
-                  }
+          <DrawerItemAddLayout
+            items={
+              !notesOpen && notes.trim() ? (
+                <Textarea
+                  value={notes}
+                  onChange={(event) => setNotes(event.target.value)}
+                  placeholder="Add a description to the client"
+                  rows={3}
+                  maxLength={NOTES_MAX_LENGTH}
+                  className={cn(
+                    APPOINTMENT_DRAWER_FIELD_CLASS,
+                    "min-h-[88px] resize-none py-3",
+                  )}
                 />
-              ) : null}
-              {!notesOpen ? (
+              ) : null
+            }
+            editor={
+              <>
+                {servicePickerOpen && hasFilledServices ? (
+                  <AppointmentServiceCombobox
+                    excludedIds={services.map((line) => line.serviceId)}
+                    onAdd={(service) => {
+                      handleAddService(service);
+                      setServicePickerOpen(false);
+                    }}
+                    currencyCode={currencyCode}
+                    placeholder="Search services…"
+                    triggerClassName={cn(
+                      APPOINTMENT_DRAWER_FIELD_CLASS,
+                      "font-normal",
+                    )}
+                    defaultOpen
+                  />
+                ) : null}
+                {notesOpen ? (
+                <div className="flex flex-col gap-2">
+                  <Textarea
+                    value={draftNotes}
+                    onChange={(event) => setDraftNotes(event.target.value)}
+                    placeholder="Add a description to the client"
+                    rows={3}
+                    maxLength={NOTES_MAX_LENGTH}
+                    className={cn(
+                      APPOINTMENT_DRAWER_FIELD_CLASS,
+                      "min-h-[88px] resize-none py-3",
+                    )}
+                  />
+                  <div className="flex items-center justify-end gap-2">
+                    <ActionButton
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-9 min-w-[72px] px-4"
+                      onClick={cancelNotes}
+                    >
+                      Cancel
+                    </ActionButton>
+                    <ActionButton
+                      type="button"
+                      size="sm"
+                      className="h-9 min-w-[72px] border-0 bg-violet-primary-normal px-4 text-white hover:bg-violet-primary-normal-hover"
+                      onClick={confirmNotes}
+                    >
+                      Add
+                    </ActionButton>
+                  </div>
+                </div>
+                ) : null}
+              </>
+            }
+            actions={
+              hasFilledServices ? (
+                <div className="flex flex-wrap items-center gap-6">
+                  {!useExpressBooking ? (
+                    <AppointmentServicePicker
+                      open={servicePickerOpen}
+                      onOpenChange={setServicePickerOpen}
+                      value={services}
+                      currencyCode={currencyCode}
+                      onAdd={handleAddService}
+                      trigger={
+                        <button
+                          type="button"
+                          className={APPOINTMENT_DRAWER_ADD_ACTION_CLASS}
+                        >
+                          <span
+                            className={APPOINTMENT_DRAWER_ADD_ACTION_ICON_CLASS}
+                          >
+                            <DrawerPlusIcon className="size-4 text-white" />
+                          </span>
+                          Add Service
+                        </button>
+                      }
+                    />
+                  ) : null}
+                  {!notesOpen ? (
+                    <DrawerAddAction
+                      label="Add Note"
+                      onClick={openNotesEditor}
+                    />
+                  ) : null}
+                </div>
+              ) : !notesOpen ? (
                 <DrawerAddAction label="Add Note" onClick={openNotesEditor} />
-              ) : null}
-            </div>
-          ) : !notesOpen ? (
-            <DrawerAddAction label="Add Note" onClick={openNotesEditor} />
-          ) : null}
-
-          {notesOpen ? (
-            <div className="flex flex-col gap-2">
-              <Textarea
-                value={draftNotes}
-                onChange={(event) => setDraftNotes(event.target.value)}
-                placeholder="Add a description to the client"
-                rows={3}
-                maxLength={NOTES_MAX_LENGTH}
-                className={cn(
-                  APPOINTMENT_DRAWER_FIELD_CLASS,
-                  "min-h-[88px] resize-none py-3",
-                )}
-              />
-              <div className="flex items-center justify-end gap-2">
-                <ActionButton
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="h-9 min-w-[72px] px-4"
-                  onClick={cancelNotes}
-                >
-                  Cancel
-                </ActionButton>
-                <ActionButton
-                  type="button"
-                  size="sm"
-                  className="h-9 min-w-[72px] border-0 bg-violet-primary-normal px-4 text-white hover:bg-violet-primary-normal-hover"
-                  onClick={confirmNotes}
-                >
-                  Add
-                </ActionButton>
-              </div>
-            </div>
-          ) : notes.trim() ? (
-            <Textarea
-              value={notes}
-              onChange={(event) => setNotes(event.target.value)}
-              placeholder="Add a description to the client"
-              rows={3}
-              maxLength={NOTES_MAX_LENGTH}
-              className={cn(
-                APPOINTMENT_DRAWER_FIELD_CLASS,
-                "min-h-[88px] resize-none py-3",
-              )}
-            />
-          ) : null}
+              ) : null
+            }
+          />
 
           <DrawerCheckboxRow
             id="send-confirmation"

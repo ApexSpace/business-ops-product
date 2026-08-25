@@ -1,15 +1,15 @@
 "use client";
 
-import { formatRelativeTime } from "@/lib/ui/relative-time";
+import { formatCompactRelativeTime } from "@/lib/ui/relative-time";
 import { ProfileAvatar } from "@/components/ui/profile-avatar";
 import { StatusPill } from "@/components/data-display/status-pill";
+import { WORKSPACE_ACTIVE_ROW_CLASS } from "@/lib/design/workspace-tokens";
 import { cn } from "@/lib/utils";
 import {
   channelLabel,
   type ConversationStatus,
   type UnifiedConversationThread,
 } from "@/features/conversations/api/conversations.api";
-import { getConversationChannelIcon } from "@/features/conversations/components/inbox/conversation-channel-display";
 import { unifiedThreadDisplayName } from "@/features/conversations/utils/unified-thread.utils";
 import { displayInboundEmailBody } from "@/features/conversations/utils/email-reply-body";
 import type { StatusPillVariant } from "@/components/data-display/status-pill";
@@ -47,55 +47,54 @@ export function UnifiedThreadRow({
         thread.lastMessagePreview)
       : thread.lastMessagePreview;
   const primaryChannel = thread.channels[0];
-  const ChannelIcon = primaryChannel
-    ? getConversationChannelIcon(primaryChannel)
-    : null;
   const pill = statusPill(thread.status);
+  const metaParts = [
+    primaryChannel ? channelLabel(primaryChannel) : null,
+    thread.lastMessageAt
+      ? formatCompactRelativeTime(thread.lastMessageAt)
+      : null,
+  ].filter(Boolean);
 
   return (
-    <li>
+    <div className="border-b border-border">
       <button
         type="button"
         onClick={() => onSelect(thread)}
         className={cn(
-          "flex w-full gap-3 px-4 py-3 text-left transition-colors hover:bg-muted/50",
-          active && "bg-primary/5",
+          "flex w-full items-start gap-3 px-6 py-3 text-left transition-colors hover:bg-violet-primary-surface/60",
+          active && cn("bg-violet-primary-surface", WORKSPACE_ACTIVE_ROW_CLASS),
         )}
       >
         <ProfileAvatar
           name={name}
           avatarUrl={thread.contact?.avatarUrl}
-          className="size-10"
-          fallbackClassName="bg-primary/10 text-xs font-semibold text-primary"
+          size="default"
+          fallbackClassName="bg-[var(--drawer-avatar-bg)] text-caption font-semibold text-[var(--drawer-avatar-fg)]"
         />
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center justify-between gap-2">
-            <span className="truncate text-sm font-semibold">{name}</span>
-            {thread.lastMessageAt ? (
-              <span className="shrink-0 text-xs text-muted-foreground">
-                {formatRelativeTime(thread.lastMessageAt)}
-              </span>
-            ) : null}
+        <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+          <div className="flex items-start justify-between gap-2">
+            <span className="min-w-0 truncate text-body-small font-semibold text-foreground">
+              {name}
+            </span>
+            <div className="flex shrink-0 items-center gap-1.5">
+              <StatusPill label={pill.label} variant={pill.variant} />
+              {thread.unreadCount > 0 ? (
+                <span className="inline-flex size-5 min-w-5 items-center justify-center rounded-full bg-violet-primary-normal px-1.5 text-caption font-medium text-white">
+                  {thread.unreadCount}
+                </span>
+              ) : null}
+            </div>
           </div>
-          <p className="mt-0.5 truncate text-xs text-muted-foreground">
+          <p className="line-clamp-2 text-caption font-normal text-muted-foreground">
             {previewText ?? "No messages"}
           </p>
-          <div className="mt-1.5 flex items-center gap-2">
-            {ChannelIcon && primaryChannel ? (
-              <span className="inline-flex min-w-0 items-center gap-1 text-xs text-muted-foreground">
-                <ChannelIcon className="size-3.5 shrink-0" aria-hidden />
-                <span className="truncate">{channelLabel(primaryChannel)}</span>
-              </span>
-            ) : null}
-            <StatusPill label={pill.label} variant={pill.variant} />
-            {thread.unreadCount > 0 ? (
-              <span className="ml-auto inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-xs font-medium text-primary-foreground">
-                {thread.unreadCount}
-              </span>
-            ) : null}
-          </div>
+          {metaParts.length > 0 ? (
+            <p className="text-caption font-normal text-muted-foreground">
+              {metaParts.join(" | ")}
+            </p>
+          ) : null}
         </div>
       </button>
-    </li>
+    </div>
   );
 }

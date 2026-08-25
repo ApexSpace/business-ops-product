@@ -17,6 +17,7 @@ interface ContactFullProfileDrawerProps {
   onOpenChange: (open: boolean) => void;
   contactId: string | null;
   onContactDeleted?: () => void;
+  initialSection?: ContactDetailTabId;
 }
 
 export function ContactFullProfileDrawer({
@@ -24,16 +25,17 @@ export function ContactFullProfileDrawer({
   onOpenChange,
   contactId,
   onContactDeleted,
+  initialSection = "timeline",
 }: ContactFullProfileDrawerProps) {
   const [activeSection, setActiveSection] =
-    useState<ContactDetailTabId>("timeline");
+    useState<ContactDetailTabId>(initialSection);
   const { data: contact } = useContactDetail(contactId ?? "");
 
   useEffect(() => {
     if (open) {
-      setActiveSection("timeline");
+      setActiveSection(initialSection);
     }
-  }, [open, contactId]);
+  }, [open, contactId, initialSection]);
 
   return (
     <FormSheet

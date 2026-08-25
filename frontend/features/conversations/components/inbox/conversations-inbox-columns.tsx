@@ -7,8 +7,6 @@ import {
   INBOX_TABLET_MAIN_ROW_CLASS,
   INBOX_TABLET_THREAD_COL_CLASS,
   WORKSPACE_COLUMN_CELL_CLASS,
-  WORKSPACE_GAP_CLASS,
-  WORKSPACE_PADDING_CLASS,
 } from "@/features/contacts/workspace/contact-workspace";
 
 interface ConversationsInboxColumnsProps {
@@ -37,8 +35,6 @@ export function ConversationsInboxColumns({
       <div
         className={cn(
           "hidden min-h-0 flex-1 overflow-hidden md:flex lg:hidden",
-          WORKSPACE_PADDING_CLASS,
-          WORKSPACE_GAP_CLASS,
           className,
         )}
       >

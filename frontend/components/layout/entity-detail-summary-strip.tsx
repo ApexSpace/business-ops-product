@@ -29,7 +29,7 @@ export function EntityDetailSummaryStrip({
         <span>Details</span>
         <NavArrowIcon
           direction={open ? "up" : "down"}
-          size="lg"
+          size="sm"
           className="text-muted-foreground"
         />
       </button>

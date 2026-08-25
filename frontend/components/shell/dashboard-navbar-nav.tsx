@@ -8,9 +8,10 @@ import type { ShellNavItem } from "@/lib/types/shell-nav";
 import { useHydrated } from "@/lib/hooks/use-hydrated";
 import { isNavItemActive } from "./sidebar-nav-utils";
 import {
+  captureExtrasOriginWidth,
   countCoreNavbarItems,
   countFittingNavbarItems,
-  NAVBAR_EXTRAS_MIN_VIEWPORT_PX,
+  packItemsIntoWidth,
   readFlexGapPx,
 } from "@/lib/config/navigation/navbar-overflow";
 
@@ -107,29 +108,45 @@ export function DashboardNavbarNav({
 }: DashboardNavbarNavProps) {
   const containerRef = useRef<HTMLElement>(null);
   const measureRef = useRef<HTMLDivElement>(null);
+  const extrasOriginWidthRef = useRef<number | null>(null);
   const coreCount = countCoreNavbarItems(
     items.map((item) => item.navbarPriority),
   );
   const [visibleCount, setVisibleCount] = useState(coreCount);
 
   useLayoutEffect(() => {
+    extrasOriginWidthRef.current = null;
     const container = containerRef.current;
     const measure = measureRef.current;
     if (!container || !measure) return;
 
-    const media = window.matchMedia(
-      `(min-width: ${NAVBAR_EXTRAS_MIN_VIEWPORT_PX}px)`,
-    );
-
     const update = () => {
       const probes = [...measure.children] as HTMLElement[];
       const itemWidths = probes.map((el) => el.getBoundingClientRect().width);
-      const nextCount = countFittingNavbarItems({
-        availableWidth: container.clientWidth,
-        itemWidths,
-        gap: readFlexGapPx(measure),
+      if (itemWidths.some((width) => width <= 0)) {
+        return;
+      }
+
+      const availableWidth = container.clientWidth;
+      const gap = readFlexGapPx(measure);
+      const coreVisible = packItemsIntoWidth(
+        itemWidths.slice(0, coreCount),
+        availableWidth,
+        gap,
+      );
+      extrasOriginWidthRef.current = captureExtrasOriginWidth(
+        availableWidth,
+        coreVisible,
         coreCount,
-        extrasUnlocked: media.matches,
+        extrasOriginWidthRef.current,
+      );
+
+      const nextCount = countFittingNavbarItems({
+        availableWidth,
+        itemWidths,
+        gap,
+        coreCount,
+        extrasOriginWidth: extrasOriginWidthRef.current ?? availableWidth,
       });
       setVisibleCount(nextCount);
     };
@@ -137,12 +154,10 @@ export function DashboardNavbarNav({
     const observer = new ResizeObserver(update);
     observer.observe(container);
     observer.observe(measure);
-    media.addEventListener("change", update);
     update();
 
     return () => {
       observer.disconnect();
-      media.removeEventListener("change", update);
     };
   }, [items, coreCount]);
 
@@ -169,11 +184,7 @@ export function DashboardNavbarNav({
           <NavbarItemWidthProbe key={item.href} title={item.title} />
         ))}
       </div>
-      <div
-        className={cn(
-          "flex h-full min-w-0 items-center gap-[var(--spacing-2)] overflow-hidden",
-        )}
-      >
+      <div className="flex h-full min-w-0 items-center gap-[var(--spacing-2)] overflow-hidden">
         {visibleItems.map((item) => (
           <DashboardNavbarLink
             key={item.href}

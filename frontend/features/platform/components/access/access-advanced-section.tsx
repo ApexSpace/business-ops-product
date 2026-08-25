@@ -141,9 +141,9 @@ export function AccessAdvancedSection({
           <div className="flex items-center justify-between">
             <CardTitle className="text-base">Advanced</CardTitle>
             {open ? (
-              <NavArrowIcon direction="down" size="lg" />
+              <NavArrowIcon direction="down" size="sm" />
             ) : (
-              <NavArrowIcon direction="right" size="lg" />
+              <NavArrowIcon direction="right" size="sm" />
             )}
           </div>
         </CardHeader>

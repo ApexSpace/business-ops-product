@@ -121,33 +121,40 @@ function AppointmentTicketCard({
   const inner = (
     <div
       className={cn(
-        "rounded-lg border border-border bg-card p-4",
+        "flex flex-col rounded-[var(--radius-md)] border border-border bg-white p-4",
         !appointment && "opacity-70",
       )}
     >
       <p
         className={cn(
-          "text-xs font-semibold uppercase tracking-wide",
-          isNext ? "text-primary" : "text-muted-foreground",
+          "text-xs font-bold uppercase tracking-wide",
+          isNext ? "text-violet-primary-normal" : "text-muted-foreground",
         )}
       >
         {isNext ? "Next appointment" : "Last appointment"}
       </p>
-      <p className="mt-1 text-sm font-semibold text-foreground">{title}</p>
-      <div className="mt-3 border-t border-dashed border-border pt-3">
-        <div className="flex justify-between gap-3">
-          <div className="min-w-0">
-            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              {isNext ? "Date & time" : "Date"}
-            </p>
-            <p className="mt-0.5 truncate text-sm text-foreground">{when}</p>
-          </div>
-          <div className="min-w-0 text-right">
-            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              Stylist
-            </p>
-            <p className="mt-0.5 truncate text-sm text-foreground">{staff}</p>
-          </div>
+      <p
+        className={cn(
+          "mt-2 pb-2 text-base leading-snug",
+          isNext
+            ? "font-bold text-foreground"
+            : "font-medium text-muted-foreground",
+        )}
+      >
+        {title}
+      </p>
+      <div className="flex justify-between gap-3 border-t border-dashed border-border pt-2">
+        <div className="min-w-0">
+          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            {isNext ? "Date & time" : "Date"}
+          </p>
+          <p className="mt-0.5 truncate text-sm text-foreground">{when}</p>
+        </div>
+        <div className="min-w-0 text-right">
+          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            Stylist
+          </p>
+          <p className="mt-0.5 truncate text-sm text-foreground">{staff}</p>
         </div>
       </div>
     </div>
@@ -180,6 +187,14 @@ export function ContactSidebarAppointments({
     useContactAppointmentHighlights(contactId);
 
   if (isLoading) {
+    if (variant === "ticket") {
+      return (
+        <div className={cn("flex flex-col gap-2.5", className)}>
+          <Skeleton className="h-40 w-full rounded-[var(--radius-md)]" />
+          <Skeleton className="h-40 w-full rounded-[var(--radius-md)]" />
+        </div>
+      );
+    }
     return (
       <div className={cn("space-y-4", className)}>
         <div className="space-y-2">
@@ -204,7 +219,7 @@ export function ContactSidebarAppointments({
 
   if (variant === "ticket") {
     return (
-      <div className={cn("space-y-3", className)}>
+      <div className={cn("flex flex-col gap-2.5", className)}>
         <AppointmentTicketCard
           kind="next"
           appointment={nextAppointment}

@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ArrowLeft, MessageSquare, MoreHorizontal, UserRound } from "lucide-react";
-import { useMutation, useQueryClient, UseMutationResult } from "@tanstack/react-query";
+import { ArrowLeft, MessageSquare, MoreVertical, UserRound } from "lucide-react";
+import { useMutation, useQuery, useQueryClient, type UseMutationResult } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { ConfirmDeleteDialog } from "@/components/forms/confirm-delete-dialog";
 import {
@@ -24,9 +24,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { VirtualizedMessageList } from "@/features/conversations/components/virtualized-message-list";
 import { IconButton } from "@/components/ui/icon-button";
-import { ProfileAvatar } from "@/components/ui/profile-avatar";
-import { ThreadChannelFilter } from "@/features/conversations/components/inbox/thread-channel-filter";
-import type { ThreadChannelFilterValue } from "@/features/conversations/components/inbox/thread-channel-filter";
+import {
+  ThreadChannelFilter,
+  filterMessagesByThreadChannel,
+  type ThreadChannelFilterValue,
+} from "@/features/conversations/components/inbox/thread-channel-filter";
 import {
   blockConversationContact,
   channelLabel,
@@ -42,26 +44,29 @@ import {
   type ConversationMessage,
   type UnifiedConversationThread,
 } from "@/features/conversations/api/conversations.api";
-import { ConversationChannelBadge } from "@/features/conversations/components/inbox/conversation-channel-display";
 import {
   channelComposerHint,
   contactDisplayName,
 } from "@/features/conversations/components/inbox/conversation-inbox-utils";
+import {
+  createConversationNote,
+  listConversationNotes,
+} from "@/features/conversations/api/conversation-notes.api";
 import { unifiedThreadDisplayName } from "@/features/conversations/utils/unified-thread.utils";
 import { isDeletableConversationMessage } from "@/features/conversations/utils/message-delete.util";
 import {
   MessageComposer,
   type PendingMessageAttachment,
 } from "@/features/conversations/components/inbox/message-composer";
-import { ConversationInternalNotesPanel } from "@/features/conversations/components/inbox/conversation-internal-notes-panel";
 import { ChatbotSessionActions } from "@/features/conversations/components/inbox/chatbot-session-actions";
 import { useConversationsHost } from "@/features/conversations/conversations-host-context";
 import { removeMessageFromCache } from "@/features/realtime/event-handlers";
 import { queryKeys } from "@/lib/query/keys";
+import {
+  INBOX_THREAD_HEADER_CLASS,
+  INBOX_THREAD_PANEL_CLASS,
+} from "@/features/contacts/workspace/contact-workspace";
 import { cn } from "@/lib/utils";
-
-const INBOX_THREAD_PANEL_CLASS =
-  "flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-border/60 bg-background shadow-elevation-xs";
 
 interface ConversationThreadPanelProps {
   selectedId: string | null;
@@ -74,13 +79,9 @@ interface ConversationThreadPanelProps {
   isFetchingNextPage: boolean;
   fetchNextPage: () => void;
   messageScrollKey?: string | null;
-  threadChannels?: ConversationChannel[];
-  threadChannelFilter?: ThreadChannelFilterValue;
-  onThreadChannelFilterChange?: (value: ThreadChannelFilterValue) => void;
   replyChannels?: ContactReplyChannel[];
   selectedReplyChannel?: ConversationChannel | null;
   onReplyChannelChange?: (channel: ConversationChannel) => void;
-  channelBarReadOnly?: boolean;
   composer: string;
   onComposerChange: (value: string) => void;
   attachmentUrl: string;
@@ -143,13 +144,9 @@ export function ConversationThreadPanel({
   isFetchingNextPage,
   fetchNextPage,
   messageScrollKey = null,
-  threadChannels = [],
-  threadChannelFilter = "ALL",
-  onThreadChannelFilterChange,
   replyChannels,
   selectedReplyChannel,
   onReplyChannelChange,
-  channelBarReadOnly = false,
   composer,
   onComposerChange,
   attachmentUrl,
@@ -185,15 +182,31 @@ export function ConversationThreadPanel({
   const [pendingDeleteMessage, setPendingDeleteMessage] =
     useState<ConversationMessage | null>(null);
   const [cannotDeleteOpen, setCannotDeleteOpen] = useState(false);
+  const [noteDraft, setNoteDraft] = useState("");
+  const [composerTab, setComposerTab] = useState<"reply" | "note">("reply");
+  const [threadChannelFilter, setThreadChannelFilter] =
+    useState<ThreadChannelFilterValue>("ALL");
 
   useEffect(() => {
     setMessageDeleteMode(false);
     setPendingDeleteMessage(null);
     setCannotDeleteOpen(false);
+    setNoteDraft("");
+    setComposerTab("reply");
+    setThreadChannelFilter("ALL");
   }, [selectedId]);
 
   const contactId =
     selectedThread?.contactId ?? selected?.contactId ?? selected?.contact?.id;
+  const threadChannels: ConversationChannel[] = selectedThread?.channels.length
+    ? selectedThread.channels
+    : selected?.channel
+      ? [selected.channel]
+      : [];
+  const visibleMessages =
+    composerTab === "note"
+      ? filterMessagesByThreadChannel(messages, threadChannelFilter)
+      : messages;
   const isBlocked = Boolean(
     selected?.contact?.isBlocked ?? selectedThread?.contact?.isBlocked,
   );
@@ -226,6 +239,27 @@ export function ConversationThreadPanel({
       });
     }
   };
+
+  const notesQuery = useQuery({
+    queryKey: queryKeys.conversations.notes(selectedId ?? "", apiBase),
+    queryFn: () => listConversationNotes(selectedId!, apiBase),
+    enabled: Boolean(selectedId),
+  });
+
+  const createNoteMutation = useMutation({
+    mutationFn: (body: string) =>
+      createConversationNote(selectedId!, body, apiBase),
+    onSuccess: () => {
+      setNoteDraft("");
+      if (selectedId) {
+        void queryClient.invalidateQueries({
+          queryKey: queryKeys.conversations.notes(selectedId, apiBase),
+        });
+      }
+      toast.success("Internal note added");
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
 
   const deleteMessageMutation = useMutation({
     mutationFn: (message: ConversationMessage) =>
@@ -293,9 +327,6 @@ export function ConversationThreadPanel({
     : "";
   const threadAvatarUrl =
     selectedThread?.contact?.avatarUrl ?? selected?.contact?.avatarUrl ?? null;
-  const headerChannel =
-    selectedReplyChannel ??
-    (threadChannels.length === 1 ? threadChannels[0] : null);
 
   function handleRequestDeleteMessage(message: ConversationMessage) {
     if (!isDeletableConversationMessage(message)) {
@@ -314,50 +345,89 @@ export function ConversationThreadPanel({
           </div>
         ) : (
           <>
-            <header className="flex shrink-0 items-center gap-2 border-b border-border/60 px-3 py-2 sm:px-4">
+            <header className={INBOX_THREAD_HEADER_CLASS}>
               {onBackToList ? (
                 <IconButton
                   aria-label="Back to conversations"
-                  className="size-7 shrink-0 md:hidden"
+                  size="icon-sm"
+                  className="size-[var(--control-height-sm)] shrink-0 rounded-full md:hidden"
                   onClick={onBackToList}
                 >
                   <ArrowLeft className="size-4" />
                 </IconButton>
               ) : null}
 
-              <ProfileAvatar
-                name={threadDisplayName}
-                avatarUrl={threadAvatarUrl}
-                className="size-8 shrink-0"
-                fallbackClassName="bg-primary/10 text-[10px] font-semibold text-primary"
-              />
-
-              <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-hidden">
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-semibold leading-tight">
-                    {threadDisplayName}
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-base font-semibold leading-tight text-foreground">
+                  {threadDisplayName}
+                </p>
+                {clientSinceLabel ? (
+                  <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                    {clientSinceLabel}
                   </p>
-                  {clientSinceLabel ? (
-                    <p className="mt-0.5 truncate text-xs text-muted-foreground">
-                      {clientSinceLabel}
-                    </p>
-                  ) : null}
-                </div>
+                ) : null}
+              </div>
+
+              <div className="flex shrink-0 items-center gap-1">
+                {messageDeleteMode ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-[var(--control-height-sm)] shrink-0"
+                    onClick={() => setMessageDeleteMode(false)}
+                  >
+                    Done
+                  </Button>
+                ) : null}
+                {isClosed ? (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="brand"
+                    className="h-[var(--control-height-sm)] shrink-0"
+                    disabled={statusMutation.isPending}
+                    onClick={() => statusMutation.mutate("reopen")}
+                  >
+                    Reopen
+                  </Button>
+                ) : null}
+                {selected.channel === "WEBCHAT" ? (
+                  <ChatbotSessionActions
+                    conversationId={selectedId}
+                    botPaused={selected.chatbotBotPaused}
+                  />
+                ) : null}
+                {composerTab === "note" ? (
+                  <ThreadChannelFilter
+                    channels={threadChannels}
+                    value={threadChannelFilter}
+                    onChange={setThreadChannelFilter}
+                  />
+                ) : null}
+                {onOpenContactDetails ? (
+                  <IconButton
+                    aria-label="Contact details"
+                    size="icon-sm"
+                    className="size-[var(--control-height-sm)] shrink-0 rounded-full lg:hidden"
+                    onClick={onOpenContactDetails}
+                  >
+                    <UserRound className="size-3.5" />
+                  </IconButton>
+                ) : null}
                 <DropdownMenu>
                   <DropdownMenuTrigger
                     render={
                       <IconButton
                         aria-label="Conversation actions"
-                        className="size-7 shrink-0"
+                        size="icon-sm"
+                        className="size-[var(--control-height-sm)] shrink-0 rounded-full"
                       >
-                        <MoreHorizontal className="size-3.5" />
+                        <MoreVertical className="size-4" />
                       </IconButton>
                     }
                   />
-                  <DropdownMenuContent
-                    align="start"
-                    className="w-auto min-w-56"
-                  >
+                  <DropdownMenuContent align="end" className="w-auto min-w-56">
                     {messageDeleteMode ? (
                       <DropdownMenuItem
                         onClick={() => setMessageDeleteMode(false)}
@@ -407,60 +477,6 @@ export function ConversationThreadPanel({
                     ) : null}
                   </DropdownMenuContent>
                 </DropdownMenu>
-                {headerChannel ? (
-                  <ConversationChannelBadge
-                    channel={headerChannel}
-                    size="sm"
-                    className="hidden shrink-0 sm:inline-flex"
-                  />
-                ) : null}
-              </div>
-
-              <div className="flex max-w-[58%] shrink-0 items-center gap-1 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] sm:max-w-none sm:overflow-visible [&::-webkit-scrollbar]:hidden">
-                {messageDeleteMode ? (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="h-7 shrink-0 px-2 text-xs"
-                    onClick={() => setMessageDeleteMode(false)}
-                  >
-                    Done
-                  </Button>
-                ) : null}
-                {isClosed ? (
-                  <Button
-                    type="button"
-                    size="sm"
-                    className="h-7 shrink-0 px-2.5 text-xs"
-                    disabled={statusMutation.isPending}
-                    onClick={() => statusMutation.mutate("reopen")}
-                  >
-                    Reopen
-                  </Button>
-                ) : null}
-                {selected.channel === "WEBCHAT" ? (
-                  <ChatbotSessionActions
-                    conversationId={selectedId}
-                    botPaused={selected.chatbotBotPaused}
-                  />
-                ) : null}
-                {onThreadChannelFilterChange ? (
-                  <ThreadChannelFilter
-                    channels={threadChannels}
-                    value={threadChannelFilter}
-                    onChange={onThreadChannelFilterChange}
-                  />
-                ) : null}
-                {onOpenContactDetails ? (
-                  <IconButton
-                    aria-label="Contact details"
-                    className="size-7 shrink-0 lg:hidden"
-                    onClick={onOpenContactDetails}
-                  >
-                    <UserRound className="size-3.5" />
-                  </IconButton>
-                ) : null}
               </div>
             </header>
 
@@ -484,22 +500,26 @@ export function ConversationThreadPanel({
               </div>
             ) : null}
 
-            <div className="min-h-0 flex-1 overflow-hidden bg-muted/10">
+            <div className="min-h-0 flex-1 overflow-hidden bg-white">
               {messagesLoading ? (
                 <p className="px-4 py-3 text-sm text-muted-foreground">
                   Loading messages…
                 </p>
-              ) : messages.length === 0 ? (
-                <p className="px-4 py-3 text-sm text-muted-foreground">
-                  {totalMessageCount > 0 && threadChannelFilter !== "ALL"
+              ) : visibleMessages.length === 0 &&
+                !(notesQuery.data && notesQuery.data.length > 0) ? (
+                <p className="px-6 py-6 text-sm text-muted-foreground">
+                  {totalMessageCount > 0 &&
+                  composerTab === "note" &&
+                  threadChannelFilter !== "ALL"
                     ? `No ${channelLabel(threadChannelFilter)} messages yet.`
                     : "No messages yet."}
                 </p>
               ) : (
                 <VirtualizedMessageList
-                  key={messageScrollKey ?? selectedId}
-                  scrollKey={messageScrollKey ?? selectedId}
-                  messages={messages}
+                  key={`${messageScrollKey ?? selectedId}:${composerTab}:${threadChannelFilter}`}
+                  scrollKey={`${messageScrollKey ?? selectedId}:${composerTab}:${threadChannelFilter}`}
+                  messages={visibleMessages}
+                  notes={notesQuery.data ?? []}
                   hasMore={hasNextPage}
                   isLoadingMore={isFetchingNextPage}
                   onLoadMore={() => void fetchNextPage()}
@@ -517,15 +537,19 @@ export function ConversationThreadPanel({
               )}
             </div>
 
-            <div className="shrink-0 border-t border-border/60 bg-background">
+            <div className="shrink-0 bg-white">
               <MessageComposer
                 variant="thread"
-                notesPanel={
-                  <ConversationInternalNotesPanel
-                    conversationId={selectedId}
-                    variant="embedded"
-                  />
-                }
+                composerTab={composerTab}
+                onComposerTabChange={setComposerTab}
+                noteDraft={noteDraft}
+                onNoteDraftChange={setNoteDraft}
+                onCreateNote={() => {
+                  const body = noteDraft.trim();
+                  if (!body) return;
+                  createNoteMutation.mutate(body);
+                }}
+                notePending={createNoteMutation.isPending}
                 composer={composer}
                 onComposerChange={onComposerChange}
                 attachmentUrl={attachmentUrl}
@@ -549,7 +573,6 @@ export function ConversationThreadPanel({
                 channelBarChannels={replyChannels}
                 channelBarValue={selectedReplyChannel}
                 onChannelBarChange={onReplyChannelChange}
-                channelBarReadOnly={channelBarReadOnly}
                 whatsAppRequiresTemplate={whatsAppRequiresTemplate}
                 selectedTemplateId={selectedTemplateId}
                 onTemplateIdChange={onTemplateIdChange}

@@ -14,8 +14,6 @@ import { ConversationListPanel } from "@/features/conversations/components/inbox
 import { ConversationInboxContactSidebar } from "@/features/conversations/components/inbox/conversation-inbox-contact-sidebar";
 import { ConversationsInboxColumns } from "@/features/conversations/components/inbox/conversations-inbox-columns";
 import { ConversationThreadPanel } from "@/features/conversations/components/inbox/conversation-thread-panel";
-import type { ThreadChannelFilterValue } from "@/features/conversations/components/inbox/thread-channel-filter";
-import { filterMessagesByThreadChannel } from "@/features/conversations/components/inbox/thread-channel-filter";
 import { ContactWorkspaceShell } from "@/features/contacts/components/contact-workspace/contact-workspace-shell";
 import { useConversationInboxContactSidebar } from "@/features/conversations/hooks/use-conversation-inbox-contact-sidebar";
 import { useRetryConversationMessage } from "@/features/conversations/hooks/use-retry-conversation-message";
@@ -115,8 +113,6 @@ export function ConversationsInbox() {
   const [newConversationOpen, setNewConversationOpen] = useState(false);
   const [selectedReplyChannel, setSelectedReplyChannel] =
     useState<ConversationChannel | null>(null);
-  const [threadChannelFilter, setThreadChannelFilter] =
-    useState<ThreadChannelFilterValue>("ALL");
   const [mobilePane, setMobilePane] = useState<InboxMobilePane>("list");
   const [detailsSheetOpen, setDetailsSheetOpen] = useState(false);
   const businessAccess = useOptionalBusinessAccess();
@@ -180,7 +176,6 @@ export function ConversationsInbox() {
     (thread: UnifiedConversationThread) => {
       setManualThreadKey(thread.threadKey);
       setSelectedReplyChannel(null);
-      setThreadChannelFilter("ALL");
       setEmailSubject("");
       setMobilePane("thread");
       const params = buildInboxThreadSearchParams(thread, searchParams);
@@ -232,19 +227,6 @@ export function ConversationsInbox() {
   const handleReplyChannelChange = useCallback(
     (channel: ConversationChannel) => {
       setSelectedReplyChannel(channel);
-      setThreadChannelFilter(channel);
-      setEmailSubject("");
-    },
-    [],
-  );
-
-  const handleThreadChannelFilterChange = useCallback(
-    (filter: ThreadChannelFilterValue) => {
-      setThreadChannelFilter(filter);
-      if (filter === "ALL") {
-        return;
-      }
-      setSelectedReplyChannel(filter);
       setEmailSubject("");
     },
     [],
@@ -296,14 +278,9 @@ export function ConversationsInbox() {
     [messagesInfinite?.pages],
   );
 
-  const filteredMessages = useMemo(
-    () => filterMessagesByThreadChannel(messages, threadChannelFilter),
-    [messages, threadChannelFilter],
-  );
-
   const messageScrollKey = mergedTimeline
-    ? `${activeThread?.threadKey ?? ""}:${threadChannelFilter}`
-    : `${orphanConversationId ?? ""}:${threadChannelFilter}`;
+    ? (activeThread?.threadKey ?? "")
+    : (orphanConversationId ?? "");
 
   const defaultReplyChannel = useMemo(
     () =>
@@ -329,7 +306,7 @@ export function ConversationsInbox() {
 
   const replyConversationId = mergedTimeline
     ? activeReplyChannel?.conversationId ??
-      (effectiveReplyChannel === "WEBCHAT" || threadChannelFilter === "WEBCHAT"
+      (effectiveReplyChannel === "WEBCHAT"
         ? webchatConversationId
         : null)
     : orphanConversationId;
@@ -349,16 +326,6 @@ export function ConversationsInbox() {
   const threadConversation = mergedTimeline
     ? (selected ?? statusConversation)
     : selected;
-
-  const threadChannels = useMemo(() => {
-    if (activeThread?.channels.length) {
-      return activeThread.channels;
-    }
-    if (threadConversation?.channel) {
-      return [threadConversation.channel];
-    }
-    return [];
-  }, [activeThread?.channels, threadConversation?.channel]);
 
   const sidebarContactId =
     activeThread?.contactId ?? threadConversation?.contactId ?? null;
@@ -793,24 +760,18 @@ export function ConversationsInbox() {
       selectedId={statusConversationId}
       selected={threadConversation}
       selectedThread={activeThread}
-      messages={filteredMessages}
+      messages={messages}
       totalMessageCount={messages.length}
       messagesLoading={messagesLoading}
       hasNextPage={hasNextPage ?? false}
       isFetchingNextPage={isFetchingNextPage}
       fetchNextPage={() => void fetchNextPage()}
       messageScrollKey={messageScrollKey}
-      threadChannels={threadChannels}
-      threadChannelFilter={threadChannelFilter}
-      onThreadChannelFilterChange={
-        threadChannels.length > 1 ? handleThreadChannelFilterChange : undefined
-      }
       replyChannels={composerReplyChannels}
       selectedReplyChannel={composerReplyChannel}
       onReplyChannelChange={
         mergedTimeline ? handleReplyChannelChange : undefined
       }
-      channelBarReadOnly={mergedTimeline && threadChannelFilter !== "ALL"}
       composer={composer}
       onComposerChange={setComposer}
       attachmentUrl={attachmentUrl}
@@ -883,7 +844,7 @@ export function ConversationsInbox() {
       <Sheet open={detailsSheetOpen} onOpenChange={setDetailsSheetOpen}>
         <SheetContent
           side="right"
-          className="w-full p-0 sm:max-w-md lg:hidden"
+          className="w-full p-0 sm:max-w-[22.5rem] lg:hidden"
         >
           <SheetTitle className="sr-only">Contact details</SheetTitle>
           <div className="h-full min-h-0">{renderContactSidebar()}</div>
@@ -894,7 +855,6 @@ export function ConversationsInbox() {
         <div
           className={cn(
             "min-h-0 flex-1 overflow-hidden",
-            WORKSPACE_PADDING_CLASS,
             mobilePane !== "list" && "hidden",
           )}
         >
@@ -928,12 +888,7 @@ export function ConversationsInbox() {
             </Button>
             <span className="text-sm font-semibold">Contact details</span>
           </header>
-          <div
-            className={cn(
-              "min-h-0 flex-1 overflow-hidden pb-2",
-              WORKSPACE_PADDING_CLASS,
-            )}
-          >
+          <div className="min-h-0 flex-1 overflow-hidden">
             <ConversationInboxContactSidebar
               sidebarState={contactSidebar}
               selected={threadConversation}

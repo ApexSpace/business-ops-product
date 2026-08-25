@@ -256,9 +256,9 @@ export function PublicGiftCardPurchase({
           >
             Gift card details
             {showDetails ? (
-              <NavArrowIcon direction="up" size="lg" />
+              <NavArrowIcon direction="up" size="md" />
             ) : (
-              <NavArrowIcon direction="down" size="lg" />
+              <NavArrowIcon direction="down" size="md" />
             )}
           </button>
           {showDetails ? (

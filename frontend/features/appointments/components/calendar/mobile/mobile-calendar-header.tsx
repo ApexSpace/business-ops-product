@@ -77,7 +77,7 @@ export function MobileCalendarHeader({
             aria-expanded={pickerOpen}
           >
             {monthLabel}
-            <NavArrowIcon direction="down" size="lg" className="opacity-90" />
+            <NavArrowIcon direction="down" size="sm" className="opacity-90" />
           </button>
         }
       />
