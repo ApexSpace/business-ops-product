@@ -193,7 +193,6 @@ export function BusinessCalendarsSettings() {
   return (
     <div className="space-y-[var(--page-stack-gap)]">
       <PageHeader
-        description="Manage internal calendars for scheduling and Google sync. Public booking is configured under Online Booking."
         actions={
           <div className="flex flex-wrap items-center gap-2">
             <Link

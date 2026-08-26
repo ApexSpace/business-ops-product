@@ -17,3 +17,6 @@ export const WORKSPACE_NAV_ITEM_ACTIVE_CLASS =
 
 export const WORKSPACE_NAV_ITEM_IDLE_CLASS =
   "text-muted-foreground hover:bg-muted/60 hover:text-foreground";
+
+/** ~20×20 nav glyph (Figma sidebar icon language). Hit target stays on the row. */
+export const WORKSPACE_NAV_ICON_CLASS = "size-5 shrink-0";

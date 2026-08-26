@@ -9,7 +9,6 @@ import { useAuth } from "@/lib/auth/provider";
 import { useAppRouter } from "@/lib/hooks/use-app-router";
 import { useBusinessAccess } from "@/lib/business-access/use-business-access";
 import { getAccessBlockedMessage } from "@/components/business-access/business-access-messages";
-import { PageHeader } from "@/components/layout/page-header";
 import { ActionButton } from "@/components/ui/action-button";
 import {
   Card,
@@ -179,8 +178,7 @@ export function BusinessBillingSettings() {
 
   if (isLoading) {
     return (
-      <div className="w-full min-w-0 space-y-6">
-        <PageHeader description="Your subscription and plan details." />
+      <div className="w-full min-w-0 space-y-[var(--spacing-6)]">
         <p className="text-sm text-muted-foreground">Loading plan details…</p>
       </div>
     );
@@ -193,8 +191,7 @@ export function BusinessBillingSettings() {
       : null;
 
   return (
-    <div className="w-full min-w-0 space-y-6">
-      <PageHeader description="Your subscription and plan details." />
+    <div className="w-full min-w-0 space-y-[var(--spacing-6)]">
 
       {blockedCopy ? (
         <Card className="border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/30">

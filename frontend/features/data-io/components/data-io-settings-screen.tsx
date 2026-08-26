@@ -30,16 +30,7 @@ export function DataIoSettingsScreen() {
   const entities = entitiesQuery.data ?? [];
 
   return (
-    <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 p-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">
-          Data import & export
-        </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Migrate CSV/Excel files from other platforms, or export your data.
-        </p>
-      </div>
-
+    <div className="flex w-full min-w-0 flex-col gap-[var(--spacing-6)]">
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Entities</CardTitle>

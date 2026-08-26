@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { SearchInput } from "@/components/forms/search-input";
 import {
   Accordion,
@@ -11,21 +11,18 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { isNavItemActive } from "@/components/shell/sidebar-nav-utils";
 import { useHydrated } from "@/lib/hooks/use-hydrated";
 import { cn } from "@/lib/utils";
 import type { ShellNavItem, ShellNavSection } from "@/lib/types/shell-nav";
+import { isSettingsNavItemActive } from "@/lib/config/navigation/settings-nav-active";
 import {
+  WORKSPACE_NAV_ICON_CLASS,
   WORKSPACE_NAV_ITEM_ACTIVE_CLASS,
   WORKSPACE_NAV_ITEM_CLASS,
   WORKSPACE_NAV_ITEM_IDLE_CLASS,
   WORKSPACE_NAV_PANEL_CLASS,
   WORKSPACE_NAV_SECTION_TRIGGER_CLASS,
 } from "@/lib/design/workspace-nav-tokens";
-
-function isSettingsIndexPath(pathname: string): boolean {
-  return pathname === "/business/settings" || pathname === "/business/settings/";
-}
 
 function itemMatchesQuery(item: ShellNavItem, query: string): boolean {
   const q = query.trim().toLowerCase();
@@ -43,6 +40,8 @@ export function SettingsNavPanel({
   onNavigate?: () => void;
 }) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const search = searchParams.toString();
   const hydrated = useHydrated();
   const [query, setQuery] = useState("");
 
@@ -58,13 +57,15 @@ export function SettingsNavPanel({
   }, [query, sections]);
 
   const activeSectionId = useMemo(() => {
-    if (!hydrated || isSettingsIndexPath(pathname)) return null;
+    if (!hydrated) return null;
     return (
       filtered.find((section) =>
-        section.items.some((item) => isNavItemActive(pathname, item)),
+        section.items.some((item) =>
+          isSettingsNavItemActive(pathname, search, item),
+        ),
       )?.id ?? null
     );
-  }, [filtered, hydrated, pathname]);
+  }, [filtered, hydrated, pathname, search]);
 
   const [openIds, setOpenIds] = useState<string[]>([]);
 
@@ -89,7 +90,7 @@ export function SettingsNavPanel({
       <SearchInput
         value={query}
         onChange={setQuery}
-        placeholder="Search settings"
+        placeholder="Search"
         className="max-w-none"
       />
       <ScrollArea className="min-h-0 flex-1">
@@ -141,11 +142,11 @@ function SettingsNavLink({
   onNavigate?: () => void;
 }) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const hydrated = useHydrated();
   const active =
     hydrated &&
-    !isSettingsIndexPath(pathname) &&
-    isNavItemActive(pathname, item);
+    isSettingsNavItemActive(pathname, searchParams.toString(), item);
   const Icon = item.icon;
 
   return (
@@ -162,7 +163,7 @@ function SettingsNavLink({
     >
       <Icon
         className={cn(
-          "size-4 shrink-0",
+          WORKSPACE_NAV_ICON_CLASS,
           active ? "text-primary" : "text-muted-foreground",
         )}
         aria-hidden

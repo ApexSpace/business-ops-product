@@ -1,7 +1,7 @@
 "use client";
 
 import { SettingsFormActions } from "@/components/layout/settings-form-actions";
-import { PageHeader } from "@/components/layout/page-header";
+import { SettingsFormStack } from "@/components/forms/settings-form-grid";
 import { PageTabs, PageTabsPanel } from "@/components/layout/page-tabs";
 import {
   Form,
@@ -31,14 +31,12 @@ export function BusinessFinancialSettings() {
   if (isLoading) return <Skeleton className="h-48 w-full" />;
 
   return (
-    <div className="w-full min-w-0 space-y-6">
-      <PageHeader />
-      <Form {...form}>
-        <FormSchemaProvider schema={financialSettingsSchema}>
-          <form
-            onSubmit={form.handleSubmit((v) => mutation.mutate(v))}
-            className="w-full min-w-0 space-y-6"
-          >
+    <Form {...form}>
+      <FormSchemaProvider schema={financialSettingsSchema}>
+        <form
+          onSubmit={form.handleSubmit((v) => mutation.mutate(v))}
+        >
+          <SettingsFormStack>
             <PageTabs
               value={activeTab}
               onValueChange={setActiveTab}
@@ -73,9 +71,9 @@ export function BusinessFinancialSettings() {
                 financial settings.
               </p>
             )}
-          </form>
-        </FormSchemaProvider>
-      </Form>
-    </div>
+          </SettingsFormStack>
+        </form>
+      </FormSchemaProvider>
+    </Form>
   );
 }

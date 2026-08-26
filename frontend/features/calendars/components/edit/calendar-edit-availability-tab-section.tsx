@@ -9,6 +9,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { SettingsFormGrid } from "@/components/forms/settings-form-grid";
 import { DAY_LABELS } from "@/features/calendars/schemas/calendar-profile";
 import type { CalendarEditSectionProps } from "@/features/calendars/components/edit/calendar-edit-types";
 import { CalendarEditExceptionsPanel } from "@/features/calendars/components/edit/calendar-edit-exceptions-panel";
@@ -78,7 +79,7 @@ export function CalendarEditAvailabilityTabSection({
             Buffers and how far ahead customers can book.
           </p>
         </div>
-        <div className="grid gap-4 sm:grid-cols-2">
+        <SettingsFormGrid>
           <FormField
             control={form.control}
             name="bufferBeforeMinutes"
@@ -144,7 +145,7 @@ export function CalendarEditAvailabilityTabSection({
               </FormItem>
             )}
           />
-        </div>
+        </SettingsFormGrid>
       </section>
 
       {calendarId ? (

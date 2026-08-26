@@ -2,6 +2,7 @@
 
 import type { UseFormReturn } from "react-hook-form";
 import { PhoneField } from "@/components/forms/phone-field";
+import { SettingsFormGrid } from "@/components/forms/settings-form-grid";
 import { TextField } from "@/components/forms/text-field";
 import {
   FormControl,
@@ -31,7 +32,7 @@ export function BusinessProfileContactFields({
       {showSectionTitle ? (
         <BusinessProfileSectionTitle>Primary contact</BusinessProfileSectionTitle>
       ) : null}
-      <div className="grid gap-4 sm:grid-cols-2">
+      <SettingsFormGrid>
         <TextField
           control={form.control}
           name="firstName"
@@ -46,7 +47,7 @@ export function BusinessProfileContactFields({
           placeholder="Smith"
           disabled={disabled}
         />
-      </div>
+      </SettingsFormGrid>
       <FormField
         control={form.control}
         name="displayName"
@@ -64,7 +65,7 @@ export function BusinessProfileContactFields({
         )}
       />
       {twoColumnLayout ? (
-        <div className="grid gap-4 sm:grid-cols-2">
+        <SettingsFormGrid>
           <TextField
             control={form.control}
             name="email"
@@ -79,7 +80,7 @@ export function BusinessProfileContactFields({
             label="Phone number"
             disabled={disabled}
           />
-        </div>
+        </SettingsFormGrid>
       ) : (
         <>
           <TextField

@@ -13,6 +13,10 @@ export { CheckboxField } from "@/components/forms/checkbox-field";
 export { SelectField } from "@/components/forms/select-field";
 export { SearchableSelect } from "@/components/forms/searchable-select";
 export { TextField } from "@/components/forms/text-field";
+export {
+  SettingsFormGrid,
+  SettingsFormStack,
+} from "@/components/forms/settings-form-grid";
 
 export {
   DataTable,

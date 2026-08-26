@@ -145,6 +145,9 @@
   --cs-shell-navbar-tab-padding-x: 8px;
   --cs-shell-navbar-tab-radius: 8px;
   --cs-shell-navbar-tab-gap: 3px;
+  /* Figma NavLink icon: 20×20, 8px gap to label */
+  --cs-shell-navbar-tab-icon-size: 20px;
+  --cs-shell-navbar-tab-icon-gap: 0.5rem;
   /* Figma Rectangle 4307 underline: 70×2, neutral/0 */
   --cs-shell-navbar-tab-underline-width: 70px;
   --cs-shell-navbar-tab-underline-height: 2px;
