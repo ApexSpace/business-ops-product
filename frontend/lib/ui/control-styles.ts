@@ -1,6 +1,6 @@
 /**
  * Shared sizing for inputs, selects, search, filters, and toolbar controls.
- * Height token: `--control-height` in globals.css (2.25rem).
+ * Height token: `--control-height` in globals.css.
  */
 export const CONTROL_HEIGHT_CLASS = "h-[var(--control-height)]";
 

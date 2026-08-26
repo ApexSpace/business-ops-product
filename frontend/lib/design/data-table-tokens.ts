@@ -22,6 +22,12 @@ export const DATA_TABLE_HEADER_TEXT = "var(--pc-violet-primary-dark)";
 export const DATA_TABLE_SHELL_CLASS =
   "flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-[var(--radius-md)] border border-[var(--drawer-tab-track)] bg-white shadow-none";
 
+/** Scroll host for the grid — fills remaining workspace height. */
+export const DATA_TABLE_SCROLL_CLASS = "min-h-0 flex-1 overflow-auto";
+
+/** Stretch the table grid to the scroll host so empty states fill the card. */
+export const DATA_TABLE_GRID_FILL_CLASS = "h-full min-h-full w-full";
+
 /**
  * Sticky header — sticks within the DataTable scroll host.
  * Opaque th backgrounds so rows don’t show through while scrolling.

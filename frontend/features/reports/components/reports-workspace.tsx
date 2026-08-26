@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { FileBarChart } from "lucide-react";
 import { ApiErrorState } from "@/components/data-display/api-error-state";
+import { SettingsLayout } from "@/components/layout/settings-layout";
 import { ReportCatalogSidebar } from "@/features/reports/components/report-catalog-sidebar";
 import { ReportConfigPanel } from "@/features/reports/components/report-config-panel";
 import { useReportsCatalog } from "@/features/reports/hooks/use-reports-catalog";
@@ -36,13 +37,16 @@ export function ReportsWorkspace() {
   }
 
   return (
-    <div className="flex h-full min-h-0 flex-1 overflow-hidden">
-      <ReportCatalogSidebar
-        groups={groups}
-        selectedKey={activeKey}
-        onSelect={setSelectedKey}
-        isLoading={isLoading}
-      />
+    <SettingsLayout
+      sidebar={
+        <ReportCatalogSidebar
+          groups={groups}
+          selectedKey={activeKey}
+          onSelect={setSelectedKey}
+          isLoading={isLoading}
+        />
+      }
+    >
       {selectedReport ? (
         <ReportConfigPanel key={selectedReport.key} report={selectedReport} />
       ) : (
@@ -51,6 +55,6 @@ export function ReportsWorkspace() {
           <p className="text-sm">Select a report from the list</p>
         </div>
       )}
-    </div>
+    </SettingsLayout>
   );
 }

@@ -5,7 +5,6 @@ import { Dialog as SheetPrimitive } from "@base-ui/react/dialog"
 import { XIcon } from "lucide-react"
 
 import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
 import { IconButton } from "@/components/ui/icon-button"
 import { DrawerCloseIcon } from "@/components/drawer/drawer-icons"
 import {
@@ -76,10 +75,11 @@ function SheetContent({
             <SheetPrimitive.Close
               data-slot="sheet-close-fallback"
               render={
-                <Button
+                <IconButton
                   variant="ghost"
                   className="absolute top-4 right-4 z-10"
                   size="icon-sm"
+                  aria-label="Close"
                 />
               }
             >

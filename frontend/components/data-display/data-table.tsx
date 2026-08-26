@@ -22,7 +22,9 @@ import {
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import {
+  DATA_TABLE_GRID_FILL_CLASS,
   DATA_TABLE_HEADER_CLASS,
+  DATA_TABLE_SCROLL_CLASS,
   DATA_TABLE_SHELL_CLASS,
 } from "@/lib/design/data-table-tokens";
 import { DataTableColumnHeader } from "@/components/data-display/data-table-column-header";
@@ -175,8 +177,11 @@ export function DataTable<T>({
           {toolbar}
         </div>
       ) : null}
-      <div className="min-h-0 flex-1 overflow-auto">
-        <Table containerClassName="overflow-visible">
+      <div className={DATA_TABLE_SCROLL_CLASS}>
+        <Table
+          className={DATA_TABLE_GRID_FILL_CLASS}
+          containerClassName={cn("overflow-visible", DATA_TABLE_GRID_FILL_CLASS)}
+        >
           <TableHeader className={DATA_TABLE_HEADER_CLASS}>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow

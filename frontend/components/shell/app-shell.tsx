@@ -136,7 +136,7 @@ export function AppShell({
                   "min-h-0 flex-1 bg-white",
                   fullBleedContent
                     ? "flex flex-col overflow-hidden p-0 [&>*]:min-h-0 [&>*]:flex-1"
-                    : "flex flex-col overflow-x-hidden overflow-y-auto px-[var(--page-padding-x)] pb-[var(--page-padding-y)] pt-[var(--page-content-top-gap)] [&>*]:min-h-0",
+                    : "flex flex-col overflow-hidden px-[var(--page-padding-x)] pb-[var(--page-padding-y)] pt-[var(--page-content-top-gap)] [&>*]:min-h-0 [&>*]:flex-1",
                 )}
               >
                 {children}
@@ -182,7 +182,7 @@ export function AppShell({
                 "min-h-0 flex-1",
                 fullBleedContent
                   ? "flex flex-col overflow-hidden p-0 [&>*]:min-h-0 [&>*]:flex-1"
-                  : "flex flex-col overflow-x-hidden overflow-y-auto px-[var(--page-padding-x)] pb-[var(--page-padding-y)] pt-[var(--page-content-top-gap)] [&>*]:min-h-0",
+                  : "flex flex-col overflow-hidden px-[var(--page-padding-x)] pb-[var(--page-padding-y)] pt-[var(--page-content-top-gap)] [&>*]:min-h-0 [&>*]:flex-1",
               )}
             >
               {children}

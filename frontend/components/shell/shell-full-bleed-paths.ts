@@ -3,6 +3,8 @@
  * Owned by shell layout — not by any single feature.
  */
 
+import { isBusinessSettingsPath } from "@/lib/config/navigation/business-settings-menu";
+
 /** Legacy per-contact workspace route (`/business/contacts/[id]`). */
 export function isContactWorkspacePath(pathname: string): boolean {
   return /^\/business\/contacts\/[^/]+$/.test(pathname);
@@ -83,8 +85,5 @@ export function isMobileEntityListPath(pathname: string): boolean {
 
 /** Business Settings two-pane workspace — full-bleed below the top navbar. */
 export function isBusinessSettingsWorkspacePath(pathname: string): boolean {
-  return (
-    pathname === "/business/settings" ||
-    pathname.startsWith("/business/settings/")
-  );
+  return isBusinessSettingsPath(pathname);
 }

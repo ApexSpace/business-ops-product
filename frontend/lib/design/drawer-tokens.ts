@@ -96,7 +96,7 @@ export const DRAWER_SHELL_FOOTER_CLASS =
 /** Dense form-control recipe used by FormSheet drawers (maps to CSS vars / ring tokens).
  * Figma field radius is 10px — no exact global token; keep pixel value. */
 export const DRAWER_FIELD_CONTROL_CLASS =
-  "h-11 min-h-11 data-[size=default]:h-11 data-[size=sm]:h-11 rounded-[10px] border-[1.5px] text-[13.5px] shadow-none focus-visible:border-ring focus-visible:ring-[4px] focus-visible:ring-ring/15";
+  "h-[var(--control-height)] min-h-[var(--control-height)] data-[size=default]:h-[var(--control-height)] data-[size=sm]:h-[var(--control-height)] rounded-[10px] border-[1.5px] text-[13.5px] shadow-none focus-visible:border-ring focus-visible:ring-[4px] focus-visible:ring-ring/15";
 
 /** Label recipe for FormSheet drawers (distinct from Figma DRAWER_FIELD_LABEL_CLASS). */
 export const DRAWER_FIELD_LABEL_SHELL_CLASS =
@@ -180,7 +180,7 @@ export const DRAWER_HEADER_CLASS =
   "relative shrink-0 border-x-0 border-t-0 border-b border-solid border-[var(--drawer-header-border)] !bg-white px-4 pb-4 pt-6 [background-image:none] sm:px-6";
 
 export const DRAWER_HEADER_CLOSE_OVERRIDES =
-  "[&_button[aria-label=Close]]:relative [&_button[aria-label=Close]]:!size-[22px] [&_button[aria-label=Close]]:rounded-full [&_button[aria-label=Close]]:!border-0 [&_button[aria-label=Close]]:!bg-transparent [&_button[aria-label=Close]]:p-0 [&_button[aria-label=Close]]:text-muted-foreground [&_button[aria-label=Close]]:!shadow-none [&_button[aria-label=Close]]:hover:!bg-transparent [&_button[aria-label=Close]]:hover:text-violet-primary-normal [&_button[aria-label=Close]]:after:absolute [&_button[aria-label=Close]]:after:-inset-2.5 [&_button[aria-label=Close]]:after:content-['']";
+  "[&_button[aria-label=Close]]:relative [&_button[aria-label=Close]]:!size-[22px] [&_button[aria-label=Close]]:rounded-full [&_button[aria-label=Close]]:!border-0 [&_button[aria-label=Close]]:bg-transparent [&_button[aria-label=Close]]:p-0 [&_button[aria-label=Close]]:text-muted-foreground [&_button[aria-label=Close]]:!shadow-none [&_button[aria-label=Close]]:hover:text-violet-primary-normal [&_button[aria-label=Close]]:after:absolute [&_button[aria-label=Close]]:after:-inset-2.5 [&_button[aria-label=Close]]:after:content-['']";
 
 export const DRAWER_TITLE_SLOT_OVERRIDES =
   "[&_[data-slot=sheet-title]]:block [&_[data-slot=sheet-title]]:text-[20px] [&_[data-slot=sheet-title]]:font-bold [&_[data-slot=sheet-title]]:leading-none [&_[data-slot=sheet-title]]:text-violet-primary-normal";
@@ -210,7 +210,7 @@ export const DRAWER_HEADER_ACTION_CLASS =
   "size-6 shrink-0 rounded-md border-0 bg-transparent p-0 text-muted-foreground shadow-none hover:bg-violet-primary-normal/10 hover:text-violet-primary-normal";
 
 export const DRAWER_CLOSE_ACTION_CLASS =
-  "relative !size-[22px] shrink-0 rounded-full !border-0 !bg-transparent p-0 text-muted-foreground !shadow-none hover:!bg-transparent hover:text-violet-primary-normal [&>svg]:size-[14px] after:absolute after:-inset-2.5 after:content-['']";
+  "relative !size-[22px] shrink-0 rounded-full !border-0 bg-transparent p-0 text-muted-foreground !shadow-none hover:text-violet-primary-normal [&>svg]:size-[14px] after:absolute after:-inset-2.5 after:content-['']";
 
 /** Shared sheet/drawer header: title row + optional description below. */
 export const SHEET_HEADER_CLASS =
@@ -286,7 +286,7 @@ export const DRAWER_PRIMARY_BUTTON_CLASS =
 
 /** Figma Date/Time inputs — 1px warm field border (var(--drawer-field-border)), radius/sm, hug ~43px. */
 export const DRAWER_FIELD_CLASS =
-  "h-11 min-h-11 w-full max-w-full rounded-[var(--radius-sm)] border border-[var(--drawer-field-border)] bg-white px-3 text-[14px] shadow-none focus-visible:border-violet-primary-normal focus-visible:ring-2 focus-visible:ring-violet-primary-normal/20 data-[size=default]:h-11 data-[size=sm]:h-11";
+  "h-[var(--control-height)] min-h-[var(--control-height)] w-full max-w-full rounded-[var(--radius-sm)] border border-[var(--drawer-field-border)] bg-white px-3 text-[14px] shadow-none focus-visible:border-violet-primary-normal focus-visible:ring-2 focus-visible:ring-violet-primary-normal/20 data-[size=default]:h-[var(--control-height)] data-[size=sm]:h-[var(--control-height)]";
 
 /** Overrides SelectTrigger glass-control so Time matches Date (Figma field border var(--drawer-field-border)). */
 export const DRAWER_SELECT_TRIGGER_CLASS = cn(
@@ -411,7 +411,7 @@ export const DRAWER_ADD_ACTION_CLASS =
   "inline-flex min-h-6 items-center gap-[5px] text-[14px] font-medium leading-[18px] text-violet-primary-darker hover:underline";
 
 export const DRAWER_ADD_ACTION_ICON_CLASS =
-  "inline-flex size-6 shrink-0 items-center justify-center rounded-[4px] bg-violet-primary-normal text-white";
+  "inline-flex size-[var(--plus-button-size)] shrink-0 items-center justify-center rounded-[4px] bg-violet-primary-normal text-white";
 
 export const DRAWER_ICON_BUTTON_CLASS =
   "inline-flex size-6 shrink-0 items-center justify-center rounded-[4px] text-violet-primary-darker hover:bg-black/5 hover:text-violet-primary-darker";
@@ -420,7 +420,7 @@ export const DRAWER_META_ROW_CLASS =
   "flex min-w-0 items-center gap-2 text-[13px] font-medium leading-[16px] text-[var(--drawer-text-primary)]";
 
 export const DRAWER_PLUS_BUTTON_CLASS =
-  "inline-flex size-6 shrink-0 items-center justify-center rounded-[4px] bg-violet-primary-normal text-white hover:bg-violet-primary-normal-hover";
+  "inline-flex size-[var(--plus-button-size)] shrink-0 items-center justify-center rounded-[4px] bg-violet-primary-normal text-white hover:bg-violet-primary-normal-hover";
 
 export const DRAWER_LINK_CLASS =
   "inline-flex items-center gap-3 text-[14px] font-medium leading-none text-violet-primary-darker hover:underline";

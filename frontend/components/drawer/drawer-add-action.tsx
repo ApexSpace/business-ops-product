@@ -1,10 +1,7 @@
 "use client";
 
-import { DrawerPlusIcon } from "@/components/drawer/drawer-icons";
-import {
-  DRAWER_ADD_ACTION_CLASS,
-  DRAWER_ADD_ACTION_ICON_CLASS,
-} from "@/lib/design/drawer-tokens";
+import { PlusIconButton } from "@/components/drawer/drawer-icons";
+import { DRAWER_ADD_ACTION_CLASS } from "@/lib/design/drawer-tokens";
 import { cn } from "@/lib/utils";
 
 export interface DrawerAddActionProps {
@@ -31,9 +28,7 @@ export function DrawerAddAction({
       )}
       onClick={onClick}
     >
-      <span className={DRAWER_ADD_ACTION_ICON_CLASS}>
-        <DrawerPlusIcon className="size-4 text-white" />
-      </span>
+      <PlusIconButton as="span" />
       {label}
     </button>
   );

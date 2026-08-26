@@ -33,9 +33,13 @@ export const WORKSPACE_TOOLBAR_SURFACE_CLASS =
  */
 export const WORKSPACE_TABLE_CLASS = "shadow-none";
 
+/** Full-height workspace column — parent must also be a flex fill chain. */
+export const WORKSPACE_FILL_CLASS =
+  "flex h-full min-h-0 flex-1 flex-col overflow-hidden";
+
 /** Workspace list surface — page white; table supplies its own border chrome */
 export const WORKSPACE_TABLE_CARD_CLASS =
-  "flex min-h-0 flex-col gap-[var(--cs-list-toolbar-gap)] overflow-hidden rounded-none border-0 bg-white shadow-none";
+  "flex min-h-0 flex-1 flex-col gap-[var(--cs-list-toolbar-gap)] overflow-hidden rounded-none border-0 bg-white shadow-none";
 
 /** Pagination / footer strip under the table — tight so the grid can grow */
 export const WORKSPACE_FOOTER_CLASS =
