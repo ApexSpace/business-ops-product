@@ -159,7 +159,8 @@ export function TrialSignupWizard() {
   }, []);
 
   const persist = async (payload: Partial<TrialWizardState>) => {
-    const next = { ...state, ...payload };
+    const next = { ...state, ...payload,
+};
     setState(next);
     try {
       const res = await createOrUpdateTrialSession({

@@ -64,7 +64,7 @@ export function AppSidebar({
   appsItems = [],
   navMode = "main",
   footerItems,
-  productName = "CodeSol",
+  productName = "PandaCue",
   logoUrl,
 }: AppSidebarProps) {
   const { isMobile } = useSidebar();

@@ -16,7 +16,8 @@ import { formatMoney, type InvoiceFormValues } from "@/features/invoices/schemas
 interface InvoiceFormSummaryProps {
   form: UseFormReturn<InvoiceFormValues>;
   dialogOpen?: boolean;
-  totals: { subtotal: number; tax: number; discount: number; total: number };
+  totals: { subtotal: number; tax: number; discount: number; total: number,
+};
   currencyCode?: string;
 }
 

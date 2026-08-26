@@ -128,7 +128,8 @@ export function calculateFormTotals(values: Pick<
   const tax = values.taxAmount ?? 0;
   const discount = values.discountAmount ?? 0;
   const total = Math.max(0, subtotal + tax - discount);
-  return { subtotal, tax, discount, total };
+  return { subtotal, tax, discount, total,
+};
 }
 
 export function estimateToForm(estimate: Estimate): EstimateFormValues {
@@ -165,7 +166,8 @@ export function estimateFormToApiBody(values: EstimateFormValues) {
     ...(values.workItemId ? { workItemId: values.workItemId } : {}),
     issueDate: new Date(values.issueDate).toISOString(),
     ...(values.expiryDate
-      ? { expiryDate: new Date(values.expiryDate).toISOString() }
+      ? { expiryDate: new Date(values.expiryDate).toISOString(),
+}
       : {}),
     status: values.status,
     taxAmount: values.taxAmount,
@@ -176,7 +178,8 @@ export function estimateFormToApiBody(values: EstimateFormValues) {
       ...(item.serviceId ? { serviceId: item.serviceId } : {}),
       title: item.title.trim(),
       ...(item.description?.trim()
-        ? { description: item.description.trim() }
+        ? { description: item.description.trim(),
+}
         : {}),
       quantity: item.quantity,
       unitPrice: item.unitPrice,

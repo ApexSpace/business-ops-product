@@ -245,7 +245,7 @@ export function DrawerPlusSquareButton({
   stopPropagation?: boolean;
   as?: "button" | "span";
 }) {
-  const icon = <DrawerPlusIcon className="size-4 text-white" />;
+  const icon = <DrawerPlusIcon className="size-3 text-white" />;
   const classes = cn(DRAWER_PLUS_BUTTON_CLASS, className);
 
   if (as === "span") {

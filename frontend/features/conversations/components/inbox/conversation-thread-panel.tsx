@@ -106,7 +106,8 @@ interface ConversationThreadPanelProps {
         name: string;
         language: string;
         components?: unknown[];
-        headerMedia?: { type: string; url: string };
+        headerMedia?: { type: string; url: string,
+};
       }
     | undefined;
   sendMutation: UseMutationResult<
@@ -120,7 +121,8 @@ interface ConversationThreadPanelProps {
         name: string;
         language: string;
         components?: unknown[];
-        headerMedia?: { type: string; url: string };
+        headerMedia?: { type: string; url: string,
+};
       };
     }
   >;

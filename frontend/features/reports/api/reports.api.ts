@@ -78,5 +78,6 @@ export async function exportReport(
   if (!(blob instanceof Blob) || blob.size === 0) {
     throw new ApiClientError("Report export returned an empty file", res.status);
   }
-  return { blob, fileName };
+  return { blob, fileName,
+};
 }

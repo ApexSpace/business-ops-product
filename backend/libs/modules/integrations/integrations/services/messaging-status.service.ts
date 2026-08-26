@@ -285,7 +285,7 @@ export class MessagingStatusService {
 
     if (!isBusinessOwned) {
       warnings.push(
-        'Outbound appointment SMS uses your Codesol-assigned number (one-way). Connect your own Twilio number or enable SMS Chat later for two-way inbox.',
+        'Outbound appointment SMS uses your PandaCue-assigned number (one-way). Connect your own Twilio number or enable SMS Chat later for two-way inbox.',
       );
     }
 

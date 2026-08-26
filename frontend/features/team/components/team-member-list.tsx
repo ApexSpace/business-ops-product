@@ -1,6 +1,6 @@
 "use client";
 
-import { Plus, Search } from "lucide-react";
+import { Search  } from "lucide-react";
 import { LoadingState } from "@/components/data-display/loading-state";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -46,7 +46,6 @@ export function TeamMemberList({
       <div className="space-y-2 border-b p-3">
         {canManage ? (
           <Button type="button" className="w-full" size="sm" onClick={onAdd}>
-            <Plus className="mr-1.5 size-4" />
             Add staff member
           </Button>
         ) : null}

@@ -107,7 +107,8 @@ export function useInvoiceForm({
 
   const lockedContact = useMemo(() => {
     if (!defaultContactId || !defaultContactLabel) return undefined;
-    return { id: defaultContactId, label: defaultContactLabel };
+    return { id: defaultContactId, label: defaultContactLabel,
+};
   }, [defaultContactId, defaultContactLabel]);
 
   const serviceItems = useMemo(() => {

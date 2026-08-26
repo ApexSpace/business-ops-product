@@ -17,7 +17,8 @@ export interface ProductsMobileListProps {
   onCreate?: () => void;
   canCreate?: boolean;
   pagination?: {
-    meta: { total: number; page: number; limit: number };
+    meta: { total: number; page: number; limit: number,
+};
     page: number;
     onPageChange: (page: number) => void;
   };
@@ -82,7 +83,8 @@ export function ProductsMobileList({
       }
       pagination={
         pagination && products.length > 0
-          ? { ...pagination, label: "products" }
+          ? { ...pagination, label: "products",
+}
           : undefined
       }
     />

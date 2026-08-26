@@ -183,7 +183,8 @@ export function profileFormToApiBody(values: BusinessProfileFormValues): {
     },
     ...(values.status ? { status: values.status } : {}),
     ...(values.snapshotId?.trim()
-      ? { snapshotId: values.snapshotId.trim() }
+      ? { snapshotId: values.snapshotId.trim(),
+}
       : {}),
   };
 }

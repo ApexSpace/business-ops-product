@@ -95,7 +95,7 @@ export function EntityDetailTabs({
             aria-keyshortcuts={`Alt+${index + 1}`}
             onClick={() => onValueChange(tab.value)}
             className={cn(
-              "relative shrink-0 whitespace-nowrap transition-colors",
+              "relative shrink-0 cursor-pointer whitespace-nowrap transition-colors",
               isPanel
                 ? cn(
                     "min-h-11 border-b-2 px-0 pb-3 text-[14px] leading-none",

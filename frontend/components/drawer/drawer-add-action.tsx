@@ -1,6 +1,5 @@
 "use client";
 
-import { PlusIconButton } from "@/components/drawer/drawer-icons";
 import { DRAWER_ADD_ACTION_CLASS } from "@/lib/design/drawer-tokens";
 import { cn } from "@/lib/utils";
 
@@ -28,7 +27,6 @@ export function DrawerAddAction({
       )}
       onClick={onClick}
     >
-      <PlusIconButton as="span" />
       {label}
     </button>
   );

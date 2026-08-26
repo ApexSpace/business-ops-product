@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import {
   DataTable,
@@ -213,7 +212,6 @@ export function TasksPageContent() {
               setDialogOpen(true);
             }}
           >
-            <Plus className="mr-1.5 size-4" />
             New task
           </Button>
         }
@@ -249,7 +247,6 @@ export function TasksPageContent() {
                 setDialogOpen(true);
               }}
             >
-              <Plus className="mr-1.5 size-4" />
               New task
             </Button>
           }

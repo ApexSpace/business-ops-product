@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Plus } from "lucide-react";
 import { NavArrowIcon } from "@/components/ui/nav-arrow-icon";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -188,7 +187,6 @@ export function CreateSnapshotWizard() {
   return (
     <>
       <Button type="button" onClick={() => setOpen(true)}>
-        <Plus className="mr-2 size-4" />
         New snapshot
       </Button>
       <Dialog

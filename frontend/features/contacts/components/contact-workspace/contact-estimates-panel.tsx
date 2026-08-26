@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { ContactFinancialRecordRow } from "@/features/contacts/components/contact-workspace/contact-financial-record-row";
 import { EstimateFormDialog } from "@/features/estimates/components/estimate-form-dialog";
@@ -70,7 +69,8 @@ export function ContactEstimatesPanel({
   });
 
   const statusMutation = useMutation({
-    mutationFn: ({ id, status }: { id: string; status: EstimateStatus }) =>
+    mutationFn: ({ id, status,
+}: { id: string; status: EstimateStatus }) =>
       updateEstimateStatus(id, status),
     onSuccess: () => {
       toast.success("Status updated");
@@ -101,7 +101,6 @@ export function ContactEstimatesPanel({
           title="No estimates for this contact yet."
           action={
             <ActionButton onClick={openCreate}>
-              <Plus className="mr-1.5 size-4" />
               Create Estimate
             </ActionButton>
           }
@@ -127,7 +126,6 @@ export function ContactEstimatesPanel({
     <>
       <div className="mb-2 flex justify-end">
         <ActionButton variant="outline" onClick={openCreate}>
-          <Plus className="mr-1 size-3.5" />
           Create Estimate
         </ActionButton>
       </div>

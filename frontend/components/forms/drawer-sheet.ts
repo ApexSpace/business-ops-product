@@ -10,8 +10,8 @@ export const DRAWER_FOOTER_ACTIONS_CLASS =
 
 /** Standard drawer footer — actions pinned bottom-right. */
 export const DRAWER_SHEET_FOOTER_CLASS =
-  "flex-row flex-wrap items-center justify-end gap-2.5 border-t border-[var(--drawer-header-border)] bg-white px-6 py-4";
+  "flex-row flex-wrap items-center justify-end gap-2.5 border-t border-[var(--drawer-header-border)] bg-white px-6 py-drawer-footer-y";
 
 /** Wider drawer footer padding (financial, appointment, work-item sheets). */
 export const DRAWER_SHEET_FOOTER_WIDE_CLASS =
-  "flex-row flex-wrap items-center justify-end gap-2.5 border-t border-[var(--drawer-header-border)] bg-white px-7 py-4";
+  "flex-row flex-wrap items-center justify-end gap-2.5 border-t border-[var(--drawer-header-border)] bg-white px-7 py-drawer-footer-y";

@@ -2,7 +2,6 @@
 
 import { useEffect } from "react";
 import {
-  DrawerPlusIcon,
   DrawerPlusSquareButton,
   DrawerTrashIcon,
 } from "@/components/drawer/drawer-icons";
@@ -25,7 +24,6 @@ import { formatMoney } from "@/features/payments/utils/currencies";
 import {
   APPOINTMENT_DRAWER_ADD_ACTION_CLASS,
   APPOINTMENT_DRAWER_ADD_ACTION_OUTLINE_CLASS,
-  APPOINTMENT_DRAWER_ADD_ACTION_ICON_CLASS,
   APPOINTMENT_DRAWER_ICON_BUTTON_CLASS,
   APPOINTMENT_DRAWER_PROVIDER_SELECT_TRIGGER_CLASS,
   APPOINTMENT_DRAWER_SERVICE_CARD_CLASS,
@@ -258,12 +256,7 @@ export function AppointmentAddActions({
           }
           onClick={onAddService}
         >
-          {isOutline ? null : (
-            <span className={APPOINTMENT_DRAWER_ADD_ACTION_ICON_CLASS}>
-              <DrawerPlusIcon className="size-4 text-white" />
-            </span>
-          )}
-          {isOutline ? "+ Add Service" : "Add Service"}
+          Add Service
         </button>
       ) : null}
       {onAddNote ? (
@@ -276,12 +269,7 @@ export function AppointmentAddActions({
           }
           onClick={onAddNote}
         >
-          {isOutline ? null : (
-            <span className={APPOINTMENT_DRAWER_ADD_ACTION_ICON_CLASS}>
-              <DrawerPlusIcon className="size-4 text-white" />
-            </span>
-          )}
-          {isOutline ? "+ Add Note" : "Add Note"}
+          Add Note
         </button>
       ) : null}
     </div>

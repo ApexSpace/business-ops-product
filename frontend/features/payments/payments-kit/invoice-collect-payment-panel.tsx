@@ -190,10 +190,12 @@ export function InvoiceCollectPaymentPanel({
         method: resolvedPrimary,
         amount: capGiftCardAmount(resolvedPrimary, primary, primaryGiftCard),
         ...(resolvedPrimary === "STRIPE" && savedCardId && savedCardId !== "new"
-          ? { contactPaymentMethodId: savedCardId }
+          ? { contactPaymentMethodId: savedCardId,
+}
           : {}),
         ...(resolvedPrimary === "GIFT_CARD" && primaryGiftCardId
-          ? { giftCardId: primaryGiftCardId }
+          ? { giftCardId: primaryGiftCardId,
+}
           : {}),
       });
     }
@@ -211,10 +213,12 @@ export function InvoiceCollectPaymentPanel({
           ...(resolvedSecondary === "STRIPE" &&
           savedCardId &&
           savedCardId !== "new"
-            ? { contactPaymentMethodId: savedCardId }
+            ? { contactPaymentMethodId: savedCardId,
+}
             : {}),
           ...(resolvedSecondary === "GIFT_CARD" && secondaryGiftCardId
-            ? { giftCardId: secondaryGiftCardId }
+            ? { giftCardId: secondaryGiftCardId,
+}
             : {}),
         });
       }

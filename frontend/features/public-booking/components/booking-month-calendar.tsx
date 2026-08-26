@@ -162,7 +162,7 @@ export function BookingMonthCalendar({
                 }
                 aria-pressed={isSelected}
                 className={cn(
-                  "group relative isolate inline-grid size-9 place-items-center border-0 bg-transparent p-0 text-sm leading-none shadow-none outline-none sm:size-10 sm:text-[15px]",
+                  "group relative isolate inline-grid size-9 cursor-pointer place-items-center border-0 bg-transparent p-0 text-sm leading-none shadow-none outline-none sm:size-10 sm:text-[15px]",
                   "appearance-none [-webkit-appearance:none]",
                   cell.disabled &&
                     cell.inMonth &&

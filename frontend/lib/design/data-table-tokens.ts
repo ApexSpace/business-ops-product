@@ -81,7 +81,7 @@ export const DATA_TABLE_SEARCH_STANDALONE_CLASS =
  * Important width/height beat Button `size="icon"` square sizing.
  */
 export const DATA_TABLE_FILTER_ICON_CLASS =
-  "inline-flex !h-[var(--control-height)] !w-14 !min-h-[var(--control-height)] !min-w-14 shrink-0 items-center justify-center rounded-[var(--radius-md)] border border-[var(--pc-black-secondary-light)] bg-white p-0 text-foreground shadow-none hover:bg-violet-primary-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-primary-normal/30";
+  "inline-flex !h-[var(--control-height)] !w-14 !min-h-[var(--control-height)] !min-w-14 shrink-0 cursor-pointer items-center justify-center rounded-[var(--radius-md)] border border-[var(--pc-black-secondary-light)] bg-white p-0 text-foreground shadow-none hover:bg-violet-primary-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-primary-normal/30";
 
 /** Status cell text — purple accent (not a badge pill) */
 export const DATA_TABLE_STATUS_CLASS =

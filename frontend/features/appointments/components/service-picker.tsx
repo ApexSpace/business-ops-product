@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Plus, X } from "lucide-react";
+import { X  } from "lucide-react";
 import { listServices } from "@/features/settings/api/services.api";
 import type { Service } from "@/features/settings/types";
 import { queryKeys } from "@/lib/query/keys";
@@ -152,7 +152,6 @@ export function ServicePicker({
           )}
           onClick={() => setPickerOpen(true)}
         >
-          <Plus className="size-4" />
           Add service
         </button>
       )}

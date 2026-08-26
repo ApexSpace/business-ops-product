@@ -10,7 +10,8 @@ import { useMemo } from "react";
 
 export function EmailsBuilder() {
   const { assets, updateAssets, canManage } = useSnapshotEditor();
-  const emails = assets?.emails ?? { preferences: [], templates: [] };
+  const emails = assets?.emails ?? { preferences: [], templates: [],
+};
 
   const preferenceMap = useMemo(() => {
     const map = new Map<string, boolean>();
@@ -24,7 +25,8 @@ export function EmailsBuilder() {
     const prefs = [...(emails.preferences ?? [])];
     const index = prefs.findIndex((p) => p.emailType === emailType);
     if (index >= 0) {
-      prefs[index] = { emailType, enabled };
+      prefs[index] = { emailType, enabled,
+};
     } else {
       prefs.push({ emailType, enabled });
     }

@@ -141,7 +141,8 @@ export function getProductInventory(
       note?: string | null;
       createdAt: string;
     }>;
-    meta: { total: number; page: number; limit: number };
+    meta: { total: number; page: number; limit: number,
+};
   }>(`products/${productId}/inventory`, { searchParams: filters });
 }
 

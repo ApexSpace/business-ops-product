@@ -147,7 +147,8 @@ export function GiftCardsSettingsScreen() {
 
   function saveDisclaimer() {
     if (!onlineSalesForm) return;
-    const next = { ...onlineSalesForm, purchaseDisclaimer: disclaimerDraft };
+    const next = { ...onlineSalesForm, purchaseDisclaimer: disclaimerDraft,
+};
     setOnlineSalesDraft(next);
     persistOnlineSales(next);
     setDisclaimerDialogOpen(false);
@@ -244,7 +245,8 @@ export function GiftCardsSettingsScreen() {
                     <Switch
                       checked={onlineSalesForm.enabled}
                       onCheckedChange={(enabled) => {
-                        const next = { ...onlineSalesForm, enabled };
+                        const next = { ...onlineSalesForm, enabled,
+};
                         setOnlineSalesDraft(next);
                         persistOnlineSales(next);
                       }}

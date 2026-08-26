@@ -41,7 +41,8 @@ export function ContactRecordsSectionBody({
   labels,
   ...sectionProps
 }: ContactRecordsSectionBodyProps) {
-  const props = { labels, ...sectionProps };
+  const props = { labels, ...sectionProps,
+};
   const { contact } = props;
 
   if (isPlaceholderSection(activeSection)) {

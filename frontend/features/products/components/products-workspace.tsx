@@ -2,14 +2,11 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import {
-  ArrowDown,
+import { ArrowDown,
   ArrowUp,
   FolderTree,
   Package,
-  Pencil,
-  Plus,
-  Trash2,
+  Pencil, Trash2,
   Upload,
 } from "lucide-react";
 import { DataImportWizard } from "@/features/data-io/components/data-import-wizard";
@@ -111,28 +108,23 @@ const ADJUSTMENT_TYPES: {
   {
     value: "RECEIVED",
     label: "Received",
-    hint: "Add stock when inventory arrives from a supplier or shipment.",
-  },
+    hint: "Add stock when inventory arrives from a supplier or shipment." },
   {
     value: "RECOUNT",
     label: "Recount",
-    hint: "Set stock to the exact count from a physical inventory check.",
-  },
+    hint: "Set stock to the exact count from a physical inventory check." },
   {
     value: "PROFESSIONAL_USE",
     label: "Professional use",
-    hint: "Remove stock used during appointments or internal professional use.",
-  },
+    hint: "Remove stock used during appointments or internal professional use." },
   {
     value: "OTHER",
     label: "Other",
-    hint: "Manual correction. Use a positive or negative quantity as needed.",
-  },
+    hint: "Manual correction. Use a positive or negative quantity as needed." },
   {
     value: "RETURNED",
     label: "Customer return",
-    hint: "Add stock back when a customer returns a product (e.g. after a sale).",
-  },
+    hint: "Add stock back when a customer returns a product (e.g. after a sale)." },
 ];
 
 function adjustmentQuantityLabel(type: ProductInventoryAdjustmentType): string {
@@ -188,8 +180,7 @@ export function ProductsWorkspace() {
     selectedId,
     isOpen,
     setSelectedId,
-    clearSelection,
-  } = useEntitySelection({ legacyIdParams: ["product"] });
+    clearSelection } = useEntitySelection({ legacyIdParams: ["product"] });
 
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
@@ -210,8 +201,7 @@ export function ProductsWorkspace() {
     () => ({
       page,
       limit: PAGE_LIMIT,
-      search: search.trim() || undefined,
-    }),
+      search: search.trim() || undefined }),
     [page, search],
   );
 
@@ -251,30 +241,26 @@ export function ProductsWorkspace() {
         header: "Category",
         sortable: true,
         sortValue: (row) => row.categoryName ?? "",
-        cell: (row) => row.categoryName ?? "—",
-      },
+        cell: (row) => row.categoryName ?? "—" },
       {
         id: "brand",
         header: "Brand",
         sortable: true,
         sortValue: (row) => row.brand ?? "",
-        cell: (row) => row.brand ?? "—",
-      },
+        cell: (row) => row.brand ?? "—" },
       {
         id: "name",
         header: "Name",
         sortable: true,
         sortValue: (row) => row.name,
-        cell: (row) => <span className="font-medium">{row.name}</span>,
-      },
+        cell: (row) => <span className="font-medium">{row.name}</span> },
       {
         id: "price",
         header: "Price",
         sortable: true,
         sortValue: (row) => parseFloat(row.unitPrice),
         className: "whitespace-nowrap",
-        cell: (row) => formatMoney(parseFloat(row.unitPrice)),
-      },
+        cell: (row) => formatMoney(parseFloat(row.unitPrice)) },
       {
         id: "stock",
         header: "Stock",
@@ -282,8 +268,7 @@ export function ProductsWorkspace() {
         sortValue: (row) => row.stockQuantity,
         className: "whitespace-nowrap",
         cell: (row) =>
-          row.trackInventory ? String(row.stockQuantity) : "—",
-      },
+          row.trackInventory ? String(row.stockQuantity) : "—" },
     ],
     [],
   );
@@ -304,7 +289,7 @@ export function ProductsWorkspace() {
       mutations.adjustInventory.mutate({ productId: selectedId, body });
     },
     adjustPending: mutations.adjustInventory.isPending,
-  };
+};
 
   return (
     <>
@@ -331,7 +316,7 @@ export function ProductsWorkspace() {
                   meta: listData.meta,
                   page,
                   onPageChange: setPage,
-                }
+}
               : undefined
           }
         />
@@ -394,7 +379,6 @@ export function ProductsWorkspace() {
           emptyAction={
             canManage ? (
               <Button size="sm" onClick={openCreate}>
-                <Plus className="mr-1.5 size-4" />
                 Add product
               </Button>
             ) : undefined
@@ -449,8 +433,7 @@ export function ProductsWorkspace() {
                   label: "Delete",
                   icon: <Trash2 className="mr-2 size-4" />,
                   destructive: true,
-                  onSelect: () => setDeleteId(selectedId),
-                },
+                  onSelect: () => setDeleteId(selectedId) },
               ]
             : undefined
         }
@@ -511,8 +494,7 @@ export function ProductsWorkspace() {
             onSuccess: (product) => {
               setCreateOpen(false);
               setSelectedId(product.id);
-            },
-          })
+            } })
         }
         createPending={mutations.create.isPending}
       />
@@ -679,8 +661,7 @@ export function ProductsWorkspace() {
                 const isCategory = categories.some((c) => c.id === deleteId);
                 if (isCategory) {
                   mutations.removeCategory.mutate(deleteId, {
-                    onSuccess: () => setDeleteId(null),
-                  });
+                    onSuccess: () => setDeleteId(null) });
                 } else {
                   mutations.remove.mutate(deleteId, {
                     onSuccess: () => {
@@ -688,8 +669,7 @@ export function ProductsWorkspace() {
                       if (selectedId === deleteId) {
                         clearSelection();
                       }
-                    },
-                  });
+                    } });
                 }
               }}
             >
@@ -911,8 +891,7 @@ function ProductDetailBody({
                   variantId: isVariable ? adjVariantId : undefined,
                   type: adjType,
                   quantityChange: parseInt(adjQty, 10),
-                  note: adjNote.trim() || undefined,
-                })
+                  note: adjNote.trim() || undefined })
               }
             >
               Apply adjustment
@@ -961,8 +940,7 @@ function ProductProfileFormFields({
   const { data: teamData, isLoading: teamLoading } = useQuery({
     queryKey: queryKeys.business.members({ limit: 100 }),
     queryFn: () => listBusinessMembers({ page: 1, limit: 100 }),
-    enabled: formActive && form.assignStaffToSale,
-  });
+    enabled: formActive && form.assignStaffToSale });
 
   const activeTeamMembers = useMemo(
     () =>
@@ -982,8 +960,7 @@ function ProductProfileFormFields({
                 v &&
                 setForm({
                   ...form,
-                  productType: v as ProductType,
-                })
+                  productType: v as ProductType })
               }
             >
               <SelectTrigger>
@@ -1016,8 +993,7 @@ function ProductProfileFormFields({
             onValueChange={(v) =>
               setForm({
                 ...form,
-                categoryId: !v || v === "__none__" ? "" : v,
-              })
+                categoryId: !v || v === "__none__" ? "" : v })
             }
           >
             <SelectTrigger>
@@ -1229,8 +1205,7 @@ function ProductProfileFormFields({
               v &&
               setForm({
                 ...form,
-                status: v as ProductProfileFormValues["status"],
-              })
+                status: v as ProductProfileFormValues["status"] })
             }
           >
             <SelectTrigger>

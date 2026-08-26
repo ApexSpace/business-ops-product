@@ -28,5 +28,6 @@ export function useReportsCatalog() {
     return Array.from(byCategory.values());
   }, [query.data]);
 
-  return { ...query, groups };
+  return { ...query, groups,
+};
 }

@@ -30,5 +30,6 @@ export function useServiceEligibleStaff(
     }));
   }, [data?.items, fallback]);
 
-  return { staffOptions, isPending };
+  return { staffOptions, isPending,
+};
 }

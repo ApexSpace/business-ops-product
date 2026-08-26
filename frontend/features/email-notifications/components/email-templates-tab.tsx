@@ -54,8 +54,10 @@ const CATEGORY_ORDER: EmailTypeCategory[] = [
 ];
 
 type OpenSection =
-  | { kind: "category"; category: EmailTypeCategory }
-  | { kind: "template"; category: EmailTypeCategory; emailType: string };
+  | { kind: "category"; category: EmailTypeCategory,
+}
+  | { kind: "template"; category: EmailTypeCategory; emailType: string,
+};
 
 export function EmailTemplatesTab() {
   const queryClient = useQueryClient();

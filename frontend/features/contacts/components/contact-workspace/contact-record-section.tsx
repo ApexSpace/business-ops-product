@@ -1,6 +1,5 @@
 "use client";
 
-import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { LoadingState } from "@/components/data-display/loading-state";
 import { cn } from "@/lib/utils";
@@ -44,7 +43,6 @@ export function ContactRecordSection({
             onClick={onAdd}
             disabled={addDisabled}
           >
-            <Plus className="size-3.5" />
             {addLabel}
           </Button>
         ) : addDisabled ? (

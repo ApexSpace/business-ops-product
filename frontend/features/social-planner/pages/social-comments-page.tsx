@@ -361,7 +361,8 @@ export function SocialCommentsPage() {
                     likedIds={likedIds}
                     onReply={(c, message) => {
                       setDrafts((prev) => {
-                        const next = { ...prev };
+                        const next = { ...prev,
+};
                         delete next[c.id];
                         return next;
                       });

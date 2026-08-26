@@ -59,5 +59,6 @@ export function useWaitlistMutations() {
     onError: (err: Error) => toast.error(err.message),
   });
 
-  return { dismiss, book, cancel };
+  return { dismiss, book, cancel,
+};
 }

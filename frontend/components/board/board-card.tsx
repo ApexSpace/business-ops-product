@@ -37,7 +37,8 @@ export function BoardCard({
   const dragging = isDraggingProp ?? isDragging;
 
   const style = transform
-    ? { transform: CSS.Translate.toString(transform) }
+    ? { transform: CSS.Translate.toString(transform),
+}
     : undefined;
 
   return (

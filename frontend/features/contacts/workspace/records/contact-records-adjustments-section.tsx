@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, Trash2 } from "lucide-react";
+import { Trash2  } from "lucide-react";
 import { toast } from "sonner";
 import { EmptyState } from "@/components/data-display/empty-state";
 import { ActionButton } from "@/components/ui/action-button";
@@ -120,7 +120,6 @@ export function ContactRecordsAdjustmentsSection({ contact }: ContactRecordsSect
         className="h-9 rounded-[10px] px-3 text-[12.5px] font-semibold"
         onClick={() => setCreateOpen(true)}
       >
-        <Plus className="mr-1 size-3.5" />
         Add custom duration
       </ActionButton>
 

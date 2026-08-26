@@ -39,7 +39,8 @@ export function CalendarEditAvailabilityTabSection({
                 checked={slot.isEnabled}
                 onCheckedChange={(checked) => {
                   const next = [...availability];
-                  next[index] = { ...slot, isEnabled: checked === true };
+                  next[index] = { ...slot, isEnabled: checked === true,
+};
                   onAvailabilityChange(next);
                 }}
               />
@@ -52,7 +53,8 @@ export function CalendarEditAvailabilityTabSection({
               value={slot.startTime}
               onChange={(e) => {
                 const next = [...availability];
-                next[index] = { ...slot, startTime: e.target.value };
+                next[index] = { ...slot, startTime: e.target.value,
+};
                 onAvailabilityChange(next);
               }}
             />
@@ -64,7 +66,8 @@ export function CalendarEditAvailabilityTabSection({
               value={slot.endTime}
               onChange={(e) => {
                 const next = [...availability];
-                next[index] = { ...slot, endTime: e.target.value };
+                next[index] = { ...slot, endTime: e.target.value,
+};
                 onAvailabilityChange(next);
               }}
             />

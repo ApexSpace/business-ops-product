@@ -111,7 +111,7 @@ export class ContactIdentityResolver implements ChatIdentityResolver {
 }
 
 /**
- * Resolves a platform (or marketing-site) JWT to a CodeSol platform customer/user.
+ * Resolves a platform (or marketing-site) JWT to a PandaCue platform customer/user.
  * Used when chatbot.businessId is the INTERNAL ops tenant.
  */
 @Injectable()

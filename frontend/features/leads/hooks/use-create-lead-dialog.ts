@@ -77,7 +77,8 @@ export function useCreateLeadDialog({
 
   const lockedContact = useMemo(() => {
     if (!defaultContactId || !defaultContactLabel) return undefined;
-    return { id: defaultContactId, label: defaultContactLabel };
+    return { id: defaultContactId, label: defaultContactLabel,
+};
   }, [defaultContactId, defaultContactLabel]);
 
   const serviceItems = useMemo(() => {
@@ -176,7 +177,8 @@ export function useCreateLeadDialog({
         pipelineStageId: values.pipelineStageId,
         serviceId: values.serviceId || undefined,
         ...(canAssign
-          ? { assignedToId: values.assignedToId || undefined }
+          ? { assignedToId: values.assignedToId || undefined,
+}
           : {}),
         title: values.title || undefined,
         value:

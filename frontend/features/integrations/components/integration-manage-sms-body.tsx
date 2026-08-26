@@ -225,7 +225,7 @@ export function IntegrationManageSmsBody({
         <div>
           <p className="font-medium">Outbound notification SMS</p>
           <p className="text-muted-foreground text-sm">
-            US businesses are auto-assigned a local Codesol Twilio number (same
+            US businesses are auto-assigned a local PandaCue Twilio number (same
             area code as your business phone when available) for one-way
             appointment and automation texts. Two-way inbox requires connecting
             your own Twilio number above (or a future SMS Chat add-on).
@@ -239,7 +239,7 @@ export function IntegrationManageSmsBody({
             </p>
             {platform.provisioned ? (
               <p className="text-muted-foreground text-xs">
-                Auto-assigned Codesol number (shared A2P pool)
+                Auto-assigned PandaCue number (shared A2P pool)
                 {platform.a2pPool ? ` · ${platform.a2pPool}` : ""}
               </p>
             ) : (

@@ -24,7 +24,8 @@ export async function listTimeCards(
       },
     },
   );
-  return { items, meta };
+  return { items, meta,
+};
 }
 
 export function getTimeCard(id: string) {

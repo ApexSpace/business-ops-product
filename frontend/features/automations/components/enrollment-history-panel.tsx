@@ -64,7 +64,8 @@ export function EnrollmentHistoryPanel({
       ...(status !== "all" ? { status } : {}),
       ...(startedAfter ? { startedAfter: new Date(startedAfter).toISOString() } : {}),
       ...(startedBefore
-        ? { startedBefore: new Date(startedBefore).toISOString() }
+        ? { startedBefore: new Date(startedBefore).toISOString(),
+}
         : {}),
     }),
     [workflowId, contactId, status, startedAfter, startedBefore],

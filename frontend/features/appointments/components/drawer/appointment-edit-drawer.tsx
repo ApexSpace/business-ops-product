@@ -15,7 +15,6 @@ import { DrawerItemAddLayout } from "@/components/drawer/drawer-item-add-layout"
 import { DrawerCheckboxRow } from "@/components/drawer/drawer-checkbox-row";
 import { DrawerFormFieldGroup } from "@/components/drawer/drawer-form-field-group";
 import { DrawerFormFields } from "@/components/drawer/drawer-form-fields";
-import { DrawerPlusIcon } from "@/components/drawer/drawer-icons";
 import { Textarea } from "@/components/ui/textarea";
 import { ContactPicker } from "@/features/contacts/components/contact-picker";
 import type { Contact } from "@/features/contacts/types";
@@ -49,7 +48,6 @@ import { queryKeys } from "@/lib/query/keys";
 import type { Service } from "@/lib/types/api";
 import {
   APPOINTMENT_DRAWER_ADD_ACTION_CLASS,
-  APPOINTMENT_DRAWER_ADD_ACTION_ICON_CLASS,
   APPOINTMENT_DRAWER_FIELD_CLASS,
 } from "@/features/appointments/styles/appointment-drawer-tokens";
 import { cn } from "@/lib/utils";
@@ -496,9 +494,6 @@ export const AppointmentUpdateForm = forwardRef<
                     type="button"
                     className={APPOINTMENT_DRAWER_ADD_ACTION_CLASS}
                   >
-                    <span className={APPOINTMENT_DRAWER_ADD_ACTION_ICON_CLASS}>
-                      <DrawerPlusIcon className="size-4 text-white" />
-                    </span>
                     Add Service
                   </button>
                 }

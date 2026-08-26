@@ -156,8 +156,10 @@ export function applyTerminologyPreset(
       ? HEALTHCARE_TERMINOLOGY
       : preset === "professional"
         ? PROFESSIONAL_TERMINOLOGY
-        : { ...DEFAULT_TERMINOLOGY };
-  return { ...assets, terminology };
+        : { ...DEFAULT_TERMINOLOGY,
+};
+  return { ...assets, terminology,
+};
 }
 
 export function applyNavigationPreset(
@@ -170,7 +172,8 @@ export function applyNavigationPreset(
       : preset === "minimal"
         ? navFromKeys([...MINIMAL_NAV_KEYS])
         : [...DEFAULT_SNAPSHOT_NAVIGATION];
-  return { ...assets, navigation };
+  return { ...assets, navigation,
+};
 }
 
 export function applyDashboardPreset(
@@ -198,7 +201,8 @@ export function buildAssetsFromWizardPresets(options: {
   navigationPreset: NavigationPresetId;
   dashboardPreset: DashboardPresetId;
 }): SnapshotAssets {
-  let assets = { ...options.startingAssets };
+  let assets = { ...options.startingAssets,
+};
   assets = applyTerminologyPreset(assets, options.terminologyPreset);
   assets = applyNavigationPreset(assets, options.navigationPreset);
   assets = applyDashboardPreset(assets, options.dashboardPreset);

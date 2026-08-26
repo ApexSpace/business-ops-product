@@ -104,7 +104,8 @@ export function rechainAllServiceLines(
   return lines.map((line) => {
     const startMinutes = cursor;
     cursor = startMinutes + line.occupancyMinutes;
-    return { ...line, startMinutes };
+    return { ...line, startMinutes,
+};
   });
 }
 
@@ -117,7 +118,8 @@ export function rechainServiceLinesAfterChange(
     if (index === 0) {
       return index === changedIndex
         ? line
-        : { ...line, startMinutes: appointmentStartMinutes };
+        : { ...line, startMinutes: appointmentStartMinutes,
+};
     }
     if (index <= changedIndex) {
       return line;
@@ -197,7 +199,8 @@ export function buildAppointmentSchedulePayload(options: {
     };
   });
 
-  return { startAt, endAt, services };
+  return { startAt, endAt, services,
+};
 }
 
 export function scheduleFromUtcIso(

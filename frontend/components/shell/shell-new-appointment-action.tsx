@@ -11,7 +11,6 @@ export function ShellNewAppointmentAction() {
       href="/business/appointments?action=create"
       className={cn(buttonVariants(), "shrink-0")}
     >
-      <Plus className="size-4" />
       New appointment
     </Link>
   );

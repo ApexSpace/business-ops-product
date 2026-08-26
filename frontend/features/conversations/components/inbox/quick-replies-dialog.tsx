@@ -2,12 +2,9 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  Loader2,
+import { Loader2,
   MoreHorizontal,
-  Pencil,
-  Plus,
-  Search,
+  Pencil, Search,
   Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -59,9 +56,12 @@ const TITLE_MAX_LENGTH = 120;
 const NEW_REPLY_ID = "__new__";
 
 type EditorMode =
-  | { type: "preview"; id: string }
-  | { type: "create" }
-  | { type: "edit"; id: string };
+  | { type: "preview"; id: string,
+}
+  | { type: "create",
+}
+  | { type: "edit"; id: string,
+};
 
 interface QuickRepliesDialogProps {
   open: boolean;
@@ -88,8 +88,7 @@ export function QuickRepliesDialog({
   const { data: items = [], isLoading } = useQuery({
     queryKey: queryKeys.cannedResponses.list(cannedApiBase),
     queryFn: () => listCannedResponses(cannedApiBase),
-    enabled: open,
-  });
+    enabled: open });
 
   useEffect(() => {
     if (!open) return;
@@ -115,8 +114,7 @@ export function QuickRepliesDialog({
 
   const invalidate = () => {
     void queryClient.invalidateQueries({
-      queryKey: queryKeys.cannedResponses.all(cannedApiBase),
-    });
+      queryKey: queryKeys.cannedResponses.all(cannedApiBase) });
   };
 
   const filteredItems = useMemo(() => {
@@ -141,8 +139,7 @@ export function QuickRepliesDialog({
       createCannedResponse(
         {
           title: draftTitle.trim(),
-          body: draftBody.trim(),
-        },
+          body: draftBody.trim() },
         cannedApiBase,
       ),
     onSuccess: (created) => {
@@ -153,8 +150,7 @@ export function QuickRepliesDialog({
       setDraftBody("");
       setSelectedId(created.id);
     },
-    onError: (error: Error) => toast.error(error.message),
-  });
+    onError: (error: Error) => toast.error(error.message) });
 
   const updateMutation = useMutation({
     mutationFn: () => {
@@ -165,8 +161,7 @@ export function QuickRepliesDialog({
         editor.id,
         {
           title: draftTitle.trim(),
-          body: draftBody.trim(),
-        },
+          body: draftBody.trim() },
         cannedApiBase,
       );
     },
@@ -178,8 +173,7 @@ export function QuickRepliesDialog({
       setDraftBody("");
       setSelectedId(updated.id);
     },
-    onError: (error: Error) => toast.error(error.message),
-  });
+    onError: (error: Error) => toast.error(error.message) });
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => deleteCannedResponse(id, cannedApiBase),
@@ -190,8 +184,7 @@ export function QuickRepliesDialog({
       if (editor?.type === "edit" && editor.id === id) setEditor(null);
       invalidate();
     },
-    onError: (error: Error) => toast.error(error.message),
-  });
+    onError: (error: Error) => toast.error(error.message) });
 
   const canSaveDraft =
     draftTitle.trim().length > 0 &&
@@ -256,7 +249,6 @@ export function QuickRepliesDialog({
               className="h-8 gap-1.5"
               onClick={startCreate}
             >
-              <Plus className="size-3.5" />
               Add reply
             </Button>
           </DialogHeader>
@@ -464,7 +456,6 @@ export function QuickRepliesDialog({
                     </p>
                     {items.length === 0 ? (
                       <Button type="button" onClick={startCreate}>
-                        <Plus className="size-4" />
                         Add reply
                       </Button>
                     ) : null}

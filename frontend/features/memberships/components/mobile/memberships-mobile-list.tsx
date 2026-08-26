@@ -21,7 +21,8 @@ export interface MembershipsMobileListProps {
   onCreate?: () => void;
   canCreate?: boolean;
   pagination?: {
-    meta: { total: number; page: number; limit: number };
+    meta: { total: number; page: number; limit: number,
+};
     page: number;
     onPageChange: (page: number) => void;
   };
@@ -79,7 +80,8 @@ export function MembershipsMobileList({
       }
       pagination={
         pagination && memberships.length > 0
-          ? { ...pagination, label: "memberships" }
+          ? { ...pagination, label: "memberships",
+}
           : undefined
       }
     />

@@ -21,7 +21,7 @@ function def(
 }
 
 /**
- * Full catalog of Mangomint-parity + CodeSol reports.
+ * Full catalog of Mangomint-parity + PandaCue reports.
  * Deferred entries stay in the registry for documentation / future providers.
  */
 export const REPORT_DEFINITIONS: ReportDefinition[] = [
@@ -852,7 +852,7 @@ export const REPORT_DEFINITIONS: ReportDefinition[] = [
       'Requires Payroll / commission / tips / hourly compensation models.',
   }),
 
-  // —— CodeSol-only ——
+  // —— PandaCue-only ——
   def({
     key: 'ar_aging',
     category: 'codesol',
@@ -949,7 +949,7 @@ export const REPORT_CATEGORY_LABELS: Record<
   payments: 'Payments',
   inventory: 'Inventory',
   business: 'Business',
-  codesol: 'CodeSol Insights',
+  codesol: 'PandaCue Insights',
 };
 
 export function getReportDefinition(

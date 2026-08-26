@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { Pencil, Trash2  } from "lucide-react";
 import { toast } from "sonner";
 import { ApiErrorState } from "@/components/data-display/api-error-state";
 import { DataTable } from "@/components/data-display/data-table";
@@ -130,7 +130,8 @@ export function PaymentsEstimatesTab() {
   });
 
   const statusMutation = useMutation({
-    mutationFn: ({ id, status }: { id: string; status: EstimateStatus }) =>
+    mutationFn: ({ id, status,
+}: { id: string; status: EstimateStatus }) =>
       updateEstimateStatus(id, status),
     onSuccess: () => {
       toast.success("Status updated");
@@ -182,7 +183,6 @@ export function PaymentsEstimatesTab() {
       <FinancialTabPanel
         actions={
           <Button size="sm" onClick={openCreate}>
-            <Plus className="mr-1.5 size-4" />
             New estimate
           </Button>
         }
@@ -258,7 +258,6 @@ export function PaymentsEstimatesTab() {
           emptyDescription="Create your first quote for a customer."
           emptyAction={
             <Button size="sm" onClick={openCreate}>
-              <Plus className="mr-2 size-4" />
               New estimate
             </Button>
           }

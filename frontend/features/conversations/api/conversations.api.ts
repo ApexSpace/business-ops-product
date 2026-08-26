@@ -135,7 +135,8 @@ export async function listConversations(
       assignedToMe: filters.assignedToMe ? "true" : undefined,
     },
   });
-  return { items, meta };
+  return { items, meta,
+};
 }
 
 export async function listUnifiedConversations(
@@ -156,7 +157,8 @@ export async function listUnifiedConversations(
       },
     },
   );
-  return { items, meta };
+  return { items, meta,
+};
 }
 
 export function getConversation(
@@ -271,7 +273,8 @@ export type SendConversationMessageInput = {
     name: string;
     language: string;
     components?: unknown[];
-    headerMedia?: { type: string; url: string };
+    headerMedia?: { type: string; url: string,
+};
   };
 };
 
@@ -289,7 +292,8 @@ export async function sendConversationMessage(
 ): Promise<SendMessageResult> {
   const body =
     typeof input === "string"
-      ? { text: input }
+      ? { text: input,
+}
       : {
           text: input.text,
           subject: input.subject,

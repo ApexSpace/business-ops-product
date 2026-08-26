@@ -1,6 +1,6 @@
 # Social media platforms — implementation & developer-portal submissions
 
-**Product:** PandaCue (CodeSol Technologies)  
+**Product:** PandaCue  
 **Purpose:** Reference for how Social Planner / Integrations are built in this repo, and how app-review / OAuth verification was submitted on each developer portal.  
 **Environments:** `https://dev.pandacue.com` (app), `https://dev-api.pandacue.com` (API). Legal entity pages often live on `https://www.codesoltech.com`.  
 **Last captured:** 2026-08-14 (from work through 2026-08-07 plus codebase as of this date).
@@ -87,12 +87,12 @@ PandaCue is a **multi-tenant SaaS**. Each customer business connects **their own
 
 ### 2.2 Developer portal submission
 
-**App name:** `PandaCue by CodeSol` (must match UI + demo; not parent logo-only).  
+**App name:** `PandaCue` (must match UI + demo; not parent logo-only).  
 **Category:** Business.  
 **Platforms:** **Web only** (do not tick Android/iOS unless you demo native apps).
 
 **Description (function, not corporate structure)**  
-Example: *PandaCue (by CodeSol Technologies): multi-tenant business platform to connect TikTok and schedule/publish original social videos.*
+Example: *PandaCue: multi-tenant business platform to connect TikTok and schedule/publish original social videos.*
 
 **URLs (what reviewers enforce)**
 
@@ -106,7 +106,7 @@ Example: *PandaCue (by CodeSol Technologies): multi-tenant business platform to 
 **Products:** Login Kit + Content Posting API (**Direct Post** on). Verify `pull_by_url` domains.
 
 **Review explanation (products/scopes)**  
-CodeSol / PandaCue is multi-tenant SaaS. Each customer connects their own TikTok and publishes **original** content from Social Planner (no scrape/repost of arbitrary third-party content).
+PandaCue is multi-tenant SaaS. Each customer connects their own TikTok and publishes **original** content from Social Planner (no scrape/repost of arbitrary third-party content).
 
 - Login Kit (`user.info.basic`, `user.info.profile`): Integrations → Connect TikTok → store tokens per business → show creator profile.  
 - Content Posting (`video.upload`, `video.publish`): compose caption + video on R2 → TikTok destination → privacy/interaction → Schedule or Post now → init via Content Posting API pull_by_url.
@@ -115,7 +115,7 @@ CodeSol / PandaCue is multi-tenant SaaS. Each customer connects their own TikTok
 
 1. Website in form ≠ domain in demo.  
 2. `dev.` subdomain looks like development; they want a fully developed public site (not login-only).  
-3. App name/icon vs parent CodeSol logo mismatch.  
+3. App name/icon vs parent/corporate logo mismatch.  
 4. Description was corporate (“child of parent”) instead of **what the product does**.  
 5. Privacy/Terms must be visible on the submitted website (footer).  
 6. Demo must be end-to-end Connect + publish/schedule with **all selected scopes**. First-time apps: sandbox demo on Developer Portal as required.
@@ -163,7 +163,7 @@ Project: **codesol-technologies**, number **163558663772**.
 
 **Console “How will the scopes be used?” (keep YouTube + GBP)**
 
-PandaCue (CodeSol Technologies) is multi-tenant SaaS. Least privilege per Connect. Data only for user-facing features; not sold; not ads; not AI/ML training. Revoke on disconnect.
+PandaCue is multi-tenant SaaS. Least privilege per Connect. Data only for user-facing features; not sold; not ads; not AI/ML training. Revoke on disconnect.
 
 - `openid` / `email` / `profile`: identify and display the connected Google account in Integrations.  
 - `business.manage`: Integrations → Connect Google Business Profile → list/select locations; mutations only when the user acts in-app.  
@@ -243,9 +243,9 @@ Start: `/api/oauth/x/start`.
 
 | Item | Approach |
 |------|----------|
-| Legal entity | CodeSol Technologies |
+| Legal entity | PandaCue |
 | Product name | PandaCue |
-| App name on stores/portals | `PandaCue by CodeSol` |
+| App name on stores/portals | `PandaCue` |
 | Icon | PandaCue (or PandaCue-led), not parent-only logo |
 | Terms / Privacy URLs | Parent codesoltech.com **if** they name PandaCue + relevant data practices |
 | Product Web URL | Same host as demo; production-looking; footer Privacy + Terms |

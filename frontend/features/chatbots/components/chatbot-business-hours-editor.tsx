@@ -130,7 +130,8 @@ export function ChatbotBusinessHoursEditor({
                 checked={slot.isEnabled}
                 onCheckedChange={(checked) => {
                   const next = [...slots];
-                  next[index] = { ...slot, isEnabled: checked === true };
+                  next[index] = { ...slot, isEnabled: checked === true,
+};
                   updateSlots(next);
                 }}
               />
@@ -143,7 +144,8 @@ export function ChatbotBusinessHoursEditor({
               value={slot.start}
               onChange={(e) => {
                 const next = [...slots];
-                next[index] = { ...slot, start: e.target.value };
+                next[index] = { ...slot, start: e.target.value,
+};
                 updateSlots(next);
               }}
             />
@@ -155,7 +157,8 @@ export function ChatbotBusinessHoursEditor({
               value={slot.end}
               onChange={(e) => {
                 const next = [...slots];
-                next[index] = { ...slot, end: e.target.value };
+                next[index] = { ...slot, end: e.target.value,
+};
                 updateSlots(next);
               }}
             />

@@ -79,7 +79,8 @@ export function useRetryConversationMessage(options?: {
         contactId,
         apiBase,
       );
-      return { message };
+      return { message,
+};
     },
     onSuccess: (data) => {
       upsertMessageInCache(

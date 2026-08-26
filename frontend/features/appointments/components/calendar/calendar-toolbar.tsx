@@ -83,7 +83,7 @@ export function CalendarToolbar({
         className,
       )}
     >
-      {/* Figma Left Buttons: < Today > · gap 10 · h-44 · then date frame gap 25 */}
+      {/* Prev / Today / Next — shared --control-height, then date frame */}
       <div className="flex min-w-0 flex-wrap items-center gap-3 sm:gap-[25px]">
         <div
           className={CALENDAR_TOOLBAR_NAV_GROUP_CLASS}

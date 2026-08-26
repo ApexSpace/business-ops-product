@@ -1,6 +1,6 @@
 "use client";
 
-import { Plus, Trash2 } from "lucide-react";
+import { Trash2  } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,7 +25,8 @@ const DAY_LABELS = [
 ];
 
 function emptyRule(): OfferDateRule {
-  return { type: "date_range", startDate: "", endDate: "" };
+  return { type: "date_range", startDate: "", endDate: "",
+};
 }
 
 export function OfferDateRuleBuilder({
@@ -159,7 +160,6 @@ export function OfferDateRuleBuilder({
         size="sm"
         onClick={() => onChange([...rules, emptyRule()])}
       >
-        <Plus className="mr-1 size-4" />
         Add rule
       </Button>
     </div>

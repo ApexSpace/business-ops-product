@@ -13,7 +13,8 @@ export type PlatformAddon = {
   priceYearly: string | null;
   staffLimitDelta: number | null;
   locationLimitDelta: number | null;
-  capability: { id: string; key: string; name: string; status: string };
+  capability: { id: string; key: string; name: string; status: string,
+};
   sortOrder: number;
   tierLinks: Array<{
     tierId: string;
@@ -93,7 +94,8 @@ export async function listPlatformAddons(
     "platform/addons",
     { searchParams: filters },
   );
-  return { items, meta };
+  return { items, meta,
+};
 }
 
 export function getPlatformAddon(id: string) {

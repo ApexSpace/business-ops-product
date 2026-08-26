@@ -1,4 +1,4 @@
-# Frontend reuse tiers (CodeSol)
+# Frontend reuse tiers (PandaCue)
 
 This app uses a **single Next.js frontend** with strict tiers so shared UI can be copied into future niche apps without a monorepo split.
 

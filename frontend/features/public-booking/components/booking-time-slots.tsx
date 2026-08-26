@@ -149,7 +149,7 @@ export function BookingTimeSlots({
                 type="button"
                 onClick={() => onSelectSlot(slot)}
                 className={cn(
-                  "min-h-11 w-full rounded-lg border px-4 py-3.5 text-sm font-semibold transition-all sm:min-h-12 sm:text-base",
+                  "min-h-11 w-full cursor-pointer rounded-lg border px-4 py-3.5 text-sm font-semibold transition-all sm:min-h-12 sm:text-base",
                   "hover:border-[var(--booking-accent)] hover:shadow-sm active:scale-[0.99]",
                   isPending &&
                     "border-[var(--booking-accent)] ring-2 ring-[var(--booking-accent)]/30",

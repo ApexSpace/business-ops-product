@@ -92,7 +92,8 @@ function formatTimelineWhen(
       month: "long",
       day: "numeric",
       ...(withTime
-        ? { hour: "numeric", minute: "2-digit" as const }
+        ? { hour: "numeric", minute: "2-digit" as const,
+}
         : undefined),
       timeZone: businessTimezone || undefined,
     }).format(new Date(iso));

@@ -175,7 +175,8 @@ export function ProductImagesPanel({
           return [...existing, image];
         }
         const next = [...existing];
-        next[index] = { ...next[index], ...image };
+        next[index] = { ...next[index], ...image,
+};
         return next;
       },
     );

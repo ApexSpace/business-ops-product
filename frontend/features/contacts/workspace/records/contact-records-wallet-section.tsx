@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/data-display/empty-state";
@@ -85,7 +84,6 @@ export function ContactRecordsWalletSection({ contact, businessTimezone }: Conta
               className="h-9 rounded-[10px] px-3 text-[12.5px] font-semibold"
               onClick={() => setAdjustOpen(true)}
             >
-              <Plus className="mr-1 size-3.5" />
               Add to balance
             </ActionButton>
           ) : null}

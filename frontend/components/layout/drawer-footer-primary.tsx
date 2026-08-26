@@ -21,7 +21,7 @@ export function DrawerFooterPrimaryAction({
   className,
 }: DrawerFooterPrimaryActionProps) {
   return (
-    <div className={cn("w-full space-y-[15px]", className)}>
+    <div className={cn("w-full space-y-drawer-footer", className)}>
       {summaryLabel && summaryValue ? (
         <div className="flex items-center justify-between px-1">
           <span className="text-[13px] font-medium text-muted-foreground">

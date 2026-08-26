@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Pencil, Plus, RotateCcw, Trash2 } from "lucide-react";
+import { Check, Pencil, RotateCcw, Trash2  } from "lucide-react";
 import { EmptyState } from "@/components/data-display/empty-state";
 import { ActionButton } from "@/components/ui/action-button";
 import { IconButton } from "@/components/ui/icon-button";
@@ -31,7 +31,6 @@ export function ContactRecordsTasksSection({
         description="Schedule follow-ups with due dates for this contact."
         action={
           <ActionButton onClick={onCreateTask}>
-            <Plus className="mr-1.5 size-4" />
             Add task
           </ActionButton>
         }

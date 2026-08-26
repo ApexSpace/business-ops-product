@@ -34,7 +34,8 @@ export async function listAppointments(
       startTo: filters.startTo,
     },
   });
-  return { items, meta };
+  return { items, meta,
+};
 }
 
 export function getAppointment(id: string) {

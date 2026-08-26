@@ -151,13 +151,22 @@
   /* Figma Rectangle 4307 underline: 70×2, neutral/0 */
   --cs-shell-navbar-tab-underline-width: 70px;
   --cs-shell-navbar-tab-underline-height: 2px;
+  /* Top-right Apps / Notifications / User cluster */
+  --cs-shell-navbar-action-gap: 0.5rem;
+  --cs-shell-navbar-action-size: 2.5rem;
+  --cs-shell-navbar-action-hover: rgb(255 255 255 / 10%);
+  --cs-shell-navbar-user-padding-x: 0.75rem;
+  --cs-shell-navbar-user-padding-y: 0.375rem;
+  --cs-shell-navbar-user-gap: 0.5rem;
+  --cs-shell-navbar-user-radius: var(--cs-shell-navbar-tab-radius);
+  --cs-shell-navbar-menu-offset: 0.5rem;
 
   /* Figma Calendar / Appointment tab */
   --cs-calendar-primary: var(--pc-violet-primary-normal);
   --cs-calendar-primary-soft: color-mix(in srgb, var(--pc-violet-primary-normal) 60%, transparent);
   --cs-calendar-border: #bc9bf6;
   --cs-calendar-surface: var(--pc-violet-primary-surface);
-  --cs-calendar-toolbar-height: 44px;
+  --cs-calendar-toolbar-height: var(--control-height);
   /* Workspace is full-bleed; toolbar keeps a modest control inset */
   --cs-calendar-workspace-padding-x: 0px;
   --cs-calendar-workspace-padding-y: var(--spacing-4);

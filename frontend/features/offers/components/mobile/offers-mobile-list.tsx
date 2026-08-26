@@ -18,7 +18,8 @@ export interface OffersMobileListProps {
   onCreate?: () => void;
   canCreate?: boolean;
   pagination?: {
-    meta: { total: number; page: number; limit: number };
+    meta: { total: number; page: number; limit: number,
+};
     page: number;
     onPageChange: (page: number) => void;
   };
@@ -79,7 +80,8 @@ export function OffersMobileList({
       }
       pagination={
         pagination && offers.length > 0
-          ? { ...pagination, label: "offers" }
+          ? { ...pagination, label: "offers",
+}
           : undefined
       }
     />

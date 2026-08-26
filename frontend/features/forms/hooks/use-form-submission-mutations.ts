@@ -26,5 +26,6 @@ export function useFormSubmissionMutations(formId: string) {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  return { deleteMutation };
+  return { deleteMutation,
+};
 }

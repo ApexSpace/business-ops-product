@@ -6,7 +6,8 @@ import { captureApiError } from "@/lib/observability/sentry";
 import { getUserErrorMessage } from "@/lib/api/user-error-message";
 
 type SegmentErrorProps = {
-  error: Error & { digest?: string };
+  error: Error & { digest?: string,
+};
   reset: () => void;
   title?: string;
 };

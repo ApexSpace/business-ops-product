@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { Plus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { RecordListEmpty } from "@/features/contacts/components/contact-workspace/contact-record-section";
@@ -44,7 +43,6 @@ export function ContactRecordsSalesSection({
             <Link href={`/business/sales?contact=${contact.id}`} />
           }
         >
-          <Plus className="mr-1 size-3.5" />
           New sale
         </Button>
       </div>
@@ -62,7 +60,6 @@ export function ContactRecordsSalesSection({
             <Link href={`/business/sales?contact=${contact.id}`} />
           }
         >
-          <Plus className="mr-1 size-3.5" />
           New sale
         </Button>
       </div>

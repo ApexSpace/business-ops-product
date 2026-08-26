@@ -32,7 +32,7 @@ export function isPlatformProvisionedSmsResource(
   return readMetadataType(resource) === PLATFORM_PROVISIONED_SMS_METADATA_TYPE;
 }
 
-/** Shared env number OR per-business Codesol-provisioned notification number. */
+/** Shared env number OR per-business PandaCue-provisioned notification number. */
 export function isPlatformSmsResource(
   resource: Pick<IntegrationResource, 'externalId' | 'metadata'> | null,
 ): boolean {

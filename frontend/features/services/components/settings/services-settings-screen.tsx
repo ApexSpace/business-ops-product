@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, Search } from "lucide-react";
+import { Search  } from "lucide-react";
 import { toast } from "sonner";
 import { ApiErrorState } from "@/components/data-display/api-error-state";
 import { LoadingState } from "@/components/data-display/loading-state";
@@ -115,7 +115,6 @@ export function ServicesSettingsScreen() {
             }}
             disabled={createCategoryMutation.isPending}
           >
-            <Plus className="mr-2 size-4" />
             Add category
           </Button>
           <div className="space-y-1.5">
@@ -201,7 +200,6 @@ export function ServicesSettingsScreen() {
                     setSelectedServiceId(null);
                   }}
                 >
-                  <Plus className="mr-1 size-3" />
                   Add service
                 </Button>
               </div>

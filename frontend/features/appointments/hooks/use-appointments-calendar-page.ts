@@ -375,7 +375,8 @@ export function useAppointmentsCalendarPage() {
           staffUserId: appointment.assignedToId ?? undefined,
         });
       }
-      return { ...checkout, continued: false as const };
+      return { ...checkout, continued: false as const,
+};
     },
     onSuccess: (checkout) => {
       if (!checkout.continued) {

@@ -393,7 +393,7 @@ const platformRoutes: Record<string, RouteEntry> = {
   "/platform/chatbots": {
     title: "Chatbots",
     description:
-      "Configure AI chatbots for the CodeSol marketing site and ops surfaces.",
+      "Configure AI chatbots for the PandaCue marketing site and ops surfaces.",
   },
   "/platform/work-items": {
     title: "Work Items",

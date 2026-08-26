@@ -1,7 +1,6 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { Plus } from "lucide-react";
 import type { AppointmentStatus } from "@/features/appointments/schemas/appointment-profile";
 import { getAppointmentStatusDotClass } from "@/features/appointments/utils/appointment-calendar-styles";
 import { cn } from "@/lib/utils";
@@ -53,7 +52,6 @@ export function AppointmentFormAddButton({
         "disabled:pointer-events-none disabled:opacity-50",
       )}
     >
-      <Plus className="size-3.5 shrink-0" aria-hidden />
       {label}
     </button>
   );

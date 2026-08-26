@@ -44,9 +44,9 @@ export const SALES_DRAWER_SPINE_LABELS = {
   payment: "PAYMENT",
 } as const;
 
-/** Figma checkout add-row stack — vertical · gap 16. */
+/** Checkout add-row stack — vertical · `--drawer-section-gap`. */
 export const SALES_DRAWER_ADD_ACTIONS_STACK_CLASS =
-  "flex w-full min-w-0 flex-col items-start gap-4";
+  "flex w-full min-w-0 flex-col items-start gap-drawer-section";
 
 /** Figma checkout line card — collapsed. */
 export const SALES_DRAWER_LINE_CARD_CLASS =

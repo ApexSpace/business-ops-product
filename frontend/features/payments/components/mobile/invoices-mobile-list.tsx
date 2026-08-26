@@ -1,6 +1,5 @@
 "use client";
 
-import { Plus } from "lucide-react";
 import { MobileEntityList } from "@/components/mobile/mobile-entity-list";
 import { StatusBadge } from "@/components/data-display/status-badge";
 import { Button } from "@/components/ui/button";
@@ -20,7 +19,8 @@ export interface InvoicesMobileListProps {
   onSelect: (invoice: Invoice) => void;
   onCreate: () => void;
   pagination?: {
-    meta: { total: number; page: number; limit: number };
+    meta: { total: number; page: number; limit: number,
+};
     page: number;
     onPageChange: (page: number) => void;
   };
@@ -69,13 +69,13 @@ export function InvoicesMobileList({
       emptyDescription="Create your first invoice for a customer."
       emptyAction={
         <Button size="sm" onClick={onCreate}>
-          <Plus className="mr-1.5 size-4" />
           New invoice
         </Button>
       }
       pagination={
         pagination && invoices.length > 0
-          ? { ...pagination, label: "invoices" }
+          ? { ...pagination, label: "invoices",
+}
           : undefined
       }
     />

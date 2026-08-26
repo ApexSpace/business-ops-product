@@ -36,7 +36,7 @@ interface ContactDrawerProfilePanelProps {
 
 /**
  * Figma Client Details left column — centered 92px avatar, label/value fields,
- * compact "+ Add Note". Shared tokens keep create + view drawers aligned.
+ * compact "Add Note". Shared tokens keep create + view drawers aligned.
  */
 export function ContactDrawerProfilePanel({
   contact,

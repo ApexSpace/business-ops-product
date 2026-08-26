@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 
 /**
  * Shared drawer body order for checkout, sales, and appointment side-drawers:
- * line items → inline add/edit surface → "+ Add" action triggers.
+ * line items → inline add/edit surface → Add action triggers.
  * Keeps action buttons directly above the sticky footer.
  */
 export function DrawerItemAddLayout({
@@ -20,7 +20,7 @@ export function DrawerItemAddLayout({
   className?: string;
 }) {
   return (
-    <div className={cn("flex w-full min-w-0 flex-col gap-6", className)}>
+    <div className={cn("flex w-full min-w-0 flex-col gap-drawer-section", className)}>
       {items}
       {editor}
       {actions}

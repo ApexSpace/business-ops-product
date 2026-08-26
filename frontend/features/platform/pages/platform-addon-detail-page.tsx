@@ -124,7 +124,8 @@ export function PlatformAddonDetailPage({ isNew = false }: { isNew?: boolean }) 
       notifyEffectiveDate?: string;
       notifyMessage?: string;
     }) => {
-      const body = { ...saveBody, ...extra };
+      const body = { ...saveBody, ...extra,
+};
       if (isNew) return createPlatformAddon(body);
       return updatePlatformAddon(id!, body);
     },

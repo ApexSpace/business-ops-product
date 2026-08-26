@@ -353,7 +353,7 @@ export function ClientDetailsDrawer({
           />
 
           <div className={cn(CONTACTS_DRAWER_BODY_INSET_CLASS, "pt-4")}>
-            <div className={cn(CONTACTS_DRAWER_FORM_FIELDS_CLASS, "gap-6")}>
+            <div className={CONTACTS_DRAWER_FORM_FIELDS_CLASS}>
               <TextField
                 control={form.control}
                 name="firstName"

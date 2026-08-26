@@ -168,7 +168,8 @@ export function updateMembershipSettingsOnlineSales(body: {
 
 export function getPublicMembershipCatalog(slug: string) {
   return api.get<{
-    business: { id: string; name: string };
+    business: { id: string; name: string,
+};
     plans: Array<{
       id: string;
       name: string;
@@ -183,7 +184,8 @@ export function getPublicMembershipCatalog(slug: string) {
 
 export function getPublicMembershipPlan(slug: string, planId: string) {
   return api.get<{
-    business: { id: string; name: string };
+    business: { id: string; name: string,
+};
     plan: MembershipPlan;
     stripeReady: boolean;
   }>(`public/memberships/${slug}/plans/${planId}`);

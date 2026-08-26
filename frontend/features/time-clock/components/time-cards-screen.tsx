@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { DateTime } from "luxon";
-import { Clock, MoreHorizontal, Pencil, Plus, Trash2 } from "lucide-react";
+import { Clock, MoreHorizontal, Pencil, Trash2  } from "lucide-react";
 import { toast } from "sonner";
 import { ApiErrorState } from "@/components/data-display/api-error-state";
 import {
@@ -80,7 +80,8 @@ import {
 type DrawerMode = "view" | "edit";
 
 function memberLabel(member: {
-  user: { firstName?: string | null; lastName?: string | null; email: string };
+  user: { firstName?: string | null; lastName?: string | null; email: string,
+};
 }) {
   const name = [member.user.firstName, member.user.lastName]
     .filter(Boolean)
@@ -329,7 +330,6 @@ export function TimeCardsScreen() {
               Staff kiosk
             </Button>
             <Button size="sm" onClick={openAdd}>
-              <Plus className="mr-1.5 size-4" />
               Add time card
             </Button>
           </>
@@ -362,7 +362,6 @@ export function TimeCardsScreen() {
             emptyDescription="Add a time card or adjust your filters."
             emptyAction={
               <Button size="sm" onClick={openAdd}>
-                <Plus className="mr-2 size-4" />
                 Add time card
               </Button>
             }

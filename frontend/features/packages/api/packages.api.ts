@@ -127,7 +127,8 @@ export function updatePackageSettings(body: { onlineSalesEnabled?: boolean }) {
 
 export function getPublicPackageCatalog(slug: string) {
   return api.get<{
-    business: { id: string; name: string };
+    business: { id: string; name: string,
+};
     packages: Array<{
       id: string;
       name: string;
@@ -141,7 +142,8 @@ export function getPublicPackageCatalog(slug: string) {
 
 export function getPublicPackageCheckout(slug: string, templateId: string) {
   return api.get<{
-    business: { id: string; name: string };
+    business: { id: string; name: string,
+};
     package: {
       id: string;
       name: string;

@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Plus } from "lucide-react";
 import { NavArrowIcon } from "@/components/ui/nav-arrow-icon";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -552,7 +551,6 @@ export function CreateBusinessWizard() {
   return (
     <>
       <Button type="button" onClick={() => setOpen(true)}>
-        <Plus className="mr-2 size-4" />
         Create business
       </Button>
       <Dialog
@@ -1204,7 +1202,6 @@ function PaymentOptionalFieldsSection({
               size="sm"
               onClick={() => onReferenceVisibleChange(true)}
             >
-              <Plus className="mr-1.5 size-3.5" />
               Add reference
             </Button>
           ) : null}
@@ -1215,7 +1212,6 @@ function PaymentOptionalFieldsSection({
               size="sm"
               onClick={() => onNotesVisibleChange(true)}
             >
-              <Plus className="mr-1.5 size-3.5" />
               Add notes
             </Button>
           ) : null}

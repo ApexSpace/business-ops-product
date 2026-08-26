@@ -37,7 +37,7 @@ const workspaceSwitcherSurfaceClassName =
 
 const workspaceSwitcherTriggerClassName = cn(
   workspaceSwitcherSurfaceClassName,
-  "transition-colors hover:border-white/22 hover:bg-white/14 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring",
+  "cursor-pointer transition-colors hover:border-white/22 hover:bg-white/14 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring",
 );
 
 interface WorkspaceSwitcherProps {

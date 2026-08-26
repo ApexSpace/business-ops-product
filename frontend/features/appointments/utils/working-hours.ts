@@ -46,7 +46,8 @@ export function getWorkingWindowForDay(
 ): { isEnabled: boolean; startMinutes: number; endMinutes: number } {
   const weekly = weeklyHours.find((h) => h.dayOfWeek === dayOfWeek);
   if (!weekly?.isEnabled) {
-    return { isEnabled: false, startMinutes: 0, endMinutes: 0 };
+    return { isEnabled: false, startMinutes: 0, endMinutes: 0,
+};
   }
   return {
     isEnabled: true,

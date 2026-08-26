@@ -8,7 +8,7 @@ import {
 } from "@/lib/design/drawer-tokens";
 import { cn } from "@/lib/utils";
 
-/** Figma field group — label + control, gap 8px, hug height. */
+/** Field group — label + control, gap `--drawer-field-gap`. */
 export function DrawerFormFieldGroup({
   label,
   htmlFor,

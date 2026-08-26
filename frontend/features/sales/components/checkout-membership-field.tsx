@@ -70,5 +70,6 @@ export function parseMembershipRedemptionSelection(value: string): {
   if (!value) return {};
   const [clientMembershipId, membershipServiceGroupId] = value.split(":");
   if (!clientMembershipId || !membershipServiceGroupId) return {};
-  return { clientMembershipId, membershipServiceGroupId };
+  return { clientMembershipId, membershipServiceGroupId,
+};
 }

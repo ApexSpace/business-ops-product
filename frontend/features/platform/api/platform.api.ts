@@ -48,7 +48,8 @@ export async function listPlatformBusinesses(
       },
     },
   );
-  return { items, meta };
+  return { items, meta,
+};
 }
 
 export function getPlatformBusiness(id: string) {
@@ -94,7 +95,8 @@ export async function listPlatformUsers(
       },
     },
   );
-  return { items, meta };
+  return { items, meta,
+};
 }
 
 export function deletePlatformUser(id: string) {
@@ -120,7 +122,8 @@ export async function listPlatformIndustries(
       },
     },
   );
-  return { items, meta };
+  return { items, meta,
+};
 }
 
 export function deletePlatformIndustry(id: string) {
@@ -146,7 +149,8 @@ export async function listPlatformAuditLogs(
       },
     },
   );
-  return { items, meta };
+  return { items, meta,
+};
 }
 
 export async function listBusinessAuditLogs(
@@ -163,7 +167,8 @@ export async function listBusinessAuditLogs(
       },
     },
   );
-  return { items, meta };
+  return { items, meta,
+};
 }
 
 export function createPlatformBusiness(body: Record<string, unknown>) {

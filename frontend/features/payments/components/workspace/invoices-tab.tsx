@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ExternalLink, Pencil, Plus } from "lucide-react";
+import { ExternalLink, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { ApiErrorState } from "@/components/data-display/api-error-state";
 import { DataTable } from "@/components/data-display/data-table";
@@ -114,7 +114,8 @@ export function PaymentsInvoicesTab() {
   });
 
   const statusMutation = useMutation({
-    mutationFn: ({ id, status }: { id: string; status: InvoiceStatus }) =>
+    mutationFn: ({ id, status,
+}: { id: string; status: InvoiceStatus }) =>
       updateInvoiceStatus(id, status),
     onSuccess: () => {
       toast.success("Status updated");
@@ -176,7 +177,6 @@ export function PaymentsInvoicesTab() {
       <FinancialTabPanel
         actions={
           <Button size="sm" onClick={openCreate}>
-            <Plus className="mr-1.5 size-4" />
             New invoice
           </Button>
         }
@@ -252,7 +252,6 @@ export function PaymentsInvoicesTab() {
           emptyDescription="Create your first invoice for a customer."
           emptyAction={
             <Button size="sm" onClick={openCreate}>
-              <Plus className="mr-2 size-4" />
               New invoice
             </Button>
           }

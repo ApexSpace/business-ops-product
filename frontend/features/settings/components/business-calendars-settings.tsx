@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ExternalLink, Plus } from "lucide-react";
+import { ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { CalendarCreationFlow } from "@/features/calendars/components/calendar-creation-flow";
 import { CalendarDetailsDialog } from "@/features/calendars/components/calendar-details-dialog";
@@ -204,7 +204,6 @@ export function BusinessCalendarsSettings() {
             </Link>
             {canManage ? (
               <ActionButton onClick={() => setCreateOpen(true)}>
-                <Plus className="mr-2 size-4" />
                 New calendar
               </ActionButton>
             ) : null}
@@ -222,7 +221,6 @@ export function BusinessCalendarsSettings() {
         emptyAction={
           canManage ? (
             <ActionButton onClick={() => setCreateOpen(true)}>
-              <Plus className="mr-2 size-4" />
               New calendar
             </ActionButton>
           ) : undefined

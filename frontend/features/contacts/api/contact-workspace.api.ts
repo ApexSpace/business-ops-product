@@ -40,7 +40,8 @@ export interface ContactWalletTransaction {
 }
 
 export interface ContactWallet {
-  balance: { amount: string; currency: string };
+  balance: { amount: string; currency: string,
+};
   transactions: ContactWalletTransaction[];
   paymentMethods: unknown[];
   giftCards: {
@@ -50,7 +51,8 @@ export interface ContactWallet {
     status: string;
     createdAt: string;
   }[];
-  capabilities: { paymentMethods: boolean; giftCards: boolean };
+  capabilities: { paymentMethods: boolean; giftCards: boolean,
+};
 }
 
 export interface ContactAdjustment {

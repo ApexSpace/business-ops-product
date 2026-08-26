@@ -54,7 +54,6 @@ export function ListPrimaryAction({
         )}
         onClick={onClick}
       >
-        {showIcon ? <Plus className="size-4" strokeWidth={2.5} /> : null}
         {label}
       </Button>
     </>

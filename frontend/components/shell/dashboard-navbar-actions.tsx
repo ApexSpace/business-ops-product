@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef } from "react";
 import Link from "next/link";
 import {
   Bell,
@@ -10,7 +11,6 @@ import {
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { NavArrowIcon } from "@/components/ui/nav-arrow-icon";
-import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -25,6 +25,13 @@ import { useAuth } from "@/lib/auth/provider";
 import { getUserDisplayName } from "@/lib/auth";
 import { useAppRouter } from "@/lib/hooks/use-app-router";
 import { cn } from "@/lib/utils";
+import {
+  NAVBAR_ACTION_CLUSTER_CLASS,
+  NAVBAR_ACTION_ICON_CLASS,
+  NAVBAR_USER_MENU_CONTENT_CLASS,
+  NAVBAR_USER_MENU_SIDE_OFFSET,
+  NAVBAR_USER_TRIGGER_CLASS,
+} from "@/lib/design/navbar-action-tokens";
 
 interface DashboardNavbarIconButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -44,13 +51,7 @@ export function DashboardNavbarIconButton({
       type="button"
       aria-label={label}
       aria-pressed={active}
-      className={cn(
-        "inline-flex size-10 shrink-0 items-center justify-center rounded-lg",
-        "text-white transition-colors hover:bg-white/10",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40",
-        active && "bg-white/10",
-        className,
-      )}
+      className={cn(NAVBAR_ACTION_ICON_CLASS, className)}
       {...props}
     >
       {children}
@@ -77,6 +78,7 @@ export function DashboardNavbarActions({
 }: DashboardNavbarActionsProps) {
   const router = useAppRouter();
   const { user, jwt, contexts, logout } = useAuth();
+  const chevronAnchorRef = useRef<HTMLSpanElement>(null);
   const displayName = user ? getUserDisplayName(user) : "Account";
   const initials = displayName
     .split(" ")
@@ -104,61 +106,66 @@ export function DashboardNavbarActions({
   };
 
   return (
-    <div className={cn("flex h-10 shrink-0 items-center gap-2 sm:gap-4 md:gap-6", className)}>
-      <div className="flex items-center gap-1 sm:gap-2 md:gap-3">
-        {showApps ? (
-          <DashboardNavbarIconButton
-            label="Apps"
-            active={appsOpen}
-            onClick={() => onAppsOpenChange?.(true)}
-          >
-            <LayoutGrid className="size-5" strokeWidth={1.75} />
-          </DashboardNavbarIconButton>
-        ) : null}
+    <div className={cn(NAVBAR_ACTION_CLUSTER_CLASS, className)}>
+      {showApps ? (
+        <DashboardNavbarIconButton
+          label="Apps"
+          active={appsOpen}
+          onClick={() => onAppsOpenChange?.(true)}
+        >
+          <LayoutGrid
+            className="size-[var(--shell-navbar-tab-icon-size)]"
+            strokeWidth={1.75}
+          />
+        </DashboardNavbarIconButton>
+      ) : null}
 
-        {!isPlatform ? (
-          <Link
-            href={notificationsHref}
-            aria-label="Notifications"
-            className={cn(
-              "inline-flex size-10 shrink-0 items-center justify-center rounded-lg",
-              "text-white transition-colors hover:bg-white/10",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40",
-            )}
-          >
-            <Bell className="size-5" strokeWidth={1.75} />
-          </Link>
-        ) : null}
-      </div>
+      {!isPlatform ? (
+        <Link
+          href={notificationsHref}
+          aria-label="Notifications"
+          className={NAVBAR_ACTION_ICON_CLASS}
+        >
+          <Bell
+            className="size-[var(--shell-navbar-tab-icon-size)]"
+            strokeWidth={1.75}
+          />
+        </Link>
+      ) : null}
 
       <DropdownMenu>
-        <DropdownMenuTrigger
-          render={
-            <Button
-              variant="ghost"
-              className="flex h-10 items-center gap-2 rounded-lg bg-transparent px-1 py-0 text-white sm:gap-3 hover:bg-white/10 hover:text-white"
-            />
-          }
-        >
-          {businessName ? (
-            <div className="hidden max-w-[160px] text-right md:block">
-              <p className="truncate text-caption leading-none text-white/70">
-                {businessName}
-              </p>
-              <p className="mt-1 truncate text-body-small font-semibold leading-none text-white">
-                {displayName}
-              </p>
-            </div>
-          ) : null}
-          <Avatar size="lg" className="size-10">
+        <DropdownMenuTrigger className={NAVBAR_USER_TRIGGER_CLASS}>
+          <Avatar className="size-8 after:border-white/20">
             <AvatarFallback className="bg-violet-primary-darker text-caption font-semibold text-white">
               {initials}
             </AvatarFallback>
           </Avatar>
-          <NavArrowIcon direction="down" size="md" className="text-white" />
+          {businessName ? (
+            <span className="hidden min-w-0 max-w-40 flex-col items-start gap-1 text-left md:flex">
+              <span className="w-full truncate text-body-small font-semibold leading-none text-[var(--shell-navbar-foreground)]">
+                {displayName}
+              </span>
+              <span className="w-full truncate text-caption leading-none text-white/70">
+                {businessName}
+              </span>
+            </span>
+          ) : (
+            <span className="hidden min-w-0 max-w-40 truncate text-body-small font-semibold leading-none text-[var(--shell-navbar-foreground)] md:inline">
+              {displayName}
+            </span>
+          )}
+          <span ref={chevronAnchorRef} className="inline-flex shrink-0">
+            <NavArrowIcon direction="down" size="md" className="text-white" />
+          </span>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-56">
-          <div className="px-2 py-1.5 text-sm">
+        <DropdownMenuContent
+          align="end"
+          showArrow
+          anchor={chevronAnchorRef}
+          sideOffset={NAVBAR_USER_MENU_SIDE_OFFSET}
+          className={NAVBAR_USER_MENU_CONTENT_CLASS}
+        >
+          <div className="px-3 py-2 text-sm">
             {businessName ? (
               <p className="text-caption text-muted-foreground">{businessName}</p>
             ) : null}

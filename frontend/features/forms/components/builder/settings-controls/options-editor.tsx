@@ -1,6 +1,6 @@
 "use client";
 
-import { GripVertical, Plus, Trash2 } from "lucide-react";
+import { GripVertical, Trash2  } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { FieldOption } from "@/features/forms/types";
@@ -32,7 +32,8 @@ export function OptionsEditor({ options, onChange }: OptionsEditorProps) {
 
   const updateOption = (index: number, patch: Partial<FieldOption>) => {
     const next = [...options];
-    next[index] = { ...next[index], ...patch };
+    next[index] = { ...next[index], ...patch,
+};
     onChange(next);
   };
 
@@ -74,7 +75,6 @@ export function OptionsEditor({ options, onChange }: OptionsEditorProps) {
         </div>
       ))}
       <Button type="button" variant="outline" size="sm" onClick={addOption}>
-        <Plus className="mr-1 size-3" />
         Add option
       </Button>
     </div>

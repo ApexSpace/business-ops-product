@@ -108,7 +108,7 @@ export class MembershipSettingsService {
     const shareableLink = slug ? `${frontendUrl}/memberships/${slug}` : null;
     const overlayLink = shareableLink;
     const embedScript = slug
-      ? `<script>window.CodeSol = window.CodeSol || {}; window.CodeSol.CompanyId = "${businessId}";</script><script src="https://booking.${appDomain}/app.js" async></script>`
+      ? `<script>window.PandaCue = window.PandaCue || window.CodeSol || {}; window.CodeSol = window.PandaCue; window.PandaCue.CompanyId = "${businessId}";</script><script src="https://booking.${appDomain}/app.js" async></script>`
       : null;
     const stripeReady = await this.isStripeReady(businessId);
 

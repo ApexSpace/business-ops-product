@@ -4,7 +4,7 @@
 **Last updated:** August 7, 2026  
 
 **Product:** PandaCue (the “Service,” “Platform,” “we,” “us,” or “our”)  
-**Operator / data controller (platform account & infrastructure data):** CodeSol Technologies (“CodeSol,” “Company”)  
+**Operator / data controller (platform account & infrastructure data):** PandaCue (“Company”)  
 
 **Contact for privacy requests:** support@codesoltech.com  
 
@@ -20,7 +20,7 @@
 
 This Privacy Policy describes how we collect, use, disclose, store, and protect information when you:
 
-- create or use a **PandaCue / CodeSol account** (platform staff or business staff);
+- create or use a **PandaCue account** (platform staff or business staff);
 - use business features (CRM, booking, messaging, social publishing, finance, forms, automations, and related tools);
 - visit **public** surfaces we host for a business (online booking, invoices/estimates/payment links, forms, chat/chatbot widgets, gift cards, packages, memberships, embeds);
 - connect **third-party integrations** (Google, Meta, LinkedIn, TikTok, Pinterest, X, Stripe, Twilio-related messaging, email providers, storage, and similar);
@@ -32,7 +32,7 @@ PandaCue is a **multi-tenant business operations platform**. Each customer busin
 
 | Data type | Typical role |
 |-----------|----------------|
-| Your staff account data, authentication, platform billing, product analytics we generate about account use, infrastructure logs, and our own marketing/support communications | CodeSol / PandaCue acts as an independent **controller** (or equivalent). |
+| Your staff account data, authentication, platform billing, product analytics we generate about account use, infrastructure logs, and our own marketing/support communications | PandaCue acts as an independent **controller** (or equivalent). |
 | Contacts, leads, appointments, messages, form submissions, invoices issued to *your* end customers, social posts you publish, files you upload for *your* business, chatbot transcripts of *your* website visitors, etc. | The **Customer Business is the controller** of that content. We process it as a **processor / service provider** on the Business’s instructions to provide the Service. |
 
 If you are an **end customer** of a Business (you booked an appointment, filled a form, paid an invoice, or chatted on a Business website), that Business’s own privacy notice applies to how **they** use your information. This Policy explains how **we** process that information on their behalf and what choices may exist through the Business.
@@ -55,7 +55,7 @@ When you register, are invited, or log in, we may collect:
 - email verification status and related tokens;
 - password reset tokens (hashed) and related security metadata;
 - business membership role (`OWNER`, `ADMIN`, `MEMBER`) and status;
-- platform roles for CodeSol staff (`SUPER_ADMIN`, `PLATFORM_ADMIN`, `SUPPORT`) where applicable;
+- platform roles for PandaCue staff (`SUPER_ADMIN`, `PLATFORM_ADMIN`, `SUPPORT`) where applicable;
 - staff profile details used for operations (e.g. gender where configured, service-provider flags, work schedules, calendars, time-clock **PIN** stored hashed);
 - fine-grained **staff permissions** and notification preferences;
 - invite tokens and acceptance metadata;
@@ -347,7 +347,7 @@ The product architecture may include AI-related message types or provider catalo
 
 ## 12. Public pages, embeds, and “Powered by” branding
 
-Public booking, payment, form, chat, and catalog pages may display Business branding and/or “Powered by CodeSol / PandaCue.” Visitor data submitted on those pages is Customer Content processed for that Business.
+Public booking, payment, form, chat, and catalog pages may display Business branding and/or “Powered by PandaCue.” Visitor data submitted on those pages is Customer Content processed for that Business.
 
 ---
 
@@ -361,7 +361,7 @@ We may update this Policy from time to time. We will post the updated version wi
 
 **Privacy / data requests:** support@codesoltech.com  
 
-**Postal / registered address:** [REGISTERED ADDRESS OF CODESOL TECHNOLOGIES]  
+**Postal / registered address:** [REGISTERED ADDRESS OF PANDACUE]  
 
 **Data Protection Officer (if appointed):** [DPO NAME / EMAIL OR “N/A”]  
 

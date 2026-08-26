@@ -228,7 +228,7 @@ export const INBOX_DETAILS_HEADER_CLASS =
   `${INBOX_THREAD_HEADER_CLASS} max-md:hidden max-lg:pr-12`;
 
 export const INBOX_DETAILS_SECTION_CLASS =
-  "flex flex-col gap-2.5 border-b border-border px-6 py-6 last:border-b-0";
+  "flex flex-col gap-2.5 border-b border-border px-6 py-drawer-section last:border-b-0";
 
 /** Tablet md–lg: list + thread; details open in a sheet */
 export const INBOX_TABLET_MAIN_ROW_CLASS =

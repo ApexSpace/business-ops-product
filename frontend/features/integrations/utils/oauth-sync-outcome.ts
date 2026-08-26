@@ -20,7 +20,8 @@ export async function waitForOAuthResourceSync(options: {
       });
       const result = job.result as { resourceCount?: number } | null;
       if (typeof result?.resourceCount === "number") {
-        return { resourceCount: result.resourceCount };
+        return { resourceCount: result.resourceCount,
+};
       }
     } catch {
       // Fall through to resources list — job may have finished without readable result.
@@ -28,7 +29,8 @@ export async function waitForOAuthResourceSync(options: {
   }
 
   const list = await listIntegrationResources(options.providerKey, host);
-  return { resourceCount: list.resources.length };
+  return { resourceCount: list.resources.length,
+};
 }
 
 export function oauthSyncOutcomeToastMessage(

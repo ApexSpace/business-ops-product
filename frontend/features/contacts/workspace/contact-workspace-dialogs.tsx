@@ -87,15 +87,20 @@ export interface ContactWorkspaceDialogState {
   deleteAppointmentId: string | null;
   setDeleteAppointmentId: (id: string | null) => void;
   refreshContactData: () => void;
-  deleteContactMutation: { isPending: boolean; mutate: (value: undefined, options?: { onSuccess?: () => void }) => void };
-  deleteLeadMutation: { isPending: boolean; mutate: (id: string) => void };
-  deleteWorkItemMutation: { isPending: boolean; mutate: (id: string) => void };
+  deleteContactMutation: { isPending: boolean; mutate: (value: undefined, options?: { onSuccess?: () => void }) => void,
+};
+  deleteLeadMutation: { isPending: boolean; mutate: (id: string) => void,
+};
+  deleteWorkItemMutation: { isPending: boolean; mutate: (id: string) => void,
+};
   deleteNoteMutation: {
     isPending: boolean;
     mutate: (id: string, options?: { onSuccess?: () => void }) => void;
   };
-  deleteTaskMutation: { isPending: boolean; mutate: (id: string) => void };
-  deleteAppointmentMutation: { isPending: boolean; mutate: (id: string) => void };
+  deleteTaskMutation: { isPending: boolean; mutate: (id: string) => void,
+};
+  deleteAppointmentMutation: { isPending: boolean; mutate: (id: string) => void,
+};
 }
 
 const AppointmentFormDialog = dynamic(
@@ -109,7 +114,8 @@ const AppointmentFormDialog = dynamic(
 interface ContactWorkspaceDialogsProps {
   state: ContactWorkspaceDialogState;
   contact: Contact;
-  lockedContact: { id: string; label: string };
+  lockedContact: { id: string; label: string,
+};
   onContactDeleted: () => void;
   onContactEditSuccess: () => void;
   /** Drawer embed: create notes inline instead of NoteFormDialog. */

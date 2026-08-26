@@ -10,7 +10,6 @@ import {
   useState,
 } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Accordion } from "@/components/ui/accordion";
@@ -287,7 +286,6 @@ export const PlanGroupTiersTab = forwardRef<
             className="shrink-0"
             disabled={isSaving}
           >
-            <Plus className="mr-2 size-4" />
             Add tier
           </Button>
         ) : null}

@@ -286,7 +286,7 @@ export function buildDefaultBusinessSnapshot(): SnapshotSeedDefinition {
         templates: baseEmailTemplates(),
       },
       branding: {
-        productName: 'CodeSol',
+        productName: 'PandaCue',
         accentColor: '#2563eb',
       },
       integrations: {

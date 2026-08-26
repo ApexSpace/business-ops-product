@@ -83,7 +83,8 @@ export interface Appointment {
   externalEventId: string | null;
   createdAt: string;
   updatedAt: string;
-  calendar: { id: string; name: string; color: string | null };
+  calendar: { id: string; name: string; color: string | null,
+};
   contact: {
     id: string;
     firstName: string | null;
@@ -132,16 +133,19 @@ export function getAppointmentSyncIndicator(appointment: Appointment): {
   variant: "google-import" | "google-sync" | "google-error";
 } | null {
   if (appointment.googleSyncWarning) {
-    return { label: "Sync error", variant: "google-error" };
+    return { label: "Sync error", variant: "google-error",
+};
   }
   if (appointment.source === "GOOGLE_SYNC") {
-    return { label: "Google", variant: "google-import" };
+    return { label: "Google", variant: "google-import",
+};
   }
   if (
     appointment.externalProvider === "GOOGLE_CALENDAR" &&
     appointment.externalEventId
   ) {
-    return { label: "Synced", variant: "google-sync" };
+    return { label: "Synced", variant: "google-sync",
+};
   }
   return null;
 }

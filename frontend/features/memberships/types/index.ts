@@ -17,7 +17,8 @@ export interface MembershipContactSummary {
 
 export interface MembershipServiceGroupItem {
   serviceId: string;
-  service: { id: string; name: string };
+  service: { id: string; name: string,
+};
 }
 
 export interface MembershipServiceGroup {
@@ -75,7 +76,8 @@ export interface MembershipBillingEvent {
 export interface ClientMembershipListItem {
   id: string;
   contact: MembershipContactSummary;
-  plan: { id: string; name: string; emoji: string | null; price: string };
+  plan: { id: string; name: string; emoji: string | null; price: string,
+};
   startDate: string;
   price: string;
   status: ClientMembershipStatus;

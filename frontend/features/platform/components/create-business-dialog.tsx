@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { FormDialog } from "@/components/forms/form-dialog";
 import { BusinessProfileFormFields } from "@/features/platform/components/business-profile-form-fields";
@@ -42,7 +41,6 @@ export function CreateBusinessDialog() {
   return (
     <>
       <Button type="button" onClick={() => setOpen(true)}>
-        <Plus className="mr-2 size-4" />
         Create business
       </Button>
       <FormDialog

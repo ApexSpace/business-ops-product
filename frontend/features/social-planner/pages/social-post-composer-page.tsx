@@ -286,7 +286,8 @@ export function SocialPostComposerPage() {
       prev.map((d) =>
         d.providerKey === providerKey &&
         d.integrationResourceId === resourceId
-          ? { ...d, ...patch }
+          ? { ...d, ...patch,
+}
           : d,
       ),
     );

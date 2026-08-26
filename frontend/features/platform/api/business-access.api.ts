@@ -71,7 +71,8 @@ export type BusinessAddonPackagingItem = {
   status: string;
   grandfathered: boolean;
   priceAtPurchase: string | null;
-  capability: { id: string; key: string; name: string; status: string };
+  capability: { id: string; key: string; name: string; status: string,
+};
   activatedAt: string;
 };
 

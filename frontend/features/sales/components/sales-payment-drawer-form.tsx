@@ -3,14 +3,11 @@
 import { DRAWER_PRIMARY_BUTTON_CLASS } from "@/lib/design/drawer-tokens";
 
 import { useMemo, useState } from "react";
-import {
-  Banknote,
+import { Banknote,
   CreditCard,
   Gift,
   Monitor,
-  Pencil,
-  Plus,
-  User,
+  Pencil, User,
   Wallet,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -66,15 +63,13 @@ const PAYMENT_UI_OPTIONS: Array<{
     label: "Self checkout",
     method: "STRIPE",
     icon: Monitor,
-    stripeOnly: true,
-  },
+    stripeOnly: true },
   {
     key: "credit_card",
     label: "Credit card",
     method: "STRIPE",
     icon: CreditCard,
-    stripeOnly: true,
-  },
+    stripeOnly: true },
   { key: "cash", label: "Cash", method: "CASH", icon: Banknote },
   { key: "gift_card", label: "Gift card", method: "GIFT_CARD", icon: Gift },
   { key: "wallet", label: "Account balance", method: "WALLET", icon: Wallet },
@@ -184,7 +179,8 @@ export function SalesPaymentDrawerForm({
         methodItems.some((item) => item.value === "CARD"));
   }).map((option) => {
     if (option.method === "STRIPE" && !stripeReady) {
-      return { ...option, method: "CARD" as PaymentMethod };
+      return { ...option, method: "CARD" as PaymentMethod,
+};
     }
     return option;
   });
@@ -344,7 +340,6 @@ export function SalesPaymentDrawerForm({
             onPrimaryMethodChange("OTHER");
           }}
         >
-          <Plus className="size-4" aria-hidden />
           Other payment method
         </button>
 

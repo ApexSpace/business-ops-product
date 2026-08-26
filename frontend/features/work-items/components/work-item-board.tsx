@@ -137,14 +137,16 @@ export function WorkItemBoard({
             ...old,
             items: old.items.map((i) =>
               i.id === itemId
-                ? { ...i, status, updatedAt: new Date().toISOString() }
+                ? { ...i, status, updatedAt: new Date().toISOString(),
+}
                 : i,
             ),
           };
         },
       );
 
-      return { previous };
+      return { previous,
+};
     },
     onSuccess: (updated, { status }) => {
       queryClient.setQueryData<PaginatedResult<WorkItem>>(
@@ -176,7 +178,8 @@ export function WorkItemBoard({
       }
       toast.success(`Moved to ${formatWorkItemStatus(status)}`);
       setStatusOverrides((prev) => {
-        const next = { ...prev };
+        const next = { ...prev,
+};
         delete next[updated.id];
         return next;
       });

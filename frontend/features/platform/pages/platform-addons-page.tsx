@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { Plus } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -30,7 +29,6 @@ export function PlatformAddonsPage() {
           href="/platform/addons/new"
           className={cn(buttonVariants({ variant: "default" }))}
         >
-          <Plus className="mr-2 size-4" />
           New add-on
         </Link>
       </div>

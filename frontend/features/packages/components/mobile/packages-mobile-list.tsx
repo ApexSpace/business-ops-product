@@ -45,7 +45,8 @@ export interface PackagesMobileListProps {
   onCreate?: () => void;
   canCreate?: boolean;
   pagination?: {
-    meta: { total: number; page: number; limit: number };
+    meta: { total: number; page: number; limit: number,
+};
     page: number;
     onPageChange: (page: number) => void;
   };
@@ -107,7 +108,8 @@ export function PackagesMobileList({
       }
       pagination={
         pagination && packages.length > 0
-          ? { ...pagination, label: "packages" }
+          ? { ...pagination, label: "packages",
+}
           : undefined
       }
     />

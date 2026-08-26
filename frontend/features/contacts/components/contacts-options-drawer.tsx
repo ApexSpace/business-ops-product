@@ -154,7 +154,7 @@ export function ContactsOptionsDrawer({
         ) : null
       }
     >
-      <div className={cn(DRAWER_FORM_FIELDS_CLASS, "gap-6")}>
+      <div className={DRAWER_FORM_FIELDS_CLASS}>
         <Field label="Client Profile Created">
           <Select
             value={draft.profileCreated}

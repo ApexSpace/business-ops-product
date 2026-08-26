@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { CreateLeadDialog } from "@/features/leads/components/create-lead-dialog";
 import { LeadDetailSheet } from "@/features/leads/components/lead-detail-sheet";
@@ -127,7 +126,6 @@ export function BusinessCrmPipelinePage() {
               onClick={() => openAddLead()}
               disabled={!selectedPipeline}
             >
-              <Plus className="mr-2 size-4" />
               Add lead
             </Button>
           ) : null

@@ -161,7 +161,7 @@ export function FormSheet<T extends FieldValues>({
       <SheetBody className="min-h-0 flex-1 overflow-y-auto !p-0">
         <div
           className={cn(
-            "space-y-4",
+            "space-y-drawer-stack",
             !(bodyClassName || contentClassName) && FORM_DRAWER_CONTENT_CLASS,
             bodyClassName,
             contentClassName,

@@ -26,7 +26,8 @@ import { DRAWER_SHEET_FOOTER_WIDE_CLASS } from "@/components/forms/drawer-sheet"
 export const FORM_DRAWER_CLOSE_CLASS = [
   "[&_[data-slot=sheet-close]]:relative",
   "[&_[data-slot=sheet-close]]:static",
-  "[&_[data-slot=sheet-close]]:size-6",
+  "[&_[data-slot=sheet-close]]:self-center",
+  "[&_[data-slot=sheet-close]]:!size-6",
   "[&_[data-slot=sheet-close]]:rounded-md",
   "[&_[data-slot=sheet-close]]:!border-0",
   "[&_[data-slot=sheet-close]]:bg-transparent",
@@ -62,7 +63,7 @@ export const FORM_DRAWER_HEADER_CLASS = DRAWER_HEADER_CLASS;
 
 /** Wider horizontal padding for financial forms. */
 export const FORM_DRAWER_HEADER_COMPACT_CLASS =
-  "relative shrink-0 border-x-0 border-t-0 border-b border-solid border-[var(--drawer-header-border)] !bg-white px-7 pb-5 pt-6 [background-image:none]";
+  "relative flex shrink-0 flex-col justify-center border-x-0 border-t-0 border-b border-solid border-[var(--drawer-header-border)] !bg-white px-7 py-drawer-header-y [background-image:none]";
 
 export const FORM_DRAWER_TITLE_CLASS = DRAWER_TITLE_CLASS;
 
@@ -74,7 +75,7 @@ export const FORM_DRAWER_DESCRIPTION_CLASS = DRAWER_DESCRIPTION_CLASS;
 export const FORM_DRAWER_CONTENT_CLASS = DRAWER_SHELL_CONTENT_INSET_CLASS;
 
 export const FORM_DRAWER_CONTENT_COMPACT_CLASS =
-  "space-y-4 px-7 py-5 scrollbar-thin";
+  "space-y-drawer-stack px-7 py-drawer-body-y scrollbar-thin";
 
 export const FORM_DRAWER_FOOTER_CLASS = DRAWER_SHEET_FOOTER_WIDE_CLASS;
 
@@ -88,7 +89,7 @@ export const FORM_DRAWER_FORM_DIVIDER_CLASS = DRAWER_FORM_DIVIDER_CLASS;
 
 /** Flex column body for contact profile (scroll managed by children). */
 export const FORM_DRAWER_BODY_FLEX_CLASS =
-  "flex min-h-0 flex-1 flex-col space-y-0 overflow-hidden !px-[30px] !py-5";
+  "flex min-h-0 flex-1 flex-col space-y-0 overflow-hidden !px-6 !py-[var(--drawer-body-padding-y)]";
 
 /** @internal Kept for IconButton sizing references in DrawerShell. */
 export const FORM_DRAWER_CLOSE_ICON_CLASS = DRAWER_CLOSE_ACTION_CLASS;

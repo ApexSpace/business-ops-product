@@ -70,7 +70,8 @@ export function buildPaymentsWorkspaceHref(
 ): string {
   const resolved =
     options === "create"
-      ? { action: "create" as const }
+      ? { action: "create" as const,
+}
       : (options ?? {});
 
   const next = new URLSearchParams();

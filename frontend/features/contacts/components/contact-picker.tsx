@@ -16,6 +16,7 @@ import {
 import {
   APPOINTMENT_DRAWER_FIELD_CLASS,
 } from "@/features/appointments/styles/appointment-drawer-tokens";
+import { CONTROL_START_SLOT_CLASS } from "@/lib/ui/control-styles";
 import { cn } from "@/lib/utils";
 import {
   formatContactPickerLine,
@@ -232,13 +233,16 @@ export function ContactPicker({
         >
           <div className="relative w-full min-w-0 flex-1">
             {!isDrawer ? (
-              <User className="pointer-events-none absolute top-1/2 left-3 z-10 size-4 -translate-y-1/2 opacity-60" />
+              <span className={CONTROL_START_SLOT_CLASS}>
+                <User className="size-4 opacity-60" />
+              </span>
             ) : null}
             <ComboboxFieldInput
               id={id}
               disabled={disabled}
               placeholder={placeholder}
               showIcon={!isDrawer}
+              endSlot={isDrawer ? createButton : undefined}
               className={cn(
                 isDrawer
                   ? cn(APPOINTMENT_DRAWER_FIELD_CLASS, "pr-10 font-normal")
@@ -246,11 +250,6 @@ export function ContactPicker({
                 triggerClassName,
               )}
             />
-            {isDrawer ? (
-              <div className="absolute top-1/2 right-1.5 z-10 -translate-y-1/2">
-                {createButton}
-              </div>
-            ) : null}
           </div>
           <ComboboxPopup>
             {isFetching ? (

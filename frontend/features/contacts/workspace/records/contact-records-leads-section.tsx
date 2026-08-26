@@ -1,6 +1,6 @@
 "use client";
 
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { Pencil, Trash2  } from "lucide-react";
 import { EmptyState } from "@/components/data-display/empty-state";
 import { ActionButton } from "@/components/ui/action-button";
 import { IconButton } from "@/components/ui/icon-button";
@@ -25,7 +25,6 @@ export function ContactRecordsLeadsSection({
         description="Add a lead to track this contact through your pipeline."
         action={
           <ActionButton onClick={onCreateLead}>
-            <Plus className="mr-1.5 size-4" />
             Add lead
           </ActionButton>
         }

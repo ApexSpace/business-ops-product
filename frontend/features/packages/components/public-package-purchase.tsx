@@ -114,7 +114,7 @@ export function PublicPackagePurchase({
         <div className="flex items-center justify-between border-b px-5 py-4">
           <p className="font-semibold">{data.business.name}</p>
           <p className="text-muted-foreground text-[10px] tracking-wide uppercase">
-            Powered by CodeSol
+            Powered by PandaCue
           </p>
         </div>
 

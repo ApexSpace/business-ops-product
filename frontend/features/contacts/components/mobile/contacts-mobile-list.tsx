@@ -18,7 +18,8 @@ export interface ContactsMobileListProps {
   canOpenProfiles?: boolean;
   emptyAction?: React.ReactNode;
   pagination?: {
-    meta: { total: number; page: number; limit: number };
+    meta: { total: number; page: number; limit: number,
+};
     page: number;
     onPageChange: (page: number) => void;
   };

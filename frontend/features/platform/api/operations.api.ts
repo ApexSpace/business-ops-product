@@ -68,7 +68,8 @@ export type OperationsCampaign = {
       removed?: Array<{ id: string; name: string; services: Array<{ key: string; name: string }> }>;
     };
     services?: {
-      capability?: { id: string; name: string };
+      capability?: { id: string; name: string,
+};
       before?: Array<{ key: string; name: string }>;
       after?: Array<{ key: string; name: string }>;
       added?: Array<{ key: string; name: string }>;

@@ -24,6 +24,7 @@ import {
   DRAWER_SHELL_CONTENT_INSET_CLASS,
   DRAWER_SHELL_FOOTER_CLASS,
   DRAWER_SHELL_HEADER_ROW_CLASS,
+  DRAWER_SHELL_HEADER_ACTIONS_CLASS,
   DRAWER_SHELL_HEADER_ACTION_CLASS,
   DRAWER_SHELL_TITLE_CLASS,
   DRAWER_SHELL_DESCRIPTION_CLASS,
@@ -171,18 +172,19 @@ function DrawerShellInner({
               <Title
                 className={cn(
                   DRAWER_SHELL_TITLE_CLASS,
-                  "flex min-h-[var(--control-height-sm)] min-w-0 items-center",
+                  "min-w-0",
                 )}
               >
                 {title}
               </Title>
               {headerActions || (inSheet && showCloseButton) ? (
-                <div className="flex h-[var(--control-height-sm)] shrink-0 items-center gap-1.5 self-end">
+                <div className={DRAWER_SHELL_HEADER_ACTIONS_CLASS}>
                   {headerActions}
                   {inSheet && showCloseButton && onRequestClose ? (
                     <IconButton
                       type="button"
                       variant="ghost"
+                      size="icon-sm"
                       aria-label="Close"
                       className={DRAWER_CLOSE_ACTION_CLASS}
                       onClick={onRequestClose}

@@ -127,13 +127,15 @@ export function parseFieldWidth(value: string | number | undefined): FieldWidth 
 
 export function getFieldMarginStyle(style?: FieldStyle): CSSProperties {
   if (style?.marginBottom == null) return {};
-  return { marginBottom: `${style.marginBottom}px` };
+  return { marginBottom: `${style.marginBottom}px`,
+};
 }
 
 export function getFieldSizeStyle(style?: FieldStyle): CSSProperties {
   const width = normalizeFieldWidth(style?.width);
   if (width === 100) return {};
-  return { width: `${width}%`, maxWidth: `${width}%` };
+  return { width: `${width}%`, maxWidth: `${width}%`,
+};
 }
 
 export function getFieldWrapperStyle(style?: FieldStyle): CSSProperties {

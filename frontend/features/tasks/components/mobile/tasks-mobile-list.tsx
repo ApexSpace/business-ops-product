@@ -1,6 +1,5 @@
 "use client";
 
-import { Plus } from "lucide-react";
 import { MobileEntityList } from "@/components/mobile/mobile-entity-list";
 import { StatusBadge } from "@/components/data-display/status-badge";
 import { Button } from "@/components/ui/button";
@@ -19,7 +18,8 @@ export interface TasksMobileListProps {
   onSelect: (task: Task) => void;
   onCreate: () => void;
   pagination?: {
-    meta: { total: number; page: number; limit: number };
+    meta: { total: number; page: number; limit: number,
+};
     page: number;
     onPageChange: (page: number) => void;
   };
@@ -65,13 +65,13 @@ export function TasksMobileList({
       emptyDescription="Create a task from a contact workspace or here."
       emptyAction={
         <Button size="sm" onClick={onCreate}>
-          <Plus className="mr-1.5 size-4" />
           New task
         </Button>
       }
       pagination={
         pagination && tasks.length > 0
-          ? { ...pagination, label: "tasks" }
+          ? { ...pagination, label: "tasks",
+}
           : undefined
       }
     />

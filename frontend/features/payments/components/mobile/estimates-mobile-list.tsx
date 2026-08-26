@@ -1,6 +1,5 @@
 "use client";
 
-import { Plus } from "lucide-react";
 import { MobileEntityList } from "@/components/mobile/mobile-entity-list";
 import { StatusBadge } from "@/components/data-display/status-badge";
 import { Button } from "@/components/ui/button";
@@ -20,7 +19,8 @@ export interface EstimatesMobileListProps {
   onSelect: (estimate: Estimate) => void;
   onCreate: () => void;
   pagination?: {
-    meta: { total: number; page: number; limit: number };
+    meta: { total: number; page: number; limit: number,
+};
     page: number;
     onPageChange: (page: number) => void;
   };
@@ -69,13 +69,13 @@ export function EstimatesMobileList({
       emptyDescription="Create your first quote for a customer."
       emptyAction={
         <Button size="sm" onClick={onCreate}>
-          <Plus className="mr-1.5 size-4" />
           New estimate
         </Button>
       }
       pagination={
         pagination && estimates.length > 0
-          ? { ...pagination, label: "estimates" }
+          ? { ...pagination, label: "estimates",
+}
           : undefined
       }
     />

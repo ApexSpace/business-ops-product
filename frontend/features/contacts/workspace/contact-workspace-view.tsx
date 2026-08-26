@@ -107,7 +107,8 @@ export function ContactWorkspaceView(state: ContactWorkspaceState) {
     );
   }
 
-  const lockedContact = { id: contact.id, label: contact.label };
+  const lockedContact = { id: contact.id, label: contact.label,
+};
 
   const recordsPanelProps = {
     contact,

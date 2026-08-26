@@ -25,7 +25,8 @@ import type {
 } from "@/features/memberships/types";
 
 export function membershipPlanLabel(item: {
-  plan: { name: string; emoji: string | null };
+  plan: { name: string; emoji: string | null,
+};
 }) {
   const emoji = item.plan.emoji ?? "";
   return `${emoji} ${item.plan.name}`.trim();

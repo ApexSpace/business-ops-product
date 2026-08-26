@@ -27,7 +27,8 @@ export function TrialEmbedCodeCard() {
       } catch {
         const fallback = getTrialEmbedCodeFallback();
         if (!fallback) throw new Error("Embed URL not configured");
-        return { scriptEmbed: fallback, iframeSrc: "/widget/trial" };
+        return { scriptEmbed: fallback, iframeSrc: "/widget/trial",
+};
       }
     },
     retry: false,

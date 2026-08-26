@@ -156,7 +156,7 @@ export function PlatformLifecyclePipelinesPage() {
     <div className="space-y-6">
       <PageHeader
         title="Pipelines"
-        description="Campaign funnels on CodeSol Ops. Cards are real Business rows (LEAD → ACTIVE)."
+        description="Campaign funnels on PandaCue Ops. Cards are real Business rows (LEAD → ACTIVE)."
         actions={
           <Button size="sm" onClick={() => setCreateOpen(true)}>
             New pipeline

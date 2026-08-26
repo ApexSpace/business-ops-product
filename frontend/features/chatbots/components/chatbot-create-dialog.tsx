@@ -86,7 +86,8 @@ export function ChatbotCreateDialog({
       );
       await activateChatbot(bot.id, apiBase);
       const embed = await getChatbotEmbed(bot.id, apiBase);
-      return { bot, embed };
+      return { bot, embed,
+};
     },
     onSuccess: ({ bot, embed }) => {
       setCreatedId(bot.id);

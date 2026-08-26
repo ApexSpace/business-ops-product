@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import {
   DataTable,
@@ -78,7 +77,8 @@ export function WorkItemsPageContent() {
     setDialogOpen(true);
   };
 
-  const resetPage = { resetPage: true as const };
+  const resetPage = { resetPage: true as const,
+};
 
   return (
     <>
@@ -157,7 +157,6 @@ export function WorkItemsPageContent() {
             emptyAction={
               canManage ? (
                 <ActionButton onClick={() => openCreate()}>
-                  <Plus className="mr-2 size-4" />
                   Add {countSingular}
                 </ActionButton>
               ) : undefined
