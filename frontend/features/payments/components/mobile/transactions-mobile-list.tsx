@@ -4,7 +4,6 @@ import { Plus } from "lucide-react";
 import { MobileEntityListItem } from "@/components/mobile/mobile-entity-list-item";
 import { MobileEntityListScreen } from "@/components/mobile/mobile-entity-list-screen";
 import { Button } from "@/components/ui/button";
-import { MobileAppBottomNav } from "@/components/shell/mobile-app-bottom-nav";
 import {
   formatMoney,
   formatPaymentMethod,
@@ -85,7 +84,6 @@ export function TransactionsMobileList({
             }
           : undefined
       }
-      bottomNav={<MobileAppBottomNav />}
       className={className}
     >
       <ul className="m-0 list-none p-0">

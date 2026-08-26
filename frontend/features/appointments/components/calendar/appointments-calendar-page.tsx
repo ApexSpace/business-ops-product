@@ -14,7 +14,6 @@ import { StaffDayCalendarView } from "@/features/appointments/components/calenda
 import { WeekCalendarView } from "@/features/appointments/components/calendar/week-calendar-view";
 import { MobileCalendarHeader } from "@/features/appointments/components/calendar/mobile/mobile-calendar-header";
 import { MobileCalendarDateStrip } from "@/features/appointments/components/calendar/mobile/mobile-calendar-date-strip";
-import { MobileAppBottomNav } from "@/components/shell/mobile-app-bottom-nav";
 import { ConfirmDeleteDialog } from "@/components/forms/confirm-delete-dialog";
 import { ListPageSkeleton } from "@/components/layout/list-page";
 import { useAppointmentsCreateAction } from "@/features/appointments/hooks/use-appointments-create-action";
@@ -249,8 +248,6 @@ function AppointmentsCalendarPageContent() {
           )}
         />
       </div>
-
-      {isMobile ? <MobileAppBottomNav /> : null}
 
       <AppointmentCreateDrawer
         open={cal.drawer.drawerMode === "create"}
