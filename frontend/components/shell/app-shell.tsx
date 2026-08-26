@@ -30,6 +30,7 @@ import type {
 import { AppSidebar } from "./app-sidebar";
 import { CommandPaletteProvider } from "./command-palette-provider";
 import { DashboardNavbar } from "./dashboard-navbar";
+import { MobileAppBottomNav } from "./mobile-app-bottom-nav";
 import { MobileSidebarCloseOnNavigate } from "./mobile-sidebar-close";
 import { ShellAppsProvider } from "./shell-apps-context";
 import { Topbar } from "./topbar";
@@ -103,13 +104,7 @@ export function AppShell({
     shellMode === "platform" ? PLATFORM_HOME_HREF : "/business/dashboard";
 
   if (useTopNavbar) {
-    const hideDesktopNavbar =
-      (appointmentsCalendar ||
-        salesWorkspace ||
-        paymentsMobileList ||
-        contactsList ||
-        entityList) &&
-      isMobile;
+    const showMobileChrome = isMobile;
     return (
       <div className="app-shell-canvas flex h-svh min-h-0 flex-col overflow-hidden bg-white">
         <CommandPaletteProvider
@@ -125,7 +120,7 @@ export function AppShell({
                   : APPS_MANAGE_HREF
               }
             >
-              {!hideDesktopNavbar ? (
+              {!showMobileChrome ? (
                 <DashboardNavbar
                   sections={sections}
                   appsItems={appsItems}
@@ -136,7 +131,9 @@ export function AppShell({
                   shellMode={shellMode}
                   notice={topbarNotice}
                 />
-              ) : null}
+              ) : (
+                topbarNotice
+              )}
               <div
                 className={cn(
                   "flex h-0 min-h-0 flex-1 flex-col overflow-hidden bg-white [&>[data-workspace-fill]]:flex [&>[data-workspace-fill]]:h-0 [&>[data-workspace-fill]]:min-h-0 [&>[data-workspace-fill]]:flex-1 [&>[data-workspace-fill]]:flex-col",
@@ -147,6 +144,9 @@ export function AppShell({
               >
                 {children}
               </div>
+              {showMobileChrome ? (
+                <MobileAppBottomNav shellMode={shellMode} />
+              ) : null}
             </ShellAppsProvider>
           </PageMetadataProvider>
         </CommandPaletteProvider>

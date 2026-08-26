@@ -3,7 +3,6 @@
 import { MobileEntityListItem } from "@/components/mobile/mobile-entity-list-item";
 import { MobileEntityListScreen } from "@/components/mobile/mobile-entity-list-screen";
 import { ListPrimaryAction } from "@/components/layout/list-primary-action";
-import { MobileAppBottomNav } from "@/components/shell/mobile-app-bottom-nav";
 import type { Contact } from "@/features/contacts/types";
 
 export interface ContactsMobileListProps {
@@ -84,7 +83,6 @@ export function ContactsMobileList({
             }
           : undefined
       }
-      bottomNav={<MobileAppBottomNav />}
       className={className}
     >
       <ul className="m-0 list-none p-0">

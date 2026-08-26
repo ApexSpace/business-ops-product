@@ -32,7 +32,7 @@ export interface MobileEntityListScreenProps {
     onPageChange: (page: number) => void;
     label?: string;
   };
-  /** Optional bottom nav (e.g. MobileAppBottomNav). */
+  /** Optional extra footer slot. Bottom nav is owned by AppShell. */
   bottomNav?: React.ReactNode;
   children: React.ReactNode;
   className?: string;

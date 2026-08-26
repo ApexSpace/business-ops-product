@@ -4,7 +4,6 @@ import { MobileEntityListItem } from "@/components/mobile/mobile-entity-list-ite
 import { MobileEntityListScreen } from "@/components/mobile/mobile-entity-list-screen";
 import { MobileStatusPill } from "@/components/mobile/mobile-status-pill";
 import { ListPrimaryAction } from "@/components/layout/list-primary-action";
-import { MobileAppBottomNav } from "@/components/shell/mobile-app-bottom-nav";
 import { formatMoney } from "@/features/payments/schemas/payment-profile";
 import type { Checkout } from "@/features/sales/types/checkout";
 import {
@@ -82,7 +81,6 @@ export function SalesMobileList({
             }
           : undefined
       }
-      bottomNav={<MobileAppBottomNav />}
       className={className}
     >
       <ul className="m-0 list-none p-0">
