@@ -35,14 +35,14 @@ export function SettingsLayout({
             "min-h-0 min-w-0 flex-col overflow-hidden border-border bg-background",
             browseMode
               ? "flex w-full"
-              : "hidden w-72 shrink-0 border-r lg:flex",
+              : "hidden h-full w-72 shrink-0 border-r lg:flex",
           )}
         >
           {sidebar}
         </aside>
         <section
           className={cn(
-            "min-h-0 min-w-0 flex-1 overflow-y-auto",
+            "flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto",
             browseMode && "hidden",
           )}
         >

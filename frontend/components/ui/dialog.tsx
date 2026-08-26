@@ -7,6 +7,7 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { IconButton } from "@/components/ui/icon-button"
+import { DRAWER_CLOSE_ACTION_CLASS } from "@/lib/design/drawer-tokens"
 import { XIcon } from "lucide-react"
 
 const dialogContentVariants = cva(
@@ -85,7 +86,7 @@ function DialogContent({
             render={
               <IconButton
                 variant="ghost"
-                className="absolute top-3 right-3 z-10"
+                className={cn("absolute top-3 right-3 z-10", DRAWER_CLOSE_ACTION_CLASS)}
                 size="icon-sm"
                 aria-label="Close"
               />

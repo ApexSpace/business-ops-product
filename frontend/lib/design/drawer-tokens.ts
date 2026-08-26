@@ -180,7 +180,7 @@ export const DRAWER_HEADER_CLASS =
   "relative shrink-0 border-x-0 border-t-0 border-b border-solid border-[var(--drawer-header-border)] !bg-white px-4 pb-4 pt-6 [background-image:none] sm:px-6";
 
 export const DRAWER_HEADER_CLOSE_OVERRIDES =
-  "[&_button[aria-label=Close]]:relative [&_button[aria-label=Close]]:!size-[22px] [&_button[aria-label=Close]]:rounded-full [&_button[aria-label=Close]]:!border-0 [&_button[aria-label=Close]]:bg-transparent [&_button[aria-label=Close]]:p-0 [&_button[aria-label=Close]]:text-muted-foreground [&_button[aria-label=Close]]:!shadow-none [&_button[aria-label=Close]]:hover:text-violet-primary-normal [&_button[aria-label=Close]]:after:absolute [&_button[aria-label=Close]]:after:-inset-2.5 [&_button[aria-label=Close]]:after:content-['']";
+  "[&_button[aria-label=Close]]:relative [&_button[aria-label=Close]]:size-6 [&_button[aria-label=Close]]:rounded-md [&_button[aria-label=Close]]:!border-0 [&_button[aria-label=Close]]:bg-transparent [&_button[aria-label=Close]]:p-0 [&_button[aria-label=Close]]:text-muted-foreground [&_button[aria-label=Close]]:!shadow-none [&_button[aria-label=Close]]:hover:bg-violet-primary-normal/10 [&_button[aria-label=Close]]:hover:text-violet-primary-normal";
 
 export const DRAWER_TITLE_SLOT_OVERRIDES =
   "[&_[data-slot=sheet-title]]:block [&_[data-slot=sheet-title]]:text-[20px] [&_[data-slot=sheet-title]]:font-bold [&_[data-slot=sheet-title]]:leading-none [&_[data-slot=sheet-title]]:text-violet-primary-normal";
@@ -207,10 +207,13 @@ export const DRAWER_DESCRIPTION_CLASS =
   "mt-1.5 text-[13px] font-medium leading-none text-violet-primary-normal/80";
 
 export const DRAWER_HEADER_ACTION_CLASS =
-  "size-6 shrink-0 rounded-md border-0 bg-transparent p-0 text-muted-foreground shadow-none hover:bg-violet-primary-normal/10 hover:text-violet-primary-normal";
+  "size-6 shrink-0 cursor-pointer rounded-md border-0 bg-transparent p-0 text-muted-foreground shadow-none hover:bg-violet-primary-normal/10 hover:text-violet-primary-normal";
 
-export const DRAWER_CLOSE_ACTION_CLASS =
-  "relative !size-[22px] shrink-0 rounded-full !border-0 bg-transparent p-0 text-muted-foreground !shadow-none hover:text-violet-primary-normal [&>svg]:size-[14px] after:absolute after:-inset-2.5 after:content-['']";
+/** Same hover chip as header edit/trash — do not force a transparent hover. */
+export const DRAWER_CLOSE_ACTION_CLASS = cn(
+  DRAWER_HEADER_ACTION_CLASS,
+  "relative [&>svg]:size-4",
+);
 
 /** Shared sheet/drawer header: title row + optional description below. */
 export const SHEET_HEADER_CLASS =

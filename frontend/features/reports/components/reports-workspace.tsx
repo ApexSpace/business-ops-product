@@ -50,7 +50,7 @@ export function ReportsWorkspace() {
       {selectedReport ? (
         <ReportConfigPanel key={selectedReport.key} report={selectedReport} />
       ) : (
-        <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-3 text-center text-muted-foreground">
+        <div className="flex h-full min-h-0 flex-1 flex-col items-center justify-center gap-3 text-center text-muted-foreground">
           <FileBarChart className="size-12 opacity-40" />
           <p className="text-sm">Select a report from the list</p>
         </div>

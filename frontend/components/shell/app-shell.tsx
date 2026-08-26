@@ -13,6 +13,7 @@ import {
   isConversationsInboxPath,
   isMobileEntityListPath,
   isPaymentsMobileListPath,
+  isReportsWorkspacePath,
   isSalesWorkspacePath,
 } from "@/components/shell/shell-full-bleed-paths";
 import { PageMetadataProvider } from "@/lib/runtime/page-metadata-context";
@@ -81,11 +82,13 @@ export function AppShell({
   const contactsList = isContactsListPath(pathname);
   const entityList = isMobileEntityListPath(pathname);
   const settingsWorkspace = isBusinessSettingsWorkspacePath(pathname);
+  const reportsWorkspace = isReportsWorkspacePath(pathname);
   const fullBleedContent =
     contactWorkspace ||
     conversationsInbox ||
     appointmentsCalendar ||
     settingsWorkspace ||
+    reportsWorkspace ||
     (salesWorkspace && isMobile) ||
     (paymentsMobileList && isMobile) ||
     (contactsList && isMobile) ||
