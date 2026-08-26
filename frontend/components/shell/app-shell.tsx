@@ -7,6 +7,7 @@ import {
 } from "@/components/ui/sidebar";
 import {
   isAppointmentsCalendarPath,
+  isAppsMasterDetailWorkspacePath,
   isBusinessSettingsWorkspacePath,
   isContactWorkspacePath,
   isContactsListPath,
@@ -83,12 +84,14 @@ export function AppShell({
   const entityList = isMobileEntityListPath(pathname);
   const settingsWorkspace = isBusinessSettingsWorkspacePath(pathname);
   const reportsWorkspace = isReportsWorkspacePath(pathname);
+  const appsMasterDetail = isAppsMasterDetailWorkspacePath(pathname);
   const fullBleedContent =
     contactWorkspace ||
     conversationsInbox ||
     appointmentsCalendar ||
     settingsWorkspace ||
     reportsWorkspace ||
+    appsMasterDetail ||
     (salesWorkspace && isMobile) ||
     (paymentsMobileList && isMobile) ||
     (contactsList && isMobile) ||
@@ -136,10 +139,10 @@ export function AppShell({
               ) : null}
               <div
                 className={cn(
-                  "min-h-0 flex-1 bg-white",
+                  "flex h-0 min-h-0 flex-1 flex-col overflow-hidden bg-white [&>[data-workspace-fill]]:flex [&>[data-workspace-fill]]:h-0 [&>[data-workspace-fill]]:min-h-0 [&>[data-workspace-fill]]:flex-1 [&>[data-workspace-fill]]:flex-col",
                   fullBleedContent
-                    ? "flex flex-col overflow-hidden p-0 [&>*]:min-h-0 [&>*]:flex-1"
-                    : "flex flex-col overflow-hidden px-[var(--page-padding-x)] pb-[var(--page-padding-y)] pt-[var(--page-content-top-gap)] [&>*]:min-h-0 [&>*]:flex-1",
+                    ? "p-0"
+                    : "px-[var(--page-padding-x)] pb-[var(--page-padding-y)] pt-[var(--page-content-top-gap)]",
                 )}
               >
                 {children}
@@ -182,10 +185,10 @@ export function AppShell({
             />
             <div
               className={cn(
-                "min-h-0 flex-1",
+                "flex h-0 min-h-0 flex-1 flex-col overflow-hidden [&>[data-workspace-fill]]:flex [&>[data-workspace-fill]]:h-0 [&>[data-workspace-fill]]:min-h-0 [&>[data-workspace-fill]]:flex-1 [&>[data-workspace-fill]]:flex-col",
                 fullBleedContent
-                  ? "flex flex-col overflow-hidden p-0 [&>*]:min-h-0 [&>*]:flex-1"
-                  : "flex flex-col overflow-hidden px-[var(--page-padding-x)] pb-[var(--page-padding-y)] pt-[var(--page-content-top-gap)] [&>*]:min-h-0 [&>*]:flex-1",
+                  ? "p-0"
+                  : "px-[var(--page-padding-x)] pb-[var(--page-padding-y)] pt-[var(--page-content-top-gap)]",
               )}
             >
               {children}

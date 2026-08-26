@@ -17,12 +17,13 @@ export function PageContainer({
 }: PageContainerProps) {
   return (
     <div
+      {...(fullHeight ? { "data-workspace-fill": "" } : {})}
       className={cn(
         "w-full",
         fullHeight
           ? dense
-            ? "flex flex-col gap-2"
-            : "flex flex-col gap-[var(--page-stack-gap)]"
+            ? "flex h-0 min-h-0 flex-1 flex-col gap-2 overflow-hidden"
+            : "flex h-0 min-h-0 flex-1 flex-col gap-[var(--page-stack-gap)] overflow-hidden"
           : dense
             ? "space-y-2"
             : "space-y-[var(--page-stack-gap)]",

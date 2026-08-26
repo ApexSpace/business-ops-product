@@ -267,9 +267,10 @@
   --spacing-6: 1.5rem;
   --sidebar-width: 10.75rem;
   --sheet-width: 400px;
-  /* Body row height — dense enough for list pages, still ≥44px for row hit targets */
+  /* Body row height — single list density (56px, still ≥44px for row hit targets) */
   --table-row-height: 3.5rem;
-  --table-row-height-compact: 3.25rem;
+  --table-row-height-compact: var(--table-row-height);
+  --table-header-height: 3.6875rem;
   /* Default ≥40px control; sm remains dense for compact chrome */
   --control-height: 2.5rem;
   --control-height-sm: 2rem;

@@ -99,7 +99,7 @@ export function EntityListLayout<T>({
   data,
   getRowId,
   isLoading,
-  density = "compact",
+  density = "default",
   tableClassName,
   enableRowSelection,
   rowSelection,
