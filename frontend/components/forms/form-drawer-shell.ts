@@ -29,11 +29,10 @@ export const FORM_DRAWER_CLOSE_CLASS = [
   "[&_[data-slot=sheet-close]]:!size-[22px]",
   "[&_[data-slot=sheet-close]]:rounded-full",
   "[&_[data-slot=sheet-close]]:!border-0",
-  "[&_[data-slot=sheet-close]]:!bg-transparent",
+  "[&_[data-slot=sheet-close]]:bg-transparent",
   "[&_[data-slot=sheet-close]]:p-0",
   "[&_[data-slot=sheet-close]]:text-muted-foreground",
   "[&_[data-slot=sheet-close]]:!shadow-none",
-  "[&_[data-slot=sheet-close]]:hover:!bg-transparent",
   "[&_[data-slot=sheet-close]]:hover:text-violet-primary-normal",
   "[&_[data-slot=sheet-close]]:[&>svg]:size-[14px]",
 ].join(" ");

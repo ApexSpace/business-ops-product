@@ -15,6 +15,13 @@ import { isNavItemActive } from "@/components/shell/sidebar-nav-utils";
 import { useHydrated } from "@/lib/hooks/use-hydrated";
 import { cn } from "@/lib/utils";
 import type { ShellNavItem, ShellNavSection } from "@/lib/types/shell-nav";
+import {
+  WORKSPACE_NAV_ITEM_ACTIVE_CLASS,
+  WORKSPACE_NAV_ITEM_CLASS,
+  WORKSPACE_NAV_ITEM_IDLE_CLASS,
+  WORKSPACE_NAV_PANEL_CLASS,
+  WORKSPACE_NAV_SECTION_TRIGGER_CLASS,
+} from "@/lib/design/workspace-nav-tokens";
 
 function isSettingsIndexPath(pathname: string): boolean {
   return pathname === "/business/settings" || pathname === "/business/settings/";
@@ -78,7 +85,7 @@ export function SettingsNavPanel({
   }, [activeSectionId, filtered, query]);
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-4 p-4">
+    <div className={WORKSPACE_NAV_PANEL_CLASS}>
       <SearchInput
         value={query}
         onChange={setQuery}
@@ -105,7 +112,7 @@ export function SettingsNavPanel({
                 value={section.id}
                 className="border-0"
               >
-                <AccordionTrigger className="px-2 py-2.5 text-sm font-semibold text-foreground hover:no-underline">
+                <AccordionTrigger className={WORKSPACE_NAV_SECTION_TRIGGER_CLASS}>
                   {section.label}
                 </AccordionTrigger>
                 <AccordionContent className="pb-2 [&_a]:no-underline">
@@ -147,11 +154,10 @@ function SettingsNavLink({
       aria-current={active ? "page" : undefined}
       onClick={onNavigate}
       className={cn(
-        "flex min-h-[var(--control-height)] min-w-0 items-center gap-2 rounded-[var(--radius-control)] px-3 py-2 text-sm transition-colors",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+        WORKSPACE_NAV_ITEM_CLASS,
         active
-          ? "border-l-2 border-primary bg-primary-tint font-medium text-primary"
-          : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+          ? WORKSPACE_NAV_ITEM_ACTIVE_CLASS
+          : WORKSPACE_NAV_ITEM_IDLE_CLASS,
       )}
     >
       <Icon

@@ -5,6 +5,7 @@ import { PageHeader } from "@/components/layout/page-header";
 import { ListToolbar } from "@/components/layout/list-toolbar";
 import { cn } from "@/lib/utils";
 import {
+  WORKSPACE_FILL_CLASS,
   WORKSPACE_FOOTER_CLASS,
   WORKSPACE_TABLE_CARD_CLASS,
   WORKSPACE_TOOLBAR_CLASS,
@@ -62,15 +63,13 @@ export function EntityWorkspaceLayout({
   return (
     <PageContainer
       dense={dense}
-      className={cn(
-        fullHeight && "flex h-full min-h-0 flex-1 flex-col overflow-hidden",
-        className,
-      )}
+      fullHeight={fullHeight}
+      className={cn(fullHeight && WORKSPACE_FILL_CLASS, className)}
     >
       {hideHeader ? null : (
         <PageHeader title={title} description={description} />
       )}
-      <section className={cn(WORKSPACE_TABLE_CARD_CLASS, "min-h-0 flex-1")}>
+      <section className={WORKSPACE_TABLE_CARD_CLASS}>
         {toolbarNode}
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
           {children}

@@ -237,12 +237,25 @@ export function DrawerPlusSquareButton({
   onClick,
   "aria-label": ariaLabel = "Add",
   stopPropagation = false,
+  as = "button",
 }: {
   className?: string;
   onClick?: () => void;
   "aria-label"?: string;
   stopPropagation?: boolean;
+  as?: "button" | "span";
 }) {
+  const icon = <DrawerPlusIcon className="size-4 text-white" />;
+  const classes = cn(DRAWER_PLUS_BUTTON_CLASS, className);
+
+  if (as === "span") {
+    return (
+      <span className={classes} aria-hidden>
+        {icon}
+      </span>
+    );
+  }
+
   return (
     <button
       type="button"
@@ -254,9 +267,11 @@ export function DrawerPlusSquareButton({
         }
         onClick?.();
       }}
-      className={cn(DRAWER_PLUS_BUTTON_CLASS, className)}
+      className={classes}
     >
-      <DrawerPlusIcon className="size-4 text-white" />
+      {icon}
     </button>
   );
 }
+
+export const PlusIconButton = DrawerPlusSquareButton;

@@ -21,7 +21,10 @@ export function IconButton({
       type="button"
       variant={variant}
       size={size}
-      className={cn(className)}
+      className={cn(
+        "cursor-pointer rounded-full hover:bg-violet-primary-normal/10 hover:text-violet-primary-normal",
+        className,
+      )}
       {...props}
     >
       {children}

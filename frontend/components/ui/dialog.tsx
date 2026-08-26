@@ -6,6 +6,7 @@ import { cva, type VariantProps } from "class-variance-authority"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
+import { IconButton } from "@/components/ui/icon-button"
 import { XIcon } from "lucide-react"
 
 const dialogContentVariants = cva(
@@ -82,10 +83,11 @@ function DialogContent({
           <DialogPrimitive.Close
             data-slot="dialog-close"
             render={
-              <Button
+              <IconButton
                 variant="ghost"
                 className="absolute top-3 right-3 z-10"
                 size="icon-sm"
+                aria-label="Close"
               />
             }
           >

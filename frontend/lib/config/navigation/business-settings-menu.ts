@@ -117,7 +117,34 @@ export const businessSettingsNavItems: BusinessSettingsNavItem[] =
 
 export const BUSINESS_SETTINGS_BASE = "/business/settings";
 
+/**
+ * Apps that still live under `/business/settings/**` but are no longer
+ * Settings chrome. Keep this list in sync with the Apps catalog.
+ */
+export const MIGRATED_SETTINGS_APP_PREFIXES = [
+  "/business/settings/services",
+  "/business/settings/team",
+  "/business/settings/resources",
+  "/business/settings/pipelines",
+  "/business/settings/automations",
+  "/business/settings/automation-workflows",
+  "/business/settings/automation-registry",
+  "/business/settings/forms",
+  "/business/settings/integrations",
+] as const;
+
+function matchesPathPrefix(pathname: string, prefix: string): boolean {
+  return pathname === prefix || pathname.startsWith(`${prefix}/`);
+}
+
+export function isMigratedSettingsAppPath(pathname: string): boolean {
+  return MIGRATED_SETTINGS_APP_PREFIXES.some((prefix) =>
+    matchesPathPrefix(pathname, prefix),
+  );
+}
+
 export function isBusinessSettingsPath(pathname: string): boolean {
+  if (isMigratedSettingsAppPath(pathname)) return false;
   return (
     pathname === BUSINESS_SETTINGS_BASE ||
     pathname.startsWith(`${BUSINESS_SETTINGS_BASE}/`)
