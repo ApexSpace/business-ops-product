@@ -59,10 +59,12 @@ export const WORKSPACE_TABLE_CARD_CLASS =
   "flex h-0 min-h-0 flex-1 flex-col gap-[var(--cs-list-toolbar-gap)] overflow-hidden rounded-none border-0 bg-white shadow-none";
 
 /**
- * Stretch the DataTable (or error replacement) between toolbar and pagination.
+ * Table slot between toolbar and pagination.
+ * Content-height (`flex: 0 1 auto` + `min-h-0`): few rows size the table;
+ * many rows shrink and scroll. Do not use `flex-1` / `h-0` here.
  */
 export const WORKSPACE_TABLE_BODY_CLASS =
-  "flex h-0 min-h-0 flex-1 flex-col overflow-hidden [&>*]:flex [&>*]:h-0 [&>*]:min-h-0 [&>*]:flex-1 [&>*]:flex-col";
+  "flex min-h-0 flex-col overflow-hidden";
 
 /** Pagination / footer strip under the table — hidden when pagination renders nothing */
 export const WORKSPACE_FOOTER_CLASS =

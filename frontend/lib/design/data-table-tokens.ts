@@ -17,24 +17,23 @@ export const DATA_TABLE_HEADER_TEXT = "var(--pc-violet-primary-dark)";
 /**
  * Outer table shell — Figma Sales Table:
  * 1px primary/200 border, radius/md, white fill.
- * `h-0 flex-1` fills the workspace; do not use `h-full` on `<table>`
- * (browsers treat table height as extra space to distribute across rows).
+ * Content-height: do not use `h-0 flex-1` (stretches empty space under
+ * the last row) or `h-full` on `<table>` (browsers distribute extra
+ * height across rows). `max-h-full` still allows long lists to scroll.
  */
 export const DATA_TABLE_SHELL_CLASS =
-  "flex h-0 min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-[var(--radius-md)] border border-[var(--drawer-tab-track)] bg-white shadow-none";
+  "flex w-full min-h-0 max-h-full min-w-0 flex-col overflow-hidden rounded-[var(--radius-md)] border border-[var(--drawer-tab-track)] bg-white shadow-none";
 
-/** Scroll host for the grid — fills remaining workspace height. */
-export const DATA_TABLE_SCROLL_CLASS =
-  "flex h-0 min-h-0 flex-1 flex-col overflow-auto";
+/** Scroll host for the grid — content-sized; scrolls when rows exceed the shell. */
+export const DATA_TABLE_SCROLL_CLASS = "min-h-0 overflow-auto";
 
 /**
  * Grid width only. Height stays content-sized so `--table-row-height` is honored.
  */
 export const DATA_TABLE_GRID_CLASS = "w-full";
 
-/** Empty-state filler when there are no rows — occupies leftover scroll-host height. */
-export const DATA_TABLE_EMPTY_FILL_CLASS =
-  "flex min-h-0 flex-1 items-center justify-center";
+/** Empty-state filler when there are no rows — intrinsic height, not stretched. */
+export const DATA_TABLE_EMPTY_FILL_CLASS = "flex items-center justify-center";
 
 /**
  * Sticky header — sticks within the DataTable scroll host.
@@ -45,11 +44,11 @@ export const DATA_TABLE_HEADER_CLASS =
 
 /** Header cell typography — primary/800, 14px bold (Montserrat) */
 export const DATA_TABLE_HEAD_CELL_CLASS =
-  "h-[var(--table-header-height)] px-4 text-left align-middle text-[14px] font-bold leading-none tracking-normal text-violet-primary-dark whitespace-nowrap";
+  "h-[var(--table-row-height)] px-4 text-left align-middle text-[14px] font-bold leading-none tracking-normal text-violet-primary-dark whitespace-nowrap";
 
-/** Sticky header row — `--table-header-height` (59px) */
+/** Sticky header row — same `--table-row-height` as body rows */
 export const DATA_TABLE_HEADER_ROW_CLASS =
-  "h-[var(--table-header-height)] border-b-0 bg-[var(--drawer-tab-track)] hover:bg-[var(--drawer-tab-track)] data-[state=selected]:bg-[var(--drawer-tab-track)]";
+  "h-[var(--table-row-height)] border-b-0 bg-[var(--drawer-tab-track)] hover:bg-[var(--drawer-tab-track)] data-[state=selected]:bg-[var(--drawer-tab-track)]";
 
 /** Body row — `--table-row-height` (56px), 2px primary/300 bottom border only */
 export const DATA_TABLE_ROW_CLASS =
