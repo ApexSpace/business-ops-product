@@ -1,6 +1,6 @@
 "use client";
 
-import { Plus, Trash2 } from "lucide-react";
+import { Trash2  } from "lucide-react";
 import type { Control, UseFormSetValue } from "react-hook-form";
 import { useFieldArray, useWatch } from "react-hook-form";
 import { TextField } from "@/components/forms/text-field";
@@ -46,7 +46,6 @@ export function WhatsAppTemplateButtonsField({
             append({ type: "QUICK_REPLY", text: "", url: "", phone_number: "" })
           }
         >
-          <Plus className="mr-2 size-4" />
           Add button
         </ActionButton>
       </div>

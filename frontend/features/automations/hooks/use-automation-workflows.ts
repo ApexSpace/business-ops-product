@@ -64,7 +64,8 @@ export function useAutomationWorkflowMutations() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, body }: { id: string; body: UpdateWorkflowBody }) =>
+    mutationFn: ({ id, body,
+}: { id: string; body: UpdateWorkflowBody }) =>
       updateWorkflow(id, body, apiBase),
     onSuccess: async (_, { id }) => {
       await invalidate();
@@ -77,7 +78,8 @@ export function useAutomationWorkflowMutations() {
   });
 
   const statusMutation = useMutation({
-    mutationFn: ({ id, status }: { id: string; status: WorkflowStatus }) =>
+    mutationFn: ({ id, status,
+}: { id: string; status: WorkflowStatus }) =>
       updateWorkflowStatus(id, status, apiBase),
     onSuccess: async () => {
       await invalidate();

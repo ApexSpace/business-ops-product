@@ -57,7 +57,8 @@ const recentlyDelivered = new Map<string, number>();
 
 function isOAuthMessage(data: unknown): data is OAuthMessage {
   if (!data || typeof data !== "object") return false;
-  const message = data as { type?: string };
+  const message = data as { type?: string,
+};
   return (
     message.type === OAUTH_MESSAGE_TYPE.SUCCESS ||
     message.type === OAUTH_MESSAGE_TYPE.ERROR
@@ -120,7 +121,8 @@ function parseStoredOAuthResult(raw: string): OAuthMessage | null {
         providerKey: parsed.providerKey,
         ...(parsed.warning ? { warning: parsed.warning } : {}),
         ...("jobId" in parsed && typeof (parsed as { jobId?: string }).jobId === "string"
-          ? { jobId: (parsed as { jobId: string }).jobId }
+          ? { jobId: (parsed as { jobId: string }).jobId,
+}
           : {}),
       };
     }
@@ -165,7 +167,8 @@ export function openOAuthPopup(
   options?: OpenOAuthPopupOptions,
 ): OpenOAuthPopupResult {
   if (typeof window === "undefined") {
-    return { popup: null, blocked: true };
+    return { popup: null, blocked: true,
+};
   }
 
   const width = options?.width ?? DEFAULT_WIDTH;
@@ -195,11 +198,13 @@ export function openOAuthPopup(
   );
 
   if (!popup) {
-    return { popup: null, blocked: true };
+    return { popup: null, blocked: true,
+};
   }
 
   popup.focus();
-  return { popup, blocked: false };
+  return { popup, blocked: false,
+};
 }
 
 /**
@@ -210,7 +215,8 @@ export function openOAuthPopup(
 export function postOAuthResultToOpener(message: OAuthMessage): void {
   if (typeof window === "undefined") return;
 
-  const stored: StoredOAuthResult = { ...message, ts: Date.now() };
+  const stored: StoredOAuthResult = { ...message, ts: Date.now(),
+};
 
   try {
     localStorage.setItem(OAUTH_RESULT_STORAGE_KEY, JSON.stringify(stored));

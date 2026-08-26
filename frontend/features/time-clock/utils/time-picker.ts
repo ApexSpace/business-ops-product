@@ -7,7 +7,8 @@ export type TimePickerValue = {
 };
 
 export function emptyTimePicker(): TimePickerValue {
-  return { hour: "", minute: "", period: "AM" };
+  return { hour: "", minute: "", period: "AM",
+};
 }
 
 export function hmToTimePicker(hm: string): TimePickerValue {

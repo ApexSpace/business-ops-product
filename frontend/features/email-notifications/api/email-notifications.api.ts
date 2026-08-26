@@ -158,7 +158,8 @@ export function listEmailLogs(params?: {
   const qs = searchParams.toString();
   return api.get<{
     items: EmailLog[];
-    meta: { total: number; page: number; limit: number };
+    meta: { total: number; page: number; limit: number,
+};
   }>(`/email-notifications/logs${qs ? `?${qs}` : ""}`);
 }
 

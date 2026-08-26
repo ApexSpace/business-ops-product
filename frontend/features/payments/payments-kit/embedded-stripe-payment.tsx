@@ -328,8 +328,10 @@ export function EmbeddedStripePayment({
   // PaymentElement (checkout/setup) requires the clientSecret up front.
   const options =
     mode === "checkout" || mode === "setup"
-      ? { clientSecret, appearance: { theme: "stripe" as const } }
-      : { appearance: { theme: "stripe" as const } };
+      ? { clientSecret, appearance: { theme: "stripe" as const },
+}
+      : { appearance: { theme: "stripe" as const },
+};
 
   return (
     <Elements

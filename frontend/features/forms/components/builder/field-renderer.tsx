@@ -170,7 +170,8 @@ function fieldValueBinding(
   if (interactive) {
     return value !== undefined ? { defaultValue: value } : {};
   }
-  return { value: value ?? "" };
+  return { value: value ?? "",
+};
 }
 
 function StyledInput({

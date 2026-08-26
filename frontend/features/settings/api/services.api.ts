@@ -22,7 +22,8 @@ export async function listServices(
       status: filters.status,
     },
   });
-  return { items, meta };
+  return { items, meta,
+};
 }
 
 export function getService(id: string) {

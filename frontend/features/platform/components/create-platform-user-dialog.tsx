@@ -5,7 +5,6 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { FormDialog } from "@/components/forms/form-dialog";
 import { SelectField } from "@/components/forms/select-field";
@@ -58,7 +57,6 @@ export function CreatePlatformUserDialog() {
   return (
     <>
       <Button type="button" onClick={() => setOpen(true)}>
-        <Plus className="mr-2 size-4" />
         Add platform user
       </Button>
       <FormDialog
@@ -76,7 +74,7 @@ export function CreatePlatformUserDialog() {
           name="email"
           label="Email"
           type="email"
-          placeholder="staff@codesol.com"
+          placeholder="staff@pandacue.com"
         />
         <SelectField
           control={form.control}

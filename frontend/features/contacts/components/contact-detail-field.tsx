@@ -40,7 +40,7 @@ interface ContactAddNoteActionProps {
   label?: string;
 }
 
-/** Figma "+ Add Note" — shared DrawerAddAction. */
+/** Figma "Add Note" — shared DrawerAddAction. */
 export function ContactAddNoteAction({
   onClick,
   disabled,

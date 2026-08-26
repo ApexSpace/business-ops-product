@@ -1,6 +1,5 @@
 "use client";
 
-import { Plus } from "lucide-react";
 import { ContactRecordsSectionBody } from "@/features/contacts/components/contact-workspace/contact-records-section-body";
 import { ActionButton } from "@/components/ui/action-button";
 import { cn } from "@/lib/utils";
@@ -36,7 +35,6 @@ export function ContactRecordsPanel({
     if (activeSection === "leads") {
       return (
         <ActionButton onClick={onCreateLead}>
-          <Plus className="mr-1 size-3.5" />
           Add
         </ActionButton>
       );
@@ -44,7 +42,6 @@ export function ContactRecordsPanel({
     if (activeSection === "work-items") {
       return (
         <ActionButton onClick={onCreateWorkItem}>
-          <Plus className="mr-1 size-3.5" />
           Add
         </ActionButton>
       );
@@ -52,7 +49,6 @@ export function ContactRecordsPanel({
     if (activeSection === "notes") {
       return (
         <ActionButton onClick={onCreateNote}>
-          <Plus className="mr-1 size-3.5" />
           Add
         </ActionButton>
       );
@@ -60,7 +56,6 @@ export function ContactRecordsPanel({
     if (activeSection === "tasks") {
       return (
         <ActionButton onClick={onCreateTask}>
-          <Plus className="mr-1 size-3.5" />
           Add
         </ActionButton>
       );
@@ -68,7 +63,6 @@ export function ContactRecordsPanel({
     if (activeSection === "appointments" && onCreateAppointment) {
       return (
         <ActionButton onClick={onCreateAppointment}>
-          <Plus className="mr-1 size-3.5" />
           Add
         </ActionButton>
       );

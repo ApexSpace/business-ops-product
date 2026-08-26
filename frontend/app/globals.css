@@ -186,6 +186,19 @@
   --spacing-page-y: var(--page-padding-y);
   --spacing-section: var(--section-gap);
   --spacing-stack: var(--stack-gap);
+
+  /* Drawer density — recipes use gap-drawer-* / py-drawer-* (see :root --drawer-*) */
+  --spacing-drawer-section: var(--drawer-section-gap);
+  --spacing-drawer-stack: var(--drawer-stack-gap);
+  --spacing-drawer-field: var(--drawer-field-gap);
+  --spacing-drawer-title: var(--drawer-header-gap);
+  --spacing-drawer-header-y: var(--drawer-header-padding-y);
+  --spacing-drawer-body-x: var(--drawer-body-padding-x);
+  --spacing-drawer-body-y: var(--drawer-body-padding-y);
+  --spacing-drawer-footer: var(--drawer-footer-gap);
+  --spacing-drawer-footer-y: var(--drawer-footer-padding-y);
+  --spacing-drawer-spine-x: var(--drawer-spine-padding-x);
+  --spacing-drawer-spine-y: var(--drawer-spine-padding-y);
 }
 
 /* --- Light: PandaCue semantic tokens (mapped from Figma palettes in codesol-default-theme.css) ??? */
@@ -255,6 +268,14 @@
   --shell-navbar-tab-icon-gap: var(--cs-shell-navbar-tab-icon-gap);
   --shell-navbar-tab-underline-width: var(--cs-shell-navbar-tab-underline-width);
   --shell-navbar-tab-underline-height: var(--cs-shell-navbar-tab-underline-height);
+  --shell-navbar-action-gap: var(--cs-shell-navbar-action-gap);
+  --shell-navbar-action-size: var(--cs-shell-navbar-action-size);
+  --shell-navbar-action-hover: var(--cs-shell-navbar-action-hover);
+  --shell-navbar-user-padding-x: var(--cs-shell-navbar-user-padding-x);
+  --shell-navbar-user-padding-y: var(--cs-shell-navbar-user-padding-y);
+  --shell-navbar-user-gap: var(--cs-shell-navbar-user-gap);
+  --shell-navbar-user-radius: var(--cs-shell-navbar-user-radius);
+  --shell-navbar-menu-offset: var(--cs-shell-navbar-menu-offset);
   --glass-blur: 18px;
   --glass-blur-strong: 26px;
   --radius: 0.5rem;
@@ -284,6 +305,37 @@
   --section-gap: 1.5rem;
   --page-stack-gap: 1rem;
   --stack-gap: 0.75rem;
+
+  /*
+   * Drawer density — hit-and-trial these; every DrawerShell / FormSheet
+   * / shared drawer field recipe reads them via gap-drawer-* and py-drawer-*.
+   *
+   *   --drawer-section-gap        major blocks (Date, Client, Service, notes)
+   *   --drawer-stack-gap          field-to-field / form item stack
+   *   --drawer-field-gap          label → control
+   *   --drawer-header-padding-y   header bar vertical padding
+   *   --drawer-header-gap         eyebrow → title
+   *   --drawer-body-padding-y     body vertical inset
+   *   --drawer-footer-padding-y   footer vertical padding (above primary CTA)
+   *   --drawer-footer-gap         footer stack (express row → primary button)
+   *   --drawer-spine-width        purple purpose strip thickness
+   *   --drawer-spine-padding-x    strip left/right inset around the label
+   *   --drawer-spine-padding-y    strip top/bottom inset along the label
+   */
+  --drawer-header-padding-y: 0.75rem; /* 12px; was pt-6/pb-4 (24/16) */
+  --drawer-header-gap: 0.25rem; /* 4px; was gap-2 (8) */
+  --drawer-body-padding-x: 1rem; /* 16px */
+  --drawer-body-padding-y: 0.75rem; /* 12px; was 16–26 */
+  --drawer-section-gap: 1rem; /* 16px; was gap-6 (24) */
+  --drawer-field-gap: 0.375rem; /* 6px; was gap-2 / 7px */
+  --drawer-stack-gap: 0.75rem; /* 12px; was space-y-4/5 (16–20) */
+  --drawer-footer-padding-y: 0.75rem; /* 12px; was 16 */
+  --drawer-footer-gap: 0.625rem; /* 10px; was 15 */
+  --drawer-spine-width: 1.375rem; /* 22px; was 30 */
+  --drawer-spine-padding-x: 0.125rem; /* 2px */
+  --drawer-spine-padding-y: 0.5rem; /* 8px */
+  --drawer-spine-font-size: 0.5625rem; /* 9px; was 10 */
+  --drawer-spine-tracking: 0.08em; /* was 0.14em */
   --shadow-xs-value: 0 1px 2px rgb(0 0 0 / 4%);
   --shadow-sm-value: 0 1px 3px rgb(0 0 0 / 6%),
     0 1px 2px rgb(0 0 0 / 4%);
@@ -372,6 +424,14 @@
   --shell-navbar-tab-icon-gap: var(--cs-shell-navbar-tab-icon-gap);
   --shell-navbar-tab-underline-width: var(--cs-shell-navbar-tab-underline-width);
   --shell-navbar-tab-underline-height: var(--cs-shell-navbar-tab-underline-height);
+  --shell-navbar-action-gap: var(--cs-shell-navbar-action-gap);
+  --shell-navbar-action-size: var(--cs-shell-navbar-action-size);
+  --shell-navbar-action-hover: var(--cs-shell-navbar-action-hover);
+  --shell-navbar-user-padding-x: var(--cs-shell-navbar-user-padding-x);
+  --shell-navbar-user-padding-y: var(--cs-shell-navbar-user-padding-y);
+  --shell-navbar-user-gap: var(--cs-shell-navbar-user-gap);
+  --shell-navbar-user-radius: var(--cs-shell-navbar-user-radius);
+  --shell-navbar-menu-offset: var(--cs-shell-navbar-menu-offset);
   --glass-blur: 18px;
   --glass-blur-strong: 24px;
   --shadow-xs-value: 0 1px 2px rgb(0 0 0 / 25%);
@@ -442,6 +502,79 @@
   textarea,
   optgroup {
     font: inherit;
+  }
+
+  /*
+   * Actionable cursor — pointer on clickable controls (same as the drawer close icon).
+   * Nested :where() keeps specificity 0 so Tailwind cursor-grab / cursor-text still win
+   * (calendar event drag, true text fields). Searchable pickers (role=combobox) use pointer.
+   */
+  :where(
+    a[href],
+    button,
+    summary,
+    label,
+    select,
+    [role="button"],
+    [role="tab"],
+    [role="switch"],
+    [role="checkbox"],
+    [role="radio"],
+    [role="option"],
+    [role="combobox"],
+    [role="menuitem"],
+    [role="menuitemcheckbox"],
+    [role="menuitemradio"],
+    [role="treeitem"],
+    [role="slider"],
+    [data-slot$="-trigger"]:not([data-slot="tooltip-trigger"]),
+    [data-slot="checkbox"],
+    [data-slot="switch"],
+    [data-slot="radio-group-item"],
+    [data-slot="select-item"],
+    [data-slot="dropdown-menu-item"],
+    [data-slot="dropdown-menu-checkbox-item"],
+    [data-slot="dropdown-menu-radio-item"],
+    [data-slot="combobox-item"],
+    [data-slot="sheet-close"],
+    [data-slot="dialog-close"],
+    input[type="button"],
+    input[type="submit"],
+    input[type="reset"],
+    input[type="checkbox"],
+    input[type="radio"],
+    input[type="file"],
+    input[type="color"],
+    input[type="date"],
+    input[type="time"],
+    input[type="datetime-local"],
+    input[type="month"],
+    input[type="week"],
+    input[type="range"]
+  ):where(:not(:disabled):not([aria-disabled="true"]):not([data-disabled])) {
+    cursor: pointer;
+  }
+
+  :where(::file-selector-button) {
+    cursor: pointer;
+  }
+
+  :where(
+    input:not([type]),
+    input[type="text"],
+    input[type="search"],
+    input[type="email"],
+    input[type="password"],
+    input[type="tel"],
+    input[type="url"],
+    input[type="number"],
+    textarea
+  ):where(:not([role="combobox"])):where(:not(:disabled)) {
+    cursor: text;
+  }
+
+  :where(:disabled, [aria-disabled="true"], [data-disabled]) {
+    cursor: not-allowed;
   }
 
   /* Portaled UI (sheets, dialogs, selects, toasts, rich text) */

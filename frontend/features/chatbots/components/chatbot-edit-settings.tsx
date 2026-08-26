@@ -3,14 +3,11 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  ArrowLeft,
+import { ArrowLeft,
   Copy,
   ExternalLink,
   Loader2,
-  Monitor,
-  Plus,
-  Smartphone,
+  Monitor, Smartphone,
   Tablet,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -64,28 +61,23 @@ export function ChatbotEditSettings({ chatbotId }: ChatbotEditSettingsProps) {
 
   const { data: bot, isLoading } = useQuery({
     queryKey: queryKeys.chatbots.detail(apiBase, chatbotId),
-    queryFn: () => getChatbot(chatbotId, apiBase),
-  });
+    queryFn: () => getChatbot(chatbotId, apiBase) });
 
   const { data: rules = [] } = useQuery({
     queryKey: queryKeys.chatbots.rules(apiBase, chatbotId),
     queryFn: () => listChatbotRules(chatbotId, apiBase),
-    enabled: Boolean(bot),
-  });
+    enabled: Boolean(bot) });
 
   const { data: embed } = useQuery({
     queryKey: queryKeys.chatbots.embed(apiBase, chatbotId),
     queryFn: () => getChatbotEmbed(chatbotId, apiBase),
-    enabled: Boolean(bot),
-  });
+    enabled: Boolean(bot) });
 
   const invalidate = () => {
     void queryClient.invalidateQueries({
-      queryKey: queryKeys.chatbots.detail(apiBase, chatbotId),
-    });
+      queryKey: queryKeys.chatbots.detail(apiBase, chatbotId) });
     void queryClient.invalidateQueries({
-      queryKey: queryKeys.chatbots.all(apiBase),
-    });
+      queryKey: queryKeys.chatbots.all(apiBase) });
   };
 
   const saveMutation = useMutation({
@@ -95,8 +87,7 @@ export function ChatbotEditSettings({ chatbotId }: ChatbotEditSettingsProps) {
       invalidate();
       toast.success("Saved");
     },
-    onError: (e: Error) => toast.error(e.message),
-  });
+    onError: (e: Error) => toast.error(e.message) });
 
   if (isLoading || !bot) {
     return (
@@ -157,8 +148,7 @@ function ChatbotEditForm({
   invalidate: () => void;
 }) {
   const { data: business } = useCurrentBusiness({
-    enabled: mode === "business",
-  });
+    enabled: mode === "business" });
   const defaultTimezone =
     mode === "platform" ? "UTC" : (business?.timezone ?? "UTC");
   const [draft, setDraft] = useState<Partial<Chatbot>>({});
@@ -364,8 +354,7 @@ function ChatbotEditForm({
                           allowedDomains: e.target.value
                             .split("\n")
                             .map((line) => line.trim())
-                            .filter(Boolean),
-                        }))
+                            .filter(Boolean) }))
                       }
                       rows={4}
                       placeholder={"example.com\nwww.example.com"}
@@ -542,8 +531,7 @@ function ChatbotEditForm({
                     setDraft((d) => ({
                       ...d,
                       businessHoursSettings: settings,
-                      businessHoursOnly,
-                    }));
+                      businessHoursOnly }));
                   }}
                 />
                 <Button
@@ -680,7 +668,7 @@ function WelcomeVariantsEditor({
               next[index] = {
                 ...variant,
                 matchType: e.target.value as ChatbotWelcomeVariant["matchType"],
-              };
+};
               onChange(next);
             }}
           >
@@ -692,7 +680,8 @@ function WelcomeVariantsEditor({
             value={variant.pattern}
             onChange={(e) => {
               const next = [...variants];
-              next[index] = { ...variant, pattern: e.target.value };
+              next[index] = { ...variant, pattern: e.target.value,
+};
               onChange(next);
             }}
           />
@@ -702,7 +691,8 @@ function WelcomeVariantsEditor({
             rows={2}
             onChange={(e) => {
               const next = [...variants];
-              next[index] = { ...variant, message: e.target.value };
+              next[index] = { ...variant, message: e.target.value,
+};
               onChange(next);
             }}
           />
@@ -727,7 +717,6 @@ function WelcomeVariantsEditor({
           ])
         }
       >
-        <Plus className="mr-1 size-4" />
         Add variant
       </Button>
     </div>

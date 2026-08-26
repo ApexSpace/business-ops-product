@@ -147,7 +147,8 @@ export function useContactConversationComposer(contactId: string) {
         name: string;
         language: string;
         components?: unknown[];
-        headerMedia?: { type: string; url: string };
+        headerMedia?: { type: string; url: string,
+};
       };
       replyChannel: ContactReplyChannel | null;
     }) => {

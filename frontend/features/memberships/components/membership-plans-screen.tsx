@@ -8,7 +8,6 @@ import {
   Copy,
   ExternalLink,
   Lock,
-  Plus,
   Search,
   Trash2,
   X,
@@ -394,7 +393,6 @@ export function MembershipPlansScreen() {
         <div className="space-y-3 rounded-lg border p-3">
           <div className="flex gap-2">
             <Button className="flex-1" onClick={() => setCreateOpen(true)}>
-              <Plus className="mr-2 size-4" />
               Create Plan
             </Button>
             <Button variant="outline" size="icon" aria-label="Search">
@@ -724,7 +722,7 @@ export function MembershipPlansScreen() {
                               }
                               onClick={() => setShowServicePicker(true)}
                             >
-                              + Add service
+                              Add service
                             </Button>
                           )}
                         </div>
@@ -763,7 +761,7 @@ export function MembershipPlansScreen() {
                         className="px-0"
                         onClick={startAddingGroup}
                       >
-                        + Add service group
+                        Add service group
                       </Button>
                     )}
                   </div>

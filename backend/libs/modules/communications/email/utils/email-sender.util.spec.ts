@@ -8,10 +8,10 @@ describe('email-sender.util', () => {
   it('normalizes legacy no-reply addresses to notifications', () => {
     expect(
       normalizeTransactionalDefaultFrom(
-        'CodeSol Technologies <no-reply@notify.codesoltech.com>',
+        'PandaCue <no-reply@notify.codesoltech.com>',
         'notify.codesoltech.com',
       ),
-    ).toBe('CodeSol Technologies <notifications@notify.codesoltech.com>');
+    ).toBe('PandaCue <notifications@notify.codesoltech.com>');
     expect(
       normalizeTransactionalDefaultFrom('no-reply@example.com', 'example.com'),
     ).toBe('notifications@example.com');
@@ -28,7 +28,7 @@ describe('email-sender.util', () => {
       fromName: 'Workflow Sender',
       stepFromName: 'Acme Dental',
       defaultFrom:
-        'CodeSol Technologies <notifications@notify.codesoltech.com>',
+        'PandaCue <notifications@notify.codesoltech.com>',
     });
 
     expect(sender).toEqual({

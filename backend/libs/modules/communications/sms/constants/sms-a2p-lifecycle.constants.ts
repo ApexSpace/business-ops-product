@@ -3,7 +3,7 @@
  *
  * Phase 1 (current):
  * - Auto-assign US local number on business register
- * - a2pPool = SHARED (Codesol Brand + Campaign + Messaging Service)
+ * - a2pPool = SHARED (PandaCue Brand + Campaign + Messaging Service)
  * - twoWayEnabled = false (notifications only)
  *
  * Phase 2 (design):

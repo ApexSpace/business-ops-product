@@ -32,7 +32,8 @@ export async function listWorkItems(
       assignedToId: filters.assignedToId,
     },
   });
-  return { items, meta };
+  return { items, meta,
+};
 }
 
 export function getWorkItem(

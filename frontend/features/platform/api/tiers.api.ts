@@ -91,7 +91,8 @@ export async function listPlatformTiers(
   const { items, meta } = await api.getPaginated<PlatformTier>("platform/tiers", {
     searchParams: filters,
   });
-  return { items, meta };
+  return { items, meta,
+};
 }
 
 export function getPlatformTier(id: string) {

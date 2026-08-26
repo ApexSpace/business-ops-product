@@ -22,7 +22,7 @@ export class PlatformSmsSendService {
   ) {}
 
   /**
-   * Outbound notification SMS via the business's auto-assigned Codesol number
+   * Outbound notification SMS via the business's auto-assigned PandaCue number
    * when present; otherwise the shared TWILIO_PLATFORM_FROM_NUMBER fallback.
    * Always uses primary-account credentials (not BYO Twilio).
    */

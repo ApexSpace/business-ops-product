@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Pencil, Plus, Settings } from "lucide-react";
+import { Pencil, Settings  } from "lucide-react";
 import { toast } from "sonner";
 import { ApiErrorState } from "@/components/data-display/api-error-state";
 import { DataTable } from "@/components/data-display/data-table";
@@ -143,7 +143,8 @@ export function GiftCardsWorkspace() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, notes }: { id: string; notes: string }) =>
+    mutationFn: ({ id, notes,
+}: { id: string; notes: string }) =>
       updateGiftCard(id, { notes }),
     onSuccess: async () => {
       toast.success("Gift card updated");

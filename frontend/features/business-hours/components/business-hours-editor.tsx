@@ -23,7 +23,8 @@ export function BusinessHoursEditor({
 
   const updateRow = (index: number, patch: Partial<BusinessHoursSlot>) => {
     const next = [...rows];
-    next[index] = { ...rows[index]!, ...patch };
+    next[index] = { ...rows[index]!, ...patch,
+};
     onChange(next);
   };
 

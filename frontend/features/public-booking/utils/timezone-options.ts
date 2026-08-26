@@ -32,7 +32,8 @@ export function getTimezoneOptions(): TimezoneOption[] {
   let zones: string[] = CURATED;
   try {
     const supported = (
-      Intl as typeof Intl & { supportedValuesOf?: (key: string) => string[] }
+      Intl as typeof Intl & { supportedValuesOf?: (key: string) => string[],
+}
     ).supportedValuesOf?.("timeZone");
     if (supported?.length) {
       zones = [...new Set([...CURATED, ...supported])].sort();

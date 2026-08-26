@@ -30,7 +30,8 @@ export function useResourceMutations() {
   });
 
   const updateGroup = useMutation({
-    mutationFn: ({ id, name }: { id: string; name: string }) =>
+    mutationFn: ({ id, name,
+}: { id: string; name: string }) =>
       updateResourceGroup(id, { name }),
     onSuccess: () => {
       toast.success("Group updated");

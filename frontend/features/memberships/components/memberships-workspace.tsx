@@ -3,11 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  LayoutTemplate,
-  Plus,
-  Settings,
-} from "lucide-react";
+import { LayoutTemplate, Settings } from "lucide-react";
 import { toast } from "sonner";
 import { DateTime } from "luxon";
 import { ApiErrorState } from "@/components/data-display/api-error-state";
@@ -75,8 +71,7 @@ export function MembershipsWorkspace() {
     selectedId,
     isOpen,
     setSelectedId,
-    clearSelection,
-  } = useEntitySelection({ legacyIdParams: ["selected"] });
+    clearSelection } = useEntitySelection({ legacyIdParams: ["selected"] });
 
   // Deep link from contact details: ?contact=<contactId> means "start membership
   // for this client", not "open membership detail" (contact is also a legacy
@@ -118,32 +113,28 @@ export function MembershipsWorkspace() {
     planId: planFilter === "all" ? undefined : planFilter,
     ...(showDifferentVersionsOnly ? { showDifferentVersionsOnly: true } : {}),
     ...(showOlderUnpaid ? { showOlderUnpaid: true } : {}),
-  };
+};
 
   const listQuery = useQuery({
     queryKey: queryKeys.memberships.clientList(filters),
-    queryFn: () => listClientMemberships(filters),
-  });
+    queryFn: () => listClientMemberships(filters) });
 
   const memberships = listQuery.data?.items ?? [];
 
   const detailQuery = useQuery({
     queryKey: queryKeys.memberships.clientDetail(selectedId ?? ""),
     queryFn: () => getClientMembership(selectedId!),
-    enabled: !!selectedId && selectedId !== contactFilter,
-  });
+    enabled: !!selectedId && selectedId !== contactFilter });
 
   const plansQuery = useQuery({
     queryKey: queryKeys.memberships.plans(),
     queryFn: () => listMembershipPlans(),
-    enabled: addOpen || optionsOpen,
-  });
+    enabled: addOpen || optionsOpen });
 
   const contactsQuery = useQuery({
     queryKey: ["contacts", "picker", addOpen],
     queryFn: () => listContacts({ page: 1, limit: 100 }),
-    enabled: addOpen,
-  });
+    enabled: addOpen });
 
   const contactOptions = useMemo(
     () =>
@@ -153,8 +144,7 @@ export function MembershipsWorkspace() {
           c.displayName?.trim() ||
           [c.firstName, c.lastName].filter(Boolean).join(" ") ||
           c.email ||
-          "Unknown",
-      })),
+          "Unknown" })),
     [contactsQuery.data],
   );
 
@@ -164,8 +154,7 @@ export function MembershipsWorkspace() {
         .filter((p) => !p.isArchived)
         .map((p) => ({
           value: p.id,
-          label: `${p.emoji ?? ""} ${p.name}`.trim(),
-        })),
+          label: `${p.emoji ?? ""} ${p.name}`.trim() })),
     [plansQuery.data],
   );
 
@@ -177,14 +166,13 @@ export function MembershipsWorkspace() {
       await invalidateMemberships(queryClient);
       setSelectedId(row.id);
     },
-    onError: (e: Error) => toast.error(e.message),
-  });
+    onError: (e: Error) => toast.error(e.message) });
 
   const actionMutation = useMutation({
     mutationFn: ({
       id,
       action,
-    }: {
+}: {
       id: string;
       action: "pause" | "resume" | "cancel";
     }) => updateClientMembership(id, { action }),
@@ -192,8 +180,7 @@ export function MembershipsWorkspace() {
       toast.success("Membership updated");
       await invalidateMemberships(queryClient);
     },
-    onError: (e: Error) => toast.error(e.message),
-  });
+    onError: (e: Error) => toast.error(e.message) });
 
   async function handleExport(override?: {
     status: string;
@@ -209,10 +196,11 @@ export function MembershipsWorkspace() {
           status: override.status as ClientMembershipStatus | "all_except_canceled",
           planId: override.planId === "all" ? undefined : override.planId,
           ...(override.showDifferentVersionsOnly
-            ? { showDifferentVersionsOnly: true }
+            ? { showDifferentVersionsOnly: true,
+}
             : {}),
           ...(override.showOlderUnpaid ? { showOlderUnpaid: true } : {}),
-        }
+}
       : filters;
     try {
       const blob = await exportClientMemberships(exportFilters);
@@ -243,13 +231,11 @@ export function MembershipsWorkspace() {
           >
             {row.contact.name}
           </button>
-        ),
-      },
+        ) },
       {
         id: "plan",
         header: "Plan",
-        cell: (row: ClientMembershipListItem) => membershipPlanLabel(row),
-      },
+        cell: (row: ClientMembershipListItem) => membershipPlanLabel(row) },
       {
         id: "startDate",
         header: "Start date",
@@ -257,8 +243,7 @@ export function MembershipsWorkspace() {
           <span className="text-muted-foreground">
             {formatListDate(row.startDate)}
           </span>
-        ),
-      },
+        ) },
       {
         id: "price",
         header: "Price",
@@ -266,15 +251,13 @@ export function MembershipsWorkspace() {
           <span className="tabular-nums">
             {formatMembershipPrice(row.price, row.billingIntervalUnit)}
           </span>
-        ),
-      },
+        ) },
       {
         id: "status",
         header: "Status",
         cell: (row: ClientMembershipListItem) => (
           <MembershipStatusBadge status={row.status} />
-        ),
-      },
+        ) },
     ],
     [router],
   );
@@ -306,7 +289,7 @@ export function MembershipsWorkspace() {
     onOpenContact: (contactId: string) => {
       router.push(`/business/contacts?contact=${contactId}`);
     },
-  };
+};
 
   return (
     <>
@@ -336,7 +319,7 @@ export function MembershipsWorkspace() {
                     meta: listQuery.data.meta,
                     page,
                     onPageChange: setPage,
-                  }
+}
                 : undefined
             }
           />
@@ -426,7 +409,6 @@ export function MembershipsWorkspace() {
             emptyAction={
               canManage ? (
                 <Button size="sm" onClick={() => setAddOpen(true)}>
-                  <Plus className="mr-1.5 size-4" />
                   New membership
                 </Button>
               ) : undefined
@@ -581,8 +563,7 @@ export function MembershipsWorkspace() {
               onClick={() =>
                 createMutation.mutate({
                   contactId: contactId!,
-                  planId: planId!,
-                })
+                  planId: planId! })
               }
             >
               Start membership
@@ -598,8 +579,7 @@ export function MembershipsWorkspace() {
           status: statusFilter,
           planId: planFilter,
           showDifferentVersionsOnly,
-          showOlderUnpaid,
-        }}
+          showOlderUnpaid }}
         plans={(plansQuery.data ?? []).map((p) => ({ id: p.id, name: p.name }))}
         onApply={(next) => {
           setStatusFilter(next.status);

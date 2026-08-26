@@ -83,7 +83,8 @@ export function AvoidGapsSettingsSection({ data, disabled, onSave }: Props) {
             onSave({
               avoidGapsEnabled: enabled,
               ...(enabled && data.avoidGapsMaxGapMinutes == null
-                ? { avoidGapsMaxGapMinutes: 0 }
+                ? { avoidGapsMaxGapMinutes: 0,
+}
                 : {}),
             })
           }

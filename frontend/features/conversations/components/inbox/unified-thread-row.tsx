@@ -20,13 +20,17 @@ function statusPill(status: ConversationStatus): {
 } {
   switch (status) {
     case "CLOSED":
-      return { label: "Closed", variant: "warning" };
+      return { label: "Closed", variant: "warning",
+};
     case "SPAM":
-      return { label: "Spam", variant: "danger" };
+      return { label: "Spam", variant: "danger",
+};
     case "PENDING":
-      return { label: "Pending", variant: "info" };
+      return { label: "Pending", variant: "info",
+};
     default:
-      return { label: "Open", variant: "success" };
+      return { label: "Open", variant: "success",
+};
   }
 }
 

@@ -39,7 +39,8 @@ export async function listPlatformCapabilities(
       },
     },
   );
-  return { items, meta };
+  return { items, meta,
+};
 }
 
 export function getPlatformCapabilityStats() {

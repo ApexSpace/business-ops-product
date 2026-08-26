@@ -24,7 +24,8 @@ export async function listCalendars(
       status: filters.status,
     },
   });
-  return { items, meta };
+  return { items, meta,
+};
 }
 
 export function getCalendar(id: string) {

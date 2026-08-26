@@ -25,7 +25,8 @@ export interface PackageContactSummary {
 
 export interface PackageServiceGroupItem {
   serviceId: string;
-  service: { id: string; name: string };
+  service: { id: string; name: string,
+};
 }
 
 export interface PackageServiceGroup {

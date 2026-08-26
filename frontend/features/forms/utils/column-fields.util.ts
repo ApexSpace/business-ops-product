@@ -46,10 +46,12 @@ export function addColumnField(
   type: FieldType = "text",
 ): { columns: FormField[][]; field: FormField } {
   const next = structuredClone(columns);
-  if (!next[columnIndex]) return { columns, field: createDefaultField(type, columnIndex) };
+  if (!next[columnIndex]) return { columns, field: createDefaultField(type, columnIndex),
+};
   const field = createDefaultField(type, columnIndex);
   next[columnIndex] = [...next[columnIndex], field];
-  return { columns: next, field };
+  return { columns: next, field,
+};
 }
 
 export function removeColumnField(
@@ -168,7 +170,8 @@ export function removeNestedFieldFromColumns(
       return column.filter((nested) => nested.id !== fieldId);
     });
 
-    return { ...field, columns: nextColumns };
+    return { ...field, columns: nextColumns,
+};
   });
 }
 
@@ -187,7 +190,8 @@ export function parseColumnDropZoneId(
   if (!columnsFieldId || columnIndexStr == null) return null;
   const columnIndex = Number(columnIndexStr);
   if (!Number.isInteger(columnIndex) || columnIndex < 0) return null;
-  return { columnsFieldId, columnIndex };
+  return { columnsFieldId, columnIndex,
+};
 }
 
 export interface ColumnAddContext {
@@ -207,12 +211,14 @@ export function findColumnFieldContext(
     if (field.type !== "columns" || !field.columns) continue;
 
     if (field.id === fieldId) {
-      return { columnsField: field, columnIndex: 0 };
+      return { columnsField: field, columnIndex: 0,
+};
     }
 
     for (let columnIndex = 0; columnIndex < field.columns.length; columnIndex++) {
       if (field.columns[columnIndex].some((nested) => nested.id === fieldId)) {
-        return { columnsField: field, columnIndex };
+        return { columnsField: field, columnIndex,
+};
       }
     }
   }

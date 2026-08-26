@@ -59,7 +59,8 @@ function resolveFieldName(field: FormField, type: FieldType, label: string): str
 }
 
 function normalizeFieldStyle(style?: FieldStyle): FieldStyle {
-  const merged = { ...DEFAULT_FIELD_STYLE, ...style };
+  const merged = { ...DEFAULT_FIELD_STYLE, ...style,
+};
   if (style?.width === "half") merged.width = 50;
   if (style?.width === "full") merged.width = 100;
   const numericWidth = Number(merged.width);
@@ -78,7 +79,8 @@ function normalizeFieldStyle(style?: FieldStyle): FieldStyle {
 
 function applyTypeDefaults(type: FieldType, field: FormField): FormField {
   const typeDefaults = createDefaultField(type);
-  const merged: FormField = { ...field };
+  const merged: FormField = { ...field,
+};
 
   for (const key of Object.keys(typeDefaults) as (keyof FormField)[]) {
     if (key === "id" || key === "type" || key === "label" || key === "name") {
@@ -127,7 +129,8 @@ export function normalizeFormField(field: FormField): FormField {
 }
 
 export function normalizeFormSettings(settings: Partial<FormSettings>): FormSettings {
-  const merged = { ...createDefaultFormSettings(), ...settings };
+  const merged = { ...createDefaultFormSettings(), ...settings,
+};
   return {
     ...merged,
     ...syncFormLayoutSettings(merged),

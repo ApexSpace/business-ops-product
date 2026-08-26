@@ -21,13 +21,13 @@ export function FormDrawerSection({
         className,
       )}
     >
-      <div className="mb-4 flex items-center gap-2.5">
+      <div className="mb-drawer-stack flex items-center gap-2.5">
         <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
           <Icon className="size-4" aria-hidden />
         </div>
         <h3 className="text-sm font-semibold text-foreground">{title}</h3>
       </div>
-      <div className="space-y-4">{children}</div>
+      <div className="space-y-drawer-stack">{children}</div>
     </section>
   );
 }

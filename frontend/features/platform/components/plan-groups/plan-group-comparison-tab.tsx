@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Trash2 } from "lucide-react";
+import { Trash2  } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -86,7 +86,8 @@ export function PlanGroupComparisonTab({
     tierSlug: string,
     patch: Partial<FeatureRowTierValue>,
   ) {
-    const values = { ...row.values, [tierSlug]: { ...row.values[tierSlug], ...patch } };
+    const values = { ...row.values, [tierSlug]: { ...row.values[tierSlug], ...patch },
+};
     updateMutation.mutate({ rowId: row.id, body: { values } });
   }
 
@@ -94,7 +95,6 @@ export function PlanGroupComparisonTab({
     <div className="space-y-4">
       {canManage ? (
         <Button type="button" onClick={() => createMutation.mutate()}>
-          <Plus className="mr-2 size-4" />
           Add row
         </Button>
       ) : null}
@@ -150,7 +150,8 @@ export function PlanGroupComparisonTab({
                   )}
                 </td>
                 {tiers.map((tier) => {
-                  const val = row.values[tier.slug] ?? { included: false };
+                  const val = row.values[tier.slug] ?? { included: false,
+};
                   return (
                     <td key={tier.id} className="border px-3 py-2 align-top">
                       {canManage ? (

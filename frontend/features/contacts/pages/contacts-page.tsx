@@ -3,7 +3,7 @@
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Plus, Printer, Trash2 } from "lucide-react";
+import { Printer, Trash2  } from "lucide-react";
 import { ApiErrorState } from "@/components/data-display/api-error-state";
 import { type DataTableColumn } from "@/components/data-display/data-table";
 import { EntityDetailDrawer } from "@/components/layout/entity-detail-drawer";
@@ -275,7 +275,6 @@ function BusinessContactsPageContent() {
         emptyAction={
           contactPerms.canManage ? (
             <ActionButton onClick={openCreate}>
-              <Plus className="mr-2 size-4" />
               Add contact
             </ActionButton>
           ) : undefined

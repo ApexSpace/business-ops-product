@@ -26,7 +26,8 @@ interface BookingDetailsFormProps {
   business: PublicBookingBusiness;
   calendar?: PublicBookingBusiness;
   accentColor: string;
-  summary: { dateLabel: string; timeLabel: string; durationLabel: string };
+  summary: { dateLabel: string; timeLabel: string; durationLabel: string,
+};
   serviceSummaries?: Array<{
     serviceName: string;
     staffName: string;

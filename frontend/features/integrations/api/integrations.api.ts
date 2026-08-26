@@ -32,7 +32,8 @@ export async function syncIntegrationResources(
 
   const job = await pollAsyncJob(jobId);
   const result = job.result as { resourceCount?: number } | null;
-  return { job, resourceCount: result?.resourceCount ?? 0 };
+  return { job, resourceCount: result?.resourceCount ?? 0,
+};
 }
 
 export function listIntegrationResources(

@@ -29,7 +29,8 @@ interface EstimateBasicFieldsProps {
   estimateNumberPreview?: string;
   estimateStatus?: EstimateStatus;
   lockContact?: boolean;
-  lockedContact?: { id: string; label: string };
+  lockedContact?: { id: string; label: string,
+};
   workItemItems: { value: string; label: string }[];
   contactId?: string;
 }

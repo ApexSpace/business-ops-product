@@ -77,7 +77,7 @@ function SheetContent({
               render={
                 <IconButton
                   variant="ghost"
-                  className={cn("absolute top-4 right-4 z-10", DRAWER_CLOSE_ACTION_CLASS)}
+                  className={cn("absolute top-[var(--drawer-header-padding-y)] right-4 z-10", DRAWER_CLOSE_ACTION_CLASS)}
                   size="icon-sm"
                   aria-label="Close"
                 />
@@ -194,7 +194,7 @@ function SheetBody({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="sheet-body"
-      className={cn("min-h-0 flex-1 overflow-y-auto px-4 py-4", className)}
+      className={cn("min-h-0 flex-1 overflow-y-auto px-4 py-drawer-body-y", className)}
       {...props}
     />
   )

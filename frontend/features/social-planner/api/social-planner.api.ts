@@ -104,7 +104,8 @@ export function normalizeEngagementResult(
   }
 
   if (!raw || typeof raw !== "object") {
-    return { items: [], totalComments: 0, unreadCount: 0, warnings: [] };
+    return { items: [], totalComments: 0, unreadCount: 0, warnings: [],
+};
   }
 
   const record = raw as Record<string, unknown>;

@@ -4,7 +4,7 @@
 **Last updated:** August 7, 2026  
 
 **Product:** PandaCue (the “Service”)  
-**Provider:** CodeSol Technologies (“CodeSol,” “Company,” “we,” “us,” or “our”)  
+**Provider:** PandaCue (“Company,” “we,” “us,” or “our”)  
 
 **Contact:** support@codesoltech.com  
 
@@ -38,12 +38,12 @@ PandaCue is a **multi-tenant business automation / operations platform** that ma
 - **Integrations:** OAuth and API connections to third parties (Google Calendar and other Google products as enabled, Meta, LinkedIn, TikTok, Pinterest, X, Stripe, storage, email, SMS, and similar);
 - **Files / media storage** via our object storage;
 - **Reports** and in-product operational analytics;
-- **Platform administration** for CodeSol staff (billing, capabilities/plans, snapshots, audit, support tooling);
+- **Platform administration** for PandaCue staff (billing, capabilities/plans, snapshots, audit, support tooling);
 - **Trial signup** and public catalog/embed experiences.
 
 Features may be gated by **roles, staff permissions, plan groups, add-ons, and business capabilities**. We may add, modify, or discontinue features with reasonable notice where practicable.
 
-**Branding:** The product may appear as “PandaCue,” “CodeSol,” or an industry snapshot name (e.g. practice hubs). These Terms apply regardless of display name.
+**Branding:** The product may appear as “PandaCue” or an industry snapshot name (e.g. practice hubs). These Terms apply regardless of display name.
 
 ---
 
@@ -55,7 +55,7 @@ You must be at least **18 years old** (or the age of majority in your jurisdicti
 
 ### 3.2 Account types
 
-- **Platform users** — CodeSol personnel with platform roles.
+- **Platform users** — PandaCue personnel with platform roles.
 - **Business users** — members of a Customer Business with roles `OWNER`, `ADMIN`, or `MEMBER`, plus staff permissions.
 - **Public visitors** — unauthenticated users of booking, pay, form, chat, gift card, package, membership, or embed pages (subject to the relevant Business’s policies and these Terms insofar as they use our infrastructure).
 
@@ -82,7 +82,7 @@ Users may switch between **platform** and **business** authentication contexts w
 
 “**Customer Content**” means all data, files, messages, media, form answers, booking details, invoices, social posts, and other materials submitted to or generated in the Service by or for a Business (including end-customer data).
 
-As between you and CodeSol, **the Business retains ownership** of Customer Content. You grant CodeSol a worldwide, non-exclusive license to host, process, transmit, display, and back up Customer Content solely to provide, secure, and improve the Service and as otherwise permitted in the Privacy Policy or a signed DPA/Order Form.
+As between you and PandaCue, **the Business retains ownership** of Customer Content. You grant PandaCue a worldwide, non-exclusive license to host, process, transmit, display, and back up Customer Content solely to provide, secure, and improve the Service and as otherwise permitted in the Privacy Policy or a signed DPA/Order Form.
 
 ### 4.2 Your responsibilities (Businesses)
 
@@ -97,7 +97,7 @@ You represent and warrant that you will:
 7. Ensure staff permissions (including contact privacy restrictions) match your internal policies.
 8. For **YouTube** and similar platforms, correctly set designations such as **Made for Kids**, privacy status, and category fields; compliance with COPPA/YouTube rules is yours.
 9. For **TikTok** and other networks, set privacy levels, commercial/branded content flags, and disclosures required by those platforms.
-10. Not misrepresent affiliation with CodeSol/PandaCue beyond permitted “Powered by” or marketplace branding.
+10. Not misrepresent affiliation with PandaCue beyond permitted “Powered by” or marketplace branding.
 
 ### 4.3 End customers of Businesses
 
@@ -122,7 +122,7 @@ You may not:
 
 Access to modules may depend on plan groups, add-ons, and **capabilities** assigned to your Business. We may change packaging with notice. Downgrades may disable features or integrations.
 
-### 5.2 Platform billing (fees you pay CodeSol)
+### 5.2 Platform billing (fees you pay PandaCue)
 
 Fees for PandaCue subscriptions are billed via **Stripe** (Checkout, Customer Portal, invoices, or other methods we enable). By subscribing you authorize recurring charges according to your plan. Taxes may apply.
 
@@ -130,7 +130,7 @@ Non-payment may result in suspension, limited mode, or termination. Dunning and 
 
 ### 5.3 Payments your Business collects (Stripe Connect)
 
-If you enable Stripe Connect, you are the merchant of record (or as designated by Stripe) for charges to your end customers. You must complete Stripe’s onboarding, verify identity, and comply with Stripe’s terms. CodeSol is not responsible for chargebacks, refunds, payout delays, or Stripe account holds, except to the extent caused by our proven gross negligence in platform routing.
+If you enable Stripe Connect, you are the merchant of record (or as designated by Stripe) for charges to your end customers. You must complete Stripe’s onboarding, verify identity, and comply with Stripe’s terms. PandaCue is not responsible for chargebacks, refunds, payout delays, or Stripe account holds, except to the extent caused by our proven gross negligence in platform routing.
 
 ### 5.4 Refunds
 
@@ -204,7 +204,7 @@ We may remove or block content that violates law, these Terms, or provider rules
 
 ### 10.1 Our IP
 
-The Service software, UI, documentation, trademarks (including CodeSol and PandaCue marks), and underlying technology are owned by CodeSol or its licensors. Except for the limited right to use the Service under your subscription, no rights are granted.
+The Service software, UI, documentation, trademarks (including PandaCue marks), and underlying technology are owned by PandaCue or its licensors. Except for the limited right to use the Service under your subscription, no rights are granted.
 
 ### 10.2 Feedback
 
@@ -224,7 +224,7 @@ Each party may receive confidential technical or business information. The recip
 
 ## 12. Privacy and data protection
 
-Our Privacy Policy explains how we process personal data. For Customer Content, Businesses are typically controllers and CodeSol is a processor/service provider. Enterprise customers may request a Data Processing Addendum (DPA). You must not configure the Service to process special categories of data (health, precise biometrics, etc.) unless your plan and agreements expressly allow it and appropriate safeguards exist.
+Our Privacy Policy explains how we process personal data. For Customer Content, Businesses are typically controllers and PandaCue is a processor/service provider. Enterprise customers may request a Data Processing Addendum (DPA). You must not configure the Service to process special categories of data (health, precise biometrics, etc.) unless your plan and agreements expressly allow it and appropriate safeguards exist.
 
 ---
 
@@ -259,7 +259,7 @@ WE DO NOT PROVIDE MEDICAL, LEGAL, ACCOUNTING, OR OTHER PROFESSIONAL ADVICE. INDU
 TO THE MAXIMUM EXTENT PERMITTED BY LAW:
 
 - WE WILL NOT BE LIABLE FOR INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, EXEMPLARY, OR PUNITIVE DAMAGES, OR LOST PROFITS, REVENUE, DATA, OR GOODWILL, EVEN IF ADVISED OF THE POSSIBILITY.
-- OUR TOTAL LIABILITY ARISING OUT OF THESE TERMS OR THE SERVICE IN ANY TWELVE (12) MONTH PERIOD WILL NOT EXCEED THE AMOUNTS YOU PAID TO CODESOL FOR THE SERVICE IN THAT PERIOD (OR USD $[100] IF YOU ARE ON A FREE TRIAL).
+- OUR TOTAL LIABILITY ARISING OUT OF THESE TERMS OR THE SERVICE IN ANY TWELVE (12) MONTH PERIOD WILL NOT EXCEED THE AMOUNTS YOU PAID TO PANDACUE FOR THE SERVICE IN THAT PERIOD (OR USD $[100] IF YOU ARE ON A FREE TRIAL).
 
 SOME JURISDICTIONS DO NOT ALLOW CERTAIN LIMITATIONS; IN THOSE CASES OUR LIABILITY IS LIMITED TO THE MAXIMUM PERMITTED.
 
@@ -267,7 +267,7 @@ SOME JURISDICTIONS DO NOT ALLOW CERTAIN LIMITATIONS; IN THOSE CASES OUR LIABILIT
 
 ## 17. Indemnification
 
-You will defend and indemnify CodeSol and its officers, directors, employees, and agents against claims, damages, and expenses (including reasonable attorneys’ fees) arising from: (a) Customer Content; (b) your use of the Service or integrations; (c) your communications (email/SMS/WhatsApp/social); (d) your breach of these Terms or law; (e) disputes between you and your end customers or staff; (f) infringement claims related to content you upload or publish.
+You will defend and indemnify PandaCue and its officers, directors, employees, and agents against claims, damages, and expenses (including reasonable attorneys’ fees) arising from: (a) Customer Content; (b) your use of the Service or integrations; (c) your communications (email/SMS/WhatsApp/social); (d) your breach of these Terms or law; (e) disputes between you and your end customers or staff; (f) infringement claims related to content you upload or publish.
 
 ---
 
@@ -329,7 +329,7 @@ Consumers in jurisdictions with mandatory local consumer protections retain thos
 
 ## 25. Contact
 
-**CodeSol Technologies — PandaCue**  
+**PandaCue**  
 Email: support@codesoltech.com  
 Address: `[REGISTERED ADDRESS]`  
 Website: `[PRIMARY MARKETING OR APP URL]`

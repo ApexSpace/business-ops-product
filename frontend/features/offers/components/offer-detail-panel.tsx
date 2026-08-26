@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { MoreHorizontal, Pencil, Plus, X } from "lucide-react";
+import { MoreHorizontal, Pencil, X  } from "lucide-react";
 import { toast } from "sonner";
 import { SettingsCard } from "@/components/layout/settings-card";
 import { Button } from "@/components/ui/button";
@@ -276,7 +276,8 @@ export function OfferDetailPanel({
 
   function memberLabel(member: {
     id: string;
-    user: { firstName?: string | null; lastName?: string | null; email: string };
+    user: { firstName?: string | null; lastName?: string | null; email: string,
+};
   }) {
     return (
       [member.user.firstName, member.user.lastName].filter(Boolean).join(" ") ||
@@ -383,7 +384,6 @@ export function OfferDetailPanel({
               size="sm"
               onClick={startAddDiscount}
             >
-              <Plus className="mr-1.5 size-4" />
               Add discount
             </Button>
           ) : null}
@@ -513,11 +513,13 @@ function DetailsEditForm({
   membershipPlans: Array<{ id: string; name: string }>;
   teamMembers: Array<{
     id: string;
-    user: { firstName?: string | null; lastName?: string | null; email: string };
+    user: { firstName?: string | null; lastName?: string | null; email: string,
+};
   }>;
   memberLabel: (member: {
     id: string;
-    user: { firstName?: string | null; lastName?: string | null; email: string };
+    user: { firstName?: string | null; lastName?: string | null; email: string,
+};
   }) => string;
   savePending: boolean;
   onCancel: () => void;

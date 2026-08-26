@@ -60,7 +60,8 @@ function resolveTargetStageId(
     }
   }
 
-  return { targetStageId: currentStageId, shouldMoveStage: false };
+  return { targetStageId: currentStageId, shouldMoveStage: false,
+};
 }
 
 export interface UseLeadDetailSheetOptions {

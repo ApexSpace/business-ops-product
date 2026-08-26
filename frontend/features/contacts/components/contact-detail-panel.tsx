@@ -231,7 +231,8 @@ export function ContactDetailPanel({
     );
   }
 
-  const lockedContact = { id: contact.id, label: contact.label };
+  const lockedContact = { id: contact.id, label: contact.label,
+};
   const createdAt = formatContactCreatedAt(contact.createdAt, business?.timezone ?? undefined);
   const isDrawer = variant === "drawer";
   const onContactEditSuccess = () => {

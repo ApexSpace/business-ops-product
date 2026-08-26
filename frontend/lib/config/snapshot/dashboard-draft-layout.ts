@@ -1,6 +1,6 @@
 import type { DashboardWidgetKey } from "./widget-registry";
 
-/** KPI row on the CodeSol dashboard draft (four cards, no subtitles). */
+/** KPI row on the PandaCue dashboard draft (four cards, no subtitles). */
 export const DASHBOARD_DRAFT_WIDGET_KEYS: DashboardWidgetKey[] = [
   "appointments",
   "contacts",

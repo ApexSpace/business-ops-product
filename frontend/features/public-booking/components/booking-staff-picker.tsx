@@ -87,7 +87,7 @@ export function BookingStaffPicker({
               key={member.id}
               type="button"
               className={cn(
-                "flex w-full items-center gap-4 px-4 py-4 text-left transition-colors hover:bg-muted/40 sm:px-6",
+                "flex w-full cursor-pointer items-center gap-4 px-4 py-4 text-left transition-colors hover:bg-muted/40 sm:px-6",
                 selectedStaffId === member.id && "bg-muted/30",
               )}
               onClick={() => onSelectStaff(member)}

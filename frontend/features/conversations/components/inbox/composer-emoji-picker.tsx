@@ -127,7 +127,7 @@ export function ComposerEmojiPicker({
               />
             </div>
             <EmojiPicker.SkinToneSelector
-              className="flex size-8 shrink-0 items-center justify-center rounded-md text-base transition-colors hover:bg-muted"
+              className="flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-md text-base transition-colors hover:bg-muted"
               aria-label="Change skin tone"
             />
           </div>
@@ -143,7 +143,7 @@ export function ComposerEmojiPicker({
                   aria-label={label}
                   aria-pressed={isActive}
                   className={cn(
-                    "flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
+                    "flex size-7 cursor-pointer items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
                     isActive && "bg-muted text-foreground",
                   )}
                   onClick={() => {
@@ -183,7 +183,7 @@ export function ComposerEmojiPicker({
                 Emoji: ({ emoji, ...props }) => (
                   <button
                     type="button"
-                    className="flex size-9 items-center justify-center rounded-md text-[1.35rem] leading-none transition-colors hover:bg-muted data-[active]:bg-muted"
+                    className="flex size-9 cursor-pointer items-center justify-center rounded-md text-[1.35rem] leading-none transition-colors hover:bg-muted data-[active]:bg-muted"
                     {...props}
                   >
                     {emoji.emoji}

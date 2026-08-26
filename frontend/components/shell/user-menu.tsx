@@ -15,6 +15,7 @@ import { DarkModeMenuItem } from "@/components/theme/dark-mode-toggle";
 import { useAuth } from "@/lib/auth/provider";
 import { getUserDisplayName } from "@/lib/auth";
 import { cn } from "@/lib/utils";
+import { NAVBAR_USER_MENU_SIDE_OFFSET } from "@/lib/design/navbar-action-tokens";
 
 const sidebarUserTriggerClassName =
   "glass-hover flex h-11 w-full items-center gap-2 rounded-2xl border border-[color:var(--glass-border)] bg-white/55 px-3 text-left text-[#12172b] transition-colors hover:bg-white/78 hover:text-[#12172b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring aria-expanded:bg-white aria-expanded:text-[#12172b] data-popup-open:bg-white data-popup-open:text-[#12172b]";
@@ -79,7 +80,9 @@ export function UserMenu({ variant = "avatar", className }: UserMenuProps) {
       )}
       <DropdownMenuContent
         align={variant === "sidebar" ? "start" : "end"}
-        className="w-56"
+        showArrow
+        sideOffset={NAVBAR_USER_MENU_SIDE_OFFSET}
+        className="w-56 overflow-visible rounded-[var(--radius-xl)] border border-border/40 shadow-elevation-lg"
       >
         <div className="px-2 py-1.5 text-sm">
           <p className="font-medium">{displayName}</p>

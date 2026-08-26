@@ -184,14 +184,17 @@ export function mergeSnapshotAssets(
     ...current,
     ...patch,
     dashboard: patch.dashboard
-      ? { ...current.dashboard, ...patch.dashboard }
+      ? { ...current.dashboard, ...patch.dashboard,
+}
       : current.dashboard,
     crm: patch.crm ? { ...current.crm, ...patch.crm } : current.crm,
     emails: patch.emails
-      ? { ...current.emails, ...patch.emails }
+      ? { ...current.emails, ...patch.emails,
+}
       : current.emails,
     branding: patch.branding
-      ? { ...current.branding, ...patch.branding }
+      ? { ...current.branding, ...patch.branding,
+}
       : current.branding,
   };
 }

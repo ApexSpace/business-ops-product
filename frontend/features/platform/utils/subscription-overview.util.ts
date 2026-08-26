@@ -29,14 +29,16 @@ export function resolveSubscriptionTotal(sub?: BusinessAccessSubscription | null
   isSet: boolean;
 } {
   if (!sub) {
-    return { amount: null, currency: null, display: "Not set", isSet: false };
+    return { amount: null, currency: null, display: "Not set", isSet: false,
+};
   }
 
   const amount = sub.amount ?? sub.suggestedAmount ?? null;
   const currency = sub.currency ?? sub.suggestedCurrency ?? null;
 
   if (!amount) {
-    return { amount: null, currency, display: "Price not set", isSet: false };
+    return { amount: null, currency, display: "Price not set", isSet: false,
+};
   }
 
   const base = formatMoney(amount, currency);
@@ -45,7 +47,8 @@ export function resolveSubscriptionTotal(sub?: BusinessAccessSubscription | null
   if (cycle === "monthly") display = `${base} / month`;
   else if (cycle === "yearly") display = `${base} / year`;
 
-  return { amount, currency, display, isSet: true };
+  return { amount, currency, display, isSet: true,
+};
 }
 
 export function formatBillingPeriod(
@@ -67,7 +70,8 @@ export function resolveNextBillingLabel(sub?: BusinessAccessSubscription | null)
   value: string;
 } {
   if (!sub) {
-    return { label: "Next billing date", value: "Not set" };
+    return { label: "Next billing date", value: "Not set",
+};
   }
 
   if (sub.nextBillingLabel) {
@@ -112,9 +116,11 @@ export function resolveNextBillingLabel(sub?: BusinessAccessSubscription | null)
           : date ?? "Canceled",
       };
     case "EXPIRED":
-      return { label: "Expired", value: date ?? "Expired" };
+      return { label: "Expired", value: date ?? "Expired",
+};
     case "INTERNAL":
-      return { label: "Billing", value: "No billing required" };
+      return { label: "Billing", value: "No billing required",
+};
     case "PAST_DUE":
       return {
         label: "Payment due",

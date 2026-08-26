@@ -1,7 +1,6 @@
 "use client";
 
 import { DrawerAddAction } from "@/components/drawer/drawer-add-action";
-import { DrawerPlusIcon } from "@/components/drawer/drawer-icons";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,7 +9,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
   SALES_DRAWER_ADD_ACTION_CLASS,
-  SALES_DRAWER_ADD_ACTION_ICON_CLASS,
   SALES_DRAWER_ADD_ACTIONS_STACK_CLASS,
 } from "@/features/sales/styles/sales-drawer-tokens";
 import type { InlineAddMode } from "@/features/sales/hooks/use-checkout-panel";
@@ -60,9 +58,6 @@ export function CheckoutAddActions({
                 disabled && "pointer-events-none opacity-50",
               )}
             >
-              <span className={SALES_DRAWER_ADD_ACTION_ICON_CLASS}>
-                <DrawerPlusIcon className="size-4 text-white" />
-              </span>
               More
             </button>
           }

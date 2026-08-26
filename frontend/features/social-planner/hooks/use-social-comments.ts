@@ -115,7 +115,8 @@ function patchEngagementCaches(
       return patch(current);
     },
   );
-  return { previous };
+  return { previous,
+};
 }
 
 function restoreEngagementCaches(
@@ -171,7 +172,8 @@ function appendOptimisticReply(
       ...group,
       comments,
       metrics: group.metrics
-        ? { ...group.metrics, comments: group.metrics.comments + 1 }
+        ? { ...group.metrics, comments: group.metrics.comments + 1,
+}
         : group.metrics,
     };
   });
@@ -193,7 +195,8 @@ function bumpLike(
       ...group,
       comments: mapComments(group.comments, (comment) =>
         comment.id === commentId
-          ? { ...comment, likeCount: comment.likeCount + 1 }
+          ? { ...comment, likeCount: comment.likeCount + 1,
+}
           : comment,
       ),
     })),
@@ -284,7 +287,8 @@ export function useSocialCommentMutations(
       const snapshot = patchEngagementCaches(queryClient, (data) =>
         appendOptimisticReply(data, vars, optimisticId),
       );
-      return { ...snapshot, optimisticId };
+      return { ...snapshot, optimisticId,
+};
     },
     onError: (error: Error, _vars, context) => {
       restoreEngagementCaches(queryClient, context);
@@ -446,7 +450,8 @@ export function findCommentContext(
     const stack = [...group.comments];
     while (stack.length) {
       const comment = stack.pop()!;
-      if (comment.id === commentId) return { comment, group };
+      if (comment.id === commentId) return { comment, group,
+};
       stack.push(...(comment.replies ?? []));
     }
   }

@@ -19,13 +19,10 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useMutation } from "@tanstack/react-query";
-import {
-  Download,
+import { Download,
   GripVertical,
   Loader2,
-  Play,
-  Plus,
-  Trash2,
+  Play, Trash2,
   Upload,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -61,8 +58,7 @@ function SortableRuleRow({
       ref={setNodeRef}
       style={{
         transform: CSS.Transform.toString(transform),
-        transition,
-      }}
+        transition }}
       className="flex items-start gap-2 rounded-lg border border-border/60 p-3"
     >
       <button
@@ -122,8 +118,7 @@ export function ChatbotRulesEditor({
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    }),
+      coordinateGetter: sortableKeyboardCoordinates }),
   );
 
   const reorderMutation = useMutation({
@@ -133,16 +128,14 @@ export function ChatbotRulesEditor({
       onChanged();
       toast.success("Rules reordered");
     },
-    onError: (error: Error) => toast.error(error.message),
-  });
+    onError: (error: Error) => toast.error(error.message) });
 
   const previewMutation = useMutation({
     mutationFn: (text: string) => previewChatbotRule(chatbotId, text, apiBase),
     onSuccess: (result) => {
       setPreviewResult(result.text ?? "No matching reply");
     },
-    onError: (error: Error) => toast.error(error.message),
-  });
+    onError: (error: Error) => toast.error(error.message) });
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
@@ -157,8 +150,7 @@ export function ChatbotRulesEditor({
   const handleExport = async () => {
     const data = await exportChatbotRules(chatbotId, apiBase);
     const blob = new Blob([JSON.stringify(data, null, 2)], {
-      type: "application/json",
-    });
+      type: "application/json" });
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement("a");
     anchor.href = url;
@@ -308,8 +300,7 @@ export function ChatbotRulesEditor({
               {
                 triggerType,
                 triggerText: triggerText.trim(),
-                responseText: responseText.trim(),
-              },
+                responseText: responseText.trim() },
               apiBase,
             ).then(() => {
               setTriggerText("");
@@ -319,7 +310,6 @@ export function ChatbotRulesEditor({
             })
           }
         >
-          <Plus className="mr-1 size-4" />
           Add rule
         </Button>
       </div>

@@ -236,7 +236,8 @@ export const PlanTierAccordionItem = forwardRef<
                     cardBackgroundColor={designSettings.cardBackgroundColor}
                     onCardBackgroundColorChange={(cardBackgroundColor) =>
                       setDesignSettings((prev) => {
-                        const next = { ...prev };
+                        const next = { ...prev,
+};
                         if (cardBackgroundColor.trim()) {
                           next.cardBackgroundColor = cardBackgroundColor;
                         } else {
@@ -445,7 +446,8 @@ export const PlanTierDraftAccordionItem = forwardRef<
                     cardBackgroundColor={designSettings.cardBackgroundColor}
                     onCardBackgroundColorChange={(cardBackgroundColor) =>
                       setDesignSettings((prev) => {
-                        const next = { ...prev };
+                        const next = { ...prev,
+};
                         if (cardBackgroundColor.trim()) {
                           next.cardBackgroundColor = cardBackgroundColor;
                         } else {

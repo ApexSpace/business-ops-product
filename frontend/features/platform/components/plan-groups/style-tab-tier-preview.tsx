@@ -153,7 +153,8 @@ export function StyleTabTierPreview({
                             background: "var(--plan-accent)",
                             color: "#fff",
                           }
-                        : { color: "var(--plan-section-muted)" }
+                        : { color: "var(--plan-section-muted)",
+}
                     }
                     onClick={() => setCycle(billingCycle)}
                   >

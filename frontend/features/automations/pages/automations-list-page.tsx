@@ -2,7 +2,6 @@
 
 import { Suspense, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus } from "lucide-react";
 import {
   DataTable,
   type DataTableColumn,
@@ -106,7 +105,6 @@ function AutomationsListPageContent() {
               size="sm"
               onClick={() => router.push(`${workflowsBasePath}/new`)}
             >
-              <Plus className="mr-1.5 size-4" />
               Create workflow
             </Button>
           </>
@@ -131,7 +129,6 @@ function AutomationsListPageContent() {
               size="sm"
               onClick={() => router.push(`${workflowsBasePath}/new`)}
             >
-              <Plus className="mr-1.5 size-4" />
               Create workflow
             </Button>
           }

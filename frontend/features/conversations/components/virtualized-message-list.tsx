@@ -326,7 +326,8 @@ function parseTemplateDisplay(message: ConversationMessage): {
   }
 
   if (!text) {
-    return { templateName: "Template message" };
+    return { templateName: "Template message",
+};
   }
 
   return null;

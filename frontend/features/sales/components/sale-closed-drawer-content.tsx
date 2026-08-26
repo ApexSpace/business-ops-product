@@ -46,7 +46,8 @@ export function SaleClosedDrawerContent({
 }: SaleClosedDrawerContentProps) {
   const contactName = sale.contact?.label ?? "Client";
 
-  const paymentFilters = { invoiceId: sale.id, limit: 20 } as const;
+  const paymentFilters = { invoiceId: sale.id, limit: 20,
+} as const;
   const { data: paymentsData } = useQuery({
     queryKey: queryKeys.payments.list(paymentFilters),
     queryFn: () => listPayments(paymentFilters),

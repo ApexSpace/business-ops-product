@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { CODESOL_BRAND_LOGO_URL, BRAND_LOGO_IS_WORDMARK } from "./shell-constants";
+import { PANDACUE_BRAND_LOGO_URL, BRAND_LOGO_IS_WORDMARK } from "./shell-constants";
 
 interface ShellBrandHeaderProps {
   productName?: string;
@@ -11,11 +11,11 @@ interface ShellBrandHeaderProps {
 
 export function ShellBrandHeader({
   productName = "PandaCue",
-  logoUrl = CODESOL_BRAND_LOGO_URL,
+  logoUrl = PANDACUE_BRAND_LOGO_URL,
   className,
 }: ShellBrandHeaderProps) {
-  const resolvedLogoUrl = logoUrl ?? CODESOL_BRAND_LOGO_URL;
-  const isDefaultBrand = resolvedLogoUrl === CODESOL_BRAND_LOGO_URL;
+  const resolvedLogoUrl = logoUrl ?? PANDACUE_BRAND_LOGO_URL;
+  const isDefaultBrand = resolvedLogoUrl === PANDACUE_BRAND_LOGO_URL;
   const isWordmarkLogo = isDefaultBrand && BRAND_LOGO_IS_WORDMARK;
 
   return (

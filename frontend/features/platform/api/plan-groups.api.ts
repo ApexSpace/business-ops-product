@@ -31,7 +31,8 @@ export async function listPlatformPlanGroups(
       },
     },
   );
-  return { items, meta };
+  return { items, meta,
+};
 }
 
 export function getPlatformPlanGroupStats() {

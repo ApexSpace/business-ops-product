@@ -38,7 +38,8 @@ export function TikTokDestinationFields({
     : ["SELF_ONLY"];
 
   const patch = (partial: Record<string, unknown>) => {
-    const next = { ...platformPayload, ...partial };
+    const next = { ...platformPayload, ...partial,
+};
     if (creator) {
       next._privacyLevelOptions = creator.privacyLevelOptions;
       next._maxDurationSec = creator.maxVideoPostDurationSec;
@@ -98,7 +99,8 @@ export function TikTokDestinationFields({
           value={privacyLevel}
           onChange={(e) => {
             const value = e.target.value;
-            const next: Record<string, unknown> = { privacyLevel: value };
+            const next: Record<string, unknown> = { privacyLevel: value,
+};
             if (value === "SELF_ONLY" && brandedContent) {
               next.brandedContent = false;
             }

@@ -69,7 +69,8 @@ export function isToday(date: Date): boolean {
 }
 
 export function getDayRange(date: Date): DateRange {
-  return { start: startOfDay(date), end: endOfDay(date) };
+  return { start: startOfDay(date), end: endOfDay(date),
+};
 }
 
 /** Week starts Sunday (US-style scheduling). */
@@ -78,7 +79,8 @@ export function getWeekRange(date: Date): DateRange {
   const dayOfWeek = start.getDay();
   const weekStart = addDays(start, -dayOfWeek);
   const weekEnd = endOfDay(addDays(weekStart, 6));
-  return { start: weekStart, end: weekEnd };
+  return { start: weekStart, end: weekEnd,
+};
 }
 
 export function getWeekDays(date: Date): Date[] {
@@ -87,7 +89,8 @@ export function getWeekDays(date: Date): Date[] {
 }
 
 export function getMonthRange(date: Date): { year: number; month: number } {
-  return { year: date.getFullYear(), month: date.getMonth() };
+  return { year: date.getFullYear(), month: date.getMonth(),
+};
 }
 
 /** Includes leading/trailing days visible in a month grid. */
@@ -100,7 +103,8 @@ export function getMonthVisibleRange(date: Date): DateRange {
   const gridEnd = endOfDay(
     addDays(startOfDay(lastOfMonth), 6 - lastOfMonth.getDay()),
   );
-  return { start: gridStart, end: gridEnd };
+  return { start: gridStart, end: gridEnd,
+};
 }
 
 export function getMonthGridDays(date: Date): Date[] {
@@ -280,7 +284,8 @@ export function calculateEventPosition(
     CALENDAR_EVENT_MIN_HEIGHT_PX,
   );
 
-  return { top, height };
+  return { top, height,
+};
 }
 
 export function getTimeGridHeight(

@@ -30,7 +30,8 @@ import type {
 } from "@/features/packages/types";
 
 export function packageDisplayName(detail: {
-  packageTemplate: { name: string; emoji: string | null };
+  packageTemplate: { name: string; emoji: string | null,
+};
 }) {
   const emoji = detail.packageTemplate.emoji ?? "";
   return `${emoji} ${detail.packageTemplate.name}`.trim();

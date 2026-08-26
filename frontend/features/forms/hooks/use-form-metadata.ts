@@ -54,5 +54,6 @@ export function useFormFieldTypeMap(filters?: FormMetadataFilters) {
     return map;
   }, [query.data]);
 
-  return { ...query, byKey };
+  return { ...query, byKey,
+};
 }

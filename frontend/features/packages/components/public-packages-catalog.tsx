@@ -35,7 +35,7 @@ export function PublicPackagesCatalog({ slug }: { slug: string }) {
         <div className="flex items-center justify-between">
           <h1 className="text-xl font-semibold">{data.business.name}</h1>
           <p className="text-muted-foreground text-[10px] tracking-wide uppercase">
-            Powered by CodeSol
+            Powered by PandaCue
           </p>
         </div>
 

@@ -37,7 +37,7 @@ export function buildOptInTwiml(): string {
 }
 
 export function buildHelpTwiml(): string {
-  return '<?xml version="1.0" encoding="UTF-8"?><Response><Message>CodeSol SMS: Reply STOP to unsubscribe. For support, contact your business directly.</Message></Response>';
+  return '<?xml version="1.0" encoding="UTF-8"?><Response><Message>PandaCue SMS: Reply STOP to unsubscribe. For support, contact your business directly.</Message></Response>';
 }
 
 export function buildEmptyTwiml(): string {

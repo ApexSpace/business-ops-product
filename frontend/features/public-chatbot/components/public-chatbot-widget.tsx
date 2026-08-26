@@ -427,7 +427,8 @@ export function PublicChatbotWidget({
                 )}
                 style={
                   m.direction === "INBOUND"
-                    ? { backgroundColor: config.primaryColor, color: "#fff" }
+                    ? { backgroundColor: config.primaryColor, color: "#fff",
+}
                     : undefined
                 }
               >

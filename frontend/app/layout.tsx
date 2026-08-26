@@ -1,7 +1,8 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Montserrat } from "next/font/google";
 import { OfflineIndicator } from "@/components/layout/offline-indicator";
 import { WebVitalsReporter } from "@/components/layout/web-vitals-reporter";
+import { NAVBAR_SURFACE_HEX } from "@/components/shell/shell-constants";
 import { Providers } from "@/lib/runtime/providers";
 import "./globals.css";
 
@@ -21,6 +22,14 @@ export const metadata: Metadata = {
     icon: [{ url: FAVICON_HREF, type: "image/png" }],
     apple: [{ url: FAVICON_HREF, type: "image/png" }],
   },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: NAVBAR_SURFACE_HEX,
 };
 
 export default function RootLayout({

@@ -3,7 +3,6 @@
 import { Suspense, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Plus } from "lucide-react";
 import { ApiErrorState } from "@/components/data-display/api-error-state";
 import {
   DataTable,
@@ -202,7 +201,6 @@ function FormsListPageContent() {
           emptyAction={
             canManageTemplates ? (
               <ActionButton onClick={() => setCreateOpen(true)}>
-                <Plus className="mr-2 size-4" />
                 Create form
               </ActionButton>
             ) : undefined

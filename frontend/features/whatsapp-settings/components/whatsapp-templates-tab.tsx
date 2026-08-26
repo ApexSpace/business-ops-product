@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useCallback, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Plus } from "lucide-react";
 import {
   DataTable,
   type DataTableColumn,
@@ -237,7 +236,6 @@ export function WhatsAppTemplatesTab() {
               isPending={syncAllMutation.isPending}
             />
             <ActionButton onClick={() => setTemplateRoute({ action: "create" })}>
-              <Plus className="mr-2 size-4" />
               Create template
             </ActionButton>
           </div>
@@ -252,7 +250,6 @@ export function WhatsAppTemplatesTab() {
           emptyDescription="Create a template or sync from Meta to get started."
           emptyAction={
             <ActionButton onClick={() => setTemplateRoute({ action: "create" })}>
-              <Plus className="mr-2 size-4" />
               Create template
             </ActionButton>
           }

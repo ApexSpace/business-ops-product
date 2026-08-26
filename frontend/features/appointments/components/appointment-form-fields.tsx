@@ -100,7 +100,8 @@ export function AppointmentFormFields({
               locked={lockContact}
               lockedContact={
                 lockContact && defaultContactId && defaultContactLabel
-                  ? { id: defaultContactId, label: defaultContactLabel }
+                  ? { id: defaultContactId, label: defaultContactLabel,
+}
                   : undefined
               }
               triggerClassName={fieldControlClass}

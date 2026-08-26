@@ -15,7 +15,7 @@ export {
 } from "./platform-nav-catalog";
 
 export const platformBrand = {
-  title: "CodeSol Platform",
+  title: "PandaCue Platform",
   subtitle: "Platform Admin",
   icon: Shield,
 };

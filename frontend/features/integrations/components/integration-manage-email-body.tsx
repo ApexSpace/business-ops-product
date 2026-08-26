@@ -36,7 +36,7 @@ export function IntegrationManageEmailBody({
           </div>
           <div className="min-w-0 flex-1 space-y-2">
             <div className="flex flex-wrap items-center gap-2">
-              <p className="font-medium">CodeSol shared email</p>
+              <p className="font-medium">PandaCue shared email</p>
               <Badge variant={isConnected ? "default" : "secondary"}>
                 {isLoading ? "Checking…" : isConnected ? "Active" : "Not active"}
               </Badge>

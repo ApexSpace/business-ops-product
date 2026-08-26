@@ -1,6 +1,6 @@
 "use client";
 
-import { Plus, Trash2 } from "lucide-react";
+import { Trash2  } from "lucide-react";
 import type { FieldArrayWithId, UseFormReturn } from "react-hook-form";
 import { SearchableSelect } from "@/components/forms/searchable-select";
 import { Button } from "@/components/ui/button";
@@ -45,7 +45,6 @@ export function InvoiceLineItems({
           size="sm"
           onClick={() => append(emptyLineItem())}
         >
-          <Plus className="mr-1 size-3.5" />
           Add line
         </Button>
       </div>

@@ -19,7 +19,7 @@ export function FormSheetSection({
   return (
     <section
       className={cn(
-        "space-y-3",
+        "space-y-drawer-stack",
         card &&
           "rounded-xl border border-border bg-card/80 p-4 shadow-elevation-xs",
         className,
@@ -31,7 +31,7 @@ export function FormSheetSection({
           <p className="text-[11px] text-muted-foreground">{description}</p>
         ) : null}
       </div>
-      <div className="space-y-3">{children}</div>
+      <div className="space-y-drawer-stack">{children}</div>
     </section>
   );
 }

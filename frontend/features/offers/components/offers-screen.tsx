@@ -123,7 +123,8 @@ export function OffersScreen() {
   });
 
   const toggleEnabled = useMutation({
-    mutationFn: ({ id, enabled }: { id: string; enabled: boolean }) =>
+    mutationFn: ({ id, enabled,
+}: { id: string; enabled: boolean }) =>
       enabled ? enableOffer(id) : disableOffer(id),
     onSuccess: async (_, { enabled }) => {
       toast.success(enabled ? "Offer enabled" : "Offer disabled");
@@ -216,7 +217,6 @@ export function OffersScreen() {
                 className="hidden shrink-0 sm:inline-flex"
                 onClick={() => setCreateOpen(true)}
               >
-                <Plus className="mr-1.5 size-4" />
                 Create offer
               </Button>
             </>
@@ -256,7 +256,6 @@ export function OffersScreen() {
             emptyAction={
               canManage ? (
                 <Button size="sm" onClick={() => setCreateOpen(true)}>
-                  <Plus className="mr-1.5 size-4" />
                   Create offer
                 </Button>
               ) : undefined

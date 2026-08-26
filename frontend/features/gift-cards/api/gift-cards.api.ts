@@ -112,7 +112,8 @@ export function listContactGiftCards(contactId: string) {
 
 export function getPublicGiftCardPage(slug: string) {
   return api.get<{
-    business: { id: string; name: string; logoUrl: string | null };
+    business: { id: string; name: string; logoUrl: string | null,
+};
     settings: {
       disclaimer?: string | null;
       artworkUrl?: string | null;

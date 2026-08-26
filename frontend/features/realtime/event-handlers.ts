@@ -402,7 +402,8 @@ export function removeMessageFromCache(
         items: page.items.filter((item) => item.id !== messageId),
       }));
 
-      return { ...old, pages };
+      return { ...old, pages,
+};
     },
   );
 
@@ -417,7 +418,8 @@ export function removeMessageFromCache(
           items: page.items.filter((item) => item.id !== messageId),
         }));
 
-        return { ...old, pages };
+        return { ...old, pages,
+};
       },
     );
   }
@@ -505,8 +507,10 @@ function upsertMessageInInfiniteCache(
     for (const page of pages) {
       const index = page.items.findIndex((item) => item.id === message.id);
       if (index >= 0) {
-        page.items[index] = { ...page.items[index], ...message };
-        return { ...old, pages };
+        page.items[index] = { ...page.items[index], ...message,
+};
+        return { ...old, pages,
+};
       }
     }
 
@@ -514,7 +518,8 @@ function upsertMessageInInfiniteCache(
       const optimisticIndex = findOptimisticReconcileIndex(page.items, message);
       if (optimisticIndex >= 0) {
         page.items[optimisticIndex] = message;
-        return { ...old, pages };
+        return { ...old, pages,
+};
       }
     }
 
@@ -523,7 +528,8 @@ function upsertMessageInInfiniteCache(
       ...latestPage,
       items: [...latestPage.items, message],
     };
-    return { ...old, pages };
+    return { ...old, pages,
+};
   });
 }
 
@@ -630,7 +636,8 @@ function patchMessageInInfiniteCache(
           return item;
         }
         patched = true;
-        return { ...item, ...patch };
+        return { ...item, ...patch,
+};
       }),
     }));
 

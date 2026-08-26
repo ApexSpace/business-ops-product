@@ -61,13 +61,16 @@ export function getTemplateHeaderMediaRequirement(
   );
   const format = header?.format?.toUpperCase();
   if (format === "IMAGE") {
-    return { type: "image", label: "Header image URL" };
+    return { type: "image", label: "Header image URL",
+};
   }
   if (format === "VIDEO") {
-    return { type: "video", label: "Header video URL" };
+    return { type: "video", label: "Header video URL",
+};
   }
   if (format === "DOCUMENT") {
-    return { type: "document", label: "Header document URL" };
+    return { type: "document", label: "Header document URL",
+};
   }
   return null;
 }
@@ -187,7 +190,8 @@ export function deriveWhatsAppSessionFromMessages(
     );
 
   if (!lastInbound) {
-    return { sessionOpen: false, requiresTemplate: true };
+    return { sessionOpen: false, requiresTemplate: true,
+};
   }
 
   const elapsed = now.getTime() - new Date(lastInbound.createdAt).getTime();

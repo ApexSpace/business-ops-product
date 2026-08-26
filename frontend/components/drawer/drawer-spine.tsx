@@ -12,8 +12,8 @@ export interface DrawerSpineProps {
 }
 
 /**
- * Left vertical purpose strip — shared by appointment + sales drawers.
- * Figma: 30px wide, primary/500, border-radius on top-left + bottom-left only.
+ * Left vertical purpose strip — shared by all DrawerShell sidebars.
+ * Size comes from `--drawer-spine-width` / `--drawer-spine-padding-*` in globals.css.
  */
 export function DrawerSpine({ label, className }: DrawerSpineProps) {
   return (

@@ -144,7 +144,7 @@ export class PlatformEmailProvisioningService {
       [
         {
           externalId: PLATFORM_EMAIL_RESOURCE_EXTERNAL_ID,
-          name: `${fromName} (CodeSol Email)`,
+          name: `${fromName} (PandaCue Email)`,
           type: IntegrationResourceType.EMAIL_ACCOUNT,
           metadata,
           status: IntegrationResourceStatus.ACTIVE,

@@ -7,7 +7,7 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import { ArrowLeft, Plus } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { CreateLeadDialog } from "@/features/leads/components/create-lead-dialog";
 import { LeadDetailSheet } from "@/features/leads/components/lead-detail-sheet";
@@ -64,8 +64,7 @@ function BusinessLeadsPageContent() {
     selectedId,
     isOpen,
     setSelectedId,
-    clearSelection,
-  } = useEntitySelection();
+    clearSelection } = useEntitySelection();
   const [createOpen, setCreateOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
@@ -74,23 +73,21 @@ function BusinessLeadsPageContent() {
 
   const { data: pipelines } = useQuery({
     queryKey: queryKeys.pipelines.list(),
-    queryFn: () => listPipelines(),
-  });
+    queryFn: () => listPipelines() });
 
   const listFilters = {
     page,
     limit: PAGE_LIMIT,
     pipelineId: pipelineFilter !== "all" ? pipelineFilter : undefined,
     status: statusFilter !== "all" ? (statusFilter as LeadStatus) : undefined,
-  };
+};
 
   const { data, isLoading } = useLeadsList(listFilters);
 
   const detailQuery = useQuery({
     queryKey: queryKeys.leads.detail(selectedId ?? ""),
     queryFn: () => getLead(selectedId!),
-    enabled: !!selectedId,
-  });
+    enabled: !!selectedId });
 
   const detailPipeline = useMemo(() => {
     if (!detailQuery.data) return null;
@@ -106,8 +103,7 @@ function BusinessLeadsPageContent() {
       void invalidateLeadLists(queryClient);
       setDeleteId(null);
     },
-    onError: (err: Error) => toast.error(err.message),
-  });
+    onError: (err: Error) => toast.error(err.message) });
 
   const invalidate = () => {
     void invalidateLeadLists(queryClient);
@@ -128,43 +124,37 @@ function BusinessLeadsPageContent() {
         sortValue: (row) => getLeadDisplayTitle(row),
         cell: (row) => (
           <span className="font-medium">{getLeadDisplayTitle(row)}</span>
-        ),
-      },
+        ) },
       {
         id: "service",
         header: "Service",
         sortable: true,
         sortValue: (row) => getLeadServiceLabel(row),
-        cell: (row) => getLeadServiceLabel(row),
-      },
+        cell: (row) => getLeadServiceLabel(row) },
       {
         id: "pipeline",
         header: "Pipeline",
         sortable: true,
         sortValue: (row) => row.pipeline.name,
-        cell: (row) => row.pipeline.name,
-      },
+        cell: (row) => row.pipeline.name },
       {
         id: "stage",
         header: "Stage",
         sortable: true,
         sortValue: (row) => row.pipelineStage.name,
-        cell: (row) => row.pipelineStage.name,
-      },
+        cell: (row) => row.pipelineStage.name },
       {
         id: "value",
         header: "Value",
         sortable: true,
         sortValue: (row) => row.value ?? 0,
-        cell: (row) => formatLeadValue(row.value),
-      },
+        cell: (row) => formatLeadValue(row.value) },
       {
         id: "status",
         header: "Status",
         sortable: true,
         sortValue: (row) => row.status,
-        cell: (row) => <StatusBadge status={row.status} domain="lead" />,
-      },
+        cell: (row) => <StatusBadge status={row.status} domain="lead" /> },
     ],
     [],
   );
@@ -184,7 +174,7 @@ function BusinessLeadsPageContent() {
                   meta: data.meta,
                   page,
                   onPageChange: (p) => setParams({ page: String(p) }),
-                }
+}
               : undefined
           }
         />
@@ -225,7 +215,6 @@ function BusinessLeadsPageContent() {
         }
         actions={
           <Button size="sm" onClick={() => setCreateOpen(true)}>
-            <Plus className="mr-1.5 size-4" />
             New lead
           </Button>
         }
@@ -255,7 +244,6 @@ function BusinessLeadsPageContent() {
           emptyDescription="Create one from a contact or add a new lead."
           emptyAction={
             <Button size="sm" onClick={() => setCreateOpen(true)}>
-              <Plus className="mr-1.5 size-4" />
               New lead
             </Button>
           }
@@ -266,8 +254,7 @@ function BusinessLeadsPageContent() {
                 {
                   label: "Delete",
                   onClick: () => setDeleteId(lead.id),
-                  destructive: true,
-                },
+                  destructive: true },
               ]}
             />
           )}

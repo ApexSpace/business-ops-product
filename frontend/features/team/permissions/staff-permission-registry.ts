@@ -709,7 +709,8 @@ export const DEFAULT_NOTIFICATION_SETTINGS: Record<
 export function normalizeNotificationSettings(
   raw: unknown,
 ): Record<StaffNotificationSettingKey, boolean> {
-  const result = { ...DEFAULT_NOTIFICATION_SETTINGS };
+  const result = { ...DEFAULT_NOTIFICATION_SETTINGS,
+};
   if (!raw || typeof raw !== 'object') {
     return result;
   }

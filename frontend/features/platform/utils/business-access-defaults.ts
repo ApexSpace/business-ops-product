@@ -187,8 +187,10 @@ export function splitFullName(fullName?: string): {
   const trimmed = fullName?.trim();
   if (!trimmed) return {};
   const parts = trimmed.split(/\s+/);
-  if (parts.length === 1) return { firstName: parts[0] };
-  return { firstName: parts[0], lastName: parts.slice(1).join(" ") };
+  if (parts.length === 1) return { firstName: parts[0],
+};
+  return { firstName: parts[0], lastName: parts.slice(1).join(" "),
+};
 }
 
 export function getAccessWarnings(input: {

@@ -43,7 +43,8 @@ export function FormRuntimeView({
 }: FormRuntimeViewProps) {
   const { settings, fields } = definition;
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
-  const displayedFieldErrors = { ...fieldErrors, ...externalFieldErrors };
+  const displayedFieldErrors = { ...fieldErrors, ...externalFieldErrors,
+};
 
   return (
     <div

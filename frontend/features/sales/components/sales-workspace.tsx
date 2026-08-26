@@ -58,7 +58,8 @@ import {
   WORKSPACE_TABLE_CLASS,
 } from "@/lib/design/workspace-tokens";
 import { DATA_TABLE_SALE_NUMBER_CLASS,
-  DATA_TABLE_STATUS_CLASS } from "@/lib/design/data-table-tokens";
+  DATA_TABLE_STATUS_CLASS,
+} from "@/lib/design/data-table-tokens";
 import { useEntitySelection } from "@/lib/routing/use-entity-selection";
 import { useIsMobile } from "@/lib/hooks/use-mobile";
 import { cn } from "@/lib/utils";

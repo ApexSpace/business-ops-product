@@ -29,7 +29,8 @@ export async function listBusinessMembers(
       search: filters.search,
     },
   });
-  return { items, meta };
+  return { items, meta,
+};
 }
 
 export function inviteBusinessMember(body: Record<string, unknown>) {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useDroppable } from "@dnd-kit/core";
-import { Inbox, Plus } from "lucide-react";
+import { Inbox } from "lucide-react";
 import { NavArrowIcon } from "@/components/ui/nav-arrow-icon";
 import { formatBoardColumnTotal } from "@/components/board";
 import { PipelineLeadCard } from "@/features/pipelines/components/pipeline-lead-card";
@@ -144,7 +144,6 @@ export function PipelineBoardColumn({
                 className="h-9 w-full gap-1.5 rounded-[var(--radius-control)] border border-dashed border-border/80 text-xs font-semibold text-muted-foreground hover:border-primary/40 hover:bg-primary-tint/50 hover:text-primary"
                 onClick={() => onAddLead(stage.id)}
               >
-                <Plus className="size-3.5" aria-hidden />
                 Add lead
               </Button>
             </div>

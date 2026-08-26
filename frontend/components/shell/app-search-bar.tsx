@@ -22,7 +22,7 @@ export function AppSearchBar({
       aria-label="Open search"
       aria-keyshortcuts="Control+K Meta+K"
       className={cn(
-        "glass-control glass-hover flex h-[42px] w-[260px] max-w-full items-center gap-2 rounded-full border-[color:var(--glass-border)] px-3.5 text-left text-[13px] text-[#98a1b5] shadow-[0_4px_24px_rgba(18,23,43,0.05)] hover:bg-white/78 hover:text-[#5b6478] dark:hover:bg-white/8",
+        "glass-control glass-hover flex h-[42px] w-[260px] max-w-full cursor-pointer items-center gap-2 rounded-full border-[color:var(--glass-border)] px-3.5 text-left text-[13px] text-[#98a1b5] shadow-[0_4px_24px_rgba(18,23,43,0.05)] hover:bg-white/78 hover:text-[#5b6478] dark:hover:bg-white/8",
         className,
       )}
     >

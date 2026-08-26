@@ -4,7 +4,6 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import {
   DataTable,
@@ -254,12 +253,11 @@ export function BusinessChatbotsSettings() {
         title={isPlatform ? "Chatbots" : undefined}
         description={
           isPlatform
-            ? "Configure AI chatbots for the CodeSol marketing site and ops surfaces."
+            ? "Configure AI chatbots for the PandaCue marketing site and ops surfaces."
             : undefined
         }
         actions={
           <ActionButton onClick={() => setCreateOpen(true)}>
-            <Plus className="mr-2 size-4" />
             Create Chatbot
           </ActionButton>
         }
@@ -278,7 +276,6 @@ export function BusinessChatbotsSettings() {
         }
         emptyAction={
           <ActionButton onClick={() => setCreateOpen(true)}>
-            <Plus className="mr-2 size-4" />
             Create Chatbot
           </ActionButton>
         }

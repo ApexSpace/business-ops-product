@@ -44,7 +44,7 @@ describe('email env validation', () => {
         EMAIL_ENABLED: 'true',
         RESEND_API_KEY: 're_test_key',
         EMAIL_DEFAULT_FROM:
-          'CodeSol Technologies <notifications@notify.codesoltech.com>',
+          'PandaCue <notifications@notify.codesoltech.com>',
         EMAIL_DEFAULT_REPLY_TO: 'support@codesoltech.com',
       }),
     ).not.toThrow();

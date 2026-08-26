@@ -1,6 +1,6 @@
 "use client";
 
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { Pencil, Trash2  } from "lucide-react";
 import { ProfileAvatar } from "@/components/ui/profile-avatar";
 import { ActionButton } from "@/components/ui/action-button";
 import { IconButton } from "@/components/ui/icon-button";
@@ -56,7 +56,6 @@ export function ContactSidebarPanel({
     if (activeSection === "leads" && onCreateLead) {
       return (
         <ActionButton size="sm" onClick={onCreateLead}>
-          <Plus className="mr-1 size-3.5" />
           Add
         </ActionButton>
       );
@@ -64,7 +63,6 @@ export function ContactSidebarPanel({
     if (activeSection === "work-items" && onCreateWorkItem) {
       return (
         <ActionButton size="sm" onClick={onCreateWorkItem}>
-          <Plus className="mr-1 size-3.5" />
           Add
         </ActionButton>
       );
@@ -72,7 +70,6 @@ export function ContactSidebarPanel({
     if (activeSection === "notes" && onCreateNote) {
       return (
         <ActionButton size="sm" onClick={onCreateNote}>
-          <Plus className="mr-1 size-3.5" />
           Add
         </ActionButton>
       );
@@ -80,7 +77,6 @@ export function ContactSidebarPanel({
     if (activeSection === "tasks" && onCreateTask) {
       return (
         <ActionButton size="sm" onClick={onCreateTask}>
-          <Plus className="mr-1 size-3.5" />
           Add
         </ActionButton>
       );
@@ -88,7 +84,6 @@ export function ContactSidebarPanel({
     if (activeSection === "appointments" && onCreateAppointment) {
       return (
         <ActionButton size="sm" onClick={onCreateAppointment}>
-          <Plus className="mr-1 size-3.5" />
           Add
         </ActionButton>
       );

@@ -17,7 +17,8 @@ function blockStyle(startMinutes: number, endMinutes: number) {
   const height =
     ((endMinutes - startMinutes) / CALENDAR_SLOT_MINUTES) *
     CALENDAR_SLOT_HEIGHT_PX;
-  return { top, height };
+  return { top, height,
+};
 }
 
 interface WorkingHoursOverlaysProps {

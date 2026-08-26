@@ -138,7 +138,8 @@ export function usePlatformCapabilityDetail() {
       if (!catalogMod) return;
 
       setModuleSelections((prev) => {
-        const base = { ...(prev ?? serverModuleSelections) };
+        const base = { ...(prev ?? serverModuleSelections),
+};
         base[moduleKey] = {
           enabled,
           options: enabled
@@ -158,7 +159,8 @@ export function usePlatformCapabilityDetail() {
       if (!catalogMod) return;
 
       setModuleSelections((prev) => {
-        const base = { ...(prev ?? serverModuleSelections) };
+        const base = { ...(prev ?? serverModuleSelections),
+};
         const current = base[moduleKey] ?? {
           enabled: false,
           options: emptyOptions(catalogMod.availableOptions),

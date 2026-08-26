@@ -691,7 +691,8 @@ export function PublicBookingPage({ slug, embed = false }: PublicBookingPageProp
             setSelectedService(null);
           }}
           onSelectStaff={(member) => {
-            const line = { service: selectedService, staff: member };
+            const line = { service: selectedService, staff: member,
+};
             if (allowMultipleServices) {
               setServiceLines((prev) => [...prev, line]);
               setSelectedService(null);

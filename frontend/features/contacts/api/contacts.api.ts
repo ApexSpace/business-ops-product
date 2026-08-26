@@ -24,7 +24,8 @@ export async function listContacts(
       search: filters.search,
     },
   });
-  return { items, meta };
+  return { items, meta,
+};
 }
 
 export function getContact(

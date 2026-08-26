@@ -16,8 +16,10 @@ import {
 import { cn } from "@/lib/utils";
 
 export type ContactTimelineBadge =
-  | { kind: "closed"; label?: string }
-  | { kind: "requested"; label?: string };
+  | { kind: "closed"; label?: string,
+}
+  | { kind: "requested"; label?: string,
+};
 
 export interface ContactTimelineMoneyRow {
   label: string;

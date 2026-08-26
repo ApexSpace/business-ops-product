@@ -266,7 +266,8 @@ export function ResourceWorkspacePanel({ resourceId }: { resourceId: string }) {
                       value={slot.startTime}
                       onChange={(e) => {
                         const next = [...slots];
-                        next[index] = { ...slot, startTime: e.target.value };
+                        next[index] = { ...slot, startTime: e.target.value,
+};
                         setSlots(next);
                       }}
                     />
@@ -278,7 +279,8 @@ export function ResourceWorkspacePanel({ resourceId }: { resourceId: string }) {
                       value={slot.endTime}
                       onChange={(e) => {
                         const next = [...slots];
-                        next[index] = { ...slot, endTime: e.target.value };
+                        next[index] = { ...slot, endTime: e.target.value,
+};
                         setSlots(next);
                       }}
                     />

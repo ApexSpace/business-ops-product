@@ -148,7 +148,7 @@ export function CalendarDatePicker({
                 key={dateKey}
                 type="button"
                 className={cn(
-                  "flex size-8 items-center justify-center rounded-md text-sm transition-colors",
+                  "flex size-8 cursor-pointer items-center justify-center rounded-md text-sm transition-colors",
                   "hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                   !inMonth && "text-muted-foreground/50",
                   inMonth && "text-foreground",

@@ -48,7 +48,8 @@ function FeatureIcon({
   if (!included || style === "none") return null;
   const sizeClasses = featureIconSizeClasses(size);
   const iconClassName = cn(sizeClasses.icon, "shrink-0");
-  const iconStyle = { color };
+  const iconStyle = { color,
+};
   let icon: ReactNode;
   if (style === "dot") {
     icon = (
@@ -228,7 +229,8 @@ export function PricingTierCard({
               )}
               style={{
                 ...(!feature.included
-                  ? { color: "var(--plan-section-muted)" }
+                  ? { color: "var(--plan-section-muted)",
+}
                   : {}),
                 fontWeight: tierStyles.featureListBold ? 700 : 400,
               }}

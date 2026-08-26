@@ -50,14 +50,17 @@ function extractWrapper(html: string): {
 } {
   const trimmed = html.trim();
   if (!trimmed) {
-    return { wrapperOpen: null, inner: "" };
+    return { wrapperOpen: null, inner: "",
+};
   }
 
   const match = trimmed.match(/^(<div(\s+[^>]*)?>)([\s\S]*)<\/div>$/i);
   if (match) {
-    return { wrapperOpen: match[1], inner: match[3].trim() };
+    return { wrapperOpen: match[1], inner: match[3].trim(),
+};
   }
-  return { wrapperOpen: null, inner: trimmed };
+  return { wrapperOpen: null, inner: trimmed,
+};
 }
 
 function getEditorInnerHtml(html: string): string {

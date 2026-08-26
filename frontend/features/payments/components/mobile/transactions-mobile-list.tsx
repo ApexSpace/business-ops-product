@@ -1,6 +1,5 @@
 "use client";
 
-import { Plus } from "lucide-react";
 import { MobileEntityListItem } from "@/components/mobile/mobile-entity-list-item";
 import { MobileEntityListScreen } from "@/components/mobile/mobile-entity-list-screen";
 import { Button } from "@/components/ui/button";
@@ -21,7 +20,8 @@ export interface TransactionsMobileListProps {
   onOpenFilters?: () => void;
   onCreate?: () => void;
   pagination?: {
-    meta: { total: number; page: number; limit: number };
+    meta: { total: number; page: number; limit: number,
+};
     page: number;
     onPageChange: (page: number) => void;
   };
@@ -69,7 +69,6 @@ export function TransactionsMobileList({
       emptyAction={
         onCreate ? (
           <Button size="sm" onClick={onCreate}>
-            <Plus className="mr-1.5 size-4" />
             Record payment
           </Button>
         ) : null

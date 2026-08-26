@@ -125,7 +125,8 @@ export function PipelineBoard({
       );
       void invalidateLeadLists(queryClient);
       setStageOverrides((prev) => {
-        const next = { ...prev };
+        const next = { ...prev,
+};
         delete next[updatedLead.id];
         return next;
       });
@@ -159,7 +160,8 @@ export function PipelineBoard({
           },
           onError: () => {
             setStageOverrides((prev) => {
-              const next = { ...prev };
+              const next = { ...prev,
+};
               delete next[lead.id];
               return next;
             });

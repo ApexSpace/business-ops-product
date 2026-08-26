@@ -72,7 +72,8 @@ export type ReportFilterField = {
   label: string;
   type: ReportFilterFieldType;
   options?: ReportFilterOption[];
-  visibleWhen?: { key: string; equals: string | boolean };
+  visibleWhen?: { key: string; equals: string | boolean,
+};
   defaultValue?: string | boolean | string[] | null;
   /** `months` = past-year month presets + custom (Client Retention). */
   dateRangeMode?: ReportDateRangeMode;

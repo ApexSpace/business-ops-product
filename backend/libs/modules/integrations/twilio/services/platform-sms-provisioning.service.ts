@@ -227,7 +227,7 @@ export class PlatformSmsProvisioningService {
       authToken,
       phoneNumber: selected.phoneNumber,
       smsUrl: inboundUrl,
-      friendlyName: `${business.name} (CodeSol SMS)`.slice(0, 64),
+      friendlyName: `${business.name} (PandaCue SMS)`.slice(0, 64),
     });
 
     const fromNumber = normalizeE164Phone(purchased.phoneNumber);
@@ -299,7 +299,7 @@ export class PlatformSmsProvisioningService {
           messagingServiceSid: params.messagingServiceSid,
         },
         credentials: Prisma.DbNull,
-        connectedAccountName: `${params.businessName} (CodeSol SMS)`,
+        connectedAccountName: `${params.businessName} (PandaCue SMS)`,
         connectedAccountEmail: null,
         connectedAt: new Date(),
         errorMessage: null,
@@ -330,7 +330,7 @@ export class PlatformSmsProvisioningService {
       [
         {
           externalId: params.fromNumber,
-          name: `${params.businessName} (CodeSol SMS)`,
+          name: `${params.businessName} (PandaCue SMS)`,
           type: IntegrationResourceType.PHONE_NUMBER,
           metadata,
           status: IntegrationResourceStatus.ACTIVE,
@@ -384,7 +384,7 @@ export class PlatformSmsProvisioningService {
           twoWayEnabled: false,
         },
         credentials: Prisma.DbNull,
-        connectedAccountName: `${businessName} (CodeSol SMS)`,
+        connectedAccountName: `${businessName} (PandaCue SMS)`,
         connectedAccountEmail: null,
         connectedAt: new Date(),
         errorMessage: null,
@@ -404,7 +404,7 @@ export class PlatformSmsProvisioningService {
       [
         {
           externalId: PLATFORM_SMS_RESOURCE_EXTERNAL_ID,
-          name: `${businessName} (CodeSol SMS)`,
+          name: `${businessName} (PandaCue SMS)`,
           type: IntegrationResourceType.PHONE_NUMBER,
           metadata,
           status: IntegrationResourceStatus.ACTIVE,

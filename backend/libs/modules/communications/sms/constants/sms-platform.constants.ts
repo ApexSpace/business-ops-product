@@ -7,14 +7,14 @@ export const PLATFORM_SMS_RESOURCE_EXTERNAL_ID = 'platform-default';
 export const PLATFORM_SMS_METADATA_TYPE = 'PLATFORM_SHARED';
 
 /**
- * Phase 1: Codesol-purchased US local number for this business (outbound notifications).
+ * Phase 1: PandaCue-purchased US local number for this business (outbound notifications).
  * Number lives on the primary Twilio account under the shared A2P Messaging Service.
  */
 export const PLATFORM_PROVISIONED_SMS_METADATA_TYPE = 'PLATFORM_PROVISIONED';
 
 export const BUSINESS_SMS_METADATA_TYPE = 'BUSINESS_OWNED';
 
-/** A2P registration pool — SHARED = Codesol Brand/Campaign (Phase 1). */
+/** A2P registration pool — SHARED = PandaCue Brand/Campaign (Phase 1). */
 export const SMS_A2P_POOL_SHARED = 'SHARED';
 
 /**

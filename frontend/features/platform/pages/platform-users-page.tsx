@@ -61,7 +61,8 @@ function PlatformUsersPageContent() {
   });
 
   const updateRoleMutation = useMutation({
-    mutationFn: ({ id, role: newRole }: { id: string; role: PlatformMemberRole }) =>
+    mutationFn: ({ id, role: newRole,
+}: { id: string; role: PlatformMemberRole }) =>
       updatePlatformUser(id, { role: newRole }),
     onSuccess: () => {
       toast.success("Role updated");
@@ -156,7 +157,7 @@ function PlatformUsersPageContent() {
     <>
       <ListPage
         title="Platform Users"
-        description="CodeSol staff and platform users."
+        description="PandaCue staff and platform users."
         actions={canManage ? <CreatePlatformUserDialog /> : null}
         filters={
           <FilterBar>

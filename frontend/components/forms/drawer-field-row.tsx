@@ -22,7 +22,7 @@ export function DrawerFieldRow({
       type={onClick ? "button" : undefined}
       onClick={onClick}
       className={cn(
-        "flex w-full flex-col gap-1 border-b border-border/70 py-3 text-left transition-colors",
+        "flex w-full flex-col gap-drawer-field border-b border-border/70 py-drawer-stack text-left transition-colors",
         onClick && "cursor-pointer hover:bg-muted/30",
         className,
       )}

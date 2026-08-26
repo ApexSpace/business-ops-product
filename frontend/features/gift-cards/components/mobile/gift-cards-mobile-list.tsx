@@ -16,7 +16,8 @@ export interface GiftCardsMobileListProps {
   onCreate?: () => void;
   canCreate?: boolean;
   pagination?: {
-    meta: { total: number; page: number; limit: number };
+    meta: { total: number; page: number; limit: number,
+};
     page: number;
     onPageChange: (page: number) => void;
   };
@@ -74,7 +75,8 @@ export function GiftCardsMobileList({
       }
       pagination={
         pagination && cards.length > 0
-          ? { ...pagination, label: "gift cards" }
+          ? { ...pagination, label: "gift cards",
+}
           : undefined
       }
     />

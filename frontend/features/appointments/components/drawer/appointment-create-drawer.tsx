@@ -8,7 +8,6 @@ import { TriangleAlert } from "lucide-react";
 import { toast } from "sonner";
 import { DrawerAddAction } from "@/components/drawer/drawer-add-action";
 import { DrawerItemAddLayout } from "@/components/drawer/drawer-item-add-layout";
-import { DrawerPlusIcon } from "@/components/drawer/drawer-icons";
 import { DrawerCheckboxRow } from "@/components/drawer/drawer-checkbox-row";
 import { DrawerExpressRow } from "@/components/drawer/drawer-express-row";
 import { DrawerFooterContent } from "@/components/drawer/drawer-footer-content";
@@ -77,7 +76,6 @@ import { queryKeys } from "@/lib/query/keys";
 import type { Service } from "@/lib/types/api";
 import {
   APPOINTMENT_DRAWER_ADD_ACTION_CLASS,
-  APPOINTMENT_DRAWER_ADD_ACTION_ICON_CLASS,
   APPOINTMENT_DRAWER_BODY_INSET_CLASS,
   APPOINTMENT_DRAWER_FIELD_CLASS,
   APPOINTMENT_DRAWER_FOOTER_CLASS,
@@ -777,11 +775,6 @@ export function AppointmentCreateDrawer({
                           type="button"
                           className={APPOINTMENT_DRAWER_ADD_ACTION_CLASS}
                         >
-                          <span
-                            className={APPOINTMENT_DRAWER_ADD_ACTION_ICON_CLASS}
-                          >
-                            <DrawerPlusIcon className="size-4 text-white" />
-                          </span>
                           Add Service
                         </button>
                       }

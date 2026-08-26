@@ -123,7 +123,8 @@ export function useFormBuilderState({
       setDefinition((current) => {
         const nextFields = updater(current.fields);
         pushHistory(nextFields);
-        return { ...current, fields: nextFields };
+        return { ...current, fields: nextFields,
+};
       });
       markDirty();
     },
@@ -225,7 +226,8 @@ export function useFormBuilderState({
           const nextColumns = structuredClone(field.columns);
           if (!nextColumns[columnIndex]) return field;
           nextColumns[columnIndex] = [...nextColumns[columnIndex], added];
-          return { ...field, columns: nextColumns };
+          return { ...field, columns: nextColumns,
+};
         }),
       );
       setSelectedFieldId(added.id);
@@ -238,12 +240,15 @@ export function useFormBuilderState({
       setDefinition((current) => ({
         ...current,
         fields: mapFields(current.fields, fieldId, (field) => {
-          const next = { ...field, ...patch };
+          const next = { ...field, ...patch,
+};
           if (patch.style) {
-            next.style = { ...field.style, ...patch.style };
+            next.style = { ...field.style, ...patch.style,
+};
           }
           if (patch.validation) {
-            next.validation = { ...field.validation, ...patch.validation };
+            next.validation = { ...field.validation, ...patch.validation,
+};
           }
           return next;
         }),

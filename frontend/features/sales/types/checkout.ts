@@ -48,7 +48,8 @@ export interface Checkout {
   balanceDue: string;
   notes?: string | null;
   closedAt?: string | null;
-  contact?: { id: string; label: string };
+  contact?: { id: string; label: string,
+};
   items: CheckoutItem[];
   appliedOffers?: Array<{
     offerId: string;

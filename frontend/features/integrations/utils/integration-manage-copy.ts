@@ -244,7 +244,7 @@ const COPY_BY_PROVIDER: Record<string, IntegrationManageCopy> = {
   email: {
     connectionTitle: "Email for conversations",
     description:
-      "Conversation email is enabled on CodeSol's shared domain by default. Customers can reply to your messages and those replies appear in your inbox.",
+      "Conversation email is enabled on PandaCue's shared domain by default. Customers can reply to your messages and those replies appear in your inbox.",
     resourcesSectionLabel: "Email address",
     syncButtonLabel: "Refresh email address",
     syncSuccessToast: () => "Email address refreshed",
@@ -264,7 +264,7 @@ const COPY_BY_PROVIDER: Record<string, IntegrationManageCopy> = {
   sms: {
     connectionTitle: "Twilio SMS",
     description:
-      "Connect your Twilio account and phone number for two-way inbox SMS. Outbound notification texts (e.g. Express Booking links) use the CodeSol platform number automatically.",
+      "Connect your Twilio account and phone number for two-way inbox SMS. Outbound notification texts (e.g. Express Booking links) use the PandaCue platform number automatically.",
     resourcesSectionLabel: "SMS number",
     syncButtonLabel: "Refresh SMS settings",
     syncSuccessToast: () => "SMS settings refreshed",

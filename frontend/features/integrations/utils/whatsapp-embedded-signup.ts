@@ -33,7 +33,8 @@ const EMBEDDED_SIGNUP_MAX_WAIT_MS = 600_000;
 const EMBEDDED_SIGNUP_POST_LOGIN_GRACE_MS = 30_000;
 
 type FacebookLoginResponse = {
-  authResponse?: { code?: string };
+  authResponse?: { code?: string,
+};
   status?: string;
 };
 

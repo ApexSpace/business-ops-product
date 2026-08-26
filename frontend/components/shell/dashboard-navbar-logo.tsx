@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { cn } from "@/lib/utils";
-import { CODESOL_BRAND_LOGO_URL } from "./shell-constants";
+import { PANDACUE_BRAND_LOGO_URL } from "./shell-constants";
 
 interface DashboardNavbarLogoProps {
   productName?: string;
@@ -13,11 +13,11 @@ interface DashboardNavbarLogoProps {
 
 export function DashboardNavbarLogo({
   productName = "PandaCue",
-  logoUrl = CODESOL_BRAND_LOGO_URL,
+  logoUrl = PANDACUE_BRAND_LOGO_URL,
   href = "/business/dashboard",
   className,
 }: DashboardNavbarLogoProps) {
-  const resolvedLogoUrl = logoUrl ?? CODESOL_BRAND_LOGO_URL;
+  const resolvedLogoUrl = logoUrl ?? PANDACUE_BRAND_LOGO_URL;
 
   return (
     <Link

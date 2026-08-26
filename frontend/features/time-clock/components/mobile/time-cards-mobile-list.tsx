@@ -1,6 +1,5 @@
 "use client";
 
-import { Plus } from "lucide-react";
 import { MobileEntityList } from "@/components/mobile/mobile-entity-list";
 import { Button } from "@/components/ui/button";
 import type { TimeCardListItem } from "@/features/time-clock/types";
@@ -52,7 +51,6 @@ export function TimeCardsMobileList({
       emptyDescription="Add a time card or adjust your filters."
       emptyAction={
         <Button size="sm" onClick={onCreate}>
-          <Plus className="mr-1.5 size-4" />
           Add time card
         </Button>
       }

@@ -4,7 +4,6 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import {
   DataTable,
@@ -156,7 +155,6 @@ export function BusinessPipelinesSettings() {
             </Button>
             {canManage ? (
               <ActionButton onClick={() => setCreateOpen(true)}>
-                <Plus className="mr-2 size-4" />
                 New pipeline
               </ActionButton>
             ) : null}
@@ -178,7 +176,6 @@ export function BusinessPipelinesSettings() {
         emptyAction={
           canManage ? (
             <ActionButton onClick={() => setCreateOpen(true)}>
-              <Plus className="mr-2 size-4" />
               New pipeline
             </ActionButton>
           ) : undefined

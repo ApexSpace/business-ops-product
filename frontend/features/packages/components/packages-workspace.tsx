@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { LayoutTemplate, Plus, Settings } from "lucide-react";
+import { LayoutTemplate, Settings  } from "lucide-react";
 import { toast } from "sonner";
 import { DateTime } from "luxon";
 import { ApiErrorState } from "@/components/data-display/api-error-state";
@@ -456,7 +456,6 @@ export function PackagesWorkspace() {
             emptyAction={
               canManage ? (
                 <Button size="sm" onClick={() => setAddOpen(true)}>
-                  <Plus className="mr-1.5 size-4" />
                   Add package
                 </Button>
               ) : undefined

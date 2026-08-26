@@ -29,7 +29,8 @@ interface InvoiceBasicFieldsProps {
   invoiceStatus?: InvoiceStatus;
   invoiceBalanceDue?: string;
   lockContact?: boolean;
-  lockedContact?: { id: string; label: string };
+  lockedContact?: { id: string; label: string,
+};
   estimateItems: { value: string; label: string }[];
   workItemItems: { value: string; label: string }[];
   contactId?: string;

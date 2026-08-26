@@ -178,7 +178,8 @@ export function createDefaultField(type: FieldType, index?: number): FormField {
     case "select":
     case "multiselect":
     case "radio":
-      return { ...base, options: createDefaultOptions() };
+      return { ...base, options: createDefaultOptions(),
+};
     case "columns":
       return {
         ...base,

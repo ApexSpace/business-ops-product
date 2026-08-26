@@ -75,7 +75,7 @@ export function ContactInlineEditableField({
       ? (contact.phone?.trim() ?? "")
       : (contact.email?.trim() ?? "");
   const emptyActionLabel =
-    kind === "phone" ? "+ Add phone" : "+ Add email";
+    kind === "phone" ? "Add phone" : "Add email";
 
   const initialPhone = apiPhoneToFormValue(
     contact.phone,

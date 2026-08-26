@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ArrowDown, Plus, Trash2 } from "lucide-react";
+import { ArrowDown, Trash2  } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -60,7 +60,8 @@ function defaultConfigForAction(actionKey: string): Record<string, unknown> {
     };
   }
   if (actionKey === "workflow.delay") {
-    return { amount: 1, unit: "hours" };
+    return { amount: 1, unit: "hours",
+};
   }
   if (actionKey === "workflow.condition") {
     return {
@@ -70,10 +71,12 @@ function defaultConfigForAction(actionKey: string): Record<string, unknown> {
     };
   }
   if (actionKey === "note.create") {
-    return { body: "Automation note for {{contact.first_name}}" };
+    return { body: "Automation note for {{contact.first_name}}",
+};
   }
   if (actionKey === "task.create") {
-    return { title: "Follow up with {{contact.first_name}}" };
+    return { title: "Follow up with {{contact.first_name}}",
+};
   }
   return {};
 }
@@ -170,7 +173,6 @@ export function WorkflowBuilder({
               ])
             }
           >
-            <Plus className="mr-1 size-4" />
             Add filter
           </Button>
         </CardHeader>
@@ -221,7 +223,6 @@ export function WorkflowBuilder({
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-base">Steps</CardTitle>
           <Button type="button" variant="outline" size="sm" onClick={addStep}>
-            <Plus className="mr-1 size-4" />
             Add step
           </Button>
         </CardHeader>

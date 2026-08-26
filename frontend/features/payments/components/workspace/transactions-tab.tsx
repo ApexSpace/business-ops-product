@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ExternalLink, Plus } from "lucide-react";
+import { ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { ApiErrorState } from "@/components/data-display/api-error-state";
 import {
@@ -241,7 +241,6 @@ export function PaymentsTransactionsTab() {
       <FinancialTabPanel
         actions={
           <Button size="sm" onClick={() => setCreateOpen(true)}>
-            <Plus className="mr-1.5 size-4" />
             Record payment
           </Button>
         }
@@ -317,7 +316,6 @@ export function PaymentsTransactionsTab() {
           emptyDescription="Transactions are usually recorded from an invoice. Use this list to review history or make corrections."
           emptyAction={
             <Button size="sm" onClick={() => setCreateOpen(true)}>
-              <Plus className="mr-2 size-4" />
               Record payment
             </Button>
           }

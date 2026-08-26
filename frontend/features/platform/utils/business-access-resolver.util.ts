@@ -115,13 +115,16 @@ function resolveAccess(
   now: Date,
 ): { canAccessWorkspace: boolean; reasonCode: BusinessAccessReasonCode } {
   if (businessStatus === "SUSPENDED") {
-    return { canAccessWorkspace: false, reasonCode: "BUSINESS_SUSPENDED" };
+    return { canAccessWorkspace: false, reasonCode: "BUSINESS_SUSPENDED",
+};
   }
   if (businessStatus === "NOT_ACTIVE" || businessStatus === "ARCHIVED") {
-    return { canAccessWorkspace: false, reasonCode: "BUSINESS_NOT_ACTIVE" };
+    return { canAccessWorkspace: false, reasonCode: "BUSINESS_NOT_ACTIVE",
+};
   }
   if (!sub) {
-    return { canAccessWorkspace: false, reasonCode: "NO_SUBSCRIPTION" };
+    return { canAccessWorkspace: false, reasonCode: "NO_SUBSCRIPTION",
+};
   }
 
   const { canAccess, reasonCode } = resolveSubscriptionAccessReason(sub.status, {
@@ -200,5 +203,6 @@ export function computeCapabilityDiff(
     (c) => !nextKeys.has(c.key) && !preserved.has(c.key),
   );
 
-  return { toAdd, toRemove };
+  return { toAdd, toRemove,
+};
 }

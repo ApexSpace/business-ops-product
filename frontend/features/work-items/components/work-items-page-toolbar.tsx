@@ -1,6 +1,5 @@
 "use client";
 
-import { Plus } from "lucide-react";
 import { SearchInput } from "@/components/forms/search-input";
 import { SearchableSelect } from "@/components/forms/searchable-select";
 import { FilterBar } from "@/components/layout/filter-bar";
@@ -138,7 +137,6 @@ export function WorkItemsPageToolbar({
           />
           {canManage ? (
             <ActionButton onClick={onAddClick} className="w-full">
-              <Plus className="mr-2 size-4" />
               Add {countSingular}
             </ActionButton>
           ) : null}
@@ -184,7 +182,6 @@ export function WorkItemsPageToolbar({
         />
         {canManage ? (
           <ActionButton onClick={onAddClick} className="shrink-0">
-            <Plus className="mr-2 size-4" />
             Add {countSingular}
           </ActionButton>
         ) : null}

@@ -64,7 +64,8 @@ export function EntityLabelsBuilder() {
   ) => {
     if (!assets) return;
     const expanded = expandEntityLabels(assets.terminology);
-    expanded[entityId] = { ...expanded[entityId], [field]: value };
+    expanded[entityId] = { ...expanded[entityId], [field]: value,
+};
     updateAssets({
       terminology: flattenEntityLabels(expanded, assets.terminology),
     });

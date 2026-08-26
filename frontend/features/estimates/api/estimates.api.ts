@@ -25,7 +25,8 @@ export async function listEstimates(
       issueTo: filters.issueTo,
     },
   });
-  return { items, meta };
+  return { items, meta,
+};
 }
 
 export function getEstimate(id: string) {

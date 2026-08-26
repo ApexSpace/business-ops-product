@@ -1,6 +1,6 @@
 "use client";
 
-import { Plus, Trash2 } from "lucide-react";
+import { Trash2  } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { FormField, FormSettings, FormStep } from "@/features/forms/types";
 import { SectionHeader } from "@/features/forms/components/builder/settings-controls/section-header";
@@ -41,7 +41,8 @@ export function MultiStepSection({ settings, fields, onUpdate }: MultiStepSectio
 
   const updateStep = (index: number, patch: Partial<FormStep>) => {
     const next = [...steps];
-    next[index] = { ...next[index], ...patch };
+    next[index] = { ...next[index], ...patch,
+};
     updateSteps(next);
   };
 
@@ -114,7 +115,6 @@ export function MultiStepSection({ settings, fields, onUpdate }: MultiStepSectio
               </div>
             ))}
             <Button type="button" variant="outline" size="sm" onClick={addStep}>
-              <Plus className="mr-1 size-3" />
               Add step
             </Button>
           </div>

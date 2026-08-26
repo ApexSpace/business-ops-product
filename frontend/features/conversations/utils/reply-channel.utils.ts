@@ -41,7 +41,8 @@ export function resolveWhatsAppComposerMode(input: {
     };
   }
 
-  return { requiresTemplate: true, sessionOpen: false };
+  return { requiresTemplate: true, sessionOpen: false,
+};
 }
 
 export function pickDefaultReplyChannel(

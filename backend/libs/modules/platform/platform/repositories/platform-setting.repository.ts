@@ -12,7 +12,7 @@ export interface PlatformSettingsValue {
 }
 
 export const DEFAULT_PLATFORM_SETTINGS: PlatformSettingsValue = {
-  platformName: 'CodeSol Platform',
+  platformName: 'PandaCue Platform',
   supportEmail: 'support@codesol.com',
   defaultTrialDays: 14,
   maintenanceMode: false,

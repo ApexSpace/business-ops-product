@@ -42,7 +42,8 @@ export function useReportStaffOptions(enabled = true) {
             .filter(Boolean)
             .join(" ")
             .trim() || "Unnamed";
-        return { value: member.userId, label: name };
+        return { value: member.userId, label: name,
+};
       }),
     [query.data],
   );

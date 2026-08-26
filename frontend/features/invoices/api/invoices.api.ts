@@ -25,7 +25,8 @@ export async function listInvoices(
       issueTo: filters.issueTo,
     },
   });
-  return { items, meta };
+  return { items, meta,
+};
 }
 
 export function getInvoice(id: string) {

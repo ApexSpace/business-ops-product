@@ -21,7 +21,8 @@ export async function listNotes(
       leadId: filters.leadId,
     },
   });
-  return { items, meta };
+  return { items, meta,
+};
 }
 
 export function getNote(id: string) {

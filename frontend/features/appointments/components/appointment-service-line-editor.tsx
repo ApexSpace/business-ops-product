@@ -2,7 +2,6 @@
 
 import { cloneElement, useMemo, useState, type MouseEvent, type ReactElement } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Plus } from "lucide-react";
 import { listServices } from "@/features/settings/api/services.api";
 import { SearchableSelect } from "@/components/forms/searchable-select";
 import type { Service } from "@/lib/types/api";
@@ -59,7 +58,7 @@ export interface AppointmentServiceLineEditorProps {
 }
 
 const INLINE_SELECT_TRIGGER_CLASS =
-  "h-auto w-auto min-w-0 border-0 bg-transparent px-1 py-0.5 text-[13px] font-semibold text-[#7E3BED] shadow-none hover:bg-[#F6F1FE] focus-visible:ring-0";
+  "h-auto w-auto min-w-0 cursor-pointer border-0 bg-transparent px-1 py-0.5 text-[13px] font-semibold text-[#7E3BED] shadow-none hover:bg-[#F6F1FE] focus-visible:ring-0";
 
 function ServiceLineCard({
   line,
@@ -333,7 +332,6 @@ export function AppointmentServiceLineEditor({
             className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-[#7E3BED] hover:underline disabled:opacity-50"
             onClick={() => setPickerOpen(true)}
           >
-            <Plus className="size-4" />
             Add another service
           </button>
         )
