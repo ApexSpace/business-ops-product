@@ -434,9 +434,9 @@ export const DRAWER_BOOKING_DETAILS_TRIGGER_CLASS =
 export const DRAWER_CHECKBOX_ROW_CLASS =
   "flex h-6 w-full min-w-0 items-center gap-[5px]";
 
-/** Figma bxs:check-square — 24×24, primary/500 fill, 18×18 checkmark. */
+/** Checkbox control — 16×16, primary/500 fill, 12×12 checkmark. */
 export const DRAWER_CHECKBOX_CLASS =
-  "size-6 shrink-0 rounded-[4px] border-violet-primary-normal data-[checked]:border-violet-primary-normal data-[checked]:bg-violet-primary-normal [&_[data-slot=checkbox-indicator]_svg]:size-[18px]";
+  "size-4 shrink-0 rounded-[4px] border-violet-primary-normal data-[checked]:border-violet-primary-normal data-[checked]:bg-violet-primary-normal [&_[data-slot=checkbox-indicator]_svg]:size-3";
 
 /** Figma checkbox label — Body Small 500 · 14px · primary/900. */
 export const DRAWER_CHECKBOX_LABEL_CLASS =

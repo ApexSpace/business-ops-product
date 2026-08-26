@@ -17,16 +17,24 @@ export const DATA_TABLE_HEADER_TEXT = "var(--pc-violet-primary-dark)";
 /**
  * Outer table shell — Figma Sales Table:
  * 1px primary/200 border, radius/md, white fill.
- * Flex column so the body scrolls under a sticky header.
+ * `h-0 flex-1` fills the workspace; do not use `h-full` on `<table>`
+ * (browsers treat table height as extra space to distribute across rows).
  */
 export const DATA_TABLE_SHELL_CLASS =
-  "flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-[var(--radius-md)] border border-[var(--drawer-tab-track)] bg-white shadow-none";
+  "flex h-0 min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-[var(--radius-md)] border border-[var(--drawer-tab-track)] bg-white shadow-none";
 
 /** Scroll host for the grid — fills remaining workspace height. */
-export const DATA_TABLE_SCROLL_CLASS = "min-h-0 flex-1 overflow-auto";
+export const DATA_TABLE_SCROLL_CLASS =
+  "flex h-0 min-h-0 flex-1 flex-col overflow-auto";
 
-/** Stretch the table grid to the scroll host so empty states fill the card. */
-export const DATA_TABLE_GRID_FILL_CLASS = "h-full min-h-full w-full";
+/**
+ * Grid width only. Height stays content-sized so `--table-row-height` is honored.
+ */
+export const DATA_TABLE_GRID_CLASS = "w-full";
+
+/** Empty-state filler when there are no rows — occupies leftover scroll-host height. */
+export const DATA_TABLE_EMPTY_FILL_CLASS =
+  "flex min-h-0 flex-1 items-center justify-center";
 
 /**
  * Sticky header — sticks within the DataTable scroll host.
@@ -37,15 +45,19 @@ export const DATA_TABLE_HEADER_CLASS =
 
 /** Header cell typography — primary/800, 14px bold (Montserrat) */
 export const DATA_TABLE_HEAD_CELL_CLASS =
-  "h-[59px] px-4 text-left align-middle text-[14px] font-bold leading-none tracking-normal text-violet-primary-dark whitespace-nowrap";
+  "h-[var(--table-header-height)] px-4 text-left align-middle text-[14px] font-bold leading-none tracking-normal text-violet-primary-dark whitespace-nowrap";
 
-/** Body row — `--table-row-height` (56px default / 52px compact), 2px primary/300 bottom border only */
+/** Sticky header row — `--table-header-height` (59px) */
+export const DATA_TABLE_HEADER_ROW_CLASS =
+  "h-[var(--table-header-height)] border-b-0 bg-[var(--drawer-tab-track)] hover:bg-[var(--drawer-tab-track)] data-[state=selected]:bg-[var(--drawer-tab-track)]";
+
+/** Body row — `--table-row-height` (56px), 2px primary/300 bottom border only */
 export const DATA_TABLE_ROW_CLASS =
   "h-[var(--table-row-height)] border-b-2 border-[var(--drawer-divider-accent)] bg-white transition-colors hover:bg-violet-primary-surface/60 data-[state=selected]:bg-violet-primary-surface";
 
-/** Body cell — Figma pad 8 / 16 · neutral/700 */
+/** Body cell — Figma pad 8 / 16 · neutral/700 · row token height */
 export const DATA_TABLE_CELL_CLASS =
-  "px-4 py-2 align-middle text-[14px] font-normal leading-[21px] text-[var(--drawer-text-body)] whitespace-nowrap";
+  "h-[var(--table-row-height)] px-4 py-2 align-middle text-[14px] font-normal leading-[21px] text-[var(--drawer-text-body)] whitespace-nowrap";
 
 /**
  * List toolbar — Figma: primary CTA left, search + standalone filter right, h 44.

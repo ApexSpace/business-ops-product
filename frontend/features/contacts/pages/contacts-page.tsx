@@ -161,9 +161,10 @@ function BusinessContactsPageContent() {
               name={row.label}
               avatarUrl={row.avatarAssetId ? row.avatarUrl : null}
               size="sm"
-              className="!size-8 shrink-0"
             />
-            <p className="truncate font-medium text-[#4A4A4A]">{row.label}</p>
+            <span className="truncate font-medium text-[#4A4A4A]">
+              {row.label}
+            </span>
           </div>
         ),
       },
@@ -256,7 +257,6 @@ function BusinessContactsPageContent() {
         data={contacts}
         getRowId={(row) => row.id}
         isLoading={isLoading}
-        density="compact"
         activeRowId={selectedId}
         onRowClick={(row) => {
           if (!contactPerms.canOpenProfiles) return;

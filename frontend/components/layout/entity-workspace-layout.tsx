@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import {
   WORKSPACE_FILL_CLASS,
   WORKSPACE_FOOTER_CLASS,
+  WORKSPACE_TABLE_BODY_CLASS,
   WORKSPACE_TABLE_CARD_CLASS,
   WORKSPACE_TOOLBAR_CLASS,
 } from "@/lib/design/workspace-tokens";
@@ -71,9 +72,7 @@ export function EntityWorkspaceLayout({
       )}
       <section className={WORKSPACE_TABLE_CARD_CLASS}>
         {toolbarNode}
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-          {children}
-        </div>
+        <div className={WORKSPACE_TABLE_BODY_CLASS}>{children}</div>
         {footer ? <div className={WORKSPACE_FOOTER_CLASS}>{footer}</div> : null}
       </section>
       {drawer}

@@ -22,8 +22,10 @@ import {
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import {
-  DATA_TABLE_GRID_FILL_CLASS,
+  DATA_TABLE_EMPTY_FILL_CLASS,
+  DATA_TABLE_GRID_CLASS,
   DATA_TABLE_HEADER_CLASS,
+  DATA_TABLE_HEADER_ROW_CLASS,
   DATA_TABLE_SCROLL_CLASS,
   DATA_TABLE_SHELL_CLASS,
 } from "@/lib/design/data-table-tokens";
@@ -54,6 +56,7 @@ export interface DataTableProps<T> {
   onRowSelectionChange?: (selection: RowSelectionState) => void;
   rowActions?: (row: T) => React.ReactNode;
   actionsColumnHeader?: string;
+  /** Kept for API compatibility. All tables use `--table-row-height`. */
   density?: DataTableDensity;
   toolbar?: React.ReactNode;
   className?: string;
@@ -77,7 +80,6 @@ export function DataTable<T>({
   onRowSelectionChange,
   rowActions,
   actionsColumnHeader = "",
-  density = "default",
   toolbar,
   className,
   activeRowId,
@@ -91,14 +93,11 @@ export function DataTable<T>({
 
   const rowSelection = controlledSelection ?? internalSelection;
   const setRowSelection = onRowSelectionChange ?? setInternalSelection;
-  const isCompact = density === "compact";
 
   const tanstackColumns = useMemo<ColumnDef<T>[]>(() => {
     const defs: ColumnDef<T>[] = columns.map((col) => ({
       id: col.id,
-      accessorFn: col.sortValue
-        ? (row) => col.sortValue!(row)
-        : undefined,
+      accessorFn: col.sortValue ? (row) => col.sortValue!(row) : undefined,
       header: col.header,
       cell: ({ row }) => col.cell(row.original),
       enableSorting: col.sortable ?? false,
@@ -159,144 +158,137 @@ export function DataTable<T>({
   });
 
   const colSpan =
-    table.getVisibleFlatColumns().length || columns.length + (rowActions ? 1 : 0);
+    table.getVisibleFlatColumns().length ||
+    columns.length + (rowActions ? 1 : 0);
+  const hasRows = table.getRowModel().rows.length > 0;
+  const showGrid = isLoading || hasRows;
 
   return (
-    <div
-      className={cn(DATA_TABLE_SHELL_CLASS, className)}
-      style={
-        isCompact
-          ? ({
-              "--table-row-height": "var(--table-row-height-compact)",
-            } as React.CSSProperties)
-          : undefined
-      }
-    >
+    <div className={cn(DATA_TABLE_SHELL_CLASS, className)}>
       {toolbar ? (
         <div className="shrink-0 border-b border-[#F3F0F9] px-4 py-3">
           {toolbar}
         </div>
       ) : null}
       <div className={DATA_TABLE_SCROLL_CLASS}>
-        <Table
-          className={DATA_TABLE_GRID_FILL_CLASS}
-          containerClassName={cn("overflow-visible", DATA_TABLE_GRID_FILL_CLASS)}
-        >
-          <TableHeader className={DATA_TABLE_HEADER_CLASS}>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow
-                key={headerGroup.id}
-                className="h-[59px] border-b-0 bg-[#F3F0F9] hover:bg-[#F3F0F9] data-[state=selected]:bg-[#F3F0F9]"
-              >
-                {headerGroup.headers.map((header) => {
-                  const sorted = header.column.getIsSorted();
-                  return (
-                    <TableHead
-                      key={header.id}
-                      className={cn(
-                        header.column.id === "actions" && "w-[1%] text-right",
-                        (
-                          header.column.columnDef.meta as
-                            | { className?: string }
-                            | undefined
-                        )?.className,
-                      )}
-                    >
-                      {header.isPlaceholder ? null : header.column.getCanSort() ? (
-                        <DataTableColumnHeader
-                          title={String(header.column.columnDef.header)}
-                          sorted={sorted || false}
-                          onSort={header.column.getToggleSortingHandler()}
-                        />
-                      ) : (
-                        flexRender(
-                          header.column.columnDef.header,
-                          header.getContext(),
-                        )
-                      )}
-                    </TableHead>
-                  );
-                })}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
-              Array.from({ length: SKELETON_ROWS }).map((_, i) => (
-                <TableRow key={`skeleton-${i}`}>
-                  {Array.from({ length: colSpan }).map((__, j) => (
-                    <TableCell key={j}>
-                      <Skeleton className="h-4 w-full max-w-[200px]" />
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
-            ) : table.getRowModel().rows.length === 0 ? (
-              <TableRow className="hover:bg-transparent">
-                <TableCell colSpan={colSpan} className="p-0">
-                  <EmptyState
-                    title={emptyTitle}
-                    description={emptyDescription}
-                    action={emptyAction}
-                  />
-                </TableCell>
-              </TableRow>
-            ) : (
-              table.getRowModel().rows.map((row) => (
+        {showGrid ? (
+          <Table
+            className={DATA_TABLE_GRID_CLASS}
+            containerClassName={cn("overflow-visible", DATA_TABLE_GRID_CLASS)}
+          >
+            <TableHeader className={DATA_TABLE_HEADER_CLASS}>
+              {table.getHeaderGroups().map((headerGroup) => (
                 <TableRow
-                  key={row.id}
-                  data-state={
-                    row.getIsSelected() || activeRowId === row.id
-                      ? "selected"
-                      : undefined
-                  }
-                  tabIndex={onRowClick ? 0 : undefined}
-                  role={onRowClick ? "button" : undefined}
-                  className={cn(
-                    onRowClick &&
-                      "cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7E3BED]/40 focus-visible:ring-inset",
-                    getRowClassName?.(row.original),
-                  )}
-                  onClick={(event) => {
-                    if (!onRowClick) return;
-                    const target = event.target as HTMLElement;
-                    if (
-                      target.closest(
-                        "a,button,input,textarea,select,label,[role='checkbox'],[data-row-click-ignore='true']",
-                      )
-                    ) {
-                      return;
-                    }
-                    onRowClick(row.original);
-                  }}
-                  onKeyDown={(event) => {
-                    if (!onRowClick) return;
-                    if (event.key === "Enter" || event.key === " ") {
-                      event.preventDefault();
-                      onRowClick(row.original);
-                    }
-                  }}
+                  key={headerGroup.id}
+                  className={DATA_TABLE_HEADER_ROW_CLASS}
                 >
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell
-                      key={cell.id}
-                      className={cn(
-                        cell.column.id === "actions" && "text-right",
-                        (
-                          cell.column.columnDef.meta as
-                            | { className?: string }
-                            | undefined
-                        )?.className,
-                      )}
-                    >
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </TableCell>
-                  ))}
+                  {headerGroup.headers.map((header) => {
+                    const sorted = header.column.getIsSorted();
+                    return (
+                      <TableHead
+                        key={header.id}
+                        className={cn(
+                          header.column.id === "actions" && "w-[1%] text-right",
+                          (
+                            header.column.columnDef.meta as
+                              { className?: string } | undefined
+                          )?.className,
+                        )}
+                      >
+                        {header.isPlaceholder ? null : header.column.getCanSort() ? (
+                          <DataTableColumnHeader
+                            title={String(header.column.columnDef.header)}
+                            sorted={sorted || false}
+                            onSort={header.column.getToggleSortingHandler()}
+                          />
+                        ) : (
+                          flexRender(
+                            header.column.columnDef.header,
+                            header.getContext(),
+                          )
+                        )}
+                      </TableHead>
+                    );
+                  })}
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+              ))}
+            </TableHeader>
+            <TableBody>
+              {isLoading
+                ? Array.from({ length: SKELETON_ROWS }).map((_, i) => (
+                    <TableRow key={`skeleton-${i}`}>
+                      {Array.from({ length: colSpan }).map((__, j) => (
+                        <TableCell key={j}>
+                          <Skeleton className="h-4 w-full max-w-[200px]" />
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))
+                : table.getRowModel().rows.map((row) => (
+                    <TableRow
+                      key={row.id}
+                      data-state={
+                        row.getIsSelected() || activeRowId === row.id
+                          ? "selected"
+                          : undefined
+                      }
+                      tabIndex={onRowClick ? 0 : undefined}
+                      role={onRowClick ? "button" : undefined}
+                      className={cn(
+                        onRowClick &&
+                          "cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7E3BED]/40 focus-visible:ring-inset",
+                        getRowClassName?.(row.original),
+                      )}
+                      onClick={(event) => {
+                        if (!onRowClick) return;
+                        const target = event.target as HTMLElement;
+                        if (
+                          target.closest(
+                            "a,button,input,textarea,select,label,[role='checkbox'],[data-row-click-ignore='true']",
+                          )
+                        ) {
+                          return;
+                        }
+                        onRowClick(row.original);
+                      }}
+                      onKeyDown={(event) => {
+                        if (!onRowClick) return;
+                        if (event.key === "Enter" || event.key === " ") {
+                          event.preventDefault();
+                          onRowClick(row.original);
+                        }
+                      }}
+                    >
+                      {row.getVisibleCells().map((cell) => (
+                        <TableCell
+                          key={cell.id}
+                          className={cn(
+                            cell.column.id === "actions" && "text-right",
+                            (
+                              cell.column.columnDef.meta as
+                                { className?: string } | undefined
+                            )?.className,
+                          )}
+                        >
+                          {flexRender(
+                            cell.column.columnDef.cell,
+                            cell.getContext(),
+                          )}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))}
+            </TableBody>
+          </Table>
+        ) : (
+          <div className={DATA_TABLE_EMPTY_FILL_CLASS}>
+            <EmptyState
+              title={emptyTitle}
+              description={emptyDescription}
+              action={emptyAction}
+            />
+          </div>
+        )}
       </div>
     </div>
   );

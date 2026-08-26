@@ -88,6 +88,30 @@ export function isBusinessSettingsWorkspacePath(pathname: string): boolean {
   return isBusinessSettingsPath(pathname);
 }
 
+function matchesPathPrefix(pathname: string, prefix: string): boolean {
+  return pathname === prefix || pathname.startsWith(`${prefix}/`);
+}
+
+/**
+ * Apps catalog routes that are master-detail / canvas workspaces (not DataTable).
+ * DataTable Apps (Forms, Automations, Pipeline settings, Sales, …) stay padded.
+ *
+ * Add a prefix here when a new non-table Apps page should inherit full-bleed.
+ * Do not add per-page layout patches.
+ */
+export const APPS_MASTER_DETAIL_WORKSPACE_PREFIXES = [
+  "/business/settings/services",
+  "/business/settings/resources",
+  "/business/settings/team",
+] as const;
+
+/** Services, Resources, Team, and nested routes under those Apps. */
+export function isAppsMasterDetailWorkspacePath(pathname: string): boolean {
+  return APPS_MASTER_DETAIL_WORKSPACE_PREFIXES.some((prefix) =>
+    matchesPathPrefix(pathname, prefix),
+  );
+}
+
 /** Reports two-pane workspace — same full-bleed as Settings. */
 export function isReportsWorkspacePath(pathname: string): boolean {
   return (

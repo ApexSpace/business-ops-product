@@ -1,10 +1,16 @@
 "use client";
 
 import { Suspense } from "react";
+import { usePathname } from "next/navigation";
 import { PageContainer } from "@/components/layout/page-container";
 import { PageHeader } from "@/components/layout/page-header";
 import { ListToolbar } from "@/components/layout/list-toolbar";
 import { LoadingState } from "@/components/data-display/loading-state";
+import { isAppsMasterDetailWorkspacePath } from "@/components/shell/shell-full-bleed-paths";
+import {
+  APPS_MASTER_DETAIL_CANVAS_SLOT_CLASS,
+  WORKSPACE_FILL_CLASS,
+} from "@/lib/design/workspace-tokens";
 import { cn } from "@/lib/utils";
 
 export interface ListPageProps {
@@ -33,10 +39,16 @@ function ListPageContent({
   className,
   dense,
 }: ListPageProps) {
+  const pathname = usePathname();
+  const masterDetail = isAppsMasterDetailWorkspacePath(pathname);
   const toolbarSearch = search ?? filters;
 
   return (
-    <PageContainer dense={dense} className={className}>
+    <PageContainer
+      dense={dense}
+      fullHeight={masterDetail}
+      className={cn(masterDetail && WORKSPACE_FILL_CLASS, className)}
+    >
       <PageHeader title={title} description={description} />
       {toolbar ? (
         toolbar
@@ -47,7 +59,11 @@ function ListPageContent({
           actions={actions}
         />
       ) : null}
-      {children}
+      {masterDetail ? (
+        <div className={APPS_MASTER_DETAIL_CANVAS_SLOT_CLASS}>{children}</div>
+      ) : (
+        children
+      )}
       {pagination}
     </PageContainer>
   );
@@ -64,8 +80,13 @@ export function ListPageSuspense({ children }: { children: React.ReactNode }) {
 }
 
 export function ListPageSkeleton() {
+  const pathname = usePathname();
+  const masterDetail = isAppsMasterDetailWorkspacePath(pathname);
   return (
-    <PageContainer>
+    <PageContainer
+      fullHeight={masterDetail}
+      className={masterDetail ? WORKSPACE_FILL_CLASS : undefined}
+    >
       <LoadingState variant="skeleton" rows={4} />
     </PageContainer>
   );

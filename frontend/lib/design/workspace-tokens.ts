@@ -33,17 +33,40 @@ export const WORKSPACE_TOOLBAR_SURFACE_CLASS =
  */
 export const WORKSPACE_TABLE_CLASS = "shadow-none";
 
-/** Full-height workspace column — parent must also be a flex fill chain. */
+/**
+ * Full-height workspace column — parent must also be a flex fill chain.
+ * `h-0 flex-1` (not `h-full`): percentage height fails when the parent is
+ * flex-sized without an explicit `height`, so the table card shrinks to rows.
+ */
 export const WORKSPACE_FILL_CLASS =
-  "flex h-full min-h-0 flex-1 flex-col overflow-hidden";
+  "flex h-0 min-h-0 flex-1 flex-col overflow-hidden";
+
+/**
+ * Settings-route shell for Apps master-detail pages (Services, Resources, Team).
+ * Makes the first child a flex fill column so nested ListPage / two-pane canvases stretch.
+ */
+export const APPS_MASTER_DETAIL_ROUTE_SHELL_CLASS = `${WORKSPACE_FILL_CLASS} [&>*]:flex [&>*]:h-0 [&>*]:min-h-0 [&>*]:min-w-0 [&>*]:flex-1 [&>*]:flex-col`;
+
+/**
+ * ListPage slot that stretches the two-pane canvas to the content area.
+ * `!h-full` overrides feature-level `h-[calc(100vh-…)]` height caps.
+ */
+export const APPS_MASTER_DETAIL_CANVAS_SLOT_CLASS =
+  "flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden [&>*]:!h-full [&>*]:!min-h-0 [&>*]:min-w-0 [&>*]:!flex-1 [&>*]:rounded-none";
 
 /** Workspace list surface — page white; table supplies its own border chrome */
 export const WORKSPACE_TABLE_CARD_CLASS =
-  "flex min-h-0 flex-1 flex-col gap-[var(--cs-list-toolbar-gap)] overflow-hidden rounded-none border-0 bg-white shadow-none";
+  "flex h-0 min-h-0 flex-1 flex-col gap-[var(--cs-list-toolbar-gap)] overflow-hidden rounded-none border-0 bg-white shadow-none";
 
-/** Pagination / footer strip under the table — tight so the grid can grow */
+/**
+ * Stretch the DataTable (or error replacement) between toolbar and pagination.
+ */
+export const WORKSPACE_TABLE_BODY_CLASS =
+  "flex h-0 min-h-0 flex-1 flex-col overflow-hidden [&>*]:flex [&>*]:h-0 [&>*]:min-h-0 [&>*]:flex-1 [&>*]:flex-col";
+
+/** Pagination / footer strip under the table — hidden when pagination renders nothing */
 export const WORKSPACE_FOOTER_CLASS =
-  "shrink-0 border-t border-[var(--drawer-header-border)] bg-white px-4 py-2";
+  "empty:hidden shrink-0 border-t border-[var(--drawer-header-border)] bg-white px-4 py-2";
 
 export const ENTITY_DRAWER_TOOLBAR_CLASS =
   "shrink-0 border-b border-border/70 bg-background px-6 py-3";
