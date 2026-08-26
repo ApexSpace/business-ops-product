@@ -18,16 +18,20 @@ export const COMBOBOX_INPUT_CLASS =
 export const COMBOBOX_POSITIONER_CLASS = "isolate z-[200]";
 
 export const COMBOBOX_POPUP_CLASS =
-  "glass-panel-strong relative isolate z-50 max-h-64 w-(--anchor-width) min-w-36 origin-(--transform-origin) overflow-x-hidden overflow-y-auto rounded-md text-popover-foreground ring-1 ring-foreground/10 duration-100 data-[side=bottom]:slide-in-from-top-2 data-[side=inline-end]:slide-in-from-left-2 data-[side=inline-start]:slide-in-from-right-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95";
+  "glass-panel-strong relative isolate z-50 max-h-64 w-(--anchor-width) min-w-36 origin-(--transform-origin) overflow-x-hidden overflow-y-auto rounded-md text-popover-foreground ring-1 ring-foreground/10 duration-100 data-[side=bottom]:slide-in-from-top-2 data-[side=inline-end]:slide-in-from-left-2 data-[side=inline-start]:slide-in-from-right-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95 [&_[role=status]:empty]:hidden";
 
 export const COMBOBOX_ITEM_CLASS =
   "relative flex w-full cursor-default items-center gap-1.5 rounded-md py-2 pr-8 pl-2 text-sm outline-hidden select-none data-highlighted:bg-accent data-highlighted:text-accent-foreground data-disabled:pointer-events-none data-disabled:opacity-50";
 
+/**
+ * Base UI keeps Combobox.Empty mounted (live region) even when the list has
+ * items; `empty:hidden` collapses that leftover search-slot gap.
+ */
 export const COMBOBOX_EMPTY_CLASS =
-  "px-2 py-6 text-center text-sm text-muted-foreground normal-case";
+  "empty:hidden px-2 py-2 text-center text-sm text-muted-foreground normal-case";
 
 export const COMBOBOX_STATUS_CLASS =
-  "px-2 py-6 text-center text-sm text-muted-foreground";
+  "empty:hidden px-2 py-2 text-center text-sm text-muted-foreground";
 
 export const COMBOBOX_GROUP_LABEL_CLASS =
   "px-2 py-1.5 text-[11px] font-semibold uppercase tracking-[0.06em] text-muted-foreground";

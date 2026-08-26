@@ -22,19 +22,20 @@ import {
 } from "@/lib/design/drawer-tokens";
 import { DRAWER_SHEET_FOOTER_WIDE_CLASS } from "@/components/forms/drawer-sheet";
 
-/** Sheet close control — Figma transparent circle (matches DrawerShell default). */
+/** Sheet close control — same hover chip as drawer header edit/trash. */
 export const FORM_DRAWER_CLOSE_CLASS = [
   "[&_[data-slot=sheet-close]]:relative",
   "[&_[data-slot=sheet-close]]:static",
-  "[&_[data-slot=sheet-close]]:!size-[22px]",
-  "[&_[data-slot=sheet-close]]:rounded-full",
+  "[&_[data-slot=sheet-close]]:size-6",
+  "[&_[data-slot=sheet-close]]:rounded-md",
   "[&_[data-slot=sheet-close]]:!border-0",
   "[&_[data-slot=sheet-close]]:bg-transparent",
   "[&_[data-slot=sheet-close]]:p-0",
   "[&_[data-slot=sheet-close]]:text-muted-foreground",
   "[&_[data-slot=sheet-close]]:!shadow-none",
+  "[&_[data-slot=sheet-close]]:hover:bg-violet-primary-normal/10",
   "[&_[data-slot=sheet-close]]:hover:text-violet-primary-normal",
-  "[&_[data-slot=sheet-close]]:[&>svg]:size-[14px]",
+  "[&_[data-slot=sheet-close]]:[&>svg]:size-4",
 ].join(" ");
 
 export type FormDrawerShellWidth = "compact" | "standard" | "wide";

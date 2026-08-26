@@ -77,7 +77,7 @@ function SheetContent({
               render={
                 <IconButton
                   variant="ghost"
-                  className="absolute top-4 right-4 z-10"
+                  className={cn("absolute top-4 right-4 z-10", DRAWER_CLOSE_ACTION_CLASS)}
                   size="icon-sm"
                   aria-label="Close"
                 />

@@ -87,3 +87,11 @@ export function isMobileEntityListPath(pathname: string): boolean {
 export function isBusinessSettingsWorkspacePath(pathname: string): boolean {
   return isBusinessSettingsPath(pathname);
 }
+
+/** Reports two-pane workspace — same full-bleed as Settings. */
+export function isReportsWorkspacePath(pathname: string): boolean {
+  return (
+    pathname === "/business/reports" ||
+    pathname.startsWith("/business/reports/")
+  );
+}
