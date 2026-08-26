@@ -1,15 +1,18 @@
 import {
   Bell,
-  Building2,
   Calendar,
+  Clock,
   CreditCard,
   Database,
   FileText,
   Globe,
+  IdCard,
+  MapPin,
   MessageCircle,
   MessageSquare,
   Palette,
   Receipt,
+  User,
 } from "lucide-react";
 import type { ShellNavItem, ShellNavSection } from "@/lib/types/shell-nav";
 import { canAccessSettingsHref } from "@/features/team/permissions/staff-permissions";
@@ -19,9 +22,29 @@ export interface BusinessSettingsNavItem extends ShellNavItem {}
 
 const businessSetupItems: BusinessSettingsNavItem[] = [
   {
-    title: "Business Profile",
+    title: "Business Details",
     href: "/business/settings/profile",
-    icon: Building2,
+    icon: IdCard,
+  },
+  {
+    title: "Primary contact",
+    href: "/business/settings/profile?tab=contact",
+    icon: User,
+  },
+  {
+    title: "Locations",
+    href: "/business/settings/profile?tab=address",
+    icon: MapPin,
+  },
+  {
+    title: "Regional & tax",
+    href: "/business/settings/profile?tab=regional",
+    icon: Globe,
+  },
+  {
+    title: "Business Hours",
+    href: "/business/settings/profile?tab=hours",
+    icon: Clock,
   },
   {
     title: "Appearance",

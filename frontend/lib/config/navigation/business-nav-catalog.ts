@@ -4,7 +4,6 @@ import {
   Calendar,
   ClipboardList,
   Clock,
-  Contact,
   CreditCard,
   FileBarChart,
   Gift,
@@ -17,7 +16,6 @@ import {
   Repeat,
   Settings,
   Share2,
-  ShoppingBag,
   Tag,
   Users,
   Warehouse,
@@ -95,7 +93,7 @@ export const BUSINESS_NAV_CATALOG: BusinessNavCatalogEntry[] = [
   {
     navKey: "contacts",
     href: "/business/contacts",
-    icon: Contact,
+    icon: Users,
     title: "Contacts",
     labelKey: "contacts",
     navbarPriority: 2,
@@ -117,7 +115,7 @@ export const BUSINESS_NAV_CATALOG: BusinessNavCatalogEntry[] = [
   {
     navKey: "sales",
     href: "/business/sales",
-    icon: ShoppingBag,
+    icon: Tag,
     title: "Sales",
     navbarPriority: 3,
     appsCategory: "core",

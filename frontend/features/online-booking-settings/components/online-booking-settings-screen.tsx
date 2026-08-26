@@ -17,6 +17,7 @@ import {
   updateOnlineBookingSetup,
   updateOnlineBookingStaffSelection,
 } from "@/features/online-booking-settings/api/online-booking-settings.api";
+import { SettingsFormGrid } from "@/components/forms/settings-form-grid";
 import { AvoidGapsSettingsSection } from "@/features/online-booking-settings/components/avoid-gaps-settings-section";
 import { useCan } from "@/features/auth/permissions";
 
@@ -77,14 +78,7 @@ export function OnlineBookingSettingsScreen() {
   const form = (data.formSettings ?? {}) as Record<string, unknown>;
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Online Booking</h1>
-        <p className="text-sm text-muted-foreground">
-          Manage your public booking link, preferences, and staff selection.
-        </p>
-      </div>
-
+    <div className="space-y-[var(--spacing-6)]">
       <Tabs defaultValue="setup">
         <TabsList>
           <TabsTrigger value="setup">Setup & Integration</TabsTrigger>
@@ -94,10 +88,7 @@ export function OnlineBookingSettingsScreen() {
 
         <TabsContent value="setup" className="space-y-4 pt-4">
           <Card>
-            <CardHeader>
-              <CardTitle>Online booking</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 pt-6">
               <div className="flex items-center justify-between">
                 <Label htmlFor="ob-enabled">Enabled</Label>
                 <Switch
@@ -195,7 +186,7 @@ export function OnlineBookingSettingsScreen() {
         <TabsContent value="preferences" className="space-y-4 pt-4">
           <Card>
             <CardContent className="space-y-4 pt-6">
-              <div className="grid gap-4 sm:grid-cols-2">
+              <SettingsFormGrid>
                 <div>
                   <Label>Maximum advance booking (days)</Label>
                   <Input
@@ -239,7 +230,7 @@ export function OnlineBookingSettingsScreen() {
                     processing time come from each service&apos;s settings.
                   </p>
                 </div>
-              </div>
+              </SettingsFormGrid>
               <AvoidGapsSettingsSection
                 data={data}
                 disabled={!canManage}

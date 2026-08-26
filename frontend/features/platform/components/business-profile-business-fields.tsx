@@ -2,6 +2,7 @@
 
 import type { UseFormReturn } from "react-hook-form";
 import { SelectField } from "@/components/forms/select-field";
+import { SettingsFormGrid } from "@/components/forms/settings-form-grid";
 import { TextField } from "@/components/forms/text-field";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BusinessProfileSectionTitle } from "@/features/platform/components/business-profile-section-title";
@@ -70,48 +71,56 @@ export function BusinessProfileBusinessFields({
     />
   );
 
+  const snapshotField = showSnapshotPicker ? (
+    snapshotsLoading ? (
+      <Skeleton className="h-[var(--control-height)] w-full" />
+    ) : (
+      <SelectField
+        control={form.control}
+        name="snapshotId"
+        label="Snapshot (optional)"
+        items={[
+          { value: "", label: "Default business snapshot" },
+          ...(snapshotOptions ?? []),
+        ]}
+        placeholder="Default business snapshot"
+        disabled={disabled}
+      />
+    )
+  ) : null;
+
+  const nameField = (
+    <TextField
+      control={form.control}
+      name="name"
+      label="Legal business name"
+      placeholder="ABC Med Spa"
+      disabled={disabled}
+    />
+  );
+
   return (
-    <section className="space-y-5">
+    <section className="space-y-[var(--spacing-4)]">
       {showSectionTitle ? (
         <BusinessProfileSectionTitle>Business</BusinessProfileSectionTitle>
       ) : null}
-      <TextField
-        control={form.control}
-        name="name"
-        label="Legal business name"
-        placeholder="ABC Med Spa"
-        disabled={disabled}
-      />
       {twoColumnLayout ? (
-        <div className="grid gap-4 sm:grid-cols-2">
+        <SettingsFormGrid>
+          {nameField}
           {industryField}
-          {statusField ?? logoField}
-        </div>
+          {logoField}
+          {statusField}
+          {snapshotField}
+        </SettingsFormGrid>
       ) : (
         <>
+          {nameField}
           {industryField}
           {statusField}
+          {logoField}
+          {snapshotField}
         </>
       )}
-      {showSnapshotPicker ? (
-        snapshotsLoading ? (
-          <Skeleton className="h-[var(--control-height)] w-full" />
-        ) : (
-          <SelectField
-            control={form.control}
-            name="snapshotId"
-            label="Snapshot (optional)"
-            items={[
-              { value: "", label: "Default business snapshot" },
-              ...(snapshotOptions ?? []),
-            ]}
-            placeholder="Default business snapshot"
-            disabled={disabled}
-          />
-        )
-      ) : null}
-      {twoColumnLayout && showStatus ? logoField : null}
-      {!twoColumnLayout ? logoField : null}
     </section>
   );
 }

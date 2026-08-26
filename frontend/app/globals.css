@@ -251,6 +251,8 @@
   --shell-navbar-tab-padding-x: var(--cs-shell-navbar-tab-padding-x);
   --shell-navbar-tab-radius: var(--cs-shell-navbar-tab-radius);
   --shell-navbar-tab-gap: var(--cs-shell-navbar-tab-gap);
+  --shell-navbar-tab-icon-size: var(--cs-shell-navbar-tab-icon-size);
+  --shell-navbar-tab-icon-gap: var(--cs-shell-navbar-tab-icon-gap);
   --shell-navbar-tab-underline-width: var(--cs-shell-navbar-tab-underline-width);
   --shell-navbar-tab-underline-height: var(--cs-shell-navbar-tab-underline-height);
   --glass-blur: 18px;
@@ -278,7 +280,7 @@
   --plus-button-size: 1.05rem;
   --page-padding-x: 1rem;
   --page-padding-y: 0.5rem;
-  --page-content-top-gap: 0.5rem;
+  --page-content-top-gap: 0.6rem;
   --section-gap: 1.5rem;
   --page-stack-gap: 1rem;
   --stack-gap: 0.75rem;
@@ -366,6 +368,8 @@
   --shell-navbar-tab-padding-x: var(--cs-shell-navbar-tab-padding-x);
   --shell-navbar-tab-radius: var(--cs-shell-navbar-tab-radius);
   --shell-navbar-tab-gap: var(--cs-shell-navbar-tab-gap);
+  --shell-navbar-tab-icon-size: var(--cs-shell-navbar-tab-icon-size);
+  --shell-navbar-tab-icon-gap: var(--cs-shell-navbar-tab-icon-gap);
   --shell-navbar-tab-underline-width: var(--cs-shell-navbar-tab-underline-width);
   --shell-navbar-tab-underline-height: var(--cs-shell-navbar-tab-underline-height);
   --glass-blur: 18px;

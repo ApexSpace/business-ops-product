@@ -1,11 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ArrowLeft, Menu } from "lucide-react";
 import { SettingsLayout } from "@/components/layout/settings-layout";
-import { PageBreadcrumbs } from "@/components/layout/page-breadcrumbs";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -92,12 +91,9 @@ function SettingsContentHeader() {
 
   return (
     <div className="min-w-0 space-y-1">
-      <PageBreadcrumbs />
-      <h1 className="text-lg font-semibold tracking-tight text-foreground">
-        {metadata.title}
-      </h1>
+      <h1 className="text-page-title">{metadata.title}</h1>
       {metadata.description ? (
-        <p className="text-sm text-muted-foreground">{metadata.description}</p>
+        <p className="text-caption max-w-2xl">{metadata.description}</p>
       ) : null}
     </div>
   );
@@ -119,10 +115,12 @@ export function SettingsWorkspaceChrome({
   }, [pathname]);
 
   const nav = (
-    <SettingsNavPanel
-      sections={sections}
-      onNavigate={() => setNavOpen(false)}
-    />
+    <Suspense fallback={<div className="flex h-full min-h-0 flex-col gap-4 p-4" />}>
+      <SettingsNavPanel
+        sections={sections}
+        onNavigate={() => setNavOpen(false)}
+      />
+    </Suspense>
   );
 
   const toolbar = browseMode ? (
@@ -157,7 +155,7 @@ export function SettingsWorkspaceChrome({
         sidebar={nav}
         toolbar={isLg ? undefined : toolbar}
       >
-        <div className="flex min-h-0 min-w-0 flex-col gap-6 p-4 lg:p-6">
+        <div className="flex min-h-0 min-w-0 flex-col gap-[var(--spacing-6)] p-[var(--spacing-4)] lg:p-[var(--spacing-6)]">
           <SettingsContentHeader />
           {children}
         </div>

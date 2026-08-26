@@ -3,6 +3,7 @@
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Switch } from "@/components/ui/switch";
+import { SettingsFormGrid } from "@/components/forms/settings-form-grid";
 import type { OnlineBookingSettings } from "@/features/online-booking-settings/api/online-booking-settings.api";
 
 const GAP_MINUTE_OPTIONS = [
@@ -91,7 +92,7 @@ export function AvoidGapsSettingsSection({ data, disabled, onSave }: Props) {
 
       {data.avoidGapsEnabled ? (
         <div className="space-y-4 border-t pt-4">
-          <div className="grid gap-4 sm:grid-cols-2">
+          <SettingsFormGrid>
             <div className="space-y-2">
               <Label htmlFor="avoid-gaps-max">Don&apos;t allow gaps larger than</Label>
               <select
@@ -128,7 +129,7 @@ export function AvoidGapsSettingsSection({ data, disabled, onSave }: Props) {
                 ))}
               </select>
             </div>
-          </div>
+          </SettingsFormGrid>
 
           {showStrictNote ? (
             <div className="rounded-md bg-primary/10 px-3 py-2 text-sm text-primary">

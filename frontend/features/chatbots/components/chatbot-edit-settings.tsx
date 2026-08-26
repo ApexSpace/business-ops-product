@@ -18,6 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { SettingsFormGrid } from "@/components/forms/settings-form-grid";
 import { SettingsCard } from "@/components/layout/settings-card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -261,7 +262,7 @@ function ChatbotEditForm({
 
             <TabsContent value="styles" className="mt-4 space-y-4">
               <SettingsCard title="Placement & appearance">
-                <div className="grid gap-4 sm:grid-cols-2">
+                <SettingsFormGrid>
                   <div>
                     <Label>Name</Label>
                     <Input
@@ -303,7 +304,7 @@ function ChatbotEditForm({
                       }
                     />
                   </div>
-                </div>
+                </SettingsFormGrid>
                 <div className="mt-4 flex items-center justify-between">
                   <Label>Show branding</Label>
                   <Checkbox

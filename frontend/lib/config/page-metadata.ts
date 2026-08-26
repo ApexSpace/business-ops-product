@@ -163,12 +163,12 @@ const businessRoutes: Record<string, RouteEntry> = {
     description: "Product catalog, inventory, variants, and bundles.",
   },
   "/business/settings/profile": {
-    title: "Business Profile",
+    title: "Business Details",
     description:
-      "Business details, logo, address, timezone, and default tax and currency settings.",
+      "Edit legal name, industry, and branding for this workspace.",
     breadcrumbs: [
       { label: "Settings", href: "/business/settings/profile" },
-      { label: "Business Profile" },
+      { label: "Business Details" },
     ],
   },
   "/business/settings/team": {
@@ -185,6 +185,15 @@ const businessRoutes: Record<string, RouteEntry> = {
     breadcrumbs: [
       { label: "Settings", href: "/business/settings/profile" },
       { label: "Calendars" },
+    ],
+  },
+  "/business/settings/online-booking": {
+    title: "Online Booking",
+    description:
+      "Manage your public booking link, preferences, and staff selection.",
+    breadcrumbs: [
+      { label: "Settings", href: "/business/settings/profile" },
+      { label: "Online Booking" },
     ],
   },
   "/business/settings/services": {
@@ -223,6 +232,7 @@ const businessRoutes: Record<string, RouteEntry> = {
   },
   "/business/settings/templates": {
     title: "Templates",
+    description: "Reusable messages for follow-ups and campaigns.",
     breadcrumbs: [
       { label: "Settings", href: "/business/settings/profile" },
       { label: "Templates" },
@@ -315,6 +325,8 @@ const businessRoutes: Record<string, RouteEntry> = {
   },
   "/business/settings/notifications": {
     title: "Notifications",
+    description:
+      "Control which notifications send and whether they go by email or SMS. Customize email templates and review delivery logs.",
     breadcrumbs: [
       { label: "Settings", href: "/business/settings/profile" },
       { label: "Notifications" },

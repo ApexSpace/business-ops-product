@@ -2,6 +2,7 @@
 
 import type { UseFormReturn } from "react-hook-form";
 import { SelectField } from "@/components/forms/select-field";
+import { SettingsFormGrid } from "@/components/forms/settings-form-grid";
 import { TextField } from "@/components/forms/text-field";
 import { BusinessProfileSectionTitle } from "@/features/platform/components/business-profile-section-title";
 import type { BusinessProfileFormValues } from "@/features/settings/schemas/business-profile";
@@ -21,7 +22,7 @@ export function BusinessProfileAddressFields({
       {showSectionTitle ? (
         <BusinessProfileSectionTitle>Address</BusinessProfileSectionTitle>
       ) : null}
-      <div className="grid gap-4 sm:grid-cols-2">
+      <SettingsFormGrid>
         <TextField
           control={form.control}
           name="address"
@@ -36,8 +37,6 @@ export function BusinessProfileAddressFields({
           placeholder="Suite 100"
           disabled={disabled}
         />
-      </div>
-      <div className="grid gap-4 sm:grid-cols-2">
         <TextField
           control={form.control}
           name="city"
@@ -50,8 +49,6 @@ export function BusinessProfileAddressFields({
           label="State / Province"
           disabled={disabled}
         />
-      </div>
-      <div className="grid gap-4 sm:grid-cols-2">
         <SelectField
           control={form.control}
           name="country"
@@ -66,7 +63,7 @@ export function BusinessProfileAddressFields({
           label="ZIP / Postal code"
           disabled={disabled}
         />
-      </div>
+      </SettingsFormGrid>
     </section>
   );
 }

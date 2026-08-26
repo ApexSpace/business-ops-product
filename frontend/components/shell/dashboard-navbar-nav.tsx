@@ -20,6 +20,22 @@ type NavbarTone = "onBrand" | "default";
 const NAVBAR_TAB_LAYOUT_CLASS =
   "h-[var(--shell-navbar-tab-height)] rounded-[var(--shell-navbar-tab-radius)] px-[var(--shell-navbar-tab-padding-x)] py-[var(--shell-navbar-tab-padding-y)]";
 
+const NAVBAR_TAB_CONTENT_CLASS =
+  "inline-flex items-center gap-[var(--shell-navbar-tab-icon-gap)]";
+
+const NAVBAR_TAB_ICON_CLASS =
+  "size-[var(--shell-navbar-tab-icon-size)] shrink-0";
+
+function NavbarTabContent({ item }: { item: ShellNavItem }) {
+  const Icon = item.icon;
+  return (
+    <>
+      <Icon className={NAVBAR_TAB_ICON_CLASS} aria-hidden />
+      <span className="whitespace-nowrap">{item.title}</span>
+    </>
+  );
+}
+
 interface DashboardNavbarLinkProps {
   item: ShellNavItem;
   onNavigate?: () => void;
@@ -61,8 +77,8 @@ export function DashboardNavbarLink({
         className,
       )}
     >
-      <span className="relative inline-block leading-none whitespace-nowrap">
-        {item.title}
+      <span className={cn("relative leading-none", NAVBAR_TAB_CONTENT_CLASS)}>
+        <NavbarTabContent item={item} />
         {onBrand ? (
           <span
             aria-hidden
@@ -79,7 +95,7 @@ export function DashboardNavbarLink({
   );
 }
 
-function NavbarItemWidthProbe({ title }: { title: string }) {
+function NavbarItemWidthProbe({ item }: { item: ShellNavItem }) {
   return (
     <span
       className={cn(
@@ -88,7 +104,9 @@ function NavbarItemWidthProbe({ title }: { title: string }) {
         NAVBAR_TAB_LAYOUT_CLASS,
       )}
     >
-      <span className="whitespace-nowrap">{title}</span>
+      <span className={NAVBAR_TAB_CONTENT_CLASS}>
+        <NavbarTabContent item={item} />
+      </span>
     </span>
   );
 }
@@ -181,7 +199,7 @@ export function DashboardNavbarNav({
         className="pointer-events-none invisible absolute top-0 left-0 flex items-center gap-[var(--spacing-2)] whitespace-nowrap"
       >
         {items.map((item) => (
-          <NavbarItemWidthProbe key={item.href} title={item.title} />
+          <NavbarItemWidthProbe key={item.href} item={item} />
         ))}
       </div>
       <div className="flex h-full min-w-0 items-center gap-[var(--spacing-2)] overflow-hidden">

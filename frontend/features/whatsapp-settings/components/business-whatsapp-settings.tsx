@@ -2,7 +2,6 @@
 
 import { useCallback } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { PageHeader } from "@/components/layout/page-header";
 import { PageTabs, PageTabsPanel } from "@/components/layout/page-tabs";
 import { WhatsAppFlowsTab } from "@/features/whatsapp-settings/components/whatsapp-flows-tab";
 import { WhatsAppNumbersTab } from "@/features/whatsapp-settings/components/whatsapp-numbers-tab";
@@ -32,9 +31,7 @@ export function BusinessWhatsAppSettings() {
   );
 
   return (
-    <div className="w-full min-w-0 space-y-6">
-      <PageHeader />
-
+    <div className="w-full min-w-0 space-y-[var(--spacing-6)]">
       <PageTabs
         value={activeTab}
         onValueChange={(value) =>

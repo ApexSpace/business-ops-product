@@ -3,6 +3,7 @@
 import { useId } from "react";
 import type { UseFormReturn } from "react-hook-form";
 import { SelectField } from "@/components/forms/select-field";
+import { SettingsFormGrid } from "@/components/forms/settings-form-grid";
 import { TextField } from "@/components/forms/text-field";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -94,7 +95,7 @@ export function BusinessProfileRegionalFields({
           disabled={disabled}
         />
         {twoColumnLayout ? (
-          <div className="grid items-start gap-4 sm:grid-cols-2">
+          <SettingsFormGrid>
             <SelectField
               control={form.control}
               name="timezone"
@@ -111,7 +112,7 @@ export function BusinessProfileRegionalFields({
               searchable={false}
               disabled={disabled}
             />
-          </div>
+          </SettingsFormGrid>
         ) : (
           <SelectField
             control={form.control}
@@ -134,12 +135,12 @@ export function BusinessProfileRegionalFields({
           </div>
         ) : null}
         {twoColumnLayout ? (
-          <div className="grid items-start gap-4 sm:grid-cols-2">
+          <SettingsFormGrid>
             {currencySymbolField}
             {defaultTaxRateField}
-          </div>
+          </SettingsFormGrid>
         ) : (
-          <div className="grid items-start gap-4 sm:grid-cols-2">
+          <SettingsFormGrid>
             <SelectField
               control={form.control}
               name="taxesAndCurrency.currencyCode"
@@ -151,7 +152,7 @@ export function BusinessProfileRegionalFields({
             />
             {currencySymbolField}
             {defaultTaxRateField}
-          </div>
+          </SettingsFormGrid>
         )}
         <FormField
           control={form.control}
