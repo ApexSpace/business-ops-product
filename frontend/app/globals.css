@@ -270,7 +270,7 @@
   /* Body row height — single list density (56px, still ≥44px for row hit targets) */
   --table-row-height: 3.5rem;
   --table-row-height-compact: var(--table-row-height);
-  --table-header-height: 3.6875rem;
+  --table-header-height: var(--table-row-height);
   /* Default ≥40px control; sm remains dense for compact chrome */
   --control-height: 2.5rem;
   --control-height-sm: 2rem;
