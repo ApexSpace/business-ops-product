@@ -1,6 +1,7 @@
 "use client";
 
 import { DrawerAddAction } from "@/components/drawer/drawer-add-action";
+import { PlusIconButton } from "@/components/drawer/drawer-icons";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -58,6 +59,7 @@ export function CheckoutAddActions({
                 disabled && "pointer-events-none opacity-50",
               )}
             >
+              <PlusIconButton as="span" />
               More
             </button>
           }

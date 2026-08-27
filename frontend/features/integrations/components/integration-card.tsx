@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Loader2, MoreVertical } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { IntegrationProviderIcon } from "@/features/integrations/components/integration-provider-icon";
 import { IntegrationStatusBadge } from "@/features/integrations/components/integration-status-badge";
 import { Button } from "@/components/ui/button";
@@ -21,7 +21,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { IconButton } from "@/components/ui/icon-button";
+import { MoreActionsButton } from "@/components/ui/more-actions-button";
 import {
   formatIntegrationDate,
   getIntegrationConnectLabel,
@@ -92,12 +92,9 @@ export function IntegrationCard({
           <DropdownMenu>
             <DropdownMenuTrigger
               render={
-                <IconButton
+                <MoreActionsButton
                   aria-label={`Actions for ${provider.name}`}
-                  className="size-8"
-                >
-                  <MoreVertical className="size-4" />
-                </IconButton>
+                />
               }
             />
             <DropdownMenuContent align="end" className="w-44">

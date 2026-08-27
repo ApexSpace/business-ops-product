@@ -93,8 +93,70 @@ function matchesPathPrefix(pathname: string, prefix: string): boolean {
 }
 
 /**
+ * Exact routes that render EntityListLayout (DataTable + toolbar).
+ * Shell is full-bleed; inset lives on EntityListLayout only.
+ */
+const DATA_TABLE_LIST_EXACT_PATHS = new Set([
+  "/business/sales",
+  "/business/contacts",
+  "/business/leads",
+  "/business/tasks",
+  "/business/notes",
+  "/business/work-items",
+  "/business/products",
+  "/business/offers",
+  "/business/gift-cards",
+  "/business/packages",
+  "/business/memberships",
+  "/business/time-cards",
+  "/business/social-planner/posts",
+  "/business/settings/forms",
+  "/business/settings/automations",
+  "/business/settings/pipelines",
+  "/business/settings/calendars",
+  "/business/settings/chatbots",
+  "/platform/users",
+  "/platform/businesses",
+  "/platform/plan-groups",
+  "/platform/snapshots",
+  "/platform/capabilities",
+  "/platform/industries",
+  "/platform/audit-logs",
+  "/platform/forms",
+  "/platform/automations",
+  "/platform/chatbots",
+  "/platform/work-items",
+]);
+
+/** Nested DataTable list routes (detail/edit under these prefixes are excluded). */
+const DATA_TABLE_LIST_PREFIXES = [
+  "/business/sales",
+  "/business/payments",
+] as const;
+
+export function isDataTableListPath(pathname: string): boolean {
+  if (DATA_TABLE_LIST_EXACT_PATHS.has(pathname)) return true;
+  if (
+    DATA_TABLE_LIST_PREFIXES.some(
+      (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+    )
+  ) {
+    return true;
+  }
+  return /\/forms\/[^/]+\/submissions$/.test(pathname);
+}
+
+/** Settings-chrome pages that are DataTable lists (not migrated Apps). */
+export function isSettingsDataTableListPath(pathname: string): boolean {
+  return (
+    pathname === "/business/settings/calendars" ||
+    pathname === "/business/settings/chatbots"
+  );
+}
+
+/**
  * Apps catalog routes that are master-detail / canvas workspaces (not DataTable).
- * DataTable Apps (Forms, Automations, Pipeline settings, Sales, …) stay padded.
+ * DataTable Apps use EntityListLayout + isDataTableListPath (full-bleed + composite inset).
  *
  * Add a prefix here when a new non-table Apps page should inherit full-bleed.
  * Do not add per-page layout patches.

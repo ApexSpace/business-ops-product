@@ -1,9 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { MoreVertical } from "lucide-react";
 import { OptionsFilterDrawer } from "@/components/layout/options-filter-drawer";
-import { IconButton } from "@/components/ui/icon-button";
+import { MoreActionsButton } from "@/components/ui/more-actions-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -16,11 +15,8 @@ import {
 import {
   DRAWER_FIELD_CLASS,
   DRAWER_FORM_FIELDS_CLASS,
-  DRAWER_HEADER_ACTION_CLASS,
-  DRAWER_MOBILE_HEADER_ACTION_CLASS,
   DRAWER_SELECT_TRIGGER_CLASS,
 } from "@/lib/design/drawer-tokens";
-import { useIsMobile } from "@/lib/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 
 export type ContactsTimeFilter = "all" | "30d" | "90d" | "1y";
@@ -97,7 +93,6 @@ export function ContactsOptionsDrawer({
   onImport,
   downloadPending = false,
 }: ContactsOptionsDrawerProps) {
-  const isMobile = useIsMobile();
   const [draft, setDraft] = useState<ContactsOptionsValues>(values);
 
   const handleOpenChange = (next: boolean) => {
@@ -122,20 +117,7 @@ export function ContactsOptionsDrawer({
         onDownload?.();
       }}
       showMoreAction={false}
-      headerActions={
-        <IconButton
-          type="button"
-          variant="ghost"
-          aria-label="More options"
-          className={
-            isMobile
-              ? DRAWER_MOBILE_HEADER_ACTION_CLASS
-              : DRAWER_HEADER_ACTION_CLASS
-          }
-        >
-          <MoreVertical className="size-5" />
-        </IconButton>
-      }
+      headerActions={<MoreActionsButton aria-label="More options" />}
       leading={
         onImport ? (
           <button

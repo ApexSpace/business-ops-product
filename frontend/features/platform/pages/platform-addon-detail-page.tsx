@@ -406,6 +406,7 @@ export function PlatformAddonDetailPage({ isNew = false }: { isNew?: boolean }) 
 
       <div className="flex flex-wrap gap-2">
         <Button
+          variant="brand"
           onClick={() => previewThenSave.mutate()}
           disabled={
             previewThenSave.isPending ||

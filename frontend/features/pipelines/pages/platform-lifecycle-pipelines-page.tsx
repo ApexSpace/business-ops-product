@@ -158,7 +158,7 @@ export function PlatformLifecyclePipelinesPage() {
         title="Pipelines"
         description="Campaign funnels on PandaCue Ops. Cards are real Business rows (LEAD → ACTIVE)."
         actions={
-          <Button size="sm" onClick={() => setCreateOpen(true)}>
+          <Button variant="brand" onClick={() => setCreateOpen(true)}>
             New pipeline
           </Button>
         }
@@ -170,7 +170,7 @@ export function PlatformLifecyclePipelinesPage() {
             No campaign pipelines yet. Create one (e.g. “Facebook Campaign”) to
             place businesses from form automations.
           </p>
-          <Button size="sm" onClick={() => setCreateOpen(true)}>
+          <Button variant="brand" onClick={() => setCreateOpen(true)}>
             Create first pipeline
           </Button>
         </div>

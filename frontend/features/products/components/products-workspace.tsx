@@ -13,11 +13,8 @@ import { DataImportWizard } from "@/features/data-io/components/data-import-wiza
 import { EntityDetailDrawer } from "@/components/layout/entity-detail-drawer";
 import { EntityDetailFooter } from "@/components/layout/entity-detail-footer";
 import { EntityDetailSection } from "@/components/layout/entity-detail-section";
-import { EntityWorkspaceLayout } from "@/components/layout/entity-workspace-layout";
-import { ListFilterButton } from "@/components/layout/list-filter-button";
-import { ListPrimaryAction } from "@/components/layout/list-primary-action";
-import { SearchInput } from "@/components/forms/search-input";
-import { DataTable, type DataTableColumn } from "@/components/data-display/data-table";
+import { EntityListLayout } from "@/components/layout/entity-list-layout";
+import { type DataTableColumn } from "@/components/data-display/data-table";
 import { LoadingState } from "@/components/data-display/loading-state";
 import { ListPagination } from "@/components/ui/list-pagination";
 import { Button } from "@/components/ui/button";
@@ -69,10 +66,7 @@ import {
 } from "@/components/ui/table";
 import { useEntitySelection } from "@/lib/routing/use-entity-selection";
 import { useIsMobile } from "@/lib/hooks/use-mobile";
-import {
-  WORKSPACE_ACTIVE_ROW_CLASS,
-  WORKSPACE_TABLE_CLASS,
-} from "@/lib/design/workspace-tokens";
+import { WORKSPACE_ACTIVE_ROW_CLASS } from "@/lib/design/workspace-tokens";
 import { formatMoney } from "@/features/payments/schemas/payment-profile";
 import { useProductsList } from "@/features/products/hooks/use-products-list";
 import { useProductDetail } from "@/features/products/hooks/use-product-detail";
@@ -321,33 +315,20 @@ export function ProductsWorkspace() {
           }
         />
       ) : (
-      <EntityWorkspaceLayout
+      <EntityListLayout
         title="Products"
         description="Manage catalog products, pricing, and inventory."
-        search={
-          <SearchInput
-            value={search}
-            onChange={(value) => {
-              setSearch(value);
-              setPage(1);
-            }}
-            placeholder="Search products…"
-            className="min-w-0 flex-1"
-          />
-        }
-        filters={
-          canManage ? (
-            <ListFilterButton
-              aria-label="Product options"
-              onClick={() => setOptionsOpen(true)}
-            />
-          ) : undefined
-        }
-        actions={
-          canManage ? (
-            <ListPrimaryAction label="New Product" onClick={openCreate} />
-          ) : null
-        }
+        addButtonLabel="New Product"
+        onAdd={canManage ? openCreate : undefined}
+        searchPlaceholder="Search products…"
+        searchValue={search}
+        onSearchChange={(value) => {
+          setSearch(value);
+          setPage(1);
+        }}
+        showFilter={canManage}
+        filterAriaLabel="Product options"
+        onFilterClick={() => setOptionsOpen(true)}
         footer={
           listData?.meta && products.length > 0 ? (
             <ListPagination
@@ -359,33 +340,29 @@ export function ProductsWorkspace() {
             />
           ) : undefined
         }
-      >
-        <DataTable
-          columns={columns}
-          data={products}
-          getRowId={(row) => row.id}
-          isLoading={isLoading}
-          density="compact"
-          activeRowId={selectedId}
-          onRowClick={(row) => {
-            setDrawerMode("view");
-            setSelectedId(row.id);
-          }}
-          getRowClassName={(row) =>
-            selectedId === row.id ? WORKSPACE_ACTIVE_ROW_CLASS : undefined
-          }
-          emptyTitle="No products yet"
-          emptyDescription="Add your first product to get started."
-          emptyAction={
-            canManage ? (
-              <Button size="sm" onClick={openCreate}>
-                Add product
-              </Button>
-            ) : undefined
-          }
-          className={WORKSPACE_TABLE_CLASS}
-        />
-      </EntityWorkspaceLayout>
+        columns={columns}
+        data={products}
+        getRowId={(row) => row.id}
+        isLoading={isLoading}
+        density="compact"
+        activeRowId={selectedId}
+        onRowClick={(row) => {
+          setDrawerMode("view");
+          setSelectedId(row.id);
+        }}
+        getRowClassName={(row) =>
+          selectedId === row.id ? WORKSPACE_ACTIVE_ROW_CLASS : undefined
+        }
+        emptyTitle="No products yet"
+        emptyDescription="Add your first product to get started."
+        emptyAction={
+          canManage ? (
+            <Button variant="brand" onClick={openCreate}>
+              Add product
+            </Button>
+          ) : undefined
+        }
+      />
       )}
 
       <EntityDetailDrawer
@@ -442,14 +419,15 @@ export function ProductsWorkspace() {
             <EntityDetailFooter>
               <Button
                 variant="outline"
-                className="min-h-[2.75rem] w-full sm:w-auto sm:min-w-[10rem]"
+                className="w-full sm:w-auto sm:min-w-[10rem]"
                 disabled={mutations.update.isPending}
                 onClick={cancelEdit}
               >
                 Cancel
               </Button>
               <Button
-                className="min-h-[2.75rem] w-full sm:w-auto sm:min-w-[10rem]"
+                variant="brand"
+                className="w-full sm:w-auto sm:min-w-[10rem]"
                 disabled={
                   mutations.update.isPending || !editForm.name.trim()
                 }

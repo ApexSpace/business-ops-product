@@ -4,13 +4,11 @@ import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
-  DataTable,
-} from "@/components/data-display/data-table";
-import { DataTableRowActions } from "@/components/data-display/data-table-row-actions";
+  DataTableRowActions,
+} from "@/components/data-display/data-table-row-actions";
 import { ConfirmDeleteDialog } from "@/components/forms/confirm-delete-dialog";
-import { SearchInput } from "@/components/forms/search-input";
-import { SearchableSelect } from "@/components/forms/searchable-select";
-import { EntityWorkspaceLayout } from "@/components/layout/entity-workspace-layout";
+import { EntityListLayout } from "@/components/layout/entity-list-layout";
+import { ListFilterCheckboxGroup } from "@/components/layout/list-filter-checkbox-group";
 import { TaskFormDialog } from "@/features/tasks/components/task-form-dialog";
 import { TasksMobileList } from "@/features/tasks/components/mobile/tasks-mobile-list";
 import { useTasksPageColumns } from "@/features/tasks/hooks/use-tasks-page-columns";
@@ -20,10 +18,7 @@ import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
 import { useListSearchParams } from "@/lib/hooks/use-list-search-params";
 import { useEntitySelection } from "@/lib/routing/use-entity-selection";
 import { useIsMobile } from "@/lib/hooks/use-mobile";
-import {
-  WORKSPACE_ACTIVE_ROW_CLASS,
-  WORKSPACE_TABLE_CLASS,
-} from "@/lib/design/workspace-tokens";
+import { WORKSPACE_ACTIVE_ROW_CLASS } from "@/lib/design/workspace-tokens";
 import { completeTask, deleteTask, reopenTask } from "@/features/tasks/api/tasks.api";
 import { useTasksList } from "@/features/tasks/hooks/use-tasks-list";
 import { listBusinessMembers } from "@/features/settings/api/business.api";
@@ -70,6 +65,10 @@ export function TasksPageContent() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Task | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [draftStatus, setDraftStatus] = useState(params.status);
+  const [draftPriority, setDraftPriority] = useState(params.priority);
+  const [draftAssignee, setDraftAssignee] = useState(params.assignedToId);
 
   const listFilters = {
     page,
@@ -160,60 +159,61 @@ export function TasksPageContent() {
           }
         />
       ) : (
-      <EntityWorkspaceLayout
+      <EntityListLayout
         title="Tasks"
         description="Follow-up actions with due dates, linked to contacts and leads."
-        search={
-          <SearchInput
-            value={params.search}
-            onChange={(search) => setParams({ search, page: "1" })}
-            placeholder="Search tasks…"
-            className="min-w-0 flex-1 sm:max-w-md"
-          />
-        }
-        filters={
+        addButtonLabel="New task"
+        onAdd={() => {
+          setEditing(null);
+          setDialogOpen(true);
+        }}
+        searchPlaceholder="Search tasks…"
+        searchValue={params.search}
+        onSearchChange={(search) => setParams({ search, page: "1" })}
+        filterAriaLabel="Task filters"
+        filterActive={Boolean(
+          params.status || params.priority || params.assignedToId,
+        )}
+        filterOpen={filterOpen}
+        onFilterOpenChange={(open) => {
+          if (open) {
+            setDraftStatus(params.status);
+            setDraftPriority(params.priority);
+            setDraftAssignee(params.assignedToId);
+          }
+          setFilterOpen(open);
+        }}
+        filterContent={
           <>
-            <SearchableSelect
-              items={statusFilterItems}
-              value={params.status}
-              onValueChange={(status) =>
-                setParams({ status: status ?? "", page: "1" })
-              }
-              placeholder="Status"
-              triggerClassName="w-[9.5rem] shrink-0"
+            <ListFilterCheckboxGroup
+              legend="Status"
+              options={statusFilterItems}
+              value={draftStatus}
+              onChange={(next) => setDraftStatus(String(next))}
             />
-            <SearchableSelect
-              items={priorityFilterItems}
-              value={params.priority}
-              onValueChange={(priority) =>
-                setParams({ priority: priority ?? "", page: "1" })
-              }
-              placeholder="Priority"
-              triggerClassName="w-[9.5rem] shrink-0"
+            <ListFilterCheckboxGroup
+              legend="Priority"
+              options={priorityFilterItems}
+              value={draftPriority}
+              onChange={(next) => setDraftPriority(String(next))}
             />
             {canAssign ? (
-              <SearchableSelect
-                items={assigneeFilterItems}
-                value={params.assignedToId}
-                onValueChange={(assignedToId) =>
-                  setParams({ assignedToId: assignedToId ?? "", page: "1" })
-                }
-                placeholder="Assignee"
-                triggerClassName="w-[11rem] shrink-0"
+              <ListFilterCheckboxGroup
+                legend="Assignee"
+                options={assigneeFilterItems}
+                value={draftAssignee}
+                onChange={(next) => setDraftAssignee(String(next))}
               />
             ) : null}
           </>
         }
-        actions={
-          <Button
-            size="sm"
-            onClick={() => {
-              setEditing(null);
-              setDialogOpen(true);
-            }}
-          >
-            New task
-          </Button>
+        onFilterApply={() =>
+          setParams({
+            status: draftStatus,
+            priority: draftPriority,
+            assignedToId: draftAssignee,
+            page: "1",
+          })
         }
         footer={
           data ? (
@@ -225,32 +225,30 @@ export function TasksPageContent() {
             />
           ) : undefined
         }
-      >
-        <DataTable
-          columns={columns}
-          data={data?.items ?? []}
-          getRowId={(row) => row.id}
-          isLoading={isLoading}
-          density="compact"
-          activeRowId={selectedId}
-          onRowClick={(row) => openTask(row)}
-          getRowClassName={(row) =>
-            selectedId === row.id ? WORKSPACE_ACTIVE_ROW_CLASS : undefined
-          }
-          emptyTitle="No tasks yet"
-          emptyDescription="Create a task from a contact workspace or here."
-          emptyAction={
-            <Button
-              size="sm"
-              onClick={() => {
-                setEditing(null);
-                setDialogOpen(true);
-              }}
-            >
-              New task
-            </Button>
-          }
-          rowActions={(row) => (
+        columns={columns}
+        data={data?.items ?? []}
+        getRowId={(row) => row.id}
+        isLoading={isLoading}
+        density="compact"
+        activeRowId={selectedId}
+        onRowClick={(row) => openTask(row)}
+        getRowClassName={(row) =>
+          selectedId === row.id ? WORKSPACE_ACTIVE_ROW_CLASS : undefined
+        }
+        emptyTitle="No tasks yet"
+        emptyDescription="Create a task from a contact workspace or here."
+        emptyAction={
+          <Button
+            variant="brand"
+            onClick={() => {
+              setEditing(null);
+              setDialogOpen(true);
+            }}
+          >
+            New task
+          </Button>
+        }
+        rowActions={(row) => (
             <DataTableRowActions
               actions={[
                 row.status !== "COMPLETED"
@@ -273,10 +271,8 @@ export function TasksPageContent() {
                 },
               ]}
             />
-          )}
-          className={WORKSPACE_TABLE_CLASS}
-        />
-      </EntityWorkspaceLayout>
+        )}
+      />
       )}
 
       <TaskFormDialog

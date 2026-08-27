@@ -2,14 +2,11 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2,
-  MoreHorizontal,
-  Pencil, Search,
-  Trash2,
-} from "lucide-react";
+import { Loader2, Pencil, Search, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { ConfirmDeleteDialog } from "@/components/forms/confirm-delete-dialog";
 import { Button } from "@/components/ui/button";
+import { MoreActionsButton } from "@/components/ui/more-actions-button";
 import {
   Dialog,
   DialogBody,
@@ -405,17 +402,9 @@ export function QuickRepliesDialog({
                       </h3>
                       <DropdownMenu>
                         <DropdownMenuTrigger
-                          render={
-                            <Button
-                              type="button"
-                              size="icon"
-                              variant="ghost"
-                              className="size-8 shrink-0"
-                              aria-label="Quick reply options"
-                            >
-                              <MoreHorizontal className="size-4" />
-                            </Button>
-                          }
+                            render={
+                              <MoreActionsButton aria-label="Quick reply options" />
+                            }
                         />
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem onClick={() => startEdit(selectedItem)}>
@@ -455,7 +444,7 @@ export function QuickRepliesDialog({
                         : "Select a quick reply to preview it."}
                     </p>
                     {items.length === 0 ? (
-                      <Button type="button" onClick={startCreate}>
+                      <Button type="button" variant="brand" onClick={startCreate}>
                         Add reply
                       </Button>
                     ) : null}

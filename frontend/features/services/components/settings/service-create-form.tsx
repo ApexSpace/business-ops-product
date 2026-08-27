@@ -268,7 +268,7 @@ export function ServiceCreateForm({
           <Button type="button" variant="outline" onClick={onCancel}>
             Cancel
           </Button>
-          <Button type="submit" disabled={isPending || !name.trim()}>
+          <Button type="submit" variant="brand" disabled={isPending || !name.trim()}>
             Create
           </Button>
         </div>

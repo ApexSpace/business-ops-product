@@ -52,7 +52,7 @@ export function CreateCapabilityDialog() {
 
   return (
     <>
-      <Button type="button" onClick={() => setOpen(true)}>
+      <Button type="button" variant="brand" onClick={() => setOpen(true)}>
         Create capability
       </Button>
       <FormDialog

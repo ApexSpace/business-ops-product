@@ -1,6 +1,7 @@
 "use client";
 
-import { Plus, SlidersHorizontal } from "lucide-react";
+import { Plus } from "lucide-react";
+import { ListFilterButton } from "@/components/layout/list-filter-button";
 import { MOBILE_LIST_HEADER_BG } from "@/lib/design/mobile-list-tokens";
 import { cn } from "@/lib/utils";
 
@@ -41,14 +42,12 @@ export function MobileListScreenHeader({
     >
       <div className="flex min-w-0 flex-1 items-center justify-start">
         {showFilter && onFilter ? (
-          <button
-            type="button"
+          <ListFilterButton
             aria-label={filterLabel}
             onClick={onFilter}
-            className="inline-flex size-10 items-center justify-center rounded-md text-white hover:bg-white/15"
-          >
-            <SlidersHorizontal className="size-5" strokeWidth={2} aria-hidden />
-          </button>
+            className="!size-10 !min-h-10 !min-w-10 !w-10 !rounded-md text-white hover:!bg-white/15 hover:!text-white"
+            iconClassName="!text-white"
+          />
         ) : (
           <span className="size-10" aria-hidden />
         )}

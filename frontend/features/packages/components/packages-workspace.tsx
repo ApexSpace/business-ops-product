@@ -7,12 +7,10 @@ import { LayoutTemplate, Settings  } from "lucide-react";
 import { toast } from "sonner";
 import { DateTime } from "luxon";
 import { ApiErrorState } from "@/components/data-display/api-error-state";
-import { DataTable } from "@/components/data-display/data-table";
 import { ListPagination } from "@/components/ui/list-pagination";
 import { EntityDetailDrawer } from "@/components/layout/entity-detail-drawer";
-import { EntityWorkspaceLayout } from "@/components/layout/entity-workspace-layout";
+import { EntityListLayout } from "@/components/layout/entity-list-layout";
 import { ListPrimaryAction } from "@/components/layout/list-primary-action";
-import { SearchInput } from "@/components/forms/search-input";
 import { SearchableSelect } from "@/components/forms/searchable-select";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -26,10 +24,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  WORKSPACE_ACTIVE_ROW_CLASS,
-  WORKSPACE_TABLE_CLASS,
-} from "@/lib/design/workspace-tokens";
+import { WORKSPACE_ACTIVE_ROW_CLASS } from "@/lib/design/workspace-tokens";
 import { useEntitySelection } from "@/lib/routing/use-entity-selection";
 import { useIsMobile } from "@/lib/hooks/use-mobile";
 import { queryKeys } from "@/lib/query/keys";
@@ -382,21 +377,12 @@ export function PackagesWorkspace() {
           />
         )
       ) : (
-      <EntityWorkspaceLayout
+      <EntityListLayout
         title="Packages"
         description="Assign prepaid service packages to clients."
-        search={
-          <SearchInput
-            value={search}
-            onChange={(value) => {
-              setSearch(value);
-              setPage(1);
-            }}
-            placeholder="Search by name or client…"
-            className="min-w-0 flex-1 sm:max-w-md"
-          />
-        }
-        actions={
+        addButtonLabel="New Package"
+        onAdd={canManage ? () => setAddOpen(true) : undefined}
+        extraActions={
           <>
             <Button
               variant="outline"
@@ -414,14 +400,14 @@ export function PackagesWorkspace() {
               <Settings className="mr-1.5 size-4" />
               Settings
             </Button>
-            {canManage ? (
-              <ListPrimaryAction
-                label="New Package"
-                onClick={() => setAddOpen(true)}
-              />
-            ) : null}
           </>
         }
+        searchPlaceholder="Search by name or client…"
+        searchValue={search}
+        onSearchChange={(value) => {
+          setSearch(value);
+          setPage(1);
+        }}
         footer={
           listQuery.data?.meta && packages.length > 0 ? (
             <ListPagination
@@ -433,37 +419,35 @@ export function PackagesWorkspace() {
             />
           ) : undefined
         }
-      >
-        {listQuery.isError ? (
-          <ApiErrorState
-            error={listQuery.error}
-            onRetry={() => void listQuery.refetch()}
-          />
-        ) : (
-          <DataTable
-            columns={columns}
-            data={packages}
-            getRowId={(row) => row.id}
-            isLoading={listQuery.isLoading}
-            density="compact"
-            activeRowId={selectedId}
-            onRowClick={(row) => setSelectedId(row.id)}
-            getRowClassName={(row) =>
-              selectedId === row.id ? WORKSPACE_ACTIVE_ROW_CLASS : undefined
-            }
-            emptyTitle="No client packages yet"
-            emptyDescription="Add a package to assign prepaid services to a client."
-            emptyAction={
-              canManage ? (
-                <Button size="sm" onClick={() => setAddOpen(true)}>
-                  Add package
-                </Button>
-              ) : undefined
-            }
-            className={WORKSPACE_TABLE_CLASS}
-          />
-        )}
-      </EntityWorkspaceLayout>
+        error={
+          listQuery.isError ? (
+            <ApiErrorState
+              error={listQuery.error}
+              onRetry={() => void listQuery.refetch()}
+            />
+          ) : undefined
+        }
+        columns={columns}
+        data={packages}
+        getRowId={(row) => row.id}
+        isLoading={listQuery.isLoading}
+        density="compact"
+        activeRowId={selectedId}
+        onRowClick={(row) => setSelectedId(row.id)}
+        getRowClassName={(row) =>
+          selectedId === row.id ? WORKSPACE_ACTIVE_ROW_CLASS : undefined
+        }
+        emptyTitle="No packages yet"
+        emptyDescription="Create a package to get started."
+        emptyAction={
+          canManage ? (
+            <ListPrimaryAction
+              label="New Package"
+              onClick={() => setAddOpen(true)}
+            />
+          ) : undefined
+        }
+      />
       )}
 
       <EntityDetailDrawer

@@ -68,7 +68,7 @@ export function EstimatesMobileList({
       emptyTitle="No estimates yet"
       emptyDescription="Create your first quote for a customer."
       emptyAction={
-        <Button size="sm" onClick={onCreate}>
+        <Button variant="brand" onClick={onCreate}>
           New estimate
         </Button>
       }

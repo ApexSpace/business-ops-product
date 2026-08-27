@@ -5,14 +5,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import {
-  DataTable,
-  type DataTableColumn,
-} from "@/components/data-display/data-table";
+import { type DataTableColumn } from "@/components/data-display/data-table";
 import { DataTableRowActions } from "@/components/data-display/data-table-row-actions";
 import { Badge } from "@/components/ui/badge";
 import { ConfirmDeleteDialog } from "@/components/forms/confirm-delete-dialog";
-import { PageHeader } from "@/components/layout/page-header";
+import { EntityListLayout } from "@/components/layout/entity-list-layout";
 import { ActionButton } from "@/components/ui/action-button";
 import {
   activateChatbot,
@@ -248,38 +245,32 @@ export function BusinessChatbotsSettings() {
   );
 
   return (
-    <div className="space-y-[var(--page-stack-gap)]">
-      <PageHeader
-        title={isPlatform ? "Chatbots" : undefined}
-        description={
-          isPlatform
-            ? "Configure AI chatbots for the PandaCue marketing site and ops surfaces."
-            : undefined
-        }
-        actions={
-          <ActionButton onClick={() => setCreateOpen(true)}>
-            Create Chatbot
-          </ActionButton>
-        }
-      />
-
-      <DataTable
-        columns={columns}
-        data={data?.items ?? []}
-        getRowId={(row) => row.id}
-        isLoading={isLoading}
-        emptyTitle="No chatbots yet"
-        emptyDescription={
-          isPlatform
-            ? "Create a chatbot to engage visitors on the marketing site."
-            : "Create a website chatbot to capture leads and conversations from your website."
-        }
-        emptyAction={
-          <ActionButton onClick={() => setCreateOpen(true)}>
-            Create Chatbot
-          </ActionButton>
-        }
-        rowActions={(bot) => (
+    <>
+    <EntityListLayout
+      title={isPlatform ? "Chatbots" : "Chatbots"}
+      description={
+        isPlatform
+          ? "Configure AI chatbots for the PandaCue marketing site and ops surfaces."
+          : undefined
+      }
+      addButtonLabel="Create Chatbot"
+      onAdd={() => setCreateOpen(true)}
+      columns={columns}
+      data={data?.items ?? []}
+      getRowId={(row) => row.id}
+      isLoading={isLoading}
+      emptyTitle="No chatbots yet"
+      emptyDescription={
+        isPlatform
+          ? "Create a chatbot to engage visitors on the marketing site."
+          : "Create a website chatbot to capture leads and conversations from your website."
+      }
+      emptyAction={
+        <ActionButton onClick={() => setCreateOpen(true)}>
+          Create Chatbot
+        </ActionButton>
+      }
+      rowActions={(bot) => (
           <DataTableRowActions
             menuLabel={`Actions for ${bot.name}`}
             actions={[
@@ -342,6 +333,6 @@ export function BusinessChatbotsSettings() {
         isPending={deleteMutation.isPending}
         onConfirm={() => deleteId && deleteMutation.mutate(deleteId)}
       />
-    </div>
+    </>
   );
 }

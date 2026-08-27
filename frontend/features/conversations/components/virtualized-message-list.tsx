@@ -2,8 +2,9 @@
 
 import { useEffect, useMemo, useRef } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { MoreHorizontal, RefreshCw, Trash2 } from "lucide-react";
+import { RefreshCw, Trash2 } from "lucide-react";
 import { ProfileAvatar } from "@/components/ui/profile-avatar";
+import { MoreActionsButton } from "@/components/ui/more-actions-button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -647,13 +648,10 @@ function MessageOptionsMenu({
     <DropdownMenu>
       <DropdownMenuTrigger
         render={
-          <button
-            type="button"
-            className="inline-flex size-5 items-center justify-center rounded-md text-muted-foreground/70 opacity-0 transition-opacity hover:bg-muted/60 hover:text-foreground group-hover/message:opacity-100 data-[popup-open]:opacity-100"
+          <MoreActionsButton
             aria-label="Message options"
-          >
-            <MoreHorizontal className="size-3.5" />
-          </button>
+            className="opacity-0 transition-opacity group-hover/message:opacity-100 data-[popup-open]:opacity-100"
+          />
         }
       />
       <DropdownMenuContent align={align} className="min-w-36">

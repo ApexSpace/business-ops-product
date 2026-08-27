@@ -490,7 +490,7 @@ export function WorkflowSettingsPanel({
 
         <div className="flex justify-end">
 
-          <Button disabled={isSaving} onClick={() => onSave(draft)}>
+          <Button variant="brand" disabled={isSaving} onClick={() => onSave(draft)}>
 
             Save settings
 

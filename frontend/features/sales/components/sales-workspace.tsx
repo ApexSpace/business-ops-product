@@ -15,19 +15,17 @@ import {
   Tag,
   Trash2,
   Wrench,
-  MoreVertical,
 } from "lucide-react";
 import { toast } from "sonner";
-import { DataTable, type DataTableColumn } from "@/components/data-display/data-table";
+import { type DataTableColumn } from "@/components/data-display/data-table";
 import { ListPagination } from "@/components/ui/list-pagination";
 import { DrawerShell } from "@/components/layout/drawer-shell";
 import { DrawerHeaderContent } from "@/components/drawer/drawer-header-content";
 import { DrawerPrimaryButton } from "@/components/drawer/drawer-primary-button";
-import { ListFilterButton } from "@/components/layout/list-filter-button";
 import { IconButton } from "@/components/ui/icon-button";
-import { EntityWorkspaceLayout } from "@/components/layout/entity-workspace-layout";
+import { MoreActionsButton } from "@/components/ui/more-actions-button";
+import { EntityListLayout } from "@/components/layout/entity-list-layout";
 import { ListPrimaryAction } from "@/components/layout/list-primary-action";
-import { SearchInput } from "@/components/forms/search-input";
 import { StatusBadge } from "@/components/data-display/status-badge";
 import {
   saleStatusLabel,
@@ -53,10 +51,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { SearchableSelect } from "@/components/forms/searchable-select";
-import {
-  WORKSPACE_ACTIVE_ROW_CLASS,
-  WORKSPACE_TABLE_CLASS,
-} from "@/lib/design/workspace-tokens";
+import { WORKSPACE_ACTIVE_ROW_CLASS } from "@/lib/design/workspace-tokens";
 import { DATA_TABLE_SALE_NUMBER_CLASS,
   DATA_TABLE_STATUS_CLASS,
 } from "@/lib/design/data-table-tokens";
@@ -126,8 +121,6 @@ import {
   SALES_DRAWER_FIELD_CLASS,
   SALES_DRAWER_FOOTER_CLASS,
   SALES_DRAWER_FOOTER_INNER_CLASS,
-  SALES_DRAWER_HEADER_ACTION_CLASS,
-  SALES_DRAWER_MOBILE_HEADER_ACTION_CLASS,
   SALES_DRAWER_MOBILE_SHELL_CLASS,
   SALES_DRAWER_SELECT_TRIGGER_CLASS,
   SALES_DRAWER_SHELL_CLASS,
@@ -668,10 +661,6 @@ export function SalesWorkspace() {
     setSelectedId(row.id);
   };
 
-  const headerActionClass = isMobile
-    ? SALES_DRAWER_MOBILE_HEADER_ACTION_CLASS
-    : SALES_DRAWER_HEADER_ACTION_CLASS;
-
   return (
   <>
       {isMobile ? (
@@ -699,30 +688,19 @@ export function SalesWorkspace() {
           }
         />
       ) : (
-      <EntityWorkspaceLayout
+      <EntityListLayout
         title="Sales"
         description="Point-of-sale checkouts — open sales, add services, and collect payment."
-        search={
-          <SearchInput
-            value={listSearch}
-            onChange={(value) => {
-              setListSearch(value);
-              setPage(1);
-            }}
-            placeholder="Search"
-          />
-        }
-        filters={
-          <ListFilterButton
-            aria-label="Sale options"
-            onClick={() => setOptionsOpen(true)}
-          />
-        }
-        actions={
-          canCheckout ? (
-            <ListPrimaryAction label="New Checkout" showIcon={false} onClick={openNewSale} />
-          ) : null
-        }
+        addButtonLabel="New Checkout"
+        onAdd={canCheckout ? openNewSale : undefined}
+        searchPlaceholder="Search"
+        searchValue={listSearch}
+        onSearchChange={(value) => {
+          setListSearch(value);
+          setPage(1);
+        }}
+        filterAriaLabel="Sale options"
+        onFilterClick={() => setOptionsOpen(true)}
         footer={
           listData?.meta && sales.length > 0 ? (
             <ListPagination
@@ -733,28 +711,23 @@ export function SalesWorkspace() {
             />
           ) : undefined
         }
-      >
-        <DataTable
-          columns={columns}
-          data={sales}
-          getRowId={(row) => row.id}
-          isLoading={listLoading}
-          density="default"
-          activeRowId={selectedId}
-          onRowClick={openSaleRow}
-          getRowClassName={(row) =>
-            selectedId === row.id ? WORKSPACE_ACTIVE_ROW_CLASS : undefined
-          }
-          emptyTitle="No sales yet"
-          emptyDescription="Create a new checkout to get started."
-          emptyAction={
-            canCheckout ? (
-              <ListPrimaryAction label="New Checkout" showIcon={false} onClick={openNewSale} />
-            ) : undefined
-          }
-          className={WORKSPACE_TABLE_CLASS}
-        />
-      </EntityWorkspaceLayout>
+        columns={columns}
+        data={sales}
+        getRowId={(row) => row.id}
+        isLoading={listLoading}
+        activeRowId={selectedId}
+        onRowClick={openSaleRow}
+        getRowClassName={(row) =>
+          selectedId === row.id ? WORKSPACE_ACTIVE_ROW_CLASS : undefined
+        }
+        emptyTitle="No sales yet"
+        emptyDescription="Create a new checkout to get started."
+        emptyAction={
+          canCheckout ? (
+            <ListPrimaryAction label="New Checkout" showIcon={false} onClick={openNewSale} />
+          ) : undefined
+        }
+      />
       )}
 
       <DrawerShell
@@ -816,8 +789,8 @@ export function SalesWorkspace() {
               <IconButton
                 type="button"
                 variant="ghost"
+                size="header"
                 aria-label="Edit sale"
-                className={headerActionClass}
                 onClick={saleDetailProps.onEdit}
               >
                 <Pencil className="size-4" />
@@ -831,21 +804,14 @@ export function SalesWorkspace() {
               <IconButton
                 type="button"
                 variant="ghost"
+                size="header"
                 aria-label="Void sale"
-                className={headerActionClass}
                 onClick={saleDetailProps.onVoid}
               >
                 <Trash2 className="size-4" />
               </IconButton>
             ) : (
-              <IconButton
-                type="button"
-                variant="ghost"
-                aria-label="More actions"
-                className={headerActionClass}
-              >
-                <MoreVertical className="size-4" />
-              </IconButton>
+              <MoreActionsButton aria-label="More actions" />
             )}
           </>
         }

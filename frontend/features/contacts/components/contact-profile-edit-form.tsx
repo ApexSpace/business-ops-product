@@ -97,7 +97,7 @@ export function ContactProfileEditForm({
             <Button
               type="button"
               variant="outline"
-              className="min-h-[2.75rem] flex-1"
+              className="min-w-0 flex-1"
               disabled={mutation.isPending}
               onClick={onCancel}
             >
@@ -105,7 +105,8 @@ export function ContactProfileEditForm({
             </Button>
             <Button
               type="submit"
-              className="min-h-[2.75rem] flex-1"
+              variant="brand"
+              className="min-w-0 flex-1"
               disabled={mutation.isPending}
             >
               {mutation.isPending ? "Saving…" : "Save"}

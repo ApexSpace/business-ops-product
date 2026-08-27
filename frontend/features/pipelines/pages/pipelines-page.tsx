@@ -123,6 +123,7 @@ export function BusinessCrmPipelinePage() {
         actions={
           canManage ? (
             <Button
+              variant="brand"
               onClick={() => openAddLead()}
               disabled={!selectedPipeline}
             >

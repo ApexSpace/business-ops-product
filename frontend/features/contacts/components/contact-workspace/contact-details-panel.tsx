@@ -163,11 +163,12 @@ export function ContactDetailsPanel({
             <div className="min-w-0 flex-1">
               <h2 className="truncate text-base font-semibold">{contact.label}</h2>
               <div className="mt-2 flex gap-1">
-                <IconButton aria-label="Edit contact" onClick={onEdit}>
+                <IconButton aria-label="Edit contact" size="header" onClick={onEdit}>
                   <Pencil className="size-4" />
                 </IconButton>
                 <IconButton
                   aria-label="Delete contact"
+                  size="header"
                   className="text-destructive hover:text-destructive"
                   onClick={onDelete}
                 >

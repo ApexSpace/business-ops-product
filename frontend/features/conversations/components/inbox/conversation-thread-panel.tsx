@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ArrowLeft, MessageSquare, MoreVertical, UserRound } from "lucide-react";
+import { ArrowLeft, MessageSquare, UserRound } from "lucide-react";
 import { useMutation, useQuery, useQueryClient, type UseMutationResult } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { ConfirmDeleteDialog } from "@/components/forms/confirm-delete-dialog";
@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { VirtualizedMessageList } from "@/features/conversations/components/virtualized-message-list";
 import { IconButton } from "@/components/ui/icon-button";
+import { MoreActionsButton } from "@/components/ui/more-actions-button";
 import {
   ThreadChannelFilter,
   filterMessagesByThreadChannel,
@@ -420,13 +421,7 @@ export function ConversationThreadPanel({
                 <DropdownMenu>
                   <DropdownMenuTrigger
                     render={
-                      <IconButton
-                        aria-label="Conversation actions"
-                        size="icon-sm"
-                        className="size-[var(--control-height-sm)] shrink-0 rounded-full"
-                      >
-                        <MoreVertical className="size-4" />
-                      </IconButton>
+                      <MoreActionsButton aria-label="Conversation actions" />
                     }
                   />
                   <DropdownMenuContent align="end" className="w-auto min-w-56">

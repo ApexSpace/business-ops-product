@@ -16,22 +16,23 @@ export const WORKSPACE_ACTIVE_ROW_CLASS =
   "shadow-[inset_3px_0_0_0_var(--pc-violet-primary-normal)]";
 
 /**
- * Flush toolbar above the Figma table — no card chrome.
+ * List toolbar above the table — no card chrome.
+ * Horizontal inset: `--cs-list-toolbar-padding-x` (hit-and-trial in globals.css).
  * Vertical rhythm is `--cs-list-toolbar-gap` on the workspace card (equal
  * above and below the toolbar). Do not add extra py here or the shell
  * `--page-content-top-gap` stacks and the top gap looks larger.
  */
 export const WORKSPACE_TOOLBAR_CLASS =
-  "rounded-none border-0 bg-transparent px-0 py-0 shadow-none sm:px-0";
+  "rounded-none border-0 bg-transparent px-[var(--cs-list-toolbar-padding-x)] py-0 shadow-none";
 
 export const WORKSPACE_TOOLBAR_SURFACE_CLASS =
   "flex flex-col gap-2 rounded-[var(--radius-md)] border border-[var(--drawer-tab-track)] bg-white p-2 sm:p-3";
 
 /**
- * Applied on DataTable — keep empty so DATA_TABLE_SHELL_CLASS
- * (radius/md + primary/200 border) is not overridden.
+ * Applied on DataTable in EntityListLayout — full-bleed list shell
+ * (no extra radius that insets the grid from the page edges).
  */
-export const WORKSPACE_TABLE_CLASS = "shadow-none";
+export const WORKSPACE_TABLE_CLASS = "w-full min-w-0 rounded-none shadow-none";
 
 /**
  * Full-height workspace column — parent must also be a flex fill chain.
@@ -39,7 +40,7 @@ export const WORKSPACE_TABLE_CLASS = "shadow-none";
  * flex-sized without an explicit `height`, so the table card shrinks to rows.
  */
 export const WORKSPACE_FILL_CLASS =
-  "flex h-0 min-h-0 flex-1 flex-col overflow-hidden";
+  "flex h-0 min-h-0 w-full min-w-0 flex-1 flex-col overflow-hidden";
 
 /**
  * Settings-route shell for Apps master-detail pages (Services, Resources, Team).
@@ -54,9 +55,18 @@ export const APPS_MASTER_DETAIL_ROUTE_SHELL_CLASS = `${WORKSPACE_FILL_CLASS} [&>
 export const APPS_MASTER_DETAIL_CANVAS_SLOT_CLASS =
   "flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden [&>*]:!h-full [&>*]:!min-h-0 [&>*]:min-w-0 [&>*]:!flex-1 [&>*]:rounded-none";
 
+/**
+ * Outer inset for DataTable list pages (navbar → toolbar → table).
+ * Shell list routes are full-bleed (`p-0`). Horizontal padding is 0 so the
+ * toolbar and table use the full content width on every list page.
+ * Vertical rhythm stays `--cs-list-toolbar-gap` / `--page-padding-y`.
+ */
+export const ENTITY_LIST_PAGE_INSET_CLASS =
+  "w-full min-w-0 px-0 pb-[var(--page-padding-y)] pt-[var(--cs-list-toolbar-gap)]";
+
 /** Workspace list surface — page white; table supplies its own border chrome */
 export const WORKSPACE_TABLE_CARD_CLASS =
-  "flex h-0 min-h-0 flex-1 flex-col gap-[var(--cs-list-toolbar-gap)] overflow-hidden rounded-none border-0 bg-white shadow-none";
+  "flex h-0 min-h-0 w-full min-w-0 flex-1 flex-col gap-[var(--cs-list-toolbar-gap)] overflow-hidden rounded-none border-0 bg-white shadow-none";
 
 /**
  * Table slot between toolbar and pagination.

@@ -3,7 +3,6 @@
 import {
   Calendar,
   Clock,
-  MoreVertical,
   Pencil,
   SlidersHorizontal,
   Trash2,
@@ -17,7 +16,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { IconButton } from "@/components/ui/icon-button";
+import { MoreActionsButton } from "@/components/ui/more-actions-button";
 import {
   formatWorkItemScheduledAt,
   getWorkItemAssigneeName,
@@ -114,16 +113,14 @@ export function WorkItemBoardCard({
             <DropdownMenu>
               <DropdownMenuTrigger
                 render={
-                  <IconButton
+                  <MoreActionsButton
                     aria-label="Work item actions"
-                    className="size-6 shrink-0 rounded-md text-muted-foreground opacity-0 transition-opacity group-hover/card:opacity-100 hover:bg-muted/70 hover:text-foreground"
+                    className="text-muted-foreground opacity-0 transition-opacity group-hover/card:opacity-100"
                     data-no-dnd
                     onPointerDown={(e) => e.stopPropagation()}
                   />
                 }
-              >
-                <MoreVertical className="size-3.5" />
-              </DropdownMenuTrigger>
+              />
               <DropdownMenuContent align="end" className="w-40">
                 <DropdownMenuItem
                   onClick={() => onEdit?.(item)}

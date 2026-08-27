@@ -91,7 +91,7 @@ export function CalendarCreatedSuccessDialog({
               </Button>
             </div>
           ) : (
-            <Button type="button" onClick={() => void handleEnablePublic()}>
+            <Button type="button" variant="brand" onClick={() => void handleEnablePublic()}>
               Enable public booking
             </Button>
           )}

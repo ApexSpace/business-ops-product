@@ -1,13 +1,11 @@
 "use client";
 
 import { useMemo } from "react";
-import {
-  DataTable,
-  type DataTableColumn,
-} from "@/components/data-display/data-table";
+import { type DataTableColumn } from "@/components/data-display/data-table";
 import { DataTableRowActions } from "@/components/data-display/data-table-row-actions";
 import { LoadingState } from "@/components/data-display/loading-state";
 import { Badge } from "@/components/ui/badge";
+import { EntityListLayout } from "@/components/layout/entity-list-layout";
 import { ListPagination } from "@/components/ui/list-pagination";
 import {
   formatAppointmentRange,
@@ -147,21 +145,24 @@ export function AppointmentListView({
   }
 
   return (
-    <div className="space-y-4">
-      <DataTable
-        columns={columns}
-        data={appointments}
-        getRowId={(row) => row.id}
-        emptyTitle="No appointments match your filters."
-      />
-      {meta ? (
-        <ListPagination
-          meta={meta}
-          page={page}
-          onPageChange={onPageChange}
-          label="appointments"
-        />
-      ) : null}
-    </div>
+    <EntityListLayout
+      title="Appointments"
+      hideHeader
+      flush
+      columns={columns}
+      data={appointments}
+      getRowId={(row) => row.id}
+      emptyTitle="No appointments match your filters."
+      footer={
+        meta ? (
+          <ListPagination
+            meta={meta}
+            page={page}
+            onPageChange={onPageChange}
+            label="appointments"
+          />
+        ) : undefined
+      }
+    />
   );
 }

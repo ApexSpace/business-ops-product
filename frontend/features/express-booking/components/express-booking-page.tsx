@@ -555,6 +555,7 @@ export function ExpressBookingPage({
 
           <Button
             type="button"
+            variant="brand"
             className="w-full"
             disabled={
               checkoutMutation.isPending || completeMutation.isPending

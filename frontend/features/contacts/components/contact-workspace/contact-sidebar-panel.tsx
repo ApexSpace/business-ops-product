@@ -133,13 +133,14 @@ export function ContactSidebarPanel({
             {!avatarEditOnHover ? (
               <div className="mt-2 flex gap-1">
                 {showEditButton ? (
-                  <IconButton aria-label="Edit contact" onClick={onEdit}>
+                  <IconButton aria-label="Edit contact" size="header" onClick={onEdit}>
                     <Pencil className="size-4" />
                   </IconButton>
                 ) : null}
                 {showDeleteButton ? (
                   <IconButton
                     aria-label="Delete contact"
+                    size="header"
                     className="text-destructive hover:text-destructive"
                     onClick={onDelete}
                   >

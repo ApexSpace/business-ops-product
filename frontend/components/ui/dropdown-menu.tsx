@@ -6,6 +6,7 @@ import { Menu as MenuPrimitive } from "@base-ui/react/menu"
 import { cn } from "@/lib/utils"
 import { NavArrowIcon } from "@/components/ui/nav-arrow-icon"
 import { CheckIcon } from "lucide-react"
+import { OVERLAY_SIDE, OVERLAY_SIDE_OFFSET } from "@/lib/ui/overlay-position"
 
 const DROPDOWN_MENU_ARROW_CLASS =
   "pointer-events-none z-50 size-2.5 rotate-45 rounded-[var(--radius-xs)] border-l border-t border-border/40 bg-popover fill-popover data-[side=bottom]:top-0 data-[side=bottom]:-translate-y-1/2 data-[side=inline-end]:top-1/2 data-[side=inline-end]:-left-1 data-[side=inline-end]:-translate-y-1/2 data-[side=inline-start]:top-1/2 data-[side=inline-start]:-right-1 data-[side=inline-start]:-translate-y-1/2 data-[side=left]:top-1/2 data-[side=left]:-right-1 data-[side=left]:-translate-y-1/2 data-[side=right]:top-1/2 data-[side=right]:-left-1 data-[side=right]:-translate-y-1/2 data-[side=top]:bottom-0 data-[side=top]:translate-y-1/2"
@@ -31,8 +32,8 @@ function DropdownMenuTrigger({ className, ...props }: MenuPrimitive.Trigger.Prop
 function DropdownMenuContent({
   align = "start",
   alignOffset = 0,
-  side = "bottom",
-  sideOffset = 4,
+  side = OVERLAY_SIDE,
+  sideOffset = OVERLAY_SIDE_OFFSET,
   arrowPadding = 12,
   showArrow = false,
   anchor,

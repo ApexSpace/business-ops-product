@@ -329,7 +329,7 @@ export function PackageSetupScreen() {
       <div className="grid min-h-[600px] gap-4 lg:grid-cols-[240px_180px_minmax(0,1fr)]">
         <div className="space-y-3 rounded-lg border p-3">
           <div className="flex gap-2">
-            <Button className="flex-1" onClick={() => setCreateOpen(true)}>
+            <Button className="flex-1" variant="brand" onClick={() => setCreateOpen(true)}>
               Create Package
             </Button>
             <Button variant="outline" size="icon" aria-label="Search">
@@ -849,7 +849,7 @@ export function PackageSetupScreen() {
                       />
                     </div>
                     <div className="flex justify-end">
-                      <Button onClick={() => saveTemplate.mutate(editForm)}>
+                      <Button variant="brand" onClick={() => saveTemplate.mutate(editForm)}>
                         Save
                       </Button>
                     </div>
@@ -882,7 +882,7 @@ export function PackageSetupScreen() {
                       />
                     ) : null}
                     <div className="flex justify-end">
-                      <Button onClick={() => saveTemplate.mutate(editForm)}>
+                      <Button variant="brand" onClick={() => saveTemplate.mutate(editForm)}>
                         Save
                       </Button>
                     </div>
@@ -972,6 +972,7 @@ export function PackageSetupScreen() {
               Cancel
             </Button>
             <Button
+              variant="brand"
               disabled={!newName.trim() || !newPrice}
               onClick={() => createTemplate.mutate()}
             >

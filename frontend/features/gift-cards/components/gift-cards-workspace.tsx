@@ -6,13 +6,11 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Pencil, Settings  } from "lucide-react";
 import { toast } from "sonner";
 import { ApiErrorState } from "@/components/data-display/api-error-state";
-import { DataTable } from "@/components/data-display/data-table";
 import { ListPagination } from "@/components/ui/list-pagination";
 import { EntityDetailDrawer } from "@/components/layout/entity-detail-drawer";
 import { EntityDetailFooter } from "@/components/layout/entity-detail-footer";
-import { EntityWorkspaceLayout } from "@/components/layout/entity-workspace-layout";
+import { EntityListLayout } from "@/components/layout/entity-list-layout";
 import { ListPrimaryAction } from "@/components/layout/list-primary-action";
-import { SearchInput } from "@/components/forms/search-input";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -26,10 +24,7 @@ import { Label } from "@/components/ui/label";
 import { SearchableSelect } from "@/components/forms/searchable-select";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import {
-  WORKSPACE_ACTIVE_ROW_CLASS,
-  WORKSPACE_TABLE_CLASS,
-} from "@/lib/design/workspace-tokens";
+import { WORKSPACE_ACTIVE_ROW_CLASS } from "@/lib/design/workspace-tokens";
 import { useEntitySelection } from "@/lib/routing/use-entity-selection";
 import { useIsMobile } from "@/lib/hooks/use-mobile";
 import { queryKeys } from "@/lib/query/keys";
@@ -330,43 +325,30 @@ export function GiftCardsWorkspace() {
           />
         )
       ) : (
-      <EntityWorkspaceLayout
+      <EntityListLayout
         title="Gift cards"
         description="Issue, track, and redeem gift cards."
-        search={
-          <SearchInput
-            value={search}
-            onChange={(value) => {
-              setSearch(value);
-              setPage(1);
-            }}
-            placeholder="Search by number or client…"
-            className="min-w-0 flex-1 sm:max-w-md"
-          />
+        addButtonLabel="New Gift Card"
+        onAdd={canManage ? () => void openAdd() : undefined}
+        extraActions={
+          canManage ? (
+            <Button
+              variant="outline"
+              onMouseEnter={prefetchSettings}
+              onFocus={prefetchSettings}
+              onClick={() => router.push("/business/gift-cards/settings")}
+            >
+              <Settings className="mr-1.5 size-4" />
+              Settings
+            </Button>
+          ) : null
         }
-        actions={
-          <>
-            {canManage ? (
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-11 rounded-[var(--radius-md)]"
-                onMouseEnter={prefetchSettings}
-                onFocus={prefetchSettings}
-                onClick={() => router.push("/business/gift-cards/settings")}
-              >
-                <Settings className="mr-1.5 size-4" />
-                Settings
-              </Button>
-            ) : null}
-            {canManage ? (
-              <ListPrimaryAction
-                label="New Gift Card"
-                onClick={() => void openAdd()}
-              />
-            ) : null}
-          </>
-        }
+        searchPlaceholder="Search by number or client…"
+        searchValue={search}
+        onSearchChange={(value) => {
+          setSearch(value);
+          setPage(1);
+        }}
         footer={
           listQuery.data?.meta && cards.length > 0 ? (
             <ListPagination
@@ -378,41 +360,38 @@ export function GiftCardsWorkspace() {
             />
           ) : undefined
         }
-      >
-        {listQuery.isError ? (
-          <ApiErrorState
-            error={listQuery.error}
-            onRetry={() => void listQuery.refetch()}
-          />
-        ) : (
-          <DataTable
-            columns={columns}
-            data={cards}
-            getRowId={(card) => card.id}
-            isLoading={listQuery.isLoading}
-            density="compact"
-            activeRowId={selectedId}
-            onRowClick={(card) => {
-              setDrawerMode("view");
-              setSelectedId(card.id);
-            }}
-            getRowClassName={(card) =>
-              selectedId === card.id ? WORKSPACE_ACTIVE_ROW_CLASS : undefined
-            }
-            emptyTitle="No gift cards yet"
-            emptyDescription="Create a gift card to get started."
-            emptyAction={
-              canManage ? (
-                <ListPrimaryAction
-                  label="New Gift Card"
-                  onClick={() => void openAdd()}
-                />
-              ) : undefined
-            }
-            className={WORKSPACE_TABLE_CLASS}
-          />
-        )}
-      </EntityWorkspaceLayout>
+        error={
+          listQuery.isError ? (
+            <ApiErrorState
+              error={listQuery.error}
+              onRetry={() => void listQuery.refetch()}
+            />
+          ) : undefined
+        }
+        columns={columns}
+        data={cards}
+        getRowId={(row) => row.id}
+        isLoading={listQuery.isLoading}
+        density="compact"
+        activeRowId={selectedId}
+        onRowClick={(card) => {
+          setDrawerMode("view");
+          setSelectedId(card.id);
+        }}
+        getRowClassName={(row) =>
+          selectedId === row.id ? WORKSPACE_ACTIVE_ROW_CLASS : undefined
+        }
+        emptyTitle="No gift cards yet"
+        emptyDescription="Issue a gift card to get started."
+        emptyAction={
+          canManage ? (
+            <ListPrimaryAction
+              label="New Gift Card"
+              onClick={() => void openAdd()}
+            />
+          ) : undefined
+        }
+      />
       )}
 
       <EntityDetailDrawer
@@ -458,14 +437,15 @@ export function GiftCardsWorkspace() {
               <EntityDetailFooter>
                 <Button
                   variant="outline"
-                  className="min-h-[2.75rem] w-full sm:w-auto sm:min-w-[10rem]"
+                  className="w-full sm:w-auto sm:min-w-[10rem]"
                   disabled={updateMutation.isPending}
                   onClick={() => setDrawerMode("view")}
                 >
                   Cancel
                 </Button>
                 <Button
-                  className="min-h-[2.75rem] w-full sm:w-auto sm:min-w-[10rem]"
+                  variant="brand"
+                  className="w-full sm:w-auto sm:min-w-[10rem]"
                   disabled={updateMutation.isPending}
                   onClick={() =>
                     updateMutation.mutate({ id: detail.id, notes: notesDraft })

@@ -40,7 +40,7 @@ export function CreateBusinessDialog() {
 
   return (
     <>
-      <Button type="button" onClick={() => setOpen(true)}>
+      <Button type="button" variant="brand" onClick={() => setOpen(true)}>
         Create business
       </Button>
       <FormDialog

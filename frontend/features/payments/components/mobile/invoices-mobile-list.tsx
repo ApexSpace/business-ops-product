@@ -68,7 +68,7 @@ export function InvoicesMobileList({
       emptyTitle="No invoices yet"
       emptyDescription="Create your first invoice for a customer."
       emptyAction={
-        <Button size="sm" onClick={onCreate}>
+        <Button variant="brand" onClick={onCreate}>
           New invoice
         </Button>
       }

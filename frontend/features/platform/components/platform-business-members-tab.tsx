@@ -1,11 +1,9 @@
 "use client";
 
 import { useMemo } from "react";
-import {
-  DataTable,
-  type DataTableColumn,
-} from "@/components/data-display/data-table";
+import { type DataTableColumn } from "@/components/data-display/data-table";
 import { StatusBadge } from "@/components/data-display/status-badge";
+import { EntityListLayout } from "@/components/layout/entity-list-layout";
 import { InvitePlatformBusinessMemberDialog } from "@/features/platform/components/invite-platform-business-member-dialog";
 import { SetBusinessOwnerDialog } from "@/features/platform/components/set-business-owner-dialog";
 import type { BusinessMember } from "@/features/platform/types";
@@ -91,52 +89,51 @@ export function PlatformBusinessMembersTab({
   );
 
   return (
-    <div className="space-y-4">
-      <div className="overflow-hidden rounded-lg ring-1 ring-border/70">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b px-4 py-3">
-          <div>
-            <h3 className="text-sm font-medium">Team members</h3>
-            <p className="text-xs text-muted-foreground">
-              People who can access this business workspace.
-            </p>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
+    <EntityListLayout
+      title="Team members"
+      description="People who can access this business workspace."
+      hideHeader
+      flush
+      extraActions={
+        canInvite || canSetOwner ? (
+          <>
             {canInvite ? (
-              <InvitePlatformBusinessMemberDialog businessId={businessId} />
+              <InvitePlatformBusinessMemberDialog
+                businessId={businessId}
+                variant="action"
+              />
             ) : null}
             {canSetOwner ? (
               <SetBusinessOwnerDialog businessId={businessId} />
             ) : null}
-          </div>
-        </div>
-
-        <div className="grid gap-2 px-4 py-3 sm:grid-cols-4">
+          </>
+        ) : null
+      }
+      leading={
+        <div className="grid gap-2 sm:grid-cols-4">
           <TeamSummaryChip label="Active" value={activeCount} emphasis />
           <TeamSummaryChip label="Invited" value={invitedCount} />
           <TeamSummaryChip label="Owners" value={ownerCount} />
           <TeamSummaryChip label="Admins" value={adminCount} />
         </div>
-      </div>
-
-      <DataTable
-        columns={columns}
-        data={members ?? []}
-        getRowId={(row) => row.id}
-        emptyTitle="No members found"
-        emptyDescription={
-          canInvite
-            ? "Invite the first team member to this business."
-            : undefined
-        }
-        emptyAction={
-          canInvite ? (
-            <InvitePlatformBusinessMemberDialog
-              businessId={businessId}
-              variant="action"
-            />
-          ) : undefined
-        }
-      />
-    </div>
+      }
+      columns={columns}
+      data={members ?? []}
+      getRowId={(row) => row.id}
+      emptyTitle="No members found"
+      emptyDescription={
+        canInvite
+          ? "Invite the first team member to this business."
+          : undefined
+      }
+      emptyAction={
+        canInvite ? (
+          <InvitePlatformBusinessMemberDialog
+            businessId={businessId}
+            variant="action"
+          />
+        ) : undefined
+      }
+    />
   );
 }

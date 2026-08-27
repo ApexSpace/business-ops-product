@@ -7,22 +7,18 @@ import { Archive, CheckCircle2, FileEdit, TableProperties } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { CreatePlanGroupDialog } from "@/features/platform/components/plan-groups/create-plan-group-dialog";
-import {
-  DataTable,
-  type DataTableColumn,
-} from "@/components/data-display/data-table";
+import { type DataTableColumn } from "@/components/data-display/data-table";
 import {
   DataTableRowActions,
   type RowAction,
 } from "@/components/data-display/data-table-row-actions";
 import { StatusBadge } from "@/components/data-display/status-badge";
 import { ConfirmDeleteDialog } from "@/components/forms/confirm-delete-dialog";
-import { SearchInput } from "@/components/forms/search-input";
-import { FilterBar } from "@/components/layout/filter-bar";
-import { ListPage, ListPageSkeleton } from "@/components/layout/list-page";
+import { EntityListLayout } from "@/components/layout/entity-list-layout";
+import { ListFilterCheckboxGroup } from "@/components/layout/list-filter-checkbox-group";
+import { ListPageSkeleton } from "@/components/layout/list-page";
 import { StatsCard } from "@/components/layout/stats-card";
 import { ListPagination } from "@/components/ui/list-pagination";
-import { SearchableSelect } from "@/components/forms/searchable-select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
 import { useListSearchParams } from "@/lib/hooks/use-list-search-params";
@@ -63,6 +59,8 @@ function PlatformPlanGroupsPageContent() {
   const [deleteTarget, setDeleteTarget] = useState<PlanGroupListItem | null>(
     null,
   );
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [draftStatus, setDraftStatus] = useState(params.status);
   const canManage = useCan(PERMISSIONS["platform.plan_groups.manage"]);
   const status = params.status;
 
@@ -170,119 +168,118 @@ function PlatformPlanGroupsPageContent() {
 
   return (
     <>
-      <div className="space-y-6">
-        {statsLoading ? (
-          <div className="grid items-stretch gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {[1, 2, 3, 4].map((i) => (
-              <Skeleton key={i} className="min-h-[7.25rem] rounded-lg" />
-            ))}
-          </div>
-        ) : stats ? (
-          <div className="grid items-stretch gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <StatsCard label="Total" value={stats.total} icon={TableProperties} />
-            <StatsCard
-              label="Published"
-              value={stats.published}
-              icon={CheckCircle2}
-            />
-            <StatsCard label="Draft" value={stats.draft} icon={FileEdit} />
-            <StatsCard label="Archived" value={stats.archived} icon={Archive} />
-          </div>
-        ) : null}
-
-        <ListPage
-          title="Plan Groups"
-          description="Build marketing pricing tables with tiers, capabilities, comparison rows, and embeddable widgets."
-          actions={canManage ? <CreatePlanGroupDialog /> : null}
-          filters={
-            <FilterBar>
-              <SearchInput
-                value={params.search}
-                onChange={(v) =>
-                  setParams({ search: v, page: "1" }, { resetPage: true })
-                }
-                placeholder="Search by name…"
-                className="w-full sm:w-64"
+      <EntityListLayout
+        title="Plan Groups"
+        description="Build marketing pricing tables with tiers, capabilities, comparison rows, and embeddable widgets."
+        extraActions={canManage ? <CreatePlanGroupDialog /> : null}
+        leading={
+          statsLoading ? (
+            <div className="grid items-stretch gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              {[1, 2, 3, 4].map((i) => (
+                <Skeleton key={i} className="min-h-[7.25rem] rounded-lg" />
+              ))}
+            </div>
+          ) : stats ? (
+            <div className="grid items-stretch gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <StatsCard
+                label="Total"
+                value={stats.total}
+                icon={TableProperties}
               />
-              <SearchableSelect
-                items={planGroupStatusFilterOptions}
-                value={status}
-                onValueChange={(v) =>
-                  setParams(
-                    { status: v ?? "all", page: "1" },
-                    { resetPage: true },
-                  )
-                }
-                placeholder="Status"
-                triggerClassName="w-[180px]"
+              <StatsCard
+                label="Published"
+                value={stats.published}
+                icon={CheckCircle2}
               />
-            </FilterBar>
-          }
-          pagination={
-            data?.meta && !isEmpty ? (
-              <ListPagination
-                meta={data.meta}
-                page={page}
-                onPageChange={(p) => setParams({ page: String(p) })}
-                label="plan groups"
-              />
-            ) : null
-          }
-        >
-          <DataTable
-            columns={columns}
-            data={data?.items ?? []}
-            getRowId={(row) => row.id}
-            isLoading={isLoading}
-            emptyTitle="No plan groups yet"
-            emptyDescription="Create a plan group to build pricing tables and embeds."
-            emptyAction={canManage ? <CreatePlanGroupDialog /> : undefined}
-            rowActions={
-              canManage
-                ? (row) => {
-                    const actions: RowAction[] = [
-                      {
-                        label: "View",
-                        onClick: () =>
-                          router.push(`/platform/plan-groups/${row.id}`),
-                      },
-                    ];
-                    if (row.status === "DRAFT") {
-                      actions.push({
-                        label: "Publish",
-                        onClick: () => publishMutation.mutate(row.id),
-                      });
-                    }
-                    if (row.status === "PUBLISHED") {
-                      actions.push({
-                        label: "Move to Draft",
-                        onClick: () => draftMutation.mutate(row.id),
-                      });
-                      actions.push({
-                        label: "Copy Embed Code",
-                        onClick: async () => {
-                          const code = getPricingEmbedCode(row.id);
-                          if (!code) {
-                            toast.error("Public backend URL is not configured");
-                            return;
-                          }
-                          await navigator.clipboard.writeText(code);
-                          toast.success("Embed code copied");
-                        },
-                      });
-                    }
-                    actions.push({
-                      label: "Delete",
-                      onClick: () => setDeleteTarget(row),
-                      destructive: true,
-                    });
-                    return <DataTableRowActions actions={actions} />;
-                  }
-                : undefined
-            }
+              <StatsCard label="Draft" value={stats.draft} icon={FileEdit} />
+              <StatsCard label="Archived" value={stats.archived} icon={Archive} />
+            </div>
+          ) : null
+        }
+        searchPlaceholder="Search by name…"
+        searchValue={params.search}
+        onSearchChange={(v) =>
+          setParams({ search: v, page: "1" }, { resetPage: true })
+        }
+        filterAriaLabel="Plan group filters"
+        filterActive={status !== "all"}
+        filterOpen={filterOpen}
+        onFilterOpenChange={(open) => {
+          if (open) setDraftStatus(status);
+          setFilterOpen(open);
+        }}
+        filterContent={
+          <ListFilterCheckboxGroup
+            legend="Status"
+            options={planGroupStatusFilterOptions}
+            value={draftStatus}
+            onChange={(next) => setDraftStatus(String(next))}
           />
-        </ListPage>
-      </div>
+        }
+        onFilterApply={() =>
+          setParams({ status: draftStatus, page: "1" }, { resetPage: true })
+        }
+        footer={
+          data?.meta && !isEmpty ? (
+            <ListPagination
+              meta={data.meta}
+              page={page}
+              onPageChange={(p) => setParams({ page: String(p) })}
+              label="plan groups"
+            />
+          ) : undefined
+        }
+        columns={columns}
+        data={data?.items ?? []}
+        getRowId={(row) => row.id}
+        isLoading={isLoading}
+        emptyTitle="No plan groups yet"
+        emptyDescription="Create a plan group to build pricing tables and embeds."
+        emptyAction={canManage ? <CreatePlanGroupDialog /> : undefined}
+        rowActions={
+          canManage
+            ? (row) => {
+                  const actions: RowAction[] = [
+                    {
+                      label: "View",
+                      onClick: () =>
+                        router.push(`/platform/plan-groups/${row.id}`),
+                    },
+                  ];
+                  if (row.status === "DRAFT") {
+                    actions.push({
+                      label: "Publish",
+                      onClick: () => publishMutation.mutate(row.id),
+                    });
+                  }
+                  if (row.status === "PUBLISHED") {
+                    actions.push({
+                      label: "Move to Draft",
+                      onClick: () => draftMutation.mutate(row.id),
+                    });
+                    actions.push({
+                      label: "Copy Embed Code",
+                      onClick: async () => {
+                        const code = getPricingEmbedCode(row.id);
+                        if (!code) {
+                          toast.error("Public backend URL is not configured");
+                          return;
+                        }
+                        await navigator.clipboard.writeText(code);
+                        toast.success("Embed code copied");
+                      },
+                    });
+                  }
+                  actions.push({
+                    label: "Delete",
+                    onClick: () => setDeleteTarget(row),
+                    destructive: true,
+                  });
+                  return <DataTableRowActions actions={actions} />;
+                }
+            : undefined
+        }
+      />
 
       <ConfirmDeleteDialog
         open={!!deleteTarget}

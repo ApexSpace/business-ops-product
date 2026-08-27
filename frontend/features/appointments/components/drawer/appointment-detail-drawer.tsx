@@ -7,7 +7,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { DateTime } from "luxon";
 import {
   Loader2,
-  MoreVertical,
   Pencil,
   Trash2,
 } from "lucide-react";
@@ -16,6 +15,7 @@ import { DrawerFooterPrimaryAction } from "@/components/layout/drawer-footer-pri
 import { AcknowledgementGuardDialog } from "@/components/forms/acknowledgement-guard-dialog";
 import { DrawerShell } from "@/components/layout/drawer-shell";
 import { IconButton } from "@/components/ui/icon-button";
+import { MoreActionsButton } from "@/components/ui/more-actions-button";
 import { NavArrowIcon } from "@/components/ui/nav-arrow-icon";
 import {
   DropdownMenu,
@@ -79,10 +79,7 @@ import {
 } from "@/lib/design/drawer-shell-tokens";
 import {
   APPOINTMENT_DRAWER_BODY_INSET_CLASS,
-  APPOINTMENT_DRAWER_CLOSE_ACTION_CLASS,
   APPOINTMENT_DRAWER_FOOTER_CLASS,
-  APPOINTMENT_DRAWER_HEADER_ACTION_CLASS,
-  APPOINTMENT_DRAWER_MOBILE_HEADER_ACTION_CLASS,
   APPOINTMENT_DRAWER_SHELL_CLASS,
   APPOINTMENT_DRAWER_MOBILE_SHELL_CLASS,
   APPOINTMENT_DRAWER_SHELL_HEADER_CLASS,
@@ -382,18 +379,7 @@ export function AppointmentDetailDrawer({
       {!isEditing ? (
         <DropdownMenu>
           <DropdownMenuTrigger
-            render={
-              <IconButton
-                aria-label="Appointment actions"
-                className={
-                  isMobile
-                    ? APPOINTMENT_DRAWER_MOBILE_HEADER_ACTION_CLASS
-                    : APPOINTMENT_DRAWER_HEADER_ACTION_CLASS
-                }
-              >
-                <MoreVertical className="size-4" />
-              </IconButton>
-            }
+            render={<MoreActionsButton aria-label="Appointment actions" />}
           />
           <DropdownMenuContent align="end" className="w-52">
             {!isTimeBlockView && allowStatusMenu
@@ -459,12 +445,8 @@ export function AppointmentDetailDrawer({
       {allowEdit && !isEditing ? (
         <IconButton
           aria-label="Edit appointment"
+          size="header"
           onClick={handleEditClick}
-          className={
-            isMobile
-              ? APPOINTMENT_DRAWER_MOBILE_HEADER_ACTION_CLASS
-              : APPOINTMENT_DRAWER_HEADER_ACTION_CLASS
-          }
         >
           <Pencil className="size-4" />
         </IconButton>
@@ -472,6 +454,7 @@ export function AppointmentDetailDrawer({
       {variant === "panel" ? (
         <IconButton
           aria-label="Close appointment details"
+          size="header"
           onClick={() => {
             if (isEditing) {
               exitEditing();
@@ -479,7 +462,6 @@ export function AppointmentDetailDrawer({
             }
             onClose();
           }}
-          className={APPOINTMENT_DRAWER_CLOSE_ACTION_CLASS}
         >
           <DrawerCloseIcon />
         </IconButton>
@@ -490,8 +472,8 @@ export function AppointmentDetailDrawer({
   const checkoutHeaderActions = (
     <IconButton
       aria-label="Back"
+      size="header"
       onClick={handleCheckoutBack}
-      className={APPOINTMENT_DRAWER_HEADER_ACTION_CLASS}
     >
       <NavArrowIcon direction="left" size="lg" />
     </IconButton>

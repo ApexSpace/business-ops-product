@@ -176,7 +176,7 @@ export function CalendarSettingsEditor({ calendarId }: CalendarSettingsEditorPro
                 {canManage ? "Cancel" : "Back to calendars"}
               </Button>
               {canManage ? (
-                <Button type="submit" disabled={saveMutation.isPending}>
+                <Button type="submit" variant="brand" disabled={saveMutation.isPending}>
                   {saveMutation.isPending ? "Saving…" : "Save calendar"}
                 </Button>
               ) : (

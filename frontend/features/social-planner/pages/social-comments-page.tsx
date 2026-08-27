@@ -253,8 +253,7 @@ export function SocialCommentsPage() {
               </Button>
             ) : null}
             <Button
-              variant="outline"
-              size="sm"
+              variant="brand"
               nativeButton={false}
               render={<Link href="/business/social-planner" />}
             >

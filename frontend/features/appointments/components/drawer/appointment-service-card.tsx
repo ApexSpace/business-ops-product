@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { DrawerAddAction } from "@/components/drawer/drawer-add-action";
 import {
   DrawerPlusSquareButton,
   DrawerTrashIcon,
@@ -22,7 +23,6 @@ import {
 import { useServiceEligibleStaff } from "@/features/appointments/hooks/use-service-eligible-staff";
 import { formatMoney } from "@/features/payments/utils/currencies";
 import {
-  APPOINTMENT_DRAWER_ADD_ACTION_CLASS,
   APPOINTMENT_DRAWER_ADD_ACTION_OUTLINE_CLASS,
   APPOINTMENT_DRAWER_ICON_BUTTON_CLASS,
   APPOINTMENT_DRAWER_PROVIDER_SELECT_TRIGGER_CLASS,
@@ -247,30 +247,30 @@ export function AppointmentAddActions({
       )}
     >
       {onAddService ? (
-        <button
-          type="button"
-          className={
-            isOutline
-              ? APPOINTMENT_DRAWER_ADD_ACTION_OUTLINE_CLASS
-              : APPOINTMENT_DRAWER_ADD_ACTION_CLASS
-          }
-          onClick={onAddService}
-        >
-          Add Service
-        </button>
+        isOutline ? (
+          <button
+            type="button"
+            className={APPOINTMENT_DRAWER_ADD_ACTION_OUTLINE_CLASS}
+            onClick={onAddService}
+          >
+            + Add Service
+          </button>
+        ) : (
+          <DrawerAddAction label="Add Service" onClick={onAddService} />
+        )
       ) : null}
       {onAddNote ? (
-        <button
-          type="button"
-          className={
-            isOutline
-              ? APPOINTMENT_DRAWER_ADD_ACTION_OUTLINE_CLASS
-              : APPOINTMENT_DRAWER_ADD_ACTION_CLASS
-          }
-          onClick={onAddNote}
-        >
-          Add Note
-        </button>
+        isOutline ? (
+          <button
+            type="button"
+            className={APPOINTMENT_DRAWER_ADD_ACTION_OUTLINE_CLASS}
+            onClick={onAddNote}
+          >
+            + Add Note
+          </button>
+        ) : (
+          <DrawerAddAction label="Add Note" onClick={onAddNote} />
+        )
       ) : null}
     </div>
   );

@@ -8,6 +8,8 @@
  * ListPagination, and entity workspaces. Colors reference CSS variables.
  */
 
+import { FILTER_ICON_BUTTON_CLASS } from "@/lib/ui/control-styles";
+
 /**
  * primary/800 — column header text
  * Matches `--pc-violet-primary-dark`
@@ -62,26 +64,14 @@ export const DATA_TABLE_CELL_CLASS =
  * List toolbar — Figma: primary CTA left, search + standalone filter right, h 44.
  */
 export const DATA_TABLE_TOOLBAR_CLASS =
-  "flex min-h-[var(--control-height)] w-full flex-row flex-wrap items-center gap-3 border-0 bg-transparent p-0 shadow-none sm:gap-8";
-
-/**
- * Primary “New …” CTA layout extras — fill/hover come from Button `variant="brand"`.
- * Height uses `--control-height` via Button size default.
- */
-export const DATA_TABLE_PRIMARY_ACTION_CLASS =
-  "min-w-[157px] gap-2 rounded-[var(--radius-sm)] px-4";
+  "flex min-h-[var(--control-height)] w-full flex-row flex-wrap items-center gap-3 border-0 bg-transparent px-[var(--cs-list-toolbar-padding-x)] py-0 shadow-none sm:gap-8";
 
 /** Standalone search field — Figma h 44, max ~355, radius/md */
 export const DATA_TABLE_SEARCH_STANDALONE_CLASS =
   "h-[var(--control-height)] w-full min-w-0 max-w-[min(100%,355px)] rounded-[var(--radius-md)] border border-[var(--pc-black-secondary-light)] bg-white px-4 py-2 text-[14px] shadow-none placeholder:text-grey-tertiary-normal focus-visible:border-violet-primary-normal focus-visible:ring-2 focus-visible:ring-violet-primary-normal/20";
 
-/**
- * Filter-with Icon — Figma: 56×44, radius/md, 1px border/subtle, white fill.
- * Sits beside search with a clear gap (not joined into one control).
- * Important width/height beat Button `size="icon"` square sizing.
- */
-export const DATA_TABLE_FILTER_ICON_CLASS =
-  "inline-flex !h-[var(--control-height)] !w-14 !min-h-[var(--control-height)] !min-w-14 shrink-0 cursor-pointer items-center justify-center rounded-[var(--radius-md)] border border-[var(--pc-black-secondary-light)] bg-white p-0 text-foreground shadow-none hover:bg-violet-primary-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-primary-normal/30";
+/** Same chrome as Appointments — see `FILTER_ICON_BUTTON_CLASS`. */
+export const DATA_TABLE_FILTER_ICON_CLASS = FILTER_ICON_BUTTON_CLASS;
 
 /** Status cell text — purple accent (not a badge pill) */
 export const DATA_TABLE_STATUS_CLASS =

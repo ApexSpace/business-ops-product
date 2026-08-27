@@ -27,6 +27,7 @@ import {
 } from "@/lib/capabilities/route-capability-map";
 import { usePageMetadata } from "@/lib/runtime/page-metadata-context";
 import { useHydrated } from "@/lib/hooks/use-hydrated";
+import { isSettingsDataTableListPath } from "@/components/shell/shell-full-bleed-paths";
 import { SettingsNavPanel } from "@/features/settings/components/settings-nav-panel";
 import type { ShellNavSection } from "@/lib/types/shell-nav";
 
@@ -105,6 +106,7 @@ export function SettingsWorkspaceChrome({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const tableList = isSettingsDataTableListPath(pathname);
   const sections = useFilteredSettingsSections();
   const isLg = useIsLg();
   const browseMode = isSettingsIndexPath(pathname) && !isLg;
@@ -155,8 +157,14 @@ export function SettingsWorkspaceChrome({
         sidebar={nav}
         toolbar={isLg ? undefined : toolbar}
       >
-        <div className="flex min-h-0 min-w-0 flex-col gap-[var(--spacing-6)] p-[var(--spacing-4)] lg:p-[var(--spacing-6)]">
-          <SettingsContentHeader />
+        <div
+          className={
+            tableList
+              ? "flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden"
+              : "flex min-h-0 min-w-0 flex-col gap-[var(--spacing-6)] p-[var(--spacing-4)] lg:p-[var(--spacing-6)]"
+          }
+        >
+          {tableList ? null : <SettingsContentHeader />}
           {children}
         </div>
       </SettingsLayout>

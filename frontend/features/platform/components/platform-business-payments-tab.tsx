@@ -8,14 +8,10 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { toast } from "sonner";
-import {
-  DataTable,
-  type DataTableColumn,
-} from "@/components/data-display/data-table";
+import { type DataTableColumn } from "@/components/data-display/data-table";
 import { StatusBadge } from "@/components/data-display/status-badge";
-import { SearchableSelect } from "@/components/forms/searchable-select";
-import { DataToolbar } from "@/components/layout/data-toolbar";
-import { FilterBar } from "@/components/layout/filter-bar";
+import { EntityListLayout } from "@/components/layout/entity-list-layout";
+import { ListFilterCheckboxGroup } from "@/components/layout/list-filter-checkbox-group";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -78,6 +74,13 @@ export function PlatformBusinessPaymentsTab({
   const [direction, setDirection] = useState("all");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [draftPaymentStatus, setDraftPaymentStatus] = useState("all");
+  const [draftPaymentMethod, setDraftPaymentMethod] = useState("all");
+  const [draftPaymentType, setDraftPaymentType] = useState("all");
+  const [draftDirection, setDraftDirection] = useState("all");
+  const [draftFromDate, setDraftFromDate] = useState("");
+  const [draftToDate, setDraftToDate] = useState("");
   const [selectedPayment, setSelectedPayment] =
     useState<BusinessSubscriptionPayment | null>(null);
   const [userRecordOpen, setUserRecordOpen] = useState(false);
@@ -192,6 +195,12 @@ export function PlatformBusinessPaymentsTab({
     setDirection("all");
     setFromDate("");
     setToDate("");
+    setDraftPaymentStatus("all");
+    setDraftPaymentMethod("all");
+    setDraftPaymentType("all");
+    setDraftDirection("all");
+    setDraftFromDate("");
+    setDraftToDate("");
   };
 
   const columns = useMemo<DataTableColumn<BusinessSubscriptionPayment>[]>(
@@ -260,134 +269,147 @@ export function PlatformBusinessPaymentsTab({
 
   return (
     <div className="space-y-6">
-      <div className="space-y-1">
-        <h2 className="text-base font-semibold">Payment Records</h2>
-        <p className="text-sm text-muted-foreground">
-          Paid records can be refunded. Pending or failed records can be voided.
-        </p>
-      </div>
-
-      <PaymentSummaryCards payments={summaryData?.items ?? []} />
-
-      <div className="space-y-4">
-        <DataToolbar
-          filters={
-            <FilterBar>
-              <SearchableSelect
-                items={subscriptionPaymentStatusFilterOptions}
-                value={paymentStatus}
-                onValueChange={(v) => setPaymentStatus(v ?? "all")}
-                placeholder="Payment status"
-                triggerClassName="w-[180px]"
-              />
-              <SearchableSelect
-                items={subscriptionPaymentMethodFilterOptions}
-                value={paymentMethod}
-                onValueChange={(v) => setPaymentMethod(v ?? "all")}
-                placeholder="Method"
-                triggerClassName="w-[160px]"
-              />
-              <SearchableSelect
-                items={subscriptionPaymentTypeFilterOptions}
-                value={paymentType}
-                onValueChange={(v) => setPaymentType(v ?? "all")}
-                placeholder="Payment type"
-                triggerClassName="w-[180px]"
-              />
-              <SearchableSelect
-                items={subscriptionPaymentDirectionFilterOptions}
-                value={direction}
-                onValueChange={(v) => setDirection(v ?? "all")}
-                placeholder="Direction"
-                triggerClassName="w-[160px]"
-              />
+      <EntityListLayout
+        title="Payment Records"
+        description="Paid records can be refunded. Pending or failed records can be voided."
+        hideHeader
+        flush
+        addButtonLabel="Record Payment"
+        onAdd={canUpdate ? () => setUserRecordOpen(true) : undefined}
+        leading={<PaymentSummaryCards payments={summaryData?.items ?? []} />}
+        filterAriaLabel="Payment filters"
+        filterActive={
+          paymentStatus !== "all" ||
+          paymentMethod !== "all" ||
+          paymentType !== "all" ||
+          direction !== "all" ||
+          Boolean(fromDate || toDate)
+        }
+        filterOpen={filterOpen}
+        onFilterOpenChange={(open) => {
+          if (open) {
+            setDraftPaymentStatus(paymentStatus);
+            setDraftPaymentMethod(paymentMethod);
+            setDraftPaymentType(paymentType);
+            setDraftDirection(direction);
+            setDraftFromDate(fromDate);
+            setDraftToDate(toDate);
+          }
+          setFilterOpen(open);
+        }}
+        filterContent={
+          <>
+            <ListFilterCheckboxGroup
+              legend="Payment status"
+              options={subscriptionPaymentStatusFilterOptions}
+              value={draftPaymentStatus}
+              onChange={(next) => setDraftPaymentStatus(String(next))}
+            />
+            <ListFilterCheckboxGroup
+              legend="Method"
+              options={subscriptionPaymentMethodFilterOptions}
+              value={draftPaymentMethod}
+              onChange={(next) => setDraftPaymentMethod(String(next))}
+            />
+            <ListFilterCheckboxGroup
+              legend="Payment type"
+              options={subscriptionPaymentTypeFilterOptions}
+              value={draftPaymentType}
+              onChange={(next) => setDraftPaymentType(String(next))}
+            />
+            <ListFilterCheckboxGroup
+              legend="Direction"
+              options={subscriptionPaymentDirectionFilterOptions}
+              value={draftDirection}
+              onChange={(next) => setDraftDirection(String(next))}
+            />
+            <div className="flex w-full min-w-0 flex-col gap-2">
+              <Label htmlFor="sub-pay-from">From date</Label>
               <Input
+                id="sub-pay-from"
                 type="date"
-                value={fromDate}
-                onChange={(e) => setFromDate(e.target.value)}
-                className="w-[160px]"
-                aria-label="From date"
+                value={draftFromDate}
+                onChange={(e) => setDraftFromDate(e.target.value)}
               />
+              <Label htmlFor="sub-pay-to">To date</Label>
               <Input
+                id="sub-pay-to"
                 type="date"
-                value={toDate}
-                onChange={(e) => setToDate(e.target.value)}
-                className="w-[160px]"
-                aria-label="To date"
+                value={draftToDate}
+                onChange={(e) => setDraftToDate(e.target.value)}
               />
               <Button type="button" variant="ghost" size="sm" onClick={resetFilters}>
                 Clear
               </Button>
-            </FilterBar>
-          }
-          actions={
-            canUpdate ? (
-              <Button size="sm" onClick={() => setUserRecordOpen(true)}>
-                Record Payment
-              </Button>
-            ) : null
-          }
-        />
-
-        <DataTable
-          columns={columns}
-          data={payments}
-          getRowId={(row) => row.id}
-          isLoading={isLoading && payments.length === 0}
-          emptyTitle="No payment records"
-          emptyDescription="Subscription payments and credits will appear here."
-          rowActions={(payment) => (
-            <div className="flex gap-1">
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => setSelectedPayment(payment)}
-              >
-                View
-              </Button>
-              {canUpdate && !payment.voidedAt ? (
-                <>
-                  {payment.paymentStatus === "PAID" &&
-                  payment.direction === "INCOMING" ? (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => setRefundPayment(payment)}
-                    >
-                      Refund
-                    </Button>
-                  ) : null}
-                  {payment.paymentStatus === "PENDING" ||
-                  payment.paymentStatus === "FAILED" ? (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => setVoidPayment(payment)}
-                    >
-                      Void
-                    </Button>
-                  ) : null}
-                </>
-              ) : null}
             </div>
-          )}
-          actionsColumnHeader="Actions"
-        />
-
-        {hasNextPage ? (
-          <div className="flex justify-center">
+          </>
+        }
+        onFilterApply={() => {
+          setPaymentStatus(draftPaymentStatus);
+          setPaymentMethod(draftPaymentMethod);
+          setPaymentType(draftPaymentType);
+          setDirection(draftDirection);
+          setFromDate(draftFromDate);
+          setToDate(draftToDate);
+        }}
+        footer={
+          hasNextPage ? (
+            <div className="flex justify-center">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={isFetchingNextPage}
+                onClick={() => void fetchNextPage()}
+              >
+                {isFetchingNextPage ? "Loading…" : "Load more"}
+              </Button>
+            </div>
+          ) : undefined
+        }
+        columns={columns}
+        data={payments}
+        getRowId={(row) => row.id}
+        isLoading={isLoading && payments.length === 0}
+        emptyTitle="No payment records"
+        emptyDescription="Subscription payments and credits will appear here."
+        actionsColumnHeader="Actions"
+        rowActions={(payment) => (
+          <div className="flex gap-1">
             <Button
-              type="button"
-              variant="outline"
               size="sm"
-              disabled={isFetchingNextPage}
-              onClick={() => void fetchNextPage()}
+              variant="ghost"
+              onClick={() => setSelectedPayment(payment)}
             >
-              {isFetchingNextPage ? "Loading…" : "Load more"}
+              View
             </Button>
+            {canUpdate && !payment.voidedAt ? (
+              <>
+                {payment.paymentStatus === "PAID" &&
+                payment.direction === "INCOMING" ? (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setRefundPayment(payment)}
+                  >
+                    Refund
+                  </Button>
+                ) : null}
+                {payment.paymentStatus === "PENDING" ||
+                payment.paymentStatus === "FAILED" ? (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setVoidPayment(payment)}
+                  >
+                    Void
+                  </Button>
+                ) : null}
+              </>
+            ) : null}
           </div>
-        ) : null}
-      </div>
+        )}
+      />
 
       <RecordPaymentDialog
         businessId={businessId}

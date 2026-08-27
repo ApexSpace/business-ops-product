@@ -64,7 +64,7 @@ export function TasksMobileList({
       emptyTitle="No tasks yet"
       emptyDescription="Create a task from a contact workspace or here."
       emptyAction={
-        <Button size="sm" onClick={onCreate}>
+        <Button variant="brand" onClick={onCreate}>
           New task
         </Button>
       }

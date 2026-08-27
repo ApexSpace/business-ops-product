@@ -56,7 +56,7 @@ export function CreatePlatformUserDialog() {
 
   return (
     <>
-      <Button type="button" onClick={() => setOpen(true)}>
+      <Button type="button" variant="brand" onClick={() => setOpen(true)}>
         Add platform user
       </Button>
       <FormDialog

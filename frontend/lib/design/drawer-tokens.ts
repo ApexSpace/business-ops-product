@@ -12,10 +12,14 @@
  *   --drawer-stack-gap          → gap-drawer-stack       (field-to-field)
  *   --drawer-field-gap          → gap-drawer-field       (label → control)
  *   --drawer-header-padding-y   → py-drawer-header-y
+ *   --drawer-header-icon-size   → header close/edit/trash/more hover box
  *   --drawer-header-gap         → gap-drawer-title       (eyebrow → title)
- *   --drawer-body-padding-y     → py-drawer-body-y
+ *   --drawer-body-padding-y     → py-drawer-body-y / pt-drawer-body-y
+ *   --drawer-body-padding-bottom → pb-drawer-body-bottom (last field → footer)
  *   --drawer-footer-padding-y   → py-drawer-footer-y
  *   --drawer-footer-gap         → gap-drawer-footer
+ *   --plus-button-inset         → field-trailing “+” top/bottom/right
+ *   --drawer-express-row-height → express / toggle row
  *   --drawer-spine-width        → w-[var(--drawer-spine-width)]
  *   --drawer-spine-padding-x    → px-drawer-spine-x
  *   --drawer-spine-padding-y    → py-drawer-spine-y
@@ -106,7 +110,7 @@ export const DRAWER_SHELL_DESCRIPTION_CLASS =
 export const DRAWER_SHELL_BODY_CLASS = "min-h-0 flex-1 overflow-y-auto !p-0";
 
 export const DRAWER_SHELL_CONTENT_INSET_CLASS =
-  "space-y-0 px-6 py-drawer-body-y scrollbar-thin";
+  "space-y-0 px-6 pt-drawer-body-y pb-drawer-body-bottom scrollbar-thin";
 
 export const DRAWER_SHELL_FOOTER_CLASS =
   "flex-row flex-wrap items-center justify-end gap-2.5 border-t border-border/70 bg-background px-7 py-drawer-footer-y";
@@ -144,7 +148,8 @@ export const DRAWER_SPINE_CLASS =
 export const DRAWER_SPINE_LABEL_CLASS =
   "pointer-events-none select-none text-[length:var(--drawer-spine-font-size)] font-bold uppercase leading-none tracking-[var(--drawer-spine-tracking)] text-white";
 
-export const DRAWER_PRIMARY_FOOTER_BUTTON_CLASS = "h-14 min-h-14 w-full";
+/** Full-width drawer footer layout — height/padding from Button size="default". */
+export const DRAWER_PRIMARY_FOOTER_BUTTON_CLASS = "w-full";
 
 
 /* ─── Default Figma spine drawer chrome ─── */
@@ -198,8 +203,35 @@ export const DRAWER_CONTENT_PANEL_CLASS =
 export const DRAWER_HEADER_CLASS =
   "relative flex shrink-0 flex-col justify-center border-x-0 border-t-0 border-b border-solid border-[var(--drawer-header-border)] !bg-white px-4 py-drawer-header-y [background-image:none] sm:px-6";
 
+/** Hover box for header icons — value lives on `--drawer-header-icon-size`. */
+export const DRAWER_HEADER_ICON_BOX_CLASS =
+  "!size-[var(--drawer-header-icon-size)] !min-h-[var(--drawer-header-icon-size)] !min-w-[var(--drawer-header-icon-size)]";
+
+/**
+ * Canonical drawer/sheet header icon control — close (X) is the standard.
+ * Size comes from `--drawer-header-icon-size` (globals.css). Important min
+ * beats IconButton `size="icon"` (`--control-height`).
+ */
+export const DRAWER_HEADER_ACTION_CLASS = cn(
+  "relative shrink-0 cursor-pointer self-center rounded-md !border-0 bg-transparent p-0 text-muted-foreground shadow-none hover:bg-violet-primary-normal/10 hover:text-violet-primary-normal [&>svg]:size-4",
+  DRAWER_HEADER_ICON_BOX_CLASS,
+);
+
+/** Identical to header actions — close is not a special size. */
+export const DRAWER_CLOSE_ACTION_CLASS = DRAWER_HEADER_ACTION_CLASS;
+
+/**
+ * Force every IconButton in the drawer header (edit, trash, more, close)
+ * to the close (X) hover box. Text buttons in `headerActions` are untouched.
+ */
+export const DRAWER_HEADER_ICON_BUTTON_SLOT_CLASS = cn(
+  "[&_[data-icon-button]]:relative [&_[data-icon-button]]:self-center [&_[data-icon-button]]:rounded-md [&_[data-icon-button]]:!border-0 [&_[data-icon-button]]:bg-transparent [&_[data-icon-button]]:p-0 [&_[data-icon-button]]:text-muted-foreground [&_[data-icon-button]]:!shadow-none [&_[data-icon-button]]:hover:bg-violet-primary-normal/10 [&_[data-icon-button]]:hover:text-violet-primary-normal [&_[data-icon-button]_svg]:size-4",
+  "[&_[data-icon-button]]:!size-[var(--drawer-header-icon-size)] [&_[data-icon-button]]:!min-h-[var(--drawer-header-icon-size)] [&_[data-icon-button]]:!min-w-[var(--drawer-header-icon-size)]",
+);
+
+/** @deprecated Use `DRAWER_HEADER_ICON_BUTTON_SLOT_CLASS`. */
 export const DRAWER_HEADER_CLOSE_OVERRIDES =
-  "[&_button[aria-label=Close]]:relative [&_button[aria-label=Close]]:self-center [&_button[aria-label=Close]]:!size-6 [&_button[aria-label=Close]]:rounded-md [&_button[aria-label=Close]]:!border-0 [&_button[aria-label=Close]]:bg-transparent [&_button[aria-label=Close]]:p-0 [&_button[aria-label=Close]]:text-muted-foreground [&_button[aria-label=Close]]:!shadow-none [&_button[aria-label=Close]]:hover:bg-violet-primary-normal/10 [&_button[aria-label=Close]]:hover:text-violet-primary-normal";
+  DRAWER_HEADER_ICON_BUTTON_SLOT_CLASS;
 
 export const DRAWER_TITLE_SLOT_OVERRIDES =
   "[&_[data-slot=sheet-title]]:block [&_[data-slot=sheet-title]]:text-[20px] [&_[data-slot=sheet-title]]:font-bold [&_[data-slot=sheet-title]]:leading-none [&_[data-slot=sheet-title]]:text-violet-primary-normal";
@@ -225,15 +257,6 @@ export const DRAWER_TITLE_CLASS =
 export const DRAWER_DESCRIPTION_CLASS =
   "mt-1.5 text-[13px] font-medium leading-none text-violet-primary-normal/80";
 
-export const DRAWER_HEADER_ACTION_CLASS =
-  "!size-6 shrink-0 cursor-pointer self-center rounded-md border-0 bg-transparent p-0 text-muted-foreground shadow-none hover:bg-violet-primary-normal/10 hover:text-violet-primary-normal";
-
-/** Same hover chip as header edit/trash — do not force a transparent hover. */
-export const DRAWER_CLOSE_ACTION_CLASS = cn(
-  DRAWER_HEADER_ACTION_CLASS,
-  "relative [&>svg]:size-4",
-);
-
 /** Shared sheet/drawer header: title row + optional description below. */
 export const SHEET_HEADER_CLASS =
   "flex shrink-0 flex-col justify-center gap-1 border-b border-border px-4 py-drawer-header-y";
@@ -242,7 +265,7 @@ export const SHEET_HEADER_ROW_CLASS =
   "flex min-h-[var(--control-height-sm)] w-full items-center justify-between gap-3 [&_[data-slot=sheet-close]]:self-center";
 
 export const DRAWER_BODY_INSET_CLASS =
-  "flex w-full min-w-0 flex-col gap-drawer-section px-4 py-drawer-body-y scrollbar-thin sm:px-6";
+  "flex w-full min-w-0 flex-col gap-drawer-section px-4 pt-drawer-body-y pb-drawer-body-bottom scrollbar-thin sm:px-6";
 
 /** Form field stack — section-to-section gap `--drawer-section-gap`. */
 export const DRAWER_FORM_FIELDS_CLASS =
@@ -281,9 +304,9 @@ export const DRAWER_FOOTER_CLASS = cn(
 export const DRAWER_FOOTER_INNER_CLASS =
   "flex w-full min-w-0 flex-col gap-drawer-footer";
 
-/** Figma Express Booking row — hug 48px · space-between. */
+/** Figma Express Booking row — height `--drawer-express-row-height`. */
 export const DRAWER_EXPRESS_ROW_CLASS =
-  "flex h-12 min-h-12 w-full min-w-0 items-center justify-between gap-3";
+  "flex h-[var(--drawer-express-row-height)] min-h-[var(--drawer-express-row-height)] w-full min-w-0 items-center justify-between gap-3";
 
 /** Figma label — Montserrat 500 · 16px · neutral/700. */
 export const DRAWER_EXPRESS_LABEL_CLASS =
@@ -301,10 +324,9 @@ export const DRAWER_SWITCH_CLASS = cn(
 export const DRAWER_SETTINGS_ICON_BUTTON_CLASS =
   "inline-flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-md text-[var(--drawer-icon-gear)] hover:text-violet-primary-normal";
 
-/** Figma Primary CTA — h 48 · fill width · radius/sm · px spacing/6 · 16px bold white. */
-/** Full-width drawer/dialog primary — fill from Button `variant="brand"`. */
-export const DRAWER_PRIMARY_BUTTON_CLASS =
-  "w-full max-w-full rounded-[var(--radius-sm)] px-6 font-bold";
+/** Full-width drawer/dialog primary — fill from Button `variant="brand"`.
+ * Height/padding come from Button size="default" (`--control-height`, `--control-padding-x`). */
+export const DRAWER_PRIMARY_BUTTON_CLASS = "w-full max-w-full";
 
 /** Figma Date/Time inputs — 1px warm field border (var(--drawer-field-border)), radius/sm, hug ~43px. */
 export const DRAWER_FIELD_CLASS =
@@ -442,6 +464,7 @@ export const DRAWER_ICON_BUTTON_CLASS =
 export const DRAWER_META_ROW_CLASS =
   "flex min-w-0 items-center gap-2 text-[13px] font-medium leading-[16px] text-[var(--drawer-text-primary)]";
 
+/** Trailing / inline purple “+” — size `--plus-button-size` (Add Note, Service, Client field). */
 export const DRAWER_PLUS_BUTTON_CLASS =
   "pointer-events-auto inline-flex size-[var(--plus-button-size)] shrink-0 cursor-pointer appearance-none items-center justify-center rounded-[4px] border-0 bg-violet-primary-normal p-0 leading-none text-white hover:bg-violet-primary-normal-hover [&>svg]:block [&>svg]:size-3";
 
@@ -462,21 +485,26 @@ export const DRAWER_CHECKBOX_CLASS =
 export const DRAWER_CHECKBOX_LABEL_CLASS =
   "cursor-pointer text-[14px] font-medium leading-none text-violet-primary-darker";
 
+export const DRAWER_MOBILE_CLOSE_ACTION_CLASS =
+  "relative !size-11 !min-h-11 !min-w-11 shrink-0 justify-self-start rounded-full !border-0 !bg-transparent p-0 text-white !shadow-none hover:!bg-white/10 hover:text-white [&>svg]:size-4 after:absolute after:inset-0 after:content-['']";
+
+/** Same hover box as mobile close (X). */
+export const DRAWER_MOBILE_HEADER_ACTION_CLASS = DRAWER_MOBILE_CLOSE_ACTION_CLASS;
+
+/** Force every IconButton in the mobile-brand header to match close. */
+export const DRAWER_MOBILE_HEADER_ICON_BUTTON_SLOT_CLASS =
+  "[&_[data-icon-button]]:relative [&_[data-icon-button]]:!size-11 [&_[data-icon-button]]:!min-h-11 [&_[data-icon-button]]:!min-w-11 [&_[data-icon-button]]:rounded-full [&_[data-icon-button]]:!border-0 [&_[data-icon-button]]:!bg-transparent [&_[data-icon-button]]:p-0 [&_[data-icon-button]]:text-white [&_[data-icon-button]]:!shadow-none [&_[data-icon-button]]:hover:!bg-white/10 [&_[data-icon-button]]:hover:text-white [&_[data-icon-button]_svg]:size-4";
+
 /** Mobile Figma sidebars — full-bleed purple app bar (no spine). */
 export const DRAWER_MOBILE_HEADER_CLASS =
-  "relative shrink-0 border-0 !bg-violet-primary-normal px-3 pb-3 pt-[max(0.75rem,env(safe-area-inset-top,0px))] [background-image:none] sm:px-4";
+  "relative shrink-0 border-0 !bg-violet-primary-normal px-3 pb-3 pt-[max(0.75rem,env(safe-area-inset-top,0px))] [background-image:none] sm:px-4 " +
+  DRAWER_MOBILE_HEADER_ICON_BUTTON_SLOT_CLASS;
 
 export const DRAWER_MOBILE_HEADER_ROW_CLASS =
   "grid w-full grid-cols-[2.75rem_minmax(0,1fr)_2.75rem] items-center gap-1";
 
 export const DRAWER_MOBILE_TITLE_CLASS =
   "truncate text-center text-[17px] font-bold leading-none tracking-normal text-white";
-
-export const DRAWER_MOBILE_CLOSE_ACTION_CLASS =
-  "relative !size-11 shrink-0 justify-self-start rounded-full !border-0 !bg-transparent p-0 text-white !shadow-none hover:!bg-white/10 hover:text-white [&>svg]:size-4 after:absolute after:inset-0 after:content-['']";
-
-export const DRAWER_MOBILE_HEADER_ACTION_CLASS =
-  "relative !size-11 shrink-0 rounded-full !border-0 !bg-transparent p-0 text-white !shadow-none hover:!bg-white/10 hover:text-white [&>svg]:size-5 after:absolute after:inset-0 after:content-['']";
 
 export const DRAWER_MOBILE_HEADER_ACTIONS_CLASS =
   "flex shrink-0 items-center justify-end justify-self-end gap-0.5";

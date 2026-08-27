@@ -4,21 +4,16 @@ import { Suspense, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ApiErrorState } from "@/components/data-display/api-error-state";
-import {
-  DataTable,
-  type DataTableColumn,
-} from "@/components/data-display/data-table";
+import { type DataTableColumn } from "@/components/data-display/data-table";
 import { DataTableRowActions } from "@/components/data-display/data-table-row-actions";
-import { SearchInput } from "@/components/forms/search-input";
 import { ConfirmDeleteDialog } from "@/components/forms/confirm-delete-dialog";
-import { FilterBar } from "@/components/layout/filter-bar";
-import { ListPage, ListPageSkeleton } from "@/components/layout/list-page";
+import { EntityListLayout } from "@/components/layout/entity-list-layout";
+import { ListFilterCheckboxGroup } from "@/components/layout/list-filter-checkbox-group";
+import { ListPageSkeleton } from "@/components/layout/list-page";
 import { ActionButton } from "@/components/ui/action-button";
 import { Badge } from "@/components/ui/badge";
-import { SearchableSelect } from "@/components/forms/searchable-select";
 import { FormCreateDialog } from "@/features/forms/components/form-create-dialog";
 import { FormShareDialog } from "@/features/forms/components/form-share-dialog";
-import { FormsListHeaderActions } from "@/features/forms/components/forms-list-header-actions";
 import { useFormMutations } from "@/features/forms/hooks/use-form-mutations";
 import { useFormStaffPermissions } from "@/features/forms/hooks/use-form-staff-permissions";
 import { useFormsList } from "@/features/forms/hooks/use-forms-list";
@@ -54,6 +49,8 @@ function FormsListPageContent() {
   const { params, setParams } = useListSearchParams(LIST_SCHEMA);
   const debouncedSearch = useDebouncedValue(params.search);
   const [createOpen, setCreateOpen] = useState(false);
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [draftStatus, setDraftStatus] = useState(params.status);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [shareForm, setShareForm] = useState<FormListItem | null>(null);
   const { canManageTemplates } = useFormStaffPermissions();
@@ -161,51 +158,49 @@ function FormsListPageContent() {
 
   return (
     <>
-      <ListPage
+      <EntityListLayout
         title="Forms"
         description="Build lead capture forms for your website and landing pages."
-        actions={
-          canManageTemplates ? (
-            <FormsListHeaderActions onCreate={() => setCreateOpen(true)} />
+        addButtonLabel="Create form"
+        onAdd={canManageTemplates ? () => setCreateOpen(true) : undefined}
+        searchPlaceholder="Search forms…"
+        searchValue={params.search}
+        onSearchChange={(value) => setParams({ search: value })}
+        filterAriaLabel="Form filters"
+        filterActive={params.status !== "all"}
+        filterOpen={filterOpen}
+        onFilterOpenChange={(open) => {
+          if (open) setDraftStatus(params.status);
+          setFilterOpen(open);
+        }}
+        filterContent={
+          <ListFilterCheckboxGroup
+            legend="Status"
+            options={STATUS_OPTIONS}
+            value={draftStatus}
+            onChange={(next) => setDraftStatus(String(next))}
+          />
+        }
+        onFilterApply={() => setParams({ status: draftStatus })}
+        error={
+          isError ? (
+            <ApiErrorState error={error} onRetry={() => void refetch()} />
           ) : undefined
         }
-        filters={
-          <FilterBar>
-            <SearchInput
-              value={params.search}
-              onChange={(value) => setParams({ search: value })}
-              placeholder="Search forms…"
-            />
-            <SearchableSelect
-              items={STATUS_OPTIONS}
-              value={params.status}
-              onValueChange={(value) =>
-                setParams({ status: value ?? "all" })
-              }
-              searchable={false}
-              triggerClassName="w-[180px]"
-            />
-          </FilterBar>
+        columns={columns}
+        data={data?.items ?? []}
+        getRowId={(row) => row.id}
+        isLoading={isLoading}
+        emptyTitle="No forms yet"
+        emptyDescription="Create your first lead capture form."
+        emptyAction={
+          canManageTemplates ? (
+            <ActionButton onClick={() => setCreateOpen(true)}>
+              Create form
+            </ActionButton>
+          ) : undefined
         }
-      >
-        {isError ? (
-          <ApiErrorState error={error} onRetry={() => void refetch()} />
-        ) : (
-        <DataTable
-          columns={columns}
-          data={data?.items ?? []}
-          getRowId={(row) => row.id}
-          isLoading={isLoading}
-          emptyTitle="No forms yet"
-          emptyDescription="Create your first lead capture form."
-          emptyAction={
-            canManageTemplates ? (
-              <ActionButton onClick={() => setCreateOpen(true)}>
-                Create form
-              </ActionButton>
-            ) : undefined
-          }
-          rowActions={(form) => (
+        rowActions={(form) => (
             <DataTableRowActions
               menuLabel={`Actions for ${form.name}`}
               actions={[
@@ -270,10 +265,8 @@ function FormsListPageContent() {
                   : []),
               ]}
             />
-          )}
-        />
         )}
-      </ListPage>
+      />
 
       {canManageTemplates ? (
         <FormCreateDialog

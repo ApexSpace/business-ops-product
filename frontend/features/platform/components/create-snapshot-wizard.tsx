@@ -186,7 +186,7 @@ export function CreateSnapshotWizard() {
 
   return (
     <>
-      <Button type="button" onClick={() => setOpen(true)}>
+      <Button type="button" variant="brand" onClick={() => setOpen(true)}>
         New snapshot
       </Button>
       <Dialog
@@ -359,6 +359,7 @@ export function CreateSnapshotWizard() {
                 {step < 4 ? (
                   <Button
                     type="button"
+                    variant="brand"
                     disabled={!canGoNext() || mutation.isPending}
                     onClick={() => void handleNext()}
                   >
@@ -368,6 +369,7 @@ export function CreateSnapshotWizard() {
                 ) : (
                   <Button
                     type="button"
+                    variant="brand"
                     disabled={mutation.isPending}
                     onClick={() => void handleCreate()}
                   >

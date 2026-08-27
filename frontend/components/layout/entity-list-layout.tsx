@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import {
   DataTable,
   type DataTableColumn,
@@ -10,6 +11,7 @@ import { SearchInput } from "@/components/forms/search-input";
 import { EntityWorkspaceLayout } from "@/components/layout/entity-workspace-layout";
 import { ListFilterButton } from "@/components/layout/list-filter-button";
 import { ListPrimaryAction } from "@/components/layout/list-primary-action";
+import { OptionsFilterDrawer } from "@/components/layout/options-filter-drawer";
 import { WORKSPACE_TABLE_CLASS } from "@/lib/design/workspace-tokens";
 import type { RowSelectionState } from "@tanstack/react-table";
 
@@ -37,6 +39,8 @@ export interface EntityListLayoutProps<T> extends EntityListTableProps<T> {
   fullHeight?: boolean;
   footer?: React.ReactNode;
   drawer?: React.ReactNode;
+  /** Optional chrome above the toolbar (back links). */
+  leading?: React.ReactNode;
   /** Replaces the table (errors, custom empty, etc.). */
   error?: React.ReactNode;
 
@@ -54,7 +58,21 @@ export interface EntityListLayoutProps<T> extends EntityListTableProps<T> {
   onFilterClick?: () => void;
   filterActive?: boolean;
   filterAriaLabel?: string;
+  /**
+   * Body of the shared Appointments-style filter sidebar.
+   * When set (and `onFilterClick` is not), the filter icon opens OptionsFilterDrawer.
+   */
+  filterContent?: React.ReactNode;
+  onFilterApply?: () => void;
+  filterTitle?: string;
+  filterSpineLabel?: string;
+  filterApplyLabel?: string;
+  filterApplyDisabled?: boolean;
+  filterOpen?: boolean;
+  onFilterOpenChange?: (open: boolean) => void;
 
+  /** Skip list-page inset (nested tabs already inside a padded workspace). */
+  flush?: boolean;
   extraActions?: React.ReactNode;
   extraFilters?: React.ReactNode;
 
@@ -67,9 +85,10 @@ export interface EntityListLayoutProps<T> extends EntityListTableProps<T> {
 }
 
 /**
- * Shared list-page chrome: optional Add + Search + Filter, then DataTable.
- * Vertical gap above/below the toolbar is `--cs-list-toolbar-gap` (via
- * EntityWorkspaceLayout / workspace tokens) so every consumer matches.
+ * Shared DataTable list-page chrome.
+ * Toolbar (primary action left, search + filter right) + DataTable.
+ * Vertical gap navbar → toolbar → table is `--cs-list-toolbar-gap`.
+ * Horizontal: full content width (`px-0`) on every list page.
  */
 export function EntityListLayout<T>({
   title,
@@ -80,6 +99,7 @@ export function EntityListLayout<T>({
   fullHeight,
   footer,
   drawer,
+  leading,
   error,
   showAddButton,
   addButtonLabel = "New",
@@ -93,6 +113,14 @@ export function EntityListLayout<T>({
   onFilterClick,
   filterActive,
   filterAriaLabel = "Filters",
+  filterContent,
+  onFilterApply,
+  filterTitle = "Filters",
+  filterSpineLabel = "FILTERS",
+  filterApplyLabel = "Apply",
+  filterApplyDisabled,
+  filterOpen: filterOpenProp,
+  onFilterOpenChange,
   extraActions,
   extraFilters,
   columns,
@@ -101,6 +129,7 @@ export function EntityListLayout<T>({
   isLoading,
   density = "default",
   tableClassName,
+  flush,
   enableRowSelection,
   rowSelection,
   onRowSelectionChange,
@@ -113,9 +142,16 @@ export function EntityListLayout<T>({
   emptyDescription,
   emptyAction,
 }: EntityListLayoutProps<T>) {
+  const [internalFilterOpen, setInternalFilterOpen] = useState(false);
+  const usesBuiltInFilter = Boolean(filterContent) && !onFilterClick;
+  const filterOpen = filterOpenProp ?? internalFilterOpen;
+  const setFilterOpen = onFilterOpenChange ?? setInternalFilterOpen;
+
   const addVisible = Boolean(onAdd) && showAddButton !== false;
   const searchVisible = Boolean(onSearchChange) && showSearch !== false;
-  const filterVisible = Boolean(onFilterClick) && showFilter !== false;
+  const filterVisible =
+    showFilter !== false &&
+    (usesBuiltInFilter || Boolean(onFilterClick) || Boolean(extraFilters));
 
   const actions =
     addVisible || extraActions ? (
@@ -143,11 +179,17 @@ export function EntityListLayout<T>({
   const filters =
     filterVisible || extraFilters ? (
       <>
-        {filterVisible ? (
+        {filterVisible && (usesBuiltInFilter || onFilterClick) ? (
           <ListFilterButton
             aria-label={filterAriaLabel}
             active={filterActive}
-            onClick={onFilterClick}
+            onClick={() => {
+              if (onFilterClick) {
+                onFilterClick();
+                return;
+              }
+              setFilterOpen(true);
+            }}
           />
         ) : null}
         {extraFilters}
@@ -155,40 +197,58 @@ export function EntityListLayout<T>({
     ) : null;
 
   return (
-    <EntityWorkspaceLayout
-      title={title}
-      description={description}
-      hideHeader={hideHeader}
-      className={className}
-      dense={dense}
-      fullHeight={fullHeight}
-      footer={footer}
-      drawer={drawer}
-      actions={actions}
-      search={search}
-      filters={filters}
-    >
-      {error ?? (
-        <DataTable
-          columns={columns}
-          data={data}
-          getRowId={getRowId}
-          isLoading={isLoading}
-          density={density}
-          enableRowSelection={enableRowSelection}
-          rowSelection={rowSelection as RowSelectionState | undefined}
-          onRowSelectionChange={onRowSelectionChange}
-          rowActions={rowActions}
-          actionsColumnHeader={actionsColumnHeader}
-          activeRowId={activeRowId}
-          onRowClick={onRowClick}
-          getRowClassName={getRowClassName}
-          emptyTitle={emptyTitle}
-          emptyDescription={emptyDescription}
-          emptyAction={emptyAction}
-          className={tableClassName ?? WORKSPACE_TABLE_CLASS}
-        />
-      )}
-    </EntityWorkspaceLayout>
+    <>
+      <EntityWorkspaceLayout
+        title={title}
+        description={description}
+        hideHeader={hideHeader}
+        className={className}
+        dense={dense}
+        fullHeight={fullHeight}
+        footer={footer}
+        drawer={drawer}
+        leading={leading}
+        flush={flush}
+        actions={actions}
+        search={search}
+        filters={filters}
+      >
+        {error ?? (
+          <DataTable
+            columns={columns}
+            data={data}
+            getRowId={getRowId}
+            isLoading={isLoading}
+            density={density}
+            enableRowSelection={enableRowSelection}
+            rowSelection={rowSelection as RowSelectionState | undefined}
+            onRowSelectionChange={onRowSelectionChange}
+            rowActions={rowActions}
+            actionsColumnHeader={actionsColumnHeader}
+            activeRowId={activeRowId}
+            onRowClick={onRowClick}
+            getRowClassName={getRowClassName}
+            emptyTitle={emptyTitle}
+            emptyDescription={emptyDescription}
+            emptyAction={emptyAction}
+            className={tableClassName ?? WORKSPACE_TABLE_CLASS}
+          />
+        )}
+      </EntityWorkspaceLayout>
+      {usesBuiltInFilter ? (
+        <OptionsFilterDrawer
+          open={filterOpen}
+          onOpenChange={setFilterOpen}
+          title={filterTitle}
+          spineLabel={filterSpineLabel}
+          applyLabel={filterApplyLabel}
+          applyDisabled={filterApplyDisabled}
+          showMoreAction={false}
+          onApply={() => onFilterApply?.()}
+        >
+          {filterContent}
+        </OptionsFilterDrawer>
+      ) : null}
+    </>
   );
 }

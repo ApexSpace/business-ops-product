@@ -197,7 +197,7 @@ export function MemberDetailsTab({ member, canManage, onArchive }: Props) {
                 </Button>
               ) : null}
               {canManage ? (
-                <Button type="submit" disabled={saveMutation.isPending}>
+                <Button type="submit" variant="brand" disabled={saveMutation.isPending}>
                   Save details
                 </Button>
               ) : null}

@@ -581,7 +581,7 @@ export function GiftCardsSettingsScreen() {
             >
               Cancel
             </Button>
-            <Button type="button" onClick={saveDisclaimer}>
+            <Button type="button" variant="brand" onClick={saveDisclaimer}>
               Save
             </Button>
           </DialogFooter>

@@ -9,7 +9,6 @@ import {
   Copy,
   Download,
   Eye,
-  MoreVertical,
   Pencil,
   Redo2,
   Save,
@@ -28,6 +27,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { IconButton } from "@/components/ui/icon-button";
+import { MoreActionsButton } from "@/components/ui/more-actions-button";
 import { useFormsHost } from "@/features/forms/forms-host-context";
 import type { FormStatus } from "@/features/forms/types";
 import { formStatusLabel, formStatusVariant } from "@/features/forms/utils/form-display.util";
@@ -212,7 +212,7 @@ export function BuilderTopbar({
           Preview
         </ActionButton>
 
-        <ActionButton size="sm" onClick={onSave} disabled={!canSave || isSaving}>
+        <ActionButton size="default" onClick={onSave} disabled={!canSave || isSaving}>
           <Save className="mr-2 size-4" />
           {isSaving ? "Saving…" : "Save"}
         </ActionButton>
@@ -238,9 +238,7 @@ export function BuilderTopbar({
         <DropdownMenu>
           <DropdownMenuTrigger
             render={
-              <IconButton aria-label="More actions" className="size-9">
-                <MoreVertical className="size-4" />
-              </IconButton>
+              <MoreActionsButton aria-label="More actions" />
             }
           />
           <DropdownMenuContent align="end" className="w-48">

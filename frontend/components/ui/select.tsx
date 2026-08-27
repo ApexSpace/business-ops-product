@@ -6,6 +6,11 @@ import { Select as SelectPrimitive } from "@base-ui/react/select"
 import { cn } from "@/lib/utils"
 import { NavArrowIcon } from "@/components/ui/nav-arrow-icon"
 import { CheckIcon } from "lucide-react"
+import {
+  OVERLAY_SIDE,
+  OVERLAY_SIDE_OFFSET,
+  SELECT_ALIGN_ITEM_WITH_TRIGGER,
+} from "@/lib/ui/overlay-position"
 
 const Select = SelectPrimitive.Root
 
@@ -60,11 +65,11 @@ function SelectTrigger({
 function SelectContent({
   className,
   children,
-  side = "bottom",
-  sideOffset = 4,
+  side = OVERLAY_SIDE,
+  sideOffset = OVERLAY_SIDE_OFFSET,
   align = "center",
   alignOffset = 0,
-  alignItemWithTrigger = true,
+  alignItemWithTrigger = SELECT_ALIGN_ITEM_WITH_TRIGGER,
   container,
   ...props
 }: SelectPrimitive.Popup.Props &

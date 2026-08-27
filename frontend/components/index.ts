@@ -41,6 +41,10 @@ export { PageBreadcrumbs } from "@/components/layout/page-breadcrumbs";
 export { DataToolbar } from "@/components/layout/data-toolbar";
 export { FilterBar } from "@/components/layout/filter-bar";
 export { ListFilterButton } from "@/components/layout/list-filter-button";
+export {
+  ListFilterCheckboxGroup,
+  type ListFilterOption,
+} from "@/components/layout/list-filter-checkbox-group";
 export { EntityListLayout } from "@/components/layout/entity-list-layout";
 export type { EntityListLayoutProps } from "@/components/layout/entity-list-layout";
 export {
@@ -55,6 +59,8 @@ export { SettingsCard } from "@/components/layout/settings-card";
 export { StatsCard } from "@/components/layout/stats-card";
 
 export { IconButton } from "@/components/ui/icon-button";
+export { MoreActionsButton } from "@/components/ui/more-actions-button";
+export { MoreActionsIcon } from "@/components/ui/more-actions-icon";
 export { ListPagination } from "@/components/ui/list-pagination";
 export {
   NavArrowIcon,

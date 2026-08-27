@@ -4,17 +4,13 @@ import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { DateTime } from "luxon";
-import { Clock, MoreHorizontal, Pencil, Trash2  } from "lucide-react";
+import { Clock, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { ApiErrorState } from "@/components/data-display/api-error-state";
-import {
-  DataTable,
-  type DataTableColumn,
-} from "@/components/data-display/data-table";
+import { type DataTableColumn } from "@/components/data-display/data-table";
 import { EntityDetailDrawer } from "@/components/layout/entity-detail-drawer";
 import { EntityDetailFooter } from "@/components/layout/entity-detail-footer";
-import { EntityWorkspaceLayout } from "@/components/layout/entity-workspace-layout";
-import { ListFilterButton } from "@/components/layout/list-filter-button";
+import { EntityListLayout } from "@/components/layout/entity-list-layout";
 import {
   EntityDetailField,
   EntityDetailFieldGrid,
@@ -46,10 +42,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import {
-  WORKSPACE_ACTIVE_ROW_CLASS,
-  WORKSPACE_TABLE_CLASS,
-} from "@/lib/design/workspace-tokens";
+import { WORKSPACE_ACTIVE_ROW_CLASS } from "@/lib/design/workspace-tokens";
 import { useEntitySelection } from "@/lib/routing/use-entity-selection";
 import { useIsMobile } from "@/lib/hooks/use-mobile";
 import { queryKeys } from "@/lib/query/keys";
@@ -310,64 +303,53 @@ export function TimeCardsScreen() {
           />
         )
       ) : (
-      <EntityWorkspaceLayout
+      <EntityListLayout
         title="Time cards"
         description="Review and manage staff clock-in and clock-out records."
-        filters={
-          <ListFilterButton
-            aria-label="Time card options"
-            onClick={() => setOptionsOpen(true)}
-          />
+        addButtonLabel="Add time card"
+        onAdd={openAdd}
+        extraActions={
+          <Button
+            variant="brand"
+            render={<Link href="/business/time-clock" />}
+          >
+            <Clock className="mr-1.5 size-4" />
+            Staff kiosk
+          </Button>
         }
-        actions={
-          <>
-            <Button
-              variant="outline"
-              size="sm"
-              render={<Link href="/business/time-clock" />}
-            >
-              <Clock className="mr-1.5 size-4" />
-              Staff kiosk
-            </Button>
-            <Button size="sm" onClick={openAdd}>
-              Add time card
-            </Button>
-          </>
-        }
+        filterAriaLabel="Time card options"
+        onFilterClick={() => setOptionsOpen(true)}
         footer={
           data?.items.length
             ? `${data.items.length} of ${total} time card${total === 1 ? "" : "s"}`
             : undefined
         }
-      >
-        {isError ? (
-          <ApiErrorState error={error} onRetry={() => void refetch()} />
-        ) : (
-          <DataTable
-            className={WORKSPACE_TABLE_CLASS}
-            density="compact"
-            columns={columns}
-            data={data?.items ?? []}
-            getRowId={(row) => row.id}
-            isLoading={isLoading}
-            activeRowId={selectedId}
-            onRowClick={(row) => {
-              setDrawerMode("view");
-              setSelectedId(row.id);
-            }}
-            getRowClassName={(row) =>
-              selectedId === row.id ? WORKSPACE_ACTIVE_ROW_CLASS : undefined
-            }
-            emptyTitle="No time cards yet"
-            emptyDescription="Add a time card or adjust your filters."
-            emptyAction={
-              <Button size="sm" onClick={openAdd}>
-                Add time card
-              </Button>
-            }
-          />
-        )}
-      </EntityWorkspaceLayout>
+        error={
+          isError ? (
+            <ApiErrorState error={error} onRetry={() => void refetch()} />
+          ) : undefined
+        }
+        columns={columns}
+        data={data?.items ?? []}
+        getRowId={(row) => row.id}
+        isLoading={isLoading}
+        density="compact"
+        activeRowId={selectedId}
+        onRowClick={(row) => {
+          setDrawerMode("view");
+          setSelectedId(row.id);
+        }}
+        getRowClassName={(row) =>
+          selectedId === row.id ? WORKSPACE_ACTIVE_ROW_CLASS : undefined
+        }
+        emptyTitle="No time cards yet"
+        emptyDescription="Add a time card or adjust your filters."
+        emptyAction={
+          <Button variant="brand" onClick={openAdd}>
+            Add time card
+          </Button>
+        }
+      />
       )}
 
       <EntityDetailDrawer
@@ -415,7 +397,8 @@ export function TimeCardsScreen() {
           drawerMode === "edit" ? (
             <EntityDetailFooter>
               <Button
-                className="min-h-[2.75rem] w-full sm:w-auto sm:min-w-[10rem]"
+                variant="brand"
+                className="w-full sm:w-auto sm:min-w-[10rem]"
                 disabled={saveMutation.isPending}
                 onClick={() => saveMutation.mutate()}
               >

@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/select";
 import { selectItemMatchesQuery } from "@/lib/forms/filter-select-items";
 import { CONTROL_HEIGHT_CLASS } from "@/lib/ui/control-styles";
+import { SELECT_ALIGN_ITEM_WITH_TRIGGER, OVERLAY_SIDE } from "@/lib/ui/overlay-position";
 import { cn } from "@/lib/utils";
 import type { SelectOption } from "@/components/forms/select-field";
 
@@ -36,6 +37,10 @@ export interface SearchableSelectProps {
   id?: string;
   contentSide?: "top" | "bottom" | "left" | "right";
   contentAlign?: "start" | "center" | "end";
+  /**
+   * Base UI overlap mode. Default is false so the list opens under the field
+   * (same as Appointment Client/Service). Do not enable for product selects.
+   */
   alignItemWithTrigger?: boolean;
   /** Set false when the select is inside a modal dialog to avoid nested-modal focus traps. */
   modal?: boolean;
@@ -71,8 +76,9 @@ export function SearchableSelect({
   triggerClassName,
   contentClassName,
   id,
-  contentSide = "bottom",
+  contentSide = OVERLAY_SIDE,
   contentAlign = "center",
+  alignItemWithTrigger = SELECT_ALIGN_ITEM_WITH_TRIGGER,
   modal = true,
   inDialog = false,
   onOpenChange,
@@ -110,6 +116,7 @@ export function SearchableSelect({
         <SelectContent
           side={contentSide}
           align={contentAlign}
+          alignItemWithTrigger={alignItemWithTrigger}
           className={cn("max-h-64", contentClassName)}
         >
           {items.length === 0 ? (

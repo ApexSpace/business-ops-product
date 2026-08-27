@@ -27,7 +27,7 @@ export default function ConversationsError({
       {requestId ? (
         <p className="text-xs text-muted-foreground">Request ID: {requestId}</p>
       ) : null}
-      <Button type="button" onClick={() => reset()}>
+      <Button type="button" variant="brand" onClick={() => reset()}>
         Try again
       </Button>
     </div>

@@ -94,7 +94,7 @@ export function PlanGroupComparisonTab({
   return (
     <div className="space-y-4">
       {canManage ? (
-        <Button type="button" onClick={() => createMutation.mutate()}>
+        <Button type="button" variant="brand" onClick={() => createMutation.mutate()}>
           Add row
         </Button>
       ) : null}

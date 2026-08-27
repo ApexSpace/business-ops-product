@@ -38,7 +38,7 @@ export function SegmentError({ error, reset, title = "Something went wrong" }: S
       {message.requestId ? (
         <p className="text-xs text-muted-foreground">Reference: {message.requestId}</p>
       ) : null}
-      <Button type="button" onClick={reset}>
+      <Button type="button" variant="brand" onClick={reset}>
         Try again
       </Button>
     </div>

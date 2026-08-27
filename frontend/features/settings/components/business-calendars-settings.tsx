@@ -8,14 +8,11 @@ import { ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { CalendarCreationFlow } from "@/features/calendars/components/calendar-creation-flow";
 import { CalendarDetailsDialog } from "@/features/calendars/components/calendar-details-dialog";
-import {
-  DataTable,
-  type DataTableColumn,
-} from "@/components/data-display/data-table";
+import { type DataTableColumn } from "@/components/data-display/data-table";
 import { DataTableRowActions } from "@/components/data-display/data-table-row-actions";
 import { Badge } from "@/components/ui/badge";
 import { ConfirmDeleteDialog } from "@/components/forms/confirm-delete-dialog";
-import { PageHeader } from "@/components/layout/page-header";
+import { EntityListLayout } from "@/components/layout/entity-list-layout";
 import { ActionButton } from "@/components/ui/action-button";
 import { buttonVariants } from "@/components/ui/button";
 import {
@@ -191,42 +188,35 @@ export function BusinessCalendarsSettings() {
   };
 
   return (
-    <div className="space-y-[var(--page-stack-gap)]">
-      <PageHeader
-        actions={
-          <div className="flex flex-wrap items-center gap-2">
-            <Link
-              href="/business/settings/online-booking"
-              className={buttonVariants({ variant: "outline", size: "sm" })}
-            >
-              <ExternalLink className="mr-1.5 size-4" />
-              Online Booking
-            </Link>
-            {canManage ? (
-              <ActionButton onClick={() => setCreateOpen(true)}>
-                New calendar
-              </ActionButton>
-            ) : null}
-          </div>
-        }
-      />
-
-      <DataTable
-        columns={columns}
-        data={data?.items ?? []}
-        getRowId={(row) => row.id}
-        isLoading={isLoading}
-        emptyTitle="No calendars yet"
-        emptyDescription="Create a calendar for internal scheduling and integrations."
-        emptyAction={
-          canManage ? (
-            <ActionButton onClick={() => setCreateOpen(true)}>
-              New calendar
-            </ActionButton>
-          ) : undefined
-        }
-        rowActions={buildRowActions}
-      />
+    <>
+    <EntityListLayout
+      title="Calendars"
+      extraActions={
+        <Link
+          href="/business/settings/online-booking"
+          className={buttonVariants({ variant: "brand" })}
+        >
+          <ExternalLink className="mr-1.5 size-4" />
+          Online Booking
+        </Link>
+      }
+      addButtonLabel="New calendar"
+      onAdd={canManage ? () => setCreateOpen(true) : undefined}
+      columns={columns}
+      data={data?.items ?? []}
+      getRowId={(row) => row.id}
+      isLoading={isLoading}
+      emptyTitle="No calendars yet"
+      emptyDescription="Create a calendar for internal scheduling and integrations."
+      emptyAction={
+        canManage ? (
+          <ActionButton onClick={() => setCreateOpen(true)}>
+            New calendar
+          </ActionButton>
+        ) : undefined
+      }
+      rowActions={buildRowActions}
+    />
 
       <CalendarCreationFlow
         open={createOpen}
@@ -255,6 +245,6 @@ export function BusinessCalendarsSettings() {
         isPending={deleteMutation.isPending}
         onConfirm={() => deleteId && deleteMutation.mutate(deleteId)}
       />
-    </div>
+    </>
   );
 }

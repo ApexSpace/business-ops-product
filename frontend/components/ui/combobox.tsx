@@ -4,7 +4,8 @@ import type { ComponentProps, ReactNode } from "react";
 import { Combobox as ComboboxPrimitive } from "@base-ui/react/combobox";
 import { CheckIcon } from "lucide-react";
 import { NavArrowIcon } from "@/components/ui/nav-arrow-icon";
-import { CONTROL_END_SLOT_CLASS } from "@/lib/ui/control-styles";
+import { CONTROL_END_SLOT_CLASS, CONTROL_END_SLOT_INPUT_PAD_CLASS } from "@/lib/ui/control-styles";
+import { OVERLAY_SIDE, OVERLAY_SIDE_OFFSET } from "@/lib/ui/overlay-position";
 import { cn } from "@/lib/utils";
 
 export const Combobox = ComboboxPrimitive;
@@ -57,7 +58,7 @@ export function ComboboxFieldInput({
         data-slot="combobox-trigger"
         className={cn(
           COMBOBOX_INPUT_CLASS,
-          trailing ? "pr-10" : null,
+          trailing ? CONTROL_END_SLOT_INPUT_PAD_CLASS : null,
           className,
         )}
         {...props}
@@ -78,17 +79,21 @@ export function ComboboxFieldInput({
 
 export function ComboboxPopup({
   className,
-  side = "bottom",
+  side = OVERLAY_SIDE,
   align = "start",
+  sideOffset = OVERLAY_SIDE_OFFSET,
   ...props
 }: ComponentProps<typeof ComboboxPrimitive.Popup> &
-  Pick<ComponentProps<typeof ComboboxPrimitive.Positioner>, "side" | "align">) {
+  Pick<
+    ComponentProps<typeof ComboboxPrimitive.Positioner>,
+    "side" | "align" | "sideOffset"
+  >) {
   return (
     <ComboboxPrimitive.Portal>
       <ComboboxPrimitive.Positioner
         side={side}
         align={align}
-        sideOffset={4}
+        sideOffset={sideOffset}
         className={COMBOBOX_POSITIONER_CLASS}
       >
         <ComboboxPrimitive.Popup

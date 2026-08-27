@@ -319,6 +319,7 @@ export function MessageComposer({
       <Button
         type="button"
         size="icon"
+        variant="brand"
         className="size-9 shrink-0 rounded-full"
         disabled={!effectiveCanSend}
         onClick={requestSend}

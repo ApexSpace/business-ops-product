@@ -8,7 +8,6 @@ import { cn } from "@/lib/utils"
 import { IconButton } from "@/components/ui/icon-button"
 import { DrawerCloseIcon } from "@/components/drawer/drawer-icons"
 import {
-  DRAWER_CLOSE_ACTION_CLASS,
   SHEET_HEADER_CLASS,
   SHEET_HEADER_ROW_CLASS,
 } from "@/lib/design/drawer-tokens"
@@ -77,8 +76,8 @@ function SheetContent({
               render={
                 <IconButton
                   variant="ghost"
-                  className={cn("absolute top-[var(--drawer-header-padding-y)] right-4 z-10", DRAWER_CLOSE_ACTION_CLASS)}
-                  size="icon-sm"
+                  className="absolute top-[var(--drawer-header-padding-y)] right-4 z-10"
+                  size="header"
                   aria-label="Close"
                 />
               }
@@ -125,8 +124,7 @@ function SheetHeaderClose() {
           type="button"
           variant="ghost"
           aria-label="Close"
-          size="icon-sm"
-          className={DRAWER_CLOSE_ACTION_CLASS}
+          size="header"
         />
       }
     >
@@ -194,7 +192,7 @@ function SheetBody({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="sheet-body"
-      className={cn("min-h-0 flex-1 overflow-y-auto px-4 py-drawer-body-y", className)}
+      className={cn("min-h-0 flex-1 overflow-y-auto px-4 pt-drawer-body-y pb-drawer-body-bottom", className)}
       {...props}
     />
   )
@@ -205,7 +203,7 @@ function SheetFooter({ className, ...props }: React.ComponentProps<"div">) {
     <div
       data-slot="sheet-footer"
       className={cn(
-        "mt-auto flex shrink-0 flex-col items-stretch gap-2 border-t border-border bg-white/8 px-4 py-3 sm:flex-row sm:items-center sm:justify-end dark:bg-white/5",
+        "mt-auto flex shrink-0 flex-col items-stretch gap-drawer-footer border-t border-border bg-white/8 px-4 py-drawer-footer-y sm:flex-row sm:items-center sm:justify-end dark:bg-white/5",
         className
       )}
       {...props}

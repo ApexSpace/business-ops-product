@@ -268,6 +268,7 @@ export function DataImportWizard({
                 />
                 <Button
                   type="button"
+                  variant="brand"
                   disabled={busy}
                   nativeButton={false}
                   render={<span />}
@@ -420,7 +421,7 @@ export function DataImportWizard({
               <Button variant="outline" onClick={() => setStep("upload")}>
                 Back
               </Button>
-              <Button disabled={busy} onClick={onConfirmMapping}>
+              <Button variant="brand" disabled={busy} onClick={onConfirmMapping}>
                 Continue
               </Button>
             </DialogFooter>
@@ -437,7 +438,7 @@ export function DataImportWizard({
               <Button variant="outline" onClick={() => setStep("map")}>
                 Back
               </Button>
-              <Button disabled={busy} onClick={onStartImport}>
+              <Button variant="brand" disabled={busy} onClick={onStartImport}>
                 {busy ? "Importing…" : "Start import"}
               </Button>
             </DialogFooter>

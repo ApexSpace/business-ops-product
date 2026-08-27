@@ -2,17 +2,13 @@
 
 import { Suspense, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-  DataTable,
-  type DataTableColumn,
-} from "@/components/data-display/data-table";
+import { type DataTableColumn } from "@/components/data-display/data-table";
 import { DataTableRowActions } from "@/components/data-display/data-table-row-actions";
 import { ConfirmDeleteDialog } from "@/components/forms/confirm-delete-dialog";
-import { EntityWorkspaceLayout } from "@/components/layout/entity-workspace-layout";
+import { EntityListLayout } from "@/components/layout/entity-list-layout";
 import { ListPageSkeleton } from "@/components/layout/list-page";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { WORKSPACE_TABLE_CLASS } from "@/lib/design/workspace-tokens";
 import { workflowStatusLabel } from "@/features/automations/api/workflows.api";
 import { useAutomationsHost } from "@/features/automations/automations-host-context";
 import {
@@ -86,53 +82,44 @@ function AutomationsListPageContent() {
 
   return (
     <>
-      <EntityWorkspaceLayout
+      <EntityListLayout
         title="Automations"
         description="Linear workflows that run when triggers fire."
-        actions={
-          <>
-            {registryPath ? (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => router.push(registryPath)}
-              >
-                Registry
-              </Button>
-            ) : null}
+        addButtonLabel="Create workflow"
+        onAdd={() => router.push(`${workflowsBasePath}/new`)}
+        extraActions={
+          registryPath ? (
             <Button
-              size="sm"
-              onClick={() => router.push(`${workflowsBasePath}/new`)}
+              type="button"
+              variant="brand"
+              onClick={() => router.push(registryPath)}
             >
-              Create workflow
+              Registry
             </Button>
-          </>
+          ) : null
         }
         footer={
           items.length > 0
             ? `${items.length} workflow${items.length === 1 ? "" : "s"}`
             : undefined
         }
-      >
-        <DataTable
-          columns={columns}
-          data={items}
-          getRowId={(row) => row.id}
-          isLoading={isLoading}
-          density="compact"
-          onRowClick={(row) => router.push(`${workflowsBasePath}/${row.id}`)}
-          emptyTitle="No workflows yet"
-          emptyDescription="Create one to get started."
-          emptyAction={
-            <Button
-              size="sm"
-              onClick={() => router.push(`${workflowsBasePath}/new`)}
-            >
-              Create workflow
-            </Button>
-          }
-          rowActions={(row) => (
+        columns={columns}
+        data={items}
+        getRowId={(row) => row.id}
+        isLoading={isLoading}
+        density="compact"
+        onRowClick={(row) => router.push(`${workflowsBasePath}/${row.id}`)}
+        emptyTitle="No workflows yet"
+        emptyDescription="Create one to get started."
+        emptyAction={
+          <Button
+            variant="brand"
+            onClick={() => router.push(`${workflowsBasePath}/new`)}
+          >
+            Create workflow
+          </Button>
+        }
+        rowActions={(row) => (
             <DataTableRowActions
               actions={[
                 {
@@ -155,10 +142,8 @@ function AutomationsListPageContent() {
                 },
               ]}
             />
-          )}
-          className={WORKSPACE_TABLE_CLASS}
-        />
-      </EntityWorkspaceLayout>
+        )}
+      />
 
       <ConfirmDeleteDialog
         open={!!deleteId}

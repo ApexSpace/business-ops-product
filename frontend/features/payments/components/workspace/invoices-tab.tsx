@@ -5,10 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ExternalLink, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { ApiErrorState } from "@/components/data-display/api-error-state";
-import { DataTable } from "@/components/data-display/data-table";
 import { StatusBadge } from "@/components/data-display/status-badge";
-import { SearchInput } from "@/components/forms/search-input";
-import { SearchableSelect } from "@/components/forms/searchable-select";
 import { EntityDetailDrawer } from "@/components/layout/entity-detail-drawer";
 import { EntityDetailFooter } from "@/components/layout/entity-detail-footer";
 import { getInvoice } from "@/features/invoices/api/invoices.api";
@@ -16,7 +13,9 @@ import { InvoiceFormDialog } from "@/features/invoices/components/invoice-form-d
 import { InvoiceDetailPanel } from "@/features/payments/components/workspace/invoice-detail-panel";
 import { PaymentFormDrawer } from "@/features/payments/components/payment-form-drawer";
 import { InvoiceTableRowActions } from "@/features/payments/components/workspace/invoice-table-row-actions";
-import { FinancialTabPanel } from "@/features/payments/components/workspace/financial-tab-panel";
+import { EntityListLayout } from "@/components/layout/entity-list-layout";
+import { ListFilterCheckboxGroup } from "@/components/layout/list-filter-checkbox-group";
+import { Label } from "@/components/ui/label";
 import { InvoicesMobileList } from "@/features/payments/components/mobile/invoices-mobile-list";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -76,6 +75,10 @@ export function PaymentsInvoicesTab() {
   const [editing, setEditing] = useState<Invoice | null>(null);
   const [paymentInvoiceId, setPaymentInvoiceId] = useState<string | null>(null);
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [draftStatus, setDraftStatus] = useState(params.status);
+  const [draftFrom, setDraftFrom] = useState(params.issueFrom);
+  const [draftTo, setDraftTo] = useState(params.issueTo);
 
   usePaymentsTabCreateAction(() => {
     setEditing(null);
@@ -174,54 +177,68 @@ export function PaymentsInvoicesTab() {
           />
         )
       ) : (
-      <FinancialTabPanel
-        actions={
-          <Button size="sm" onClick={openCreate}>
-            New invoice
-          </Button>
+      <EntityListLayout
+        title="Invoices"
+        hideHeader
+        flush
+        addButtonLabel="New invoice"
+        onAdd={openCreate}
+        searchPlaceholder="Search invoices…"
+        searchValue={params.search}
+        onSearchChange={(search) =>
+          setParams({ search, page: "1" }, { resetPage: true })
         }
-        search={
-          <SearchInput
-            className="min-w-[12rem] flex-1 shrink-0"
-            value={params.search}
-            onChange={(search) =>
-              setParams({ search, page: "1" }, { resetPage: true })
-            }
-            placeholder="Search invoices…"
-          />
-        }
-        filters={
+        filterAriaLabel="Invoice filters"
+        filterActive={Boolean(
+          params.status || params.issueFrom || params.issueTo,
+        )}
+        filterOpen={filterOpen}
+        onFilterOpenChange={(open) => {
+          if (open) {
+            setDraftStatus(params.status);
+            setDraftFrom(params.issueFrom);
+            setDraftTo(params.issueTo);
+          }
+          setFilterOpen(open);
+        }}
+        filterContent={
           <>
-            <SearchableSelect
-              items={statusFilterItems}
-              value={params.status}
-              onValueChange={(status) =>
-                setParams({ status: status ?? "", page: "1" }, { resetPage: true })
-              }
-              placeholder="Status"
-              triggerClassName="w-[9.5rem] shrink-0"
+            <ListFilterCheckboxGroup
+              legend="Status"
+              options={statusFilterItems}
+              value={draftStatus}
+              onChange={(next) => setDraftStatus(String(next))}
             />
-            <Input
-              type="date"
-              className="h-[var(--control-height)] w-[10.5rem] shrink-0 text-sm"
-              value={params.issueFrom}
-              onChange={(e) =>
-                setParams({ issueFrom: e.target.value, page: "1" })
-              }
-              aria-label="Issue from"
-            />
-            <Input
-              type="date"
-              className="h-[var(--control-height)] w-[10.5rem] shrink-0 text-sm"
-              value={params.issueTo}
-              onChange={(e) =>
-                setParams({ issueTo: e.target.value, page: "1" })
-              }
-              aria-label="Issue to"
-            />
+            <div className="flex w-full min-w-0 flex-col gap-2">
+              <Label htmlFor="invoice-filter-from">Issue from</Label>
+              <Input
+                id="invoice-filter-from"
+                type="date"
+                value={draftFrom}
+                onChange={(e) => setDraftFrom(e.target.value)}
+              />
+              <Label htmlFor="invoice-filter-to">Issue to</Label>
+              <Input
+                id="invoice-filter-to"
+                type="date"
+                value={draftTo}
+                onChange={(e) => setDraftTo(e.target.value)}
+              />
+            </div>
           </>
         }
-        pagination={
+        onFilterApply={() =>
+          setParams(
+            {
+              status: draftStatus,
+              issueFrom: draftFrom,
+              issueTo: draftTo,
+              page: "1",
+            },
+            { resetPage: true },
+          )
+        }
+        footer={
           data?.meta ? (
             <ListPagination
               meta={data.meta}
@@ -229,33 +246,33 @@ export function PaymentsInvoicesTab() {
               onPageChange={(p) => setParams({ page: String(p) })}
               label="invoices"
             />
-          ) : null
+          ) : undefined
         }
-      >
-        {isError ? (
-          <ApiErrorState error={error} onRetry={() => void refetch()} />
-        ) : (
-        <DataTable
-          className="min-w-[60rem]"
-          density="compact"
-          columns={columns}
-          data={data?.items ?? []}
-          getRowId={(row) => row.id}
-          isLoading={isLoading}
-          activeRowId={selectedId}
-          onRowClick={(row) => setSelectedId(row.id)}
-          getRowClassName={(row) =>
-            selectedId === row.id ? WORKSPACE_ACTIVE_ROW_CLASS : undefined
-          }
-          actionsColumnHeader="Actions"
-          emptyTitle="No invoices yet"
-          emptyDescription="Create your first invoice for a customer."
-          emptyAction={
-            <Button size="sm" onClick={openCreate}>
-              New invoice
-            </Button>
-          }
-          rowActions={(row) => (
+        error={
+          isError ? (
+            <ApiErrorState error={error} onRetry={() => void refetch()} />
+          ) : undefined
+        }
+        tableClassName="min-w-[60rem]"
+        columns={columns}
+        data={data?.items ?? []}
+        getRowId={(row) => row.id}
+        isLoading={isLoading}
+        density="compact"
+        activeRowId={selectedId}
+        onRowClick={(row) => setSelectedId(row.id)}
+        getRowClassName={(row) =>
+          selectedId === row.id ? WORKSPACE_ACTIVE_ROW_CLASS : undefined
+        }
+        actionsColumnHeader="Actions"
+        emptyTitle="No invoices yet"
+        emptyDescription="Create your first invoice for a customer."
+        emptyAction={
+          <Button variant="brand" onClick={openCreate}>
+            New invoice
+          </Button>
+        }
+        rowActions={(row) => (
             <InvoiceTableRowActions
               invoice={row}
               canCopyLink={canCopyLink(row)}
@@ -278,10 +295,8 @@ export function PaymentsInvoicesTab() {
                   : undefined
               }
             />
-          )}
-        />
         )}
-      </FinancialTabPanel>
+      />
       )}
 
       <EntityDetailDrawer
@@ -332,7 +347,8 @@ export function PaymentsInvoicesTab() {
           detail && canRecordPayment(detail) ? (
             <EntityDetailFooter>
               <Button
-                className="min-h-[2.75rem] w-full sm:w-auto sm:min-w-[12rem]"
+                variant="brand"
+                className="w-full sm:w-auto sm:min-w-[12rem]"
                 onClick={() => {
                   setPaymentInvoiceId(detail.id);
                   setPaymentDialogOpen(true);

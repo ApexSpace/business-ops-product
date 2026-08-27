@@ -103,8 +103,8 @@ export function ServicesSettingsScreen() {
       <aside className="flex w-72 shrink-0 flex-col border-r bg-muted/20">
         <div className="space-y-2 border-b p-3">
           <Button
+            variant="brand"
             className="w-full"
-            size="sm"
             onClick={() => {
               const name = newCategoryName.trim();
               if (!name) {

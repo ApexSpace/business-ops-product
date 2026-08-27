@@ -27,7 +27,7 @@ export function PlatformTiersPage() {
         </div>
         <Link
           href="/platform/tiers/new"
-          className={cn(buttonVariants({ variant: "default" }))}
+          className={cn(buttonVariants({ variant: "brand" }))}
         >
           New tier
         </Link>

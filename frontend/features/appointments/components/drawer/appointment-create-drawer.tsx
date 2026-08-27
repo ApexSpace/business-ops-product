@@ -75,7 +75,6 @@ import { hasPhoneDigits } from "@/lib/forms/phone";
 import { queryKeys } from "@/lib/query/keys";
 import type { Service } from "@/lib/types/api";
 import {
-  APPOINTMENT_DRAWER_ADD_ACTION_CLASS,
   APPOINTMENT_DRAWER_BODY_INSET_CLASS,
   APPOINTMENT_DRAWER_FIELD_CLASS,
   APPOINTMENT_DRAWER_FOOTER_CLASS,
@@ -770,14 +769,7 @@ export function AppointmentCreateDrawer({
                       value={services}
                       currencyCode={currencyCode}
                       onAdd={handleAddService}
-                      trigger={
-                        <button
-                          type="button"
-                          className={APPOINTMENT_DRAWER_ADD_ACTION_CLASS}
-                        >
-                          Add Service
-                        </button>
-                      }
+                      trigger={<DrawerAddAction label="Add Service" />}
                     />
                   ) : null}
                   {!notesOpen ? (

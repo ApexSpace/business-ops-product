@@ -9,7 +9,7 @@ export function CreateIndustryDialog() {
 
   return (
     <>
-      <Button type="button" onClick={() => setOpen(true)}>
+      <Button type="button" variant="brand" onClick={() => setOpen(true)}>
         Add industry
       </Button>
       <IndustryFormDialog open={open} onOpenChange={setOpen} />
