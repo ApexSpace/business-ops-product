@@ -5,20 +5,17 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { ApiErrorState } from "@/components/data-display/api-error-state";
-import {
-  DataTable,
-  type DataTableColumn,
-} from "@/components/data-display/data-table";
+import { type DataTableColumn } from "@/components/data-display/data-table";
 import { StatusBadge } from "@/components/data-display/status-badge";
 import { ConfirmDeleteDialog } from "@/components/forms/confirm-delete-dialog";
-import { SearchInput } from "@/components/forms/search-input";
 import { SearchableSelect } from "@/components/forms/searchable-select";
 import { EntityDetailDrawer } from "@/components/layout/entity-detail-drawer";
 import { EntityDetailFooter } from "@/components/layout/entity-detail-footer";
+import { EntityListLayout } from "@/components/layout/entity-list-layout";
+import { ListFilterCheckboxGroup } from "@/components/layout/list-filter-checkbox-group";
 import { DrawerShell } from "@/components/layout/drawer-shell";
 import { DrawerPrimaryButton } from "@/components/drawer/drawer-primary-button";
 import { PaymentFormDrawer } from "@/features/payments/components/payment-form-drawer";
-import { FinancialTabPanel } from "@/features/payments/components/workspace/financial-tab-panel";
 import { TransactionDetailPanel } from "@/features/payments/components/workspace/transaction-detail-panel";
 import { TransactionTableRowActions } from "@/features/payments/components/workspace/transaction-table-row-actions";
 import { TransactionsMobileList } from "@/features/payments/components/mobile/transactions-mobile-list";
@@ -90,6 +87,10 @@ export function PaymentsTransactionsTab() {
 
   const [createOpen, setCreateOpen] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [draftMethod, setDraftMethod] = useState(params.method);
+  const [draftFrom, setDraftFrom] = useState(params.paidFrom);
+  const [draftTo, setDraftTo] = useState(params.paidTo);
   const [refundId, setRefundId] = useState<string | null>(null);
 
   const canRefundRow = (payment: Payment) =>
@@ -238,54 +239,68 @@ export function PaymentsTransactionsTab() {
           />
         )
       ) : (
-      <FinancialTabPanel
-        actions={
-          <Button size="sm" onClick={() => setCreateOpen(true)}>
-            Record payment
-          </Button>
+      <EntityListLayout
+        title="Transactions"
+        hideHeader
+        flush
+        addButtonLabel="Record payment"
+        onAdd={() => setCreateOpen(true)}
+        searchPlaceholder="Search transactions…"
+        searchValue={params.search}
+        onSearchChange={(search) =>
+          setParams({ search, page: "1" }, { resetPage: true })
         }
-        search={
-          <SearchInput
-            className="min-w-[12rem] flex-1 shrink-0"
-            value={params.search}
-            onChange={(search) =>
-              setParams({ search, page: "1" }, { resetPage: true })
-            }
-            placeholder="Search transactions…"
-          />
-        }
-        filters={
+        filterAriaLabel="Transaction filters"
+        filterActive={Boolean(
+          params.method || params.paidFrom || params.paidTo,
+        )}
+        filterOpen={filterOpen}
+        onFilterOpenChange={(open) => {
+          if (open) {
+            setDraftMethod(params.method);
+            setDraftFrom(params.paidFrom);
+            setDraftTo(params.paidTo);
+          }
+          setFilterOpen(open);
+        }}
+        filterContent={
           <>
-            <SearchableSelect
-              items={methodFilterItems}
-              value={params.method}
-              onValueChange={(method) =>
-                setParams({ method: method ?? "", page: "1" }, { resetPage: true })
-              }
-              placeholder="Provider"
-              triggerClassName="w-[10rem] shrink-0"
+            <ListFilterCheckboxGroup
+              legend="Provider"
+              options={methodFilterItems}
+              value={draftMethod}
+              onChange={(next) => setDraftMethod(String(next))}
             />
-            <Input
-              type="date"
-              className="h-[var(--control-height)] w-[10.5rem] shrink-0 text-sm"
-              value={params.paidFrom}
-              onChange={(e) =>
-                setParams({ paidFrom: e.target.value, page: "1" })
-              }
-              aria-label="Transaction from"
-            />
-            <Input
-              type="date"
-              className="h-[var(--control-height)] w-[10.5rem] shrink-0 text-sm"
-              value={params.paidTo}
-              onChange={(e) =>
-                setParams({ paidTo: e.target.value, page: "1" })
-              }
-              aria-label="Transaction to"
-            />
+            <div className="flex w-full min-w-0 flex-col gap-2">
+              <Label htmlFor="tx-filter-from">Transaction from</Label>
+              <Input
+                id="tx-filter-from"
+                type="date"
+                value={draftFrom}
+                onChange={(e) => setDraftFrom(e.target.value)}
+              />
+              <Label htmlFor="tx-filter-to">Transaction to</Label>
+              <Input
+                id="tx-filter-to"
+                type="date"
+                value={draftTo}
+                onChange={(e) => setDraftTo(e.target.value)}
+              />
+            </div>
           </>
         }
-        pagination={
+        onFilterApply={() =>
+          setParams(
+            {
+              method: draftMethod,
+              paidFrom: draftFrom,
+              paidTo: draftTo,
+              page: "1",
+            },
+            { resetPage: true },
+          )
+        }
+        footer={
           data?.meta ? (
             <ListPagination
               meta={data.meta}
@@ -293,45 +308,41 @@ export function PaymentsTransactionsTab() {
               onPageChange={(p) => setParams({ page: String(p) })}
               label="transactions"
             />
-          ) : null
+          ) : undefined
         }
-      >
-        {isError ? (
-          <ApiErrorState error={error} onRetry={() => void refetch()} />
-        ) : (
-        <DataTable
-          className="min-w-[48rem]"
-          density="compact"
-          columns={columns}
-          data={transactions}
-          getRowId={(row) => row.id}
-          isLoading={isLoading}
-          activeRowId={selectedId}
-          onRowClick={(row) => setSelectedId(row.id)}
-          getRowClassName={(row) =>
-            selectedId === row.id ? WORKSPACE_ACTIVE_ROW_CLASS : undefined
-          }
-          actionsColumnHeader="Actions"
-          emptyTitle="No transactions yet"
-          emptyDescription="Transactions are usually recorded from an invoice. Use this list to review history or make corrections."
-          emptyAction={
-            <Button size="sm" onClick={() => setCreateOpen(true)}>
-              Record payment
-            </Button>
-          }
-          rowActions={(row) => (
-            <TransactionTableRowActions
-              onView={() => setSelectedId(row.id)}
-              onRefund={
-                canRefundRow(row)
-                  ? () => setRefundId(row.id)
-                  : undefined
-              }
-            />
-          )}
-        />
+        error={
+          isError ? (
+            <ApiErrorState error={error} onRetry={() => void refetch()} />
+          ) : undefined
+        }
+        tableClassName="min-w-[48rem]"
+        columns={columns}
+        data={transactions}
+        getRowId={(row) => row.id}
+        isLoading={isLoading}
+        density="compact"
+        activeRowId={selectedId}
+        onRowClick={(row) => setSelectedId(row.id)}
+        getRowClassName={(row) =>
+          selectedId === row.id ? WORKSPACE_ACTIVE_ROW_CLASS : undefined
+        }
+        actionsColumnHeader="Actions"
+        emptyTitle="No transactions yet"
+        emptyDescription="Transactions are usually recorded from an invoice. Use this list to review history or make corrections."
+        emptyAction={
+          <Button variant="brand" onClick={() => setCreateOpen(true)}>
+            Record payment
+          </Button>
+        }
+        rowActions={(row) => (
+          <TransactionTableRowActions
+            onView={() => setSelectedId(row.id)}
+            onRefund={
+              canRefundRow(row) ? () => setRefundId(row.id) : undefined
+            }
+          />
         )}
-      </FinancialTabPanel>
+      />
       )}
 
       <DrawerShell
@@ -441,7 +452,7 @@ export function PaymentsTransactionsTab() {
             <EntityDetailFooter>
               <Button
                 variant="destructive"
-                className="min-h-[2.75rem] w-full sm:w-auto sm:min-w-[12rem]"
+                className="w-full sm:w-auto sm:min-w-[12rem]"
                 onClick={() => setRefundId(drawerPayment.id)}
               >
                 Refund transaction

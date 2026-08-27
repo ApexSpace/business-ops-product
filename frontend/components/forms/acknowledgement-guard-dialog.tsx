@@ -90,7 +90,7 @@ export function AcknowledgementGuardDialog({
           </AlertDialogCancel>
           <ActionButton
             type="button"
-            className="h-11 w-full rounded-[var(--radius-md)] text-[13px] font-semibold uppercase tracking-[0.04em]"
+            className="w-full"
             disabled={!canConfirm}
             onClick={() => {
               if (!canConfirm) return;

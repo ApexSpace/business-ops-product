@@ -1,14 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { SlidersHorizontal } from "lucide-react";
+import { ListFilterButton } from "@/components/layout/list-filter-button";
 import { OptionsFilterDrawer } from "@/components/layout/options-filter-drawer";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import type { AppointmentStatus } from "@/features/appointments/schemas/appointment-profile";
 import { APPOINTMENT_LIFECYCLE_STATUS_OPTIONS } from "@/features/appointments/schemas/appointment-profile";
 import { getAppointmentStatusDotClass } from "@/features/appointments/utils/appointment-calendar-styles";
-import { CALENDAR_TOOLBAR_FILTER_BUTTON_CLASS } from "@/features/appointments/components/calendar/calendar-toolbar-tokens";
 import {
   DRAWER_CHECKBOX_CLASS,
   DRAWER_CHECKBOX_LABEL_CLASS,
@@ -35,8 +34,7 @@ function serializeStatuses(statuses: AppointmentStatus[]): string {
 }
 
 /**
- * Calendar status filters — same sliders trigger as before, but the panel is
- * the shared OptionsFilterDrawer (right sidebar), not a popover.
+ * Calendar status filters — shared ListFilterButton + OptionsFilterDrawer.
  */
 export function CalendarFiltersPopover({
   statusFilter,
@@ -68,30 +66,17 @@ export function CalendarFiltersPopover({
 
   return (
     <>
-      <button
-        type="button"
+      <ListFilterButton
         aria-label={
           activeCount > 0 ? `Filters, ${activeCount} active` : "Filters"
         }
         aria-expanded={open}
         aria-haspopup="dialog"
-        className={cn(
-          CALENDAR_TOOLBAR_FILTER_BUTTON_CLASS,
-          "relative",
-          triggerClassName,
-        )}
+        count={activeCount}
+        className={triggerClassName}
+        iconClassName={iconClassName}
         onClick={() => handleOpenChange(true)}
-      >
-        <SlidersHorizontal
-          className={cn("size-5 shrink-0 text-black", iconClassName)}
-          strokeWidth={2}
-        />
-        {activeCount > 0 ? (
-          <span className="absolute -top-0.5 -right-0.5 inline-flex size-5 items-center justify-center rounded-full bg-violet-primary-normal text-[11px] font-semibold text-white">
-            {activeCount}
-          </span>
-        ) : null}
-      </button>
+      />
 
       <OptionsFilterDrawer
         open={open}

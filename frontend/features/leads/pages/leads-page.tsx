@@ -12,15 +12,12 @@ import { toast } from "sonner";
 import { CreateLeadDialog } from "@/features/leads/components/create-lead-dialog";
 import { LeadDetailSheet } from "@/features/leads/components/lead-detail-sheet";
 import { LeadsMobileList } from "@/features/leads/components/mobile/leads-mobile-list";
-import {
-  DataTable,
-  type DataTableColumn,
-} from "@/components/data-display/data-table";
+import { type DataTableColumn } from "@/components/data-display/data-table";
 import { DataTableRowActions } from "@/components/data-display/data-table-row-actions";
 import { StatusBadge } from "@/components/data-display/status-badge";
 import { ConfirmDeleteDialog } from "@/components/forms/confirm-delete-dialog";
-import { SearchableSelect } from "@/components/forms/searchable-select";
-import { EntityWorkspaceLayout } from "@/components/layout/entity-workspace-layout";
+import { EntityListLayout } from "@/components/layout/entity-list-layout";
+import { ListFilterCheckboxGroup } from "@/components/layout/list-filter-checkbox-group";
 import { ListPageSkeleton } from "@/components/layout/list-page";
 import { Button } from "@/components/ui/button";
 import { ListPagination } from "@/components/ui/list-pagination";
@@ -29,10 +26,7 @@ import { useLeadsList } from "@/features/leads/hooks/use-leads-list";
 import { listPipelines } from "@/features/pipelines/api/pipelines.api";
 import { useListSearchParams } from "@/lib/hooks/use-list-search-params";
 import { useIsMobile } from "@/lib/hooks/use-mobile";
-import {
-  WORKSPACE_ACTIVE_ROW_CLASS,
-  WORKSPACE_TABLE_CLASS,
-} from "@/lib/design/workspace-tokens";
+import { WORKSPACE_ACTIVE_ROW_CLASS } from "@/lib/design/workspace-tokens";
 import { useEntitySelection } from "@/lib/routing/use-entity-selection";
 import {
   formatLeadValue,
@@ -67,6 +61,9 @@ function BusinessLeadsPageContent() {
     clearSelection } = useEntitySelection();
   const [createOpen, setCreateOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [draftPipeline, setDraftPipeline] = useState(params.pipeline);
+  const [draftStatus, setDraftStatus] = useState(params.status);
 
   const pipelineFilter = params.pipeline;
   const statusFilter = params.status;
@@ -179,44 +176,51 @@ function BusinessLeadsPageContent() {
           }
         />
       ) : (
-      <>
-      <Link
-        href="/business/pipelines"
-        className="mb-4 inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
-      >
-        <ArrowLeft className="size-4" />
-        Back to CRM Pipeline
-      </Link>
-
-      <EntityWorkspaceLayout
+      <EntityListLayout
         title="All leads (table)"
         description="Advanced list view with filters. Day-to-day work happens on the CRM Pipeline board."
-        filters={
+        leading={
+          <Link
+            href="/business/pipelines"
+            className="mb-1 inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
+          >
+            <ArrowLeft className="size-4" />
+            Back to CRM Pipeline
+          </Link>
+        }
+        addButtonLabel="New lead"
+        onAdd={() => setCreateOpen(true)}
+        filterAriaLabel="Lead filters"
+        filterActive={pipelineFilter !== "all" || statusFilter !== "all"}
+        filterOpen={filterOpen}
+        onFilterOpenChange={(open) => {
+          if (open) {
+            setDraftPipeline(pipelineFilter);
+            setDraftStatus(statusFilter);
+          }
+          setFilterOpen(open);
+        }}
+        filterContent={
           <>
-            <SearchableSelect
-              items={pipelineFilterItems}
-              value={pipelineFilter}
-              onValueChange={(v) =>
-                setParams({ pipeline: v ?? "all", page: "1" }, { resetPage: true })
-              }
-              placeholder="All pipelines"
-              triggerClassName="w-[200px] shrink-0"
+            <ListFilterCheckboxGroup
+              legend="Pipeline"
+              options={pipelineFilterItems}
+              value={draftPipeline}
+              onChange={(next) => setDraftPipeline(String(next))}
             />
-            <SearchableSelect
-              items={leadStatusFilterOptions}
-              value={statusFilter}
-              onValueChange={(v) =>
-                setParams({ status: v ?? "all", page: "1" }, { resetPage: true })
-              }
-              placeholder="All statuses"
-              triggerClassName="w-[160px] shrink-0"
+            <ListFilterCheckboxGroup
+              legend="Status"
+              options={leadStatusFilterOptions}
+              value={draftStatus}
+              onChange={(next) => setDraftStatus(String(next))}
             />
           </>
         }
-        actions={
-          <Button size="sm" onClick={() => setCreateOpen(true)}>
-            New lead
-          </Button>
+        onFilterApply={() =>
+          setParams(
+            { pipeline: draftPipeline, status: draftStatus, page: "1" },
+            { resetPage: true },
+          )
         }
         footer={
           data?.meta ? (
@@ -228,26 +232,24 @@ function BusinessLeadsPageContent() {
             />
           ) : undefined
         }
-      >
-        <DataTable
-          columns={columns}
-          data={data?.items ?? []}
-          getRowId={(row) => row.id}
-          isLoading={isLoading}
-          density="compact"
-          activeRowId={selectedId}
-          onRowClick={(row) => setSelectedId(row.id)}
-          getRowClassName={(row) =>
-            selectedId === row.id ? WORKSPACE_ACTIVE_ROW_CLASS : undefined
-          }
-          emptyTitle="No leads yet"
-          emptyDescription="Create one from a contact or add a new lead."
-          emptyAction={
-            <Button size="sm" onClick={() => setCreateOpen(true)}>
-              New lead
-            </Button>
-          }
-          rowActions={(lead) => (
+        columns={columns}
+        data={data?.items ?? []}
+        getRowId={(row) => row.id}
+        isLoading={isLoading}
+        density="compact"
+        activeRowId={selectedId}
+        onRowClick={(row) => setSelectedId(row.id)}
+        getRowClassName={(row) =>
+          selectedId === row.id ? WORKSPACE_ACTIVE_ROW_CLASS : undefined
+        }
+        emptyTitle="No leads yet"
+        emptyDescription="Create one from a contact or add a new lead."
+        emptyAction={
+          <Button variant="brand" onClick={() => setCreateOpen(true)}>
+            New lead
+          </Button>
+        }
+        rowActions={(lead) => (
             <DataTableRowActions
               actions={[
                 { label: "Edit", onClick: () => setSelectedId(lead.id) },
@@ -257,11 +259,8 @@ function BusinessLeadsPageContent() {
                   destructive: true },
               ]}
             />
-          )}
-          className={WORKSPACE_TABLE_CLASS}
-        />
-      </EntityWorkspaceLayout>
-      </>
+        )}
+      />
       )}
 
       <CreateLeadDialog

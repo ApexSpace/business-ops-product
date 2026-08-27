@@ -2,15 +2,13 @@
 
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Copy, Plus, Trash2 } from "lucide-react";
+import { Copy, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { ApiErrorState } from "@/components/data-display/api-error-state";
-import { DataTable } from "@/components/data-display/data-table";
 import { ListPagination } from "@/components/ui/list-pagination";
 import { ConfirmDeleteDialog } from "@/components/forms/confirm-delete-dialog";
-import { SearchInput } from "@/components/forms/search-input";
 import { EntityDetailDrawer } from "@/components/layout/entity-detail-drawer";
-import { EntityWorkspaceLayout } from "@/components/layout/entity-workspace-layout";
+import { EntityListLayout } from "@/components/layout/entity-list-layout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -41,10 +39,7 @@ import {
   offerDrawerSubtitle,
   type OfferTabId,
 } from "@/features/offers/utils/offer-workspace-utils";
-import {
-  WORKSPACE_ACTIVE_ROW_CLASS,
-  WORKSPACE_TABLE_CLASS,
-} from "@/lib/design/workspace-tokens";
+import { WORKSPACE_ACTIVE_ROW_CLASS } from "@/lib/design/workspace-tokens";
 import { invalidateOffers } from "@/lib/query/invalidation";
 import { queryKeys } from "@/lib/query/keys";
 import { useEntitySelection } from "@/lib/routing/use-entity-selection";
@@ -187,41 +182,17 @@ export function OffersScreen() {
           />
         )
       ) : (
-      <EntityWorkspaceLayout
+      <EntityListLayout
         title="Offers"
         description="Create and manage promotional offers and discounts."
-        search={
-          <SearchInput
-            value={search}
-            onChange={(value) => {
-              setSearch(value);
-              setPage(1);
-            }}
-            placeholder="Search offers…"
-            className="min-w-0 flex-1 sm:max-w-md"
-          />
-        }
-        actions={
-          canManage ? (
-            <>
-              <Button
-                size="icon-sm"
-                className="sm:hidden"
-                aria-label="Create offer"
-                onClick={() => setCreateOpen(true)}
-              >
-                <Plus className="size-4" />
-              </Button>
-              <Button
-                size="sm"
-                className="hidden shrink-0 sm:inline-flex"
-                onClick={() => setCreateOpen(true)}
-              >
-                Create offer
-              </Button>
-            </>
-          ) : null
-        }
+        addButtonLabel="Create offer"
+        onAdd={canManage ? () => setCreateOpen(true) : undefined}
+        searchPlaceholder="Search offers…"
+        searchValue={search}
+        onSearchChange={(value) => {
+          setSearch(value);
+          setPage(1);
+        }}
         footer={
           offersQuery.data?.meta && offers.length > 0 ? (
             <ListPagination
@@ -233,37 +204,34 @@ export function OffersScreen() {
             />
           ) : undefined
         }
-      >
-        {offersQuery.isError ? (
-          <ApiErrorState
-            error={offersQuery.error}
-            onRetry={() => void offersQuery.refetch()}
-          />
-        ) : (
-          <DataTable
-            columns={columns}
-            data={offers}
-            getRowId={(offer) => offer.id}
-            isLoading={offersQuery.isLoading}
-            density="compact"
-            activeRowId={selectedId}
-            onRowClick={(offer) => setSelectedId(offer.id)}
-            getRowClassName={(offer) =>
-              selectedId === offer.id ? WORKSPACE_ACTIVE_ROW_CLASS : undefined
-            }
-            emptyTitle="No offers yet"
-            emptyDescription="Create your first promotional offer to get started."
-            emptyAction={
-              canManage ? (
-                <Button size="sm" onClick={() => setCreateOpen(true)}>
-                  Create offer
-                </Button>
-              ) : undefined
-            }
-            className={WORKSPACE_TABLE_CLASS}
-          />
-        )}
-      </EntityWorkspaceLayout>
+        error={
+          offersQuery.isError ? (
+            <ApiErrorState
+              error={offersQuery.error}
+              onRetry={() => void offersQuery.refetch()}
+            />
+          ) : undefined
+        }
+        columns={columns}
+        data={offers}
+        getRowId={(offer) => offer.id}
+        isLoading={offersQuery.isLoading}
+        density="compact"
+        activeRowId={selectedId}
+        onRowClick={(offer) => setSelectedId(offer.id)}
+        getRowClassName={(offer) =>
+          selectedId === offer.id ? WORKSPACE_ACTIVE_ROW_CLASS : undefined
+        }
+        emptyTitle="No offers yet"
+        emptyDescription="Create your first promotional offer to get started."
+        emptyAction={
+          canManage ? (
+            <Button variant="brand" onClick={() => setCreateOpen(true)}>
+              Create offer
+            </Button>
+          ) : undefined
+        }
+      />
       )}
 
       <EntityDetailDrawer

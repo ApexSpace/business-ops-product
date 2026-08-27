@@ -50,7 +50,7 @@ export function TimeCardsMobileList({
       emptyTitle="No time cards yet"
       emptyDescription="Add a time card or adjust your filters."
       emptyAction={
-        <Button size="sm" onClick={onCreate}>
+        <Button variant="brand" onClick={onCreate}>
           Add time card
         </Button>
       }

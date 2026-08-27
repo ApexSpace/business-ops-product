@@ -227,7 +227,7 @@ export function CalendarQuickSetupDialog({
                 >
                   Advanced settings
                 </Button>
-                <Button type="submit" disabled={isPending}>
+                <Button type="submit" variant="brand" disabled={isPending}>
                   {isPending ? "Creating…" : "Create calendar"}
                 </Button>
               </div>

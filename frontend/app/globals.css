@@ -195,6 +195,7 @@
   --spacing-drawer-header-y: var(--drawer-header-padding-y);
   --spacing-drawer-body-x: var(--drawer-body-padding-x);
   --spacing-drawer-body-y: var(--drawer-body-padding-y);
+  --spacing-drawer-body-bottom: var(--drawer-body-padding-bottom);
   --spacing-drawer-footer: var(--drawer-footer-gap);
   --spacing-drawer-footer-y: var(--drawer-footer-padding-y);
   --spacing-drawer-spine-x: var(--drawer-spine-padding-x);
@@ -284,8 +285,9 @@
   --radius-nav: 7px;
   /* Figma radius/radius/xs — 4px when --radius is 8px */
   --radius-xs: 0.25rem;
-  /* Figma spacing/spacing scale (4px base): /2=8, /4=16, /6=24 */
+  /* Figma spacing/spacing scale (4px base): /2=8, /3=12, /4=16, /6=24 */
   --spacing-2: 0.5rem;
+  --spacing-3: 0.75rem;
   --spacing-4: 1rem;
   --spacing-6: 1.5rem;
   --sidebar-width: 10.75rem;
@@ -294,14 +296,37 @@
   --table-row-height: 3.5rem;
   --table-row-height-compact: var(--table-row-height);
   --table-header-height: var(--table-row-height);
-  /* Default ≥40px control; sm remains dense for compact chrome */
+  /*
+   * DataTable column density — hit-and-trial here; every list uses these.
+   *   --table-column-padding-x   cell left/right padding (was px-4 / 16px)
+   *   --table-column-min-width   data column width (browsers ignore min-width on <td>)
+   * Use a length with a unit: 0px hugs content; try 8rem / 10rem / 12rem. Not a bare 5.
+   */
+  --table-column-padding-x: 1rem;
+  --table-column-min-width: 5px;
+  /* Default ≥40px control; sm remains dense for compact chrome.
+   * Button size="default" (including variant="brand") reads these:
+   *   --control-height      → height / min-height
+   *   --control-padding-x   → horizontal padding
+   * Hit-and-trial density from this one place — do not override on pages.
+   * Brand label weight (New Checkout, New Contact, Save, …):
+   *   --button-brand-font-weight  500 medium / 600 semibold / 700 bold */
   --control-height: 2.5rem;
   --control-height-sm: 2rem;
   --control-padding-x: 0.625rem;
+  --button-brand-font-weight: 650;
+  /* Purple “+” square — same size for Add Note, Service, and Client field. */
   --plus-button-size: 1.05rem;
+  /* Distance from the field edge (top / bottom / right). Default matches
+   * leftover vertical space so all three sides are equal. Hit-and-trial here. */
+  --plus-button-inset: calc(
+    (var(--control-height) - var(--plus-button-size)) / 2
+  );
   --page-padding-x: 1rem;
   --page-padding-y: 0.5rem;
   --page-content-top-gap: 0.6rem;
+  /* EntityListLayout toolbar inset (left of Add, right of filter). Hit-and-trial here. */
+  --cs-list-toolbar-padding-x: 1rem;
   --section-gap: 1.5rem;
   --page-stack-gap: 1rem;
   --stack-gap: 0.75rem;
@@ -314,23 +339,30 @@
    *   --drawer-stack-gap          field-to-field / form item stack
    *   --drawer-field-gap          label → control
    *   --drawer-header-padding-y   header bar vertical padding
+   *   --drawer-header-icon-size   close / edit / trash / more hover box
    *   --drawer-header-gap         eyebrow → title
-   *   --drawer-body-padding-y     body vertical inset
-   *   --drawer-footer-padding-y   footer vertical padding (above primary CTA)
+   *   --drawer-body-padding-y     body top inset
+   *   --drawer-body-padding-bottom last form block → footer
+   *   --drawer-footer-padding-y   footer vertical padding (above / below CTA)
    *   --drawer-footer-gap         footer stack (express row → primary button)
+   *   --drawer-express-row-height express / toggle row (was 48px)
    *   --drawer-spine-width        purple purpose strip thickness
    *   --drawer-spine-padding-x    strip left/right inset around the label
    *   --drawer-spine-padding-y    strip top/bottom inset along the label
    */
   --drawer-header-padding-y: 0.75rem; /* 12px; was pt-6/pb-4 (24/16) */
+  /* Hover hit-area for drawer header icons (X, edit, trash, ⋯). Hit-and-trial here. */
+  --drawer-header-icon-size: 1.6rem; /* 24px; was size-6 */
   --drawer-header-gap: 0.25rem; /* 4px; was gap-2 (8) */
   --drawer-body-padding-x: 1rem; /* 16px */
   --drawer-body-padding-y: 0.75rem; /* 12px; was 16–26 */
+  --drawer-body-padding-bottom: 0.5rem; /* 8px; last field → footer (was body-y 12) */
   --drawer-section-gap: 1rem; /* 16px; was gap-6 (24) */
   --drawer-field-gap: 0.375rem; /* 6px; was gap-2 / 7px */
   --drawer-stack-gap: 0.75rem; /* 12px; was space-y-4/5 (16–20) */
-  --drawer-footer-padding-y: 0.75rem; /* 12px; was 16 */
-  --drawer-footer-gap: 0.625rem; /* 10px; was 15 */
+  --drawer-footer-padding-y: 0.5rem; /* 8px; was 12 */
+  --drawer-footer-gap: 0.375rem; /* 6px; was 10 */
+  --drawer-express-row-height: 2rem; /* 32px; was 48 */
   --drawer-spine-width: 1.375rem; /* 22px; was 30 */
   --drawer-spine-padding-x: 0.125rem; /* 2px */
   --drawer-spine-padding-y: 0.5rem; /* 8px */
@@ -778,5 +810,14 @@
 
 .navigation-loading-bar {
   animation: navigation-loading-slide 1s ease-in-out infinite;
+}
+
+/* Brand CTA labels — New Checkout, drawer footer primaries, sidebar
+ * “New appointment” (buttonVariants on a Link, not <Button>).
+ * Unlayered so this wins over leftover `.font-medium` utilities.
+ * Hit-and-trial: `--button-brand-font-weight` in :root (500 / 600 / 700). */
+.btn-brand,
+[data-slot="button"][data-variant="brand"] {
+  font-weight: var(--button-brand-font-weight);
 }
 

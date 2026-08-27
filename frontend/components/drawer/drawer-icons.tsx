@@ -250,7 +250,7 @@ export function DrawerPlusSquareButton({
 
   if (as === "span") {
     return (
-      <span className={classes} aria-hidden>
+      <span data-slot="drawer-plus" className={classes} aria-hidden>
         {icon}
       </span>
     );
@@ -259,6 +259,7 @@ export function DrawerPlusSquareButton({
   return (
     <button
       type="button"
+      data-slot="drawer-plus"
       aria-label={ariaLabel}
       onClick={(event) => {
         if (stopPropagation) {

@@ -1,16 +1,13 @@
 "use client";
 
-import { MoreHorizontal } from "lucide-react";
 import { DrawerHeaderContent } from "@/components/drawer/drawer-header-content";
 import { DrawerPrimaryButton } from "@/components/drawer/drawer-primary-button";
 import { DrawerShell, type DrawerShellChrome } from "@/components/layout/drawer-shell";
-import { IconButton } from "@/components/ui/icon-button";
+import { MoreActionsButton } from "@/components/ui/more-actions-button";
 import {
   DRAWER_BODY_INSET_CLASS,
   DRAWER_FOOTER_CLASS,
   DRAWER_FOOTER_INNER_CLASS,
-  DRAWER_HEADER_ACTION_CLASS,
-  DRAWER_MOBILE_HEADER_ACTION_CLASS,
   DRAWER_MOBILE_SHELL_CLASS,
   DRAWER_SHELL_CLASS,
   DRAWER_SHELL_HEADER_CLASS,
@@ -56,16 +53,7 @@ export function OptionsFilterDrawer({
   const chrome: DrawerShellChrome = isMobile ? "mobile-brand" : "default";
 
   const moreAction = showMoreAction ? (
-    <IconButton
-      type="button"
-      variant="ghost"
-      aria-label="More options"
-      className={
-        isMobile ? DRAWER_MOBILE_HEADER_ACTION_CLASS : DRAWER_HEADER_ACTION_CLASS
-      }
-    >
-      <MoreHorizontal className="size-4" />
-    </IconButton>
+    <MoreActionsButton aria-label="More options" />
   ) : null;
 
   return (

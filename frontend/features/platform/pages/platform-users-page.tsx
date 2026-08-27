@@ -4,15 +4,13 @@ import { Suspense, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { CreatePlatformUserDialog } from "@/features/platform/components/create-platform-user-dialog";
-import {
-  DataTable,
-  type DataTableColumn,
-} from "@/components/data-display/data-table";
+import { type DataTableColumn } from "@/components/data-display/data-table";
 import { DataTableRowActions } from "@/components/data-display/data-table-row-actions";
 import { StatusBadge } from "@/components/data-display/status-badge";
 import { ConfirmDeleteDialog } from "@/components/forms/confirm-delete-dialog";
-import { FilterBar } from "@/components/layout/filter-bar";
-import { ListPage, ListPageSkeleton } from "@/components/layout/list-page";
+import { EntityListLayout } from "@/components/layout/entity-list-layout";
+import { ListFilterCheckboxGroup } from "@/components/layout/list-filter-checkbox-group";
+import { ListPageSkeleton } from "@/components/layout/list-page";
 import { Badge } from "@/components/ui/badge";
 import { ListPagination } from "@/components/ui/list-pagination";
 import { SearchableSelect } from "@/components/forms/searchable-select";
@@ -41,6 +39,8 @@ function PlatformUsersPageContent() {
   const queryClient = useQueryClient();
   const { params, page, setParams } = useListSearchParams(LIST_SCHEMA);
   const [deleteTarget, setDeleteTarget] = useState<PlatformUser | null>(null);
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [draftRole, setDraftRole] = useState(params.role);
 
   const role = params.role;
   const canManage = useCan(PERMISSIONS["platform.users.manage"]);
@@ -155,24 +155,29 @@ function PlatformUsersPageContent() {
 
   return (
     <>
-      <ListPage
+      <EntityListLayout
         title="Platform Users"
         description="PandaCue staff and platform users."
-        actions={canManage ? <CreatePlatformUserDialog /> : null}
-        filters={
-          <FilterBar>
-            <SearchableSelect
-              items={platformRoleFilterOptions}
-              value={role}
-              onValueChange={(v) =>
-                setParams({ role: v ?? "all", page: "1" }, { resetPage: true })
-              }
-              placeholder="Role"
-              triggerClassName="w-[180px]"
-            />
-          </FilterBar>
+        extraActions={canManage ? <CreatePlatformUserDialog /> : null}
+        filterAriaLabel="User filters"
+        filterActive={role !== "all"}
+        filterOpen={filterOpen}
+        onFilterOpenChange={(open) => {
+          if (open) setDraftRole(role);
+          setFilterOpen(open);
+        }}
+        filterContent={
+          <ListFilterCheckboxGroup
+            legend="Role"
+            options={platformRoleFilterOptions}
+            value={draftRole}
+            onChange={(next) => setDraftRole(String(next))}
+          />
         }
-        pagination={
+        onFilterApply={() =>
+          setParams({ role: draftRole, page: "1" }, { resetPage: true })
+        }
+        footer={
           data?.meta ? (
             <ListPagination
               meta={data.meta}
@@ -180,18 +185,16 @@ function PlatformUsersPageContent() {
               onPageChange={(p) => setParams({ page: String(p) })}
               label="users"
             />
-          ) : null
+          ) : undefined
         }
-      >
-        <DataTable
-          columns={columns}
-          data={data?.items ?? []}
-          getRowId={(row) => row.id}
-          isLoading={isLoading}
-          emptyTitle="No platform users found"
-          rowActions={
-            canManage
-              ? (user) => {
+        columns={columns}
+        data={data?.items ?? []}
+        getRowId={(row) => row.id}
+        isLoading={isLoading}
+        emptyTitle="No platform users found"
+        rowActions={
+          canManage
+            ? (user) => {
                   if (user.role === "SUPER_ADMIN" || !canRemoveUsers) return null;
                   return (
                     <DataTableRowActions
@@ -206,10 +209,9 @@ function PlatformUsersPageContent() {
                     />
                   );
                 }
-              : undefined
-          }
-        />
-      </ListPage>
+            : undefined
+        }
+      />
 
       <ConfirmDeleteDialog
         open={!!deleteTarget}

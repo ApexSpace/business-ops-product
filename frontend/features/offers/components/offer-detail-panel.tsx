@@ -2,10 +2,11 @@
 
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { MoreHorizontal, Pencil, X  } from "lucide-react";
+import { Pencil, X } from "lucide-react";
 import { toast } from "sonner";
 import { SettingsCard } from "@/components/layout/settings-card";
 import { Button } from "@/components/ui/button";
+import { MoreActionsButton } from "@/components/ui/more-actions-button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   DropdownMenu,
@@ -333,11 +334,7 @@ export function OfferDetailPanel({
               {canManage ? (
                 <DropdownMenu>
                   <DropdownMenuTrigger
-                    render={
-                      <Button variant="ghost" size="icon-sm">
-                        <MoreHorizontal className="size-4" />
-                      </Button>
-                    }
+                    render={<MoreActionsButton aria-label="Discount actions" />}
                   />
                   <DropdownMenuContent align="end" className="w-40">
                     <DropdownMenuItem

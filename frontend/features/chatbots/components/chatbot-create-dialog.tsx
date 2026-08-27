@@ -239,12 +239,13 @@ export function ChatbotCreateDialog({
                   </Button>
                 </div>
                 {step < 3 ? (
-                  <Button type="button" onClick={() => void handleNext()}>
+                  <Button type="button" variant="brand" onClick={() => void handleNext()}>
                     Next
                   </Button>
                 ) : (
                   <Button
                     type="button"
+                    variant="brand"
                     disabled={createMutation.isPending}
                     onClick={form.handleSubmit((values) =>
                       createMutation.mutate(values),
@@ -267,7 +268,7 @@ export function ChatbotCreateDialog({
                   Copy embed code
                 </Button>
                 {createdId ? (
-                  <Button type="button" onClick={() => onCreated(createdId)}>
+                  <Button type="button" variant="brand" onClick={() => onCreated(createdId)}>
                     Continue editing
                   </Button>
                 ) : null}

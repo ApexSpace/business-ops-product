@@ -120,7 +120,7 @@ export function CheckoutLineItemRow({
               {lineTotalLabel}
             </span>
           ) : null}
-          {canEdit ? (
+          {canEdit && expanded ? (
             <button
               type="button"
               aria-label="Remove item"

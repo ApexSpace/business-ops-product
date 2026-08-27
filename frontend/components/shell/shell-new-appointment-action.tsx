@@ -9,7 +9,7 @@ export function ShellNewAppointmentAction() {
   return (
     <Link
       href="/business/appointments?action=create"
-      className={cn(buttonVariants(), "shrink-0")}
+      className={cn(buttonVariants({ variant: "brand" }), "shrink-0")}
     >
       New appointment
     </Link>

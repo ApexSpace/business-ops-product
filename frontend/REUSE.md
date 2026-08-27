@@ -25,36 +25,44 @@ Use `FormSheet` + `FormSheetSection` from list/dashboard contexts:
 
 Keep `FormDialog` / `AlertDialog` for confirms and tiny pickers only.
 
-### List pages
+### List pages (DataTable)
 
-Use `ListPage` + `ListToolbar` + `DataTable` + `StatusPill` for simple table views.
-
-### Entity workspaces (standard list + detail drawer)
-
-For CRM/catalog screens, use the shared workspace pattern:
+Use `EntityListLayout` for every screen that shows a DataTable. Do not assemble primary action + search + filter + `DataTable` by hand.
 
 ```tsx
-const { selectedId, isOpen, setSelectedId, clearSelection } = useEntitySelection({
-  legacyIdParams: ["product"], // optional backward-compat query keys
-});
+<EntityListLayout
+  title="Forms"
+  addButtonLabel="Create form"
+  onAdd={() => setCreateOpen(true)}
+  searchPlaceholder="Search"
+  searchValue={params.search}
+  onSearchChange={(v) => setParams({ search: v, page: "1" })}
+  filterContent={
+    <ListFilterCheckboxGroup
+      legend="Status"
+      options={STATUS_OPTIONS}
+      value={draftStatus}
+      onChange={(next) => setDraftStatus(String(next))}
+    />
+  }
+  onFilterApply={() => setParams({ status: draftStatus })}
+  columns={columns}
+  data={items}
+  getRowId={(row) => row.id}
+/>
+```
 
-<EntityWorkspaceLayout
-  title="Products"
-  search={<SearchInput ... />}
-  actions={<Button>Add product</Button>} // always top-right
-  footer={`${count} items`}
->
-  <DataTable
-    density="compact"
-    activeRowId={selectedId}
-    onRowClick={(row) => setSelectedId(row.id)}
-    className={WORKSPACE_TABLE_CLASS}
-    getRowClassName={(row) =>
-      selectedId === row.id ? WORKSPACE_ACTIVE_ROW_CLASS : undefined
-    }
-  />
-</EntityWorkspaceLayout>
+- Toolbar (primary left, search + filter icon right) and table live in the composite
+- Filter icon opens the shared `OptionsFilterDrawer` (Appointments-style sidebar)
+- Nested tabs: `hideHeader` + `flush` so parent chrome owns padding
+- Full width: `ENTITY_LIST_PAGE_INSET_CLASS` is `px-0`; toolbar and table span the content area
+- Tokens: `ENTITY_LIST_PAGE_INSET_CLASS`, `WORKSPACE_TABLE_CARD_CLASS` in `frontend/lib/design/workspace-tokens.ts`
 
+### Entity workspaces (list + detail drawer)
+
+Pair `EntityListLayout` with `EntityDetailDrawer`:
+
+```tsx
 <EntityDetailDrawer
   open={isOpen}
   onOpenChange={(open) => !open && clearSelection()}

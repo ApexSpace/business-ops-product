@@ -242,7 +242,7 @@ export function PipelineStagesEditor({
     <PageSection
       actions={
         showAddStageAction ? (
-          <Button type="button" onClick={addStage} disabled={disabled}>
+          <Button type="button" variant="brand" onClick={addStage} disabled={disabled}>
             Add stage
           </Button>
         ) : undefined

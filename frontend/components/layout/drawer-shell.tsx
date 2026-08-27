@@ -29,7 +29,6 @@ import {
   DRAWER_SHELL_TITLE_CLASS,
   DRAWER_SHELL_DESCRIPTION_CLASS,
   DRAWER_SHELL_HEADER_CLASS,
-  DRAWER_CLOSE_ACTION_CLASS,
   DRAWER_CONTENT_PANEL_CLASS,
   DRAWER_MOBILE_CLOSE_ACTION_CLASS,
   DRAWER_MOBILE_HEADER_ACTIONS_CLASS,
@@ -184,9 +183,8 @@ function DrawerShellInner({
                     <IconButton
                       type="button"
                       variant="ghost"
-                      size="icon-sm"
+                      size="header"
                       aria-label="Close"
-                      className={DRAWER_CLOSE_ACTION_CLASS}
                       onClick={onRequestClose}
                     >
                       <DrawerCloseIcon />

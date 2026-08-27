@@ -15,7 +15,11 @@ import {
   VIRTUALIZE_THRESHOLD,
 } from "@/features/conversations/components/inbox/conversation-inbox-utils";
 import type { InboxStatusFilter } from "@/features/conversations/hooks/use-conversations-inbox-filters";
-import { INBOX_LIST_PANEL_CLASS } from "@/features/contacts/workspace/contact-workspace";
+import {
+  INBOX_LIST_HEADER_CLASS,
+  INBOX_LIST_PANEL_CLASS,
+  INBOX_LIST_TOOLS_CLASS,
+} from "@/features/contacts/workspace/contact-workspace";
 import { cn } from "@/lib/utils";
 
 const STATUS_FILTER_CHIPS: { value: InboxStatusFilter; label: string }[] = [
@@ -58,23 +62,23 @@ export function ConversationListPanel({
 }: ConversationListPanelProps) {
   return (
     <aside className={cn(INBOX_LIST_PANEL_CLASS, className)}>
-      <div className="flex shrink-0 flex-col gap-4 border-b border-border px-6 py-6">
-        <div className="flex items-center justify-between gap-2">
-          <h2 className="text-heading-5 font-bold tracking-tight text-violet-primary-dark">
-            Conversation
-          </h2>
-          {onNewConversation ? (
-            <IconButton
-              variant="ghost"
-              size="icon-sm"
-              onClick={onNewConversation}
-              aria-label="New conversation"
-            >
-              <SquarePen className="size-4" />
-            </IconButton>
-          ) : null}
-        </div>
+      <header className={INBOX_LIST_HEADER_CLASS}>
+        <h2 className="min-w-0 truncate text-heading-5 font-bold leading-none tracking-tight text-violet-primary-dark">
+          Conversation
+        </h2>
+        {onNewConversation ? (
+          <IconButton
+            variant="ghost"
+            size="icon-sm"
+            onClick={onNewConversation}
+            aria-label="New conversation"
+          >
+            <SquarePen className="size-4" />
+          </IconButton>
+        ) : null}
+      </header>
 
+      <div className={INBOX_LIST_TOOLS_CLASS}>
         <SearchInput
           value={search}
           onChange={onSearchChange}

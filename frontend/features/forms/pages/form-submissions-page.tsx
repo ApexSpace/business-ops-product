@@ -3,14 +3,11 @@
 import { Suspense, useMemo, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import {
-  DataTable,
-  type DataTableColumn,
-} from "@/components/data-display/data-table";
+import { type DataTableColumn } from "@/components/data-display/data-table";
 import { DataTableRowActions } from "@/components/data-display/data-table-row-actions";
 import { ConfirmDeleteDialog } from "@/components/forms/confirm-delete-dialog";
 import { EntityDetailDrawer } from "@/components/layout/entity-detail-drawer";
-import { EntityWorkspaceLayout } from "@/components/layout/entity-workspace-layout";
+import { EntityListLayout } from "@/components/layout/entity-list-layout";
 import { ListPageSkeleton } from "@/components/layout/list-page";
 import { Button } from "@/components/ui/button";
 import { ListPagination } from "@/components/ui/list-pagination";
@@ -28,10 +25,7 @@ import {
   buildFormFieldLabelMap,
   formatSubmissionSummary,
 } from "@/features/forms/utils/form-submission-display.util";
-import {
-  WORKSPACE_ACTIVE_ROW_CLASS,
-  WORKSPACE_TABLE_CLASS,
-} from "@/lib/design/workspace-tokens";
+import { WORKSPACE_ACTIVE_ROW_CLASS } from "@/lib/design/workspace-tokens";
 import { useEntitySelection } from "@/lib/routing/use-entity-selection";
 
 interface FormSubmissionsPageProps {
@@ -96,21 +90,21 @@ function FormSubmissionsPageContent({ formId }: FormSubmissionsPageProps) {
 
   return (
     <>
-      <Link
-        href={basePath}
-        className="mb-4 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
-      >
-        <ArrowLeft className="size-4" />
-        Back to forms
-      </Link>
-
-      <EntityWorkspaceLayout
+      <EntityListLayout
         title={`${formName} submissions`}
         description="Review and manage responses collected from this form."
-        actions={
+        leading={
+          <Link
+            href={basePath}
+            className="mb-1 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
+          >
+            <ArrowLeft className="size-4" />
+            Back to forms
+          </Link>
+        }
+        extraActions={
           <Button
-            variant="outline"
-            size="sm"
+            variant="brand"
             nativeButton={false}
             render={<Link href={`${basePath}/${formId}/edit`} />}
           >
@@ -128,21 +122,19 @@ function FormSubmissionsPageContent({ formId }: FormSubmissionsPageProps) {
             ? `${data.items.length} submission${data.items.length === 1 ? "" : "s"}`
             : undefined
         }
-      >
-        <DataTable
-          columns={columns}
-          data={data?.items ?? []}
-          getRowId={(row) => row.id}
-          isLoading={isLoading || isFormLoading}
-          density="compact"
-          activeRowId={selectedId}
-          onRowClick={(row) => setSelectedId(row.id)}
-          getRowClassName={(row) =>
-            selectedId === row.id ? WORKSPACE_ACTIVE_ROW_CLASS : undefined
-          }
-          emptyTitle="No submissions yet"
-          emptyDescription="Responses will appear here after visitors submit this form."
-          rowActions={(submission) => (
+        columns={columns}
+        data={data?.items ?? []}
+        getRowId={(row) => row.id}
+        isLoading={isLoading || isFormLoading}
+        density="compact"
+        activeRowId={selectedId}
+        onRowClick={(row) => setSelectedId(row.id)}
+        getRowClassName={(row) =>
+          selectedId === row.id ? WORKSPACE_ACTIVE_ROW_CLASS : undefined
+        }
+        emptyTitle="No submissions yet"
+        emptyDescription="Responses will appear here after visitors submit this form."
+        rowActions={(submission) => (
             <DataTableRowActions
               menuLabel="Submission actions"
               actions={[
@@ -157,10 +149,8 @@ function FormSubmissionsPageContent({ formId }: FormSubmissionsPageProps) {
                 },
               ]}
             />
-          )}
-          className={WORKSPACE_TABLE_CLASS}
-        />
-      </EntityWorkspaceLayout>
+        )}
+      />
 
       <EntityDetailDrawer
         open={isOpen}

@@ -181,6 +181,8 @@
   --cs-calendar-hour-height: 120px;
   /* Same as shell `--page-content-top-gap` so toolbar has equal space above & below */
   --cs-list-toolbar-gap: var(--page-content-top-gap, var(--spacing-2));
+  /* EntityListLayout action row only — space left of primary button / right of filter */
+  --cs-list-toolbar-padding-x: 1rem;
   --cs-page-gradient:
     radial-gradient(
       circle at top left,

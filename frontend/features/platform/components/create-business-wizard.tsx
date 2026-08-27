@@ -550,7 +550,7 @@ export function CreateBusinessWizard() {
 
   return (
     <>
-      <Button type="button" onClick={() => setOpen(true)}>
+      <Button type="button" variant="brand" onClick={() => setOpen(true)}>
         Create business
       </Button>
       <Dialog
@@ -1093,13 +1093,14 @@ export function CreateBusinessWizard() {
               Back
             </Button>
             {step < MAX_STEP ? (
-              <Button type="button" onClick={() => void handleNext()} disabled={!canGoNext()}>
+              <Button type="button" variant="brand" onClick={() => void handleNext()} disabled={!canGoNext()}>
                 Next
                 <NavArrowIcon direction="right" size="lg" className="ml-1" />
               </Button>
             ) : (
               <Button
                 type="button"
+                variant="brand"
                 onClick={() => void handleCreate()}
                 disabled={mutation.isPending || blockingWarnings}
               >

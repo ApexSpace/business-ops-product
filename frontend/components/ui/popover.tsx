@@ -4,6 +4,7 @@ import * as React from "react"
 import { Popover as PopoverPrimitive } from "@base-ui/react/popover"
 
 import { cn } from "@/lib/utils"
+import { OVERLAY_SIDE, OVERLAY_SIDE_OFFSET } from "@/lib/ui/overlay-position"
 
 function Popover({ ...props }: PopoverPrimitive.Root.Props) {
   return <PopoverPrimitive.Root data-slot="popover" {...props} />
@@ -23,8 +24,8 @@ function PopoverContent({
   className,
   align = "center",
   alignOffset = 0,
-  side = "bottom",
-  sideOffset = 4,
+  side = OVERLAY_SIDE,
+  sideOffset = OVERLAY_SIDE_OFFSET,
   collisionAvoidance,
   collisionPadding,
   collisionBoundary,

@@ -19,7 +19,7 @@ export function CalendarEditBookingLinkSection() {
         </p>
         <Link
           href="/business/settings/online-booking"
-          className={buttonVariants({ variant: "default", size: "sm" })}
+          className={buttonVariants({ variant: "brand" })}
         >
           <ExternalLink className="mr-1.5 size-4" />
           Open Online Booking settings

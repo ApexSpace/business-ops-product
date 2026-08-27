@@ -3,17 +3,12 @@
 import { Suspense, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import {
-  DataTable,
-  type DataTableColumn,
-} from "@/components/data-display/data-table";
+import { type DataTableColumn } from "@/components/data-display/data-table";
 import { DataTableRowActions } from "@/components/data-display/data-table-row-actions";
 import { ConfirmDeleteDialog } from "@/components/forms/confirm-delete-dialog";
-import { SearchInput } from "@/components/forms/search-input";
-import { FilterBar } from "@/components/layout/filter-bar";
-import { ListPage, ListPageSkeleton } from "@/components/layout/list-page";
+import { EntityListLayout } from "@/components/layout/entity-list-layout";
+import { ListPageSkeleton } from "@/components/layout/list-page";
 import { NoteFormDialog } from "@/features/notes/components/note-form-dialog";
-import { ActionButton } from "@/components/ui/action-button";
 import { ListPagination } from "@/components/ui/list-pagination";
 import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
 import { useListSearchParams } from "@/lib/hooks/use-list-search-params";
@@ -93,30 +88,18 @@ function BusinessNotesPageContent() {
 
   return (
     <>
-      <ListPage
+      <EntityListLayout
         title="Notes"
         description="Free-form notes linked to contacts and leads."
-        actions={
-          <ActionButton
-            onClick={() => {
-              setEditing(null);
-              setDialogOpen(true);
-            }}
-          >
-            New note
-          </ActionButton>
-        }
-        filters={
-          <FilterBar>
-            <SearchInput
-              value={params.search}
-              onChange={(search) => setParams({ search, page: "1" })}
-              placeholder="Search notes…"
-              className="max-w-xs"
-            />
-          </FilterBar>
-        }
-        pagination={
+        addButtonLabel="New note"
+        onAdd={() => {
+          setEditing(null);
+          setDialogOpen(true);
+        }}
+        searchPlaceholder="Search notes…"
+        searchValue={params.search}
+        onSearchChange={(search) => setParams({ search, page: "1" })}
+        footer={
           data ? (
             <ListPagination
               meta={data.meta}
@@ -124,17 +107,15 @@ function BusinessNotesPageContent() {
               onPageChange={(p) => setParams({ page: String(p) })}
               label="notes"
             />
-          ) : null
+          ) : undefined
         }
-      >
-        <DataTable
-          columns={columns}
-          data={data?.items ?? []}
-          getRowId={(row) => row.id}
-          isLoading={isLoading}
-          emptyTitle="No notes yet"
-          emptyDescription="Create a note from a contact workspace or here."
-          rowActions={(row) => (
+        columns={columns}
+        data={data?.items ?? []}
+        getRowId={(row) => row.id}
+        isLoading={isLoading}
+        emptyTitle="No notes yet"
+        emptyDescription="Create a note from a contact workspace or here."
+        rowActions={(row) => (
             <DataTableRowActions
               actions={[
                 {
@@ -151,9 +132,8 @@ function BusinessNotesPageContent() {
                 },
               ]}
             />
-          )}
-        />
-      </ListPage>
+        )}
+      />
 
       <NoteFormDialog
         open={dialogOpen}

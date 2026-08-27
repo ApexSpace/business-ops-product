@@ -15,19 +15,17 @@ import {
   Tag,
   Trash2,
   Wrench,
-  MoreVertical,
 } from "lucide-react";
 import { toast } from "sonner";
-import { DataTable, type DataTableColumn } from "@/components/data-display/data-table";
+import { type DataTableColumn } from "@/components/data-display/data-table";
 import { ListPagination } from "@/components/ui/list-pagination";
 import { DrawerShell } from "@/components/layout/drawer-shell";
 import { DrawerHeaderContent } from "@/components/drawer/drawer-header-content";
 import { DrawerPrimaryButton } from "@/components/drawer/drawer-primary-button";
-import { ListFilterButton } from "@/components/layout/list-filter-button";
 import { IconButton } from "@/components/ui/icon-button";
-import { EntityWorkspaceLayout } from "@/components/layout/entity-workspace-layout";
+import { MoreActionsButton } from "@/components/ui/more-actions-button";
+import { EntityListLayout } from "@/components/layout/entity-list-layout";
 import { ListPrimaryAction } from "@/components/layout/list-primary-action";
-import { SearchInput } from "@/components/forms/search-input";
 import { StatusBadge } from "@/components/data-display/status-badge";
 import {
   saleStatusLabel,
@@ -53,10 +51,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { SearchableSelect } from "@/components/forms/searchable-select";
-import {
-  WORKSPACE_ACTIVE_ROW_CLASS,
-  WORKSPACE_TABLE_CLASS,
-} from "@/lib/design/workspace-tokens";
+import { WORKSPACE_ACTIVE_ROW_CLASS } from "@/lib/design/workspace-tokens";
 import { DATA_TABLE_SALE_NUMBER_CLASS,
   DATA_TABLE_STATUS_CLASS,
 } from "@/lib/design/data-table-tokens";
@@ -66,7 +61,6 @@ import { cn } from "@/lib/utils";
 import { queryKeys } from "@/lib/query/keys";
 import { invalidateCheckouts } from "@/lib/query/invalidation";
 import { listContacts } from "@/features/contacts/api/contacts.api";
-import { listBusinessMembers } from "@/features/settings/api/business.api";
 import { formatMoney } from "@/features/payments/schemas/payment-profile";
 import { SalesMobileList } from "@/features/sales/components/mobile/sales-mobile-list";
 import {
@@ -99,6 +93,7 @@ import {
   type CheckoutDrawerStep,
   type CheckoutDrawerSubmitAction,
 } from "@/features/sales/components/checkout-drawer-panel";
+import { CheckoutItemPicker } from "@/features/sales/components/checkout-item-picker";
 import { SaleEditDrawerContent } from "@/features/sales/components/sale-edit-drawer-content";
 import {
   SaleClosedDrawerContent,
@@ -123,11 +118,8 @@ import {
   SALES_DIALOG_LABEL_CLASS,
   SALES_DIALOG_SECONDARY_BUTTON_CLASS,
   SALES_DIALOG_TITLE_CLASS,
-  SALES_DRAWER_FIELD_CLASS,
   SALES_DRAWER_FOOTER_CLASS,
   SALES_DRAWER_FOOTER_INNER_CLASS,
-  SALES_DRAWER_HEADER_ACTION_CLASS,
-  SALES_DRAWER_MOBILE_HEADER_ACTION_CLASS,
   SALES_DRAWER_MOBILE_SHELL_CLASS,
   SALES_DRAWER_SELECT_TRIGGER_CLASS,
   SALES_DRAWER_SHELL_CLASS,
@@ -135,10 +127,6 @@ import {
   SALES_DRAWER_SPINE_LABELS,
   SALES_DRAWER_SUBTOTAL_ROW_CLASS,
 } from "@/features/sales/styles/sales-drawer-tokens";
-import {
-  CheckoutMembershipField,
-  parseMembershipRedemptionSelection,
-} from "@/features/sales/components/checkout-membership-field";
 import { GiftCardSaleDialog } from "@/features/sales/components/gift-card-sale-dialog";
 import { PackageSaleDialog } from "@/features/sales/components/package-sale-dialog";
 import type {
@@ -191,18 +179,6 @@ export function SalesWorkspace() {
   const [addPackageOpen, setAddPackageOpen] = useState(false);
   const [applyOfferOpen, setApplyOfferOpen] = useState(false);
   const [selectedOfferId, setSelectedOfferId] = useState<string | null>(null);
-  const [selectedServiceId, setSelectedServiceId] = useState<string | null>(
-    null,
-  );
-  const [selectedProductKey, setSelectedProductKey] = useState<string | null>(
-    null,
-  );
-  const [productQty, setProductQty] = useState(1);
-  const [selectedProductStaffId, setSelectedProductStaffId] = useState<
-    string | null
-  >(null);
-  const [selectedStaffId, setSelectedStaffId] = useState<string | null>(null);
-  const [selectedMembershipKey, setSelectedMembershipKey] = useState("");
   const [editNotes, setEditNotes] = useState("");
   const [editContactId, setEditContactId] = useState<string | null>(null);
   const [editingLine, setEditingLine] = useState<CheckoutItem | null>(null);
@@ -260,27 +236,6 @@ export function SalesWorkspace() {
     enabled: addProductOpen && !!selectedId,
   });
 
-  const selectedProduct = useMemo(
-    () =>
-      (productsData?.items ?? []).find(
-        (p) => pickerProductKey(p) === selectedProductKey,
-      ) ?? null,
-    [productsData?.items, selectedProductKey],
-  );
-
-  const { data: productStaffData } = useQuery({
-    queryKey: queryKeys.business.members({ limit: 100 }),
-    queryFn: () => listBusinessMembers({ page: 1, limit: 100 }),
-    enabled:
-      addProductOpen && !!selectedProduct?.assignStaffToSale && !!selectedId,
-  });
-
-  const { data: staffData } = useQuery({
-    queryKey: queryKeys.checkouts.serviceStaff(selectedServiceId ?? ""),
-    queryFn: () => listCheckoutServiceStaff(selectedServiceId!),
-    enabled: addServiceOpen && !!selectedServiceId,
-  });
-
   const { data: lineStaffData } = useQuery({
     queryKey: queryKeys.checkouts.serviceStaff(
       editingLine?.serviceId ?? "",
@@ -316,29 +271,6 @@ export function SalesWorkspace() {
         label: productPickerLabel(p),
       })),
     [productsData?.items],
-  );
-
-  const productStaffItems = useMemo(
-    () =>
-      (productStaffData?.items ?? []).map((member) => ({
-        value: member.userId,
-        label:
-          [member.user.firstName, member.user.lastName]
-            .filter(Boolean)
-            .join(" ") ||
-          member.user.email ||
-          "Staff",
-      })),
-    [productStaffData?.items],
-  );
-
-  const staffItems = useMemo(
-    () =>
-      (staffData?.items ?? []).map((s) => ({
-        value: s.id,
-        label: s.label,
-      })),
-    [staffData?.items],
   );
 
   const lineStaffItems = useMemo(
@@ -402,41 +334,31 @@ export function SalesWorkspace() {
   });
 
   const addServiceMutation = useMutation({
-    mutationFn: () => {
-      const membership = parseMembershipRedemptionSelection(
-        selectedMembershipKey,
-      );
-      return addCheckoutService(selectedId!, {
-        serviceId: selectedServiceId!,
-        staffUserId: selectedStaffId ?? undefined,
-        ...membership,
-      });
-    },
+    mutationFn: (serviceId: string) =>
+      addCheckoutService(selectedId!, { serviceId }),
     onSuccess: () => {
       toast.success("Service added");
       setAddServiceOpen(false);
-      setSelectedServiceId(null);
-      setSelectedStaffId(null);
-      setSelectedMembershipKey("");
       refreshSale();
     },
     onError: (err: Error) => toast.error(err.message),
   });
 
   const addProductMutation = useMutation({
-    mutationFn: () =>
-      addCheckoutProduct(selectedId!, {
-        productId: selectedProduct!.productId,
-        variantId: selectedProduct!.variantId ?? undefined,
-        quantity: productQty,
-        staffUserId: selectedProductStaffId ?? undefined,
-      }),
+    mutationFn: (productKey: string) => {
+      const product = (productsData?.items ?? []).find(
+        (item) => pickerProductKey(item) === productKey,
+      );
+      if (!product) throw new Error("Select a product");
+      return addCheckoutProduct(selectedId!, {
+        productId: product.productId,
+        variantId: product.variantId ?? undefined,
+        quantity: 1,
+      });
+    },
     onSuccess: () => {
       toast.success("Product added");
       setAddProductOpen(false);
-      setSelectedProductKey(null);
-      setSelectedProductStaffId(null);
-      setProductQty(1);
       refreshSale();
     },
     onError: (err: Error) => toast.error(err.message),
@@ -668,10 +590,6 @@ export function SalesWorkspace() {
     setSelectedId(row.id);
   };
 
-  const headerActionClass = isMobile
-    ? SALES_DRAWER_MOBILE_HEADER_ACTION_CLASS
-    : SALES_DRAWER_HEADER_ACTION_CLASS;
-
   return (
   <>
       {isMobile ? (
@@ -699,30 +617,19 @@ export function SalesWorkspace() {
           }
         />
       ) : (
-      <EntityWorkspaceLayout
+      <EntityListLayout
         title="Sales"
         description="Point-of-sale checkouts — open sales, add services, and collect payment."
-        search={
-          <SearchInput
-            value={listSearch}
-            onChange={(value) => {
-              setListSearch(value);
-              setPage(1);
-            }}
-            placeholder="Search"
-          />
-        }
-        filters={
-          <ListFilterButton
-            aria-label="Sale options"
-            onClick={() => setOptionsOpen(true)}
-          />
-        }
-        actions={
-          canCheckout ? (
-            <ListPrimaryAction label="New Checkout" showIcon={false} onClick={openNewSale} />
-          ) : null
-        }
+        addButtonLabel="New Checkout"
+        onAdd={canCheckout ? openNewSale : undefined}
+        searchPlaceholder="Search"
+        searchValue={listSearch}
+        onSearchChange={(value) => {
+          setListSearch(value);
+          setPage(1);
+        }}
+        filterAriaLabel="Sale options"
+        onFilterClick={() => setOptionsOpen(true)}
         footer={
           listData?.meta && sales.length > 0 ? (
             <ListPagination
@@ -733,28 +640,23 @@ export function SalesWorkspace() {
             />
           ) : undefined
         }
-      >
-        <DataTable
-          columns={columns}
-          data={sales}
-          getRowId={(row) => row.id}
-          isLoading={listLoading}
-          density="default"
-          activeRowId={selectedId}
-          onRowClick={openSaleRow}
-          getRowClassName={(row) =>
-            selectedId === row.id ? WORKSPACE_ACTIVE_ROW_CLASS : undefined
-          }
-          emptyTitle="No sales yet"
-          emptyDescription="Create a new checkout to get started."
-          emptyAction={
-            canCheckout ? (
-              <ListPrimaryAction label="New Checkout" showIcon={false} onClick={openNewSale} />
-            ) : undefined
-          }
-          className={WORKSPACE_TABLE_CLASS}
-        />
-      </EntityWorkspaceLayout>
+        columns={columns}
+        data={sales}
+        getRowId={(row) => row.id}
+        isLoading={listLoading}
+        activeRowId={selectedId}
+        onRowClick={openSaleRow}
+        getRowClassName={(row) =>
+          selectedId === row.id ? WORKSPACE_ACTIVE_ROW_CLASS : undefined
+        }
+        emptyTitle="No sales yet"
+        emptyDescription="Create a new checkout to get started."
+        emptyAction={
+          canCheckout ? (
+            <ListPrimaryAction label="New Checkout" showIcon={false} onClick={openNewSale} />
+          ) : undefined
+        }
+      />
       )}
 
       <DrawerShell
@@ -816,8 +718,8 @@ export function SalesWorkspace() {
               <IconButton
                 type="button"
                 variant="ghost"
+                size="header"
                 aria-label="Edit sale"
-                className={headerActionClass}
                 onClick={saleDetailProps.onEdit}
               >
                 <Pencil className="size-4" />
@@ -831,21 +733,14 @@ export function SalesWorkspace() {
               <IconButton
                 type="button"
                 variant="ghost"
+                size="header"
                 aria-label="Void sale"
-                className={headerActionClass}
                 onClick={saleDetailProps.onVoid}
               >
                 <Trash2 className="size-4" />
               </IconButton>
             ) : (
-              <IconButton
-                type="button"
-                variant="ghost"
-                aria-label="More actions"
-                className={headerActionClass}
-              >
-                <MoreVertical className="size-4" />
-              </IconButton>
+              <MoreActionsButton aria-label="More actions" />
             )}
           </>
         }
@@ -1002,77 +897,18 @@ export function SalesWorkspace() {
             </DialogTitle>
           </DialogHeader>
           <div className={SALES_DIALOG_BODY_CLASS}>
-            <div className={SALES_DIALOG_FIELD_CLASS}>
-              <Label className={SALES_DIALOG_LABEL_CLASS}>Product</Label>
-              <SearchableSelect
-                inDialog
-                items={productItems}
-                value={selectedProductKey}
-                onValueChange={(key) => {
-                  setSelectedProductKey(key);
-                  setSelectedProductStaffId(null);
-                }}
-                placeholder="Select product…"
-                triggerClassName={SALES_DRAWER_SELECT_TRIGGER_CLASS}
-              />
-            </div>
-            {selectedProduct?.assignStaffToSale ? (
-              <div className={SALES_DIALOG_FIELD_CLASS}>
-                <Label className={SALES_DIALOG_LABEL_CLASS}>Provider</Label>
-                <SearchableSelect
-                  inDialog
-                  items={productStaffItems}
-                  value={selectedProductStaffId}
-                  onValueChange={setSelectedProductStaffId}
-                  placeholder="Select provider…"
-                  triggerClassName={SALES_DRAWER_SELECT_TRIGGER_CLASS}
-                />
-              </div>
-            ) : null}
-            <div className={SALES_DIALOG_FIELD_CLASS}>
-              <Label className={SALES_DIALOG_LABEL_CLASS}>Quantity</Label>
-              <Input
-                type="number"
-                min={0.0001}
-                step="1"
-                value={productQty || ""}
-                onChange={(e) =>
-                  setProductQty(parseFloat(e.target.value) || 0)
-                }
-                className={SALES_DRAWER_FIELD_CLASS}
-              />
-            </div>
-          </div>
-          <div className={SALES_DIALOG_FOOTER_STACK_CLASS}>
-            <Button
-              type="button"
-              variant="brand"
-              className={DRAWER_PRIMARY_BUTTON_CLASS}
-              disabled={
-                !selectedProductKey ||
-                productQty <= 0 ||
-                addProductMutation.isPending ||
-                (selectedProduct?.assignStaffToSale && !selectedProductStaffId)
-              }
-              onClick={() => addProductMutation.mutate()}
-            >
-              {addProductMutation.isPending ? "Adding…" : "Add to sale"}
-            </Button>
+            <CheckoutItemPicker
+              inDialog
+              items={productItems}
+              placeholder="Search…"
+              pending={addProductMutation.isPending}
+              onSelect={(productKey) => addProductMutation.mutate(productKey)}
+            />
           </div>
         </DialogContent>
       </Dialog>
 
-      <Dialog
-        open={addServiceOpen}
-        onOpenChange={(open) => {
-          setAddServiceOpen(open);
-          if (!open) {
-            setSelectedServiceId(null);
-            setSelectedStaffId(null);
-            setSelectedMembershipKey("");
-          }
-        }}
-      >
+      <Dialog open={addServiceOpen} onOpenChange={setAddServiceOpen}>
         <DialogContent size="md" className={SALES_DIALOG_CONTENT_CLASS}>
           <DialogHeader className={SALES_DIALOG_HEADER_CLASS}>
             <DialogTitle className={SALES_DIALOG_TITLE_CLASS}>
@@ -1080,51 +916,13 @@ export function SalesWorkspace() {
             </DialogTitle>
           </DialogHeader>
           <div className={SALES_DIALOG_BODY_CLASS}>
-            <div className={SALES_DIALOG_FIELD_CLASS}>
-              <Label className={SALES_DIALOG_LABEL_CLASS}>Service</Label>
-              <SearchableSelect
-                inDialog
-                items={serviceItems}
-                value={selectedServiceId}
-                onValueChange={(id) => {
-                  setSelectedServiceId(id);
-                  setSelectedStaffId(null);
-                  setSelectedMembershipKey("");
-                }}
-                placeholder="Select service…"
-                triggerClassName={SALES_DRAWER_SELECT_TRIGGER_CLASS}
-              />
-            </div>
-            {selectedServiceId && staffItems.length > 0 ? (
-              <div className={SALES_DIALOG_FIELD_CLASS}>
-                <Label className={SALES_DIALOG_LABEL_CLASS}>Provider</Label>
-                <SearchableSelect
-                  inDialog
-                  items={staffItems}
-                  value={selectedStaffId}
-                  onValueChange={setSelectedStaffId}
-                  placeholder="Provider (optional)"
-                  triggerClassName={SALES_DRAWER_SELECT_TRIGGER_CLASS}
-                />
-              </div>
-            ) : null}
-            <CheckoutMembershipField
-              contactId={sale?.contactId ?? null}
-              serviceId={selectedServiceId}
-              value={selectedMembershipKey}
-              onValueChange={setSelectedMembershipKey}
+            <CheckoutItemPicker
+              inDialog
+              items={serviceItems}
+              placeholder="Search…"
+              pending={addServiceMutation.isPending}
+              onSelect={(serviceId) => addServiceMutation.mutate(serviceId)}
             />
-          </div>
-          <div className={SALES_DIALOG_FOOTER_STACK_CLASS}>
-            <Button
-              type="button"
-              variant="brand"
-              className={DRAWER_PRIMARY_BUTTON_CLASS}
-              disabled={!selectedServiceId || addServiceMutation.isPending}
-              onClick={() => addServiceMutation.mutate()}
-            >
-              {addServiceMutation.isPending ? "Adding…" : "Add to sale"}
-            </Button>
           </div>
         </DialogContent>
       </Dialog>

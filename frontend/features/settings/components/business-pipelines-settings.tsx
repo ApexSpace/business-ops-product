@@ -5,14 +5,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import {
-  DataTable,
-  type DataTableColumn,
-} from "@/components/data-display/data-table";
+import { type DataTableColumn } from "@/components/data-display/data-table";
 import { DataTableRowActions } from "@/components/data-display/data-table-row-actions";
 import { Badge } from "@/components/ui/badge";
 import { ConfirmDeleteDialog } from "@/components/forms/confirm-delete-dialog";
-import { PageHeader } from "@/components/layout/page-header";
+import { EntityListLayout } from "@/components/layout/entity-list-layout";
 import { ActionButton } from "@/components/ui/action-button";
 import { Button } from "@/components/ui/button";
 import {
@@ -142,46 +139,39 @@ export function BusinessPipelinesSettings() {
   };
 
   return (
-    <div className="w-full min-w-0 space-y-[var(--page-stack-gap)]">
-      <PageHeader
-        actions={
-          <div className="flex flex-wrap items-center gap-2">
-            <Button
-              variant="outline"
-              nativeButton={false}
-              render={<Link href="/business/pipelines" />}
-            >
-              Open CRM Pipeline
-            </Button>
-            {canManage ? (
-              <ActionButton onClick={() => setCreateOpen(true)}>
-                New pipeline
-              </ActionButton>
-            ) : null}
-          </div>
-        }
-      />
-
-      <DataTable
-        columns={columns}
-        data={pipelines ?? []}
-        getRowId={(row) => row.id}
-        isLoading={isLoading}
-        emptyTitle="No pipelines yet"
-        emptyDescription={
-          canManage
-            ? "Create a pipeline to define stages for your CRM board."
-            : "Ask an owner or admin to set up pipelines."
-        }
-        emptyAction={
-          canManage ? (
-            <ActionButton onClick={() => setCreateOpen(true)}>
-              New pipeline
-            </ActionButton>
-          ) : undefined
-        }
-        rowActions={buildRowActions}
-      />
+    <>
+    <EntityListLayout
+      title="Pipelines"
+      extraActions={
+        <Button
+          variant="brand"
+          nativeButton={false}
+          render={<Link href="/business/pipelines" />}
+        >
+          Open CRM Pipeline
+        </Button>
+      }
+      addButtonLabel="New pipeline"
+      onAdd={canManage ? () => setCreateOpen(true) : undefined}
+      columns={columns}
+      data={pipelines ?? []}
+      getRowId={(row) => row.id}
+      isLoading={isLoading}
+      emptyTitle="No pipelines yet"
+      emptyDescription={
+        canManage
+          ? "Create a pipeline to define stages for your CRM board."
+          : "Ask an owner or admin to set up pipelines."
+      }
+      emptyAction={
+        canManage ? (
+          <ActionButton onClick={() => setCreateOpen(true)}>
+            New pipeline
+          </ActionButton>
+        ) : undefined
+      }
+      rowActions={buildRowActions}
+    />
 
       <PipelineFormDialog
         open={createOpen}
@@ -207,6 +197,6 @@ export function BusinessPipelinesSettings() {
         isPending={deleteMutation.isPending}
         onConfirm={() => deleteId && deleteMutation.mutate(deleteId)}
       />
-    </div>
+    </>
   );
 }

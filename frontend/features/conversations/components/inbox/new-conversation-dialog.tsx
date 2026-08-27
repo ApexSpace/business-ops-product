@@ -265,6 +265,7 @@ export function NewConversationDialog({
             Cancel
           </Button>
           <Button
+            variant="brand"
             onClick={() => mutation.mutate()}
             disabled={!canSubmit}
           >

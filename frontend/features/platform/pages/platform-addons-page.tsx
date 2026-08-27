@@ -27,7 +27,7 @@ export function PlatformAddonsPage() {
         </div>
         <Link
           href="/platform/addons/new"
-          className={cn(buttonVariants({ variant: "default" }))}
+          className={cn(buttonVariants({ variant: "brand" }))}
         >
           New add-on
         </Link>

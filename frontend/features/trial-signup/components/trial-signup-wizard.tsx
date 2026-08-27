@@ -455,7 +455,7 @@ export function TrialSignupWizard() {
                   >
                     Back
                   </Button>
-                  <Button type="submit" className="flex-1">
+                  <Button type="submit" variant="brand" className="flex-1">
                     Continue
                   </Button>
                 </div>
@@ -513,7 +513,7 @@ export function TrialSignupWizard() {
                   >
                     Back
                   </Button>
-                  <Button type="submit" className="flex-1">
+                  <Button type="submit" variant="brand" className="flex-1">
                     Continue
                   </Button>
                 </div>
@@ -560,7 +560,7 @@ export function TrialSignupWizard() {
                     >
                       Back
                     </Button>
-                    <Button type="submit" className="flex-1" disabled={busy}>
+                    <Button type="submit" variant="brand" className="flex-1" disabled={busy}>
                       {busy ? "Sending…" : "Send code"}
                     </Button>
                   </div>
@@ -602,7 +602,7 @@ export function TrialSignupWizard() {
                     >
                       Change number
                     </Button>
-                    <Button type="submit" className="flex-1" disabled={busy}>
+                    <Button type="submit" variant="brand" className="flex-1" disabled={busy}>
                       {busy ? "Verifying…" : "Verify"}
                     </Button>
                   </div>
@@ -689,7 +689,7 @@ export function TrialSignupWizard() {
                   >
                     Back
                   </Button>
-                  <Button type="submit" className="flex-1" disabled={busy}>
+                  <Button type="submit" variant="brand" className="flex-1" disabled={busy}>
                     {busy ? "Creating account…" : "Start trial"}
                   </Button>
                 </div>

@@ -17,7 +17,7 @@ import {
   previewGiftCardNumber,
 } from "@/features/gift-cards/api/gift-cards.api";
 import { listPackageTemplates } from "@/features/packages/api/packages.api";
-import { CheckoutMembershipField } from "@/features/sales/components/checkout-membership-field";
+import { CheckoutItemPicker } from "@/features/sales/components/checkout-item-picker";
 import type { InlineAddMode } from "@/features/sales/hooks/use-checkout-panel";
 import {
   SALES_DRAWER_FIELD_CLASS,
@@ -47,21 +47,10 @@ export interface CheckoutInlineAddSectionProps {
   contactId: string;
   onClose: () => void;
   serviceItems: Array<{ value: string; label: string }>;
-  selectedServiceId: string | null;
-  onServiceChange: (serviceId: string | null) => void;
-  staffItems: Array<{ value: string; label: string }>;
-  selectedStaffId: string | null;
-  onStaffChange: (staffId: string | null) => void;
-  selectedMembershipKey: string;
-  onMembershipChange: (value: string) => void;
-  onAddService: () => void;
+  onAddService: (serviceId: string) => void;
   servicePending: boolean;
   productItems: Array<{ value: string; label: string }>;
-  selectedProductKey: string | null;
-  onProductChange: (key: string | null) => void;
-  productQty: number;
-  onProductQtyChange: (qty: number) => void;
-  onAddProduct: () => void;
+  onAddProduct: (productKey: string) => void;
   productPending: boolean;
   offerItems: Array<{ value: string; label: string }>;
   selectedOfferId: string | null;
@@ -92,20 +81,9 @@ export function CheckoutInlineAddSection({
   contactId,
   onClose,
   serviceItems,
-  selectedServiceId,
-  onServiceChange,
-  staffItems,
-  selectedStaffId,
-  onStaffChange,
-  selectedMembershipKey,
-  onMembershipChange,
   onAddService,
   servicePending,
   productItems,
-  selectedProductKey,
-  onProductChange,
-  productQty,
-  onProductQtyChange,
   onAddProduct,
   productPending,
   offerItems,
@@ -210,80 +188,23 @@ export function CheckoutInlineAddSection({
 
       <div className={DRAWER_FORM_STACK_CLASS}>
         {mode === "service" ? (
-          <>
-            <SearchableSelect
-              items={serviceItems}
-              value={selectedServiceId}
-              onValueChange={onServiceChange}
-              placeholder="Select service…"
-              triggerClassName={SALES_DRAWER_SELECT_TRIGGER_CLASS}
-            />
-            {selectedServiceId && staffItems.length > 0 ? (
-              <div className={DRAWER_FORM_FIELD_CLASS}>
-                <Label className={DRAWER_FIELD_LABEL_CLASS}>Provider</Label>
-                <SearchableSelect
-                  items={staffItems}
-                  value={selectedStaffId}
-                  onValueChange={onStaffChange}
-                  placeholder="Provider (optional)"
-                  triggerClassName={SALES_DRAWER_SELECT_TRIGGER_CLASS}
-                />
-              </div>
-            ) : null}
-            <CheckoutMembershipField
-              contactId={contactId}
-              serviceId={selectedServiceId}
-              value={selectedMembershipKey}
-              onValueChange={onMembershipChange}
-            />
-            <Button
-              type="button"
-              variant="brand"
-              className={DRAWER_PRIMARY_BUTTON_CLASS}
-              disabled={!selectedServiceId || servicePending}
-              onClick={onAddService}
-            >
-              {servicePending ? "Adding…" : "Add to checkout"}
-            </Button>
-          </>
+          <CheckoutItemPicker
+            key="service"
+            items={serviceItems}
+            placeholder="Search…"
+            pending={servicePending}
+            onSelect={onAddService}
+          />
         ) : null}
 
         {mode === "product" ? (
-          <>
-            <SearchableSelect
-              items={productItems}
-              value={selectedProductKey}
-              onValueChange={onProductChange}
-              placeholder="Select product…"
-              triggerClassName={SALES_DRAWER_SELECT_TRIGGER_CLASS}
-            />
-            <div className={DRAWER_FORM_FIELD_CLASS}>
-              <Label className={DRAWER_FIELD_LABEL_CLASS}>Quantity</Label>
-              <Input
-                type="number"
-                min={1}
-                step="1"
-                value={productQty || ""}
-                onChange={(event) =>
-                  onProductQtyChange(parseFloat(event.target.value) || 0)
-                }
-                className={SALES_DRAWER_FIELD_CLASS}
-              />
-            </div>
-            <Button
-              type="button"
-              variant="brand"
-              className={DRAWER_PRIMARY_BUTTON_CLASS}
-              disabled={
-                !selectedProductKey ||
-                productQty <= 0 ||
-                productPending
-              }
-              onClick={onAddProduct}
-            >
-              {productPending ? "Adding…" : "Add to checkout"}
-            </Button>
-          </>
+          <CheckoutItemPicker
+            key="product"
+            items={productItems}
+            placeholder="Search…"
+            pending={productPending}
+            onSelect={onAddProduct}
+          />
         ) : null}
 
         {mode === "offer" ? (

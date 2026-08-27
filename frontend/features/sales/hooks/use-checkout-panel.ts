@@ -19,7 +19,6 @@ import {
   removeCheckoutLineItem,
   updateCheckoutLineItem,
 } from "@/features/sales/api/checkouts.api";
-import { parseMembershipRedemptionSelection } from "@/features/sales/components/checkout-membership-field";
 import type { CheckoutItem } from "@/features/sales/types/checkout";
 import { useSalesStaffPermissions } from "@/features/sales/hooks/use-sales-staff-permissions";
 import {
@@ -56,13 +55,6 @@ export function useCheckoutPanel(checkoutId: string) {
   const [changePriceItem, setChangePriceItem] = useState<CheckoutItem | null>(
     null,
   );
-  const [selectedServiceId, setSelectedServiceId] = useState<string | null>(null);
-  const [selectedStaffId, setSelectedStaffId] = useState<string | null>(null);
-  const [selectedMembershipKey, setSelectedMembershipKey] = useState("");
-  const [selectedProductKey, setSelectedProductKey] = useState<string | null>(
-    null,
-  );
-  const [productQty, setProductQty] = useState(1);
   const [selectedOfferId, setSelectedOfferId] = useState<string | null>(null);
   const [depositAmount, setDepositAmount] = useState(25);
 
@@ -100,17 +92,6 @@ export function useCheckoutPanel(checkoutId: string) {
     setInlineAddModeState(null);
   }, []);
 
-  const resetServiceSelection = useCallback(() => {
-    setSelectedServiceId(null);
-    setSelectedStaffId(null);
-    setSelectedMembershipKey("");
-  }, []);
-
-  const resetProductSelection = useCallback(() => {
-    setSelectedProductKey(null);
-    setProductQty(1);
-  }, []);
-
   const { data: servicesData } = useQuery({
     queryKey: queryKeys.checkouts.services(),
     queryFn: listCheckoutServices,
@@ -121,12 +102,6 @@ export function useCheckoutPanel(checkoutId: string) {
     queryKey: queryKeys.checkouts.products(),
     queryFn: () => listCheckoutProducts(),
     enabled: pickerEnabled,
-  });
-
-  const { data: staffData } = useQuery({
-    queryKey: queryKeys.checkouts.serviceStaff(selectedServiceId ?? ""),
-    queryFn: () => listCheckoutServiceStaff(selectedServiceId!),
-    enabled: pickerEnabled && inlineAddMode === "service" && Boolean(selectedServiceId),
   });
 
   const staffOffersQuery = useQuery({
@@ -147,45 +122,32 @@ export function useCheckoutPanel(checkoutId: string) {
   });
 
   const addServiceMutation = useMutation({
-    mutationFn: () => {
-      const membership = parseMembershipRedemptionSelection(selectedMembershipKey);
-      return addCheckoutService(checkoutId, {
-        serviceId: selectedServiceId!,
-        staffUserId: selectedStaffId ?? undefined,
-        ...membership,
-      });
-    },
+    mutationFn: (serviceId: string) =>
+      addCheckoutService(checkoutId, { serviceId }),
     onSuccess: (updatedCheckout) => {
       toast.success("Service added");
       closeInlineAdd();
-      resetServiceSelection();
       expandLatestLine(updatedCheckout, setExpandedLineId);
       void invalidateCheckouts(queryClient, checkoutId);
     },
     onError: (error: Error) => toast.error(error.message),
   });
 
-  const selectedProduct = useMemo(
-    () =>
-      (productsData?.items ?? []).find(
-        (product) => pickerProductKey(product) === selectedProductKey,
-      ) ?? null,
-    [productsData?.items, selectedProductKey],
-  );
-
   const addProductMutation = useMutation({
-    mutationFn: () => {
-      if (!selectedProduct) throw new Error("Select a product");
+    mutationFn: (productKey: string) => {
+      const product = (productsData?.items ?? []).find(
+        (item) => pickerProductKey(item) === productKey,
+      );
+      if (!product) throw new Error("Select a product");
       return addCheckoutProduct(checkoutId, {
-        productId: selectedProduct.productId,
-        variantId: selectedProduct.variantId ?? undefined,
-        quantity: productQty,
+        productId: product.productId,
+        variantId: product.variantId ?? undefined,
+        quantity: 1,
       });
     },
     onSuccess: (updatedCheckout) => {
       toast.success("Product added");
       closeInlineAdd();
-      resetProductSelection();
       expandLatestLine(updatedCheckout, setExpandedLineId);
       void invalidateCheckouts(queryClient, checkoutId);
     },
@@ -309,15 +271,6 @@ export function useCheckoutPanel(checkoutId: string) {
     [productsData?.items],
   );
 
-  const staffItems = useMemo(
-    () =>
-      (staffData?.items ?? []).map((staff) => ({
-        value: staff.id,
-        label: staff.label,
-      })),
-    [staffData?.items],
-  );
-
   const expandedLineStaffItems = useMemo(
     () =>
       (expandedLineStaffData?.items ?? []).map((staff) => ({
@@ -356,20 +309,6 @@ export function useCheckoutPanel(checkoutId: string) {
     removeLineMutation,
     updateLineMutation,
     changePriceMutation,
-    selectedServiceId,
-    setSelectedServiceId: (id: string | null) => {
-      setSelectedServiceId(id);
-      setSelectedStaffId(null);
-      setSelectedMembershipKey("");
-    },
-    selectedStaffId,
-    setSelectedStaffId,
-    selectedMembershipKey,
-    setSelectedMembershipKey,
-    selectedProductKey,
-    setSelectedProductKey,
-    productQty,
-    setProductQty,
     selectedOfferId,
     setSelectedOfferId,
     depositAmount,
@@ -382,7 +321,6 @@ export function useCheckoutPanel(checkoutId: string) {
     applyOfferMutation,
     serviceItems,
     productItems,
-    staffItems,
     expandedLineStaffItems,
     offerItems,
   };

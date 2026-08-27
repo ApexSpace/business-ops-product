@@ -1,6 +1,5 @@
 "use client";
 
-import { useRef } from "react";
 import Link from "next/link";
 import {
   Bell,
@@ -78,7 +77,6 @@ export function DashboardNavbarActions({
 }: DashboardNavbarActionsProps) {
   const router = useAppRouter();
   const { user, jwt, contexts, logout } = useAuth();
-  const chevronAnchorRef = useRef<HTMLSpanElement>(null);
   const displayName = user ? getUserDisplayName(user) : "Account";
   const initials = displayName
     .split(" ")
@@ -154,14 +152,14 @@ export function DashboardNavbarActions({
               {displayName}
             </span>
           )}
-          <span ref={chevronAnchorRef} className="inline-flex shrink-0">
+          <span className="inline-flex shrink-0">
             <NavArrowIcon direction="down" size="md" className="text-white" />
           </span>
         </DropdownMenuTrigger>
         <DropdownMenuContent
           align="end"
+          side="bottom"
           showArrow
-          anchor={chevronAnchorRef}
           sideOffset={NAVBAR_USER_MENU_SIDE_OFFSET}
           className={NAVBAR_USER_MENU_CONTENT_CLASS}
         >

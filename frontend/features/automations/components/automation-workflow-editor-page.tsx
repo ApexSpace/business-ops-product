@@ -65,6 +65,7 @@ export function AutomationWorkflowEditorPage() {
         ) : null}
         {workflow.status !== "ACTIVE" ? (
           <Button
+            variant="brand"
             size="sm"
             onClick={() =>
               statusMutation.mutate({ id: workflow.id, status: "ACTIVE" })

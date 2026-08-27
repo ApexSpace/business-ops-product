@@ -8,6 +8,10 @@ import { DrawerShell } from "@/components/layout/drawer-shell";
 import { SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar";
 import { Input } from "@/components/ui/input";
 import { buttonVariants } from "@/components/ui/button";
+import {
+  APPS_LAUNCHER_FOOTER_CLASS,
+  APPS_LAUNCHER_MANAGE_CLASS,
+} from "@/lib/design/apps-launcher-tokens";
 import { cn } from "@/lib/utils";
 import type { ShellNavItem } from "@/lib/types/shell-nav";
 import { isNavItemActive } from "./sidebar-nav-utils";
@@ -115,14 +119,14 @@ export function AppsLauncherSheet({
         "flex flex-col gap-[var(--spacing-4)]",
         "!px-[var(--spacing-4)] !py-[var(--spacing-2)] sm:!px-[var(--spacing-6)]",
       )}
-      footerClassName="justify-center"
+      footerClassName={APPS_LAUNCHER_FOOTER_CLASS}
       footer={
         <Link
           href={manageHref}
           onClick={() => onOpenChange(false)}
           className={cn(
             buttonVariants({ variant: "outline" }),
-            "gap-[var(--spacing-2)]",
+            APPS_LAUNCHER_MANAGE_CLASS,
           )}
         >
           <AppsManageIcon className="size-4" aria-hidden />

@@ -1,12 +1,13 @@
 "use client";
 
-import { Boxes, MoreHorizontal, Pencil } from "lucide-react";
+import { Boxes, Pencil } from "lucide-react";
 import { DateTime } from "luxon";
 import { ApiErrorState } from "@/components/data-display/api-error-state";
 import { EmptyState } from "@/components/data-display/empty-state";
 import { LoadingState } from "@/components/data-display/loading-state";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { MoreActionsButton } from "@/components/ui/more-actions-button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -139,16 +140,7 @@ export function PackageDetailPanel({
               <h2 className="text-drawer-section">Package detail</h2>
               <DropdownMenu>
                 <DropdownMenuTrigger
-                  render={
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className={cn(isDrawer && "shrink-0")}
-                    >
-                      <MoreHorizontal className="size-4" />
-                      <span className="sr-only">Package actions</span>
-                    </Button>
-                  }
+                  render={<MoreActionsButton aria-label="Package actions" />}
                 />
                 <DropdownMenuContent align="end" className="w-48">
                   <DropdownMenuItem onClick={onTransfer}>

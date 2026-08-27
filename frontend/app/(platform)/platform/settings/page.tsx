@@ -158,7 +158,7 @@ export default function PlatformSettingsPage() {
           />
           {canManage ? (
             <FormActions>
-              <Button type="submit" disabled={mutation.isPending}>
+              <Button type="submit" variant="brand" disabled={mutation.isPending}>
                 {mutation.isPending ? "Saving…" : "Save settings"}
               </Button>
             </FormActions>

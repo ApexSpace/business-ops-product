@@ -116,8 +116,6 @@ export function ContactRecordsAdjustmentsSection({ contact }: ContactRecordsSect
       </p>
 
       <ActionButton
-        size="sm"
-        className="h-9 rounded-[10px] px-3 text-[12.5px] font-semibold"
         onClick={() => setCreateOpen(true)}
       >
         Add custom duration

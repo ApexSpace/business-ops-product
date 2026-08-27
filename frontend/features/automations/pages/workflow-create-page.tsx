@@ -81,6 +81,7 @@ export function WorkflowCreatePage() {
             Cancel
           </Button>
           <Button
+            variant="brand"
             disabled={!name.trim() || !triggerKey || createMutation.isPending}
             onClick={handleCreate}
           >

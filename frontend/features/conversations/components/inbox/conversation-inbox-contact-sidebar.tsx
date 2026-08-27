@@ -23,7 +23,9 @@ import { cn } from "@/lib/utils";
 function DetailsPaneHeader() {
   return (
     <header className={INBOX_DETAILS_HEADER_CLASS}>
-      <h2 className="text-base font-semibold text-foreground">Details</h2>
+      <h2 className="truncate text-base font-semibold leading-none text-foreground">
+        Details
+      </h2>
     </header>
   );
 }

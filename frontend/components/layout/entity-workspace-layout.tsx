@@ -5,6 +5,7 @@ import { PageHeader } from "@/components/layout/page-header";
 import { ListToolbar } from "@/components/layout/list-toolbar";
 import { cn } from "@/lib/utils";
 import {
+  ENTITY_LIST_PAGE_INSET_CLASS,
   WORKSPACE_FILL_CLASS,
   WORKSPACE_FOOTER_CLASS,
   WORKSPACE_TABLE_BODY_CLASS,
@@ -29,6 +30,10 @@ export interface EntityWorkspaceLayoutProps {
   fullHeight?: boolean;
   /** Hide the page header when the shell already provides chrome (e.g. mobile). */
   hideHeader?: boolean;
+  /** Optional chrome above the toolbar (back links). */
+  leading?: React.ReactNode;
+  /** Skip list-page inset (nested tabs already inside a padded workspace). */
+  flush?: boolean;
 }
 
 /**
@@ -49,6 +54,8 @@ export function EntityWorkspaceLayout({
   dense = true,
   fullHeight = true,
   hideHeader = false,
+  leading,
+  flush = false,
 }: EntityWorkspaceLayoutProps) {
   const toolbarNode =
     toolbar ??
@@ -65,11 +72,17 @@ export function EntityWorkspaceLayout({
     <PageContainer
       dense={dense}
       fullHeight={fullHeight}
-      className={cn(fullHeight && WORKSPACE_FILL_CLASS, className)}
+      className={cn(
+        fullHeight && WORKSPACE_FILL_CLASS,
+        "w-full min-w-0",
+        !flush && ENTITY_LIST_PAGE_INSET_CLASS,
+        className,
+      )}
     >
       {hideHeader ? null : (
         <PageHeader title={title} description={description} />
       )}
+      {leading}
       <section className={WORKSPACE_TABLE_CARD_CLASS}>
         {toolbarNode}
         <div className={WORKSPACE_TABLE_BODY_CLASS}>{children}</div>

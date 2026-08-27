@@ -4,19 +4,14 @@ import { useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ApiErrorState } from "@/components/data-display/api-error-state";
-import {
-  DataTable,
-  type DataTableColumn,
-} from "@/components/data-display/data-table";
-import { EntityWorkspaceLayout } from "@/components/layout/entity-workspace-layout";
-import { ListPrimaryAction } from "@/components/layout/list-primary-action";
+import { type DataTableColumn } from "@/components/data-display/data-table";
+import { EntityListLayout } from "@/components/layout/entity-list-layout";
 import { ActionButton } from "@/components/ui/action-button";
 import { Button } from "@/components/ui/button";
 import { SocialPostStatusBadge } from "@/features/social-planner/components/social-post-status-badge";
 import { useSocialPostsList } from "@/features/social-planner/hooks/use-social-posts-list";
 import { useSocialPostMutations } from "@/features/social-planner/hooks/use-social-post-mutations";
 import type { SocialPost } from "@/features/social-planner/types";
-import { WORKSPACE_TABLE_CLASS } from "@/lib/design/workspace-tokens";
 
 export function SocialPostsListPage() {
   const router = useRouter();
@@ -134,47 +129,39 @@ export function SocialPostsListPage() {
   );
 
   return (
-    <EntityWorkspaceLayout
+    <EntityListLayout
       title="Social posts"
       description="Drafts, scheduled, and published posts"
-      actions={
-        <>
-          <Button
-            variant="outline"
-            size="sm"
-            nativeButton={false}
-            render={<Link href="/business/social-planner" />}
-          >
-            Calendar
-          </Button>
-          <ListPrimaryAction
-            label="Compose"
-            onClick={() => router.push("/business/social-planner/new")}
-          />
-        </>
+      addButtonLabel="Compose"
+      onAdd={() => router.push("/business/social-planner/new")}
+      extraActions={
+        <Button
+          variant="brand"
+          nativeButton={false}
+          render={<Link href="/business/social-planner" />}
+        >
+          Calendar
+        </Button>
       }
-    >
-      {isError ? (
-        <ApiErrorState error={error} onRetry={() => void refetch()} />
-      ) : (
-        <DataTable
-          columns={columns}
-          data={data?.items ?? []}
-          getRowId={(row) => row.id}
-          isLoading={isLoading}
-          density="compact"
-          emptyTitle="No posts yet"
-          emptyDescription="Compose your first post."
-          emptyAction={
-            <ActionButton
-              onClick={() => router.push("/business/social-planner/new")}
-            >
-              Compose
-            </ActionButton>
-          }
-          className={WORKSPACE_TABLE_CLASS}
-        />
-      )}
-    </EntityWorkspaceLayout>
+      error={
+        isError ? (
+          <ApiErrorState error={error} onRetry={() => void refetch()} />
+        ) : undefined
+      }
+      columns={columns}
+      data={data?.items ?? []}
+      getRowId={(row) => row.id}
+      isLoading={isLoading}
+      density="compact"
+      emptyTitle="No posts yet"
+      emptyDescription="Compose your first post."
+      emptyAction={
+        <ActionButton
+          onClick={() => router.push("/business/social-planner/new")}
+        >
+          Compose
+        </ActionButton>
+      }
+    />
   );
 }

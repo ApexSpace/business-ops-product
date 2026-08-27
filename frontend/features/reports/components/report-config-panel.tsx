@@ -90,6 +90,7 @@ export function ReportConfigPanel({ report }: { report: ReportCatalogItem }) {
             </p>
           )}
           <Button
+            variant="brand"
             className="w-full"
             onClick={handleGenerate}
             disabled={generateMutation.isPending}

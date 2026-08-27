@@ -3,13 +3,9 @@
 import Link from "next/link";
 import { Suspense, useMemo } from "react";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import {
-  DataTable,
-  type DataTableColumn,
-} from "@/components/data-display/data-table";
-import { SearchInput } from "@/components/forms/search-input";
-import { FilterBar } from "@/components/layout/filter-bar";
-import { ListPage, ListPageSkeleton } from "@/components/layout/list-page";
+import { type DataTableColumn } from "@/components/data-display/data-table";
+import { EntityListLayout } from "@/components/layout/entity-list-layout";
+import { ListPageSkeleton } from "@/components/layout/list-page";
 import { ListPagination } from "@/components/ui/list-pagination";
 import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
 import { useListSearchParams } from "@/lib/hooks/use-list-search-params";
@@ -97,21 +93,15 @@ function PlatformAuditLogsPageContent() {
   );
 
   return (
-    <ListPage
+    <EntityListLayout
       title="Audit Logs"
       description="Platform-wide activity across all businesses."
-      filters={
-        <FilterBar>
-          <SearchInput
-            value={params.action}
-            onChange={(value) =>
-              setParams({ action: value, page: "1" }, { resetPage: true })
-            }
-            placeholder="Filter by action…"
-          />
-        </FilterBar>
+      searchPlaceholder="Filter by action…"
+      searchValue={params.action}
+      onSearchChange={(value) =>
+        setParams({ action: value, page: "1" }, { resetPage: true })
       }
-      pagination={
+      footer={
         data?.meta ? (
           <ListPagination
             meta={data.meta}
@@ -119,17 +109,14 @@ function PlatformAuditLogsPageContent() {
             onPageChange={(p) => setParams({ page: String(p) })}
             label="logs"
           />
-        ) : null
+        ) : undefined
       }
-    >
-      <DataTable
-        columns={columns}
-        data={data?.items ?? []}
-        getRowId={(row) => row.id}
-        isLoading={isLoading}
-        emptyTitle="No audit logs found"
-      />
-    </ListPage>
+      columns={columns}
+      data={data?.items ?? []}
+      getRowId={(row) => row.id}
+      isLoading={isLoading}
+      emptyTitle="No audit logs found"
+    />
   );
 }
 

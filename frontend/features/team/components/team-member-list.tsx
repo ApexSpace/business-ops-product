@@ -45,7 +45,7 @@ export function TeamMemberList({
     <aside className="flex w-64 shrink-0 flex-col border-r bg-background">
       <div className="space-y-2 border-b p-3">
         {canManage ? (
-          <Button type="button" className="w-full" size="sm" onClick={onAdd}>
+          <Button type="button" variant="brand" className="w-full" onClick={onAdd}>
             Add staff member
           </Button>
         ) : null}

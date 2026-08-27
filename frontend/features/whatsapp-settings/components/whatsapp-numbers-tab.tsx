@@ -2,11 +2,9 @@
 
 import Link from "next/link";
 import { useMemo } from "react";
-import {
-  DataTable,
-  type DataTableColumn,
-} from "@/components/data-display/data-table";
+import { type DataTableColumn } from "@/components/data-display/data-table";
 import { EmptyState } from "@/components/data-display/empty-state";
+import { EntityListLayout } from "@/components/layout/entity-list-layout";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { ResourceStatusBadge } from "@/features/integrations/components/resource-status-badge";
@@ -162,7 +160,10 @@ export function WhatsAppNumbersTab() {
           }
         />
       ) : (
-        <DataTable
+        <EntityListLayout
+          title="WhatsApp numbers"
+          hideHeader
+          flush
           columns={columns}
           data={numbers}
           getRowId={(row) => row.id}

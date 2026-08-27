@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   isAppsMasterDetailWorkspacePath,
   isBusinessSettingsWorkspacePath,
+  isDataTableListPath,
   isReportsWorkspacePath,
 } from "./shell-full-bleed-paths";
 
@@ -56,5 +57,20 @@ describe("full-bleed workspace paths stay distinct", () => {
     expect(isReportsWorkspacePath("/business/reports")).toBe(true);
     expect(isReportsWorkspacePath("/business/reports/sales")).toBe(true);
     expect(isReportsWorkspacePath("/business/settings/reports")).toBe(false);
+  });
+});
+
+describe("isDataTableListPath", () => {
+  it("matches Sales, Forms, and Contacts list", () => {
+    expect(isDataTableListPath("/business/sales")).toBe(true);
+    expect(isDataTableListPath("/business/settings/forms")).toBe(true);
+    expect(isDataTableListPath("/business/contacts")).toBe(true);
+  });
+
+  it("does not match contact workspace or form builder", () => {
+    expect(isDataTableListPath("/business/contacts/abc")).toBe(false);
+    expect(isDataTableListPath("/business/settings/forms/abc/edit")).toBe(
+      false,
+    );
   });
 });

@@ -7,21 +7,17 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { CreateBusinessWizard } from "@/features/platform/components/create-business-wizard";
 import { EditBusinessDialog } from "@/features/platform/components/edit-business-dialog";
-import {
-  DataTable,
-  type DataTableColumn,
-} from "@/components/data-display/data-table";
+import { type DataTableColumn } from "@/components/data-display/data-table";
 import {
   DataTableRowActions,
   type RowAction,
 } from "@/components/data-display/data-table-row-actions";
 import { StatusBadge } from "@/components/data-display/status-badge";
 import { ConfirmDeleteDialog } from "@/components/forms/confirm-delete-dialog";
-import { SearchInput } from "@/components/forms/search-input";
-import { FilterBar } from "@/components/layout/filter-bar";
-import { ListPage, ListPageSkeleton } from "@/components/layout/list-page";
+import { EntityListLayout } from "@/components/layout/entity-list-layout";
+import { ListFilterCheckboxGroup } from "@/components/layout/list-filter-checkbox-group";
+import { ListPageSkeleton } from "@/components/layout/list-page";
 import { ListPagination } from "@/components/ui/list-pagination";
-import { SearchableSelect } from "@/components/forms/searchable-select";
 import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
 import { useListSearchParams } from "@/lib/hooks/use-list-search-params";
 import {
@@ -53,6 +49,11 @@ function PlatformBusinessesPageContent() {
   const debouncedSearch = useDebouncedValue(params.search);
   const [editing, setEditing] = useState<Business | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Business | null>(null);
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [draftStatus, setDraftStatus] = useState(params.status);
+  const [draftSubscriptionStatus, setDraftSubscriptionStatus] = useState(
+    params.subscriptionStatus,
+  );
 
   const status = params.status;
   const subscriptionStatus = params.subscriptionStatus;
@@ -151,43 +152,52 @@ function PlatformBusinessesPageContent() {
 
   return (
     <>
-      <ListPage
+      <EntityListLayout
         title="Businesses"
         description="Manage all client businesses on the platform."
-        actions={canCreate ? <CreateBusinessWizard /> : null}
-        filters={
-          <FilterBar>
-            <SearchInput
-              value={params.search}
-              onChange={(value) =>
-                setParams({ search: value, page: "1" }, { resetPage: true })
-              }
-              placeholder="Search businesses…"
-            />
-            <SearchableSelect
-              items={businessStatusFilterOptions}
-              value={status}
-              onValueChange={(v) =>
-                setParams({ status: v ?? "all", page: "1" }, { resetPage: true })
-              }
-              placeholder="Business status"
-              triggerClassName="w-[180px]"
-            />
-            <SearchableSelect
-              items={subscriptionStatusFilterOptions}
-              value={subscriptionStatus}
-              onValueChange={(v) =>
-                setParams(
-                  { subscriptionStatus: v ?? "all", page: "1" },
-                  { resetPage: true },
-                )
-              }
-              placeholder="Subscription status"
-              triggerClassName="w-[180px]"
-            />
-          </FilterBar>
+        extraActions={canCreate ? <CreateBusinessWizard /> : null}
+        searchPlaceholder="Search businesses…"
+        searchValue={params.search}
+        onSearchChange={(value) =>
+          setParams({ search: value, page: "1" }, { resetPage: true })
         }
-        pagination={
+        filterAriaLabel="Business filters"
+        filterActive={status !== "all" || subscriptionStatus !== "all"}
+        filterOpen={filterOpen}
+        onFilterOpenChange={(open) => {
+          if (open) {
+            setDraftStatus(status);
+            setDraftSubscriptionStatus(subscriptionStatus);
+          }
+          setFilterOpen(open);
+        }}
+        filterContent={
+          <>
+            <ListFilterCheckboxGroup
+              legend="Business status"
+              options={businessStatusFilterOptions}
+              value={draftStatus}
+              onChange={(next) => setDraftStatus(String(next))}
+            />
+            <ListFilterCheckboxGroup
+              legend="Subscription status"
+              options={subscriptionStatusFilterOptions}
+              value={draftSubscriptionStatus}
+              onChange={(next) => setDraftSubscriptionStatus(String(next))}
+            />
+          </>
+        }
+        onFilterApply={() =>
+          setParams(
+            {
+              status: draftStatus,
+              subscriptionStatus: draftSubscriptionStatus,
+              page: "1",
+            },
+            { resetPage: true },
+          )
+        }
+        footer={
           data?.meta ? (
             <ListPagination
               meta={data.meta}
@@ -195,23 +205,22 @@ function PlatformBusinessesPageContent() {
               onPageChange={(p) => setParams({ page: String(p) })}
               label="businesses"
             />
-          ) : null
+          ) : undefined
         }
-      >
-        <DataTable
-          columns={columns}
-          data={data?.items ?? []}
-          getRowId={(row) => row.id}
-          isLoading={isLoading}
-          emptyTitle="No businesses found"
-          actionsColumnHeader="Actions"
-          rowActions={
-            showActions
-              ? (business) => {
+        columns={columns}
+        data={data?.items ?? []}
+        getRowId={(row) => row.id}
+        isLoading={isLoading}
+        emptyTitle="No businesses found"
+        actionsColumnHeader="Actions"
+        rowActions={
+          showActions
+            ? (business) => {
                   const actions: RowAction[] = [
                     {
                       label: "View",
-                      onClick: () => router.push(`/platform/businesses/${business.id}`),
+                      onClick: () =>
+                        router.push(`/platform/businesses/${business.id}`),
                     },
                   ];
                   if (canUpdate) {
@@ -229,19 +238,19 @@ function PlatformBusinessesPageContent() {
                   }
                   return <DataTableRowActions actions={actions} />;
                 }
-              : (business) => (
-                  <DataTableRowActions
-                    actions={[
-                      {
-                        label: "View",
-                        onClick: () => router.push(`/platform/businesses/${business.id}`),
-                      },
-                    ]}
-                  />
-                )
-          }
-        />
-      </ListPage>
+            : (business) => (
+                <DataTableRowActions
+                  actions={[
+                    {
+                      label: "View",
+                      onClick: () =>
+                        router.push(`/platform/businesses/${business.id}`),
+                    },
+                  ]}
+                />
+              )
+        }
+      />
 
       <EditBusinessDialog
         business={editing}

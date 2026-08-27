@@ -2,12 +2,8 @@
 
 import { useMemo, useState } from "react";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import {
-  DataTable,
-  type DataTableColumn,
-} from "@/components/data-display/data-table";
-import { SearchInput } from "@/components/forms/search-input";
-import { FilterBar } from "@/components/layout/filter-bar";
+import { type DataTableColumn } from "@/components/data-display/data-table";
+import { EntityListLayout } from "@/components/layout/entity-list-layout";
 import { ListPagination } from "@/components/ui/list-pagination";
 import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
 import { listBusinessAuditLogs } from "@/features/platform/api/platform.api";
@@ -87,34 +83,31 @@ export function PlatformBusinessAuditTab({
   );
 
   return (
-    <div className="space-y-4">
-      <FilterBar>
-        <SearchInput
-          value={actionFilter}
-          onChange={(value) => {
-            setActionFilter(value);
-            setPage(1);
-          }}
-          placeholder="Filter by action…"
-        />
-      </FilterBar>
-
-      <DataTable
-        columns={columns}
-        data={auditLogs?.items ?? []}
-        getRowId={(row) => row.id}
-        isLoading={isLoading}
-        emptyTitle="No audit logs"
-      />
-
-      {auditLogs?.meta ? (
-        <ListPagination
-          meta={auditLogs.meta}
-          page={page}
-          onPageChange={setPage}
-          label="entries"
-        />
-      ) : null}
-    </div>
+    <EntityListLayout
+      title="Audit logs"
+      hideHeader
+      flush
+      searchPlaceholder="Filter by action…"
+      searchValue={actionFilter}
+      onSearchChange={(value) => {
+        setActionFilter(value);
+        setPage(1);
+      }}
+      footer={
+        auditLogs?.meta ? (
+          <ListPagination
+            meta={auditLogs.meta}
+            page={page}
+            onPageChange={setPage}
+            label="entries"
+          />
+        ) : undefined
+      }
+      columns={columns}
+      data={auditLogs?.items ?? []}
+      getRowId={(row) => row.id}
+      isLoading={isLoading}
+      emptyTitle="No audit logs"
+    />
   );
 }

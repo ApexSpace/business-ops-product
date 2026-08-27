@@ -46,10 +46,7 @@ import { listCalendars } from "@/features/calendars/api/calendars.api";
 import { listBusinessMembers } from "@/features/settings/api/business.api";
 import { queryKeys } from "@/lib/query/keys";
 import type { Service } from "@/lib/types/api";
-import {
-  APPOINTMENT_DRAWER_ADD_ACTION_CLASS,
-  APPOINTMENT_DRAWER_FIELD_CLASS,
-} from "@/features/appointments/styles/appointment-drawer-tokens";
+import { APPOINTMENT_DRAWER_FIELD_CLASS } from "@/features/appointments/styles/appointment-drawer-tokens";
 import { cn } from "@/lib/utils";
 
 const NOTES_MAX_LENGTH = 400;
@@ -489,14 +486,7 @@ export const AppointmentUpdateForm = forwardRef<
                 value={services}
                 currencyCode={currencyCode}
                 onAdd={handleAddService}
-                trigger={
-                  <button
-                    type="button"
-                    className={APPOINTMENT_DRAWER_ADD_ACTION_CLASS}
-                  >
-                    Add Service
-                  </button>
-                }
+                trigger={<DrawerAddAction label="Add Service" />}
               />
               {!notesOpen ? (
                 <DrawerAddAction label="Add Note" onClick={openNotesEditor} />

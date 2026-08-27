@@ -3,7 +3,6 @@
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { DATA_TABLE_PRIMARY_ACTION_CLASS } from "@/lib/design/data-table-tokens";
 
 interface ListPrimaryActionProps {
   label: string;
@@ -17,7 +16,7 @@ interface ListPrimaryActionProps {
 /**
  * Universal list primary CTA — Figma “New Checkout” position/style.
  * Place via ListToolbar `actions` (renders on the left).
- * Uses Button `variant="brand"` + `--control-height`.
+ * Uses Button `variant="brand"` size default (`--control-height`, `--control-padding-x`).
  */
 export function ListPrimaryAction({
   label,
@@ -33,11 +32,7 @@ export function ListPrimaryAction({
         variant="brand"
         size="icon"
         disabled={disabled}
-        className={cn(
-          DATA_TABLE_PRIMARY_ACTION_CLASS,
-          "!min-w-0 !size-[var(--control-height)] px-0 sm:hidden",
-          className,
-        )}
+        className={cn("sm:hidden", className)}
         onClick={onClick}
         aria-label={label}
       >
@@ -47,11 +42,7 @@ export function ListPrimaryAction({
         type="button"
         variant="brand"
         disabled={disabled}
-        className={cn(
-          DATA_TABLE_PRIMARY_ACTION_CLASS,
-          "hidden sm:inline-flex",
-          className,
-        )}
+        className={cn("hidden sm:inline-flex", className)}
         onClick={onClick}
       >
         {label}

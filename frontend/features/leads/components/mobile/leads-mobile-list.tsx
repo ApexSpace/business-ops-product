@@ -62,7 +62,7 @@ export function LeadsMobileList({
       emptyTitle="No leads yet"
       emptyDescription="Create one from a contact or add a new lead."
       emptyAction={
-        <Button size="sm" onClick={onCreate}>
+        <Button variant="brand" onClick={onCreate}>
           New lead
         </Button>
       }

@@ -12,6 +12,7 @@ import {
   isContactWorkspacePath,
   isContactsListPath,
   isConversationsInboxPath,
+  isDataTableListPath,
   isMobileEntityListPath,
   isPaymentsMobileListPath,
   isReportsWorkspacePath,
@@ -83,6 +84,7 @@ export function AppShell({
   );
   const contactsList = isContactsListPath(pathname);
   const entityList = isMobileEntityListPath(pathname);
+  const dataTableList = isDataTableListPath(pathname);
   const settingsWorkspace = isBusinessSettingsWorkspacePath(pathname);
   const reportsWorkspace = isReportsWorkspacePath(pathname);
   const appsMasterDetail = isAppsMasterDetailWorkspacePath(pathname);
@@ -93,6 +95,7 @@ export function AppShell({
     settingsWorkspace ||
     reportsWorkspace ||
     appsMasterDetail ||
+    dataTableList ||
     (salesWorkspace && isMobile) ||
     (paymentsMobileList && isMobile) ||
     (contactsList && isMobile) ||

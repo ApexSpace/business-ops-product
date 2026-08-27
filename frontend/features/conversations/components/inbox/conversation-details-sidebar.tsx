@@ -43,7 +43,9 @@ export function ConversationDetailsSidebar({
   return (
     <aside className={cn(INBOX_DETAILS_PANEL_CLASS, className)}>
       <header className={INBOX_DETAILS_HEADER_CLASS}>
-        <h2 className="text-base font-semibold text-foreground">Details</h2>
+        <h2 className="truncate text-base font-semibold leading-none text-foreground">
+          Details
+        </h2>
       </header>
 
       <div className="min-h-0 flex-1 overflow-y-auto">

@@ -3,16 +3,12 @@
 import Link from "next/link";
 import { useCallback, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import {
-  DataTable,
-  type DataTableColumn,
-} from "@/components/data-display/data-table";
+import { type DataTableColumn } from "@/components/data-display/data-table";
 import { DataTableRowActions } from "@/components/data-display/data-table-row-actions";
 import { EmptyState } from "@/components/data-display/empty-state";
 import { ConfirmDeleteDialog } from "@/components/forms/confirm-delete-dialog";
-import { SearchInput } from "@/components/forms/search-input";
-import { SearchableSelect } from "@/components/forms/searchable-select";
-import { FilterBar } from "@/components/layout/filter-bar";
+import { EntityListLayout } from "@/components/layout/entity-list-layout";
+import { ListFilterCheckboxGroup } from "@/components/layout/list-filter-checkbox-group";
 import { ActionButton } from "@/components/ui/action-button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -60,6 +56,8 @@ export function WhatsAppTemplatesTab() {
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState<string>("all");
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [draftCategory, setDraftCategory] = useState("all");
 
   const debouncedSearch = useDebouncedValue(search);
   const { isConnected, isLoading: isConnectionLoading } = useWhatsAppNumbers();
@@ -212,92 +210,94 @@ export function WhatsAppTemplatesTab() {
 
   return (
     <>
-      <div className="space-y-4">
-        <FilterBar className="flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center">
-            <SearchInput
-              value={search}
-              onChange={setSearch}
-              placeholder="Search templates…"
-              className="sm:max-w-xs"
-            />
-            <SearchableSelect
-              items={CATEGORY_OPTIONS}
-              value={category}
-              onValueChange={(value) => setCategory(value ?? "all")}
-              searchable={false}
-              triggerClassName="w-full sm:w-[180px]"
-            />
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <SyncResourcesButton
-              label="Sync templates"
-              onSync={() => syncAllMutation.mutate()}
-              isPending={syncAllMutation.isPending}
-            />
-            <ActionButton onClick={() => setTemplateRoute({ action: "create" })}>
-              Create template
-            </ActionButton>
-          </div>
-        </FilterBar>
-
-        <DataTable
-          columns={columns}
-          data={data?.items ?? []}
-          getRowId={(row) => row.id}
-          isLoading={isLoading}
-          emptyTitle="No templates yet"
-          emptyDescription="Create a template or sync from Meta to get started."
-          emptyAction={
-            <ActionButton onClick={() => setTemplateRoute({ action: "create" })}>
-              Create template
-            </ActionButton>
-          }
-          rowActions={(row) => (
-            <DataTableRowActions
-              menuLabel={`Actions for ${row.name}`}
-              actions={[
-                {
-                  label: "View",
-                  onClick: () =>
-                    setTemplateRoute({ action: "view", id: row.id }),
+      <EntityListLayout
+        title="WhatsApp templates"
+        hideHeader
+        flush
+        addButtonLabel="Create template"
+        onAdd={() => setTemplateRoute({ action: "create" })}
+        extraActions={
+          <SyncResourcesButton
+            label="Sync templates"
+            onSync={() => syncAllMutation.mutate()}
+            isPending={syncAllMutation.isPending}
+          />
+        }
+        searchPlaceholder="Search templates…"
+        searchValue={search}
+        onSearchChange={setSearch}
+        filterAriaLabel="Template filters"
+        filterActive={category !== "all"}
+        filterOpen={filterOpen}
+        onFilterOpenChange={(open) => {
+          if (open) setDraftCategory(category);
+          setFilterOpen(open);
+        }}
+        filterContent={
+          <ListFilterCheckboxGroup
+            legend="Category"
+            options={CATEGORY_OPTIONS}
+            value={draftCategory}
+            onChange={(next) => setDraftCategory(String(next))}
+          />
+        }
+        onFilterApply={() => setCategory(draftCategory)}
+        footer={
+          <p className="text-xs text-muted-foreground">
+            Templates are submitted to Meta for review. Rejected templates can
+            be edited and resubmitted. Approved templates are available for
+            outbound messaging outside the 24-hour window.
+          </p>
+        }
+        columns={columns}
+        data={data?.items ?? []}
+        getRowId={(row) => row.id}
+        isLoading={isLoading}
+        emptyTitle="No templates yet"
+        emptyDescription="Create a template or sync from Meta to get started."
+        emptyAction={
+          <ActionButton onClick={() => setTemplateRoute({ action: "create" })}>
+            Create template
+          </ActionButton>
+        }
+        rowActions={(row) => (
+          <DataTableRowActions
+            menuLabel={`Actions for ${row.name}`}
+            actions={[
+              {
+                label: "View",
+                onClick: () =>
+                  setTemplateRoute({ action: "view", id: row.id }),
+              },
+              {
+                label: "Edit",
+                disabled: !canEditTemplateFromStatus(row.status),
+                onClick: () =>
+                  setTemplateRoute({ action: "edit", id: row.id }),
+              },
+              {
+                label: "Duplicate",
+                onClick: () => {
+                  void (async () => {
+                    const detail = await getWhatsAppTemplate(row.id);
+                    duplicateMutation.mutate(detail);
+                  })();
                 },
-                {
-                  label: "Edit",
-                  disabled: !canEditTemplateFromStatus(row.status),
-                  onClick: () =>
-                    setTemplateRoute({ action: "edit", id: row.id }),
-                },
-                {
-                  label: "Duplicate",
-                  onClick: () => {
-                    void (async () => {
-                      const detail = await getWhatsAppTemplate(row.id);
-                      duplicateMutation.mutate(detail);
-                    })();
-                  },
-                },
-                {
-                  label: "Refresh status",
-                  onClick: () => syncOneMutation.mutate(row.id),
-                },
-                {
-                  label: "Delete",
-                  destructive: true,
-                  disabled: !canDeleteTemplateFromStatus(row.status),
-                  onClick: () => setDeleteId(row.id),
-                },
-              ]}
-            />
-          )}
-        />
-
-        <p className="text-xs text-muted-foreground">
-          Templates are submitted to Meta for review. Rejected templates can be
-          edited and resubmitted. Approved templates are available for outbound
-          messaging outside the 24-hour window.
-        </p>
-      </div>
+              },
+              {
+                label: "Refresh status",
+                onClick: () => syncOneMutation.mutate(row.id),
+              },
+              {
+                label: "Delete",
+                destructive: true,
+                disabled: !canDeleteTemplateFromStatus(row.status),
+                onClick: () => setDeleteId(row.id),
+              },
+            ]}
+          />
+        )}
+      />
 
       <WhatsAppTemplateEditorDialog
         open={editorOpen}

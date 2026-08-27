@@ -11,7 +11,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { IconButton } from "@/components/ui/icon-button";
+import { MoreActionsButton } from "@/components/ui/more-actions-button";
 import { ActionImpactPreviewDialog } from "@/features/platform/components/access/action-impact-preview-dialog";
 import { ReactivateBusinessDialog } from "@/features/platform/components/access/reactivate-business-dialog";
 import { useSubscriptionActionFlow } from "@/features/platform/components/access/use-subscription-action-flow";
@@ -25,7 +25,6 @@ import {
   getSubscriptionActionLabel,
 } from "@/features/platform/utils/business-subscription-actions";
 import type { Business } from "@/features/platform/types";
-import { MoreVertical } from "lucide-react";
 
 const DANGER_ACTIONS = new Set<SubscriptionActionKey>([
   "CANCEL_SUBSCRIPTION",
@@ -107,9 +106,7 @@ export function BusinessListSubscriptionActions({
           <DropdownMenu>
             <DropdownMenuTrigger
               render={
-                <IconButton aria-label="More actions" className="size-8">
-                  <MoreVertical className="size-4" />
-                </IconButton>
+                <MoreActionsButton aria-label="More actions" />
               }
             />
             <DropdownMenuContent align="end" className="w-52">

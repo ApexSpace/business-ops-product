@@ -8,6 +8,8 @@
  * ListPagination, and entity workspaces. Colors reference CSS variables.
  */
 
+import { FILTER_ICON_BUTTON_CLASS } from "@/lib/ui/control-styles";
+
 /**
  * primary/800 — column header text
  * Matches `--pc-violet-primary-dark`
@@ -29,8 +31,32 @@ export const DATA_TABLE_SCROLL_CLASS = "min-h-0 overflow-auto";
 
 /**
  * Grid width only. Height stays content-sized so `--table-row-height` is honored.
+ * `table-auto` + shrink-wrap columns + spacer cell: leftover width stays empty
+ * on the right instead of stretching every column.
  */
-export const DATA_TABLE_GRID_CLASS = "w-full";
+export const DATA_TABLE_GRID_CLASS = "w-full table-auto";
+
+/**
+ * Content columns. `w-[1%]` + nowrap shrink-wraps when `--table-column-min-width`
+ * is `0px`. A non-zero length (e.g. `10rem`) is applied as `width` — table cells
+ * ignore `min-width`.
+ */
+export const DATA_TABLE_COLUMN_CLASS =
+  "w-[var(--table-column-min-width)] whitespace-nowrap";
+
+/** Checkbox / actions — always hug, ignore the column-width token. */
+export const DATA_TABLE_CHROME_COLUMN_CLASS = "!w-[1%] !min-w-0";
+
+/**
+ * Inner box so `--table-column-min-width` actually takes effect (td/th min-width
+ * is ignored). `0px` does not expand the column.
+ */
+export const DATA_TABLE_COLUMN_INNER_CLASS =
+  "block min-w-[var(--table-column-min-width)]";
+
+/** Trailing empty column — takes remaining horizontal space. */
+export const DATA_TABLE_SPACER_CELL_CLASS =
+  "w-full min-w-0 !p-0 !pr-0 !pl-0";
 
 /** Empty-state filler when there are no rows — intrinsic height, not stretched. */
 export const DATA_TABLE_EMPTY_FILL_CLASS = "flex items-center justify-center";
@@ -44,7 +70,7 @@ export const DATA_TABLE_HEADER_CLASS =
 
 /** Header cell typography — primary/800, 14px bold (Montserrat) */
 export const DATA_TABLE_HEAD_CELL_CLASS =
-  "h-[var(--table-row-height)] px-4 text-left align-middle text-[14px] font-bold leading-none tracking-normal text-violet-primary-dark whitespace-nowrap";
+  "h-[var(--table-row-height)] px-[var(--table-column-padding-x)] text-left align-middle text-[14px] font-bold leading-none tracking-normal text-violet-primary-dark whitespace-nowrap";
 
 /** Sticky header row — same `--table-row-height` as body rows */
 export const DATA_TABLE_HEADER_ROW_CLASS =
@@ -54,34 +80,22 @@ export const DATA_TABLE_HEADER_ROW_CLASS =
 export const DATA_TABLE_ROW_CLASS =
   "h-[var(--table-row-height)] border-b-2 border-[var(--drawer-divider-accent)] bg-white transition-colors hover:bg-violet-primary-surface/60 data-[state=selected]:bg-violet-primary-surface";
 
-/** Body cell — Figma pad 8 / 16 · neutral/700 · row token height */
+/** Body cell — pad `--table-column-padding-x` · neutral/700 · row token height */
 export const DATA_TABLE_CELL_CLASS =
-  "h-[var(--table-row-height)] px-4 py-2 align-middle text-[14px] font-normal leading-[21px] text-[var(--drawer-text-body)] whitespace-nowrap";
+  "h-[var(--table-row-height)] px-[var(--table-column-padding-x)] py-2 align-middle text-[14px] font-normal leading-[21px] text-[var(--drawer-text-body)] whitespace-nowrap";
 
 /**
  * List toolbar — Figma: primary CTA left, search + standalone filter right, h 44.
  */
 export const DATA_TABLE_TOOLBAR_CLASS =
-  "flex min-h-[var(--control-height)] w-full flex-row flex-wrap items-center gap-3 border-0 bg-transparent p-0 shadow-none sm:gap-8";
-
-/**
- * Primary “New …” CTA layout extras — fill/hover come from Button `variant="brand"`.
- * Height uses `--control-height` via Button size default.
- */
-export const DATA_TABLE_PRIMARY_ACTION_CLASS =
-  "min-w-[157px] gap-2 rounded-[var(--radius-sm)] px-4";
+  "flex min-h-[var(--control-height)] w-full flex-row flex-wrap items-center gap-3 border-0 bg-transparent px-[var(--cs-list-toolbar-padding-x)] py-0 shadow-none sm:gap-8";
 
 /** Standalone search field — Figma h 44, max ~355, radius/md */
 export const DATA_TABLE_SEARCH_STANDALONE_CLASS =
   "h-[var(--control-height)] w-full min-w-0 max-w-[min(100%,355px)] rounded-[var(--radius-md)] border border-[var(--pc-black-secondary-light)] bg-white px-4 py-2 text-[14px] shadow-none placeholder:text-grey-tertiary-normal focus-visible:border-violet-primary-normal focus-visible:ring-2 focus-visible:ring-violet-primary-normal/20";
 
-/**
- * Filter-with Icon — Figma: 56×44, radius/md, 1px border/subtle, white fill.
- * Sits beside search with a clear gap (not joined into one control).
- * Important width/height beat Button `size="icon"` square sizing.
- */
-export const DATA_TABLE_FILTER_ICON_CLASS =
-  "inline-flex !h-[var(--control-height)] !w-14 !min-h-[var(--control-height)] !min-w-14 shrink-0 cursor-pointer items-center justify-center rounded-[var(--radius-md)] border border-[var(--pc-black-secondary-light)] bg-white p-0 text-foreground shadow-none hover:bg-violet-primary-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-primary-normal/30";
+/** Same chrome as Appointments — see `FILTER_ICON_BUTTON_CLASS`. */
+export const DATA_TABLE_FILTER_ICON_CLASS = FILTER_ICON_BUTTON_CLASS;
 
 /** Status cell text — purple accent (not a badge pill) */
 export const DATA_TABLE_STATUS_CLASS =

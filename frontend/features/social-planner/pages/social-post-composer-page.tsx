@@ -664,13 +664,14 @@ export function SocialPostComposerPage() {
             Save draft
           </Button>
           <Button
+            variant="brand"
             onClick={() => void onScheduleOrPublish("schedule")}
             disabled={!scheduledAtLocal || selectedTargets.length === 0}
           >
             Schedule
           </Button>
           <Button
-            variant="default"
+            variant="brand"
             onClick={() => void onScheduleOrPublish("now")}
             disabled={selectedTargets.length === 0}
           >

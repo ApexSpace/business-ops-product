@@ -1,11 +1,10 @@
 "use client";
 
 import { useMemo } from "react";
-import { MoreVertical } from "lucide-react";
 import { DrawerHeaderContent } from "@/components/drawer/drawer-header-content";
 import { DrawerPrimaryButton } from "@/components/drawer/drawer-primary-button";
 import { DrawerShell } from "@/components/layout/drawer-shell";
-import { IconButton } from "@/components/ui/icon-button";
+import { MoreActionsButton } from "@/components/ui/more-actions-button";
 import { Label } from "@/components/ui/label";
 import { ContactPicker } from "@/features/contacts/components/contact-picker";
 import {
@@ -18,8 +17,6 @@ import {
   SALES_DRAWER_FOOTER_CLASS,
   SALES_DRAWER_FOOTER_INNER_CLASS,
   SALES_DRAWER_FORM_FIELDS_CLASS,
-  SALES_DRAWER_HEADER_ACTION_CLASS,
-  SALES_DRAWER_MOBILE_HEADER_ACTION_CLASS,
   SALES_DRAWER_MOBILE_SHELL_CLASS,
   SALES_DRAWER_SHELL_CLASS,
   SALES_DRAWER_SHELL_HEADER_CLASS,
@@ -93,20 +90,7 @@ export function NewCheckoutDrawer({
           <DrawerHeaderContent eyebrow={dateEyebrow} title="Checkout" />
         )
       }
-      headerActions={
-        <IconButton
-          type="button"
-          variant="ghost"
-          aria-label="More actions"
-          className={
-            isMobile
-              ? SALES_DRAWER_MOBILE_HEADER_ACTION_CLASS
-              : SALES_DRAWER_HEADER_ACTION_CLASS
-          }
-        >
-          <MoreVertical className="size-4" />
-        </IconButton>
-      }
+      headerActions={<MoreActionsButton aria-label="More actions" />}
       footer={
         <div className={SALES_DRAWER_FOOTER_INNER_CLASS}>
           <div className={SALES_DRAWER_SUBTOTAL_ROW_CLASS}>

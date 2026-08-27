@@ -444,7 +444,7 @@ export function PlatformTierDetailPage({ isNew = false }: { isNew?: boolean }) {
       </Card>
 
       <div className="flex flex-wrap gap-2">
-        <Button onClick={() => save.mutate()} disabled={save.isPending || !name}>
+        <Button variant="brand" onClick={() => save.mutate()} disabled={save.isPending || !name}>
           {save.isPending ? "Saving…" : "Save"}
         </Button>
         {!isNew ? (

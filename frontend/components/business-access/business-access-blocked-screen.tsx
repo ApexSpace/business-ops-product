@@ -47,7 +47,7 @@ export function BusinessAccessBlockedScreen({
         ) : null}
 
         <div className="flex flex-wrap justify-center gap-2 border-t pt-4">
-          <Button nativeButton={false} render={<a href={getSupportHref()} />}>
+          <Button variant="brand" nativeButton={false} render={<a href={getSupportHref()} />}>
             {copy.primaryCta}
           </Button>
           {copy.secondaryCtas.includes("Switch workspace") ? (

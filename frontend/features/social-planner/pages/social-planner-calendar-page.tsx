@@ -62,16 +62,14 @@ export function SocialPlannerCalendarPage() {
         actions={
           <>
             <Button
-              variant="outline"
-              size="sm"
+              variant="brand"
               nativeButton={false}
               render={<Link href="/business/social-planner/posts" />}
             >
               Posts list
             </Button>
             <Button
-              variant="outline"
-              size="sm"
+              variant="brand"
               nativeButton={false}
               render={<Link href="/business/social-planner/comments" />}
             >

@@ -1,7 +1,6 @@
 "use client";
 
-import { MoreHorizontal } from "lucide-react";
-import { IconButton } from "@/components/ui/icon-button";
+import { MoreActionsButton } from "@/components/ui/more-actions-button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -9,10 +8,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  DRAWER_HEADER_ACTION_CLASS,
-  DRAWER_MOBILE_HEADER_ACTION_CLASS,
-} from "@/lib/design/drawer-tokens";
 import { cn } from "@/lib/utils";
 
 export interface EntityDetailOverflowAction {
@@ -33,12 +28,11 @@ interface EntityDetailHeaderProps {
 
 /**
  * Header action cluster for entity drawers (inline actions + overflow).
- * Chrome lives on DrawerShell — this is not a second header.
+ * Icon hover chrome is owned by DrawerShell header slot / IconButton `header`.
  */
 export function EntityDetailHeader({
   actions,
   overflowActions,
-  tone = "default",
   className,
 }: EntityDetailHeaderProps) {
   const hasOverflow = overflowActions && overflowActions.length > 0;
@@ -52,20 +46,7 @@ export function EntityDetailHeader({
       {hasOverflow ? (
         <DropdownMenu>
           <DropdownMenuTrigger
-            render={
-              <IconButton
-                variant="ghost"
-                size={tone === "on-brand" ? "icon" : "icon-sm"}
-                aria-label="More actions"
-                className={
-                  tone === "on-brand"
-                    ? DRAWER_MOBILE_HEADER_ACTION_CLASS
-                    : DRAWER_HEADER_ACTION_CLASS
-                }
-              >
-                <MoreHorizontal className="size-4" />
-              </IconButton>
-            }
+            render={<MoreActionsButton aria-label="More actions" />}
           />
           <DropdownMenuContent align="end" className="w-48">
             {overflowActions.map((action, index) => (

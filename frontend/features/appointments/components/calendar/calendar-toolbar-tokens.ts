@@ -1,6 +1,6 @@
 import {
   CONTROL_HEIGHT_BOX_CLASS,
-  CONTROL_SIZE_CLASS,
+  FILTER_ICON_BUTTON_CLASS,
 } from "@/lib/ui/control-styles";
 import { cn } from "@/lib/utils";
 
@@ -33,17 +33,11 @@ export const CALENDAR_TOOLBAR_TEXT_CLASS =
  */
 export const CALENDAR_TOOLBAR_TODAY_BUTTON_CLASS = cn(
   "box-border inline-flex w-auto shrink-0 cursor-pointer items-center justify-center",
-  "rounded-[var(--radius-md)] border border-violet-primary-normal px-[var(--spacing-4)]",
+  "rounded-[var(--radius-md)]",
 );
 
-/** Filter icon — black symbol, no fill/border; visual box matches Today, tap target ≥44px */
-export const CALENDAR_TOOLBAR_FILTER_BUTTON_CLASS = cn(
-  "relative inline-flex shrink-0 cursor-pointer items-center justify-center rounded-[var(--radius-md)]",
-  CONTROL_SIZE_CLASS,
-  "!border-0 !bg-transparent p-0 text-black shadow-none",
-  "after:absolute after:-inset-0.5 after:content-['']",
-  "hover:!bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-primary-normal/30",
-);
+/** @deprecated Use `ListFilterButton` — chrome lives on `FILTER_ICON_BUTTON_CLASS`. */
+export const CALENDAR_TOOLBAR_FILTER_BUTTON_CLASS = FILTER_ICON_BUTTON_CLASS;
 
 /** @deprecated prefer FILTER / TODAY tokens */
 export const CALENDAR_TOOLBAR_OUTLINE_BUTTON_CLASS = cn(

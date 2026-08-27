@@ -5,22 +5,21 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Pencil, Trash2  } from "lucide-react";
 import { toast } from "sonner";
 import { ApiErrorState } from "@/components/data-display/api-error-state";
-import { DataTable } from "@/components/data-display/data-table";
 import { StatusBadge } from "@/components/data-display/status-badge";
 import { ConfirmDeleteDialog } from "@/components/forms/confirm-delete-dialog";
-import { SearchInput } from "@/components/forms/search-input";
-import { SearchableSelect } from "@/components/forms/searchable-select";
 import { EntityDetailDrawer } from "@/components/layout/entity-detail-drawer";
+import { EntityListLayout } from "@/components/layout/entity-list-layout";
+import { ListFilterCheckboxGroup } from "@/components/layout/list-filter-checkbox-group";
 import { EstimateFormDialog } from "@/features/estimates/components/estimate-form-dialog";
 import { getEstimate } from "@/features/estimates/api/estimates.api";
 import { InvoiceFormDialog } from "@/features/invoices/components/invoice-form-dialog";
 import { EstimateDetailPanel } from "@/features/payments/components/workspace/estimate-detail-panel";
 import { FinancialRowActionsMenu } from "@/features/payments/components/workspace/financial-row-actions-menu";
-import { FinancialTabPanel } from "@/features/payments/components/workspace/financial-tab-panel";
 import { EstimatesMobileList } from "@/features/payments/components/mobile/estimates-mobile-list";
 import { Button } from "@/components/ui/button";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { ListPagination } from "@/components/ui/list-pagination";
 import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
 import { useListSearchParams } from "@/lib/hooks/use-list-search-params";
@@ -79,6 +78,10 @@ export function PaymentsEstimatesTab() {
   const [invoiceFromEstimate, setInvoiceFromEstimate] =
     useState<Estimate | null>(null);
   const [invoiceDialogOpen, setInvoiceDialogOpen] = useState(false);
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [draftStatus, setDraftStatus] = useState(params.status);
+  const [draftFrom, setDraftFrom] = useState(params.issueFrom);
+  const [draftTo, setDraftTo] = useState(params.issueTo);
 
   usePaymentsTabCreateAction(() => {
     setEditing(null);
@@ -180,54 +183,68 @@ export function PaymentsEstimatesTab() {
           />
         )
       ) : (
-      <FinancialTabPanel
-        actions={
-          <Button size="sm" onClick={openCreate}>
-            New estimate
-          </Button>
+      <EntityListLayout
+        title="Estimates"
+        hideHeader
+        flush
+        addButtonLabel="New estimate"
+        onAdd={openCreate}
+        searchPlaceholder="Search estimates…"
+        searchValue={params.search}
+        onSearchChange={(search) =>
+          setParams({ search, page: "1" }, { resetPage: true })
         }
-        search={
-          <SearchInput
-            className="min-w-[12rem] flex-1 shrink-0"
-            value={params.search}
-            onChange={(search) =>
-              setParams({ search, page: "1" }, { resetPage: true })
-            }
-            placeholder="Search estimates…"
-          />
-        }
-        filters={
+        filterAriaLabel="Estimate filters"
+        filterActive={Boolean(
+          params.status || params.issueFrom || params.issueTo,
+        )}
+        filterOpen={filterOpen}
+        onFilterOpenChange={(open) => {
+          if (open) {
+            setDraftStatus(params.status);
+            setDraftFrom(params.issueFrom);
+            setDraftTo(params.issueTo);
+          }
+          setFilterOpen(open);
+        }}
+        filterContent={
           <>
-            <SearchableSelect
-              items={statusFilterItems}
-              value={params.status}
-              onValueChange={(status) =>
-                setParams({ status: status ?? "", page: "1" }, { resetPage: true })
-              }
-              placeholder="Status"
-              triggerClassName="w-[9.5rem] shrink-0"
+            <ListFilterCheckboxGroup
+              legend="Status"
+              options={statusFilterItems}
+              value={draftStatus}
+              onChange={(next) => setDraftStatus(String(next))}
             />
-            <Input
-              type="date"
-              className="h-[var(--control-height)] w-[10.5rem] shrink-0 text-sm"
-              value={params.issueFrom}
-              onChange={(e) =>
-                setParams({ issueFrom: e.target.value, page: "1" })
-              }
-              aria-label="Issue from"
-            />
-            <Input
-              type="date"
-              className="h-[var(--control-height)] w-[10.5rem] shrink-0 text-sm"
-              value={params.issueTo}
-              onChange={(e) =>
-                setParams({ issueTo: e.target.value, page: "1" })
-              }
-              aria-label="Issue to"
-            />
+            <div className="flex w-full min-w-0 flex-col gap-2">
+              <Label htmlFor="estimate-filter-from">Issue from</Label>
+              <Input
+                id="estimate-filter-from"
+                type="date"
+                value={draftFrom}
+                onChange={(e) => setDraftFrom(e.target.value)}
+              />
+              <Label htmlFor="estimate-filter-to">Issue to</Label>
+              <Input
+                id="estimate-filter-to"
+                type="date"
+                value={draftTo}
+                onChange={(e) => setDraftTo(e.target.value)}
+              />
+            </div>
           </>
         }
-        pagination={
+        onFilterApply={() =>
+          setParams(
+            {
+              status: draftStatus,
+              issueFrom: draftFrom,
+              issueTo: draftTo,
+              page: "1",
+            },
+            { resetPage: true },
+          )
+        }
+        footer={
           data?.meta ? (
             <ListPagination
               meta={data.meta}
@@ -235,57 +252,55 @@ export function PaymentsEstimatesTab() {
               onPageChange={(p) => setParams({ page: String(p) })}
               label="estimates"
             />
-          ) : null
+          ) : undefined
         }
-      >
-        {isError ? (
-          <ApiErrorState error={error} onRetry={() => void refetch()} />
-        ) : (
-        <DataTable
-          className="min-w-[56rem]"
-          density="compact"
-          columns={columns}
-          data={data?.items ?? []}
-          getRowId={(row) => row.id}
-          isLoading={isLoading}
-          activeRowId={selectedId}
-          onRowClick={(row) => setSelectedId(row.id)}
-          getRowClassName={(row) =>
-            selectedId === row.id ? WORKSPACE_ACTIVE_ROW_CLASS : undefined
-          }
-          actionsColumnHeader="Actions"
-          emptyTitle="No estimates yet"
-          emptyDescription="Create your first quote for a customer."
-          emptyAction={
-            <Button size="sm" onClick={openCreate}>
-              New estimate
-            </Button>
-          }
-          rowActions={(row) => (
-            <FinancialRowActionsMenu
-              onView={() => setSelectedId(row.id)}
-              onEdit={() => openEdit(row)}
-              onDuplicate={() => duplicateMutation.mutate(row.id)}
-              onDelete={() => setDeleteId(row.id)}
-              statusOptions={ESTIMATE_MANUAL_STATUS_OPTIONS}
-              onStatusChange={(status) =>
-                statusMutation.mutate({ id: row.id, status })
-              }
-              extraItems={
-                <DropdownMenuItem
-                  onClick={() => {
-                    setInvoiceFromEstimate(row);
-                    setInvoiceDialogOpen(true);
-                  }}
-                >
-                  Create Invoice
-                </DropdownMenuItem>
-              }
-            />
-          )}
-        />
+        error={
+          isError ? (
+            <ApiErrorState error={error} onRetry={() => void refetch()} />
+          ) : undefined
+        }
+        tableClassName="min-w-[56rem]"
+        columns={columns}
+        data={data?.items ?? []}
+        getRowId={(row) => row.id}
+        isLoading={isLoading}
+        density="compact"
+        activeRowId={selectedId}
+        onRowClick={(row) => setSelectedId(row.id)}
+        getRowClassName={(row) =>
+          selectedId === row.id ? WORKSPACE_ACTIVE_ROW_CLASS : undefined
+        }
+        actionsColumnHeader="Actions"
+        emptyTitle="No estimates yet"
+        emptyDescription="Create your first quote for a customer."
+        emptyAction={
+          <Button variant="brand" onClick={openCreate}>
+            New estimate
+          </Button>
+        }
+        rowActions={(row) => (
+          <FinancialRowActionsMenu
+            onView={() => setSelectedId(row.id)}
+            onEdit={() => openEdit(row)}
+            onDuplicate={() => duplicateMutation.mutate(row.id)}
+            onDelete={() => setDeleteId(row.id)}
+            statusOptions={ESTIMATE_MANUAL_STATUS_OPTIONS}
+            onStatusChange={(status) =>
+              statusMutation.mutate({ id: row.id, status })
+            }
+            extraItems={
+              <DropdownMenuItem
+                onClick={() => {
+                  setInvoiceFromEstimate(row);
+                  setInvoiceDialogOpen(true);
+                }}
+              >
+                Create Invoice
+              </DropdownMenuItem>
+            }
+          />
         )}
-      </FinancialTabPanel>
+      />
       )}
 
       <EntityDetailDrawer

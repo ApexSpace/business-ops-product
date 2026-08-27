@@ -80,6 +80,7 @@ export function UserMenu({ variant = "avatar", className }: UserMenuProps) {
       )}
       <DropdownMenuContent
         align={variant === "sidebar" ? "start" : "end"}
+        side="bottom"
         showArrow
         sideOffset={NAVBAR_USER_MENU_SIDE_OFFSET}
         className="w-56 overflow-visible rounded-[var(--radius-xl)] border border-border/40 shadow-elevation-lg"

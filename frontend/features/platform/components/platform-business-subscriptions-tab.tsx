@@ -2,12 +2,9 @@
 
 import { useMemo, useState } from "react";
 import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  DataTable,
-  type DataTableColumn,
-} from "@/components/data-display/data-table";
-import { SearchableSelect } from "@/components/forms/searchable-select";
-import { FilterBar } from "@/components/layout/filter-bar";
+import { type DataTableColumn } from "@/components/data-display/data-table";
+import { EntityListLayout } from "@/components/layout/entity-list-layout";
+import { ListFilterCheckboxGroup } from "@/components/layout/list-filter-checkbox-group";
 import {
   Accordion,
   AccordionContent,
@@ -56,6 +53,11 @@ export function PlatformBusinessSubscriptionsTab({
   const [subscriptionStatus, setSubscriptionStatus] = useState("all");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [draftEventType, setDraftEventType] = useState("all");
+  const [draftSubscriptionStatus, setDraftSubscriptionStatus] = useState("all");
+  const [draftFromDate, setDraftFromDate] = useState("");
+  const [draftToDate, setDraftToDate] = useState("");
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [historyAccordionOpen, setHistoryAccordionOpen] = useState<string[]>(
     [],
@@ -125,6 +127,10 @@ export function PlatformBusinessSubscriptionsTab({
     setSubscriptionStatus("all");
     setFromDate("");
     setToDate("");
+    setDraftEventType("all");
+    setDraftSubscriptionStatus("all");
+    setDraftFromDate("");
+    setDraftToDate("");
   };
 
   const openEvent = (event: BusinessSubscriptionEventListItem) => {
@@ -225,52 +231,94 @@ export function PlatformBusinessSubscriptionsTab({
               state details.
             </p>
 
-            <FilterBar>
-              <SearchableSelect
-                items={subscriptionEventTypeFilterOptions}
-                value={eventType}
-                onValueChange={(v) => setEventType(v ?? "all")}
-                placeholder="Event type"
-                triggerClassName="w-[180px]"
-              />
-              <SearchableSelect
-                items={subscriptionStatusFilterOptions}
-                value={subscriptionStatus}
-                onValueChange={(v) => setSubscriptionStatus(v ?? "all")}
-                placeholder="Status"
-                triggerClassName="w-[180px]"
-              />
-              <Input
-                type="date"
-                value={fromDate}
-                onChange={(e) => setFromDate(e.target.value)}
-                className="w-[160px]"
-                aria-label="From date"
-              />
-              <Input
-                type="date"
-                value={toDate}
-                onChange={(e) => setToDate(e.target.value)}
-                className="w-[160px]"
-                aria-label="To date"
-              />
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={resetFilters}
-              >
-                Clear
-              </Button>
-            </FilterBar>
-
-            <DataTable
+            <EntityListLayout
+              title="Subscription history"
+              hideHeader
+              flush
+              filterAriaLabel="History filters"
+              filterActive={
+                eventType !== "all" ||
+                subscriptionStatus !== "all" ||
+                Boolean(fromDate || toDate)
+              }
+              filterOpen={filterOpen}
+              onFilterOpenChange={(open) => {
+                if (open) {
+                  setDraftEventType(eventType);
+                  setDraftSubscriptionStatus(subscriptionStatus);
+                  setDraftFromDate(fromDate);
+                  setDraftToDate(toDate);
+                }
+                setFilterOpen(open);
+              }}
+              filterContent={
+                <>
+                  <ListFilterCheckboxGroup
+                    legend="Event type"
+                    options={subscriptionEventTypeFilterOptions}
+                    value={draftEventType}
+                    onChange={(next) => setDraftEventType(String(next))}
+                  />
+                  <ListFilterCheckboxGroup
+                    legend="Status"
+                    options={subscriptionStatusFilterOptions}
+                    value={draftSubscriptionStatus}
+                    onChange={(next) =>
+                      setDraftSubscriptionStatus(String(next))
+                    }
+                  />
+                  <div className="flex w-full min-w-0 flex-col gap-2">
+                    <Input
+                      type="date"
+                      value={draftFromDate}
+                      onChange={(e) => setDraftFromDate(e.target.value)}
+                      aria-label="From date"
+                    />
+                    <Input
+                      type="date"
+                      value={draftToDate}
+                      onChange={(e) => setDraftToDate(e.target.value)}
+                      aria-label="To date"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={resetFilters}
+                    >
+                      Clear
+                    </Button>
+                  </div>
+                </>
+              }
+              onFilterApply={() => {
+                setEventType(draftEventType);
+                setSubscriptionStatus(draftSubscriptionStatus);
+                setFromDate(draftFromDate);
+                setToDate(draftToDate);
+              }}
+              footer={
+                hasNextPage ? (
+                  <div className="flex justify-center">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={isFetchingNextPage}
+                      onClick={() => void fetchNextPage()}
+                    >
+                      {isFetchingNextPage ? "Loading…" : "Load more"}
+                    </Button>
+                  </div>
+                ) : undefined
+              }
               columns={columns}
               data={events}
               getRowId={(row) => row.id}
               isLoading={eventsLoading && events.length === 0}
               emptyTitle="No subscription events"
               emptyDescription="Subscription lifecycle events will appear here."
+              actionsColumnHeader="Actions"
               rowActions={(row) => (
                 <Button
                   type="button"
@@ -281,22 +329,7 @@ export function PlatformBusinessSubscriptionsTab({
                   View
                 </Button>
               )}
-              actionsColumnHeader="Actions"
             />
-
-            {hasNextPage ? (
-              <div className="flex justify-center">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  disabled={isFetchingNextPage}
-                  onClick={() => void fetchNextPage()}
-                >
-                  {isFetchingNextPage ? "Loading…" : "Load more"}
-                </Button>
-              </div>
-            ) : null}
           </AccordionContent>
         </AccordionItem>
       </Accordion>

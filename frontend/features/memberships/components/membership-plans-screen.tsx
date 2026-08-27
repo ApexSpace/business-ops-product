@@ -392,7 +392,7 @@ export function MembershipPlansScreen() {
       <div className="grid min-h-[600px] gap-4 lg:grid-cols-[240px_180px_minmax(0,1fr)]">
         <div className="space-y-3 rounded-lg border p-3">
           <div className="flex gap-2">
-            <Button className="flex-1" onClick={() => setCreateOpen(true)}>
+            <Button className="flex-1" variant="brand" onClick={() => setCreateOpen(true)}>
               Create Plan
             </Button>
             <Button variant="outline" size="icon" aria-label="Search">
@@ -612,7 +612,7 @@ export function MembershipPlansScreen() {
                     )}
                   </div>
                   <div className="mt-4 flex justify-end">
-                    <Button onClick={() => saveDetails.mutate(editForm)}>
+                    <Button variant="brand" onClick={() => saveDetails.mutate(editForm)}>
                       Save
                     </Button>
                   </div>
@@ -814,7 +814,7 @@ export function MembershipPlansScreen() {
                     </div>
                   </div>
                   <div className="mt-4 flex justify-end">
-                    <Button onClick={() => saveDiscounts.mutate(editForm)}>
+                    <Button variant="brand" onClick={() => saveDiscounts.mutate(editForm)}>
                       Save
                     </Button>
                   </div>
@@ -846,7 +846,7 @@ export function MembershipPlansScreen() {
                       />
                     ) : null}
                     <div className="flex justify-end">
-                      <Button onClick={() => saveAgreement.mutate(editForm)}>
+                      <Button variant="brand" onClick={() => saveAgreement.mutate(editForm)}>
                         Save
                       </Button>
                     </div>
@@ -964,7 +964,7 @@ export function MembershipPlansScreen() {
                       />
                     </div>
                     <div className="flex justify-end">
-                      <Button onClick={() => saveOnlineSales.mutate(editForm)}>
+                      <Button variant="brand" onClick={() => saveOnlineSales.mutate(editForm)}>
                         Save
                       </Button>
                     </div>
@@ -1060,6 +1060,7 @@ export function MembershipPlansScreen() {
               Cancel
             </Button>
             <Button
+              variant="brand"
               disabled={!newName.trim()}
               onClick={() => createPlan.mutate()}
             >

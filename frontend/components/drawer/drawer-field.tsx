@@ -51,6 +51,7 @@ export function DrawerField({
         className={cn(
           DRAWER_FIELD_CLASS,
           "relative flex w-full items-center gap-2 text-left",
+          trailing && "pr-[var(--plus-button-inset)]",
           onClick && "cursor-pointer hover:bg-violet-primary-surface/40",
           disabled && "pointer-events-none opacity-60",
           fieldClassName,

@@ -85,7 +85,7 @@ export function LeadDetailSheet({
               <Button
                 type="submit"
                 form={LEAD_DETAIL_FORM_ID}
-                size="sm"
+                variant="brand"
                 disabled={sheet.saveMutation.isPending}
               >
                 {sheet.saveMutation.isPending ? "Saving…" : "Save"}

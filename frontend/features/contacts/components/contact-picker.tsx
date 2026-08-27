@@ -245,7 +245,7 @@ export function ContactPicker({
               endSlot={isDrawer ? createButton : undefined}
               className={cn(
                 isDrawer
-                  ? cn(APPOINTMENT_DRAWER_FIELD_CLASS, "pr-10 font-normal")
+                  ? cn(APPOINTMENT_DRAWER_FIELD_CLASS, "font-normal")
                   : "pl-9",
                 triggerClassName,
               )}

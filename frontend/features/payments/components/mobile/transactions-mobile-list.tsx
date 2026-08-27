@@ -68,7 +68,7 @@ export function TransactionsMobileList({
       emptyDescription="Transactions are usually recorded from an invoice."
       emptyAction={
         onCreate ? (
-          <Button size="sm" onClick={onCreate}>
+          <Button variant="brand" onClick={onCreate}>
             Record payment
           </Button>
         ) : null

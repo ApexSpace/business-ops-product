@@ -7,15 +7,12 @@ import { LayoutTemplate, Settings } from "lucide-react";
 import { toast } from "sonner";
 import { DateTime } from "luxon";
 import { ApiErrorState } from "@/components/data-display/api-error-state";
-import { DataTable } from "@/components/data-display/data-table";
 import { ListPagination } from "@/components/ui/list-pagination";
 import { EntityDetailDrawer } from "@/components/layout/entity-detail-drawer";
 import { EntityDetailFooter } from "@/components/layout/entity-detail-footer";
-import { EntityWorkspaceLayout } from "@/components/layout/entity-workspace-layout";
-import { ListFilterButton } from "@/components/layout/list-filter-button";
+import { EntityListLayout } from "@/components/layout/entity-list-layout";
 import { ListPrimaryAction } from "@/components/layout/list-primary-action";
 import { LoadingState } from "@/components/data-display/loading-state";
-import { SearchInput } from "@/components/forms/search-input";
 import { SearchableSelect } from "@/components/forms/searchable-select";
 import { Button } from "@/components/ui/button";
 import {
@@ -27,10 +24,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { MembershipsOptionsDrawer } from "@/features/memberships/components/memberships-options-drawer";
-import {
-  WORKSPACE_ACTIVE_ROW_CLASS,
-  WORKSPACE_TABLE_CLASS,
-} from "@/lib/design/workspace-tokens";
+import { WORKSPACE_ACTIVE_ROW_CLASS } from "@/lib/design/workspace-tokens";
 import { useEntitySelection } from "@/lib/routing/use-entity-selection";
 import { useIsMobile } from "@/lib/hooks/use-mobile";
 import { queryKeys } from "@/lib/query/keys";
@@ -325,29 +319,14 @@ export function MembershipsWorkspace() {
           />
         )
       ) : (
-      <EntityWorkspaceLayout
+      <EntityListLayout
         title="Memberships"
         description="Manage client subscriptions and billing."
-        search={
-          <SearchInput
-            value={search}
-            onChange={(value) => {
-              setSearch(value);
-              setPage(1);
-            }}
-            placeholder="Search by client or plan…"
-            className="min-w-0 flex-1"
-          />
-        }
-        filters={
-          <ListFilterButton
-            aria-label="Membership options"
-            onClick={() => setOptionsOpen(true)}
-          />
-        }
-        actions={
-          <>
-            {canManage ? (
+        addButtonLabel="New Membership"
+        onAdd={canManage ? () => setAddOpen(true) : undefined}
+        extraActions={
+          canManage ? (
+            <>
               <Button
                 variant="outline"
                 size="sm"
@@ -356,8 +335,6 @@ export function MembershipsWorkspace() {
                 <LayoutTemplate className="mr-1.5 size-4" />
                 Manage plans
               </Button>
-            ) : null}
-            {canManage ? (
               <Button
                 variant="outline"
                 size="sm"
@@ -366,15 +343,17 @@ export function MembershipsWorkspace() {
                 <Settings className="mr-1.5 size-4" />
                 Settings
               </Button>
-            ) : null}
-            {canManage ? (
-              <ListPrimaryAction
-                label="New Membership"
-                onClick={() => setAddOpen(true)}
-              />
-            ) : null}
-          </>
+            </>
+          ) : null
         }
+        searchPlaceholder="Search by client or plan…"
+        searchValue={search}
+        onSearchChange={(value) => {
+          setSearch(value);
+          setPage(1);
+        }}
+        filterAriaLabel="Membership options"
+        onFilterClick={() => setOptionsOpen(true)}
         footer={
           listQuery.data?.meta && memberships.length > 0 ? (
             <ListPagination
@@ -386,37 +365,34 @@ export function MembershipsWorkspace() {
             />
           ) : undefined
         }
-      >
-        {listQuery.isError ? (
-          <ApiErrorState
-            error={listQuery.error}
-            onRetry={() => void listQuery.refetch()}
-          />
-        ) : (
-          <DataTable
-            columns={columns}
-            data={memberships}
-            getRowId={(row) => row.id}
-            isLoading={listQuery.isLoading}
-            density="compact"
-            activeRowId={selectedId}
-            onRowClick={(row) => setSelectedId(row.id)}
-            getRowClassName={(row) =>
-              selectedId === row.id ? WORKSPACE_ACTIVE_ROW_CLASS : undefined
-            }
-            emptyTitle="No memberships found"
-            emptyDescription="Start a membership for a client or adjust your filters."
-            emptyAction={
-              canManage ? (
-                <Button size="sm" onClick={() => setAddOpen(true)}>
-                  New membership
-                </Button>
-              ) : undefined
-            }
-            className={WORKSPACE_TABLE_CLASS}
-          />
-        )}
-      </EntityWorkspaceLayout>
+        error={
+          listQuery.isError ? (
+            <ApiErrorState
+              error={listQuery.error}
+              onRetry={() => void listQuery.refetch()}
+            />
+          ) : undefined
+        }
+        columns={columns}
+        data={memberships}
+        getRowId={(row) => row.id}
+        isLoading={listQuery.isLoading}
+        density="compact"
+        activeRowId={selectedId}
+        onRowClick={(row) => setSelectedId(row.id)}
+        getRowClassName={(row) =>
+          selectedId === row.id ? WORKSPACE_ACTIVE_ROW_CLASS : undefined
+        }
+        emptyTitle="No memberships found"
+        emptyDescription="Start a membership for a client or adjust your filters."
+        emptyAction={
+          canManage ? (
+            <Button variant="brand" onClick={() => setAddOpen(true)}>
+              New membership
+            </Button>
+          ) : undefined
+        }
+      />
       )}
 
       <EntityDetailDrawer
