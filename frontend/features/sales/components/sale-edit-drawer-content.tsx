@@ -182,18 +182,20 @@ export function SaleEditDrawerContent({
                           <Pencil className="size-3.5" />
                         </button>
                       ) : null}
-                      <button
-                        type="button"
-                        aria-label="Remove item"
-                        disabled={lineRemovePending || isEditing}
-                        className={cn(
-                          SALES_DRAWER_ICON_BUTTON_CLASS,
-                          "size-6 text-violet-primary-darker disabled:opacity-50 [&>svg]:size-5",
-                        )}
-                        onClick={() => onRemoveLine(item.id)}
-                      >
-                        <DrawerTrashIcon className="size-5" />
-                      </button>
+                      {isEditing ? (
+                        <button
+                          type="button"
+                          aria-label="Remove item"
+                          disabled={lineRemovePending}
+                          className={cn(
+                            SALES_DRAWER_ICON_BUTTON_CLASS,
+                            "size-6 text-violet-primary-darker disabled:opacity-50 [&>svg]:size-5",
+                          )}
+                          onClick={() => onRemoveLine(item.id)}
+                        >
+                          <DrawerTrashIcon className="size-5" />
+                        </button>
+                      ) : null}
                     </div>
                   </div>
 

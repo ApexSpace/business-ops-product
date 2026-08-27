@@ -93,11 +93,12 @@ function ComposerFooterHint({ message }: { message: string | null | undefined })
   if (!message) return null;
   return (
     <p
-      className="flex items-start gap-2.5 pt-4 text-xs leading-snug text-muted-foreground"
+      className="flex min-w-0 max-w-full items-center justify-center gap-1.5 text-xs leading-none text-muted-foreground"
       role="status"
+      title={message}
     >
-      <Info className="mt-0.5 size-3.5 shrink-0" aria-hidden />
-      {message}
+      <Info className="size-3.5 shrink-0" aria-hidden />
+      <span className="truncate">{message}</span>
     </p>
   );
 }
@@ -473,9 +474,9 @@ export function MessageComposer({
       />
     ) : null;
 
-  const composerToolbar = (action: ReactNode) => (
-    <div className="flex items-center justify-between gap-3 border-t border-border/50 px-4 py-2">
-      <div className="flex items-center gap-1">
+  const composerToolbar = (action: ReactNode, hint?: string | null) => (
+    <div className="flex items-center gap-2 border-t border-border/50 px-4 py-2">
+      <div className="flex shrink-0 items-center gap-1">
         {emojiPickerButton}
         {attachmentToggle}
         {quickRepliesButton ? (
@@ -485,7 +486,10 @@ export function MessageComposer({
           </>
         ) : null}
       </div>
-      {action}
+      <div className="flex min-w-0 flex-1 items-center justify-center px-2">
+        <ComposerFooterHint message={hint} />
+      </div>
+      <div className="shrink-0">{action}</div>
     </div>
   );
 
@@ -511,7 +515,10 @@ export function MessageComposer({
           {emojiPickerButton}
           {attachmentToggle}
           {quickRepliesButton}
-          <div className="ml-auto">{sendButton}</div>
+          <div className="flex min-w-0 flex-1 items-center justify-center px-2">
+            <ComposerFooterHint message={composerHint} />
+          </div>
+          {sendButton}
         </div>
       </div>
       {smsSegmentFooter}
@@ -553,7 +560,10 @@ export function MessageComposer({
           {emojiPickerButton}
           {attachmentToggle}
           {quickRepliesButton}
-          <div className="ml-auto">{sendButton}</div>
+          <div className="flex min-w-0 flex-1 items-center justify-center px-2">
+            <ComposerFooterHint message={composerHint} />
+          </div>
+          {sendButton}
         </div>
       </div>
       {smsSegmentFooter}
@@ -703,7 +713,7 @@ export function MessageComposer({
         {smsSegmentFooter}
         {attachmentUrlRow}
         {pendingAttachmentChip}
-        {composerToolbar(sendButton)}
+        {composerToolbar(sendButton, footerHint)}
       </>
     );
 
@@ -722,11 +732,14 @@ export function MessageComposer({
             }
           }}
         />
-        <div className="flex items-center justify-between gap-3 border-t border-warning/20 px-4 py-2">
+        <div className="flex items-center gap-2 border-t border-warning/20 px-4 py-2">
           <ComposerEmojiPicker
             onSelect={(emoji) => onNoteDraftChange?.(`${noteDraft}${emoji}`)}
             className={composerToolButtonClass}
           />
+          <div className="flex min-w-0 flex-1 items-center justify-center px-2">
+            <ComposerFooterHint message={footerHint} />
+          </div>
           {addNoteButton}
         </div>
       </>
@@ -736,7 +749,7 @@ export function MessageComposer({
 
     return (
       <>
-        <footer className="shrink-0 bg-white px-4 pb-4">
+        <footer className="shrink-0 bg-white px-4 pb-3">
           <div
             className={cn(
               "overflow-hidden rounded-[var(--radius-xl)] border",
@@ -801,7 +814,6 @@ export function MessageComposer({
               />
             </div>
           ) : null}
-          <ComposerFooterHint message={footerHint} />
         </footer>
         {smsConfirmDialog}
       </>
@@ -830,7 +842,6 @@ export function MessageComposer({
       <>
         <footer className="shrink-0 border-t border-border/80 bg-card p-3">
           {emailThreadComposer}
-          <ComposerFooterHint message={composerHint} />
         </footer>
         {smsConfirmDialog}
       </>
@@ -885,14 +896,16 @@ export function MessageComposer({
                 <div className="flex items-center gap-0.5">
                   {emojiPickerButton}
                   {quickRepliesButton}
-                  <div className="ml-auto">{sendButton}</div>
+                  <div className="flex min-w-0 flex-1 items-center justify-center px-2">
+                    <ComposerFooterHint message={composerHint} />
+                  </div>
+                  {sendButton}
                 </div>
               </div>
               {smsSegmentFooter}
             </ComposerInputCard>
           </div>
         )}
-        <ComposerFooterHint message={composerHint} />
       </footer>
       {smsConfirmDialog}
     </>

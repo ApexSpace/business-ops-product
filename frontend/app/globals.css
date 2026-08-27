@@ -285,8 +285,9 @@
   --radius-nav: 7px;
   /* Figma radius/radius/xs — 4px when --radius is 8px */
   --radius-xs: 0.25rem;
-  /* Figma spacing/spacing scale (4px base): /2=8, /4=16, /6=24 */
+  /* Figma spacing/spacing scale (4px base): /2=8, /3=12, /4=16, /6=24 */
   --spacing-2: 0.5rem;
+  --spacing-3: 0.75rem;
   --spacing-4: 1rem;
   --spacing-6: 1.5rem;
   --sidebar-width: 10.75rem;
@@ -295,6 +296,14 @@
   --table-row-height: 3.5rem;
   --table-row-height-compact: var(--table-row-height);
   --table-header-height: var(--table-row-height);
+  /*
+   * DataTable column density — hit-and-trial here; every list uses these.
+   *   --table-column-padding-x   cell left/right padding (was px-4 / 16px)
+   *   --table-column-min-width   data column width (browsers ignore min-width on <td>)
+   * Use a length with a unit: 0px hugs content; try 8rem / 10rem / 12rem. Not a bare 5.
+   */
+  --table-column-padding-x: 1rem;
+  --table-column-min-width: 5px;
   /* Default ≥40px control; sm remains dense for compact chrome.
    * Button size="default" (including variant="brand") reads these:
    *   --control-height      → height / min-height

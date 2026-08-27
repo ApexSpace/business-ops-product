@@ -31,8 +31,32 @@ export const DATA_TABLE_SCROLL_CLASS = "min-h-0 overflow-auto";
 
 /**
  * Grid width only. Height stays content-sized so `--table-row-height` is honored.
+ * `table-auto` + shrink-wrap columns + spacer cell: leftover width stays empty
+ * on the right instead of stretching every column.
  */
-export const DATA_TABLE_GRID_CLASS = "w-full";
+export const DATA_TABLE_GRID_CLASS = "w-full table-auto";
+
+/**
+ * Content columns. `w-[1%]` + nowrap shrink-wraps when `--table-column-min-width`
+ * is `0px`. A non-zero length (e.g. `10rem`) is applied as `width` — table cells
+ * ignore `min-width`.
+ */
+export const DATA_TABLE_COLUMN_CLASS =
+  "w-[var(--table-column-min-width)] whitespace-nowrap";
+
+/** Checkbox / actions — always hug, ignore the column-width token. */
+export const DATA_TABLE_CHROME_COLUMN_CLASS = "!w-[1%] !min-w-0";
+
+/**
+ * Inner box so `--table-column-min-width` actually takes effect (td/th min-width
+ * is ignored). `0px` does not expand the column.
+ */
+export const DATA_TABLE_COLUMN_INNER_CLASS =
+  "block min-w-[var(--table-column-min-width)]";
+
+/** Trailing empty column — takes remaining horizontal space. */
+export const DATA_TABLE_SPACER_CELL_CLASS =
+  "w-full min-w-0 !p-0 !pr-0 !pl-0";
 
 /** Empty-state filler when there are no rows — intrinsic height, not stretched. */
 export const DATA_TABLE_EMPTY_FILL_CLASS = "flex items-center justify-center";
@@ -46,7 +70,7 @@ export const DATA_TABLE_HEADER_CLASS =
 
 /** Header cell typography — primary/800, 14px bold (Montserrat) */
 export const DATA_TABLE_HEAD_CELL_CLASS =
-  "h-[var(--table-row-height)] px-4 text-left align-middle text-[14px] font-bold leading-none tracking-normal text-violet-primary-dark whitespace-nowrap";
+  "h-[var(--table-row-height)] px-[var(--table-column-padding-x)] text-left align-middle text-[14px] font-bold leading-none tracking-normal text-violet-primary-dark whitespace-nowrap";
 
 /** Sticky header row — same `--table-row-height` as body rows */
 export const DATA_TABLE_HEADER_ROW_CLASS =
@@ -56,9 +80,9 @@ export const DATA_TABLE_HEADER_ROW_CLASS =
 export const DATA_TABLE_ROW_CLASS =
   "h-[var(--table-row-height)] border-b-2 border-[var(--drawer-divider-accent)] bg-white transition-colors hover:bg-violet-primary-surface/60 data-[state=selected]:bg-violet-primary-surface";
 
-/** Body cell — Figma pad 8 / 16 · neutral/700 · row token height */
+/** Body cell — pad `--table-column-padding-x` · neutral/700 · row token height */
 export const DATA_TABLE_CELL_CLASS =
-  "h-[var(--table-row-height)] px-4 py-2 align-middle text-[14px] font-normal leading-[21px] text-[var(--drawer-text-body)] whitespace-nowrap";
+  "h-[var(--table-row-height)] px-[var(--table-column-padding-x)] py-2 align-middle text-[14px] font-normal leading-[21px] text-[var(--drawer-text-body)] whitespace-nowrap";
 
 /**
  * List toolbar — Figma: primary CTA left, search + standalone filter right, h 44.

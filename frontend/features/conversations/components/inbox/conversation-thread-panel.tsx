@@ -342,10 +342,13 @@ export function ConversationThreadPanel({
   return (
     <section className={cn(INBOX_THREAD_PANEL_CLASS, className)}>
         {!selectedId || !selected ? (
-          <div className="flex flex-1 flex-col items-center justify-center text-center text-muted-foreground">
-            <MessageSquare className="mb-3 size-10 opacity-40" />
-            <p className="text-sm">Select a conversation to start.</p>
-          </div>
+          <>
+            <header className={INBOX_THREAD_HEADER_CLASS} aria-hidden />
+            <div className="flex flex-1 flex-col items-center justify-center text-center text-muted-foreground">
+              <MessageSquare className="mb-3 size-10 opacity-40" />
+              <p className="text-sm">Select a conversation to start.</p>
+            </div>
+          </>
         ) : (
           <>
             <header className={INBOX_THREAD_HEADER_CLASS}>
@@ -361,11 +364,11 @@ export function ConversationThreadPanel({
               ) : null}
 
               <div className="min-w-0 flex-1">
-                <p className="truncate text-base font-semibold leading-tight text-foreground">
+                <p className="truncate text-base font-semibold leading-none text-foreground">
                   {threadDisplayName}
                 </p>
                 {clientSinceLabel ? (
-                  <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                  <p className="mt-1 truncate text-xs leading-none text-muted-foreground">
                     {clientSinceLabel}
                   </p>
                 ) : null}

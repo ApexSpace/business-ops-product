@@ -178,21 +178,14 @@ export function CheckoutDrawerPanel({
                   contactId={checkout.contactId}
                   onClose={panel.closeInlineAdd}
                   serviceItems={panel.serviceItems}
-                  selectedServiceId={panel.selectedServiceId}
-                  onServiceChange={panel.setSelectedServiceId}
-                  staffItems={panel.staffItems}
-                  selectedStaffId={panel.selectedStaffId}
-                  onStaffChange={panel.setSelectedStaffId}
-                  selectedMembershipKey={panel.selectedMembershipKey}
-                  onMembershipChange={panel.setSelectedMembershipKey}
-                  onAddService={() => panel.addServiceMutation.mutate()}
+                  onAddService={(serviceId) =>
+                    panel.addServiceMutation.mutate(serviceId)
+                  }
                   servicePending={panel.addServiceMutation.isPending}
                   productItems={panel.productItems}
-                  selectedProductKey={panel.selectedProductKey}
-                  onProductChange={panel.setSelectedProductKey}
-                  productQty={panel.productQty}
-                  onProductQtyChange={panel.setProductQty}
-                  onAddProduct={() => panel.addProductMutation.mutate()}
+                  onAddProduct={(productKey) =>
+                    panel.addProductMutation.mutate(productKey)
+                  }
                   productPending={panel.addProductMutation.isPending}
                   offerItems={panel.offerItems}
                   selectedOfferId={panel.selectedOfferId}

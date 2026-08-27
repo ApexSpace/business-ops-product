@@ -22,12 +22,16 @@ import {
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import {
+  DATA_TABLE_CHROME_COLUMN_CLASS,
+  DATA_TABLE_COLUMN_CLASS,
+  DATA_TABLE_COLUMN_INNER_CLASS,
   DATA_TABLE_EMPTY_FILL_CLASS,
   DATA_TABLE_GRID_CLASS,
   DATA_TABLE_HEADER_CLASS,
   DATA_TABLE_HEADER_ROW_CLASS,
   DATA_TABLE_SCROLL_CLASS,
   DATA_TABLE_SHELL_CLASS,
+  DATA_TABLE_SPACER_CELL_CLASS,
 } from "@/lib/design/data-table-tokens";
 import { DataTableColumnHeader } from "@/components/data-display/data-table-column-header";
 import { EmptyState } from "@/components/data-display/empty-state";
@@ -66,6 +70,39 @@ export interface DataTableProps<T> {
 }
 
 const SKELETON_ROWS = 5;
+
+function isChromeColumn(columnId: string) {
+  return columnId === "select" || columnId === "actions";
+}
+
+function dataTableColumnClass(columnId: string) {
+  return cn(
+    DATA_TABLE_COLUMN_CLASS,
+    isChromeColumn(columnId) && DATA_TABLE_CHROME_COLUMN_CLASS,
+    columnId === "actions" && "text-right",
+  );
+}
+
+function DataTableColumnInner({
+  columnId,
+  children,
+}: {
+  columnId?: string;
+  children: React.ReactNode;
+}) {
+  if (columnId && isChromeColumn(columnId)) {
+    return children;
+  }
+  return <div className={DATA_TABLE_COLUMN_INNER_CLASS}>{children}</div>;
+}
+
+function DataTableSpacerHead() {
+  return <TableHead aria-hidden className={DATA_TABLE_SPACER_CELL_CLASS} />;
+}
+
+function DataTableSpacerCell() {
+  return <TableCell aria-hidden className={DATA_TABLE_SPACER_CELL_CLASS} />;
+}
 
 export function DataTable<T>({
   columns,
@@ -176,6 +213,19 @@ export function DataTable<T>({
             className={DATA_TABLE_GRID_CLASS}
             containerClassName={cn("overflow-visible", DATA_TABLE_GRID_CLASS)}
           >
+            <colgroup>
+              {table.getVisibleLeafColumns().map((column) => (
+                <col
+                  key={column.id}
+                  className={
+                    isChromeColumn(column.id)
+                      ? DATA_TABLE_CHROME_COLUMN_CLASS
+                      : DATA_TABLE_COLUMN_CLASS
+                  }
+                />
+              ))}
+              <col className="w-full" />
+            </colgroup>
             <TableHeader className={DATA_TABLE_HEADER_CLASS}>
               {table.getHeaderGroups().map((headerGroup) => (
                 <TableRow
@@ -188,28 +238,33 @@ export function DataTable<T>({
                       <TableHead
                         key={header.id}
                         className={cn(
-                          header.column.id === "actions" && "w-[1%] text-right",
+                          dataTableColumnClass(header.column.id),
                           (
                             header.column.columnDef.meta as
                               { className?: string } | undefined
                           )?.className,
                         )}
                       >
-                        {header.isPlaceholder ? null : header.column.getCanSort() ? (
-                          <DataTableColumnHeader
-                            title={String(header.column.columnDef.header)}
-                            sorted={sorted || false}
-                            onSort={header.column.getToggleSortingHandler()}
-                          />
-                        ) : (
-                          flexRender(
-                            header.column.columnDef.header,
-                            header.getContext(),
-                          )
+                        {header.isPlaceholder ? null : (
+                          <DataTableColumnInner columnId={header.column.id}>
+                            {header.column.getCanSort() ? (
+                              <DataTableColumnHeader
+                                title={String(header.column.columnDef.header)}
+                                sorted={sorted || false}
+                                onSort={header.column.getToggleSortingHandler()}
+                              />
+                            ) : (
+                              flexRender(
+                                header.column.columnDef.header,
+                                header.getContext(),
+                              )
+                            )}
+                          </DataTableColumnInner>
                         )}
                       </TableHead>
                     );
                   })}
+                  <DataTableSpacerHead />
                 </TableRow>
               ))}
             </TableHeader>
@@ -218,10 +273,16 @@ export function DataTable<T>({
                 ? Array.from({ length: SKELETON_ROWS }).map((_, i) => (
                     <TableRow key={`skeleton-${i}`}>
                       {Array.from({ length: colSpan }).map((__, j) => (
-                        <TableCell key={j}>
-                          <Skeleton className="h-4 w-full max-w-[200px]" />
+                        <TableCell
+                          key={j}
+                          className={DATA_TABLE_COLUMN_CLASS}
+                        >
+                          <DataTableColumnInner>
+                            <Skeleton className="h-4 w-full max-w-[200px]" />
+                          </DataTableColumnInner>
                         </TableCell>
                       ))}
+                      <DataTableSpacerCell />
                     </TableRow>
                   ))
                 : table.getRowModel().rows.map((row) => (
@@ -263,19 +324,22 @@ export function DataTable<T>({
                         <TableCell
                           key={cell.id}
                           className={cn(
-                            cell.column.id === "actions" && "text-right",
+                            dataTableColumnClass(cell.column.id),
                             (
                               cell.column.columnDef.meta as
                                 { className?: string } | undefined
                             )?.className,
                           )}
                         >
-                          {flexRender(
-                            cell.column.columnDef.cell,
-                            cell.getContext(),
-                          )}
+                          <DataTableColumnInner columnId={cell.column.id}>
+                            {flexRender(
+                              cell.column.columnDef.cell,
+                              cell.getContext(),
+                            )}
+                          </DataTableColumnInner>
                         </TableCell>
                       ))}
+                      <DataTableSpacerCell />
                     </TableRow>
                   ))}
             </TableBody>

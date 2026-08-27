@@ -216,16 +216,29 @@ export const INBOX_LIST_PANEL_CLASS =
 export const INBOX_THREAD_PANEL_CLASS =
   "flex h-full min-h-0 w-full min-w-0 flex-col overflow-hidden bg-white";
 
-export const INBOX_THREAD_HEADER_CLASS =
-  "flex min-h-[var(--control-height)] shrink-0 items-center gap-3 border-b border-border bg-white px-6 py-3";
+/**
+ * Shared inbox column header band (list / thread / details).
+ * Height: `--table-header-height` (same as list table headers). Do not override per column.
+ */
+export const INBOX_COLUMN_HEADER_CLASS =
+  "flex h-[var(--table-header-height)] min-h-[var(--table-header-height)] max-h-[var(--table-header-height)] shrink-0 items-center gap-3 overflow-hidden border-b border-border bg-white px-6";
+
+export const INBOX_LIST_HEADER_CLASS =
+  `${INBOX_COLUMN_HEADER_CLASS} justify-between`;
+
+export const INBOX_THREAD_HEADER_CLASS = INBOX_COLUMN_HEADER_CLASS;
+
+/** Same band as the thread header; hidden on mobile where a Back bar already exists. */
+export const INBOX_DETAILS_HEADER_CLASS =
+  `${INBOX_COLUMN_HEADER_CLASS} max-md:hidden max-lg:pr-12`;
 
 /** Details pane — Figma ~360px → 22.5rem, flush white with a left divider on desktop. */
 export const INBOX_DETAILS_PANEL_CLASS =
   "flex h-full min-h-0 w-full min-w-0 flex-col overflow-hidden bg-white lg:border-l lg:border-border";
 
-/** Same rhythm as the thread header; hidden on mobile where a Back bar already exists. */
-export const INBOX_DETAILS_HEADER_CLASS =
-  `${INBOX_THREAD_HEADER_CLASS} max-md:hidden max-lg:pr-12`;
+/** Search + status chips under the list header — not part of the aligned band. */
+export const INBOX_LIST_TOOLS_CLASS =
+  "flex shrink-0 flex-col gap-4 border-b border-border px-6 py-4";
 
 export const INBOX_DETAILS_SECTION_CLASS =
   "flex flex-col gap-2.5 border-b border-border px-6 py-drawer-section last:border-b-0";
