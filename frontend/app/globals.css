@@ -300,10 +300,11 @@
    * DataTable column density — hit-and-trial here; every list uses these.
    *   --table-column-padding-x   cell left/right padding (was px-4 / 16px)
    *   --table-column-min-width   data column width (browsers ignore min-width on <td>)
-   * Use a length with a unit: 0px hugs content; try 8rem / 10rem / 12rem. Not a bare 5.
+   * Use a length with a unit: 0px hugs content; try 8rem / 10rem / 12rem for wider columns.
    */
-  --table-column-padding-x: 1rem;
-  --table-column-min-width: 5px;
+  --table-column-padding-x: 14px;
+  /* 0px = hug content (columns left-aligned; spacer eats extra width). */
+  --table-column-min-width: 14rem;
   /* Default ≥40px control; sm remains dense for compact chrome.
    * Button size="default" (including variant="brand") reads these:
    *   --control-height      → height / min-height

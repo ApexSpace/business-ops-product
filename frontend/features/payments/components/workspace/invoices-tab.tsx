@@ -36,6 +36,7 @@ import {
 import { invalidateFinancialLists } from "@/features/payments/workspace/payments-workspace";
 import { getInvoiceDisplayName } from "@/features/payments/utils/financial-table-display";
 import { queryKeys } from "@/lib/query/keys";
+import { ALL_STATUSES_EMPTY_OPTION } from "@/lib/ui/filter-labels";
 import type { Invoice, InvoiceStatus } from "@/features/invoices/types";
 import {
   duplicateInvoice,
@@ -55,7 +56,7 @@ const LIST_SCHEMA = {
 const PAGE_LIMIT = 20;
 
 const statusFilterItems = [
-  { value: "", label: "All statuses" },
+  ALL_STATUSES_EMPTY_OPTION,
   ...INVOICE_STATUS_OPTIONS.map((o) => ({ value: o.value, label: o.label })),
 ];
 

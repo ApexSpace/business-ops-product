@@ -27,6 +27,9 @@ import {
   formStatusVariant,
 } from "@/features/forms/utils/form-display.util";
 import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
+import {
+  ALL_STATUSES_ALL_OPTION,
+} from "@/lib/ui/filter-labels";
 import { useListSearchParams } from "@/lib/hooks/use-list-search-params";
 
 const LIST_SCHEMA = {
@@ -37,7 +40,7 @@ const LIST_SCHEMA = {
 } as const;
 
 const STATUS_OPTIONS = [
-  { value: "all", label: "All statuses" },
+  ALL_STATUSES_ALL_OPTION,
   { value: "draft", label: "Draft" },
   { value: "published", label: "Published" },
   { value: "archived", label: "Archived" },

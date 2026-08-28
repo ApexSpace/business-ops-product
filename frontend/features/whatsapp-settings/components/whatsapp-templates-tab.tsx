@@ -40,9 +40,10 @@ import {
   truncatePreview,
 } from "@/features/whatsapp-settings/utils/whatsapp-template-display.util";
 import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
+import { ALL_CATEGORIES_ALL_OPTION } from "@/lib/ui/filter-labels";
 
 const CATEGORY_OPTIONS = [
-  { value: "all", label: "All categories" },
+  ALL_CATEGORIES_ALL_OPTION,
   { value: "UTILITY", label: "Utility" },
   { value: "MARKETING", label: "Marketing" },
   { value: "AUTHENTICATION", label: "Authentication" },

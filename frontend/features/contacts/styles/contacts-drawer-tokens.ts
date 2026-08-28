@@ -94,10 +94,21 @@ export const CONTACTS_DRAWER_PROFILE_NOTE_CLASS =
 export const CONTACTS_DRAWER_RECORDS_CLASS =
   "contacts-drawer-records-panel";
 
-export const CONTACTS_DRAWER_TABPANEL_CLASS = "contacts-d2-tabpanel";
+/** Desktop split header — title column + tab column aligned with two-pane body. */
+export const CONTACTS_DRAWER_SPLIT_HEADER_CLASS =
+  "contacts-drawer-split-header";
 
-export const CONTACTS_DRAWER_TABPANEL_TIMELINE_CLASS =
-  "contacts-drawer-tabpanel-inner--timeline";
+export const CONTACTS_DRAWER_SPLIT_HEADER_TITLE_CLASS =
+  "contacts-drawer-split-header__title";
+
+export const CONTACTS_DRAWER_SPLIT_HEADER_TABS_CLASS =
+  "contacts-drawer-split-header__tabs";
+
+export const CONTACTS_DRAWER_TABPANEL_CLASS =
+  "contacts-d2-tabpanel contacts-drawer-tabpanel-scroll";
+
+export const CONTACTS_DRAWER_TABPANEL_BODY_CLASS =
+  "contacts-drawer-tabpanel-body";
 
 export const CONTACTS_TIMELINE_WRAP_CLASS = "contacts-drawer-timeline";
 

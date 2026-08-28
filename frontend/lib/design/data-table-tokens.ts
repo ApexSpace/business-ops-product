@@ -37,12 +37,11 @@ export const DATA_TABLE_SCROLL_CLASS = "min-h-0 overflow-auto";
 export const DATA_TABLE_GRID_CLASS = "w-full table-auto";
 
 /**
- * Content columns. `w-[1%]` + nowrap shrink-wraps when `--table-column-min-width`
- * is `0px`. A non-zero length (e.g. `10rem`) is applied as `width` — table cells
- * ignore `min-width`.
+ * Content columns. `max(1%, token)` shrink-wraps at `0px`; a non-zero token
+ * (e.g. `10rem`) sets a real floor — table cells ignore `min-width` alone.
  */
 export const DATA_TABLE_COLUMN_CLASS =
-  "w-[var(--table-column-min-width)] whitespace-nowrap";
+  "w-[max(1%,var(--table-column-min-width))] whitespace-nowrap";
 
 /** Checkbox / actions — always hug, ignore the column-width token. */
 export const DATA_TABLE_CHROME_COLUMN_CLASS = "!w-[1%] !min-w-0";

@@ -115,7 +115,7 @@ export function NewCheckoutDrawer({
             <ContactPicker
               value={contactId ?? ""}
               onValueChange={(id) => onContactIdChange(id || null)}
-              placeholder="Search or create a client"
+              placeholder="Search or Create a Client"
               variant="drawer"
             />
           </div>

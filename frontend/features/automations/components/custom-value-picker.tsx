@@ -82,7 +82,7 @@ export function CustomValuePicker({
           <Input
             value={search}
             onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search custom values"
+            placeholder="Search Custom Values"
             className="h-8 pl-8"
           />
         </div>

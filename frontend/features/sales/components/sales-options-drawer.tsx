@@ -99,7 +99,7 @@ export function SalesOptionsDrawer({
         <Field label="Type">
           <Select defaultValue="sale">
             <SelectTrigger className={DRAWER_SELECT_TRIGGER_CLASS}>
-              <SelectValue placeholder="Select type" />
+              <SelectValue placeholder="Select Type" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="sale">Sale</SelectItem>
@@ -111,7 +111,7 @@ export function SalesOptionsDrawer({
         <Field label="Sales or Refund #">
           <Input
             className={DRAWER_FIELD_CLASS}
-            placeholder="Enter sales and refund #"
+            placeholder="Enter Sales and Refund #"
             value={draft.saleNumber}
             onChange={(e) => update("saleNumber", e.target.value)}
           />
@@ -120,7 +120,7 @@ export function SalesOptionsDrawer({
         <Field label="Client">
           <Input
             className={DRAWER_FIELD_CLASS}
-            placeholder="Search for client"
+            placeholder="Search for Client"
             value={draft.clientQuery}
             onChange={(e) => update("clientQuery", e.target.value)}
           />
@@ -130,7 +130,7 @@ export function SalesOptionsDrawer({
           <Field label="From Amount">
             <Input
               className={DRAWER_FIELD_CLASS}
-              placeholder="Enter amount"
+              placeholder="Enter Amount"
               inputMode="decimal"
               value={draft.amountFrom}
               onChange={(e) => update("amountFrom", e.target.value)}
@@ -139,7 +139,7 @@ export function SalesOptionsDrawer({
           <Field label="To Amount">
             <Input
               className={DRAWER_FIELD_CLASS}
-              placeholder="Enter amount"
+              placeholder="Enter Amount"
               inputMode="decimal"
               value={draft.amountTo}
               onChange={(e) => update("amountTo", e.target.value)}
@@ -155,7 +155,7 @@ export function SalesOptionsDrawer({
             }
           >
             <SelectTrigger className={DRAWER_SELECT_TRIGGER_CLASS}>
-              <SelectValue placeholder="Select status" />
+              <SelectValue placeholder="Select Status" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All</SelectItem>
@@ -172,7 +172,7 @@ export function SalesOptionsDrawer({
             onValueChange={(v) => update("paymentMethod", v ?? "")}
           >
             <SelectTrigger className={DRAWER_SELECT_TRIGGER_CLASS}>
-              <SelectValue placeholder="Select sale payment method" />
+              <SelectValue placeholder="Select Sale Payment Method" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="CASH">Cash</SelectItem>
@@ -194,7 +194,7 @@ export function SalesOptionsDrawer({
         <Field label="Includes Staff Member">
           <Input
             className={DRAWER_FIELD_CLASS}
-            placeholder="Select staff member"
+            placeholder="Select Staff Member"
             value={draft.staffQuery}
             onChange={(e) => update("staffQuery", e.target.value)}
           />

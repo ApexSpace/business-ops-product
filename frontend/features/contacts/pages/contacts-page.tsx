@@ -298,12 +298,12 @@ function BusinessContactsPageContent() {
         className={
           isMobile ? CONTACTS_DRAWER_MOBILE_SHELL_CLASS : CONTACTS_DRAWER_SHELL_CLASS
         }
-        title="Client Details"
+        title={isMobile ? "Client Details" : ""}
         isLoading={detailLoading}
         fullBleed
         bodyClassName="flex flex-col !overflow-hidden"
         overflowActions={
-          selectedId && contactPerms.canOpenProfiles
+          isMobile && selectedId && contactPerms.canOpenProfiles
             ? [
                 {
                   id: "print",
@@ -337,6 +337,43 @@ function BusinessContactsPageContent() {
             contactId={selectedId}
             activeSection={activeTab}
             onSectionChange={(section) => setTab(section)}
+            drawerTitle={isMobile ? undefined : "Client Details"}
+            onRequestClose={
+              isMobile
+                ? undefined
+                : () => {
+                    clearSelection();
+                    setNoteComposerOpen(false);
+                  }
+            }
+            drawerOverflowActions={
+              isMobile || !contactPerms.canOpenProfiles
+                ? undefined
+                : [
+                    {
+                      id: "print",
+                      label: "Print upcoming appointments",
+                      icon: <Printer className="size-3.5" />,
+                      onSelect: () => panelActionsRef.current?.printAppointments(),
+                    },
+                    ...(contactPerms.canDeleteMerge
+                      ? [
+                          {
+                            id: "merge",
+                            label: "Merge contact…",
+                            onSelect: () => setMergeOpen(true),
+                          },
+                          {
+                            id: "delete",
+                            label: "Delete",
+                            icon: <Trash2 className="size-3.5" />,
+                            destructive: true,
+                            onSelect: () => panelActionsRef.current?.openDelete(),
+                          },
+                        ]
+                      : []),
+                  ]
+            }
             onActionsReady={handleActionsReady}
             noteComposerOpen={noteComposerOpen}
             onNoteComposerOpenChange={handleNoteComposerOpenChange}

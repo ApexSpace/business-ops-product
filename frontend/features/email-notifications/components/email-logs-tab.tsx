@@ -19,6 +19,10 @@ import {
   type EmailLog,
 } from "@/features/email-notifications/api/email-notifications.api";
 import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
+import {
+  ALL_STATUSES_EMPTY_OPTION,
+  ALL_TYPES_EMPTY_OPTION,
+} from "@/lib/ui/filter-labels";
 import { queryKeys } from "@/lib/query/keys";
 
 function emailStatusVariant(
@@ -194,7 +198,7 @@ export function EmailLogsTab() {
           <ListFilterCheckboxGroup
             legend="Email type"
             options={[
-              { value: "", label: "All types" },
+              ALL_TYPES_EMPTY_OPTION,
               ...EMAIL_TYPE_OPTIONS.map((option) => ({
                 value: option.value,
                 label: option.label,
@@ -206,7 +210,7 @@ export function EmailLogsTab() {
           <ListFilterCheckboxGroup
             legend="Status"
             options={[
-              { value: "", label: "All statuses" },
+              ALL_STATUSES_EMPTY_OPTION,
               ...EMAIL_STATUS_OPTIONS,
             ]}
             value={draftStatus}

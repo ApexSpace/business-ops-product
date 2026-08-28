@@ -637,7 +637,7 @@ export function AppointmentCreateDrawer({
                   if (!id) setSelectedContact(null);
                 }}
                 onContactSelect={handleContactSelect}
-                placeholder="Search or create a client"
+                placeholder="Search or Create a Client"
                 variant="drawer"
               />
             </DrawerFormFieldGroup>

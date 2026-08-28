@@ -14,9 +14,14 @@ import type { CheckoutItem } from "@/features/sales/types/checkout";
 import { formatMoney } from "@/features/payments/utils/currencies";
 import {
   SALES_DRAWER_FIELD_CLASS,
+  SALES_DRAWER_FIELD_GROUP_CLASS,
   SALES_DRAWER_ICON_BUTTON_CLASS,
+  SALES_DRAWER_LINE_CARD_CHEVRON_CLASS,
   SALES_DRAWER_LINE_CARD_CLASS,
+  SALES_DRAWER_LINE_CARD_EXPANDED_BODY_CLASS,
   SALES_DRAWER_LINE_CARD_EXPANDED_CLASS,
+  SALES_DRAWER_LINE_CARD_FIELD_GRID_CLASS,
+  SALES_DRAWER_LINE_CARD_HEADER_TOGGLE_CLASS,
   SALES_DRAWER_PROVIDER_PILL_CLASS,
   SALES_DRAWER_SELECT_TRIGGER_CLASS,
   SALES_DRAWER_VIEW_FIELD_LABEL_CLASS,
@@ -77,71 +82,66 @@ export function CheckoutLineItemRow({
           : SALES_DRAWER_LINE_CARD_CLASS,
       )}
     >
-      <div className="flex items-start gap-2.5">
+      <div className="flex items-start gap-2">
         <button
           type="button"
           onClick={onToggle}
-          className="mt-1 inline-flex size-5 shrink-0 items-center justify-center text-[#8A8A8A] hover:text-violet-primary-darker"
+          className={SALES_DRAWER_LINE_CARD_HEADER_TOGGLE_CLASS}
           aria-label={expanded ? "Collapse line item" : "Expand line item"}
           aria-expanded={expanded}
         >
-          <DrawerChevronIcon direction={expanded ? "down" : "right"} />
-        </button>
-
-        <button
-          type="button"
-          onClick={onToggle}
-          className="min-w-0 flex-1 text-left"
-        >
-          <p className="truncate text-[15px] font-bold leading-[19px] text-violet-primary-darker">
-            {item.title}
-          </p>
-          {!expanded && staffLabel ? (
-            <div className="mt-1.5">
-              <span className={SALES_DRAWER_PROVIDER_PILL_CLASS}>
-                <ProfileAvatar
-                  name={staffLabel}
-                  className="size-4 text-[8px]"
-                />
-                <span className="min-w-0 truncate">{staffLabel}</span>
-              </span>
-            </div>
-          ) : null}
-          {!expanded && !staffLabel && showStaff ? (
-            <p className="mt-1 text-[12px] font-medium leading-[15px] text-[#8A8A8A]">
-              sold by no staff
+          <span className={SALES_DRAWER_LINE_CARD_CHEVRON_CLASS}>
+            <DrawerChevronIcon direction={expanded ? "down" : "right"} />
+          </span>
+          <span className="min-w-0 flex-1 pt-0.5">
+            <p className="truncate text-[15px] font-bold leading-[19px] text-violet-primary-darker">
+              {item.title}
             </p>
-          ) : null}
-        </button>
-
-        <div className="flex shrink-0 items-center gap-2 pt-0.5">
+            {!expanded && staffLabel ? (
+              <div className="mt-1">
+                <span className={SALES_DRAWER_PROVIDER_PILL_CLASS}>
+                  <ProfileAvatar
+                    name={staffLabel}
+                    className="size-4 text-[8px]"
+                  />
+                  <span className="min-w-0 truncate">{staffLabel}</span>
+                </span>
+              </div>
+            ) : null}
+            {!expanded && !staffLabel && showStaff ? (
+              <p className="mt-1 text-[12px] font-medium leading-[15px] text-[#8A8A8A]">
+                sold by no staff
+              </p>
+            ) : null}
+          </span>
           {!expanded ? (
-            <span className="text-[14px] font-bold tabular-nums leading-[18px] text-violet-primary-darker">
+            <span className="shrink-0 pt-0.5 text-[14px] font-bold tabular-nums leading-[18px] text-violet-primary-darker">
               {lineTotalLabel}
             </span>
           ) : null}
-          {canEdit && expanded ? (
-            <button
-              type="button"
-              aria-label="Remove item"
-              disabled={busy}
-              className={cn(
-                SALES_DRAWER_ICON_BUTTON_CLASS,
-                "size-6 text-violet-primary-darker disabled:opacity-50 [&>svg]:size-5",
-              )}
-              onClick={onRemove}
-            >
-              <DrawerTrashIcon className="size-5" />
-            </button>
-          ) : null}
-        </div>
+        </button>
+
+        {canEdit && expanded ? (
+          <button
+            type="button"
+            aria-label="Remove item"
+            disabled={busy}
+            className={cn(
+              SALES_DRAWER_ICON_BUTTON_CLASS,
+              "size-6 shrink-0 text-violet-primary-darker disabled:opacity-50 [&>svg]:size-5",
+            )}
+            onClick={onRemove}
+          >
+            <DrawerTrashIcon className="size-5" />
+          </button>
+        ) : null}
       </div>
 
       {expanded ? (
-        <div className="mt-3 space-y-3 pl-7">
+        <div className={SALES_DRAWER_LINE_CARD_EXPANDED_BODY_CLASS}>
           {isProduct ? (
-            <div className="grid grid-cols-2 gap-3">
-              <div className="flex flex-col gap-2">
+            <div className={SALES_DRAWER_LINE_CARD_FIELD_GRID_CLASS}>
+              <div className={SALES_DRAWER_FIELD_GROUP_CLASS}>
                 <Label className={SALES_DRAWER_VIEW_FIELD_LABEL_CLASS}>
                   Quantity
                 </Label>
@@ -163,7 +163,7 @@ export function CheckoutLineItemRow({
                   className={SALES_DRAWER_FIELD_CLASS}
                 />
               </div>
-              <div className="flex flex-col gap-2">
+              <div className={SALES_DRAWER_FIELD_GROUP_CLASS}>
                 <Label className={SALES_DRAWER_VIEW_FIELD_LABEL_CLASS}>
                   Price
                 </Label>
@@ -190,7 +190,7 @@ export function CheckoutLineItemRow({
               </div>
             </div>
           ) : (
-            <div className="flex flex-col gap-2">
+            <div className={SALES_DRAWER_FIELD_GROUP_CLASS}>
               <Label className={SALES_DRAWER_VIEW_FIELD_LABEL_CLASS}>Price</Label>
               <button
                 type="button"
@@ -216,7 +216,7 @@ export function CheckoutLineItemRow({
           )}
 
           {showStaff ? (
-            <div className="flex flex-col gap-2">
+            <div className={SALES_DRAWER_FIELD_GROUP_CLASS}>
               <Label className={SALES_DRAWER_VIEW_FIELD_LABEL_CLASS}>
                 Provider
               </Label>

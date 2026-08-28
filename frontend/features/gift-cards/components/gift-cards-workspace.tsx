@@ -526,7 +526,7 @@ export function GiftCardsWorkspace() {
                 items={contactOptions}
                 value={ownerContactId}
                 onValueChange={setOwnerContactId}
-                placeholder="Search or create client"
+                placeholder="Search or Create Client"
               />
             </div>
             <div className="space-y-1.5">

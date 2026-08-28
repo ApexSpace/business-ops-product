@@ -82,7 +82,7 @@ export function ConversationListPanel({
         <SearchInput
           value={search}
           onChange={onSearchChange}
-          placeholder="Search clients..."
+          placeholder="Search clients…"
           className="max-w-none"
         />
 

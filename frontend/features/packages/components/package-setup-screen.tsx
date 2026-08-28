@@ -337,7 +337,7 @@ export function PackageSetupScreen() {
             </Button>
           </div>
           <Input
-            placeholder="Search packages"
+            placeholder="Search Packages"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />

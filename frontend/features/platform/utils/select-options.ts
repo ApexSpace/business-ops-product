@@ -1,4 +1,8 @@
 import type { SelectOption } from "@/components/forms/select-field";
+import {
+  allFilterOption,
+  FILTER_ALL_LABELS,
+} from "@/lib/ui/filter-labels";
 
 export const businessStatusFilterOptions: SelectOption[] = [
   { value: "all", label: "All Statuses" },
@@ -34,7 +38,7 @@ export const planStatusFilterOptions: SelectOption[] = [
 ];
 
 export const subscriptionStatusFilterOptions: SelectOption[] = [
-  { value: "all", label: "All statuses" },
+  allFilterOption(FILTER_ALL_LABELS.statuses),
   { value: "ACTIVE", label: "Active" },
   { value: "TRIALING", label: "Trialing" },
   { value: "PENDING_PAYMENT", label: "Pending Payment" },
@@ -169,65 +173,65 @@ export const capabilityFeatureSourceOptions: SelectOption[] = [
 ];
 
 export const subscriptionEventTypeFilterOptions: SelectOption[] = [
-  { value: "all", label: "All event types" },
+  allFilterOption(FILTER_ALL_LABELS.eventTypes),
   { value: "CREATED", label: "Created" },
-  { value: "STATUS_CHANGED", label: "Status changed" },
-  { value: "PLAN_CHANGED", label: "Plan changed" },
+  { value: "STATUS_CHANGED", label: "Status Changed" },
+  { value: "PLAN_CHANGED", label: "Plan Changed" },
   { value: "UPGRADED", label: "Upgraded" },
   { value: "DOWNGRADED", label: "Downgraded" },
-  { value: "TRIAL_STARTED", label: "Trial started" },
-  { value: "TRIAL_EXTENDED", label: "Trial extended" },
-  { value: "TRIAL_EXPIRED", label: "Trial expired" },
-  { value: "PAYMENT_MARKED_PAID", label: "Payment marked paid" },
-  { value: "PAYMENT_PENDING", label: "Payment pending" },
-  { value: "PAYMENT_FAILED", label: "Payment failed" },
-  { value: "PAYMENT_REFUNDED", label: "Payment refunded" },
-  { value: "PARTIAL_PAYMENT_RECORDED", label: "Partial payment" },
+  { value: "TRIAL_STARTED", label: "Trial Started" },
+  { value: "TRIAL_EXTENDED", label: "Trial Extended" },
+  { value: "TRIAL_EXPIRED", label: "Trial Expired" },
+  { value: "PAYMENT_MARKED_PAID", label: "Payment Marked Paid" },
+  { value: "PAYMENT_PENDING", label: "Payment Pending" },
+  { value: "PAYMENT_FAILED", label: "Payment Failed" },
+  { value: "PAYMENT_REFUNDED", label: "Payment Refunded" },
+  { value: "PARTIAL_PAYMENT_RECORDED", label: "Partial Payment" },
   { value: "CANCELED", label: "Canceled" },
   { value: "EXPIRED", label: "Expired" },
   { value: "REACTIVATED", label: "Reactivated" },
   { value: "SUSPENDED", label: "Suspended" },
-  { value: "BUSINESS_STATUS_CHANGED", label: "Business status changed" },
-  { value: "CAPABILITIES_SYNCED", label: "Capabilities synced" },
-  { value: "SNAPSHOT_CHANGED", label: "Snapshot changed" },
-  { value: "MANUAL_ADJUSTMENT", label: "Manual adjustment" },
+  { value: "BUSINESS_STATUS_CHANGED", label: "Business Status Changed" },
+  { value: "CAPABILITIES_SYNCED", label: "Capabilities Synced" },
+  { value: "SNAPSHOT_CHANGED", label: "Snapshot Changed" },
+  { value: "MANUAL_ADJUSTMENT", label: "Manual Adjustment" },
 ];
 
 export const subscriptionEventSourceFilterOptions: SelectOption[] = [
-  { value: "all", label: "All sources" },
+  allFilterOption(FILTER_ALL_LABELS.sources),
   { value: "ADMIN", label: "Admin" },
   { value: "SYSTEM", label: "System" },
-  { value: "PUBLIC_SIGNUP", label: "Public signup" },
+  { value: "PUBLIC_SIGNUP", label: "Public Signup" },
   { value: "WEBHOOK", label: "Webhook" },
   { value: "IMPORT", label: "Import" },
 ];
 
 export const subscriptionEventSeverityFilterOptions: SelectOption[] = [
-  { value: "all", label: "All severities" },
+  allFilterOption(FILTER_ALL_LABELS.severities),
   { value: "INFO", label: "Info" },
   { value: "WARNING", label: "Warning" },
   { value: "CRITICAL", label: "Critical" },
 ];
 
 export const subscriptionPaymentTypeFilterOptions: SelectOption[] = [
-  { value: "all", label: "All payment types" },
+  allFilterOption(FILTER_ALL_LABELS.paymentTypes),
   { value: "SUBSCRIPTION", label: "Subscription" },
-  { value: "SETUP_FEE", label: "Setup fee" },
-  { value: "TRIAL_CONVERSION", label: "Trial conversion" },
-  { value: "UPGRADE_PRORATION", label: "Upgrade proration" },
+  { value: "SETUP_FEE", label: "Setup Fee" },
+  { value: "TRIAL_CONVERSION", label: "Trial Conversion" },
+  { value: "UPGRADE_PRORATION", label: "Upgrade Proration" },
   { value: "REFUND", label: "Refund" },
   { value: "CREDIT", label: "Credit" },
   { value: "ADJUSTMENT", label: "Adjustment" },
-  { value: "MANUAL_PAYMENT", label: "Manual payment" },
+  { value: "MANUAL_PAYMENT", label: "Manual Payment" },
 ];
 
 export const subscriptionPaymentDirectionFilterOptions: SelectOption[] = [
-  { value: "all", label: "All directions" },
+  allFilterOption(FILTER_ALL_LABELS.directions),
   { value: "INCOMING", label: "Incoming" },
   { value: "OUTGOING", label: "Outgoing" },
 ];
 
 export const subscriptionPaymentMethodFilterOptions: SelectOption[] = [
-  { value: "all", label: "All methods" },
+  allFilterOption(FILTER_ALL_LABELS.methods),
   ...subscriptionPaymentMethodOptions,
 ];

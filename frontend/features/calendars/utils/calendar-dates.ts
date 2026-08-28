@@ -4,6 +4,7 @@ import {
   formatTimeInTimezone,
   getMinutesFromMidnightInTimezone,
 } from "@/features/calendars/utils/timezone";
+import { FILTER_ALL_LABELS } from "@/lib/ui/filter-labels";
 
 export type CalendarViewMode = "day" | "week" | "month" | "list";
 
@@ -199,7 +200,7 @@ export function formatDateRangeLabel(
       timeZone,
     });
   }
-  return "All appointments";
+  return FILTER_ALL_LABELS.appointments;
 }
 
 export function groupAppointmentsByDay<T extends { startAt: string }>(

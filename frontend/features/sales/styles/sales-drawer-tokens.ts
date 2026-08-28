@@ -54,7 +54,23 @@ export const SALES_DRAWER_LINE_CARD_CLASS =
 
 /** Figma checkout line card — expanded (lavender surface). */
 export const SALES_DRAWER_LINE_CARD_EXPANDED_CLASS =
-  "rounded-[var(--radius-md)] border border-transparent bg-violet-primary-surface px-3 py-3";
+  "rounded-[var(--radius-md)] border border-transparent bg-violet-primary-surface px-3 py-2.5";
+
+/** Line card header — full-row expand/collapse target (chevron + title [+ price]). */
+export const SALES_DRAWER_LINE_CARD_HEADER_TOGGLE_CLASS =
+  "flex min-w-0 flex-1 items-start gap-2.5 rounded-[var(--radius-sm)] text-left hover:text-violet-primary-darker focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-primary-normal/20";
+
+/** Chevron slot in line card header — 24px hit area aligned to title. */
+export const SALES_DRAWER_LINE_CARD_CHEVRON_CLASS =
+  "inline-flex size-6 shrink-0 items-center justify-center text-[#8A8A8A]";
+
+/** Expanded line card body — tight stack under header, flush left (no chevron gutter). */
+export const SALES_DRAWER_LINE_CARD_EXPANDED_BODY_CLASS =
+  "mt-drawer-field flex w-full min-w-0 flex-col gap-drawer-stack";
+
+/** Product line two-column field grid in expanded card. */
+export const SALES_DRAWER_LINE_CARD_FIELD_GRID_CLASS =
+  "grid grid-cols-2 gap-drawer-stack";
 
 /** Figma checkout subtotal row above primary CTA. */
 export const SALES_DRAWER_SUBTOTAL_ROW_CLASS =

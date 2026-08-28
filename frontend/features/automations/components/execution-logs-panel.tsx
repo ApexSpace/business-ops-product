@@ -24,6 +24,7 @@ import type {
   WorkflowRunStatus,
 } from "@/features/automations/types/workflow";
 import { cn } from "@/lib/utils";
+import { FILTER_ALL_LABELS } from "@/lib/ui/filter-labels";
 
 type ExecutionLogsPanelProps = {
   workflowId: string;
@@ -152,7 +153,7 @@ export function ExecutionLogsPanel({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All statuses</SelectItem>
+              <SelectItem value="all">{FILTER_ALL_LABELS.statuses}</SelectItem>
               {RUN_STATUSES.map((item) => (
                 <SelectItem key={item} value={item}>
                   {item}

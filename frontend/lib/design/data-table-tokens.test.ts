@@ -16,7 +16,7 @@ describe("data table column layout", () => {
 
   it("applies the column width token as width, not ignored min-width on td", () => {
     expect(DATA_TABLE_COLUMN_CLASS).toContain(
-      "w-[var(--table-column-min-width)]",
+      "w-[max(1%,var(--table-column-min-width))]",
     );
     expect(DATA_TABLE_COLUMN_INNER_CLASS).toContain(
       "--table-column-min-width",

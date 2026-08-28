@@ -104,7 +104,7 @@ export function SaleEditDrawerContent({
           <ContactPicker
             value={editContactId ?? ""}
             onValueChange={(id) => onEditContactIdChange(id || null)}
-            placeholder="Search or create a client"
+            placeholder="Search or Create a Client"
             variant="drawer"
           />
         </div>

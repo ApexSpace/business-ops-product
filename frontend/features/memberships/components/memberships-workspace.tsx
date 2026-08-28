@@ -481,7 +481,7 @@ export function MembershipsWorkspace() {
                 items={contactOptions}
                 value={contactId}
                 onValueChange={setContactId}
-                placeholder="Search for client"
+                placeholder="Search for Client"
                 inDialog
               />
             </div>

@@ -257,7 +257,7 @@ export function QuickRepliesDialog({
                 <Input
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search quick replies"
+                  placeholder="Search Quick Replies"
                   className="h-10 bg-muted/40 pl-9"
                 />
               </div>
