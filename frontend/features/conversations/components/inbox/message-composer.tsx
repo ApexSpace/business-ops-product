@@ -25,6 +25,16 @@ import type {
   ContactReplyChannel,
   ConversationChannel,
 } from "@/features/conversations/api/conversations.api";
+import {
+  INBOX_COMPOSER_FIELD_INPUT_CLASS,
+  INBOX_COMPOSER_FIELD_LABEL_CLASS,
+  INBOX_COMPOSER_FIELD_ROW_CLASS,
+  INBOX_COMPOSER_FOOTER_CLASS,
+  INBOX_COMPOSER_NOTE_TOOLBAR_CLASS,
+  INBOX_COMPOSER_TAB_LIST_CLASS,
+  INBOX_COMPOSER_TAB_ROW_CLASS,
+  INBOX_COMPOSER_TOOLBAR_CLASS,
+} from "@/features/conversations/styles/inbox-tokens";
 import { cn } from "@/lib/utils";
 import { CannedResponsesPicker } from "@/features/conversations/components/inbox/canned-responses-picker";
 import dynamic from "next/dynamic";
@@ -135,22 +145,31 @@ function ComposerInputCard({
 function ComposerFieldRow({
   label,
   children,
+  dense = false,
 }: {
   label: string;
   children: React.ReactNode;
+  dense?: boolean;
 }) {
   return (
-    <div className="flex min-h-11 min-w-0 items-center gap-2 border-b border-border px-3 py-1.5">
-      <span className="w-12 shrink-0 text-[11px] font-medium text-muted-foreground">
+    <div
+      className={
+        dense
+          ? INBOX_COMPOSER_FIELD_ROW_CLASS
+          : "flex min-h-11 min-w-0 items-center gap-2 border-b border-border px-3 py-1.5"
+      }
+    >
+      <span
+        className={
+          dense ? INBOX_COMPOSER_FIELD_LABEL_CLASS : "w-12 shrink-0 text-[11px] font-medium text-muted-foreground"
+        }
+      >
         {label}
       </span>
       <div className="min-w-0 flex-1">{children}</div>
     </div>
   );
 }
-
-const borderlessFieldClass =
-  "h-8 min-h-8 border-0 bg-transparent px-0 py-0 text-sm shadow-none focus-visible:ring-0";
 
 export function MessageComposer({
   composer,
@@ -474,8 +493,12 @@ export function MessageComposer({
       />
     ) : null;
 
-  const composerToolbar = (action: ReactNode, hint?: string | null) => (
-    <div className="flex items-center gap-2 border-t border-border/50 px-4 py-2">
+  const composerToolbar = (
+    action: ReactNode,
+    hint?: string | null,
+    toolbarClassName = INBOX_COMPOSER_TOOLBAR_CLASS,
+  ) => (
+    <div className={toolbarClassName}>
       <div className="flex shrink-0 items-center gap-1">
         {emojiPickerButton}
         {attachmentToggle}
@@ -505,7 +528,7 @@ export function MessageComposer({
           value={subject ?? ""}
           onChange={(e) => onSubjectChange?.(e.target.value)}
           placeholder="Subject"
-          className={borderlessFieldClass}
+          className={INBOX_COMPOSER_FIELD_INPUT_CLASS}
           disabled={composerDisabled}
         />
       </ComposerFieldRow>
@@ -662,19 +685,19 @@ export function MessageComposer({
     const replyFields = (
       <>
         {isEmailComposer && recipientEmail ? (
-          <ComposerFieldRow label="To">
+          <ComposerFieldRow label="To" dense>
             <span className="inline-flex max-w-full truncate rounded-full bg-muted px-2.5 py-0.5 text-xs text-foreground">
               {recipientEmail}
             </span>
           </ComposerFieldRow>
         ) : null}
         {isEmailComposer ? (
-          <ComposerFieldRow label="Subject">
+          <ComposerFieldRow label="Subject" dense>
             <Input
               value={subject ?? ""}
               onChange={(e) => onSubjectChange?.(e.target.value)}
               placeholder="Subject"
-              className={borderlessFieldClass}
+              className={INBOX_COMPOSER_FIELD_INPUT_CLASS}
               disabled={composerDisabled}
             />
           </ComposerFieldRow>
@@ -732,7 +755,7 @@ export function MessageComposer({
             }
           }}
         />
-        <div className="flex items-center gap-2 border-t border-warning/20 px-4 py-2">
+        <div className={INBOX_COMPOSER_NOTE_TOOLBAR_CLASS}>
           <ComposerEmojiPicker
             onSelect={(emoji) => onNoteDraftChange?.(`${noteDraft}${emoji}`)}
             className={composerToolButtonClass}
@@ -749,7 +772,7 @@ export function MessageComposer({
 
     return (
       <>
-        <footer className="shrink-0 bg-white px-4 pb-3">
+        <footer className={INBOX_COMPOSER_FOOTER_CLASS}>
           <div
             className={cn(
               "overflow-hidden rounded-[var(--radius-xl)] border",
@@ -767,11 +790,11 @@ export function MessageComposer({
             >
               <div
                 className={cn(
-                  "flex items-center justify-between gap-2 border-b px-4 py-2",
+                  INBOX_COMPOSER_TAB_ROW_CLASS,
                   composerTab === "note" ? "border-warning/20" : "border-border",
                 )}
               >
-                <TabsList variant="line" className="h-8 bg-transparent p-0">
+                <TabsList variant="line" className={INBOX_COMPOSER_TAB_LIST_CLASS}>
                   <TabsTrigger
                     value="reply"
                     className="px-3 data-active:text-violet-primary-normal group-data-[variant=line]/tabs-list:data-active:after:bg-violet-primary-normal"

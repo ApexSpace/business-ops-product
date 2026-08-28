@@ -9,6 +9,7 @@ import {
   type Appointment,
 } from "@/features/appointments/schemas/appointment-profile";
 import { CONTACT_FIELD_LABEL_CLASS } from "@/features/contacts/components/contact-workspace/contact-sidebar-details-fields";
+import { INBOX_DETAILS_EMPTY_STATE_CLASS } from "@/features/conversations/styles/inbox-tokens";
 import { useContactAppointmentHighlights } from "@/features/contacts/hooks/use-contact-appointment-highlights";
 import { useCurrentBusiness } from "@/features/settings/hooks/use-current-business";
 import { resolveAppointmentDisplayTimezone } from "@/features/calendars/utils/timezone";
@@ -135,10 +136,12 @@ function AppointmentTicketCard({
       </p>
       <p
         className={cn(
-          "mt-2 pb-2 text-base leading-snug",
-          isNext
-            ? "font-bold text-foreground"
-            : "font-medium text-muted-foreground",
+          "mt-2 pb-2",
+          appointment
+            ? isNext
+              ? "text-base font-bold leading-snug text-foreground"
+              : "text-base font-medium leading-snug text-muted-foreground"
+            : INBOX_DETAILS_EMPTY_STATE_CLASS,
         )}
       >
         {title}

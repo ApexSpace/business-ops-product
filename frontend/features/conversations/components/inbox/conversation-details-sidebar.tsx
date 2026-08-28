@@ -11,16 +11,15 @@ import { ContactSidebarAppointments } from "@/features/contacts/components/conta
 import type { Contact } from "@/features/contacts/types";
 import { formatClientSince } from "@/features/conversations/components/inbox/conversation-inbox-utils";
 import {
-  DRAWER_CLIENT_ACTION_ICON_CLASS,
   DRAWER_CLIENT_AVATAR_CLASS,
   DRAWER_CLIENT_AVATAR_FALLBACK_CLASS,
   DRAWER_CLIENT_CONTACT_ICON_CLASS,
   DRAWER_CLIENT_CONTACT_LIST_CLASS,
   DRAWER_CLIENT_CONTACT_ROW_CLASS,
   DRAWER_CLIENT_CREDIT_CARD_CLASS,
-  DRAWER_CLIENT_NAME_CLASS,
   DRAWER_CLIENT_SINCE_CLASS,
 } from "@/lib/design/drawer-tokens";
+import { INBOX_DETAILS_CONTACT_NAME_CLASS } from "@/features/conversations/styles/inbox-tokens";
 import { cn } from "@/lib/utils";
 
 interface ConversationDetailsSidebarProps {
@@ -61,7 +60,7 @@ export function ConversationDetailsSidebar({
               <button
                 type="button"
                 className={cn(
-                  DRAWER_CLIENT_NAME_CLASS,
+                  INBOX_DETAILS_CONTACT_NAME_CLASS,
                   "w-full text-left hover:underline",
                 )}
                 onClick={onViewFullProfile}
@@ -110,7 +109,10 @@ export function ConversationDetailsSidebar({
               onClick={onAddCreditCard ?? onViewFullProfile}
             >
               <CreditCard
-                className={DRAWER_CLIENT_ACTION_ICON_CLASS}
+                className={cn(
+                  DRAWER_CLIENT_CONTACT_ICON_CLASS,
+                  "text-[var(--drawer-text-secondary)]",
+                )}
                 aria-hidden
               />
               Add credit card

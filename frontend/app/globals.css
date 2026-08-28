@@ -383,6 +383,42 @@
   --contacts-drawer-profile-section-pad: 0.625rem; /* 10px — inside each section card */
   --contacts-drawer-tab-row-height: 2.5rem; /* 40px — tab strip min-height (was min-h-14 / 56px) */
   --contacts-drawer-split-body-height: 100%; /* profile + records columns stretch to drawer body */
+  /*
+   * Conversations inbox — hit-and-trial typography + composer chrome density.
+   *   --inbox-details-contact-name-weight   right-pane contact name (was bold / 700)
+   *   --inbox-details-empty-state-weight    empty copy e.g. "No upcoming appointment"
+   *   --inbox-composer-tab-padding-y        Reply / Note tab row vertical padding
+   *   --inbox-composer-tab-list-height      tab control height inside that row
+   *   --inbox-composer-field-row-height     To / Subject row min-height
+   *   --inbox-composer-field-row-padding-y  To / Subject row vertical padding
+   *   --inbox-composer-toolbar-padding-y    footer toolbar (icons + Send / Add Note)
+   *   --inbox-composer-field-label-size     To / Subject label (11px)
+   *   --inbox-composer-field-input-size     subject value + placeholder (match label)
+   *   --inbox-composer-field-input-height   subject control height
+   *   --inbox-composer-field-input-padding-x  subject placeholder/value left inset
+   *   --inbox-composer-footer-padding-bottom space under composer card
+   */
+  --inbox-details-contact-name-weight: 600;
+  --inbox-details-empty-state-weight: 500;
+  --inbox-composer-tab-padding-y: 0.375rem; /* 6px; was py-2 / 8px */
+  --inbox-composer-tab-list-height: 1.75rem; /* 28px; was h-8 / 32px */
+  --inbox-composer-field-row-height: 2rem; /* 40px; was min-h-11 / 44px */
+  --inbox-composer-field-row-padding-y: 0.25rem; /* 4px; was py-1.5 / 6px */
+  --inbox-composer-toolbar-padding-y: 0.375rem; /* 6px; was py-2 / 8px */
+  --inbox-composer-field-label-size: 0.6875rem; /* 11px — To / Subject row labels */
+  --inbox-composer-field-input-size: 0.6875rem; /* match label — subject placeholder + value */
+  --inbox-composer-field-input-height: 1.25rem; /* 20px — tighter than h-8 / 32px */
+  --inbox-composer-field-input-padding-x: 0.55rem; /* 4px — subject placeholder left inset */
+  --inbox-composer-footer-padding-bottom: 0.5rem; /* 8px; was pb-3 / 12px */
+  /*
+   * Drawer client actions — hit-and-trial (Add credit card matches phone/email).
+   *   --drawer-client-credit-card-weight
+   *   --drawer-client-credit-card-size
+   *   --drawer-client-credit-card-leading
+   */
+  --drawer-client-credit-card-weight: 500;
+  --drawer-client-credit-card-size: 13px;
+  --drawer-client-credit-card-leading: 16px;
   --drawer-width-split: 1040px;
   --shadow-xs-value: 0 1px 2px rgb(0 0 0 / 4%);
   --shadow-sm-value: 0 1px 3px rgb(0 0 0 / 6%),

@@ -13,13 +13,13 @@ import { SearchableSelect } from "@/components/forms/searchable-select";
 import type { CheckoutItem } from "@/features/sales/types/checkout";
 import { formatMoney } from "@/features/payments/utils/currencies";
 import {
+  SALES_DRAWER_CHECKOUT_LINE_CARD_SHELL_CLASS,
   SALES_DRAWER_FIELD_CLASS,
   SALES_DRAWER_FIELD_GROUP_CLASS,
   SALES_DRAWER_ICON_BUTTON_CLASS,
   SALES_DRAWER_LINE_CARD_CHEVRON_CLASS,
-  SALES_DRAWER_LINE_CARD_CLASS,
   SALES_DRAWER_LINE_CARD_EXPANDED_BODY_CLASS,
-  SALES_DRAWER_LINE_CARD_EXPANDED_CLASS,
+  SALES_DRAWER_LINE_CARD_EXPANDED_HEADER_CLASS,
   SALES_DRAWER_LINE_CARD_FIELD_GRID_CLASS,
   SALES_DRAWER_LINE_CARD_HEADER_TOGGLE_CLASS,
   SALES_DRAWER_PROVIDER_PILL_CLASS,
@@ -75,14 +75,15 @@ export function CheckoutLineItemRow({
   const busy = removePending || updatePending;
 
   return (
-    <div
-      className={cn(
-        expanded
-          ? SALES_DRAWER_LINE_CARD_EXPANDED_CLASS
-          : SALES_DRAWER_LINE_CARD_CLASS,
-      )}
-    >
-      <div className="flex items-start gap-2">
+    <div className={SALES_DRAWER_CHECKOUT_LINE_CARD_SHELL_CLASS}>
+      <div
+        className={cn(
+          "flex items-start gap-2",
+          expanded
+            ? SALES_DRAWER_LINE_CARD_EXPANDED_HEADER_CLASS
+            : "px-3 py-3",
+        )}
+      >
         <button
           type="button"
           onClick={onToggle}
@@ -93,23 +94,23 @@ export function CheckoutLineItemRow({
           <span className={SALES_DRAWER_LINE_CARD_CHEVRON_CLASS}>
             <DrawerChevronIcon direction={expanded ? "down" : "right"} />
           </span>
-          <span className="min-w-0 flex-1 pt-0.5">
+          <span className="min-w-0 flex-1 overflow-hidden pt-0.5">
             <p className="truncate text-[15px] font-bold leading-[19px] text-violet-primary-darker">
               {item.title}
             </p>
             {!expanded && staffLabel ? (
-              <div className="mt-1">
+              <div className="mt-1 min-w-0 max-w-full">
                 <span className={SALES_DRAWER_PROVIDER_PILL_CLASS}>
                   <ProfileAvatar
                     name={staffLabel}
-                    className="size-4 text-[8px]"
+                    className="size-4 shrink-0 text-[8px]"
                   />
                   <span className="min-w-0 truncate">{staffLabel}</span>
                 </span>
               </div>
             ) : null}
             {!expanded && !staffLabel && showStaff ? (
-              <p className="mt-1 text-[12px] font-medium leading-[15px] text-[#8A8A8A]">
+              <p className="mt-1 truncate text-[12px] font-medium leading-[15px] text-[#8A8A8A]">
                 sold by no staff
               </p>
             ) : null}
