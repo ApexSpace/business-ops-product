@@ -50,7 +50,7 @@ function DetailField({
   label,
   value,
   multiline = false,
-  placeholder = "—",
+  placeholder = "",
 }: DetailFieldProps) {
   const display = value?.trim() ? value.trim() : "";
 
@@ -142,7 +142,7 @@ export function ContactDetailsPanel({
               <NavArrowIcon direction="left" size="lg" />
             </IconButton>
             <span className="tabular-nums">
-              {contactIndex != null ? contactIndex + 1 : "—"} / {contactTotal}
+              {contactIndex != null ? contactIndex + 1 : ""} / {contactTotal}
             </span>
             <IconButton aria-label="Next contact" className="size-7" disabled>
               <NavArrowIcon direction="right" size="lg" />

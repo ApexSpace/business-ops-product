@@ -453,7 +453,7 @@ function DetailsReadOnly({
         </div>
         <div className="sm:col-span-2">
           <p className="text-muted-foreground text-xs">Internal description</p>
-          <p>{offer.description?.trim() || "—"}</p>
+          <p>{offer.description?.trim() || ""}</p>
         </div>
       </div>
 
@@ -985,7 +985,7 @@ function DiscountForm({
           >
             <div className="flex items-center gap-2">
               <RadioGroupItem value="ALL" id="service-scope-all" />
-              <Label htmlFor="service-scope-all">All services</Label>
+              <Label htmlFor="service-scope-all">All Services</Label>
             </div>
             <div className="flex items-center gap-2">
               <RadioGroupItem value="SPECIFIC" id="service-scope-specific" />
@@ -1072,7 +1072,7 @@ function DiscountForm({
           >
             <div className="flex items-center gap-2">
               <RadioGroupItem value="ALL" id="product-scope-all" />
-              <Label htmlFor="product-scope-all">All products</Label>
+              <Label htmlFor="product-scope-all">All Products</Label>
             </div>
             <div className="flex items-center gap-2">
               <RadioGroupItem value="SPECIFIC" id="product-scope-specific" />

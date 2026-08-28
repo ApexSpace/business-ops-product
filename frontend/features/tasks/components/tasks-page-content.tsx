@@ -30,6 +30,11 @@ import {
 import { invalidateTaskLists } from "@/lib/query/invalidation";
 import { queryKeys } from "@/lib/query/keys";
 import type { Task } from "@/features/tasks/types";
+import {
+  ALL_ASSIGNEES_EMPTY_OPTION,
+  ALL_PRIORITIES_EMPTY_OPTION,
+  ALL_STATUSES_EMPTY_OPTION,
+} from "@/lib/ui/filter-labels";
 
 const LIST_SCHEMA = {
   page: { default: "1" },
@@ -42,12 +47,12 @@ const LIST_SCHEMA = {
 const PAGE_LIMIT = 20;
 
 const statusFilterItems = [
-  { value: "", label: "All statuses" },
+  ALL_STATUSES_EMPTY_OPTION,
   ...TASK_STATUS_OPTIONS.map((o) => ({ value: o.value, label: o.label })),
 ];
 
 const priorityFilterItems = [
-  { value: "", label: "All priorities" },
+  ALL_PRIORITIES_EMPTY_OPTION,
   ...TASK_PRIORITY_OPTIONS.map((o) => ({ value: o.value, label: o.label })),
 ];
 
@@ -95,7 +100,7 @@ export function TasksPageContent() {
           [m.user.firstName, m.user.lastName].filter(Boolean).join(" ") ||
           m.user.email,
       })) ?? [];
-    return [{ value: "", label: "All assignees" }, ...items];
+    return [ALL_ASSIGNEES_EMPTY_OPTION, ...items];
   }, [members?.items]);
 
   const deleteMutation = useMutation({

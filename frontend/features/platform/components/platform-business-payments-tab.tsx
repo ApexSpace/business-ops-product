@@ -252,14 +252,14 @@ export function PlatformBusinessPaymentsTab({
       {
         id: "reference",
         header: "Reference",
-        cell: (row) => row.paymentReference ?? "—",
+        cell: (row) => row.paymentReference ?? "",
       },
       {
         id: "notes",
         header: "Notes",
         cell: (row) => (
           <span className="max-w-[160px] truncate block">
-            {row.notes ?? "—"}
+            {row.notes ?? ""}
           </span>
         ),
       },

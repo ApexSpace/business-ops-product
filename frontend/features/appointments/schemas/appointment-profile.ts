@@ -158,7 +158,7 @@ export const APPOINTMENT_LIFECYCLE_STATUS_OPTIONS: {
   { value: "UNCONFIRMED", label: "Unconfirmed" },
   { value: "CONFIRMED", label: "Confirmed" },
   { value: "WAITING", label: "Waiting" },
-  { value: "IN_SERVICE", label: "In service" },
+  { value: "IN_SERVICE", label: "In Service" },
   { value: "COMPLETED", label: "Closed" },
 ];
 
@@ -170,7 +170,7 @@ export const APPOINTMENT_FILTER_STATUS_OPTIONS: {
 }[] = [
   ...APPOINTMENT_LIFECYCLE_STATUS_OPTIONS,
   { value: "CANCELLED", label: "Cancelled" },
-  { value: "NO_SHOW", label: "No show" },
+  { value: "NO_SHOW", label: "No Show" },
 ];
 
 export const appointmentServiceLineSchema = z.object({

@@ -65,7 +65,7 @@ export function canDeleteTemplateFromStatus(
 }
 
 export function formatTemplateTableDate(value: string | null): string {
-  if (!value) return "—";
+  if (!value) return "";
   return new Intl.DateTimeFormat(undefined, {
     dateStyle: "medium",
     timeStyle: "short",
@@ -73,7 +73,7 @@ export function formatTemplateTableDate(value: string | null): string {
 }
 
 export function truncatePreview(value: string | null, max = 72): string {
-  if (!value?.trim()) return "—";
+  if (!value?.trim()) return "";
   const trimmed = value.trim();
   return trimmed.length > max ? `${trimmed.slice(0, max)}…` : trimmed;
 }

@@ -981,7 +981,7 @@ export function CreateBusinessWizard() {
                     <p className="font-medium">Review summary</p>
                     <SummaryRow
                       label="Business"
-                      value={detailsForm.watch("name") || "—"}
+                      value={detailsForm.watch("name") || ""}
                     />
                     <SummaryRow
                       label="Owner"
@@ -1025,7 +1025,7 @@ export function CreateBusinessWizard() {
                                 : null,
                             ]
                               .filter(Boolean)
-                              .join(" · ") || "—"
+                              .join(" · ") || ""
                       }
                     />
                     <SummaryRow

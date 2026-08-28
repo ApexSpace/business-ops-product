@@ -200,7 +200,7 @@ export function MembershipDetailPanel({
                           {event.eventType.replace(/_/g, " ").toLowerCase()}
                         </TableCell>
                         <TableCell className="text-right tabular-nums">
-                          {event.amount ? formatMoney(event.amount) : "—"}
+                          {event.amount ? formatMoney(event.amount) : ""}
                         </TableCell>
                       </TableRow>
                     ))}

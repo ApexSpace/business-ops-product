@@ -44,7 +44,7 @@ export function InvoicesMobileList({
       getRow={(row) => {
         const amount = formatMoney(row.totalAmount);
         const name = getInvoiceDisplayName(row);
-        const contact = row.contact?.label?.trim() || "—";
+        const contact = row.contact?.label?.trim() || "";
         const date = formatSalesListDateSafe(row.issueDate);
         return {
           primary: name,

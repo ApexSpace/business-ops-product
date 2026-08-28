@@ -36,7 +36,7 @@ import {
 import { cn } from "@/lib/utils";
 
 function formatDurationMinutes(minutes: number | null | undefined): string {
-  if (!minutes || minutes <= 0) return "—";
+  if (!minutes || minutes <= 0) return "";
   if (minutes < 60) return `${minutes} min`;
   const hours = Math.floor(minutes / 60);
   const remainder = minutes % 60;

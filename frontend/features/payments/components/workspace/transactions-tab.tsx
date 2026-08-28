@@ -54,6 +54,7 @@ import {
   SALES_DRAWER_MOBILE_SHELL_CLASS,
 } from "@/features/sales/styles/sales-drawer-tokens";
 import { queryKeys } from "@/lib/query/keys";
+import { ALL_METHODS_EMPTY_OPTION } from "@/lib/ui/filter-labels";
 import type { Payment } from "@/features/payments/types";
 import { listPayments, refundPayment } from "@/features/payments/api/payments.api";
 
@@ -68,7 +69,7 @@ const LIST_SCHEMA = {
 const PAGE_LIMIT = 20;
 
 const methodFilterItems = [
-  { value: "", label: "All methods" },
+  ALL_METHODS_EMPTY_OPTION,
   ...PAYMENT_METHOD_OPTIONS.map((o) => ({ value: o.value, label: o.label })),
 ];
 
@@ -140,7 +141,7 @@ export function PaymentsTransactionsTab() {
         className: "min-w-[9rem] max-w-[12rem]",
         cell: (row) => (
           <span className="line-clamp-1 font-medium">
-            {row.contact?.label ?? "—"}
+            {row.contact?.label ?? ""}
           </span>
         ),
       },

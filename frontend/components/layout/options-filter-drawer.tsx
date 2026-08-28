@@ -3,7 +3,6 @@
 import { DrawerHeaderContent } from "@/components/drawer/drawer-header-content";
 import { DrawerPrimaryButton } from "@/components/drawer/drawer-primary-button";
 import { DrawerShell, type DrawerShellChrome } from "@/components/layout/drawer-shell";
-import { MoreActionsButton } from "@/components/ui/more-actions-button";
 import {
   DRAWER_BODY_INSET_CLASS,
   DRAWER_FOOTER_CLASS,
@@ -24,7 +23,6 @@ export interface OptionsFilterDrawerProps {
   applyDisabled?: boolean;
   onApply: () => void;
   headerActions?: React.ReactNode;
-  showMoreAction?: boolean;
   children: React.ReactNode;
   className?: string;
   /** Extra content above the form fields (e.g. View Transactions). */
@@ -44,17 +42,12 @@ export function OptionsFilterDrawer({
   applyDisabled = false,
   onApply,
   headerActions,
-  showMoreAction = true,
   children,
   className,
   leading,
 }: OptionsFilterDrawerProps) {
   const isMobile = useIsMobile();
   const chrome: DrawerShellChrome = isMobile ? "mobile-brand" : "default";
-
-  const moreAction = showMoreAction ? (
-    <MoreActionsButton aria-label="More options" />
-  ) : null;
 
   return (
     <DrawerShell
@@ -72,7 +65,7 @@ export function OptionsFilterDrawer({
       contentClassName="!px-0 !py-0"
       footerClassName={DRAWER_FOOTER_CLASS}
       title={isMobile ? title : <DrawerHeaderContent title={title} />}
-      headerActions={headerActions ?? moreAction}
+      headerActions={headerActions}
       footer={
         <div className={DRAWER_FOOTER_INNER_CLASS}>
           <DrawerPrimaryButton

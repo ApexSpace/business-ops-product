@@ -155,7 +155,7 @@ export function AutomationRegistryBrowser() {
                 categories={customValueCategories.data ?? []}
                 search={search}
                 onSearchChange={setSearch}
-                searchPlaceholder="Search merge fields"
+                searchPlaceholder="Search Merge Fields"
               />
             </CardContent>
           </Card>
@@ -172,7 +172,7 @@ export function AutomationRegistryBrowser() {
                 categories={conditionCategories.data ?? []}
                 search={search}
                 onSearchChange={setSearch}
-                searchPlaceholder="Search conditions"
+                searchPlaceholder="Search Conditions"
               />
             </CardContent>
           </Card>

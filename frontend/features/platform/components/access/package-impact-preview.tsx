@@ -45,7 +45,7 @@ export function PackageImpactPreview({
         <div className="grid gap-2 sm:grid-cols-2">
           <div>
             <p className="text-xs text-muted-foreground">Amount</p>
-            <p>{amount ? `${amount} ${currency ?? ""}`.trim() : "—"}</p>
+            <p>{amount ? `${amount} ${currency ?? ""}`.trim() : ""}</p>
           </div>
           {trialDays != null && (
             <div>

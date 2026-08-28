@@ -204,28 +204,94 @@
 .contacts-detail-card--drawer-split {
   display: flex;
   min-height: 0;
-  height: 100%;
+  height: var(--contacts-drawer-split-body-height);
   flex: 1 1 auto;
   flex-direction: column;
   overflow: hidden;
   background: transparent;
+  align-items: stretch;
 }
 
-/* Left profile — Figma 409px column, pad 16/24, gap 40 */
+/* Left profile — width from `--contacts-drawer-profile-pane-width` (globals.css) */
 .contacts-drawer-profile-panel {
   display: flex;
   width: 100%;
   min-width: 0;
+  min-height: 0;
   flex-shrink: 0;
+  flex-grow: 0;
   flex-direction: column;
-  gap: 40px;
-  overflow-x: hidden;
-  overflow-y: auto;
+  overflow: hidden;
   border-bottom: 1px solid var(--drawer-header-border);
   background: white;
-  padding: 16px 24px 24px;
   max-height: min(42vh, 380px);
+  box-sizing: border-box;
+}
+
+/* Full pane width — scrollbar sits on the split edge (not inside content padding). */
+.contacts-drawer-profile-panel__scroll {
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow-x: hidden;
+  overflow-y: auto;
   scrollbar-width: thin;
+}
+
+.contacts-drawer-profile-panel__body {
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+  box-sizing: border-box;
+  padding: var(--drawer-body-padding-y) var(--contacts-drawer-profile-inset)
+    var(--drawer-body-padding-bottom);
+}
+
+.contacts-drawer-profile-panel__body--edit {
+  gap: 0;
+  padding-bottom: var(--drawer-body-padding-bottom);
+}
+
+.contacts-drawer-profile-panel__footer {
+  flex-shrink: 0;
+  box-sizing: border-box;
+  border-top: 1px solid var(--drawer-header-border);
+  padding: var(--drawer-footer-padding-y) var(--contacts-drawer-profile-inset);
+  padding-bottom: max(
+    var(--drawer-footer-padding-y),
+    env(safe-area-inset-bottom, 0px)
+  );
+}
+
+/* Edit form density — spacing from --contacts-drawer-profile-* in globals.css :root */
+.contacts-drawer-profile-edit-fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--contacts-drawer-profile-gap);
+}
+
+.contacts-drawer-profile-edit-fields > section {
+  padding: var(--contacts-drawer-profile-section-pad) !important;
+}
+
+.contacts-drawer-profile-edit-fields > section > div:first-child {
+  margin-bottom: var(--contacts-drawer-profile-gap) !important;
+}
+
+.contacts-drawer-profile-edit-fields > section > div:last-child {
+  display: flex;
+  flex-direction: column;
+  gap: var(--contacts-drawer-profile-gap);
+}
+
+.contacts-drawer-profile-edit-fields > section > div:last-child > * {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+.contacts-drawer-profile-edit-field-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--contacts-drawer-profile-gap);
 }
 
 .contacts-drawer-profile-identity {
@@ -276,27 +342,84 @@
   flex-direction: column;
   overflow: hidden;
   background: var(--drawer-tab-track);
+  align-self: stretch;
 }
 
-.contacts-drawer-records-panel .contacts-d2-tabpanel {
+/* Shared contact drawer tab row — height from --contacts-drawer-tab-row-height (globals.css) */
+.contacts-drawer-tab-list {
+  min-height: var(--contacts-drawer-tab-row-height);
+  padding-top: calc(var(--contacts-drawer-tab-row-height) * 0.1);
+}
+
+.contacts-drawer-tab-list [role="tab"] {
+  min-height: calc(var(--contacts-drawer-tab-row-height) * 0.8);
+  padding-bottom: calc(var(--contacts-drawer-tab-row-height) * 0.2);
+}
+
+/* Desktop — title band over profile column, tabs over records column. */
+.contacts-drawer-split-header {
+  display: none;
+}
+
+.contacts-drawer-split-header__title {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.contacts-drawer-split-header__title-text {
+  min-width: 0;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--pc-violet-primary-normal);
+}
+
+.contacts-drawer-split-header__title-actions {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 6px;
+}
+
+.contacts-drawer-split-header__tabs {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.contacts-drawer-split-header__tabs [role="tablist"] {
+  margin-bottom: 0;
+}
+
+.contacts-drawer-records-panel .contacts-drawer-tabpanel-scroll {
   display: flex;
   min-height: 0;
   flex: 1;
   flex-direction: column;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 0;
+  scrollbar-width: thin;
 }
 
-.contacts-drawer-tabpanel-inner--timeline {
+.contacts-drawer-tabpanel-body {
   display: flex;
-  min-height: 0;
-  flex: 1;
+  min-width: 0;
   flex-direction: column;
+}
+
+.contacts-drawer-tabpanel-body:not(:has(.contacts-drawer-timeline)) {
+  padding: 12px 16px max(24px, env(safe-area-inset-bottom, 0px));
 }
 
 .contacts-drawer-timeline-composer {
   display: flex;
-  flex-shrink: 0;
   flex-direction: column;
   gap: 10px;
   background: var(--drawer-tab-track);
@@ -321,27 +444,18 @@
 }
 
 .contacts-drawer-records-filter {
-  flex-shrink: 0;
   background: var(--drawer-tab-track);
   padding: 10px 16px 2px;
 }
 
 .contacts-drawer-tab-scroll {
   display: flex;
-  min-height: 0;
-  flex: 1;
   flex-direction: column;
-  overflow-x: hidden;
-  overflow-y: auto;
-  overscroll-behavior: contain;
   padding: 12px 16px max(24px, env(safe-area-inset-bottom, 0px));
-  scrollbar-width: thin;
 }
 
 .contacts-drawer-timeline {
   display: flex;
-  min-height: 0;
-  flex: 1;
   flex-direction: column;
 }
 
@@ -356,18 +470,53 @@
     padding-left: 24px;
     padding-right: 24px;
   }
+
+  .contacts-drawer-tabpanel-body:not(:has(.contacts-drawer-timeline)) {
+    padding-left: 24px;
+    padding-right: 24px;
+  }
 }
 
 @media (min-width: 1024px) {
+  .contacts-drawer-split-header {
+    display: flex;
+    flex-shrink: 0;
+    min-width: 0;
+    border-bottom: 1px solid var(--drawer-header-border);
+    background: white;
+  }
+
+  .contacts-drawer-split-header__title {
+    width: min(100%, var(--contacts-drawer-profile-pane-width));
+    flex: 0 0 var(--contacts-drawer-profile-pane-width);
+    max-width: var(--contacts-drawer-profile-pane-width);
+    border-right: 1px solid var(--drawer-header-border);
+    padding: var(--drawer-header-padding-y) 24px;
+  }
+
   .contacts-detail-card--drawer-split {
     flex-direction: row;
+    height: var(--contacts-drawer-split-body-height);
+    min-height: 0;
   }
 
   .contacts-drawer-profile-panel {
-    width: min(100%, 409px);
-    max-height: none;
+    flex: 0 0 var(--contacts-drawer-profile-pane-width);
+    width: var(--contacts-drawer-profile-pane-width);
+    max-width: var(--contacts-drawer-profile-pane-width);
+    max-height: 100%;
+    height: 100%;
+    min-height: 0;
     border-right: 1px solid var(--drawer-header-border);
     border-bottom: none;
+    align-self: stretch;
+  }
+
+  .contacts-drawer-records-panel {
+    height: 100%;
+    max-height: 100%;
+    min-height: 0;
+    align-self: stretch;
   }
 }
 

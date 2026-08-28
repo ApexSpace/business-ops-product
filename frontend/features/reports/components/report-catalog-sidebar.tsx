@@ -100,7 +100,7 @@ export function ReportCatalogSidebar({
       <SearchInput
         value={query}
         onChange={setQuery}
-        placeholder="Search reports"
+        placeholder="Search Reports"
         className="max-w-none"
       />
       <ScrollArea className="min-h-0 flex-1">

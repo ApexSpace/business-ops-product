@@ -43,7 +43,7 @@ export function PipelineLeadCard({
   const serviceLabel = getLeadServiceLabel(lead);
   const amount = parseBoardAmount(lead.value);
   const valueLabel = formatMoney(amount);
-  const showService = serviceLabel !== "—";
+  const showService = Boolean(serviceLabel);
 
   return (
     <BoardCard

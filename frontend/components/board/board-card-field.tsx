@@ -1,5 +1,6 @@
 "use client";
 
+import { isEmptyDisplayValue } from "@/lib/ui/display-value";
 import { cn } from "@/lib/utils";
 
 export interface BoardCardFieldProps {
@@ -9,7 +10,12 @@ export interface BoardCardFieldProps {
 }
 
 export function BoardCardField({ label, value, className }: BoardCardFieldProps) {
-  if (value == null || value === "" || value === "—") return null;
+  if (
+    value == null ||
+    value === "" ||
+    (typeof value === "string" && isEmptyDisplayValue(value))
+  )
+    return null;
 
   return (
     <div className={cn("grid grid-cols-[5.5rem_1fr] gap-x-2 gap-y-0.5 text-xs", className)}>

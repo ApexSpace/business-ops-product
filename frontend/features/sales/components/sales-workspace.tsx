@@ -23,7 +23,6 @@ import { DrawerShell } from "@/components/layout/drawer-shell";
 import { DrawerHeaderContent } from "@/components/drawer/drawer-header-content";
 import { DrawerPrimaryButton } from "@/components/drawer/drawer-primary-button";
 import { IconButton } from "@/components/ui/icon-button";
-import { MoreActionsButton } from "@/components/ui/more-actions-button";
 import { EntityListLayout } from "@/components/layout/entity-list-layout";
 import { ListPrimaryAction } from "@/components/layout/list-primary-action";
 import { StatusBadge } from "@/components/data-display/status-badge";
@@ -709,12 +708,12 @@ export function SalesWorkspace() {
           )
         }
         headerActions={
-          <>
-            {sale?.isOpen &&
-            saleDetailProps &&
-            canCheckout &&
-            !saleEditMode &&
-            checkoutStep !== "payment" ? (
+          sale?.isOpen &&
+          saleDetailProps &&
+          canCheckout &&
+          !saleEditMode &&
+          checkoutStep !== "payment" ? (
+            <>
               <IconButton
                 type="button"
                 variant="ghost"
@@ -724,12 +723,6 @@ export function SalesWorkspace() {
               >
                 <Pencil className="size-4" />
               </IconButton>
-            ) : null}
-            {sale?.isOpen &&
-            saleDetailProps &&
-            canCheckout &&
-            !saleEditMode &&
-            checkoutStep !== "payment" ? (
               <IconButton
                 type="button"
                 variant="ghost"
@@ -739,10 +732,8 @@ export function SalesWorkspace() {
               >
                 <Trash2 className="size-4" />
               </IconButton>
-            ) : (
-              <MoreActionsButton aria-label="More actions" />
-            )}
-          </>
+            </>
+          ) : undefined
         }
         footer={
           sale?.isOpen && saleDetailProps && canCheckout ? (

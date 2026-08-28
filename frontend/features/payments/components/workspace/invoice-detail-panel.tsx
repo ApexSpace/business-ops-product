@@ -29,7 +29,7 @@ export function InvoiceDetailPanel({ invoice }: InvoiceDetailPanelProps) {
           {getInvoiceDisplayName(invoice)}
         </EntityDetailField>
         <EntityDetailField label="Customer">
-          {invoice.contact?.label ?? "—"}
+          {invoice.contact?.label ?? ""}
         </EntityDetailField>
         <EntityDetailField label="Issue date">
           {formatInvoiceDate(invoice.issueDate)}

@@ -131,7 +131,7 @@ export function CalendarSettingsEditor({ calendarId }: CalendarSettingsEditorPro
             render={<Link href="/business/settings/calendars" />}
           >
             <ArrowLeft className="mr-2 size-4" />
-            All calendars
+            All Calendars
           </Button>
         }
       />

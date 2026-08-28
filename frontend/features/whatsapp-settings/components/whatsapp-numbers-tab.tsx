@@ -13,12 +13,12 @@ import { useWhatsAppNumbers } from "@/features/whatsapp-settings/hooks/use-whats
 import { formatResourceDate } from "@/features/integrations/utils/integration-resources";
 
 function formatMessagingLimit(value: string | null): string {
-  if (!value) return "—";
+  if (!value) return "";
   return value.replace(/_/g, " ");
 }
 
 function formatQuality(value: string | null): string {
-  if (!value) return "—";
+  if (!value) return "";
   return value.replace(/_/g, " ").toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
 }
 

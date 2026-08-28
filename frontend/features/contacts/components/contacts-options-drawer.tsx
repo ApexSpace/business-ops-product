@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { OptionsFilterDrawer } from "@/components/layout/options-filter-drawer";
-import { MoreActionsButton } from "@/components/ui/more-actions-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -17,6 +16,10 @@ import {
   DRAWER_FORM_FIELDS_CLASS,
   DRAWER_SELECT_TRIGGER_CLASS,
 } from "@/lib/design/drawer-tokens";
+import {
+  CONTACTS_TIME_FILTER_OPTIONS,
+  FILTER_ALL_LABELS,
+} from "@/lib/ui/filter-labels";
 import { cn } from "@/lib/utils";
 
 export type ContactsTimeFilter = "all" | "30d" | "90d" | "1y";
@@ -49,12 +52,7 @@ export const EMPTY_CONTACTS_OPTIONS: ContactsOptionsValues = {
   tag: "",
 };
 
-const TIME_OPTIONS: { value: ContactsTimeFilter; label: string }[] = [
-  { value: "all", label: "All time" },
-  { value: "30d", label: "Last 30 days" },
-  { value: "90d", label: "Last 90 days" },
-  { value: "1y", label: "Last year" },
-];
+const TIME_OPTIONS = CONTACTS_TIME_FILTER_OPTIONS;
 
 export interface ContactsOptionsDrawerProps {
   open: boolean;
@@ -116,8 +114,6 @@ export function ContactsOptionsDrawer({
         onApply(draft);
         onDownload?.();
       }}
-      showMoreAction={false}
-      headerActions={<MoreActionsButton aria-label="More options" />}
       leading={
         onImport ? (
           <button
@@ -145,7 +141,7 @@ export function ContactsOptionsDrawer({
             }
           >
             <SelectTrigger className={DRAWER_SELECT_TRIGGER_CLASS}>
-              <SelectValue placeholder="All time" />
+              <SelectValue placeholder={FILTER_ALL_LABELS.time} />
             </SelectTrigger>
             <SelectContent>
               {TIME_OPTIONS.map((opt) => (
@@ -168,7 +164,7 @@ export function ContactsOptionsDrawer({
             }
           >
             <SelectTrigger className={DRAWER_SELECT_TRIGGER_CLASS}>
-              <SelectValue placeholder="All time" />
+              <SelectValue placeholder={FILTER_ALL_LABELS.time} />
             </SelectTrigger>
             <SelectContent>
               {TIME_OPTIONS.map((opt) => (
@@ -188,7 +184,7 @@ export function ContactsOptionsDrawer({
             }
           >
             <SelectTrigger className={DRAWER_SELECT_TRIGGER_CLASS}>
-              <SelectValue placeholder="All time" />
+              <SelectValue placeholder={FILTER_ALL_LABELS.time} />
             </SelectTrigger>
             <SelectContent>
               {TIME_OPTIONS.map((opt) => (
@@ -200,17 +196,17 @@ export function ContactsOptionsDrawer({
           </Select>
         </Field>
 
-        <Field label="Had Appointment with">
+        <Field label="Had Appointment With">
           <Select
             value={draft.hadAppointmentWith || undefined}
             onValueChange={(v) => update("hadAppointmentWith", v ?? "")}
           >
             <SelectTrigger className={DRAWER_SELECT_TRIGGER_CLASS}>
-              <SelectValue placeholder="All time" />
+              <SelectValue placeholder={FILTER_ALL_LABELS.time} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All time</SelectItem>
-              <SelectItem value="any">Any staff</SelectItem>
+              <SelectItem value="all">{FILTER_ALL_LABELS.time}</SelectItem>
+              <SelectItem value="any">Any Staff</SelectItem>
             </SelectContent>
           </Select>
         </Field>
@@ -224,9 +220,9 @@ export function ContactsOptionsDrawer({
               <SelectValue placeholder="Select" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="any">Any date</SelectItem>
-              <SelectItem value="30d">Last 30 days</SelectItem>
-              <SelectItem value="90d">Last 90 days</SelectItem>
+              <SelectItem value="any">Any Date</SelectItem>
+              <SelectItem value="30d">Last 30 Days</SelectItem>
+              <SelectItem value="90d">Last 90 Days</SelectItem>
             </SelectContent>
           </Select>
         </Field>
@@ -240,8 +236,8 @@ export function ContactsOptionsDrawer({
               <SelectValue placeholder="Select" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="any">Has upcoming</SelectItem>
-              <SelectItem value="none">None scheduled</SelectItem>
+              <SelectItem value="any">Has Upcoming</SelectItem>
+              <SelectItem value="none">None Scheduled</SelectItem>
             </SelectContent>
           </Select>
         </Field>
@@ -249,7 +245,7 @@ export function ContactsOptionsDrawer({
         <Field label="Had Service">
           <Input
             className={DRAWER_FIELD_CLASS}
-            placeholder="Select a service"
+            placeholder="Select a Service"
             value={draft.hadService}
             onChange={(e) => update("hadService", e.target.value)}
           />
@@ -270,13 +266,13 @@ export function ContactsOptionsDrawer({
             onValueChange={(v) => update("gender", v ?? "")}
           >
             <SelectTrigger className={DRAWER_SELECT_TRIGGER_CLASS}>
-              <SelectValue placeholder="Select gender" />
+              <SelectValue placeholder="Select Gender" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="female">Female</SelectItem>
               <SelectItem value="male">Male</SelectItem>
               <SelectItem value="non_binary">Non-binary</SelectItem>
-              <SelectItem value="prefer_not">Prefer not to say</SelectItem>
+              <SelectItem value="prefer_not">Prefer Not to Say</SelectItem>
             </SelectContent>
           </Select>
         </Field>
@@ -284,7 +280,7 @@ export function ContactsOptionsDrawer({
         <Field label="Referred By">
           <Input
             className={DRAWER_FIELD_CLASS}
-            placeholder="Search by referrals"
+            placeholder="Search by Referrals"
             value={draft.referredBy}
             onChange={(e) => update("referredBy", e.target.value)}
           />
@@ -293,7 +289,7 @@ export function ContactsOptionsDrawer({
         <Field label="Tag">
           <Input
             className={DRAWER_FIELD_CLASS}
-            placeholder="Filter by tag"
+            placeholder="Filter by Tag"
             value={draft.tag}
             onChange={(e) => update("tag", e.target.value)}
           />

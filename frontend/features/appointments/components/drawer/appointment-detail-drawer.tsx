@@ -293,6 +293,14 @@ export function AppointmentDetailDrawer({
   const allowEdit = canMutateThisAppointment && !isTimeBlockView;
   const allowTimeBlockEdit = canMutateThisAppointment && isTimeBlockView;
   const allowStatusMenu = canChangeThisStatus;
+  const hasAppointmentOverflowMenu =
+    !isEditing &&
+    ((!isTimeBlockView && allowStatusMenu) ||
+      (!isTimeBlockView && Boolean(appointment?.expressBookingPending)) ||
+      (!isTimeBlockView && Boolean(onRebook && canMutateThisAppointment)) ||
+      allowTimeBlockEdit ||
+      (allowCancel && appointment?.status !== "CANCELLED") ||
+      allowDelete);
 
   const contactHeader = appointment
     ? {
@@ -376,7 +384,7 @@ export function AppointmentDetailDrawer({
 
   const detailHeaderActions = (
     <>
-      {!isEditing ? (
+      {hasAppointmentOverflowMenu ? (
         <DropdownMenu>
           <DropdownMenuTrigger
             render={<MoreActionsButton aria-label="Appointment actions" />}

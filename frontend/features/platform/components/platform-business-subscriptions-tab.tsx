@@ -155,7 +155,7 @@ export function PlatformBusinessSubscriptionsTab({
         header: "Plan / Tier",
         sortable: true,
         sortValue: (row) => row.planTierLabel ?? "",
-        cell: (row) => row.planTierLabel ?? "—",
+        cell: (row) => row.planTierLabel ?? "",
       },
       {
         id: "event",
@@ -177,24 +177,24 @@ export function PlatformBusinessSubscriptionsTab({
         header: "Status",
         sortable: true,
         sortValue: (row) => row.statusTransition ?? "",
-        cell: (row) => row.statusTransition ?? "—",
+        cell: (row) => row.statusTransition ?? "",
       },
       {
         id: "payment",
         header: "Payment",
-        cell: (row) => row.paymentSnippet ?? "—",
+        cell: (row) => row.paymentSnippet ?? "",
       },
       {
         id: "actor",
         header: "Actor",
-        cell: (row) => row.createdByNameSnapshot ?? "—",
+        cell: (row) => row.createdByNameSnapshot ?? "",
       },
       {
         id: "notes",
         header: "Notes",
         cell: (row) => (
           <span className="max-w-[160px] truncate block">
-            {row.notes ?? "—"}
+            {row.notes ?? ""}
           </span>
         ),
       },

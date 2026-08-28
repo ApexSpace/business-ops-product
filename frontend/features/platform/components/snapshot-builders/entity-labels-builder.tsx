@@ -144,7 +144,7 @@ export function EntityLabelsBuilder() {
                       onChange={(e) => updateFlatKey(key, e.target.value)}
                     />
                     <p className="text-xs text-muted-foreground">
-                      Default: {resolveDefault(key) || "—"}
+                      Default: {resolveDefault(key) || ""}
                     </p>
                   </div>
                 ))}
@@ -210,7 +210,7 @@ export function EntityLabelsBuilder() {
                           }
                         />
                         <p className="text-xs text-muted-foreground">
-                          Default: {defaultValue || "—"}
+                          Default: {defaultValue || ""}
                         </p>
                       </div>
                     );
@@ -242,7 +242,7 @@ export function EntityLabelsBuilder() {
                     onChange={(e) => updateFlatKey(key, e.target.value)}
                   />
                   <p className="text-xs text-muted-foreground">
-                    Default: {resolveDefault(key) || "—"}
+                    Default: {resolveDefault(key) || ""}
                   </p>
                 </div>
               ))}

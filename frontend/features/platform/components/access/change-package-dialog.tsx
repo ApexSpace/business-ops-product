@@ -356,7 +356,7 @@ export function ChangePackageDialog({
                   <div>
                     <p className="text-xs text-muted-foreground">Current tier</p>
                     <p className="font-medium">
-                      {currentSub?.planTierName ?? "—"} ·{" "}
+                      {currentSub?.planTierName ?? ""} ·{" "}
                       {formatBillingCycleLabel(currentSub?.billingCycle)}
                     </p>
                     <p className="text-muted-foreground">
@@ -368,7 +368,7 @@ export function ChangePackageDialog({
                   <div>
                     <p className="text-xs text-muted-foreground">New tier</p>
                     <p className="font-medium">
-                      {selectedTier?.name ?? "—"} · {formatBillingCycleLabel(billingCycle)}
+                      {selectedTier?.name ?? ""} · {formatBillingCycleLabel(billingCycle)}
                     </p>
                     <p className="text-muted-foreground">
                       {amount ? `${amount} ${currency}` : "Price not set"}

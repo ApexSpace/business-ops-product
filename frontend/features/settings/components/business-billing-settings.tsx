@@ -42,7 +42,7 @@ import { EmbeddedStripePayment } from "@/features/payments/payments-kit/embedded
 import { queryKeys } from "@/lib/query/keys";
 
 function formatLabel(value?: string | null): string {
-  if (!value) return "—";
+  if (!value) return "";
   return value
     .toLowerCase()
     .split("_")
@@ -51,7 +51,7 @@ function formatLabel(value?: string | null): string {
 }
 
 function formatDate(value?: string | null): string {
-  if (!value) return "—";
+  if (!value) return "";
   return new Date(value).toLocaleDateString();
 }
 
@@ -220,7 +220,7 @@ export function BusinessBillingSettings() {
             <div className="space-y-2">
               <div className="flex justify-between gap-4">
                 <span className="text-muted-foreground">Tier</span>
-                <span>{sub?.planTierName ?? "—"}</span>
+                <span>{sub?.planTierName ?? ""}</span>
               </div>
               <div className="flex justify-between gap-4">
                 <span className="text-muted-foreground">Billing source</span>
@@ -232,7 +232,7 @@ export function BusinessBillingSettings() {
               </div>
               <div className="flex justify-between gap-4">
                 <span className="text-muted-foreground">Access status</span>
-                <span>{access?.reasonLabel ?? "—"}</span>
+                <span>{access?.reasonLabel ?? ""}</span>
               </div>
             </div>
 
@@ -330,7 +330,7 @@ export function BusinessBillingSettings() {
                 <span>
                   {sub?.amount && sub.currency
                     ? `${sub.currency} ${sub.amount}`
-                    : "—"}
+                    : ""}
                 </span>
               </div>
           </CardContent>

@@ -369,7 +369,7 @@ export const AppointmentUpdateForm = forwardRef<
               }
             }}
             onContactSelect={handleContactSelect}
-            placeholder="Search or create a client"
+            placeholder="Search or Create a Client"
             variant="drawer"
           />
         </DrawerFormFieldGroup>

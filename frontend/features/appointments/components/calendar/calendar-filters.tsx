@@ -6,6 +6,11 @@ import { APPOINTMENT_FILTER_STATUS_OPTIONS } from "@/features/appointments/schem
 import type { Calendar } from "@/features/calendars/schemas/calendar-profile";
 import type { BusinessMember } from "@/features/appointments/types";
 import {
+  ALL_CALENDARS_EMPTY_OPTION,
+  ALL_STAFF_EMPTY_OPTION,
+  ALL_STATUSES_EMPTY_OPTION,
+} from "@/lib/ui/filter-labels";
+import {
   FILTER_SEARCH_CLASS,
   FILTER_SELECT_TRIGGER_CLASS,
 } from "@/lib/ui/control-styles";
@@ -41,12 +46,12 @@ export function CalendarFilters({
   className,
 }: CalendarFiltersProps) {
   const calendarItems = [
-    { value: "", label: "All calendars" },
+    ALL_CALENDARS_EMPTY_OPTION,
     ...calendars.map((c) => ({ value: c.id, label: c.name })),
   ];
 
   const staffItems = [
-    { value: "", label: "All staff" },
+    ALL_STAFF_EMPTY_OPTION,
     ...members.map((m) => ({
       value: m.userId,
       label:
@@ -56,7 +61,7 @@ export function CalendarFilters({
   ];
 
   const statusItems = [
-    { value: "", label: "All statuses" },
+    ALL_STATUSES_EMPTY_OPTION,
     ...APPOINTMENT_FILTER_STATUS_OPTIONS.map((o) => ({
       value: o.value,
       label: o.label,

@@ -51,7 +51,7 @@ export function PlatformBusinessAuditTab({
         sortValue: (row) => row.actorEmail ?? "",
         cell: (row) => (
           <span className="text-muted-foreground">
-            {row.actorEmail ?? "—"}
+            {row.actorEmail ?? ""}
           </span>
         ),
       },

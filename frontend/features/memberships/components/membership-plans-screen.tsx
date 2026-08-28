@@ -400,7 +400,7 @@ export function MembershipPlansScreen() {
             </Button>
           </div>
           <Input
-            placeholder="Search plans"
+            placeholder="Search Plans"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />

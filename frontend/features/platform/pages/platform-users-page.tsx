@@ -95,7 +95,7 @@ function PlatformUsersPageContent() {
           [row.firstName, row.lastName].filter(Boolean).join(" "),
         cell: (row) => (
           <span className="font-medium">
-            {[row.firstName, row.lastName].filter(Boolean).join(" ") || "—"}
+            {[row.firstName, row.lastName].filter(Boolean).join(" ") || ""}
           </span>
         ),
       },

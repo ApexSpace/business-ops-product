@@ -506,7 +506,7 @@ export function PackagesWorkspace() {
                 items={contactOptions}
                 value={contactId}
                 onValueChange={setContactId}
-                placeholder="Search for client"
+                placeholder="Search for Client"
                 inDialog
               />
             </div>
@@ -571,7 +571,7 @@ export function PackagesWorkspace() {
               items={contactOptions}
               value={transferContactId}
               onValueChange={setTransferContactId}
-              placeholder="Search for client"
+              placeholder="Search for Client"
               inDialog
             />
           </div>

@@ -100,7 +100,7 @@ export function AppointmentListView({
             ? [row.assignedTo.firstName, row.assignedTo.lastName]
                 .filter(Boolean)
                 .join(" ") || row.assignedTo.email
-            : "—",
+            : "",
       },
       {
         id: "status",

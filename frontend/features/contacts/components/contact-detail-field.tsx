@@ -6,6 +6,7 @@ import {
   CONTACTS_DETAIL_FIELD_ROW_CLASS,
   CONTACTS_DETAIL_FIELD_VALUE_CLASS,
 } from "@/features/contacts/styles/contacts-drawer-tokens";
+import { displayValue } from "@/lib/ui/display-value";
 import { cn } from "@/lib/utils";
 
 interface ContactDetailFieldProps {
@@ -22,7 +23,7 @@ export function ContactDetailField({
   className,
   valueClassName,
 }: ContactDetailFieldProps) {
-  const display = value?.trim() || "—";
+  const display = displayValue(value);
   return (
     <div className={cn(CONTACTS_DETAIL_FIELD_ROW_CLASS, className)}>
       <span className={CONTACTS_DETAIL_FIELD_LABEL_CLASS}>{label}</span>

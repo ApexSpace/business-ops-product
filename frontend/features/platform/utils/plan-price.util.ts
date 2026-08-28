@@ -5,7 +5,7 @@ export function formatPlanPrice(
   amount: string | null | undefined,
   currencyCode: string,
 ): string {
-  if (amount == null || amount === "") return "—";
+  if (amount == null || amount === "") return "";
   const currency = currencyCode?.trim() || "USD";
   const numeric = Number(amount);
   if (!Number.isFinite(numeric)) return amount;

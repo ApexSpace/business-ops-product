@@ -5,6 +5,7 @@
 
 import { DateTime } from "luxon";
 import type { Calendar } from "@/features/calendars/schemas/calendar-profile";
+import { FILTER_ALL_LABELS } from "@/lib/ui/filter-labels";
 
 export const FALLBACK_TIMEZONE = "UTC";
 
@@ -244,7 +245,7 @@ export function formatDateRangeLabelInTimezone(
   if (view === "month") {
     return anchor.toFormat("MMMM yyyy");
   }
-  return "All appointments";
+  return FILTER_ALL_LABELS.appointments;
 }
 
 export function getMinutesFromMidnightInTimezone(

@@ -3,10 +3,16 @@
 import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Pencil, Trash2 } from "lucide-react";
+import { DrawerCloseIcon } from "@/components/drawer/drawer-icons";
 import { ApiErrorState } from "@/components/data-display/api-error-state";
 import { LoadingState } from "@/components/data-display/loading-state";
+import {
+  EntityDetailHeader,
+  type EntityDetailOverflowAction,
+} from "@/components/layout/entity-detail-header";
 import { EntityDetailTabs } from "@/components/layout/entity-detail-tabs";
 import { Button } from "@/components/ui/button";
+import { IconButton } from "@/components/ui/icon-button";
 import { ProfileAvatar } from "@/components/ui/profile-avatar";
 import { ContactDrawerProfilePanel } from "@/features/contacts/components/contact-drawer-profile-panel";
 import { ContactProfileEditForm } from "@/features/contacts/components/contact-profile-edit-form";
@@ -23,14 +29,19 @@ import {
   invalidateContactLists,
   invalidateContactPicker,
 } from "@/lib/query/invalidation";
+import { useIsMobile } from "@/lib/hooks/use-mobile";
+import { DRAWER_HEADER_ICON_BUTTON_SLOT_CLASS } from "@/lib/design/drawer-tokens";
 import { cn } from "@/lib/utils";
 import {
   CONTACTS_DRAWER_PROFILE_COL_CLASS,
   CONTACTS_DRAWER_RECORDS_CLASS,
   CONTACTS_DRAWER_SPLIT_CLASS,
+  CONTACTS_DRAWER_SPLIT_HEADER_CLASS,
+  CONTACTS_DRAWER_SPLIT_HEADER_TABS_CLASS,
+  CONTACTS_DRAWER_SPLIT_HEADER_TITLE_CLASS,
+  CONTACTS_DRAWER_TAB_LIST_CLASS,
+  CONTACTS_DRAWER_TABPANEL_BODY_CLASS,
   CONTACTS_DRAWER_TABPANEL_CLASS,
-  CONTACTS_DRAWER_TABPANEL_TIMELINE_CLASS,
-  CONTACTS_DRAWER_TAB_SCROLL_CLASS,
 } from "@/features/contacts/styles/contacts-drawer-tokens";
 import "@/features/contacts/styles/contacts-split-layout.css";
 
@@ -61,6 +72,7 @@ function ContactRecordsTabs({
   return (
     <EntityDetailTabs
       variant="panel"
+      className={CONTACTS_DRAWER_TAB_LIST_CLASS}
       value={activeSection}
       onValueChange={(value) => {
         if (isContactDetailTab(value)) onSectionChange(value);
@@ -93,6 +105,10 @@ interface ContactDetailPanelProps {
   variant?: "page" | "drawer";
   /** Body only for EntityDetailDrawer (no aside chrome or tab bar). */
   embedded?: boolean;
+  /** Desktop split header title (embedded drawer). */
+  drawerTitle?: string;
+  onRequestClose?: () => void;
+  drawerOverflowActions?: EntityDetailOverflowAction[];
   onActionsReady?: (actions: ContactDetailPanelActions) => void;
   noteComposerOpen?: boolean;
   onNoteComposerOpenChange?: (open: boolean) => void;
@@ -130,12 +146,16 @@ export function ContactDetailPanel({
   onContactDeleted,
   variant = "page",
   embedded = false,
+  drawerTitle,
+  onRequestClose,
+  drawerOverflowActions,
   onActionsReady,
   noteComposerOpen = false,
   onNoteComposerOpenChange,
   className,
 }: ContactDetailPanelProps) {
   const queryClient = useQueryClient();
+  const isMobile = useIsMobile();
   const contactPerms = useContactStaffPermissions();
   const state = useContactDetailPanel(contactId, activeSection);
   const {
@@ -288,53 +308,91 @@ export function ContactDetailPanel({
   };
 
   if (embedded) {
+    const showSplitHeader = Boolean(drawerTitle) && !isMobile;
+
     return (
       <>
         <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
+          {showSplitHeader ? (
+            <div className={CONTACTS_DRAWER_SPLIT_HEADER_CLASS}>
+              <div className={CONTACTS_DRAWER_SPLIT_HEADER_TITLE_CLASS}>
+                <h2 className="contacts-drawer-split-header__title-text">
+                  {drawerTitle}
+                </h2>
+                <div
+                  className={cn(
+                    "contacts-drawer-split-header__title-actions",
+                    DRAWER_HEADER_ICON_BUTTON_SLOT_CLASS,
+                  )}
+                >
+                  {contactPerms.canManage ? (
+                    <IconButton
+                      type="button"
+                      variant="ghost"
+                      size="header"
+                      aria-label="Edit contact"
+                      onClick={() => setEditOpen(true)}
+                    >
+                      <Pencil className="size-4" strokeWidth={1.75} />
+                    </IconButton>
+                  ) : null}
+                  {drawerOverflowActions?.length ? (
+                    <EntityDetailHeader overflowActions={drawerOverflowActions} />
+                  ) : null}
+                  {onRequestClose ? (
+                    <IconButton
+                      type="button"
+                      variant="ghost"
+                      size="header"
+                      aria-label="Close"
+                      onClick={onRequestClose}
+                    >
+                      <DrawerCloseIcon />
+                    </IconButton>
+                  ) : null}
+                </div>
+              </div>
+              <div className={CONTACTS_DRAWER_SPLIT_HEADER_TABS_CLASS}>
+                <ContactRecordsTabs
+                  activeSection={activeSection}
+                  onSectionChange={onSectionChange}
+                />
+              </div>
+            </div>
+          ) : null}
+
           <div className={CONTACTS_DRAWER_SPLIT_CLASS}>
             {editOpen ? (
               <ContactProfileEditForm
                 contact={contact}
                 onCancel={() => setEditOpen(false)}
                 onSuccess={onContactEditSuccess}
+                layout="drawer-pane"
                 className={CONTACTS_DRAWER_PROFILE_COL_CLASS}
               />
             ) : (
               <ContactDrawerProfilePanel
                 contact={contact}
                 contactId={contact.id}
-                onEdit={() => setEditOpen(true)}
-                showEditButton={contactPerms.canManage}
                 showContactDetails={contactPerms.canViewContactDetails}
                 noteComposerOpen={noteComposerOpen}
                 onNoteComposerOpenChange={onNoteComposerOpenChange}
               />
             )}
             <div className={CONTACTS_DRAWER_RECORDS_CLASS}>
-              <ContactRecordsTabs
-                activeSection={activeSection}
-                onSectionChange={onSectionChange}
-              />
-              <div
-                className={cn(
-                  CONTACTS_DRAWER_TABPANEL_CLASS,
-                  activeSection === "timeline" &&
-                    CONTACTS_DRAWER_TABPANEL_TIMELINE_CLASS,
-                )}
-              >
-                {activeSection === "timeline" ? (
+              {!showSplitHeader ? (
+                <ContactRecordsTabs
+                  activeSection={activeSection}
+                  onSectionChange={onSectionChange}
+                />
+              ) : null}
+              <div className={CONTACTS_DRAWER_TABPANEL_CLASS} role="tabpanel">
+                <div className={CONTACTS_DRAWER_TABPANEL_BODY_CLASS}>
                   <ContactRecordsSectionBody
                     activeSection={activeSection}
                     {...recordsPanelProps}
                   />
-                ) : (
-                  <div className={CONTACTS_DRAWER_TAB_SCROLL_CLASS}>
-                    <ContactRecordsSectionBody
-                      activeSection={activeSection}
-                      {...recordsPanelProps}
-                    />
-                  </div>
-                )}
+                </div>
               </div>
             </div>
           </div>

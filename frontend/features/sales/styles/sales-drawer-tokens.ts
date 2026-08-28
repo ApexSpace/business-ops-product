@@ -48,20 +48,44 @@ export const SALES_DRAWER_SPINE_LABELS = {
 export const SALES_DRAWER_ADD_ACTIONS_STACK_CLASS =
   "flex w-full min-w-0 flex-col items-start gap-drawer-section";
 
-/** Figma checkout line card — collapsed. */
+/** Figma checkout line card — outer shell (white; header/body sections inside). */
+export const SALES_DRAWER_CHECKOUT_LINE_CARD_SHELL_CLASS =
+  "overflow-hidden rounded-[var(--radius-md)] border border-[var(--drawer-field-border)] bg-white";
+
+/** Figma checkout line card — collapsed row padding. */
 export const SALES_DRAWER_LINE_CARD_CLASS =
   "rounded-[var(--radius-md)] border border-[var(--drawer-field-border)] bg-white px-3 py-3";
 
-/** Figma checkout line card — expanded (lavender surface). */
+/** Figma checkout line card — expanded header band (lavender only on title row). */
+export const SALES_DRAWER_LINE_CARD_EXPANDED_HEADER_CLASS =
+  "bg-violet-primary-surface px-3 py-2.5";
+
+/** @deprecated Whole-card lavender — use shell + expanded header band instead. */
 export const SALES_DRAWER_LINE_CARD_EXPANDED_CLASS =
-  "rounded-[var(--radius-md)] border border-transparent bg-violet-primary-surface px-3 py-3";
+  "rounded-[var(--radius-md)] border border-transparent bg-violet-primary-surface px-3 py-2.5";
+
+/** Line card header — full-row expand/collapse target (chevron + title [+ price]). */
+export const SALES_DRAWER_LINE_CARD_HEADER_TOGGLE_CLASS =
+  "flex min-w-0 flex-1 items-start gap-2.5 rounded-[var(--radius-sm)] text-left hover:text-violet-primary-darker focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-primary-normal/20";
+
+/** Chevron slot in line card header — 24px hit area aligned to title. */
+export const SALES_DRAWER_LINE_CARD_CHEVRON_CLASS =
+  "inline-flex size-6 shrink-0 items-center justify-center text-[#8A8A8A]";
+
+/** Expanded line card body — white detail section under lavender header. */
+export const SALES_DRAWER_LINE_CARD_EXPANDED_BODY_CLASS =
+  "flex w-full min-w-0 flex-col gap-drawer-stack px-3 pb-3 pt-drawer-field";
+
+/** Product line two-column field grid in expanded card. */
+export const SALES_DRAWER_LINE_CARD_FIELD_GRID_CLASS =
+  "grid grid-cols-2 gap-drawer-stack";
 
 /** Figma checkout subtotal row above primary CTA. */
 export const SALES_DRAWER_SUBTOTAL_ROW_CLASS =
   "flex w-full min-w-0 items-center justify-between gap-3 text-[14px] font-medium leading-none text-[var(--drawer-text-primary)]";
 
 export const SALES_DRAWER_PROVIDER_PILL_CLASS =
-  "inline-flex max-w-full items-center gap-1.5 rounded-full bg-[var(--mobile-status-neutral-bg)] px-2 py-0.5 text-[12px] font-medium leading-[15px] text-[var(--drawer-text-meta)]";
+  "inline-flex max-w-full min-w-0 items-center gap-1.5 overflow-hidden rounded-full bg-[var(--mobile-status-neutral-bg)] px-2 py-0.5 text-[12px] font-medium leading-[15px] text-[var(--drawer-text-meta)]";
 
 /** Inline add panel above Add Service / Product / More. */
 export const SALES_DRAWER_INLINE_ADD_PANEL_CLASS =

@@ -3,6 +3,7 @@
 import { MobileEntityListItem } from "@/components/mobile/mobile-entity-list-item";
 import { MobileEntityListScreen } from "@/components/mobile/mobile-entity-list-screen";
 import { ListPrimaryAction } from "@/components/layout/list-primary-action";
+import { displayValue } from "@/lib/ui/display-value";
 import type { Contact } from "@/features/contacts/types";
 
 export interface ContactsMobileListProps {
@@ -27,11 +28,11 @@ export interface ContactsMobileListProps {
 }
 
 function contactMeta(contact: Contact): string {
-  return contact.email?.trim() || "—";
+  return displayValue(contact.email);
 }
 
 function contactPhone(contact: Contact): string {
-  return contact.phone?.trim() || "—";
+  return displayValue(contact.phone);
 }
 
 export function ContactsMobileList({

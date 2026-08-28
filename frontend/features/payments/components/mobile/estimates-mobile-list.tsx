@@ -44,7 +44,7 @@ export function EstimatesMobileList({
       getRow={(row) => {
         const amount = formatMoney(row.totalAmount);
         const name = getEstimateQuoteName(row);
-        const contact = row.contact?.label?.trim() || "—";
+        const contact = row.contact?.label?.trim() || "";
         const date = formatSalesListDateSafe(row.issueDate);
         return {
           primary: name,

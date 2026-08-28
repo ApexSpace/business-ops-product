@@ -22,6 +22,7 @@ import type {
   AutomationWorkflowRun,
   WorkflowRunStatus,
 } from "@/features/automations/types/workflow";
+import { FILTER_ALL_LABELS } from "@/lib/ui/filter-labels";
 
 type EnrollmentHistoryPanelProps = {
   workflowId: string;
@@ -108,7 +109,7 @@ export function EnrollmentHistoryPanel({
         header: "Reason",
         cell: (row) => (
           <span className="text-xs text-muted-foreground">
-            {row.enrollmentReason ?? "—"}
+            {row.enrollmentReason ?? ""}
           </span>
         ),
       },
@@ -154,7 +155,7 @@ export function EnrollmentHistoryPanel({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All statuses</SelectItem>
+              <SelectItem value="all">{FILTER_ALL_LABELS.statuses}</SelectItem>
               {RUN_STATUSES.map((item) => (
                 <SelectItem key={item} value={item}>
                   {item}

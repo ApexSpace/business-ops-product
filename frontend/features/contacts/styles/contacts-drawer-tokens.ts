@@ -72,12 +72,40 @@ export const CONTACTS_DETAIL_FIELD_ROW_CLASS =
 export const CONTACTS_DETAIL_FIELD_STACK_CLASS =
   "flex w-full min-w-0 flex-col gap-2";
 
+/** Hit-and-trial width for Client Details left column — set in globals.css `:root`. */
+export const CONTACTS_DRAWER_PROFILE_PANE_WIDTH_VAR =
+  "--contacts-drawer-profile-pane-width";
+
 /** Two-column Client Details body (profile | tabs). Stacks below lg. */
 export const CONTACTS_DRAWER_SPLIT_CLASS =
   "contacts-detail-card--drawer-split";
 
 export const CONTACTS_DRAWER_PROFILE_COL_CLASS =
   "contacts-drawer-profile-panel";
+
+export const CONTACTS_DRAWER_PROFILE_SCROLL_CLASS =
+  "contacts-drawer-profile-panel__scroll";
+
+export const CONTACTS_DRAWER_PROFILE_BODY_CLASS =
+  "contacts-drawer-profile-panel__body";
+
+export const CONTACTS_DRAWER_PROFILE_FOOTER_CLASS =
+  "contacts-drawer-profile-panel__footer";
+
+/** Edit form stack — density from `--contacts-drawer-profile-gap` (globals.css :root). */
+export const CONTACTS_DRAWER_PROFILE_EDIT_FIELDS_CLASS =
+  "contacts-drawer-profile-edit-fields";
+
+/** Edit form field grid — gap from `--contacts-drawer-profile-gap`. */
+export const CONTACTS_DRAWER_PROFILE_EDIT_FIELD_GRID_CLASS =
+  "contacts-drawer-profile-edit-field-grid";
+
+/** Tab row — min-height from `--contacts-drawer-tab-row-height` (globals.css :root). */
+export const CONTACTS_DRAWER_TAB_LIST_CLASS = "contacts-drawer-tab-list";
+
+/** Split body height token — set in globals.css `:root`. */
+export const CONTACTS_DRAWER_SPLIT_BODY_HEIGHT_VAR =
+  "--contacts-drawer-split-body-height";
 
 export const CONTACTS_DRAWER_PROFILE_IDENTITY_CLASS =
   "contacts-drawer-profile-identity";
@@ -94,10 +122,21 @@ export const CONTACTS_DRAWER_PROFILE_NOTE_CLASS =
 export const CONTACTS_DRAWER_RECORDS_CLASS =
   "contacts-drawer-records-panel";
 
-export const CONTACTS_DRAWER_TABPANEL_CLASS = "contacts-d2-tabpanel";
+/** Desktop split header — title column + tab column aligned with two-pane body. */
+export const CONTACTS_DRAWER_SPLIT_HEADER_CLASS =
+  "contacts-drawer-split-header";
 
-export const CONTACTS_DRAWER_TABPANEL_TIMELINE_CLASS =
-  "contacts-drawer-tabpanel-inner--timeline";
+export const CONTACTS_DRAWER_SPLIT_HEADER_TITLE_CLASS =
+  "contacts-drawer-split-header__title";
+
+export const CONTACTS_DRAWER_SPLIT_HEADER_TABS_CLASS =
+  "contacts-drawer-split-header__tabs";
+
+export const CONTACTS_DRAWER_TABPANEL_CLASS =
+  "contacts-d2-tabpanel contacts-drawer-tabpanel-scroll";
+
+export const CONTACTS_DRAWER_TABPANEL_BODY_CLASS =
+  "contacts-drawer-tabpanel-body";
 
 export const CONTACTS_TIMELINE_WRAP_CLASS = "contacts-drawer-timeline";
 

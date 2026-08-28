@@ -47,7 +47,8 @@ export const DRAWER_SHELL_WIDTH_CONVERSATION =
   "[--sheet-width:min(70vw,900px)]";
 
 /** Two-column profile / waitlist. */
-export const DRAWER_SHELL_WIDTH_SPLIT = "[--sheet-width:min(96vw,1120px)]";
+export const DRAWER_SHELL_WIDTH_SPLIT =
+  "[--sheet-width:min(96vw,var(--drawer-width-split))]";
 
 /** Figma appointment / checkout / options column. */
 export const DRAWER_SHELL_WIDTH_APPOINTMENT =
@@ -415,11 +416,11 @@ export const DRAWER_CLIENT_CONTACT_ROW_CLASS =
   "flex min-w-0 cursor-pointer items-center gap-2 text-[13px] font-medium leading-[16px] text-[var(--drawer-text-primary)] hover:underline";
 
 /**
- * Figma add credit card / Message Client —
- * Montserrat 700 · 14px · line-height 100% · primary/900 (hsba 262 81% 38%).
+ * Add credit card — matches phone/email row density (`DRAWER_CLIENT_CONTACT_ROW_CLASS`).
+ * Hit-and-trial: `--drawer-client-credit-card-*` in globals.css.
  */
 export const DRAWER_CLIENT_CREDIT_CARD_CLASS =
-  "inline-flex h-[17px] cursor-pointer items-center gap-2 text-[14px] font-bold leading-none text-[var(--drawer-action-ink)] hover:underline";
+  "inline-flex min-w-0 cursor-pointer items-center gap-2 text-[length:var(--drawer-client-credit-card-size)] leading-[var(--drawer-client-credit-card-leading)] text-[var(--drawer-text-primary)] [font-weight:var(--drawer-client-credit-card-weight)] hover:underline";
 
 export const DRAWER_CLIENT_CONTACT_ICON_CLASS =
   "size-4 shrink-0 stroke-[1.75] text-[var(--drawer-action-ink)]";

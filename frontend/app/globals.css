@@ -300,10 +300,11 @@
    * DataTable column density — hit-and-trial here; every list uses these.
    *   --table-column-padding-x   cell left/right padding (was px-4 / 16px)
    *   --table-column-min-width   data column width (browsers ignore min-width on <td>)
-   * Use a length with a unit: 0px hugs content; try 8rem / 10rem / 12rem. Not a bare 5.
+   * Use a length with a unit: 0px hugs content; try 8rem / 10rem / 12rem for wider columns.
    */
-  --table-column-padding-x: 1rem;
-  --table-column-min-width: 5px;
+  --table-column-padding-x: 14px;
+  /* 0px = hug content (columns left-aligned; spacer eats extra width). */
+  --table-column-min-width: 14rem;
   /* Default ≥40px control; sm remains dense for compact chrome.
    * Button size="default" (including variant="brand") reads these:
    *   --control-height      → height / min-height
@@ -349,6 +350,13 @@
    *   --drawer-spine-width        purple purpose strip thickness
    *   --drawer-spine-padding-x    strip left/right inset around the label
    *   --drawer-spine-padding-y    strip top/bottom inset along the label
+   *   --contacts-drawer-profile-pane-width  Client Details left column (hit-and-trial)
+   *   --contacts-drawer-profile-inset       side margin — body + footer (hit-and-trial)
+   *   --contacts-drawer-profile-gap         section stack + field stack (hit-and-trial)
+   *   --contacts-drawer-profile-section-pad inner padding on section cards (hit-and-trial)
+   *   --contacts-drawer-tab-row-height     tab strip min-height (hit-and-trial)
+   *   --contacts-drawer-split-body-height  profile + records column height (hit-and-trial)
+   *   --drawer-width-split        total Client Details split drawer width (hit-and-trial)
    */
   --drawer-header-padding-y: 0.75rem; /* 12px; was pt-6/pb-4 (24/16) */
   /* Hover hit-area for drawer header icons (X, edit, trash, ⋯). Hit-and-trial here. */
@@ -368,6 +376,50 @@
   --drawer-spine-padding-y: 0.5rem; /* 8px */
   --drawer-spine-font-size: 0.5625rem; /* 9px; was 10 */
   --drawer-spine-tracking: 0.08em; /* was 0.14em */
+  /* Client Details left pane — hit-and-trial (edit form + view profile) */
+  --contacts-drawer-profile-pane-width: 340px;
+  --contacts-drawer-profile-inset: 0.8rem; /* 8px — horizontal margin (body + footer) */
+  --contacts-drawer-profile-gap: 0.5rem; /* 8px — between sections + between fields */
+  --contacts-drawer-profile-section-pad: 0.625rem; /* 10px — inside each section card */
+  --contacts-drawer-tab-row-height: 2.5rem; /* 40px — tab strip min-height (was min-h-14 / 56px) */
+  --contacts-drawer-split-body-height: 100%; /* profile + records columns stretch to drawer body */
+  /*
+   * Conversations inbox — hit-and-trial typography + composer chrome density.
+   *   --inbox-details-contact-name-weight   right-pane contact name (was bold / 700)
+   *   --inbox-details-empty-state-weight    empty copy e.g. "No upcoming appointment"
+   *   --inbox-composer-tab-padding-y        Reply / Note tab row vertical padding
+   *   --inbox-composer-tab-list-height      tab control height inside that row
+   *   --inbox-composer-field-row-height     To / Subject row min-height
+   *   --inbox-composer-field-row-padding-y  To / Subject row vertical padding
+   *   --inbox-composer-toolbar-padding-y    footer toolbar (icons + Send / Add Note)
+   *   --inbox-composer-field-label-size     To / Subject label (11px)
+   *   --inbox-composer-field-input-size     subject value + placeholder (match label)
+   *   --inbox-composer-field-input-height   subject control height
+   *   --inbox-composer-field-input-padding-x  subject placeholder/value left inset
+   *   --inbox-composer-footer-padding-bottom space under composer card
+   */
+  --inbox-details-contact-name-weight: 600;
+  --inbox-details-empty-state-weight: 500;
+  --inbox-composer-tab-padding-y: 0.375rem; /* 6px; was py-2 / 8px */
+  --inbox-composer-tab-list-height: 1.75rem; /* 28px; was h-8 / 32px */
+  --inbox-composer-field-row-height: 2rem; /* 40px; was min-h-11 / 44px */
+  --inbox-composer-field-row-padding-y: 0.25rem; /* 4px; was py-1.5 / 6px */
+  --inbox-composer-toolbar-padding-y: 0.375rem; /* 6px; was py-2 / 8px */
+  --inbox-composer-field-label-size: 0.6875rem; /* 11px — To / Subject row labels */
+  --inbox-composer-field-input-size: 0.6875rem; /* match label — subject placeholder + value */
+  --inbox-composer-field-input-height: 1.25rem; /* 20px — tighter than h-8 / 32px */
+  --inbox-composer-field-input-padding-x: 0.55rem; /* 4px — subject placeholder left inset */
+  --inbox-composer-footer-padding-bottom: 0.5rem; /* 8px; was pb-3 / 12px */
+  /*
+   * Drawer client actions — hit-and-trial (Add credit card matches phone/email).
+   *   --drawer-client-credit-card-weight
+   *   --drawer-client-credit-card-size
+   *   --drawer-client-credit-card-leading
+   */
+  --drawer-client-credit-card-weight: 500;
+  --drawer-client-credit-card-size: 13px;
+  --drawer-client-credit-card-leading: 16px;
+  --drawer-width-split: 1040px;
   --shadow-xs-value: 0 1px 2px rgb(0 0 0 / 4%);
   --shadow-sm-value: 0 1px 3px rgb(0 0 0 / 6%),
     0 1px 2px rgb(0 0 0 / 4%);

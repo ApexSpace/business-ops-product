@@ -31,7 +31,7 @@ function getWorkItemContactName(item: WorkItem): string {
 }
 
 function getWorkItemServiceLabel(item: WorkItem): string {
-  if (!item.service) return "—";
+  if (!item.service) return "";
   const parts = [item.service.name];
   if (item.service.category?.trim()) {
     parts.push(`(${item.service.category.trim()})`);
@@ -60,7 +60,7 @@ export function WorkItemBoardCard({
   const serviceLabel = getWorkItemServiceLabel(item);
   const amount = parseBoardAmount(item.amount);
   const valueLabel = formatMoney(amount);
-  const showService = serviceLabel !== "—";
+  const showService = Boolean(serviceLabel);
   const scheduled = formatWorkItemScheduledAt(item.scheduledAt);
   const assignee = getWorkItemAssigneeName(item);
 

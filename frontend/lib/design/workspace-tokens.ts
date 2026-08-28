@@ -106,7 +106,7 @@ export const WORKSPACE_CSS_VARS = {
   "--drawer-width-default": "480px",
   "--drawer-width-standard": "600px",
   "--drawer-width-wide": "640px",
-  "--drawer-width-split": "1120px",
+  "--drawer-width-split": "1040px",
   "--entity-drawer-toolbar-z": "10",
 } as Record<string, string> as CSSProperties;
 

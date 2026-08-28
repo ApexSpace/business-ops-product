@@ -66,7 +66,7 @@ export function PlatformBusinessMembersTab({
           [row.user.firstName, row.user.lastName].filter(Boolean).join(" "),
         cell: (row) =>
           [row.user.firstName, row.user.lastName].filter(Boolean).join(" ") ||
-          "—",
+          "",
       },
       {
         id: "role",

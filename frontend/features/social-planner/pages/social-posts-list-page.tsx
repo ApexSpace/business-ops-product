@@ -75,7 +75,7 @@ export function SocialPostsListPage() {
           <span className="text-sm text-muted-foreground">
             {row.scheduledAt
               ? new Date(row.scheduledAt).toLocaleString()
-              : "—"}
+              : ""}
           </span>
         ),
       },

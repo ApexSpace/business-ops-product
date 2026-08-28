@@ -9,6 +9,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { FILTER_ALL_LABELS } from "@/lib/ui/filter-labels";
 import { cn } from "@/lib/utils";
 import { CALENDAR_TOOLBAR_GHOST_BUTTON_CLASS } from "@/features/appointments/components/calendar/calendar-toolbar-tokens";
 
@@ -112,7 +113,7 @@ export function StaffSelector({
   );
 
   if (mode === "single") {
-    const displayName = selectedMember?.label ?? "All staff";
+    const displayName = selectedMember?.label ?? FILTER_ALL_LABELS.staff;
 
     return (
       <Popover>
@@ -150,7 +151,7 @@ export function StaffSelector({
           >
             <StaffAvatarStack members={members} max={2} avatarClassName="size-8" />
             <span className="min-w-0 flex-1 truncate font-medium">
-              All staff
+              {FILTER_ALL_LABELS.staff}
             </span>
             {!selectedStaffId ? (
               <Check className="size-4 shrink-0 text-primary" />
@@ -194,7 +195,7 @@ export function StaffSelector({
   const visibleMembers = members.filter((m) => visibleSet.has(m.userId));
   const displayMembers = allSelected ? members : visibleMembers;
   const displayLabel = allSelected
-    ? "All staff"
+    ? FILTER_ALL_LABELS.staff
     : visibleMembers.length === 1
       ? visibleMembers[0]!.label
       : `${visibleMembers.length} staff`;
@@ -218,7 +219,7 @@ export function StaffSelector({
             type="button"
             aria-label={
               allSelected
-                ? "All staff visible on calendar"
+                ? "All Staff Visible on Calendar"
                 : `${visibleMembers.length} staff visible on calendar`
             }
             className={cn(STAFF_TRIGGER_CLASS, className)}

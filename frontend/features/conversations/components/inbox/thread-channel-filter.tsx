@@ -11,6 +11,7 @@ import {
   channelLabel,
   type ConversationChannel,
 } from "@/features/conversations/api/conversations.api";
+import { FILTER_ALL_LABELS } from "@/lib/ui/filter-labels";
 import { cn } from "@/lib/utils";
 
 export type ThreadChannelFilterValue = ConversationChannel | "ALL";
@@ -19,7 +20,7 @@ export function threadChannelFilterLabel(
   value: ThreadChannelFilterValue,
 ): string {
   if (value === "ALL") {
-    return "All channels";
+    return FILTER_ALL_LABELS.channels;
   }
   return channelLabel(value);
 }

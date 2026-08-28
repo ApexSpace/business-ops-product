@@ -84,7 +84,6 @@ export function CalendarFiltersPopover({
         title="Filters"
         spineLabel="FILTERS"
         applyLabel="Apply"
-        showMoreAction={false}
         onApply={() => onStatusFilterChange(serializeStatuses(draft))}
       >
         <div className={DRAWER_FORM_FIELDS_CLASS}>

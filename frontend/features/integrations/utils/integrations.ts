@@ -195,7 +195,7 @@ export function getOAuthOpeningLabel(
 }
 
 export function formatIntegrationDate(value: string | null): string {
-  if (!value) return "—";
+  if (!value) return "";
   return new Date(value).toLocaleString();
 }
 

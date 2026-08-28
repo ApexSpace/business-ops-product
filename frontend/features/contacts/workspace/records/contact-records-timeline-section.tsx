@@ -314,20 +314,20 @@ export function ContactRecordsTimelineSection({
         />
       </div>
 
-      <div className={CONTACTS_DRAWER_TAB_SCROLL_CLASS}>
-        {isLoading ? (
-          <LoadingState variant="skeleton" rows={4} className="py-4" />
-        ) : timelineItems.length === 0 ? (
-          <EmptyState
-            compact
-            title="No activity yet"
-            description="Appointments, sales, notes, and forms will appear here."
-            className="py-6"
-          />
-        ) : (
+      {isLoading ? (
+        <LoadingState variant="skeleton" rows={4} className="py-4 px-4 sm:px-6" />
+      ) : timelineItems.length === 0 ? (
+        <EmptyState
+          compact
+          title="No activity yet"
+          description="Appointments, sales, notes, and forms will appear here."
+          className="py-6 px-4 sm:px-6"
+        />
+      ) : (
+        <div className={CONTACTS_DRAWER_TAB_SCROLL_CLASS}>
           <ContactTimelineFeed items={timelineItems} />
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

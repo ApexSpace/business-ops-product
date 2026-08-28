@@ -25,7 +25,7 @@ export function EstimateDetailPanel({ estimate }: EstimateDetailPanelProps) {
           {getEstimateQuoteName(estimate)}
         </EntityDetailField>
         <EntityDetailField label="Customer">
-          {estimate.contact?.label ?? "—"}
+          {estimate.contact?.label ?? ""}
         </EntityDetailField>
         <EntityDetailField label="Issue date">
           {formatEstimateDate(estimate.issueDate)}

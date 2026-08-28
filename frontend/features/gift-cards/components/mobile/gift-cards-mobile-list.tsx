@@ -42,7 +42,7 @@ export function GiftCardsMobileList({
       getRow={(card) => {
         const amount = formatMoney(card.currentBalance);
         const number = `#${card.number.replace(/^#/, "")}`;
-        const purchaser = card.purchasingContact?.name?.trim() || "—";
+        const purchaser = card.purchasingContact?.name?.trim() || "";
         return {
           primary: card.ownerContact.name,
           meta: `${number} · ${purchaser}`,

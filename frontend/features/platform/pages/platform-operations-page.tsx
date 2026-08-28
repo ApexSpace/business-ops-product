@@ -321,7 +321,7 @@ function CampaignDetail({
   const selectedCount = selectedBusinessIds.size;
   const price = campaign.priceChange;
   const money = (v: number | null | undefined) =>
-    v == null || Number.isNaN(v) ? "—" : `$${v.toFixed(2)}`;
+    v == null || Number.isNaN(v) ? "" : `$${v.toFixed(2)}`;
 
   return (
     <div className="space-y-4">
@@ -334,7 +334,7 @@ function CampaignDetail({
           </div>
           <p className="text-sm text-muted-foreground">
             {campaign.pendingCount} pending · due{" "}
-            {campaign.effectiveAt?.slice(0, 10) ?? "—"}
+            {campaign.effectiveAt?.slice(0, 10) ?? ""}
           </p>
           {price ? (
             <div className="rounded-md border bg-muted/30 px-3 py-2 text-sm">
@@ -485,7 +485,7 @@ function CampaignDetail({
                   </Badge>
                   <span className="w-24 text-right text-xs text-muted-foreground">
                     {(b.effectiveAt ?? campaign.effectiveAt)?.slice(0, 10) ??
-                      "—"}
+                      ""}
                   </span>
                 </li>
               ))}

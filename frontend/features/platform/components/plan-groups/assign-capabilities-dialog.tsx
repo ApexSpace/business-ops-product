@@ -92,7 +92,7 @@ export function AssignCapabilitiesDialog({
           }}
           placeholder={isLoading ? "Loading…" : "Add capability"}
           disabled={isLoading}
-          searchPlaceholder="Search capabilities"
+          searchPlaceholder="Search Capabilities"
           emptyMessage="No more capabilities to add"
         />
         {selectedIds.length > 0 ? (

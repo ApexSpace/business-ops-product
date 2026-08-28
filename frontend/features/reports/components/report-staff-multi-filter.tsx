@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/combobox";
 import { listBusinessMembers } from "@/features/settings/api/business.api";
 import { CONTROL_HEIGHT_CLASS } from "@/lib/ui/control-styles";
+import { FILTER_ALL_LABELS } from "@/lib/ui/filter-labels";
 import { cn } from "@/lib/utils";
 import { queryKeys } from "@/lib/query/keys";
 import type {
@@ -59,7 +60,7 @@ function staffTriggerLabel(
   selected: string[],
   options: ReportFilterOption[],
 ): string {
-  if (selected.length === 0) return "All staff";
+  if (selected.length === 0) return FILTER_ALL_LABELS.staff;
   if (selected.length === 1) {
     return (
       options.find((option) => option.value === selected[0])?.label ??
