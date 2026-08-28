@@ -32,13 +32,13 @@ function DetailRow({
 }
 
 function formatPeriod(payment: BusinessSubscriptionPayment): string {
-  if (!payment.periodStart && !payment.periodEnd) return "—";
+  if (!payment.periodStart && !payment.periodEnd) return "";
   const start = payment.periodStart
     ? new Date(payment.periodStart).toLocaleDateString()
-    : "—";
+    : "";
   const end = payment.periodEnd
     ? new Date(payment.periodEnd).toLocaleDateString()
-    : "—";
+    : "";
   return `${start} – ${end}`;
 }
 
@@ -105,7 +105,7 @@ export function PaymentDetailDrawer({
               value={
                 payment.paidAt
                   ? new Date(payment.paidAt).toLocaleString()
-                  : "—"
+                  : ""
               }
             />
             <DetailRow
@@ -113,12 +113,12 @@ export function PaymentDetailDrawer({
               value={
                 payment.dueDate
                   ? new Date(payment.dueDate).toLocaleDateString()
-                  : "—"
+                  : ""
               }
             />
             <DetailRow
               label="Reference"
-              value={payment.paymentReference ?? "—"}
+              value={payment.paymentReference ?? ""}
             />
             <DetailRow
               label="Recorded at"
@@ -132,7 +132,7 @@ export function PaymentDetailDrawer({
                 />
                 <DetailRow
                   label="Void reason"
-                  value={payment.voidReason ?? "—"}
+                  value={payment.voidReason ?? ""}
                 />
               </>
             ) : null}

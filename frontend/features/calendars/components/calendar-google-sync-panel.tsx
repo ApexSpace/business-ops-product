@@ -85,7 +85,7 @@ export function CalendarGoogleSyncPanel({
                     syncStatus.syncStatus === "ACTIVE" && "text-emerald-600",
                   )}
                 >
-                  {syncStatus.syncStatus ?? "—"}
+                  {syncStatus.syncStatus ?? ""}
                 </dd>
               </div>
               {syncStatus.lastSyncedAt ? (

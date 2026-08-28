@@ -29,9 +29,9 @@ export function formStatusVariant(
 }
 
 export function formatFormTableDate(iso: string | null | undefined): string {
-  if (!iso) return "—";
+  if (!iso) return "";
   const dt = DateTime.fromISO(iso);
-  if (!dt.isValid) return "—";
+  if (!dt.isValid) return "";
   return dt.toLocaleString(DateTime.DATETIME_MED);
 }
 

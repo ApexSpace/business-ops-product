@@ -216,8 +216,8 @@ export function formatPlanTierTransition(
 ): string {
   const from = fromName?.trim() || null;
   const to = toName?.trim() || null;
-  if (!from && !to) return "—";
-  if (!from || from === to) return to ?? from ?? "—";
+  if (!from && !to) return "";
+  if (!from || from === to) return to ?? from ?? "";
   if (!to) return from;
   return `${from} → ${to}`;
 }
@@ -228,8 +228,8 @@ export function formatSubscriptionStatusTransition(
 ): string {
   const fromLabel = from ? formatSubscriptionStatus(from) : null;
   const toLabel = to ? formatSubscriptionStatus(to) : null;
-  if (!fromLabel && !toLabel) return "—";
-  if (!fromLabel || fromLabel === toLabel) return toLabel ?? fromLabel ?? "—";
+  if (!fromLabel && !toLabel) return "";
+  if (!fromLabel || fromLabel === toLabel) return toLabel ?? fromLabel ?? "";
   if (!toLabel) return fromLabel;
   return `${fromLabel} → ${toLabel}`;
 }
@@ -273,7 +273,7 @@ export function formatAccessImpact(
   fromCanAccess?: boolean,
   toCanAccess?: boolean,
 ): string {
-  if (fromCanAccess === undefined && toCanAccess === undefined) return "—";
+  if (fromCanAccess === undefined && toCanAccess === undefined) return "";
   const from = fromCanAccess ? "Can access" : "Cannot access";
   const to = toCanAccess ? "Can access" : "Cannot access";
   return `${from} → ${to}`;

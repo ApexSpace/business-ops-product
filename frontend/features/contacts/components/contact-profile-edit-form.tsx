@@ -21,12 +21,20 @@ import { mapApiFieldErrorsToForm } from "@/lib/forms/map-api-field-errors";
 import { ApiClientError } from "@/lib/api/errors";
 import { queryKeys } from "@/lib/query/keys";
 import { cn } from "@/lib/utils";
+import {
+  CONTACTS_DRAWER_PROFILE_BODY_CLASS,
+  CONTACTS_DRAWER_PROFILE_FOOTER_CLASS,
+  CONTACTS_DRAWER_PROFILE_SCROLL_CLASS,
+  CONTACTS_DRAWER_FOOTER_INNER_CLASS,
+} from "@/features/contacts/styles/contacts-drawer-tokens";
 
 interface ContactProfileEditFormProps {
   contact: Contact;
   onCancel: () => void;
   onSuccess: () => void;
   className?: string;
+  /** Narrow left column in Client Details split drawer. */
+  layout?: "default" | "drawer-pane";
 }
 
 /** In-place contact profile editor (drawer left column or page sidebar). */
@@ -35,6 +43,7 @@ export function ContactProfileEditForm({
   onCancel,
   onSuccess,
   className,
+  layout = "default",
 }: ContactProfileEditFormProps) {
   const queryClient = useQueryClient();
 
@@ -77,41 +86,97 @@ export function ContactProfileEditForm({
   });
 
   const submit = form.handleSubmit((values) => mutation.mutate(values));
+  const isDrawerPane = layout === "drawer-pane";
 
   return (
-    <div className={cn("flex min-h-0 flex-1 flex-col", className)}>
+    <div
+      className={cn(
+        "flex min-h-0 flex-col overflow-hidden",
+        isDrawerPane ? "h-full" : "flex-1",
+        className,
+      )}
+    >
       <Form {...form}>
         <form
           className="flex min-h-0 flex-1 flex-col"
           onSubmit={(e) => void submit(e)}
         >
-          <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden pr-0.5 scrollbar-thin">
-            <ContactFormFields
-              form={form}
-              avatarPreviewUrl={
-                contact.avatarAssetId ? undefined : contact.avatarUrl
-              }
-            />
-          </div>
-          <div className="mt-4 flex shrink-0 flex-col gap-2 border-t border-border pt-4 sm:flex-row">
-            <Button
-              type="button"
-              variant="outline"
-              className="min-w-0 flex-1"
-              disabled={mutation.isPending}
-              onClick={onCancel}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              variant="brand"
-              className="min-w-0 flex-1"
-              disabled={mutation.isPending}
-            >
-              {mutation.isPending ? "Saving…" : "Save"}
-            </Button>
-          </div>
+          {isDrawerPane ? (
+            <>
+              <div className={CONTACTS_DRAWER_PROFILE_SCROLL_CLASS}>
+                <div
+                  className={cn(
+                    CONTACTS_DRAWER_PROFILE_BODY_CLASS,
+                    "contacts-drawer-profile-panel__body--edit",
+                  )}
+                >
+                  <ContactFormFields
+                    form={form}
+                    layout={layout}
+                    avatarPreviewUrl={
+                      contact.avatarAssetId ? undefined : contact.avatarUrl
+                    }
+                  />
+                </div>
+              </div>
+              <div className={CONTACTS_DRAWER_PROFILE_FOOTER_CLASS}>
+                <div className={CONTACTS_DRAWER_FOOTER_INNER_CLASS}>
+                  <div className="grid w-full grid-cols-2 gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="min-w-0"
+                      disabled={mutation.isPending}
+                      onClick={onCancel}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      type="submit"
+                      variant="brand"
+                      size="sm"
+                      className="min-w-0"
+                      disabled={mutation.isPending}
+                    >
+                      {mutation.isPending ? "Saving…" : "Save"}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden scrollbar-thin">
+                <ContactFormFields
+                  form={form}
+                  layout={layout}
+                  avatarPreviewUrl={
+                    contact.avatarAssetId ? undefined : contact.avatarUrl
+                  }
+                />
+              </div>
+              <div className="mt-4 flex shrink-0 flex-col gap-2 border-t border-border pt-4 sm:flex-row">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="min-w-0 flex-1"
+                  disabled={mutation.isPending}
+                  onClick={onCancel}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  variant="brand"
+                  className="min-w-0 flex-1"
+                  disabled={mutation.isPending}
+                >
+                  {mutation.isPending ? "Saving…" : "Save"}
+                </Button>
+              </div>
+            </>
+          )}
         </form>
       </Form>
     </div>

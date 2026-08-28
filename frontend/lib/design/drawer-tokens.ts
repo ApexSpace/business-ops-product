@@ -47,7 +47,8 @@ export const DRAWER_SHELL_WIDTH_CONVERSATION =
   "[--sheet-width:min(70vw,900px)]";
 
 /** Two-column profile / waitlist. */
-export const DRAWER_SHELL_WIDTH_SPLIT = "[--sheet-width:min(96vw,1120px)]";
+export const DRAWER_SHELL_WIDTH_SPLIT =
+  "[--sheet-width:min(96vw,var(--drawer-width-split))]";
 
 /** Figma appointment / checkout / options column. */
 export const DRAWER_SHELL_WIDTH_APPOINTMENT =

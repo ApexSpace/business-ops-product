@@ -39,7 +39,7 @@ function formatCell(
     if (isTotal && !isNumericColumn(column)) {
       return "";
     }
-    return "—";
+    return "";
   }
 
   switch (column.format) {

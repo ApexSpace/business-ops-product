@@ -34,7 +34,7 @@ export const CALENDAR_GRID = {
    * Height/padding from --cs-calendar-day-header-*; weight is font-bold (700).
    */
   dayHeaderCell:
-    "flex h-[var(--cs-calendar-day-header-height)] min-w-0 flex-col items-center justify-center gap-0.5 bg-white px-2 py-[var(--cs-calendar-day-header-padding-y)]",
+    "flex h-[var(--cs-calendar-day-header-height)] min-w-0 flex-col items-center justify-center gap-[var(--cs-calendar-day-header-gap)] bg-white px-2 py-[var(--cs-calendar-day-header-padding-y)]",
   /** Single-day header — same type + height, row layout */
   dayHeaderCellRow:
     "flex h-[var(--cs-calendar-day-header-height)] min-w-0 items-center justify-center gap-2 bg-white px-3 py-[var(--cs-calendar-day-header-padding-y)] sm:justify-start",

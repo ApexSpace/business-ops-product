@@ -138,7 +138,7 @@
   /* Figma Dashboard Navbar — solid fill hsba(262, 80%, 84%, 1) */
   --cs-shell-navbar-surface: #6a2bd6;
   --cs-shell-navbar-foreground: #ffffff;
-  --cs-shell-navbar-height: 66px;
+  --cs-shell-navbar-height: 56px;
   /* Figma active tab (Mode6): 43px tall, 10px y-padding, 8px radius, 3px underline gap */
   --cs-shell-navbar-tab-height: 43px;
   --cs-shell-navbar-tab-padding-y: 10px;
@@ -176,7 +176,8 @@
   --cs-calendar-staff-header-height: 64px;
   /* Week/day column headers (WED 26) — compact strip, not the 64px staff row */
   --cs-calendar-day-header-height: 48px;
-  --cs-calendar-day-header-padding-y: 4px;
+  --cs-calendar-day-header-padding-y: 3px;
+  --cs-calendar-day-header-gap: 4px;
   --cs-calendar-slot-height: 30px;
   --cs-calendar-hour-height: 120px;
   /* Same as shell `--page-content-top-gap` so toolbar has equal space above & below */

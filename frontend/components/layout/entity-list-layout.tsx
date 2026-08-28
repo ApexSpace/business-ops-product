@@ -243,7 +243,6 @@ export function EntityListLayout<T>({
           spineLabel={filterSpineLabel}
           applyLabel={filterApplyLabel}
           applyDisabled={filterApplyDisabled}
-          showMoreAction={false}
           onApply={() => onFilterApply?.()}
         >
           {filterContent}

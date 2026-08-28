@@ -141,7 +141,7 @@ export function PaymentsTransactionsTab() {
         className: "min-w-[9rem] max-w-[12rem]",
         cell: (row) => (
           <span className="line-clamp-1 font-medium">
-            {row.contact?.label ?? "—"}
+            {row.contact?.label ?? ""}
           </span>
         ),
       },

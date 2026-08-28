@@ -17,7 +17,7 @@ import {
 } from "@/features/platform/utils/access-labels";
 
 function formatDate(value?: string | null): string {
-  if (!value) return "—";
+  if (!value) return "";
   return new Date(value).toLocaleDateString();
 }
 
@@ -82,21 +82,21 @@ export function BusinessAccessSummaryCard({
             )}
           </SummaryItem>
           <SummaryItem label="Tier">
-            <span className="text-sm">{sub?.planTierName ?? "—"}</span>
+            <span className="text-sm">{sub?.planTierName ?? ""}</span>
           </SummaryItem>
           <SummaryItem label="Billing cycle">
-            <span className="text-sm">{sub?.billingCycle ?? "—"}</span>
+            <span className="text-sm">{sub?.billingCycle ?? ""}</span>
           </SummaryItem>
           <SummaryItem label="Amount">
             <span className="text-sm">
-              {sub?.amount ? `${sub.amount} ${sub.currency ?? ""}`.trim() : "—"}
+              {sub?.amount ? `${sub.amount} ${sub.currency ?? ""}`.trim() : ""}
             </span>
           </SummaryItem>
           <SummaryItem label="Payment method">
             <span className="text-sm">
               {sub?.paymentMethod
                 ? formatPaymentMethod(sub.paymentMethod)
-                : "—"}
+                : ""}
             </span>
           </SummaryItem>
           <SummaryItem label={sub?.nextBillingLabel ?? "Next billing"}>
@@ -110,7 +110,7 @@ export function BusinessAccessSummaryCard({
             </span>
           </SummaryItem>
           <SummaryItem label="Snapshot">
-            <span className="text-sm">{access.snapshotName ?? "—"}</span>
+            <span className="text-sm">{access.snapshotName ?? ""}</span>
           </SummaryItem>
           <SummaryItem label="Snapshot applied">
             <span className="text-sm">{formatDate(access.snapshotAppliedAt)}</span>

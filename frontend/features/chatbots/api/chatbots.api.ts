@@ -300,9 +300,9 @@ export function chatbotStatusLabel(status: ChatbotStatus): string {
 export function formatChatbotTableDate(
   iso: string | null | undefined,
 ): string {
-  if (!iso) return "—";
+  if (!iso) return "";
   const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return "—";
+  if (Number.isNaN(date.getTime())) return "";
   return date.toLocaleDateString(undefined, {
     month: "short",
     day: "numeric",

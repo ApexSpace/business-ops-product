@@ -28,7 +28,7 @@ export function formatPaymentMethod(method: PaymentMethod): string {
 
 export function formatPaymentDate(iso: string): string {
   const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "—";
+  if (Number.isNaN(d.getTime())) return "";
   return d.toLocaleString(undefined, {
     dateStyle: "medium",
     timeStyle: "short",
@@ -38,7 +38,7 @@ export function formatPaymentDate(iso: string): string {
 /** Date column for transactions table. */
 export function formatTransactionDate(iso: string): string {
   const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "—";
+  if (Number.isNaN(d.getTime())) return "";
   return d.toLocaleDateString(undefined, { dateStyle: "medium" });
 }
 

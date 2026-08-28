@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { OptionsFilterDrawer } from "@/components/layout/options-filter-drawer";
-import { MoreActionsButton } from "@/components/ui/more-actions-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -115,8 +114,6 @@ export function ContactsOptionsDrawer({
         onApply(draft);
         onDownload?.();
       }}
-      showMoreAction={false}
-      headerActions={<MoreActionsButton aria-label="More options" />}
       leading={
         onImport ? (
           <button

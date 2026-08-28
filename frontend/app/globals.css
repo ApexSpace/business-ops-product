@@ -350,6 +350,13 @@
    *   --drawer-spine-width        purple purpose strip thickness
    *   --drawer-spine-padding-x    strip left/right inset around the label
    *   --drawer-spine-padding-y    strip top/bottom inset along the label
+   *   --contacts-drawer-profile-pane-width  Client Details left column (hit-and-trial)
+   *   --contacts-drawer-profile-inset       side margin — body + footer (hit-and-trial)
+   *   --contacts-drawer-profile-gap         section stack + field stack (hit-and-trial)
+   *   --contacts-drawer-profile-section-pad inner padding on section cards (hit-and-trial)
+   *   --contacts-drawer-tab-row-height     tab strip min-height (hit-and-trial)
+   *   --contacts-drawer-split-body-height  profile + records column height (hit-and-trial)
+   *   --drawer-width-split        total Client Details split drawer width (hit-and-trial)
    */
   --drawer-header-padding-y: 0.75rem; /* 12px; was pt-6/pb-4 (24/16) */
   /* Hover hit-area for drawer header icons (X, edit, trash, ⋯). Hit-and-trial here. */
@@ -369,6 +376,14 @@
   --drawer-spine-padding-y: 0.5rem; /* 8px */
   --drawer-spine-font-size: 0.5625rem; /* 9px; was 10 */
   --drawer-spine-tracking: 0.08em; /* was 0.14em */
+  /* Client Details left pane — hit-and-trial (edit form + view profile) */
+  --contacts-drawer-profile-pane-width: 340px;
+  --contacts-drawer-profile-inset: 0.8rem; /* 8px — horizontal margin (body + footer) */
+  --contacts-drawer-profile-gap: 0.5rem; /* 8px — between sections + between fields */
+  --contacts-drawer-profile-section-pad: 0.625rem; /* 10px — inside each section card */
+  --contacts-drawer-tab-row-height: 2.5rem; /* 40px — tab strip min-height (was min-h-14 / 56px) */
+  --contacts-drawer-split-body-height: 100%; /* profile + records columns stretch to drawer body */
+  --drawer-width-split: 1040px;
   --shadow-xs-value: 0 1px 2px rgb(0 0 0 / 4%);
   --shadow-sm-value: 0 1px 3px rgb(0 0 0 / 6%),
     0 1px 2px rgb(0 0 0 / 4%);

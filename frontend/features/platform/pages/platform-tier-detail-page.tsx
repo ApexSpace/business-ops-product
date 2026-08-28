@@ -32,7 +32,7 @@ import { listPlatformAddons } from "@/features/platform/api/addons.api";
 import { ConfirmDeleteDialog } from "@/components/forms/confirm-delete-dialog";
 
 function formatCents(cents: number | null | undefined) {
-  if (cents == null) return "—";
+  if (cents == null) return "";
   return `$${(cents / 100).toFixed(2)}`;
 }
 
@@ -343,19 +343,19 @@ export function PlatformTierDetailPage({ isNew = false }: { isNew?: boolean }) {
             <div className="sm:col-span-2 space-y-1 break-all font-mono text-xs text-muted-foreground">
               <p>
                 Product:{" "}
-                {displaySync?.productId ?? tier?.stripe?.productId ?? "—"}
+                {displaySync?.productId ?? tier?.stripe?.productId ?? ""}
               </p>
               <p>
                 Monthly Price:{" "}
                 {displaySync?.monthlyPriceId ??
                   tier?.stripe?.monthlyPriceId ??
-                  "—"}
+                  ""}
               </p>
               <p>
                 Yearly Price:{" "}
                 {displaySync?.yearlyPriceId ??
                   tier?.stripe?.yearlyPriceId ??
-                  "—"}
+                  ""}
               </p>
             </div>
             {(displaySync?.warnings?.length ?? 0) > 0 ? (

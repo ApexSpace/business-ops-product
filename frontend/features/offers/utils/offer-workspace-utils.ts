@@ -166,7 +166,7 @@ export function applicationModeLabel(
 export function membershipScopeLabel(scope?: OfferMembershipScope | null) {
   if (scope === "SPECIFIC") return "Specific membership plans";
   if (scope === "ANY") return "Any membership";
-  return "—";
+  return "";
 }
 
 export function toggleId(ids: string[], id: string, checked: boolean) {

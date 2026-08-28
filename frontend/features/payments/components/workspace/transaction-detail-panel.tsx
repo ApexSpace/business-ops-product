@@ -23,7 +23,7 @@ export function TransactionDetailPanel({ payment }: TransactionDetailPanelProps)
     <div className="space-y-6">
       <EntityDetailFieldGrid>
         <EntityDetailField label="Customer">
-          {payment.contact?.label ?? "—"}
+          {payment.contact?.label ?? ""}
         </EntityDetailField>
         <EntityDetailField label="Amount">
           <span className="font-semibold tabular-nums text-emerald-700 dark:text-emerald-400">

@@ -60,17 +60,17 @@ function StateBlock({
                 domain="subscription"
               />
             ) : (
-              "—"
+              ""
             )}
           </dd>
         </div>
         <div>
           <dt className="text-muted-foreground">Tier</dt>
-          <dd>{state.planTierName ?? "—"}</dd>
+          <dd>{state.planTierName ?? ""}</dd>
         </div>
         <div>
           <dt className="text-muted-foreground">Snapshot</dt>
-          <dd>{state.snapshotName ?? "—"}</dd>
+          <dd>{state.snapshotName ?? ""}</dd>
         </div>
         <div>
           <dt className="text-muted-foreground">Access</dt>
@@ -86,7 +86,7 @@ function StateBlock({
           <dd>
             {state.currentPeriodEnd
               ? new Date(state.currentPeriodEnd).toLocaleDateString()
-              : "—"}
+              : ""}
           </dd>
         </div>
       </dl>
@@ -169,7 +169,7 @@ export function SubscriptionEventDetailDrawer({
               <dl className="grid gap-3 text-sm sm:grid-cols-2">
                 <div>
                   <dt className="text-muted-foreground">Actor</dt>
-                  <dd>{event.createdByNameSnapshot ?? "—"}</dd>
+                  <dd>{event.createdByNameSnapshot ?? ""}</dd>
                 </div>
                 <div>
                   <dt className="text-muted-foreground">Access Result</dt>
@@ -187,7 +187,7 @@ export function SubscriptionEventDetailDrawer({
                       ? formatSubscriptionStatus(
                           event.fromState.subscriptionStatus,
                         )
-                      : "—"}
+                      : ""}
                   </dd>
                 </div>
                 <div>
@@ -197,16 +197,16 @@ export function SubscriptionEventDetailDrawer({
                       ? formatSubscriptionStatus(
                           event.toState.subscriptionStatus,
                         )
-                      : "—"}
+                      : ""}
                   </dd>
                 </div>
                 <div>
                   <dt className="text-muted-foreground">From plan</dt>
-                  <dd>{event.fromState?.planTierName ?? "—"}</dd>
+                  <dd>{event.fromState?.planTierName ?? ""}</dd>
                 </div>
                 <div>
                   <dt className="text-muted-foreground">To plan</dt>
-                  <dd>{event.toState?.planTierName ?? "—"}</dd>
+                  <dd>{event.toState?.planTierName ?? ""}</dd>
                 </div>
                 {event.reason ? (
                   <div className="sm:col-span-2">

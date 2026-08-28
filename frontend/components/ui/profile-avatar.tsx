@@ -21,10 +21,21 @@ export function ProfileAvatar({
   size = "default",
   alt = "",
 }: ProfileAvatarProps) {
+  const hasPhoto = Boolean(avatarUrl?.trim());
+
   return (
-    <Avatar size={size} className={cn("shrink-0", className)}>
-      {avatarUrl ? <AvatarImage src={avatarUrl} alt={alt} /> : null}
-      <AvatarFallback className={fallbackClassName}>
+    <Avatar
+      size={size}
+      className={cn(
+        "shrink-0",
+        hasPhoto && "!bg-transparent after:hidden",
+        className,
+      )}
+    >
+      {hasPhoto ? (
+        <AvatarImage src={avatarUrl!} alt={alt || name} className="object-cover" />
+      ) : null}
+      <AvatarFallback className={cn(!hasPhoto && fallbackClassName)}>
         {displayInitials(name)}
       </AvatarFallback>
     </Avatar>

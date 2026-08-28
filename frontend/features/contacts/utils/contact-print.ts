@@ -39,7 +39,7 @@ export function openContactPrintAppointments(contactId: string) {
       const rows = data.appointments
         .map(
           (appt) =>
-            `<tr><td>${escapeHtml(new Date(appt.startAt).toLocaleString())}</td><td>${escapeHtml(appt.title)}</td><td>${escapeHtml(appt.serviceName ?? "—")}</td><td>${escapeHtml(appt.providerName ?? "—")}</td><td>${escapeHtml(appt.status)}</td></tr>`,
+            `<tr><td>${escapeHtml(new Date(appt.startAt).toLocaleString())}</td><td>${escapeHtml(appt.title)}</td><td>${escapeHtml(appt.serviceName ?? "")}</td><td>${escapeHtml(appt.providerName ?? "")}</td><td>${escapeHtml(appt.status)}</td></tr>`,
         )
         .join("");
       const contactMeta = [

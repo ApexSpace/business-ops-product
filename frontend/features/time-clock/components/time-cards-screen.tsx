@@ -179,7 +179,7 @@ export function TimeCardsScreen() {
         id: "clockOut",
         header: "Clock-out",
         className: "whitespace-nowrap text-muted-foreground",
-        cell: (row) => row.clockOutTime ?? "—",
+        cell: (row) => row.clockOutTime ?? "",
       },
       {
         id: "paidHours",
@@ -188,7 +188,7 @@ export function TimeCardsScreen() {
         cell: (row) =>
           row.paidHoursDisplay ??
           formatPaidHoursDisplay(row.paidMinutes) ??
-          "—",
+          "",
       },
     ],
     [],
@@ -414,15 +414,15 @@ export function TimeCardsScreen() {
             <EntityDetailField label="Day">{selected.dayDisplay}</EntityDetailField>
             <EntityDetailField label="Clock-in">{selected.clockInTime}</EntityDetailField>
             <EntityDetailField label="Clock-out">
-              {selected.clockOutTime ?? "—"}
+              {selected.clockOutTime ?? ""}
             </EntityDetailField>
             <EntityDetailField label="Hours">
               {selected.paidHoursDisplay
                 ? `${selected.paidHoursDisplay} (paid)`
-                : "—"}
+                : ""}
             </EntityDetailField>
             <EntityDetailField label="Notes">
-              {selected.notes || "—"}
+              {selected.notes || ""}
             </EntityDetailField>
           </EntityDetailFieldGrid>
         ) : null}

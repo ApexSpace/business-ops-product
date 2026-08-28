@@ -1,5 +1,6 @@
 "use client";
 
+import { isEmptyDisplayValue } from "@/lib/ui/display-value";
 import { useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import { cn } from "@/lib/utils";
@@ -129,7 +130,12 @@ export function BoardCardValue({
   label?: string;
   value: React.ReactNode;
 }) {
-  if (value == null || value === "" || value === "—") return null;
+  if (
+    value == null ||
+    value === "" ||
+    (typeof value === "string" && isEmptyDisplayValue(value))
+  )
+    return null;
 
   return (
     <div className="rounded-md bg-muted/40 px-2.5 py-1.5">

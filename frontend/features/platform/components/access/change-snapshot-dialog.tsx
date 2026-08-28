@@ -134,7 +134,7 @@ export function ChangeSnapshotDialog({
   const selectedSnapshotName =
     snapshots?.items.find((s) => s.id === snapshotId)?.name ??
     currentSnapshotName ??
-    "—";
+    "";
 
   return (
     <>

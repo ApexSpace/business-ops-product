@@ -109,7 +109,7 @@ export function EnrollmentHistoryPanel({
         header: "Reason",
         cell: (row) => (
           <span className="text-xs text-muted-foreground">
-            {row.enrollmentReason ?? "—"}
+            {row.enrollmentReason ?? ""}
           </span>
         ),
       },

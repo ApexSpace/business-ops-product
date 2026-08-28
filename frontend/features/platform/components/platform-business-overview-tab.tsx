@@ -43,7 +43,7 @@ export function PlatformBusinessOverviewTab({
               {business.canAccessWorkspace ? "Can Access" : "Cannot Access"}
             </Badge>
             <span className="text-sm text-muted-foreground">
-              {business.reasonLabel ?? "—"}
+              {business.reasonLabel ?? ""}
             </span>
           </div>
           {business.needsAttention?.length ? (

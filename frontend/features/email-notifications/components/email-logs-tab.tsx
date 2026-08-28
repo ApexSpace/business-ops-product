@@ -119,7 +119,7 @@ export function EmailLogsTab() {
           <span className="text-sm text-muted-foreground">
             {row.sentAt
               ? new Date(row.sentAt).toLocaleString()
-              : "—"}
+              : ""}
           </span>
         ),
       },
@@ -132,7 +132,7 @@ export function EmailLogsTab() {
           <span className="text-sm text-muted-foreground">
             {row.deliveredAt
               ? new Date(row.deliveredAt).toLocaleString()
-              : "—"}
+              : ""}
           </span>
         ),
       },

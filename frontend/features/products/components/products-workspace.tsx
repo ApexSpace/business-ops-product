@@ -235,13 +235,13 @@ export function ProductsWorkspace() {
         header: "Category",
         sortable: true,
         sortValue: (row) => row.categoryName ?? "",
-        cell: (row) => row.categoryName ?? "—" },
+        cell: (row) => row.categoryName ?? "" },
       {
         id: "brand",
         header: "Brand",
         sortable: true,
         sortValue: (row) => row.brand ?? "",
-        cell: (row) => row.brand ?? "—" },
+        cell: (row) => row.brand ?? "" },
       {
         id: "name",
         header: "Name",
@@ -262,7 +262,7 @@ export function ProductsWorkspace() {
         sortValue: (row) => row.stockQuantity,
         className: "whitespace-nowrap",
         cell: (row) =>
-          row.trackInventory ? String(row.stockQuantity) : "—" },
+          row.trackInventory ? String(row.stockQuantity) : "" },
     ],
     [],
   );
@@ -714,7 +714,7 @@ function ProductDetailBody({
             <div className="space-y-1">
               <p className="text-drawer-section">Stock</p>
               <p className="text-lg font-semibold tabular-nums">
-                {detail.trackInventory ? detail.stockQuantity : "—"}
+                {detail.trackInventory ? detail.stockQuantity : ""}
               </p>
             </div>
             {detail.brand ? (
@@ -1156,7 +1156,7 @@ function ProductProfileFormFields({
                           v.variantKey}
                       </TableCell>
                       <TableCell className="text-right text-xs">
-                        {v.price ? formatMoney(parseFloat(v.price)) : "—"}
+                        {v.price ? formatMoney(parseFloat(v.price)) : ""}
                       </TableCell>
                       <TableCell className="text-right text-xs">
                         {v.stockQuantity}

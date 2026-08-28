@@ -66,14 +66,14 @@ function BusinessNotesPageContent() {
         id: "link",
         header: "Linked to",
         cell: (row) =>
-          row.contact?.label ?? row.lead?.title ?? "—",
+          row.contact?.label ?? row.lead?.title ?? "",
       },
       {
         id: "description",
         header: "Preview",
         cell: (row) => (
           <span className="line-clamp-2 text-muted-foreground">
-            {notePreviewText(row) || "—"}
+            {notePreviewText(row) || ""}
           </span>
         ),
       },

@@ -1,15 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { FormSheet } from "@/components/forms/form-sheet";
+import { EntityDetailDrawer } from "@/components/layout/entity-detail-drawer";
 import {
   ContactDetailPanel,
   type ContactDetailTabId,
 } from "@/features/contacts/components/contact-detail-panel";
 import {
-  FORM_DRAWER_BODY_FLEX_CLASS,
-} from "@/components/forms/form-drawer-shell";
-import { useContactDetail } from "@/features/contacts/hooks/use-contact-detail";
+  CONTACTS_DRAWER_MOBILE_SHELL_CLASS,
+  CONTACTS_DRAWER_SHELL_CLASS,
+} from "@/features/contacts/styles/contacts-drawer-tokens";
+import { useIsMobile } from "@/lib/hooks/use-mobile";
 import "@/features/contacts/styles/contacts-split-layout.css";
 
 interface ContactFullProfileDrawerProps {
@@ -20,6 +21,10 @@ interface ContactFullProfileDrawerProps {
   initialSection?: ContactDetailTabId;
 }
 
+/**
+ * Full Client Details split drawer from Conversations (and other overlays).
+ * Uses EntityDetailDrawer + embedded ContactDetailPanel — same shell as Contacts page.
+ */
 export function ContactFullProfileDrawer({
   open,
   onOpenChange,
@@ -27,9 +32,9 @@ export function ContactFullProfileDrawer({
   onContactDeleted,
   initialSection = "timeline",
 }: ContactFullProfileDrawerProps) {
+  const isMobile = useIsMobile();
   const [activeSection, setActiveSection] =
     useState<ContactDetailTabId>(initialSection);
-  const { data: contact } = useContactDetail(contactId ?? "");
 
   useEffect(() => {
     if (open) {
@@ -38,31 +43,40 @@ export function ContactFullProfileDrawer({
   }, [open, contactId, initialSection]);
 
   return (
-    <FormSheet
+    <EntityDetailDrawer
       open={open}
       onOpenChange={onOpenChange}
-      title="Contact profile"
-      description={
-        contact?.label
-          ? `Conversation context · ${contact.label}`
-          : "View and manage contact details."
+      width="split"
+      stackLevel="overlay"
+      chrome={isMobile ? "mobile-brand" : "default"}
+      fullBleed
+      className={
+        isMobile ? CONTACTS_DRAWER_MOBILE_SHELL_CLASS : CONTACTS_DRAWER_SHELL_CLASS
       }
-      hideFooter
-      bodyClassName={FORM_DRAWER_BODY_FLEX_CLASS}
-      contentClassName="min-h-0 flex-1"
+      title={isMobile ? "Contact profile" : ""}
+      bodyClassName="flex flex-col !overflow-hidden"
     >
       {contactId ? (
         <ContactDetailPanel
+          embedded
           contactId={contactId}
           activeSection={activeSection}
           onSectionChange={setActiveSection}
           variant="drawer"
+          drawerTitle={isMobile ? undefined : "Contact profile"}
+          onRequestClose={
+            isMobile
+              ? undefined
+              : () => {
+                  onOpenChange(false);
+                }
+          }
           onContactDeleted={() => {
             onOpenChange(false);
             onContactDeleted?.();
           }}
         />
       ) : null}
-    </FormSheet>
+    </EntityDetailDrawer>
   );
 }

@@ -82,7 +82,7 @@ export function WhatsAppTemplateDetailSheet({
                 </div>
                 <div>
                   <dt className="text-muted-foreground">Meta template ID</dt>
-                  <dd className="truncate">{template.metaTemplateId ?? "—"}</dd>
+                  <dd className="truncate">{template.metaTemplateId ?? ""}</dd>
                 </div>
               </dl>
 

@@ -292,7 +292,7 @@ export function CreateSnapshotWizard() {
                     <SummaryRow label="Name" value={form.watch("name")} />
                     <SummaryRow
                       label="Description"
-                      value={form.watch("description") || "—"}
+                      value={form.watch("description") || ""}
                     />
                     <SummaryRow
                       label="Starting point"

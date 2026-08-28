@@ -30,6 +30,7 @@ import {
   invalidateContactPicker,
 } from "@/lib/query/invalidation";
 import { useIsMobile } from "@/lib/hooks/use-mobile";
+import { DRAWER_HEADER_ICON_BUTTON_SLOT_CLASS } from "@/lib/design/drawer-tokens";
 import { cn } from "@/lib/utils";
 import {
   CONTACTS_DRAWER_PROFILE_COL_CLASS,
@@ -38,6 +39,7 @@ import {
   CONTACTS_DRAWER_SPLIT_HEADER_CLASS,
   CONTACTS_DRAWER_SPLIT_HEADER_TABS_CLASS,
   CONTACTS_DRAWER_SPLIT_HEADER_TITLE_CLASS,
+  CONTACTS_DRAWER_TAB_LIST_CLASS,
   CONTACTS_DRAWER_TABPANEL_BODY_CLASS,
   CONTACTS_DRAWER_TABPANEL_CLASS,
 } from "@/features/contacts/styles/contacts-drawer-tokens";
@@ -70,6 +72,7 @@ function ContactRecordsTabs({
   return (
     <EntityDetailTabs
       variant="panel"
+      className={CONTACTS_DRAWER_TAB_LIST_CLASS}
       value={activeSection}
       onValueChange={(value) => {
         if (isContactDetailTab(value)) onSectionChange(value);
@@ -316,7 +319,23 @@ export function ContactDetailPanel({
                 <h2 className="contacts-drawer-split-header__title-text">
                   {drawerTitle}
                 </h2>
-                <div className="contacts-drawer-split-header__title-actions">
+                <div
+                  className={cn(
+                    "contacts-drawer-split-header__title-actions",
+                    DRAWER_HEADER_ICON_BUTTON_SLOT_CLASS,
+                  )}
+                >
+                  {contactPerms.canManage ? (
+                    <IconButton
+                      type="button"
+                      variant="ghost"
+                      size="header"
+                      aria-label="Edit contact"
+                      onClick={() => setEditOpen(true)}
+                    >
+                      <Pencil className="size-4" strokeWidth={1.75} />
+                    </IconButton>
+                  ) : null}
                   {drawerOverflowActions?.length ? (
                     <EntityDetailHeader overflowActions={drawerOverflowActions} />
                   ) : null}
@@ -348,14 +367,13 @@ export function ContactDetailPanel({
                 contact={contact}
                 onCancel={() => setEditOpen(false)}
                 onSuccess={onContactEditSuccess}
+                layout="drawer-pane"
                 className={CONTACTS_DRAWER_PROFILE_COL_CLASS}
               />
             ) : (
               <ContactDrawerProfilePanel
                 contact={contact}
                 contactId={contact.id}
-                onEdit={() => setEditOpen(true)}
-                showEditButton={contactPerms.canManage}
                 showContactDetails={contactPerms.canViewContactDetails}
                 noteComposerOpen={noteComposerOpen}
                 onNoteComposerOpenChange={onNoteComposerOpenChange}

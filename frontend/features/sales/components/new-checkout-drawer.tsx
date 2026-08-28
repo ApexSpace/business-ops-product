@@ -4,7 +4,6 @@ import { useMemo } from "react";
 import { DrawerHeaderContent } from "@/components/drawer/drawer-header-content";
 import { DrawerPrimaryButton } from "@/components/drawer/drawer-primary-button";
 import { DrawerShell } from "@/components/layout/drawer-shell";
-import { MoreActionsButton } from "@/components/ui/more-actions-button";
 import { Label } from "@/components/ui/label";
 import { ContactPicker } from "@/features/contacts/components/contact-picker";
 import {
@@ -90,7 +89,6 @@ export function NewCheckoutDrawer({
           <DrawerHeaderContent eyebrow={dateEyebrow} title="Checkout" />
         )
       }
-      headerActions={<MoreActionsButton aria-label="More actions" />}
       footer={
         <div className={SALES_DRAWER_FOOTER_INNER_CLASS}>
           <div className={SALES_DRAWER_SUBTOTAL_ROW_CLASS}>

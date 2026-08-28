@@ -43,15 +43,15 @@ function StateSummary({
         </div>
         <div>
           <dt>Subscription</dt>
-          <dd className="text-foreground">{state.subscriptionStatus ?? "—"}</dd>
+          <dd className="text-foreground">{state.subscriptionStatus ?? ""}</dd>
         </div>
         <div>
           <dt>Tier</dt>
-          <dd className="text-foreground">{state.planTierName ?? "—"}</dd>
+          <dd className="text-foreground">{state.planTierName ?? ""}</dd>
         </div>
         <div>
           <dt>Payment</dt>
-          <dd className="text-foreground">{state.paymentStatus ?? "—"}</dd>
+          <dd className="text-foreground">{state.paymentStatus ?? ""}</dd>
         </div>
       </dl>
     </div>

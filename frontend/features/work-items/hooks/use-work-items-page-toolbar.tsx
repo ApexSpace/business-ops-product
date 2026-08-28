@@ -132,14 +132,14 @@ export function useWorkItemsPageToolbar() {
             : labels.contacts.replace(/s$/, "") || "Customer",
         sortable: true,
         sortValue: (row) => row.contact?.label ?? "",
-        cell: (row) => row.contact?.label ?? "—",
+        cell: (row) => row.contact?.label ?? "",
       },
       ...(mode !== "platform"
         ? [
             {
               id: "service",
               header: "Service",
-              cell: (row: WorkItem) => row.service?.name ?? "—",
+              cell: (row: WorkItem) => row.service?.name ?? "",
             },
           ]
         : []),
@@ -155,12 +155,12 @@ export function useWorkItemsPageToolbar() {
         header: "Scheduled",
         sortable: true,
         sortValue: (row) => row.scheduledAt ?? "",
-        cell: (row) => formatWorkItemScheduledAt(row.scheduledAt) ?? "—",
+        cell: (row) => formatWorkItemScheduledAt(row.scheduledAt) ?? "",
       },
       {
         id: "amount",
         header: "Amount",
-        cell: (row) => formatWorkItemAmount(row.amount) ?? "—",
+        cell: (row) => formatWorkItemAmount(row.amount) ?? "",
       },
     ],
     [labels.contacts, mode],

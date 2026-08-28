@@ -3,11 +3,12 @@
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Printer, Trash2  } from "lucide-react";
+import { Pencil, Printer, Trash2  } from "lucide-react";
 import { ApiErrorState } from "@/components/data-display/api-error-state";
 import { type DataTableColumn } from "@/components/data-display/data-table";
 import { EntityDetailDrawer } from "@/components/layout/entity-detail-drawer";
 import { EntityListLayout } from "@/components/layout/entity-list-layout";
+import { IconButton } from "@/components/ui/icon-button";
 import { ClientDetailsDrawer } from "@/features/contacts/components/client-details-drawer";
 import {
   CONTACTS_DRAWER_MOBILE_SHELL_CLASS,
@@ -38,6 +39,7 @@ import { useContactStaffPermissions } from "@/features/contacts/hooks/use-contac
 import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
 import { useIsMobile } from "@/lib/hooks/use-mobile";
 import { useListSearchParams } from "@/lib/hooks/use-list-search-params";
+import { displayValue } from "@/lib/ui/display-value";
 import { WORKSPACE_ACTIVE_ROW_CLASS } from "@/lib/design/workspace-tokens";
 import { useEntitySelection } from "@/lib/routing/use-entity-selection";
 import {
@@ -175,7 +177,7 @@ function BusinessContactsPageContent() {
         sortValue: (row) => row.email ?? "",
         cell: (row) => (
           <span className="truncate text-[#4A4A4A]">
-            {row.email?.trim() || "—"}
+            {displayValue(row.email)}
           </span>
         ),
       },
@@ -186,7 +188,7 @@ function BusinessContactsPageContent() {
         sortValue: (row) => row.phone ?? "",
         className: "whitespace-nowrap",
         cell: (row) => (
-          <span className="text-[#4A4A4A]">{row.phone?.trim() || "—"}</span>
+          <span className="text-[#4A4A4A]">{displayValue(row.phone)}</span>
         ),
       },
     ],
@@ -302,6 +304,19 @@ function BusinessContactsPageContent() {
         isLoading={detailLoading}
         fullBleed
         bodyClassName="flex flex-col !overflow-hidden"
+        headerActions={
+          isMobile && selectedId && contactPerms.canManage ? (
+            <IconButton
+              type="button"
+              variant="ghost"
+              size="header"
+              aria-label="Edit contact"
+              onClick={() => panelActionsRef.current?.openEdit()}
+            >
+              <Pencil className="size-4" strokeWidth={1.75} />
+            </IconButton>
+          ) : undefined
+        }
         overflowActions={
           isMobile && selectedId && contactPerms.canOpenProfiles
             ? [

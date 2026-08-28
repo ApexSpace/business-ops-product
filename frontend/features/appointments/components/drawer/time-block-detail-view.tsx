@@ -81,7 +81,7 @@ export function TimeBlockDetailView({
   const staffLabel = appointment.assignedTo
     ? getMemberDisplayName(appointment.assignedTo)
     : "Unassigned";
-  const reasonLabel = appointment.notes?.trim() || "—";
+  const reasonLabel = appointment.notes?.trim() || "";
 
   return (
     <DrawerFormFields className={className}>

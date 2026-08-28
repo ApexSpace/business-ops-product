@@ -55,6 +55,8 @@ interface EntityDetailDrawerProps {
   /** Vertical purpose strip (e.g. “CLIENT DETAILS”). Hidden on mobile-brand chrome. */
   spineLabel?: string;
   chrome?: DrawerShellChrome;
+  /** Higher z-index when opened over another sheet (e.g. Conversations inbox). */
+  stackLevel?: "base" | "overlay";
 }
 
 function resolveWidth(width: EntityDetailDrawerWidth): EntityDrawerWidthTier {
@@ -88,6 +90,7 @@ export function EntityDetailDrawer({
   fullBleed = false,
   spineLabel,
   chrome = "default",
+  stackLevel = "base",
 }: EntityDetailDrawerProps) {
   const resolvedWidth = resolveWidth(width);
   const headerCluster = (
@@ -108,6 +111,7 @@ export function EntityDetailDrawer({
       variant="sheet"
       width={resolvedWidth}
       chrome={chrome}
+      stackLevel={stackLevel}
       spineLabel={spineLabel}
       title={title}
       description={subtitle}

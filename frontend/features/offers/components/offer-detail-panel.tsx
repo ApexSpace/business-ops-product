@@ -453,7 +453,7 @@ function DetailsReadOnly({
         </div>
         <div className="sm:col-span-2">
           <p className="text-muted-foreground text-xs">Internal description</p>
-          <p>{offer.description?.trim() || "—"}</p>
+          <p>{offer.description?.trim() || ""}</p>
         </div>
       </div>
 

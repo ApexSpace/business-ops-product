@@ -27,11 +27,11 @@ export function TimeCardsMobileList({
       items={cards}
       getId={(row) => row.id}
       getRow={(row) => {
-        const out = row.clockOutTime?.trim() || "—";
+        const out = row.clockOutTime?.trim() || "";
         return {
           primary: row.staff.name,
           meta: `${row.dayDisplay} · ${row.clockInTime} – ${out}`,
-          amount: row.paidHoursDisplay?.trim() || "—",
+          amount: row.paidHoursDisplay?.trim() || "",
           ariaLabel: `${row.staff.name}, ${row.dayDisplay}`,
         };
       }}

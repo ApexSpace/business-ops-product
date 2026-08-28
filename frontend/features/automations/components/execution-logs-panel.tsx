@@ -122,7 +122,7 @@ export function ExecutionLogsPanel({
         header: "Error",
         cell: (row) => (
           <span className="text-xs text-destructive">
-            {row.errorMessage ?? "—"}
+            {row.errorMessage ?? ""}
           </span>
         ),
       },

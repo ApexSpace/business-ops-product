@@ -111,12 +111,12 @@ function AppointmentTicketCard({
       : "No past appointment";
   const staff = appointment?.assignedTo
     ? getMemberDisplayName(appointment.assignedTo)
-    : "—";
+    : "";
   const when = appointment
     ? DateTime.fromISO(appointment.startAt, { zone: "utc" })
         .setZone(timezone)
         .toFormat(isNext ? "cccc, h:mm a" : "MMM d, yyyy")
-    : "—";
+    : "";
 
   const inner = (
     <div

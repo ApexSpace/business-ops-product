@@ -19,18 +19,26 @@ import {
 import { Input } from "@/components/ui/input";
 import { buildDisplayName } from "@/features/settings/schemas/business-profile";
 import type { ContactProfileFormValues } from "@/features/contacts/schemas/contact-profile";
+import {
+  CONTACTS_DRAWER_PROFILE_EDIT_FIELD_GRID_CLASS,
+  CONTACTS_DRAWER_PROFILE_EDIT_FIELDS_CLASS,
+} from "@/features/contacts/styles/contacts-drawer-tokens";
 import { countryOptions, timezoneOptions } from "@/lib/config/geo-options";
+import { cn } from "@/lib/utils";
 
 export interface ContactFormFieldsProps {
   form: UseFormReturn<ContactProfileFormValues>;
   disabled?: boolean;
   avatarPreviewUrl?: string | null;
+  /** Single-column stack for narrow Client Details left pane. */
+  layout?: "default" | "drawer-pane";
 }
 
 export function ContactFormFields({
   form,
   disabled = false,
   avatarPreviewUrl,
+  layout = "default",
 }: ContactFormFieldsProps) {
   const firstName = form.watch("firstName");
   const lastName = form.watch("lastName");
@@ -46,22 +54,36 @@ export function ContactFormFields({
   const nameForInitials =
     displayName?.trim() || buildDisplayName(firstName, lastName) || "Contact";
 
+  const isDrawerPane = layout === "drawer-pane";
+
   return (
-    <div className="space-y-4">
+    <div
+      className={cn(
+        "space-y-4",
+        isDrawerPane && CONTACTS_DRAWER_PROFILE_EDIT_FIELDS_CLASS,
+      )}
+    >
       <FormDrawerSection icon={UserRound} title="Profile picture">
         <AvatarUploadField
           control={form.control}
           name="avatarAssetId"
           disabled={disabled}
           fallbackPreviewUrl={avatarPreviewUrl}
-          layout="dropzone"
+          layout={isDrawerPane ? "inline" : "dropzone"}
           displayName={nameForInitials}
           hideLabel
         />
       </FormDrawerSection>
 
       <FormDrawerSection icon={IdCard} title="Name">
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div
+          className={cn(
+            "grid gap-4",
+            isDrawerPane
+              ? CONTACTS_DRAWER_PROFILE_EDIT_FIELD_GRID_CLASS
+              : "sm:grid-cols-2",
+          )}
+        >
           <TextField
             control={form.control}
             name="firstName"
@@ -134,7 +156,12 @@ export function ContactFormFields({
           label="Street address"
           disabled={disabled}
         />
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div
+          className={cn(
+            "grid gap-4 sm:grid-cols-2",
+            isDrawerPane && CONTACTS_DRAWER_PROFILE_EDIT_FIELD_GRID_CLASS,
+          )}
+        >
           <TextField
             control={form.control}
             name="city"
@@ -148,7 +175,12 @@ export function ContactFormFields({
             disabled={disabled}
           />
         </div>
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div
+          className={cn(
+            "grid gap-4 sm:grid-cols-2",
+            isDrawerPane && CONTACTS_DRAWER_PROFILE_EDIT_FIELD_GRID_CLASS,
+          )}
+        >
           <SelectField
             control={form.control}
             name="country"
