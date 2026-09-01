@@ -415,6 +415,21 @@ export function invalidateChatbotDetail(
   });
 }
 
+export function invalidateChatbotDefault(
+  queryClient: QueryClient,
+  apiBase = "chatbots",
+) {
+  return queryClient.invalidateQueries({
+    queryKey: queryKeys.chatbots.default(apiBase),
+  });
+}
+
+export function invalidateSchedulingSettings(queryClient: QueryClient) {
+  return queryClient.invalidateQueries({
+    queryKey: queryKeys.schedulingSettings.detail(),
+  });
+}
+
 export function invalidateTimeCardLists(queryClient: QueryClient) {
   return queryClient.invalidateQueries({
     queryKey: queryKeys.timeClock.all(),

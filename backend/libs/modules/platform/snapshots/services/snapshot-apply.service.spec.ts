@@ -16,6 +16,7 @@ describe('SnapshotApplyService', () => {
     const tx = {
       business: {
         update: jest.fn().mockResolvedValue({}),
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
       },
       pipeline: {
         create: jest.fn().mockImplementation(async (args) => {

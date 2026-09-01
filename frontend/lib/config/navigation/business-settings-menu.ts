@@ -43,8 +43,13 @@ const businessSetupItems: BusinessSettingsNavItem[] = [
   },
   {
     title: "Business Hours",
-    href: "/business/settings/profile?tab=hours",
+    href: "/business/settings/business-hours",
     icon: Clock,
+  },
+  {
+    title: "Web Chat",
+    href: "/business/settings/web-chat",
+    icon: MessageSquare,
   },
   {
     title: "Appearance",
@@ -63,6 +68,11 @@ const calendarItems: BusinessSettingsNavItem[] = [
     title: "Calendars",
     href: "/business/settings/calendars",
     icon: Calendar,
+  },
+  {
+    title: "Scheduling Options",
+    href: "/business/settings/scheduling-options",
+    icon: Clock,
   },
 ];
 

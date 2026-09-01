@@ -16,7 +16,7 @@ import {
 import { cn } from "@/lib/utils";
 
 const WEEKDAY_LABELS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
-const WEEK_JUMP_OPTIONS = [3, 4, 5, 6, 8];
+const DEFAULT_WEEK_JUMP_OPTIONS = [2, 3, 4, 5, 6, 7];
 
 interface CalendarDatePickerProps {
   open: boolean;
@@ -27,6 +27,7 @@ interface CalendarDatePickerProps {
   onSelectDate: (dateKey: string) => void;
   onToday: () => void;
   onJumpWeeks?: (weeks: number) => void;
+  weekJumpOptions?: number[];
   trigger: React.ReactElement;
 }
 
@@ -39,6 +40,7 @@ export function CalendarDatePicker({
   onSelectDate,
   onToday,
   onJumpWeeks,
+  weekJumpOptions = DEFAULT_WEEK_JUMP_OPTIONS,
   trigger,
 }: CalendarDatePickerProps) {
   const [visibleMonthKey, setVisibleMonthKey] = useState(anchorDateKey);
@@ -168,7 +170,7 @@ export function CalendarDatePicker({
 
         {onJumpWeeks && (view === "week" || view === "list") ? (
           <div className="mt-3 flex flex-wrap gap-1.5 border-t border-border/60 pt-3">
-            {WEEK_JUMP_OPTIONS.map((weeks) => (
+            {weekJumpOptions.map((weeks) => (
               <Button
                 key={weeks}
                 type="button"

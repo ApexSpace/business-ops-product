@@ -24,6 +24,26 @@ export const MOBILE_TOP_BAR_ROW_CLASS =
 /** List / calendar mobile headers — background + shell. */
 export const MOBILE_TOP_BAR_CLASS = `${MOBILE_LIST_HEADER_BG} ${MOBILE_TOP_BAR_SHELL_CLASS}`;
 
+/**
+ * Three-column grid inside the purple top bar — filter · title · action.
+ * Matches appointments mobile header centering.
+ */
+export const MOBILE_TOP_BAR_HEADER_ROW_CLASS =
+  "grid h-[var(--mobile-top-bar-height)] min-h-[var(--mobile-top-bar-height)] max-h-[var(--mobile-top-bar-height)] w-full grid-cols-[2.5rem_minmax(0,1fr)_2.5rem] items-center gap-1";
+
+/** Shared mobile page title — hit-and-trial via --mobile-page-title-* in globals.css. */
+export const MOBILE_PAGE_TITLE_CLASS =
+  "truncate text-center text-[length:var(--mobile-page-title-size)] font-[number:var(--mobile-page-title-weight)] leading-none text-white";
+
+/**
+ * Scroll slot below header/search — caps height so the body does not leave empty residue.
+ */
+export const MOBILE_LIST_BODY_SLOT_CLASS =
+  "flex min-h-0 flex-1 flex-col overflow-hidden";
+
+export const MOBILE_LIST_BODY_SCROLL_CLASS =
+  "h-max max-h-full min-h-0 w-full overflow-y-auto overscroll-contain";
+
 /** List item — Figma 24px vertical / 16px horizontal */
 export const MOBILE_LIST_ITEM_CLASS =
   "flex w-full min-h-[44px] flex-col gap-1 border-b border-[var(--mobile-list-border)] px-4 py-6 text-left transition-colors active:bg-violet-primary-surface/40";
@@ -57,4 +77,4 @@ export const MOBILE_LIST_STATUS_NEUTRAL_CLASS =
 export const MOBILE_LIST_BOTTOM_NAV_HEIGHT_PX = 60;
 
 export const MOBILE_LIST_SEARCH_WRAP_CLASS =
-  "shrink-0 border-b border-[var(--mobile-list-search-border)] bg-white px-4 py-3";
+  "flex shrink-0 justify-center border-b border-[var(--mobile-list-search-border)] bg-white px-4 py-3";

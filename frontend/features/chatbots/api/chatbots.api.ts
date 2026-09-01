@@ -52,6 +52,8 @@ export interface Chatbot {
   progressiveProfilingEnabled?: boolean;
   progressiveProfilingAskAfterMessages?: number;
   progressiveProfilingPromptMessage?: string | null;
+  acknowledgementMessage?: string;
+  liveChatEnabled?: boolean;
   createdAt: string;
   updatedAt: string;
   conversationsCount?: number;
@@ -123,6 +125,10 @@ export function getChatbot(id: string, apiBase: string = DEFAULT_API_BASE) {
   return api.get<Chatbot>(path(apiBase, id));
 }
 
+export function getDefaultChatbot(apiBase: string = DEFAULT_API_BASE) {
+  return api.get<Chatbot>(path(apiBase, "default"));
+}
+
 export function createChatbot(
   body: CreateChatbotBody,
   apiBase: string = DEFAULT_API_BASE,
@@ -137,6 +143,8 @@ export function updateChatbot(
     aiEnabled?: boolean;
     businessHoursOnly?: boolean;
     businessHoursSettings?: ChatbotBusinessHoursSettings;
+    acknowledgementMessage?: string;
+    liveChatEnabled?: boolean;
     welcomeVariants?: ChatbotWelcomeVariant[];
     progressiveProfilingEnabled?: boolean;
     progressiveProfilingAskAfterMessages?: number;

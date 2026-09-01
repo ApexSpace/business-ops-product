@@ -4,7 +4,11 @@ import { SearchInput } from "@/components/forms/search-input";
 import { MobileListScreenHeader } from "@/components/mobile/mobile-list-screen-header";
 import { LoadingState } from "@/components/data-display/loading-state";
 import { ListPagination } from "@/components/ui/list-pagination";
-import { MOBILE_LIST_SEARCH_WRAP_CLASS } from "@/lib/design/mobile-list-tokens";
+import {
+  MOBILE_LIST_BODY_SCROLL_CLASS,
+  MOBILE_LIST_BODY_SLOT_CLASS,
+  MOBILE_LIST_SEARCH_WRAP_CLASS,
+} from "@/lib/design/mobile-list-tokens";
 import { cn } from "@/lib/utils";
 
 export interface MobileEntityListScreenProps {
@@ -27,8 +31,7 @@ export interface MobileEntityListScreenProps {
   emptyDescription?: string;
   emptyAction?: React.ReactNode;
   pagination?: {
-    meta: { total: number; page: number; limit: number,
-};
+    meta: { total: number; page: number; limit: number };
     page: number;
     onPageChange: (page: number) => void;
     label?: string;
@@ -89,43 +92,47 @@ export function MobileEntityListScreen({
             value={search}
             onChange={onSearchChange}
             placeholder={searchPlaceholder}
-            className="max-w-none"
+            className="w-full max-w-[min(100%,355px)]"
           />
         </div>
       ) : null}
 
-      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
-        {isLoading && isEmpty ? (
-          <LoadingState
-            variant="inline"
-            label={loadingMessage}
-            className="w-full justify-center px-4 py-8"
-          />
-        ) : isEmpty ? (
-          <div className="flex flex-col items-center gap-3 px-6 py-12 text-center">
-            <p className="text-[15px] font-semibold text-[var(--drawer-text-primary)]">
-              {emptyTitle}
-            </p>
-            {emptyDescription ? (
-              <p className="text-sm text-muted-foreground">{emptyDescription}</p>
-            ) : null}
-            {emptyAction}
-          </div>
-        ) : (
-          children
-        )}
+      <div className={MOBILE_LIST_BODY_SLOT_CLASS}>
+        <div className={MOBILE_LIST_BODY_SCROLL_CLASS}>
+          {isLoading && isEmpty ? (
+            <LoadingState
+              variant="inline"
+              label={loadingMessage}
+              className="w-full justify-center px-4 py-8"
+            />
+          ) : isEmpty ? (
+            <div className="flex flex-col items-center gap-3 px-6 py-12 text-center">
+              <p className="text-[15px] font-semibold text-[var(--drawer-text-primary)]">
+                {emptyTitle}
+              </p>
+              {emptyDescription ? (
+                <p className="text-sm text-muted-foreground">
+                  {emptyDescription}
+                </p>
+              ) : null}
+              {emptyAction}
+            </div>
+          ) : (
+            children
+          )}
+
+          {pagination ? (
+            <div className="shrink-0 border-t border-[var(--mobile-list-border)] bg-white px-4 py-3">
+              <ListPagination
+                meta={pagination.meta}
+                page={pagination.page}
+                onPageChange={pagination.onPageChange}
+                label={pagination.label}
+              />
+            </div>
+          ) : null}
+        </div>
       </div>
-
-      {pagination ? (
-        <div className="shrink-0 border-t border-[var(--mobile-list-border)] bg-white px-4 py-3">
-          <ListPagination
-            meta={pagination.meta}
-            page={pagination.page}
-            onPageChange={pagination.onPageChange}
-            label={pagination.label}
-          />
-        </div>
-      ) : null}
 
       {bottomNav}
     </div>

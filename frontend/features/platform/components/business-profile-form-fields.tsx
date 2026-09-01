@@ -17,6 +17,7 @@ import { listActiveIndustries } from "@/features/platform/api/platform.api";
 import { listPlatformSnapshots } from "@/features/platform/api/snapshots.api";
 import { queryKeys } from "@/lib/query/keys";
 import { cn } from "@/lib/utils";
+import { SETTINGS_FORM_SECTION_STACK_CLASS } from "@/lib/design/settings-form-tokens";
 
 export interface BusinessProfileFormFieldsProps {
   form: UseFormReturn<BusinessProfileFormValues>;
@@ -92,7 +93,7 @@ export function BusinessProfileFormFields({
   return (
     <div
       className={cn(
-        "space-y-5",
+        SETTINGS_FORM_SECTION_STACK_CLASS,
         constrainScroll && !activeTab && "max-h-[min(70vh,640px)] overflow-y-auto pr-1",
       )}
     >

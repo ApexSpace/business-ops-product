@@ -85,6 +85,9 @@ export class AppointmentReminderService {
                 name: true,
                 durationMinutes: true,
                 price: true,
+                hasBufferTime: true,
+                bufferBeforeMinutes: true,
+                bufferAfterMinutes: true,
               },
             },
             assignedTo: {

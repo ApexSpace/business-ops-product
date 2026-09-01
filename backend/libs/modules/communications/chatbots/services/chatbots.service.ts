@@ -1,5 +1,5 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
-import { ChatbotStatus } from '@prisma/client';
+import { Chatbot, ChatbotStatus } from '@prisma/client';
 import { RequestUser } from '@app/common/decorators/current-user.decorator';
 import { AppException } from '@app/common/exceptions/app.exception';
 import { ErrorCode } from '@app/common/exceptions/error-code.enum';
@@ -21,6 +21,7 @@ import { ChatbotEmbedService } from './chatbot-embed.service';
 import { generateChatbotPublicKey } from '../utils/chatbot-public-key.util';
 import {
   bundleFromCreateDto,
+  defaultWebChatSettingsBundle,
   mergeUpdateDto,
   parseChatbotSettings,
   settingsToJson,
@@ -85,6 +86,68 @@ export class ChatbotsService {
       lastMessageAt,
       ...sessionStats,
     });
+  }
+
+  async getDefault(
+    businessId: string,
+    actor: RequestUser,
+  ): Promise<ChatbotResponseDto> {
+    const chatbot = await this.ensureDefaultChatbot(businessId, actor);
+    return this.get(businessId, chatbot.id);
+  }
+
+  async ensureDefaultChatbot(
+    businessId: string,
+    actor?: RequestUser,
+  ): Promise<Chatbot> {
+    const defaultId =
+      await this.chatbotsRepository.getBusinessDefaultChatbotId(businessId);
+    if (defaultId) {
+      const existing = await this.chatbotsRepository.findById(
+        businessId,
+        defaultId,
+      );
+      if (existing) {
+        return existing;
+      }
+    }
+
+    const candidate =
+      await this.chatbotsRepository.findFirstForDefault(businessId);
+    if (candidate) {
+      await this.chatbotsRepository.setBusinessDefaultChatbotId(
+        businessId,
+        candidate.id,
+      );
+      return candidate;
+    }
+
+    const bundle = defaultWebChatSettingsBundle();
+    const chatbot = await this.chatbotsRepository.create({
+      business: { connect: { id: businessId } },
+      name: 'Web Chat',
+      publicKey: generateChatbotPublicKey(),
+      status: ChatbotStatus.DRAFT,
+      ...settingsToJson(bundle),
+    });
+
+    await this.chatbotsRepository.setBusinessDefaultChatbotId(
+      businessId,
+      chatbot.id,
+    );
+
+    if (actor) {
+      await this.auditService.log({
+        actorUserId: actor.id,
+        businessId,
+        action: 'chatbot.created',
+        entityType: 'Chatbot',
+        entityId: chatbot.id,
+        metadata: { source: 'default_web_chat' },
+      });
+    }
+
+    return chatbot;
   }
 
   async create(

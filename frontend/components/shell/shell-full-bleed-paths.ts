@@ -67,6 +67,11 @@ export function isContactsListPath(pathname: string): boolean {
   return pathname === "/business/contacts";
 }
 
+/** Business dashboard — full-bleed mobile page shell. */
+export function isBusinessDashboardPath(pathname: string): boolean {
+  return pathname === "/business/dashboard";
+}
+
 const MOBILE_ENTITY_LIST_PATHS = new Set([
   "/business/gift-cards",
   "/business/packages",

@@ -20,7 +20,11 @@ import {
   WORKSPACE_NAV_ITEM_ACTIVE_CLASS,
   WORKSPACE_NAV_ITEM_CLASS,
   WORKSPACE_NAV_ITEM_IDLE_CLASS,
+  WORKSPACE_NAV_NESTED_LIST_CLASS,
   WORKSPACE_NAV_PANEL_CLASS,
+  WORKSPACE_NAV_SCROLL_AREA_CLASS,
+  WORKSPACE_NAV_SCROLL_INNER_CLASS,
+  WORKSPACE_NAV_SEARCH_WRAP_CLASS,
   WORKSPACE_NAV_SECTION_TRIGGER_CLASS,
 } from "@/lib/design/workspace-nav-tokens";
 
@@ -87,48 +91,54 @@ export function SettingsNavPanel({
 
   return (
     <div className={WORKSPACE_NAV_PANEL_CLASS}>
-      <SearchInput
-        value={query}
-        onChange={setQuery}
-        placeholder="Search"
-        className="max-w-none"
-      />
-      <ScrollArea className="min-h-0 flex-1">
-        {filtered.length === 0 ? (
-          <p className="px-2 py-6 text-sm text-muted-foreground">
-            No matching settings.
-          </p>
-        ) : (
-          <Accordion
-            multiple
-            value={openIds}
-            onValueChange={(next) => {
-              if (Array.isArray(next)) setOpenIds(next);
-            }}
-            className="pr-2"
-          >
-            {filtered.map((section) => (
-              <AccordionItem
-                key={section.id}
-                value={section.id}
-                className="border-0"
-              >
-                <AccordionTrigger className={WORKSPACE_NAV_SECTION_TRIGGER_CLASS}>
-                  {section.label}
-                </AccordionTrigger>
-                <AccordionContent className="pb-2 [&_a]:no-underline">
-                  <ul className="flex flex-col gap-1">
-                    {section.items.map((item) => (
-                      <li key={item.href}>
-                        <SettingsNavLink item={item} onNavigate={onNavigate} />
-                      </li>
-                    ))}
-                  </ul>
-                </AccordionContent>
-              </AccordionItem>
-            ))}
-          </Accordion>
-        )}
+      <div className={WORKSPACE_NAV_SEARCH_WRAP_CLASS}>
+        <SearchInput
+          value={query}
+          onChange={setQuery}
+          placeholder="Search"
+          className="max-w-none"
+        />
+      </div>
+      <ScrollArea className={WORKSPACE_NAV_SCROLL_AREA_CLASS}>
+        <div className={WORKSPACE_NAV_SCROLL_INNER_CLASS}>
+          {filtered.length === 0 ? (
+            <p className="py-6 text-sm text-muted-foreground">
+              No matching settings.
+            </p>
+          ) : (
+            <Accordion
+              multiple
+              value={openIds}
+              onValueChange={(next) => {
+                if (Array.isArray(next)) setOpenIds(next);
+              }}
+            >
+              {filtered.map((section) => (
+                <AccordionItem
+                  key={section.id}
+                  value={section.id}
+                  className="border-0"
+                >
+                  <AccordionTrigger
+                    chevronMode="section"
+                    className={WORKSPACE_NAV_SECTION_TRIGGER_CLASS}
+                  >
+                    {section.label}
+                  </AccordionTrigger>
+                  <AccordionContent className="pb-0 [&_a]:no-underline">
+                    <ul className={WORKSPACE_NAV_NESTED_LIST_CLASS}>
+                      {section.items.map((item) => (
+                        <li key={item.href}>
+                          <SettingsNavLink item={item} onNavigate={onNavigate} />
+                        </li>
+                      ))}
+                    </ul>
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
+          )}
+        </div>
       </ScrollArea>
     </div>
   );
@@ -164,11 +174,13 @@ function SettingsNavLink({
       <Icon
         className={cn(
           WORKSPACE_NAV_ICON_CLASS,
-          active ? "text-primary" : "text-muted-foreground",
+          active
+            ? "text-violet-primary-normal"
+            : "text-grey-tertiary-normal",
         )}
         aria-hidden
       />
-      <span className="min-w-0 break-words leading-snug">{item.title}</span>
+      <span className="min-w-0 truncate">{item.title}</span>
     </Link>
   );
 }

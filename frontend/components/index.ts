@@ -56,6 +56,13 @@ export { PageContainer } from "@/components/layout/page-container";
 export { PageHeader } from "@/components/layout/page-header";
 export { PageSection } from "@/components/layout/page-section";
 export { SettingsCard } from "@/components/layout/settings-card";
+export {
+  SettingsContentShell,
+  SettingsFormPage,
+  SettingsFormSection,
+  SettingsPageLayout,
+} from "@/components/layout/settings-page-layout";
+export { SettingsFormActions } from "@/components/layout/settings-form-actions";
 export { StatsCard } from "@/components/layout/stats-card";
 
 export { IconButton } from "@/components/ui/icon-button";

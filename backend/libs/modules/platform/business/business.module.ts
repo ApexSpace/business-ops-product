@@ -1,5 +1,6 @@
 import { Module, forwardRef } from '@nestjs/common';
 import { AuditModule } from '@app/modules/platform/audit/audit.module';
+import { ChatbotsModule } from '@app/modules/communications/chatbots/chatbots.module';
 import { IndustriesModule } from '@app/modules/crm/industries/industries.module';
 import { SnapshotsModule } from '@app/modules/platform/snapshots/snapshots.module';
 import { MembershipModule } from '@app/modules/platform/membership/membership.module';
@@ -47,6 +48,7 @@ import { BusinessLifecycleService } from './services/business-lifecycle.service'
 @Module({
   imports: [
     AuditModule,
+    forwardRef(() => ChatbotsModule),
     IndustriesModule,
     SnapshotsModule,
     PlanGroupsModule,

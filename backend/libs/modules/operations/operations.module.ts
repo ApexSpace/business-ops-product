@@ -9,6 +9,7 @@ import { ResourcesModule } from './resources/resources.module';
 import { TasksModule } from './tasks/tasks.module';
 import { TimeClockModule } from './time-clock/time-clock.module';
 import { WorkItemsModule } from './work-items/work-items.module';
+import { SchedulingSettingsModule } from './scheduling-settings/scheduling-settings.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { WorkItemsModule } from './work-items/work-items.module';
     AppointmentsModule,
     CalendarsModule,
     OnlineBookingSettingsModule,
+    SchedulingSettingsModule,
     PublicBookingModule,
     WaitlistModule,
     ExpressBookingModule,

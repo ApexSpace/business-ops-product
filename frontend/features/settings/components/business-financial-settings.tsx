@@ -1,6 +1,7 @@
 "use client";
 
 import { SettingsFormActions } from "@/components/layout/settings-form-actions";
+import { SettingsFormPage } from "@/components/layout/settings-page-layout";
 import { SettingsFormStack } from "@/components/forms/settings-form-grid";
 import { PageTabs, PageTabsPanel } from "@/components/layout/page-tabs";
 import {
@@ -31,49 +32,51 @@ export function BusinessFinancialSettings() {
   if (isLoading) return <Skeleton className="h-48 w-full" />;
 
   return (
-    <Form {...form}>
-      <FormSchemaProvider schema={financialSettingsSchema}>
-        <form
-          onSubmit={form.handleSubmit((v) => mutation.mutate(v))}
-        >
-          <SettingsFormStack>
-            <PageTabs
-              value={activeTab}
-              onValueChange={setActiveTab}
-              tabs={[...FINANCIAL_SETTINGS_TABS]}
-            >
-              <PageTabsPanel value="invoice">
-                <BusinessFinancialInvoiceSettingsSection
-                  form={form}
-                  canEdit={canEdit}
-                  invoicePreview={invoicePreview}
-                />
-              </PageTabsPanel>
+    <SettingsFormPage>
+      <Form {...form}>
+        <FormSchemaProvider schema={financialSettingsSchema}>
+          <form
+            onSubmit={form.handleSubmit((v) => mutation.mutate(v))}
+          >
+            <SettingsFormStack>
+              <PageTabs
+                value={activeTab}
+                onValueChange={setActiveTab}
+                tabs={[...FINANCIAL_SETTINGS_TABS]}
+              >
+                <PageTabsPanel value="invoice">
+                  <BusinessFinancialInvoiceSettingsSection
+                    form={form}
+                    canEdit={canEdit}
+                    invoicePreview={invoicePreview}
+                  />
+                </PageTabsPanel>
 
-              <PageTabsPanel value="estimate">
-                <BusinessFinancialEstimateSettingsSection
-                  form={form}
-                  canEdit={canEdit}
-                  estimatePreview={estimatePreview}
-                />
-              </PageTabsPanel>
-            </PageTabs>
+                <PageTabsPanel value="estimate">
+                  <BusinessFinancialEstimateSettingsSection
+                    form={form}
+                    canEdit={canEdit}
+                    estimatePreview={estimatePreview}
+                  />
+                </PageTabsPanel>
+              </PageTabs>
 
-            {canEdit ? (
-              <SettingsFormActions
-                onDiscard={() => form.reset()}
-                isDirty={form.formState.isDirty}
-                isSubmitting={mutation.isPending}
-              />
-            ) : (
-              <p className="text-sm text-muted-foreground">
-                Only owners, admins, and platform administrators can edit
-                financial settings.
-              </p>
-            )}
-          </SettingsFormStack>
-        </form>
-      </FormSchemaProvider>
-    </Form>
+              {canEdit ? (
+                <SettingsFormActions
+                  onDiscard={() => form.reset()}
+                  isDirty={form.formState.isDirty}
+                  isSubmitting={mutation.isPending}
+                />
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  Only owners, admins, and platform administrators can edit
+                  financial settings.
+                </p>
+              )}
+            </SettingsFormStack>
+          </form>
+        </FormSchemaProvider>
+      </Form>
+    </SettingsFormPage>
   );
 }

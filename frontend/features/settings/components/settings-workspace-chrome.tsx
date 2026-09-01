@@ -18,6 +18,7 @@ import {
   businessSettingsSections,
   filterBusinessSettingsSections,
 } from "@/lib/config/navigation/business-settings-menu";
+import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth/provider";
 import { hasPlatformBusinessAdminAccess } from "@/features/auth/permissions/permissions-legacy";
 import { useOptionalBusinessAccess } from "@/lib/business-access/use-business-access";
@@ -25,9 +26,14 @@ import {
   canAccessBusinessRoute,
   isCoreSafeBusinessRoute,
 } from "@/lib/capabilities/route-capability-map";
-import { usePageMetadata } from "@/lib/runtime/page-metadata-context";
 import { useHydrated } from "@/lib/hooks/use-hydrated";
+import { usePageMetadata } from "@/lib/runtime/page-metadata-context";
+import { usesSettingsFormShell } from "@/lib/design/settings-form-shell-paths";
 import { isSettingsDataTableListPath } from "@/components/shell/shell-full-bleed-paths";
+import {
+  SETTINGS_FORM_DESCRIPTION_CLASS,
+  SETTINGS_PAGE_OUTER_CLASS,
+} from "@/lib/design/settings-form-tokens";
 import { SettingsNavPanel } from "@/features/settings/components/settings-nav-panel";
 import type { ShellNavSection } from "@/lib/types/shell-nav";
 
@@ -91,10 +97,10 @@ function SettingsContentHeader() {
   if (!metadata?.title) return null;
 
   return (
-    <div className="min-w-0 space-y-1">
+    <div className="min-w-0 space-y-[var(--spacing-2)]">
       <h1 className="text-page-title">{metadata.title}</h1>
       {metadata.description ? (
-        <p className="text-caption max-w-2xl">{metadata.description}</p>
+        <p className={SETTINGS_FORM_DESCRIPTION_CLASS}>{metadata.description}</p>
       ) : null}
     </div>
   );
@@ -107,6 +113,7 @@ export function SettingsWorkspaceChrome({
 }) {
   const pathname = usePathname();
   const tableList = isSettingsDataTableListPath(pathname);
+  const formShell = usesSettingsFormShell(pathname);
   const sections = useFilteredSettingsSections();
   const isLg = useIsLg();
   const browseMode = isSettingsIndexPath(pathname) && !isLg;
@@ -117,7 +124,13 @@ export function SettingsWorkspaceChrome({
   }, [pathname]);
 
   const nav = (
-    <Suspense fallback={<div className="flex h-full min-h-0 flex-col gap-4 p-4" />}>
+    <Suspense
+      fallback={
+        <div
+          className="flex h-full min-h-0 flex-col gap-[var(--workspace-nav-search-gap)] px-[var(--workspace-nav-padding-x)] pt-[var(--workspace-nav-padding-y)]"
+        />
+      }
+    >
       <SettingsNavPanel
         sections={sections}
         onNavigate={() => setNavOpen(false)}
@@ -161,10 +174,13 @@ export function SettingsWorkspaceChrome({
           className={
             tableList
               ? "flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden"
-              : "flex min-h-0 min-w-0 flex-col gap-[var(--spacing-6)] p-[var(--spacing-4)] lg:p-[var(--spacing-6)]"
+              : cn(
+                  SETTINGS_PAGE_OUTER_CLASS,
+                  !formShell && "gap-[var(--spacing-6)]",
+                )
           }
         >
-          {tableList ? null : <SettingsContentHeader />}
+          {tableList || formShell ? null : <SettingsContentHeader />}
           {children}
         </div>
       </SettingsLayout>

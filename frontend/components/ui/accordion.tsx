@@ -23,11 +23,17 @@ function AccordionItem({ className, ...props }: AccordionPrimitive.Item.Props) {
   )
 }
 
+type AccordionTriggerProps = AccordionPrimitive.Trigger.Props & {
+  /** `section`: right when collapsed, down when expanded (settings workspace nav). */
+  chevronMode?: "default" | "section";
+};
+
 function AccordionTrigger({
   className,
   children,
+  chevronMode = "default",
   ...props
-}: AccordionPrimitive.Trigger.Props) {
+}: AccordionTriggerProps) {
   return (
     <AccordionPrimitive.Header className="flex">
       <AccordionPrimitive.Trigger
@@ -39,8 +45,37 @@ function AccordionTrigger({
         {...props}
       >
         {children}
-        <NavArrowIcon direction="down" size="sm" data-slot="accordion-trigger-icon" className="pointer-events-none group-aria-expanded/accordion-trigger:hidden" />
-        <NavArrowIcon direction="up" size="sm" data-slot="accordion-trigger-icon" className="pointer-events-none hidden group-aria-expanded/accordion-trigger:inline" />
+        {chevronMode === "section" ? (
+          <>
+            <NavArrowIcon
+              direction="right"
+              size="sm"
+              data-slot="accordion-trigger-icon"
+              className="pointer-events-none group-aria-expanded/accordion-trigger:hidden"
+            />
+            <NavArrowIcon
+              direction="down"
+              size="sm"
+              data-slot="accordion-trigger-icon"
+              className="pointer-events-none hidden group-aria-expanded/accordion-trigger:inline"
+            />
+          </>
+        ) : (
+          <>
+            <NavArrowIcon
+              direction="down"
+              size="sm"
+              data-slot="accordion-trigger-icon"
+              className="pointer-events-none group-aria-expanded/accordion-trigger:hidden"
+            />
+            <NavArrowIcon
+              direction="up"
+              size="sm"
+              data-slot="accordion-trigger-icon"
+              className="pointer-events-none hidden group-aria-expanded/accordion-trigger:inline"
+            />
+          </>
+        )}
       </AccordionPrimitive.Trigger>
     </AccordionPrimitive.Header>
   )

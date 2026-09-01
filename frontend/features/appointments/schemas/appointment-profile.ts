@@ -38,6 +38,9 @@ export interface AppointmentServiceLine {
     name: string;
     durationMinutes: number;
     price: string | null;
+    hasBufferTime?: boolean;
+    bufferBeforeMinutes?: number;
+    bufferAfterMinutes?: number;
   };
   assignedTo: {
     id: string;

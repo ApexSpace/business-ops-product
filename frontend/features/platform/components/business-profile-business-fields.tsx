@@ -3,6 +3,7 @@
 import type { UseFormReturn } from "react-hook-form";
 import { SelectField } from "@/components/forms/select-field";
 import { SettingsFormGrid } from "@/components/forms/settings-form-grid";
+import { SETTINGS_FORM_SECTION_STACK_CLASS } from "@/lib/design/settings-form-tokens";
 import { TextField } from "@/components/forms/text-field";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BusinessProfileSectionTitle } from "@/features/platform/components/business-profile-section-title";
@@ -100,7 +101,7 @@ export function BusinessProfileBusinessFields({
   );
 
   return (
-    <section className="space-y-[var(--spacing-4)]">
+    <section className={SETTINGS_FORM_SECTION_STACK_CLASS}>
       {showSectionTitle ? (
         <BusinessProfileSectionTitle>Business</BusinessProfileSectionTitle>
       ) : null}

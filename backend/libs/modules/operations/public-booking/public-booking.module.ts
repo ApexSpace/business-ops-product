@@ -8,6 +8,7 @@ import { AppointmentsModule } from '@app/modules/operations/appointments/appoint
 import { NotificationsModule } from '@app/modules/communications/notifications/notifications.module';
 import { JobEnqueueModule } from '@app/core/jobs/job-enqueue.module';
 import { OnlineBookingSettingsModule } from '@app/modules/operations/online-booking-settings/online-booking-settings.module';
+import { SchedulingSettingsModule } from '@app/modules/operations/scheduling-settings/scheduling-settings.module';
 import { IntegrationsModule } from '@app/modules/integrations/integrations/integrations.module';
 import { PaymentsModule } from '@app/modules/finance/payments/payments.module';
 import { RedisModule } from '@app/core/redis/redis.module';
@@ -31,6 +32,7 @@ import { WaitlistModule } from '@app/modules/operations/waitlist/waitlist.module
     NotificationsModule,
     JobEnqueueModule,
     OnlineBookingSettingsModule,
+    SchedulingSettingsModule,
     IntegrationsModule,
     PaymentsModule,
     RedisModule,

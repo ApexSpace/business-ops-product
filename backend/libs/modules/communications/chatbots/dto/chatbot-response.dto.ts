@@ -64,6 +64,8 @@ export class ChatbotResponseDto {
   businessHoursOnly!: boolean;
   showBranding!: boolean;
   embedEnabled!: boolean;
+  acknowledgementMessage!: string;
+  liveChatEnabled!: boolean;
   collectPhoneWhenOffline?: boolean;
   allowedDomains?: string[];
   consentEnabled?: boolean;

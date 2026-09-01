@@ -3,6 +3,7 @@ import { AuditModule } from '@app/modules/platform/audit/audit.module';
 import { BusinessModule } from '@app/modules/platform/business/business.module';
 import { MembershipModule } from '@app/modules/platform/membership/membership.module';
 import { ResourcesModule } from '@app/modules/operations/resources/resources.module';
+import { SchedulingSettingsModule } from '@app/modules/operations/scheduling-settings/scheduling-settings.module';
 import { ServiceCategoriesController } from './controllers/service-categories.controller';
 import { ServiceWorkspaceController } from './controllers/service-workspace.controller';
 import { ServicesController } from './controllers/services.controller';
@@ -20,6 +21,7 @@ import { ServicesService } from './services/services.service';
     forwardRef(() => BusinessModule),
     forwardRef(() => MembershipModule),
     ResourcesModule,
+    SchedulingSettingsModule,
   ],
   controllers: [
     ServiceCategoriesController,

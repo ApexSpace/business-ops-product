@@ -35,6 +35,8 @@ import { useAppointmentDrawer } from "@/features/appointments/hooks/use-appointm
 import { useAppointmentsWorkingHours } from "@/features/appointments/hooks/use-appointments-working-hours";
 import { useAuth } from "@/lib/auth/provider";
 import { useCalendarStaffPermissions } from "@/features/appointments/hooks/use-calendar-staff-permissions";
+import { useSchedulingSettings } from "@/features/scheduling-settings/hooks/use-scheduling-settings";
+import { resolveAppointmentBufferMinutes } from "@/features/appointments/utils/resolve-appointment-buffer";
 
 export const APPOINTMENTS_CALENDAR_PARAMS = {
   view: { default: "week" },
@@ -171,6 +173,13 @@ export function useAppointmentsCalendarPage() {
   const { businessSlots, staffSlotsByUserId } = useAppointmentsWorkingHours(
     workingHoursStaffIds,
   );
+
+  const { data: schedulingSettings } = useSchedulingSettings();
+  const rebookingJumpWeeks = schedulingSettings?.rebookingJumpWeeks ?? [
+    2, 3, 4, 5, 6, 7,
+  ];
+  const showBufferOnCalendar = schedulingSettings?.showBufferOnCalendar ?? false;
+  const bufferTimeEnabled = schedulingSettings?.bufferTimeEnabled ?? true;
 
   useEffect(() => {
     if (!isClient || !isMemberOnlyView || !user?.id) return;
@@ -410,25 +419,33 @@ export function useAppointmentsCalendarPage() {
         ]
           .filter(Boolean)
           .join(" ") || undefined,
-        services: (appointment.services ?? []).map((line) => ({
-          serviceId: line.serviceId,
-          name: line.service.name,
-          price: line.price ?? line.service.price,
-          assignedToId: line.assignedToId ?? appointment.assignedToId ?? "",
-          startMinutes: 0,
-          occupancyMinutes:
-            line.durationMinutes ?? line.service.durationMinutes ?? 60,
-          clientOccupancyMinutes:
-            line.durationMinutes ?? line.service.durationMinutes ?? 60,
-          staffBlockedMinutes:
-            line.durationMinutes ?? line.service.durationMinutes ?? 60,
-          bufferBeforeMinutes: 0,
-          bufferAfterMinutes: 0,
-        })),
+        services: (appointment.services ?? []).map((line) => {
+          const occupancy =
+            line.durationMinutes ?? line.service.durationMinutes ?? 60;
+          const buffers = resolveAppointmentBufferMinutes(
+            {
+              ...appointment,
+              services: [line],
+            },
+            bufferTimeEnabled,
+          );
+          return {
+            serviceId: line.serviceId,
+            name: line.service.name,
+            price: line.price ?? line.service.price,
+            assignedToId: line.assignedToId ?? appointment.assignedToId ?? "",
+            startMinutes: 0,
+            occupancyMinutes: occupancy,
+            clientOccupancyMinutes: occupancy,
+            staffBlockedMinutes: occupancy,
+            bufferBeforeMinutes: buffers.bufferBeforeMinutes,
+            bufferAfterMinutes: buffers.bufferAfterMinutes,
+          };
+        }),
         notes: appointment.notes ?? undefined,
       });
     },
-    [drawer],
+    [drawer, bufferTimeEnabled],
   );
 
   const openTimeBlockAtSlot = useCallback(
@@ -599,5 +616,8 @@ export function useAppointmentsCalendarPage() {
     handleVisibleStaffIdsChange,
     handleSelectedStaffIdChange,
     invalidateAppointments,
+    rebookingJumpWeeks,
+    showBufferOnCalendar,
+    bufferTimeEnabled,
   };
 }

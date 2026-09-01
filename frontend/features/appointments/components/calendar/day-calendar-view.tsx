@@ -28,6 +28,8 @@ interface DayCalendarViewProps {
   businessTimezone?: string | null;
   appointments: Appointment[];
   isLoading?: boolean;
+  showBufferOnCalendar?: boolean;
+  bufferTimeEnabled?: boolean;
   onAppointmentClick: (appointment: Appointment) => void;
   onSlotClick: (
     dateKey: string,
@@ -44,6 +46,8 @@ export function DayCalendarView({
   businessTimezone,
   appointments,
   isLoading,
+  showBufferOnCalendar,
+  bufferTimeEnabled,
   onAppointmentClick,
   onSlotClick,
 }: DayCalendarViewProps) {
@@ -98,6 +102,8 @@ export function DayCalendarView({
                 viewTimezone={timezone}
                 calendars={calendars}
                 businessTimezone={businessTimezone}
+                showBufferOnCalendar={showBufferOnCalendar}
+                bufferTimeEnabled={bufferTimeEnabled}
                 onAppointmentClick={onAppointmentClick}
                 onSlotClick={onSlotClick}
               />

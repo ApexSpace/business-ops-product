@@ -114,6 +114,8 @@ export function toChatbotResponse(
     businessHoursOnly: settings.messaging.businessHoursOnly,
     showBranding: settings.appearance.showBranding,
     embedEnabled: settings.bot.embedEnabled,
+    acknowledgementMessage: settings.chatWindow.acknowledgementMessage,
+    liveChatEnabled: settings.chatWindow.liveChatEnabled,
     collectPhoneWhenOffline: settings.form.collectPhoneWhenOffline,
     allowedDomains: settings.bot.allowedDomains,
     consentEnabled: settings.appearance.consentEnabled,

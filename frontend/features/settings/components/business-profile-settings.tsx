@@ -1,13 +1,14 @@
 "use client";
 
 import { useCallback, useEffect } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { BusinessProfileFormFields } from "@/features/platform/components/business-profile-form-fields";
 import { SettingsFormActions } from "@/components/layout/settings-form-actions";
+import { SettingsFormPage } from "@/components/layout/settings-page-layout";
 import { SettingsFormStack } from "@/components/forms/settings-form-grid";
 import { Form, FormSchemaProvider } from "@/components/ui/form";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -24,7 +25,6 @@ import {
 } from "@/features/settings/schemas/business-profile-tabs";
 import { queryKeys } from "@/lib/query/keys";
 import { PERMISSIONS, useCan } from "@/features/auth/permissions";
-import { BusinessHoursSettingsPanel } from "@/features/settings/components/business-hours-settings-panel";
 import {
   getCurrentBusiness,
   updateCurrentBusiness,
@@ -33,11 +33,18 @@ import { useSetPageMetadata } from "@/lib/runtime/page-metadata-context";
 
 export function BusinessProfileSettings() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const queryClient = useQueryClient();
   const setPageMetadata = useSetPageMetadata();
   const canEdit = useCan(PERMISSIONS["settings.business"]);
 
   const activeTab = parseBusinessProfileTab(searchParams.get("tab"));
+
+  useEffect(() => {
+    if (activeTab === "hours") {
+      router.replace("/business/settings/business-hours");
+    }
+  }, [activeTab, router]);
 
   useEffect(() => {
     setPageMetadata(BUSINESS_PROFILE_TAB_META[activeTab]);
@@ -82,7 +89,7 @@ export function BusinessProfileSettings() {
   if (isLoading) return <Skeleton className="h-48 w-full" />;
 
   if (activeTab === "hours") {
-    return <BusinessHoursSettingsPanel disabled={!canEdit} embedded />;
+    return <Skeleton className="h-48 w-full" />;
   }
 
   const permissionMessage = (
@@ -93,29 +100,31 @@ export function BusinessProfileSettings() {
   );
 
   return (
-    <Form {...form}>
-      <FormSchemaProvider schema={businessProfileSchema}>
-        <form onSubmit={form.handleSubmit(onSubmit)}>
-          <SettingsFormStack>
-            <BusinessProfileFormFields
-              form={form}
-              disabled={!canEdit}
-              activeTab={activeTab}
-              constrainScroll={false}
-              twoColumnLayout
-            />
-            {canEdit ? (
-              <SettingsFormActions
-                onDiscard={() => form.reset()}
-                isDirty={form.formState.isDirty}
-                isSubmitting={mutation.isPending}
+    <SettingsFormPage>
+      <Form {...form}>
+        <FormSchemaProvider schema={businessProfileSchema}>
+          <form onSubmit={form.handleSubmit(onSubmit)}>
+            <SettingsFormStack>
+              <BusinessProfileFormFields
+                form={form}
+                disabled={!canEdit}
+                activeTab={activeTab}
+                constrainScroll={false}
+                twoColumnLayout
               />
-            ) : (
-              permissionMessage
-            )}
-          </SettingsFormStack>
-        </form>
-      </FormSchemaProvider>
-    </Form>
+              {canEdit ? (
+                <SettingsFormActions
+                  onDiscard={() => form.reset()}
+                  isDirty={form.formState.isDirty}
+                  isSubmitting={mutation.isPending}
+                />
+              ) : (
+                permissionMessage
+              )}
+            </SettingsFormStack>
+          </form>
+        </FormSchemaProvider>
+      </Form>
+    </SettingsFormPage>
   );
 }

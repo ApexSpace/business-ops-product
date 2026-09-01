@@ -58,6 +58,8 @@ interface StaffDayCalendarViewProps {
   appointments: Appointment[];
   isLoading?: boolean;
   className?: string;
+  showBufferOnCalendar?: boolean;
+  bufferTimeEnabled?: boolean;
   onAppointmentClick: (appointment: Appointment) => void;
   onAppointmentMoveStart?: (
     appointment: Appointment,
@@ -89,6 +91,8 @@ export function StaffDayCalendarView({
   appointments,
   isLoading,
   className,
+  showBufferOnCalendar,
+  bufferTimeEnabled,
   onAppointmentClick,
   onAppointmentMoveStart,
   onAppointmentResizeStart,
@@ -255,6 +259,8 @@ export function StaffDayCalendarView({
                     staffHoursSlots={
                       staffSlotsByUserId?.get(member.userId) ?? null
                     }
+                    showBufferOnCalendar={showBufferOnCalendar}
+                    bufferTimeEnabled={bufferTimeEnabled}
                     onSlotClick={onSlotClick}
                   />
                 ))}

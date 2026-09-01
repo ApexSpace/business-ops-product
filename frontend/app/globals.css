@@ -282,6 +282,9 @@
    * Row height below the status bar; safe-area is added in MOBILE_TOP_BAR_CLASS.
    */
   --mobile-top-bar-height: var(--cs-mobile-top-bar-height);
+  /* Mobile purple header title — hit-and-trial (list pages, dashboard, calendar). */
+  --mobile-page-title-size: 17px;
+  --mobile-page-title-weight: 600;
   --glass-blur: 18px;
   --glass-blur-strong: 26px;
   --radius: 0.5rem;
@@ -295,6 +298,18 @@
   --spacing-3: 0.75rem;
   --spacing-4: 1rem;
   --spacing-6: 1.5rem;
+  /*
+   * Settings form shell — hit-and-trial density (recipes in settings-form-tokens.ts).
+   *   --settings-content-padding-x  shell horizontal inset (~40px at lg via --spacing-page-x)
+   *   --settings-content-padding-y  shell vertical inset
+   *   --settings-form-section-gap   header ↔ fields, subsection stacks inside a form
+   */
+  --settings-content-padding-x: var(--spacing-page-x);
+  --settings-content-padding-y: 1.875rem;
+  --settings-form-section-gap: var(--spacing-6);
+  /* Settings form violet subheading — hit-and-trial (`.settings-form-description`). */
+  --settings-form-description-size: 15px;
+  --settings-form-description-line-height: 20px;
   --sidebar-width: 10.75rem;
   --sheet-width: 400px;
   /* Body row height — single list density (56px, still ≥44px for row hit targets) */
@@ -320,6 +335,50 @@
   --control-height: 2.5rem;
   --control-height-sm: 2rem;
   --control-padding-x: 0.625rem;
+  /*
+   * PhoneInput dial-code segment — hit-and-trial (components/forms/phone-input.tsx).
+   *   --phone-dial-code-width       fixed width for flag + dial code + chevron
+   *   --phone-dial-code-padding-x   horizontal inset inside the segment
+   */
+  --phone-dial-code-width: 4.25rem;
+  --phone-dial-code-padding-x: 0.375rem;
+  /*
+   * Settings / Reports workspace sidebar — Figma PandaCue settings nav density.
+   *   --workspace-nav-width              aside width
+   *   --workspace-nav-padding-x          horizontal inset
+   *   --workspace-nav-padding-y          top inset (below shell edge)
+   *   --workspace-nav-search-gap         search → first group
+   *   --workspace-nav-item-height        nested row height
+   *   --workspace-nav-section-height     group header row height
+   *   --workspace-nav-item-gap           icon ↔ label gap
+   *   --workspace-nav-item-padding-x     nested row horizontal padding
+   *   --workspace-nav-icon-size            nested row icon box
+   *   --workspace-nav-scrollbar-size       scrollbar track width (sits in right padding gutter)
+   * Chevrons stay at --workspace-nav-padding-x from the aside edge; scrollbar is decoupled at the far right.
+   */
+  --workspace-nav-width: 19.75rem;
+  --workspace-nav-padding-x: 1.875rem;
+  --workspace-nav-padding-y: var(--spacing-4);
+  --workspace-nav-search-gap: var(--spacing-4);
+  --workspace-nav-item-height: 2.25rem;
+  --workspace-nav-section-height: 2.75rem;
+  --workspace-nav-item-gap: var(--spacing-2);
+  --workspace-nav-item-padding-x: var(--spacing-2);
+  --workspace-nav-icon-size: 0.75rem;
+  --workspace-nav-scrollbar-size: 0.625rem;
+  /*
+   * Business hours day editor — hit-and-trial (business-hours-tokens.ts).
+   *   --business-hours-editor-accent-width   left violet accent bar
+   *   --business-hours-editor-panel-gap      stack gap inside the white card
+   *   --business-hours-shift-row-gap         delete ↔ time fields
+   *   --business-hours-time-input-height     Date/Time field height
+   *   --business-hours-delete-button-size    trash icon hit target
+   */
+  --business-hours-editor-accent-width: 3px;
+  --business-hours-editor-panel-gap: var(--spacing-4);
+  --business-hours-shift-row-gap: var(--spacing-3);
+  --business-hours-time-input-height: 2.6875rem;
+  --business-hours-delete-button-size: 2.25rem;
   --button-brand-font-weight: 650;
   /* Purple “+” square — same size for Add Note, Service, and Client field. */
   --plus-button-size: 1.05rem;
@@ -538,6 +597,9 @@
   --shell-navbar-user-radius: var(--cs-shell-navbar-user-radius);
   --shell-navbar-menu-offset: var(--cs-shell-navbar-menu-offset);
   --mobile-top-bar-height: var(--cs-mobile-top-bar-height);
+  /* Mobile purple header title — hit-and-trial (list pages, dashboard, calendar). */
+  --mobile-page-title-size: 17px;
+  --mobile-page-title-weight: 600;
   --glass-blur: 18px;
   --glass-blur-strong: 24px;
   --shadow-xs-value: 0 1px 2px rgb(0 0 0 / 25%);
@@ -820,6 +882,52 @@
     background: var(--control-surface);
     backdrop-filter: blur(var(--glass-blur));
     -webkit-backdrop-filter: blur(var(--glass-blur));
+  }
+
+  /**
+   * Settings workspace forms — overrides .glass-control fill/border on fields and
+   * action buttons. Applied via .settings-form-surface on the shared settings shell.
+   */
+  .settings-form-surface .settings-form-description {
+    font-size: var(--settings-form-description-size);
+    line-height: var(--settings-form-description-line-height);
+    font-weight: 400;
+    color: var(--pc-violet-primary-dark);
+  }
+
+  .settings-form-surface
+    .glass-control:is(
+      [data-slot="input"],
+      [data-slot="select-trigger"],
+      [data-slot="textarea"],
+      [data-slot="combobox-trigger"]
+    ) {
+    border-color: var(--control-border);
+    background: #ffffff;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
+  button.settings-form-discard-button.glass-control {
+    border: 1px solid var(--pc-violet-primary-normal);
+    background: #ffffff;
+    color: var(--pc-violet-primary-normal);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    box-shadow: none;
+  }
+
+  button.settings-form-discard-button.glass-control:hover:not(:disabled) {
+    border-color: var(--pc-violet-primary-normal);
+    background: var(--pc-violet-primary-surface);
+    color: var(--pc-violet-primary-normal);
+  }
+
+  button.settings-form-discard-button.glass-control:disabled {
+    border-color: var(--pc-violet-primary-normal);
+    background: #ffffff;
+    color: var(--pc-violet-primary-normal);
+    opacity: 0.55;
   }
 
   .glass-hover {
