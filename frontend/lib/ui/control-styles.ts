@@ -30,6 +30,17 @@ export const FILTER_ICON_BUTTON_CLASS = [
 /** Horizontal inset matching default Button size. */
 export const CONTROL_PADDING_X_CLASS = "px-[var(--control-padding-x)]";
 
+/**
+ * Trailing chevron in Select / Combobox / drawer field triggers.
+ * Sizes read `--field-trigger-chevron-*` from globals.css (smaller below md).
+ */
+export const FIELD_TRIGGER_CHEVRON_NAV_CLASS =
+  "!size-[length:var(--field-trigger-chevron-nav-size)]";
+
+/** Descendant hook for drawer stroke chevrons inside field triggers. */
+export const FIELD_TRIGGER_CHEVRON_DRAWER_SLOT_CLASS =
+  "[&_[data-slot=field-trigger-chevron]]:size-auto [&_[data-slot=field-trigger-chevron]]:h-[length:var(--field-trigger-chevron-height)] [&_[data-slot=field-trigger-chevron]]:w-[length:var(--field-trigger-chevron-width)]";
+
 /** Select triggers in filter bars and toolbars */
 export const FILTER_SELECT_TRIGGER_CLASS = `${CONTROL_HEIGHT_CLASS} shrink-0 text-sm`;
 

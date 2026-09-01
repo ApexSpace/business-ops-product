@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { NavArrowIcon } from "@/components/ui/nav-arrow-icon";
 import type { CalendarViewMode } from "@/features/calendars/utils/calendar-dates";
 import {
@@ -14,6 +14,9 @@ import {
 } from "@/features/appointments/styles/mobile-calendar-tokens";
 import { cn } from "@/lib/utils";
 
+/** Visible day cells in the mobile strip (day + week views). */
+export const MOBILE_CAL_STRIP_VISIBLE_DAYS = 5;
+
 interface MobileCalendarDateStripProps {
   anchorDateKey: string;
   timezone: string;
@@ -24,16 +27,53 @@ interface MobileCalendarDateStripProps {
   className?: string;
 }
 
-function buildStripDateKeys(
-  anchorDateKey: string,
+export function buildStripDateKeysFromStart(
+  stripStartDateKey: string,
   timezone: string,
+  dayCount = MOBILE_CAL_STRIP_VISIBLE_DAYS,
 ): string[] {
-  const anchor = parseDateKeyInTimezone(anchorDateKey, timezone);
-  // Figma: five day cells centered on the selected day
-  const start = anchor.minus({ days: 2 });
-  return Array.from({ length: 5 }, (_, i) =>
+  const start = parseDateKeyInTimezone(stripStartDateKey, timezone);
+  return Array.from({ length: dayCount }, (_, i) =>
     start.plus({ days: i }).toFormat("yyyy-MM-dd"),
   );
+}
+
+/** First-load window only — selected day starts centered; not used on every tap. */
+export function initialMobileStripStartKey(
+  anchorDateKey: string,
+  timezone: string,
+  dayCount = MOBILE_CAL_STRIP_VISIBLE_DAYS,
+): string {
+  const anchor = parseDateKeyInTimezone(anchorDateKey, timezone);
+  const centerOffset = Math.floor((dayCount - 1) / 2);
+  return anchor.minus({ days: centerOffset }).toFormat("yyyy-MM-dd");
+}
+
+/**
+ * When the selected date jumps outside the strip (month picker, deep link),
+ * slide the window just enough to include it — never re-center on the anchor.
+ */
+export function resolveStripStartKeyForAnchor(
+  currentStartDateKey: string,
+  anchorDateKey: string,
+  timezone: string,
+  dayCount = MOBILE_CAL_STRIP_VISIBLE_DAYS,
+): string {
+  const keys = buildStripDateKeysFromStart(
+    currentStartDateKey,
+    timezone,
+    dayCount,
+  );
+  const first = keys[0];
+  const last = keys[keys.length - 1];
+  if (anchorDateKey >= first && anchorDateKey <= last) {
+    return currentStartDateKey;
+  }
+  if (anchorDateKey < first) {
+    return anchorDateKey;
+  }
+  const anchor = parseDateKeyInTimezone(anchorDateKey, timezone);
+  return anchor.minus({ days: dayCount - 1 }).toFormat("yyyy-MM-dd");
 }
 
 function weekRangeKeys(anchorDateKey: string, timezone: string): Set<string> {
@@ -57,9 +97,19 @@ export function MobileCalendarDateStrip({
   onNext,
   className,
 }: MobileCalendarDateStripProps) {
+  const [stripStartKey, setStripStartKey] = useState(() =>
+    initialMobileStripStartKey(anchorDateKey, timezone),
+  );
+
+  useEffect(() => {
+    setStripStartKey((current) =>
+      resolveStripStartKeyForAnchor(current, anchorDateKey, timezone),
+    );
+  }, [anchorDateKey, timezone]);
+
   const stripKeys = useMemo(
-    () => buildStripDateKeys(anchorDateKey, timezone),
-    [anchorDateKey, timezone],
+    () => buildStripDateKeysFromStart(stripStartKey, timezone),
+    [stripStartKey, timezone],
   );
   const weekSelected = useMemo(
     () =>
@@ -77,7 +127,12 @@ export function MobileCalendarDateStrip({
       <button
         type="button"
         aria-label="Previous"
-        onClick={onPrevious}
+        onClick={() => {
+          setStripStartKey((current) =>
+            shiftMobileStripDateKey(current, timezone, -1),
+          );
+          onPrevious();
+        }}
         className="inline-flex size-9 shrink-0 items-center justify-center rounded-md border border-[#D6D0C8] bg-white text-[#5A5A5A] hover:bg-[#F7F4F0]"
       >
         <NavArrowIcon direction="left" size="lg" />
@@ -126,7 +181,12 @@ export function MobileCalendarDateStrip({
       <button
         type="button"
         aria-label="Next"
-        onClick={onNext}
+        onClick={() => {
+          setStripStartKey((current) =>
+            shiftMobileStripDateKey(current, timezone, 1),
+          );
+          onNext();
+        }}
         className="inline-flex size-9 shrink-0 items-center justify-center rounded-md border border-[#D6D0C8] bg-white text-[#5A5A5A] hover:bg-[#F7F4F0]"
       >
         <NavArrowIcon direction="right" size="lg" />

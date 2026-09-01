@@ -67,7 +67,8 @@ export function DrawerChevronIcon({
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       aria-hidden
-      className={cn("block shrink-0", rotate, className)}
+      data-slot="field-trigger-chevron"
+      className={cn("block size-auto shrink-0", rotate, className)}
       style={{ color: DRAWER_ICON_CHEVRON }}
     >
       <path

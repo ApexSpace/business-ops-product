@@ -23,9 +23,18 @@
  *   --drawer-spine-width        → w-[var(--drawer-spine-width)]
  *   --drawer-spine-padding-x    → px-drawer-spine-x
  *   --drawer-spine-padding-y    → py-drawer-spine-y
+ *   --mobile-top-bar-height       → mobile list/calendar/drawer purple headers
  */
 
+import {
+  MOBILE_LIST_HEADER_BG,
+  MOBILE_TOP_BAR_SHELL_CLASS,
+} from "@/lib/design/mobile-list-tokens";
+
 import { cn } from "@/lib/utils";
+import {
+  FIELD_TRIGGER_CHEVRON_DRAWER_SLOT_CLASS,
+} from "@/lib/ui/control-styles";
 
 
 /* ─── Width tiers (single map for DrawerShell, FormSheet, EntityDetailDrawer) ───
@@ -339,6 +348,7 @@ export const DRAWER_SELECT_TRIGGER_CLASS = cn(
   "cursor-pointer",
   "!border-[var(--drawer-field-border)] !bg-white !backdrop-blur-none [background-image:none]",
   "focus-visible:!border-violet-primary-normal focus-visible:!ring-2 focus-visible:!ring-violet-primary-normal/20",
+  FIELD_TRIGGER_CHEVRON_DRAWER_SLOT_CLASS,
 );
 
 export const DRAWER_SERVICE_PICKER_CLASS =
@@ -496,13 +506,17 @@ export const DRAWER_MOBILE_HEADER_ACTION_CLASS = DRAWER_MOBILE_CLOSE_ACTION_CLAS
 export const DRAWER_MOBILE_HEADER_ICON_BUTTON_SLOT_CLASS =
   "[&_[data-icon-button]]:relative [&_[data-icon-button]]:!size-11 [&_[data-icon-button]]:!min-h-11 [&_[data-icon-button]]:!min-w-11 [&_[data-icon-button]]:rounded-full [&_[data-icon-button]]:!border-0 [&_[data-icon-button]]:!bg-transparent [&_[data-icon-button]]:p-0 [&_[data-icon-button]]:text-white [&_[data-icon-button]]:!shadow-none [&_[data-icon-button]]:hover:!bg-white/10 [&_[data-icon-button]]:hover:text-white [&_[data-icon-button]_svg]:size-4";
 
-/** Mobile Figma sidebars — full-bleed purple app bar (no spine). */
+/** Resets desktop `SHEET_HEADER_CLASS` padding when merged on mobile-brand chrome only. */
+export const DRAWER_MOBILE_SHEET_HEADER_RESET_CLASS =
+  "!gap-0 !border-b-0 !py-0";
+
+/** Mobile Figma sidebars — full-bleed purple app bar (no spine). Uses `--mobile-top-bar-height`. */
 export const DRAWER_MOBILE_HEADER_CLASS =
-  "relative shrink-0 border-0 !bg-violet-primary-normal px-3 pb-3 pt-[max(0.75rem,env(safe-area-inset-top,0px))] [background-image:none] sm:px-4 " +
+  `${MOBILE_LIST_HEADER_BG} ${MOBILE_TOP_BAR_SHELL_CLASS} ${DRAWER_MOBILE_SHEET_HEADER_RESET_CLASS} !px-3 sm:!px-4 [background-image:none] ` +
   DRAWER_MOBILE_HEADER_ICON_BUTTON_SLOT_CLASS;
 
 export const DRAWER_MOBILE_HEADER_ROW_CLASS =
-  "grid w-full grid-cols-[2.75rem_minmax(0,1fr)_2.75rem] items-center gap-1";
+  "grid h-[var(--mobile-top-bar-height)] min-h-[var(--mobile-top-bar-height)] max-h-[var(--mobile-top-bar-height)] w-full grid-cols-[2.75rem_minmax(0,1fr)_2.75rem] items-center gap-1";
 
 export const DRAWER_MOBILE_TITLE_CLASS =
   "truncate text-center text-[17px] font-bold leading-none tracking-normal text-white";

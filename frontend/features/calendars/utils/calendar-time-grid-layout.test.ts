@@ -31,7 +31,20 @@ describe("calendarTimeGridLayout", () => {
     expect(layout.frameStyle.minWidth).toBe(80 + 4 * 240);
   });
 
-  it("uses exact column widths in fixed mode for mobile", () => {
+  it("uses fluid columns for mobile staff day so one column fills the viewport", () => {
+    const layout = calendarTimeGridLayout({
+      gutterPx: 52,
+      columnCount: 1,
+      columnMinPx: 240,
+      mode: "fluid",
+    });
+
+    expect(layout.gridTemplateColumns).toBe("52px repeat(1, minmax(0, 1fr))");
+    expect(layout.frameStyle.width).toBe("100%");
+    expect(layout.frameStyle.minWidth).toBeUndefined();
+  });
+
+  it("uses exact column widths in fixed mode for mobile week", () => {
     const layout = calendarTimeGridLayout({
       gutterPx: 52,
       columnCount: 3,

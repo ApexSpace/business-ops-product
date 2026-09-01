@@ -23,7 +23,6 @@ import {
   CALENDAR_FIGMA_TIME_GUTTER_PX,
 } from "@/features/calendars/styles/calendar-figma";
 import {
-  MOBILE_CAL_COL_WIDTH_PX,
   MOBILE_CAL_STAFF_HEADER_HEIGHT_PX,
   MOBILE_CAL_TIME_GUTTER_PX,
 } from "@/features/appointments/styles/mobile-calendar-tokens";
@@ -77,7 +76,7 @@ interface StaffDayCalendarViewProps {
     minute: number,
     assignedToId?: string,
   ) => void;
-  /** Figma phone layout — narrow columns, avatar above name, no % badge. */
+  /** Figma phone layout — fluid staff columns, avatar above name, no % badge. */
   density?: "desktop" | "mobile";
 }
 
@@ -112,21 +111,19 @@ export function StaffDayCalendarView({
     enabled: !isLoading,
     resetKey: `${density}:${dateKey}`,
   });
-  const columnCount = Math.max(staffMembers.length, 1);
   const timeGutterPx = isMobile
     ? MOBILE_CAL_TIME_GUTTER_PX
     : CALENDAR_FIGMA_TIME_GUTTER_PX;
-  const colMin = isMobile
-    ? MOBILE_CAL_COL_WIDTH_PX
-    : Math.min(
-        CALENDAR_FIGMA_STAFF_COL_IDEAL_PX,
-        Math.max(CALENDAR_FIGMA_STAFF_COL_MIN_PX, 200),
-      );
+  const columnCount = Math.max(staffMembers.length, 1);
+  const colMin = Math.min(
+    CALENDAR_FIGMA_STAFF_COL_IDEAL_PX,
+    Math.max(CALENDAR_FIGMA_STAFF_COL_MIN_PX, 200),
+  );
   const { gridTemplateColumns, frameStyle } = calendarTimeGridLayout({
     gutterPx: timeGutterPx,
     columnCount,
     columnMinPx: colMin,
-    mode: isMobile ? "fixed" : "fill",
+    mode: isMobile ? "fluid" : "fill",
   });
 
   const utilizationByStaff = useMemo(() => {
@@ -156,7 +153,10 @@ export function StaffDayCalendarView({
         ref={scrollRef}
         className="min-h-0 flex-1 overflow-auto overscroll-contain bg-white"
       >
-        <div className="min-w-0 bg-white" style={frameStyle}>
+        <div
+          className={cn("bg-white", isMobile ? "w-full min-w-0" : "min-w-0")}
+          style={frameStyle}
+        >
           <div
             className={cn(
               "sticky top-0 z-30 grid w-full bg-white",
@@ -175,7 +175,7 @@ export function StaffDayCalendarView({
                 return (
                   <div
                     key={member.userId}
-                    className="flex flex-col items-center justify-center gap-1 border-b border-l border-[color:rgba(126,59,237,0.6)] bg-white px-1"
+                    className="flex min-w-0 flex-col items-center justify-center gap-1 border-b border-l border-[color:rgba(126,59,237,0.6)] bg-white px-1"
                     style={{ height: MOBILE_CAL_STAFF_HEADER_HEIGHT_PX }}
                   >
                     <ProfileAvatar

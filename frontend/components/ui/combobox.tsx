@@ -4,7 +4,7 @@ import type { ComponentProps, ReactNode } from "react";
 import { Combobox as ComboboxPrimitive } from "@base-ui/react/combobox";
 import { CheckIcon } from "lucide-react";
 import { NavArrowIcon } from "@/components/ui/nav-arrow-icon";
-import { CONTROL_END_SLOT_CLASS, CONTROL_END_SLOT_INPUT_PAD_CLASS } from "@/lib/ui/control-styles";
+import { CONTROL_END_SLOT_CLASS, CONTROL_END_SLOT_INPUT_PAD_CLASS, FIELD_TRIGGER_CHEVRON_NAV_CLASS } from "@/lib/ui/control-styles";
 import { OVERLAY_SIDE, OVERLAY_SIDE_OFFSET } from "@/lib/ui/overlay-position";
 import { cn } from "@/lib/utils";
 
@@ -50,7 +50,13 @@ export function ComboboxFieldInput({
 }) {
   const trailing =
     endSlot ??
-    (showIcon ? <NavArrowIcon direction="down" size="sm" /> : null);
+    (showIcon ? (
+      <NavArrowIcon
+        direction="down"
+        size="sm"
+        className={FIELD_TRIGGER_CHEVRON_NAV_CLASS}
+      />
+    ) : null);
 
   return (
     <div className="relative w-full min-w-0">

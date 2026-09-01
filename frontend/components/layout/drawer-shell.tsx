@@ -127,7 +127,7 @@ function DrawerShellInner({
               data-slot="sheet-header-row"
               className={DRAWER_MOBILE_HEADER_ROW_CLASS}
             >
-              <div className="flex items-center justify-start">
+              <div className="flex items-center justify-start self-stretch">
                 {inSheet && showCloseButton && onRequestClose ? (
                   <IconButton
                     type="button"
@@ -142,7 +142,7 @@ function DrawerShellInner({
                   <span className="size-11" aria-hidden />
                 )}
               </div>
-              <div className="min-w-0">
+              <div className="flex min-w-0 flex-col items-center justify-center self-stretch">
                 <Title className={DRAWER_MOBILE_TITLE_CLASS}>
                   {title}
                 </Title>
@@ -157,7 +157,7 @@ function DrawerShellInner({
                   </Description>
                 ) : null}
               </div>
-              <div className={DRAWER_MOBILE_HEADER_ACTIONS_CLASS}>
+              <div className={cn(DRAWER_MOBILE_HEADER_ACTIONS_CLASS, "self-stretch")}>
                 {headerActions ?? <span className="size-11" aria-hidden />}
               </div>
             </div>

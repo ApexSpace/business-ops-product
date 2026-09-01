@@ -7,7 +7,7 @@ import { CalendarDatePicker } from "@/features/appointments/components/calendar/
 import { CalendarFiltersPopover } from "@/features/appointments/components/calendar/calendar-filters-popover";
 import type { CalendarViewMode } from "@/features/calendars/utils/calendar-dates";
 import { parseDateKeyInTimezone } from "@/features/calendars/utils/timezone";
-import { MOBILE_CAL_HEADER_BG } from "@/features/appointments/styles/mobile-calendar-tokens";
+import { MOBILE_TOP_BAR_CLASS } from "@/lib/design/mobile-list-tokens";
 import { cn } from "@/lib/utils";
 
 interface MobileCalendarHeaderProps {
@@ -38,19 +38,12 @@ export function MobileCalendarHeader({
   className,
 }: MobileCalendarHeaderProps) {
   const [pickerOpen, setPickerOpen] = useState(false);
-  const monthLabel = parseDateKeyInTimezone(anchorDateKey, timezone).toFormat(
-    "MMMM",
+  const headerDateLabel = parseDateKeyInTimezone(anchorDateKey, timezone).toFormat(
+    "d MMMM",
   );
 
   return (
-    <header
-      className={cn(
-        MOBILE_CAL_HEADER_BG,
-        "flex h-12 shrink-0 items-center justify-between gap-2 px-2 text-white",
-        "pt-[max(0px,env(safe-area-inset-top))]",
-        className,
-      )}
-    >
+    <header className={cn(MOBILE_TOP_BAR_CLASS, className)}>
       <div className="flex min-w-0 flex-1 items-center justify-start">
         <CalendarFiltersPopover
           statusFilter={statusFilter}
@@ -73,10 +66,10 @@ export function MobileCalendarHeader({
           <button
             type="button"
             className="inline-flex min-h-10 items-center gap-1 rounded-md px-2 text-[17px] font-semibold leading-none text-white hover:bg-white/10"
-            aria-label={`${monthLabel}. Open month picker`}
+            aria-label={`${headerDateLabel}. Open month picker`}
             aria-expanded={pickerOpen}
           >
-            {monthLabel}
+            {headerDateLabel}
             <NavArrowIcon direction="down" size="sm" className="opacity-90" />
           </button>
         }
