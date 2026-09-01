@@ -6,6 +6,7 @@ const SETTINGS_FORM_SHELL_PATH_PREFIXES = [
   "/business/settings/business-hours",
   "/business/settings/web-chat",
   "/business/settings/scheduling-options",
+  "/business/settings/waiting-room",
 ] as const;
 
 export function usesSettingsFormShell(pathname: string): boolean {

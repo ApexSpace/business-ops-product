@@ -92,6 +92,10 @@ const ROUTE_CAPABILITY_MAP = new Map<string, RouteCapabilityEntry>([
     { moduleKey: "calendar", capabilityKeys: ["calendar.list"] },
   ],
   [
+    "/business/settings/waiting-room",
+    { moduleKey: "appointments", capabilityKeys: ["appointments.access"] },
+  ],
+  [
     "/business/settings/forms",
     { moduleKey: "forms", capabilityKeys: ["forms.list"] },
   ],

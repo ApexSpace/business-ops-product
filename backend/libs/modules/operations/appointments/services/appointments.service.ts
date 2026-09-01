@@ -45,6 +45,11 @@ import {
 import { hasStaffPermission } from '@app/modules/platform/membership/permissions/staff-permission.registry';
 import { applyContactSummaryPrivacy } from '@app/modules/crm/contacts/utils/contact-privacy.util';
 import { DateTime } from 'luxon';
+import { WaitingRoomSettingsService } from '../waiting-room-settings/services/waiting-room-settings.service';
+import {
+  canNotifyWaitingClient,
+  canTransitionToWaiting,
+} from '../waiting-room-settings/utils/waiting-room-gate.util';
 
 @Injectable()
 export class AppointmentsService {
@@ -66,6 +71,7 @@ export class AppointmentsService {
     @Inject(forwardRef(() => WaitlistMatchingService))
     private readonly waitlistMatchingService: WaitlistMatchingService,
     private readonly storageService: StorageService,
+    private readonly waitingRoomSettingsService: WaitingRoomSettingsService,
   ) {}
 
   private scheduleGoogleCalendarSync(
@@ -919,6 +925,20 @@ export class AppointmentsService {
 
     assertCanChangeAppointmentStatus(actor, existing, dto.status);
 
+    if (dto.status === AppointmentStatus.WAITING) {
+      const waitingStatusEnabled =
+        await this.waitingRoomSettingsService.isWaitingStatusEnabled(
+          businessId,
+        );
+      if (!canTransitionToWaiting(waitingStatusEnabled)) {
+        throw new AppException(
+          ErrorCode.BAD_REQUEST,
+          'Waiting status is disabled for this business',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+    }
+
     const appointment = await this.appointmentRepository.update(id, {
       status: dto.status,
     });
@@ -970,6 +990,18 @@ export class AppointmentsService {
       throw new AppException(
         ErrorCode.BAD_REQUEST,
         'Client can only be notified while appointment is in waiting status',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const waitingStatusEnabled =
+      await this.waitingRoomSettingsService.isWaitingStatusEnabled(businessId);
+    if (
+      !canNotifyWaitingClient(waitingStatusEnabled, existing.status)
+    ) {
+      throw new AppException(
+        ErrorCode.BAD_REQUEST,
+        'Waiting status is disabled for this business',
         HttpStatus.BAD_REQUEST,
       );
     }

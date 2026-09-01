@@ -101,6 +101,29 @@ export const CONFIGURABLE_EMAIL_TYPE_REGISTRY: Record<
       "appointment.title",
     ],
   },
+  "appointment.ready": {
+    key: "appointment.ready",
+    category: "appointments",
+    label: "Ready for service",
+    description:
+      "Sent to the customer when their provider is ready and they should come in.",
+    defaultSubject: "Your appointment with {{business.name}} is ready",
+    defaultHtmlBody: WRAPPER(`
+      <p>Hi {{contact.name}},</p>
+      <p>Your appointment with <strong>{{business.name}}</strong> is ready.</p>
+      <p><strong>When:</strong> {{appointment.start_at}}</p>
+      <p><strong>Calendar:</strong> {{appointment.calendar_name}}</p>
+      <p>Please come in at your earliest convenience.</p>
+    `),
+    variables: [
+      "business.name",
+      "contact.name",
+      "appointment.start_at",
+      "appointment.end_at",
+      "appointment.calendar_name",
+      "appointment.title",
+    ],
+  },
   "appointment.cancelled": {
     key: "appointment.cancelled",
     category: "appointments",

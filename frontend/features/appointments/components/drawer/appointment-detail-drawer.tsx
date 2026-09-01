@@ -104,6 +104,7 @@ export interface AppointmentDetailDrawerProps {
   variant?: "panel" | "sheet";
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+  waitingStatusEnabled?: boolean;
   onClose: () => void;
   onBackFromCheckout?: () => void;
   onCheckoutComplete?: () => void;
@@ -123,6 +124,7 @@ export function AppointmentDetailDrawer({
   variant = "panel",
   open = true,
   onOpenChange,
+  waitingStatusEnabled = true,
   onClose,
   onBackFromCheckout,
   onCheckoutComplete,
@@ -615,6 +617,7 @@ export function AppointmentDetailDrawer({
                         expressBookingExpiresAt={
                           appointment.expressBookingExpiresAt ?? null
                         }
+                        waitingStatusEnabled={waitingStatusEnabled}
                         disabled={
                           !allowStatusMenu ||
                           statusMutation.isPending ||

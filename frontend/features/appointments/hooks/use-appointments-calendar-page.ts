@@ -36,6 +36,7 @@ import { useAppointmentsWorkingHours } from "@/features/appointments/hooks/use-a
 import { useAuth } from "@/lib/auth/provider";
 import { useCalendarStaffPermissions } from "@/features/appointments/hooks/use-calendar-staff-permissions";
 import { useSchedulingSettings } from "@/features/scheduling-settings/hooks/use-scheduling-settings";
+import { useWaitingRoomSettings } from "@/features/waiting-room-settings/hooks/use-waiting-room-settings";
 import { resolveAppointmentBufferMinutes } from "@/features/appointments/utils/resolve-appointment-buffer";
 
 export const APPOINTMENTS_CALENDAR_PARAMS = {
@@ -175,11 +176,14 @@ export function useAppointmentsCalendarPage() {
   );
 
   const { data: schedulingSettings } = useSchedulingSettings();
+  const { data: waitingRoomSettings } = useWaitingRoomSettings();
   const rebookingJumpWeeks = schedulingSettings?.rebookingJumpWeeks ?? [
     2, 3, 4, 5, 6, 7,
   ];
   const showBufferOnCalendar = schedulingSettings?.showBufferOnCalendar ?? false;
   const bufferTimeEnabled = schedulingSettings?.bufferTimeEnabled ?? true;
+  const waitingStatusEnabled =
+    waitingRoomSettings?.waitingStatusEnabled ?? true;
 
   useEffect(() => {
     if (!isClient || !isMemberOnlyView || !user?.id) return;
@@ -619,5 +623,6 @@ export function useAppointmentsCalendarPage() {
     rebookingJumpWeeks,
     showBufferOnCalendar,
     bufferTimeEnabled,
+    waitingStatusEnabled,
   };
 }

@@ -12,10 +12,13 @@ import { OnlineBookingSettingsModule } from '@app/modules/operations/online-book
 import { WaitlistModule } from '@app/modules/operations/waitlist/waitlist.module';
 import { StorageModule } from '@app/modules/storage/storage.module';
 import { AppointmentsController } from './controllers/appointments.controller';
+import { WaitingRoomSettingsController } from './waiting-room-settings/controllers/waiting-room-settings.controller';
 import { AppointmentRepository } from './repositories/appointment.repository';
+import { WaitingRoomSettingsRepository } from './waiting-room-settings/repositories/waiting-room-settings.repository';
 import { AppointmentNotificationService } from './services/appointment-notification.service';
 import { AppointmentReminderService } from './services/appointment-reminder.service';
 import { AppointmentsService } from './services/appointments.service';
+import { WaitingRoomSettingsService } from './waiting-room-settings/services/waiting-room-settings.service';
 
 @Module({
   imports: [
@@ -32,18 +35,22 @@ import { AppointmentsService } from './services/appointments.service';
     forwardRef(() => PackagesModule),
     forwardRef(() => WaitlistModule),
   ],
-  controllers: [AppointmentsController],
+  controllers: [AppointmentsController, WaitingRoomSettingsController],
   providers: [
     AppointmentRepository,
+    WaitingRoomSettingsRepository,
     AppointmentsService,
     AppointmentNotificationService,
     AppointmentReminderService,
+    WaitingRoomSettingsService,
   ],
   exports: [
     AppointmentRepository,
+    WaitingRoomSettingsRepository,
     AppointmentsService,
     AppointmentNotificationService,
     AppointmentReminderService,
+    WaitingRoomSettingsService,
   ],
 })
 export class AppointmentsModule {}

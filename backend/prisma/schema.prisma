@@ -1155,6 +1155,7 @@ model Business {
   onlineBookingSettings    BusinessOnlineBookingSettings?
   calendarDisplaySettings  BusinessCalendarDisplaySettings?
   schedulingSettings       BusinessSchedulingSettings?
+  waitingRoomSettings      BusinessWaitingRoomSettings?
   businessHours            BusinessHours[]
   businessHourExceptions   BusinessHourException[]
   staffWorkSchedules       StaffWorkSchedule[]
@@ -3514,6 +3515,19 @@ model BusinessSchedulingSettings {
 
   @@index([businessId])
   @@map("business_scheduling_settings")
+}
+
+model BusinessWaitingRoomSettings {
+  id                   String   @id @default(uuid())
+  businessId           String   @unique
+  waitingStatusEnabled Boolean  @default(true)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([businessId])
+  @@map("business_waiting_room_settings")
 }
 
 model BusinessHours {
