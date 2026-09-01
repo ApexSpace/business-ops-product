@@ -10,6 +10,20 @@
 /** Purple app bar — locked brand violet (not client --primary). */
 export const MOBILE_LIST_HEADER_BG = "bg-violet-primary-normal";
 
+/**
+ * Shared mobile purple top bar shell — height + safe-area.
+ * Hit-and-trial: `--mobile-top-bar-height` in globals.css (:root).
+ */
+export const MOBILE_TOP_BAR_SHELL_CLASS =
+  "flex shrink-0 items-center justify-between gap-2 px-2 text-white h-[calc(var(--mobile-top-bar-height)+env(safe-area-inset-top,0px))] min-h-[calc(var(--mobile-top-bar-height)+env(safe-area-inset-top,0px))] pt-[env(safe-area-inset-top,0px)]";
+
+/** Fixed content row inside the top bar (below status bar). */
+export const MOBILE_TOP_BAR_ROW_CLASS =
+  "flex h-[var(--mobile-top-bar-height)] min-h-[var(--mobile-top-bar-height)] max-h-[var(--mobile-top-bar-height)] w-full items-center";
+
+/** List / calendar mobile headers — background + shell. */
+export const MOBILE_TOP_BAR_CLASS = `${MOBILE_LIST_HEADER_BG} ${MOBILE_TOP_BAR_SHELL_CLASS}`;
+
 /** List item — Figma 24px vertical / 16px horizontal */
 export const MOBILE_LIST_ITEM_CLASS =
   "flex w-full min-h-[44px] flex-col gap-1 border-b border-[var(--mobile-list-border)] px-4 py-6 text-left transition-colors active:bg-violet-primary-surface/40";

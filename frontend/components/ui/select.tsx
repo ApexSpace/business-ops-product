@@ -6,6 +6,7 @@ import { Select as SelectPrimitive } from "@base-ui/react/select"
 import { cn } from "@/lib/utils"
 import { NavArrowIcon } from "@/components/ui/nav-arrow-icon"
 import { CheckIcon } from "lucide-react"
+import { FIELD_TRIGGER_CHEVRON_NAV_CLASS } from "@/lib/ui/control-styles"
 import {
   OVERLAY_SIDE,
   OVERLAY_SIDE_OFFSET,
@@ -55,7 +56,11 @@ function SelectTrigger({
       {children}
       <SelectPrimitive.Icon
         render={
-          <NavArrowIcon direction="down" size="sm" className="pointer-events-none" />
+          <NavArrowIcon
+            direction="down"
+            size="sm"
+            className={cn("pointer-events-none", FIELD_TRIGGER_CHEVRON_NAV_CLASS)}
+          />
         }
       />
     </SelectPrimitive.Trigger>

@@ -3,13 +3,16 @@
  * Prefer these on <md; desktop calendar-figma tokens stay unchanged.
  */
 
-/** Purple app bar — matches shell / primary/500 */
+/** Purple app bar — locked brand violet (not client --primary). */
 export const MOBILE_CAL_HEADER_BG = "bg-violet-primary-normal";
+
+/** @deprecated Use `MOBILE_TOP_BAR_CLASS` from `@/lib/design/mobile-list-tokens`. */
+export { MOBILE_TOP_BAR_CLASS as MOBILE_CAL_HEADER_CLASS } from "@/lib/design/mobile-list-tokens";
 
 /** Date strip selected pill — primary/900-ish indigo */
 export const MOBILE_CAL_DATE_SELECTED_BG = "bg-[#2F1261]";
 
-/** Staff / day column width — Figma ~116–117px */
+/** Week-view day column width (fixed grid). Staff day view uses fluid `1fr` columns on mobile. */
 export const MOBILE_CAL_COL_WIDTH_PX = 116;
 
 /** Time gutter — narrower than desktop 80px for phone density */

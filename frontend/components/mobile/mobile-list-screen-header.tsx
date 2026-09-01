@@ -2,7 +2,7 @@
 
 import { Plus } from "lucide-react";
 import { ListFilterButton } from "@/components/layout/list-filter-button";
-import { MOBILE_LIST_HEADER_BG } from "@/lib/design/mobile-list-tokens";
+import { MOBILE_TOP_BAR_CLASS } from "@/lib/design/mobile-list-tokens";
 import { cn } from "@/lib/utils";
 
 export interface MobileListScreenHeaderProps {
@@ -32,14 +32,7 @@ export function MobileListScreenHeader({
   showFilter = true,
 }: MobileListScreenHeaderProps) {
   return (
-    <header
-      className={cn(
-        MOBILE_LIST_HEADER_BG,
-        "flex h-12 shrink-0 items-center justify-between gap-2 px-2 text-white",
-        "pt-[max(0px,env(safe-area-inset-top))]",
-        className,
-      )}
-    >
+    <header className={cn(MOBILE_TOP_BAR_CLASS, className)}>
       <div className="flex min-w-0 flex-1 items-center justify-start">
         {showFilter && onFilter ? (
           <ListFilterButton

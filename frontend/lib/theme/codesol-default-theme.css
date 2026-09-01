@@ -139,6 +139,8 @@
   --cs-shell-navbar-surface: #6a2bd6;
   --cs-shell-navbar-foreground: #ffffff;
   --cs-shell-navbar-height: 56px;
+  /* Mobile purple app bar — list pages, calendar, drawer/sheet headers (<md) */
+  --cs-mobile-top-bar-height: 48px;
   /* Figma active tab (Mode6): 43px tall, 10px y-padding, 8px radius, 3px underline gap */
   --cs-shell-navbar-tab-height: 43px;
   --cs-shell-navbar-tab-padding-y: 10px;
