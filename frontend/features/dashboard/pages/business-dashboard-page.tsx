@@ -19,6 +19,8 @@ import { resolveBusinessNicheProfile } from "@/lib/config/niche";
 import { queryKeys } from "@/lib/query/keys";
 import { WORKSPACE_CSS_VARS } from "@/lib/design/workspace-tokens";
 import { useSnapshotContext } from "@/lib/snapshot/use-snapshot-context";
+import { useIsMobile } from "@/lib/hooks/use-mobile";
+import { MobilePageScreen } from "@/components/mobile/mobile-page-screen";
 
 function parseAmount(value: string): number {
   const parsed = Number.parseFloat(value);
@@ -43,6 +45,7 @@ function formatTrend(deltaPercent: number): string {
 }
 
 export function BusinessDashboardPage() {
+  const isMobile = useIsMobile();
   const { context, isLoading: contextLoading } = useSnapshotContext();
   const { data: business } = useCurrentBusiness();
   const { user, jwt } = useAuth();
@@ -111,16 +114,21 @@ export function BusinessDashboardPage() {
   }));
 
   if (feedQuery.isError) {
-    return (
+    const errorState = (
       <ApiErrorState
         error={feedQuery.error}
         onRetry={() => void feedQuery.refetch()}
       />
     );
+    return isMobile ? (
+      <MobilePageScreen title="Dashboard">{errorState}</MobilePageScreen>
+    ) : (
+      errorState
+    );
   }
 
   if (feedQuery.isLoading || contextLoading) {
-    return (
+    const loadingState = (
       <div
         className="grid w-full gap-4 lg:grid-cols-[minmax(0,1fr)_210px]"
         style={WORKSPACE_CSS_VARS}
@@ -145,9 +153,16 @@ export function BusinessDashboardPage() {
         </div>
       </div>
     );
+    return isMobile ? (
+      <MobilePageScreen title="Dashboard" bodyClassName="px-4 py-4">
+        {loadingState}
+      </MobilePageScreen>
+    ) : (
+      loadingState
+    );
   }
 
-  return (
+  const dashboardContent = (
     <div
       className="grid w-full gap-4 lg:grid-cols-[minmax(0,1fr)_210px]"
       style={WORKSPACE_CSS_VARS}
@@ -244,4 +259,14 @@ export function BusinessDashboardPage() {
       </div>
     </div>
   );
+
+  if (isMobile) {
+    return (
+      <MobilePageScreen title="Dashboard" bodyClassName="px-4 py-4">
+        {dashboardContent}
+      </MobilePageScreen>
+    );
+  }
+
+  return dashboardContent;
 }

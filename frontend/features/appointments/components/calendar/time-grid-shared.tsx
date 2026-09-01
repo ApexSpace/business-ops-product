@@ -3,6 +3,7 @@
 import type { MouseEvent } from "react";
 import type { Appointment } from "@/features/appointments/schemas/appointment-profile";
 import { TimeGridAppointments } from "@/features/appointments/components/calendar/time-grid-appointments";
+import { TimeGridBufferBands } from "@/features/appointments/components/calendar/time-grid-buffer-bands";
 import type { Calendar } from "@/features/calendars/schemas/calendar-profile";
 import {
   CALENDAR_DAY_END_HOUR,
@@ -45,6 +46,8 @@ interface TimeGridColumnProps {
   draggingAppointmentId?: string | null;
   businessHoursSlots?: BusinessHoursSlot[];
   staffHoursSlots?: BusinessHoursSlot[] | null;
+  showBufferOnCalendar?: boolean;
+  bufferTimeEnabled?: boolean;
   onSlotClick: (
     dateKey: string,
     hour: number,
@@ -67,6 +70,8 @@ export function TimeGridColumn({
   draggingAppointmentId,
   businessHoursSlots,
   staffHoursSlots,
+  showBufferOnCalendar = false,
+  bufferTimeEnabled = true,
   onSlotClick,
 }: TimeGridColumnProps) {
   const slotLabels = getTimeSlotLabels();
@@ -130,6 +135,12 @@ export function TimeGridColumn({
         timezone={viewTimezone}
         businessSlots={resolvedBusinessHours}
         staffSlots={staffHoursSlots}
+      />
+      <TimeGridBufferBands
+        appointments={dayAppointments}
+        viewTimezone={viewTimezone}
+        showBufferOnCalendar={showBufferOnCalendar}
+        bufferTimeEnabled={bufferTimeEnabled}
       />
       <TimeGridAppointments
         appointments={dayAppointments}

@@ -661,6 +661,12 @@ enum GapMultiProviderMode {
   ALLOW_GAPS
 }
 
+enum CalendarZoomLevel {
+  SMALL
+  MEDIUM
+  LARGE
+}
+
 enum BookingWaitlistStatus {
   WAITING
   MATCHED
@@ -1016,6 +1022,7 @@ model Business {
   industryId       String?
   snapshotId       String?
   snapshotAppliedAt DateTime?
+  defaultChatbotId String?
   status           BusinessStatus @default(ACTIVE)
   /// Real customer vs single platform-ops workspace. Default TENANT.
   type             BusinessType   @default(TENANT)
@@ -1047,6 +1054,7 @@ model Business {
   createdBy      User?             @relation("BusinessCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
   industry       Industry?         @relation(fields: [industryId], references: [id], onDelete: SetNull)
   snapshot       Snapshot?         @relation(fields: [snapshotId], references: [id], onDelete: SetNull)
+  defaultChatbot Chatbot?          @relation("BusinessDefaultChatbot", fields: [defaultChatbotId], references: [id], onDelete: SetNull)
   lifecyclePipeline      Pipeline?      @relation("BusinessLifecyclePipeline", fields: [lifecyclePipelineId], references: [id], onDelete: SetNull)
   lifecyclePipelineStage PipelineStage? @relation("BusinessLifecyclePipelineStage", fields: [lifecyclePipelineStageId], references: [id], onDelete: SetNull)
   snapshotProvisions SnapshotProvision[]
@@ -1145,6 +1153,8 @@ model Business {
   offerUsageLogs           OfferUsageLog[]
   timeCards                TimeCard[]
   onlineBookingSettings    BusinessOnlineBookingSettings?
+  calendarDisplaySettings  BusinessCalendarDisplaySettings?
+  schedulingSettings       BusinessSchedulingSettings?
   businessHours            BusinessHours[]
   businessHourExceptions   BusinessHourException[]
   staffWorkSchedules       StaffWorkSchedule[]
@@ -3470,6 +3480,42 @@ model BusinessOnlineBookingSettings {
   @@map("business_online_booking_settings")
 }
 
+model BusinessCalendarDisplaySettings {
+  id         String            @id @default(uuid())
+  businessId String            @unique
+  visibleStartTime String      @default("00:00")
+  visibleEndTime   String      @default("24:00")
+  weekStartsOn     DayOfWeek   @default(SUNDAY)
+  zoomLevel        CalendarZoomLevel @default(MEDIUM)
+  showNormalCancellation Boolean @default(true)
+  showLateCancellation   Boolean @default(true)
+  showNoShow             Boolean @default(true)
+  highContrastEnabled    Boolean @default(false)
+  showBufferOnCalendar   Boolean @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([businessId])
+  @@map("business_calendar_display_settings")
+}
+
+model BusinessSchedulingSettings {
+  id                    String   @id @default(uuid())
+  businessId            String   @unique
+  bufferTimeEnabled     Boolean  @default(true)
+  processingTimeEnabled Boolean  @default(true)
+  rebookingJumpWeeks    Json     @default("[2,3,4,5,6,7]")
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([businessId])
+  @@map("business_scheduling_settings")
+}
+
 model BusinessHours {
   id         String    @id @default(uuid())
   businessId String
@@ -3824,9 +3870,10 @@ model Chatbot {
   updatedAt             DateTime      @updatedAt
   deletedAt             DateTime?
 
-  business Business        @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  rules    ChatbotRule[]
-  sessions ChatbotSession[]
+  business             Business        @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  defaultForBusinesses Business[]      @relation("BusinessDefaultChatbot")
+  rules                ChatbotRule[]
+  sessions             ChatbotSession[]
 
   @@index([businessId])
   @@index([businessId, status])

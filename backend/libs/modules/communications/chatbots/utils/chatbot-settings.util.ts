@@ -19,6 +19,32 @@ export const DEFAULT_OFFLINE_MESSAGE =
 export const DEFAULT_HANDOFF_MESSAGE =
   "I'll connect you with our team. Someone will reply here shortly.";
 
+export const DEFAULT_WEB_CHAT_WELCOME =
+  "Hey there! Have questions or need help booking? We're here to help!";
+export const DEFAULT_WEB_CHAT_OFFLINE =
+  "You have reached us outside business hours. Leave your number and we'll get back to you when we're open.";
+export const DEFAULT_WEB_CHAT_ACKNOWLEDGEMENT =
+  "We typically respond within a few minutes. Prefer to text instead? Just leave your number and we'll get back to you.";
+
+export function defaultWebChatSettingsBundle(): ChatbotSettingsBundle {
+  return defaultSettingsBundle({
+    chatWindow: {
+      title: 'Web Chat',
+      introMessage: DEFAULT_WEB_CHAT_WELCOME,
+      offlineMessage: DEFAULT_WEB_CHAT_OFFLINE,
+      acknowledgementMessage: DEFAULT_WEB_CHAT_ACKNOWLEDGEMENT,
+      liveChatEnabled: true,
+    },
+    messaging: {
+      welcomeMessage: DEFAULT_WEB_CHAT_WELCOME,
+      offlineMessage: DEFAULT_WEB_CHAT_OFFLINE,
+    },
+    bot: {
+      embedEnabled: true,
+    },
+  });
+}
+
 const DEFAULT_APPEARANCE: ChatbotAppearanceSettings = {
   placement: ChatbotWidgetPosition.BOTTOM_RIGHT,
   theme: 'light',
@@ -437,6 +463,12 @@ export function mergeUpdateDto(
   }
   if (dto.handoffMessage !== undefined) {
     chatWindow.handoffMessage = dto.handoffMessage.trim();
+  }
+  if (dto.acknowledgementMessage !== undefined) {
+    chatWindow.acknowledgementMessage = dto.acknowledgementMessage.trim();
+  }
+  if (dto.liveChatEnabled !== undefined) {
+    chatWindow.liveChatEnabled = dto.liveChatEnabled;
   }
   if (dto.fallbackMessage !== undefined) {
     messaging.fallbackMessage = dto.fallbackMessage.trim();

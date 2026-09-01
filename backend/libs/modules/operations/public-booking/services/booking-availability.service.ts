@@ -9,6 +9,8 @@ import {
 import { DateTime } from 'luxon';
 import { normalizeTimezone, resolveBusinessTimezone } from '@app/common/utils/timezone.util';
 import { AppointmentRepository } from '@app/modules/operations/appointments/repositories/appointment.repository';
+import { SchedulingSettingsRepository } from '@app/modules/operations/scheduling-settings/repositories/scheduling-settings.repository';
+import { resolveEffectiveBuffers } from '@app/modules/operations/scheduling-settings/utils/scheduling-behavior.util';
 import type { PublicBookingTimingContext } from '@app/modules/crm/services/services/service-booking-timing.service';
 import {
   PublicBookingDayAvailabilityDto,
@@ -52,7 +54,32 @@ function resolvePublicBookingSlotStep(
 
 @Injectable()
 export class BookingAvailabilityService {
-  constructor(private readonly appointmentRepository: AppointmentRepository) {}
+  constructor(
+    private readonly appointmentRepository: AppointmentRepository,
+    private readonly schedulingSettingsRepository: SchedulingSettingsRepository,
+  ) {}
+
+  private async resolveCalendarBufferMinutes(params: {
+    businessId: string;
+    calendar: Calendar;
+    timing?: PublicBookingTimingContext | null;
+  }) {
+    const scheduling =
+      await this.schedulingSettingsRepository.ensureSettings(params.businessId);
+    return resolveEffectiveBuffers({
+      bufferTimeEnabled: scheduling.bufferTimeEnabled,
+      timing: params.timing ?? null,
+      businessFallback: {
+        bufferBeforeMinutes: 0,
+        bufferAfterMinutes: 0,
+      },
+      calendarFallback: {
+        bufferBeforeMinutes: params.calendar.bufferBeforeMinutes,
+        bufferAfterMinutes: params.calendar.bufferAfterMinutes,
+      },
+      preferCalendarFallback: true,
+    });
+  }
 
   async getAvailability(params: {
     calendar: Calendar;
@@ -96,12 +123,12 @@ export class BookingAvailabilityService {
       duration,
       params.calendar.slotIntervalMinutes,
     );
-    const bufferBefore = params.timing?.hasBufferTime
-      ? params.timing.bufferBeforeMinutes
-      : params.calendar.bufferBeforeMinutes;
-    const bufferAfter = params.timing?.hasBufferTime
-      ? params.timing.bufferAfterMinutes
-      : params.calendar.bufferAfterMinutes;
+    const { bufferBeforeMinutes: bufferBefore, bufferAfterMinutes: bufferAfter } =
+      await this.resolveCalendarBufferMinutes({
+        businessId: params.calendar.businessId,
+        calendar: params.calendar,
+        timing: params.timing,
+      });
     const capacity = params.calendar.capacity;
 
     const appointments = await this.appointmentRepository.findBlockingInRange(
@@ -263,12 +290,12 @@ export class BookingAvailabilityService {
       params.calendar.slotIntervalMinutes,
     );
 
-    const bufferBefore = params.timing?.hasBufferTime
-      ? params.timing.bufferBeforeMinutes
-      : params.calendar.bufferBeforeMinutes;
-    const bufferAfter = params.timing?.hasBufferTime
-      ? params.timing.bufferAfterMinutes
-      : params.calendar.bufferAfterMinutes;
+    const { bufferBeforeMinutes: bufferBefore, bufferAfterMinutes: bufferAfter } =
+      await this.resolveCalendarBufferMinutes({
+        businessId: params.calendar.businessId,
+        calendar: params.calendar,
+        timing: params.timing,
+      });
     if (startMin < windowStart || endMin > windowEnd) return false;
     if ((startMin - windowStart) % interval !== 0) return false;
 

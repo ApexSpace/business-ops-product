@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { HttpStatus, Injectable } from '@nestjs/common';
 import {
   Chatbot,
   ChatbotStatus,
@@ -6,6 +6,8 @@ import {
   Prisma,
 } from '@prisma/client';
 import { PrismaService } from '@app/core/database/prisma.service';
+import { AppException } from '@app/common/exceptions/app.exception';
+import { ErrorCode } from '@app/common/exceptions/error-code.enum';
 
 export type ChatbotListItem = Chatbot & {
   _count: { sessions: number };
@@ -136,5 +138,46 @@ export class ChatbotsRepository {
         }),
       ]);
     return { sessionsCount, activeSessionsCount, convertedSessionsCount };
+  }
+
+  getBusinessDefaultChatbotId(businessId: string): Promise<string | null> {
+    return this.prisma.business
+      .findFirst({
+        where: { id: businessId, deletedAt: null },
+        select: { defaultChatbotId: true },
+      })
+      .then((row) => row?.defaultChatbotId ?? null);
+  }
+
+  async setBusinessDefaultChatbotId(
+    businessId: string,
+    chatbotId: string,
+  ): Promise<void> {
+    const chatbot = await this.findById(businessId, chatbotId);
+    if (!chatbot) {
+      throw new AppException(
+        ErrorCode.CHATBOT_NOT_FOUND,
+        'Chatbot not found',
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    await this.prisma.business.update({
+      where: { id: businessId },
+      data: { defaultChatbotId: chatbotId },
+    });
+  }
+
+  findFirstForDefault(businessId: string): Promise<Chatbot | null> {
+    return this.prisma.chatbot.findFirst({
+      where: this.activeWhere(businessId, { status: ChatbotStatus.ACTIVE }),
+      orderBy: { createdAt: 'asc' },
+    }).then(async (active) => {
+      if (active) return active;
+      return this.prisma.chatbot.findFirst({
+        where: this.activeWhere(businessId),
+        orderBy: { createdAt: 'asc' },
+      });
+    });
   }
 }

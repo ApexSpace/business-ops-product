@@ -340,6 +340,30 @@ const businessRoutes: Record<string, RouteEntry> = {
       { label: "Appearance" },
     ],
   },
+  "/business/settings/business-hours": {
+    title: "Business Hours",
+    description: "Manage your business hours.",
+    breadcrumbs: [
+      { label: "Settings", href: "/business/settings/profile" },
+      { label: "Business Hours" },
+    ],
+  },
+  "/business/settings/web-chat": {
+    title: "Web Chat",
+    description: "Configure the chat widget on your website.",
+    breadcrumbs: [
+      { label: "Settings", href: "/business/settings/profile" },
+      { label: "Web Chat" },
+    ],
+  },
+  "/business/settings/scheduling-options": {
+    title: "Scheduling Options",
+    description: "Configure appointment increments, buffer time, processing, and rebooking shortcuts.",
+    breadcrumbs: [
+      { label: "Settings", href: "/business/settings/profile" },
+      { label: "Scheduling Options" },
+    ],
+  },
 };
 
 const platformRoutes: Record<string, RouteEntry> = {

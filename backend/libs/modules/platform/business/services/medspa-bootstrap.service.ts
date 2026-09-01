@@ -1,6 +1,7 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
 import { BusinessLocationStatus } from '@prisma/client';
 import { PrismaService } from '@app/core/database/prisma.service';
+import { ChatbotsService } from '@app/modules/communications/chatbots/services/chatbots.service';
 
 /**
  * Seeds a new MedSpa business with essential defaults.
@@ -10,7 +11,11 @@ import { PrismaService } from '@app/core/database/prisma.service';
 export class MedSpaBootstrapService {
   private readonly logger = new Logger(MedSpaBootstrapService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Inject(forwardRef(() => ChatbotsService))
+    private readonly chatbotsService: ChatbotsService,
+  ) {}
 
   async apply(
     businessId: string,
@@ -44,6 +49,7 @@ export class MedSpaBootstrapService {
     await this.ensureDefaultPipeline(businessId);
     await this.ensureDefaultTags(businessId);
     await this.ensureDefaultCalendar(businessId, business.timezone);
+    await this.chatbotsService.ensureDefaultChatbot(businessId);
 
     // Mark as bootstrapped without requiring a Snapshot row
     if (!business.snapshotAppliedAt) {

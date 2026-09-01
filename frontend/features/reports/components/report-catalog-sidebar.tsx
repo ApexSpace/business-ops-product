@@ -16,6 +16,9 @@ import {
   WORKSPACE_NAV_ITEM_CLASS,
   WORKSPACE_NAV_ITEM_IDLE_CLASS,
   WORKSPACE_NAV_PANEL_CLASS,
+  WORKSPACE_NAV_SCROLL_AREA_CLASS,
+  WORKSPACE_NAV_SCROLL_INNER_CLASS,
+  WORKSPACE_NAV_SEARCH_WRAP_CLASS,
   WORKSPACE_NAV_SECTION_TRIGGER_CLASS,
 } from "@/lib/design/workspace-nav-tokens";
 import type { ReportCategoryGroup } from "@/features/reports/types";
@@ -97,43 +100,48 @@ export function ReportCatalogSidebar({
 
   return (
     <div className={WORKSPACE_NAV_PANEL_CLASS}>
-      <SearchInput
-        value={query}
-        onChange={setQuery}
-        placeholder="Search Reports"
-        className="max-w-none"
-      />
-      <ScrollArea className="min-h-0 flex-1">
-        {isLoading ? (
-          <div className="space-y-2 px-2">
-            {Array.from({ length: 6 }).map((_, index) => (
-              <Skeleton key={index} className="h-8 w-full rounded-md" />
-            ))}
-          </div>
-        ) : filtered.length === 0 ? (
-          <p className="px-2 py-6 text-sm text-muted-foreground">
-            {query.trim() ? "No matching reports." : "No reports available."}
-          </p>
-        ) : (
-          <Accordion
-            multiple
-            value={openIds}
-            onValueChange={(next) => {
-              if (Array.isArray(next)) setOpenIds(next);
-            }}
-            className="pr-2"
-          >
+      <div className={WORKSPACE_NAV_SEARCH_WRAP_CLASS}>
+        <SearchInput
+          value={query}
+          onChange={setQuery}
+          placeholder="Search Reports"
+          className="max-w-none"
+        />
+      </div>
+      <ScrollArea className={WORKSPACE_NAV_SCROLL_AREA_CLASS}>
+        <div className={WORKSPACE_NAV_SCROLL_INNER_CLASS}>
+          {isLoading ? (
+            <div className="space-y-2">
+              {Array.from({ length: 6 }).map((_, index) => (
+                <Skeleton key={index} className="h-8 w-full rounded-md" />
+              ))}
+            </div>
+          ) : filtered.length === 0 ? (
+            <p className="py-6 text-sm text-muted-foreground">
+              {query.trim() ? "No matching reports." : "No reports available."}
+            </p>
+          ) : (
+            <Accordion
+              multiple
+              value={openIds}
+              onValueChange={(next) => {
+                if (Array.isArray(next)) setOpenIds(next);
+              }}
+            >
             {filtered.map((group) => (
               <AccordionItem
                 key={group.category}
                 value={group.category}
                 className="border-0"
               >
-                <AccordionTrigger className={WORKSPACE_NAV_SECTION_TRIGGER_CLASS}>
+                <AccordionTrigger
+                  chevronMode="section"
+                  className={WORKSPACE_NAV_SECTION_TRIGGER_CLASS}
+                >
                   {group.categoryLabel}
                 </AccordionTrigger>
-                <AccordionContent className="pb-2">
-                  <ul className="flex flex-col gap-1">
+                <AccordionContent className="pb-0">
+                  <ul className="flex flex-col">
                     {group.reports.map((report) => {
                       const active = report.key === selectedKey;
                       return (
@@ -162,6 +170,7 @@ export function ReportCatalogSidebar({
             ))}
           </Accordion>
         )}
+        </div>
       </ScrollArea>
     </div>
   );

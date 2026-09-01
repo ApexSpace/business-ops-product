@@ -226,6 +226,17 @@ export class UpdateChatbotDto extends PartialType(CreateChatbotDto) {
   @IsBoolean()
   businessHoursOnly?: boolean;
 
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(2000)
+  acknowledgementMessage?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  liveChatEnabled?: boolean;
+
   @ApiPropertyOptional({ type: ChatbotBusinessHoursSettingsUpdateDto })
   @IsOptional()
   @ValidateNested()

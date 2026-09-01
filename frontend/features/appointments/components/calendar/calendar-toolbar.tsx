@@ -30,6 +30,7 @@ interface CalendarToolbarProps {
   onNext: () => void;
   onDateSelect: (dateKey: string) => void;
   onJumpWeeks?: (weeks: number) => void;
+  weekJumpOptions?: number[];
   staffMembers: StaffMemberOption[];
   selectedStaffId?: string;
   onSelectedStaffIdChange?: (userId: string) => void;
@@ -55,6 +56,7 @@ export function CalendarToolbar({
   onNext,
   onDateSelect,
   onJumpWeeks,
+  weekJumpOptions,
   staffMembers,
   selectedStaffId,
   onSelectedStaffIdChange,
@@ -125,6 +127,7 @@ export function CalendarToolbar({
           onSelectDate={onDateSelect}
           onToday={onToday}
           onJumpWeeks={onJumpWeeks}
+          weekJumpOptions={weekJumpOptions}
           trigger={
             <button
               type="button"

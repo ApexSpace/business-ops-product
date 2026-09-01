@@ -11,6 +11,7 @@ import {
   isBusinessSettingsWorkspacePath,
   isContactWorkspacePath,
   isContactsListPath,
+  isBusinessDashboardPath,
   isConversationsInboxPath,
   isDataTableListPath,
   isMobileEntityListPath,
@@ -83,6 +84,7 @@ export function AppShell({
     searchParams.toString(),
   );
   const contactsList = isContactsListPath(pathname);
+  const businessDashboard = isBusinessDashboardPath(pathname);
   const entityList = isMobileEntityListPath(pathname);
   const dataTableList = isDataTableListPath(pathname);
   const settingsWorkspace = isBusinessSettingsWorkspacePath(pathname);
@@ -99,6 +101,7 @@ export function AppShell({
     (salesWorkspace && isMobile) ||
     (paymentsMobileList && isMobile) ||
     (contactsList && isMobile) ||
+    (businessDashboard && isMobile) ||
     (entityList && isMobile);
 
   const showSearch = shellMode === "business";

@@ -15,6 +15,10 @@ import {
 } from '@app/modules/operations/online-booking-settings/utils/gap-avoidance.util';
 import { resolveBookingTimezone } from '@app/modules/operations/online-booking-settings/utils/resolve-booking-timezone.util';
 import { AppointmentRepository } from '@app/modules/operations/appointments/repositories/appointment.repository';
+import { SchedulingSettingsRepository } from '@app/modules/operations/scheduling-settings/repositories/scheduling-settings.repository';
+import {
+  resolveEffectiveBuffers,
+} from '@app/modules/operations/scheduling-settings/utils/scheduling-behavior.util';
 import {
   countClientOccupancyOverlaps,
 } from '@app/modules/operations/appointments/utils/appointment-blocking.util';
@@ -120,7 +124,42 @@ type DayException = {
 
 @Injectable()
 export class BusinessAvailabilityService {
-  constructor(private readonly appointmentRepository: AppointmentRepository) {}
+  constructor(
+    private readonly appointmentRepository: AppointmentRepository,
+    private readonly schedulingSettingsRepository: SchedulingSettingsRepository,
+  ) {}
+
+  private async resolveBufferMinutes(params: {
+    businessId: string;
+    settings: BusinessBookingContext;
+    timing?: PublicBookingTimingContext | null;
+  }) {
+    const scheduling =
+      await this.schedulingSettingsRepository.ensureSettings(params.businessId);
+    return resolveEffectiveBuffers({
+      bufferTimeEnabled: scheduling.bufferTimeEnabled,
+      timing: params.timing ?? null,
+      businessFallback: {
+        bufferBeforeMinutes: params.settings.bufferBeforeMinutes,
+        bufferAfterMinutes: params.settings.bufferAfterMinutes,
+      },
+    });
+  }
+
+  private async getChainedSchedulingContext(
+    businessId: string,
+    settings: BusinessBookingContext,
+  ) {
+    const scheduling =
+      await this.schedulingSettingsRepository.ensureSettings(businessId);
+    return {
+      bufferTimeEnabled: scheduling.bufferTimeEnabled,
+      businessFallback: {
+        bufferBeforeMinutes: settings.bufferBeforeMinutes,
+        bufferAfterMinutes: settings.bufferAfterMinutes,
+      },
+    };
+  }
 
   async getAvailability(params: {
     settings: BusinessBookingContext;
@@ -163,12 +202,12 @@ export class BusinessAvailabilityService {
     if (cursor > maxEnd) return [];
 
     const effectiveEnd = rangeEnd < maxEnd ? rangeEnd : maxEnd;
-    const bufferBefore = params.timing?.hasBufferTime
-      ? params.timing.bufferBeforeMinutes
-      : 0;
-    const bufferAfter = params.timing?.hasBufferTime
-      ? params.timing.bufferAfterMinutes
-      : 0;
+    const { bufferBeforeMinutes: bufferBefore, bufferAfterMinutes: bufferAfter } =
+      await this.resolveBufferMinutes({
+        businessId: params.settings.businessId,
+        settings: params.settings,
+        timing: params.timing,
+      });
     const clientOccupancy = params.timing?.clientOccupancyMinutes ?? 30;
     const duration =
       params.timing?.slotDurationMinutes ??
@@ -410,12 +449,12 @@ export class BusinessAvailabilityService {
     const effectiveEnd = rangeEnd < maxEnd ? rangeEnd : maxEnd;
     const totalOccupancy = sumChainOccupancy(params.chain);
     const firstTiming = params.chain[0]?.timing;
-    const bufferBefore = firstTiming?.hasBufferTime
-      ? firstTiming.bufferBeforeMinutes
-      : 0;
-    const bufferAfter = firstTiming?.hasBufferTime
-      ? firstTiming.bufferAfterMinutes
-      : 0;
+    const { bufferBeforeMinutes: bufferBefore, bufferAfterMinutes: bufferAfter } =
+      await this.resolveBufferMinutes({
+        businessId: params.settings.businessId,
+        settings: params.settings,
+        timing: firstTiming ?? null,
+      });
     const interval = resolvePublicBookingSlotStep(
       totalOccupancy,
       params.settings.slotIntervalMinutes,
@@ -426,6 +465,11 @@ export class BusinessAvailabilityService {
       resolveGapAvoidancePolicy({
         avoidGapsEnabled: false,
       });
+
+    const scheduling = await this.getChainedSchedulingContext(
+      params.settings.businessId,
+      params.settings,
+    );
 
     // Prefer staff timetable when every line shares the same provider.
     const sharedStaffHours =
@@ -513,6 +557,7 @@ export class BusinessAvailabilityService {
             tz: businessTz,
             gapPolicy,
             allowMultipleServices: params.allowMultipleServices,
+            scheduling,
           });
 
           if (!resolved) continue;
@@ -642,6 +687,11 @@ export class BusinessAvailabilityService {
         avoidGapsEnabled: false,
       });
 
+    const scheduling = await this.getChainedSchedulingContext(
+      params.settings.businessId,
+      params.settings,
+    );
+
     return validateChainedStart({
       chainStart: start,
       chain: params.chain,
@@ -653,6 +703,7 @@ export class BusinessAvailabilityService {
       tz: businessTz,
       gapPolicy,
       allowMultipleServices: params.allowMultipleServices,
+      scheduling,
     });
   }
 
@@ -715,12 +766,12 @@ export class BusinessAvailabilityService {
     const startMin = start.hour * 60 + start.minute;
     const endMin = end.hour * 60 + end.minute;
 
-    const bufferBefore = params.timing?.hasBufferTime
-      ? params.timing.bufferBeforeMinutes
-      : 0;
-    const bufferAfter = params.timing?.hasBufferTime
-      ? params.timing.bufferAfterMinutes
-      : 0;
+    const { bufferBeforeMinutes: bufferBefore, bufferAfterMinutes: bufferAfter } =
+      await this.resolveBufferMinutes({
+        businessId: params.settings.businessId,
+        settings: params.settings,
+        timing: params.timing,
+      });
     const clientOccupancy =
       params.timing?.clientOccupancyMinutes ?? endMin - startMin;
     const duration =

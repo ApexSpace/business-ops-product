@@ -26,6 +26,9 @@ export type AppointmentServiceLineWithRelations =
           name: true;
           durationMinutes: true;
           price: true;
+          hasBufferTime: true;
+          bufferBeforeMinutes: true;
+          bufferAfterMinutes: true;
         };
       };
       assignedTo: { select: typeof userSummarySelect };
@@ -372,6 +375,9 @@ export class AppointmentRepository {
               name: true,
               durationMinutes: true,
               price: true,
+              hasBufferTime: true,
+              bufferBeforeMinutes: true,
+              bufferAfterMinutes: true,
             },
           },
           assignedTo: { select: userSummarySelect },

@@ -41,6 +41,8 @@ interface WeekCalendarViewProps {
   appointments: Appointment[];
   isLoading?: boolean;
   className?: string;
+  showBufferOnCalendar?: boolean;
+  bufferTimeEnabled?: boolean;
   onAppointmentClick: (appointment: Appointment) => void;
   onAppointmentMoveStart?: (
     appointment: Appointment,
@@ -71,6 +73,8 @@ export function WeekCalendarView({
   appointments,
   isLoading,
   className,
+  showBufferOnCalendar,
+  bufferTimeEnabled,
   onAppointmentClick,
   onAppointmentMoveStart,
   onAppointmentResizeStart,
@@ -178,6 +182,8 @@ export function WeekCalendarView({
                     draggingAppointmentId={draggingAppointmentId}
                     businessHoursSlots={businessHoursSlots}
                     staffHoursSlots={weekStaffHoursSlots}
+                    showBufferOnCalendar={showBufferOnCalendar}
+                    bufferTimeEnabled={bufferTimeEnabled}
                     onSlotClick={onSlotClick}
                   />
                 ))}

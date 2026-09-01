@@ -28,7 +28,7 @@ export function BusinessProfileContactFields({
   twoColumnLayout?: boolean;
 }) {
   return (
-    <section className="space-y-5">
+    <section className="flex w-full min-w-0 flex-col gap-[var(--settings-form-section-gap)]">
       {showSectionTitle ? (
         <BusinessProfileSectionTitle>Primary contact</BusinessProfileSectionTitle>
       ) : null}

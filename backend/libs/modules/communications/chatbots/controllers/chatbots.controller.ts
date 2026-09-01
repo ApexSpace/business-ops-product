@@ -74,6 +74,16 @@ export class ChatbotsController {
     return this.chatbotsService.list(user.businessId!, query);
   }
 
+  @Get('default')
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
+  getDefault(@CurrentUser() user: RequestUser) {
+    return this.chatbotsService.getDefault(user.businessId!, user);
+  }
+
   @Get('sessions')
   @BusinessRoles(
     BusinessMemberRole.OWNER,

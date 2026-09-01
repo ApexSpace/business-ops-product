@@ -84,6 +84,14 @@ const ROUTE_CAPABILITY_MAP = new Map<string, RouteCapabilityEntry>([
     { moduleKey: "ai_agents", capabilityKeys: ["ai_agents.list"] },
   ],
   [
+    "/business/settings/web-chat",
+    { moduleKey: "ai_agents", capabilityKeys: ["ai_agents.list"] },
+  ],
+  [
+    "/business/settings/scheduling-options",
+    { moduleKey: "calendar", capabilityKeys: ["calendar.list"] },
+  ],
+  [
     "/business/settings/forms",
     { moduleKey: "forms", capabilityKeys: ["forms.list"] },
   ],

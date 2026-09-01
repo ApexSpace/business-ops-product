@@ -55,7 +55,7 @@ function CountryDialSelect({
       modal={false}
       autoHighlight
       autoComplete="off"
-      itemToStringLabel={(item) => `${item.flag} ${item.dialCode}`}
+      itemToStringLabel={(item) => item.dialCode}
       isItemEqualToValue={(left, right) => left.dialCode === right.dialCode}
       filter={(item, query) => {
         const q = query.trim().toLowerCase();
@@ -70,7 +70,7 @@ function CountryDialSelect({
       <ComboboxFieldInput
         disabled={disabled}
         aria-label={`Country code ${country.dialCode}`}
-        className="h-full min-w-[5.75rem] rounded-none border-0 bg-transparent px-2.5 pr-7 shadow-none focus-visible:border-transparent focus-visible:ring-0"
+        className="h-full w-full min-w-0 rounded-none border-0 bg-transparent px-[var(--phone-dial-code-padding-x)] pr-6 shadow-none focus-visible:border-transparent focus-visible:ring-0"
       />
       <ComboboxPopup align="start" className="w-72 min-w-72">
         <Combobox.Empty className={COMBOBOX_EMPTY_CLASS}>
@@ -156,7 +156,7 @@ export function PhoneInput({
       )}
       aria-invalid={ariaInvalid}
     >
-      <div className="flex shrink-0 items-center border-r border-input/80 bg-muted/20 dark:bg-input/10">
+      <div className="flex w-[var(--phone-dial-code-width)] shrink-0 items-center border-r border-input/80 bg-muted/20 dark:bg-input/10">
         <CountryDialSelect
           value={dialCode}
           onChange={handleDialCodeChange}

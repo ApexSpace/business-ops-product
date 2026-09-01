@@ -10,6 +10,10 @@ import {
 } from '@app/modules/operations/online-booking-settings/utils/gap-avoidance.util';
 import { countClientOccupancyOverlaps } from '@app/modules/operations/appointments/utils/appointment-blocking.util';
 import { DayOfWeek } from '@prisma/client';
+import {
+  resolveEffectiveBuffers,
+  type BufferFallback,
+} from '@app/modules/operations/scheduling-settings/utils/scheduling-behavior.util';
 
 const LUXON_WEEKDAY_TO_DAY: Record<number, DayOfWeek> = {
   1: 'MONDAY',
@@ -116,13 +120,18 @@ function resolveLineOccupancy(timing: PublicBookingTimingContext | null): number
   return timing?.clientOccupancyMinutes ?? 30;
 }
 
-function resolveLineBuffers(timing: PublicBookingTimingContext | null) {
-  return {
-    bufferBeforeMinutes: timing?.hasBufferTime
-      ? timing.bufferBeforeMinutes
-      : 0,
-    bufferAfterMinutes: timing?.hasBufferTime ? timing.bufferAfterMinutes : 0,
-  };
+function resolveLineBuffers(
+  timing: PublicBookingTimingContext | null,
+  scheduling: {
+    bufferTimeEnabled: boolean;
+    businessFallback: BufferFallback;
+  },
+) {
+  return resolveEffectiveBuffers({
+    bufferTimeEnabled: scheduling.bufferTimeEnabled,
+    timing,
+    businessFallback: scheduling.businessFallback,
+  });
 }
 
 function segmentWithinWorkingHours(params: {
@@ -155,9 +164,16 @@ export function resolveStaffForSegment(params: {
   tz: string;
   gapPolicy: ReturnType<typeof resolveGapAvoidancePolicy>;
   allowMultipleServices?: boolean;
+  scheduling: {
+    bufferTimeEnabled: boolean;
+    businessFallback: BufferFallback;
+  };
 }): string | null {
   const occupancy = resolveLineOccupancy(params.line.timing);
-  const fallbackBuffers = resolveLineBuffers(params.line.timing);
+  const fallbackBuffers = resolveLineBuffers(
+    params.line.timing,
+    params.scheduling,
+  );
 
   const tryStaff = (
     staffId: string,
@@ -226,6 +242,10 @@ export function validateChainedStart(params: {
   tz: string;
   gapPolicy: ReturnType<typeof resolveGapAvoidancePolicy>;
   allowMultipleServices?: boolean;
+  scheduling: {
+    bufferTimeEnabled: boolean;
+    businessFallback: BufferFallback;
+  };
 }): ResolvedChainedSegment[] | null {
   let cursor = params.chainStart;
   const resolved: ResolvedChainedSegment[] = [];
@@ -256,6 +276,7 @@ export function validateChainedStart(params: {
       tz: params.tz,
       gapPolicy: params.gapPolicy,
       allowMultipleServices: params.allowMultipleServices,
+      scheduling: params.scheduling,
     });
 
     if (!staffId) {

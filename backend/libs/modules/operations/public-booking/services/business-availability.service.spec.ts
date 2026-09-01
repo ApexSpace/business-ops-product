@@ -9,6 +9,7 @@ import {
   resolveAppointmentBlockingWindow,
 } from '@app/modules/operations/appointments/utils/appointment-blocking.util';
 import { slotPassesGapAvoidanceForStaffIds } from '@app/modules/operations/online-booking-settings/utils/gap-avoidance.util';
+import { resolveEffectiveBuffers } from '@app/modules/operations/scheduling-settings/utils/scheduling-behavior.util';
 
 const businessTz = 'Asia/Karachi';
 const staffId = 'staff-1';
@@ -213,5 +214,47 @@ describe('gap avoidance with corrected appointment anchors', () => {
     });
 
     expect(flushSlot).toBe(true);
+  });
+});
+
+describe('business availability buffer resolution', () => {
+  it('uses business fallback buffers when service has no buffer timing', () => {
+    expect(
+      resolveEffectiveBuffers({
+        bufferTimeEnabled: true,
+        timing: {
+          hasBufferTime: false,
+          bufferBeforeMinutes: 0,
+          bufferAfterMinutes: 0,
+        },
+        businessFallback: {
+          bufferBeforeMinutes: 15,
+          bufferAfterMinutes: 10,
+        },
+      }),
+    ).toEqual({
+      bufferBeforeMinutes: 15,
+      bufferAfterMinutes: 10,
+    });
+  });
+
+  it('zeroes buffers when the business master switch is off', () => {
+    expect(
+      resolveEffectiveBuffers({
+        bufferTimeEnabled: false,
+        timing: {
+          hasBufferTime: true,
+          bufferBeforeMinutes: 20,
+          bufferAfterMinutes: 10,
+        },
+        businessFallback: {
+          bufferBeforeMinutes: 15,
+          bufferAfterMinutes: 10,
+        },
+      }),
+    ).toEqual({
+      bufferBeforeMinutes: 0,
+      bufferAfterMinutes: 0,
+    });
   });
 });

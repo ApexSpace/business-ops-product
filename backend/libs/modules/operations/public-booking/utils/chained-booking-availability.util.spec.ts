@@ -7,6 +7,10 @@ import { resolveGapAvoidancePolicy } from '@app/modules/operations/online-bookin
 
 const tz = 'America/New_York';
 const gapPolicy = resolveGapAvoidancePolicy({ avoidGapsEnabled: false });
+const defaultScheduling = {
+  bufferTimeEnabled: true,
+  businessFallback: { bufferBeforeMinutes: 0, bufferAfterMinutes: 0 },
+};
 
 function timing(minutes: number) {
   return {
@@ -73,6 +77,7 @@ describe('chained-booking-availability.util', () => {
       dayAppointments: appointments,
       tz,
       gapPolicy,
+      scheduling: defaultScheduling,
     });
 
     expect(resolved).not.toBeNull();
@@ -125,6 +130,7 @@ describe('chained-booking-availability.util', () => {
       dayAppointments: appointments,
       tz,
       gapPolicy,
+      scheduling: defaultScheduling,
     });
 
     expect(resolved).toBeNull();

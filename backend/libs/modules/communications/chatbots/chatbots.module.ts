@@ -59,6 +59,7 @@ import { ChatbotSessionService } from './services/chatbot-session.service';
   ],
   exports: [
     ChatbotsRepository,
+    ChatbotsService,
     PublicChatbotSessionService,
     ChatbotSessionService,
     ChatbotSessionsRepository,

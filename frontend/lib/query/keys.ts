@@ -368,6 +368,9 @@ export const queryKeys = {
     exceptions: (id: string) => ["calendars", "exceptions", id] as const,
     googleSyncStatus: (id: string) => ["calendars", "google-sync-status", id] as const,
   },
+  schedulingSettings: {
+    detail: () => ["scheduling-settings"] as const,
+  },
   chatbots: {
     all: (apiBase = "chatbots") => ["chatbots", apiBase] as const,
     list: (apiBase = "chatbots") => ["chatbots", apiBase, "list"] as const,
@@ -377,6 +380,8 @@ export const queryKeys = {
       ["chatbots", apiBase, id, "rules"] as const,
     embed: (apiBase: string, id: string) =>
       ["chatbots", apiBase, id, "embed"] as const,
+    default: (apiBase = "chatbots") =>
+      ["chatbots", apiBase, "default"] as const,
   },
   cannedResponses: {
     all: (apiBase: string = "canned-responses") =>

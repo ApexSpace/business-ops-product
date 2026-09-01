@@ -120,6 +120,7 @@ function AppointmentsCalendarPageContent() {
             onDateSelect={cal.handleDateSelect}
             onToday={() => cal.handleDateNavigate(0)}
             onJumpWeeks={cal.handleJumpWeeks}
+            weekJumpOptions={cal.rebookingJumpWeeks}
             statusFilter={cal.params.status}
             onStatusFilterChange={(status) =>
               cal.setParams({ status, page: "1" })
@@ -148,6 +149,7 @@ function AppointmentsCalendarPageContent() {
             onNext={() => cal.handleDateNavigate(1)}
             onDateSelect={cal.handleDateSelect}
             onJumpWeeks={cal.handleJumpWeeks}
+            weekJumpOptions={cal.rebookingJumpWeeks}
             staffMembers={cal.staffMembers}
             selectedStaffId={cal.params.assignedToId}
             onSelectedStaffIdChange={cal.handleSelectedStaffIdChange}
@@ -178,6 +180,8 @@ function AppointmentsCalendarPageContent() {
             onAppointmentResizeStart={drag.startResize}
             draggingAppointmentId={drag.draggingId}
             onSlotClick={cal.openCreateAtSlot}
+            showBufferOnCalendar={cal.showBufferOnCalendar}
+            bufferTimeEnabled={cal.bufferTimeEnabled}
             density={isMobile ? "mobile" : "desktop"}
           />
         ) : null}
@@ -202,6 +206,8 @@ function AppointmentsCalendarPageContent() {
             onAppointmentResizeStart={drag.startResize}
             draggingAppointmentId={drag.draggingId}
             onSlotClick={cal.openCreateAtSlot}
+            showBufferOnCalendar={cal.showBufferOnCalendar}
+            bufferTimeEnabled={cal.bufferTimeEnabled}
             density={isMobile ? "mobile" : "desktop"}
           />
         ) : null}

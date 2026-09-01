@@ -10,6 +10,8 @@ import {
   type ResolvedServiceTiming,
   type ServiceTimingSegment,
 } from '../utils/service-timing.util';
+import { SchedulingSettingsRepository } from '@app/modules/operations/scheduling-settings/repositories/scheduling-settings.repository';
+import { applyProcessingFeatureFlag } from '@app/modules/operations/scheduling-settings/utils/scheduling-behavior.util';
 
 export type PublicBookingTimingContext = ResolvedServiceTiming & {
   slotDurationMinutes: number;
@@ -20,6 +22,7 @@ export class ServiceBookingTimingService {
   constructor(
     private readonly serviceRepository: ServiceRepository,
     private readonly workspaceRepository: ServiceWorkspaceRepository,
+    private readonly schedulingSettingsRepository: SchedulingSettingsRepository,
   ) {}
 
   async resolveForBooking(params: {
@@ -87,7 +90,13 @@ export class ServiceBookingTimingService {
       staffTiming,
     );
 
-    const resolved = resolveServiceTiming(merged);
+    const scheduling =
+      await this.schedulingSettingsRepository.ensureSettings(params.businessId);
+    const withProcessingFlag = applyProcessingFeatureFlag(
+      merged,
+      scheduling.processingTimeEnabled,
+    );
+    const resolved = resolveServiceTiming(withProcessingFlag);
 
     return {
       ...resolved,

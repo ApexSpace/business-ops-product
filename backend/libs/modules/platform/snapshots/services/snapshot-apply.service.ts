@@ -373,6 +373,11 @@ export class SnapshotApplyService {
       },
     });
 
+    await tx.business.updateMany({
+      where: { id: businessId, defaultChatbotId: null },
+      data: { defaultChatbotId: created.id },
+    });
+
     await tx.snapshotProvision.create({
       data: {
         businessId,
