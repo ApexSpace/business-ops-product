@@ -364,6 +364,14 @@ const businessRoutes: Record<string, RouteEntry> = {
       { label: "Scheduling Options" },
     ],
   },
+  "/business/settings/waiting-room": {
+    title: "Waiting Room",
+    description: "Manage the waiting status and client check-in notifications.",
+    breadcrumbs: [
+      { label: "Settings", href: "/business/settings/profile" },
+      { label: "Waiting Room" },
+    ],
+  },
 };
 
 const platformRoutes: Record<string, RouteEntry> = {

@@ -310,6 +310,7 @@ function AppointmentsCalendarPageContent() {
           if (!open) cal.drawer.close();
         }}
         appointmentId={cal.drawer.appointmentId}
+        waitingStatusEnabled={cal.waitingStatusEnabled}
         onClose={cal.drawer.close}
         onBackFromCheckout={cal.drawer.closeCheckout}
         onCheckoutComplete={() => {

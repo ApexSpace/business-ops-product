@@ -371,6 +371,9 @@ export const queryKeys = {
   schedulingSettings: {
     detail: () => ["scheduling-settings"] as const,
   },
+  waitingRoomSettings: {
+    detail: () => ["waiting-room-settings"] as const,
+  },
   chatbots: {
     all: (apiBase = "chatbots") => ["chatbots", apiBase] as const,
     list: (apiBase = "chatbots") => ["chatbots", apiBase, "list"] as const,

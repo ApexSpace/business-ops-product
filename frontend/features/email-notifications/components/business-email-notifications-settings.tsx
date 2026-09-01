@@ -1,8 +1,9 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useSearchParams } from "next/navigation";
 import { PageTabs, PageTabsPanel } from "@/components/layout/page-tabs";
 import { EmailNotificationsTab } from "@/features/email-notifications/components/email-notifications-tab";
 import { listEmailLogs } from "@/features/email-notifications/api/email-notifications.api";
@@ -42,8 +43,21 @@ const DEFAULT_LOGS_FILTERS = {
 } as const;
 
 export function BusinessEmailNotificationsSettings() {
-  const [tab, setTab] = useState("notifications");
+  const searchParams = useSearchParams();
+  const initialTab = searchParams.get("tab");
+  const focusEmailType = searchParams.get("type");
+  const [tab, setTab] = useState(
+    initialTab === "templates" || initialTab === "logs"
+      ? initialTab
+      : "notifications",
+  );
   const queryClient = useQueryClient();
+
+  useEffect(() => {
+    if (initialTab === "templates" || initialTab === "logs") {
+      setTab(initialTab);
+    }
+  }, [initialTab]);
 
   const prefetchLogs = () => {
     void queryClient.prefetchQuery({
@@ -73,7 +87,9 @@ export function BusinessEmailNotificationsSettings() {
         <EmailNotificationsTab />
       </PageTabsPanel>
       <PageTabsPanel value="templates">
-        {tab === "templates" ? <EmailTemplatesTab /> : null}
+        {tab === "templates" ? (
+          <EmailTemplatesTab focusEmailType={focusEmailType} />
+        ) : null}
       </PageTabsPanel>
       <PageTabsPanel value="logs">
         {tab === "logs" ? <EmailLogsTab /> : null}

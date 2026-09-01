@@ -430,6 +430,12 @@ export function invalidateSchedulingSettings(queryClient: QueryClient) {
   });
 }
 
+export function invalidateWaitingRoomSettings(queryClient: QueryClient) {
+  return queryClient.invalidateQueries({
+    queryKey: queryKeys.waitingRoomSettings.detail(),
+  });
+}
+
 export function invalidateTimeCardLists(queryClient: QueryClient) {
   return queryClient.invalidateQueries({
     queryKey: queryKeys.timeClock.all(),

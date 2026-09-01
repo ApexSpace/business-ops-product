@@ -58,6 +58,7 @@ export interface AppointmentStatusActionsProps {
   relatedCheckoutStatus: string | null;
   waitingNotifiedAt: string | null;
   expressBookingExpiresAt?: string | null;
+  waitingStatusEnabled?: boolean;
   disabled?: boolean;
   onStatusChange: (status: AppointmentStatus) => void;
   onNotify: () => void;
@@ -72,6 +73,7 @@ export function AppointmentStatusBar({
   relatedCheckoutStatus,
   waitingNotifiedAt,
   expressBookingExpiresAt = null,
+  waitingStatusEnabled = true,
   disabled = false,
   onStatusChange,
   onNotify,
@@ -121,6 +123,7 @@ export function AppointmentStatusBar({
             relatedCheckoutId={relatedCheckoutId}
             relatedCheckoutStatus={relatedCheckoutStatus}
             disabled={disabled}
+            waitingStatusEnabled={waitingStatusEnabled}
             checkInOpen={checkInOpen}
             onCheckInOpenChange={setCheckInOpen}
             onStatusChange={onStatusChange}
@@ -166,6 +169,7 @@ function AppointmentStatusActions({
   relatedCheckoutId,
   relatedCheckoutStatus,
   disabled = false,
+  waitingStatusEnabled = true,
   checkInOpen,
   onCheckInOpenChange,
   onStatusChange,
@@ -214,6 +218,19 @@ function AppointmentStatusActions({
   }
 
   if (status === "CONFIRMED") {
+    if (!waitingStatusEnabled) {
+      return (
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={() => onStatusChange("IN_SERVICE")}
+          className={STATUS_ACTION_BUTTON_CLASS}
+        >
+          Check In
+        </button>
+      );
+    }
+
     return (
       <Popover open={checkInOpen} onOpenChange={onCheckInOpenChange}>
         <PopoverTrigger

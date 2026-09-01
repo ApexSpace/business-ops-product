@@ -6,6 +6,7 @@ import {
   Database,
   FileText,
   Globe,
+  Hourglass,
   IdCard,
   MapPin,
   MessageCircle,
@@ -68,6 +69,11 @@ const calendarItems: BusinessSettingsNavItem[] = [
     title: "Calendars",
     href: "/business/settings/calendars",
     icon: Calendar,
+  },
+  {
+    title: "Waiting Room",
+    href: "/business/settings/waiting-room",
+    icon: Hourglass,
   },
   {
     title: "Scheduling Options",
