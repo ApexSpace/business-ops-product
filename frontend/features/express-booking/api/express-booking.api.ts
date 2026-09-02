@@ -44,8 +44,13 @@ export type ExpressBookingSummary = {
   paymentRequired: boolean;
   cardOnly: boolean;
   amountCents: number;
+  servicePriceCents?: number;
+  remainingBalanceCents?: number;
+  isPartialDeposit?: boolean;
   policyVersion: string;
   allowPhotoUpload: boolean;
+  photoUploadPrompt?: string | null;
+  publicSlug?: string | null;
   staff: Array<{
     id: string;
     firstName: string | null;
@@ -73,6 +78,10 @@ export type ExpressCompleteResult = {
   endAt: string;
   contactId?: string | null;
   assignedToId?: string | null;
+  allowPhotoUpload?: boolean;
+  photoUploadPrompt?: string | null;
+  publicSlug?: string | null;
+  uploadToken?: string | null;
 };
 
 export type ExpressCheckoutBody = {

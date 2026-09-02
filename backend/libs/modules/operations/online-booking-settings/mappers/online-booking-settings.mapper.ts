@@ -52,6 +52,10 @@ export function toOnlineBookingSettingsResponse(params: {
     expressRequireCard: settings.expressRequireCard,
     expressRequireDeposit: settings.expressRequireDeposit,
     expressDepositType: settings.expressDepositType,
+    expressDepositAmount:
+      settings.expressDepositAmount != null
+        ? String(settings.expressDepositAmount)
+        : null,
     expressAllowPhotoUpload: settings.expressAllowPhotoUpload,
     cancellationPolicyVersion: settings.cancellationPolicyVersion,
     randomizeStaffOrder: settings.randomizeStaffOrder,

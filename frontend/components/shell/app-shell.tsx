@@ -38,6 +38,10 @@ import { ShellAppsProvider } from "./shell-apps-context";
 import { Topbar } from "./topbar";
 import { APPS_MANAGE_HREF } from "@/lib/config/navigation/business-nav-catalog";
 import { PLATFORM_APPS_MANAGE_HREF, PLATFORM_HOME_HREF } from "@/lib/config/navigation/platform-nav-catalog";
+import {
+  APP_SHELL_SCROLLABLE_MAIN_CLASS,
+  APP_SHELL_WORKSPACE_MAIN_CLASS,
+} from "@/lib/design/workspace-tokens";
 
 interface AppShellProps {
   brand: ShellBrand;
@@ -142,7 +146,10 @@ export function AppShell({
               )}
               <div
                 className={cn(
-                  "flex h-0 min-h-0 flex-1 flex-col overflow-hidden bg-white [&>[data-workspace-fill]]:flex [&>[data-workspace-fill]]:h-0 [&>[data-workspace-fill]]:min-h-0 [&>[data-workspace-fill]]:flex-1 [&>[data-workspace-fill]]:flex-col",
+                  fullBleedContent
+                    ? APP_SHELL_WORKSPACE_MAIN_CLASS
+                    : APP_SHELL_SCROLLABLE_MAIN_CLASS,
+                  "bg-white",
                   fullBleedContent
                     ? "p-0"
                     : "px-[var(--page-padding-x)] pb-[var(--page-padding-y)] pt-[var(--page-content-top-gap)]",
@@ -191,7 +198,9 @@ export function AppShell({
             />
             <div
               className={cn(
-                "flex h-0 min-h-0 flex-1 flex-col overflow-hidden [&>[data-workspace-fill]]:flex [&>[data-workspace-fill]]:h-0 [&>[data-workspace-fill]]:min-h-0 [&>[data-workspace-fill]]:flex-1 [&>[data-workspace-fill]]:flex-col",
+                fullBleedContent
+                  ? APP_SHELL_WORKSPACE_MAIN_CLASS
+                  : APP_SHELL_SCROLLABLE_MAIN_CLASS,
                 fullBleedContent
                   ? "p-0"
                   : "px-[var(--page-padding-x)] pb-[var(--page-padding-y)] pt-[var(--page-content-top-gap)]",

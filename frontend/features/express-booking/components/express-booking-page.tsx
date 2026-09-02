@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useEffect, useMemo, useState } from "react";
+import { use, useMemo, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -16,7 +16,9 @@ import {
   getExpressBooking,
   type ExpressBookingSummary,
   type ExpressCompleteBody,
+  type ExpressCompleteResult,
 } from "@/features/express-booking/api/express-booking.api";
+import { BookingSuccessPhotoUpload } from "@/features/public-booking/components/booking-success-photo-upload";
 import { ApiClientError } from "@/lib/api/errors";
 import { hasPhoneDigits, parseE164Phone, toE164Phone } from "@/lib/forms/phone";
 import { cn } from "@/lib/utils";
@@ -57,6 +59,10 @@ function formatPhoneDisplay(
   return dial ? `${dial} ${number}` : number;
 }
 
+function formatCurrency(cents: number): string {
+  return `$${(cents / 100).toFixed(2)}`;
+}
+
 function contactDisplayName(summary: ExpressBookingSummary): string {
   if (summary.contact) {
     const name = [summary.contact.firstName, summary.contact.lastName]
@@ -84,17 +90,79 @@ function contactDisplayPhone(summary: ExpressBookingSummary): string | null {
   );
 }
 
+function initialGuestPhone(summary: ExpressBookingSummary): string {
+  if (summary.hasExistingContact || !summary.guestPhone) {
+    return "";
+  }
+
+  const dial = summary.guestPhoneCountryCode?.startsWith("+")
+    ? summary.guestPhoneCountryCode
+    : summary.guestPhoneCountryCode
+      ? `+${summary.guestPhoneCountryCode}`
+      : "+1";
+
+  return toE164Phone(dial, summary.guestPhone) ?? summary.guestPhone;
+}
+
 export function ExpressBookingPage({
   params,
 }: {
   params: Promise<{ token: string }>;
 }) {
   const { token } = use(params);
-  const [assignedToId, setAssignedToId] = useState<string | null>(null);
-  const [customerName, setCustomerName] = useState("");
+
+  const query = useQuery({
+    queryKey: ["express-booking", token],
+    queryFn: () => getExpressBooking(token),
+    retry: false,
+  });
+
+  if (query.isLoading) {
+    return (
+      <div className="flex min-h-[50vh] items-center justify-center">
+        <Loader2 className="size-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (query.isError || !query.data) {
+    return (
+      <div className="mx-auto max-w-lg px-4 py-16 text-center">
+        <h1 className="text-2xl font-semibold tracking-tight">
+          Link unavailable
+        </h1>
+        <p className="mt-2 text-muted-foreground">
+          {query.error instanceof Error
+            ? query.error.message
+            : "This Express Booking link is invalid or has expired."}
+        </p>
+      </div>
+    );
+  }
+
+  return <ExpressBookingFlow key={token} token={token} summary={query.data} />;
+}
+
+function ExpressBookingFlow({
+  token,
+  summary,
+}: {
+  token: string;
+  summary: ExpressBookingSummary;
+}) {
+  const [assignedToId, setAssignedToId] = useState<string | null>(
+    summary.assignedToId,
+  );
+  const [customerName, setCustomerName] = useState(
+    summary.hasExistingContact ? "" : (summary.guestFirstName ?? ""),
+  );
   const [customerLastName, setCustomerLastName] = useState("");
-  const [customerEmail, setCustomerEmail] = useState("");
-  const [customerPhone, setCustomerPhone] = useState("");
+  const [customerEmail, setCustomerEmail] = useState(
+    summary.hasExistingContact ? "" : (summary.guestEmail ?? ""),
+  );
+  const [customerPhone, setCustomerPhone] = useState(() =>
+    initialGuestPhone(summary),
+  );
   const [companyName, setCompanyName] = useState("");
   const [notes, setNotes] = useState("");
   const [policyAgreed, setPolicyAgreed] = useState(false);
@@ -102,6 +170,8 @@ export function ExpressBookingPage({
   const [holdToken, setHoldToken] = useState<string | null>(null);
   const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null);
   const [completedStatus, setCompletedStatus] = useState<string | null>(null);
+  const [completedResult, setCompletedResult] =
+    useState<ExpressCompleteResult | null>(null);
   const [paymentConfig, setPaymentConfig] = useState<{
     mode: "checkout" | "setup";
     clientSecret: string;
@@ -110,44 +180,15 @@ export function ExpressBookingPage({
     amountLabel: string | null;
   } | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [initialized, setInitialized] = useState(false);
-
-  const query = useQuery({
-    queryKey: ["express-booking", token],
-    queryFn: () => getExpressBooking(token),
-    retry: false,
-  });
-
-  const summary = query.data;
-
-  useEffect(() => {
-    if (!summary || initialized) return;
-    setAssignedToId(summary.assignedToId);
-    if (!summary.hasExistingContact) {
-      setCustomerName(summary.guestFirstName ?? "");
-      setCustomerEmail(summary.guestEmail ?? "");
-      if (summary.guestPhone) {
-        const dial = summary.guestPhoneCountryCode?.startsWith("+")
-          ? summary.guestPhoneCountryCode
-          : summary.guestPhoneCountryCode
-            ? `+${summary.guestPhoneCountryCode}`
-            : "+1";
-        setCustomerPhone(
-          toE164Phone(dial, summary.guestPhone) ?? summary.guestPhone,
-        );
-      }
-    }
-    setInitialized(true);
-  }, [summary, initialized]);
 
   const availableStaff = useMemo(
-    () => (summary?.staff ?? []).filter((s) => s.available),
-    [summary?.staff],
+    () => summary.staff.filter((s) => s.available),
+    [summary.staff],
   );
 
   const policyRequired = Boolean(
-    summary?.formSettings.cancellationPolicyText ||
-      summary?.formSettings.requirePolicyAgreement,
+    summary.formSettings.cancellationPolicyText ||
+      summary.formSettings.requirePolicyAgreement,
   );
 
   function buildGuestPayload(
@@ -194,7 +235,6 @@ export function ExpressBookingPage({
       paymentIntentId?: string;
       setupIntentId?: string;
     }) => {
-      if (!summary) throw new Error("Missing booking");
       const validationError = validateForm(summary);
       if (validationError) throw new Error(validationError);
 
@@ -220,6 +260,7 @@ export function ExpressBookingPage({
     },
     onSuccess: (result) => {
       setCompletedStatus(result.status);
+      setCompletedResult(result);
       setStep("success");
       setSubmitError(null);
     },
@@ -234,7 +275,6 @@ export function ExpressBookingPage({
 
   const checkoutMutation = useMutation({
     mutationFn: async (mode: "deposit" | "card") => {
-      if (!summary) throw new Error("Missing booking");
       const validationError = validateForm(summary);
       if (validationError) throw new Error(validationError);
 
@@ -274,7 +314,7 @@ export function ExpressBookingPage({
         stripeAccountId: checkout.stripeAccountId,
         amountLabel:
           mode === "deposit" && checkout.amountCents > 0
-            ? `$${(checkout.amountCents / 100).toFixed(2)}`
+            ? formatCurrency(checkout.amountCents)
             : null,
       });
       setStep("payment");
@@ -288,31 +328,12 @@ export function ExpressBookingPage({
     },
   });
 
-  if (query.isLoading) {
-    return (
-      <div className="flex min-h-[50vh] items-center justify-center">
-        <Loader2 className="size-6 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
-
-  if (query.isError || !summary) {
-    return (
-      <div className="mx-auto max-w-lg px-4 py-16 text-center">
-        <h1 className="text-2xl font-semibold tracking-tight">
-          Link unavailable
-        </h1>
-        <p className="mt-2 text-muted-foreground">
-          {query.error instanceof Error
-            ? query.error.message
-            : "This Express Booking link is invalid or has expired."}
-        </p>
-      </div>
-    );
-  }
-
   if (step === "success") {
     const isConfirmed = completedStatus === "CONFIRMED";
+    const showPhotoUpload =
+      completedResult?.allowPhotoUpload &&
+      completedResult.uploadToken &&
+      completedResult.publicSlug;
     return (
       <div className="mx-auto max-w-lg px-4 py-16 text-center">
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">
@@ -327,11 +348,16 @@ export function ExpressBookingPage({
           {summary.service?.name} ·{" "}
           {formatWhen(summary.startAt, summary.timezone)}
         </p>
-        {summary.allowPhotoUpload ? (
-          <p className="mt-3 text-xs text-muted-foreground">
-            You can add photos after your booking is confirmed if the studio
-            requests them.
-          </p>
+        {showPhotoUpload ? (
+          <BookingSuccessPhotoUpload
+            slug={completedResult.publicSlug!}
+            appointmentId={completedResult.id}
+            uploadToken={completedResult.uploadToken!}
+            prompt={
+              completedResult.photoUploadPrompt ?? summary.photoUploadPrompt
+            }
+            accentColor="#6366f1"
+          />
         ) : null}
       </div>
     );
@@ -356,6 +382,13 @@ export function ExpressBookingPage({
           {summary.service?.name} ·{" "}
           {formatWhen(summary.startAt, summary.timezone)}
         </p>
+        {summary.paymentRequired && summary.amountCents > 0 ? (
+          <p className="mt-2 text-sm text-muted-foreground">
+            {summary.isPartialDeposit
+              ? `Deposit due now: ${formatCurrency(summary.amountCents)} · Remaining ${formatCurrency(summary.remainingBalanceCents ?? 0)} at appointment`
+              : `Payment due: ${formatCurrency(summary.amountCents)}`}
+          </p>
+        ) : null}
         {summary.expiresAt ? (
           <p className="mt-1 text-xs text-amber-700 dark:text-amber-300">
             Complete by {formatWhen(summary.expiresAt, summary.timezone)}
@@ -368,7 +401,9 @@ export function ExpressBookingPage({
           <p className="text-sm text-muted-foreground">
             {paymentConfig.mode === "setup"
               ? "Save a card on file to complete this booking. You will not be charged now."
-              : `A total of ${paymentConfig.amountLabel} will be charged to complete this booking.`}
+              : summary.isPartialDeposit
+                ? `A deposit of ${paymentConfig.amountLabel} will be charged now. The remaining ${formatCurrency(summary.remainingBalanceCents ?? 0)} is due at your appointment.`
+                : `A total of ${paymentConfig.amountLabel} will be charged to complete this booking.`}
           </p>
           <EmbeddedStripePayment
             mode={paymentConfig.mode}

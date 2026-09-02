@@ -1,5 +1,5 @@
 import { HttpStatus, Inject, Injectable, Logger, forwardRef } from '@nestjs/common';
-import { AppointmentStatus, Prisma } from '@prisma/client';
+import { AppointmentStatus, AppointmentSource, Prisma } from '@prisma/client';
 import { RequestUser } from '@app/common/decorators/current-user.decorator';
 import { AppException } from '@app/common/exceptions/app.exception';
 import { ErrorCode } from '@app/common/exceptions/error-code.enum';
@@ -46,6 +46,9 @@ import { hasStaffPermission } from '@app/modules/platform/membership/permissions
 import { applyContactSummaryPrivacy } from '@app/modules/crm/contacts/utils/contact-privacy.util';
 import { DateTime } from 'luxon';
 import { WaitingRoomSettingsService } from '../waiting-room-settings/services/waiting-room-settings.service';
+import { CancelRescheduleSettingsService } from '../cancel-reschedule-settings/services/cancel-reschedule-settings.service';
+import { classifyStaffCancellation } from '../cancel-reschedule-settings/utils/cancel-reschedule-behavior.util';
+import { buildAppointmentManageFields } from '../utils/appointment-manage-token.util';
 import {
   canNotifyWaitingClient,
   canTransitionToWaiting,
@@ -72,6 +75,7 @@ export class AppointmentsService {
     private readonly waitlistMatchingService: WaitlistMatchingService,
     private readonly storageService: StorageService,
     private readonly waitingRoomSettingsService: WaitingRoomSettingsService,
+    private readonly cancelRescheduleSettingsService: CancelRescheduleSettingsService,
   ) {}
 
   private scheduleGoogleCalendarSync(
@@ -482,6 +486,10 @@ export class AppointmentsService {
         notes: dto.notes?.trim() || null,
         metadata: isTimeBlock ? { kind: 'TIME_BLOCK' } : undefined,
         createdById: actor.id,
+        ...buildAppointmentManageFields({
+          source: dto.source ?? AppointmentSource.INTERNAL,
+          isTimeBlock,
+        }),
       },
       serviceLines,
     );
@@ -939,9 +947,38 @@ export class AppointmentsService {
       }
     }
 
-    const appointment = await this.appointmentRepository.update(id, {
+    let updateData: Prisma.AppointmentUpdateInput = {
       status: dto.status,
-    });
+    };
+
+    if (
+      dto.status === AppointmentStatus.CANCELLED &&
+      existing.status !== AppointmentStatus.CANCELLED
+    ) {
+      const behaviorSettings =
+        await this.cancelRescheduleSettingsService.getBehaviorSettings(
+          businessId,
+        );
+      const cancellationType = classifyStaffCancellation(
+        behaviorSettings,
+        existing,
+        new Date(),
+      );
+      const previousMetadata =
+        existing.metadata && typeof existing.metadata === 'object'
+          ? (existing.metadata as Record<string, unknown>)
+          : {};
+      updateData = {
+        status: dto.status,
+        metadata: {
+          ...previousMetadata,
+          cancellationType,
+          lateCancellation: cancellationType === 'late',
+        },
+      };
+    }
+
+    const appointment = await this.appointmentRepository.update(id, updateData);
 
     await this.auditService.log({
       actorUserId: actor.id,

@@ -8,12 +8,15 @@ import {
   Globe,
   Hourglass,
   IdCard,
+  LayoutGrid,
   MapPin,
   MessageCircle,
   MessageSquare,
   Palette,
   Receipt,
+  RotateCcw,
   User,
+  Zap,
 } from "lucide-react";
 import type { ShellNavItem, ShellNavSection } from "@/lib/types/shell-nav";
 import { canAccessSettingsHref } from "@/features/team/permissions/staff-permissions";
@@ -71,6 +74,16 @@ const calendarItems: BusinessSettingsNavItem[] = [
     icon: Calendar,
   },
   {
+    title: "Display Preferences",
+    href: "/business/settings/display-preferences",
+    icon: LayoutGrid,
+  },
+  {
+    title: "Cancel & Reschedule",
+    href: "/business/settings/cancel-reschedule",
+    icon: RotateCcw,
+  },
+  {
     title: "Waiting Room",
     href: "/business/settings/waiting-room",
     icon: Hourglass,
@@ -79,6 +92,11 @@ const calendarItems: BusinessSettingsNavItem[] = [
     title: "Scheduling Options",
     href: "/business/settings/scheduling-options",
     icon: Clock,
+  },
+  {
+    title: "Express Booking™",
+    href: "/business/settings/express-booking",
+    icon: Zap,
   },
 ];
 

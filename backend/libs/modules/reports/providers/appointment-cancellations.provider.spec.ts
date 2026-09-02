@@ -144,6 +144,9 @@ describe('AppointmentCancellationsProvider', () => {
       auditLog: {
         findMany: jest.fn().mockResolvedValue(params.audits ?? []),
       },
+      businessCancelRescheduleSettings: {
+        findUnique: jest.fn().mockResolvedValue(null),
+      },
     } as never;
   }
 

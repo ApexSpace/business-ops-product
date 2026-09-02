@@ -15,6 +15,8 @@ import { SYSTEM_AUDIT_ACTOR_SENTINEL } from '@app/modules/platform/audit/constan
 import { JobEnqueueService } from '@app/core/jobs/job-enqueue.service';
 import { formatPhone } from '@app/modules/crm/contacts/utils/contact-profile.util';
 import { AppointmentRepository } from '@app/modules/operations/appointments/repositories/appointment.repository';
+import { buildAppointmentManageFields } from '@app/modules/operations/appointments/utils/appointment-manage-token.util';
+import { CancelRescheduleSettingsRepository } from '@app/modules/operations/appointments/cancel-reschedule-settings/repositories/cancel-reschedule-settings.repository';
 import { ServiceRepository } from '@app/modules/crm/services/repositories/service.repository';
 import { ServiceBookingTimingService } from '@app/modules/crm/services/services/service-booking-timing.service';
 import { ServiceWorkspaceRepository } from '@app/modules/crm/services/repositories/service-workspace.repository';
@@ -81,10 +83,15 @@ export class PublicBookingService {
     private readonly checkoutService: PublicBookingCheckoutService,
     private readonly storageService: StorageService,
     private readonly bookingLinkSale: BookingLinkSaleService,
+    private readonly cancelRescheduleSettingsRepository: CancelRescheduleSettingsRepository,
   ) {}
 
   async getBusinessBySlug(slug: string) {
     const context = await this.settingsService.resolveBusinessBySlug(slug);
+    const cancelRescheduleSettings =
+      await this.cancelRescheduleSettingsRepository.ensureSettings(
+        context.businessId,
+      );
     const giftCard = await this.prisma.giftCardSettings.findUnique({
       where: { businessId: context.businessId },
       select: { publicSlug: true, onlineSalesEnabled: true },
@@ -104,6 +111,13 @@ export class PublicBookingService {
         pkg?.onlineSalesEnabled && pkg.publicSlug && frontendUrl
           ? `${frontendUrl.replace(/\/$/, '')}/packages/${pkg.publicSlug}`
           : null,
+      cancelReschedulePolicy: {
+        cancellationPolicyHtml:
+          cancelRescheduleSettings.cancellationPolicyHtml,
+        cancellationPolicySms: cancelRescheduleSettings.cancellationPolicySms,
+        requirePolicyAgreement:
+          cancelRescheduleSettings.requirePolicyAgreement,
+      },
     });
   }
 
@@ -680,6 +694,7 @@ export class PublicBookingService {
         locationType: bookingContext.locationType,
         locationValue: bookingContext.locationValue,
         notes: dto.notes?.trim() || null,
+        ...buildAppointmentManageFields({ source }),
         metadata: {
           publicSlug: slug,
           formAnswers: dto.formAnswers ?? null,
@@ -943,7 +958,7 @@ export class PublicBookingService {
     uploadToken: string,
   ) {
     const context = await this.settingsService.resolveBusinessBySlug(slug);
-    if (!context.collectPhotosEnabled) {
+    if (!context.collectPhotosEnabled && !context.expressAllowPhotoUpload) {
       throw new AppException(
         ErrorCode.BAD_REQUEST,
         'Photo upload is not enabled',

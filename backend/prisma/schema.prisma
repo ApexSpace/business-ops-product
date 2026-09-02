@@ -667,6 +667,17 @@ enum CalendarZoomLevel {
   LARGE
 }
 
+enum SelfCancellationMode {
+  DISABLED
+  WITHIN_MINUTES_OF_ONLINE_BOOKING
+  UNTIL_HOURS_BEFORE_APPOINTMENT
+}
+
+enum SelfRescheduleMode {
+  DISABLED
+  UNTIL_HOURS_BEFORE_APPOINTMENT
+}
+
 enum BookingWaitlistStatus {
   WAITING
   MATCHED
@@ -1156,6 +1167,7 @@ model Business {
   calendarDisplaySettings  BusinessCalendarDisplaySettings?
   schedulingSettings       BusinessSchedulingSettings?
   waitingRoomSettings      BusinessWaitingRoomSettings?
+  cancelRescheduleSettings BusinessCancelRescheduleSettings?
   businessHours            BusinessHours[]
   businessHourExceptions   BusinessHourException[]
   staffWorkSchedules       StaffWorkSchedule[]
@@ -3459,6 +3471,7 @@ model BusinessOnlineBookingSettings {
   expressRequireCard              Boolean @default(false)
   expressRequireDeposit           Boolean @default(false)
   expressDepositType              ExpressDepositType @default(FULL)
+  expressDepositAmount            Decimal? @db.Decimal(12, 2)
   expressAllowPhotoUpload         Boolean @default(false)
   cancellationPolicyVersion       String  @default("1")
   randomizeStaffOrder     Boolean              @default(false)
@@ -3528,6 +3541,27 @@ model BusinessWaitingRoomSettings {
 
   @@index([businessId])
   @@map("business_waiting_room_settings")
+}
+
+model BusinessCancelRescheduleSettings {
+  id                          String               @id @default(uuid())
+  businessId                  String               @unique
+  cancellationPolicyHtml      String?              @db.Text
+  cancellationPolicySms       String?              @db.VarChar(215)
+  requirePolicyAgreement      Boolean              @default(false)
+  selfCancellationMode        SelfCancellationMode @default(DISABLED)
+  selfCancellationMinutes     Int                  @default(15)
+  selfCancellationHoursBefore Int                  @default(24)
+  selfRescheduleMode          SelfRescheduleMode   @default(DISABLED)
+  selfRescheduleHoursBefore   Int                  @default(24)
+  lateCancellationHoursBefore Int                  @default(24)
+  createdAt                   DateTime             @default(now())
+  updatedAt                   DateTime             @updatedAt
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([businessId])
+  @@map("business_cancel_reschedule_settings")
 }
 
 model BusinessHours {
@@ -3663,6 +3697,8 @@ model Appointment {
   expressBookingToken       String?   @unique
   expressBookingExpiresAt   DateTime?
   expressBookingCompletedAt DateTime?
+  clientManageToken         String?   @unique
+  bookedAt                  DateTime?
   expressRequireCard        Boolean?
   expressRequireDeposit     Boolean?
   expressTimeLimitMinutes   Int?

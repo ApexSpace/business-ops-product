@@ -14,7 +14,9 @@ import { PaymentsModule } from '@app/modules/finance/payments/payments.module';
 import { RedisModule } from '@app/core/redis/redis.module';
 import { StorageModule } from '@app/modules/storage/storage.module';
 import { PublicBookingController } from './controllers/public-booking.controller';
+import { PublicAppointmentManageController } from './controllers/public-appointment-manage.controller';
 import { PublicBookingService } from './services/public-booking.service';
+import { PublicAppointmentManageService } from './services/public-appointment-manage.service';
 import { BookingAvailabilityService } from './services/booking-availability.service';
 import { BusinessAvailabilityService } from './services/business-availability.service';
 import { PublicBookingContactService } from './services/public-booking-contact.service';
@@ -39,9 +41,10 @@ import { WaitlistModule } from '@app/modules/operations/waitlist/waitlist.module
     StorageModule,
     forwardRef(() => WaitlistModule),
   ],
-  controllers: [PublicBookingController],
+  controllers: [PublicBookingController, PublicAppointmentManageController],
   providers: [
     PublicBookingService,
+    PublicAppointmentManageService,
     BookingAvailabilityService,
     BusinessAvailabilityService,
     PublicBookingContactService,

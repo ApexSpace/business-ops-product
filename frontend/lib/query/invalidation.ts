@@ -430,9 +430,27 @@ export function invalidateSchedulingSettings(queryClient: QueryClient) {
   });
 }
 
+export function invalidateOnlineBookingSettings(queryClient: QueryClient) {
+  return queryClient.invalidateQueries({
+    queryKey: queryKeys.onlineBookingSettings.detail(),
+  });
+}
+
+export function invalidateCalendarDisplaySettings(queryClient: QueryClient) {
+  return queryClient.invalidateQueries({
+    queryKey: queryKeys.calendarDisplaySettings.detail(),
+  });
+}
+
 export function invalidateWaitingRoomSettings(queryClient: QueryClient) {
   return queryClient.invalidateQueries({
     queryKey: queryKeys.waitingRoomSettings.detail(),
+  });
+}
+
+export function invalidateCancelRescheduleSettings(queryClient: QueryClient) {
+  return queryClient.invalidateQueries({
+    queryKey: queryKeys.cancelRescheduleSettings.detail(),
   });
 }
 

@@ -364,12 +364,38 @@ const businessRoutes: Record<string, RouteEntry> = {
       { label: "Scheduling Options" },
     ],
   },
+  "/business/settings/express-booking": {
+    title: "Express Booking™",
+    description:
+      "Configure staff-started bookings that clients complete via a secure link — time limits, payment, and photo collection.",
+    breadcrumbs: [
+      { label: "Settings", href: "/business/settings/profile" },
+      { label: "Express Booking" },
+    ],
+  },
+  "/business/settings/display-preferences": {
+    title: "Display Preferences",
+    description: "Configure how appointments appear on your calendar.",
+    breadcrumbs: [
+      { label: "Settings", href: "/business/settings/profile" },
+      { label: "Display Preferences" },
+    ],
+  },
   "/business/settings/waiting-room": {
     title: "Waiting Room",
     description: "Manage the waiting status and client check-in notifications.",
     breadcrumbs: [
       { label: "Settings", href: "/business/settings/profile" },
       { label: "Waiting Room" },
+    ],
+  },
+  "/business/settings/cancel-reschedule": {
+    title: "Cancel & Reschedule",
+    description:
+      "Configure cancellation policy, client self-service, and late cancellation reporting.",
+    breadcrumbs: [
+      { label: "Settings", href: "/business/settings/profile" },
+      { label: "Cancel & Reschedule" },
     ],
   },
 };

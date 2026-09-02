@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { MembershipStatus } from '@prisma/client';
 import { formatPhone } from '@app/modules/crm/contacts/utils/contact-profile.util';
 import {
@@ -9,6 +10,9 @@ import { NotificationDispatchService } from '@app/modules/communications/notific
 import { BusinessRepository } from '@app/modules/platform/business/repositories/business.repository';
 import { BusinessMembershipRepository } from '@app/modules/platform/membership/repositories/business-membership.repository';
 import { normalizeNotificationSettings } from '@app/modules/platform/membership/permissions/staff-permission.registry';
+import { CancelRescheduleSettingsRepository } from '../cancel-reschedule-settings/repositories/cancel-reschedule-settings.repository';
+import { buildAppointmentManageUrl } from '../utils/appointment-manage-token.util';
+import { stripHtmlToPlainText } from '../cancel-reschedule-settings/utils/cancel-reschedule-behavior.util';
 import type { AppointmentWithRelations } from '../repositories/appointment.repository';
 
 @Injectable()
@@ -19,6 +23,8 @@ export class AppointmentNotificationService {
     private readonly notificationDispatch: NotificationDispatchService,
     private readonly businessRepository: BusinessRepository,
     private readonly membershipRepository: BusinessMembershipRepository,
+    private readonly cancelRescheduleSettingsRepository: CancelRescheduleSettingsRepository,
+    private readonly configService: ConfigService,
   ) {}
 
   async sendConfirmation(
@@ -27,7 +33,8 @@ export class AppointmentNotificationService {
     timezone?: string | null,
   ): Promise<void> {
     const business = await this.businessRepository.findById(businessId);
-    const variables = this.buildVariables(
+    const variables = await this.buildVariablesWithPolicy(
+      businessId,
       business?.name ?? 'Business',
       appointment,
       timezone,
@@ -168,7 +175,8 @@ export class AppointmentNotificationService {
     timezone?: string | null,
   ): Promise<void> {
     const business = await this.businessRepository.findById(businessId);
-    const variables = this.buildVariables(
+    const variables = await this.buildVariablesWithPolicy(
+      businessId,
       business?.name ?? 'Business',
       appointment,
       timezone,
@@ -195,12 +203,14 @@ export class AppointmentNotificationService {
     timezone?: string | null,
   ): Promise<void> {
     const business = await this.businessRepository.findById(businessId);
+    const baseVariables = await this.buildVariablesWithPolicy(
+      businessId,
+      business?.name ?? 'Business',
+      appointment,
+      timezone,
+    );
     const variables = {
-      ...this.buildVariables(
-        business?.name ?? 'Business',
-        appointment,
-        timezone,
-      ),
+      ...baseVariables,
       'appointment.previous_start_at': formatAppointmentDateTime(
         previousStartAt,
         timezone,
@@ -254,7 +264,8 @@ export class AppointmentNotificationService {
     timezone?: string | null,
   ): Promise<void> {
     const business = await this.businessRepository.findById(businessId);
-    const variables = this.buildVariables(
+    const variables = await this.buildVariablesWithPolicy(
+      businessId,
       business?.name ?? 'Business',
       appointment,
       timezone,
@@ -287,7 +298,22 @@ export class AppointmentNotificationService {
     businessName: string,
     appointment: AppointmentWithRelations,
     timezone?: string | null,
+    policy?: {
+      cancellationPolicyHtml?: string | null;
+      cancellationPolicySms?: string | null;
+    },
   ): Record<string, string> {
+    const frontendUrl =
+      this.configService.get<string>('FRONTEND_URL', '') ?? '';
+    const manageUrl =
+      appointment.clientManageToken && frontendUrl
+        ? buildAppointmentManageUrl(frontendUrl, appointment.clientManageToken)
+        : '';
+    const policyPlain = stripHtmlToPlainText(
+      policy?.cancellationPolicyHtml ?? null,
+    );
+    const policySms = policy?.cancellationPolicySms?.trim() ?? '';
+
     return {
       'business.name': businessName,
       'contact.name': appointment.contact
@@ -304,7 +330,34 @@ export class AppointmentNotificationService {
       ),
       'appointment.calendar_name': appointment.calendar?.name ?? 'Appointment',
       'appointment.title': appointment.title,
+      'appointment.manage_url': manageUrl,
+      'appointment.cancellation_policy': policyPlain,
+      'appointment.cancellation_policy_sms': policySms,
     };
+  }
+
+  private async loadPolicyVariables(
+    businessId: string,
+  ): Promise<{
+    cancellationPolicyHtml?: string | null;
+    cancellationPolicySms?: string | null;
+  }> {
+    const settings =
+      await this.cancelRescheduleSettingsRepository.ensureSettings(businessId);
+    return {
+      cancellationPolicyHtml: settings.cancellationPolicyHtml,
+      cancellationPolicySms: settings.cancellationPolicySms,
+    };
+  }
+
+  private async buildVariablesWithPolicy(
+    businessId: string,
+    businessName: string,
+    appointment: AppointmentWithRelations,
+    timezone?: string | null,
+  ): Promise<Record<string, string>> {
+    const policy = await this.loadPolicyVariables(businessId);
+    return this.buildVariables(businessName, appointment, timezone, policy);
   }
 
   private collectStaffUserIds(

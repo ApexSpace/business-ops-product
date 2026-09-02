@@ -92,7 +92,22 @@ const ROUTE_CAPABILITY_MAP = new Map<string, RouteCapabilityEntry>([
     { moduleKey: "calendar", capabilityKeys: ["calendar.list"] },
   ],
   [
+    "/business/settings/express-booking",
+    {
+      moduleKey: "appointments",
+      capabilityKeys: ["appointments.express_booking"],
+    },
+  ],
+  [
+    "/business/settings/display-preferences",
+    { moduleKey: "calendar", capabilityKeys: ["calendar.list"] },
+  ],
+  [
     "/business/settings/waiting-room",
+    { moduleKey: "appointments", capabilityKeys: ["appointments.access"] },
+  ],
+  [
+    "/business/settings/cancel-reschedule",
     { moduleKey: "appointments", capabilityKeys: ["appointments.access"] },
   ],
   [

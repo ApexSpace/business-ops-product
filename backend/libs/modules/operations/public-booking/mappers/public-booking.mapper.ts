@@ -1,6 +1,7 @@
 import { CalendarLocationType } from '@prisma/client';
 import type { BusinessBookingContext } from '@app/modules/operations/online-booking-settings/repositories/online-booking-settings.repository';
 import { resolveBookingTimezone } from '@app/modules/operations/online-booking-settings/utils/resolve-booking-timezone.util';
+import { stripHtmlToPlainText } from '@app/modules/operations/appointments/cancel-reschedule-settings/utils/cancel-reschedule-behavior.util';
 import {
   PublicBookingBusinessDto,
   PublicBookingConfirmationDto,
@@ -14,18 +15,30 @@ function readJsonRecord(value: unknown): Record<string, unknown> {
   return {};
 }
 
-function readFormSettings(formSettings: unknown): PublicBookingFormSettingsDto {
+function readFormSettings(
+  formSettings: unknown,
+  policy?: {
+    cancellationPolicyHtml?: string | null;
+    cancellationPolicySms?: string | null;
+    requirePolicyAgreement?: boolean;
+  },
+): PublicBookingFormSettingsDto {
   const fs = readJsonRecord(formSettings);
+  const policyHtml =
+    policy?.cancellationPolicyHtml ??
+    (typeof fs.cancellationPolicyText === 'string'
+      ? fs.cancellationPolicyText
+      : null);
   return {
     requireEmail: Boolean(fs.requireEmail),
     requirePhone: Boolean(fs.requirePhone),
     showNotes: fs.showNotes !== false,
     showBookForSomeoneElse: fs.showBookForSomeoneElse !== false,
-    cancellationPolicyText:
-      typeof fs.cancellationPolicyText === 'string'
-        ? fs.cancellationPolicyText
-        : null,
-    requirePolicyAgreement: Boolean(fs.requirePolicyAgreement),
+    cancellationPolicyText: stripHtmlToPlainText(policyHtml) || null,
+    cancellationPolicyHtml: policyHtml?.trim() || null,
+    cancellationPolicySms: policy?.cancellationPolicySms ?? null,
+    requirePolicyAgreement:
+      policy?.requirePolicyAgreement ?? Boolean(fs.requirePolicyAgreement),
   };
 }
 
@@ -40,7 +53,15 @@ function locationSummary(
 
 export function toPublicBookingBusiness(
   context: BusinessBookingContext,
-  extras?: { giftCardUrl?: string | null; packageUrl?: string | null },
+  extras?: {
+    giftCardUrl?: string | null;
+    packageUrl?: string | null;
+    cancelReschedulePolicy?: {
+      cancellationPolicyHtml?: string | null;
+      cancellationPolicySms?: string | null;
+      requirePolicyAgreement?: boolean;
+    };
+  },
 ): PublicBookingBusinessDto {
   const ws = readJsonRecord(context.widgetSettings);
   const cs = readJsonRecord(context.confirmationSettings);
@@ -88,7 +109,10 @@ export function toPublicBookingBusiness(
       context.locationType,
       context.locationValue,
     ),
-    formSettings: readFormSettings(context.formSettings),
+    formSettings: readFormSettings(
+      context.formSettings,
+      extras?.cancelReschedulePolicy,
+    ),
     confirmationMessage:
       (typeof cs.successMessage === 'string' && cs.successMessage) ||
       (typeof ws.thankYouMessage === 'string' && ws.thankYouMessage) ||

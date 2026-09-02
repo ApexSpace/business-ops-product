@@ -371,8 +371,17 @@ export const queryKeys = {
   schedulingSettings: {
     detail: () => ["scheduling-settings"] as const,
   },
+  onlineBookingSettings: {
+    detail: () => ["online-booking-settings"] as const,
+  },
+  calendarDisplaySettings: {
+    detail: () => ["calendar-display-settings"] as const,
+  },
   waitingRoomSettings: {
     detail: () => ["waiting-room-settings"] as const,
+  },
+  cancelRescheduleSettings: {
+    detail: () => ["cancel-reschedule-settings"] as const,
   },
   chatbots: {
     all: (apiBase = "chatbots") => ["chatbots", apiBase] as const,

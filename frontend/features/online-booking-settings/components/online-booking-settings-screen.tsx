@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Copy, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
@@ -19,7 +20,8 @@ import {
 } from "@/features/online-booking-settings/api/online-booking-settings.api";
 import { SettingsFormGrid } from "@/components/forms/settings-form-grid";
 import { AvoidGapsSettingsSection } from "@/features/online-booking-settings/components/avoid-gaps-settings-section";
-import { useCan } from "@/features/auth/permissions";
+import { invalidateOnlineBookingSettings } from "@/lib/query/invalidation";
+import { queryKeys } from "@/lib/query/keys";
 
 async function copyText(text: string, label: string) {
   try {
@@ -35,12 +37,11 @@ export function OnlineBookingSettingsScreen() {
   const queryClient = useQueryClient();
 
   const { data, isLoading } = useQuery({
-    queryKey: ["online-booking-settings"],
+    queryKey: queryKeys.onlineBookingSettings.detail(),
     queryFn: getOnlineBookingSettings,
   });
 
-  const invalidate = () =>
-    queryClient.invalidateQueries({ queryKey: ["online-booking-settings"] });
+  const invalidate = () => invalidateOnlineBookingSettings(queryClient);
 
   const setupMutation = useMutation({
     mutationFn: updateOnlineBookingSetup,
@@ -267,76 +268,23 @@ export function OnlineBookingSettingsScreen() {
                 </div>
               ))}
 
-              <div className="space-y-3 rounded-lg border border-border/70 p-4">
+              <div className="space-y-2 rounded-lg border border-border/70 p-4">
                 <div>
                   <p className="text-sm font-semibold text-foreground">
                     Express Booking
                   </p>
                   <p className="mt-1 text-xs text-muted-foreground">
                     Staff-started bookings completed by the client via a
-                    completion link. Expired pending requests cancel
-                    automatically, then soft-delete after 24 hours.
+                    completion link.
                   </p>
                 </div>
-                {(
-                  [
-                    ["expressBookingEnabled", "Enable Express Booking"],
-                    [
-                      "expressBookingAutoEnable",
-                      "Automatically enable for new appointments",
-                    ],
-                    ["expressRequireCard", "Require a credit card to complete"],
-                    [
-                      "expressRequireDeposit",
-                      "Require a payment or deposit to complete",
-                    ],
-                    [
-                      "expressAllowPhotoUpload",
-                      "Collect photos during Express Booking",
-                    ],
-                  ] as const
-                ).map(([key, label]) => (
-                  <div key={key} className="flex items-center justify-between">
-                    <Label>{label}</Label>
-                    <Switch
-                      checked={Boolean(data[key])}
-                      disabled={!canManage}
-                      onCheckedChange={(v) =>
-                        prefsMutation.mutate({ [key]: v })
-                      }
-                    />
-                  </div>
-                ))}
-                {data.expressBookingEnabled ? (
-                  <div className="space-y-4">
-                    <p className="text-xs text-muted-foreground">
-                      Delivery channel (email or SMS) is configured under
-                      Settings → Notifications.
-                    </p>
-                    <div className="space-y-2">
-                      <Label>Time limit (minutes)</Label>
-                      <Input
-                        type="number"
-                        min={5}
-                        max={1440}
-                        defaultValue={data.expressBookingTimeLimitMinutes}
-                        disabled={!canManage}
-                        onBlur={(e) =>
-                          prefsMutation.mutate({
-                            expressBookingTimeLimitMinutes: Number(
-                              e.target.value,
-                            ),
-                          })
-                        }
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        How long the client has to finish before the slot is
-                        released. Policy version:{" "}
-                        {data.cancellationPolicyVersion || "1"}
-                      </p>
-                    </div>
-                  </div>
-                ) : null}
+                <Link
+                  href="/business/settings/express-booking"
+                  className="inline-flex text-sm text-primary underline-offset-2 hover:underline"
+                >
+                  Configure Express Booking in Calendar &amp; Appointments →
+                  Express Booking
+                </Link>
               </div>
 
               {data.collectPhotosEnabled ? (
@@ -360,19 +308,16 @@ export function OnlineBookingSettingsScreen() {
               ) : null}
               <div className="space-y-2">
                 <Label>Cancellation policy</Label>
-                <Textarea
-                  defaultValue={String(form.cancellationPolicyText ?? "")}
-                  disabled={!canManage}
-                  onBlur={(e) =>
-                    prefsMutation.mutate({
-                      formSettings: {
-                        ...form,
-                        cancellationPolicyText: e.target.value,
-                        requirePolicyAgreement: Boolean(form.requirePolicyAgreement),
-                      },
-                    })
-                  }
-                />
+                <p className="text-sm text-muted-foreground">
+                  Edit the cancellation policy in{" "}
+                  <Link
+                    href="/business/settings/cancel-reschedule"
+                    className="text-primary underline-offset-2 hover:underline"
+                  >
+                    Cancel & Reschedule settings
+                  </Link>
+                  .
+                </p>
               </div>
               <div className="space-y-2">
                 <Label>Success message</Label>
