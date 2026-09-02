@@ -6,6 +6,7 @@ import {
   IsDateString,
   IsEnum,
   IsInt,
+  IsNumber,
   IsOptional,
   IsString,
   IsUUID,
@@ -63,6 +64,13 @@ export class CloseCheckoutDto {
   @ValidateNested({ each: true })
   @Type(() => CollectPaymentTenderDto)
   tenders!: CollectPaymentTenderDto[];
+
+  @ApiPropertyOptional({ example: 5.0 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
+  tipAmount?: number;
 }
 
 export class CloseCheckoutResponseDto {

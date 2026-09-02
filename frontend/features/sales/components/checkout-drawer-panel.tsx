@@ -13,7 +13,8 @@ import {
   useCheckoutPanel,
   type InlineAddMode,
 } from "@/features/sales/hooks/use-checkout-panel";
-import { formatMoney } from "@/features/payments/utils/currencies";
+import { getCheckoutCustomFeeLines } from "@/features/sales/utils/checkout-custom-fees";
+import { checkoutHasStaffRequirementGaps } from "@/features/sales/utils/checkout-staff-requirements";
 import {
   SALES_DRAWER_BODY_INSET_CLASS,
   SALES_DRAWER_CLIENT_AVATAR_CLASS,
@@ -100,8 +101,24 @@ export function CheckoutDrawerPanel({
 
   const checkout = panel.checkout;
   const contactName = contactHeader?.name ?? checkout.contact?.label ?? "Client";
+  const customFeeLines = getCheckoutCustomFeeLines(checkout.items);
+  const hasProductLines = checkout.items.some((item) => item.lineType === "PRODUCT");
+  const staffBlocked = checkoutHasStaffRequirementGaps(
+    checkout,
+    checkout.advancedSettings,
+  );
 
   if (step === "payment") {
+    if (staffBlocked) {
+      return (
+        <div className={SALES_DRAWER_BODY_INSET_CLASS}>
+          <p className="text-[13px] font-medium leading-relaxed text-destructive">
+            Assign staff to all required line items before collecting payment.
+          </p>
+        </div>
+      );
+    }
+
     return (
       <div className={SALES_DRAWER_BODY_INSET_CLASS}>
         <SaleClosePanel
@@ -109,6 +126,9 @@ export function CheckoutDrawerPanel({
           contactId={checkout.contactId}
           balanceDue={parseFloat(checkout.balanceDue)}
           subtotal={parseFloat(checkout.subtotal)}
+          customFeeLines={customFeeLines}
+          advancedSettings={checkout.advancedSettings}
+          hasProductLines={hasProductLines}
           embedInDrawer
           hideSubmitButton
           onSubmitActionChange={onSubmitActionChange}
@@ -183,10 +203,17 @@ export function CheckoutDrawerPanel({
                   }
                   servicePending={panel.addServiceMutation.isPending}
                   productItems={panel.productItems}
-                  onAddProduct={(productKey) =>
-                    panel.addProductMutation.mutate(productKey)
-                  }
+                  onAddProduct={panel.handleAddProduct}
                   productPending={panel.addProductMutation.isPending}
+                  pendingProductKey={panel.pendingProductKey}
+                  productStaffItems={panel.productStaffItems}
+                  productStaffId={panel.productStaffId}
+                  onProductStaffChange={panel.setProductStaffId}
+                  onConfirmPendingProduct={panel.confirmPendingProduct}
+                  onCancelPendingProduct={() => {
+                    panel.setPendingProductKey(null);
+                    panel.setProductStaffId(null);
+                  }}
                   offerItems={panel.offerItems}
                   selectedOfferId={panel.selectedOfferId}
                   onOfferChange={panel.setSelectedOfferId}

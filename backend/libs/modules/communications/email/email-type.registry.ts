@@ -476,7 +476,10 @@ export const EMAIL_TYPE_REGISTRY: Record<string, EmailTypeDefinition> = {
       <p>Hi {{contact.name}},</p>
       <p>Thank you — we received your payment for invoice <strong>{{invoice.number}}</strong>.</p>
       <p><strong>Amount paid:</strong> {{payment.amount}}</p>
+      {{payment.tip}}
       <p><strong>Date:</strong> {{payment.date}}</p>
+      {{receipt.providersBlock}}
+      {{receipt.footerBlock}}
     `),
     defaultTextBody:
       'Hi {{contact.name}},\n\nThank you — we received your payment for invoice {{invoice.number}}.\nAmount paid: {{payment.amount}}\nDate: {{payment.date}}',
@@ -488,6 +491,9 @@ export const EMAIL_TYPE_REGISTRY: Record<string, EmailTypeDefinition> = {
       'invoice.number',
       'payment.amount',
       'payment.date',
+      'payment.tip',
+      'receipt.providersBlock',
+      'receipt.footerBlock',
     ],
   },
   'gift_card.delivery': {

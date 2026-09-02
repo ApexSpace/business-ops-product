@@ -29,6 +29,8 @@ import { GiftCardOnlineCheckoutService } from '@app/modules/finance/gift-cards/s
 import { PackageOnlineCheckoutService } from '@app/modules/finance/packages/services/package-online-checkout.service';
 import { MembershipOnlineCheckoutService } from '@app/modules/finance/memberships/services/membership-online-checkout.service';
 import { MembershipWebhookService } from '@app/modules/finance/memberships/services/membership-webhook.service';
+import { CheckoutAdvancedSettingsService } from '@app/modules/finance/checkout-advanced-settings/services/checkout-advanced-settings.service';
+import { buildPaidReceiptEmailExtras } from '@app/modules/finance/checkout-advanced-settings/utils/paid-receipt-email.util';
 import { DateTime } from 'luxon';
 
 type CheckoutSessionObject = {
@@ -79,6 +81,7 @@ export class StripeInvoicePaymentService {
     private readonly membershipOnlineCheckoutService: MembershipOnlineCheckoutService,
     @Inject(forwardRef(() => MembershipWebhookService))
     private readonly membershipWebhookService: MembershipWebhookService,
+    private readonly checkoutAdvancedSettings: CheckoutAdvancedSettingsService,
   ) {}
 
   async handleSetupIntentSucceeded(event: StripeWebhookEvent): Promise<void> {
@@ -520,6 +523,13 @@ export class StripeInvoicePaymentService {
             phoneNumber: true,
           },
         },
+        items: {
+          include: {
+            staffUser: {
+              select: { firstName: true, lastName: true, email: true },
+            },
+          },
+        },
       },
     });
 
@@ -533,6 +543,30 @@ export class StripeInvoicePaymentService {
     }
 
     const business = await this.businessRepository.findById(params.businessId);
+    const advancedSettings = await this.checkoutAdvancedSettings.ensureRow(
+      params.businessId,
+    );
+    const receiptExtras = buildPaidReceiptEmailExtras(
+      advancedSettings,
+      (invoice.items ?? []).map((item) => ({
+        title: item.title,
+        staff: item.staffUser
+          ? {
+              label:
+                [item.staffUser.firstName, item.staffUser.lastName]
+                  .filter(Boolean)
+                  .join(' ')
+                  .trim() ||
+                item.staffUser.email ||
+                'Staff',
+            }
+          : null,
+      })),
+      (invoice.metadata as Record<string, unknown> | null) ?? null,
+    );
+    const tipLine = receiptExtras['payment.tip']
+      ? `<p><strong>Tip:</strong> ${receiptExtras['payment.tip']}</p>`
+      : '';
 
     await this.notificationDispatch.dispatch({
       businessId: params.businessId,
@@ -552,6 +586,8 @@ export class StripeInvoicePaymentService {
         'payment.date': DateTime.fromJSDate(params.paidAt).toFormat(
           'LLL d, yyyy',
         ),
+        'payment.tip': tipLine,
+        ...receiptExtras,
       },
     });
   }

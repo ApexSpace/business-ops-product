@@ -5,9 +5,9 @@ import type { Appointment } from "@/features/appointments/schemas/appointment-pr
 import type { Calendar } from "@/features/calendars/schemas/calendar-profile";
 import { CalendarCurrentTimeIndicator } from "@/features/appointments/components/calendar/calendar-current-time-indicator";
 import {
-  GRID_HEIGHT,
   TimeGridColumn,
   TimeGridGutter,
+  useTimeGridHeight,
 } from "@/features/appointments/components/calendar/time-grid-shared";
 import type { StaffMemberOption } from "@/features/appointments/components/calendar/staff-selector";
 import { useCalendarCurrentTimeTop } from "@/features/appointments/hooks/use-calendar-current-time";
@@ -103,6 +103,7 @@ export function StaffDayCalendarView({
   density = "desktop",
 }: StaffDayCalendarViewProps) {
   const isMobile = density === "mobile";
+  const gridHeight = useTimeGridHeight();
   const isToday = isTodayDateKey(dateKey, timezone);
   const currentTimeTop = useCalendarCurrentTimeTop(timezone, [dateKey]);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -228,7 +229,7 @@ export function StaffDayCalendarView({
           ) : (
             <div
               className="relative bg-white"
-              style={{ minHeight: GRID_HEIGHT }}
+              style={{ minHeight: gridHeight }}
             >
               {currentTimeTop !== null ? (
                 <CalendarCurrentTimeIndicator topPx={currentTimeTop} />
@@ -237,7 +238,7 @@ export function StaffDayCalendarView({
                 className="grid w-full bg-white"
                 style={{
                   gridTemplateColumns,
-                  minHeight: GRID_HEIGHT,
+                  minHeight: gridHeight,
                 }}
               >
                 <TimeGridGutter className={isMobile ? "w-[52px]" : undefined} />

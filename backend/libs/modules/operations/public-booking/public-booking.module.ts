@@ -22,10 +22,12 @@ import { BusinessAvailabilityService } from './services/business-availability.se
 import { PublicBookingContactService } from './services/public-booking-contact.service';
 import { PublicBookingCheckoutService } from './services/public-booking-checkout.service';
 import { WaitlistModule } from '@app/modules/operations/waitlist/waitlist.module';
+import { BusinessModule } from '@app/modules/platform/business/business.module';
 
 @Module({
   imports: [
     AuditModule,
+    BusinessModule,
     CalendarsModule,
     forwardRef(() => AppointmentsModule),
     ContactsModule,

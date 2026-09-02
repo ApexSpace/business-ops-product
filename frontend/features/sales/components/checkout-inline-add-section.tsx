@@ -52,6 +52,12 @@ export interface CheckoutInlineAddSectionProps {
   productItems: Array<{ value: string; label: string }>;
   onAddProduct: (productKey: string) => void;
   productPending: boolean;
+  pendingProductKey?: string | null;
+  productStaffItems?: Array<{ value: string; label: string }>;
+  productStaffId?: string | null;
+  onProductStaffChange?: (staffId: string | null) => void;
+  onConfirmPendingProduct?: () => void;
+  onCancelPendingProduct?: () => void;
   offerItems: Array<{ value: string; label: string }>;
   selectedOfferId: string | null;
   onOfferChange: (offerId: string | null) => void;
@@ -86,6 +92,12 @@ export function CheckoutInlineAddSection({
   productItems,
   onAddProduct,
   productPending,
+  pendingProductKey = null,
+  productStaffItems = [],
+  productStaffId = null,
+  onProductStaffChange,
+  onConfirmPendingProduct,
+  onCancelPendingProduct,
   offerItems,
   selectedOfferId,
   onOfferChange,
@@ -198,13 +210,46 @@ export function CheckoutInlineAddSection({
         ) : null}
 
         {mode === "product" ? (
-          <CheckoutItemPicker
-            key="product"
-            items={productItems}
-            placeholder="Search…"
-            pending={productPending}
-            onSelect={onAddProduct}
-          />
+          pendingProductKey ? (
+            <div className={DRAWER_FORM_STACK_CLASS}>
+              <p className="text-[13px] font-medium text-muted-foreground">
+                Select staff for this product
+              </p>
+              <SearchableSelect
+                items={productStaffItems}
+                value={productStaffId}
+                onValueChange={(value) => onProductStaffChange?.(value || null)}
+                placeholder="Select staff…"
+                triggerClassName={SALES_DRAWER_SELECT_TRIGGER_CLASS}
+              />
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => onCancelPendingProduct?.()}
+                >
+                  Back
+                </Button>
+                <Button
+                  type="button"
+                  variant="brand"
+                  className={DRAWER_PRIMARY_BUTTON_CLASS}
+                  disabled={!productStaffId || productPending}
+                  onClick={() => onConfirmPendingProduct?.()}
+                >
+                  Add product
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <CheckoutItemPicker
+              key="product"
+              items={productItems}
+              placeholder="Search…"
+              pending={productPending}
+              onSelect={onAddProduct}
+            />
+          )
         ) : null}
 
         {mode === "offer" ? (

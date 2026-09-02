@@ -16,6 +16,11 @@ import {
   SALES_DRAWER_SERVICE_PROVIDER_CLASS,
   SALES_DRAWER_SERVICE_TITLE_CLASS,
 } from "@/features/sales/styles/sales-drawer-tokens";
+import {
+  getCheckoutCustomFeeLines,
+  isSystemManagedCustomFeeItem,
+  merchandiseSubtotalFromCheckout,
+} from "@/features/sales/utils/checkout-custom-fees";
 import type { Checkout } from "@/features/sales/types/checkout";
 import { queryKeys } from "@/lib/query/keys";
 import { cn } from "@/lib/utils";
@@ -55,6 +60,23 @@ export function SaleClosedDrawerContent({
   });
 
   const payments = paymentsData?.items ?? [];
+  const customFeeLines = getCheckoutCustomFeeLines(sale.items);
+  const merchandiseItems = sale.items.filter(
+    (item) => !isSystemManagedCustomFeeItem(item),
+  );
+  const merchandiseSubtotal = merchandiseSubtotalFromCheckout(
+    sale.subtotal,
+    customFeeLines,
+  );
+  const tipRaw = sale.tipAmount ?? (sale as { metadata?: { tipAmount?: number } }).metadata?.tipAmount;
+  const tipAmount =
+    typeof tipRaw === "string"
+      ? parseFloat(tipRaw)
+      : typeof tipRaw === "number"
+        ? tipRaw
+        : 0;
+  const showProvider = sale.advancedSettings?.showServiceProviderOnReceipt ?? true;
+  const receiptFooter = sale.advancedSettings?.receiptCustomFooterText?.trim();
 
   return (
     <div className={cn(SALES_DRAWER_BODY_INSET_CLASS, className)}>
@@ -81,13 +103,13 @@ export function SaleClosedDrawerContent({
       </div>
 
       <ul className="space-y-4">
-        {sale.items.map((item) => (
+        {merchandiseItems.map((item) => (
           <li key={item.id} className={SALES_DRAWER_SERVICE_CARD_CLASS}>
             <p className={SALES_DRAWER_SERVICE_TITLE_CLASS}>{item.title}</p>
             <p className={SALES_DRAWER_SERVICE_PRICE_CLASS}>
               {money(item.totalPrice)}
             </p>
-            {item.staff?.label ? (
+            {showProvider && item.staff?.label ? (
               <p className={SALES_DRAWER_SERVICE_PROVIDER_CLASS}>
                 Provider: {item.staff.label}
               </p>
@@ -97,7 +119,10 @@ export function SaleClosedDrawerContent({
       </ul>
 
       <div className="space-y-3 border-t border-[#EEEAE6] pt-4">
-        <SummaryRow label="Subtotal" value={money(sale.subtotal)} />
+        <SummaryRow label="Subtotal" value={money(merchandiseSubtotal)} />
+        {customFeeLines.map((fee) => (
+          <SummaryRow key={fee.id} label={fee.name} value={money(fee.amount)} />
+        ))}
         {parseFloat(sale.discountAmount) > 0 ? (
           <SummaryRow
             label="Discount"
@@ -106,6 +131,9 @@ export function SaleClosedDrawerContent({
         ) : null}
         {parseFloat(sale.taxAmount) > 0 ? (
           <SummaryRow label="Tax" value={money(sale.taxAmount)} />
+        ) : null}
+        {tipAmount > 0 ? (
+          <SummaryRow label="Tip" value={money(tipAmount)} />
         ) : null}
         <SummaryRow
           label="Total"
@@ -140,6 +168,12 @@ export function SaleClosedDrawerContent({
           </ul>
         )}
       </div>
+
+      {receiptFooter ? (
+        <p className="border-t border-[#EEEAE6] pt-4 text-center text-[12px] text-muted-foreground">
+          {receiptFooter}
+        </p>
+      ) : null}
     </div>
   );
 }

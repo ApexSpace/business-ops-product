@@ -1,5 +1,5 @@
-import { OnlineBookingSettingsScreen } from "@/features/online-booking-settings/components/online-booking-settings-screen";
+import { SetupIntegrationSettingsScreen } from "@/features/online-booking-settings/components/setup-integration-settings";
 
-export default function OnlineBookingSettingsPage() {
-  return <OnlineBookingSettingsScreen />;
+export default function OnlineBookingSetupPage() {
+  return <SetupIntegrationSettingsScreen />;
 }

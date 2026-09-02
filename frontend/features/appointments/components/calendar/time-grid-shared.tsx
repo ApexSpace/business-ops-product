@@ -8,7 +8,7 @@ import type { Calendar } from "@/features/calendars/schemas/calendar-profile";
 import {
   CALENDAR_DAY_END_HOUR,
   CALENDAR_DAY_START_HOUR,
-  CALENDAR_SLOT_HEIGHT_PX,
+  CALENDAR_SLOT_MINUTES,
   getTimeGridHeight,
   getTimeSlotLabels,
   minutesToTimeLabel,
@@ -18,11 +18,10 @@ import {
 } from "@/features/calendars/utils/timezone";
 import { CALENDAR_GRID } from "@/features/calendars/utils/calendar-grid-styles";
 import { WorkingHoursOverlays } from "@/features/appointments/components/calendar/working-hours-overlays";
+import { useCalendarDisplayRuntime } from "@/features/calendar-display-settings/context/calendar-display-runtime-context";
 import type { BusinessHoursSlot } from "@/features/business-hours/types";
 import { defaultBusinessHoursSlots } from "@/features/business-hours/utils/default-business-hours";
 import { cn } from "@/lib/utils";
-
-const GRID_HEIGHT = getTimeGridHeight();
 
 interface TimeGridColumnProps {
   dateKey: string;
@@ -74,6 +73,13 @@ export function TimeGridColumn({
   bufferTimeEnabled = true,
   onSlotClick,
 }: TimeGridColumnProps) {
+  const { slotHeightPx } = useCalendarDisplayRuntime();
+  const gridHeight = getTimeGridHeight(
+    CALENDAR_DAY_START_HOUR,
+    CALENDAR_DAY_END_HOUR,
+    CALENDAR_SLOT_MINUTES,
+    slotHeightPx,
+  );
   const slotLabels = getTimeSlotLabels();
   const resolvedBusinessHours =
     businessHoursSlots?.length ? businessHoursSlots : defaultBusinessHoursSlots();
@@ -100,9 +106,9 @@ export function TimeGridColumn({
     const column = event.currentTarget;
     const rect = column.getBoundingClientRect();
     const y = event.clientY - rect.top;
-    if (y < 0 || y >= GRID_HEIGHT) return;
+    if (y < 0 || y >= gridHeight) return;
 
-    const slotIndex = Math.floor(y / CALENDAR_SLOT_HEIGHT_PX);
+    const slotIndex = Math.floor(y / slotHeightPx);
     const minutes = slotLabels[slotIndex];
     if (minutes === undefined) return;
 
@@ -115,7 +121,7 @@ export function TimeGridColumn({
         "relative min-w-0 cursor-pointer overflow-hidden bg-white",
         CALENDAR_GRID.column,
       )}
-      style={{ height: GRID_HEIGHT }}
+      style={{ height: gridHeight }}
       onClick={handleColumnClick}
       role="presentation"
     >
@@ -126,7 +132,7 @@ export function TimeGridColumn({
             "pointer-events-none w-full hover:bg-[#F6F1FE]/40",
             minutes % 60 === 45 ? CALENDAR_GRID.slotHour : CALENDAR_GRID.slot,
           )}
-          style={{ height: CALENDAR_SLOT_HEIGHT_PX }}
+          style={{ height: slotHeightPx }}
           aria-hidden
         />
       ))}
@@ -157,6 +163,7 @@ export function TimeGridColumn({
 }
 
 export function TimeGridGutter({ className }: { className?: string }) {
+  const { slotHeightPx } = useCalendarDisplayRuntime();
   const slotLabels = getTimeSlotLabels();
   return (
     <div className={cn(CALENDAR_GRID.timeGutter, "bg-white", className)}>
@@ -171,7 +178,7 @@ export function TimeGridGutter({ className }: { className?: string }) {
               // Hour separators only — no 15-min grid through the time labels
               isHourEnd ? CALENDAR_GRID.slotHour : "border-b border-transparent",
             )}
-            style={{ height: CALENDAR_SLOT_HEIGHT_PX }}
+            style={{ height: slotHeightPx }}
           >
             {isHourStart ? minutesToTimeLabel(minutes) : ""}
           </div>
@@ -181,4 +188,14 @@ export function TimeGridGutter({ className }: { className?: string }) {
   );
 }
 
-export { GRID_HEIGHT, CALENDAR_DAY_START_HOUR, CALENDAR_DAY_END_HOUR };
+export function useTimeGridHeight(): number {
+  const { slotHeightPx } = useCalendarDisplayRuntime();
+  return getTimeGridHeight(
+    CALENDAR_DAY_START_HOUR,
+    CALENDAR_DAY_END_HOUR,
+    CALENDAR_SLOT_MINUTES,
+    slotHeightPx,
+  );
+}
+
+export { CALENDAR_DAY_START_HOUR, CALENDAR_DAY_END_HOUR };

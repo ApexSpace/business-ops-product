@@ -15,8 +15,13 @@ import {
   Palette,
   Receipt,
   RotateCcw,
+  Settings2,
+  SlidersHorizontal,
   User,
+  Users,
+  Wrench,
   Zap,
+  CircleDollarSign,
 } from "lucide-react";
 import type { ShellNavItem, ShellNavSection } from "@/lib/types/shell-nav";
 import { canAccessSettingsHref } from "@/features/team/permissions/staff-permissions";
@@ -98,12 +103,32 @@ const calendarItems: BusinessSettingsNavItem[] = [
     href: "/business/settings/express-booking",
     icon: Zap,
   },
+  {
+    title: "Quick Tools",
+    href: "/business/settings/quick-tools",
+    icon: Wrench,
+  },
 ];
 
 const paymentsItems: BusinessSettingsNavItem[] = [
   {
+    title: "Payment Account",
+    href: "/business/settings/payment-account",
+    icon: CreditCard,
+  },
+  {
     title: "Financial Settings",
     href: "/business/settings/financial",
+    icon: Receipt,
+  },
+  {
+    title: "Custom Fees",
+    href: "/business/settings/custom-fees",
+    icon: CircleDollarSign,
+  },
+  {
+    title: "Advanced Settings",
+    href: "/business/settings/checkout-advanced",
     icon: Receipt,
   },
   {
@@ -115,9 +140,19 @@ const paymentsItems: BusinessSettingsNavItem[] = [
 
 const onlineBookingItems: BusinessSettingsNavItem[] = [
   {
-    title: "Online Booking",
+    title: "Setup & Integration",
     href: "/business/settings/online-booking",
-    icon: Globe,
+    icon: Settings2,
+  },
+  {
+    title: "Preferences",
+    href: "/business/settings/online-booking/preferences",
+    icon: SlidersHorizontal,
+  },
+  {
+    title: "Staff Selection",
+    href: "/business/settings/online-booking/staff-selection",
+    icon: Users,
   },
 ];
 

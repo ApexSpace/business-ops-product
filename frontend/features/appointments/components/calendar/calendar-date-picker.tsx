@@ -9,13 +9,18 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import type { CalendarViewMode } from "@/features/calendars/utils/calendar-dates";
+import type { WeekStartsOn } from "@/features/calendar-display-settings/api/calendar-display-settings.api";
+import {
+  daysFromWeekStart,
+  trailingDaysToWeekEnd,
+  weekdayLabelsForWeekStart,
+} from "@/features/calendar-display-settings/utils/calendar-display-runtime.util";
 import {
   isTodayDateKey,
   parseDateKeyInTimezone,
 } from "@/features/calendars/utils/timezone";
 import { cn } from "@/lib/utils";
 
-const WEEKDAY_LABELS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
 const DEFAULT_WEEK_JUMP_OPTIONS = [2, 3, 4, 5, 6, 7];
 
 interface CalendarDatePickerProps {
@@ -28,6 +33,7 @@ interface CalendarDatePickerProps {
   onToday: () => void;
   onJumpWeeks?: (weeks: number) => void;
   weekJumpOptions?: number[];
+  weekStartsOn?: WeekStartsOn;
   trigger: React.ReactElement;
 }
 
@@ -41,9 +47,14 @@ export function CalendarDatePicker({
   onToday,
   onJumpWeeks,
   weekJumpOptions = DEFAULT_WEEK_JUMP_OPTIONS,
+  weekStartsOn = "SUNDAY",
   trigger,
 }: CalendarDatePickerProps) {
   const [visibleMonthKey, setVisibleMonthKey] = useState(anchorDateKey);
+  const weekdayLabels = useMemo(
+    () => weekdayLabelsForWeekStart(weekStartsOn),
+    [weekStartsOn],
+  );
 
   useEffect(() => {
     if (open) {
@@ -59,11 +70,9 @@ export function CalendarDatePicker({
   const gridDays = useMemo(() => {
     const monthStart = monthDt;
     const monthEnd = monthDt.endOf("month");
-    const daysFromSunday =
-      monthStart.weekday === 7 ? 0 : monthStart.weekday;
-    const gridStart = monthStart.minus({ days: daysFromSunday });
-    const trailing =
-      monthEnd.weekday === 7 ? 6 : 6 - monthEnd.weekday;
+    const startOffset = daysFromWeekStart(monthStart.weekday, weekStartsOn);
+    const gridStart = monthStart.minus({ days: startOffset });
+    const trailing = trailingDaysToWeekEnd(monthEnd.weekday, weekStartsOn);
     const gridEnd = monthEnd.plus({ days: trailing });
     const days: string[] = [];
     let cursor = gridStart;
@@ -72,7 +81,7 @@ export function CalendarDatePicker({
       cursor = cursor.plus({ days: 1 });
     }
     return days;
-  }, [monthDt]);
+  }, [monthDt, weekStartsOn]);
 
   const handleSelect = (dateKey: string) => {
     onSelectDate(dateKey);
@@ -131,7 +140,7 @@ export function CalendarDatePicker({
         </div>
 
         <div className="mt-2 grid grid-cols-7 gap-0.5">
-          {WEEKDAY_LABELS.map((label) => (
+          {weekdayLabels.map((label) => (
             <div
               key={label}
               className="flex size-8 items-center justify-center text-[10px] font-medium text-muted-foreground"

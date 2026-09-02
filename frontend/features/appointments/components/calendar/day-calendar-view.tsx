@@ -6,9 +6,9 @@ import type { Calendar } from "@/features/calendars/schemas/calendar-profile";
 import { CalendarCurrentTimeIndicator } from "@/features/appointments/components/calendar/calendar-current-time-indicator";
 import { CalendarDayColumnHeader } from "@/features/appointments/components/calendar/calendar-day-column-header";
 import {
-  GRID_HEIGHT,
   TimeGridColumn,
   TimeGridGutter,
+  useTimeGridHeight,
 } from "@/features/appointments/components/calendar/time-grid-shared";
 import { useCalendarCurrentTimeTop } from "@/features/appointments/hooks/use-calendar-current-time";
 import { useScrollTimeGridToNow } from "@/features/appointments/hooks/use-scroll-time-grid-to-now";
@@ -51,6 +51,7 @@ export function DayCalendarView({
   onAppointmentClick,
   onSlotClick,
 }: DayCalendarViewProps) {
+  const gridHeight = useTimeGridHeight();
   const isToday = isTodayDateKey(dateKey, timezone);
   const dayNumber = parseDateKeyInTimezone(dateKey, timezone).day;
   const currentTimeTop = useCalendarCurrentTimeTop(timezone, [dateKey]);
@@ -87,13 +88,13 @@ export function DayCalendarView({
             <LoadingState variant="inline" label="Loading appointments…" />
           </div>
         ) : (
-          <div className="relative" style={{ minHeight: GRID_HEIGHT }}>
+          <div className="relative" style={{ minHeight: gridHeight }}>
             {currentTimeTop !== null ? (
               <CalendarCurrentTimeIndicator topPx={currentTimeTop} />
             ) : null}
             <div
               className="grid grid-cols-[80px_1fr]"
-              style={{ minHeight: GRID_HEIGHT }}
+              style={{ minHeight: gridHeight }}
             >
               <TimeGridGutter />
               <TimeGridColumn

@@ -42,6 +42,8 @@ export interface CollectPaymentInput {
   channel: PaymentChannel;
   stripeMode: StripeCollectionMode;
   actorUserId?: string;
+  /** Allows tender total up to amountDue + tipAmount (staff POS gratuity). */
+  tipAmount?: number;
 }
 
 export interface StripeTenderResult {

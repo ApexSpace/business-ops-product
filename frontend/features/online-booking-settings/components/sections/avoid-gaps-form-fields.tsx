@@ -22,21 +22,28 @@ const MIN_GAP_OPTIONS = [
   ...GAP_MINUTE_OPTIONS.filter((option) => option.value !== "none"),
 ];
 
-function toSelectValue(minutes: number | null | undefined): string {
+export function toAvoidGapsSelectValue(
+  minutes: number | null | undefined,
+): string {
   if (minutes === null || minutes === undefined) return "none";
   return String(minutes);
 }
 
-function fromSelectValue(value: string): number | null {
+export function fromAvoidGapsSelectValue(value: string): number | null {
   if (value === "none") return null;
   return Number(value);
 }
 
-type Props = {
-  data: OnlineBookingSettings;
-  disabled?: boolean;
-  onSave: (body: Record<string, unknown>) => void;
-};
+export type AvoidGapsDraft = Pick<
+  OnlineBookingSettings,
+  | "avoidGapsEnabled"
+  | "avoidGapsMaxGapMinutes"
+  | "avoidGapsMinGapMinutes"
+  | "avoidGapsTimeBlockMode"
+  | "avoidGapsEmptyDayMode"
+  | "avoidGapsMultiProviderMode"
+  | "allowMultipleServices"
+>;
 
 function RadioOption({
   id,
@@ -62,36 +69,47 @@ function RadioOption({
   );
 }
 
-export function AvoidGapsSettingsSection({ data, disabled, onSave }: Props) {
-  const maxGapValue = toSelectValue(data.avoidGapsMaxGapMinutes);
-  const minGapValue = toSelectValue(data.avoidGapsMinGapMinutes);
-  const showStrictNote = data.avoidGapsEnabled && maxGapValue === "0";
+type AvoidGapsFormFieldsProps = {
+  draft: AvoidGapsDraft;
+  disabled?: boolean;
+  onChange: (patch: Partial<AvoidGapsDraft>) => void;
+};
+
+export function AvoidGapsFormFields({
+  draft,
+  disabled,
+  onChange,
+}: AvoidGapsFormFieldsProps) {
+  const maxGapValue = toAvoidGapsSelectValue(draft.avoidGapsMaxGapMinutes);
+  const minGapValue = toAvoidGapsSelectValue(draft.avoidGapsMinGapMinutes);
+  const showStrictNote = draft.avoidGapsEnabled && maxGapValue === "0";
 
   return (
-    <div className="space-y-4 rounded-lg border p-4">
+    <div className="space-y-4">
       <div className="flex items-center justify-between gap-4">
         <div>
-          <Label>Avoid gaps between appointments</Label>
+          <Label htmlFor="avoid-gaps-enabled">Avoid gaps between appointments</Label>
           <p className="text-xs text-muted-foreground">
-            Restrict online booking times so the schedule stays tight.
+            When enabled, the system only offers times that prevent unwanted
+            gaps in service provider schedules.
           </p>
         </div>
         <Switch
-          checked={data.avoidGapsEnabled}
+          id="avoid-gaps-enabled"
+          checked={draft.avoidGapsEnabled}
           disabled={disabled}
           onCheckedChange={(enabled) =>
-            onSave({
+            onChange({
               avoidGapsEnabled: enabled,
-              ...(enabled && data.avoidGapsMaxGapMinutes == null
-                ? { avoidGapsMaxGapMinutes: 0,
-}
+              ...(enabled && draft.avoidGapsMaxGapMinutes == null
+                ? { avoidGapsMaxGapMinutes: 0 }
                 : {}),
             })
           }
         />
       </div>
 
-      {data.avoidGapsEnabled ? (
+      {draft.avoidGapsEnabled ? (
         <div className="space-y-4 border-t pt-4">
           <SettingsFormGrid>
             <div className="space-y-2">
@@ -102,7 +120,11 @@ export function AvoidGapsSettingsSection({ data, disabled, onSave }: Props) {
                 value={maxGapValue}
                 disabled={disabled}
                 onChange={(e) =>
-                  onSave({ avoidGapsMaxGapMinutes: fromSelectValue(e.target.value) })
+                  onChange({
+                    avoidGapsMaxGapMinutes: fromAvoidGapsSelectValue(
+                      e.target.value,
+                    ),
+                  })
                 }
               >
                 {GAP_MINUTE_OPTIONS.map((option) => (
@@ -120,7 +142,11 @@ export function AvoidGapsSettingsSection({ data, disabled, onSave }: Props) {
                 value={minGapValue}
                 disabled={disabled}
                 onChange={(e) =>
-                  onSave({ avoidGapsMinGapMinutes: fromSelectValue(e.target.value) })
+                  onChange({
+                    avoidGapsMinGapMinutes: fromAvoidGapsSelectValue(
+                      e.target.value,
+                    ),
+                  })
                 }
               >
                 {MIN_GAP_OPTIONS.map((option) => (
@@ -142,9 +168,11 @@ export function AvoidGapsSettingsSection({ data, disabled, onSave }: Props) {
           <div className="space-y-2">
             <Label>How should time blocks be treated?</Label>
             <RadioGroup
-              value={data.avoidGapsTimeBlockMode}
+              value={draft.avoidGapsTimeBlockMode}
               disabled={disabled}
-              onValueChange={(value) => onSave({ avoidGapsTimeBlockMode: value })}
+              onValueChange={(value) =>
+                onChange({ avoidGapsTimeBlockMode: value })
+              }
             >
               <RadioOption
                 id="time-block-ignore"
@@ -164,9 +192,11 @@ export function AvoidGapsSettingsSection({ data, disabled, onSave }: Props) {
           <div className="space-y-2">
             <Label>Days with no appointments at all</Label>
             <RadioGroup
-              value={data.avoidGapsEmptyDayMode}
+              value={draft.avoidGapsEmptyDayMode}
               disabled={disabled}
-              onValueChange={(value) => onSave({ avoidGapsEmptyDayMode: value })}
+              onValueChange={(value) =>
+                onChange({ avoidGapsEmptyDayMode: value })
+              }
             >
               <RadioOption
                 id="empty-day-all"
@@ -183,14 +213,14 @@ export function AvoidGapsSettingsSection({ data, disabled, onSave }: Props) {
             </RadioGroup>
           </div>
 
-          {data.allowMultipleServices ? (
+          {draft.allowMultipleServices ? (
             <div className="space-y-2">
               <Label>Multi-provider bookings</Label>
               <RadioGroup
-                value={data.avoidGapsMultiProviderMode}
+                value={draft.avoidGapsMultiProviderMode}
                 disabled={disabled}
                 onValueChange={(value) =>
-                  onSave({ avoidGapsMultiProviderMode: value })
+                  onChange({ avoidGapsMultiProviderMode: value })
                 }
               >
                 <RadioOption
@@ -212,4 +242,18 @@ export function AvoidGapsSettingsSection({ data, disabled, onSave }: Props) {
       ) : null}
     </div>
   );
+}
+
+export function pickAvoidGapsDraft(
+  settings: OnlineBookingSettings,
+): AvoidGapsDraft {
+  return {
+    avoidGapsEnabled: settings.avoidGapsEnabled,
+    avoidGapsMaxGapMinutes: settings.avoidGapsMaxGapMinutes,
+    avoidGapsMinGapMinutes: settings.avoidGapsMinGapMinutes,
+    avoidGapsTimeBlockMode: settings.avoidGapsTimeBlockMode,
+    avoidGapsEmptyDayMode: settings.avoidGapsEmptyDayMode,
+    avoidGapsMultiProviderMode: settings.avoidGapsMultiProviderMode,
+    allowMultipleServices: settings.allowMultipleServices,
+  };
 }

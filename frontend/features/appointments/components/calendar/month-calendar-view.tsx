@@ -10,6 +10,8 @@ import {
   parseDateKeyInTimezone,
 } from "@/features/calendars/utils/timezone";
 import { CALENDAR_GRID } from "@/features/calendars/utils/calendar-grid-styles";
+import { useCalendarDisplayRuntime } from "@/features/calendar-display-settings/context/calendar-display-runtime-context";
+import { monthWeekdayLabelsForWeekStart } from "@/features/calendar-display-settings/utils/calendar-display-runtime.util";
 import { LoadingState } from "@/components/data-display/loading-state";
 import { cn } from "@/lib/utils";
 
@@ -36,14 +38,19 @@ export function MonthCalendarView({
   onAppointmentClick,
   onDayClick,
 }: MonthCalendarViewProps) {
-  const gridDateKeys = getMonthGridDateKeysInTimezone(anchorDateKey, timezone);
+  const { weekStartsOn } = useCalendarDisplayRuntime();
+  const gridDateKeys = getMonthGridDateKeysInTimezone(
+    anchorDateKey,
+    timezone,
+    weekStartsOn,
+  );
   const anchorMonth = parseDateKeyInTimezone(anchorDateKey, timezone).month;
   const byDay = groupAppointmentsByCalendarTimezone(
     appointments,
     calendars,
     businessTimezone,
   );
-  const weekdays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const weekdays = monthWeekdayLabelsForWeekStart(weekStartsOn);
 
   return (
     <div

@@ -1,5 +1,6 @@
 import { InvoiceStatus } from '@prisma/client';
 import { resolveContactLabel } from '@app/modules/crm/contacts/mappers/contact.mapper';
+import { CheckoutAdvancedSettingsResponseDto } from '@app/modules/finance/checkout-advanced-settings/dto/checkout-advanced-settings.dto';
 import {
   CheckoutItemResponseDto,
   CheckoutResponseDto,
@@ -48,14 +49,35 @@ export function toCheckoutItemResponse(
     totalPrice: item.totalPrice.toString(),
     sortOrder: item.sortOrder,
     staff: item.staffUser && label ? { id: item.staffUser.id, label } : null,
+    metadata:
+      item.metadata &&
+      typeof item.metadata === 'object' &&
+      !Array.isArray(item.metadata)
+        ? (item.metadata as Record<string, unknown>)
+        : null,
   };
 }
 
 export function toCheckoutResponse(
   checkout: CheckoutWithRelations,
+  advancedSettings?: CheckoutAdvancedSettingsResponseDto,
 ): CheckoutResponseDto {
   const displaySequence = checkout.displaySequence ?? 0;
   const offerMeta = checkoutOffersParser.parseMetadata(checkout.metadata);
+  const checkoutMeta =
+    checkout.metadata &&
+    typeof checkout.metadata === 'object' &&
+    !Array.isArray(checkout.metadata)
+      ? (checkout.metadata as Record<string, unknown>)
+      : {};
+  const tipRaw = checkoutMeta.tipAmount;
+  const tipAmount =
+    typeof tipRaw === 'number'
+      ? tipRaw.toFixed(2)
+      : typeof tipRaw === 'string'
+        ? tipRaw
+        : undefined;
+
   return {
     id: checkout.id,
     contactId: checkout.contactId,
@@ -87,5 +109,7 @@ export function toCheckoutResponse(
       offerName: offer.offerName,
       totalDiscount: offer.totalDiscount.toFixed(2),
     })),
+    tipAmount,
+    advancedSettings,
   };
 }

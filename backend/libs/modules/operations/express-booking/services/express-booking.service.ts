@@ -482,7 +482,10 @@ export class ExpressBookingService {
     );
     const flags = this.resolveExpressPaymentFlags(appointment, settings);
     const deposit = flags.paymentRequired
-      ? this.resolveExpressDepositAmount(settings, service?.price ?? 0)
+      ? this.resolveExpressDepositAmount(
+          settings,
+          service?.price != null ? Number(service.price) : 0,
+        )
       : null;
     const staff = await this.listEligibleStaff(appointment);
 
@@ -623,7 +626,7 @@ export class ExpressBookingService {
       const contactId = await resolveContactId();
       const deposit = this.resolveExpressDepositAmount(
         settings,
-        service?.price ?? 0,
+        service?.price != null ? Number(service.price) : 0,
       );
       const amountDue = deposit.chargeAmount.toString();
       const currency = this.readBusinessCurrency(business?.settings);
@@ -839,7 +842,7 @@ export class ExpressBookingService {
       );
       const deposit = this.resolveExpressDepositAmount(
         settings,
-        service?.price ?? 0,
+        service?.price != null ? Number(service.price) : 0,
       );
       const currency = this.readBusinessCurrency(
         (

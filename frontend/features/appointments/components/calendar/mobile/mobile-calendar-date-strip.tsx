@@ -3,8 +3,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { NavArrowIcon } from "@/components/ui/nav-arrow-icon";
 import type { CalendarViewMode } from "@/features/calendars/utils/calendar-dates";
+import type { WeekStartsOn } from "@/features/calendar-display-settings/api/calendar-display-settings.api";
+import { getMobileWeekDateKeys } from "@/features/calendar-display-settings/utils/calendar-display-runtime.util";
 import {
   formatShortWeekdayForDateKey,
+  getWeekDateKeysInTimezone,
   navigateDateKeyInTimezone,
   parseDateKeyInTimezone,
 } from "@/features/calendars/utils/timezone";
@@ -25,6 +28,7 @@ interface MobileCalendarDateStripProps {
   onPrevious: () => void;
   onNext: () => void;
   className?: string;
+  weekStartsOn?: WeekStartsOn;
 }
 
 export function buildStripDateKeysFromStart(
@@ -76,16 +80,23 @@ export function resolveStripStartKeyForAnchor(
   return anchor.minus({ days: dayCount - 1 }).toFormat("yyyy-MM-dd");
 }
 
-function weekRangeKeys(anchorDateKey: string, timezone: string): Set<string> {
-  const anchor = parseDateKeyInTimezone(anchorDateKey, timezone);
-  // Sunday-start week → Mon–Wed = indexes 1..3 (Figma mobile week)
-  const sundayOffset = anchor.weekday === 7 ? 0 : anchor.weekday;
-  const weekStart = anchor.minus({ days: sundayOffset });
-  const keys = new Set<string>();
-  for (let i = 1; i <= MOBILE_CAL_WEEK_VISIBLE_DAYS; i += 1) {
-    keys.add(weekStart.plus({ days: i }).toFormat("yyyy-MM-dd"));
-  }
-  return keys;
+function weekRangeKeys(
+  anchorDateKey: string,
+  timezone: string,
+  weekStartsOn: WeekStartsOn,
+): Set<string> {
+  const allWeekKeys = getWeekDateKeysInTimezone(
+    anchorDateKey,
+    timezone,
+    weekStartsOn,
+  );
+  return new Set(
+    getMobileWeekDateKeys(
+      allWeekKeys,
+      weekStartsOn,
+      MOBILE_CAL_WEEK_VISIBLE_DAYS,
+    ),
+  );
 }
 
 export function MobileCalendarDateStrip({
@@ -96,6 +107,7 @@ export function MobileCalendarDateStrip({
   onPrevious,
   onNext,
   className,
+  weekStartsOn = "SUNDAY",
 }: MobileCalendarDateStripProps) {
   const [stripStartKey, setStripStartKey] = useState(() =>
     initialMobileStripStartKey(anchorDateKey, timezone),
@@ -113,8 +125,10 @@ export function MobileCalendarDateStrip({
   );
   const weekSelected = useMemo(
     () =>
-      view === "week" ? weekRangeKeys(anchorDateKey, timezone) : null,
-    [anchorDateKey, timezone, view],
+      view === "week"
+        ? weekRangeKeys(anchorDateKey, timezone, weekStartsOn)
+        : null,
+    [anchorDateKey, timezone, view, weekStartsOn],
   );
 
   return (

@@ -50,10 +50,13 @@ import {
   CheckoutRepository,
   CheckoutWithRelations,
 } from '../repositories/checkout.repository';
-import { calculateInvoiceTotals } from '../utils/invoice-calculations.util';
 import { CheckoutCompletionService } from './checkout-completion.service';
 import { CheckoutOffersService } from './checkout-offers.service';
 import { OfferRepository } from '@app/modules/finance/offers/repositories/offer.repository';
+import { CustomFeeEvaluationService } from '@app/modules/finance/custom-fees/services/custom-fee-evaluation.service';
+import { CustomFeeApplicationScope } from '@prisma/client';
+import { CheckoutAdvancedSettingsService } from '@app/modules/finance/checkout-advanced-settings/services/checkout-advanced-settings.service';
+import { CheckoutAdvancedSettingsResponseDto } from '@app/modules/finance/checkout-advanced-settings/dto/checkout-advanced-settings.dto';
 
 @Injectable()
 export class CheckoutsService {
@@ -74,7 +77,31 @@ export class CheckoutsService {
     private readonly auditService: AuditService,
     private readonly checkoutOffersService: CheckoutOffersService,
     private readonly offerRepository: OfferRepository,
+    private readonly customFeeEvaluation: CustomFeeEvaluationService,
+    private readonly checkoutAdvancedSettings: CheckoutAdvancedSettingsService,
   ) {}
+
+  private async mapCheckoutResponse(
+    businessId: string,
+    checkout: CheckoutWithRelations,
+    cachedSettings?: CheckoutAdvancedSettingsResponseDto,
+  ): Promise<CheckoutResponseDto> {
+    const advancedSettings =
+      cachedSettings ??
+      (await this.checkoutAdvancedSettings.getForCheckout(businessId));
+    return toCheckoutResponse(checkout, advancedSettings);
+  }
+
+  private mergeCheckoutMetadata(
+    existing: Prisma.JsonValue | null,
+    patch: Record<string, unknown>,
+  ): Prisma.InputJsonValue {
+    const base =
+      existing && typeof existing === 'object' && !Array.isArray(existing)
+        ? { ...(existing as Record<string, unknown>) }
+        : {};
+    return { ...base, ...patch } as Prisma.InputJsonValue;
+  }
 
   async list(
     businessId: string,
@@ -101,8 +128,10 @@ export class CheckoutsService {
           : user.id,
       },
     );
+    const advancedSettings =
+      await this.checkoutAdvancedSettings.getForCheckout(businessId);
     return {
-      items: items.map(toCheckoutResponse),
+      items: items.map((item) => toCheckoutResponse(item, advancedSettings)),
       meta: { total, page, limit },
     };
   }
@@ -127,7 +156,7 @@ export class CheckoutsService {
       checkout = await this.requireOpenOrClosedCheckout(businessId, id);
     }
     SalesStaffAccess.assertCanViewCheckout(user, checkout);
-    return toCheckoutResponse(checkout);
+    return this.mapCheckoutResponse(businessId, checkout);
   }
 
   async create(
@@ -168,7 +197,11 @@ export class CheckoutsService {
     const items = dto.items?.length
       ? await this.mapItemInputs(businessId, dto.items)
       : [];
-    const totals = await this.computeTotals(businessId, items, 0, 0);
+    const merged = await this.customFeeEvaluation.mergeEntireSaleFeeItems(
+      businessId,
+      items,
+    );
+    const totals = await this.computeTotals(businessId, merged.items, 0, 0);
     const { invoiceNumber, displaySequence } =
       await this.financialSettingsService.allocateCheckoutNumber(businessId);
 
@@ -182,7 +215,7 @@ export class CheckoutsService {
         issueDate: new Date(),
         notes: dto.notes?.trim() || null,
         ...totals,
-        items,
+        items: merged.items,
       },
       actor.id,
     );
@@ -195,7 +228,7 @@ export class CheckoutsService {
       entityId: checkout.id,
     });
 
-    return toCheckoutResponse(checkout);
+    return this.mapCheckoutResponse(businessId, checkout);
   }
 
   async update(
@@ -209,16 +242,24 @@ export class CheckoutsService {
       await this.assertContact(businessId, dto.contactId);
     }
 
-    const mappedItems = dto.items
+    const baseItems = dto.items
       ? await this.mapItemInputs(businessId, dto.items)
       : existing.items.map((item, index) => ({
           ...this.mapExistingCheckoutItem(item),
           sortOrder: index,
         }));
 
-    if (dto.items) {
-      await this.checkoutRepository.replaceItems(id, mappedItems);
-    }
+    const merchandiseItems = baseItems.filter((item) => {
+      const scope = (item.metadata as Record<string, unknown> | undefined)
+        ?.customFeeScope;
+      return scope !== CustomFeeApplicationScope.PAYMENT_METHOD;
+    });
+    const merged = await this.customFeeEvaluation.mergeEntireSaleFeeItems(
+      businessId,
+      merchandiseItems,
+    );
+
+    await this.checkoutRepository.replaceItems(id, merged.items);
 
     const taxAmount =
       dto.taxAmount !== undefined
@@ -231,7 +272,7 @@ export class CheckoutsService {
 
     const totals = await this.computeTotals(
       businessId,
-      mappedItems,
+      merged.items,
       taxAmount,
       discountAmount,
     );
@@ -255,7 +296,7 @@ export class CheckoutsService {
       );
     }
 
-    return toCheckoutResponse(updated);
+    return this.mapCheckoutResponse(businessId, updated);
   }
 
   async addService(
@@ -314,6 +355,15 @@ export class CheckoutsService {
         businessId,
         checkout.contactId,
         unitPrice,
+      );
+    }
+
+    const advSettings = await this.checkoutAdvancedSettings.ensureRow(businessId);
+    if (advSettings.requireStaffForServices && !dto.staffUserId) {
+      throw new AppException(
+        ErrorCode.BAD_REQUEST,
+        'staffUserId is required for service lines',
+        HttpStatus.BAD_REQUEST,
       );
     }
 
@@ -396,7 +446,11 @@ export class CheckoutsService {
       );
     }
 
-    if (product.assignStaffToSale && !dto.staffUserId) {
+    const advSettings = await this.checkoutAdvancedSettings.ensureRow(businessId);
+    if (
+      (product.assignStaffToSale || advSettings.requireStaffForProducts) &&
+      !dto.staffUserId
+    ) {
       throw new AppException(
         ErrorCode.BAD_REQUEST,
         'staffUserId is required for this product',
@@ -542,6 +596,15 @@ export class CheckoutsService {
       );
     }
 
+    const advSettings = await this.checkoutAdvancedSettings.ensureRow(businessId);
+    if (advSettings.requireStaffForGiftCards && !dto.staffUserId) {
+      throw new AppException(
+        ErrorCode.BAD_REQUEST,
+        'staffUserId is required for gift card lines',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
     const amount = new Prisma.Decimal(dto.amount.toFixed(2));
     const numberLabel = dto.number?.trim() || 'Auto';
     const newItem: CheckoutItemInput = {
@@ -551,6 +614,7 @@ export class CheckoutsService {
       unitPrice: amount,
       totalPrice: amount,
       sortOrder: checkout.items.length,
+      staffUserId: dto.staffUserId ?? null,
       metadata: {
         giftCardNumber: dto.number?.trim() || null,
         cardValue: dto.amount,
@@ -611,6 +675,15 @@ export class CheckoutsService {
       );
     }
 
+    const advSettings = await this.checkoutAdvancedSettings.ensureRow(businessId);
+    if (advSettings.requireStaffForPackages && !dto.staffUserId) {
+      throw new AppException(
+        ErrorCode.BAD_REQUEST,
+        'staffUserId is required for package lines',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
     const amount = template.totalPrice;
     const emoji = template.emoji ? `${template.emoji} ` : '';
     const newItem: CheckoutItemInput = {
@@ -620,6 +693,7 @@ export class CheckoutsService {
       unitPrice: amount,
       totalPrice: amount,
       sortOrder: checkout.items.length,
+      staffUserId: dto.staffUserId ?? null,
       metadata: {
         packageTemplateId: dto.packageTemplateId,
         ownerContactId: dto.ownerContactId,
@@ -654,7 +728,7 @@ export class CheckoutsService {
       entityType: 'Invoice',
       entityId: checkout.id,
     });
-    return toCheckoutResponse(updated!);
+    return this.mapCheckoutResponse(businessId, updated!);
   }
 
   async close(
@@ -689,7 +763,7 @@ export class CheckoutsService {
       });
       const refreshed = await this.checkoutRepository.findById(businessId, id);
       return {
-        checkout: toCheckoutResponse(refreshed!),
+        checkout: await this.mapCheckoutResponse(businessId, refreshed!),
         completed: true,
         paymentIds: [],
         stripeTenders: [],
@@ -704,11 +778,114 @@ export class CheckoutsService {
       );
     }
 
+    const tipAmount = dto.tipAmount ?? 0;
+    if (tipAmount < 0) {
+      throw new AppException(
+        ErrorCode.BAD_REQUEST,
+        'Tip amount cannot be negative',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const advancedSettingsRow =
+      await this.checkoutAdvancedSettings.ensureRow(businessId);
+    const productIds = [
+      ...new Set(
+        checkout.items
+          .map((item) => item.productId)
+          .filter((id): id is string => Boolean(id)),
+      ),
+    ];
+    const productAssignMap: Record<string, boolean> = {};
+    if (productIds.length > 0) {
+      const products = await this.prisma.product.findMany({
+        where: { businessId, id: { in: productIds }, deletedAt: null },
+        select: { id: true, assignStaffToSale: true },
+      });
+      for (const product of products) {
+        productAssignMap[product.id] = product.assignStaffToSale;
+      }
+    }
+    this.checkoutAdvancedSettings.assertStaffRequirements(
+      advancedSettingsRow,
+      checkout,
+      productAssignMap,
+    );
+
+    for (const tender of dto.tenders) {
+      this.checkoutAdvancedSettings.assertPaymentMethodAllowed(
+        advancedSettingsRow,
+        tender.method,
+        tender.reference,
+      );
+    }
+
+    const refreshedForFees = await this.applyPaymentMethodFeesBeforeClose(
+      businessId,
+      checkout.id,
+      dto.tenders,
+    );
+
+    const checkoutAfterFees = await this.checkoutRepository.findById(
+      businessId,
+      id,
+    );
+    if (!checkoutAfterFees) {
+      throw new AppException(
+        ErrorCode.INVOICE_NOT_FOUND,
+        'Checkout not found',
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    const due = checkoutAfterFees.balanceDue;
+    const tipDecimal = new Prisma.Decimal(tipAmount.toFixed(2));
+    const expectedMin = due.add(tipDecimal);
+    const tenderSum = dto.tenders.reduce(
+      (sum, tender) => sum.add(new Prisma.Decimal(tender.amount.toFixed(2))),
+      new Prisma.Decimal(0),
+    );
+
+    if (tenderSum.lessThan(due)) {
+      throw new AppException(
+        ErrorCode.BAD_REQUEST,
+        'Payment amount is less than balance due',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    if (tenderSum.add(new Prisma.Decimal('0.01')).lessThan(expectedMin)) {
+      throw new AppException(
+        ErrorCode.BAD_REQUEST,
+        'Payment amount must cover balance due plus tip',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    await this.checkoutRepository.update(businessId, id, {
+      metadata: this.mergeCheckoutMetadata(checkoutAfterFees.metadata, {
+        tipAmount: Number(tipDecimal.toFixed(2)),
+      }),
+    });
+
+    const adjustedTenders = dto.tenders.map((tender) => {
+      const surcharge = refreshedForFees.surchargeByMethod.get(tender.method);
+      if (!surcharge || surcharge.lte(0)) {
+        return tender;
+      }
+      return {
+        ...tender,
+        amount: Number(
+          new Prisma.Decimal(tender.amount).add(surcharge).toFixed(2),
+        ),
+      };
+    });
+
     const result = await this.paymentOrchestrator.collectPayment({
       businessId,
       payableType: PayableType.INVOICE,
       payableId: checkout.id,
-      tenders: dto.tenders.map((t) => ({
+      tenders: adjustedTenders.map((t) => ({
         method: t.method,
         amount: t.amount,
         reference: t.reference,
@@ -719,6 +896,7 @@ export class CheckoutsService {
       channel: 'STAFF_POS',
       stripeMode: 'EMBEDDED',
       actorUserId: actor.id,
+      tipAmount,
     });
 
     await this.checkoutCompletion.finalizeCheckoutIfPaid(
@@ -739,7 +917,7 @@ export class CheckoutsService {
 
     const refreshed = await this.checkoutRepository.findById(businessId, id);
     return {
-      checkout: toCheckoutResponse(refreshed!),
+      checkout: await this.mapCheckoutResponse(businessId, refreshed!),
       completed: result.completed,
       paymentIds: result.paymentIds,
       stripeTenders: result.stripeTenders,
@@ -1005,6 +1183,12 @@ export class CheckoutsService {
       this.mapExistingCheckoutItem(item),
     );
 
+    const merged = await this.customFeeEvaluation.mergeEntireSaleFeeItems(
+      businessId,
+      mappedItems,
+    );
+    await this.checkoutRepository.replaceItems(checkoutId, merged.items);
+
     const offerResult = await this.checkoutOffersService.evaluateForCheckout(
       businessId,
       checkout,
@@ -1012,7 +1196,7 @@ export class CheckoutsService {
 
     const totals = await this.computeTotals(
       businessId,
-      mappedItems,
+      merged.items,
       Number(checkout.taxAmount.toString()),
       offerResult.totalOfferDiscount,
     );
@@ -1058,7 +1242,7 @@ export class CheckoutsService {
       businessId,
       checkoutId,
     );
-    return toCheckoutResponse(refreshed!);
+    return this.mapCheckoutResponse(businessId, refreshed!);
   }
 
   private async computeTotals(
@@ -1067,37 +1251,117 @@ export class CheckoutsService {
     taxAmountInput: number,
     discountAmountInput: number,
   ) {
+    const { merchandiseItems, manualCustomItems, systemFeeItems } =
+      this.customFeeEvaluation.splitCheckoutItems(items);
+    const merchandiseSubtotal = this.customFeeEvaluation
+      .sumItemTotals(merchandiseItems)
+      .add(this.customFeeEvaluation.sumItemTotals(manualCustomItems));
+    const feeSubtotal = this.customFeeEvaluation.sumItemTotals(systemFeeItems);
+
     const financialSettings =
       await this.financialSettingsService.getSettingsForBusiness(businessId);
-    const subtotalPreview = items.reduce(
-      (sum, item) => sum + Number(item.totalPrice.toString()),
-      0,
-    );
     const taxAmount =
       taxAmountInput ||
       computeDefaultTaxAmount(
-        subtotalPreview,
+        Number(merchandiseSubtotal.toString()),
         financialSettings.taxesAndCurrency.defaultTaxRate,
         financialSettings.taxesAndCurrency.pricesIncludeTax,
       );
     const discountAmount = discountAmountInput;
-    const totals = calculateInvoiceTotals({
-      items: items.map((i) => ({
-        quantity: Number(i.quantity.toString()),
-        unitPrice: Number(i.unitPrice.toString()),
-      })),
-      taxAmount,
-      discountAmount,
-    });
+    const subtotal = merchandiseSubtotal.add(feeSubtotal);
+    const totalAmount = subtotal
+      .add(new Prisma.Decimal(taxAmount))
+      .sub(new Prisma.Decimal(discountAmount));
 
     return {
-      subtotal: new Prisma.Decimal(totals.subtotal.toFixed(2)),
-      taxAmount: new Prisma.Decimal(totals.taxAmount.toFixed(2)),
-      discountAmount: new Prisma.Decimal(totals.discountAmount.toFixed(2)),
-      totalAmount: new Prisma.Decimal(totals.totalAmount.toFixed(2)),
-      balanceDue: new Prisma.Decimal(totals.totalAmount.toFixed(2)),
+      subtotal: new Prisma.Decimal(subtotal.toFixed(2)),
+      taxAmount: new Prisma.Decimal(Number(taxAmount).toFixed(2)),
+      discountAmount: new Prisma.Decimal(Number(discountAmount).toFixed(2)),
+      totalAmount: totalAmount.lessThan(0)
+        ? new Prisma.Decimal(0)
+        : new Prisma.Decimal(totalAmount.toFixed(2)),
+      balanceDue: totalAmount.lessThan(0)
+        ? new Prisma.Decimal(0)
+        : new Prisma.Decimal(totalAmount.toFixed(2)),
       items,
     };
+  }
+
+  private async applyPaymentMethodFeesBeforeClose(
+    businessId: string,
+    checkoutId: string,
+    tenders: CloseCheckoutDto['tenders'],
+  ) {
+    const checkout = await this.checkoutRepository.findById(
+      businessId,
+      checkoutId,
+    );
+    if (!checkout) {
+      throw new AppException(
+        ErrorCode.INVOICE_NOT_FOUND,
+        'Checkout not found',
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    const mappedItems = checkout.items.map((item) =>
+      this.mapExistingCheckoutItem(item),
+    );
+    const merged = await this.customFeeEvaluation.mergeEntireSaleFeeItems(
+      businessId,
+      mappedItems.filter((item) => {
+        const scope = (item.metadata as Record<string, unknown> | undefined)
+          ?.customFeeScope;
+        return scope !== CustomFeeApplicationScope.PAYMENT_METHOD;
+      }),
+    );
+
+    const { items: paymentMethodFeeItems, surchargeByMethod } =
+      await this.customFeeEvaluation.buildPaymentMethodFeeItems(
+        businessId,
+        tenders.map((tender) => ({
+          method: tender.method,
+          amount: tender.amount,
+        })),
+        merged.items.length,
+      );
+
+    const allItems = [...merged.items, ...paymentMethodFeeItems];
+    await this.checkoutRepository.replaceItems(checkoutId, allItems);
+
+    const offerResult = await this.checkoutOffersService.evaluateForCheckout(
+      businessId,
+      checkout,
+    );
+    const totals = await this.computeTotals(
+      businessId,
+      allItems,
+      Number(checkout.taxAmount.toString()),
+      offerResult.totalOfferDiscount,
+    );
+
+    const paymentFields = await loadInvoicePaymentFields(
+      this.prisma,
+      businessId,
+      checkoutId,
+      totals.totalAmount,
+      checkout.status,
+      { closedAt: checkout.closedAt, kind: checkout.kind },
+    );
+
+    await this.checkoutRepository.update(businessId, checkoutId, {
+      subtotal: totals.subtotal,
+      taxAmount: totals.taxAmount,
+      discountAmount: totals.discountAmount,
+      totalAmount: totals.totalAmount,
+      balanceDue: paymentFields.balanceDue,
+      remainingAmount: paymentFields.remainingAmount,
+      paidAmount: paymentFields.paidAmount,
+      paymentStatus: paymentFields.paymentStatus,
+      metadata: offerResult.metadata,
+    });
+
+    return { surchargeByMethod };
   }
 
   private async mapItemInputs(

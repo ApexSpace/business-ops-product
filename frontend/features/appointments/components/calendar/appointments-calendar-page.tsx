@@ -19,6 +19,7 @@ import { ListPageSkeleton } from "@/components/layout/list-page";
 import { useAppointmentsCreateAction } from "@/features/appointments/hooks/use-appointments-create-action";
 import { useAppointmentCalendarDrag } from "@/features/appointments/hooks/use-appointment-calendar-drag";
 import { useAppointmentsCalendarPage } from "@/features/appointments/hooks/use-appointments-calendar-page";
+import { CalendarDisplayRuntimeProvider } from "@/features/calendar-display-settings/context/calendar-display-runtime-context";
 import { getAppointment } from "@/features/appointments/api/appointments.api";
 import { WaitlistPanel } from "@/features/waitlist/components/waitlist-panel";
 import { WaitlistToolbarButton } from "@/features/waitlist/components/waitlist-toolbar-button";
@@ -68,6 +69,23 @@ const BARE_VIEW_CLASS = "rounded-none shadow-none";
 
 function AppointmentsCalendarPageContent() {
   const cal = useAppointmentsCalendarPage();
+
+  return (
+    <CalendarDisplayRuntimeProvider
+      weekStartsOn={cal.weekStartsOn}
+      zoomLevel={cal.displaySettings?.zoomLevel ?? "MEDIUM"}
+      highContrastEnabled={cal.displaySettings?.highContrastEnabled ?? false}
+    >
+      <AppointmentsCalendarPageBody cal={cal} />
+    </CalendarDisplayRuntimeProvider>
+  );
+}
+
+function AppointmentsCalendarPageBody({
+  cal,
+}: {
+  cal: ReturnType<typeof useAppointmentsCalendarPage>;
+}) {
   const isMobile = useIsMobile();
   const [waitlistOpen, setWaitlistOpen] = useState(false);
   const drag = useAppointmentCalendarDrag({
@@ -127,6 +145,7 @@ function AppointmentsCalendarPageContent() {
             }
             onCreate={openCreateFromHeader}
             canCreate={cal.calendarPerms.canCreateAnyAppointment}
+            weekStartsOn={cal.weekStartsOn}
           />
           <MobileCalendarDateStrip
             anchorDateKey={cal.anchorDateKey}
@@ -135,6 +154,7 @@ function AppointmentsCalendarPageContent() {
             onDateSelect={cal.handleDateSelect}
             onPrevious={() => cal.handleDateNavigate(-1)}
             onNext={() => cal.handleDateNavigate(1)}
+            weekStartsOn={cal.weekStartsOn}
           />
         </>
       ) : (
@@ -158,6 +178,7 @@ function AppointmentsCalendarPageContent() {
             onStatusFilterChange={(status) =>
               cal.setParams({ status, page: "1" })
             }
+            weekStartsOn={cal.weekStartsOn}
           />
         </div>
       )}
@@ -209,6 +230,7 @@ function AppointmentsCalendarPageContent() {
             showBufferOnCalendar={cal.showBufferOnCalendar}
             bufferTimeEnabled={cal.bufferTimeEnabled}
             density={isMobile ? "mobile" : "desktop"}
+            weekStartsOn={cal.weekStartsOn}
           />
         ) : null}
 

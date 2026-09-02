@@ -454,6 +454,18 @@ export function invalidateCancelRescheduleSettings(queryClient: QueryClient) {
   });
 }
 
+export function invalidateCustomFees(queryClient: QueryClient) {
+  return queryClient.invalidateQueries({
+    queryKey: queryKeys.customFees.all(),
+  });
+}
+
+export function invalidateCheckoutAdvancedSettings(queryClient: QueryClient) {
+  return queryClient.invalidateQueries({
+    queryKey: queryKeys.checkoutAdvancedSettings.detail(),
+  });
+}
+
 export function invalidateTimeCardLists(queryClient: QueryClient) {
   return queryClient.invalidateQueries({
     queryKey: queryKeys.timeClock.all(),

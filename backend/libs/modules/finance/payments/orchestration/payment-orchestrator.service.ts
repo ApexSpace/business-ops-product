@@ -56,6 +56,10 @@ export class PaymentOrchestratorService {
     );
 
     const amountDue = new Prisma.Decimal(snapshot.amountDue);
+    const tipAllowance = new Prisma.Decimal(
+      (input.tipAmount ?? 0).toFixed(2),
+    );
+    const maxTenderTotal = amountDue.add(tipAllowance);
     const tenderTotal = input.tenders.reduce(
       (sum, t) => sum.add(new Prisma.Decimal(t.amount.toFixed(2))),
       new Prisma.Decimal(0),
@@ -69,7 +73,7 @@ export class PaymentOrchestratorService {
       );
     }
 
-    if (tenderTotal.greaterThan(amountDue)) {
+    if (tenderTotal.greaterThan(maxTenderTotal)) {
       throw new AppException(
         ErrorCode.BAD_REQUEST,
         'Tender total exceeds amount due',
@@ -89,6 +93,7 @@ export class PaymentOrchestratorService {
         tender.method === PaymentMethod.CASH ||
         tender.method === PaymentMethod.BANK_TRANSFER ||
         tender.method === PaymentMethod.CARD ||
+        tender.method === PaymentMethod.CHECK ||
         tender.method === PaymentMethod.OTHER
       ) {
         const payment = await this.createManualPayment({

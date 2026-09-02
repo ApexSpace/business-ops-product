@@ -4,6 +4,7 @@ import { DRAWER_PRIMARY_BUTTON_CLASS } from "@/lib/design/drawer-tokens";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import type { CheckoutAdvancedSettings } from "@/features/checkout-advanced-settings/api/checkout-advanced-settings.api";
 import { InvoiceCollectPaymentPanel } from "@/features/payments/payments-kit/invoice-collect-payment-panel";
 import {
   closeCheckout,
@@ -16,6 +17,9 @@ interface SaleClosePanelProps {
   contactId: string;
   balanceDue: number;
   subtotal?: number;
+  customFeeLines?: Array<{ id: string; name: string; amount: number }>;
+  advancedSettings?: CheckoutAdvancedSettings | null;
+  hasProductLines?: boolean;
   onComplete: () => void;
   embedInDrawer?: boolean;
   hideSubmitButton?: boolean;
@@ -29,6 +33,9 @@ export function SaleClosePanel({
   contactId,
   balanceDue,
   subtotal,
+  customFeeLines = [],
+  advancedSettings,
+  hasProductLines = false,
   onComplete,
   embedInDrawer = false,
   hideSubmitButton = false,
@@ -89,11 +96,14 @@ export function SaleClosePanel({
       contactId={contactId}
       balanceDue={balanceDue}
       subtotal={subtotal}
+      customFeeLines={customFeeLines}
+      advancedSettings={advancedSettings}
+      hasProductLines={hasProductLines}
       embedInDrawer={embedInDrawer}
       hideSubmitButton={hideSubmitButton}
       onSubmitActionChange={onSubmitActionChange}
-      collectOverride={async (tenders) => {
-        const result = await closeCheckout(checkoutId, { tenders });
+      collectOverride={async ({ tenders, tipAmount }) => {
+        const result = await closeCheckout(checkoutId, { tenders, tipAmount });
         return {
           completed: result.completed,
           stripeTenders: result.stripeTenders,

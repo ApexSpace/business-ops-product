@@ -207,6 +207,9 @@ export const queryKeys = {
     }) => listKey(["payments", "list"], filters),
     detail: (id: string) => ["payments", "detail", id] as const,
   },
+  paymentAccounts: {
+    primary: () => ["payment-accounts", "primary"] as const,
+  },
   checkouts: {
     all: () => ["checkouts"] as const,
     list: (filters: {
@@ -379,6 +382,15 @@ export const queryKeys = {
   },
   waitingRoomSettings: {
     detail: () => ["waiting-room-settings"] as const,
+  },
+  customFees: {
+    all: () => ["custom-fees"] as const,
+    list: (filters?: { page?: number; limit?: number; search?: string }) =>
+      listKey(["custom-fees", "list"], filters),
+    detail: (id: string) => ["custom-fees", "detail", id] as const,
+  },
+  checkoutAdvancedSettings: {
+    detail: () => ["checkout-advanced-settings"] as const,
   },
   cancelRescheduleSettings: {
     detail: () => ["cancel-reschedule-settings"] as const,

@@ -5,6 +5,7 @@ import type { Appointment } from "@/features/appointments/schemas/appointment-pr
 import { AppointmentEventCard } from "@/features/appointments/components/calendar/appointment-event-card";
 import { AppointmentMorePopover } from "@/features/appointments/components/calendar/appointment-more-popover";
 import { CALENDAR_EVENT_MIN_HEIGHT_PX } from "@/features/calendars/utils/calendar-dates";
+import { useCalendarDisplayRuntime } from "@/features/calendar-display-settings/context/calendar-display-runtime-context";
 import type { Calendar } from "@/features/calendars/schemas/calendar-profile";
 import {
   OVERLAP_LAYOUT_GAP_PX,
@@ -53,6 +54,7 @@ export function TimeGridAppointments({
   onAppointmentResizeStart,
   draggingAppointmentId,
 }: TimeGridAppointmentsProps) {
+  const { slotHeightPx } = useCalendarDisplayRuntime();
   const resolveEventTimezone = useCallback(
     (_appointment: Appointment) => viewTimezone,
     [viewTimezone],
@@ -63,8 +65,9 @@ export function TimeGridAppointments({
       layoutOverlappingAppointments(appointments, {
         timezone: viewTimezone,
         resolveEventTimezone,
+        slotHeightPx,
       }),
-    [appointments, viewTimezone, resolveEventTimezone],
+    [appointments, viewTimezone, resolveEventTimezone, slotHeightPx],
   );
 
   return (

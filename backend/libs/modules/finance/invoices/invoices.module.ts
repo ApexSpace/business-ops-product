@@ -12,6 +12,8 @@ import { ProductsModule } from '@app/modules/finance/products/products.module';
 import { GiftCardsModule } from '@app/modules/finance/gift-cards/gift-cards.module';
 import { PackagesModule } from '@app/modules/finance/packages/packages.module';
 import { MembershipsModule } from '@app/modules/finance/memberships/memberships.module';
+import { CustomFeesModule } from '@app/modules/finance/custom-fees/custom-fees.module';
+import { CheckoutAdvancedSettingsModule } from '@app/modules/finance/checkout-advanced-settings/checkout-advanced-settings.module';
 import { OffersModule } from '@app/modules/finance/offers/offers.module';
 import { CheckoutsController } from './controllers/checkouts.controller';
 import { InvoicesController } from './controllers/invoices.controller';
@@ -41,6 +43,8 @@ import { StripeInvoicePaymentService } from './services/stripe-invoice-payment.s
     forwardRef(() => PackagesModule),
     forwardRef(() => MembershipsModule),
     forwardRef(() => OffersModule),
+    CustomFeesModule,
+    CheckoutAdvancedSettingsModule,
   ],
   controllers: [
     InvoicesController,

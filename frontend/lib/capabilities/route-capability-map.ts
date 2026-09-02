@@ -99,6 +99,14 @@ const ROUTE_CAPABILITY_MAP = new Map<string, RouteCapabilityEntry>([
     },
   ],
   [
+    "/business/settings/custom-fees",
+    { moduleKey: "sales", capabilityKeys: ["sales.access"] },
+  ],
+  [
+    "/business/settings/checkout-advanced",
+    { moduleKey: "sales", capabilityKeys: ["sales.access"] },
+  ],
+  [
     "/business/settings/display-preferences",
     { moduleKey: "calendar", capabilityKeys: ["calendar.list"] },
   ],
@@ -108,6 +116,14 @@ const ROUTE_CAPABILITY_MAP = new Map<string, RouteCapabilityEntry>([
   ],
   [
     "/business/settings/cancel-reschedule",
+    { moduleKey: "appointments", capabilityKeys: ["appointments.access"] },
+  ],
+  [
+    "/business/settings/payment-account",
+    { moduleKey: "payments", capabilityKeys: ["payments.access"] },
+  ],
+  [
+    "/business/settings/quick-tools",
     { moduleKey: "appointments", capabilityKeys: ["appointments.access"] },
   ],
   [

@@ -24,6 +24,7 @@ import { RedisModule } from '@app/core/redis/redis.module';
 import { BookingDepositHoldStore } from './stores/booking-deposit-hold.store';
 import { BookingDepositPaymentService } from './services/booking-deposit-payment.service';
 import { BookingLinkSaleService } from './services/booking-link-sale.service';
+import { CheckoutAdvancedSettingsModule } from '@app/modules/finance/checkout-advanced-settings/checkout-advanced-settings.module';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { BookingLinkSaleService } from './services/booking-link-sale.service';
     forwardRef(() => IntegrationsModule),
     forwardRef(() => NotificationsModule),
     forwardRef(() => GiftCardsModule),
+    CheckoutAdvancedSettingsModule,
     RedisModule,
   ],
   controllers: [PaymentsController],
