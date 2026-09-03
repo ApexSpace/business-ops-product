@@ -2,13 +2,16 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { ResourceStatus, ServiceResourceType } from '@prisma/client';
 import { Type } from 'class-transformer';
 import {
+  IsBoolean,
   IsEnum,
   IsInt,
   IsOptional,
   IsString,
   IsUUID,
+  Max,
   MaxLength,
   Min,
+  ValidateIf,
 } from 'class-validator';
 
 export class ListResourcesQueryDto {
@@ -49,6 +52,23 @@ export class CreateResourceDto {
   @IsString()
   @MaxLength(2000)
   description?: string | null;
+
+  @ApiPropertyOptional({
+    nullable: true,
+    description: 'Concurrent appointment limit. null = no limit.',
+  })
+  @IsOptional()
+  @ValidateIf((_, value) => value !== null && value !== undefined)
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  capacity?: number | null;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  alwaysAvailable?: boolean;
 }
 
 export class UpdateResourceDto {
@@ -85,6 +105,23 @@ export class UpdateResourceDto {
   @IsInt()
   @Min(0)
   sortOrder?: number;
+
+  @ApiPropertyOptional({
+    nullable: true,
+    description: 'Concurrent appointment limit. null = no limit.',
+  })
+  @IsOptional()
+  @ValidateIf((_, value) => value !== null && value !== undefined)
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  capacity?: number | null;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  alwaysAvailable?: boolean;
 }
 
 export class ResourceListItemResponseDto {
@@ -105,6 +142,15 @@ export class ResourceListItemResponseDto {
 
   @ApiProperty({ enum: ServiceResourceType })
   resourceType!: ServiceResourceType;
+
+  @ApiPropertyOptional({
+    nullable: true,
+    description: 'Concurrent appointment limit. null = no limit.',
+  })
+  capacity!: number | null;
+
+  @ApiProperty()
+  alwaysAvailable!: boolean;
 
   @ApiProperty({ enum: ResourceStatus })
   status!: ResourceStatus;

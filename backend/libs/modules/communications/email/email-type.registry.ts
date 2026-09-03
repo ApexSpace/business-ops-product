@@ -71,12 +71,13 @@ export const EMAIL_TYPE_REGISTRY: Record<string, EmailTypeDefinition> = {
       <p>Your appointment with <strong>{{business.name}}</strong> is confirmed.</p>
       <p><strong>When:</strong> {{appointment.start_at}}</p>
       <p><strong>Calendar:</strong> {{appointment.calendar_name}}</p>
+      <p><a href="{{appointment.manage_url}}">Manage your appointment</a></p>
       <p>We look forward to seeing you.</p>
     `),
     defaultTextBody:
-      'Hi {{contact.name}},\n\nYour appointment with {{business.name}} is confirmed.\n\nWhen: {{appointment.start_at}}\nCalendar: {{appointment.calendar_name}}\n\nWe look forward to seeing you.',
+      'Hi {{contact.name}},\n\nYour appointment with {{business.name}} is confirmed.\n\nWhen: {{appointment.start_at}}\nCalendar: {{appointment.calendar_name}}\n\nManage your appointment: {{appointment.manage_url}}\n\nWe look forward to seeing you.',
     defaultSmsBody:
-      'Hi {{contact.name}}, your appointment with {{business.name}} is confirmed for {{appointment.start_at}}.',
+      'Hi {{contact.name}}, your appointment with {{business.name}} is confirmed for {{appointment.start_at}}. Manage: {{appointment.manage_url}}',
     variables: [
       'business.name',
       'contact.name',
@@ -84,6 +85,9 @@ export const EMAIL_TYPE_REGISTRY: Record<string, EmailTypeDefinition> = {
       'appointment.end_at',
       'appointment.calendar_name',
       'appointment.title',
+      'appointment.manage_url',
+      'appointment.cancellation_policy',
+      'appointment.cancellation_policy_sms',
     ],
   },
   'appointment.booked_for': {
@@ -159,12 +163,13 @@ export const EMAIL_TYPE_REGISTRY: Record<string, EmailTypeDefinition> = {
       <p>This is a reminder about your upcoming appointment with <strong>{{business.name}}</strong>.</p>
       <p><strong>When:</strong> {{appointment.start_at}}</p>
       <p><strong>Calendar:</strong> {{appointment.calendar_name}}</p>
+      <p><a href="{{appointment.manage_url}}">Manage your appointment</a></p>
       <p>We look forward to seeing you.</p>
     `),
     defaultTextBody:
-      'Hi {{contact.name}},\n\nReminder: your appointment with {{business.name}}.\n\nWhen: {{appointment.start_at}}\nCalendar: {{appointment.calendar_name}}',
+      'Hi {{contact.name}},\n\nReminder: your appointment with {{business.name}}.\n\nWhen: {{appointment.start_at}}\nCalendar: {{appointment.calendar_name}}\n\nManage your appointment: {{appointment.manage_url}}',
     defaultSmsBody:
-      'Hi {{contact.name}}, reminder: your appointment with {{business.name}} is on {{appointment.start_at}}.',
+      'Hi {{contact.name}}, reminder: your appointment with {{business.name}} is on {{appointment.start_at}}. Manage: {{appointment.manage_url}}',
     variables: [
       'business.name',
       'contact.name',
@@ -172,6 +177,9 @@ export const EMAIL_TYPE_REGISTRY: Record<string, EmailTypeDefinition> = {
       'appointment.end_at',
       'appointment.calendar_name',
       'appointment.title',
+      'appointment.manage_url',
+      'appointment.cancellation_policy',
+      'appointment.cancellation_policy_sms',
     ],
   },
   'appointment.express_complete': {
@@ -468,7 +476,10 @@ export const EMAIL_TYPE_REGISTRY: Record<string, EmailTypeDefinition> = {
       <p>Hi {{contact.name}},</p>
       <p>Thank you — we received your payment for invoice <strong>{{invoice.number}}</strong>.</p>
       <p><strong>Amount paid:</strong> {{payment.amount}}</p>
+      {{payment.tip}}
       <p><strong>Date:</strong> {{payment.date}}</p>
+      {{receipt.providersBlock}}
+      {{receipt.footerBlock}}
     `),
     defaultTextBody:
       'Hi {{contact.name}},\n\nThank you — we received your payment for invoice {{invoice.number}}.\nAmount paid: {{payment.amount}}\nDate: {{payment.date}}',
@@ -480,6 +491,9 @@ export const EMAIL_TYPE_REGISTRY: Record<string, EmailTypeDefinition> = {
       'invoice.number',
       'payment.amount',
       'payment.date',
+      'payment.tip',
+      'receipt.providersBlock',
+      'receipt.footerBlock',
     ],
   },
   'gift_card.delivery': {

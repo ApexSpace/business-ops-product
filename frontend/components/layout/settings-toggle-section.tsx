@@ -37,7 +37,7 @@ export function SettingsToggleSection({
   isSaving = false,
   className,
 }: SettingsToggleSectionProps) {
-  const showActions = Boolean(onDiscard && onSave);
+  const showActions = Boolean(onDiscard && onSave && isDirty);
 
   return (
     <section className={cn(SETTINGS_FORM_SECTION_STACK_CLASS, className)}>

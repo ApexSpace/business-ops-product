@@ -119,6 +119,7 @@ export interface Appointment {
   photoFileIds?: string[];
   hasPhotos?: boolean;
   isTimeBlock?: boolean;
+  metadata?: Record<string, unknown> | null;
 }
 
 export function isAppointmentTimeBlock(appointment: Appointment): boolean {

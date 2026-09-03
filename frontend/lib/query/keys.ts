@@ -207,6 +207,9 @@ export const queryKeys = {
     }) => listKey(["payments", "list"], filters),
     detail: (id: string) => ["payments", "detail", id] as const,
   },
+  paymentAccounts: {
+    primary: () => ["payment-accounts", "primary"] as const,
+  },
   checkouts: {
     all: () => ["checkouts"] as const,
     list: (filters: {
@@ -371,8 +374,32 @@ export const queryKeys = {
   schedulingSettings: {
     detail: () => ["scheduling-settings"] as const,
   },
+  onlineBookingSettings: {
+    detail: () => ["online-booking-settings"] as const,
+  },
+  calendarDisplaySettings: {
+    detail: () => ["calendar-display-settings"] as const,
+  },
   waitingRoomSettings: {
     detail: () => ["waiting-room-settings"] as const,
+  },
+  appointmentAutomatedMessages: {
+    detail: (eventType: string) =>
+      ["appointment-automated-messages", eventType] as const,
+    catalog: (eventType: string) =>
+      ["appointment-automated-messages", eventType, "catalog"] as const,
+  },
+  customFees: {
+    all: () => ["custom-fees"] as const,
+    list: (filters?: { page?: number; limit?: number; search?: string }) =>
+      listKey(["custom-fees", "list"], filters),
+    detail: (id: string) => ["custom-fees", "detail", id] as const,
+  },
+  checkoutAdvancedSettings: {
+    detail: () => ["checkout-advanced-settings"] as const,
+  },
+  cancelRescheduleSettings: {
+    detail: () => ["cancel-reschedule-settings"] as const,
   },
   chatbots: {
     all: (apiBase = "chatbots") => ["chatbots", apiBase] as const,

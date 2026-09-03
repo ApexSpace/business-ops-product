@@ -118,6 +118,18 @@ export class AppointmentRepository {
     });
   }
 
+  findByClientManageToken(
+    token: string,
+  ): Promise<AppointmentWithRelations | null> {
+    return this.prisma.appointment.findFirst({
+      where: {
+        deletedAt: null,
+        clientManageToken: token,
+      },
+      include: this.includeRelations(),
+    });
+  }
+
   findExpiredPendingExpress(now: Date, take = 100): Promise<
     AppointmentWithRelations[]
   > {

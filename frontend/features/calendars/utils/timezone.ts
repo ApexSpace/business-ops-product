@@ -5,6 +5,10 @@
 
 import { DateTime } from "luxon";
 import type { Calendar } from "@/features/calendars/schemas/calendar-profile";
+import {
+  daysFromWeekStart,
+  trailingDaysToWeekEnd,
+} from "@/features/calendar-display-settings/utils/calendar-display-runtime.util";
 import { FILTER_ALL_LABELS } from "@/lib/ui/filter-labels";
 
 export const FALLBACK_TIMEZONE = "UTC";
@@ -70,14 +74,22 @@ export function getUtcRangeForLocalDay(
   };
 }
 
-/** Sunday-start week containing dateKey. */
+/** Week containing dateKey; defaults to Sunday start. */
 export function getWeekDateKeysInTimezone(
   anchorDateKey: string,
   timezone: string,
+  weekStartsOn: "SUNDAY" | "MONDAY" = "SUNDAY",
 ): string[] {
   const anchor = parseDateKeyInTimezone(anchorDateKey, timezone);
-  const daysFromSunday = anchor.weekday === 7 ? 0 : anchor.weekday;
-  const weekStart = anchor.minus({ days: daysFromSunday });
+  const offset =
+    weekStartsOn === "MONDAY"
+      ? anchor.weekday === 7
+        ? 6
+        : anchor.weekday - 1
+      : anchor.weekday === 7
+        ? 0
+        : anchor.weekday;
+  const weekStart = anchor.minus({ days: offset });
   return Array.from({ length: 7 }, (_, i) =>
     weekStart.plus({ days: i }).toFormat("yyyy-MM-dd"),
   );
@@ -86,8 +98,9 @@ export function getWeekDateKeysInTimezone(
 export function getUtcRangeForLocalWeek(
   anchorDateKey: string,
   timezone: string,
+  weekStartsOn: "SUNDAY" | "MONDAY" = "SUNDAY",
 ): { start: Date; end: Date } {
-  const keys = getWeekDateKeysInTimezone(anchorDateKey, timezone);
+  const keys = getWeekDateKeysInTimezone(anchorDateKey, timezone, weekStartsOn);
   const start = parseDateKeyInTimezone(keys[0]!, timezone);
   const end = parseDateKeyInTimezone(keys[6]!, timezone).endOf("day");
   return {
@@ -99,14 +112,14 @@ export function getUtcRangeForLocalWeek(
 export function getMonthGridDateKeysInTimezone(
   anchorDateKey: string,
   timezone: string,
+  weekStartsOn: "SUNDAY" | "MONDAY" = "SUNDAY",
 ): string[] {
   const anchor = parseDateKeyInTimezone(anchorDateKey, timezone);
   const monthStart = anchor.startOf("month");
   const monthEnd = anchor.endOf("month");
-  const daysFromSunday = monthStart.weekday === 7 ? 0 : monthStart.weekday;
-  const gridStart = monthStart.minus({ days: daysFromSunday });
-  const trailing =
-    monthEnd.weekday === 7 ? 6 : 6 - monthEnd.weekday;
+  const startOffset = daysFromWeekStart(monthStart.weekday, weekStartsOn);
+  const gridStart = monthStart.minus({ days: startOffset });
+  const trailing = trailingDaysToWeekEnd(monthEnd.weekday, weekStartsOn);
   const gridEnd = monthEnd.plus({ days: trailing });
   const keys: string[] = [];
   let cursor = gridStart;
@@ -225,6 +238,7 @@ export function formatDateRangeLabelInTimezone(
   anchorDateKey: string,
   view: "day" | "week" | "month" | "list",
   timezone: string,
+  weekStartsOn: "SUNDAY" | "MONDAY" = "SUNDAY",
 ): string {
   const anchor = parseDateKeyInTimezone(anchorDateKey, timezone);
   if (view === "day") {
@@ -232,7 +246,11 @@ export function formatDateRangeLabelInTimezone(
     return anchor.toFormat("cccc LLLL, d");
   }
   if (view === "week") {
-    const keys = getWeekDateKeysInTimezone(anchorDateKey, timezone);
+    const keys = getWeekDateKeysInTimezone(
+      anchorDateKey,
+      timezone,
+      weekStartsOn,
+    );
     const start = parseDateKeyInTimezone(keys[0]!, timezone);
     const end = parseDateKeyInTimezone(keys[6]!, timezone);
     const sameYear = start.year === end.year;
@@ -317,9 +335,11 @@ export function getVisibleUtcRange(
   anchorDateKey: string,
   view: "day" | "week" | "month",
   timezone: string,
+  weekStartsOn: "SUNDAY" | "MONDAY" = "SUNDAY",
 ): { start: Date; end: Date } {
   if (view === "day") return getUtcRangeForLocalDay(anchorDateKey, timezone);
-  if (view === "week") return getUtcRangeForLocalWeek(anchorDateKey, timezone);
+  if (view === "week")
+    return getUtcRangeForLocalWeek(anchorDateKey, timezone, weekStartsOn);
   return getUtcRangeForLocalMonth(anchorDateKey, timezone);
 }
 

@@ -32,6 +32,10 @@ import {
   normalizeBusinessHoursSlots,
 } from '../utils/business-hours.util';
 import { resolveBusinessTimezone } from '@app/common/utils/timezone.util';
+import { ExpressDepositType } from '@prisma/client';
+import {
+  assertValidExpressDepositPreferences,
+} from '@app/modules/operations/express-booking/utils/express-deposit.util';
 import type {
   ReplaceBusinessHoursDto,
   ReplaceStaffWorkScheduleDto,
@@ -215,6 +219,33 @@ export class OnlineBookingSettingsService {
     actorUserId: string,
   ) {
     await this.repository.ensureSettings(businessId);
+
+    const current = await this.repository.findByBusinessId(businessId);
+    const nextDepositType =
+      dto.expressDepositType ??
+      current?.expressDepositType ??
+      ExpressDepositType.FULL;
+    const nextDepositAmount =
+      dto.expressDepositAmount !== undefined
+        ? dto.expressDepositAmount
+        : current?.expressDepositAmount;
+    const nextRequireDeposit =
+      dto.expressRequireDeposit ?? current?.expressRequireDeposit ?? false;
+
+    try {
+      assertValidExpressDepositPreferences({
+        expressRequireDeposit: nextRequireDeposit,
+        expressDepositType: nextDepositType,
+        expressDepositAmount: nextDepositAmount,
+      });
+    } catch (err) {
+      throw new AppException(
+        ErrorCode.VALIDATION_ERROR,
+        err instanceof Error ? err.message : 'Invalid express deposit settings',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
     const settings = await this.repository.upsert(businessId, {
       minimumNoticeMinutes: dto.minimumNoticeMinutes,
       maxBookingDays: dto.maxBookingDays,
@@ -236,6 +267,15 @@ export class OnlineBookingSettingsService {
       expressRequireCard: dto.expressRequireCard,
       expressRequireDeposit: dto.expressRequireDeposit,
       expressDepositType: dto.expressDepositType,
+      ...(dto.expressDepositAmount !== undefined
+        ? {
+            expressDepositAmount:
+              dto.expressDepositAmount === null ||
+              dto.expressDepositAmount === ''
+                ? null
+                : new Prisma.Decimal(dto.expressDepositAmount),
+          }
+        : {}),
       expressAllowPhotoUpload: dto.expressAllowPhotoUpload,
       cancellationPolicyVersion: dto.cancellationPolicyVersion,
       slotIntervalMinutes: dto.slotIntervalMinutes,

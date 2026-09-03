@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { ProfileAvatar } from "@/components/ui/profile-avatar";
 import { SearchableSelect } from "@/components/forms/searchable-select";
 import type { CheckoutItem } from "@/features/sales/types/checkout";
+import { isSystemManagedCustomFeeItem } from "@/features/sales/utils/checkout-custom-fees";
 import { formatMoney } from "@/features/payments/utils/currencies";
 import {
   SALES_DRAWER_CHECKOUT_LINE_CARD_SHELL_CLASS,
@@ -68,6 +69,8 @@ export function CheckoutLineItemRow({
   }, [item.id, item.quantity, item.staffUserId]);
 
   const isProduct = item.lineType === "PRODUCT";
+  const isSystemFee = isSystemManagedCustomFeeItem(item);
+  const lineCanEdit = canEdit && !isSystemFee;
   const showStaff = Boolean(item.serviceId);
   const staffLabel = item.staff?.label ?? null;
   const unitPriceLabel = formatMoney(parseFloat(item.unitPrice));
@@ -122,7 +125,7 @@ export function CheckoutLineItemRow({
           ) : null}
         </button>
 
-        {canEdit && expanded ? (
+        {lineCanEdit && expanded ? (
           <button
             type="button"
             aria-label="Remove item"
@@ -151,7 +154,7 @@ export function CheckoutLineItemRow({
                   min={0.0001}
                   step="1"
                   value={quantity || ""}
-                  disabled={!canEdit || updatePending}
+                  disabled={!lineCanEdit || updatePending}
                   onChange={(event) =>
                     setQuantity(parseFloat(event.target.value) || 0)
                   }
@@ -170,18 +173,18 @@ export function CheckoutLineItemRow({
                 </Label>
                 <button
                   type="button"
-                  disabled={!canEdit}
+                  disabled={!lineCanEdit}
                   onClick={onChangePrice}
                   className={cn(
                     SALES_DRAWER_FIELD_CLASS,
                     "flex items-center justify-between gap-2 text-left",
-                    canEdit && "cursor-pointer hover:border-violet-primary-normal",
+                    lineCanEdit && "cursor-pointer hover:border-violet-primary-normal",
                   )}
                 >
                   <span className="text-[14px] font-semibold tabular-nums text-foreground">
                     {unitPriceLabel}
                   </span>
-                  {canEdit ? (
+                  {lineCanEdit ? (
                     <Pencil
                       className="size-3.5 shrink-0 text-violet-primary-normal"
                       aria-hidden
@@ -195,18 +198,18 @@ export function CheckoutLineItemRow({
               <Label className={SALES_DRAWER_VIEW_FIELD_LABEL_CLASS}>Price</Label>
               <button
                 type="button"
-                disabled={!canEdit}
+                disabled={!lineCanEdit}
                 onClick={onChangePrice}
                 className={cn(
                   SALES_DRAWER_FIELD_CLASS,
                   "flex items-center justify-between gap-2 text-left",
-                  canEdit && "cursor-pointer hover:border-violet-primary-normal",
+                  lineCanEdit && "cursor-pointer hover:border-violet-primary-normal",
                 )}
               >
                 <span className="text-[14px] font-semibold tabular-nums text-foreground">
                   {unitPriceLabel}
                 </span>
-                {canEdit ? (
+                {lineCanEdit ? (
                   <Pencil
                     className="size-3.5 shrink-0 text-violet-primary-normal"
                     aria-hidden
@@ -230,7 +233,7 @@ export function CheckoutLineItemRow({
                       : []
                 }
                 value={staffUserId}
-                disabled={!canEdit || updatePending || staffItems.length === 0}
+                disabled={!lineCanEdit || updatePending || staffItems.length === 0}
                 onValueChange={(value) => {
                   setStaffUserId(value);
                   onUpdate({ staffUserId: value });

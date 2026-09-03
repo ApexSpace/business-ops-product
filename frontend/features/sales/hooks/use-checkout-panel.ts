@@ -19,6 +19,7 @@ import {
   removeCheckoutLineItem,
   updateCheckoutLineItem,
 } from "@/features/sales/api/checkouts.api";
+import { listBusinessMembers } from "@/features/settings/api/business.api";
 import type { CheckoutItem } from "@/features/sales/types/checkout";
 import { useSalesStaffPermissions } from "@/features/sales/hooks/use-sales-staff-permissions";
 import {
@@ -57,6 +58,8 @@ export function useCheckoutPanel(checkoutId: string) {
   );
   const [selectedOfferId, setSelectedOfferId] = useState<string | null>(null);
   const [depositAmount, setDepositAmount] = useState(25);
+  const [pendingProductKey, setPendingProductKey] = useState<string | null>(null);
+  const [productStaffId, setProductStaffId] = useState<string | null>(null);
 
   const {
     data: checkout,
@@ -110,6 +113,12 @@ export function useCheckoutPanel(checkoutId: string) {
     enabled: pickerEnabled,
   });
 
+  const businessMembersQuery = useQuery({
+    queryKey: queryKeys.business.members({ page: 1, limit: 100 }),
+    queryFn: () => listBusinessMembers({ page: 1, limit: 100 }),
+    enabled: pickerEnabled,
+  });
+
   const expandedLine = useMemo(
     () => checkout?.items.find((item) => item.id === expandedLineId) ?? null,
     [checkout?.items, expandedLineId],
@@ -134,20 +143,35 @@ export function useCheckoutPanel(checkoutId: string) {
   });
 
   const addProductMutation = useMutation({
-    mutationFn: (productKey: string) => {
+    mutationFn: ({
+      productKey,
+      staffUserId,
+    }: {
+      productKey: string;
+      staffUserId?: string;
+    }) => {
       const product = (productsData?.items ?? []).find(
         (item) => pickerProductKey(item) === productKey,
       );
       if (!product) throw new Error("Select a product");
+      const requiresStaff =
+        checkout?.advancedSettings?.requireStaffForProducts ||
+        product.assignStaffToSale;
+      if (requiresStaff && !staffUserId) {
+        throw new Error("Select a staff member for this product");
+      }
       return addCheckoutProduct(checkoutId, {
         productId: product.productId,
         variantId: product.variantId ?? undefined,
         quantity: 1,
+        staffUserId,
       });
     },
     onSuccess: (updatedCheckout) => {
       toast.success("Product added");
       closeInlineAdd();
+      setPendingProductKey(null);
+      setProductStaffId(null);
       expandLatestLine(updatedCheckout, setExpandedLineId);
       void invalidateCheckouts(queryClient, checkoutId);
     },
@@ -289,6 +313,53 @@ export function useCheckoutPanel(checkoutId: string) {
     [staffOffersQuery.data],
   );
 
+  const productStaffItems = useMemo(
+    () =>
+      (businessMembersQuery.data?.items ?? []).map((member) => ({
+        value: member.userId,
+        label:
+          [member.user.firstName, member.user.lastName]
+            .filter(Boolean)
+            .join(" ") ||
+          member.user.email ||
+          member.userId,
+      })),
+    [businessMembersQuery.data?.items],
+  );
+
+  const handleAddProduct = useCallback(
+    (productKey: string) => {
+      const product = (productsData?.items ?? []).find(
+        (item) => pickerProductKey(item) === productKey,
+      );
+      const requiresStaff =
+        checkout?.advancedSettings?.requireStaffForProducts ||
+        product?.assignStaffToSale;
+      if (requiresStaff && !productStaffId) {
+        setPendingProductKey(productKey);
+        return;
+      }
+      addProductMutation.mutate({
+        productKey,
+        staffUserId: productStaffId ?? undefined,
+      });
+    },
+    [
+      addProductMutation,
+      checkout?.advancedSettings?.requireStaffForProducts,
+      productStaffId,
+      productsData?.items,
+    ],
+  );
+
+  const confirmPendingProduct = useCallback(() => {
+    if (!pendingProductKey) return;
+    addProductMutation.mutate({
+      productKey: pendingProductKey,
+      staffUserId: productStaffId ?? undefined,
+    });
+  }, [addProductMutation, pendingProductKey, productStaffId]);
+
   const toggleExpandedLine = useCallback((lineId: string) => {
     setExpandedLineId((current) => (current === lineId ? null : lineId));
   }, []);
@@ -313,6 +384,12 @@ export function useCheckoutPanel(checkoutId: string) {
     setSelectedOfferId,
     depositAmount,
     setDepositAmount,
+    pendingProductKey,
+    setPendingProductKey,
+    productStaffId,
+    setProductStaffId,
+    handleAddProduct,
+    confirmPendingProduct,
     addServiceMutation,
     addProductMutation,
     depositMutation,
@@ -321,6 +398,7 @@ export function useCheckoutPanel(checkoutId: string) {
     applyOfferMutation,
     serviceItems,
     productItems,
+    productStaffItems,
     expandedLineStaffItems,
     offerItems,
   };

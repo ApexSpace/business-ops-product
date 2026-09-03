@@ -6,16 +6,10 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { LoadingState } from "@/components/data-display/loading-state";
 import { SettingsFormPage } from "@/components/layout/settings-page-layout";
+import { SettingsInlineEditSection } from "@/components/layout/settings-inline-edit-section";
 import { SettingsToggleSection } from "@/components/layout/settings-toggle-section";
-import { SettingsValueSection } from "@/components/layout/settings-value-section";
+import { SettingsViewRows } from "@/components/layout/settings-view-rows";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { PERMISSIONS, useCan } from "@/features/auth/permissions";
@@ -30,6 +24,7 @@ import {
 import { useSchedulingSettings } from "@/features/scheduling-settings/hooks/use-scheduling-settings";
 import { invalidateSchedulingSettings } from "@/lib/query/invalidation";
 import { SETTINGS_FORM_SECTION_STACK_CLASS } from "@/lib/design/settings-form-tokens";
+import { useSettingsSectionEdit } from "@/lib/settings/use-settings-section-edit";
 import { cn } from "@/lib/utils";
 
 function useSectionState<T extends Record<string, unknown>>(
@@ -42,7 +37,6 @@ function useSectionState<T extends Record<string, unknown>>(
     if (source) {
       setDraft(pick(source));
     }
-    // pick is stable when defined outside the component
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [source]);
 
@@ -68,6 +62,9 @@ export function SchedulingOptionsSettings() {
   const queryClient = useQueryClient();
   const canEdit = useCan(PERMISSIONS["settings.business"]);
   const { data, isLoading, isError, error } = useSchedulingSettings();
+  const { isEditing, startEdit, stopEdit } = useSettingsSectionEdit<
+    "increment" | "rebooking"
+  >();
 
   const increment = useSectionState(data, (s) => ({
     slotIntervalMinutes: s.slotIntervalMinutes,
@@ -83,16 +80,12 @@ export function SchedulingOptionsSettings() {
     rebookingJumpWeeks: s.rebookingJumpWeeks,
   }));
 
-  const [incrementDialogOpen, setIncrementDialogOpen] = useState(false);
-  const [rebookingDialogOpen, setRebookingDialogOpen] = useState(false);
-  const [dialogIncrement, setDialogIncrement] = useState(15);
-  const [dialogWeeks, setDialogWeeks] = useState<number[]>([2, 3, 4, 5, 6, 7]);
-
   const mutation = useMutation({
     mutationFn: updateSchedulingSettings,
     onSuccess: async () => {
       await invalidateSchedulingSettings(queryClient);
       toast.success("Scheduling options saved");
+      stopEdit();
     },
     onError: (err: Error) => toast.error(err.message),
   });
@@ -105,13 +98,14 @@ export function SchedulingOptionsSettings() {
   );
 
   const incrementLabel = useMemo(() => {
-    const minutes = increment.values?.slotIntervalMinutes ?? 15;
+    const minutes = increment.saved?.slotIntervalMinutes ?? 15;
     return formatSlotIntervalLabel(minutes);
-  }, [increment.values?.slotIntervalMinutes]);
+  }, [increment.saved?.slotIntervalMinutes]);
 
   const rebookingLabel = useMemo(
-    () => formatRebookingJumpWeeksLabel(rebooking.values?.rebookingJumpWeeks ?? []),
-    [rebooking.values?.rebookingJumpWeeks],
+    () =>
+      formatRebookingJumpWeeksLabel(rebooking.saved?.rebookingJumpWeeks ?? []),
+    [rebooking.saved?.rebookingJumpWeeks],
   );
 
   if (isLoading) {
@@ -121,7 +115,9 @@ export function SchedulingOptionsSettings() {
   if (isError || !data) {
     return (
       <p className="text-sm text-destructive">
-        {error instanceof Error ? error.message : "Could not load scheduling options"}
+        {error instanceof Error
+          ? error.message
+          : "Could not load scheduling options"}
       </p>
     );
   }
@@ -129,24 +125,32 @@ export function SchedulingOptionsSettings() {
   return (
     <SettingsFormPage>
       <div className={SETTINGS_FORM_SECTION_STACK_CLASS}>
-        <SettingsValueSection
+        <SettingsInlineEditSection
           title="Appointment increment"
           description={
             <>
               Default time-slot step for new appointments and online booking.
               Per-calendar overrides remain in{" "}
-              <Link href="/business/settings/calendars" className="text-primary underline-offset-2 hover:underline">
+              <Link
+                href="/business/settings/calendars"
+                className="text-primary underline-offset-2 hover:underline"
+              >
                 Calendars
               </Link>
               .
             </>
           }
-          valueLabel={incrementLabel}
-          onEdit={() => {
-            setDialogIncrement(increment.values?.slotIntervalMinutes ?? 15);
-            setIncrementDialogOpen(true);
+          summary={
+            <SettingsViewRows
+              rows={[{ label: "Increments", value: incrementLabel }]}
+            />
+          }
+          isEditing={isEditing("increment")}
+          onEdit={() => startEdit("increment")}
+          onDiscard={() => {
+            increment.reset();
+            stopEdit();
           }}
-          onDiscard={increment.reset}
           onSave={() =>
             saveSection({
               slotIntervalMinutes: increment.values?.slotIntervalMinutes,
@@ -155,16 +159,38 @@ export function SchedulingOptionsSettings() {
           isDirty={increment.isDirty}
           isSaving={mutation.isPending}
           disabled={!canEdit}
-        />
+        >
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+            {SLOT_INTERVAL_OPTIONS.map((minutes) => (
+              <Button
+                key={minutes}
+                type="button"
+                variant={
+                  increment.values?.slotIntervalMinutes === minutes
+                    ? "brand"
+                    : "outline"
+                }
+                onClick={() =>
+                  increment.commit({ slotIntervalMinutes: minutes })
+                }
+              >
+                {formatSlotIntervalLabel(minutes)}
+              </Button>
+            ))}
+          </div>
+        </SettingsInlineEditSection>
 
         <SettingsToggleSection
           id="buffer-time-enabled"
           title="Buffer time"
           description={
             <>
-              Enable buffer time before and after appointments. Configure per-service
-              minutes in{" "}
-              <Link href="/business/settings/services" className="text-primary underline-offset-2 hover:underline">
+              Enable buffer time before and after appointments. Configure
+              per-service minutes in{" "}
+              <Link
+                href="/business/settings/services"
+                className="text-primary underline-offset-2 hover:underline"
+              >
                 Services
               </Link>
               .
@@ -174,7 +200,8 @@ export function SchedulingOptionsSettings() {
           onCheckedChange={(checked) =>
             buffer.commit({
               bufferTimeEnabled: checked,
-              showBufferOnCalendar: buffer.values?.showBufferOnCalendar ?? false,
+              showBufferOnCalendar:
+                buffer.values?.showBufferOnCalendar ?? false,
             })
           }
           onDiscard={buffer.reset}
@@ -219,9 +246,12 @@ export function SchedulingOptionsSettings() {
           title="Processing & finishing"
           description={
             <>
-              Enable processing and finishing time for services. Configure per-service
-              durations in{" "}
-              <Link href="/business/settings/services" className="text-primary underline-offset-2 hover:underline">
+              Enable processing and finishing time for services. Configure
+              per-service durations in{" "}
+              <Link
+                href="/business/settings/services"
+                className="text-primary underline-offset-2 hover:underline"
+              >
                 Services
               </Link>
               .
@@ -242,15 +272,20 @@ export function SchedulingOptionsSettings() {
           disabled={!canEdit}
         />
 
-        <SettingsValueSection
+        <SettingsInlineEditSection
           title="Rebooking quick nav"
           description="Week-jump buttons shown in the calendar date picker when rebooking."
-          valueLabel={rebookingLabel}
-          onEdit={() => {
-            setDialogWeeks(rebooking.values?.rebookingJumpWeeks ?? [2, 3, 4, 5, 6, 7]);
-            setRebookingDialogOpen(true);
+          summary={
+            <SettingsViewRows
+              rows={[{ label: "Navigation buttons", value: rebookingLabel }]}
+            />
+          }
+          isEditing={isEditing("rebooking")}
+          onEdit={() => startEdit("rebooking")}
+          onDiscard={() => {
+            rebooking.reset();
+            stopEdit();
           }}
-          onDiscard={rebooking.reset}
           onSave={() =>
             saveSection({
               rebookingJumpWeeks: rebooking.values?.rebookingJumpWeeks,
@@ -259,55 +294,14 @@ export function SchedulingOptionsSettings() {
           isDirty={rebooking.isDirty}
           isSaving={mutation.isPending}
           disabled={!canEdit}
-        />
-      </div>
-
-      <Dialog open={incrementDialogOpen} onOpenChange={setIncrementDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Appointment increment</DialogTitle>
-          </DialogHeader>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-            {SLOT_INTERVAL_OPTIONS.map((minutes) => (
-              <Button
-                key={minutes}
-                type="button"
-                variant={dialogIncrement === minutes ? "brand" : "outline"}
-                onClick={() => setDialogIncrement(minutes)}
-              >
-                {formatSlotIntervalLabel(minutes)}
-              </Button>
-            ))}
-          </div>
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setIncrementDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              variant="brand"
-              onClick={() => {
-                increment.commit({ slotIntervalMinutes: dialogIncrement });
-                setIncrementDialogOpen(false);
-              }}
-            >
-              Apply
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={rebookingDialogOpen} onOpenChange={setRebookingDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Rebooking quick nav</DialogTitle>
-          </DialogHeader>
+        >
           <p className="text-sm text-muted-foreground">
             Select up to 8 week intervals (1–12 weeks).
           </p>
           <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
             {REBOOKING_WEEK_OPTIONS.map((week) => {
-              const selected = dialogWeeks.includes(week);
+              const selected =
+                rebooking.values?.rebookingJumpWeeks.includes(week) ?? false;
               return (
                 <div
                   key={week}
@@ -323,15 +317,24 @@ export function SchedulingOptionsSettings() {
                     id={`rebook-week-${week}`}
                     checked={selected}
                     onCheckedChange={(checked) => {
-                      setDialogWeeks((current) => {
-                        if (checked) {
-                          if (current.length >= 8) {
-                            toast.error("Select at most 8 intervals");
-                            return current;
-                          }
-                          return [...current, week].sort((a, b) => a - b);
+                      const current =
+                        rebooking.values?.rebookingJumpWeeks ?? [];
+                      if (checked) {
+                        if (current.length >= 8) {
+                          toast.error("Select at most 8 intervals");
+                          return;
                         }
-                        return current.filter((value) => value !== week);
+                        rebooking.commit({
+                          rebookingJumpWeeks: [...current, week].sort(
+                            (a, b) => a - b,
+                          ),
+                        });
+                        return;
+                      }
+                      rebooking.commit({
+                        rebookingJumpWeeks: current.filter(
+                          (value) => value !== week,
+                        ),
                       });
                     }}
                   />
@@ -339,24 +342,8 @@ export function SchedulingOptionsSettings() {
               );
             })}
           </div>
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setRebookingDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              variant="brand"
-              disabled={dialogWeeks.length === 0}
-              onClick={() => {
-                rebooking.commit({ rebookingJumpWeeks: dialogWeeks });
-                setRebookingDialogOpen(false);
-              }}
-            >
-              Apply
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        </SettingsInlineEditSection>
+      </div>
     </SettingsFormPage>
   );
 }

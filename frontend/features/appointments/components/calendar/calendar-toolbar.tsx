@@ -15,6 +15,7 @@ import {
   CALENDAR_TOOLBAR_TODAY_BUTTON_CLASS,
 } from "@/features/appointments/components/calendar/calendar-toolbar-tokens";
 import type { CalendarViewMode } from "@/features/calendars/utils/calendar-dates";
+import type { WeekStartsOn } from "@/features/calendar-display-settings/api/calendar-display-settings.api";
 import { formatDateRangeLabelInTimezone } from "@/features/calendars/utils/timezone";
 import { Button } from "@/components/ui/button";
 import { NavArrowIcon } from "@/components/ui/nav-arrow-icon";
@@ -37,6 +38,7 @@ interface CalendarToolbarProps {
   showStaffSelector?: boolean;
   statusFilter: string;
   onStatusFilterChange: (value: string) => void;
+  weekStartsOn?: WeekStartsOn;
   className?: string;
 }
 
@@ -63,6 +65,7 @@ export function CalendarToolbar({
   showStaffSelector: showStaffSelectorProp,
   statusFilter,
   onStatusFilterChange,
+  weekStartsOn = "SUNDAY",
   className,
 }: CalendarToolbarProps) {
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -71,6 +74,7 @@ export function CalendarToolbar({
     anchorDateKey,
     navView,
     timezone,
+    weekStartsOn,
   );
   // Figma: staff picker only in Week (Day shows every staff as columns)
   const showStaffSelector =
@@ -128,6 +132,7 @@ export function CalendarToolbar({
           onToday={onToday}
           onJumpWeeks={onJumpWeeks}
           weekJumpOptions={weekJumpOptions}
+          weekStartsOn={weekStartsOn}
           trigger={
             <button
               type="button"

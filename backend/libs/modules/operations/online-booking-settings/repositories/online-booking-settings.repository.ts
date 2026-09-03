@@ -4,10 +4,10 @@ import {
   BusinessHours,
   BusinessOnlineBookingSettings,
   Prisma,
-  StaffWorkException,
   StaffWorkSchedule,
 } from '@prisma/client';
 import { PrismaService } from '@app/core/database/prisma.service';
+import { StaffWorkExceptionRepository } from '../staff-work-exceptions/repositories/staff-work-exception.repository';
 
 export type BusinessBookingContext = BusinessOnlineBookingSettings & {
   business: {
@@ -22,7 +22,10 @@ export type BusinessBookingContext = BusinessOnlineBookingSettings & {
 
 @Injectable()
 export class OnlineBookingSettingsRepository {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly staffWorkExceptionRepository: StaffWorkExceptionRepository,
+  ) {}
 
   private bookingContextInclude = {
     business: {
@@ -130,14 +133,13 @@ export class OnlineBookingSettingsRepository {
     userId: string,
     from: Date,
     to: Date,
-  ): Promise<StaffWorkException[]> {
-    return this.prisma.staffWorkException.findMany({
-      where: {
-        businessId,
-        userId,
-        date: { gte: from, lte: to },
-      },
-    });
+  ) {
+    return this.staffWorkExceptionRepository.findByStaffInRange(
+      businessId,
+      userId,
+      from,
+      to,
+    );
   }
 
   replaceStaffSchedules(

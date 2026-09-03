@@ -87,6 +87,7 @@ export function addGiftCardLine(
     amount: number;
     ownerContactId: string;
     sendDigital?: boolean;
+    staffUserId?: string;
   },
 ) {
   return api.post<Checkout>(`checkouts/${checkoutId}/gift-card`, body);
@@ -98,6 +99,7 @@ export function addPackageLine(
     packageTemplateId: string;
     ownerContactId: string;
     isDemo?: boolean;
+    staffUserId?: string;
   },
 ) {
   return api.post<Checkout>(`checkouts/${checkoutId}/package`, body);
@@ -109,7 +111,7 @@ export function voidCheckout(checkoutId: string) {
 
 export function closeCheckout(
   checkoutId: string,
-  body: { tenders: CollectPaymentTender[] },
+  body: { tenders: CollectPaymentTender[]; tipAmount?: number },
 ) {
   return api.post<CloseCheckoutResult>(`checkouts/${checkoutId}/close`, body);
 }

@@ -37,6 +37,8 @@ import { useAuth } from "@/lib/auth/provider";
 import { useCalendarStaffPermissions } from "@/features/appointments/hooks/use-calendar-staff-permissions";
 import { useSchedulingSettings } from "@/features/scheduling-settings/hooks/use-scheduling-settings";
 import { useWaitingRoomSettings } from "@/features/waiting-room-settings/hooks/use-waiting-room-settings";
+import { useCalendarDisplaySettings } from "@/features/calendar-display-settings/hooks/use-calendar-display-settings";
+import { filterAppointmentsForCalendarDisplay } from "@/features/calendar-display-settings/utils/calendar-display-runtime.util";
 import { resolveAppointmentBufferMinutes } from "@/features/appointments/utils/resolve-appointment-buffer";
 
 export const APPOINTMENTS_CALENDAR_PARAMS = {
@@ -177,6 +179,8 @@ export function useAppointmentsCalendarPage() {
 
   const { data: schedulingSettings } = useSchedulingSettings();
   const { data: waitingRoomSettings } = useWaitingRoomSettings();
+  const { data: displaySettings } = useCalendarDisplaySettings();
+  const weekStartsOn = displaySettings?.weekStartsOn ?? "SUNDAY";
   const rebookingJumpWeeks = schedulingSettings?.rebookingJumpWeeks ?? [
     2, 3, 4, 5, 6, 7,
   ];
@@ -246,12 +250,17 @@ export function useAppointmentsCalendarPage() {
 
   const appointmentRange = useMemo(() => {
     if (view === "list") return null;
-    const range = getVisibleUtcRange(anchorDateKey, view, displayTimezone);
+    const range = getVisibleUtcRange(
+      anchorDateKey,
+      view,
+      displayTimezone,
+      weekStartsOn,
+    );
     return {
       startFrom: toIsoRangeBound(range.start),
       startTo: toIsoRangeBound(range.end),
     };
-  }, [anchorDateKey, view, displayTimezone]);
+  }, [anchorDateKey, view, displayTimezone, weekStartsOn]);
 
   const weekStaffFilter =
     view === "week" ? params.assignedToId || undefined : undefined;
@@ -324,8 +333,19 @@ export function useAppointmentsCalendarPage() {
     enabled: view === "list",
   });
 
-  const appointments =
+  const rawAppointments =
     view === "list" ? (listData?.items ?? []) : (calendarData?.items ?? []);
+
+  const appointments = useMemo(() => {
+    if (view === "list" || !displaySettings) {
+      return rawAppointments;
+    }
+    return filterAppointmentsForCalendarDisplay(rawAppointments, {
+      showNormalCancellation: displaySettings.showNormalCancellation,
+      showLateCancellation: displaySettings.showLateCancellation,
+      showNoShow: displaySettings.showNoShow,
+    });
+  }, [rawAppointments, displaySettings, view]);
   const isLoading = view === "list" ? listLoading : calendarLoading;
 
   const deleteMutation = useMutation({
@@ -624,5 +644,7 @@ export function useAppointmentsCalendarPage() {
     showBufferOnCalendar,
     bufferTimeEnabled,
     waitingStatusEnabled,
+    displaySettings,
+    weekStartsOn,
   };
 }

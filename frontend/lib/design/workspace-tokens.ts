@@ -43,6 +43,19 @@ export const WORKSPACE_FILL_CLASS =
   "flex h-0 min-h-0 w-full min-w-0 flex-1 flex-col overflow-hidden";
 
 /**
+ * App shell main content slot — shared flex chain for both scroll modes.
+ * Workspace children with `data-workspace-fill` stretch to the viewport slot.
+ */
+const APP_SHELL_MAIN_BASE_CLASS =
+  "flex h-0 min-h-0 flex-1 flex-col [&>[data-workspace-fill]]:flex [&>[data-workspace-fill]]:h-0 [&>[data-workspace-fill]]:min-h-0 [&>[data-workspace-fill]]:flex-1 [&>[data-workspace-fill]]:flex-col";
+
+/** Document-style pages (dashboard, forms) — shell owns vertical scroll. */
+export const APP_SHELL_SCROLLABLE_MAIN_CLASS = `${APP_SHELL_MAIN_BASE_CLASS} overflow-y-auto`;
+
+/** Full-bleed workspaces (inbox, calendar, settings) — internal panes scroll. */
+export const APP_SHELL_WORKSPACE_MAIN_CLASS = `${APP_SHELL_MAIN_BASE_CLASS} overflow-hidden`;
+
+/**
  * Settings-route shell for Apps master-detail pages (Services, Resources, Team).
  * Makes the first child a flex fill column so nested ListPage / two-pane canvases stretch.
  */

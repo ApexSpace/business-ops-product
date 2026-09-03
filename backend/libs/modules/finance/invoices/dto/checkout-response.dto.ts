@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { InvoiceLineType, InvoiceStatus } from '@prisma/client';
+import { CheckoutAdvancedSettingsResponseDto } from '@app/modules/finance/checkout-advanced-settings/dto/checkout-advanced-settings.dto';
 
 export class CheckoutStaffSummaryDto {
   @ApiProperty()
@@ -48,6 +49,12 @@ export class CheckoutItemResponseDto {
 
   @ApiPropertyOptional()
   staff?: CheckoutStaffSummaryDto | null;
+
+  @ApiPropertyOptional({
+    description:
+      'Line metadata (e.g. customFeeId for system-managed checkout fees)',
+  })
+  metadata?: Record<string, unknown> | null;
 }
 
 export class CheckoutContactSummaryDto {
@@ -132,4 +139,10 @@ export class CheckoutResponseDto {
 
   @ApiPropertyOptional({ type: [AppliedCheckoutOfferDto] })
   appliedOffers?: AppliedCheckoutOfferDto[];
+
+  @ApiPropertyOptional()
+  tipAmount?: string;
+
+  @ApiPropertyOptional()
+  advancedSettings?: CheckoutAdvancedSettingsResponseDto;
 }

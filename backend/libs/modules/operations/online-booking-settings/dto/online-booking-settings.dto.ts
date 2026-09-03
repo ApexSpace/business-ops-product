@@ -177,6 +177,10 @@ export class UpdateOnlineBookingPreferencesDto {
 
   @ApiPropertyOptional()
   @IsOptional()
+  expressDepositAmount?: number | string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
   @IsBoolean()
   expressAllowPhotoUpload?: boolean;
 
@@ -357,6 +361,7 @@ export class OnlineBookingSettingsResponseDto {
   expressRequireCard!: boolean;
   expressRequireDeposit!: boolean;
   expressDepositType!: string;
+  expressDepositAmount!: string | null;
   expressAllowPhotoUpload!: boolean;
   cancellationPolicyVersion!: string;
   randomizeStaffOrder!: boolean;

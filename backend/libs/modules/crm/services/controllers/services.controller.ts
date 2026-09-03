@@ -21,6 +21,7 @@ import { BusinessCapabilityGuard } from '@app/common/guards/business-capability.
 import { BusinessRolesGuard } from '@app/common/guards/business-roles.guard';
 import { CreateServiceDto } from '../dto/create-service.dto';
 import { ListServicesQueryDto } from '../dto/list-services-query.dto';
+import { ReorderServicesDto } from '../dto/reorder-services.dto';
 import { UpdateServiceDto } from '../dto/update-service.dto';
 import { ServicesService } from '@app/modules/crm/services/services/services.service';
 
@@ -40,6 +41,19 @@ export class ServicesController {
   )
   create(@CurrentUser() user: RequestUser, @Body() dto: CreateServiceDto) {
     return this.servicesService.create(user.businessId!, dto, user);
+  }
+
+  @Post('reorder')
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
+  reorder(
+    @CurrentUser() user: RequestUser,
+    @Body() dto: ReorderServicesDto,
+  ) {
+    return this.servicesService.reorder(user.businessId!, dto, user);
   }
 
   @Get()

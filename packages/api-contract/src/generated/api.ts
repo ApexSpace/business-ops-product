@@ -1268,6 +1268,646 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/chatbots": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ChatbotsController_list"];
+        put?: never;
+        post: operations["ChatbotsController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/chatbots/default": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ChatbotsController_getDefault"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/chatbots/sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ChatbotsController_listSessionsByIdentity"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/chatbots/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ChatbotsController_get"];
+        put?: never;
+        post?: never;
+        delete: operations["ChatbotsController_remove"];
+        options?: never;
+        head?: never;
+        patch: operations["ChatbotsController_update"];
+        trace?: never;
+    };
+    "/api/v1/chatbots/{id}/duplicate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ChatbotsController_duplicate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/chatbots/{id}/activate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ChatbotsController_activate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/chatbots/{id}/disable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ChatbotsController_disable"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/chatbots/{id}/embed": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ChatbotsController_embed"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/chatbots/{id}/rules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ChatbotsController_listRules"];
+        put?: never;
+        post: operations["ChatbotsController_createRule"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/chatbots/{id}/rules/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ChatbotsController_exportRules"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/chatbots/{id}/rules/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ChatbotsController_importRules"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/chatbots/{id}/rules/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ChatbotsController_previewRule"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/chatbots/{id}/rules/reorder": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["ChatbotsController_reorderRules"];
+        trace?: never;
+    };
+    "/api/v1/chatbots/{id}/rules/{ruleId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["ChatbotsController_deleteRule"];
+        options?: never;
+        head?: never;
+        patch: operations["ChatbotsController_updateRule"];
+        trace?: never;
+    };
+    "/api/v1/chatbots/sessions/{sessionId}/end": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ChatbotsController_endSession"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/chatbots/sessions/{sessionId}/convert": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ChatbotsController_convertSession"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/platform/chatbots": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["PlatformChatbotsController_list"];
+        put?: never;
+        post: operations["PlatformChatbotsController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/platform/chatbots/sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["PlatformChatbotsController_listSessionsByIdentity"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/platform/chatbots/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["PlatformChatbotsController_get"];
+        put?: never;
+        post?: never;
+        delete: operations["PlatformChatbotsController_remove"];
+        options?: never;
+        head?: never;
+        patch: operations["PlatformChatbotsController_update"];
+        trace?: never;
+    };
+    "/api/v1/platform/chatbots/{id}/duplicate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["PlatformChatbotsController_duplicate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/platform/chatbots/{id}/activate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["PlatformChatbotsController_activate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/platform/chatbots/{id}/disable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["PlatformChatbotsController_disable"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/platform/chatbots/{id}/embed": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["PlatformChatbotsController_embed"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/platform/chatbots/{id}/rules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["PlatformChatbotsController_listRules"];
+        put?: never;
+        post: operations["PlatformChatbotsController_createRule"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/platform/chatbots/{id}/rules/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["PlatformChatbotsController_exportRules"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/platform/chatbots/{id}/rules/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["PlatformChatbotsController_importRules"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/platform/chatbots/{id}/rules/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["PlatformChatbotsController_previewRule"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/platform/chatbots/{id}/rules/reorder": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["PlatformChatbotsController_reorderRules"];
+        trace?: never;
+    };
+    "/api/v1/platform/chatbots/{id}/rules/{ruleId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["PlatformChatbotsController_deleteRule"];
+        options?: never;
+        head?: never;
+        patch: operations["PlatformChatbotsController_updateRule"];
+        trace?: never;
+    };
+    "/api/v1/platform/chatbots/sessions/{sessionId}/end": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["PlatformChatbotsController_endSession"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/platform/chatbots/sessions/{sessionId}/convert": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["PlatformChatbotsController_convertSession"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/chatbots/{publicKey}/config": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["PublicChatbotController_getConfig"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/chatbots/{publicKey}/sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["PublicChatbotController_startSession"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/chatbots/sessions/{sessionId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["PublicChatbotController_getSession"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/chatbots/sessions/{sessionId}/messages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["PublicChatbotController_listMessages"];
+        put?: never;
+        post: operations["PublicChatbotController_sendMessage"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/chatbots/sessions/{sessionId}/end": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["PublicChatbotController_endSession"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/chatbots/sessions/{sessionId}/profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["PublicChatbotController_updateSessionProfile"];
+        trace?: never;
+    };
+    "/api/v1/public/chatbots/sessions/{sessionId}/claim": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["PublicChatbotController_claimSession"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/widgets/chatbot.js": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ChatbotWidgetsController_serveScript"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/widgets/chatbot/{publicKey}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ChatbotWidgetsController_serveWidget"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/platform/industries": {
         parameters: {
             query?: never;
@@ -3428,6 +4068,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/businesses/current/billing/setup-intent/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["StripePlatformBillingController_confirmCurrentSetupIntent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/businesses/current/billing/payment-methods": {
         parameters: {
             query?: never;
@@ -4740,6 +5396,102 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/integrations/oauth/x/start": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["SocialOAuthController_startX"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/integrations/oauth/x/callback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["SocialOAuthController_callbackX"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/integrations/oauth/pinterest/start": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["SocialOAuthController_startPinterest"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/integrations/oauth/pinterest/callback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["SocialOAuthController_callbackPinterest"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/integrations/oauth/tiktok/start": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["SocialOAuthController_startTikTok"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/integrations/oauth/tiktok/callback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["SocialOAuthController_callbackTikTok"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/integrations/oauth/stripe/start": {
         parameters: {
             query?: never;
@@ -4766,6 +5518,54 @@ export interface paths {
         get: operations["StripeOAuthController_callback"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/payment-accounts/primary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["StripeAccountSettingsController_getPrimaryAccount"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/integrations/business/stripe/onboarding-link": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["StripeAccountSettingsController_createOnboardingLink"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/integrations/business/stripe/dashboard-link": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["StripeAccountSettingsController_createDashboardLink"];
         delete?: never;
         options?: never;
         head?: never;
@@ -5020,630 +5820,6 @@ export interface paths {
             cookie?: never;
         };
         get: operations["SmsIntegrationController_getWebhookUrl"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/chatbots": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["ChatbotsController_list"];
-        put?: never;
-        post: operations["ChatbotsController_create"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/chatbots/sessions": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["ChatbotsController_listSessionsByIdentity"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/chatbots/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["ChatbotsController_get"];
-        put?: never;
-        post?: never;
-        delete: operations["ChatbotsController_remove"];
-        options?: never;
-        head?: never;
-        patch: operations["ChatbotsController_update"];
-        trace?: never;
-    };
-    "/api/v1/chatbots/{id}/duplicate": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["ChatbotsController_duplicate"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/chatbots/{id}/activate": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["ChatbotsController_activate"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/chatbots/{id}/disable": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["ChatbotsController_disable"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/chatbots/{id}/embed": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["ChatbotsController_embed"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/chatbots/{id}/rules": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["ChatbotsController_listRules"];
-        put?: never;
-        post: operations["ChatbotsController_createRule"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/chatbots/{id}/rules/export": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["ChatbotsController_exportRules"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/chatbots/{id}/rules/import": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["ChatbotsController_importRules"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/chatbots/{id}/rules/preview": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["ChatbotsController_previewRule"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/chatbots/{id}/rules/reorder": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch: operations["ChatbotsController_reorderRules"];
-        trace?: never;
-    };
-    "/api/v1/chatbots/{id}/rules/{ruleId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete: operations["ChatbotsController_deleteRule"];
-        options?: never;
-        head?: never;
-        patch: operations["ChatbotsController_updateRule"];
-        trace?: never;
-    };
-    "/api/v1/chatbots/sessions/{sessionId}/end": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["ChatbotsController_endSession"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/chatbots/sessions/{sessionId}/convert": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["ChatbotsController_convertSession"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/platform/chatbots": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["PlatformChatbotsController_list"];
-        put?: never;
-        post: operations["PlatformChatbotsController_create"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/platform/chatbots/sessions": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["PlatformChatbotsController_listSessionsByIdentity"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/platform/chatbots/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["PlatformChatbotsController_get"];
-        put?: never;
-        post?: never;
-        delete: operations["PlatformChatbotsController_remove"];
-        options?: never;
-        head?: never;
-        patch: operations["PlatformChatbotsController_update"];
-        trace?: never;
-    };
-    "/api/v1/platform/chatbots/{id}/duplicate": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["PlatformChatbotsController_duplicate"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/platform/chatbots/{id}/activate": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["PlatformChatbotsController_activate"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/platform/chatbots/{id}/disable": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["PlatformChatbotsController_disable"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/platform/chatbots/{id}/embed": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["PlatformChatbotsController_embed"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/platform/chatbots/{id}/rules": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["PlatformChatbotsController_listRules"];
-        put?: never;
-        post: operations["PlatformChatbotsController_createRule"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/platform/chatbots/{id}/rules/export": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["PlatformChatbotsController_exportRules"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/platform/chatbots/{id}/rules/import": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["PlatformChatbotsController_importRules"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/platform/chatbots/{id}/rules/preview": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["PlatformChatbotsController_previewRule"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/platform/chatbots/{id}/rules/reorder": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch: operations["PlatformChatbotsController_reorderRules"];
-        trace?: never;
-    };
-    "/api/v1/platform/chatbots/{id}/rules/{ruleId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete: operations["PlatformChatbotsController_deleteRule"];
-        options?: never;
-        head?: never;
-        patch: operations["PlatformChatbotsController_updateRule"];
-        trace?: never;
-    };
-    "/api/v1/platform/chatbots/sessions/{sessionId}/end": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["PlatformChatbotsController_endSession"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/platform/chatbots/sessions/{sessionId}/convert": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["PlatformChatbotsController_convertSession"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/public/chatbots/{publicKey}/config": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["PublicChatbotController_getConfig"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/public/chatbots/{publicKey}/sessions": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["PublicChatbotController_startSession"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/public/chatbots/sessions/{sessionId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["PublicChatbotController_getSession"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/public/chatbots/sessions/{sessionId}/messages": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["PublicChatbotController_listMessages"];
-        put?: never;
-        post: operations["PublicChatbotController_sendMessage"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/public/chatbots/sessions/{sessionId}/end": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["PublicChatbotController_endSession"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/public/chatbots/sessions/{sessionId}/profile": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch: operations["PublicChatbotController_updateSessionProfile"];
-        trace?: never;
-    };
-    "/api/v1/public/chatbots/sessions/{sessionId}/claim": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["PublicChatbotController_claimSession"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/widgets/chatbot.js": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["ChatbotWidgetsController_serveScript"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/widgets/chatbot/{publicKey}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["ChatbotWidgetsController_serveWidget"];
         put?: never;
         post?: never;
         delete?: never;
@@ -7348,6 +7524,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/services/reorder": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ServicesController_reorder"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/services/{id}": {
         parameters: {
             query?: never;
@@ -7362,38 +7554,6 @@ export interface paths {
         options?: never;
         head?: never;
         patch: operations["ServicesController_update"];
-        trace?: never;
-    };
-    "/api/v1/platform/services": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["PlatformServicesController_list"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/platform/services/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["PlatformServicesController_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
         trace?: never;
     };
     "/api/v1/resource-groups": {
@@ -7570,6 +7730,390 @@ export interface paths {
         options?: never;
         head?: never;
         patch: operations["ResourcesController_update"];
+        trace?: never;
+    };
+    "/api/v1/scheduling-settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["SchedulingSettingsController_getSettings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["SchedulingSettingsController_updateSettings"];
+        trace?: never;
+    };
+    "/api/v1/online-booking-settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["OnlineBookingSettingsController_getSettings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/online-booking-settings/setup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["OnlineBookingSettingsController_updateSetup"];
+        trace?: never;
+    };
+    "/api/v1/online-booking-settings/preferences": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["OnlineBookingSettingsController_updatePreferences"];
+        trace?: never;
+    };
+    "/api/v1/online-booking-settings/staff-selection": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["OnlineBookingSettingsController_updateStaffSelection"];
+        trace?: never;
+    };
+    "/api/v1/online-booking-settings/business-hours": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["OnlineBookingSettingsController_getBusinessHours"];
+        put: operations["OnlineBookingSettingsController_updateBusinessHours"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/online-booking-settings/staff/{userId}/work-schedule": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["OnlineBookingSettingsController_getStaffWorkSchedule"];
+        put: operations["OnlineBookingSettingsController_updateStaffWorkSchedule"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/quick-tools/set-not-working/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["QuickToolsController_previewSetNotWorking"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/quick-tools/set-not-working": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["QuickToolsController_applySetNotWorking"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/quick-tools/remove-not-working/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["QuickToolsController_previewRemoveNotWorking"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/quick-tools/remove-not-working": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["QuickToolsController_applyRemoveNotWorking"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/calendars": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["CalendarsController_list"];
+        put?: never;
+        post: operations["CalendarsController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/calendars/{id}/staff": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["CalendarsController_listStaff"];
+        put?: never;
+        post: operations["CalendarsController_addStaff"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/calendars/{id}/staff/{userId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["CalendarsController_removeStaff"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/calendars/{id}/availability": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["CalendarsController_getAvailability"];
+        put: operations["CalendarsController_replaceAvailability"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/calendars/{id}/exceptions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["CalendarsController_listExceptions"];
+        put?: never;
+        post: operations["CalendarsController_createException"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/calendars/{id}/exceptions/{exceptionId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["CalendarsController_removeException"];
+        options?: never;
+        head?: never;
+        patch: operations["CalendarsController_updateException"];
+        trace?: never;
+    };
+    "/api/v1/calendars/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["CalendarsController_get"];
+        put?: never;
+        post?: never;
+        delete: operations["CalendarsController_remove"];
+        options?: never;
+        head?: never;
+        patch: operations["CalendarsController_update"];
+        trace?: never;
+    };
+    "/api/v1/calendar-display-settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["CalendarDisplaySettingsController_getSettings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/calendar-display-settings/visible-hours": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["CalendarDisplaySettingsController_updateVisibleHours"];
+        trace?: never;
+    };
+    "/api/v1/calendar-display-settings/week-start": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["CalendarDisplaySettingsController_updateWeekStart"];
+        trace?: never;
+    };
+    "/api/v1/calendar-display-settings/zoom-level": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["CalendarDisplaySettingsController_updateZoomLevel"];
+        trace?: never;
+    };
+    "/api/v1/calendar-display-settings/cancelled-visibility": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["CalendarDisplaySettingsController_updateCancelledVisibility"];
+        trace?: never;
+    };
+    "/api/v1/calendar-display-settings/high-contrast": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["CalendarDisplaySettingsController_updateHighContrast"];
         trace?: never;
     };
     "/api/v1/work-items": {
@@ -8050,6 +8594,22 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/api/v1/checkout-advanced-settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["CheckoutAdvancedSettingsController_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["CheckoutAdvancedSettingsController_update"];
         trace?: never;
     };
     "/api/v1/product-categories": {
@@ -8610,6 +9170,38 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/api/v1/custom-fees": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["CustomFeesController_list"];
+        put?: never;
+        post: operations["CustomFeesController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/custom-fees/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["CustomFeesController_get"];
+        put?: never;
+        post?: never;
+        delete: operations["CustomFeesController_delete"];
+        options?: never;
+        head?: never;
+        patch: operations["CustomFeesController_update"];
         trace?: never;
     };
     "/api/v1/platform/operations/campaigns": {
@@ -9716,6 +10308,278 @@ export interface paths {
         patch: operations["TasksController_reopen"];
         trace?: never;
     };
+    "/api/v1/social-planner/platform-schemas": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["SocialPlannerController_platformSchemas"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/social-planner/tiktok/creator-info": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["SocialPlannerController_tiktokCreatorInfo"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/social-planner/youtube/categories": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["SocialPlannerController_youtubeCategories"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/social-planner/pinterest/boards": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["SocialPlannerController_createPinterestBoard"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/social-planner/calendar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["SocialPlannerController_calendar"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/social-planner/posts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["SocialPlannerController_list"];
+        put?: never;
+        post: operations["SocialPlannerController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/social-planner/posts/validate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["SocialPlannerController_validate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/social-planner/posts/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["SocialPlannerController_get"];
+        put?: never;
+        post?: never;
+        delete: operations["SocialPlannerController_remove"];
+        options?: never;
+        head?: never;
+        patch: operations["SocialPlannerController_update"];
+        trace?: never;
+    };
+    "/api/v1/social-planner/posts/{id}/schedule": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["SocialPlannerController_schedule"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/social-planner/posts/{id}/publish-now": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["SocialPlannerController_publishNow"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/social-planner/posts/{id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["SocialPlannerController_cancel"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/social-planner/targets/{targetId}/retry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["SocialPlannerController_retryTarget"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/social-planner/comments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["SocialPlannerCommentsController_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/social-planner/comments/mark-read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["SocialPlannerCommentsController_markRead"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/social-planner/comments/{commentId}/reply": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["SocialPlannerCommentsController_reply"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/social-planner/comments/{commentId}/like": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["SocialPlannerCommentsController_like"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/social-planner/comments/{commentId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["SocialPlannerCommentsController_remove"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/calendars/{id}/sync/status": {
         parameters: {
             query?: never;
@@ -9746,118 +10610,6 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
-        trace?: never;
-    };
-    "/api/v1/calendars": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["CalendarsController_list"];
-        put?: never;
-        post: operations["CalendarsController_create"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/calendars/{id}/staff": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["CalendarsController_listStaff"];
-        put?: never;
-        post: operations["CalendarsController_addStaff"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/calendars/{id}/staff/{userId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete: operations["CalendarsController_removeStaff"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/calendars/{id}/availability": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["CalendarsController_getAvailability"];
-        put: operations["CalendarsController_replaceAvailability"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/calendars/{id}/exceptions": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["CalendarsController_listExceptions"];
-        put?: never;
-        post: operations["CalendarsController_createException"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/calendars/{id}/exceptions/{exceptionId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete: operations["CalendarsController_removeException"];
-        options?: never;
-        head?: never;
-        patch: operations["CalendarsController_updateException"];
-        trace?: never;
-    };
-    "/api/v1/calendars/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["CalendarsController_get"];
-        put?: never;
-        post?: never;
-        delete: operations["CalendarsController_remove"];
-        options?: never;
-        head?: never;
-        patch: operations["CalendarsController_update"];
         trace?: never;
     };
     "/api/v1/appointments": {
@@ -9956,14 +10708,30 @@ export interface paths {
         patch: operations["AppointmentsController_updateStatus"];
         trace?: never;
     };
-    "/api/v1/online-booking-settings": {
+    "/api/v1/waiting-room-settings": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get: operations["OnlineBookingSettingsController_getSettings"];
+        get: operations["WaitingRoomSettingsController_getSettings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["WaitingRoomSettingsController_updateSettings"];
+        trace?: never;
+    };
+    "/api/v1/cancel-reschedule-settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["CancelRescheduleSettingsController_getSettings"];
         put?: never;
         post?: never;
         delete?: never;
@@ -9972,7 +10740,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/online-booking-settings/setup": {
+    "/api/v1/cancel-reschedule-settings/cancellation-policy": {
         parameters: {
             query?: never;
             header?: never;
@@ -9985,10 +10753,10 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        patch: operations["OnlineBookingSettingsController_updateSetup"];
+        patch: operations["CancelRescheduleSettingsController_updateCancellationPolicy"];
         trace?: never;
     };
-    "/api/v1/online-booking-settings/preferences": {
+    "/api/v1/cancel-reschedule-settings/self-service": {
         parameters: {
             query?: never;
             header?: never;
@@ -10001,10 +10769,10 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        patch: operations["OnlineBookingSettingsController_updatePreferences"];
+        patch: operations["CancelRescheduleSettingsController_updateSelfService"];
         trace?: never;
     };
-    "/api/v1/online-booking-settings/staff-selection": {
+    "/api/v1/cancel-reschedule-settings/late-cancellation": {
         parameters: {
             query?: never;
             header?: never;
@@ -10017,18 +10785,18 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        patch: operations["OnlineBookingSettingsController_updateStaffSelection"];
+        patch: operations["CancelRescheduleSettingsController_updateLateCancellation"];
         trace?: never;
     };
-    "/api/v1/online-booking-settings/business-hours": {
+    "/api/v1/appointment-automated-messages/{eventType}/message-catalog": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get: operations["OnlineBookingSettingsController_getBusinessHours"];
-        put: operations["OnlineBookingSettingsController_updateBusinessHours"];
+        get: operations["AppointmentAutomatedMessagesController_catalog"];
+        put?: never;
         post?: never;
         delete?: never;
         options?: never;
@@ -10036,20 +10804,84 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/online-booking-settings/staff/{userId}/work-schedule": {
+    "/api/v1/appointment-automated-messages/{eventType}": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get: operations["OnlineBookingSettingsController_getStaffWorkSchedule"];
-        put: operations["OnlineBookingSettingsController_updateStaffWorkSchedule"];
+        get: operations["AppointmentAutomatedMessagesController_get"];
+        put?: never;
         post?: never;
         delete?: never;
         options?: never;
         head?: never;
+        patch: operations["AppointmentAutomatedMessagesController_updateSettings"];
+        trace?: never;
+    };
+    "/api/v1/appointment-automated-messages/{eventType}/triggers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AppointmentAutomatedMessagesController_createTrigger"];
+        delete?: never;
+        options?: never;
+        head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/api/v1/appointment-automated-messages/triggers/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["AppointmentAutomatedMessagesController_deleteTrigger"];
+        options?: never;
+        head?: never;
+        patch: operations["AppointmentAutomatedMessagesController_updateTrigger"];
+        trace?: never;
+    };
+    "/api/v1/appointment-automated-messages/triggers/{id}/messages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AppointmentAutomatedMessagesController_createMessage"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/appointment-automated-messages/messages/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["AppointmentAutomatedMessagesController_deleteMessage"];
+        options?: never;
+        head?: never;
+        patch: operations["AppointmentAutomatedMessagesController_updateMessage"];
         trace?: never;
     };
     "/api/v1/waitlist": {
@@ -10370,6 +11202,70 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/appointments/{token}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["PublicAppointmentManageController_getSummary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/appointments/{token}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["PublicAppointmentManageController_cancel"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/appointments/{token}/availability": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["PublicAppointmentManageController_getAvailability"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/appointments/{token}/reschedule": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["PublicAppointmentManageController_reschedule"];
         trace?: never;
     };
     "/api/v1/appointments/express": {
@@ -10718,6 +11614,134 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["TrialHandoffController_exchange"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/data-io/entities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["DataIoController_listEntities"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/data-imports/template": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["DataIoController_template"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/data-imports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["DataIoController_list"];
+        put?: never;
+        post: operations["DataIoController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/data-imports/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["DataIoController_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/data-imports/{id}/attach-file": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["DataIoController_attachFile"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/data-imports/{id}/configure": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["DataIoController_configure"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/data-imports/{id}/start": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["DataIoController_start"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/data-exports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["DataIoController_export"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -11173,6 +12197,138 @@ export interface components {
             /** @enum {string} */
             role?: "SUPER_ADMIN" | "PLATFORM_ADMIN" | "SUPPORT";
         };
+        CreateChatbotDto: {
+            name: string;
+            widgetTitle: string;
+            welcomeMessage: string;
+            fallbackMessage?: string;
+            offlineMessage?: string;
+            handoffMessage?: string;
+            description?: string;
+            avatarUrl?: string;
+            primaryColor?: string;
+            /** @enum {string} */
+            position?: "BOTTOM_RIGHT" | "BOTTOM_LEFT";
+            collectContactInfo?: boolean;
+            requireName?: boolean;
+            requireEmail?: boolean;
+            requirePhone?: boolean;
+            showNotesField?: boolean;
+            allowAnonymous?: boolean;
+            autoReplyEnabled?: boolean;
+            showBranding?: boolean;
+            embedEnabled?: boolean;
+            consentEnabled?: boolean;
+            consentText?: string;
+            /** @enum {string} */
+            launcherIcon?: "message" | "chat" | "help";
+            collectPhoneWhenOffline?: boolean;
+            allowedDomains?: string[];
+        };
+        ChatbotBusinessHoursSettingsUpdateDto: {
+            enabled?: boolean;
+            timezone?: string;
+            schedule?: {
+                [key: string]: {
+                    start: string;
+                    end: string;
+                }[];
+            };
+        };
+        ChatbotWelcomeVariantDto: {
+            /** @enum {string} */
+            matchType: "page_url" | "referrer";
+            pattern: string;
+            message: string;
+        };
+        UpdateChatbotDto: {
+            name?: string;
+            widgetTitle?: string;
+            welcomeMessage?: string;
+            fallbackMessage?: string;
+            offlineMessage?: string;
+            handoffMessage?: string;
+            description?: string;
+            avatarUrl?: string;
+            primaryColor?: string;
+            /** @enum {string} */
+            position?: "BOTTOM_RIGHT" | "BOTTOM_LEFT";
+            collectContactInfo?: boolean;
+            requireName?: boolean;
+            requireEmail?: boolean;
+            requirePhone?: boolean;
+            showNotesField?: boolean;
+            allowAnonymous?: boolean;
+            autoReplyEnabled?: boolean;
+            showBranding?: boolean;
+            embedEnabled?: boolean;
+            consentEnabled?: boolean;
+            consentText?: string;
+            /** @enum {string} */
+            launcherIcon?: "message" | "chat" | "help";
+            collectPhoneWhenOffline?: boolean;
+            allowedDomains?: string[];
+            /** @enum {string} */
+            status?: "DRAFT" | "ACTIVE" | "DISABLED" | "ARCHIVED";
+            aiEnabled?: boolean;
+            businessHoursOnly?: boolean;
+            acknowledgementMessage?: string;
+            liveChatEnabled?: boolean;
+            businessHoursSettings?: components["schemas"]["ChatbotBusinessHoursSettingsUpdateDto"];
+            progressiveProfilingEnabled?: boolean;
+            progressiveProfilingAskAfterMessages?: number;
+            progressiveProfilingPromptMessage?: string;
+            welcomeVariants?: components["schemas"]["ChatbotWelcomeVariantDto"][];
+        };
+        CreateChatbotRuleDto: {
+            /** @enum {string} */
+            triggerType: "EXACT_MATCH" | "CONTAINS" | "STARTS_WITH" | "FALLBACK";
+            triggerText: string;
+            responseText: string;
+            sortOrder?: number;
+            isActive?: boolean;
+        };
+        ImportChatbotRulesDto: {
+            rules: components["schemas"]["CreateChatbotRuleDto"][];
+            replace?: boolean;
+        };
+        PreviewChatbotRuleDto: {
+            text: string;
+        };
+        ReorderChatbotRulesDto: {
+            ruleIds: string[];
+        };
+        UpdateChatbotRuleDto: {
+            /** @enum {string} */
+            triggerType?: "EXACT_MATCH" | "CONTAINS" | "STARTS_WITH" | "FALLBACK";
+            triggerText?: string;
+            responseText?: string;
+            sortOrder?: number;
+            isActive?: boolean;
+        };
+        StartChatbotSessionDto: {
+            visitorId: string;
+            visitorName?: string;
+            visitorEmail?: string;
+            visitorPhone?: string;
+            initialMessage?: string;
+            pageUrl?: string;
+            referrer?: string;
+            anonymous?: boolean;
+            authToken?: string;
+        };
+        SendChatbotMessageDto: {
+            text: string;
+        };
+        UpdateChatbotSessionProfileDto: {
+            visitorName?: string;
+            visitorEmail?: string;
+            visitorPhone?: string;
+        };
+        ClaimChatbotSessionDto: {
+            /** @description Access JWT; may also be sent as Authorization Bearer header */
+            authToken?: string;
+        };
         IndustryLabelsDto: {
             contacts: string;
             pipelines: string;
@@ -11627,6 +12783,10 @@ export interface components {
             /** @enum {string} */
             billingCycle: "MONTHLY" | "YEARLY" | "ONE_TIME" | "CUSTOM";
         };
+        ConfirmBusinessSetupIntentDto: {
+            /** @description Stripe SetupIntent id returned after confirmSetup succeeds */
+            setupIntentId: string;
+        };
         CreateBusinessCheckoutSessionDto: {
             planTierId: string;
             /** @enum {string} */
@@ -11817,136 +12977,6 @@ export interface components {
             /** @enum {string} */
             connectionType?: "MANUAL" | "OAUTH" | "EMBEDDED_SIGNUP";
         };
-        CreateChatbotDto: {
-            name: string;
-            widgetTitle: string;
-            welcomeMessage: string;
-            fallbackMessage?: string;
-            offlineMessage?: string;
-            handoffMessage?: string;
-            description?: string;
-            avatarUrl?: string;
-            primaryColor?: string;
-            /** @enum {string} */
-            position?: "BOTTOM_RIGHT" | "BOTTOM_LEFT";
-            collectContactInfo?: boolean;
-            requireName?: boolean;
-            requireEmail?: boolean;
-            requirePhone?: boolean;
-            showNotesField?: boolean;
-            allowAnonymous?: boolean;
-            autoReplyEnabled?: boolean;
-            showBranding?: boolean;
-            embedEnabled?: boolean;
-            consentEnabled?: boolean;
-            consentText?: string;
-            /** @enum {string} */
-            launcherIcon?: "message" | "chat" | "help";
-            collectPhoneWhenOffline?: boolean;
-            allowedDomains?: string[];
-        };
-        ChatbotBusinessHoursSettingsUpdateDto: {
-            enabled?: boolean;
-            timezone?: string;
-            schedule?: {
-                [key: string]: {
-                    start: string;
-                    end: string;
-                }[];
-            };
-        };
-        ChatbotWelcomeVariantDto: {
-            /** @enum {string} */
-            matchType: "page_url" | "referrer";
-            pattern: string;
-            message: string;
-        };
-        UpdateChatbotDto: {
-            name?: string;
-            widgetTitle?: string;
-            welcomeMessage?: string;
-            fallbackMessage?: string;
-            offlineMessage?: string;
-            handoffMessage?: string;
-            description?: string;
-            avatarUrl?: string;
-            primaryColor?: string;
-            /** @enum {string} */
-            position?: "BOTTOM_RIGHT" | "BOTTOM_LEFT";
-            collectContactInfo?: boolean;
-            requireName?: boolean;
-            requireEmail?: boolean;
-            requirePhone?: boolean;
-            showNotesField?: boolean;
-            allowAnonymous?: boolean;
-            autoReplyEnabled?: boolean;
-            showBranding?: boolean;
-            embedEnabled?: boolean;
-            consentEnabled?: boolean;
-            consentText?: string;
-            /** @enum {string} */
-            launcherIcon?: "message" | "chat" | "help";
-            collectPhoneWhenOffline?: boolean;
-            allowedDomains?: string[];
-            /** @enum {string} */
-            status?: "DRAFT" | "ACTIVE" | "DISABLED" | "ARCHIVED";
-            aiEnabled?: boolean;
-            businessHoursOnly?: boolean;
-            businessHoursSettings?: components["schemas"]["ChatbotBusinessHoursSettingsUpdateDto"];
-            progressiveProfilingEnabled?: boolean;
-            progressiveProfilingAskAfterMessages?: number;
-            progressiveProfilingPromptMessage?: string;
-            welcomeVariants?: components["schemas"]["ChatbotWelcomeVariantDto"][];
-        };
-        CreateChatbotRuleDto: {
-            /** @enum {string} */
-            triggerType: "EXACT_MATCH" | "CONTAINS" | "STARTS_WITH" | "FALLBACK";
-            triggerText: string;
-            responseText: string;
-            sortOrder?: number;
-            isActive?: boolean;
-        };
-        ImportChatbotRulesDto: {
-            rules: components["schemas"]["CreateChatbotRuleDto"][];
-            replace?: boolean;
-        };
-        PreviewChatbotRuleDto: {
-            text: string;
-        };
-        ReorderChatbotRulesDto: {
-            ruleIds: string[];
-        };
-        UpdateChatbotRuleDto: {
-            /** @enum {string} */
-            triggerType?: "EXACT_MATCH" | "CONTAINS" | "STARTS_WITH" | "FALLBACK";
-            triggerText?: string;
-            responseText?: string;
-            sortOrder?: number;
-            isActive?: boolean;
-        };
-        StartChatbotSessionDto: {
-            visitorId: string;
-            visitorName?: string;
-            visitorEmail?: string;
-            visitorPhone?: string;
-            initialMessage?: string;
-            pageUrl?: string;
-            referrer?: string;
-            anonymous?: boolean;
-            authToken?: string;
-        };
-        SendChatbotMessageDto: {
-            text: string;
-        };
-        UpdateChatbotSessionProfileDto: {
-            visitorName?: string;
-            visitorEmail?: string;
-            visitorPhone?: string;
-        };
-        ClaimChatbotSessionDto: {
-            /** @description Access JWT; may also be sent as Authorization Bearer header */
-            authToken?: string;
-        };
         UpdateGiftCardSettingsOnlineSalesDto: {
             enabled: boolean;
             purchaseDisclaimer?: string;
@@ -12092,6 +13122,7 @@ export interface components {
             chargeTax?: boolean;
             /** @enum {string} */
             expirationPolicy?: "NEVER" | "AFTER_PURCHASE";
+            /** @description Required when expirationPolicy is AFTER_PURCHASE */
             expirationDays?: number;
             onlineSalesEnabled?: boolean;
             shortDescription?: string;
@@ -12108,6 +13139,7 @@ export interface components {
             chargeTax?: boolean;
             /** @enum {string} */
             expirationPolicy?: "NEVER" | "AFTER_PURCHASE";
+            /** @description Required when expirationPolicy is AFTER_PURCHASE */
             expirationDays?: number;
             onlineSalesEnabled?: boolean;
             shortDescription?: string;
@@ -12267,11 +13299,13 @@ export interface components {
             amount: number;
             ownerContactId: string;
             sendDigital?: boolean;
+            staffUserId?: string;
         };
         AddPackageLineDto: {
             packageTemplateId: string;
             ownerContactId: string;
             isDemo?: boolean;
+            staffUserId?: string;
         };
         UpdateCheckoutLineItemDto: {
             title?: string;
@@ -12283,7 +13317,7 @@ export interface components {
         };
         CollectPaymentTenderDto: {
             /** @enum {string} */
-            method: "CASH" | "CARD" | "BANK_TRANSFER" | "WALLET" | "GIFT_CARD" | "STRIPE" | "OTHER";
+            method: "CASH" | "CARD" | "BANK_TRANSFER" | "WALLET" | "GIFT_CARD" | "STRIPE" | "CHECK" | "OTHER";
             /** @example 50 */
             amount: number;
             reference?: string;
@@ -12293,6 +13327,8 @@ export interface components {
         };
         CloseCheckoutDto: {
             tenders: components["schemas"]["CollectPaymentTenderDto"][];
+            /** @example 5 */
+            tipAmount?: number;
         };
         CreateEstimateDto: {
             contactId: string;
@@ -12360,6 +13396,9 @@ export interface components {
             commissionDeductionType?: "FLAT" | "PERCENT";
             commissionDeductionValue?: Record<string, never>;
             /** @enum {string} */
+            postCommissionDeductionType?: "FLAT" | "PERCENT";
+            postCommissionDeductionValue?: Record<string, never>;
+            /** @enum {string} */
             status?: "ACTIVE" | "ARCHIVED";
             isDemo?: boolean;
         };
@@ -12380,27 +13419,27 @@ export interface components {
             onlineBookingEnabled?: boolean;
             calendarId?: Record<string, never>;
             customizePriceDisplay?: boolean;
+            /** @enum {string} */
+            priceDisplayMode?: "SHOW_MINIMUM" | "HIDE";
             showPromptToCall?: boolean;
+            promptToCallExplanation?: Record<string, never>;
+            onlineBookingDescription?: Record<string, never>;
             requireHomeAddress?: boolean;
             requireCreditCard?: boolean;
             /** @enum {string} */
             requirePaymentAtBooking?: "NO" | "OPTIONAL" | "REQUIRED";
         };
         CreateResourceRequirementDto: {
-            label: string;
+            groupId: string;
             /** @enum {string} */
-            resourceType: "ROOM" | "EQUIPMENT" | "CONSUMABLE";
-            resourceId?: Record<string, never>;
-            quantity?: number;
-            notes?: string;
+            selectionMode: "ALL" | "SPECIFIC";
+            resourceIds?: string[];
         };
         UpdateResourceRequirementDto: {
-            label?: string;
+            groupId?: string;
             /** @enum {string} */
-            resourceType?: "ROOM" | "EQUIPMENT" | "CONSUMABLE";
-            resourceId?: Record<string, never>;
-            quantity?: number;
-            notes?: string;
+            selectionMode?: "ALL" | "SPECIFIC";
+            resourceIds?: string[];
         };
         ServiceProductUsageDto: {
             productId?: Record<string, never>;
@@ -12462,9 +13501,18 @@ export interface components {
             /** @enum {string} */
             commissionDeductionType?: "FLAT" | "PERCENT";
             commissionDeductionValue?: number;
+            /** @enum {string} */
+            postCommissionDeductionType?: "FLAT" | "PERCENT";
+            postCommissionDeductionValue?: number;
             isDemo?: boolean;
             /** @enum {string} */
             status?: "ACTIVE" | "ARCHIVED";
+        };
+        ReorderServicesDto: {
+            /** Format: uuid */
+            categoryId: string;
+            /** @description Service IDs in the desired order within the category */
+            orderedIds: string[];
         };
         UpdateServiceDto: {
             name?: string;
@@ -12483,6 +13531,9 @@ export interface components {
             /** @enum {string} */
             commissionDeductionType?: "FLAT" | "PERCENT";
             commissionDeductionValue?: Record<string, never>;
+            /** @enum {string} */
+            postCommissionDeductionType?: "FLAT" | "PERCENT";
+            postCommissionDeductionValue?: Record<string, never>;
             isDemo?: boolean;
         };
         CreateResourceGroupDto: {
@@ -12500,6 +13551,9 @@ export interface components {
             resourceType: "ROOM" | "EQUIPMENT" | "CONSUMABLE";
             groupId?: Record<string, never>;
             description?: Record<string, never>;
+            /** @description Concurrent appointment limit. null = no limit. */
+            capacity?: Record<string, never> | null;
+            alwaysAvailable?: boolean;
         };
         ResourceAvailabilitySlotDto: {
             /** @enum {string} */
@@ -12527,6 +13581,233 @@ export interface components {
             /** @enum {string} */
             status?: "ACTIVE" | "INACTIVE";
             sortOrder?: number;
+            /** @description Concurrent appointment limit. null = no limit. */
+            capacity?: Record<string, never> | null;
+            alwaysAvailable?: boolean;
+        };
+        UpdateSchedulingSettingsDto: {
+            slotIntervalMinutes?: number;
+            bufferTimeEnabled?: boolean;
+            bufferBeforeMinutes?: number;
+            bufferAfterMinutes?: number;
+            showBufferOnCalendar?: boolean;
+            processingTimeEnabled?: boolean;
+            rebookingJumpWeeks?: number[];
+        };
+        UpdateOnlineBookingSetupDto: {
+            onlineBookingEnabled: boolean;
+            embedEnabled?: boolean;
+            overlayEnabled?: boolean;
+            widgetSettings?: Record<string, never>;
+            confirmationSettings?: Record<string, never>;
+            formSettings?: Record<string, never>;
+        };
+        UpdateOnlineBookingPreferencesDto: {
+            minimumNoticeMinutes?: number;
+            maxBookingDays?: number;
+            avoidGapsEnabled?: boolean;
+            /** @description Maximum allowed gap in minutes. 0 = adjacent only. Null = no limit. */
+            avoidGapsMaxGapMinutes?: Record<string, never>;
+            /** @description Minimum allowed gap in minutes. Null = no minimum. */
+            avoidGapsMinGapMinutes?: Record<string, never>;
+            /** @enum {string} */
+            avoidGapsTimeBlockMode?: "IGNORE" | "SAME_AS_APPOINTMENTS";
+            /** @enum {string} */
+            avoidGapsEmptyDayMode?: "ALL_TIMES" | "SHIFT_EDGES_ONLY";
+            /** @enum {string} */
+            avoidGapsMultiProviderMode?: "SAME_AS_SINGLE" | "ALLOW_GAPS";
+            allowMultipleServices?: boolean;
+            allowDuplicateServices?: boolean;
+            singleStaffOnly?: boolean;
+            collectPhotosEnabled?: boolean;
+            photoUploadPrompt?: string;
+            waitlistEnabled?: boolean;
+            expressBookingEnabled?: boolean;
+            expressBookingAutoEnable?: boolean;
+            expressBookingTimeLimitMinutes?: number;
+            expressRequireCard?: boolean;
+            expressRequireDeposit?: boolean;
+            /** @enum {string} */
+            expressDepositType?: "FULL" | "PERCENTAGE" | "FIXED";
+            expressDepositAmount?: Record<string, never>;
+            expressAllowPhotoUpload?: boolean;
+            cancellationPolicyVersion?: string;
+            slotIntervalMinutes?: number;
+            bufferBeforeMinutes?: number;
+            bufferAfterMinutes?: number;
+            /** @description Deprecated — ignored. Scheduling uses the business profile timezone. */
+            timezone?: string;
+            requireApproval?: boolean;
+            autoConfirm?: boolean;
+            /** @enum {string} */
+            locationType?: "PHYSICAL" | "PHONE_CALL" | "GOOGLE_MEET" | "ZOOM" | "CUSTOM" | "ONSITE";
+            locationValue?: string;
+            formSettings?: Record<string, never>;
+            notificationSettings?: Record<string, never>;
+        };
+        UpdateOnlineBookingStaffSelectionDto: {
+            randomizeStaffOrder?: boolean;
+            showGenderOptions?: boolean;
+            showAnyoneOption?: boolean;
+            /** @enum {string} */
+            anyoneAssignmentMode?: "RANDOM" | "ORDER";
+            anyoneExcludedStaffIds?: string[];
+        };
+        BusinessHoursSlotDto: {
+            /** @enum {string} */
+            dayOfWeek: "MONDAY" | "TUESDAY" | "WEDNESDAY" | "THURSDAY" | "FRIDAY" | "SATURDAY" | "SUNDAY";
+            /** @example 09:00 */
+            startTime: string;
+            /** @example 17:00 */
+            endTime: string;
+            isEnabled: boolean;
+        };
+        ReplaceBusinessHoursDto: {
+            slots: components["schemas"]["BusinessHoursSlotDto"][];
+        };
+        ReplaceStaffWorkScheduleDto: {
+            useBusinessHours?: boolean;
+            slots?: components["schemas"]["BusinessHoursSlotDto"][];
+        };
+        SetNotWorkingDto: {
+            /**
+             * @description ISO date (YYYY-MM-DD)
+             * @example 2026-09-02
+             */
+            fromDate: string;
+            /**
+             * @description ISO date (YYYY-MM-DD); defaults to fromDate
+             * @example 2026-09-05
+             */
+            toDate?: string;
+            /** @description Staff user IDs to mark unavailable */
+            staffUserIds: string[];
+            reason?: string;
+        };
+        RemoveNotWorkingDto: {
+            /**
+             * @description ISO date (YYYY-MM-DD)
+             * @example 2026-09-02
+             */
+            fromDate: string;
+            /**
+             * @description ISO date (YYYY-MM-DD); defaults to fromDate
+             * @example 2026-09-05
+             */
+            toDate?: string;
+            /** @description Staff user IDs to clear full-day off blocks */
+            staffUserIds: string[];
+        };
+        CreateCalendarDto: {
+            name: string;
+            description?: string;
+            /** @enum {string} */
+            type?: "SERVICE" | "STAFF" | "ROUND_ROBIN" | "COLLECTIVE" | "CLASS_EVENT" | "PERSONAL";
+            color?: string;
+            timezone?: string;
+            /** @enum {string} */
+            status?: "ACTIVE" | "INACTIVE";
+            defaultDurationMinutes?: number;
+            bufferBeforeMinutes?: number;
+            bufferAfterMinutes?: number;
+            minimumNoticeMinutes?: number;
+            maxBookingDays?: number;
+            slotIntervalMinutes?: number;
+            /** @enum {string} */
+            locationType?: "PHYSICAL" | "PHONE_CALL" | "GOOGLE_MEET" | "ZOOM" | "CUSTOM" | "ONSITE";
+            locationValue?: string;
+            requireApproval?: boolean;
+            autoConfirm?: boolean;
+            capacity?: number;
+            formSettings?: Record<string, never>;
+            confirmationSettings?: Record<string, never>;
+            paymentSettings?: Record<string, never>;
+            notificationSettings?: Record<string, never>;
+            policySettings?: Record<string, never>;
+            widgetSettings?: Record<string, never>;
+            googleSyncSettings?: Record<string, never>;
+            embedEnabled?: boolean;
+        };
+        AddCalendarStaffDto: {
+            userId: string;
+            role?: string;
+            isPrimary?: boolean;
+        };
+        AvailabilitySlotDto: {
+            /** @enum {string} */
+            dayOfWeek: "MONDAY" | "TUESDAY" | "WEDNESDAY" | "THURSDAY" | "FRIDAY" | "SATURDAY" | "SUNDAY";
+            startTime: string;
+            endTime: string;
+            isEnabled?: boolean;
+        };
+        ReplaceCalendarAvailabilityDto: {
+            slots: components["schemas"]["AvailabilitySlotDto"][];
+        };
+        CreateCalendarExceptionDto: {
+            date: string;
+            startTime?: string;
+            endTime?: string;
+            isUnavailable?: boolean;
+            reason?: string;
+        };
+        UpdateCalendarExceptionDto: {
+            date: string;
+            startTime?: string;
+            endTime?: string;
+            isUnavailable?: boolean;
+            reason?: string;
+        };
+        UpdateCalendarDto: {
+            name?: string;
+            description?: string;
+            /** @enum {string} */
+            type?: "SERVICE" | "STAFF" | "ROUND_ROBIN" | "COLLECTIVE" | "CLASS_EVENT" | "PERSONAL";
+            color?: string;
+            timezone?: string;
+            /** @enum {string} */
+            status?: "ACTIVE" | "INACTIVE";
+            defaultDurationMinutes?: number;
+            bufferBeforeMinutes?: number;
+            bufferAfterMinutes?: number;
+            minimumNoticeMinutes?: number;
+            maxBookingDays?: number;
+            slotIntervalMinutes?: number;
+            /** @enum {string} */
+            locationType?: "PHYSICAL" | "PHONE_CALL" | "GOOGLE_MEET" | "ZOOM" | "CUSTOM" | "ONSITE";
+            locationValue?: string;
+            requireApproval?: boolean;
+            autoConfirm?: boolean;
+            capacity?: number;
+            formSettings?: Record<string, never>;
+            confirmationSettings?: Record<string, never>;
+            paymentSettings?: Record<string, never>;
+            notificationSettings?: Record<string, never>;
+            policySettings?: Record<string, never>;
+            widgetSettings?: Record<string, never>;
+            googleSyncSettings?: Record<string, never>;
+            embedEnabled?: boolean;
+        };
+        UpdateVisibleHoursDto: {
+            /** @example 07:00 */
+            visibleStartTime: string;
+            /** @example 22:00 */
+            visibleEndTime: string;
+        };
+        UpdateWeekStartDto: {
+            /** @enum {string} */
+            weekStartsOn: "SUNDAY" | "MONDAY";
+        };
+        UpdateZoomLevelDto: {
+            /** @enum {string} */
+            zoomLevel: "SMALL" | "MEDIUM" | "LARGE";
+        };
+        UpdateCancelledVisibilityDto: {
+            showNormalCancellation: boolean;
+            showLateCancellation: boolean;
+            showNoShow: boolean;
+        };
+        UpdateHighContrastDto: {
+            highContrastEnabled: boolean;
         };
         CreateWorkItemDto: {
             contactId: string;
@@ -12618,7 +13899,7 @@ export interface components {
             /** @example 150 */
             amount: number;
             /** @enum {string} */
-            method: "CASH" | "CARD" | "BANK_TRANSFER" | "WALLET" | "GIFT_CARD" | "STRIPE" | "OTHER";
+            method: "CASH" | "CARD" | "BANK_TRANSFER" | "WALLET" | "GIFT_CARD" | "STRIPE" | "CHECK" | "OTHER";
             /** @description ISO date-time when payment was received */
             paidAt: string;
             reference?: string;
@@ -12644,10 +13925,27 @@ export interface components {
             invoiceId?: string;
             amount?: number;
             /** @enum {string} */
-            method?: "CASH" | "CARD" | "BANK_TRANSFER" | "WALLET" | "GIFT_CARD" | "STRIPE" | "OTHER";
+            method?: "CASH" | "CARD" | "BANK_TRANSFER" | "WALLET" | "GIFT_CARD" | "STRIPE" | "CHECK" | "OTHER";
             paidAt?: string;
             reference?: string;
             notes?: string;
+        };
+        UpdateCheckoutAdvancedSettingsDto: {
+            customPaymentMethodNames?: string[];
+            tipButtonPercents?: number[];
+            hideTipButtons?: boolean;
+            askClientsForTip?: boolean;
+            askForTipProductsOnly?: boolean;
+            askClientsForSignature?: boolean;
+            enableCheckPayments?: boolean;
+            showChangeCalculator?: boolean;
+            showReceiptPreview?: boolean;
+            requireStaffForServices?: boolean;
+            requireStaffForProducts?: boolean;
+            requireStaffForGiftCards?: boolean;
+            requireStaffForPackages?: boolean;
+            showServiceProviderOnReceipt?: boolean;
+            receiptCustomFooterText?: Record<string, never>;
         };
         CreateProductCategoryDto: {
             name: string;
@@ -12843,6 +14141,27 @@ export interface components {
         };
         ValidateOfferCodeDto: {
             code: string;
+        };
+        CreateCustomFeeDto: {
+            name: string;
+            /** @enum {string} */
+            applicationScope: "ENTIRE_SALE" | "PAYMENT_METHOD";
+            paymentMethods?: ("CASH" | "CARD" | "BANK_TRANSFER" | "WALLET" | "GIFT_CARD" | "STRIPE" | "CHECK" | "OTHER")[];
+            /** @enum {string} */
+            amountType: "FIXED" | "PERCENTAGE";
+            /** @example 5.00 */
+            amount: number;
+            isEnabled?: boolean;
+        };
+        UpdateCustomFeeDto: {
+            name?: string;
+            /** @enum {string} */
+            applicationScope?: "ENTIRE_SALE" | "PAYMENT_METHOD";
+            paymentMethods?: ("CASH" | "CARD" | "BANK_TRANSFER" | "WALLET" | "GIFT_CARD" | "STRIPE" | "CHECK" | "OTHER")[];
+            /** @enum {string} */
+            amountType?: "FIXED" | "PERCENTAGE";
+            amount?: number;
+            isEnabled?: boolean;
         };
         CreateCampaignDto: {
             /** @enum {string} */
@@ -13102,94 +14421,61 @@ export interface components {
             priority?: "LOW" | "MEDIUM" | "HIGH";
             assignedToId?: Record<string, never>;
         };
-        CreateCalendarDto: {
+        CreatePinterestBoardDto: {
+            /** @example Product launches */
             name: string;
             description?: string;
-            /** @enum {string} */
-            type?: "SERVICE" | "STAFF" | "ROUND_ROBIN" | "COLLECTIVE" | "CLASS_EVENT" | "PERSONAL";
-            color?: string;
+        };
+        CreateSocialPostTargetDto: {
+            /** @example facebook */
+            providerKey: string;
+            /** @description IntegrationResource id (page/channel/board/account). */
+            integrationResourceId?: string;
+            /** @example FEED */
+            postType?: string;
+            platformPayload?: Record<string, never>;
+        };
+        ValidateSocialPostDto: {
+            caption: string;
             timezone?: string;
-            /** @enum {string} */
-            status?: "ACTIVE" | "INACTIVE";
-            defaultDurationMinutes?: number;
-            bufferBeforeMinutes?: number;
-            bufferAfterMinutes?: number;
-            minimumNoticeMinutes?: number;
-            maxBookingDays?: number;
-            slotIntervalMinutes?: number;
-            /** @enum {string} */
-            locationType?: "PHYSICAL" | "PHONE_CALL" | "GOOGLE_MEET" | "ZOOM" | "CUSTOM" | "ONSITE";
-            locationValue?: string;
-            requireApproval?: boolean;
-            autoConfirm?: boolean;
-            capacity?: number;
-            formSettings?: Record<string, never>;
-            confirmationSettings?: Record<string, never>;
-            paymentSettings?: Record<string, never>;
-            notificationSettings?: Record<string, never>;
-            policySettings?: Record<string, never>;
-            widgetSettings?: Record<string, never>;
-            googleSyncSettings?: Record<string, never>;
-            embedEnabled?: boolean;
+            category?: string;
+            tags?: string[];
+            mediaFileAssetIds?: string[];
+            targets: components["schemas"]["CreateSocialPostTargetDto"][];
         };
-        AddCalendarStaffDto: {
-            userId: string;
-            role?: string;
-            isPrimary?: boolean;
-        };
-        AvailabilitySlotDto: {
-            /** @enum {string} */
-            dayOfWeek: "MONDAY" | "TUESDAY" | "WEDNESDAY" | "THURSDAY" | "FRIDAY" | "SATURDAY" | "SUNDAY";
-            startTime: string;
-            endTime: string;
-            isEnabled?: boolean;
-        };
-        ReplaceCalendarAvailabilityDto: {
-            slots: components["schemas"]["AvailabilitySlotDto"][];
-        };
-        CreateCalendarExceptionDto: {
-            date: string;
-            startTime?: string;
-            endTime?: string;
-            isUnavailable?: boolean;
-            reason?: string;
-        };
-        UpdateCalendarExceptionDto: {
-            date: string;
-            startTime?: string;
-            endTime?: string;
-            isUnavailable?: boolean;
-            reason?: string;
-        };
-        UpdateCalendarDto: {
-            name?: string;
-            description?: string;
-            /** @enum {string} */
-            type?: "SERVICE" | "STAFF" | "ROUND_ROBIN" | "COLLECTIVE" | "CLASS_EVENT" | "PERSONAL";
-            color?: string;
+        CreateSocialPostDto: {
+            caption: string;
             timezone?: string;
-            /** @enum {string} */
-            status?: "ACTIVE" | "INACTIVE";
-            defaultDurationMinutes?: number;
-            bufferBeforeMinutes?: number;
-            bufferAfterMinutes?: number;
-            minimumNoticeMinutes?: number;
-            maxBookingDays?: number;
-            slotIntervalMinutes?: number;
-            /** @enum {string} */
-            locationType?: "PHYSICAL" | "PHONE_CALL" | "GOOGLE_MEET" | "ZOOM" | "CUSTOM" | "ONSITE";
-            locationValue?: string;
-            requireApproval?: boolean;
-            autoConfirm?: boolean;
-            capacity?: number;
-            formSettings?: Record<string, never>;
-            confirmationSettings?: Record<string, never>;
-            paymentSettings?: Record<string, never>;
-            notificationSettings?: Record<string, never>;
-            policySettings?: Record<string, never>;
-            widgetSettings?: Record<string, never>;
-            googleSyncSettings?: Record<string, never>;
-            embedEnabled?: boolean;
+            category?: string;
+            tags?: string[];
+            mediaFileAssetIds?: string[];
+            targets: components["schemas"]["CreateSocialPostTargetDto"][];
+        };
+        UpdateSocialPostDto: {
+            caption?: string;
+            timezone?: string;
+            category?: string;
+            tags?: string[];
+            mediaFileAssetIds?: string[];
+            targets?: components["schemas"]["CreateSocialPostTargetDto"][];
+        };
+        ScheduleSocialPostDto: {
+            /** @description ISO 8601 timestamp to publish at */
+            scheduledAt: string;
+            /** @example America/New_York */
+            timezone: string;
+        };
+        MarkSocialCommentsReadDto: {
+            ids?: string[];
+            /** @example instagram */
+            providerKey?: string;
+            socialPostId?: string;
+        };
+        ReplySocialCommentDto: {
+            message: string;
+            /** @example facebook */
+            providerKey: string;
+            socialPostTargetId?: string;
         };
         AppointmentServiceLineInputDto: {
             serviceId: string;
@@ -13260,79 +14546,61 @@ export interface components {
              */
             sendConfirmation: boolean;
         };
-        UpdateOnlineBookingSetupDto: {
-            onlineBookingEnabled: boolean;
-            embedEnabled?: boolean;
-            overlayEnabled?: boolean;
-            widgetSettings?: Record<string, never>;
-            confirmationSettings?: Record<string, never>;
-            formSettings?: Record<string, never>;
+        UpdateWaitingRoomSettingsDto: {
+            waitingStatusEnabled?: boolean;
         };
-        UpdateOnlineBookingPreferencesDto: {
-            minimumNoticeMinutes?: number;
-            maxBookingDays?: number;
-            avoidGapsEnabled?: boolean;
-            /** @description Maximum allowed gap in minutes. 0 = adjacent only. Null = no limit. */
-            avoidGapsMaxGapMinutes?: Record<string, never>;
-            /** @description Minimum allowed gap in minutes. Null = no minimum. */
-            avoidGapsMinGapMinutes?: Record<string, never>;
-            /** @enum {string} */
-            avoidGapsTimeBlockMode?: "IGNORE" | "SAME_AS_APPOINTMENTS";
-            /** @enum {string} */
-            avoidGapsEmptyDayMode?: "ALL_TIMES" | "SHIFT_EDGES_ONLY";
-            /** @enum {string} */
-            avoidGapsMultiProviderMode?: "SAME_AS_SINGLE" | "ALLOW_GAPS";
-            allowMultipleServices?: boolean;
-            allowDuplicateServices?: boolean;
-            singleStaffOnly?: boolean;
-            collectPhotosEnabled?: boolean;
-            photoUploadPrompt?: string;
-            waitlistEnabled?: boolean;
-            expressBookingEnabled?: boolean;
-            expressBookingAutoEnable?: boolean;
-            expressBookingTimeLimitMinutes?: number;
-            expressRequireCard?: boolean;
-            expressRequireDeposit?: boolean;
-            /** @enum {string} */
-            expressDepositType?: "FULL" | "PERCENTAGE" | "FIXED";
-            expressAllowPhotoUpload?: boolean;
-            cancellationPolicyVersion?: string;
-            slotIntervalMinutes?: number;
-            bufferBeforeMinutes?: number;
-            bufferAfterMinutes?: number;
-            /** @description Deprecated — ignored. Scheduling uses the business profile timezone. */
-            timezone?: string;
-            requireApproval?: boolean;
-            autoConfirm?: boolean;
-            /** @enum {string} */
-            locationType?: "PHYSICAL" | "PHONE_CALL" | "GOOGLE_MEET" | "ZOOM" | "CUSTOM" | "ONSITE";
-            locationValue?: string;
-            formSettings?: Record<string, never>;
-            notificationSettings?: Record<string, never>;
+        UpdateCancellationPolicyDto: {
+            cancellationPolicyHtml?: Record<string, never>;
+            cancellationPolicySms?: Record<string, never>;
+            requirePolicyAgreement?: boolean;
         };
-        UpdateOnlineBookingStaffSelectionDto: {
-            randomizeStaffOrder?: boolean;
-            showGenderOptions?: boolean;
-            showAnyoneOption?: boolean;
+        UpdateSelfServiceSettingsDto: {
             /** @enum {string} */
-            anyoneAssignmentMode?: "RANDOM" | "ORDER";
-            anyoneExcludedStaffIds?: string[];
-        };
-        BusinessHoursSlotDto: {
+            selfCancellationMode: "DISABLED" | "WITHIN_MINUTES_OF_ONLINE_BOOKING" | "UNTIL_HOURS_BEFORE_APPOINTMENT";
+            selfCancellationMinutes?: number;
+            selfCancellationHoursBefore?: number;
             /** @enum {string} */
-            dayOfWeek: "MONDAY" | "TUESDAY" | "WEDNESDAY" | "THURSDAY" | "FRIDAY" | "SATURDAY" | "SUNDAY";
-            /** @example 09:00 */
-            startTime: string;
-            /** @example 17:00 */
-            endTime: string;
-            isEnabled: boolean;
+            selfRescheduleMode: "DISABLED" | "UNTIL_HOURS_BEFORE_APPOINTMENT";
+            selfRescheduleHoursBefore?: number;
         };
-        ReplaceBusinessHoursDto: {
-            slots: components["schemas"]["BusinessHoursSlotDto"][];
+        UpdateLateCancellationDto: {
+            lateCancellationHoursBefore: number;
         };
-        ReplaceStaffWorkScheduleDto: {
-            useBusinessHours?: boolean;
-            slots?: components["schemas"]["BusinessHoursSlotDto"][];
+        UpdateAppointmentAutomatedMessageSettingsDto: {
+            /** @enum {string} */
+            defaultStatus?: "UNCONFIRMED" | "CONFIRMED";
+        };
+        CreateAppointmentAutomatedMessageTriggerDto: {
+            /** @enum {string} */
+            kind: "IMMEDIATE" | "BEFORE_START";
+            offsetValue?: number;
+            /** @enum {string} */
+            offsetUnit?: "DAYS" | "HOURS";
+            sortOrder?: number;
+        };
+        UpdateAppointmentAutomatedMessageTriggerDto: {
+            offsetValue?: number;
+            /** @enum {string} */
+            offsetUnit?: "DAYS" | "HOURS";
+            sortOrder?: number;
+        };
+        CreateAppointmentAutomatedMessageDto: {
+            /** @enum {string} */
+            sourceScope: "ALL" | "ONLINE" | "STAFF";
+            /** @enum {string} */
+            channel: "EMAIL" | "SMS";
+            notificationKey: string;
+            sortOrder?: number;
+            enabled?: boolean;
+        };
+        UpdateAppointmentAutomatedMessageDto: {
+            /** @enum {string} */
+            sourceScope?: "ALL" | "ONLINE" | "STAFF";
+            /** @enum {string} */
+            channel?: "EMAIL" | "SMS";
+            notificationKey?: string;
+            sortOrder?: number;
+            enabled?: boolean;
         };
         CreateWaitlistEntryDto: {
             contactId: string;
@@ -13435,6 +14703,10 @@ export interface components {
             appointmentId: string;
             uploadToken: string;
             fileIds: string[];
+        };
+        PublicAppointmentRescheduleDto: {
+            startAt: string;
+            endAt: string;
         };
         CreateExpressAppointmentDto: {
             /** @description Existing contact. Mutually exclusive with guest first name + destination (email or phone). */
@@ -13567,6 +14839,35 @@ export interface components {
         };
         TrialHandoffExchangeDto: {
             code: string;
+        };
+        CreateDataImportDto: {
+            /** @enum {string} */
+            entityType: "CONTACT" | "SERVICE" | "PRODUCT" | "LEAD" | "NOTE" | "GIFT_CARD" | "CLIENT_MEMBERSHIP" | "CLIENT_PACKAGE" | "TASK" | "APPOINTMENT" | "INVOICE" | "ESTIMATE" | "PAYMENT" | "WORK_ITEM" | "OFFER" | "FORM_SUBMISSION" | "TIME_CARD";
+            providerPreset?: string;
+            timezoneDefault?: string;
+        };
+        AttachDataImportFileDto: {
+            fileAssetId: string;
+            sheetName?: string;
+            /** @default 1 */
+            headerRowNumber: number;
+        };
+        ColumnMappingDto: {
+            sourceColumn: string;
+            target?: Record<string, never> | null;
+            /** @enum {string} */
+            action: "map" | "skip" | "append_to_notes";
+        };
+        ConfigureDataImportDto: {
+            mapping: components["schemas"]["ColumnMappingDto"][];
+            /** @enum {string} */
+            duplicatePolicy?: "SKIP" | "UPDATE" | "CREATE_ALWAYS";
+            providerPreset?: string;
+            timezoneDefault?: string;
+            restoreDeleted?: boolean;
+            autoCreateTags?: boolean;
+            sheetName?: string;
+            headerRowNumber?: number;
         };
         GenerateReportDto: {
             /** @description Report filter values keyed by filter field key */
@@ -15756,6 +17057,1075 @@ export interface operations {
             };
             header?: never;
             path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ChatbotsController_list: {
+        parameters: {
+            query?: {
+                page?: number;
+                limit?: number;
+                sortBy?: string;
+                sortOrder?: "asc" | "desc";
+                status?: "DRAFT" | "ACTIVE" | "DISABLED" | "ARCHIVED";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ChatbotsController_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateChatbotDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ChatbotsController_getDefault: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ChatbotsController_listSessionsByIdentity: {
+        parameters: {
+            query?: {
+                identityRefId?: string;
+                identityRefType?: "CONTACT" | "PLATFORM_CUSTOMER";
+                chatbotId?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ChatbotsController_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ChatbotsController_remove: {
+        parameters: {
+            query: {
+                /** @description Must be true to confirm deletion */
+                confirm: true;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ChatbotsController_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateChatbotDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ChatbotsController_duplicate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ChatbotsController_activate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ChatbotsController_disable: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ChatbotsController_embed: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ChatbotsController_listRules: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ChatbotsController_createRule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateChatbotRuleDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ChatbotsController_exportRules: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ChatbotsController_importRules: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ImportChatbotRulesDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ChatbotsController_previewRule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PreviewChatbotRuleDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ChatbotsController_reorderRules: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReorderChatbotRulesDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ChatbotsController_deleteRule: {
+        parameters: {
+            query: {
+                /** @description Must be true to confirm deletion */
+                confirm: true;
+            };
+            header?: never;
+            path: {
+                id: string;
+                ruleId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ChatbotsController_updateRule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                ruleId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateChatbotRuleDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ChatbotsController_endSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sessionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ChatbotsController_convertSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sessionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    PlatformChatbotsController_list: {
+        parameters: {
+            query?: {
+                page?: number;
+                limit?: number;
+                sortBy?: string;
+                sortOrder?: "asc" | "desc";
+                status?: "DRAFT" | "ACTIVE" | "DISABLED" | "ARCHIVED";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    PlatformChatbotsController_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateChatbotDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    PlatformChatbotsController_listSessionsByIdentity: {
+        parameters: {
+            query?: {
+                identityRefId?: string;
+                identityRefType?: "CONTACT" | "PLATFORM_CUSTOMER";
+                chatbotId?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    PlatformChatbotsController_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    PlatformChatbotsController_remove: {
+        parameters: {
+            query: {
+                /** @description Must be true to confirm deletion */
+                confirm: true;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    PlatformChatbotsController_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateChatbotDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    PlatformChatbotsController_duplicate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    PlatformChatbotsController_activate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    PlatformChatbotsController_disable: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    PlatformChatbotsController_embed: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    PlatformChatbotsController_listRules: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    PlatformChatbotsController_createRule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateChatbotRuleDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    PlatformChatbotsController_exportRules: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    PlatformChatbotsController_importRules: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ImportChatbotRulesDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    PlatformChatbotsController_previewRule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PreviewChatbotRuleDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    PlatformChatbotsController_reorderRules: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReorderChatbotRulesDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    PlatformChatbotsController_deleteRule: {
+        parameters: {
+            query: {
+                /** @description Must be true to confirm deletion */
+                confirm: true;
+            };
+            header?: never;
+            path: {
+                id: string;
+                ruleId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    PlatformChatbotsController_updateRule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                ruleId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateChatbotRuleDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    PlatformChatbotsController_endSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sessionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    PlatformChatbotsController_convertSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sessionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    PublicChatbotController_getConfig: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                publicKey: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    PublicChatbotController_startSession: {
+        parameters: {
+            query?: never;
+            header: {
+                "user-agent": string;
+                referer: string;
+                authorization: string;
+            };
+            path: {
+                publicKey: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StartChatbotSessionDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    PublicChatbotController_getSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sessionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    PublicChatbotController_listMessages: {
+        parameters: {
+            query: {
+                since: string;
+            };
+            header?: never;
+            path: {
+                sessionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    PublicChatbotController_sendMessage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sessionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SendChatbotMessageDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    PublicChatbotController_endSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sessionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    PublicChatbotController_updateSessionProfile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sessionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateChatbotSessionProfileDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    PublicChatbotController_claimSession: {
+        parameters: {
+            query?: never;
+            header: {
+                authorization: string;
+            };
+            path: {
+                sessionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClaimChatbotSessionDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ChatbotWidgetsController_serveScript: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ChatbotWidgetsController_serveWidget: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                publicKey: string;
+            };
             cookie?: never;
         };
         requestBody?: never;
@@ -19522,6 +21892,27 @@ export interface operations {
             };
         };
     };
+    StripePlatformBillingController_confirmCurrentSetupIntent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConfirmBusinessSetupIntentDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     StripePlatformBillingController_listCurrentPaymentMethods: {
         parameters: {
             query?: never;
@@ -21516,6 +23907,108 @@ export interface operations {
             };
         };
     };
+    SocialOAuthController_startX: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    SocialOAuthController_callbackX: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    SocialOAuthController_startPinterest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    SocialOAuthController_callbackPinterest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    SocialOAuthController_startTikTok: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    SocialOAuthController_callbackTikTok: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     StripeOAuthController_start: {
         parameters: {
             query?: never;
@@ -21543,6 +24036,57 @@ export interface operations {
         requestBody?: never;
         responses: {
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    StripeAccountSettingsController_getPrimaryAccount: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    StripeAccountSettingsController_createOnboardingLink: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    StripeAccountSettingsController_createDashboardLink: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -21841,1058 +24385,6 @@ export interface operations {
             query?: never;
             header?: never;
             path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    ChatbotsController_list: {
-        parameters: {
-            query?: {
-                page?: number;
-                limit?: number;
-                sortBy?: string;
-                sortOrder?: "asc" | "desc";
-                status?: "DRAFT" | "ACTIVE" | "DISABLED" | "ARCHIVED";
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    ChatbotsController_create: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateChatbotDto"];
-            };
-        };
-        responses: {
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    ChatbotsController_listSessionsByIdentity: {
-        parameters: {
-            query?: {
-                identityRefId?: string;
-                identityRefType?: "CONTACT" | "PLATFORM_CUSTOMER";
-                chatbotId?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    ChatbotsController_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    ChatbotsController_remove: {
-        parameters: {
-            query: {
-                /** @description Must be true to confirm deletion */
-                confirm: true;
-            };
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    ChatbotsController_update: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpdateChatbotDto"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    ChatbotsController_duplicate: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    ChatbotsController_activate: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    ChatbotsController_disable: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    ChatbotsController_embed: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    ChatbotsController_listRules: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    ChatbotsController_createRule: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateChatbotRuleDto"];
-            };
-        };
-        responses: {
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    ChatbotsController_exportRules: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    ChatbotsController_importRules: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ImportChatbotRulesDto"];
-            };
-        };
-        responses: {
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    ChatbotsController_previewRule: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["PreviewChatbotRuleDto"];
-            };
-        };
-        responses: {
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    ChatbotsController_reorderRules: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ReorderChatbotRulesDto"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    ChatbotsController_deleteRule: {
-        parameters: {
-            query: {
-                /** @description Must be true to confirm deletion */
-                confirm: true;
-            };
-            header?: never;
-            path: {
-                id: string;
-                ruleId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    ChatbotsController_updateRule: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-                ruleId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpdateChatbotRuleDto"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    ChatbotsController_endSession: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                sessionId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    ChatbotsController_convertSession: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                sessionId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    PlatformChatbotsController_list: {
-        parameters: {
-            query?: {
-                page?: number;
-                limit?: number;
-                sortBy?: string;
-                sortOrder?: "asc" | "desc";
-                status?: "DRAFT" | "ACTIVE" | "DISABLED" | "ARCHIVED";
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    PlatformChatbotsController_create: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateChatbotDto"];
-            };
-        };
-        responses: {
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    PlatformChatbotsController_listSessionsByIdentity: {
-        parameters: {
-            query?: {
-                identityRefId?: string;
-                identityRefType?: "CONTACT" | "PLATFORM_CUSTOMER";
-                chatbotId?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    PlatformChatbotsController_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    PlatformChatbotsController_remove: {
-        parameters: {
-            query: {
-                /** @description Must be true to confirm deletion */
-                confirm: true;
-            };
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    PlatformChatbotsController_update: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpdateChatbotDto"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    PlatformChatbotsController_duplicate: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    PlatformChatbotsController_activate: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    PlatformChatbotsController_disable: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    PlatformChatbotsController_embed: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    PlatformChatbotsController_listRules: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    PlatformChatbotsController_createRule: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateChatbotRuleDto"];
-            };
-        };
-        responses: {
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    PlatformChatbotsController_exportRules: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    PlatformChatbotsController_importRules: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ImportChatbotRulesDto"];
-            };
-        };
-        responses: {
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    PlatformChatbotsController_previewRule: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["PreviewChatbotRuleDto"];
-            };
-        };
-        responses: {
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    PlatformChatbotsController_reorderRules: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ReorderChatbotRulesDto"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    PlatformChatbotsController_deleteRule: {
-        parameters: {
-            query: {
-                /** @description Must be true to confirm deletion */
-                confirm: true;
-            };
-            header?: never;
-            path: {
-                id: string;
-                ruleId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    PlatformChatbotsController_updateRule: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-                ruleId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpdateChatbotRuleDto"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    PlatformChatbotsController_endSession: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                sessionId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    PlatformChatbotsController_convertSession: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                sessionId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    PublicChatbotController_getConfig: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                publicKey: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    PublicChatbotController_startSession: {
-        parameters: {
-            query?: never;
-            header: {
-                "user-agent": string;
-                referer: string;
-                authorization: string;
-            };
-            path: {
-                publicKey: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["StartChatbotSessionDto"];
-            };
-        };
-        responses: {
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    PublicChatbotController_getSession: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                sessionId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    PublicChatbotController_listMessages: {
-        parameters: {
-            query: {
-                since: string;
-            };
-            header?: never;
-            path: {
-                sessionId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    PublicChatbotController_sendMessage: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                sessionId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["SendChatbotMessageDto"];
-            };
-        };
-        responses: {
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    PublicChatbotController_endSession: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                sessionId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    PublicChatbotController_updateSessionProfile: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                sessionId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpdateChatbotSessionProfileDto"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    PublicChatbotController_claimSession: {
-        parameters: {
-            query?: never;
-            header: {
-                authorization: string;
-            };
-            path: {
-                sessionId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ClaimChatbotSessionDto"];
-            };
-        };
-        responses: {
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    ChatbotWidgetsController_serveScript: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    ChatbotWidgetsController_serveWidget: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                publicKey: string;
-            };
             cookie?: never;
         };
         requestBody?: never;
@@ -23690,6 +25182,10 @@ export interface operations {
     ClientMembershipsController_exportMemberships: {
         parameters: {
             query?: {
+                page?: number;
+                limit?: number;
+                sortBy?: string;
+                sortOrder?: "asc" | "desc";
                 contactId?: string;
                 search?: string;
                 status?: string;
@@ -23714,6 +25210,10 @@ export interface operations {
     ClientMembershipsController_listClientMemberships: {
         parameters: {
             query?: {
+                page?: number;
+                limit?: number;
+                sortBy?: string;
+                sortOrder?: "asc" | "desc";
                 contactId?: string;
                 search?: string;
                 status?: string;
@@ -24192,6 +25692,10 @@ export interface operations {
     ClientPackagesController_findAll: {
         parameters: {
             query?: {
+                page?: number;
+                limit?: number;
+                sortBy?: string;
+                sortOrder?: "asc" | "desc";
                 contactId?: string;
                 search?: string;
             };
@@ -25835,6 +27339,27 @@ export interface operations {
             };
         };
     };
+    ServicesController_reorder: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReorderServicesDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     ServicesController_get: {
         parameters: {
             query?: never;
@@ -25890,50 +27415,6 @@ export interface operations {
                 "application/json": components["schemas"]["UpdateServiceDto"];
             };
         };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    PlatformServicesController_list: {
-        parameters: {
-            query?: {
-                page?: number;
-                limit?: number;
-                sortBy?: string;
-                sortOrder?: "asc" | "desc";
-                search?: string;
-                status?: "ACTIVE" | "ARCHIVED";
-                categoryId?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    PlatformServicesController_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
         responses: {
             200: {
                 headers: {
@@ -26303,6 +27784,709 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["UpdateResourceDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    SchedulingSettingsController_getSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    SchedulingSettingsController_updateSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateSchedulingSettingsDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    OnlineBookingSettingsController_getSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    OnlineBookingSettingsController_updateSetup: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateOnlineBookingSetupDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    OnlineBookingSettingsController_updatePreferences: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateOnlineBookingPreferencesDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    OnlineBookingSettingsController_updateStaffSelection: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateOnlineBookingStaffSelectionDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    OnlineBookingSettingsController_getBusinessHours: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    OnlineBookingSettingsController_updateBusinessHours: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReplaceBusinessHoursDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    OnlineBookingSettingsController_getStaffWorkSchedule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    OnlineBookingSettingsController_updateStaffWorkSchedule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReplaceStaffWorkScheduleDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    QuickToolsController_previewSetNotWorking: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetNotWorkingDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    QuickToolsController_applySetNotWorking: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetNotWorkingDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    QuickToolsController_previewRemoveNotWorking: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RemoveNotWorkingDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    QuickToolsController_applyRemoveNotWorking: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RemoveNotWorkingDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CalendarsController_list: {
+        parameters: {
+            query?: {
+                page?: number;
+                limit?: number;
+                sortBy?: string;
+                sortOrder?: "asc" | "desc";
+                search?: string;
+                status?: "ACTIVE" | "INACTIVE";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CalendarsController_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateCalendarDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CalendarsController_listStaff: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CalendarsController_addStaff: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AddCalendarStaffDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CalendarsController_removeStaff: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CalendarsController_getAvailability: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CalendarsController_replaceAvailability: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReplaceCalendarAvailabilityDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CalendarsController_listExceptions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CalendarsController_createException: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateCalendarExceptionDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CalendarsController_removeException: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                exceptionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CalendarsController_updateException: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                exceptionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateCalendarExceptionDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CalendarsController_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CalendarsController_remove: {
+        parameters: {
+            query: {
+                /** @description Must be true to confirm deletion */
+                confirm: true;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CalendarsController_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateCalendarDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CalendarDisplaySettingsController_getSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CalendarDisplaySettingsController_updateVisibleHours: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateVisibleHoursDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CalendarDisplaySettingsController_updateWeekStart: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateWeekStartDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CalendarDisplaySettingsController_updateZoomLevel: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateZoomLevelDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CalendarDisplaySettingsController_updateCancelledVisibility: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateCancelledVisibilityDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CalendarDisplaySettingsController_updateHighContrast: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateHighContrastDto"];
             };
         };
         responses: {
@@ -27149,7 +29333,7 @@ export interface operations {
                 search?: string;
                 invoiceId?: string;
                 contactId?: string;
-                method?: "CASH" | "CARD" | "BANK_TRANSFER" | "WALLET" | "GIFT_CARD" | "STRIPE" | "OTHER";
+                method?: "CASH" | "CARD" | "BANK_TRANSFER" | "WALLET" | "GIFT_CARD" | "STRIPE" | "CHECK" | "OTHER";
                 /** @description Filter paidAt >= this ISO date */
                 paidFrom?: string;
                 /** @description Filter paidAt <= this ISO date */
@@ -27379,6 +29563,44 @@ export interface operations {
         requestBody?: never;
         responses: {
             201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CheckoutAdvancedSettingsController_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CheckoutAdvancedSettingsController_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateCheckoutAdvancedSettingsDto"];
+            };
+        };
+        responses: {
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -28157,8 +30379,12 @@ export interface operations {
     };
     OffersController_listOffers: {
         parameters: {
-            query: {
-                search: string;
+            query?: {
+                page?: number;
+                limit?: number;
+                sortBy?: string;
+                sortOrder?: "asc" | "desc";
+                search?: string;
             };
             header?: never;
             path?: never;
@@ -28483,6 +30709,114 @@ export interface operations {
         };
         responses: {
             201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CustomFeesController_list: {
+        parameters: {
+            query?: {
+                page?: number;
+                limit?: number;
+                sortBy?: string;
+                sortOrder?: "asc" | "desc";
+                search?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CustomFeesController_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateCustomFeeDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CustomFeesController_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CustomFeesController_delete: {
+        parameters: {
+            query: {
+                /** @description Must be true to confirm deletion */
+                confirm: true;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CustomFeesController_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateCustomFeeDto"];
+            };
+        };
+        responses: {
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -30439,6 +32773,428 @@ export interface operations {
             };
         };
     };
+    SocialPlannerController_platformSchemas: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    SocialPlannerController_tiktokCreatorInfo: {
+        parameters: {
+            query: {
+                resourceId: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    SocialPlannerController_youtubeCategories: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    SocialPlannerController_createPinterestBoard: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreatePinterestBoardDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    SocialPlannerController_calendar: {
+        parameters: {
+            query: {
+                /** @description ISO 8601 range start */
+                from: string;
+                /** @description ISO 8601 range end */
+                to: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    SocialPlannerController_list: {
+        parameters: {
+            query?: {
+                page?: number;
+                limit?: number;
+                sortBy?: string;
+                sortOrder?: "asc" | "desc";
+                status?: "DRAFT" | "SCHEDULED" | "PUBLISHING" | "PUBLISHED" | "PARTIAL" | "FAILED" | "CANCELLED";
+                providerKey?: string;
+                /** @description Filter scheduledAt >= this ISO date */
+                from?: string;
+                /** @description Filter scheduledAt <= this ISO date */
+                to?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    SocialPlannerController_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateSocialPostDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    SocialPlannerController_validate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ValidateSocialPostDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    SocialPlannerController_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    SocialPlannerController_remove: {
+        parameters: {
+            query: {
+                /** @description Must be true to confirm deletion */
+                confirm: true;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    SocialPlannerController_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateSocialPostDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    SocialPlannerController_schedule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScheduleSocialPostDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    SocialPlannerController_publishNow: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    SocialPlannerController_cancel: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    SocialPlannerController_retryTarget: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                targetId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    SocialPlannerCommentsController_list: {
+        parameters: {
+            query?: {
+                providerKey?: string;
+                socialPostId?: string;
+                unreadOnly?: boolean;
+                search?: string;
+                /** @description When true, reconcile published targets from provider APIs before listing */
+                refresh?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    SocialPlannerCommentsController_markRead: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MarkSocialCommentsReadDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    SocialPlannerCommentsController_reply: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                commentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReplySocialCommentDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    SocialPlannerCommentsController_like: {
+        parameters: {
+            query: {
+                providerKey: string;
+                socialPostTargetId?: string;
+            };
+            header?: never;
+            path: {
+                commentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    SocialPlannerCommentsController_remove: {
+        parameters: {
+            query: {
+                providerKey: string;
+                socialPostTargetId?: string;
+            };
+            header?: never;
+            path: {
+                commentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     GoogleCalendarSyncController_getSyncStatus: {
         parameters: {
             query?: never;
@@ -30472,305 +33228,6 @@ export interface operations {
         requestBody?: never;
         responses: {
             202: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    CalendarsController_list: {
-        parameters: {
-            query?: {
-                page?: number;
-                limit?: number;
-                sortBy?: string;
-                sortOrder?: "asc" | "desc";
-                search?: string;
-                status?: "ACTIVE" | "INACTIVE";
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    CalendarsController_create: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateCalendarDto"];
-            };
-        };
-        responses: {
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    CalendarsController_listStaff: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    CalendarsController_addStaff: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["AddCalendarStaffDto"];
-            };
-        };
-        responses: {
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    CalendarsController_removeStaff: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-                userId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    CalendarsController_getAvailability: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    CalendarsController_replaceAvailability: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ReplaceCalendarAvailabilityDto"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    CalendarsController_listExceptions: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    CalendarsController_createException: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateCalendarExceptionDto"];
-            };
-        };
-        responses: {
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    CalendarsController_removeException: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-                exceptionId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    CalendarsController_updateException: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-                exceptionId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpdateCalendarExceptionDto"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    CalendarsController_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    CalendarsController_remove: {
-        parameters: {
-            query: {
-                /** @description Must be true to confirm deletion */
-                confirm: true;
-            };
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    CalendarsController_update: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpdateCalendarDto"];
-            };
-        };
-        responses: {
-            200: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -30975,7 +33432,7 @@ export interface operations {
             };
         };
     };
-    OnlineBookingSettingsController_getSettings: {
+    WaitingRoomSettingsController_getSettings: {
         parameters: {
             query?: never;
             header?: never;
@@ -30992,7 +33449,7 @@ export interface operations {
             };
         };
     };
-    OnlineBookingSettingsController_updateSetup: {
+    WaitingRoomSettingsController_updateSettings: {
         parameters: {
             query?: never;
             header?: never;
@@ -31001,7 +33458,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["UpdateOnlineBookingSetupDto"];
+                "application/json": components["schemas"]["UpdateWaitingRoomSettingsDto"];
             };
         };
         responses: {
@@ -31013,49 +33470,7 @@ export interface operations {
             };
         };
     };
-    OnlineBookingSettingsController_updatePreferences: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpdateOnlineBookingPreferencesDto"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    OnlineBookingSettingsController_updateStaffSelection: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpdateOnlineBookingStaffSelectionDto"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    OnlineBookingSettingsController_getBusinessHours: {
+    CancelRescheduleSettingsController_getSettings: {
         parameters: {
             query?: never;
             header?: never;
@@ -31072,7 +33487,7 @@ export interface operations {
             };
         };
     };
-    OnlineBookingSettingsController_updateBusinessHours: {
+    CancelRescheduleSettingsController_updateCancellationPolicy: {
         parameters: {
             query?: never;
             header?: never;
@@ -31081,7 +33496,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["ReplaceBusinessHoursDto"];
+                "application/json": components["schemas"]["UpdateCancellationPolicyDto"];
             };
         };
         responses: {
@@ -31093,12 +33508,54 @@ export interface operations {
             };
         };
     };
-    OnlineBookingSettingsController_getStaffWorkSchedule: {
+    CancelRescheduleSettingsController_updateSelfService: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateSelfServiceSettingsDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CancelRescheduleSettingsController_updateLateCancellation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateLateCancellationDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AppointmentAutomatedMessagesController_catalog: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                userId: string;
+                eventType: string;
             };
             cookie?: never;
         };
@@ -31112,18 +33569,173 @@ export interface operations {
             };
         };
     };
-    OnlineBookingSettingsController_updateStaffWorkSchedule: {
+    AppointmentAutomatedMessagesController_get: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                userId: string;
+                eventType: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AppointmentAutomatedMessagesController_updateSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                eventType: string;
             };
             cookie?: never;
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["ReplaceStaffWorkScheduleDto"];
+                "application/json": components["schemas"]["UpdateAppointmentAutomatedMessageSettingsDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AppointmentAutomatedMessagesController_createTrigger: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                eventType: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateAppointmentAutomatedMessageTriggerDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AppointmentAutomatedMessagesController_deleteTrigger: {
+        parameters: {
+            query: {
+                /** @description Must be true to confirm deletion */
+                confirm: true;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AppointmentAutomatedMessagesController_updateTrigger: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateAppointmentAutomatedMessageTriggerDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AppointmentAutomatedMessagesController_createMessage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateAppointmentAutomatedMessageDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AppointmentAutomatedMessagesController_deleteMessage: {
+        parameters: {
+            query: {
+                /** @description Must be true to confirm deletion */
+                confirm: true;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AppointmentAutomatedMessagesController_updateMessage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateAppointmentAutomatedMessageDto"];
             };
         };
         responses: {
@@ -31609,6 +34221,90 @@ export interface operations {
         };
         responses: {
             201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    PublicAppointmentManageController_getSummary: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    PublicAppointmentManageController_cancel: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    PublicAppointmentManageController_getAvailability: {
+        parameters: {
+            query: {
+                from: string;
+                to: string;
+                timezone?: string;
+            };
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    PublicAppointmentManageController_reschedule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PublicAppointmentRescheduleDto"];
+            };
+        };
+        responses: {
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -32138,6 +34834,188 @@ export interface operations {
         };
         responses: {
             201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    DataIoController_listEntities: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    DataIoController_template: {
+        parameters: {
+            query: {
+                entityType: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    DataIoController_list: {
+        parameters: {
+            query?: {
+                entityType?: string;
+                page?: number;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    DataIoController_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateDataImportDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    DataIoController_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    DataIoController_attachFile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AttachDataImportFileDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    DataIoController_configure: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConfigureDataImportDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    DataIoController_start: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    DataIoController_export: {
+        parameters: {
+            query: {
+                entityType: "CONTACT" | "SERVICE" | "PRODUCT" | "LEAD" | "NOTE" | "GIFT_CARD" | "CLIENT_MEMBERSHIP" | "CLIENT_PACKAGE" | "TASK" | "APPOINTMENT" | "INVOICE" | "ESTIMATE" | "PAYMENT" | "WORK_ITEM" | "OFFER" | "FORM_SUBMISSION" | "TIME_CARD";
+                search?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };

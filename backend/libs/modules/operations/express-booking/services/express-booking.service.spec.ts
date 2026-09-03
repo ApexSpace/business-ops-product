@@ -31,6 +31,7 @@ describe('ExpressBookingService', () => {
   };
   const bookingLinkSale = {
     createPrepaidCheckoutSale: jest.fn(),
+    createPartialDepositCheckout: jest.fn(),
   };
   const stripeContactPaymentMethod = {
     createSetupIntent: jest.fn(),
@@ -66,6 +67,12 @@ describe('ExpressBookingService', () => {
   const notificationDispatch = {
     dispatch: jest.fn().mockResolvedValue('email'),
   };
+  const cancelRescheduleSettingsRepository = {
+    ensureSettings: jest.fn().mockResolvedValue({
+      cancellationPolicyHtml: null,
+      requirePolicyAgreement: false,
+    }),
+  };
 
   const service = new ExpressBookingService(
     appointmentRepository as never,
@@ -84,6 +91,7 @@ describe('ExpressBookingService', () => {
     configService as never,
     notificationChannelPreference as never,
     notificationDispatch as never,
+    cancelRescheduleSettingsRepository as never,
   );
 
   const actor = { id: 'user-1', businessId: 'biz-1' } as never;
@@ -96,6 +104,8 @@ describe('ExpressBookingService', () => {
       expressBookingTimeLimitMinutes: 30,
       expressRequireCard: false,
       expressRequireDeposit: false,
+      expressDepositType: 'FULL',
+      expressDepositAmount: null,
       expressAllowPhotoUpload: false,
       cancellationPolicyVersion: '1',
       requireApproval: false,
@@ -431,6 +441,8 @@ describe('ExpressBookingService', () => {
       expressBookingTimeLimitMinutes: 30,
       expressRequireCard: false,
       expressRequireDeposit: false,
+      expressDepositType: 'FULL',
+      expressDepositAmount: null,
       expressAllowPhotoUpload: false,
       cancellationPolicyVersion: '1',
       requireApproval: false,
@@ -544,6 +556,205 @@ describe('ExpressBookingService', () => {
         }),
         data: expect.objectContaining({ deletedAt: expect.any(Date) }),
       }),
+    );
+  });
+
+  it('returns partial deposit amounts from getByToken', async () => {
+    settingsRepository.ensureSettings.mockResolvedValue({
+      expressBookingEnabled: true,
+      expressBookingTimeLimitMinutes: 30,
+      expressRequireCard: false,
+      expressRequireDeposit: true,
+      expressDepositType: 'PERCENTAGE',
+      expressDepositAmount: 25,
+      expressAllowPhotoUpload: false,
+      cancellationPolicyVersion: '1',
+      requireApproval: false,
+      autoConfirm: false,
+      timezone: 'UTC',
+      formSettings: {},
+      publicSlug: 'demo',
+      anyoneExcludedStaffIds: [],
+      randomizeStaffOrder: false,
+    });
+    appointmentRepository.findByExpressToken.mockResolvedValue({
+      id: 'appt-1',
+      businessId: 'biz-1',
+      status: AppointmentStatus.PENDING_COMPLETION,
+      serviceId: 'svc-1',
+      assignedToId: 'staff-1',
+      contactId: null,
+      startAt: new Date('2030-01-01T15:00:00.000Z'),
+      endAt: new Date('2030-01-01T15:30:00.000Z'),
+      expressBookingExpiresAt: new Date(Date.now() + 60_000),
+      expressBookingToken: 'token-1',
+      expressRequireCard: null,
+      expressRequireDeposit: null,
+      guestFirstName: 'Alex',
+      guestEmail: 'alex@example.com',
+      title: 'Alex — Haircut',
+      service: { id: 'svc-1', name: 'Haircut' },
+      serviceLines: [],
+      assignedTo: null,
+      metadata: null,
+    });
+
+    const result = await service.getByToken('token-1');
+
+    expect(result.paymentRequired).toBe(true);
+    expect(result.amountCents).toBe(1250);
+    expect(result.servicePriceCents).toBe(5000);
+    expect(result.remainingBalanceCents).toBe(3750);
+    expect(result.isPartialDeposit).toBe(true);
+  });
+
+  it('creates partial deposit checkout on complete when deposit is partial', async () => {
+    settingsRepository.ensureSettings.mockResolvedValue({
+      expressBookingEnabled: true,
+      expressBookingTimeLimitMinutes: 30,
+      expressRequireCard: false,
+      expressRequireDeposit: true,
+      expressDepositType: 'FIXED',
+      expressDepositAmount: 20,
+      expressAllowPhotoUpload: false,
+      cancellationPolicyVersion: '1',
+      requireApproval: false,
+      autoConfirm: false,
+      timezone: 'UTC',
+      formSettings: {},
+      publicSlug: 'demo',
+      anyoneExcludedStaffIds: [],
+      randomizeStaffOrder: false,
+    });
+    const pending = {
+      id: 'appt-1',
+      businessId: 'biz-1',
+      status: AppointmentStatus.PENDING_COMPLETION,
+      serviceId: 'svc-1',
+      assignedToId: 'staff-1',
+      contactId: 'contact-existing',
+      startAt: new Date('2030-01-01T15:00:00.000Z'),
+      endAt: new Date('2030-01-01T15:30:00.000Z'),
+      expressBookingExpiresAt: new Date(Date.now() + 60_000),
+      expressBookingToken: 'token-1',
+      expressRequireCard: null,
+      expressRequireDeposit: true,
+      guestFirstName: 'Alex',
+      guestEmail: 'alex@example.com',
+      title: 'Alex — Haircut',
+      notes: null,
+      metadata: null,
+      service: { id: 'svc-1', name: 'Haircut' },
+      serviceLines: [
+        {
+          serviceId: 'svc-1',
+          assignedToId: 'staff-1',
+          startAt: new Date('2030-01-01T15:00:00.000Z'),
+          durationMinutes: 30,
+          price: 50,
+          sortOrder: 0,
+        },
+      ],
+      assignedTo: null,
+    };
+    appointmentRepository.findByExpressToken.mockResolvedValue(pending);
+    bookingDepositPayment.verifyPaymentIntent.mockResolvedValue(undefined);
+    bookingLinkSale.createPartialDepositCheckout.mockResolvedValue({
+      checkoutId: 'checkout-partial',
+    });
+    appointmentRepository.update.mockResolvedValue({
+      ...pending,
+      status: AppointmentStatus.UNCONFIRMED,
+      contactId: 'contact-existing',
+      service: pending.service,
+    });
+
+    await service.complete('token-1', {
+      assignedToId: 'staff-1',
+      policyAgreed: true,
+      paymentIntentId: 'pi_partial',
+      holdToken: 'hold-1',
+    });
+
+    expect(bookingLinkSale.createPartialDepositCheckout).toHaveBeenCalledWith(
+      expect.objectContaining({
+        businessId: 'biz-1',
+        appointmentId: 'appt-1',
+        servicePrice: '50',
+        depositAmount: '20',
+        paymentIntentId: 'pi_partial',
+      }),
+    );
+    expect(bookingLinkSale.createPrepaidCheckoutSale).not.toHaveBeenCalled();
+  });
+
+  it('returns upload token on complete when express photos are enabled', async () => {
+    settingsRepository.ensureSettings.mockResolvedValue({
+      expressBookingEnabled: true,
+      expressBookingTimeLimitMinutes: 30,
+      expressRequireCard: false,
+      expressRequireDeposit: false,
+      expressDepositType: 'FULL',
+      expressDepositAmount: null,
+      expressAllowPhotoUpload: true,
+      photoUploadPrompt: 'Share inspiration photos',
+      cancellationPolicyVersion: '1',
+      requireApproval: false,
+      autoConfirm: false,
+      timezone: 'UTC',
+      formSettings: {},
+      publicSlug: 'demo',
+      anyoneExcludedStaffIds: [],
+      randomizeStaffOrder: false,
+    });
+    const pending = {
+      id: 'appt-1',
+      businessId: 'biz-1',
+      status: AppointmentStatus.PENDING_COMPLETION,
+      serviceId: 'svc-1',
+      assignedToId: 'staff-1',
+      contactId: 'contact-existing',
+      startAt: new Date('2030-01-01T15:00:00.000Z'),
+      endAt: new Date('2030-01-01T15:30:00.000Z'),
+      expressBookingExpiresAt: new Date(Date.now() + 60_000),
+      expressBookingToken: 'token-1',
+      expressRequireCard: null,
+      expressRequireDeposit: null,
+      guestFirstName: 'Alex',
+      guestEmail: 'alex@example.com',
+      title: 'Alex — Haircut',
+      notes: null,
+      metadata: null,
+      service: { id: 'svc-1', name: 'Haircut' },
+      serviceLines: [],
+      assignedTo: null,
+    };
+    appointmentRepository.findByExpressToken.mockResolvedValue(pending);
+    appointmentRepository.update.mockResolvedValue({
+      ...pending,
+      status: AppointmentStatus.UNCONFIRMED,
+      contactId: 'contact-existing',
+      service: pending.service,
+    });
+
+    const result = await service.complete('token-1', {
+      assignedToId: 'staff-1',
+      policyAgreed: true,
+    });
+
+    expect(result.uploadToken).toEqual(expect.any(String));
+    expect(result.publicSlug).toBe('demo');
+    expect(result.allowPhotoUpload).toBe(true);
+    expect(result.photoUploadPrompt).toBe('Share inspiration photos');
+    expect(appointmentRepository.update).toHaveBeenCalledWith(
+      'appt-1',
+      expect.objectContaining({
+        metadata: expect.objectContaining({
+          uploadToken: expect.any(String),
+          publicSlug: 'demo',
+        }),
+      }),
+      undefined,
     );
   });
 });

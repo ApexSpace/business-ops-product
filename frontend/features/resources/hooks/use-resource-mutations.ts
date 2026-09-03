@@ -70,6 +70,7 @@ export function useResourceMutations() {
     onSuccess: (_, { id }) => {
       toast.success("Resource updated");
       void invalidateResourceWorkspace(queryClient, id);
+      void invalidateResources(queryClient);
     },
   });
 

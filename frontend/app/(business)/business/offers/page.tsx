@@ -1,5 +1,5 @@
-import { OffersScreen } from "@/features/offers/components/offers-screen";
+import { OffersSettingsScreen } from "@/features/offers/components/offers-settings-screen";
 
 export default function OffersPage() {
-  return <OffersScreen />;
+  return <OffersSettingsScreen />;
 }

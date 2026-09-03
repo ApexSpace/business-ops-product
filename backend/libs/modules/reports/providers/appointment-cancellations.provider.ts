@@ -1,4 +1,4 @@
-﻿import { Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import {
   AppointmentSource,
   AppointmentStatus,
@@ -296,6 +296,13 @@ export class AppointmentCancellationsProvider implements ReportDataProvider {
     const timezone = context.timezone || 'UTC';
     const typeFilter = asString(filters.cancellationType, 'all');
 
+    const lateSettings =
+      await this.prisma.businessCancelRescheduleSettings.findUnique({
+        where: { businessId },
+      });
+    const lateWindowHours =
+      lateSettings?.lateCancellationHoursBefore ?? DEFAULT_LATE_CANCEL_HOURS;
+
     const appointments = (await this.prisma.appointment.findMany({
       where: {
         businessId,
@@ -447,7 +454,7 @@ export class AppointmentCancellationsProvider implements ReportDataProvider {
     for (const appt of candidates) {
       const audit = cancelAuditById.get(appt.id);
       const canceledAt = audit?.at ?? eventAt(appt);
-      const typeKey = classifyCancellationType(appt, canceledAt);
+      const typeKey = classifyCancellationType(appt, canceledAt, lateWindowHours);
 
       if (typeFilter !== 'all' && typeFilter !== typeKey) {
         continue;

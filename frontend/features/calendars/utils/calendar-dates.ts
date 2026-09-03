@@ -74,14 +74,22 @@ export function getDayRange(date: Date): DateRange {
 };
 }
 
-/** Week starts Sunday (US-style scheduling). */
-export function getWeekRange(date: Date): DateRange {
+/** Week range; defaults to Sunday start. */
+export function getWeekRange(
+  date: Date,
+  weekStartsOn: "SUNDAY" | "MONDAY" = "SUNDAY",
+): DateRange {
   const start = startOfDay(date);
   const dayOfWeek = start.getDay();
-  const weekStart = addDays(start, -dayOfWeek);
+  const offset =
+    weekStartsOn === "MONDAY"
+      ? dayOfWeek === 0
+        ? 6
+        : dayOfWeek - 1
+      : dayOfWeek;
+  const weekStart = addDays(start, -offset);
   const weekEnd = endOfDay(addDays(weekStart, 6));
-  return { start: weekStart, end: weekEnd,
-};
+  return { start: weekStart, end: weekEnd };
 }
 
 export function getWeekDays(date: Date): Date[] {

@@ -48,6 +48,9 @@ export function toServiceResponse(
     commissionDeductionType: service.commissionDeductionType,
     commissionDeductionValue:
       service.commissionDeductionValue?.toString() ?? null,
+    postCommissionDeductionType: service.postCommissionDeductionType,
+    postCommissionDeductionValue:
+      service.postCommissionDeductionValue?.toString() ?? null,
     staffingMode: resolveStaffingMode(service),
     clientOccupancyMinutes: timing.clientOccupancyMinutes,
     staffBlockedMinutes: timing.staffBlockedMinutes,

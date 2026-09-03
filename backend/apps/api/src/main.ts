@@ -111,6 +111,8 @@ async function bootstrap(): Promise<void> {
   if (process.env.WRITE_OPENAPI === 'true') {
     const fs = await import('fs');
     fs.writeFileSync('openapi.json', JSON.stringify(document, null, 2));
+    await app.close();
+    return;
   }
 
   await app.listen(port);

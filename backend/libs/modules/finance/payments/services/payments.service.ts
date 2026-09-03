@@ -37,6 +37,8 @@ import { BusinessRepository } from '@app/modules/platform/business/repositories/
 import { DateTime } from 'luxon';
 import { PaymentOrchestratorService } from '../orchestration/payment-orchestrator.service';
 import { assertCanRefundSale } from '@app/modules/finance/invoices/utils/sales-staff-access.util';
+import { CheckoutAdvancedSettingsService } from '@app/modules/finance/checkout-advanced-settings/services/checkout-advanced-settings.service';
+import { buildPaidReceiptEmailExtras } from '@app/modules/finance/checkout-advanced-settings/utils/paid-receipt-email.util';
 
 @Injectable()
 export class PaymentsService {
@@ -50,6 +52,7 @@ export class PaymentsService {
     private readonly notificationDispatch: NotificationDispatchService,
     private readonly businessRepository: BusinessRepository,
     private readonly paymentOrchestrator: PaymentOrchestratorService,
+    private readonly checkoutAdvancedSettings: CheckoutAdvancedSettingsService,
   ) {}
 
   async create(
@@ -678,6 +681,48 @@ export class PaymentsService {
 
     const business = await this.businessRepository.findById(businessId);
 
+    const invoiceDetails = await this.prisma.invoice.findFirst({
+      where: {
+        id: payment.invoice.id,
+        businessId,
+        deletedAt: null,
+      },
+      include: {
+        items: {
+          include: {
+            staffUser: {
+              select: { firstName: true, lastName: true, email: true },
+            },
+          },
+        },
+      },
+    });
+
+    const advancedSettings =
+      await this.checkoutAdvancedSettings.ensureRow(businessId);
+    const receiptExtras = buildPaidReceiptEmailExtras(
+      advancedSettings,
+      (invoiceDetails?.items ?? []).map((item) => ({
+        title: item.title,
+        staff: item.staffUser
+          ? {
+              label:
+                [item.staffUser.firstName, item.staffUser.lastName]
+                  .filter(Boolean)
+                  .join(' ')
+                  .trim() ||
+                item.staffUser.email ||
+                'Staff',
+            }
+          : null,
+      })),
+      (invoiceDetails?.metadata as Record<string, unknown> | null) ?? null,
+    );
+
+    const tipLine = receiptExtras['payment.tip']
+      ? `<p><strong>Tip:</strong> ${receiptExtras['payment.tip']}</p>`
+      : '';
+
     await this.notificationDispatch.dispatch({
       businessId,
       notificationKey: 'invoice.paid_receipt',
@@ -694,6 +739,8 @@ export class PaymentsService {
         'invoice.number': payment.invoice.invoiceNumber,
         'payment.amount': formatMoney(amount),
         'payment.date': DateTime.fromJSDate(paidAt).toFormat('LLL d, yyyy'),
+        'payment.tip': tipLine,
+        ...receiptExtras,
       },
     });
   }

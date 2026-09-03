@@ -116,6 +116,18 @@ export class CreateServiceDto {
   @Min(0)
   commissionDeductionValue?: number;
 
+  @ApiPropertyOptional({ enum: ServiceCommissionType })
+  @IsOptional()
+  @IsEnum(ServiceCommissionType)
+  postCommissionDeductionType?: ServiceCommissionType;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
+  postCommissionDeductionValue?: number;
+
   @ApiPropertyOptional()
   @IsOptional()
   @IsBoolean()

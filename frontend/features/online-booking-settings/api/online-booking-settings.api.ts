@@ -64,6 +64,7 @@ export interface OnlineBookingSettings {
   expressRequireCard: boolean;
   expressRequireDeposit: boolean;
   expressDepositType: string;
+  expressDepositAmount: string | null;
   expressAllowPhotoUpload: boolean;
   cancellationPolicyVersion: string;
   randomizeStaffOrder: boolean;

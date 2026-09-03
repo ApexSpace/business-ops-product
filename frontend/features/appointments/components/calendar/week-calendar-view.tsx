@@ -6,12 +6,14 @@ import type { Calendar } from "@/features/calendars/schemas/calendar-profile";
 import { CalendarCurrentTimeIndicator } from "@/features/appointments/components/calendar/calendar-current-time-indicator";
 import { CalendarDayColumnHeader } from "@/features/appointments/components/calendar/calendar-day-column-header";
 import {
-  GRID_HEIGHT,
   TimeGridColumn,
   TimeGridGutter,
+  useTimeGridHeight,
 } from "@/features/appointments/components/calendar/time-grid-shared";
 import { useCalendarCurrentTimeTop } from "@/features/appointments/hooks/use-calendar-current-time";
 import { useScrollTimeGridToNow } from "@/features/appointments/hooks/use-scroll-time-grid-to-now";
+import { getMobileWeekDateKeys } from "@/features/calendar-display-settings/utils/calendar-display-runtime.util";
+import type { WeekStartsOn } from "@/features/calendar-display-settings/api/calendar-display-settings.api";
 import {
   formatShortWeekdayForDateKey,
   getWeekDateKeysInTimezone,
@@ -63,6 +65,7 @@ interface WeekCalendarViewProps {
   ) => void;
   /** Figma phone week — Mon–Wed columns only. */
   density?: "desktop" | "mobile";
+  weekStartsOn?: WeekStartsOn;
 }
 
 export function WeekCalendarView({
@@ -83,12 +86,21 @@ export function WeekCalendarView({
   weekStaffHoursSlots,
   onSlotClick,
   density = "desktop",
+  weekStartsOn = "SUNDAY",
 }: WeekCalendarViewProps) {
   const isMobile = density === "mobile";
-  const allWeekKeys = getWeekDateKeysInTimezone(anchorDateKey, timezone);
-  // Sunday-start week → Mon–Wed = indexes 1..3 (Figma mobile week)
+  const gridHeight = useTimeGridHeight();
+  const allWeekKeys = getWeekDateKeysInTimezone(
+    anchorDateKey,
+    timezone,
+    weekStartsOn,
+  );
   const weekDateKeys = isMobile
-    ? allWeekKeys.slice(1, 1 + MOBILE_CAL_WEEK_VISIBLE_DAYS)
+    ? getMobileWeekDateKeys(
+        allWeekKeys,
+        weekStartsOn,
+        MOBILE_CAL_WEEK_VISIBLE_DAYS,
+      )
     : allWeekKeys;
   const currentTimeTop = useCalendarCurrentTimeTop(timezone, weekDateKeys);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -155,7 +167,7 @@ export function WeekCalendarView({
           ) : (
             <div
               className="relative bg-white"
-              style={{ minHeight: GRID_HEIGHT }}
+              style={{ minHeight: gridHeight }}
             >
               {currentTimeTop !== null ? (
                 <CalendarCurrentTimeIndicator topPx={currentTimeTop} />
@@ -164,7 +176,7 @@ export function WeekCalendarView({
                 className="grid w-full bg-white"
                 style={{
                   gridTemplateColumns,
-                  minHeight: GRID_HEIGHT,
+                  minHeight: gridHeight,
                 }}
               >
                 <TimeGridGutter className={isMobile ? "w-[52px]" : undefined} />

@@ -29,6 +29,7 @@ import {
   AppointmentRepository,
   type AppointmentWithRelations,
 } from '@app/modules/operations/appointments/repositories/appointment.repository';
+import { generateClientManageToken } from '@app/modules/operations/appointments/utils/appointment-manage-token.util';
 import { toAppointmentResponse } from '@app/modules/operations/appointments/mappers/appointment.mapper';
 import type { AppointmentResponseDto } from '@app/modules/operations/appointments/dto/appointment.dto';
 import {
@@ -41,6 +42,10 @@ import { PublicBookingContactService } from '@app/modules/operations/public-book
 import { BookingDepositPaymentService } from '@app/modules/finance/payments/services/booking-deposit-payment.service';
 import { BookingLinkSaleService } from '@app/modules/finance/payments/services/booking-link-sale.service';
 import { StripeContactPaymentMethodService } from '@app/modules/finance/payments/services/stripe-contact-payment-method.service';
+import { CancelRescheduleSettingsRepository } from '@app/modules/operations/appointments/cancel-reschedule-settings/repositories/cancel-reschedule-settings.repository';
+import { resolveExpressDeposit } from '../utils/express-deposit.util';
+import type { BusinessOnlineBookingSettings } from '@prisma/client';
+import { stripHtmlToPlainText } from '@app/modules/operations/appointments/cancel-reschedule-settings/utils/cancel-reschedule-behavior.util';
 import { AppointmentNotificationService } from '@app/modules/operations/appointments/services/appointment-notification.service';
 import { ContactRepository } from '@app/modules/crm/contacts/repositories/contact.repository';
 import {
@@ -49,22 +54,31 @@ import {
   ExpressCompleteDto,
 } from '../dto/express-booking.dto';
 
-function readFormSettings(formSettings: unknown) {
+function readFormSettings(
+  formSettings: unknown,
+  policy?: {
+    cancellationPolicyHtml?: string | null;
+    requirePolicyAgreement?: boolean;
+  },
+) {
   const fs =
     formSettings &&
     typeof formSettings === 'object' &&
     !Array.isArray(formSettings)
       ? (formSettings as Record<string, unknown>)
       : {};
+  const policyHtml =
+    policy?.cancellationPolicyHtml ??
+    (typeof fs.cancellationPolicyText === 'string'
+      ? fs.cancellationPolicyText
+      : null);
   return {
     requireEmail: fs.requireEmail !== false,
     requirePhone: Boolean(fs.requirePhone),
     showNotes: fs.showNotes !== false,
-    cancellationPolicyText:
-      typeof fs.cancellationPolicyText === 'string'
-        ? fs.cancellationPolicyText
-        : null,
-    requirePolicyAgreement: Boolean(fs.requirePolicyAgreement),
+    cancellationPolicyText: stripHtmlToPlainText(policyHtml) || null,
+    requirePolicyAgreement:
+      policy?.requirePolicyAgreement ?? Boolean(fs.requirePolicyAgreement),
   };
 }
 
@@ -89,6 +103,7 @@ export class ExpressBookingService {
     private readonly configService: ConfigService,
     private readonly notificationChannelPreference: NotificationChannelPreferenceService,
     private readonly notificationDispatch: NotificationDispatchService,
+    private readonly cancelRescheduleSettingsRepository: CancelRescheduleSettingsRepository,
   ) {}
 
   async create(
@@ -373,6 +388,9 @@ export class ExpressBookingService {
       guestEmail: null,
       guestPhone: null,
       guestPhoneCountryCode: null,
+      ...(existing.clientManageToken
+        ? {}
+        : { clientManageToken: generateClientManageToken() }),
       metadata: {
         ...previousMetadata,
         expressCompletedByStaff: true,
@@ -453,13 +471,22 @@ export class ExpressBookingService {
       settings.timezone,
       business?.timezone,
     );
-    const formSettings = readFormSettings(settings.formSettings);
+    const formSettings = await this.resolveFormSettings(
+      appointment.businessId,
+      settings.formSettings,
+    );
     const serviceId = appointment.serviceId!;
     const service = await this.serviceRepository.findById(
       appointment.businessId,
       serviceId,
     );
     const flags = this.resolveExpressPaymentFlags(appointment, settings);
+    const deposit = flags.paymentRequired
+      ? this.resolveExpressDepositAmount(
+          settings,
+          service?.price != null ? Number(service.price) : 0,
+        )
+      : null;
     const staff = await this.listEligibleStaff(appointment);
 
     let contact: {
@@ -523,11 +550,20 @@ export class ExpressBookingService {
       requireDeposit: flags.requireDeposit,
       paymentRequired: flags.paymentRequired,
       cardOnly: flags.cardOnly,
-      amountCents: flags.paymentRequired
-        ? Math.round(Number(service?.price ?? 0) * 100)
+      amountCents: deposit
+        ? Math.round(Number(deposit.chargeAmount) * 100)
         : 0,
+      servicePriceCents: deposit
+        ? Math.round(Number(deposit.servicePrice) * 100)
+        : 0,
+      remainingBalanceCents: deposit
+        ? Math.round(Number(deposit.remainingBalance) * 100)
+        : 0,
+      isPartialDeposit: deposit ? !deposit.isFullPayment : false,
       policyVersion: settings.cancellationPolicyVersion,
       allowPhotoUpload: settings.expressAllowPhotoUpload,
+      photoUploadPrompt: settings.photoUploadPrompt,
+      publicSlug: settings.publicSlug,
       staff,
     };
   }
@@ -588,7 +624,11 @@ export class ExpressBookingService {
     if (flags.paymentRequired) {
       const holdToken = randomUUID();
       const contactId = await resolveContactId();
-      const amountDue = service?.price?.toString() ?? '0';
+      const deposit = this.resolveExpressDepositAmount(
+        settings,
+        service?.price != null ? Number(service.price) : 0,
+      );
+      const amountDue = deposit.chargeAmount.toString();
       const currency = this.readBusinessCurrency(business?.settings);
 
       return this.bookingDepositPayment.createCheckout({
@@ -650,7 +690,10 @@ export class ExpressBookingService {
     const settings = await this.settingsRepository.ensureSettings(
       appointment.businessId,
     );
-    const formSettings = readFormSettings(settings.formSettings);
+    const formSettings = await this.resolveFormSettings(
+      appointment.businessId,
+      settings.formSettings,
+    );
     const hasExistingContact = Boolean(appointment.contactId);
 
     if (!hasExistingContact) {
@@ -797,18 +840,50 @@ export class ExpressBookingService {
         appointment.businessId,
         serviceId,
       );
-      const sale = await this.bookingLinkSale.createPrepaidCheckoutSale({
-        businessId: appointment.businessId,
-        appointmentId: appointment.id,
-        contactId,
-        serviceId,
-        serviceName: service?.name ?? appointment.title,
-        staffUserId: nextStaffId,
-        amount: service?.price?.toString() ?? '0',
-        paymentIntentId: dto.paymentIntentId,
-      });
-      prepaidCheckoutId = sale.checkoutId;
+      const deposit = this.resolveExpressDepositAmount(
+        settings,
+        service?.price != null ? Number(service.price) : 0,
+      );
+      const currency = this.readBusinessCurrency(
+        (
+          await this.businessRepository.findById(appointment.businessId)
+        )?.settings,
+      );
+
+      if (deposit.isFullPayment) {
+        const sale = await this.bookingLinkSale.createPrepaidCheckoutSale({
+          businessId: appointment.businessId,
+          appointmentId: appointment.id,
+          contactId,
+          serviceId,
+          serviceName: service?.name ?? appointment.title,
+          staffUserId: nextStaffId,
+          amount: deposit.chargeAmount.toString(),
+          paymentIntentId: dto.paymentIntentId,
+          currency,
+        });
+        prepaidCheckoutId = sale.checkoutId;
+      } else {
+        const sale = await this.bookingLinkSale.createPartialDepositCheckout({
+          businessId: appointment.businessId,
+          appointmentId: appointment.id,
+          contactId,
+          serviceId,
+          serviceName: service?.name ?? appointment.title,
+          staffUserId: nextStaffId,
+          servicePrice: deposit.servicePrice.toString(),
+          depositAmount: deposit.chargeAmount.toString(),
+          paymentIntentId: dto.paymentIntentId,
+          currency,
+        });
+        prepaidCheckoutId = sale.checkoutId;
+      }
     }
+
+    const uploadToken =
+      settings.expressAllowPhotoUpload && settings.publicSlug
+        ? randomUUID()
+        : null;
 
     const serviceLine = appointment.serviceLines[0];
     const updated = await this.appointmentRepository.update(
@@ -825,6 +900,9 @@ export class ExpressBookingService {
         expressBookingToken: null,
         expressBookingExpiresAt: null,
         expressBookingCompletedAt: new Date(),
+        ...(appointment.clientManageToken
+          ? {}
+          : { clientManageToken: generateClientManageToken() }),
         metadata: {
           ...previousMetadata,
           policyAgreed: Boolean(dto.policyAgreed),
@@ -834,6 +912,12 @@ export class ExpressBookingService {
             : {}),
           ...(dto.setupIntentId ? { setupIntentId: dto.setupIntentId } : {}),
           ...(prepaidCheckoutId ? { prepaidCheckoutId } : {}),
+          ...(uploadToken
+            ? {
+                uploadToken,
+                publicSlug: settings.publicSlug,
+              }
+            : {}),
           expressCompleted: true,
         },
       },
@@ -878,6 +962,10 @@ export class ExpressBookingService {
       contactId: updated.contactId,
       assignedToId: updated.assignedToId,
       service: updated.service,
+      allowPhotoUpload: settings.expressAllowPhotoUpload,
+      photoUploadPrompt: settings.photoUploadPrompt,
+      publicSlug: settings.publicSlug,
+      uploadToken,
     };
   }
 
@@ -963,6 +1051,20 @@ export class ExpressBookingService {
       paymentRequired: Boolean(requireDeposit),
       cardOnly: Boolean(requireCard) && !Boolean(requireDeposit),
     };
+  }
+
+  private resolveExpressDepositAmount(
+    settings: Pick<
+      BusinessOnlineBookingSettings,
+      'expressDepositType' | 'expressDepositAmount'
+    >,
+    servicePrice: string | number | null | undefined,
+  ) {
+    return resolveExpressDeposit({
+      depositType: settings.expressDepositType,
+      depositAmount: settings.expressDepositAmount,
+      servicePrice,
+    });
   }
 
   private resolveCompletionStatus(settings: {
@@ -1096,6 +1198,18 @@ export class ExpressBookingService {
           appointment.service?.name ?? appointment.title,
         'appointment.title': appointment.title,
       },
+    });
+  }
+
+  private async resolveFormSettings(
+    businessId: string,
+    formSettings: unknown,
+  ) {
+    const cancelRescheduleSettings =
+      await this.cancelRescheduleSettingsRepository.ensureSettings(businessId);
+    return readFormSettings(formSettings, {
+      cancellationPolicyHtml: cancelRescheduleSettings.cancellationPolicyHtml,
+      requirePolicyAgreement: cancelRescheduleSettings.requirePolicyAgreement,
     });
   }
 

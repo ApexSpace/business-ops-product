@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -26,6 +26,7 @@ import {
 import { useStripeConnectStatus } from "@/features/payments/hooks/use-stripe-connect-status";
 import { GiftCardPaymentPicker } from "@/features/gift-cards/components/gift-card-payment-picker";
 import type { GiftCardListItem } from "@/features/gift-cards/types";
+import type { CheckoutAdvancedSettings } from "@/features/checkout-advanced-settings/api/checkout-advanced-settings.api";
 import { SalesPaymentDrawerForm } from "@/features/sales/components/sales-payment-drawer-form";
 import { queryKeys } from "@/lib/query/keys";
 import { invalidateGiftCards } from "@/lib/query/invalidation";
@@ -44,6 +45,8 @@ import {
 export interface CollectTenderInput {
   method: PaymentMethod;
   amount: number;
+  reference?: string;
+  notes?: string;
   contactPaymentMethodId?: string;
   giftCardId?: string;
 }
@@ -54,9 +57,15 @@ export interface InvoiceCollectPaymentPanelProps {
   balanceDue: number;
   /** Used for payment summary / tip base in sales drawer layout. */
   subtotal?: number;
+  customFeeLines?: Array<{ id: string; name: string; amount: number }>;
+  advancedSettings?: CheckoutAdvancedSettings | null;
+  hasProductLines?: boolean;
   onComplete: () => void;
   /** When set (e.g. sales close), replaces POST /payments/collect */
-  collectOverride?: (tenders: CollectTenderInput[]) => Promise<{
+  collectOverride?: (input: {
+    tenders: CollectTenderInput[];
+    tipAmount?: number;
+  }) => Promise<{
     completed: boolean;
     stripeTenders: CollectPaymentResult["stripeTenders"];
     redirectTenders?: CollectPaymentResult["redirectTenders"];
@@ -77,6 +86,9 @@ export function InvoiceCollectPaymentPanel({
   contactId,
   balanceDue,
   subtotal,
+  customFeeLines = [],
+  advancedSettings,
+  hasProductLines = false,
   onComplete,
   collectOverride,
   awaitSettlement,
@@ -106,14 +118,19 @@ export function InvoiceCollectPaymentPanel({
     useState<GiftCardListItem | null>(null);
   const [secondaryGiftCard, setSecondaryGiftCard] =
     useState<GiftCardListItem | null>(null);
+  const [tipAmount, setTipAmount] = useState(0);
+  const [paymentReference, setPaymentReference] = useState<string | null>(null);
 
   const queryClient = useQueryClient();
+  const chargeTotal = Math.round((balanceDue + tipAmount) * 100) / 100;
 
-  useEffect(() => {
-    setPrimaryAmount((current) =>
-      balanceDue > 0 ? Math.min(current, balanceDue) : balanceDue,
-    );
-  }, [balanceDue]);
+  const handleTipAmountChange = useCallback(
+    (amount: number) => {
+      setTipAmount(amount);
+      setPrimaryAmount(Math.round((balanceDue + amount) * 100) / 100);
+    },
+    [balanceDue],
+  );
 
   const { ready: stripeReady, publishableKey, stripeAccountId } =
     useStripeConnectStatus();
@@ -189,6 +206,9 @@ export function InvoiceCollectPaymentPanel({
       rows.push({
         method: resolvedPrimary,
         amount: capGiftCardAmount(resolvedPrimary, primary, primaryGiftCard),
+        ...(resolvedPrimary === "OTHER" && paymentReference
+          ? { reference: paymentReference }
+          : {}),
         ...(resolvedPrimary === "STRIPE" && savedCardId && savedCardId !== "new"
           ? { contactPaymentMethodId: savedCardId,
 }
@@ -236,6 +256,7 @@ export function InvoiceCollectPaymentPanel({
     primaryGiftCard,
     secondaryGiftCard,
     stripeReady,
+    paymentReference,
   ]);
 
   const tenderTotal = tenders.reduce((sum, t) => sum + t.amount, 0);
@@ -259,8 +280,12 @@ export function InvoiceCollectPaymentPanel({
       toast.error("Enter at least one positive amount");
       return;
     }
-    if (tenderTotal > balanceDue + 0.001) {
-      toast.error("Tender total exceeds balance due");
+    if (tenderTotal < chargeTotal - 0.001) {
+      toast.error("Payment must cover balance due plus tip");
+      return;
+    }
+    if (tenderTotal > chargeTotal + 0.001) {
+      toast.error("Tender total exceeds amount due");
       return;
     }
 
@@ -274,7 +299,10 @@ export function InvoiceCollectPaymentPanel({
 
     try {
       const result = collectOverride
-        ? await collectOverride(tenders)
+        ? await collectOverride({
+            tenders,
+            tipAmount: tipAmount > 0 ? tipAmount : undefined,
+          })
         : await collectMutation.mutateAsync({
             payableType: "INVOICE",
             payableId: invoiceId,
@@ -320,7 +348,7 @@ export function InvoiceCollectPaymentPanel({
     }
   }, [
     awaitSettlement,
-    balanceDue,
+    chargeTotal,
     collectMutation,
     collectOverride,
     contactId,
@@ -329,6 +357,7 @@ export function InvoiceCollectPaymentPanel({
     queryClient,
     successMessage,
     tenderTotal,
+    tipAmount,
     tenders,
   ]);
 
@@ -427,7 +456,13 @@ export function InvoiceCollectPaymentPanel({
     return (
       <SalesPaymentDrawerForm
         balanceDue={balanceDue}
+        chargeTotal={chargeTotal}
         subtotal={subtotal}
+        customFeeLines={customFeeLines}
+        advancedSettings={advancedSettings}
+        hasProductLines={hasProductLines}
+        onTipAmountChange={handleTipAmountChange}
+        onPaymentReferenceChange={setPaymentReference}
         primaryMethod={primaryMethod}
         onPrimaryMethodChange={(method) => {
           setPrimaryMethod(method);

@@ -4,6 +4,8 @@ export interface PublicBookingFormSettings {
   showNotes: boolean;
   showBookForSomeoneElse: boolean;
   cancellationPolicyText: string | null;
+  cancellationPolicyHtml?: string | null;
+  cancellationPolicySms?: string | null;
   requirePolicyAgreement: boolean;
 }
 

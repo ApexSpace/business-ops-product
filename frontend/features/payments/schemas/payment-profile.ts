@@ -9,6 +9,7 @@ export const PAYMENT_METHOD_OPTIONS: {
   label: string;
 }[] = [
   { value: "CASH", label: "Cash" },
+  { value: "CHECK", label: "Check" },
   { value: "CARD", label: "Card" },
   { value: "BANK_TRANSFER", label: "Bank transfer" },
   { value: "WALLET", label: "Wallet" },
@@ -140,6 +141,7 @@ export const paymentFormSchema = z.object({
   amount: z.number().min(0.01, "Amount must be greater than zero"),
   method: z.enum([
     "CASH",
+    "CHECK",
     "CARD",
     "BANK_TRANSFER",
     "WALLET",

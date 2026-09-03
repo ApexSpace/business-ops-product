@@ -41,3 +41,10 @@ export function updateService(id: string, body: Record<string, unknown>) {
 export function deleteService(id: string) {
   return api.delete<void>(`services/${id}?confirm=true`);
 }
+
+export function reorderServices(categoryId: string, orderedIds: string[]) {
+  return api.post<Service[]>("services/reorder", {
+    categoryId,
+    orderedIds,
+  });
+}

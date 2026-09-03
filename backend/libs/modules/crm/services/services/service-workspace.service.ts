@@ -124,20 +124,28 @@ export class ServiceWorkspaceService {
       })),
       onlineBooking: workspace.onlineBookingSettings
         ? {
-            ...workspace.onlineBookingSettings,
+            onlineBookingEnabled:
+              workspace.onlineBookingSettings.onlineBookingEnabled,
+            calendarId: workspace.onlineBookingSettings.calendarId,
+            customizePriceDisplay:
+              workspace.onlineBookingSettings.customizePriceDisplay,
+            priceDisplayMode: workspace.onlineBookingSettings.priceDisplayMode,
+            showPromptToCall: workspace.onlineBookingSettings.showPromptToCall,
+            promptToCallExplanation:
+              workspace.onlineBookingSettings.promptToCallExplanation,
+            onlineBookingDescription:
+              workspace.onlineBookingSettings.onlineBookingDescription,
+            requireHomeAddress:
+              workspace.onlineBookingSettings.requireHomeAddress,
+            requireCreditCard:
+              workspace.onlineBookingSettings.requireCreditCard,
+            requirePaymentAtBooking:
+              workspace.onlineBookingSettings.requirePaymentAtBooking,
           }
         : null,
-      resourceRequirements: workspace.resourceRequirements.map((r) => ({
-        id: r.id,
-        label: r.label,
-        resourceType: r.resourceType,
-        resourceId: r.resourceId,
-        resourceName: r.resource?.name ?? null,
-        quantity: r.quantity,
-        notes: r.notes,
-        sortOrder: r.sortOrder,
-        linked: r.resourceId != null,
-      })),
+      resourceRequirements: workspace.resourceRequirements.map((r) =>
+        this.mapResourceRequirement(r),
+      ),
       products: workspace.productUsages.map((p) => ({
         id: p.id,
         productId: p.productId,
@@ -449,10 +457,35 @@ export class ServiceWorkspaceService {
             : { calendar: { disconnect: true } }
           : {}),
         ...(dto.customizePriceDisplay !== undefined
-          ? { customizePriceDisplay: dto.customizePriceDisplay }
+          ? {
+              customizePriceDisplay: dto.customizePriceDisplay,
+              ...(!dto.customizePriceDisplay
+                ? { priceDisplayMode: null }
+                : {}),
+            }
+          : {}),
+        ...(dto.priceDisplayMode !== undefined
+          ? { priceDisplayMode: dto.priceDisplayMode }
           : {}),
         ...(dto.showPromptToCall !== undefined
-          ? { showPromptToCall: dto.showPromptToCall }
+          ? {
+              showPromptToCall: dto.showPromptToCall,
+              ...(!dto.showPromptToCall
+                ? { promptToCallExplanation: null }
+                : {}),
+            }
+          : {}),
+        ...(dto.promptToCallExplanation !== undefined
+          ? {
+              promptToCallExplanation:
+                dto.promptToCallExplanation?.trim() || null,
+            }
+          : {}),
+        ...(dto.onlineBookingDescription !== undefined
+          ? {
+              onlineBookingDescription:
+                dto.onlineBookingDescription?.trim() || null,
+            }
           : {}),
         ...(dto.requireHomeAddress !== undefined
           ? { requireHomeAddress: dto.requireHomeAddress }
@@ -527,24 +560,23 @@ export class ServiceWorkspaceService {
     actor: RequestUser,
   ) {
     await this.requireService(businessId, serviceId);
-    const resourceId = await this.resolveResourceId(
+    const resourceIds = await this.validateRequirementSelection(
       businessId,
-      dto.resourceId,
-      dto.resourceType,
+      dto.groupId,
+      dto.selectionMode,
+      dto.resourceIds,
     );
     const count = await this.workspaceRepository.countResourceRequirements(
       businessId,
       serviceId,
     );
     const row = await this.workspaceRepository.createResourceRequirement({
-      business: { connect: { id: businessId } },
-      service: { connect: { id: serviceId } },
-      label: dto.label.trim(),
-      resourceType: dto.resourceType,
-      ...(resourceId ? { resource: { connect: { id: resourceId } } } : {}),
-      quantity: dto.quantity ?? 1,
-      notes: dto.notes?.trim() || null,
+      businessId,
+      serviceId,
+      groupId: dto.groupId,
+      selectionMode: dto.selectionMode,
       sortOrder: count,
+      resourceIds,
     });
 
     await this.auditService.log({
@@ -579,26 +611,41 @@ export class ServiceWorkspaceService {
       );
     }
 
-    const resourceType = dto.resourceType ?? existing.resourceType;
-    const resourceId =
-      dto.resourceId !== undefined
-        ? await this.resolveResourceId(businessId, dto.resourceId, resourceType)
-        : existing.resourceId;
+    const groupId = dto.groupId ?? existing.groupId;
+    if (!groupId) {
+      throw new AppException(
+        ErrorCode.VALIDATION_ERROR,
+        'Resource group is required',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const selectionMode = dto.selectionMode ?? existing.selectionMode;
+    const resourceIds =
+      dto.resourceIds !== undefined ||
+      dto.selectionMode !== undefined ||
+      dto.groupId !== undefined
+        ? await this.validateRequirementSelection(
+            businessId,
+            groupId,
+            selectionMode,
+            dto.resourceIds ??
+              (selectionMode === 'SPECIFIC'
+                ? existing.items.map((item) => item.resourceId)
+                : []),
+          )
+        : undefined;
 
     const row = await this.workspaceRepository.updateResourceRequirement(
       businessId,
       serviceId,
       reqId,
       {
-        ...(dto.label !== undefined ? { label: dto.label.trim() } : {}),
-        ...(dto.resourceType !== undefined
-          ? { resourceType: dto.resourceType }
+        ...(dto.groupId !== undefined ? { groupId: dto.groupId } : {}),
+        ...(dto.selectionMode !== undefined
+          ? { selectionMode: dto.selectionMode }
           : {}),
-        ...(dto.resourceId !== undefined ? { resourceId } : {}),
-        ...(dto.quantity !== undefined ? { quantity: dto.quantity } : {}),
-        ...(dto.notes !== undefined
-          ? { notes: dto.notes?.trim() || null }
-          : {}),
+        ...(resourceIds !== undefined ? { resourceIds } : {}),
       },
     );
     if (!row) {
@@ -1017,42 +1064,76 @@ export class ServiceWorkspaceService {
     }
   }
 
-  private async resolveResourceId(
+  private async validateRequirementSelection(
     businessId: string,
-    resourceId: string | null | undefined,
-    resourceType: string,
-  ): Promise<string | null> {
-    if (resourceId == null) {
-      return null;
+    groupId: string,
+    selectionMode: string,
+    resourceIds?: string[],
+  ): Promise<string[]> {
+    await this.resourcesService.assertGroupExists(businessId, groupId);
+
+    if (selectionMode === 'ALL') {
+      return [];
     }
-    await this.resourcesService.assertResourceExists(
-      businessId,
-      resourceId,
-      resourceType,
-    );
-    return resourceId;
+
+    const ids = [...new Set(resourceIds ?? [])];
+    if (ids.length === 0) {
+      throw new AppException(
+        ErrorCode.VALIDATION_ERROR,
+        'Select at least one resource when using specific resources',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    for (const resourceId of ids) {
+      const resource = await this.resourcesService.assertResourceExists(
+        businessId,
+        resourceId,
+      );
+      if (resource.groupId !== groupId) {
+        throw new AppException(
+          ErrorCode.VALIDATION_ERROR,
+          'Selected resources must belong to the chosen resource group',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+    }
+
+    return ids;
   }
 
   private mapResourceRequirement(row: {
     id: string;
-    label: string;
-    resourceType: string;
-    resourceId: string | null;
-    quantity: number;
-    notes: string | null;
+    groupId: string | null;
+    selectionMode: string;
     sortOrder: number;
-    resource?: { name: string } | null;
+    group?: { id: string; name: string } | null;
+    items?: Array<{
+      resourceId: string;
+      resource?: { id: string; name: string } | null;
+    }>;
+    resource?: { id: string; name: string } | null;
+    resourceId?: string | null;
   }) {
+    const items = row.items ?? [];
+    const resources =
+      items.length > 0
+        ? items.map((item) => ({
+            id: item.resource?.id ?? item.resourceId,
+            name: item.resource?.name ?? 'Unknown',
+          }))
+        : row.resource
+          ? [{ id: row.resource.id, name: row.resource.name }]
+          : [];
+
     return {
       id: row.id,
-      label: row.label,
-      resourceType: row.resourceType,
-      resourceId: row.resourceId,
-      resourceName: row.resource?.name ?? null,
-      quantity: row.quantity,
-      notes: row.notes,
+      groupId: row.groupId,
+      groupName: row.group?.name ?? null,
+      selectionMode: row.selectionMode,
+      resourceIds: resources.map((r) => r.id),
+      resources,
       sortOrder: row.sortOrder,
-      linked: row.resourceId != null,
     };
   }
 

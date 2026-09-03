@@ -43,6 +43,8 @@ export function toResourceListItemResponse(
     groupName: resource.group?.name ?? null,
     name: resource.name,
     resourceType: resource.resourceType,
+    capacity: resource.capacity,
+    alwaysAvailable: resource.alwaysAvailable,
     status: resource.status,
     sortOrder: resource.sortOrder,
     createdAt: resource.createdAt,

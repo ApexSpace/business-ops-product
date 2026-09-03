@@ -6,6 +6,7 @@ import { NavArrowIcon } from "@/components/ui/nav-arrow-icon";
 import { CalendarDatePicker } from "@/features/appointments/components/calendar/calendar-date-picker";
 import { CalendarFiltersPopover } from "@/features/appointments/components/calendar/calendar-filters-popover";
 import type { CalendarViewMode } from "@/features/calendars/utils/calendar-dates";
+import type { WeekStartsOn } from "@/features/calendar-display-settings/api/calendar-display-settings.api";
 import { parseDateKeyInTimezone } from "@/features/calendars/utils/timezone";
 import {
   MOBILE_PAGE_TITLE_CLASS,
@@ -27,6 +28,7 @@ interface MobileCalendarHeaderProps {
   onCreate: () => void;
   canCreate?: boolean;
   className?: string;
+  weekStartsOn?: WeekStartsOn;
 }
 
 export function MobileCalendarHeader({
@@ -42,6 +44,7 @@ export function MobileCalendarHeader({
   onCreate,
   canCreate = true,
   className,
+  weekStartsOn = "SUNDAY",
 }: MobileCalendarHeaderProps) {
   const [pickerOpen, setPickerOpen] = useState(false);
   const headerDateLabel = parseDateKeyInTimezone(anchorDateKey, timezone).toFormat(
@@ -70,6 +73,7 @@ export function MobileCalendarHeader({
           onToday={onToday}
           onJumpWeeks={onJumpWeeks}
           weekJumpOptions={weekJumpOptions}
+          weekStartsOn={weekStartsOn}
           trigger={
             <button
               type="button"

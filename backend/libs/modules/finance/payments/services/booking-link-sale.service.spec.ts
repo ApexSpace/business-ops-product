@@ -105,4 +105,59 @@ describe('BookingLinkSaleService', () => {
     );
     expect(prisma.$transaction).toHaveBeenCalled();
   });
+
+  it('returns existing OPEN checkout for appointment on partial deposit', async () => {
+    prisma.payment.findFirst.mockResolvedValue(null);
+    prisma.invoice.findFirst.mockResolvedValue({ id: 'inv-open' });
+
+    const result = await service.createPartialDepositCheckout({
+      businessId: 'biz-1',
+      appointmentId: 'apt-1',
+      contactId: 'contact-1',
+      serviceId: 'svc-1',
+      serviceName: 'Facial',
+      servicePrice: '100.00',
+      depositAmount: '25.00',
+      paymentIntentId: 'pi_partial',
+    });
+
+    expect(result).toEqual({ checkoutId: 'inv-open' });
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it('creates OPEN partially-paid checkout + deposit payment', async () => {
+    prisma.payment.findFirst.mockResolvedValue(null);
+    prisma.invoice.findFirst.mockResolvedValue(null);
+    prisma.$transaction.mockImplementation(async (fn) => {
+      const tx = {
+        invoice: {
+          create: jest.fn().mockResolvedValue({
+            id: 'inv-partial',
+            kind: InvoiceKind.CHECKOUT,
+            status: InvoiceStatus.OPEN,
+          }),
+        },
+        payment: {
+          create: jest.fn().mockResolvedValue({ id: 'pay-partial' }),
+        },
+      };
+      return fn(tx);
+    });
+
+    const result = await service.createPartialDepositCheckout({
+      businessId: 'biz-1',
+      appointmentId: 'apt-1',
+      contactId: 'contact-1',
+      serviceId: 'svc-1',
+      serviceName: 'Facial',
+      staffUserId: 'staff-1',
+      servicePrice: new Prisma.Decimal('100'),
+      depositAmount: new Prisma.Decimal('25'),
+      paymentIntentId: 'pi_partial_new',
+      currency: 'USD',
+    });
+
+    expect(result).toEqual({ checkoutId: 'inv-partial' });
+    expect(prisma.$transaction).toHaveBeenCalled();
+  });
 });

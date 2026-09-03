@@ -216,6 +216,11 @@ export class AddGiftCardLineDto {
   @IsOptional()
   @IsBoolean()
   sendDigital?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsUUID('4')
+  staffUserId?: string;
 }
 
 export class AddPackageLineDto {
@@ -231,6 +236,11 @@ export class AddPackageLineDto {
   @IsOptional()
   @IsBoolean()
   isDemo?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsUUID('4')
+  staffUserId?: string;
 }
 
 export class UpdateCheckoutLineItemDto {

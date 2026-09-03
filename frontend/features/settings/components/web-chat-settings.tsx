@@ -26,16 +26,24 @@ import {
 } from "@/lib/query/invalidation";
 import { queryKeys } from "@/lib/query/keys";
 import { SETTINGS_FORM_SECTION_STACK_CLASS } from "@/lib/design/settings-form-tokens";
+import { useSettingsSectionEdit } from "@/lib/settings/use-settings-section-edit";
 import { cn } from "@/lib/utils";
 
 function isWebChatEnabled(bot: Chatbot): boolean {
   return bot.status === "ACTIVE" && bot.embedEnabled;
 }
 
+type WebChatEditSection =
+  | "offline"
+  | "welcome"
+  | "acknowledgement";
+
 export function WebChatSettings() {
   const queryClient = useQueryClient();
   const canEdit = useCan(PERMISSIONS["settings.business"]);
   const { data: bot, isLoading, isError, error } = useDefaultChatbot();
+  const { isEditing, startEdit, stopEdit } =
+    useSettingsSectionEdit<WebChatEditSection>();
 
   const [enabled, setEnabled] = useState(false);
   const [savedEnabled, setSavedEnabled] = useState(false);
@@ -124,6 +132,7 @@ export function WebChatSettings() {
     onSuccess: (updated) => {
       invalidateAll(updated.id);
       toast.success("Saved");
+      stopEdit();
     },
     onError: (err: Error) => toast.error(err.message),
   });
@@ -217,23 +226,21 @@ export function WebChatSettings() {
           value={offlineMessage}
           onChange={setOfflineMessage}
           disabled={!canEdit}
+          isEditing={isEditing("offline")}
+          onEdit={() => startEdit("offline")}
           isDirty={offlineMessage !== savedOfflineMessage}
           isSaving={sectionSaving.offline}
-          onDiscard={() => setOfflineMessage(savedOfflineMessage)}
+          onDiscard={() => {
+            setOfflineMessage(savedOfflineMessage);
+            stopEdit();
+          }}
           onSave={() =>
-            patchMutation.mutate(
-              {
-                chatbotId: bot.id,
-                body: { offlineMessage },
-              },
-              {
-                onSuccess: (updated) => {
-                  setSavedOfflineMessage(updated.offlineMessage);
-                  setOfflineMessage(updated.offlineMessage);
-                },
-              },
-            )
+            patchMutation.mutate({
+              chatbotId: bot.id,
+              body: { offlineMessage },
+            })
           }
+          maxLength={1000}
         />
 
         <SettingsTextareaSection
@@ -243,23 +250,21 @@ export function WebChatSettings() {
           value={welcomeMessage}
           onChange={setWelcomeMessage}
           disabled={!canEdit}
+          isEditing={isEditing("welcome")}
+          onEdit={() => startEdit("welcome")}
           isDirty={welcomeMessage !== savedWelcomeMessage}
           isSaving={sectionSaving.welcome}
-          onDiscard={() => setWelcomeMessage(savedWelcomeMessage)}
+          onDiscard={() => {
+            setWelcomeMessage(savedWelcomeMessage);
+            stopEdit();
+          }}
           onSave={() =>
-            patchMutation.mutate(
-              {
-                chatbotId: bot.id,
-                body: { welcomeMessage },
-              },
-              {
-                onSuccess: (updated) => {
-                  setSavedWelcomeMessage(updated.welcomeMessage);
-                  setWelcomeMessage(updated.welcomeMessage);
-                },
-              },
-            )
+            patchMutation.mutate({
+              chatbotId: bot.id,
+              body: { welcomeMessage },
+            })
           }
+          maxLength={1000}
         />
 
         <SettingsTextareaSection
@@ -269,27 +274,21 @@ export function WebChatSettings() {
           value={acknowledgementMessage}
           onChange={setAcknowledgementMessage}
           disabled={!canEdit}
+          isEditing={isEditing("acknowledgement")}
+          onEdit={() => startEdit("acknowledgement")}
           isDirty={acknowledgementMessage !== savedAcknowledgementMessage}
           isSaving={sectionSaving.acknowledgement}
-          onDiscard={() =>
-            setAcknowledgementMessage(savedAcknowledgementMessage)
-          }
+          onDiscard={() => {
+            setAcknowledgementMessage(savedAcknowledgementMessage);
+            stopEdit();
+          }}
           onSave={() =>
-            patchMutation.mutate(
-              {
-                chatbotId: bot.id,
-                body: { acknowledgementMessage },
-              },
-              {
-                onSuccess: (updated) => {
-                  const next =
-                    updated.acknowledgementMessage ?? acknowledgementMessage;
-                  setSavedAcknowledgementMessage(next);
-                  setAcknowledgementMessage(next);
-                },
-              },
-            )
+            patchMutation.mutate({
+              chatbotId: bot.id,
+              body: { acknowledgementMessage },
+            })
           }
+          maxLength={1000}
         />
 
         <SettingsToggleSection

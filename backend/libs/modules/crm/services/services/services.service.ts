@@ -7,6 +7,7 @@ import { getPaginationParams } from '@app/common/utils/pagination.util';
 import { AuditService } from '@app/modules/platform/audit/services/audit.service';
 import { CreateServiceDto } from '../dto/create-service.dto';
 import { ListServicesQueryDto } from '../dto/list-services-query.dto';
+import { ReorderServicesDto } from '../dto/reorder-services.dto';
 import { ServiceResponseDto } from '../dto/service-response.dto';
 import { UpdateServiceDto } from '../dto/update-service.dto';
 import { toServiceResponse } from '../mappers/service.mapper';
@@ -64,6 +65,11 @@ export class ServicesService {
         dto.commissionDeductionValue !== undefined
           ? new Prisma.Decimal(dto.commissionDeductionValue)
           : null,
+      postCommissionDeductionType: dto.postCommissionDeductionType ?? null,
+      postCommissionDeductionValue:
+        dto.postCommissionDeductionValue !== undefined
+          ? new Prisma.Decimal(dto.postCommissionDeductionValue)
+          : null,
     };
 
     let normalized: Prisma.ServiceUpdateInput;
@@ -73,6 +79,8 @@ export class ServicesService {
           ...base,
           commissionDeductionType: base.commissionDeductionType,
           commissionDeductionValue: base.commissionDeductionValue,
+          postCommissionDeductionType: base.postCommissionDeductionType,
+          postCommissionDeductionValue: base.postCommissionDeductionValue,
         },
         {},
       );
@@ -111,6 +119,12 @@ export class ServicesService {
         null,
       commissionDeductionValue:
         (normalized.commissionDeductionValue as Prisma.Decimal | null) ?? null,
+      postCommissionDeductionType:
+        (normalized.postCommissionDeductionType as typeof dto.postCommissionDeductionType) ??
+        null,
+      postCommissionDeductionValue:
+        (normalized.postCommissionDeductionValue as Prisma.Decimal | null) ??
+        null,
     });
 
     await this.workspaceRepository.createOnlineBookingSettings(
@@ -216,7 +230,9 @@ export class ServicesService {
       dto.requiresTwoStaff !== undefined ||
       dto.hasCommissionDeduction !== undefined ||
       dto.commissionDeductionType !== undefined ||
-      dto.commissionDeductionValue !== undefined
+      dto.commissionDeductionValue !== undefined ||
+      dto.postCommissionDeductionType !== undefined ||
+      dto.postCommissionDeductionValue !== undefined
     ) {
       try {
         Object.assign(
@@ -231,6 +247,8 @@ export class ServicesService {
             hasCommissionDeduction: dto.hasCommissionDeduction,
             commissionDeductionType: dto.commissionDeductionType,
             commissionDeductionValue: dto.commissionDeductionValue,
+            postCommissionDeductionType: dto.postCommissionDeductionType,
+            postCommissionDeductionValue: dto.postCommissionDeductionValue,
           }),
         );
       } catch {
@@ -291,5 +309,53 @@ export class ServicesService {
     });
 
     return toServiceResponse(existing);
+  }
+
+  async reorder(
+    businessId: string,
+    dto: ReorderServicesDto,
+    actor: RequestUser,
+  ): Promise<ServiceResponseDto[]> {
+    const categories = await this.categoriesService.list(businessId);
+    if (!categories.some((c) => c.id === dto.categoryId)) {
+      throw new AppException(
+        ErrorCode.SERVICE_CATEGORY_NOT_FOUND,
+        'Service category not found',
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    const existing = await this.serviceRepository.findManyOrderedByCategory(
+      businessId,
+      dto.categoryId,
+    );
+    const existingIds = new Set(existing.map((s) => s.id));
+    if (
+      dto.orderedIds.length !== existing.length ||
+      dto.orderedIds.some((id) => !existingIds.has(id))
+    ) {
+      throw new AppException(
+        ErrorCode.VALIDATION_ERROR,
+        'orderedIds must include every service in the category exactly once',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const items = await this.serviceRepository.reorderInCategory(
+      businessId,
+      dto.categoryId,
+      dto.orderedIds,
+    );
+
+    await this.auditService.log({
+      actorUserId: actor.id,
+      businessId,
+      action: 'service.reordered',
+      entityType: 'Service',
+      entityId: dto.categoryId,
+      metadata: { categoryId: dto.categoryId, orderedIds: dto.orderedIds },
+    });
+
+    return items.map(toServiceResponse);
   }
 }

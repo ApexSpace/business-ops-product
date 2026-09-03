@@ -66,7 +66,7 @@ import {
   resolveEffectiveWeeklyHours,
 } from "@/features/appointments/utils/working-hours";
 import { useCurrentBusiness } from "@/features/settings/hooks/use-current-business";
-import { getOnlineBookingSettings } from "@/features/online-booking-settings/api/online-booking-settings.api";
+import { useExpressBookingSettings } from "@/features/express-booking/hooks/use-express-booking-settings";
 import {
   APPOINTMENT_EXPRESS_COMPLETE_KEY,
   getNotificationChannelPreference,
@@ -193,11 +193,7 @@ export function AppointmentCreateDrawer({
   const [draftNotes, setDraftNotes] = useState("");
   const [servicePickerOpen, setServicePickerOpen] = useState(false);
 
-  const { data: onlineBookingSettings } = useQuery({
-    queryKey: ["online-booking-settings"],
-    queryFn: getOnlineBookingSettings,
-    enabled: open,
-  });
+  const { data: onlineBookingSettings } = useExpressBookingSettings(open);
 
   const { data: expressChannelPref } = useQuery({
     queryKey: queryKeys.notificationChannelPreferences.detail(
@@ -295,7 +291,10 @@ export function AppointmentCreateDrawer({
 
   useEffect(() => {
     if (!open) return;
-    setUseExpressBooking(false);
+    setUseExpressBooking(
+      onlineBookingSettings?.expressBookingAutoEnable === true &&
+        onlineBookingSettings?.expressBookingEnabled === true,
+    );
     setExpressTimeLimitMinutes(
       onlineBookingSettings?.expressBookingTimeLimitMinutes ?? 30,
     );
@@ -305,6 +304,8 @@ export function AppointmentCreateDrawer({
     );
   }, [
     open,
+    onlineBookingSettings?.expressBookingAutoEnable,
+    onlineBookingSettings?.expressBookingEnabled,
     onlineBookingSettings?.expressBookingTimeLimitMinutes,
     onlineBookingSettings?.expressRequireCard,
     onlineBookingSettings?.expressRequireDeposit,

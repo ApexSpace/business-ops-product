@@ -319,10 +319,17 @@ export function BookingDetailsForm({
             </div>
           ) : null}
 
-          {fs.cancellationPolicyText ? (
+          {(fs.cancellationPolicyHtml || fs.cancellationPolicyText) ? (
             <div className="space-y-2 rounded-lg border bg-muted/20 p-3 text-sm">
               <p className="font-medium">Cancellation policy</p>
-              <p className="text-muted-foreground">{fs.cancellationPolicyText}</p>
+              {fs.cancellationPolicyHtml ? (
+                <div
+                  className="prose prose-sm max-w-none text-muted-foreground"
+                  dangerouslySetInnerHTML={{ __html: fs.cancellationPolicyHtml }}
+                />
+              ) : (
+                <p className="text-muted-foreground">{fs.cancellationPolicyText}</p>
+              )}
               {fs.requirePolicyAgreement ? (
                 <div className="flex items-start gap-2 pt-1">
                   <Checkbox

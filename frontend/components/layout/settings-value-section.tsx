@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { Pencil } from "lucide-react";
+import { SquarePen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SettingsFormActions } from "@/components/layout/settings-form-actions";
 import {
@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
 export interface SettingsValueSectionProps {
   title: string;
   description?: ReactNode;
-  valueLabel: string;
+  valueLabel: ReactNode;
   editLabel?: string;
   onEdit: () => void;
   onDiscard?: () => void;
@@ -24,6 +24,11 @@ export interface SettingsValueSectionProps {
   className?: string;
 }
 
+/**
+ * Read-only value section with header pencil.
+ * Prefer SettingsInlineEditSection for same-page edit; keep this for
+ * summary-only rows that open a caller-owned edit surface.
+ */
 export function SettingsValueSection({
   title,
   description,
@@ -37,29 +42,31 @@ export function SettingsValueSection({
   disabled = false,
   className,
 }: SettingsValueSectionProps) {
-  const showActions = Boolean(onDiscard && onSave);
+  const showActions = Boolean(onDiscard && onSave && isDirty);
 
   return (
     <section className={cn(SETTINGS_FORM_SECTION_STACK_CLASS, className)}>
-      <div className="space-y-[var(--spacing-1)]">
-        <h3 className="text-base font-medium">{title}</h3>
-        {description ? (
-          <p className={SETTINGS_FORM_DESCRIPTION_CLASS}>{description}</p>
-        ) : null}
-      </div>
-      <div className="flex items-center justify-between gap-[var(--spacing-4)] rounded-[var(--radius-control)] border border-border bg-background px-[var(--spacing-4)] py-[var(--spacing-3)]">
-        <span className="text-sm text-foreground">{valueLabel}</span>
+      <div className="flex items-start justify-between gap-[var(--spacing-4)]">
+        <div className="min-w-0 space-y-[var(--spacing-1)]">
+          <h3 className="text-base font-medium">{title}</h3>
+          {description ? (
+            <p className={SETTINGS_FORM_DESCRIPTION_CLASS}>{description}</p>
+          ) : null}
+        </div>
         <Button
           type="button"
           variant="ghost"
-          size="sm"
-          className="shrink-0 gap-1.5 text-primary"
+          size="icon-sm"
+          className="shrink-0 text-primary"
           onClick={onEdit}
           disabled={disabled || isSaving}
+          aria-label={editLabel}
         >
-          <Pencil className="size-3.5" aria-hidden />
-          {editLabel}
+          <SquarePen className="size-4" aria-hidden />
         </Button>
+      </div>
+      <div className="min-w-0 text-sm font-semibold text-foreground">
+        {valueLabel}
       </div>
       {showActions ? (
         <SettingsFormActions

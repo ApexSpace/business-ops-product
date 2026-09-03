@@ -1,3 +1,5 @@
+import type { CheckoutAdvancedSettings } from "@/features/checkout-advanced-settings/api/checkout-advanced-settings.api";
+
 export type CheckoutStatus =
   | "OPEN"
   | "PAID"
@@ -30,6 +32,7 @@ export interface CheckoutItem {
   totalPrice: string;
   sortOrder: number;
   staff?: { id: string; label: string } | null;
+  metadata?: Record<string, unknown> | null;
 }
 
 export interface Checkout {
@@ -56,6 +59,8 @@ export interface Checkout {
     offerName: string;
     totalDiscount: string;
   }>;
+  tipAmount?: string;
+  advancedSettings?: CheckoutAdvancedSettings;
 }
 
 export interface CheckoutServicePickerItem {

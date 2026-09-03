@@ -6,8 +6,8 @@ import { toast } from "sonner";
 import { updateAppointment } from "@/features/appointments/api/appointments.api";
 import type { Appointment } from "@/features/appointments/schemas/appointment-profile";
 import { snapMinutesToSlot } from "@/features/appointments/utils/appointment-scheduling";
+import { useCalendarDisplayRuntime } from "@/features/calendar-display-settings/context/calendar-display-runtime-context";
 import {
-  CALENDAR_SLOT_HEIGHT_PX,
   CALENDAR_SLOT_MINUTES,
 } from "@/features/calendars/utils/calendar-dates";
 import {
@@ -31,6 +31,7 @@ export function useAppointmentCalendarDrag({
   enabled = true,
 }: UseAppointmentCalendarDragOptions) {
   const queryClient = useQueryClient();
+  const { slotHeightPx } = useCalendarDisplayRuntime();
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const dragState = useRef<{
     appointment: Appointment;
@@ -75,9 +76,9 @@ export function useAppointmentCalendarDrag({
   });
 
   const pixelsToMinutes = useCallback((deltaY: number) => {
-    const raw = (deltaY / CALENDAR_SLOT_HEIGHT_PX) * slotIntervalMinutes;
+    const raw = (deltaY / slotHeightPx) * slotIntervalMinutes;
     return snapMinutesToSlot(raw, slotIntervalMinutes);
-  }, [slotIntervalMinutes]);
+  }, [slotHeightPx, slotIntervalMinutes]);
 
   const finishDrag = useCallback(
     (deltaY: number) => {

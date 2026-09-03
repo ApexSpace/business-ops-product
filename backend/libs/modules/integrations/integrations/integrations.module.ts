@@ -17,8 +17,10 @@ import { LinkedInOAuthController } from './linkedin-oauth.controller';
 import { LinkedInOAuthService } from './linkedin-oauth.service';
 import { SocialOAuthController } from './social-oauth.controller';
 import { SocialOAuthService } from './social-oauth.service';
+import { StripeAccountSettingsController } from './stripe/controllers/stripe-account-settings.controller';
 import { StripeOAuthController } from './stripe/controllers/stripe-oauth.controller';
 import { StripeWebhookController } from './stripe/controllers/stripe-webhook.controller';
+import { StripeAccountLinksService } from './stripe/services/stripe-account-links.service';
 import { StripeAccountService } from './stripe/services/stripe-account.service';
 import { StripeApiService } from './stripe/services/stripe-api.service';
 import { StripeCheckoutService } from './stripe/services/stripe-checkout.service';
@@ -93,6 +95,7 @@ import { WhatsAppTemplatesController } from '../whatsapp/controllers/whatsapp-te
     LinkedInOAuthController,
     SocialOAuthController,
     StripeOAuthController,
+    StripeAccountSettingsController,
     StripeWebhookController,
     MetaOAuthController,
     MetaWebhookController,
@@ -110,6 +113,7 @@ import { WhatsAppTemplatesController } from '../whatsapp/controllers/whatsapp-te
     SocialOAuthService,
     StripeApiService,
     StripeAccountService,
+    StripeAccountLinksService,
     StripeOAuthService,
     StripeWebhookService,
     StripeWebhookDispatchService,

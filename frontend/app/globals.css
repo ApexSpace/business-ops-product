@@ -380,8 +380,15 @@
   --business-hours-time-input-height: 2.6875rem;
   --business-hours-delete-button-size: 2.25rem;
   --button-brand-font-weight: 650;
-  /* Purple “+” square — same size for Add Note, Service, and Client field. */
+  /*
+   * Purple “+” square — hit-and-trial here.
+   *   --plus-button-size / --plus-button-icon-size → sidebar / dense (Add Service in nav)
+   *   --plus-button-size-page / --plus-button-icon-size-page → page/content CTAs
+   */
   --plus-button-size: 1.05rem;
+  --plus-button-icon-size: 0.75rem; /* 12px — size-3 */
+  --plus-button-size-page: 1.25rem;
+  --plus-button-icon-size-page: 0.875rem; /* 14px */
   /* Distance from the field edge (top / bottom / right). Default matches
    * leftover vertical space so all three sides are equal. Hit-and-trial here. */
   --plus-button-inset: calc(

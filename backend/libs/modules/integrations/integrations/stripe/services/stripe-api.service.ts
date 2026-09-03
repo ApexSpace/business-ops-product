@@ -85,6 +85,27 @@ export class StripeApiService {
     return account;
   }
 
+  async createAccountOnboardingLink(
+    stripeAccountId: string,
+    refreshUrl: string,
+    returnUrl: string,
+  ): Promise<string> {
+    const stripe = this.getClient();
+    const link = await stripe.accountLinks.create({
+      account: stripeAccountId,
+      refresh_url: refreshUrl,
+      return_url: returnUrl,
+      type: 'account_onboarding',
+    });
+    return link.url;
+  }
+
+  async createAccountLoginLink(stripeAccountId: string): Promise<string> {
+    const stripe = this.getClient();
+    const link = await stripe.accounts.createLoginLink(stripeAccountId);
+    return link.url;
+  }
+
   constructWebhookEvent(
     rawBody: Buffer,
     signature: string,

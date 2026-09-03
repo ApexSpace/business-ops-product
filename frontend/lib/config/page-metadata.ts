@@ -188,12 +188,32 @@ const businessRoutes: Record<string, RouteEntry> = {
     ],
   },
   "/business/settings/online-booking": {
-    title: "Online Booking",
+    title: "Setup & Integration",
     description:
-      "Manage your public booking link, preferences, and staff selection.",
+      "Online booking setup, booking links, and website integration.",
     breadcrumbs: [
       { label: "Settings", href: "/business/settings/profile" },
-      { label: "Online Booking" },
+      { label: "Online Booking", href: "/business/settings/online-booking" },
+      { label: "Setup & Integration" },
+    ],
+  },
+  "/business/settings/online-booking/preferences": {
+    title: "Preferences",
+    description:
+      "Set booking windows, gap avoidance, service rules, photos, and waitlist options for online booking.",
+    breadcrumbs: [
+      { label: "Settings", href: "/business/settings/profile" },
+      { label: "Online Booking", href: "/business/settings/online-booking" },
+      { label: "Preferences" },
+    ],
+  },
+  "/business/settings/online-booking/staff-selection": {
+    title: "Staff Selection",
+    description: "Adjust staff selection options in online booking.",
+    breadcrumbs: [
+      { label: "Settings", href: "/business/settings/profile" },
+      { label: "Online Booking", href: "/business/settings/online-booking" },
+      { label: "Staff Selection" },
     ],
   },
   "/business/settings/services": {
@@ -228,6 +248,24 @@ const businessRoutes: Record<string, RouteEntry> = {
     breadcrumbs: [
       { label: "Settings", href: "/business/settings/profile" },
       { label: "Financial Settings" },
+    ],
+  },
+  "/business/settings/custom-fees": {
+    title: "Custom Fees",
+    description:
+      "Custom fees are extra charges that get applied at checkout, such as convenience fees or eco fees.",
+    breadcrumbs: [
+      { label: "Settings", href: "/business/settings/profile" },
+      { label: "Custom Fees" },
+    ],
+  },
+  "/business/settings/checkout-advanced": {
+    title: "Advanced Settings",
+    description:
+      "Tips, custom payment labels, check payments, staff requirements, and receipt options for staff checkout.",
+    breadcrumbs: [
+      { label: "Settings", href: "/business/settings/profile" },
+      { label: "Advanced Settings" },
     ],
   },
   "/business/settings/templates": {
@@ -332,6 +370,15 @@ const businessRoutes: Record<string, RouteEntry> = {
       { label: "Notifications" },
     ],
   },
+  "/business/settings/appointment-booked": {
+    title: "Appointment Booked",
+    description:
+      "Configure which automated messages are sent after an appointment is booked.",
+    breadcrumbs: [
+      { label: "Settings", href: "/business/settings/profile" },
+      { label: "Appointment Booked" },
+    ],
+  },
   "/business/settings/appearance": {
     title: "Appearance",
     description: "Theme and display preferences for your workspace.",
@@ -364,12 +411,56 @@ const businessRoutes: Record<string, RouteEntry> = {
       { label: "Scheduling Options" },
     ],
   },
+  "/business/settings/express-booking": {
+    title: "Express Booking™",
+    description:
+      "Configure staff-started bookings that clients complete via a secure link — time limits, payment, and photo collection.",
+    breadcrumbs: [
+      { label: "Settings", href: "/business/settings/profile" },
+      { label: "Express Booking" },
+    ],
+  },
+  "/business/settings/display-preferences": {
+    title: "Display Preferences",
+    description: "Configure how appointments appear on your calendar.",
+    breadcrumbs: [
+      { label: "Settings", href: "/business/settings/profile" },
+      { label: "Display Preferences" },
+    ],
+  },
   "/business/settings/waiting-room": {
     title: "Waiting Room",
     description: "Manage the waiting status and client check-in notifications.",
     breadcrumbs: [
       { label: "Settings", href: "/business/settings/profile" },
       { label: "Waiting Room" },
+    ],
+  },
+  "/business/settings/cancel-reschedule": {
+    title: "Cancel & Reschedule",
+    description:
+      "Configure cancellation policy, client self-service, and late cancellation reporting.",
+    breadcrumbs: [
+      { label: "Settings", href: "/business/settings/profile" },
+      { label: "Cancel & Reschedule" },
+    ],
+  },
+  "/business/settings/payment-account": {
+    title: "Payment Accounts",
+    description:
+      "Manage your Stripe payment account and calendar display preferences for reports and scheduling.",
+    breadcrumbs: [
+      { label: "Settings", href: "/business/settings/profile" },
+      { label: "Payment Accounts" },
+    ],
+  },
+  "/business/settings/quick-tools": {
+    title: "Quick Tools",
+    description:
+      "Bulk actions for staff availability — mark days as not working or clear full-day off blocks.",
+    breadcrumbs: [
+      { label: "Settings", href: "/business/settings/profile" },
+      { label: "Quick Tools" },
     ],
   },
 };

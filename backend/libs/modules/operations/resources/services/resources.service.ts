@@ -82,6 +82,8 @@ export class ResourcesService {
         resourceType: dto.resourceType,
         groupId: dto.groupId ?? null,
         description: dto.description?.trim() || null,
+        capacity: dto.capacity === undefined ? 1 : dto.capacity,
+        alwaysAvailable: dto.alwaysAvailable ?? false,
         sortOrder,
       });
 
@@ -115,6 +117,10 @@ export class ResourcesService {
         : {}),
       ...(dto.description !== undefined
         ? { description: dto.description?.trim() || null }
+        : {}),
+      ...(dto.capacity !== undefined ? { capacity: dto.capacity } : {}),
+      ...(dto.alwaysAvailable !== undefined
+        ? { alwaysAvailable: dto.alwaysAvailable }
         : {}),
       ...(dto.status !== undefined ? { status: dto.status } : {}),
       ...(dto.sortOrder !== undefined ? { sortOrder: dto.sortOrder } : {}),
@@ -297,6 +303,10 @@ export class ResourcesService {
     return resource;
   }
 
+  async assertGroupExists(businessId: string, groupId: string) {
+    await this.assertGroup(businessId, groupId);
+  }
+
   private async assertResource(businessId: string, id: string) {
     const resource = await this.resourceRepository.findById(businessId, id);
     if (!resource) {
@@ -324,38 +334,70 @@ export class ResourcesService {
     businessId: string,
     resourceId: string,
   ): Promise<LinkedServiceResponseDto[]> {
-    const [serviceRequirements, optionRequirements] = await Promise.all([
-      this.prisma.serviceResourceRequirement.findMany({
-        where: { businessId, resourceId },
-        include: { service: { select: { id: true, name: true } } },
-        orderBy: { sortOrder: 'asc' },
-      }),
-      this.prisma.serviceOptionResourceRequirement.findMany({
-        where: { businessId, resourceId },
-        include: {
-          serviceOption: {
-            include: {
-              group: {
-                include: { service: { select: { id: true, name: true } } },
+    const [legacyRequirements, itemLinks, optionRequirements] =
+      await Promise.all([
+        this.prisma.serviceResourceRequirement.findMany({
+          where: { businessId, resourceId },
+          include: {
+            service: { select: { id: true, name: true } },
+            group: { select: { name: true } },
+          },
+          orderBy: { sortOrder: 'asc' },
+        }),
+        this.prisma.serviceResourceRequirementItem.findMany({
+          where: {
+            resourceId,
+            requirement: { businessId },
+          },
+          include: {
+            requirement: {
+              include: {
+                service: { select: { id: true, name: true } },
+                group: { select: { name: true } },
               },
             },
           },
-        },
-        orderBy: { sortOrder: 'asc' },
-      }),
-    ]);
+        }),
+        this.prisma.serviceOptionResourceRequirement.findMany({
+          where: { businessId, resourceId },
+          include: {
+            serviceOption: {
+              include: {
+                group: {
+                  include: { service: { select: { id: true, name: true } } },
+                },
+              },
+            },
+          },
+          orderBy: { sortOrder: 'asc' },
+        }),
+      ]);
 
-    const fromServices: LinkedServiceResponseDto[] = serviceRequirements.map(
-      (row) => ({
+    const fromItems = new Map<string, LinkedServiceResponseDto>();
+    for (const link of itemLinks) {
+      const row = link.requirement;
+      fromItems.set(row.id, {
         serviceId: row.service.id,
         serviceName: row.service.name,
         requirementId: row.id,
-        label: row.label,
+        label: row.group?.name ?? row.label ?? row.service.name,
         quantity: row.quantity,
         source: 'service' as const,
         optionName: null,
-      }),
-    );
+      });
+    }
+
+    const fromServices: LinkedServiceResponseDto[] = legacyRequirements
+      .filter((row) => !fromItems.has(row.id))
+      .map((row) => ({
+        serviceId: row.service.id,
+        serviceName: row.service.name,
+        requirementId: row.id,
+        label: row.group?.name ?? row.label ?? row.service.name,
+        quantity: row.quantity,
+        source: 'service' as const,
+        optionName: null,
+      }));
 
     const fromOptions: LinkedServiceResponseDto[] = optionRequirements.map(
       (row) => ({
@@ -369,6 +411,10 @@ export class ResourcesService {
       }),
     );
 
-    return [...fromServices, ...fromOptions];
+    return [
+      ...Array.from(fromItems.values()),
+      ...fromServices,
+      ...fromOptions,
+    ];
   }
 }
