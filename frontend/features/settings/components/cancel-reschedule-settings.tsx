@@ -172,18 +172,19 @@ export function CancelRescheduleSettingsScreen() {
             setEditingSection(null);
           }}
           onSave={() => {
-            if (!policy.values) return;
-            if (policy.values.cancellationPolicySms.length > SMS_MAX) {
+            const values = policy.values;
+            if (!values) return;
+            if (values.cancellationPolicySms.length > SMS_MAX) {
               toast.error(`SMS policy must be ${SMS_MAX} characters or fewer`);
               return;
             }
             mutation.mutate(() =>
               updateCancellationPolicy({
                 cancellationPolicyHtml:
-                  policy.values.cancellationPolicyHtml.trim() || null,
+                  values.cancellationPolicyHtml.trim() || null,
                 cancellationPolicySms:
-                  policy.values.cancellationPolicySms.trim() || null,
-                requirePolicyAgreement: policy.values.requirePolicyAgreement,
+                  values.cancellationPolicySms.trim() || null,
+                requirePolicyAgreement: values.requirePolicyAgreement,
               }),
             );
           }}
@@ -314,11 +315,14 @@ export function CancelRescheduleSettingsScreen() {
               <Label>Allow self-cancellations</Label>
               <Select
                 value={selfService.values?.selfCancellationValue ?? "DISABLED"}
-                onValueChange={(value) =>
+                onValueChange={(value) => {
+                  if (value == null) return;
                   selfService.setDraft((current) =>
-                    current ? { ...current, selfCancellationValue: value } : current,
-                  )
-                }
+                    current
+                      ? { ...current, selfCancellationValue: value }
+                      : current,
+                  );
+                }}
                 disabled={!canEdit || mutation.isPending}
               >
                 <SelectTrigger>
@@ -337,11 +341,14 @@ export function CancelRescheduleSettingsScreen() {
               <Label>Allow self-rescheduling</Label>
               <Select
                 value={selfService.values?.selfRescheduleValue ?? "DISABLED"}
-                onValueChange={(value) =>
+                onValueChange={(value) => {
+                  if (value == null) return;
                   selfService.setDraft((current) =>
-                    current ? { ...current, selfRescheduleValue: value } : current,
-                  )
-                }
+                    current
+                      ? { ...current, selfRescheduleValue: value }
+                      : current,
+                  );
+                }}
                 disabled={!canEdit || mutation.isPending}
               >
                 <SelectTrigger>
@@ -370,11 +377,12 @@ export function CancelRescheduleSettingsScreen() {
             setEditingSection(null);
           }}
           onSave={() => {
-            if (!late.values) return;
+            const values = late.values;
+            if (!values) return;
             mutation.mutate(() =>
               updateLateCancellation({
                 lateCancellationHoursBefore:
-                  late.values.lateCancellationHoursBefore,
+                  values.lateCancellationHoursBefore,
               }),
             );
           }}

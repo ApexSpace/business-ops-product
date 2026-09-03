@@ -222,7 +222,7 @@ export function CustomFeesSettings() {
             onSuccess: () => setDeleteTarget(null),
           });
         }}
-        isDeleting={deleteMutation.isPending}
+        isPending={deleteMutation.isPending}
       />
     </SettingsFormPage>
   );

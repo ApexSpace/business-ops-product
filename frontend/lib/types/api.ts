@@ -654,6 +654,7 @@ export type PaymentMethod =
   | "WALLET"
   | "GIFT_CARD"
   | "STRIPE"
+  | "CHECK"
   | "OTHER";
 
 export type PaymentStatus =

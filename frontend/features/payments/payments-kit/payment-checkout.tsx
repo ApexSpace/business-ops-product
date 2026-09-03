@@ -1,27 +1,23 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { InvoiceCollectPaymentPanel } from "@/features/payments/payments-kit/invoice-collect-payment-panel";
-import type { CollectPaymentResult } from "@/features/payments/api/payment-collection.api";
-import type { PaymentMethod } from "@/features/payments/api/payment-collection.api";
+import {
+  InvoiceCollectPaymentPanel,
+  type InvoiceCollectPaymentPanelProps,
+} from "@/features/payments/payments-kit/invoice-collect-payment-panel";
 
-export interface PaymentCheckoutProps {
+export interface PaymentCheckoutProps
+  extends Pick<
+    InvoiceCollectPaymentPanelProps,
+    | "contactId"
+    | "balanceDue"
+    | "onComplete"
+    | "collectOverride"
+    | "awaitSettlement"
+    | "successMessage"
+  > {
   payableType: "INVOICE";
   payableId: string;
-  contactId: string;
-  balanceDue: number;
-  onComplete: () => void;
-  collectOverride?: (tenders: {
-    method: PaymentMethod;
-    amount: number;
-    contactPaymentMethodId?: string;
-  }[]) => Promise<{
-    completed: boolean;
-    stripeTenders: CollectPaymentResult["stripeTenders"];
-    redirectTenders?: CollectPaymentResult["redirectTenders"];
-  }>;
-  awaitSettlement?: () => Promise<void>;
-  successMessage?: string;
   footer?: ReactNode;
 }
 

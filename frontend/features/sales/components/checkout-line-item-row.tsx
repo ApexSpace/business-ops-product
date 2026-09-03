@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ProfileAvatar } from "@/components/ui/profile-avatar";
 import { SearchableSelect } from "@/components/forms/searchable-select";
+import type { CheckoutItem } from "@/features/sales/types/checkout";
 import { isSystemManagedCustomFeeItem } from "@/features/sales/utils/checkout-custom-fees";
 import { formatMoney } from "@/features/payments/utils/currencies";
 import {

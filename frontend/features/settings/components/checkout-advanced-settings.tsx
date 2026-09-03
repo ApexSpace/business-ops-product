@@ -430,9 +430,13 @@ export function CheckoutAdvancedSettingsScreen() {
                 <span className="text-sm font-medium">{label}</span>
                 <Switch
                   checked={staffSection.values?.[key] ?? false}
-                  onCheckedChange={(checked) =>
-                    staffSection.commit({ [key]: checked })
-                  }
+                  onCheckedChange={(checked) => {
+                    const current = staffSection.values;
+                    if (!current) return;
+                    const next = { ...current };
+                    next[key] = checked;
+                    staffSection.commit(next);
+                  }}
                   disabled={!canEdit}
                 />
               </label>

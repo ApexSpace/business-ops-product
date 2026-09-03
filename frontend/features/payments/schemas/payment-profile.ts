@@ -141,6 +141,7 @@ export const paymentFormSchema = z.object({
   amount: z.number().min(0.01, "Amount must be greater than zero"),
   method: z.enum([
     "CASH",
+    "CHECK",
     "CARD",
     "BANK_TRANSFER",
     "WALLET",

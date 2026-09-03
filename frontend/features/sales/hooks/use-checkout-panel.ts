@@ -318,9 +318,10 @@ export function useCheckoutPanel(checkoutId: string) {
       (businessMembersQuery.data?.items ?? []).map((member) => ({
         value: member.userId,
         label:
-          member.displayName ||
-          [member.firstName, member.lastName].filter(Boolean).join(" ") ||
-          member.email ||
+          [member.user.firstName, member.user.lastName]
+            .filter(Boolean)
+            .join(" ") ||
+          member.user.email ||
           member.userId,
       })),
     [businessMembersQuery.data?.items],

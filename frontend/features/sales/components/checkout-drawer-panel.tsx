@@ -13,6 +13,7 @@ import {
   useCheckoutPanel,
   type InlineAddMode,
 } from "@/features/sales/hooks/use-checkout-panel";
+import { formatMoney } from "@/features/payments/utils/currencies";
 import { getCheckoutCustomFeeLines } from "@/features/sales/utils/checkout-custom-fees";
 import { checkoutHasStaffRequirementGaps } from "@/features/sales/utils/checkout-staff-requirements";
 import {
