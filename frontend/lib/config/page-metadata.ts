@@ -370,6 +370,15 @@ const businessRoutes: Record<string, RouteEntry> = {
       { label: "Notifications" },
     ],
   },
+  "/business/settings/appointment-booked": {
+    title: "Appointment Booked",
+    description:
+      "Configure which automated messages are sent after an appointment is booked.",
+    breadcrumbs: [
+      { label: "Settings", href: "/business/settings/profile" },
+      { label: "Appointment Booked" },
+    ],
+  },
   "/business/settings/appearance": {
     title: "Appearance",
     description: "Theme and display preferences for your workspace.",

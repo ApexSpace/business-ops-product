@@ -72,7 +72,9 @@ export function StaffSelectionSettingsScreen() {
           data={data}
           disabled={!canEdit}
           isSaving={isSaving}
-          onSave={(body) => staffSelectionMutation.mutate(body)}
+          onSave={(body, options) =>
+            staffSelectionMutation.mutate(body, options)
+          }
         />
       </div>
     </SettingsFormPage>

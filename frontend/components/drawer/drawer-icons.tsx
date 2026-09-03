@@ -4,6 +4,7 @@ import {
   DRAWER_ICON_GEAR,
   DRAWER_ICON_MUTED,
   DRAWER_PLUS_BUTTON_CLASS,
+  DRAWER_PLUS_BUTTON_PAGE_CLASS,
 } from "@/lib/design/drawer-tokens";
 
 type IconProps = {
@@ -239,15 +240,21 @@ export function DrawerPlusSquareButton({
   "aria-label": ariaLabel = "Add",
   stopPropagation = false,
   as = "button",
+  size = "sidebar",
 }: {
   className?: string;
   onClick?: () => void;
   "aria-label"?: string;
   stopPropagation?: boolean;
   as?: "button" | "span";
+  /** `sidebar` = dense nav; `page` = content CTAs (hit-and-trial via CSS vars). */
+  size?: "sidebar" | "page";
 }) {
-  const icon = <DrawerPlusIcon className="size-3 text-white" />;
-  const classes = cn(DRAWER_PLUS_BUTTON_CLASS, className);
+  const icon = <DrawerPlusIcon className="text-white" />;
+  const classes = cn(
+    size === "page" ? DRAWER_PLUS_BUTTON_PAGE_CLASS : DRAWER_PLUS_BUTTON_CLASS,
+    className,
+  );
 
   if (as === "span") {
     return (

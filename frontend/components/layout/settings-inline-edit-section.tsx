@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { Pencil } from "lucide-react";
+import { SquarePen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SettingsFormActions } from "@/components/layout/settings-form-actions";
 import {
@@ -45,28 +45,30 @@ export function SettingsInlineEditSection({
 
   return (
     <section className={cn(SETTINGS_FORM_SECTION_STACK_CLASS, className)}>
-      <div className="space-y-[var(--spacing-1)]">
-        <h3 className="text-base font-medium">{title}</h3>
-        {description ? (
-          <p className={SETTINGS_FORM_DESCRIPTION_CLASS}>{description}</p>
+      <div className="flex items-start justify-between gap-[var(--spacing-4)]">
+        <div className="min-w-0 space-y-[var(--spacing-1)]">
+          <h3 className="text-base font-medium">{title}</h3>
+          {description ? (
+            <p className={SETTINGS_FORM_DESCRIPTION_CLASS}>{description}</p>
+          ) : null}
+        </div>
+        {!isEditing ? (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            className="shrink-0 text-primary"
+            onClick={onEdit}
+            disabled={disabled || isSaving}
+            aria-label={editLabel}
+          >
+            <SquarePen className="size-4" aria-hidden />
+          </Button>
         ) : null}
       </div>
 
       {!isEditing ? (
-        <div className="flex items-start justify-between gap-[var(--spacing-4)] rounded-[var(--radius-control)] border border-border bg-background px-[var(--spacing-4)] py-[var(--spacing-3)]">
-          <div className="min-w-0 text-sm text-foreground">{summary}</div>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="shrink-0 gap-1.5 text-primary"
-            onClick={onEdit}
-            disabled={disabled || isSaving}
-          >
-            <Pencil className="size-3.5" aria-hidden />
-            {editLabel}
-          </Button>
-        </div>
+        <div className="min-w-0 text-sm text-foreground">{summary}</div>
       ) : (
         <div className="space-y-[var(--spacing-4)]">{children}</div>
       )}

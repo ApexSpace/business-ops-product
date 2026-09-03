@@ -1,15 +1,8 @@
 "use client";
 
-import { useCallback, useState } from "react";
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { SettingsValueSection } from "@/components/layout/settings-value-section";
+import { useCallback, useEffect, useState } from "react";
+import { SettingsInlineEditSection } from "@/components/layout/settings-inline-edit-section";
+import { SettingsViewRows } from "@/components/layout/settings-view-rows";
 import type { OnlineBookingSettings } from "@/features/online-booking-settings/api/online-booking-settings.api";
 import {
   AvoidGapsFormFields,
@@ -22,7 +15,10 @@ type AvoidGapsSectionProps = {
   data: OnlineBookingSettings;
   disabled?: boolean;
   isSaving?: boolean;
-  onSave: (body: AvoidGapsDraft) => void;
+  onSave: (
+    body: AvoidGapsDraft,
+    options?: { onSuccess?: () => void },
+  ) => void;
 };
 
 export function AvoidGapsSection({
@@ -31,57 +27,64 @@ export function AvoidGapsSection({
   isSaving,
   onSave,
 }: AvoidGapsSectionProps) {
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const [draft, setDraft] = useState<AvoidGapsDraft>(() =>
     pickAvoidGapsDraft(data),
   );
+  const [saved, setSaved] = useState<AvoidGapsDraft>(() =>
+    pickAvoidGapsDraft(data),
+  );
 
-  const openDialog = useCallback(() => {
-    setDraft(pickAvoidGapsDraft(data));
-    setDialogOpen(true);
-  }, [data]);
+  useEffect(() => {
+    const next = pickAvoidGapsDraft(data);
+    setSaved(next);
+    if (!isEditing) setDraft(next);
+  }, [data, isEditing]);
+
+  const isDirty = JSON.stringify(draft) !== JSON.stringify(saved);
+
+  const handleDiscard = useCallback(() => {
+    setDraft(saved);
+    setIsEditing(false);
+  }, [saved]);
 
   return (
-    <>
-      <SettingsValueSection
-        title="Avoid gaps between appointments"
-        description="When enabled, the system only offers times that prevent unwanted gaps in service provider schedules."
-        valueLabel={formatAvoidGapsSummary(data)}
-        onEdit={openDialog}
+    <SettingsInlineEditSection
+      title="Avoid gaps between appointments"
+      description="When enabled, the system only offers times that prevent unwanted gaps in service provider schedules."
+      summary={
+        <SettingsViewRows
+          rows={[
+            {
+              label: "Avoid gaps",
+              value: formatAvoidGapsSummary(saved),
+            },
+          ]}
+        />
+      }
+      isEditing={isEditing}
+      onEdit={() => {
+        setDraft(saved);
+        setIsEditing(true);
+      }}
+      onDiscard={handleDiscard}
+      onSave={() =>
+        onSave(draft, {
+          onSuccess: () => {
+            setSaved(draft);
+            setIsEditing(false);
+          },
+        })
+      }
+      isDirty={isDirty}
+      isSaving={isSaving}
+      disabled={disabled}
+    >
+      <AvoidGapsFormFields
+        draft={draft}
         disabled={disabled || isSaving}
+        onChange={(patch) => setDraft((current) => ({ ...current, ...patch }))}
       />
-
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Avoid gaps between appointments</DialogTitle>
-          </DialogHeader>
-          <AvoidGapsFormFields
-            draft={draft}
-            disabled={disabled || isSaving}
-            onChange={(patch) => setDraft((current) => ({ ...current, ...patch }))}
-          />
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setDialogOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              disabled={disabled || isSaving}
-              onClick={() => {
-                onSave(draft);
-                setDialogOpen(false);
-              }}
-            >
-              Save
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </>
+    </SettingsInlineEditSection>
   );
 }

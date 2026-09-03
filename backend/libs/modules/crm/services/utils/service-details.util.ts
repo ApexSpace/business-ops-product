@@ -14,6 +14,8 @@ export type ServiceDetailsPatch = {
   hasCommissionDeduction?: boolean;
   commissionDeductionType?: ServiceCommissionType | null;
   commissionDeductionValue?: number | null;
+  postCommissionDeductionType?: ServiceCommissionType | null;
+  postCommissionDeductionValue?: number | null;
 };
 
 export function normalizeServiceDetailsPatch(
@@ -31,6 +33,8 @@ export function normalizeServiceDetailsPatch(
     hasCommissionDeduction: boolean;
     commissionDeductionType: ServiceCommissionType | null;
     commissionDeductionValue: Prisma.Decimal | null;
+    postCommissionDeductionType: ServiceCommissionType | null;
+    postCommissionDeductionValue: Prisma.Decimal | null;
   },
   patch: ServiceDetailsPatch,
 ): Prisma.ServiceUpdateInput {
@@ -72,9 +76,22 @@ export function normalizeServiceDetailsPatch(
         : new Prisma.Decimal(patch.commissionDeductionValue)
       : existing.commissionDeductionValue;
 
+  let postCommissionDeductionType: ServiceCommissionType | null =
+    patch.postCommissionDeductionType !== undefined
+      ? patch.postCommissionDeductionType
+      : existing.postCommissionDeductionType;
+  let postCommissionDeductionValue: Prisma.Decimal | null =
+    patch.postCommissionDeductionValue !== undefined
+      ? patch.postCommissionDeductionValue === null
+        ? null
+        : new Prisma.Decimal(patch.postCommissionDeductionValue)
+      : existing.postCommissionDeductionValue;
+
   if (!hasCommissionDeduction) {
     commissionDeductionType = null;
     commissionDeductionValue = null;
+    postCommissionDeductionType = null;
+    postCommissionDeductionValue = null;
   }
 
   return {
@@ -91,5 +108,7 @@ export function normalizeServiceDetailsPatch(
     hasCommissionDeduction,
     commissionDeductionType,
     commissionDeductionValue,
+    postCommissionDeductionType,
+    postCommissionDeductionValue,
   };
 }

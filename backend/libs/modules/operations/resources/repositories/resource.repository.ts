@@ -75,6 +75,8 @@ export class ResourceRepository {
       resourceType: ServiceResourceType;
       groupId?: string | null;
       description?: string | null;
+      capacity?: number | null;
+      alwaysAvailable?: boolean;
       sortOrder: number;
     },
   ): Promise<ResourceListRow> {
@@ -86,6 +88,8 @@ export class ResourceRepository {
           name: data.name,
           resourceType: data.resourceType,
           description: data.description ?? null,
+          capacity: data.capacity === undefined ? 1 : data.capacity,
+          alwaysAvailable: data.alwaysAvailable ?? false,
           status: ResourceStatus.ACTIVE,
           sortOrder: data.sortOrder,
         },

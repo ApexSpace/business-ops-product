@@ -467,7 +467,10 @@ export const DRAWER_ADD_ACTION_CLASS =
   "inline-flex min-h-6 cursor-pointer items-center gap-[5px] text-[14px] font-medium leading-[18px] text-violet-primary-darker hover:underline";
 
 export const DRAWER_ADD_ACTION_ICON_CLASS =
-  "inline-flex size-[var(--plus-button-size)] shrink-0 items-center justify-center rounded-[4px] border-0 bg-violet-primary-normal p-0 leading-none text-white [&>svg]:block [&>svg]:size-3";
+  "inline-flex size-[var(--plus-button-size)] shrink-0 items-center justify-center rounded-[4px] border-0 bg-violet-primary-normal p-0 leading-none text-white [&>svg]:block [&>svg]:size-[var(--plus-button-icon-size)]";
+
+export const DRAWER_ADD_ACTION_ICON_PAGE_CLASS =
+  "inline-flex size-[var(--plus-button-size-page)] shrink-0 items-center justify-center rounded-[4px] border-0 bg-violet-primary-normal p-0 leading-none text-white [&>svg]:block [&>svg]:size-[var(--plus-button-icon-size-page)]";
 
 export const DRAWER_ICON_BUTTON_CLASS =
   "inline-flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-[4px] text-violet-primary-darker hover:bg-black/5 hover:text-violet-primary-darker";
@@ -477,7 +480,10 @@ export const DRAWER_META_ROW_CLASS =
 
 /** Trailing / inline purple “+” — size `--plus-button-size` (Add Note, Service, Client field). */
 export const DRAWER_PLUS_BUTTON_CLASS =
-  "pointer-events-auto inline-flex size-[var(--plus-button-size)] shrink-0 cursor-pointer appearance-none items-center justify-center rounded-[4px] border-0 bg-violet-primary-normal p-0 leading-none text-white hover:bg-violet-primary-normal-hover [&>svg]:block [&>svg]:size-3";
+  "pointer-events-auto inline-flex size-[var(--plus-button-size)] shrink-0 cursor-pointer appearance-none items-center justify-center rounded-[4px] border-0 bg-violet-primary-normal p-0 leading-none text-white hover:bg-violet-primary-normal-hover [&>svg]:block [&>svg]:size-[var(--plus-button-icon-size)]";
+
+export const DRAWER_PLUS_BUTTON_PAGE_CLASS =
+  "pointer-events-auto inline-flex size-[var(--plus-button-size-page)] shrink-0 cursor-pointer appearance-none items-center justify-center rounded-[4px] border-0 bg-violet-primary-normal p-0 leading-none text-white hover:bg-violet-primary-normal-hover [&>svg]:block [&>svg]:size-[var(--plus-button-icon-size-page)]";
 
 export const DRAWER_LINK_CLASS =
   "inline-flex cursor-pointer items-center gap-3 text-[14px] font-medium leading-none text-violet-primary-darker hover:underline";

@@ -163,6 +163,11 @@ const automatedMessagesItems: BusinessSettingsNavItem[] = [
     icon: Bell,
   },
   {
+    title: "Appointment Booked",
+    href: "/business/settings/appointment-booked",
+    icon: Calendar,
+  },
+  {
     title: "WhatsApp",
     href: "/business/settings/whatsapp",
     icon: MessageCircle,

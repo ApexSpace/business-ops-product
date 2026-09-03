@@ -40,14 +40,14 @@ export function PreferencesSettingsScreen() {
           data={data}
           disabled={!canEdit}
           isSaving={isSaving}
-          onSave={(body) => preferencesMutation.mutate(body)}
+          onSave={(body, options) => preferencesMutation.mutate(body, options)}
         />
 
         <AvoidGapsSection
           data={data}
           disabled={!canEdit}
           isSaving={isSaving}
-          onSave={(body) => preferencesMutation.mutate(body)}
+          onSave={(body, options) => preferencesMutation.mutate(body, options)}
         />
 
         <SettingsToggleSection
@@ -87,7 +87,7 @@ export function PreferencesSettingsScreen() {
           data={data}
           disabled={!canEdit}
           isSaving={isSaving}
-          onSave={(body) => preferencesMutation.mutate(body)}
+          onSave={(body, options) => preferencesMutation.mutate(body, options)}
         />
 
         <SettingsToggleSection

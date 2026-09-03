@@ -34,7 +34,7 @@ export function SettingsFormActions({
         variant="outline"
         className={SETTINGS_FORM_DISCARD_BUTTON_CLASS}
         onClick={onDiscard}
-        disabled={disabled || isSubmitting || !isDirty}
+        disabled={disabled || isSubmitting}
       >
         {discardLabel}
       </Button>

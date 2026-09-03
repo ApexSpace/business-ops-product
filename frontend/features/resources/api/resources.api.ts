@@ -54,6 +54,8 @@ export function createResource(body: {
   resourceType: ServiceResourceType;
   groupId?: string | null;
   description?: string | null;
+  capacity?: number | null;
+  alwaysAvailable?: boolean;
 }) {
   return api.post<ResourceListItem>("resources", body);
 }

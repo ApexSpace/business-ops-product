@@ -11,6 +11,7 @@ const SETTINGS_FORM_SHELL_PATH_PREFIXES = [
   "/business/settings/express-booking",
   "/business/settings/display-preferences",
   "/business/settings/waiting-room",
+  "/business/settings/appointment-booked",
   "/business/settings/cancel-reschedule",
   "/business/settings/payment-account",
   "/business/settings/quick-tools",

@@ -7524,6 +7524,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/services/reorder": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ServicesController_reorder"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/services/{id}": {
         parameters: {
             query?: never;
@@ -10772,6 +10788,102 @@ export interface paths {
         patch: operations["CancelRescheduleSettingsController_updateLateCancellation"];
         trace?: never;
     };
+    "/api/v1/appointment-automated-messages/{eventType}/message-catalog": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["AppointmentAutomatedMessagesController_catalog"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/appointment-automated-messages/{eventType}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["AppointmentAutomatedMessagesController_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["AppointmentAutomatedMessagesController_updateSettings"];
+        trace?: never;
+    };
+    "/api/v1/appointment-automated-messages/{eventType}/triggers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AppointmentAutomatedMessagesController_createTrigger"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/appointment-automated-messages/triggers/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["AppointmentAutomatedMessagesController_deleteTrigger"];
+        options?: never;
+        head?: never;
+        patch: operations["AppointmentAutomatedMessagesController_updateTrigger"];
+        trace?: never;
+    };
+    "/api/v1/appointment-automated-messages/triggers/{id}/messages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AppointmentAutomatedMessagesController_createMessage"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/appointment-automated-messages/messages/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["AppointmentAutomatedMessagesController_deleteMessage"];
+        options?: never;
+        head?: never;
+        patch: operations["AppointmentAutomatedMessagesController_updateMessage"];
+        trace?: never;
+    };
     "/api/v1/waitlist": {
         parameters: {
             query?: never;
@@ -13284,6 +13396,9 @@ export interface components {
             commissionDeductionType?: "FLAT" | "PERCENT";
             commissionDeductionValue?: Record<string, never>;
             /** @enum {string} */
+            postCommissionDeductionType?: "FLAT" | "PERCENT";
+            postCommissionDeductionValue?: Record<string, never>;
+            /** @enum {string} */
             status?: "ACTIVE" | "ARCHIVED";
             isDemo?: boolean;
         };
@@ -13304,27 +13419,27 @@ export interface components {
             onlineBookingEnabled?: boolean;
             calendarId?: Record<string, never>;
             customizePriceDisplay?: boolean;
+            /** @enum {string} */
+            priceDisplayMode?: "SHOW_MINIMUM" | "HIDE";
             showPromptToCall?: boolean;
+            promptToCallExplanation?: Record<string, never>;
+            onlineBookingDescription?: Record<string, never>;
             requireHomeAddress?: boolean;
             requireCreditCard?: boolean;
             /** @enum {string} */
             requirePaymentAtBooking?: "NO" | "OPTIONAL" | "REQUIRED";
         };
         CreateResourceRequirementDto: {
-            label: string;
+            groupId: string;
             /** @enum {string} */
-            resourceType: "ROOM" | "EQUIPMENT" | "CONSUMABLE";
-            resourceId?: Record<string, never>;
-            quantity?: number;
-            notes?: string;
+            selectionMode: "ALL" | "SPECIFIC";
+            resourceIds?: string[];
         };
         UpdateResourceRequirementDto: {
-            label?: string;
+            groupId?: string;
             /** @enum {string} */
-            resourceType?: "ROOM" | "EQUIPMENT" | "CONSUMABLE";
-            resourceId?: Record<string, never>;
-            quantity?: number;
-            notes?: string;
+            selectionMode?: "ALL" | "SPECIFIC";
+            resourceIds?: string[];
         };
         ServiceProductUsageDto: {
             productId?: Record<string, never>;
@@ -13386,9 +13501,18 @@ export interface components {
             /** @enum {string} */
             commissionDeductionType?: "FLAT" | "PERCENT";
             commissionDeductionValue?: number;
+            /** @enum {string} */
+            postCommissionDeductionType?: "FLAT" | "PERCENT";
+            postCommissionDeductionValue?: number;
             isDemo?: boolean;
             /** @enum {string} */
             status?: "ACTIVE" | "ARCHIVED";
+        };
+        ReorderServicesDto: {
+            /** Format: uuid */
+            categoryId: string;
+            /** @description Service IDs in the desired order within the category */
+            orderedIds: string[];
         };
         UpdateServiceDto: {
             name?: string;
@@ -13407,6 +13531,9 @@ export interface components {
             /** @enum {string} */
             commissionDeductionType?: "FLAT" | "PERCENT";
             commissionDeductionValue?: Record<string, never>;
+            /** @enum {string} */
+            postCommissionDeductionType?: "FLAT" | "PERCENT";
+            postCommissionDeductionValue?: Record<string, never>;
             isDemo?: boolean;
         };
         CreateResourceGroupDto: {
@@ -13424,6 +13551,9 @@ export interface components {
             resourceType: "ROOM" | "EQUIPMENT" | "CONSUMABLE";
             groupId?: Record<string, never>;
             description?: Record<string, never>;
+            /** @description Concurrent appointment limit. null = no limit. */
+            capacity?: Record<string, never> | null;
+            alwaysAvailable?: boolean;
         };
         ResourceAvailabilitySlotDto: {
             /** @enum {string} */
@@ -13451,6 +13581,9 @@ export interface components {
             /** @enum {string} */
             status?: "ACTIVE" | "INACTIVE";
             sortOrder?: number;
+            /** @description Concurrent appointment limit. null = no limit. */
+            capacity?: Record<string, never> | null;
+            alwaysAvailable?: boolean;
         };
         UpdateSchedulingSettingsDto: {
             slotIntervalMinutes?: number;
@@ -14432,6 +14565,42 @@ export interface components {
         };
         UpdateLateCancellationDto: {
             lateCancellationHoursBefore: number;
+        };
+        UpdateAppointmentAutomatedMessageSettingsDto: {
+            /** @enum {string} */
+            defaultStatus?: "UNCONFIRMED" | "CONFIRMED";
+        };
+        CreateAppointmentAutomatedMessageTriggerDto: {
+            /** @enum {string} */
+            kind: "IMMEDIATE" | "BEFORE_START";
+            offsetValue?: number;
+            /** @enum {string} */
+            offsetUnit?: "DAYS" | "HOURS";
+            sortOrder?: number;
+        };
+        UpdateAppointmentAutomatedMessageTriggerDto: {
+            offsetValue?: number;
+            /** @enum {string} */
+            offsetUnit?: "DAYS" | "HOURS";
+            sortOrder?: number;
+        };
+        CreateAppointmentAutomatedMessageDto: {
+            /** @enum {string} */
+            sourceScope: "ALL" | "ONLINE" | "STAFF";
+            /** @enum {string} */
+            channel: "EMAIL" | "SMS";
+            notificationKey: string;
+            sortOrder?: number;
+            enabled?: boolean;
+        };
+        UpdateAppointmentAutomatedMessageDto: {
+            /** @enum {string} */
+            sourceScope?: "ALL" | "ONLINE" | "STAFF";
+            /** @enum {string} */
+            channel?: "EMAIL" | "SMS";
+            notificationKey?: string;
+            sortOrder?: number;
+            enabled?: boolean;
         };
         CreateWaitlistEntryDto: {
             contactId: string;
@@ -27170,6 +27339,27 @@ export interface operations {
             };
         };
     };
+    ServicesController_reorder: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReorderServicesDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     ServicesController_get: {
         parameters: {
             query?: never;
@@ -33349,6 +33539,203 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["UpdateLateCancellationDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AppointmentAutomatedMessagesController_catalog: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                eventType: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AppointmentAutomatedMessagesController_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                eventType: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AppointmentAutomatedMessagesController_updateSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                eventType: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateAppointmentAutomatedMessageSettingsDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AppointmentAutomatedMessagesController_createTrigger: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                eventType: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateAppointmentAutomatedMessageTriggerDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AppointmentAutomatedMessagesController_deleteTrigger: {
+        parameters: {
+            query: {
+                /** @description Must be true to confirm deletion */
+                confirm: true;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AppointmentAutomatedMessagesController_updateTrigger: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateAppointmentAutomatedMessageTriggerDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AppointmentAutomatedMessagesController_createMessage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateAppointmentAutomatedMessageDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AppointmentAutomatedMessagesController_deleteMessage: {
+        parameters: {
+            query: {
+                /** @description Must be true to confirm deletion */
+                confirm: true;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AppointmentAutomatedMessagesController_updateMessage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateAppointmentAutomatedMessageDto"];
             };
         };
         responses: {

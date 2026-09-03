@@ -69,6 +69,12 @@ export class ServiceResponseDto {
   @ApiPropertyOptional()
   commissionDeductionValue?: string | null;
 
+  @ApiPropertyOptional({ enum: ServiceCommissionType })
+  postCommissionDeductionType?: ServiceCommissionType | null;
+
+  @ApiPropertyOptional()
+  postCommissionDeductionValue?: string | null;
+
   @ApiProperty()
   staffingMode!: ServiceStaffingMode;
 

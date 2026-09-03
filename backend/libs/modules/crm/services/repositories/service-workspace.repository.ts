@@ -6,10 +6,25 @@ import {
   ServiceOnlineBookingSettings,
   ServiceOptionGroup,
   ServiceProductUsage,
-  ServiceResourceRequirement,
   ServiceStaff,
 } from '@prisma/client';
 import { PrismaService } from '@app/core/database/prisma.service';
+
+const resourceRequirementInclude = {
+  group: {
+    select: { id: true, name: true },
+  },
+  resource: {
+    select: { id: true, name: true, resourceType: true, status: true },
+  },
+  items: {
+    include: {
+      resource: {
+        select: { id: true, name: true, resourceType: true, status: true },
+      },
+    },
+  },
+} satisfies Prisma.ServiceResourceRequirementInclude;
 
 const workspaceInclude = {
   category: true,
@@ -30,8 +45,18 @@ const workspaceInclude = {
   resourceRequirements: {
     orderBy: { sortOrder: 'asc' as const },
     include: {
+      group: {
+        select: { id: true, name: true },
+      },
       resource: {
         select: { id: true, name: true, resourceType: true, status: true },
+      },
+      items: {
+        include: {
+          resource: {
+            select: { id: true, name: true, resourceType: true, status: true },
+          },
+        },
       },
     },
   },
@@ -218,16 +243,32 @@ export class ServiceWorkspaceRepository {
     });
   }
 
-  createResourceRequirement(
-    data: Prisma.ServiceResourceRequirementCreateInput,
-  ): Promise<ServiceResourceRequirement> {
+  createResourceRequirement(params: {
+    businessId: string;
+    serviceId: string;
+    groupId: string;
+    selectionMode: Prisma.ServiceResourceRequirementCreateInput['selectionMode'];
+    sortOrder: number;
+    resourceIds: string[];
+  }) {
+    const { businessId, serviceId, groupId, selectionMode, sortOrder, resourceIds } =
+      params;
     return this.prisma.serviceResourceRequirement.create({
-      data,
-      include: {
-        resource: {
-          select: { id: true, name: true, resourceType: true, status: true },
-        },
+      data: {
+        business: { connect: { id: businessId } },
+        service: { connect: { id: serviceId } },
+        group: { connect: { id: groupId } },
+        selectionMode,
+        sortOrder,
+        ...(selectionMode === 'SPECIFIC' && resourceIds.length > 0
+          ? {
+              items: {
+                create: resourceIds.map((resourceId) => ({ resourceId })),
+              },
+            }
+          : {}),
       },
+      include: resourceRequirementInclude,
     });
   }
 
@@ -235,38 +276,76 @@ export class ServiceWorkspaceRepository {
     businessId: string,
     serviceId: string,
     id: string,
-  ): Promise<ServiceResourceRequirement | null> {
+  ) {
     return this.prisma.serviceResourceRequirement.findFirst({
       where: { id, businessId, serviceId },
+      include: resourceRequirementInclude,
     });
   }
 
-  updateResourceRequirement(
+  async updateResourceRequirement(
     businessId: string,
     serviceId: string,
     id: string,
-    data: Prisma.ServiceResourceRequirementUpdateManyMutationInput,
-  ): Promise<ServiceResourceRequirement | null> {
-    return this.prisma.serviceResourceRequirement
-      .updateMany({ where: { id, businessId, serviceId }, data })
-      .then(async (r) => {
-        if (r.count === 0) {
-          return null;
-        }
-        return this.prisma.serviceResourceRequirement.findFirst({
-          where: { id, businessId, serviceId },
-          include: {
-            resource: {
-              select: {
-                id: true,
-                name: true,
-                resourceType: true,
-                status: true,
-              },
-            },
-          },
+    data: {
+      groupId?: string;
+      selectionMode?: Prisma.ServiceResourceRequirementUpdateInput['selectionMode'];
+      resourceIds?: string[];
+    },
+  ) {
+    const existing = await this.findResourceRequirement(
+      businessId,
+      serviceId,
+      id,
+    );
+    if (!existing) {
+      return null;
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      if (data.resourceIds !== undefined || data.selectionMode === 'ALL') {
+        await tx.serviceResourceRequirementItem.deleteMany({
+          where: { requirementId: id },
         });
+      }
+
+      const selectionMode =
+        data.selectionMode ?? existing.selectionMode;
+      const resourceIds =
+        selectionMode === 'SPECIFIC'
+          ? (data.resourceIds ??
+            existing.items.map((item) => item.resourceId))
+          : [];
+
+      if (selectionMode === 'SPECIFIC' && resourceIds.length > 0) {
+        await tx.serviceResourceRequirementItem.createMany({
+          data: resourceIds.map((resourceId) => ({
+            requirementId: id,
+            resourceId,
+          })),
+          skipDuplicates: true,
+        });
+      }
+
+      await tx.serviceResourceRequirement.update({
+        where: { id },
+        data: {
+          ...(data.groupId !== undefined ? { groupId: data.groupId } : {}),
+          ...(data.selectionMode !== undefined
+            ? { selectionMode: data.selectionMode }
+            : {}),
+          // Clear legacy single-resource link when using group model
+          resourceId: null,
+          label: null,
+          resourceType: null,
+        },
       });
+
+      return tx.serviceResourceRequirement.findFirst({
+        where: { id, businessId, serviceId },
+        include: resourceRequirementInclude,
+      });
+    });
   }
 
   deleteResourceRequirement(

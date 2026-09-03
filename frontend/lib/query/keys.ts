@@ -383,6 +383,12 @@ export const queryKeys = {
   waitingRoomSettings: {
     detail: () => ["waiting-room-settings"] as const,
   },
+  appointmentAutomatedMessages: {
+    detail: (eventType: string) =>
+      ["appointment-automated-messages", eventType] as const,
+    catalog: (eventType: string) =>
+      ["appointment-automated-messages", eventType, "catalog"] as const,
+  },
   customFees: {
     all: () => ["custom-fees"] as const,
     list: (filters?: { page?: number; limit?: number; search?: string }) =>

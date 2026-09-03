@@ -47,6 +47,8 @@ import { applyContactSummaryPrivacy } from '@app/modules/crm/contacts/utils/cont
 import { DateTime } from 'luxon';
 import { WaitingRoomSettingsService } from '../waiting-room-settings/services/waiting-room-settings.service';
 import { CancelRescheduleSettingsService } from '../cancel-reschedule-settings/services/cancel-reschedule-settings.service';
+import { AppointmentAutomatedMessagesService } from '../automated-messages/services/appointment-automated-messages.service';
+import { matchingImmediateNotificationKeys } from '../automated-messages/utils/message-resolver.util';
 import { classifyStaffCancellation } from '../cancel-reschedule-settings/utils/cancel-reschedule-behavior.util';
 import { buildAppointmentManageFields } from '../utils/appointment-manage-token.util';
 import {
@@ -76,6 +78,7 @@ export class AppointmentsService {
     private readonly storageService: StorageService,
     private readonly waitingRoomSettingsService: WaitingRoomSettingsService,
     private readonly cancelRescheduleSettingsService: CancelRescheduleSettingsService,
+    private readonly appointmentAutomatedMessagesService: AppointmentAutomatedMessagesService,
   ) {}
 
   private scheduleGoogleCalendarSync(
@@ -463,9 +466,16 @@ export class AppointmentsService {
 
     const scheduleWarning = outsideHoursWarning ?? null;
 
+    const bookedSettings =
+      await this.appointmentAutomatedMessagesService.ensureBookedSettings(
+        businessId,
+      );
+    const bookedDefaultStatus =
+      bookedSettings.defaultStatus ?? AppointmentStatus.CONFIRMED;
+
     const resolvedStatus = outsideHoursWarning
       ? AppointmentStatus.UNCONFIRMED
-      : (dto.status ?? AppointmentStatus.CONFIRMED);
+      : (dto.status ?? bookedDefaultStatus);
 
     const appointment = await this.appointmentRepository.create(
       businessId,
@@ -514,12 +524,17 @@ export class AppointmentsService {
     if (
       dto.sendConfirmation !== false &&
       !isTimeBlock &&
-      dto.contactId &&
-      resolvedStatus !== AppointmentStatus.UNCONFIRMED
+      dto.contactId
     ) {
-      void this.appointmentNotificationService
-        .sendConfirmation(businessId, appointment)
-        .catch(() => undefined);
+      const keys = matchingImmediateNotificationKeys(
+        bookedSettings.triggers,
+        appointment.source,
+      );
+      if (keys.includes('appointment.confirmation')) {
+        void this.appointmentNotificationService
+          .sendConfirmation(businessId, appointment)
+          .catch(() => undefined);
+      }
     }
 
     const redeemServiceId = primaryServiceId ?? dto.serviceId;

@@ -1,21 +1,14 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo } from "react";
 import Link from "next/link";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { LoadingState } from "@/components/data-display/loading-state";
 import { SettingsFormPage } from "@/components/layout/settings-page-layout";
+import { SettingsInlineEditSection } from "@/components/layout/settings-inline-edit-section";
 import { SettingsToggleSection } from "@/components/layout/settings-toggle-section";
-import { SettingsValueSection } from "@/components/layout/settings-value-section";
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { SettingsViewRows } from "@/components/layout/settings-view-rows";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -43,6 +36,7 @@ import {
 } from "@/features/express-booking/utils/express-booking-settings-labels";
 import { invalidateOnlineBookingSettings } from "@/lib/query/invalidation";
 import { SETTINGS_FORM_SECTION_STACK_CLASS } from "@/lib/design/settings-form-tokens";
+import { useSettingsSectionEdit } from "@/lib/settings/use-settings-section-edit";
 import { useSettingsSectionState } from "@/lib/settings/use-settings-section-state";
 
 type DefaultSettingsDraft = {
@@ -60,6 +54,9 @@ export function ExpressBookingSettings() {
   const queryClient = useQueryClient();
   const canEdit = useCan(PERMISSIONS["settings.business"]);
   const { data, isLoading, isError, error } = useExpressBookingSettings();
+  const { isEditing, startEdit, stopEdit } = useSettingsSectionEdit<
+    "defaults" | "photos"
+  >();
 
   const enablePick = useCallback(
     (settings: NonNullable<typeof data>) => ({
@@ -87,22 +84,14 @@ export function ExpressBookingSettings() {
   const defaultSection = useSettingsSectionState(data, defaultPick);
   const photosSection = useSettingsSectionState(data, photosPick);
 
-  const [defaultDialogOpen, setDefaultDialogOpen] = useState(false);
-  const [photosDialogOpen, setPhotosDialogOpen] = useState(false);
-  const [dialogDefaults, setDialogDefaults] = useState<DefaultSettingsDraft | null>(
-    null,
-  );
-  const [dialogPhotos, setDialogPhotos] = useState<PhotosSettingsDraft | null>(
-    null,
-  );
-
   const mutation = useMutation({
     mutationFn: updateExpressBookingPreferences,
     onSuccess: async () => {
       await invalidateOnlineBookingSettings(queryClient);
       toast.success("Express Booking settings saved");
-      setDefaultDialogOpen(false);
-      setPhotosDialogOpen(false);
+      stopEdit();
+      defaultSection.reset();
+      photosSection.reset();
     },
     onError: (err: Error) => toast.error(err.message),
   });
@@ -117,13 +106,6 @@ export function ExpressBookingSettings() {
     return formatExpressPhotosSummary(data);
   }, [data]);
 
-  const saveSection = useCallback(
-    (body: Parameters<typeof updateExpressBookingPreferences>[0]) => {
-      mutation.mutate(body);
-    },
-    [mutation],
-  );
-
   if (isLoading) {
     return <LoadingState label="Loading Express Booking settings…" />;
   }
@@ -137,6 +119,9 @@ export function ExpressBookingSettings() {
       </p>
     );
   }
+
+  const defaults = defaultSection.values;
+  const photos = photosSection.values;
 
   return (
     <SettingsFormPage
@@ -160,7 +145,7 @@ export function ExpressBookingSettings() {
           }
           onDiscard={enableSection.reset}
           onSave={() =>
-            saveSection({
+            mutation.mutate({
               expressBookingEnabled:
                 enableSection.values?.expressBookingEnabled,
             })
@@ -172,7 +157,7 @@ export function ExpressBookingSettings() {
 
         {enableSection.values?.expressBookingEnabled ? (
           <>
-            <SettingsValueSection
+            <SettingsInlineEditSection
               title="Default settings"
               description={
                 <>
@@ -187,222 +172,151 @@ export function ExpressBookingSettings() {
                   .
                 </>
               }
-              valueLabel={defaultSummary}
-              onEdit={() => {
-                if (defaultSection.values) {
-                  setDialogDefaults(defaultSection.values);
-                }
-                setDefaultDialogOpen(true);
+              summary={
+                <SettingsViewRows
+                  rows={[{ label: "Current settings", value: defaultSummary }]}
+                />
+              }
+              isEditing={isEditing("defaults")}
+              onEdit={() => startEdit("defaults")}
+              onDiscard={() => {
+                defaultSection.reset();
+                stopEdit();
               }}
-              onDiscard={defaultSection.reset}
               onSave={() => {
-                if (!defaultSection.values) return;
-                saveSection({
-                  expressBookingAutoEnable:
-                    defaultSection.values.expressBookingAutoEnable,
+                if (!defaults) return;
+                mutation.mutate({
+                  expressBookingAutoEnable: defaults.expressBookingAutoEnable,
                   expressBookingTimeLimitMinutes:
-                    defaultSection.values.expressBookingTimeLimitMinutes,
-                  ...expressDepositFieldsToPreferences(
-                    defaultSection.values.depositFields,
-                  ),
+                    defaults.expressBookingTimeLimitMinutes,
+                  ...expressDepositFieldsToPreferences(defaults.depositFields),
                 });
               }}
               isDirty={defaultSection.isDirty}
               isSaving={mutation.isPending}
               disabled={!canEdit}
-            />
+            >
+              {defaults ? (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between gap-4">
+                    <Label htmlFor="express-auto-enable">
+                      Automatically enable for new appointments
+                    </Label>
+                    <Switch
+                      id="express-auto-enable"
+                      checked={defaults.expressBookingAutoEnable}
+                      disabled={!canEdit}
+                      onCheckedChange={(checked) =>
+                        defaultSection.commit({
+                          ...defaults,
+                          expressBookingAutoEnable: checked,
+                        })
+                      }
+                    />
+                  </div>
 
-            <SettingsValueSection
+                  <div className="space-y-2">
+                    <Label>Time limit</Label>
+                    <Select
+                      value={String(defaults.expressBookingTimeLimitMinutes)}
+                      onValueChange={(value) => {
+                        if (!value) return;
+                        defaultSection.commit({
+                          ...defaults,
+                          expressBookingTimeLimitMinutes: Number(value),
+                        });
+                      }}
+                      disabled={!canEdit}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {EXPRESS_TIME_LIMIT_OPTIONS.map((minutes) => (
+                          <SelectItem key={minutes} value={String(minutes)}>
+                            {formatExpressTimeLimitLabel(minutes)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <ExpressDepositFields
+                    value={defaults.depositFields}
+                    disabled={!canEdit}
+                    onChange={(depositFields) =>
+                      defaultSection.commit({ ...defaults, depositFields })
+                    }
+                  />
+                </div>
+              ) : null}
+            </SettingsInlineEditSection>
+
+            <SettingsInlineEditSection
               title="Collect photos"
               description="Let clients upload reference photos after completing Express Booking."
-              valueLabel={photosSummary}
-              onEdit={() => {
-                if (photosSection.values) {
-                  setDialogPhotos(photosSection.values);
-                }
-                setPhotosDialogOpen(true);
-              }}
-              onDiscard={photosSection.reset}
-              onSave={() =>
-                saveSection({
-                  expressAllowPhotoUpload:
-                    photosSection.values?.expressAllowPhotoUpload,
-                  photoUploadPrompt:
-                    photosSection.values?.photoUploadPrompt.trim() || null,
-                })
+              summary={
+                <SettingsViewRows
+                  rows={[{ label: "Current settings", value: photosSummary }]}
+                />
               }
+              isEditing={isEditing("photos")}
+              onEdit={() => startEdit("photos")}
+              onDiscard={() => {
+                photosSection.reset();
+                stopEdit();
+              }}
+              onSave={() => {
+                if (!photos) return;
+                mutation.mutate({
+                  expressAllowPhotoUpload: photos.expressAllowPhotoUpload,
+                  photoUploadPrompt: photos.photoUploadPrompt.trim() || null,
+                });
+              }}
               isDirty={photosSection.isDirty}
               isSaving={mutation.isPending}
               disabled={!canEdit}
-            />
+            >
+              {photos ? (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between gap-4">
+                    <Label htmlFor="express-allow-photo-upload">Enable</Label>
+                    <Switch
+                      id="express-allow-photo-upload"
+                      checked={photos.expressAllowPhotoUpload}
+                      disabled={!canEdit}
+                      onCheckedChange={(checked) =>
+                        photosSection.commit({
+                          ...photos,
+                          expressAllowPhotoUpload: checked,
+                        })
+                      }
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="express-photo-prompt">
+                      Photo upload prompt
+                    </Label>
+                    <Textarea
+                      id="express-photo-prompt"
+                      rows={4}
+                      value={photos.photoUploadPrompt}
+                      disabled={!canEdit || !photos.expressAllowPhotoUpload}
+                      placeholder="Please share any reference or inspiration photos that are relevant to your appointment."
+                      onChange={(e) =>
+                        photosSection.commit({
+                          ...photos,
+                          photoUploadPrompt: e.target.value,
+                        })
+                      }
+                    />
+                  </div>
+                </div>
+              ) : null}
+            </SettingsInlineEditSection>
           </>
         ) : null}
       </div>
-
-      <Dialog open={defaultDialogOpen} onOpenChange={setDefaultDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Default settings</DialogTitle>
-          </DialogHeader>
-          {dialogDefaults ? (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between gap-4">
-                <Label htmlFor="express-auto-enable">
-                  Automatically enable for new appointments
-                </Label>
-                <Switch
-                  id="express-auto-enable"
-                  checked={dialogDefaults.expressBookingAutoEnable}
-                  disabled={!canEdit}
-                  onCheckedChange={(checked) =>
-                    setDialogDefaults({
-                      ...dialogDefaults,
-                      expressBookingAutoEnable: checked,
-                    })
-                  }
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label>Time limit</Label>
-                <Select
-                  value={String(dialogDefaults.expressBookingTimeLimitMinutes)}
-                  onValueChange={(value) =>
-                    setDialogDefaults({
-                      ...dialogDefaults,
-                      expressBookingTimeLimitMinutes: Number(value),
-                    })
-                  }
-                  disabled={!canEdit}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {EXPRESS_TIME_LIMIT_OPTIONS.map((minutes) => (
-                      <SelectItem key={minutes} value={String(minutes)}>
-                        {formatExpressTimeLimitLabel(minutes)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground">
-                  How long the client has to finish before the slot is released.
-                  Policy version: {data.cancellationPolicyVersion || "1"}
-                </p>
-              </div>
-
-              <ExpressDepositFields
-                value={dialogDefaults.depositFields}
-                disabled={!canEdit}
-                onChange={(depositFields) =>
-                  setDialogDefaults({ ...dialogDefaults, depositFields })
-                }
-              />
-            </div>
-          ) : null}
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setDefaultDialogOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              variant="brand"
-              disabled={!canEdit || mutation.isPending}
-              onClick={() => {
-                if (!dialogDefaults) return;
-                defaultSection.commit(dialogDefaults);
-                saveSection({
-                  expressBookingAutoEnable:
-                    dialogDefaults.expressBookingAutoEnable,
-                  expressBookingTimeLimitMinutes:
-                    dialogDefaults.expressBookingTimeLimitMinutes,
-                  ...expressDepositFieldsToPreferences(
-                    dialogDefaults.depositFields,
-                  ),
-                });
-              }}
-            >
-              Save
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={photosDialogOpen} onOpenChange={setPhotosDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Collect photos</DialogTitle>
-          </DialogHeader>
-          {dialogPhotos ? (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between gap-4">
-                <Label htmlFor="express-allow-photo-upload">Enable</Label>
-                <Switch
-                  id="express-allow-photo-upload"
-                  checked={dialogPhotos.expressAllowPhotoUpload}
-                  disabled={!canEdit}
-                  onCheckedChange={(checked) =>
-                    setDialogPhotos({
-                      ...dialogPhotos,
-                      expressAllowPhotoUpload: checked,
-                    })
-                  }
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="express-photo-prompt">Photo upload prompt</Label>
-                <Textarea
-                  id="express-photo-prompt"
-                  rows={4}
-                  value={dialogPhotos.photoUploadPrompt}
-                  disabled={!canEdit || !dialogPhotos.expressAllowPhotoUpload}
-                  placeholder="Please share any reference or inspiration photos that are relevant to your appointment."
-                  onChange={(e) =>
-                    setDialogPhotos({
-                      ...dialogPhotos,
-                      photoUploadPrompt: e.target.value,
-                    })
-                  }
-                />
-                <p className="text-xs text-muted-foreground">
-                  Shown after the client completes Express Booking. Clients can
-                  upload up to 3 photos.
-                </p>
-              </div>
-            </div>
-          ) : null}
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setPhotosDialogOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              variant="brand"
-              disabled={!canEdit || mutation.isPending}
-              onClick={() => {
-                if (!dialogPhotos) return;
-                photosSection.commit(dialogPhotos);
-                saveSection({
-                  expressAllowPhotoUpload: dialogPhotos.expressAllowPhotoUpload,
-                  photoUploadPrompt:
-                    dialogPhotos.photoUploadPrompt.trim() || null,
-                });
-              }}
-            >
-              Save
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </SettingsFormPage>
   );
 }

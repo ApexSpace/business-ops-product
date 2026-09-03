@@ -126,4 +126,31 @@ export class ServiceRepository {
       },
     });
   }
+
+  findManyOrderedByCategory(
+    businessId: string,
+    categoryId: string,
+  ): Promise<ServiceWithCategory[]> {
+    return this.prisma.service.findMany({
+      where: this.activeWhere(businessId, { categoryId }),
+      orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
+      include: listInclude,
+    });
+  }
+
+  async reorderInCategory(
+    businessId: string,
+    categoryId: string,
+    orderedIds: string[],
+  ): Promise<ServiceWithCategory[]> {
+    await this.prisma.$transaction(
+      orderedIds.map((id, index) =>
+        this.prisma.service.updateMany({
+          where: { id, businessId, categoryId, deletedAt: null },
+          data: { sortOrder: index },
+        }),
+      ),
+    );
+    return this.findManyOrderedByCategory(businessId, categoryId);
+  }
 }

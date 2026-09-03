@@ -1,18 +1,11 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo } from "react";
 import { LoadingState } from "@/components/data-display/loading-state";
 import { SettingsFormPage } from "@/components/layout/settings-page-layout";
+import { SettingsInlineEditSection } from "@/components/layout/settings-inline-edit-section";
 import { SettingsToggleSection } from "@/components/layout/settings-toggle-section";
-import { SettingsValueSection } from "@/components/layout/settings-value-section";
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { SettingsViewRows } from "@/components/layout/settings-view-rows";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -29,6 +22,7 @@ import {
   parseCustomPaymentMethodNamesInput,
 } from "@/features/checkout-advanced-settings/schemas/checkout-advanced-settings-profile";
 import { SETTINGS_FORM_SECTION_STACK_CLASS } from "@/lib/design/settings-form-tokens";
+import { useSettingsSectionEdit } from "@/lib/settings/use-settings-section-edit";
 import { useSettingsSectionState } from "@/lib/settings/use-settings-section-state";
 
 type StaffDraft = {
@@ -43,10 +37,22 @@ type ReceiptDraft = {
   receiptCustomFooterText: string;
 };
 
+type TipButtonsDraft = {
+  tipPercentsInput: string;
+  hideTipButtons: boolean;
+};
+
+type CustomMethodsDraft = {
+  input: string;
+};
+
 export function CheckoutAdvancedSettingsScreen() {
   const canEdit = useCan(PERMISSIONS["settings.business"]);
   const { data, isLoading, isError, error } = useCheckoutAdvancedSettings();
   const { updateMutation } = useCheckoutAdvancedSettingsMutations();
+  const { isEditing, startEdit, stopEdit } = useSettingsSectionEdit<
+    "customMethods" | "tipButtons" | "staff" | "receipt"
+  >();
 
   const askTipPick = useCallback(
     (settings: NonNullable<typeof data>) => ({
@@ -100,6 +106,29 @@ export function CheckoutAdvancedSettingsScreen() {
     [],
   );
 
+  const receiptPick = useCallback(
+    (settings: NonNullable<typeof data>): ReceiptDraft => ({
+      showServiceProviderOnReceipt: settings.showServiceProviderOnReceipt,
+      receiptCustomFooterText: settings.receiptCustomFooterText ?? "",
+    }),
+    [],
+  );
+
+  const tipButtonsPick = useCallback(
+    (settings: NonNullable<typeof data>): TipButtonsDraft => ({
+      tipPercentsInput: settings.tipButtonPercents.join(", "),
+      hideTipButtons: settings.hideTipButtons,
+    }),
+    [],
+  );
+
+  const customMethodsPick = useCallback(
+    (settings: NonNullable<typeof data>): CustomMethodsDraft => ({
+      input: customPaymentMethodNamesToInput(settings.customPaymentMethodNames),
+    }),
+    [],
+  );
+
   const askTipSection = useSettingsSectionState(data, askTipPick);
   const askTipProductsSection = useSettingsSectionState(data, askTipProductsPick);
   const signatureSection = useSettingsSectionState(data, signaturePick);
@@ -107,15 +136,9 @@ export function CheckoutAdvancedSettingsScreen() {
   const changeCalcSection = useSettingsSectionState(data, changeCalcPick);
   const receiptPreviewSection = useSettingsSectionState(data, receiptPreviewPick);
   const staffSection = useSettingsSectionState(data, staffPick);
-
-  const [customMethodsDialogOpen, setCustomMethodsDialogOpen] = useState(false);
-  const [tipButtonsDialogOpen, setTipButtonsDialogOpen] = useState(false);
-  const [receiptDialogOpen, setReceiptDialogOpen] = useState(false);
-  const [staffDialogOpen, setStaffDialogOpen] = useState(false);
-  const [customMethodsInput, setCustomMethodsInput] = useState("");
-  const [tipPercentsInput, setTipPercentsInput] = useState("");
-  const [hideTipButtonsDraft, setHideTipButtonsDraft] = useState(false);
-  const [receiptDraft, setReceiptDraft] = useState<ReceiptDraft | null>(null);
+  const receiptSection = useSettingsSectionState(data, receiptPick);
+  const tipButtonsSection = useSettingsSectionState(data, tipButtonsPick);
+  const customMethodsSection = useSettingsSectionState(data, customMethodsPick);
 
   const customMethodsSummary = useMemo(
     () => formatCustomPaymentMethodsSummary(data?.customPaymentMethodNames ?? []),
@@ -139,9 +162,11 @@ export function CheckoutAdvancedSettingsScreen() {
 
   const save = useCallback(
     (body: Parameters<typeof updateMutation.mutate>[0]) => {
-      updateMutation.mutate(body);
+      updateMutation.mutate(body, {
+        onSuccess: () => stopEdit(),
+      });
     },
-    [updateMutation],
+    [updateMutation, stopEdit],
   );
 
   if (isLoading) {
@@ -164,30 +189,111 @@ export function CheckoutAdvancedSettingsScreen() {
       description="Configure checkout tips, payment labels, staff requirements, and receipt options for staff POS sales."
     >
       <div className={SETTINGS_FORM_SECTION_STACK_CLASS}>
-        <SettingsValueSection
+        <SettingsInlineEditSection
           title="Custom Payment Method Labels"
           description="Display names for cash-like payment tiles (PayPal, Venmo, Zelle). No platform integration — payments are recorded manually for reporting."
-          valueLabel={customMethodsSummary}
-          onEdit={() => {
-            setCustomMethodsInput(
-              customPaymentMethodNamesToInput(data.customPaymentMethodNames),
-            );
-            setCustomMethodsDialogOpen(true);
+          summary={
+            <SettingsViewRows
+              rows={[{ label: "Labels", value: customMethodsSummary }]}
+            />
+          }
+          isEditing={isEditing("customMethods")}
+          onEdit={() => startEdit("customMethods")}
+          onDiscard={() => {
+            customMethodsSection.reset();
+            stopEdit();
           }}
+          onSave={() =>
+            save({
+              customPaymentMethodNames: parseCustomPaymentMethodNamesInput(
+                customMethodsSection.values?.input ?? "",
+              ),
+            })
+          }
+          isDirty={customMethodsSection.isDirty}
+          isSaving={updateMutation.isPending}
           disabled={!canEdit}
-        />
+        >
+          <div className="space-y-2">
+            <Label htmlFor="custom-payment-names">Labels</Label>
+            <Input
+              id="custom-payment-names"
+              value={customMethodsSection.values?.input ?? ""}
+              onChange={(event) =>
+                customMethodsSection.commit({ input: event.target.value })
+              }
+              placeholder="PayPal, Venmo, Zelle"
+            />
+            <p className="text-xs text-muted-foreground">
+              Comma-separated names. Each appears as a payment tile in staff
+              checkout.
+            </p>
+          </div>
+        </SettingsInlineEditSection>
 
-        <SettingsValueSection
+        <SettingsInlineEditSection
           title="Tip Buttons"
           description="Percentage presets shown on the payment screen."
-          valueLabel={tipButtonsSummary}
-          onEdit={() => {
-            setTipPercentsInput(data.tipButtonPercents.join(", "));
-            setHideTipButtonsDraft(data.hideTipButtons);
-            setTipButtonsDialogOpen(true);
+          summary={
+            <SettingsViewRows
+              rows={[{ label: "Tip buttons", value: tipButtonsSummary }]}
+            />
+          }
+          isEditing={isEditing("tipButtons")}
+          onEdit={() => startEdit("tipButtons")}
+          onDiscard={() => {
+            tipButtonsSection.reset();
+            stopEdit();
           }}
+          onSave={() => {
+            const percents = (tipButtonsSection.values?.tipPercentsInput ?? "")
+              .split(",")
+              .map((part) => parseInt(part.trim(), 10))
+              .filter((n) => Number.isFinite(n) && n >= 1 && n <= 100);
+            save({
+              tipButtonPercents: percents.length > 0 ? percents : [18, 20, 22],
+              hideTipButtons:
+                tipButtonsSection.values?.hideTipButtons ?? false,
+            });
+          }}
+          isDirty={tipButtonsSection.isDirty}
+          isSaving={updateMutation.isPending}
           disabled={!canEdit}
-        />
+        >
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="tip-percents">Preset percentages</Label>
+              <Input
+                id="tip-percents"
+                value={tipButtonsSection.values?.tipPercentsInput ?? ""}
+                onChange={(event) =>
+                  tipButtonsSection.commit({
+                    tipPercentsInput: event.target.value,
+                    hideTipButtons:
+                      tipButtonsSection.values?.hideTipButtons ?? false,
+                  })
+                }
+                placeholder="18, 20, 22"
+              />
+              <p className="text-xs text-muted-foreground">
+                Comma-separated values from 1–100 (up to 5 presets).
+              </p>
+            </div>
+            <label className="flex items-center justify-between gap-3">
+              <span className="text-sm font-medium">Hide tip buttons</span>
+              <Switch
+                checked={tipButtonsSection.values?.hideTipButtons ?? false}
+                onCheckedChange={(checked) =>
+                  tipButtonsSection.commit({
+                    tipPercentsInput:
+                      tipButtonsSection.values?.tipPercentsInput ?? "",
+                    hideTipButtons: checked,
+                  })
+                }
+              />
+            </label>
+          </div>
+        </SettingsInlineEditSection>
 
         <SettingsToggleSection
           id="ask-clients-for-tip"
@@ -278,7 +384,8 @@ export function CheckoutAdvancedSettingsScreen() {
           onDiscard={changeCalcSection.reset}
           onSave={() =>
             save({
-              showChangeCalculator: changeCalcSection.values?.showChangeCalculator,
+              showChangeCalculator:
+                changeCalcSection.values?.showChangeCalculator,
             })
           }
           isDirty={changeCalcSection.isDirty}
@@ -297,7 +404,8 @@ export function CheckoutAdvancedSettingsScreen() {
           onDiscard={receiptPreviewSection.reset}
           onSave={() =>
             save({
-              showReceiptPreview: receiptPreviewSection.values?.showReceiptPreview,
+              showReceiptPreview:
+                receiptPreviewSection.values?.showReceiptPreview,
             })
           }
           isDirty={receiptPreviewSection.isDirty}
@@ -305,115 +413,28 @@ export function CheckoutAdvancedSettingsScreen() {
           disabled={!canEdit}
         />
 
-        <SettingsValueSection
+        <SettingsInlineEditSection
           title="Require Staff Assignments"
           description="Require a staff member on each line item before closing the sale."
-          valueLabel={staffSummary}
-          onEdit={() => setStaffDialogOpen(true)}
-          disabled={!canEdit}
-        />
-
-        <SettingsValueSection
-          title="Receipt Settings"
-          description="Control provider visibility and custom footer text on closed sales and payment receipt emails."
-          valueLabel={receiptSummary}
-          onEdit={() => {
-            setReceiptDraft({
-              showServiceProviderOnReceipt: data.showServiceProviderOnReceipt,
-              receiptCustomFooterText: data.receiptCustomFooterText ?? "",
-            });
-            setReceiptDialogOpen(true);
-          }}
-          disabled={!canEdit}
-        />
-      </div>
-
-      <Dialog open={customMethodsDialogOpen} onOpenChange={setCustomMethodsDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Custom payment method labels</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-2">
-            <Label htmlFor="custom-payment-names">Labels</Label>
-            <Input
-              id="custom-payment-names"
-              value={customMethodsInput}
-              onChange={(event) => setCustomMethodsInput(event.target.value)}
-              placeholder="PayPal, Venmo, Zelle"
+          summary={
+            <SettingsViewRows
+              rows={[{ label: "Requirements", value: staffSummary }]}
             />
-            <p className="text-xs text-muted-foreground">
-              Comma-separated names. Each appears as a payment tile in staff checkout.
-            </p>
-          </div>
-          <DialogFooter>
-            <Button
-              variant="brand"
-              disabled={updateMutation.isPending}
-              onClick={() =>
-                save({
-                  customPaymentMethodNames:
-                    parseCustomPaymentMethodNamesInput(customMethodsInput),
-                })
-              }
-            >
-              Save
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={tipButtonsDialogOpen} onOpenChange={setTipButtonsDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Tip buttons</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="tip-percents">Preset percentages</Label>
-              <Input
-                id="tip-percents"
-                value={tipPercentsInput}
-                onChange={(event) => setTipPercentsInput(event.target.value)}
-                placeholder="18, 20, 22"
-              />
-              <p className="text-xs text-muted-foreground">
-                Comma-separated values from 1–100 (up to 5 presets).
-              </p>
-            </div>
-            <label className="flex items-center justify-between gap-3">
-              <span className="text-sm font-medium">Hide tip buttons</span>
-              <Switch
-                checked={hideTipButtonsDraft}
-                onCheckedChange={setHideTipButtonsDraft}
-              />
-            </label>
-          </div>
-          <DialogFooter>
-            <Button
-              variant="brand"
-              disabled={updateMutation.isPending}
-              onClick={() => {
-                const percents = tipPercentsInput
-                  .split(",")
-                  .map((part) => parseInt(part.trim(), 10))
-                  .filter((n) => Number.isFinite(n) && n >= 1 && n <= 100);
-                save({
-                  tipButtonPercents: percents.length > 0 ? percents : [18, 20, 22],
-                  hideTipButtons: hideTipButtonsDraft,
-                });
-              }}
-            >
-              Save
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={staffDialogOpen} onOpenChange={setStaffDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Require staff assignments</DialogTitle>
-          </DialogHeader>
+          }
+          isEditing={isEditing("staff")}
+          onEdit={() => startEdit("staff")}
+          onDiscard={() => {
+            staffSection.reset();
+            stopEdit();
+          }}
+          onSave={() => {
+            if (!staffSection.values) return;
+            save(staffSection.values);
+          }}
+          isDirty={staffSection.isDirty}
+          isSaving={updateMutation.isPending}
+          disabled={!canEdit}
+        >
           <div className="space-y-3">
             {(
               [
@@ -433,93 +454,81 @@ export function CheckoutAdvancedSettingsScreen() {
                   onCheckedChange={(checked) => {
                     const current = staffSection.values;
                     if (!current) return;
-                    const next = { ...current };
-                    next[key] = checked;
-                    staffSection.commit(next);
+                    staffSection.commit({ ...current, [key]: checked });
                   }}
                   disabled={!canEdit}
                 />
               </label>
             ))}
           </div>
-          <DialogFooter>
-            <Button
-              variant="brand"
-              disabled={updateMutation.isPending || !staffSection.values}
-              onClick={() => {
-                if (!staffSection.values) return;
-                save(staffSection.values);
-                setStaffDialogOpen(false);
-              }}
-            >
-              Save
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        </SettingsInlineEditSection>
 
-      <Dialog open={receiptDialogOpen} onOpenChange={setReceiptDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Receipt settings</DialogTitle>
-          </DialogHeader>
-          {receiptDraft ? (
-            <div className="space-y-4">
-              <label className="flex items-center justify-between gap-3">
-                <span className="text-sm font-medium">
-                  Show service provider on receipt
-                </span>
-                <Switch
-                  checked={receiptDraft.showServiceProviderOnReceipt}
-                  onCheckedChange={(checked) =>
-                    setReceiptDraft((current) =>
-                      current
-                        ? { ...current, showServiceProviderOnReceipt: checked }
-                        : current,
-                    )
-                  }
-                />
-              </label>
-              <div className="space-y-2">
-                <Label htmlFor="receipt-footer">Custom footer text</Label>
-                <Textarea
-                  id="receipt-footer"
-                  value={receiptDraft.receiptCustomFooterText}
-                  onChange={(event) =>
-                    setReceiptDraft((current) =>
-                      current
-                        ? {
-                            ...current,
-                            receiptCustomFooterText: event.target.value,
-                          }
-                        : current,
-                    )
-                  }
-                  rows={4}
-                  maxLength={500}
-                />
-              </div>
+        <SettingsInlineEditSection
+          title="Receipt Settings"
+          description="Control provider visibility and custom footer text on closed sales and payment receipt emails."
+          summary={
+            <SettingsViewRows
+              rows={[{ label: "Receipt", value: receiptSummary }]}
+            />
+          }
+          isEditing={isEditing("receipt")}
+          onEdit={() => startEdit("receipt")}
+          onDiscard={() => {
+            receiptSection.reset();
+            stopEdit();
+          }}
+          onSave={() => {
+            if (!receiptSection.values) return;
+            save({
+              showServiceProviderOnReceipt:
+                receiptSection.values.showServiceProviderOnReceipt,
+              receiptCustomFooterText:
+                receiptSection.values.receiptCustomFooterText.trim() || null,
+            });
+          }}
+          isDirty={receiptSection.isDirty}
+          isSaving={updateMutation.isPending}
+          disabled={!canEdit}
+        >
+          <div className="space-y-4">
+            <label className="flex items-center justify-between gap-3">
+              <span className="text-sm font-medium">
+                Show service provider on receipt
+              </span>
+              <Switch
+                checked={
+                  receiptSection.values?.showServiceProviderOnReceipt ?? false
+                }
+                onCheckedChange={(checked) => {
+                  const current = receiptSection.values;
+                  if (!current) return;
+                  receiptSection.commit({
+                    ...current,
+                    showServiceProviderOnReceipt: checked,
+                  });
+                }}
+              />
+            </label>
+            <div className="space-y-2">
+              <Label htmlFor="receipt-footer">Custom footer text</Label>
+              <Textarea
+                id="receipt-footer"
+                value={receiptSection.values?.receiptCustomFooterText ?? ""}
+                onChange={(event) => {
+                  const current = receiptSection.values;
+                  if (!current) return;
+                  receiptSection.commit({
+                    ...current,
+                    receiptCustomFooterText: event.target.value,
+                  });
+                }}
+                rows={4}
+                maxLength={500}
+              />
             </div>
-          ) : null}
-          <DialogFooter>
-            <Button
-              variant="brand"
-              disabled={updateMutation.isPending || !receiptDraft}
-              onClick={() => {
-                if (!receiptDraft) return;
-                save({
-                  showServiceProviderOnReceipt:
-                    receiptDraft.showServiceProviderOnReceipt,
-                  receiptCustomFooterText:
-                    receiptDraft.receiptCustomFooterText.trim() || null,
-                });
-              }}
-            >
-              Save
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </div>
+        </SettingsInlineEditSection>
+      </div>
     </SettingsFormPage>
   );
 }

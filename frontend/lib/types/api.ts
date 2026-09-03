@@ -345,6 +345,8 @@ export interface Service {
   hasCommissionDeduction: boolean;
   commissionDeductionType: "FLAT" | "PERCENT" | null;
   commissionDeductionValue: string | null;
+  postCommissionDeductionType: "FLAT" | "PERCENT" | null;
+  postCommissionDeductionValue: string | null;
   staffingMode: "SINGLE_STAFF" | "TWO_STAFF" | "RESOURCE_ONLY";
   clientOccupancyMinutes: number;
   staffBlockedMinutes: number;

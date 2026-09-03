@@ -2,7 +2,8 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   ServiceCommissionType,
   ServicePaymentRequirement,
-  ServiceResourceType,
+  ServicePriceDisplayMode,
+  ServiceResourceSelectionMode,
   ServiceStatus,
 } from '@prisma/client';
 import { Type } from 'class-transformer';
@@ -125,6 +126,18 @@ export class PatchServiceDetailsDto {
   @Min(0)
   commissionDeductionValue?: number | null;
 
+  @ApiPropertyOptional({ enum: ServiceCommissionType })
+  @IsOptional()
+  @IsEnum(ServiceCommissionType)
+  postCommissionDeductionType?: ServiceCommissionType | null;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
+  postCommissionDeductionValue?: number | null;
+
   @ApiPropertyOptional({ enum: ServiceStatus })
   @IsOptional()
   @IsEnum(ServiceStatus)
@@ -202,10 +215,27 @@ export class PatchServiceOnlineBookingDto {
   @IsBoolean()
   customizePriceDisplay?: boolean;
 
+  @ApiPropertyOptional({ enum: ServicePriceDisplayMode })
+  @IsOptional()
+  @IsEnum(ServicePriceDisplayMode)
+  priceDisplayMode?: ServicePriceDisplayMode | null;
+
   @ApiPropertyOptional()
   @IsOptional()
   @IsBoolean()
   showPromptToCall?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(2000)
+  promptToCallExplanation?: string | null;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(5000)
+  onlineBookingDescription?: string | null;
 
   @ApiPropertyOptional()
   @IsOptional()
@@ -225,64 +255,36 @@ export class PatchServiceOnlineBookingDto {
 
 export class CreateResourceRequirementDto {
   @ApiProperty()
-  @IsString()
-  @MinLength(1)
-  @MaxLength(200)
-  label!: string;
-
-  @ApiProperty({ enum: ServiceResourceType })
-  @IsEnum(ServiceResourceType)
-  resourceType!: ServiceResourceType;
-
-  @ApiPropertyOptional()
-  @IsOptional()
   @IsUUID()
-  resourceId?: string | null;
+  groupId!: string;
 
-  @ApiPropertyOptional()
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  quantity?: number;
+  @ApiProperty({ enum: ServiceResourceSelectionMode })
+  @IsEnum(ServiceResourceSelectionMode)
+  selectionMode!: ServiceResourceSelectionMode;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ type: [String] })
   @IsOptional()
-  @IsString()
-  @MaxLength(2000)
-  notes?: string;
+  @IsArray()
+  @IsUUID('4', { each: true })
+  resourceIds?: string[];
 }
 
 export class UpdateResourceRequirementDto {
   @ApiPropertyOptional()
   @IsOptional()
-  @IsString()
-  @MinLength(1)
-  @MaxLength(200)
-  label?: string;
-
-  @ApiPropertyOptional({ enum: ServiceResourceType })
-  @IsOptional()
-  @IsEnum(ServiceResourceType)
-  resourceType?: ServiceResourceType;
-
-  @ApiPropertyOptional()
-  @IsOptional()
   @IsUUID()
-  resourceId?: string | null;
+  groupId?: string;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ enum: ServiceResourceSelectionMode })
   @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  quantity?: number;
+  @IsEnum(ServiceResourceSelectionMode)
+  selectionMode?: ServiceResourceSelectionMode;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ type: [String] })
   @IsOptional()
-  @IsString()
-  @MaxLength(2000)
-  notes?: string;
+  @IsArray()
+  @IsUUID('4', { each: true })
+  resourceIds?: string[];
 }
 
 export class ServiceProductUsageDto {

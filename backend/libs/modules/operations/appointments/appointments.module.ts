@@ -14,14 +14,17 @@ import { StorageModule } from '@app/modules/storage/storage.module';
 import { AppointmentsController } from './controllers/appointments.controller';
 import { WaitingRoomSettingsController } from './waiting-room-settings/controllers/waiting-room-settings.controller';
 import { CancelRescheduleSettingsController } from './cancel-reschedule-settings/controllers/cancel-reschedule-settings.controller';
+import { AppointmentAutomatedMessagesController } from './automated-messages/controllers/appointment-automated-messages.controller';
 import { AppointmentRepository } from './repositories/appointment.repository';
 import { WaitingRoomSettingsRepository } from './waiting-room-settings/repositories/waiting-room-settings.repository';
 import { CancelRescheduleSettingsRepository } from './cancel-reschedule-settings/repositories/cancel-reschedule-settings.repository';
+import { AppointmentAutomatedMessagesRepository } from './automated-messages/repositories/appointment-automated-messages.repository';
 import { AppointmentNotificationService } from './services/appointment-notification.service';
 import { AppointmentReminderService } from './services/appointment-reminder.service';
 import { AppointmentsService } from './services/appointments.service';
 import { WaitingRoomSettingsService } from './waiting-room-settings/services/waiting-room-settings.service';
 import { CancelRescheduleSettingsService } from './cancel-reschedule-settings/services/cancel-reschedule-settings.service';
+import { AppointmentAutomatedMessagesService } from './automated-messages/services/appointment-automated-messages.service';
 
 @Module({
   imports: [
@@ -42,26 +45,31 @@ import { CancelRescheduleSettingsService } from './cancel-reschedule-settings/se
     AppointmentsController,
     WaitingRoomSettingsController,
     CancelRescheduleSettingsController,
+    AppointmentAutomatedMessagesController,
   ],
   providers: [
     AppointmentRepository,
     WaitingRoomSettingsRepository,
     CancelRescheduleSettingsRepository,
+    AppointmentAutomatedMessagesRepository,
     AppointmentsService,
     AppointmentNotificationService,
     AppointmentReminderService,
     WaitingRoomSettingsService,
     CancelRescheduleSettingsService,
+    AppointmentAutomatedMessagesService,
   ],
   exports: [
     AppointmentRepository,
     WaitingRoomSettingsRepository,
     CancelRescheduleSettingsRepository,
+    AppointmentAutomatedMessagesRepository,
     AppointmentsService,
     AppointmentNotificationService,
     AppointmentReminderService,
     WaitingRoomSettingsService,
     CancelRescheduleSettingsService,
+    AppointmentAutomatedMessagesService,
   ],
 })
 export class AppointmentsModule {}

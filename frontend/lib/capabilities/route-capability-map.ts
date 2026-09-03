@@ -115,6 +115,10 @@ const ROUTE_CAPABILITY_MAP = new Map<string, RouteCapabilityEntry>([
     { moduleKey: "appointments", capabilityKeys: ["appointments.access"] },
   ],
   [
+    "/business/settings/appointment-booked",
+    { moduleKey: "appointments", capabilityKeys: ["appointments.access"] },
+  ],
+  [
     "/business/settings/cancel-reschedule",
     { moduleKey: "appointments", capabilityKeys: ["appointments.access"] },
   ],

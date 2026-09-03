@@ -1,14 +1,8 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { SettingsInlineEditSection } from "@/components/layout/settings-inline-edit-section";
+import { SettingsViewRows } from "@/components/layout/settings-view-rows";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -17,7 +11,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { SettingsValueSection } from "@/components/layout/settings-value-section";
 import type { OnlineBookingSettings } from "@/features/online-booking-settings/api/online-booking-settings.api";
 import {
   OnlineBookingStaffMultiSelect,
@@ -34,7 +27,10 @@ type AnyoneAssignmentsSectionProps = {
   data: OnlineBookingSettings;
   disabled?: boolean;
   isSaving?: boolean;
-  onSave: (body: AnyoneAssignmentsDraft) => void;
+  onSave: (
+    body: AnyoneAssignmentsDraft,
+    options?: { onSuccess?: () => void },
+  ) => void;
 };
 
 function pickDraft(data: OnlineBookingSettings): AnyoneAssignmentsDraft {
@@ -51,91 +47,93 @@ export function AnyoneAssignmentsSection({
   onSave,
 }: AnyoneAssignmentsSectionProps) {
   const { labelsById } = useOnlineBookingStaffOptions();
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const [draft, setDraft] = useState<AnyoneAssignmentsDraft>(() =>
     pickDraft(data),
   );
-
-  const summary = useMemo(
-    () => formatAnyoneAssignmentsSummary(data, labelsById),
-    [data, labelsById],
+  const [saved, setSaved] = useState<AnyoneAssignmentsDraft>(() =>
+    pickDraft(data),
   );
 
-  const openDialog = useCallback(() => {
-    setDraft(pickDraft(data));
-    setDialogOpen(true);
-  }, [data]);
+  useEffect(() => {
+    const next = pickDraft(data);
+    setSaved(next);
+    if (!isEditing) setDraft(next);
+  }, [data, isEditing]);
+
+  const summary = useMemo(
+    () => formatAnyoneAssignmentsSummary(saved, labelsById),
+    [saved, labelsById],
+  );
+
+  const isDirty = JSON.stringify(draft) !== JSON.stringify(saved);
+
+  const handleDiscard = useCallback(() => {
+    setDraft(saved);
+    setIsEditing(false);
+  }, [saved]);
 
   return (
-    <>
-      <SettingsValueSection
-        title={`"Anyone" staff assignments`}
-        description={`Select how staff members are assigned to appointments when clients choose "Anyone" when booking online.`}
-        valueLabel={summary}
-        onEdit={openDialog}
-        disabled={disabled || isSaving}
-      />
-
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{`"Anyone" staff assignments`}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>Assign staff members</Label>
-              <Select
-                value={draft.anyoneAssignmentMode}
-                disabled={disabled || isSaving}
-                onValueChange={(value) => {
-                  if (!value) return;
-                  setDraft((current) => ({
-                    ...current,
-                    anyoneAssignmentMode: value,
-                  }));
-                }}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="RANDOM">Randomly</SelectItem>
-                  <SelectItem value="ORDER">By staff order</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <OnlineBookingStaffMultiSelect
-              value={draft.anyoneExcludedStaffIds}
-              disabled={disabled || isSaving}
-              onChange={(next) =>
-                setDraft((current) => ({
-                  ...current,
-                  anyoneExcludedStaffIds: next,
-                }))
-              }
-            />
-          </div>
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setDialogOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              disabled={disabled || isSaving}
-              onClick={() => {
-                onSave(draft);
-                setDialogOpen(false);
-              }}
-            >
-              Save
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </>
+    <SettingsInlineEditSection
+      title={`"Anyone" staff assignments`}
+      description={`Select how staff members are assigned to appointments when clients choose "Anyone" when booking online.`}
+      summary={
+        <SettingsViewRows
+          rows={[{ label: "Anyone assignments", value: summary }]}
+        />
+      }
+      isEditing={isEditing}
+      onEdit={() => {
+        setDraft(saved);
+        setIsEditing(true);
+      }}
+      onDiscard={handleDiscard}
+      onSave={() =>
+        onSave(draft, {
+          onSuccess: () => {
+            setSaved(draft);
+            setIsEditing(false);
+          },
+        })
+      }
+      isDirty={isDirty}
+      isSaving={isSaving}
+      disabled={disabled}
+    >
+      <div className="space-y-4">
+        <div className="space-y-2">
+          <Label>Assign staff members</Label>
+          <Select
+            value={draft.anyoneAssignmentMode}
+            disabled={disabled || isSaving}
+            onValueChange={(value) => {
+              if (!value) return;
+              setDraft((current) => ({
+                ...current,
+                anyoneAssignmentMode: value,
+              }));
+            }}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="RANDOM">Randomly</SelectItem>
+              <SelectItem value="ORDER">By staff order</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <OnlineBookingStaffMultiSelect
+          value={draft.anyoneExcludedStaffIds}
+          disabled={disabled || isSaving}
+          onChange={(next) =>
+            setDraft((current) => ({
+              ...current,
+              anyoneExcludedStaffIds: next,
+            }))
+          }
+        />
+      </div>
+    </SettingsInlineEditSection>
   );
 }

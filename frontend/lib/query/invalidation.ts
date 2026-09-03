@@ -448,6 +448,15 @@ export function invalidateWaitingRoomSettings(queryClient: QueryClient) {
   });
 }
 
+export function invalidateAppointmentAutomatedMessages(
+  queryClient: QueryClient,
+  eventType: string,
+) {
+  return queryClient.invalidateQueries({
+    queryKey: queryKeys.appointmentAutomatedMessages.detail(eventType),
+  });
+}
+
 export function invalidateCancelRescheduleSettings(queryClient: QueryClient) {
   return queryClient.invalidateQueries({
     queryKey: queryKeys.cancelRescheduleSettings.detail(),

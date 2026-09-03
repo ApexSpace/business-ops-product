@@ -28,6 +28,9 @@ export type ResourceListItem = {
   groupName: string | null;
   name: string;
   resourceType: ServiceResourceType;
+  /** Concurrent appointment limit. null = no limit. */
+  capacity?: number | null;
+  alwaysAvailable?: boolean;
   status: ResourceStatus;
   sortOrder: number;
   createdAt: string;

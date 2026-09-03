@@ -262,6 +262,7 @@ export class AppointmentNotificationService {
     appointment: AppointmentWithRelations,
     reminderHoursBefore: number,
     timezone?: string | null,
+    idempotencyKey?: string,
   ): Promise<void> {
     const business = await this.businessRepository.findById(businessId);
     const variables = await this.buildVariablesWithPolicy(
@@ -279,7 +280,9 @@ export class AppointmentNotificationService {
       contactId: appointment.contactId ?? undefined,
       entityType: 'Appointment',
       entityId: appointment.id,
-      idempotencyKey: `appointment-reminder-${appointment.id}-${reminderHoursBefore}h`,
+      idempotencyKey:
+        idempotencyKey ??
+        `appointment-reminder-${appointment.id}-${reminderHoursBefore}h`,
       missingRecipient: 'skip',
       variables,
     });
