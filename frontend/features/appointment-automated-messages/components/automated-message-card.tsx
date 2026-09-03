@@ -49,33 +49,35 @@ export function AutomatedMessageCard({
         {messageLabel(message)}
       </p>
       <Button
-        type="button"
         variant="ghost"
         size="icon"
         className="size-8 shrink-0"
-        asChild
+        aria-label="Edit template"
         disabled={disabled}
+        nativeButton={false}
+        render={
+          <Link
+            href={`/business/settings/notifications?tab=templates&type=${encodeURIComponent(message.notificationKey)}`}
+          />
+        }
       >
-        <Link
-          href={`/business/settings/notifications?tab=templates&type=${encodeURIComponent(message.notificationKey)}`}
-          aria-label="Edit template"
-        >
-          <Settings2 className="size-4" />
-        </Link>
+        <Settings2 className="size-4" />
       </Button>
       <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="size-8 shrink-0"
-            disabled={disabled}
-            aria-label="Message actions"
-          >
-            <MoreVertical className="size-4" />
-          </Button>
-        </DropdownMenuTrigger>
+        <DropdownMenuTrigger
+          render={
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="size-8 shrink-0"
+              disabled={disabled}
+              aria-label="Message actions"
+            >
+              <MoreVertical className="size-4" />
+            </Button>
+          }
+        />
         <DropdownMenuContent align="end">
           <DropdownMenuItem
             onClick={() => onToggleEnabled(!message.enabled)}

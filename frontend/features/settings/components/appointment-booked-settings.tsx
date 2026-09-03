@@ -312,7 +312,10 @@ export function AppointmentBookedSettings() {
               <Label>Message type</Label>
               <Select
                 value={selectedCatalogKey}
-                onValueChange={setSelectedCatalogKey}
+                onValueChange={(value) => {
+                  if (value == null) return;
+                  setSelectedCatalogKey(value);
+                }}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select message" />
