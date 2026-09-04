@@ -1,6 +1,7 @@
 "use client";
 
 import type { Appointment } from "@/features/appointments/schemas/appointment-profile";
+import { useCalendarDisplayRuntime } from "@/features/calendar-display-settings/context/calendar-display-runtime-context";
 import { calculateEventPosition } from "@/features/calendars/utils/calendar-dates";
 import {
   offsetIsoByMinutes,
@@ -20,6 +21,9 @@ export function TimeGridBufferBands({
   showBufferOnCalendar,
   bufferTimeEnabled,
 }: TimeGridBufferBandsProps) {
+  const { visibleStartHour, visibleEndHour, slotHeightPx } =
+    useCalendarDisplayRuntime();
+
   if (!showBufferOnCalendar || !bufferTimeEnabled) {
     return null;
   }
@@ -30,12 +34,16 @@ export function TimeGridBufferBands({
         const { bufferBeforeMinutes, bufferAfterMinutes } =
           resolveAppointmentBufferMinutes(appointment, bufferTimeEnabled);
 
-        const bands: Array<{ key: string; startAt: string; endAt: string }> = [];
+        const bands: Array<{ key: string; startAt: string; endAt: string }> =
+          [];
 
         if (bufferBeforeMinutes > 0) {
           bands.push({
             key: `${appointment.id}-before`,
-            startAt: offsetIsoByMinutes(appointment.startAt, -bufferBeforeMinutes),
+            startAt: offsetIsoByMinutes(
+              appointment.startAt,
+              -bufferBeforeMinutes,
+            ),
             endAt: appointment.startAt,
           });
         }
@@ -52,10 +60,10 @@ export function TimeGridBufferBands({
           const position = calculateEventPosition(
             band.startAt,
             band.endAt,
+            visibleStartHour,
+            visibleEndHour,
             undefined,
-            undefined,
-            undefined,
-            undefined,
+            slotHeightPx,
             viewTimezone,
           );
 

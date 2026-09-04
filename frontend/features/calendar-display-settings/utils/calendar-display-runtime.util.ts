@@ -17,6 +17,26 @@ export function slotHeightForZoom(zoomLevel: CalendarZoomLevel): number {
   }
 }
 
+/** Parse HH:mm or 24:00 into minutes from midnight. */
+export function parseVisibleTimeToMinutes(value: string): number {
+  const trimmed = value.trim();
+  if (trimmed === "24:00") return 24 * 60;
+  const [hoursRaw, minutesRaw] = trimmed.split(":");
+  const hours = Number(hoursRaw);
+  const minutes = Number(minutesRaw);
+  if (
+    !Number.isFinite(hours) ||
+    !Number.isFinite(minutes) ||
+    hours < 0 ||
+    hours > 23 ||
+    minutes < 0 ||
+    minutes > 59
+  ) {
+    return 0;
+  }
+  return hours * 60 + minutes;
+}
+
 /** Luxon weekday: Mon=1 … Sun=7 */
 export function daysFromWeekStart(
   weekday: number,

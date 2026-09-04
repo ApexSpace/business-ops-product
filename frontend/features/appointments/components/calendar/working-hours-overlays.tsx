@@ -15,8 +15,10 @@ function blockStyle(
   startMinutes: number,
   endMinutes: number,
   slotHeightPx: number,
+  gridStartMinutes: number,
 ) {
-  const top = (startMinutes / CALENDAR_SLOT_MINUTES) * slotHeightPx;
+  const top =
+    ((startMinutes - gridStartMinutes) / CALENDAR_SLOT_MINUTES) * slotHeightPx;
   const height =
     ((endMinutes - startMinutes) / CALENDAR_SLOT_MINUTES) * slotHeightPx;
   return { top, height };
@@ -35,11 +37,23 @@ export function WorkingHoursOverlays({
   businessSlots,
   staffSlots,
 }: WorkingHoursOverlaysProps) {
-  const { slotHeightPx, highContrastEnabled } = useCalendarDisplayRuntime();
-  const weekly = resolveEffectiveWeeklyHours(businessSlots, staffSlots ?? undefined);
+  const {
+    slotHeightPx,
+    highContrastEnabled,
+    visibleStartMinutes,
+    visibleEndMinutes,
+  } = useCalendarDisplayRuntime();
+  const weekly = resolveEffectiveWeeklyHours(
+    businessSlots,
+    staffSlots ?? undefined,
+  );
   const dayOfWeek = dayOfWeekForDateKey(dateKey, timezone);
   const window = getWorkingWindowForDay(weekly, dayOfWeek);
-  const blocks = getNonWorkingOverlayBlocks(window);
+  const blocks = getNonWorkingOverlayBlocks(
+    window,
+    visibleStartMinutes,
+    visibleEndMinutes,
+  );
 
   return (
     <>
@@ -48,6 +62,7 @@ export function WorkingHoursOverlays({
           block.startMinutes,
           block.endMinutes,
           slotHeightPx,
+          visibleStartMinutes,
         );
         return (
           <div

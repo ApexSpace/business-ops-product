@@ -6,16 +6,12 @@ import { TimeGridAppointments } from "@/features/appointments/components/calenda
 import { TimeGridBufferBands } from "@/features/appointments/components/calendar/time-grid-buffer-bands";
 import type { Calendar } from "@/features/calendars/schemas/calendar-profile";
 import {
-  CALENDAR_DAY_END_HOUR,
-  CALENDAR_DAY_START_HOUR,
   CALENDAR_SLOT_MINUTES,
   getTimeGridHeight,
   getTimeSlotLabels,
   minutesToTimeLabel,
 } from "@/features/calendars/utils/calendar-dates";
-import {
-  dateKeyFromUtcIso,
-} from "@/features/calendars/utils/timezone";
+import { dateKeyFromUtcIso } from "@/features/calendars/utils/timezone";
 import { CALENDAR_GRID } from "@/features/calendars/utils/calendar-grid-styles";
 import { WorkingHoursOverlays } from "@/features/appointments/components/calendar/working-hours-overlays";
 import { useCalendarDisplayRuntime } from "@/features/calendar-display-settings/context/calendar-display-runtime-context";
@@ -73,16 +69,22 @@ export function TimeGridColumn({
   bufferTimeEnabled = true,
   onSlotClick,
 }: TimeGridColumnProps) {
-  const { slotHeightPx } = useCalendarDisplayRuntime();
+  const { slotHeightPx, visibleStartHour, visibleEndHour } =
+    useCalendarDisplayRuntime();
   const gridHeight = getTimeGridHeight(
-    CALENDAR_DAY_START_HOUR,
-    CALENDAR_DAY_END_HOUR,
+    visibleStartHour,
+    visibleEndHour,
     CALENDAR_SLOT_MINUTES,
     slotHeightPx,
   );
-  const slotLabels = getTimeSlotLabels();
-  const resolvedBusinessHours =
-    businessHoursSlots?.length ? businessHoursSlots : defaultBusinessHoursSlots();
+  const slotLabels = getTimeSlotLabels(
+    visibleStartHour,
+    visibleEndHour,
+    CALENDAR_SLOT_MINUTES,
+  );
+  const resolvedBusinessHours = businessHoursSlots?.length
+    ? businessHoursSlots
+    : defaultBusinessHoursSlots();
 
   // Bucket appointments into day columns using the grid's view timezone so a
   // day/column matches the axis, slot clicks, and card positions.
@@ -163,8 +165,13 @@ export function TimeGridColumn({
 }
 
 export function TimeGridGutter({ className }: { className?: string }) {
-  const { slotHeightPx } = useCalendarDisplayRuntime();
-  const slotLabels = getTimeSlotLabels();
+  const { slotHeightPx, visibleStartHour, visibleEndHour } =
+    useCalendarDisplayRuntime();
+  const slotLabels = getTimeSlotLabels(
+    visibleStartHour,
+    visibleEndHour,
+    CALENDAR_SLOT_MINUTES,
+  );
   return (
     <div className={cn(CALENDAR_GRID.timeGutter, "bg-white", className)}>
       {slotLabels.map((minutes) => {
@@ -189,13 +196,12 @@ export function TimeGridGutter({ className }: { className?: string }) {
 }
 
 export function useTimeGridHeight(): number {
-  const { slotHeightPx } = useCalendarDisplayRuntime();
+  const { slotHeightPx, visibleStartHour, visibleEndHour } =
+    useCalendarDisplayRuntime();
   return getTimeGridHeight(
-    CALENDAR_DAY_START_HOUR,
-    CALENDAR_DAY_END_HOUR,
+    visibleStartHour,
+    visibleEndHour,
     CALENDAR_SLOT_MINUTES,
     slotHeightPx,
   );
 }
-
-export { CALENDAR_DAY_START_HOUR, CALENDAR_DAY_END_HOUR };

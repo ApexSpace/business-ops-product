@@ -50,7 +50,8 @@ import {
   WORKSPACE_NAV_ITEM_CLASS,
   WORKSPACE_NAV_ITEM_IDLE_CLASS,
   WORKSPACE_NAV_NESTED_LIST_CLASS,
-  WORKSPACE_NAV_PANEL_CLASS,
+  WORKSPACE_NAV_ASIDE_CLASS,
+  WORKSPACE_NAV_PRIMARY_ADD_CLASS,
   WORKSPACE_NAV_SCROLL_AREA_CLASS,
   WORKSPACE_NAV_SCROLL_INNER_CLASS,
   WORKSPACE_NAV_SEARCH_WRAP_CLASS,
@@ -168,12 +169,7 @@ export function ServicesSidebar({
   };
 
   return (
-    <aside
-      className={cn(
-        WORKSPACE_NAV_PANEL_CLASS,
-        "w-[var(--workspace-nav-width)] shrink-0 border-r border-border bg-muted/20",
-      )}
-    >
+    <aside className={WORKSPACE_NAV_ASIDE_CLASS}>
       <div className={WORKSPACE_NAV_SEARCH_WRAP_CLASS}>
         <SearchInput
           value={search}
@@ -183,7 +179,7 @@ export function ServicesSidebar({
         <Button
           type="button"
           variant="brand"
-          className="mt-3 w-full"
+          className={WORKSPACE_NAV_PRIMARY_ADD_CLASS}
           onClick={() => {
             createForm.reset(categoryNameDefaults);
             setCreateOpen(true);

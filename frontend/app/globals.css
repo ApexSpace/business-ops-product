@@ -344,23 +344,30 @@
   --phone-dial-code-padding-x: 0.375rem;
   /*
    * Settings / Reports workspace sidebar — Figma PandaCue settings nav density.
-   *   --workspace-nav-width              aside width
-   *   --workspace-nav-padding-x          horizontal inset
+   *   --workspace-nav-width              aside width (316px)
+   *   --workspace-nav-padding-x          search/add inset → content ~284px
    *   --workspace-nav-padding-y          top inset (below shell edge)
-   *   --workspace-nav-search-gap         search → first group
-   *   --workspace-nav-item-height        nested row height
+   *   --workspace-nav-search-gap         search → primary add / first group
+   *   --workspace-nav-item-height        nested text row height
+   *   --workspace-nav-person-item-height  avatar+name row (54px)
+   *   --workspace-nav-person-item-padding-y / -x  person row padding (10 / 30)
+   *   --workspace-nav-person-item-gap     avatar ↔ name (10px)
    *   --workspace-nav-section-height     group header row height
-   *   --workspace-nav-item-gap           icon ↔ label gap
+   *   --workspace-nav-item-gap           nested icon ↔ label gap
    *   --workspace-nav-item-padding-x     nested row horizontal padding
    *   --workspace-nav-icon-size            nested row icon box
    *   --workspace-nav-scrollbar-size       scrollbar track width (sits in right padding gutter)
    * Chevrons stay at --workspace-nav-padding-x from the aside edge; scrollbar is decoupled at the far right.
    */
   --workspace-nav-width: 19.75rem;
-  --workspace-nav-padding-x: 1.875rem;
+  --workspace-nav-padding-x: 1rem;
   --workspace-nav-padding-y: var(--spacing-4);
   --workspace-nav-search-gap: var(--spacing-4);
   --workspace-nav-item-height: 2.25rem;
+  --workspace-nav-person-item-height: 3.375rem;
+  --workspace-nav-person-item-padding-y: 0.625rem;
+  --workspace-nav-person-item-padding-x: 1.875rem;
+  --workspace-nav-person-item-gap: 0.625rem;
   --workspace-nav-section-height: 2.75rem;
   --workspace-nav-item-gap: var(--spacing-2);
   --workspace-nav-item-padding-x: var(--spacing-2);
