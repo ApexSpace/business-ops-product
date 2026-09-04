@@ -43,7 +43,7 @@ export function OfferAdvancedSection({
   return (
     <div className={cn(SETTINGS_FORM_SECTION_STACK_CLASS, "max-w-3xl")}>
       <h3 className="text-base font-medium">
-        How is service commission calculated?
+        How is commission for staff members calculated?
       </h3>
       <SettingsChoiceRadioGroup
         name="commission-basis"
@@ -59,15 +59,15 @@ export function OfferAdvancedSection({
         options={[
           {
             value: "REGULAR_PRICE",
-            label: "Based on regular price",
+            label: "Regular price",
             description:
-              "Commission will be calculated based on the regular service price.",
+              "Commission will be calculated based on the regular price of services and products without any discount applied.",
           },
           {
             value: "DISCOUNTED_PRICE",
-            label: "Based on discounted price",
+            label: "Discounted price",
             description:
-              "Commission will be calculated based on the discounted service price.",
+              "The discounted price of services and products will be used to calculate commission for staff members.",
           },
         ]}
       />

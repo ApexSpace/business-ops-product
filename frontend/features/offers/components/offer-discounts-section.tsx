@@ -1,9 +1,19 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import {
+  useMemo,
+  useState,
+  type Dispatch,
+  type SetStateAction,
+} from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { X } from "lucide-react";
 import { toast } from "sonner";
+import { DrawerAddAction } from "@/components/drawer/drawer-add-action";
+import { DrawerSegmentedTabs } from "@/components/drawer/drawer-segmented-tabs";
+import { SettingsChoiceRadioGroup } from "@/components/forms/settings-choice-radio-group";
 import { SettingsFormActions } from "@/components/layout/settings-form-actions";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -15,7 +25,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { MoreActionsButton } from "@/components/ui/more-actions-button";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Select,
   SelectContent,
@@ -57,6 +66,8 @@ type OfferDiscountsSectionProps = {
   offer: Offer;
   canManage?: boolean;
 };
+
+type PickerItem = { id: string; name: string };
 
 export function OfferDiscountsSection({
   offer,
@@ -183,69 +194,91 @@ export function OfferDiscountsSection({
 
   return (
     <div className={cn(SETTINGS_FORM_SECTION_STACK_CLASS, "max-w-3xl")}>
-      <h3 className="text-base font-medium">Discounts</h3>
-      <div className="space-y-3">
-        {offer.discounts.map((discount) => (
-          <div
-            key={discount.id}
-            className="flex items-start justify-between gap-3 rounded-md border border-border bg-card p-3"
-          >
-            <div>
-              <p className="font-medium">{discount.summary}</p>
-              {discount.subtext ? (
-                <p className="mt-1 text-sm text-muted-foreground">
-                  {discount.subtext}
-                </p>
-              ) : null}
-            </div>
-            {canManage ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger
-                  render={<MoreActionsButton aria-label="Discount actions" />}
-                />
-                <DropdownMenuContent align="end" className="w-40">
-                  <DropdownMenuItem onClick={() => startEdit(discount)}>
-                    Edit
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    variant="destructive"
-                    onClick={() => deleteDiscountMutation.mutate(discount.id)}
-                  >
-                    Delete
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            ) : null}
-          </div>
-        ))}
+      {!showForm ? (
+        <div className="space-y-[var(--spacing-4)]">
+          {offer.discounts.map((discount) => (
+            <section
+              key={discount.id}
+              className="space-y-[var(--spacing-3)]"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <button
+                  type="button"
+                  className="min-w-0 flex-1 cursor-pointer text-left"
+                  onClick={() => {
+                    if (canManage) startEdit(discount);
+                  }}
+                  disabled={!canManage}
+                >
+                  <h3 className="text-base font-medium">Discount</h3>
+                  <p className="mt-2 text-sm font-medium text-foreground">
+                    {discount.summary}
+                  </p>
+                  {discount.subtext ? (
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      {discount.subtext}
+                    </p>
+                  ) : null}
+                </button>
+                {canManage ? (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger
+                      render={
+                        <MoreActionsButton aria-label="Discount actions" />
+                      }
+                    />
+                    <DropdownMenuContent align="end" className="w-40">
+                      <DropdownMenuItem
+                        variant="destructive"
+                        onClick={() =>
+                          deleteDiscountMutation.mutate(discount.id)
+                        }
+                      >
+                        Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                ) : null}
+              </div>
+            </section>
+          ))}
 
-        {offer.discounts.length === 0 && !showForm ? (
-          <p className="text-sm text-muted-foreground">
-            No discounts yet. Add one to define how this offer reduces the sale.
-          </p>
-        ) : null}
+          {offer.discounts.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              No discounts yet. Add one to define how this offer reduces the
+              sale.
+            </p>
+          ) : null}
 
-        {showForm ? (
-          <DiscountForm
-            discountForm={discountForm}
-            setDiscountForm={setDiscountForm}
-            editingDiscountId={editingDiscountId}
-            serviceCategories={serviceCategories}
-            serviceOptions={serviceOptions}
-            productCategories={productCategories}
-            products={products}
-            savePending={
-              addDiscountMutation.isPending || updateDiscountMutation.isPending
-            }
-            onCancel={cancelForm}
-            onSave={saveForm}
-          />
-        ) : canManage ? (
-          <Button type="button" variant="outline" size="sm" onClick={startAdd}>
-            Add discount
-          </Button>
-        ) : null}
-      </div>
+          {canManage ? (
+            <DrawerAddAction label="Add discount" onClick={startAdd} />
+          ) : null}
+        </div>
+      ) : (
+        <DiscountForm
+          discountForm={discountForm}
+          setDiscountForm={setDiscountForm}
+          editingDiscountId={editingDiscountId}
+          serviceCategories={serviceCategories.map((c) => ({
+            id: c.id,
+            name: c.name,
+          }))}
+          serviceOptions={serviceOptions.map((s) => ({
+            id: s.id,
+            name: s.categoryName ? `${s.name} (${s.categoryName})` : s.name,
+          }))}
+          productCategories={productCategories.map((c) => ({
+            id: c.id,
+            name: c.name,
+          }))}
+          products={products.map((p) => ({ id: p.id, name: p.name }))}
+          savePending={
+            addDiscountMutation.isPending || updateDiscountMutation.isPending
+          }
+          onCancel={cancelForm}
+          onSave={saveForm}
+        />
+      )}
     </div>
   );
 }
@@ -263,27 +296,25 @@ function DiscountForm({
   onSave,
 }: {
   discountForm: DiscountFormState;
-  setDiscountForm: React.Dispatch<React.SetStateAction<DiscountFormState>>;
+  setDiscountForm: Dispatch<SetStateAction<DiscountFormState>>;
   editingDiscountId: string | null;
-  serviceCategories: Array<{ id: string; name: string }>;
-  serviceOptions: Array<{
-    id: string;
-    name: string;
-    categoryName: string;
-  }>;
-  productCategories: Array<{ id: string; name: string }>;
-  products: Array<{ id: string; name: string }>;
+  serviceCategories: PickerItem[];
+  serviceOptions: PickerItem[];
+  productCategories: PickerItem[];
+  products: PickerItem[];
   savePending: boolean;
   onCancel: () => void;
   onSave: () => void;
 }) {
   const percentDisabled = discountForm.appliesTo === "ENTIRE_SALE";
+  const amountTypeValue =
+    discountForm.amountType === "PERCENTAGE" ? "PERCENT" : "FLAT";
 
   return (
-    <div className="space-y-4 rounded-md border p-4">
-      <h4 className="font-medium">
-        {editingDiscountId ? "Edit discount" : "Add discount"}
-      </h4>
+    <div className="space-y-[var(--spacing-6)]">
+      <h3 className="text-base font-medium">
+        {editingDiscountId ? "Edit discount" : "New Discount"}
+      </h3>
 
       <div className="space-y-2">
         <Label>Applies to</Label>
@@ -301,7 +332,7 @@ function DiscountForm({
           }}
         >
           <SelectTrigger>
-            <SelectValue />
+            <SelectValue placeholder="Select" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="SERVICES">Services</SelectItem>
@@ -313,7 +344,7 @@ function DiscountForm({
 
       <div className="space-y-2">
         <Label>Amount</Label>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2">
           <Input
             type="number"
             min={0}
@@ -322,37 +353,33 @@ function DiscountForm({
             onChange={(e) =>
               setDiscountForm({ ...discountForm, amount: e.target.value })
             }
+            placeholder="Enter amount"
             className="flex-1"
           />
-          <div className="flex rounded-md border p-0.5">
-            <Button
-              type="button"
-              size="sm"
-              variant={
-                discountForm.amountType === "PERCENTAGE" ? "secondary" : "ghost"
-              }
-              className="min-w-10 px-3"
-              disabled={percentDisabled}
-              onClick={() =>
-                setDiscountForm({ ...discountForm, amountType: "PERCENTAGE" })
-              }
-            >
-              %
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant={
-                discountForm.amountType === "FIXED" ? "secondary" : "ghost"
-              }
-              className="min-w-10 px-3"
-              onClick={() =>
-                setDiscountForm({ ...discountForm, amountType: "FIXED" })
-              }
-            >
-              $
-            </Button>
-          </div>
+          <DrawerSegmentedTabs
+            size="sm"
+            className="w-auto shrink-0"
+            value={amountTypeValue}
+            options={[
+              {
+                value: "FLAT",
+                label: "$",
+                onClick: () =>
+                  setDiscountForm({ ...discountForm, amountType: "FIXED" }),
+              },
+              {
+                value: "PERCENT",
+                label: "%",
+                onClick: () => {
+                  if (percentDisabled) return;
+                  setDiscountForm({
+                    ...discountForm,
+                    amountType: "PERCENTAGE",
+                  });
+                },
+              },
+            ]}
+          />
         </div>
         {percentDisabled ? (
           <p className="text-xs text-muted-foreground">
@@ -362,76 +389,61 @@ function DiscountForm({
       </div>
 
       {discountForm.appliesTo === "SERVICES" ? (
-        <ScopePicker
-          label="Service scope"
+        <ScopeWithAddPickers
+          allLabel="All services"
+          allDescription="Discount applies to all services in a sale."
+          specificLabel="Specific services"
+          specificDescription="Discount only applies to selected services."
           scope={discountForm.serviceScope}
           onScopeChange={(serviceScope) =>
             setDiscountForm({ ...discountForm, serviceScope })
           }
-          categoryLabel="Service categories"
+          categoryHeading="All services in categories"
+          addCategoryLabel="Add categories"
           categories={serviceCategories}
           selectedCategoryIds={discountForm.specificServiceCategoryIds}
-          onToggleCategory={(id, checked) =>
+          onChangeCategories={(ids) =>
             setDiscountForm({
               ...discountForm,
-              specificServiceCategoryIds: toggleId(
-                discountForm.specificServiceCategoryIds,
-                id,
-                checked,
-              ),
+              specificServiceCategoryIds: ids,
             })
           }
-          itemLabel="Services"
-          items={serviceOptions.map((s) => ({
-            id: s.id,
-            name: s.categoryName ? `${s.name} (${s.categoryName})` : s.name,
-          }))}
+          itemHeading="Services"
+          addItemLabel="Add services"
+          items={serviceOptions}
           selectedItemIds={discountForm.specificServiceIds}
-          onToggleItem={(id, checked) =>
-            setDiscountForm({
-              ...discountForm,
-              specificServiceIds: toggleId(
-                discountForm.specificServiceIds,
-                id,
-                checked,
-              ),
-            })
+          onChangeItems={(ids) =>
+            setDiscountForm({ ...discountForm, specificServiceIds: ids })
           }
         />
       ) : null}
 
       {discountForm.appliesTo === "PRODUCTS" ? (
-        <ScopePicker
-          label="Product scope"
+        <ScopeWithAddPickers
+          allLabel="All products"
+          allDescription="Discount applies to all products in a sale."
+          specificLabel="Specific products"
+          specificDescription="Discount only applies to selected products."
           scope={discountForm.productScope}
           onScopeChange={(productScope) =>
             setDiscountForm({ ...discountForm, productScope })
           }
-          categoryLabel="Product categories"
+          categoryHeading="All products in categories"
+          addCategoryLabel="Add categories"
           categories={productCategories}
           selectedCategoryIds={discountForm.specificProductCategoryIds}
-          onToggleCategory={(id, checked) =>
+          onChangeCategories={(ids) =>
             setDiscountForm({
               ...discountForm,
-              specificProductCategoryIds: toggleId(
-                discountForm.specificProductCategoryIds,
-                id,
-                checked,
-              ),
+              specificProductCategoryIds: ids,
             })
           }
-          itemLabel="Products"
+          itemHeading="Products"
+          addItemLabel="Add products"
           items={products}
           selectedItemIds={discountForm.specificProductIds}
-          onToggleItem={(id, checked) =>
-            setDiscountForm({
-              ...discountForm,
-              specificProductIds: toggleId(
-                discountForm.specificProductIds,
-                id,
-                checked,
-              ),
-            })
+          onChangeItems={(ids) =>
+            setDiscountForm({ ...discountForm, specificProductIds: ids })
           }
         />
       ) : null}
@@ -442,94 +454,185 @@ function DiscountForm({
         isDirty={isDiscountFormValid(discountForm)}
         isSubmitting={savePending}
         saveLabel="Save"
+        discardLabel="Discard"
       />
     </div>
   );
 }
 
-function ScopePicker({
-  label,
+function ScopeWithAddPickers({
+  allLabel,
+  allDescription,
+  specificLabel,
+  specificDescription,
   scope,
   onScopeChange,
-  categoryLabel,
+  categoryHeading,
+  addCategoryLabel,
   categories,
   selectedCategoryIds,
-  onToggleCategory,
-  itemLabel,
+  onChangeCategories,
+  itemHeading,
+  addItemLabel,
   items,
   selectedItemIds,
-  onToggleItem,
+  onChangeItems,
 }: {
-  label: string;
+  allLabel: string;
+  allDescription: string;
+  specificLabel: string;
+  specificDescription: string;
   scope: DiscountScope;
   onScopeChange: (scope: DiscountScope) => void;
-  categoryLabel: string;
-  categories: Array<{ id: string; name: string }>;
+  categoryHeading: string;
+  addCategoryLabel: string;
+  categories: PickerItem[];
   selectedCategoryIds: string[];
-  onToggleCategory: (id: string, checked: boolean) => void;
-  itemLabel: string;
-  items: Array<{ id: string; name: string }>;
+  onChangeCategories: (ids: string[]) => void;
+  itemHeading: string;
+  addItemLabel: string;
+  items: PickerItem[];
   selectedItemIds: string[];
-  onToggleItem: (id: string, checked: boolean) => void;
+  onChangeItems: (ids: string[]) => void;
 }) {
   return (
-    <div className="space-y-3">
-      <Label>{label}</Label>
-      <RadioGroup
-        value={scope}
-        onValueChange={(value) => onScopeChange(value as DiscountScope)}
-      >
-        <div className="flex items-center gap-2">
-          <RadioGroupItem value="ALL" id={`${label}-all`} />
-          <Label htmlFor={`${label}-all`}>All</Label>
-        </div>
-        <div className="flex items-center gap-2">
-          <RadioGroupItem value="SPECIFIC" id={`${label}-specific`} />
-          <Label htmlFor={`${label}-specific`}>Specific</Label>
-        </div>
-      </RadioGroup>
-      {scope === "SPECIFIC" ? (
-        <div className="space-y-4 rounded-md border p-3">
-          <div className="space-y-2">
-            <Label>{categoryLabel}</Label>
-            <div className="max-h-40 space-y-2 overflow-y-auto">
-              {categories.map((category) => (
-                <label
-                  key={category.id}
-                  className="flex items-center gap-2 text-sm"
-                >
-                  <Checkbox
-                    checked={selectedCategoryIds.includes(category.id)}
-                    onCheckedChange={(checked) =>
-                      onToggleCategory(category.id, checked === true)
-                    }
-                  />
-                  {category.name}
-                </label>
-              ))}
+    <SettingsChoiceRadioGroup
+      name={`scope-${allLabel}`}
+      aria-label={allLabel}
+      value={scope}
+      onValueChange={(value) => onScopeChange(value as DiscountScope)}
+      options={[
+        {
+          value: "ALL",
+          label: allLabel,
+          description: allDescription,
+        },
+        {
+          value: "SPECIFIC",
+          label: specificLabel,
+          description: specificDescription,
+          children: (
+            <div className="space-y-[var(--spacing-4)]">
+              <AddPickerBlock
+                heading={categoryHeading}
+                addLabel={addCategoryLabel}
+                options={categories}
+                selectedIds={selectedCategoryIds}
+                onChange={onChangeCategories}
+              />
+              <AddPickerBlock
+                heading={itemHeading}
+                addLabel={addItemLabel}
+                options={items}
+                selectedIds={selectedItemIds}
+                onChange={onChangeItems}
+              />
             </div>
-          </div>
-          <div className="space-y-2">
-            <Label>{itemLabel}</Label>
-            <div className="max-h-48 space-y-2 overflow-y-auto">
-              {items.map((item) => (
-                <label
-                  key={item.id}
-                  className="flex items-center gap-2 text-sm"
-                >
-                  <Checkbox
-                    checked={selectedItemIds.includes(item.id)}
-                    onCheckedChange={(checked) =>
-                      onToggleItem(item.id, checked === true)
-                    }
-                  />
-                  {item.name}
-                </label>
-              ))}
-            </div>
-          </div>
+          ),
+        },
+      ]}
+    />
+  );
+}
+
+function AddPickerBlock({
+  heading,
+  addLabel,
+  options,
+  selectedIds,
+  onChange,
+}: {
+  heading: string;
+  addLabel: string;
+  options: PickerItem[];
+  selectedIds: string[];
+  onChange: (ids: string[]) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+
+  const selectedItems = useMemo(
+    () => options.filter((option) => selectedIds.includes(option.id)),
+    [options, selectedIds],
+  );
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return options;
+    return options.filter((option) => option.name.toLowerCase().includes(q));
+  }, [options, query]);
+
+  return (
+    <div className="space-y-[var(--spacing-2)]">
+      <p className="text-sm font-medium text-foreground">{heading}</p>
+      {selectedItems.length > 0 ? (
+        <div className="flex flex-wrap gap-2">
+          {selectedItems.map((item) => (
+            <Badge key={item.id} variant="secondary" className="gap-1 pr-1">
+              {item.name}
+              <button
+                type="button"
+                className="rounded-sm p-0.5 hover:bg-muted"
+                aria-label={`Remove ${item.name}`}
+                onClick={() =>
+                  onChange(selectedIds.filter((id) => id !== item.id))
+                }
+              >
+                <X className="size-3" aria-hidden />
+              </button>
+            </Badge>
+          ))}
         </div>
       ) : null}
+
+      {open ? (
+        <div className="space-y-2 rounded-md border p-3">
+          <Input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search…"
+          />
+          <div className="max-h-48 space-y-2 overflow-y-auto">
+            {filtered.map((option) => (
+              <label
+                key={option.id}
+                className="flex items-center gap-2 text-sm"
+              >
+                <Checkbox
+                  checked={selectedIds.includes(option.id)}
+                  onCheckedChange={(checked) =>
+                    onChange(
+                      toggleId(selectedIds, option.id, checked === true),
+                    )
+                  }
+                />
+                {option.name}
+              </label>
+            ))}
+            {filtered.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No matches.</p>
+            ) : null}
+          </div>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="px-0"
+            onClick={() => {
+              setOpen(false);
+              setQuery("");
+            }}
+          >
+            Done
+          </Button>
+        </div>
+      ) : (
+        <DrawerAddAction
+          label={addLabel}
+          onClick={() => setOpen(true)}
+          disabled={options.length === 0}
+        />
+      )}
     </div>
   );
 }
