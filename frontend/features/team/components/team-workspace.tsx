@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
@@ -13,7 +13,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { ListPageSkeleton } from "@/components/layout/list-page";
 import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
 import { useEntitySelection } from "@/lib/routing/use-entity-selection";
 import { PERMISSIONS, useCan } from "@/features/auth/permissions";
@@ -44,7 +43,7 @@ import { cn } from "@/lib/utils";
 
 const TEAM_LIST_LIMIT = 100;
 
-function TeamWorkspaceContent() {
+export function TeamWorkspace() {
   const queryClient = useQueryClient();
   const { user, jwt } = useAuth();
   const canInviteAsAdmin = useCan(PERMISSIONS["members.invite"]);
@@ -138,10 +137,10 @@ function TeamWorkspaceContent() {
     memberDetail?.role === "ADMIN" || memberDetail?.role === "OWNER";
 
   return (
-    <>
+    <div className="relative flex h-full min-h-0 w-full min-w-0 flex-col">
       <div
         className={cn(
-          "flex h-[calc(100vh-8rem)] min-h-[520px] w-full gap-0 overflow-hidden rounded-lg border bg-card",
+          "flex h-full min-h-0 w-full gap-0 overflow-hidden rounded-lg border bg-card",
           SETTINGS_FORM_SURFACE_CLASS,
         )}
       >
@@ -226,14 +225,6 @@ function TeamWorkspaceContent() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </>
-  );
-}
-
-export function TeamWorkspace() {
-  return (
-    <Suspense fallback={<ListPageSkeleton />}>
-      <TeamWorkspaceContent />
-    </Suspense>
+    </div>
   );
 }

@@ -20,6 +20,7 @@ const MOVED_FROM_SETTINGS = [
   "/business/settings/forms",
   "/business/settings/resources",
   "/business/settings/integrations",
+  "/business/settings/data",
 ];
 
 function item(
@@ -98,6 +99,7 @@ describe("business nav catalog", () => {
         "/business/settings/pipelines",
         "/business/settings/resources",
         "/business/settings/integrations",
+        "/business/settings/data",
       ]),
     );
   });
@@ -133,6 +135,7 @@ describe("business nav catalog", () => {
       "pipeline-settings",
       "resources",
       "integrations",
+      "data-io",
     ]);
   });
 
@@ -180,6 +183,9 @@ describe("business nav catalog", () => {
     ).toBe(false);
     expect(
       items.some((entry) => entry.href === "/business/settings/integrations"),
+    ).toBe(false);
+    expect(
+      items.some((entry) => entry.href === "/business/settings/data"),
     ).toBe(false);
     expect(items.some((entry) => entry.href === "/business/settings")).toBe(
       true,

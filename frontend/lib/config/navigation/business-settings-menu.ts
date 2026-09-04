@@ -3,7 +3,6 @@ import {
   Calendar,
   Clock,
   CreditCard,
-  Database,
   FileText,
   Globe,
   Hourglass,
@@ -64,11 +63,6 @@ const businessSetupItems: BusinessSettingsNavItem[] = [
     title: "Appearance",
     href: "/business/settings/appearance",
     icon: Palette,
-  },
-  {
-    title: "Data import & export",
-    href: "/business/settings/data",
-    icon: Database,
   },
 ];
 
@@ -228,6 +222,7 @@ export const MIGRATED_SETTINGS_APP_PREFIXES = [
   "/business/settings/automation-registry",
   "/business/settings/forms",
   "/business/settings/integrations",
+  "/business/settings/data",
 ] as const;
 
 function matchesPathPrefix(pathname: string, prefix: string): boolean {

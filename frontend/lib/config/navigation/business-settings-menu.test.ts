@@ -13,6 +13,7 @@ describe("migrated settings app paths", () => {
     expect(
       isMigratedSettingsAppPath("/business/settings/automation-workflows/new"),
     ).toBe(true);
+    expect(isMigratedSettingsAppPath("/business/settings/data")).toBe(true);
   });
 
   it("keeps remaining Settings pages out of the migrated set", () => {
@@ -31,6 +32,7 @@ describe("migrated settings app paths", () => {
     expect(isBusinessSettingsPath("/business/settings/integrations")).toBe(
       false,
     );
+    expect(isBusinessSettingsPath("/business/settings/data")).toBe(false);
     expect(isBusinessSettingsPath("/business/settings")).toBe(true);
     expect(isBusinessSettingsPath("/business/settings/profile")).toBe(true);
     expect(isBusinessSettingsPath("/business/settings/templates")).toBe(true);
@@ -44,11 +46,11 @@ describe("migrated settings app paths", () => {
         "/business/settings/profile?tab=contact",
         "/business/settings/profile?tab=address",
         "/business/settings/profile?tab=regional",
-        "/business/settings/profile?tab=hours",
+        "/business/settings/business-hours",
         "/business/settings/appearance",
-        "/business/settings/data",
       ]),
     );
+    expect(hrefs).not.toContain("/business/settings/data");
     expect(hrefs).not.toContain("/business/settings/payroll");
   });
 });
