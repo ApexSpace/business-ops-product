@@ -18,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { DrawerSegmentedTabs } from "@/components/drawer/drawer-segmented-tabs";
+import { AmountUnitToggle } from "@/components/ui/amount-unit-toggle";
 import { SETTINGS_CONTENT_SHELL_CLASS, SETTINGS_FORM_DESCRIPTION_CLASS } from "@/lib/design/settings-form-tokens";
 import { DRAWER_SWITCH_CLASS } from "@/lib/design/drawer-tokens";
 import { cn } from "@/lib/utils";
@@ -265,23 +265,12 @@ export function ServiceCreateForm({
                         }
                         className="flex-1"
                       />
-                      <DrawerSegmentedTabs
-                        size="sm"
-                        className="w-auto shrink-0"
+                      <AmountUnitToggle
                         value={commissionDeductionType}
-                        options={[
-                          {
-                            value: "FLAT",
-                            label: "$",
-                            onClick: () => setCommissionDeductionType("FLAT"),
-                          },
-                          {
-                            value: "PERCENT",
-                            label: "%",
-                            onClick: () =>
-                              setCommissionDeductionType("PERCENT"),
-                          },
-                        ]}
+                        currencyValue="FLAT"
+                        percentValue="PERCENT"
+                        onValueChange={setCommissionDeductionType}
+                        aria-label="Pre-commission unit"
                       />
                     </div>
                   </div>
@@ -298,24 +287,12 @@ export function ServiceCreateForm({
                         }
                         className="flex-1"
                       />
-                      <DrawerSegmentedTabs
-                        size="sm"
-                        className="w-auto shrink-0"
+                      <AmountUnitToggle
                         value={postCommissionDeductionType}
-                        options={[
-                          {
-                            value: "FLAT",
-                            label: "$",
-                            onClick: () =>
-                              setPostCommissionDeductionType("FLAT"),
-                          },
-                          {
-                            value: "PERCENT",
-                            label: "%",
-                            onClick: () =>
-                              setPostCommissionDeductionType("PERCENT"),
-                          },
-                        ]}
+                        currencyValue="FLAT"
+                        percentValue="PERCENT"
+                        onValueChange={setPostCommissionDeductionType}
+                        aria-label="Post-commission unit"
                       />
                     </div>
                   </div>

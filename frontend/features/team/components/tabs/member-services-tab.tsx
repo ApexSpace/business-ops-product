@@ -7,7 +7,7 @@ import { Copy, Package } from "lucide-react";
 import { toast } from "sonner";
 import { EmptyState } from "@/components/data-display/empty-state";
 import { LoadingState } from "@/components/data-display/loading-state";
-import { DrawerSegmentedTabs } from "@/components/drawer/drawer-segmented-tabs";
+import { AmountUnitToggle } from "@/components/ui/amount-unit-toggle";
 import { SearchableSelect } from "@/components/forms/searchable-select";
 import {
   Accordion,
@@ -238,28 +238,15 @@ export function MemberServicesTab({ userId, canManage }: Props) {
                                   })
                                 }
                               />
-                              <DrawerSegmentedTabs
-                                size="sm"
-                                className="w-auto shrink-0"
+                              <AmountUnitToggle
                                 value={row.commissionType}
-                                options={[
-                                  {
-                                    value: "FLAT",
-                                    label: "$",
-                                    onClick: () =>
-                                      updateDraft(service.id, {
-                                        commissionType: "FLAT",
-                                      }),
-                                  },
-                                  {
-                                    value: "PERCENT",
-                                    label: "%",
-                                    onClick: () =>
-                                      updateDraft(service.id, {
-                                        commissionType: "PERCENT",
-                                      }),
-                                  },
-                                ]}
+                                currencyValue="FLAT"
+                                percentValue="PERCENT"
+                                disabled={!canManage}
+                                onValueChange={(commissionType) =>
+                                  updateDraft(service.id, { commissionType })
+                                }
+                                aria-label="Commission unit"
                               />
                             </div>
                           </div>

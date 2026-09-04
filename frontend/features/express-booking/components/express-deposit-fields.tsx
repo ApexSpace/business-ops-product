@@ -4,6 +4,7 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
+import { AmountUnitToggle } from "@/components/ui/amount-unit-toggle";
 import { cn } from "@/lib/utils";
 
 export type ExpressDepositFieldsValue = {
@@ -142,57 +143,40 @@ export function ExpressDepositFields({
 
           {value.paymentMode === "partial" ? (
             <div className="space-y-3">
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  disabled={disabled}
-                  className={cn(
-                    "rounded-md border px-3 py-1.5 text-sm",
-                    value.partialType === "FIXED"
-                      ? "border-primary bg-primary/5"
-                      : "border-border",
-                  )}
-                  onClick={() => onChange({ ...value, partialType: "FIXED" })}
-                >
-                  $
-                </button>
-                <button
-                  type="button"
-                  disabled={disabled}
-                  className={cn(
-                    "rounded-md border px-3 py-1.5 text-sm",
-                    value.partialType === "PERCENTAGE"
-                      ? "border-primary bg-primary/5"
-                      : "border-border",
-                  )}
-                  onClick={() =>
-                    onChange({ ...value, partialType: "PERCENTAGE" })
-                  }
-                >
-                  %
-                </button>
-              </div>
               <div className="space-y-2">
                 <Label htmlFor="express-deposit-amount">
                   {value.partialType === "PERCENTAGE"
                     ? "Deposit percentage"
                     : "Deposit amount"}
                 </Label>
-                <Input
-                  id="express-deposit-amount"
-                  type="number"
-                  min={value.partialType === "PERCENTAGE" ? 1 : 0.01}
-                  max={value.partialType === "PERCENTAGE" ? 100 : undefined}
-                  step={value.partialType === "PERCENTAGE" ? 1 : 0.01}
-                  value={value.expressDepositAmount}
-                  disabled={disabled}
-                  onChange={(e) =>
-                    onChange({
-                      ...value,
-                      expressDepositAmount: e.target.value,
-                    })
-                  }
-                />
+                <div className="flex items-center gap-2">
+                  <Input
+                    id="express-deposit-amount"
+                    type="number"
+                    min={value.partialType === "PERCENTAGE" ? 1 : 0.01}
+                    max={value.partialType === "PERCENTAGE" ? 100 : undefined}
+                    step={value.partialType === "PERCENTAGE" ? 1 : 0.01}
+                    value={value.expressDepositAmount}
+                    disabled={disabled}
+                    onChange={(e) =>
+                      onChange({
+                        ...value,
+                        expressDepositAmount: e.target.value,
+                      })
+                    }
+                    className="flex-1"
+                  />
+                  <AmountUnitToggle
+                    value={value.partialType}
+                    currencyValue="FIXED"
+                    percentValue="PERCENTAGE"
+                    disabled={disabled}
+                    onValueChange={(partialType) =>
+                      onChange({ ...value, partialType })
+                    }
+                    aria-label="Deposit unit"
+                  />
+                </div>
               </div>
             </div>
           ) : null}

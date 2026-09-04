@@ -21,7 +21,14 @@ export interface SettingsToggleSectionProps {
   onSave?: () => void;
   isDirty?: boolean;
   isSaving?: boolean;
+  /**
+   * When false, never render Discard/Save (use for dependent toggles that
+   * share dirty state with a parent section that owns the actions).
+   * Default true.
+   */
+  showActions?: boolean;
   className?: string;
+  children?: ReactNode;
 }
 
 export function SettingsToggleSection({
@@ -35,9 +42,12 @@ export function SettingsToggleSection({
   onSave,
   isDirty = false,
   isSaving = false,
+  showActions = true,
   className,
+  children,
 }: SettingsToggleSectionProps) {
-  const showActions = Boolean(onDiscard && onSave && isDirty);
+  const renderActions =
+    showActions && Boolean(onDiscard && onSave && isDirty);
 
   return (
     <section className={cn(SETTINGS_FORM_SECTION_STACK_CLASS, className)}>
@@ -57,7 +67,8 @@ export function SettingsToggleSection({
           disabled={disabled || isSaving}
         />
       </div>
-      {showActions ? (
+      {children}
+      {renderActions ? (
         <SettingsFormActions
           onDiscard={onDiscard!}
           onSave={onSave}

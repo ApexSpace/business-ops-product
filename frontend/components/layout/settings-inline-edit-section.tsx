@@ -25,14 +25,12 @@ export interface SettingsInlineEditSectionProps {
   editLabel?: string;
   children?: ReactNode;
   className?: string;
-}
-
-function titlesMatch(
-  sectionTitle: string,
-  pageTitle: string | null | undefined,
-): boolean {
-  if (!pageTitle) return false;
-  return sectionTitle.trim().toLowerCase() === pageTitle.trim().toLowerCase();
+  /**
+   * Opt-in: attach this section's edit control to the SettingsFormPage header
+   * and suppress the local section heading (avoids double titles on single-section pages).
+   * Do not enable on multi-section pages — use a distinct section title instead.
+   */
+  promoteEditToPageHeader?: boolean;
 }
 
 export function SettingsInlineEditSection({
@@ -49,9 +47,12 @@ export function SettingsInlineEditSection({
   editLabel = "Edit",
   children,
   className,
+  promoteEditToPageHeader = false,
 }: SettingsInlineEditSectionProps) {
   const formHeader = useSettingsFormHeader();
-  const promoteToPageHeader = titlesMatch(title, formHeader?.pageTitle);
+  const promoteToPageHeader = Boolean(
+    promoteEditToPageHeader && formHeader?.pageTitle,
+  );
   const showActions = Boolean(onDiscard && onSave);
   const onEditRef = useRef(onEdit);
   onEditRef.current = onEdit;

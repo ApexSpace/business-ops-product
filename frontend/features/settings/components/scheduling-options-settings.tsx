@@ -200,8 +200,9 @@ export function SchedulingOptionsSettings() {
           onCheckedChange={(checked) =>
             buffer.commit({
               bufferTimeEnabled: checked,
-              showBufferOnCalendar:
-                buffer.values?.showBufferOnCalendar ?? false,
+              showBufferOnCalendar: checked
+                ? (buffer.values?.showBufferOnCalendar ?? false)
+                : false,
             })
           }
           onDiscard={buffer.reset}
@@ -214,32 +215,26 @@ export function SchedulingOptionsSettings() {
           isDirty={buffer.isDirty}
           isSaving={mutation.isPending}
           disabled={!canEdit}
-        />
-
-        {buffer.values?.bufferTimeEnabled ? (
-          <SettingsToggleSection
-            id="show-buffer-on-calendar"
-            title="Show buffer on calendar"
-            description="Display buffer bands before and after appointments in day and week views."
-            checked={buffer.values.showBufferOnCalendar}
-            onCheckedChange={(checked) =>
-              buffer.commit({
-                bufferTimeEnabled: buffer.values?.bufferTimeEnabled ?? true,
-                showBufferOnCalendar: checked,
-              })
-            }
-            onDiscard={buffer.reset}
-            onSave={() =>
-              saveSection({
-                bufferTimeEnabled: buffer.values?.bufferTimeEnabled,
-                showBufferOnCalendar: buffer.values?.showBufferOnCalendar,
-              })
-            }
-            isDirty={buffer.isDirty}
-            isSaving={mutation.isPending}
-            disabled={!canEdit}
-          />
-        ) : null}
+        >
+          {buffer.values?.bufferTimeEnabled ? (
+            <SettingsToggleSection
+              id="show-buffer-on-calendar"
+              title="Show buffer on calendar"
+              description="Display buffer bands before and after appointments in day and week views."
+              checked={buffer.values.showBufferOnCalendar}
+              onCheckedChange={(checked) =>
+                buffer.commit({
+                  bufferTimeEnabled: buffer.values?.bufferTimeEnabled ?? true,
+                  showBufferOnCalendar: checked,
+                })
+              }
+              showActions={false}
+              isSaving={mutation.isPending}
+              disabled={!canEdit}
+              className="border-t border-border/60 pt-[var(--settings-form-section-gap)]"
+            />
+          ) : null}
+        </SettingsToggleSection>
 
         <SettingsToggleSection
           id="processing-time-enabled"

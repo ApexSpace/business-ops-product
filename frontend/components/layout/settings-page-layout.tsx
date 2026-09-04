@@ -52,7 +52,8 @@ const SettingsFormHeaderContext =
 
 /**
  * Lets a primary SettingsInlineEditSection attach its edit control to the
- * page header when its title matches the page title (avoids double headings).
+ * page header when `promoteEditToPageHeader` is set (avoids double headings
+ * on single-section settings pages). Multi-section pages must not opt in.
  */
 export function useSettingsFormHeader() {
   return useContext(SettingsFormHeaderContext);

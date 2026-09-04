@@ -8,7 +8,7 @@ import { SettingsFormStack } from "@/components/forms/settings-form-grid";
 import { SearchableSelect } from "@/components/forms/searchable-select";
 import { SelectField } from "@/components/forms/select-field";
 import { TextField } from "@/components/forms/text-field";
-import { DrawerSegmentedTabs } from "@/components/drawer/drawer-segmented-tabs";
+import { AmountUnitToggle } from "@/components/ui/amount-unit-toggle";
 import { SettingsInlineEditSection } from "@/components/layout/settings-inline-edit-section";
 import { SettingsViewRows } from "@/components/layout/settings-view-rows";
 import {
@@ -343,32 +343,18 @@ export function ServiceDetailsSection({
                                   className="flex-1"
                                 />
                               </FormControl>
-                              <DrawerSegmentedTabs
-                                size="sm"
-                                className="w-auto shrink-0"
+                              <AmountUnitToggle
                                 value={commissionType}
-                                options={[
-                                  {
-                                    value: "FLAT",
-                                    label: "$",
-                                    onClick: () =>
-                                      form.setValue(
-                                        "commissionDeductionType",
-                                        "FLAT",
-                                        { shouldDirty: true },
-                                      ),
-                                  },
-                                  {
-                                    value: "PERCENT",
-                                    label: "%",
-                                    onClick: () =>
-                                      form.setValue(
-                                        "commissionDeductionType",
-                                        "PERCENT",
-                                        { shouldDirty: true },
-                                      ),
-                                  },
-                                ]}
+                                currencyValue="FLAT"
+                                percentValue="PERCENT"
+                                onValueChange={(next) =>
+                                  form.setValue(
+                                    "commissionDeductionType",
+                                    next,
+                                    { shouldDirty: true },
+                                  )
+                                }
+                                aria-label="Pre-commission unit"
                               />
                             </div>
                             <FormDescription className="italic">
@@ -394,32 +380,18 @@ export function ServiceDetailsSection({
                                   className="flex-1"
                                 />
                               </FormControl>
-                              <DrawerSegmentedTabs
-                                size="sm"
-                                className="w-auto shrink-0"
+                              <AmountUnitToggle
                                 value={postCommissionType}
-                                options={[
-                                  {
-                                    value: "FLAT",
-                                    label: "$",
-                                    onClick: () =>
-                                      form.setValue(
-                                        "postCommissionDeductionType",
-                                        "FLAT",
-                                        { shouldDirty: true },
-                                      ),
-                                  },
-                                  {
-                                    value: "PERCENT",
-                                    label: "%",
-                                    onClick: () =>
-                                      form.setValue(
-                                        "postCommissionDeductionType",
-                                        "PERCENT",
-                                        { shouldDirty: true },
-                                      ),
-                                  },
-                                ]}
+                                currencyValue="FLAT"
+                                percentValue="PERCENT"
+                                onValueChange={(next) =>
+                                  form.setValue(
+                                    "postCommissionDeductionType",
+                                    next,
+                                    { shouldDirty: true },
+                                  )
+                                }
+                                aria-label="Post-commission unit"
                               />
                             </div>
                             <FormDescription className="italic">
