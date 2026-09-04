@@ -3,14 +3,21 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { LoadingState } from "@/components/data-display/loading-state";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import {
   getTeamMemberPermissions,
   updateTeamMemberPermissions,
 } from "@/features/team/api/team.api";
 import { STAFF_PERMISSION_GROUPS } from "@/features/team/permissions/staff-permissions";
+import { DRAWER_SWITCH_CLASS } from "@/lib/design/drawer-tokens";
+import {
+  SETTINGS_FORM_DESCRIPTION_CLASS,
+  SETTINGS_FORM_SECTION_STACK_CLASS,
+  SETTINGS_GROUP_TITLE_CLASS,
+} from "@/lib/design/settings-form-tokens";
 import { queryKeys } from "@/lib/query/keys";
+import { cn } from "@/lib/utils";
 
 type Props = {
   userId: string;
@@ -48,36 +55,24 @@ export function MemberPermissionsTab({ userId, role, canManage }: Props) {
 
   if (isAdmin) {
     return (
-      <Card>
-        <CardContent className="pt-6">
-          <p className="text-sm text-muted-foreground">
-            Admin users have full access to all features. Permission toggles
-            apply only to Normal staff members.
-          </p>
-        </CardContent>
-      </Card>
+      <p className="text-sm text-muted-foreground">
+        Admin users have full access to all features. Permission toggles apply
+        only to Normal staff members.
+      </p>
     );
   }
 
   return (
-    <div className="space-y-4">
+    <div className={cn(SETTINGS_FORM_SECTION_STACK_CLASS, "max-w-3xl gap-10")}>
       {STAFF_PERMISSION_GROUPS.map((group) => (
-        <Card key={group.id}>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">{group.label}</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
+        <section key={group.id} className="space-y-5">
+          <h3 className={SETTINGS_GROUP_TITLE_CLASS}>{group.label}</h3>
+          <div className="space-y-5">
             {group.permissions.map((permission) => (
               <div
                 key={permission.key}
-                className="flex items-start justify-between gap-4 border-b pb-4 last:border-0"
+                className="flex items-start gap-4"
               >
-                <div>
-                  <p className="text-sm font-medium">{permission.label}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {permission.description}
-                  </p>
-                </div>
                 <Switch
                   checked={Boolean(data.permissions[permission.key])}
                   disabled={!canManage || mutation.isPending}
@@ -87,11 +82,21 @@ export function MemberPermissionsTab({ userId, role, canManage }: Props) {
                       [permission.key]: checked,
                     })
                   }
+                  className={cn(DRAWER_SWITCH_CLASS, "mt-0.5")}
+                  aria-label={permission.label}
                 />
+                <div className="min-w-0 space-y-1">
+                  <Label className="text-sm font-semibold text-foreground">
+                    {permission.label}
+                  </Label>
+                  <p className={cn(SETTINGS_FORM_DESCRIPTION_CLASS, "text-xs")}>
+                    {permission.description}
+                  </p>
+                </div>
               </div>
             ))}
-          </CardContent>
-        </Card>
+          </div>
+        </section>
       ))}
     </div>
   );

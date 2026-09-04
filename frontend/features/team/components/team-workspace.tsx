@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
@@ -22,15 +22,15 @@ import {
   archiveStaffMember,
   listBusinessMembers,
 } from "@/features/settings/api/business.api";
-import { getTeamMember } from "@/features/team/api/team.api";
-import { TeamMemberList } from "@/features/team/components/team-member-list";
-import { TeamMemberTabs } from "@/features/team/components/team-member-tabs";
-import { MemberDetailsTab } from "@/features/team/components/tabs/member-details-tab";
-import { MemberNotificationsTab } from "@/features/team/components/tabs/member-notifications-tab";
-import { MemberPermissionsTab } from "@/features/team/components/tabs/member-permissions-tab";
-import { MemberServicesTab } from "@/features/team/components/tabs/member-services-tab";
-import { MemberWorkHoursTab } from "@/features/team/components/tabs/member-work-hours-tab";
-import { MemberCompensationTab } from "@/features/team/components/tabs/member-compensation-tab";
+import {
+  getTeamMember,
+  resendStaffInvite,
+} from "@/features/team/api/team.api";
+import {
+  TeamMemberPanel,
+  TeamMemberPanelLoading,
+} from "@/features/team/components/team-member-panel";
+import { TeamSidebar } from "@/features/team/components/team-sidebar";
 import {
   isTeamMemberTab,
   type TeamMemberTabId,
@@ -39,6 +39,8 @@ import { hasStaffPermission } from "@/features/team/permissions/staff-permission
 import { invalidateBusinessMembers } from "@/lib/query/invalidation";
 import { queryKeys } from "@/lib/query/keys";
 import { useAuth } from "@/lib/auth/provider";
+import { SETTINGS_FORM_SURFACE_CLASS } from "@/lib/design/settings-form-tokens";
+import { cn } from "@/lib/utils";
 
 const TEAM_LIST_LIMIT = 100;
 
@@ -52,8 +54,7 @@ function TeamWorkspaceContent() {
   const canManageTeam =
     canInviteAsAdmin ||
     hasStaffPermission(staffPermissions, "settings.team.manage", role);
-  /** Permissions/compensation remain owner/admin-only per staff permission copy. */
-  const canManage = canInviteAsAdmin;
+  const canManageAdmin = canInviteAsAdmin;
   const canEditDetails = canManageTeam;
   const [search, setSearch] = useState("");
   const [addOpen, setAddOpen] = useState(false);
@@ -115,133 +116,84 @@ function TeamWorkspaceContent() {
     onError: (err: Error) => toast.error(err.message),
   });
 
-  const panel = useMemo(() => {
-    if (!selectedUserId) {
-      return (
-        <div className="flex flex-1 items-center justify-center p-8 text-sm text-muted-foreground">
-          Select a staff member to view details.
-        </div>
+  const resendMutation = useMutation({
+    mutationFn: () => resendStaffInvite(selectedUserId!),
+    onSuccess: (data) => {
+      toast.success(
+        data.inviteLink
+          ? "Invite resent. Share the link if the email doesn’t arrive."
+          : "Invite resent",
       );
-    }
-    if (detailLoading) {
-      return (
-        <div className="flex flex-1 items-center justify-center p-8 text-sm text-muted-foreground">
-          Loading staff member…
-        </div>
-      );
-    }
-    if (detailError || !memberDetail) {
-      return (
-        <div className="flex flex-1 items-center justify-center p-8 text-sm text-destructive">
-          {detailErrorValue instanceof Error
-            ? detailErrorValue.message
-            : "Unable to load this staff member."}
-        </div>
-      );
-    }
-
-    switch (activeTab) {
-      case "details":
-        return (
-          <MemberDetailsTab
-            member={memberDetail}
-            canManage={canEditDetails}
-            onArchive={
-              canManage &&
-              selectedUserId &&
-              selectedUserId !== user?.id
-                ? () => setArchiveTarget(selectedUserId)
-                : undefined
-            }
-          />
+      if (data.inviteLink) {
+        void navigator.clipboard.writeText(data.inviteLink).then(
+          () => toast.message("Invite link copied to clipboard"),
+          () => undefined,
         );
-      case "notifications":
-        return (
-          <MemberNotificationsTab
-            userId={selectedUserId}
-            canManage={canEditDetails}
-          />
-        );
-      case "permissions":
-        return (
-          <MemberPermissionsTab
-            userId={selectedUserId}
-            role={memberDetail.role}
-            canManage={canManage}
-          />
-        );
-      case "services":
-        return (
-          <MemberServicesTab
-            userId={selectedUserId}
-            canManage={canEditDetails}
-          />
-        );
-      case "work-hours":
-        return (
-          <MemberWorkHoursTab
-            userId={selectedUserId}
-            canManage={canEditDetails}
-          />
-        );
-      case "compensation":
-        return (
-          <MemberCompensationTab
-            userId={selectedUserId}
-            role={memberDetail.role}
-            canManage={canManage}
-          />
-        );
-      default:
-        return null;
-    }
-  }, [
-    activeTab,
-    canEditDetails,
-    canManage,
-    detailError,
-    detailErrorValue,
-    detailLoading,
-    memberDetail,
-    selectedUserId,
-    user?.id,
-  ]);
+      }
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
 
   const isAdminTarget =
     memberDetail?.role === "ADMIN" || memberDetail?.role === "OWNER";
 
   return (
     <>
-      <div className="flex min-h-[calc(100vh-8rem)] flex-col">
-        <div className="border-b px-4 py-4">
-          <h1 className="text-xl font-semibold">Team</h1>
-          <p className="text-sm text-muted-foreground">
-            Manage staff profiles, permissions, services, and schedules.
-          </p>
-        </div>
-        <div className="flex min-h-0 flex-1">
-          <TeamMemberList
-            members={members}
-            selectedUserId={selectedUserId}
-            search={search}
-            onSearchChange={setSearch}
-            onSelect={setSelectedId}
-            onAdd={() => setAddOpen(true)}
-            canManage={canManageTeam}
-            isLoading={isLoading}
-            isError={isError}
-            errorMessage={error instanceof Error ? error.message : undefined}
-          />
-          {selectedUserId ? (
-            <TeamMemberTabs
+      <div
+        className={cn(
+          "flex h-[calc(100vh-8rem)] min-h-[520px] w-full gap-0 overflow-hidden rounded-lg border bg-card",
+          SETTINGS_FORM_SURFACE_CLASS,
+        )}
+      >
+        <TeamSidebar
+          members={members}
+          selectedUserId={selectedUserId}
+          search={search}
+          onSearchChange={setSearch}
+          onSelect={setSelectedId}
+          onAdd={() => setAddOpen(true)}
+          canManage={canManageTeam}
+          isLoading={isLoading}
+          isError={isError}
+          errorMessage={error instanceof Error ? error.message : undefined}
+        />
+
+        <div className="min-h-0 min-w-0 flex-1 overflow-y-auto p-[var(--spacing-6)]">
+          {!selectedUserId ? (
+            <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+              Select a staff member to view details.
+            </div>
+          ) : detailLoading ? (
+            <TeamMemberPanelLoading />
+          ) : detailError || !memberDetail ? (
+            <div className="flex h-full items-center justify-center text-sm text-destructive">
+              {detailErrorValue instanceof Error
+                ? detailErrorValue.message
+                : "Unable to load this staff member."}
+            </div>
+          ) : (
+            <TeamMemberPanel
+              member={memberDetail}
               activeTab={activeTab}
               onTabChange={setTab}
-              hidePermissionsAndCompensation={
-                isAdminTarget || !canManage
+              canEditDetails={canEditDetails}
+              canManageAdmin={canManageAdmin}
+              hidePermissionsAndCompensation={isAdminTarget || !canManageAdmin}
+              onArchive={
+                canManageAdmin &&
+                selectedUserId &&
+                selectedUserId !== user?.id
+                  ? () => setArchiveTarget(selectedUserId)
+                  : undefined
               }
+              onResendInvite={
+                canEditDetails && memberDetail.status === "INVITED"
+                  ? () => resendMutation.mutate()
+                  : undefined
+              }
+              isResendingInvite={resendMutation.isPending}
             />
-          ) : null}
-          <div className="min-w-0 flex-1 overflow-y-auto p-4">{panel}</div>
+          )}
         </div>
       </div>
 
