@@ -20,6 +20,7 @@ import {
   FormLabel,
   FormSchemaProvider,
 } from "@/components/ui/form";
+import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import type { ServiceOnlineBookingSettings } from "@/features/services/api/service-workspace.api";
 import { DRAWER_SWITCH_CLASS } from "@/lib/design/drawer-tokens";
@@ -222,7 +223,7 @@ export function ServiceOnlineBookingSection({
 
             {directLink ? (
               <div className="space-y-2">
-                <FormLabel>Direct Link</FormLabel>
+                <Label className="text-sm font-medium">Direct Link</Label>
                 <div className="flex items-center gap-2 rounded-[var(--radius-control)] border border-border p-2 text-sm">
                   <span className="min-w-0 flex-1 truncate">{directLink}</span>
                   <Button

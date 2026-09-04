@@ -1,7 +1,17 @@
 -- Dual commission (post), online booking fields, resource group requirements
+-- IDs in this project are TEXT (Prisma String), not Postgres UUID.
 
-CREATE TYPE "ServicePriceDisplayMode" AS ENUM ('SHOW_MINIMUM', 'HIDE');
-CREATE TYPE "ServiceResourceSelectionMode" AS ENUM ('ALL', 'SPECIFIC');
+DO $$ BEGIN
+  CREATE TYPE "ServicePriceDisplayMode" AS ENUM ('SHOW_MINIMUM', 'HIDE');
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  CREATE TYPE "ServiceResourceSelectionMode" AS ENUM ('ALL', 'SPECIFIC');
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
 
 ALTER TABLE "services"
   ADD COLUMN IF NOT EXISTS "postCommissionDeductionType" "ServiceCommissionType",
@@ -18,13 +28,13 @@ ALTER TABLE "service_resource_requirements"
   ALTER COLUMN "resourceType" DROP NOT NULL;
 
 ALTER TABLE "service_resource_requirements"
-  ADD COLUMN IF NOT EXISTS "groupId" UUID,
+  ADD COLUMN IF NOT EXISTS "groupId" TEXT,
   ADD COLUMN IF NOT EXISTS "selectionMode" "ServiceResourceSelectionMode" NOT NULL DEFAULT 'ALL';
 
 CREATE TABLE IF NOT EXISTS "service_resource_requirement_items" (
-  "id" UUID NOT NULL DEFAULT gen_random_uuid(),
-  "requirementId" UUID NOT NULL,
-  "resourceId" UUID NOT NULL,
+  "id" TEXT NOT NULL,
+  "requirementId" TEXT NOT NULL,
+  "resourceId" TEXT NOT NULL,
   "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT "service_resource_requirement_items_pkey" PRIMARY KEY ("id")
 );
@@ -48,7 +58,7 @@ WHERE req."resourceId" = r."id"
   AND req."groupId" IS NULL;
 
 INSERT INTO "service_resource_requirement_items" ("id", "requirementId", "resourceId", "createdAt")
-SELECT gen_random_uuid(), req."id", req."resourceId", CURRENT_TIMESTAMP
+SELECT gen_random_uuid()::text, req."id", req."resourceId", CURRENT_TIMESTAMP
 FROM "service_resource_requirements" req
 WHERE req."resourceId" IS NOT NULL
   AND NOT EXISTS (
