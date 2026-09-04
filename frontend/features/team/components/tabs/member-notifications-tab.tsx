@@ -3,28 +3,34 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { LoadingState } from "@/components/data-display/loading-state";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import {
   getTeamMemberNotifications,
   updateTeamMemberNotifications,
 } from "@/features/team/api/team.api";
-import { queryKeys } from "@/lib/query/keys";
 import { NOTIFICATION_SETTING_KEYS } from "@/features/team/permissions/staff-permissions";
+import { DRAWER_SWITCH_CLASS } from "@/lib/design/drawer-tokens";
+import {
+  SETTINGS_FORM_DESCRIPTION_CLASS,
+  SETTINGS_FORM_SECTION_STACK_CLASS,
+  SETTINGS_GROUP_TITLE_CLASS,
+} from "@/lib/design/settings-form-tokens";
+import { queryKeys } from "@/lib/query/keys";
+import { cn } from "@/lib/utils";
 
 const LABELS: Record<string, { title: string; description: string }> = {
   "appointment.booked": {
     title: "Appointment booked",
-    description: "Email when an appointment is booked with this staff member.",
+    description: "When an appointment is booked with this staff member.",
   },
   "appointment.rescheduled": {
     title: "Appointment rescheduled",
-    description: "Email when an assigned appointment is rescheduled.",
+    description: "When an assigned appointment is rescheduled.",
   },
   "appointment.cancelled": {
     title: "Appointment canceled",
-    description: "Email when an assigned appointment is canceled.",
+    description: "When an assigned appointment is canceled.",
   },
 };
 
@@ -57,42 +63,51 @@ export function MemberNotificationsTab({ userId, canManage }: Props) {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-base">Email notifications</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <p className="text-sm text-muted-foreground">
-          Appointment notifications for service providers. Push and SMS are not
-          available yet.
-        </p>
-        {NOTIFICATION_SETTING_KEYS.map((key) => {
-          const meta = LABELS[key];
-          return (
-            <div
-              key={key}
-              className="flex items-start justify-between gap-4 border-b pb-4 last:border-0"
-            >
-              <div>
-                <p className="text-sm font-medium">{meta.title}</p>
-                <p className="text-sm text-muted-foreground">
-                  {meta.description}
-                </p>
+    <div className={cn(SETTINGS_FORM_SECTION_STACK_CLASS, "max-w-3xl")}>
+      <div className="space-y-4">
+        <div className="flex items-end justify-between gap-4">
+          <h3 className={SETTINGS_GROUP_TITLE_CLASS}>Appointments</h3>
+          <p className="text-sm font-medium text-violet-primary-dark">Email</p>
+        </div>
+
+        <div className="space-y-4">
+          {NOTIFICATION_SETTING_KEYS.map((key) => {
+            const meta = LABELS[key] ?? {
+              title: key,
+              description: "",
+            };
+            return (
+              <div
+                key={key}
+                className="flex items-start justify-between gap-4 border-b border-border/60 pb-4 last:border-b-0 last:pb-0"
+              >
+                <div className="min-w-0 space-y-1">
+                  <Label className="text-sm font-semibold text-violet-primary-dark">
+                    {meta.title}
+                  </Label>
+                  {meta.description ? (
+                    <p className={cn(SETTINGS_FORM_DESCRIPTION_CLASS, "text-xs")}>
+                      {meta.description}
+                    </p>
+                  ) : null}
+                </div>
+                <Switch
+                  checked={Boolean(data.notificationSettings[key])}
+                  disabled={!canManage || mutation.isPending}
+                  onCheckedChange={(checked) =>
+                    mutation.mutate({
+                      ...data.notificationSettings,
+                      [key]: checked,
+                    })
+                  }
+                  className={DRAWER_SWITCH_CLASS}
+                  aria-label={meta.title}
+                />
               </div>
-              <Switch
-                checked={data.notificationSettings[key] ?? false}
-                disabled={!canManage || mutation.isPending}
-                onCheckedChange={(checked) =>
-                  mutation.mutate({
-                    ...data.notificationSettings,
-                    [key]: checked,
-                  })
-                }
-              />
-            </div>
-          );
-        })}
-      </CardContent>
-    </Card>
+            );
+          })}
+        </div>
+      </div>
+    </div>
   );
 }

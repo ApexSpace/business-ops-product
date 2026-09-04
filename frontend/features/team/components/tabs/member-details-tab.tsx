@@ -1,31 +1,49 @@
 "use client";
 
-import { useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Copy } from "lucide-react";
+import { useForm, useWatch } from "react-hook-form";
+import { z } from "zod";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Form } from "@/components/ui/form";
+import { SettingsFormStack } from "@/components/forms/settings-form-grid";
 import { SelectField } from "@/components/forms/select-field";
 import { TextField } from "@/components/forms/text-field";
+import { SettingsInlineEditSection } from "@/components/layout/settings-inline-edit-section";
+import { SettingsViewRows } from "@/components/layout/settings-view-rows";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import { Button } from "@/components/ui/button";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormSchemaProvider,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
+import { staffGenderOptions } from "@/features/settings/utils/select-options";
 import {
-  staffGenderOptions,
-} from "@/features/settings/utils/select-options";
+  removeMemberTimeClockPin,
+  setMemberTimeClockPin,
+} from "@/features/settings/api/business.api";
 import {
-  resendStaffInvite,
   updateTeamMemberDetails,
   type TeamMemberDetail,
 } from "@/features/team/api/team.api";
+import { DRAWER_SWITCH_CLASS } from "@/lib/design/drawer-tokens";
+import { SETTINGS_FORM_DESCRIPTION_CLASS } from "@/lib/design/settings-form-tokens";
 import { invalidateBusinessMembers } from "@/lib/query/invalidation";
 import { queryKeys } from "@/lib/query/keys";
-import { MemberTimeClockPinDialog } from "@/features/settings/components/member-time-clock-pin-dialog";
-import { useState } from "react";
+import { useSettingsSectionEdit } from "@/lib/settings/use-settings-section-edit";
 
 const staffGenderValues = [
   "FEMALE",
@@ -37,8 +55,8 @@ const staffGenderValues = [
 type StaffGender = (typeof staffGenderValues)[number];
 
 const schema = z.object({
-  firstName: z.string().trim().min(1),
-  lastName: z.string().trim().min(1),
+  firstName: z.string().trim().min(1, "First name is required"),
+  lastName: z.string().trim().min(1, "Last name is required"),
   email: z.string().email(),
   phoneNumber: z.string().optional(),
   gender: z.enum(staffGenderValues).optional(),
@@ -46,6 +64,8 @@ const schema = z.object({
   onlineBookingEnabled: z.boolean(),
   canAssignProductSales: z.boolean(),
   canManageWaitlist: z.boolean(),
+  pin: z.string().optional(),
+  confirmPin: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -68,18 +88,29 @@ function toMemberFormValues(member: TeamMemberDetail): FormValues {
     onlineBookingEnabled: member.onlineBookingEnabled ?? false,
     canAssignProductSales: member.canAssignProductSales ?? false,
     canManageWaitlist: member.canManageWaitlist ?? false,
+    pin: "",
+    confirmPin: "",
   };
+}
+
+function roleLabel(role: string): string {
+  return role === "ADMIN" || role === "OWNER" ? "Admin" : "Normal";
+}
+
+function yesNo(value: boolean): string {
+  return value ? "Yes" : "No";
 }
 
 type Props = {
   member: TeamMemberDetail;
   canManage: boolean;
-  onArchive?: () => void;
 };
 
-export function MemberDetailsTab({ member, canManage, onArchive }: Props) {
+export function MemberDetailsTab({ member, canManage }: Props) {
   const queryClient = useQueryClient();
-  const [pinOpen, setPinOpen] = useState(false);
+  const { isEditing, startEdit, stopEdit } =
+    useSettingsSectionEdit<"details">();
+  const [pinBusy, setPinBusy] = useState(false);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -88,13 +119,51 @@ export function MemberDetailsTab({ member, canManage, onArchive }: Props) {
 
   useEffect(() => {
     form.reset(toMemberFormValues(member));
-  }, [member, form]);
+    stopEdit();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    member.userId,
+    member.createdAt,
+    member.hasTimeclockPin,
+    member.staffBookingUrl,
+  ]);
+
+  const watched = useWatch({ control: form.control });
 
   const saveMutation = useMutation({
-    mutationFn: (values: FormValues) =>
-      updateTeamMemberDetails(member.userId, values),
+    mutationFn: async (values: FormValues) => {
+      await updateTeamMemberDetails(member.userId, {
+        firstName: values.firstName,
+        lastName: values.lastName,
+        email: values.email,
+        phoneNumber: values.phoneNumber || null,
+        gender: values.gender ?? null,
+        isServiceProvider: values.isServiceProvider,
+        onlineBookingEnabled: values.onlineBookingEnabled,
+        canAssignProductSales: values.canAssignProductSales,
+        canManageWaitlist: values.canManageWaitlist,
+      });
+
+      const pin = values.pin?.trim() ?? "";
+      const confirmPin = values.confirmPin?.trim() ?? "";
+      if (pin || confirmPin) {
+        if (pin !== confirmPin) {
+          throw new Error("PIN and confirmation do not match");
+        }
+        if (!/^\d{4,8}$/.test(pin)) {
+          throw new Error("PIN must be 4–8 digits");
+        }
+        setPinBusy(true);
+        try {
+          await setMemberTimeClockPin(member.userId, pin);
+        } finally {
+          setPinBusy(false);
+        }
+      }
+    },
     onSuccess: () => {
       toast.success("Staff details saved");
+      stopEdit();
       void invalidateBusinessMembers(queryClient);
       void queryClient.invalidateQueries({
         queryKey: queryKeys.business.memberDetail(member.userId),
@@ -103,194 +172,251 @@ export function MemberDetailsTab({ member, canManage, onArchive }: Props) {
     onError: (err: Error) => toast.error(err.message),
   });
 
-  const resendMutation = useMutation({
-    mutationFn: () => resendStaffInvite(member.userId),
-    onSuccess: (data) => {
-      toast.success(
-        data.inviteLink
-          ? "Invite resent. Share the link if the email doesn’t arrive."
-          : "Invite resent",
-      );
-      if (data.inviteLink) {
-        void navigator.clipboard.writeText(data.inviteLink).then(
-          () => toast.message("Invite link copied to clipboard"),
-          () => undefined,
-        );
-      }
+  const removePinMutation = useMutation({
+    mutationFn: () => removeMemberTimeClockPin(member.userId),
+    onSuccess: () => {
+      toast.success("Time clock PIN removed");
+      void invalidateBusinessMembers(queryClient);
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.business.memberDetail(member.userId),
+      });
     },
     onError: (err: Error) => toast.error(err.message),
   });
 
-  const copyLink = () => {
-    if (!member.staffBookingUrl) return;
-    void navigator.clipboard.writeText(member.staffBookingUrl);
-    toast.success("Booking link copied");
-  };
+  const fullName =
+    [watched.firstName, watched.lastName].filter(Boolean).join(" ") ||
+    member.user.email;
+
+  const summaryRows = [
+    { label: "Name", value: fullName },
+    { label: "User type", value: roleLabel(member.role) },
+    { label: "Email", value: watched.email || member.user.email },
+    { label: "Phone", value: watched.phoneNumber || null },
+    {
+      label: "Gender",
+      value:
+        staffGenderOptions.find((o) => o.value === watched.gender)?.label ??
+        null,
+    },
+    {
+      label: "Service provider",
+      value: yesNo(Boolean(watched.isServiceProvider)),
+    },
+    {
+      label: "Online booking",
+      value: yesNo(Boolean(watched.onlineBookingEnabled)),
+    },
+  ];
 
   return (
-    <div className="space-y-4">
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Profile</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <Form {...form}>
-            <form
-              className="space-y-4"
-              onSubmit={form.handleSubmit((v) => saveMutation.mutate(v))}
-            >
-              <div className="grid gap-4 sm:grid-cols-2">
-                <TextField control={form.control} name="firstName" label="First name" />
-                <TextField control={form.control} name="lastName" label="Last name" />
-              </div>
-              <TextField control={form.control} name="email" label="Email" type="email" />
-              <TextField control={form.control} name="phoneNumber" label="Phone" />
-              <SelectField
+    <Form {...form}>
+      <FormSchemaProvider schema={schema}>
+        <SettingsInlineEditSection
+          title="Details"
+          summary={<SettingsViewRows rows={summaryRows} />}
+          isEditing={isEditing("details")}
+          onEdit={() => startEdit("details")}
+          onDiscard={() => {
+            form.reset(toMemberFormValues(member));
+            stopEdit();
+          }}
+          onSave={() =>
+            void form.handleSubmit((values) => saveMutation.mutate(values))()
+          }
+          isDirty={form.formState.isDirty}
+          isSaving={saveMutation.isPending || pinBusy}
+          disabled={!canManage}
+        >
+          <SettingsFormStack>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <TextField
                 control={form.control}
-                name="gender"
-                label="Gender"
-                placeholder="Select gender"
-                items={staffGenderOptions}
+                name="firstName"
+                label="Name"
+                placeholder="First name"
               />
+              <TextField
+                control={form.control}
+                name="lastName"
+                label="Last name"
+                placeholder="Last name"
+              />
+            </div>
+            <div className="space-y-1">
+              <p className="text-sm font-medium">User type</p>
               <p className="text-sm text-muted-foreground">
-                User type:{" "}
-                <span className="font-medium text-foreground">
-                  {member.role === "ADMIN" || member.role === "OWNER"
-                    ? "Admin"
-                    : "Normal"}
-                </span>
+                {roleLabel(member.role)}
               </p>
-              <div className="space-y-3 rounded-lg border p-3">
-                <ToggleRow
-                  label="Service provider"
-                  checked={form.watch("isServiceProvider")}
-                  onCheckedChange={(v) => form.setValue("isServiceProvider", v)}
-                  disabled={!canManage}
-                />
-                <ToggleRow
-                  label="Enabled in online booking"
-                  checked={form.watch("onlineBookingEnabled")}
-                  onCheckedChange={(v) =>
-                    form.setValue("onlineBookingEnabled", v)
-                  }
-                  disabled={!canManage}
-                />
-                <ToggleRow
-                  label="Can be assigned to product sales"
-                  checked={form.watch("canAssignProductSales")}
-                  onCheckedChange={(v) =>
-                    form.setValue("canAssignProductSales", v)
-                  }
-                  disabled={!canManage}
-                />
-                <ToggleRow
-                  label="Can manage waitlist"
-                  checked={form.watch("canManageWaitlist")}
-                  onCheckedChange={(v) => form.setValue("canManageWaitlist", v)}
-                  disabled={!canManage}
-                />
-              </div>
-              {member.staffBookingUrl ? (
-                <Button type="button" variant="outline" size="sm" onClick={copyLink}>
-                  <Copy className="mr-1.5 size-3.5" />
-                  Copy online booking link
-                </Button>
-              ) : null}
-              {canManage ? (
-                <Button type="submit" variant="brand" disabled={saveMutation.isPending}>
-                  Save details
-                </Button>
-              ) : null}
-            </form>
-          </Form>
-        </CardContent>
-      </Card>
+            </div>
+            <TextField
+              control={form.control}
+              name="email"
+              label="Email"
+              type="email"
+            />
+            <TextField control={form.control} name="phoneNumber" label="Phone" />
+            <SelectField
+              control={form.control}
+              name="gender"
+              label="Gender"
+              placeholder="Select gender"
+              items={staffGenderOptions}
+              searchable={false}
+            />
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Credentials</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <p className="text-sm text-muted-foreground">
-            Status: {member.status}
-            {member.user.status === "INVITED" ? " (awaiting activation)" : ""}
-          </p>
-          {canManage && member.status === "INVITED" ? (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              disabled={resendMutation.isPending}
-              onClick={() => resendMutation.mutate()}
-            >
-              Resend invite email
-            </Button>
-          ) : null}
-          {canManage ? (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => setPinOpen(true)}
-            >
-              {member.hasTimeclockPin ? "Change time clock PIN" : "Set time clock PIN"}
-            </Button>
-          ) : null}
-        </CardContent>
-      </Card>
+            <Accordion multiple defaultValue={["additional"]}>
+              <AccordionItem value="additional" className="border-none">
+                <AccordionTrigger className="px-0 text-base font-medium text-violet-primary-normal hover:no-underline">
+                  Additional Options
+                </AccordionTrigger>
+                <AccordionContent className="space-y-4 pb-0">
+                  <ToggleField
+                    control={form.control}
+                    name="isServiceProvider"
+                    label="Is service provider"
+                  />
+                  <ToggleField
+                    control={form.control}
+                    name="canAssignProductSales"
+                    label="Can be assigned to product sales"
+                  />
+                  <ToggleField
+                    control={form.control}
+                    name="canManageWaitlist"
+                    label="Can manage waitlist"
+                  />
+                  <ToggleField
+                    control={form.control}
+                    name="onlineBookingEnabled"
+                    label="Enable in online booking"
+                  />
 
-      {canManage && onArchive ? (
-        <Card className="border-destructive/30">
-          <CardHeader>
-            <CardTitle className="text-base text-destructive">
-              Danger zone
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <p className="text-sm text-muted-foreground">
-              Archiving removes this person from your active staff list. They
-              will no longer have access to this business.
-            </p>
-            <Button
-              type="button"
-              variant="destructive"
-              size="sm"
-              onClick={onArchive}
-            >
-              Archive staff member
-            </Button>
-          </CardContent>
-        </Card>
-      ) : null}
+                  <div className="space-y-3">
+                    <p className="text-sm font-medium">Time clock PIN</p>
+                    <p className={SETTINGS_FORM_DESCRIPTION_CLASS}>
+                      {member.hasTimeclockPin
+                        ? "A PIN is set. Enter a new PIN below to change it."
+                        : "Set a 4–8 digit PIN for the time clock."}
+                    </p>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <FormField
+                        control={form.control}
+                        name="pin"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Enter PIN</FormLabel>
+                            <FormControl>
+                              <Input
+                                {...field}
+                                type="password"
+                                inputMode="numeric"
+                                autoComplete="new-password"
+                                placeholder="••••"
+                              />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="confirmPin"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Confirm PIN</FormLabel>
+                            <FormControl>
+                              <Input
+                                {...field}
+                                type="password"
+                                inputMode="numeric"
+                                autoComplete="new-password"
+                                placeholder="••••"
+                              />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                    {member.hasTimeclockPin ? (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        disabled={removePinMutation.isPending}
+                        onClick={() => removePinMutation.mutate()}
+                      >
+                        Remove PIN
+                      </Button>
+                    ) : null}
+                  </div>
 
-      <MemberTimeClockPinDialog
-        member={member}
-        open={pinOpen}
-        onOpenChange={setPinOpen}
-      />
-    </div>
+                  {member.staffBookingUrl ? (
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium">Online Booking</p>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          void navigator.clipboard.writeText(
+                            member.staffBookingUrl!,
+                          );
+                          toast.success("Direct link copied");
+                        }}
+                      >
+                        <Copy className="mr-1 size-3" aria-hidden />
+                        Direct Link
+                      </Button>
+                    </div>
+                  ) : null}
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          </SettingsFormStack>
+        </SettingsInlineEditSection>
+      </FormSchemaProvider>
+    </Form>
   );
 }
 
-function ToggleRow({
+function ToggleField({
+  control,
+  name,
   label,
-  checked,
-  onCheckedChange,
-  disabled,
+  description,
 }: {
+  control: ReturnType<typeof useForm<FormValues>>["control"];
+  name:
+    | "isServiceProvider"
+    | "onlineBookingEnabled"
+    | "canAssignProductSales"
+    | "canManageWaitlist";
   label: string;
-  checked: boolean;
-  onCheckedChange: (v: boolean) => void;
-  disabled?: boolean;
+  description?: string;
 }) {
   return (
-    <div className="flex items-center justify-between gap-3">
-      <Label className="font-normal">{label}</Label>
-      <Switch
-        checked={checked}
-        onCheckedChange={onCheckedChange}
-        disabled={disabled}
-      />
-    </div>
+    <FormField
+      control={control}
+      name={name}
+      render={({ field }) => (
+        <FormItem className="flex items-start justify-between gap-4 space-y-0">
+          <div className="min-w-0 space-y-1">
+            <FormLabel className="text-sm font-medium">{label}</FormLabel>
+            {description ? (
+              <FormDescription className={SETTINGS_FORM_DESCRIPTION_CLASS}>
+                {description}
+              </FormDescription>
+            ) : null}
+          </div>
+          <FormControl>
+            <Switch
+              checked={Boolean(field.value)}
+              onCheckedChange={field.onChange}
+              className={DRAWER_SWITCH_CLASS}
+            />
+          </FormControl>
+        </FormItem>
+      )}
+    />
   );
 }

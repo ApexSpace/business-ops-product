@@ -41,6 +41,13 @@ export const SETTINGS_CONTENT_SHELL_CLASS = cn(
 export const SETTINGS_FORM_SECTION_HEADER_CLASS =
   "min-w-0 space-y-[var(--spacing-2)]";
 
+/**
+ * In-panel group heading (Calendar, Appointments, Haircuts, …).
+ * Figma primary/900 violet — shared by Team, Services, Resources, etc.
+ */
+export const SETTINGS_GROUP_TITLE_CLASS =
+  "text-lg font-bold text-violet-primary-dark";
+
 /** Figma subheading — styled by `.settings-form-surface .settings-form-description`. */
 export const SETTINGS_FORM_DESCRIPTION_CLASS =
   "settings-form-description max-w-2xl";

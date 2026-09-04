@@ -1,14 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { LoadingState } from "@/components/data-display/loading-state";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { BusinessHoursEditor } from "@/features/business-hours/components/business-hours-editor";
+import { BusinessHoursWeekList } from "@/features/business-hours/components/business-hours-week-list";
 import {
   defaultBusinessHoursSlots,
   normalizeBusinessHoursSlots,
@@ -18,6 +16,12 @@ import {
   getStaffWorkSchedule,
   updateStaffWorkSchedule,
 } from "@/features/online-booking-settings/api/online-booking-settings.api";
+import { DRAWER_SWITCH_CLASS } from "@/lib/design/drawer-tokens";
+import {
+  SETTINGS_FORM_DESCRIPTION_CLASS,
+  SETTINGS_FORM_SECTION_STACK_CLASS,
+} from "@/lib/design/settings-form-tokens";
+import { cn } from "@/lib/utils";
 
 type Props = {
   userId: string;
@@ -25,10 +29,12 @@ type Props = {
 };
 
 export function MemberWorkHoursTab({ userId, canManage }: Props) {
+  const queryClient = useQueryClient();
   const [useBusinessHours, setUseBusinessHours] = useState(true);
   const [scheduleSlots, setScheduleSlots] = useState<BusinessHoursSlot[]>(
     defaultBusinessHoursSlots(),
   );
+  const [savingDay, setSavingDay] = useState(false);
 
   const scheduleQuery = useQuery({
     queryKey: ["staff-work-schedule", userId],
@@ -41,57 +47,114 @@ export function MemberWorkHoursTab({ userId, canManage }: Props) {
     setScheduleSlots(normalizeBusinessHoursSlots(scheduleQuery.data.slots));
   }, [scheduleQuery.data]);
 
-  const saveMutation = useMutation({
-    mutationFn: async () => {
-      await updateStaffWorkSchedule(userId, {
-        useBusinessHours,
-        slots: useBusinessHours ? [] : scheduleSlots,
+  const persistSchedule = async (next: {
+    useBusinessHours: boolean;
+    slots: BusinessHoursSlot[];
+  }) => {
+    await updateStaffWorkSchedule(userId, {
+      useBusinessHours: next.useBusinessHours,
+      slots: next.useBusinessHours ? [] : next.slots,
+    });
+    await queryClient.invalidateQueries({
+      queryKey: ["staff-work-schedule", userId],
+    });
+  };
+
+  const toggleMutation = useMutation({
+    mutationFn: async (nextUseBusinessHours: boolean) => {
+      const slots = nextUseBusinessHours
+        ? scheduleSlots
+        : normalizeBusinessHoursSlots(
+            scheduleSlots.length
+              ? scheduleSlots
+              : defaultBusinessHoursSlots(),
+          );
+      if (!nextUseBusinessHours && scheduleSlots.every((s) => !s.isEnabled)) {
+        // Keep defaults when switching to custom with empty/disabled template
+      }
+      setUseBusinessHours(nextUseBusinessHours);
+      if (!nextUseBusinessHours) {
+        setScheduleSlots(normalizeBusinessHoursSlots(slots));
+      }
+      await persistSchedule({
+        useBusinessHours: nextUseBusinessHours,
+        slots: normalizeBusinessHoursSlots(slots),
       });
     },
     onSuccess: () => toast.success("Work hours saved"),
-    onError: (err: Error) => toast.error(err.message),
+    onError: (err: Error) => {
+      toast.error(err.message);
+      if (scheduleQuery.data) {
+        setUseBusinessHours(scheduleQuery.data.useBusinessHours);
+        setScheduleSlots(
+          normalizeBusinessHoursSlots(scheduleQuery.data.slots),
+        );
+      }
+    },
   });
+
+  const handleSaveDay = async (
+    dayOfWeek: BusinessHoursSlot["dayOfWeek"],
+    slot: BusinessHoursSlot,
+  ) => {
+    const nextSlots = scheduleSlots.map((row) =>
+      row.dayOfWeek === dayOfWeek ? slot : row,
+    );
+    setScheduleSlots(nextSlots);
+    setSavingDay(true);
+    try {
+      await persistSchedule({
+        useBusinessHours: false,
+        slots: nextSlots,
+      });
+      toast.success("Day hours saved");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not save hours");
+      if (scheduleQuery.data) {
+        setScheduleSlots(
+          normalizeBusinessHoursSlots(scheduleQuery.data.slots),
+        );
+      }
+    } finally {
+      setSavingDay(false);
+    }
+  };
 
   if (scheduleQuery.isLoading) {
     return <LoadingState variant="inline" />;
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-base">Weekly schedule</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="flex items-center justify-between gap-3">
-          <Label className="font-normal">Use business hours</Label>
-          <Switch
-            checked={useBusinessHours}
-            disabled={!canManage}
-            onCheckedChange={setUseBusinessHours}
-          />
-        </div>
-        {!useBusinessHours ? (
-          <BusinessHoursEditor
-            slots={scheduleSlots}
-            onChange={setScheduleSlots}
-            disabled={!canManage}
-          />
-        ) : (
-          <p className="text-sm text-muted-foreground">
-            This staff member follows your business-wide hours from Business
-            Profile settings.
+    <div className={cn(SETTINGS_FORM_SECTION_STACK_CLASS, "max-w-3xl")}>
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0 space-y-1">
+          <Label className="text-sm font-medium">Use business hours</Label>
+          <p className={SETTINGS_FORM_DESCRIPTION_CLASS}>
+            When enabled, this staff member follows the business weekly
+            schedule.
           </p>
-        )}
-        {canManage ? (
-          <Button
-            type="button"
-            onClick={() => saveMutation.mutate()}
-            disabled={saveMutation.isPending}
-          >
-            Save work hours
-          </Button>
-        ) : null}
-      </CardContent>
-    </Card>
+        </div>
+        <Switch
+          checked={useBusinessHours}
+          disabled={!canManage || toggleMutation.isPending}
+          onCheckedChange={(checked) => toggleMutation.mutate(checked)}
+          className={DRAWER_SWITCH_CLASS}
+        />
+      </div>
+
+      {!useBusinessHours ? (
+        <BusinessHoursWeekList
+          slots={scheduleSlots}
+          disabled={!canManage}
+          isSaving={savingDay}
+          onSaveDay={handleSaveDay}
+        />
+      ) : (
+        <p className="text-sm text-muted-foreground">
+          Custom hours are hidden while business hours are in use. Turn the
+          toggle off to set a personal weekly schedule.
+        </p>
+      )}
+    </div>
   );
 }
