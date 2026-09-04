@@ -75,6 +75,8 @@ function AppointmentsCalendarPageContent() {
       weekStartsOn={cal.weekStartsOn}
       zoomLevel={cal.displaySettings?.zoomLevel ?? "MEDIUM"}
       highContrastEnabled={cal.displaySettings?.highContrastEnabled ?? false}
+      visibleStartTime={cal.displaySettings?.visibleStartTime ?? "00:00"}
+      visibleEndTime={cal.displaySettings?.visibleEndTime ?? "24:00"}
     >
       <AppointmentsCalendarPageBody cal={cal} />
     </CalendarDisplayRuntimeProvider>

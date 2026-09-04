@@ -61,22 +61,26 @@ export type MinuteRange = { startMinutes: number; endMinutes: number };
 /** Ranges to gray out on the calendar grid (outside working hours). */
 export function getNonWorkingOverlayBlocks(
   window: { isEnabled: boolean; startMinutes: number; endMinutes: number },
+  gridStartMinutes = 0,
   gridEndMinutes = 24 * 60,
 ): MinuteRange[] {
   if (!window.isEnabled) {
-    return [{ startMinutes: 0, endMinutes: gridEndMinutes }];
+    return [{ startMinutes: gridStartMinutes, endMinutes: gridEndMinutes }];
   }
   const blocks: MinuteRange[] = [];
-  if (window.startMinutes > 0) {
-    blocks.push({ startMinutes: 0, endMinutes: window.startMinutes });
+  if (window.startMinutes > gridStartMinutes) {
+    blocks.push({
+      startMinutes: gridStartMinutes,
+      endMinutes: Math.min(window.startMinutes, gridEndMinutes),
+    });
   }
   if (window.endMinutes < gridEndMinutes) {
     blocks.push({
-      startMinutes: window.endMinutes,
+      startMinutes: Math.max(window.endMinutes, gridStartMinutes),
       endMinutes: gridEndMinutes,
     });
   }
-  return blocks;
+  return blocks.filter((block) => block.endMinutes > block.startMinutes);
 }
 
 export function isRangeOutsideWorkingWindow(

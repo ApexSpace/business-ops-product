@@ -3,6 +3,7 @@ import type { Appointment } from "@/features/appointments/schemas/appointment-pr
 import {
   filterAppointmentsForCalendarDisplay,
   getMobileWeekDateKeys,
+  parseVisibleTimeToMinutes,
   shouldShowCancelledAppointment,
   slotHeightForZoom,
 } from "./calendar-display-runtime.util";
@@ -47,6 +48,14 @@ describe("slotHeightForZoom", () => {
     expect(slotHeightForZoom("SMALL")).toBe(20);
     expect(slotHeightForZoom("MEDIUM")).toBe(30);
     expect(slotHeightForZoom("LARGE")).toBe(40);
+  });
+});
+
+describe("parseVisibleTimeToMinutes", () => {
+  it("parses HH:mm and 24:00", () => {
+    expect(parseVisibleTimeToMinutes("01:00")).toBe(60);
+    expect(parseVisibleTimeToMinutes("02:00")).toBe(120);
+    expect(parseVisibleTimeToMinutes("24:00")).toBe(1440);
   });
 });
 

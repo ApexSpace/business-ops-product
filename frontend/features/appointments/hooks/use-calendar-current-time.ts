@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { DateTime } from "luxon";
 import { useCalendarDisplayRuntime } from "@/features/calendar-display-settings/context/calendar-display-runtime-context";
 import {
-  CALENDAR_DAY_START_HOUR,
   CALENDAR_SLOT_MINUTES,
   getTimeGridHeight,
 } from "@/features/calendars/utils/calendar-dates";
@@ -14,10 +13,11 @@ export function useCalendarCurrentTimeTop(
   timezone: string,
   visibleDateKeys: string[],
 ): number | null {
-  const { slotHeightPx } = useCalendarDisplayRuntime();
+  const { slotHeightPx, visibleStartMinutes, visibleEndMinutes } =
+    useCalendarDisplayRuntime();
   const gridHeight = getTimeGridHeight(
-    CALENDAR_DAY_START_HOUR,
-    24,
+    visibleStartMinutes / 60,
+    visibleEndMinutes / 60,
     CALENDAR_SLOT_MINUTES,
     slotHeightPx,
   );
@@ -35,9 +35,8 @@ export function useCalendarCurrentTimeTop(
     const update = () => {
       const now = DateTime.now().setZone(timezone);
       const minutesFromMidnight = now.hour * 60 + now.minute + now.second / 60;
-      const gridStartMinutes = CALENDAR_DAY_START_HOUR * 60;
       const top =
-        ((minutesFromMidnight - gridStartMinutes) / CALENDAR_SLOT_MINUTES) *
+        ((minutesFromMidnight - visibleStartMinutes) / CALENDAR_SLOT_MINUTES) *
         slotHeightPx;
 
       if (top < 0 || top > gridHeight) {
@@ -51,7 +50,13 @@ export function useCalendarCurrentTimeTop(
     update();
     const intervalId = window.setInterval(update, 60_000);
     return () => window.clearInterval(intervalId);
-  }, [gridHeight, isTodayVisible, slotHeightPx, timezone]);
+  }, [
+    gridHeight,
+    isTodayVisible,
+    slotHeightPx,
+    timezone,
+    visibleStartMinutes,
+  ]);
 
   return topPx;
 }

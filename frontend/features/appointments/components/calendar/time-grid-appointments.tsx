@@ -54,7 +54,8 @@ export function TimeGridAppointments({
   onAppointmentResizeStart,
   draggingAppointmentId,
 }: TimeGridAppointmentsProps) {
-  const { slotHeightPx } = useCalendarDisplayRuntime();
+  const { slotHeightPx, visibleStartHour, visibleEndHour } =
+    useCalendarDisplayRuntime();
   const resolveEventTimezone = useCallback(
     (_appointment: Appointment) => viewTimezone,
     [viewTimezone],
@@ -66,8 +67,17 @@ export function TimeGridAppointments({
         timezone: viewTimezone,
         resolveEventTimezone,
         slotHeightPx,
+        dayStartHour: visibleStartHour,
+        dayEndHour: visibleEndHour,
       }),
-    [appointments, viewTimezone, resolveEventTimezone, slotHeightPx],
+    [
+      appointments,
+      viewTimezone,
+      resolveEventTimezone,
+      slotHeightPx,
+      visibleStartHour,
+      visibleEndHour,
+    ],
   );
 
   return (
