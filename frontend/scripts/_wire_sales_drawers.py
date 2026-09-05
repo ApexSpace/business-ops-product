@@ -230,6 +230,12 @@ new_drawer = f"""<DrawerShell
               </div>
             ) : checkoutStep === "payment" && paymentAction ? (
               <div className={{SALES_DRAWER_FOOTER_INNER_CLASS}}>
+                <DrawerPrimaryButton
+                  disabled={{paymentAction.disabled}}
+                  onClick={{paymentAction.onClick}}
+                >
+                  {{paymentAction.label}}
+                </DrawerPrimaryButton>
                 <Button
                   type="button"
                   variant="ghost"
@@ -241,12 +247,6 @@ new_drawer = f"""<DrawerShell
                 >
                   Back to items
                 </Button>
-                <DrawerPrimaryButton
-                  disabled={{paymentAction.disabled}}
-                  onClick={{paymentAction.onClick}}
-                >
-                  {{paymentAction.label}}
-                </DrawerPrimaryButton>
               </div>
             ) : (
               <div className={{SALES_DRAWER_FOOTER_INNER_CLASS}}>

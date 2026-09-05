@@ -4,6 +4,7 @@ import {
   formatTimeInTimezone,
   getMinutesFromMidnightInTimezone,
 } from "@/features/calendars/utils/timezone";
+import { eventMinHeightForSlot } from "@/features/calendars/utils/calendar-event-density";
 import { FILTER_ALL_LABELS } from "@/lib/ui/filter-labels";
 
 export type CalendarViewMode = "day" | "week" | "month" | "list";
@@ -290,11 +291,10 @@ export function calculateEventPosition(
     ((clampedStart - gridStartMinutes) / slotMinutes) * slotHeightPx;
   const height = Math.max(
     ((clampedEnd - clampedStart) / slotMinutes) * slotHeightPx,
-    CALENDAR_EVENT_MIN_HEIGHT_PX,
+    eventMinHeightForSlot(slotHeightPx),
   );
 
-  return { top, height,
-};
+  return { top, height };
 }
 
 export function getTimeGridHeight(

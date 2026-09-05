@@ -5,6 +5,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
+import { AmountUnitToggle } from "@/components/ui/amount-unit-toggle";
 import { PAYMENT_METHOD_OPTIONS } from "@/features/payments/schemas/payment-profile";
 import type { CustomFeeFormValues } from "@/features/custom-fees/schemas/custom-fee-profile";
 import { SETTINGS_FORM_DESCRIPTION_CLASS } from "@/lib/design/settings-form-tokens";
@@ -117,44 +118,27 @@ export function CustomFeeFormFields({
 
       <div className="space-y-3 rounded-lg border border-border/70 p-4">
         <Label>Fee amount</Label>
-        <div className="flex gap-2">
-          <button
-            type="button"
+        <div className="flex items-center gap-2">
+          <Input
+            type="number"
+            min={values.amountType === "PERCENTAGE" ? 1 : 0.01}
+            max={values.amountType === "PERCENTAGE" ? 100 : undefined}
+            step={values.amountType === "PERCENTAGE" ? 1 : 0.01}
+            value={values.amount}
             disabled={disabled}
-            className={cn(
-              "rounded-md border px-3 py-1.5 text-sm",
-              values.amountType === "FIXED"
-                ? "border-primary bg-primary/5"
-                : "border-border",
-            )}
-            onClick={() => onChange({ ...values, amountType: "FIXED" })}
-          >
-            $
-          </button>
-          <button
-            type="button"
+            placeholder={values.amountType === "PERCENTAGE" ? "10" : "5.00"}
+            onChange={(e) => onChange({ ...values, amount: e.target.value })}
+            className="flex-1"
+          />
+          <AmountUnitToggle
+            value={values.amountType}
+            currencyValue="FIXED"
+            percentValue="PERCENTAGE"
             disabled={disabled}
-            className={cn(
-              "rounded-md border px-3 py-1.5 text-sm",
-              values.amountType === "PERCENTAGE"
-                ? "border-primary bg-primary/5"
-                : "border-border",
-            )}
-            onClick={() => onChange({ ...values, amountType: "PERCENTAGE" })}
-          >
-            %
-          </button>
+            onValueChange={(amountType) => onChange({ ...values, amountType })}
+            aria-label="Fee amount unit"
+          />
         </div>
-        <Input
-          type="number"
-          min={values.amountType === "PERCENTAGE" ? 1 : 0.01}
-          max={values.amountType === "PERCENTAGE" ? 100 : undefined}
-          step={values.amountType === "PERCENTAGE" ? 1 : 0.01}
-          value={values.amount}
-          disabled={disabled}
-          placeholder={values.amountType === "PERCENTAGE" ? "10" : "5.00"}
-          onChange={(e) => onChange({ ...values, amount: e.target.value })}
-        />
       </div>
 
       {showEnabledToggle ? (

@@ -2,11 +2,11 @@ import type { Appointment } from "@/features/appointments/schemas/appointment-pr
 import {
   CALENDAR_DAY_END_HOUR,
   CALENDAR_DAY_START_HOUR,
-  CALENDAR_EVENT_MIN_HEIGHT_PX,
   CALENDAR_SLOT_HEIGHT_PX,
   CALENDAR_SLOT_MINUTES,
   calculateEventPosition,
 } from "@/features/calendars/utils/calendar-dates";
+import { eventMinHeightForSlot } from "@/features/calendars/utils/calendar-event-density";
 
 export const OVERLAP_LAYOUT_GAP_PX = 2;
 /** Mangomint-style: bars use this share of the column; the rest stays clickable. */
@@ -165,6 +165,9 @@ export function layoutOverlappingAppointments(
 ): TimeGridAppointmentLayout[] {
   const clusters = getOverlappingAppointmentGroups(appointments);
   const layouts: TimeGridAppointmentLayout[] = [];
+  const minHeight = eventMinHeightForSlot(
+    options.slotHeightPx ?? CALENDAR_SLOT_HEIGHT_PX,
+  );
 
   for (const cluster of clusters) {
     if (cluster.length === 1) {
@@ -174,7 +177,7 @@ export function layoutOverlappingAppointments(
         type: "event",
         appointment: apt,
         top,
-        height: Math.max(height, CALENDAR_EVENT_MIN_HEIGHT_PX),
+        height: Math.max(height, minHeight),
         leftPercent: 0,
         widthPercent: OVERLAP_BARS_MAX_WIDTH_PERCENT,
         columnIndex: 0,
@@ -198,7 +201,7 @@ export function layoutOverlappingAppointments(
         type: "event",
         appointment: apt,
         top,
-        height: Math.max(height, CALENDAR_EVENT_MIN_HEIGHT_PX),
+        height: Math.max(height, minHeight),
         leftPercent: columnIndex * barWidth,
         widthPercent: barWidth,
         columnIndex,

@@ -13,6 +13,11 @@ import {
   getAppointmentCardTheme,
   getAppointmentEventStyle,
 } from "@/features/appointments/utils/appointment-calendar-styles";
+import { useCalendarDisplayRuntime } from "@/features/calendar-display-settings/context/calendar-display-runtime-context";
+import {
+  calendarEventCardMetrics,
+  calendarEventVisibleLines,
+} from "@/features/calendars/utils/calendar-event-density";
 import { formatTime } from "@/features/calendars/utils/calendar-dates";
 import { cn } from "@/lib/utils";
 
@@ -34,12 +39,22 @@ interface AppointmentEventCardProps {
 function CardLine({
   children,
   className,
+  style,
 }: {
   children: ReactNode;
   className?: string;
+  style?: React.CSSProperties;
 }) {
   return (
-    <p className={cn("min-w-0 truncate leading-tight", className)}>{children}</p>
+    <p
+      className={cn(
+        "min-w-0 shrink-0 truncate overflow-hidden whitespace-nowrap",
+        className,
+      )}
+      style={style}
+    >
+      {children}
+    </p>
   );
 }
 
@@ -54,6 +69,8 @@ export function AppointmentEventCard({
   onResizeStart,
   isDragging = false,
 }: AppointmentEventCardProps) {
+  const { slotHeightPx } = useCalendarDisplayRuntime();
+  const metrics = calendarEventCardMetrics(slotHeightPx);
   const theme = getAppointmentCardTheme(appointment);
   const { className: eventClass, style } = getAppointmentEventStyle(appointment);
   const contactName = getContactDisplayName(appointment.contact, {
@@ -75,13 +92,31 @@ export function AppointmentEventCard({
   const interactive = Boolean(onClick);
   const draggable = Boolean(onMoveStart);
 
-  /** Figma: service → client → time; hide lower lines on very short blocks */
+  const visible =
+    variant === "grid" && eventHeight !== undefined
+      ? calendarEventVisibleLines(eventHeight, metrics)
+      : { showClient: true, showTime: true };
+
   const showClient =
-    variant === "grid" &&
-    Boolean(contactName) &&
-    (eventHeight === undefined || eventHeight >= 56);
-  const showTime =
-    variant === "grid" && (eventHeight === undefined || eventHeight >= 40);
+    variant === "grid" && Boolean(contactName) && visible.showClient;
+  const showTime = variant === "grid" && visible.showTime;
+
+  const titleClass =
+    metrics.density === "compact"
+      ? "text-[11px] font-semibold leading-3"
+      : metrics.density === "comfortable"
+        ? "text-[12px] font-bold leading-[14px]"
+        : "text-[13px] font-bold leading-4";
+
+  const secondaryClass =
+    metrics.density === "compact"
+      ? "text-[10px] font-normal leading-[11px]"
+      : metrics.density === "comfortable"
+        ? "text-[11px] font-normal leading-3"
+        : "text-[11px] font-normal leading-[14px]";
+
+  const iconClass =
+    metrics.density === "compact" ? "size-2.5" : "size-3";
 
   return (
     <div
@@ -118,9 +153,8 @@ export function AppointmentEventCard({
           : undefined
       }
       className={cn(
-        // Figma Cards-Calendar: radius 8, border 1px, pad 8, gap 4, top-aligned
         "relative flex h-full min-h-0 w-full min-w-0 flex-col overflow-hidden rounded-[var(--radius-md)] border border-solid text-left",
-        variant === "month" ? "gap-0.5 px-1.5 py-1" : "gap-1 p-2",
+        variant === "month" && "gap-0.5 px-1.5 py-1",
         interactive &&
           "cursor-pointer transition-[box-shadow,transform] hover:shadow-md active:scale-[0.995]",
         draggable && "cursor-grab active:cursor-grabbing",
@@ -128,15 +162,21 @@ export function AppointmentEventCard({
         eventClass,
         className,
       )}
-      style={style}
+      style={{
+        ...style,
+        ...(variant === "grid"
+          ? {
+              paddingTop: metrics.padY,
+              paddingBottom: metrics.padY,
+              paddingLeft: metrics.padX,
+              paddingRight: metrics.padX,
+              gap: metrics.gap,
+            }
+          : undefined),
+      }}
     >
-      <div className="flex min-w-0 items-start gap-1">
-        <CardLine
-          className={cn(
-            "flex-1 font-bold",
-            variant === "month" ? "text-[10px]" : "text-[13px] leading-4",
-          )}
-        >
+      <div className="flex min-h-0 min-w-0 shrink-0 items-start gap-1">
+        <CardLine className={cn("flex-1", titleClass)}>
           {serviceLabel}
         </CardLine>
         {hasPhotos ? (
@@ -144,7 +184,7 @@ export function AppointmentEventCard({
             className="mt-0.5 shrink-0 text-current opacity-80"
             title="Has attached photos"
           >
-            <ImageIcon className="size-3" aria-hidden />
+            <ImageIcon className={iconClass} aria-hidden />
           </span>
         ) : null}
         {isPendingExpress ? (
@@ -152,7 +192,7 @@ export function AppointmentEventCard({
             className="mt-0.5 shrink-0 text-current opacity-90"
             title="Pending Express Booking completion"
           >
-            <Timer className="size-3" aria-hidden />
+            <Timer className={iconClass} aria-hidden />
           </span>
         ) : null}
         {syncIndicator ? (
@@ -174,29 +214,34 @@ export function AppointmentEventCard({
       </div>
 
       {showClient ? (
-        <CardLine className="text-[12px] font-normal leading-[15px]">
+        <CardLine className={secondaryClass}>
           <span style={{ color: theme.textMuted }}>{contactName}</span>
         </CardLine>
       ) : null}
 
       {showTime ? (
-        <CardLine className="text-[11px] font-normal leading-[14px]">
-          {timeRange}
-        </CardLine>
+        <CardLine className={secondaryClass}>{timeRange}</CardLine>
       ) : null}
 
       {variant === "month" ? (
-        <CardLine className="text-[10px] opacity-80">
+        <CardLine className="text-[10px] leading-3 opacity-80">
           {formatTime(appointment.startAt, timeZone)}
         </CardLine>
       ) : null}
 
-      {onResizeStart && variant === "grid" ? (
+      {onResizeStart && variant === "grid" && metrics.density !== "compact" ? (
         <div
           data-resize-handle=""
           role="presentation"
           onPointerDown={(event) => onResizeStart(event)}
           className="absolute inset-x-1 bottom-0 h-2 cursor-ns-resize rounded-b-[8px] hover:bg-black/5"
+        />
+      ) : onResizeStart && variant === "grid" ? (
+        <div
+          data-resize-handle=""
+          role="presentation"
+          onPointerDown={(event) => onResizeStart(event)}
+          className="absolute inset-x-0 bottom-0 h-1.5 cursor-ns-resize"
         />
       ) : null}
     </div>

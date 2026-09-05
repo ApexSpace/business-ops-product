@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { DrawerSegmentedTabs } from "@/components/drawer/drawer-segmented-tabs";
+import { AmountUnitToggle } from "@/components/ui/amount-unit-toggle";
 import { SearchableSelect } from "@/components/forms/searchable-select";
 import { SettingsInlineEditSection } from "@/components/layout/settings-inline-edit-section";
 import { SettingsViewRows } from "@/components/layout/settings-view-rows";
@@ -320,28 +320,14 @@ export function ServiceStaffSection({
                                 })
                               }
                             />
-                            <DrawerSegmentedTabs
-                              size="sm"
-                              className="w-auto shrink-0"
+                            <AmountUnitToggle
                               value={row.commissionType}
-                              options={[
-                                {
-                                  value: "FLAT",
-                                  label: "$",
-                                  onClick: () =>
-                                    updateDraft(member.userId, {
-                                      commissionType: "FLAT",
-                                    }),
-                                },
-                                {
-                                  value: "PERCENT",
-                                  label: "%",
-                                  onClick: () =>
-                                    updateDraft(member.userId, {
-                                      commissionType: "PERCENT",
-                                    }),
-                                },
-                              ]}
+                              currencyValue="FLAT"
+                              percentValue="PERCENT"
+                              onValueChange={(commissionType) =>
+                                updateDraft(member.userId, { commissionType })
+                              }
+                              aria-label="Commission unit"
                             />
                           </div>
                         </div>

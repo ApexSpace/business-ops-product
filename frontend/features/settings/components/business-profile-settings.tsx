@@ -194,6 +194,7 @@ export function BusinessProfileSettings() {
                   description={meta.description}
                   summary={<SettingsViewRows rows={summaryRows} />}
                   isEditing={isEditing}
+                  promoteEditToPageHeader
                   onEdit={() => startEdit("profile")}
                   onDiscard={() => {
                     form.reset(

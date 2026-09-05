@@ -259,7 +259,7 @@ export function CancelRescheduleSettingsScreen() {
         </SettingsInlineEditSection>
 
         <SettingsInlineEditSection
-          title="Cancel & Reschedule"
+          title="Client Self-Service"
           description="Let clients cancel or reschedule from a link in automated messages."
           summary={
             <div className="space-y-1">

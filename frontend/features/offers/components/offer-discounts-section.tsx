@@ -10,8 +10,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { X } from "lucide-react";
 import { toast } from "sonner";
 import { DrawerAddAction } from "@/components/drawer/drawer-add-action";
-import { DrawerSegmentedTabs } from "@/components/drawer/drawer-segmented-tabs";
 import { SettingsChoiceRadioGroup } from "@/components/forms/settings-choice-radio-group";
+import { AmountUnitToggle } from "@/components/ui/amount-unit-toggle";
 import { SettingsFormActions } from "@/components/layout/settings-form-actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -307,8 +307,6 @@ function DiscountForm({
   onSave: () => void;
 }) {
   const percentDisabled = discountForm.appliesTo === "ENTIRE_SALE";
-  const amountTypeValue =
-    discountForm.amountType === "PERCENTAGE" ? "PERCENT" : "FLAT";
 
   return (
     <div className="space-y-[var(--spacing-6)]">
@@ -356,29 +354,15 @@ function DiscountForm({
             placeholder="Enter amount"
             className="flex-1"
           />
-          <DrawerSegmentedTabs
-            size="sm"
-            className="w-auto shrink-0"
-            value={amountTypeValue}
-            options={[
-              {
-                value: "FLAT",
-                label: "$",
-                onClick: () =>
-                  setDiscountForm({ ...discountForm, amountType: "FIXED" }),
-              },
-              {
-                value: "PERCENT",
-                label: "%",
-                onClick: () => {
-                  if (percentDisabled) return;
-                  setDiscountForm({
-                    ...discountForm,
-                    amountType: "PERCENTAGE",
-                  });
-                },
-              },
-            ]}
+          <AmountUnitToggle
+            value={discountForm.amountType}
+            currencyValue="FIXED"
+            percentValue="PERCENTAGE"
+            percentDisabled={percentDisabled}
+            onValueChange={(amountType) =>
+              setDiscountForm({ ...discountForm, amountType })
+            }
+            aria-label="Discount unit"
           />
         </div>
         {percentDisabled ? (
