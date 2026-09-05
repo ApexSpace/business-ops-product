@@ -758,6 +758,12 @@ export function SalesWorkspace() {
               </div>
             ) : checkoutStep === "payment" && paymentAction ? (
               <div className={SALES_DRAWER_FOOTER_INNER_CLASS}>
+                <DrawerPrimaryButton
+                  disabled={paymentAction.disabled}
+                  onClick={paymentAction.onClick}
+                >
+                  {paymentAction.label}
+                </DrawerPrimaryButton>
                 <button
                   type="button"
                   className="w-full py-1 text-center text-[14px] font-medium text-[#8A8A8A] hover:text-violet-primary-darker hover:underline"
@@ -768,12 +774,6 @@ export function SalesWorkspace() {
                 >
                   Back to items
                 </button>
-                <DrawerPrimaryButton
-                  disabled={paymentAction.disabled}
-                  onClick={paymentAction.onClick}
-                >
-                  {paymentAction.label}
-                </DrawerPrimaryButton>
               </div>
             ) : (
               <div className={SALES_DRAWER_FOOTER_INNER_CLASS}>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { Pencil, Trash2 } from "lucide-react";
 import { LoadingState } from "@/components/data-display/loading-state";
 import { SettingsFormPage } from "@/components/layout/settings-page-layout";
 import { Badge } from "@/components/ui/badge";
@@ -111,7 +111,6 @@ export function CustomFeesSettings() {
           </div>
           {canEdit ? (
             <Button type="button" variant="brand" onClick={openCreateDialog}>
-              <Plus className="mr-2 size-4" />
               New custom fee
             </Button>
           ) : null}
