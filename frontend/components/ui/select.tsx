@@ -20,7 +20,7 @@ import {
   type SelectItemDescriptor,
 } from "@/components/ui/select-item-labels"
 
-type SelectRootProps = React.ComponentProps<typeof SelectPrimitive.Root>
+type SelectRootProps = SelectPrimitive.Root.Props<string>
 
 const SelectItemsContext = React.createContext<
   ReadonlyArray<SelectItemDescriptor> | undefined
