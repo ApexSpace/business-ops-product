@@ -2,9 +2,8 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Copy, Lock } from "lucide-react";
-import { toast } from "sonner";
 import { PageContainer } from "@/components/layout/page-container";
 import { PageHeader } from "@/components/layout/page-header";
 import { SettingsCard } from "@/components/layout/settings-card";
@@ -16,17 +15,18 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { queryKeys } from "@/lib/query/keys";
 import { invalidateMemberships } from "@/lib/query/invalidation";
+import { useOptimisticQueryPatchMutation } from "@/lib/query/use-optimistic-query-patch-mutation";
 import { copyTextToClipboard } from "@/features/forms/utils/copy-text.util";
 import {
   getMembershipSettings,
   updateMembershipSettingsOnlineSales,
   updateMembershipPreferences,
 } from "@/features/memberships/api/memberships.api";
+import type { MembershipSettings } from "@/features/memberships/types";
 
 type SettingsTab = "preferences" | "online-sales";
 
 export function MembershipsSettingsScreen() {
-  const queryClient = useQueryClient();
   const [tab, setTab] = useState<SettingsTab>("preferences");
 
   const settingsQuery = useQuery({
@@ -38,24 +38,34 @@ export function MembershipsSettingsScreen() {
   const allowClientCancel = settings?.allowClientCancel ?? false;
   const onlineSalesEnabled = settings?.onlineSalesEnabled ?? false;
 
-  const savePreferences = useMutation({
-    mutationFn: (value: boolean) =>
+  const savePreferences = useOptimisticQueryPatchMutation<
+    MembershipSettings,
+    boolean
+  >({
+    queryKey: queryKeys.memberships.settings(),
+    mutationFn: (value) =>
       updateMembershipPreferences({ allowClientCancel: value }),
-    onSuccess: async () => {
-      toast.success("Preferences saved");
-      await invalidateMemberships(queryClient);
-    },
-    onError: (e: Error) => toast.error(e.message),
+    applyOptimistic: (previous, value) => ({
+      ...previous,
+      allowClientCancel: value,
+    }),
+    successMessage: "Preferences saved",
+    invalidate: (qc) => invalidateMemberships(qc),
   });
 
-  const saveOnlineSales = useMutation({
-    mutationFn: (value: boolean) =>
+  const saveOnlineSales = useOptimisticQueryPatchMutation<
+    MembershipSettings,
+    boolean
+  >({
+    queryKey: queryKeys.memberships.settings(),
+    mutationFn: (value) =>
       updateMembershipSettingsOnlineSales({ onlineSalesEnabled: value }),
-    onSuccess: async () => {
-      toast.success("Online sales settings saved");
-      await invalidateMemberships(queryClient);
-    },
-    onError: (e: Error) => toast.error(e.message),
+    applyOptimistic: (previous, value) => ({
+      ...previous,
+      onlineSalesEnabled: value,
+    }),
+    successMessage: "Online sales settings saved",
+    invalidate: (qc) => invalidateMemberships(qc),
   });
 
   return (

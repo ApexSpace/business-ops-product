@@ -1,14 +1,11 @@
 "use client";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
+import { useQuery } from "@tanstack/react-query";
 import { LoadingState } from "@/components/data-display/loading-state";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import {
-  getTeamMemberNotifications,
-  updateTeamMemberNotifications,
-} from "@/features/team/api/team.api";
+import { getTeamMemberNotifications } from "@/features/team/api/team.api";
+import { useTeamMemberNotificationMutations } from "@/features/team/hooks/use-team-member-preference-mutations";
 import { NOTIFICATION_SETTING_KEYS } from "@/features/team/permissions/staff-permissions";
 import { DRAWER_SWITCH_CLASS } from "@/lib/design/drawer-tokens";
 import {
@@ -40,23 +37,12 @@ type Props = {
 };
 
 export function MemberNotificationsTab({ userId, canManage }: Props) {
-  const queryClient = useQueryClient();
   const { data, isLoading } = useQuery({
     queryKey: queryKeys.business.memberNotifications(userId),
     queryFn: () => getTeamMemberNotifications(userId),
   });
 
-  const mutation = useMutation({
-    mutationFn: (notificationSettings: Record<string, boolean>) =>
-      updateTeamMemberNotifications(userId, notificationSettings),
-    onSuccess: () => {
-      toast.success("Notification settings saved");
-      void queryClient.invalidateQueries({
-        queryKey: queryKeys.business.memberNotifications(userId),
-      });
-    },
-    onError: (err: Error) => toast.error(err.message),
-  });
+  const mutation = useTeamMemberNotificationMutations(userId);
 
   if (isLoading || !data) {
     return <LoadingState variant="inline" />;
@@ -93,7 +79,7 @@ export function MemberNotificationsTab({ userId, canManage }: Props) {
                 </div>
                 <Switch
                   checked={Boolean(data.notificationSettings[key])}
-                  disabled={!canManage || mutation.isPending}
+                  disabled={!canManage}
                   onCheckedChange={(checked) =>
                     mutation.mutate({
                       ...data.notificationSettings,

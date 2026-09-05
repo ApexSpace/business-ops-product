@@ -66,6 +66,7 @@ import {
   formatSaleNumberDisplay,
   formatSalesListDate,
 } from "@/features/sales/utils/sales-list-format";
+import { seedCheckoutCache } from "@/features/sales/utils/seed-checkout-cache";
 import {
   addCheckoutProduct,
   addCheckoutService,
@@ -312,6 +313,14 @@ export function SalesWorkspace() {
     void invalidateCheckouts(queryClient, selectedId ?? undefined);
   }, [queryClient, selectedId]);
 
+  const applySaleUpdate = useCallback(
+    (updated: Checkout) => {
+      seedCheckoutCache(queryClient, updated);
+      void invalidateCheckouts(queryClient, selectedId ?? undefined);
+    },
+    [queryClient, selectedId],
+  );
+
   const createMutation = useMutation({
     mutationFn: (intent?: InlineAddMode) =>
       createCheckout({ contactId: newContactId! }),
@@ -323,6 +332,7 @@ export function SalesWorkspace() {
       setPaymentAction(null);
       setSaleEditMode(false);
       setPendingInlineAddMode(intent ?? null);
+      seedCheckoutCache(queryClient, created);
       void invalidateCheckouts(queryClient);
       setSelectedId(created.id);
     },
@@ -335,10 +345,10 @@ export function SalesWorkspace() {
   const addServiceMutation = useMutation({
     mutationFn: (serviceId: string) =>
       addCheckoutService(selectedId!, { serviceId }),
-    onSuccess: () => {
+    onSuccess: (updated) => {
       toast.success("Service added");
       setAddServiceOpen(false);
-      refreshSale();
+      applySaleUpdate(updated);
     },
     onError: (err: Error) => toast.error(err.message),
   });
@@ -355,10 +365,10 @@ export function SalesWorkspace() {
         quantity: 1,
       });
     },
-    onSuccess: () => {
+    onSuccess: (updated) => {
       toast.success("Product added");
       setAddProductOpen(false);
-      refreshSale();
+      applySaleUpdate(updated);
     },
     onError: (err: Error) => toast.error(err.message),
   });
@@ -366,9 +376,9 @@ export function SalesWorkspace() {
   const depositMutation = useMutation({
     mutationFn: (amount: number) =>
       addWalletDepositLine(selectedId!, { amount }),
-    onSuccess: () => {
+    onSuccess: (updated) => {
       toast.success("Wallet deposit line added");
-      refreshSale();
+      applySaleUpdate(updated);
     },
     onError: (err: Error) => toast.error(err.message),
   });
@@ -380,10 +390,10 @@ export function SalesWorkspace() {
       ownerContactId: string;
       sendDigital: boolean;
     }) => addGiftCardLine(selectedId!, body),
-    onSuccess: () => {
+    onSuccess: (updated) => {
       toast.success("Gift card added to sale");
       setAddGiftCardOpen(false);
-      refreshSale();
+      applySaleUpdate(updated);
     },
     onError: (err: Error) => toast.error(err.message),
   });
@@ -394,10 +404,10 @@ export function SalesWorkspace() {
       ownerContactId: string;
       isDemo: boolean;
     }) => addPackageLine(selectedId!, body),
-    onSuccess: () => {
+    onSuccess: (updated) => {
       toast.success("Package added to sale");
       setAddPackageOpen(false);
-      refreshSale();
+      applySaleUpdate(updated);
     },
     onError: (err: Error) => toast.error(err.message),
   });
@@ -410,20 +420,20 @@ export function SalesWorkspace() {
 
   const applyOfferMutation = useMutation({
     mutationFn: (offerId: string) => applyCheckoutOffer(selectedId!, offerId),
-    onSuccess: () => {
+    onSuccess: (updated) => {
       toast.success("Offer applied");
       setApplyOfferOpen(false);
       setSelectedOfferId(null);
-      refreshSale();
+      applySaleUpdate(updated);
     },
     onError: (err: Error) => toast.error(err.message),
   });
 
   const removeOfferMutation = useMutation({
     mutationFn: (offerId: string) => removeCheckoutOffer(selectedId!, offerId),
-    onSuccess: () => {
+    onSuccess: (updated) => {
       toast.success("Offer removed");
-      refreshSale();
+      applySaleUpdate(updated);
     },
     onError: (err: Error) => toast.error(err.message),
   });
@@ -434,22 +444,20 @@ export function SalesWorkspace() {
         contactId: editContactId ?? undefined,
         notes: editNotes.trim() || null,
       }),
-    onSuccess: () => {
+    onSuccess: (updated) => {
       toast.success("Sale updated");
       setSaleEditMode(false);
-      refreshSale();
-      void invalidateCheckouts(queryClient);
+      applySaleUpdate(updated);
     },
     onError: (err: Error) => toast.error(err.message),
   });
 
   const voidMutation = useMutation({
     mutationFn: () => voidCheckout(selectedId!),
-    onSuccess: () => {
+    onSuccess: (updated) => {
       toast.success("Sale voided");
       setVoidOpen(false);
-      refreshSale();
-      void invalidateCheckouts(queryClient);
+      applySaleUpdate(updated);
     },
     onError: (err: Error) => toast.error(err.message),
   });
@@ -457,9 +465,9 @@ export function SalesWorkspace() {
   const removeLineMutation = useMutation({
     mutationFn: (lineId: string) =>
       removeCheckoutLineItem(selectedId!, lineId),
-    onSuccess: () => {
+    onSuccess: (updated) => {
       toast.success("Line removed");
-      refreshSale();
+      applySaleUpdate(updated);
     },
     onError: (err: Error) => toast.error(err.message),
   });
@@ -471,10 +479,10 @@ export function SalesWorkspace() {
         unitPrice: lineUnitPrice,
         staffUserId: editingLine?.serviceId ? lineStaffId : undefined,
       }),
-    onSuccess: () => {
+    onSuccess: (updated) => {
       toast.success("Line updated");
       setEditingLine(null);
-      refreshSale();
+      applySaleUpdate(updated);
     },
     onError: (err: Error) => toast.error(err.message),
   });

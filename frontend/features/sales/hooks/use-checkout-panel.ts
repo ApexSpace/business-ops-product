@@ -20,12 +20,13 @@ import {
   updateCheckoutLineItem,
 } from "@/features/sales/api/checkouts.api";
 import { listBusinessMembers } from "@/features/settings/api/business.api";
-import type { CheckoutItem } from "@/features/sales/types/checkout";
+import type { CheckoutItem, Checkout } from "@/features/sales/types/checkout";
 import { useSalesStaffPermissions } from "@/features/sales/hooks/use-sales-staff-permissions";
 import {
   pickerProductKey,
   productPickerLabel,
 } from "@/features/sales/utils/checkout-picker";
+import { seedCheckoutCache } from "@/features/sales/utils/seed-checkout-cache";
 import { invalidateCheckouts } from "@/lib/query/invalidation";
 import { queryKeys } from "@/lib/query/keys";
 
@@ -66,6 +67,7 @@ export function useCheckoutPanel(checkoutId: string) {
     isLoading,
     error: checkoutError,
     isError: checkoutFailed,
+    refetch: refetchCheckout,
   } = useQuery({
     queryKey: queryKeys.checkouts.detail(checkoutId),
     queryFn: () => getCheckout(checkoutId),
@@ -86,6 +88,14 @@ export function useCheckoutPanel(checkoutId: string) {
       queryKey: queryKeys.appointments.all(),
     });
   }, [checkoutId, queryClient]);
+
+  const applyCheckoutUpdate = useCallback(
+    (updatedCheckout: Checkout) => {
+      seedCheckoutCache(queryClient, updatedCheckout);
+      void invalidateCheckouts(queryClient, checkoutId);
+    },
+    [checkoutId, queryClient],
+  );
 
   const setInlineAddMode = useCallback((mode: InlineAddMode) => {
     setInlineAddModeState((current) => (current === mode ? null : mode));
@@ -137,7 +147,7 @@ export function useCheckoutPanel(checkoutId: string) {
       toast.success("Service added");
       closeInlineAdd();
       expandLatestLine(updatedCheckout, setExpandedLineId);
-      void invalidateCheckouts(queryClient, checkoutId);
+      applyCheckoutUpdate(updatedCheckout);
     },
     onError: (error: Error) => toast.error(error.message),
   });
@@ -173,7 +183,7 @@ export function useCheckoutPanel(checkoutId: string) {
       setPendingProductKey(null);
       setProductStaffId(null);
       expandLatestLine(updatedCheckout, setExpandedLineId);
-      void invalidateCheckouts(queryClient, checkoutId);
+      applyCheckoutUpdate(updatedCheckout);
     },
     onError: (error: Error) => toast.error(error.message),
   });
@@ -184,7 +194,7 @@ export function useCheckoutPanel(checkoutId: string) {
       toast.success("Account balance line added");
       closeInlineAdd();
       expandLatestLine(updatedCheckout, setExpandedLineId);
-      void invalidateCheckouts(queryClient, checkoutId);
+      applyCheckoutUpdate(updatedCheckout);
     },
     onError: (error: Error) => toast.error(error.message),
   });
@@ -200,7 +210,7 @@ export function useCheckoutPanel(checkoutId: string) {
       toast.success("Gift card added");
       closeInlineAdd();
       expandLatestLine(updatedCheckout, setExpandedLineId);
-      void invalidateCheckouts(queryClient, checkoutId);
+      applyCheckoutUpdate(updatedCheckout);
     },
     onError: (error: Error) => toast.error(error.message),
   });
@@ -215,30 +225,30 @@ export function useCheckoutPanel(checkoutId: string) {
       toast.success("Package added");
       closeInlineAdd();
       expandLatestLine(updatedCheckout, setExpandedLineId);
-      void invalidateCheckouts(queryClient, checkoutId);
+      applyCheckoutUpdate(updatedCheckout);
     },
     onError: (error: Error) => toast.error(error.message),
   });
 
   const applyOfferMutation = useMutation({
     mutationFn: (offerId: string) => applyCheckoutOffer(checkoutId, offerId),
-    onSuccess: () => {
+    onSuccess: (updatedCheckout) => {
       toast.success("Offer applied");
       closeInlineAdd();
       setSelectedOfferId(null);
-      refreshCheckout();
+      applyCheckoutUpdate(updatedCheckout);
     },
     onError: (error: Error) => toast.error(error.message),
   });
 
   const removeLineMutation = useMutation({
     mutationFn: (lineId: string) => removeCheckoutLineItem(checkoutId, lineId),
-    onSuccess: () => {
+    onSuccess: (updatedCheckout) => {
       toast.success("Item removed");
       if (expandedLineId) {
         setExpandedLineId(null);
       }
-      refreshCheckout();
+      applyCheckoutUpdate(updatedCheckout);
     },
     onError: (error: Error) => toast.error(error.message),
   });
@@ -255,8 +265,8 @@ export function useCheckoutPanel(checkoutId: string) {
         staffUserId?: string | null;
       };
     }) => updateCheckoutLineItem(checkoutId, lineId, body),
-    onSuccess: () => {
-      refreshCheckout();
+    onSuccess: (updatedCheckout) => {
+      applyCheckoutUpdate(updatedCheckout);
     },
     onError: (error: Error) => toast.error(error.message),
   });
@@ -269,10 +279,10 @@ export function useCheckoutPanel(checkoutId: string) {
       lineId: string;
       unitPrice: number;
     }) => updateCheckoutLineItem(checkoutId, lineId, { unitPrice }),
-    onSuccess: () => {
+    onSuccess: (updatedCheckout) => {
       toast.success("Price updated");
       setChangePriceItem(null);
-      refreshCheckout();
+      applyCheckoutUpdate(updatedCheckout);
     },
     onError: (error: Error) => toast.error(error.message),
   });
@@ -370,6 +380,7 @@ export function useCheckoutPanel(checkoutId: string) {
     loadError,
     canEdit,
     refreshCheckout,
+    refetchCheckout,
     inlineAddMode,
     setInlineAddMode,
     closeInlineAdd,

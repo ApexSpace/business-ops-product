@@ -12,8 +12,86 @@ import {
   OVERLAY_SIDE_OFFSET,
   SELECT_ALIGN_ITEM_WITH_TRIGGER,
 } from "@/lib/ui/overlay-position"
+import {
+  SELECT_ITEM_DISPLAY_NAME,
+  collectSelectItemsFromChildren,
+  extractSelectItemLabelText,
+  isOpaqueSelectValue,
+  type SelectItemDescriptor,
+} from "@/components/ui/select-item-labels"
 
-const Select = SelectPrimitive.Root
+type SelectRootProps = SelectPrimitive.Root.Props<string>
+
+const SelectItemsContext = React.createContext<
+  ReadonlyArray<SelectItemDescriptor> | undefined
+>(undefined)
+
+function normalizeSelectLabelItems(
+  items: SelectRootProps["items"],
+  collected: SelectItemDescriptor[],
+): SelectItemDescriptor[] {
+  if (items == null) return collected
+  if (Array.isArray(items)) {
+    const normalized: SelectItemDescriptor[] = []
+    for (const entry of items) {
+      if (
+        entry &&
+        typeof entry === "object" &&
+        "value" in entry &&
+        "label" in entry
+      ) {
+        normalized.push({
+          value: (entry as SelectItemDescriptor).value,
+          label: (entry as SelectItemDescriptor).label,
+        })
+        continue
+      }
+      if (entry && typeof entry === "object" && "items" in entry) {
+        const group = entry as { items: ReadonlyArray<SelectItemDescriptor> }
+        for (const nested of group.items) {
+          normalized.push({ value: nested.value, label: nested.label })
+        }
+      }
+    }
+    return normalized.length > 0 ? normalized : collected
+  }
+  return Object.entries(items).map(([value, label]) => ({ value, label }))
+}
+
+function findSelectItemLabel(
+  items: ReadonlyArray<SelectItemDescriptor> | undefined,
+  value: unknown,
+): React.ReactNode | undefined {
+  if (!items || value == null || value === "") return undefined
+  const match = items.find((item) => Object.is(item.value, value))
+  return match?.label
+}
+
+/**
+ * Base UI Select root wrapper.
+ * Auto-derives `items` from SelectItem children so SelectValue shows labels
+ * (names) instead of raw values (UUIDs / enum codes) when `items` is omitted.
+ */
+function Select({ items, children, ...props }: SelectRootProps) {
+  const collectedItems = React.useMemo(
+    () => collectSelectItemsFromChildren(children),
+    [children],
+  )
+  const resolvedItems =
+    items ?? (collectedItems.length > 0 ? collectedItems : undefined)
+  const labelItems = React.useMemo(
+    () => normalizeSelectLabelItems(resolvedItems, collectedItems),
+    [resolvedItems, collectedItems],
+  )
+
+  return (
+    <SelectItemsContext.Provider value={labelItems}>
+      <SelectPrimitive.Root items={resolvedItems} {...props}>
+        {children}
+      </SelectPrimitive.Root>
+    </SelectItemsContext.Provider>
+  )
+}
 
 function SelectGroup({ className, ...props }: SelectPrimitive.Group.Props) {
   return (
@@ -25,13 +103,30 @@ function SelectGroup({ className, ...props }: SelectPrimitive.Group.Props) {
   )
 }
 
-function SelectValue({ className, ...props }: SelectPrimitive.Value.Props) {
+function SelectValue({
+  className,
+  placeholder,
+  children,
+  ...props
+}: SelectPrimitive.Value.Props) {
+  const items = React.useContext(SelectItemsContext)
+
   return (
     <SelectPrimitive.Value
       data-slot="select-value"
       className={cn("flex flex-1 text-left", className)}
+      placeholder={placeholder}
       {...props}
-    />
+    >
+      {children ??
+        ((value: unknown) => {
+          const label = findSelectItemLabel(items, value)
+          if (label != null && label !== "") return label
+          if (isOpaqueSelectValue(value)) return placeholder ?? null
+          if (value == null || value === "") return placeholder ?? null
+          return String(value)
+        })}
+    </SelectPrimitive.Value>
   )
 }
 
@@ -126,8 +221,12 @@ function SelectLabel({
 function SelectItem({
   className,
   children,
+  label,
   ...props
 }: SelectPrimitive.Item.Props) {
+  const resolvedLabel =
+    label ?? extractSelectItemLabelText(children) ?? undefined
+
   return (
     <SelectPrimitive.Item
       data-slot="select-item"
@@ -135,6 +234,7 @@ function SelectItem({
         "relative flex w-full cursor-pointer items-center gap-1.5 rounded-md py-2 pr-8 pl-2 text-sm outline-hidden select-none focus:bg-accent focus:text-accent-foreground not-data-[variant=destructive]:focus:**:text-accent-foreground data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 *:[span]:last:flex *:[span]:last:min-w-0 *:[span]:last:flex-1 *:[span]:last:items-center *:[span]:last:gap-2 *:[span]:last:truncate",
         className
       )}
+      label={resolvedLabel}
       {...props}
     >
       <SelectPrimitive.ItemText className="flex min-w-0 flex-1 gap-2 truncate">
@@ -150,6 +250,7 @@ function SelectItem({
     </SelectPrimitive.Item>
   )
 }
+SelectItem.displayName = SELECT_ITEM_DISPLAY_NAME
 
 function SelectSeparator({
   className,
