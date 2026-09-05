@@ -1,7 +1,15 @@
 "use client";
 
-import { Pencil, Plus } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { SquarePen } from "lucide-react";
+import { DrawerAddAction } from "@/components/drawer/drawer-add-action";
+import { IconButton } from "@/components/ui/icon-button";
+import {
+  AUTOMATED_MESSAGE_SECTION_STACK_CLASS,
+  AUTOMATED_MESSAGE_TIMELINE_DOT_CLASS,
+  AUTOMATED_MESSAGE_TIMELINE_LINE_CLASS,
+  AUTOMATED_MESSAGE_TRIGGER_BANNER_CLASS,
+  AUTOMATED_MESSAGE_TRIGGER_BANNER_LABEL_CLASS,
+} from "@/lib/design/automated-message-tokens";
 import { cn } from "@/lib/utils";
 
 export function AutomatedMessageTriggerBanner({
@@ -16,29 +24,24 @@ export function AutomatedMessageTriggerBanner({
   className?: string;
 }) {
   return (
-    <div
-      className={cn(
-        "flex items-center justify-between gap-3 rounded-full bg-violet-primary-surface px-4 py-2",
-        className,
-      )}
-    >
-      <p className="text-sm font-semibold text-violet-primary-darker">{label}</p>
+    <div className={cn(AUTOMATED_MESSAGE_TRIGGER_BANNER_CLASS, className)}>
+      <p className={AUTOMATED_MESSAGE_TRIGGER_BANNER_LABEL_CLASS}>{label}</p>
       {showEdit && onEdit ? (
-        <Button
+        <IconButton
           type="button"
-          variant="ghost"
-          size="icon"
-          className="size-8 shrink-0 text-violet-primary-normal"
+          size="icon-sm"
+          className="shrink-0 text-violet-primary-normal"
           onClick={onEdit}
           aria-label="Edit timing"
         >
-          <Pencil className="size-3.5" />
-        </Button>
+          <SquarePen className="size-4" aria-hidden />
+        </IconButton>
       ) : null}
     </div>
   );
 }
 
+/** @deprecated Prefer DrawerAddAction directly; kept for call-site compatibility. */
 export function AddMessageButton({
   onClick,
   disabled,
@@ -47,34 +50,40 @@ export function AddMessageButton({
   disabled?: boolean;
 }) {
   return (
-    <button
-      type="button"
+    <DrawerAddAction
+      label="Add message"
       onClick={onClick}
       disabled={disabled}
-      className="inline-flex items-center gap-1.5 text-sm font-semibold text-violet-primary-normal hover:underline disabled:opacity-50"
-    >
-      <Plus className="size-4" aria-hidden />
-      Add message
-    </button>
+      size="page"
+    />
   );
 }
 
 export function AutomatedMessageTimelineNode({
   children,
   isLast = false,
+  className,
 }: {
   children: React.ReactNode;
   isLast?: boolean;
+  className?: string;
 }) {
   return (
-    <div className="relative flex gap-4 pl-1">
-      <div className="relative flex w-4 shrink-0 flex-col items-center">
-        <span className="mt-2 size-3 rounded-full bg-violet-primary-normal" />
+    <div className={cn("relative flex gap-[var(--spacing-4)]", className)}>
+      <div className="relative flex w-8 shrink-0 flex-col items-center">
+        <span className={AUTOMATED_MESSAGE_TIMELINE_DOT_CLASS} aria-hidden />
         {!isLast ? (
-          <span className="mt-1 w-px flex-1 bg-[#E0DCD4]" aria-hidden />
+          <span className={AUTOMATED_MESSAGE_TIMELINE_LINE_CLASS} aria-hidden />
         ) : null}
       </div>
-      <div className="min-w-0 flex-1 space-y-3 pb-8">{children}</div>
+      <div
+        className={cn(
+          AUTOMATED_MESSAGE_SECTION_STACK_CLASS,
+          "min-w-0 flex-1 pb-[var(--spacing-6)]",
+        )}
+      >
+        {children}
+      </div>
     </div>
   );
 }

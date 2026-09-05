@@ -21,6 +21,7 @@ import { CONTROL_HEIGHT_CLASS } from "@/lib/ui/control-styles";
 import { SELECT_ALIGN_ITEM_WITH_TRIGGER, OVERLAY_SIDE } from "@/lib/ui/overlay-position";
 import { cn } from "@/lib/utils";
 import type { SelectOption } from "@/components/forms/select-field";
+import { isOpaqueSelectValue } from "@/components/ui/select-item-labels";
 
 export interface SearchableSelectProps {
   items: SelectOption[];
@@ -32,6 +33,11 @@ export interface SearchableSelectProps {
   /** @deprecated Search happens in the trigger input; kept for call-site compatibility. */
   searchPlaceholder?: string;
   emptyMessage?: string;
+  /**
+   * Label used when `value` is set but missing from `items` (e.g. options still loading).
+   * Opaque IDs never display as the trigger text.
+   */
+  unresolvedLabel?: string;
   triggerClassName?: string;
   contentClassName?: string;
   id?: string;
@@ -65,6 +71,21 @@ function optionKey(value: string | null): string {
   return value ?? "__null__";
 }
 
+/** Keep a selected value labelable even when the option list has not loaded yet. */
+function withUnresolvedSelection(
+  items: SelectOption[],
+  value: string | null,
+  unresolvedLabel?: string,
+  placeholder?: string,
+): SelectOption[] {
+  if (value == null) return items;
+  if (items.some((item) => item.value === value)) return items;
+  const label =
+    unresolvedLabel ??
+    (isOpaqueSelectValue(value) ? (placeholder ?? "Selected") : value);
+  return [...items, { value, label }];
+}
+
 export function SearchableSelect({
   items = [],
   value,
@@ -73,6 +94,7 @@ export function SearchableSelect({
   disabled,
   searchable = true,
   emptyMessage = "No results found",
+  unresolvedLabel,
   triggerClassName,
   contentClassName,
   id,
@@ -86,12 +108,23 @@ export function SearchableSelect({
 }: SearchableSelectProps) {
   const selectValue = normalizeSelectValue(value);
 
-  const itemsKey = items
+  const resolvedItems = useMemo(
+    () =>
+      withUnresolvedSelection(
+        items,
+        selectValue,
+        unresolvedLabel,
+        placeholder,
+      ),
+    [items, selectValue, unresolvedLabel, placeholder],
+  );
+
+  const itemsKey = resolvedItems
     .map((item) => `${item.value ?? "\u0000"}:${item.label}`)
     .join("|");
 
   const selectedItem = useMemo(
-    () => items.find((item) => item.value === selectValue) ?? null,
+    () => resolvedItems.find((item) => item.value === selectValue) ?? null,
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [itemsKey, selectValue],
   );
@@ -99,7 +132,7 @@ export function SearchableSelect({
   if (!searchable) {
     return (
       <Select
-        items={items}
+        items={resolvedItems}
         value={selectValue}
         onValueChange={onValueChange}
         disabled={disabled}
@@ -139,7 +172,7 @@ export function SearchableSelect({
 
   return (
     <Combobox.Root
-      items={items}
+      items={resolvedItems}
       value={selectedItem}
       onValueChange={(next) => onValueChange(next?.value ?? null)}
       disabled={disabled}

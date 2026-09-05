@@ -307,6 +307,13 @@
   --settings-content-padding-x: var(--spacing-page-x);
   --settings-content-padding-y: 1.875rem;
   --settings-form-section-gap: var(--spacing-6);
+  /*
+   * Automated Messages — hit-and-trial (recipes in automated-message-tokens.ts).
+   *   --automated-message-content-max-width  timing banner + section column (Figma ~540px)
+   *   --automated-message-card-max-width     message surface next to ⋮ (Figma ~449px)
+   */
+  --automated-message-content-max-width: 33.75rem;
+  --automated-message-card-max-width: 28rem;
   /* Settings form violet subheading — hit-and-trial (`.settings-form-description`). */
   --settings-form-description-size: 15px;
   --settings-form-description-line-height: 20px;

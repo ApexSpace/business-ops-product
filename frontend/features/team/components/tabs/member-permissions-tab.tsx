@@ -1,14 +1,11 @@
 "use client";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
+import { useQuery } from "@tanstack/react-query";
 import { LoadingState } from "@/components/data-display/loading-state";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import {
-  getTeamMemberPermissions,
-  updateTeamMemberPermissions,
-} from "@/features/team/api/team.api";
+import { getTeamMemberPermissions } from "@/features/team/api/team.api";
+import { useTeamMemberPermissionMutations } from "@/features/team/hooks/use-team-member-preference-mutations";
 import { STAFF_PERMISSION_GROUPS } from "@/features/team/permissions/staff-permissions";
 import { DRAWER_SWITCH_CLASS } from "@/lib/design/drawer-tokens";
 import {
@@ -26,7 +23,6 @@ type Props = {
 };
 
 export function MemberPermissionsTab({ userId, role, canManage }: Props) {
-  const queryClient = useQueryClient();
   const isAdmin = role === "ADMIN" || role === "OWNER";
 
   const { data, isLoading } = useQuery({
@@ -34,20 +30,7 @@ export function MemberPermissionsTab({ userId, role, canManage }: Props) {
     queryFn: () => getTeamMemberPermissions(userId),
   });
 
-  const mutation = useMutation({
-    mutationFn: (permissions: Record<string, boolean>) =>
-      updateTeamMemberPermissions(userId, permissions),
-    onSuccess: () => {
-      toast.success("Permissions saved");
-      void queryClient.invalidateQueries({
-        queryKey: queryKeys.business.memberPermissions(userId),
-      });
-      void queryClient.invalidateQueries({
-        queryKey: queryKeys.business.memberDetail(userId),
-      });
-    },
-    onError: (err: Error) => toast.error(err.message),
-  });
+  const mutation = useTeamMemberPermissionMutations(userId);
 
   if (isLoading || !data) {
     return <LoadingState variant="inline" />;
@@ -75,7 +58,7 @@ export function MemberPermissionsTab({ userId, role, canManage }: Props) {
               >
                 <Switch
                   checked={Boolean(data.permissions[permission.key])}
-                  disabled={!canManage || mutation.isPending}
+                  disabled={!canManage}
                   onCheckedChange={(checked) =>
                     mutation.mutate({
                       ...data.permissions,

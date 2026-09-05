@@ -7,7 +7,10 @@ import {
   type CreateCustomFeeBody,
   type UpdateCustomFeeBody,
 } from "@/features/custom-fees/api/custom-fees.api";
-import { invalidateCustomFees } from "@/lib/query/invalidation";
+import {
+  invalidateCheckouts,
+  invalidateCustomFees,
+} from "@/lib/query/invalidation";
 
 export function useCustomFeeMutations() {
   const queryClient = useQueryClient();
@@ -16,6 +19,7 @@ export function useCustomFeeMutations() {
     mutationFn: (body: CreateCustomFeeBody) => createCustomFee(body),
     onSuccess: async () => {
       await invalidateCustomFees(queryClient);
+      await invalidateCheckouts(queryClient);
       toast.success("Custom fee created");
     },
     onError: (err: Error) => toast.error(err.message),
@@ -26,6 +30,7 @@ export function useCustomFeeMutations() {
       updateCustomFee(id, body),
     onSuccess: async () => {
       await invalidateCustomFees(queryClient);
+      await invalidateCheckouts(queryClient);
       toast.success("Custom fee saved");
     },
     onError: (err: Error) => toast.error(err.message),
@@ -35,6 +40,7 @@ export function useCustomFeeMutations() {
     mutationFn: (id: string) => deleteCustomFee(id),
     onSuccess: async () => {
       await invalidateCustomFees(queryClient);
+      await invalidateCheckouts(queryClient);
       toast.success("Custom fee deleted");
     },
     onError: (err: Error) => toast.error(err.message),

@@ -10,31 +10,74 @@ import {
   updateAppointmentAutomatedMessage,
   updateAppointmentAutomatedMessageSettings,
   updateAppointmentAutomatedMessageTrigger,
+  type AppointmentAutomatedMessage,
   type AppointmentAutomatedMessageEventType,
   type AppointmentAutomatedMessageOffsetUnit,
+  type AppointmentAutomatedMessageSettings,
   type AppointmentAutomatedMessageSourceScope,
   type AppointmentAutomatedMessageTriggerKind,
   type NotificationChannel,
 } from "@/features/appointment-automated-messages/api/appointment-automated-messages.api";
 import { invalidateAppointmentAutomatedMessages } from "@/lib/query/invalidation";
+import { queryKeys } from "@/lib/query/keys";
+import { useOptimisticQueryPatchMutation } from "@/lib/query/use-optimistic-query-patch-mutation";
+
+function patchMessageInSettings(
+  settings: AppointmentAutomatedMessageSettings,
+  messageId: string,
+  patch: Partial<AppointmentAutomatedMessage>,
+): AppointmentAutomatedMessageSettings {
+  return {
+    ...settings,
+    triggers: settings.triggers.map((trigger) => ({
+      ...trigger,
+      messages: trigger.messages.map((message) =>
+        message.id === messageId ? { ...message, ...patch } : message,
+      ),
+    })),
+  };
+}
+
+function upsertMessageInSettings(
+  settings: AppointmentAutomatedMessageSettings,
+  message: AppointmentAutomatedMessage,
+): AppointmentAutomatedMessageSettings {
+  return {
+    ...settings,
+    triggers: settings.triggers.map((trigger) => ({
+      ...trigger,
+      messages: trigger.messages.some((item) => item.id === message.id)
+        ? trigger.messages.map((item) =>
+            item.id === message.id ? message : item,
+          )
+        : trigger.messages,
+    })),
+  };
+}
 
 export function useAppointmentAutomatedMessageMutations(
   eventType: AppointmentAutomatedMessageEventType,
 ) {
   const queryClient = useQueryClient();
+  const detailKey = queryKeys.appointmentAutomatedMessages.detail(eventType);
 
-  const invalidate = async () => {
-    await invalidateAppointmentAutomatedMessages(queryClient, eventType);
-  };
+  const invalidate = () =>
+    invalidateAppointmentAutomatedMessages(queryClient, eventType);
 
-  const updateSettingsMutation = useMutation({
-    mutationFn: (body: { defaultStatus?: "UNCONFIRMED" | "CONFIRMED" }) =>
+  const updateSettingsMutation = useOptimisticQueryPatchMutation<
+    AppointmentAutomatedMessageSettings,
+    { defaultStatus?: "UNCONFIRMED" | "CONFIRMED" }
+  >({
+    queryKey: detailKey,
+    mutationFn: (body) =>
       updateAppointmentAutomatedMessageSettings(eventType, body),
-    onSuccess: async () => {
-      await invalidate();
-      toast.success("Settings saved");
-    },
-    onError: (err: Error) => toast.error(err.message),
+    applyOptimistic: (previous, body) => ({
+      ...previous,
+      ...body,
+    }),
+    successMessage: "Settings saved",
+    invalidate: (qc) =>
+      invalidateAppointmentAutomatedMessages(qc, eventType),
   });
 
   const createTriggerMutation = useMutation({
@@ -100,11 +143,9 @@ export function useAppointmentAutomatedMessageMutations(
     onError: (err: Error) => toast.error(err.message),
   });
 
-  const updateMessageMutation = useMutation({
-    mutationFn: ({
-      messageId,
-      body,
-    }: {
+  const updateMessageMutation = useOptimisticQueryPatchMutation<
+    AppointmentAutomatedMessageSettings,
+    {
       messageId: string;
       body: Partial<{
         sourceScope: AppointmentAutomatedMessageSourceScope;
@@ -112,12 +153,19 @@ export function useAppointmentAutomatedMessageMutations(
         notificationKey: string;
         enabled: boolean;
       }>;
-    }) => updateAppointmentAutomatedMessage(messageId, body),
-    onSuccess: async () => {
-      await invalidate();
-      toast.success("Message updated");
     },
-    onError: (err: Error) => toast.error(err.message),
+    AppointmentAutomatedMessage
+  >({
+    queryKey: detailKey,
+    mutationFn: ({ messageId, body }) =>
+      updateAppointmentAutomatedMessage(messageId, body),
+    applyOptimistic: (previous, { messageId, body }) =>
+      patchMessageInSettings(previous, messageId, body),
+    resolveData: (previous, result) =>
+      previous ? upsertMessageInSettings(previous, result) : undefined,
+    successMessage: "Message updated",
+    invalidate: (qc) =>
+      invalidateAppointmentAutomatedMessages(qc, eventType),
   });
 
   const deleteMessageMutation = useMutation({

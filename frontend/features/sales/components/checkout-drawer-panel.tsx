@@ -84,6 +84,12 @@ export function CheckoutDrawerPanel({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [checkoutId, initialAddMode, panel.canEdit]);
 
+  // Re-fetch on payment so entire-sale custom fees sync from current settings.
+  useEffect(() => {
+    if (step !== "payment") return;
+    void panel.refetchCheckout();
+  }, [step, checkoutId, panel.refetchCheckout]);
+
   if (panel.isLoading) {
     return (
       <div className="flex items-center justify-center py-16 text-muted-foreground">

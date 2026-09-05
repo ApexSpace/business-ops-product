@@ -149,7 +149,7 @@ export function AppointmentBookedSettings() {
                   defaultStatus: value as "UNCONFIRMED" | "CONFIRMED",
                 });
               }}
-              disabled={!canEdit || mutations.updateSettingsMutation.isPending}
+              disabled={!canEdit}
               className="space-y-3"
             >
               <label className="flex items-start gap-3">

@@ -75,4 +75,53 @@ describe("isSettingsNavItemActive", () => {
       isSettingsNavItemActive("/business/settings/appearance", "", profile),
     ).toBe(false);
   });
+
+  it("highlights only the deepest online-booking nav item", () => {
+    const setup = { href: "/business/settings/online-booking" };
+    const preferences = {
+      href: "/business/settings/online-booking/preferences",
+    };
+    const staff = {
+      href: "/business/settings/online-booking/staff-selection",
+    };
+
+    expect(
+      isSettingsNavItemActive(
+        "/business/settings/online-booking/staff-selection",
+        "",
+        setup,
+      ),
+    ).toBe(false);
+    expect(
+      isSettingsNavItemActive(
+        "/business/settings/online-booking/staff-selection",
+        "",
+        staff,
+      ),
+    ).toBe(true);
+    expect(
+      isSettingsNavItemActive(
+        "/business/settings/online-booking/preferences",
+        "",
+        setup,
+      ),
+    ).toBe(false);
+    expect(
+      isSettingsNavItemActive(
+        "/business/settings/online-booking/preferences",
+        "",
+        preferences,
+      ),
+    ).toBe(true);
+    expect(
+      isSettingsNavItemActive("/business/settings/online-booking", "", setup),
+    ).toBe(true);
+    expect(
+      isSettingsNavItemActive(
+        "/business/settings/online-booking",
+        "",
+        staff,
+      ),
+    ).toBe(false);
+  });
 });

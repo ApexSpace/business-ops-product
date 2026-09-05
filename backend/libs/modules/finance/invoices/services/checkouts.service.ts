@@ -142,20 +142,15 @@ export class CheckoutsService {
     user: RequestUser,
   ): Promise<CheckoutResponseDto> {
     await syncInvoicePaymentFields(this.prisma, businessId, id);
-    let checkout = await this.requireOpenOrClosedCheckout(businessId, id);
-    if (
-      checkout.status === InvoiceStatus.OPEN &&
-      checkout.balanceDue.lessThanOrEqualTo(0) &&
-      checkout.paidAmount.greaterThan(0)
-    ) {
-      await this.checkoutCompletion.finalizeCheckoutIfPaid(
-        businessId,
-        id,
-        user.id,
-      );
-      checkout = await this.requireOpenOrClosedCheckout(businessId, id);
-    }
+    const checkout = await this.requireOpenOrClosedCheckout(businessId, id);
     SalesStaffAccess.assertCanViewCheckout(user, checkout);
+
+    // Open checkouts re-merge entire-sale custom fees on read so payment UI
+    // reflects current fee settings without waiting for another line edit.
+    if (checkout.status === InvoiceStatus.OPEN) {
+      return this.recalculateAndReturn(businessId, id, user.id);
+    }
+
     return this.mapCheckoutResponse(businessId, checkout);
   }
 

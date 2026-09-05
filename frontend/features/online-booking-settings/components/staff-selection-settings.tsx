@@ -43,7 +43,7 @@ export function StaffSelectionSettingsScreen() {
           onCheckedChange={(checked) =>
             staffSelectionMutation.mutate({ randomizeStaffOrder: checked })
           }
-          disabled={!canEdit || isSaving}
+          disabled={!canEdit}
         />
 
         <SettingsToggleSection
@@ -54,7 +54,7 @@ export function StaffSelectionSettingsScreen() {
           onCheckedChange={(checked) =>
             staffSelectionMutation.mutate({ showGenderOptions: checked })
           }
-          disabled={!canEdit || isSaving}
+          disabled={!canEdit}
         />
 
         <SettingsToggleSection
@@ -65,7 +65,7 @@ export function StaffSelectionSettingsScreen() {
           onCheckedChange={(checked) =>
             staffSelectionMutation.mutate({ showAnyoneOption: checked })
           }
-          disabled={!canEdit || isSaving}
+          disabled={!canEdit}
         />
 
         <AnyoneAssignmentsSection

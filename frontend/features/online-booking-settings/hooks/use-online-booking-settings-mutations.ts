@@ -1,39 +1,51 @@
 "use client";
 
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
 import {
   updateOnlineBookingPreferences,
   updateOnlineBookingSetup,
   updateOnlineBookingStaffSelection,
+  type OnlineBookingSettings,
 } from "@/features/online-booking-settings/api/online-booking-settings.api";
 import { invalidateOnlineBookingSettings } from "@/lib/query/invalidation";
+import { queryKeys } from "@/lib/query/keys";
+import { useOptimisticQueryPatchMutation } from "@/lib/query/use-optimistic-query-patch-mutation";
+
+function useOnlineBookingPatchMutation(
+  mutationFn: (
+    body: Record<string, unknown>,
+  ) => Promise<OnlineBookingSettings>,
+  successMessage: string,
+) {
+  return useOptimisticQueryPatchMutation<
+    OnlineBookingSettings,
+    Record<string, unknown>
+  >({
+    queryKey: queryKeys.onlineBookingSettings.detail(),
+    mutationFn,
+    applyOptimistic: (previous, body) => ({
+      ...previous,
+      ...(body as Partial<OnlineBookingSettings>),
+    }),
+    successMessage,
+    invalidate: (qc) => invalidateOnlineBookingSettings(qc),
+  });
+}
 
 export function useOnlineBookingSettingsMutations() {
-  const queryClient = useQueryClient();
+  const setupMutation = useOnlineBookingPatchMutation(
+    updateOnlineBookingSetup,
+    "Setup saved",
+  );
 
-  const onSuccess = async (message: string) => {
-    await invalidateOnlineBookingSettings(queryClient);
-    toast.success(message);
-  };
+  const preferencesMutation = useOnlineBookingPatchMutation(
+    updateOnlineBookingPreferences,
+    "Preferences saved",
+  );
 
-  const setupMutation = useMutation({
-    mutationFn: updateOnlineBookingSetup,
-    onSuccess: () => onSuccess("Setup saved"),
-    onError: (err: Error) => toast.error(err.message),
-  });
-
-  const preferencesMutation = useMutation({
-    mutationFn: updateOnlineBookingPreferences,
-    onSuccess: () => onSuccess("Preferences saved"),
-    onError: (err: Error) => toast.error(err.message),
-  });
-
-  const staffSelectionMutation = useMutation({
-    mutationFn: updateOnlineBookingStaffSelection,
-    onSuccess: () => onSuccess("Staff selection saved"),
-    onError: (err: Error) => toast.error(err.message),
-  });
+  const staffSelectionMutation = useOnlineBookingPatchMutation(
+    updateOnlineBookingStaffSelection,
+    "Staff selection saved",
+  );
 
   return {
     setupMutation,

@@ -58,7 +58,7 @@ export function PreferencesSettingsScreen() {
           onCheckedChange={(checked) =>
             preferencesMutation.mutate({ allowMultipleServices: checked })
           }
-          disabled={!canEdit || isSaving}
+          disabled={!canEdit}
         />
 
         <SettingsToggleSection
@@ -69,7 +69,7 @@ export function PreferencesSettingsScreen() {
           onCheckedChange={(checked) =>
             preferencesMutation.mutate({ allowDuplicateServices: checked })
           }
-          disabled={!canEdit || isSaving}
+          disabled={!canEdit}
         />
 
         <SettingsToggleSection
@@ -80,7 +80,7 @@ export function PreferencesSettingsScreen() {
           onCheckedChange={(checked) =>
             preferencesMutation.mutate({ singleStaffOnly: checked })
           }
-          disabled={!canEdit || isSaving}
+          disabled={!canEdit}
         />
 
         <CollectPhotosSection
@@ -98,7 +98,7 @@ export function PreferencesSettingsScreen() {
           onCheckedChange={(checked) =>
             preferencesMutation.mutate({ waitlistEnabled: checked })
           }
-          disabled={!canEdit || isSaving}
+          disabled={!canEdit}
         />
       </div>
     </SettingsFormPage>

@@ -1,9 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Lock } from "lucide-react";
-import { toast } from "sonner";
 import {
   Accordion,
   AccordionContent,
@@ -17,13 +16,12 @@ import {
   emailCategoryDescription,
   emailCategoryLabel,
   listEmailPreferences,
-  updateEmailPreferences,
   type EmailPreference,
   type EmailTypeCategory,
 } from "@/features/email-notifications/api/email-notifications.api";
+import { useEmailNotificationPreferenceMutations } from "@/features/email-notifications/hooks/use-email-notification-preference-mutations";
 import {
   listNotificationChannelPreferences,
-  updateNotificationChannelPreference,
   type NotificationChannel,
   type NotificationChannelPreference,
 } from "@/features/notifications/api/notification-channel-preferences.api";
@@ -117,15 +115,11 @@ function CompactChannelControl({
 function NotificationToggleRow({
   item,
   channel,
-  disabled,
-  channelDisabled,
   onToggle,
   onChannelChange,
 }: {
   item: EmailPreference;
   channel: NotificationChannel;
-  disabled: boolean;
-  channelDisabled: boolean;
   onToggle: (item: EmailPreference, enabled: boolean) => void;
   onChannelChange: (
     item: EmailPreference,
@@ -156,16 +150,14 @@ function NotificationToggleRow({
           <CompactChannelControl
             notificationKey={item.emailType}
             value={channel}
-            disabled={
-              locked || !item.enabled || disabled || channelDisabled
-            }
+            disabled={locked || !item.enabled}
             onChange={(next) => onChannelChange(item, next)}
           />
         ) : null}
         <Switch
           id={item.emailType}
           checked={item.enabled}
-          disabled={locked || disabled}
+          disabled={locked}
           onCheckedChange={(checked) => onToggle(item, checked)}
         />
       </div>
@@ -174,10 +166,11 @@ function NotificationToggleRow({
 }
 
 export function EmailNotificationsTab() {
-  const queryClient = useQueryClient();
   const [expandedCategories, setExpandedCategories] = useState<
     EmailTypeCategory[]
   >([]);
+  const { preferencesMutation, channelMutation } =
+    useEmailNotificationPreferenceMutations();
 
   const { data = [], isLoading } = useQuery({
     queryKey: queryKeys.emailNotifications.preferences(),
@@ -196,32 +189,6 @@ export function EmailNotificationsTab() {
     }
     return map;
   }, [channelPrefs]);
-
-  const mutation = useMutation({
-    mutationFn: (preferences: { emailType: string; enabled: boolean }[]) =>
-      updateEmailPreferences(preferences),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({
-        queryKey: queryKeys.emailNotifications.all(),
-      });
-      toast.success("Notification preferences updated");
-    },
-    onError: (e: Error) => toast.error(e.message),
-  });
-
-  const channelMutation = useMutation({
-    mutationFn: (body: {
-      notificationKey: string;
-      channel: NotificationChannel;
-    }) => updateNotificationChannelPreference(body),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({
-        queryKey: queryKeys.notificationChannelPreferences.all(),
-      });
-      toast.success("Delivery channel saved");
-    },
-    onError: (e: Error) => toast.error(e.message),
-  });
 
   const allItems = useMemo(() => [...data, ...SYSTEM_AUTH_TYPES], [data]);
 
@@ -242,7 +209,7 @@ export function EmailNotificationsTab() {
     if (item.systemOnly || item.businessConfigurable === false) {
       return;
     }
-    mutation.mutate([{ emailType: item.emailType, enabled }]);
+    preferencesMutation.mutate([{ emailType: item.emailType, enabled }]);
   };
 
   const changeChannel = (
@@ -315,8 +282,6 @@ export function EmailNotificationsTab() {
                     channel={
                       channelByKey.get(item.emailType)?.channel ?? "EMAIL"
                     }
-                    disabled={mutation.isPending}
-                    channelDisabled={channelMutation.isPending}
                     onToggle={toggle}
                     onChannelChange={changeChannel}
                   />

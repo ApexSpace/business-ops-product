@@ -22,7 +22,7 @@ export function formatTriggerBannerLabel(
   trigger: AppointmentAutomatedMessageTrigger,
 ): string {
   if (trigger.kind === "IMMEDIATE") {
-    return "Immediately when booked.";
+    return "Immediately when booked";
   }
   if (trigger.offsetValue != null && trigger.offsetUnit) {
     return formatBeforeStartLabel(trigger.offsetValue, trigger.offsetUnit);

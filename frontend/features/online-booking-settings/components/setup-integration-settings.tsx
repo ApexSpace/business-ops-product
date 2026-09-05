@@ -14,7 +14,7 @@ import { SETTINGS_FORM_SECTION_STACK_CLASS } from "@/lib/design/settings-form-to
 export function SetupIntegrationSettingsScreen() {
   const canEdit = useCan(PERMISSIONS["settings.business"]);
   const { data, isLoading, isError, error } = useOnlineBookingSettings();
-  const { setupMutation, isSaving } = useOnlineBookingSettingsMutations();
+  const { setupMutation } = useOnlineBookingSettingsMutations();
 
   if (isLoading) {
     return <LoadingState label="Loading online booking settings…" />;
@@ -44,7 +44,7 @@ export function SetupIntegrationSettingsScreen() {
           onCheckedChange={(enabled) =>
             setupMutation.mutate({ onlineBookingEnabled: enabled })
           }
-          disabled={!canEdit || isSaving}
+          disabled={!canEdit}
         />
 
         {data.publicBookingUrl ? (
@@ -82,7 +82,7 @@ export function SetupIntegrationSettingsScreen() {
             onCheckedChange={(embedEnabled) =>
               setupMutation.mutate({ embedEnabled })
             }
-            disabled={!canEdit || isSaving}
+            disabled={!canEdit}
           />
           {data.embedEnabled && data.embedCode ? (
             <CopyField
@@ -110,7 +110,7 @@ export function SetupIntegrationSettingsScreen() {
             onCheckedChange={(overlayEnabled) =>
               setupMutation.mutate({ overlayEnabled })
             }
-            disabled={!canEdit || isSaving}
+            disabled={!canEdit}
           />
           {data.overlayUrl ? (
             <>
