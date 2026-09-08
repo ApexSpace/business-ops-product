@@ -5,6 +5,7 @@ import {
   PaymentMethod,
   PaymentProvider,
   PaymentStatus,
+  FormPaymentAttemptStatus,
   Prisma,
 } from '@prisma/client';
 import { SYSTEM_AUDIT_ACTOR_SENTINEL } from '@app/modules/platform/audit/constants/audit.constants';
@@ -173,6 +174,38 @@ export class StripeInvoicePaymentService {
       return;
     }
 
+    if (purpose === STRIPE_PAYMENT_PURPOSE.FORM) {
+      if (!intent.id) return;
+      const chargeId = this.resolveId(intent.latest_charge);
+      const attempt = await this.prisma.formPaymentAttempt.findUnique({
+        where: { stripePaymentIntentId: intent.id },
+      });
+      if (!attempt) return;
+      if (attempt.formSubmissionId) {
+        if (
+          attempt.status !== FormPaymentAttemptStatus.SUCCEEDED &&
+          chargeId
+        ) {
+          await this.prisma.formPaymentAttempt.update({
+            where: { id: attempt.id },
+            data: {
+              status: FormPaymentAttemptStatus.SUCCEEDED,
+              stripeChargeId: chargeId,
+            },
+          });
+        }
+        return;
+      }
+      await this.prisma.formPaymentAttempt.update({
+        where: { id: attempt.id },
+        data: {
+          status: FormPaymentAttemptStatus.SUCCEEDED_PENDING_SUBMISSION,
+          ...(chargeId ? { stripeChargeId: chargeId } : {}),
+        },
+      });
+      return;
+    }
+
     if (purpose === STRIPE_PAYMENT_PURPOSE.GIFT_CARD) {
       const handled =
         await this.giftCardOnlineCheckoutService.handlePaymentIntentCompleted({
@@ -219,6 +252,19 @@ export class StripeInvoicePaymentService {
   async handlePaymentIntentFailed(event: StripeWebhookEvent): Promise<void> {
     const intent = event.data.object as PaymentIntentObject;
     const metadata = intent.metadata ?? null;
+    const purpose =
+      typeof metadata?.purpose === 'string' ? metadata.purpose : null;
+
+    if (purpose === STRIPE_PAYMENT_PURPOSE.FORM && intent.id) {
+      await this.prisma.formPaymentAttempt.updateMany({
+        where: {
+          stripePaymentIntentId: intent.id,
+          formSubmissionId: null,
+        },
+        data: { status: FormPaymentAttemptStatus.FAILED },
+      });
+    }
+
     const businessId = metadata?.businessId;
     const invoiceId = metadata?.invoiceId;
     if (!businessId) return;

@@ -23,6 +23,7 @@ export const FORM_FIELD_TYPE_KEYS = [
   "range",
   "hidden",
   "captcha",
+  "collect_payment",
   "name",
   "address",
   "heading",

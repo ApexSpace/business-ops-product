@@ -12,6 +12,7 @@ import { useAuth } from "@/lib/auth/provider";
 import {
   createStripeDashboardLink,
   createStripeOnboardingLink,
+  updatePaymentsMode,
 } from "@/features/payment-accounts/api/payment-accounts.api";
 import { usePrimaryPaymentAccount } from "@/features/payment-accounts/hooks/use-primary-payment-account";
 import { OAuthPopupBlockedDialog } from "@/features/integrations/components/oauth-popup-blocked-dialog";
@@ -53,6 +54,20 @@ export function PrimaryAccountSection() {
     },
     onSuccess: (url) => {
       window.open(url, "_blank", "noopener,noreferrer");
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  const modeMutation = useMutation({
+    mutationFn: (mode: "live" | "test") => updatePaymentsMode(mode),
+    onSuccess: async () => {
+      toast.success("Payments mode updated");
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.paymentAccounts.primary(),
+      });
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.payments.stripeContext(),
+      });
     },
     onError: (err: Error) => toast.error(err.message),
   });
@@ -161,6 +176,41 @@ export function PrimaryAccountSection() {
             <li key={line}>{line}</li>
           ))}
         </ul>
+      ) : null}
+
+      {data?.connectionStatus !== "NOT_CONNECTED" ? (
+        <div className="flex flex-wrap items-center gap-3">
+          <span className="text-sm text-muted-foreground">Payments mode</span>
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              size="sm"
+              variant={data?.paymentsMode === "live" ? "brand" : "outline"}
+              disabled={!canManage || modeMutation.isPending}
+              onClick={() => modeMutation.mutate("live")}
+            >
+              Live
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant={data?.paymentsMode === "test" ? "brand" : "outline"}
+              disabled={
+                !canManage ||
+                modeMutation.isPending ||
+                data?.testModeConfigured === false
+              }
+              onClick={() => modeMutation.mutate("test")}
+            >
+              Test
+            </Button>
+          </div>
+          {data?.testModeConfigured === false ? (
+            <p className="text-xs text-muted-foreground">
+              Set STRIPE_SECRET_KEY_TEST to enable sandbox charges.
+            </p>
+          ) : null}
+        </div>
       ) : null}
 
       <div className="flex flex-wrap gap-3">

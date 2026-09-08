@@ -234,6 +234,41 @@ function FieldEditor({
           </SettingRow>
         ) : null}
 
+        {field.type === "collect_payment" ? (
+          <>
+            <SettingRow label="Amount">
+              <SettingInput
+                type="number"
+                value={field.amount ?? 20}
+                onChange={(value) => {
+                  const next = Number(value);
+                  onUpdate({
+                    amount: Number.isFinite(next) && next > 0 ? next : 20,
+                  });
+                }}
+              />
+            </SettingRow>
+            <SettingRow label="Currency">
+              <SettingInput
+                value={field.currency ?? "USD"}
+                onChange={(value) =>
+                  onUpdate({
+                    currency: value.trim().toUpperCase().slice(0, 3) || "USD",
+                  })
+                }
+              />
+            </SettingRow>
+            <SettingRow label="Help text">
+              <SettingInput
+                value={field.helpText ?? ""}
+                onChange={(value) => onUpdate({ helpText: value })}
+                multiline
+                rows={2}
+              />
+            </SettingRow>
+          </>
+        ) : null}
+
         {field.type === "file" ? (
           <>
             <SettingRow label="Accepted types">

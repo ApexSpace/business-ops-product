@@ -8,6 +8,7 @@ import { IntegrationsModule } from '@app/modules/integrations/integrations/integ
 import { NotificationsModule } from '@app/modules/communications/notifications/notifications.module';
 import { PaymentsController } from './controllers/payments.controller';
 import { BookingDepositPayableHandler } from './handlers/booking-deposit-payable.handler';
+import { FormPaymentPayableHandler } from './handlers/form-payment-payable.handler';
 import { InvoicePayableHandler } from './handlers/invoice-payable.handler';
 import { PaymentOrchestratorService } from './orchestration/payment-orchestrator.service';
 import { PayableHandlerRegistry } from './registry/payable-handler.registry';
@@ -51,6 +52,7 @@ import { CheckoutAdvancedSettingsModule } from '@app/modules/finance/checkout-ad
     BookingDepositPaymentService,
     BookingLinkSaleService,
     InvoicePayableHandler,
+    FormPaymentPayableHandler,
     WalletLedgerService,
     StripeContactPaymentMethodService,
     ContactPaymentMethodsService,

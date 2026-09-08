@@ -2,6 +2,7 @@ import {
   Bot,
   Building2,
   ClipboardList,
+  CreditCard,
   FileText,
   Layers,
   LayoutDashboard,
@@ -108,6 +109,15 @@ export const PLATFORM_NAV_CATALOG: PlatformNavCatalogEntry[] = [
     title: "Forms",
     navbarPriority: 5,
     appsCategory: "marketing",
+    origin: "operational",
+  },
+  {
+    navKey: "payments",
+    href: "/platform/payments",
+    icon: CreditCard,
+    title: "Payments",
+    navbarPriority: 5,
+    appsCategory: "core",
     origin: "operational",
   },
   {

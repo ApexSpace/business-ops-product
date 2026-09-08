@@ -513,6 +513,11 @@ const platformRoutes: Record<string, RouteEntry> = {
     title: "Forms",
     description: "Build and publish platform marketing and ops forms.",
   },
+  "/platform/payments": {
+    title: "Payments",
+    description:
+      "Platform payments hub for SaaS subscriptions and form Collect Payment charges.",
+  },
   "/platform/chatbots": {
     title: "Chatbots",
     description:

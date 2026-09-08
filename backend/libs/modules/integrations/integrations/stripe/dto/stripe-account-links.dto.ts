@@ -38,6 +38,12 @@ export class PrimaryPaymentAccountResponseDto {
   @ApiProperty()
   livemode!: boolean;
 
+  @ApiProperty({ enum: ['live', 'test'] })
+  paymentsMode!: 'live' | 'test';
+
+  @ApiProperty()
+  testModeConfigured!: boolean;
+
   @ApiPropertyOptional()
   publishableKey?: string | null;
 }

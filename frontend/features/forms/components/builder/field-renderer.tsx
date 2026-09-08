@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  CreditCard,
   Heart,
   PenLine,
   ShieldCheck,
@@ -452,6 +453,49 @@ export function FieldRenderer({
           </div>
           {mode === "builder" ? (
             <span className="ml-auto text-xs text-muted-foreground">Captcha preview</span>
+          ) : null}
+        </div>
+      </InputChrome>
+    );
+  }
+
+  if (field.type === "collect_payment") {
+    const amount =
+      typeof field.amount === "number" && Number.isFinite(field.amount)
+        ? field.amount
+        : 0;
+    const currency = (field.currency ?? "USD").toUpperCase();
+    const formatted = new Intl.NumberFormat(undefined, {
+      style: "currency",
+      currency,
+    }).format(amount);
+
+    return (
+      <InputChrome
+        applyLayout={applyLayout}
+        field={field}
+        showRequiredIndicator={showRequiredIndicator}
+        className={className}
+      >
+        <div className="space-y-3 rounded-md border bg-muted/30 px-4 py-4">
+          <div className="flex items-center gap-2 text-sm font-medium">
+            <CreditCard className="size-4 text-muted-foreground" />
+            <span>{field.label || "Payment"}</span>
+          </div>
+          <p className="text-lg font-semibold tracking-tight">
+            Amount due: {formatted}
+          </p>
+          {field.helpText ? (
+            <p className="text-sm text-muted-foreground">{field.helpText}</p>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              Card details are collected securely when you submit this form.
+            </p>
+          )}
+          {mode === "builder" ? (
+            <p className="text-xs text-muted-foreground">
+              Stripe card fields appear on the live form after submit validation.
+            </p>
           ) : null}
         </div>
       </InputChrome>

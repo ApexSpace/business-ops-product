@@ -15,11 +15,19 @@ export type PrimaryPaymentAccount = {
   defaultCurrency?: string | null;
   country?: string | null;
   livemode: boolean;
+  paymentsMode?: "live" | "test";
+  testModeConfigured?: boolean;
   publishableKey?: string | null;
 };
 
 export function getPrimaryPaymentAccount() {
   return api.get<PrimaryPaymentAccount>("payment-accounts/primary");
+}
+
+export function updatePaymentsMode(mode: "live" | "test") {
+  return api.patch<PrimaryPaymentAccount>("payment-accounts/payments-mode", {
+    mode,
+  });
 }
 
 export function createStripeOnboardingLink() {

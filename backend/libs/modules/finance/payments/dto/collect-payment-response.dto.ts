@@ -44,4 +44,7 @@ export class StripeConnectContextResponseDto {
 
   @ApiProperty()
   livemode!: boolean;
+
+  @ApiProperty({ enum: ['live', 'test'] })
+  paymentsMode!: 'live' | 'test';
 }

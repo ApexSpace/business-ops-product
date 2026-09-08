@@ -128,6 +128,7 @@ const DATA_TABLE_LIST_EXACT_PATHS = new Set([
   "/platform/industries",
   "/platform/audit-logs",
   "/platform/forms",
+  "/platform/payments",
   "/platform/automations",
   "/platform/chatbots",
   "/platform/work-items",

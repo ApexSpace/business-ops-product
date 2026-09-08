@@ -4,8 +4,9 @@ import { useState } from "react";
 import { CheckCircle2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import type { FormDefinition } from "@/features/forms/types";
+import type { FormDefinition, FormField } from "@/features/forms/types";
 import { FieldRenderer } from "@/features/forms/components/builder/field-renderer";
+import { EmbeddedStripePayment } from "@/features/payments/payments-kit/embedded-stripe-payment";
 import {
   getFormContainerClass,
   getFormContainerStyle,
@@ -17,6 +18,20 @@ import {
   mapSubmissionErrors,
   validateRuntimeFormSubmission,
 } from "@/features/forms/utils/form-submission-validation.util";
+import { createPublicFormPaymentIntent } from "@/features/public-forms/api/public-forms.api";
+
+function findCollectPaymentField(fields: FormField[]): FormField | null {
+  for (const field of fields) {
+    if (field.type === "collect_payment") return field;
+    if (field.type === "columns" && field.columns) {
+      for (const column of field.columns) {
+        const nested = findCollectPaymentField(column);
+        if (nested) return nested;
+      }
+    }
+  }
+  return null;
+}
 
 interface FormRuntimeViewProps {
   definition: FormDefinition;
@@ -25,10 +40,22 @@ interface FormRuntimeViewProps {
   submitError?: string | null;
   fieldErrors?: Record<string, string>;
   publicKey?: string;
-  onSubmit: (data: Record<string, unknown>) => void | Promise<void>;
+  onSubmit: (
+    data: Record<string, unknown>,
+    extras?: { paymentIntentId?: string },
+  ) => void | Promise<void>;
   onResetSubmitted?: () => void;
   className?: string;
 }
+
+type PaymentCheckoutState = {
+  clientSecret: string;
+  publishableKey: string;
+  stripeAccountId: string | null;
+  paymentIntentId: string;
+  amountCents: number;
+  currency: string;
+};
 
 export function FormRuntimeView({
   definition,
@@ -43,8 +70,16 @@ export function FormRuntimeView({
 }: FormRuntimeViewProps) {
   const { settings, fields } = definition;
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
-  const displayedFieldErrors = { ...fieldErrors, ...externalFieldErrors,
-};
+  const [pendingData, setPendingData] = useState<Record<string, unknown> | null>(
+    null,
+  );
+  const [paymentCheckout, setPaymentCheckout] =
+    useState<PaymentCheckoutState | null>(null);
+  const [paymentBusy, setPaymentBusy] = useState(false);
+  const [paymentError, setPaymentError] = useState<string | null>(null);
+  const displayedFieldErrors = { ...fieldErrors, ...externalFieldErrors };
+  const collectPaymentField = findCollectPaymentField(fields);
+  const busy = isSubmitting || paymentBusy;
 
   return (
     <div
@@ -65,6 +100,62 @@ export function FormRuntimeView({
               Back to form
             </Button>
           ) : null}
+        </div>
+      ) : paymentCheckout && pendingData ? (
+        <div className="space-y-4">
+          <div className="space-y-1">
+            <h2 className="text-xl font-semibold">Complete payment</h2>
+            <p className="text-sm text-muted-foreground">
+              Amount due:{" "}
+              {new Intl.NumberFormat(undefined, {
+                style: "currency",
+                currency: paymentCheckout.currency,
+              }).format(paymentCheckout.amountCents / 100)}
+            </p>
+          </div>
+          {paymentError ? (
+            <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+              {paymentError}
+            </div>
+          ) : null}
+          <EmbeddedStripePayment
+            mode="checkout"
+            publishableKey={paymentCheckout.publishableKey}
+            clientSecret={paymentCheckout.clientSecret}
+            stripeAccountId={paymentCheckout.stripeAccountId}
+            onSuccess={async () => {
+              setPaymentBusy(true);
+              setPaymentError(null);
+              try {
+                await onSubmit(pendingData, {
+                  paymentIntentId: paymentCheckout.paymentIntentId,
+                });
+                setPaymentCheckout(null);
+                setPendingData(null);
+              } catch (error) {
+                setPaymentError(
+                  error instanceof Error
+                    ? error.message
+                    : "Unable to submit after payment",
+                );
+              } finally {
+                setPaymentBusy(false);
+              }
+            }}
+            onError={(message) => setPaymentError(message)}
+          />
+          <Button
+            type="button"
+            variant="outline"
+            disabled={busy}
+            onClick={() => {
+              setPaymentCheckout(null);
+              setPendingData(null);
+              setPaymentError(null);
+            }}
+          >
+            Back to form
+          </Button>
         </div>
       ) : (
         <>
@@ -88,12 +179,46 @@ export function FormRuntimeView({
               }
 
               setFieldErrors({});
+              setPaymentError(null);
+
+              if (collectPaymentField && publicKey) {
+                if (
+                  typeof collectPaymentField.amount !== "number" ||
+                  collectPaymentField.amount <= 0
+                ) {
+                  setPaymentError("This form payment amount is not configured.");
+                  return;
+                }
+                setPaymentBusy(true);
+                try {
+                  const intent = await createPublicFormPaymentIntent(publicKey);
+                  setPendingData(data);
+                  setPaymentCheckout({
+                    clientSecret: intent.clientSecret,
+                    publishableKey: intent.publishableKey,
+                    stripeAccountId: intent.stripeAccountId,
+                    paymentIntentId: intent.paymentIntentId,
+                    amountCents: intent.amountCents,
+                    currency: intent.currency,
+                  });
+                } catch (error) {
+                  setPaymentError(
+                    error instanceof Error
+                      ? error.message
+                      : "Unable to start payment",
+                  );
+                } finally {
+                  setPaymentBusy(false);
+                }
+                return;
+              }
+
               await onSubmit(data);
             }}
           >
-            {submitError ? (
+            {submitError || paymentError ? (
               <div className="mb-4 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-                {submitError}
+                {submitError || paymentError}
               </div>
             ) : null}
 
@@ -122,15 +247,17 @@ export function FormRuntimeView({
             >
               <Button
                 type="submit"
-                disabled={isSubmitting}
+                disabled={busy}
                 className={getSubmitButtonClass(settings)}
                 style={getSubmitButtonStyle(settings)}
               >
-                {isSubmitting ? (
+                {busy ? (
                   <>
                     <Loader2 className="mr-2 size-4 animate-spin" />
-                    Submitting…
+                    {collectPaymentField ? "Preparing payment…" : "Submitting…"}
                   </>
+                ) : collectPaymentField ? (
+                  "Continue to payment"
                 ) : (
                   settings.submitButtonLabel
                 )}

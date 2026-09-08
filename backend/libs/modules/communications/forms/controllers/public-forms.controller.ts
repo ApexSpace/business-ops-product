@@ -28,6 +28,13 @@ export class PublicFormsController {
     return this.publicFormsService.getConfig(publicKey);
   }
 
+  @Post(':publicKey/payment-intent')
+  @Public()
+  @Throttle({ default: { limit: 30, ttl: 60000 } })
+  createPaymentIntent(@Param('publicKey') publicKey: string) {
+    return this.publicFormsService.createPaymentIntent(publicKey);
+  }
+
   @Post(':publicKey/submissions')
   @Public()
   @Throttle({ default: { limit: 30, ttl: 60000 } })

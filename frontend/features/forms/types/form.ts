@@ -27,7 +27,8 @@ export type FieldType =
   | "columns"
   | "name"
   | "address"
-  | "website";
+  | "website"
+  | "collect_payment";
 
 export type FormStatus = "draft" | "published" | "archived";
 
@@ -110,6 +111,9 @@ export interface FormField {
   showFirstName?: boolean;
   showMiddleName?: boolean;
   showLastName?: boolean;
+  /** Fixed charge amount in major currency units (e.g. 20 for $20). */
+  amount?: number;
+  currency?: string;
 }
 
 export interface FormStep {

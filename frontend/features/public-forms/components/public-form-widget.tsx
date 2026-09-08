@@ -30,8 +30,13 @@ export function PublicFormWidget({ publicKey }: PublicFormWidgetProps) {
   });
 
   const submitMutation = useMutation({
-    mutationFn: (data: Record<string, unknown>) =>
-      submitPublicForm(publicKey, data),
+    mutationFn: ({
+      data,
+      paymentIntentId,
+    }: {
+      data: Record<string, unknown>;
+      paymentIntentId?: string;
+    }) => submitPublicForm(publicKey, data, { paymentIntentId }),
     onSuccess: (result) => {
       setSubmitted(true);
       setSubmitError(null);
@@ -117,10 +122,13 @@ export function PublicFormWidget({ publicKey }: PublicFormWidgetProps) {
         submitError={submitError}
         fieldErrors={fieldErrors}
         publicKey={publicKey}
-        onSubmit={async (data) => {
+        onSubmit={async (data, extras) => {
           setSubmitError(null);
           setFieldErrors({});
-          await submitMutation.mutateAsync(data);
+          await submitMutation.mutateAsync({
+            data,
+            paymentIntentId: extras?.paymentIntentId,
+          });
         }}
         onResetSubmitted={() => {
           setSubmitted(false);

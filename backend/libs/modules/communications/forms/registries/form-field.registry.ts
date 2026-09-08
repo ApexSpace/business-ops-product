@@ -120,6 +120,14 @@ export const FORM_FIELD_REGISTRY: FormFieldDefinition[] = [
     supportsInputStyle: false,
     supportsPlaceholder: false,
   }),
+  field('collect_payment', 'advanced', 'Collect payment', 'input', {
+    icon: 'credit-card',
+    description: 'Charge a fixed amount via Stripe when the form is submitted',
+    countsAsInput: false,
+    supportsValidation: false,
+    supportsPlaceholder: false,
+    supportsInputStyle: false,
+  }),
 
   // Personal
   field('name', 'personal', 'Full name', 'composite', {

@@ -62,6 +62,7 @@ const FIELD_LABELS: Record<FieldType, string> = {
   name: "Full name",
   address: "Address",
   website: "Website",
+  collect_payment: "Collect payment",
 };
 
 export function getFieldTypeLabel(type: FieldType): string {
@@ -199,6 +200,15 @@ export function createDefaultField(type: FieldType, index?: number): FormField {
         ...base,
         label: "Security check",
         name: `captcha${suffix}`,
+      };
+    case "collect_payment":
+      return {
+        ...base,
+        label: "Payment",
+        name: `payment${suffix}`,
+        amount: 20,
+        currency: "USD",
+        helpText: "Amount due will be charged when the form is submitted.",
       };
     case "signature":
       return {
