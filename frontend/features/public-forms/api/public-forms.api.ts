@@ -51,12 +51,40 @@ export interface PublicFormSubmissionResult {
 export function submitPublicForm(
   publicKey: string,
   data: Record<string, unknown>,
+  extras?: { paymentIntentId?: string },
 ) {
   return publicFetch<PublicFormSubmissionResult>(
     `public/forms/${encodeURIComponent(publicKey)}/submissions`,
     {
       method: "POST",
-      body: JSON.stringify({ data }),
+      body: JSON.stringify({
+        data,
+        ...(extras?.paymentIntentId
+          ? { paymentIntentId: extras.paymentIntentId }
+          : {}),
+      }),
+    },
+  );
+}
+
+export type PublicFormPaymentIntent = {
+  attemptId: string;
+  paymentIntentId: string;
+  clientSecret: string;
+  publishableKey: string;
+  stripeAccountId: string | null;
+  amountCents: number;
+  currency: string;
+  livemode: boolean;
+  rail: "PLATFORM" | "CONNECT";
+};
+
+export function createPublicFormPaymentIntent(publicKey: string) {
+  return publicFetch<PublicFormPaymentIntent>(
+    `public/forms/${encodeURIComponent(publicKey)}/payment-intent`,
+    {
+      method: "POST",
+      body: JSON.stringify({}),
     },
   );
 }

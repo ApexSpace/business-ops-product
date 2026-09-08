@@ -75,6 +75,7 @@ export const fieldTypeSchema = z.enum([
   "name",
   "address",
   "website",
+  "collect_payment",
 ]);
 
 export const formFieldSchema: z.ZodType<{
@@ -109,6 +110,8 @@ export const formFieldSchema: z.ZodType<{
   showFirstName?: boolean;
   showMiddleName?: boolean;
   showLastName?: boolean;
+  amount?: number;
+  currency?: string;
 }> = z.lazy(() =>
   z.object({
     id: z.string().min(1),
@@ -145,5 +148,7 @@ export const formFieldSchema: z.ZodType<{
     showFirstName: z.boolean().optional(),
     showMiddleName: z.boolean().optional(),
     showLastName: z.boolean().optional(),
+    amount: z.number().positive().optional(),
+    currency: z.string().min(3).max(3).optional(),
   }),
 );

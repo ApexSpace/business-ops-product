@@ -159,6 +159,7 @@ import { WhatsAppTemplatesController } from '../whatsapp/controllers/whatsapp-te
     MetaConfigService,
     StripeApiService,
     StripeAccountService,
+    StripeAccountLinksService,
     StripeCheckoutService,
     StripeConnectContextService,
     StripeCustomerService,

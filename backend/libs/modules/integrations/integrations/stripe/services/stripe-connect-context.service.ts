@@ -1,11 +1,17 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { AppException } from '@app/common/exceptions/app.exception';
 import { ErrorCode } from '@app/common/exceptions/error-code.enum';
+import { PrismaService } from '@app/core/database/prisma.service';
 import { BusinessIntegrationRepository } from '../../repositories/business-integration.repository';
 import {
   assertStripeReadyForPayments,
   parseStripeIntegrationConfig,
 } from '../utils/stripe-readiness.util';
+import {
+  getStripePublishableForMode,
+  readPaymentsModeFromSettings,
+  type StripePaymentsMode,
+} from '../utils/stripe-mode.util';
 
 export interface StripeConnectContext {
   ready: boolean;
@@ -13,22 +19,39 @@ export interface StripeConnectContext {
   publishableKey: string | null;
   defaultCurrency: string | null;
   livemode: boolean;
+  paymentsMode: StripePaymentsMode;
 }
 
 @Injectable()
 export class StripeConnectContextService {
   constructor(
     private readonly businessIntegrationRepository: BusinessIntegrationRepository,
+    private readonly prisma: PrismaService,
   ) {}
 
   getPublishableKey(): string | null {
-    return process.env.STRIPE_PUBLISHABLE_KEY?.trim() || null;
+    return getStripePublishableForMode('live');
+  }
+
+  getPublishableKeyForMode(mode: StripePaymentsMode): string | null {
+    return getStripePublishableForMode(mode);
+  }
+
+  async getPaymentsModeForBusiness(
+    businessId: string,
+  ): Promise<StripePaymentsMode> {
+    const business = await this.prisma.business.findFirst({
+      where: { id: businessId, deletedAt: null },
+      select: { settings: true },
+    });
+    return readPaymentsModeFromSettings(business?.settings);
   }
 
   async getContextForBusiness(
     businessId: string,
   ): Promise<StripeConnectContext> {
-    const publishableKey = this.getPublishableKey();
+    const paymentsMode = await this.getPaymentsModeForBusiness(businessId);
+    const publishableKey = this.getPublishableKeyForMode(paymentsMode);
     const integration =
       await this.businessIntegrationRepository.findByBusinessAndKey(
         businessId,
@@ -41,7 +64,8 @@ export class StripeConnectContextService {
         stripeAccountId: null,
         publishableKey,
         defaultCurrency: null,
-        livemode: false,
+        livemode: paymentsMode === 'live',
+        paymentsMode,
       };
     }
 
@@ -52,7 +76,8 @@ export class StripeConnectContextService {
         stripeAccountId: config.stripeAccountId,
         publishableKey,
         defaultCurrency: config.defaultCurrency,
-        livemode: config.livemode,
+        livemode: paymentsMode === 'live',
+        paymentsMode,
       };
     } catch {
       const parsed = parseStripeIntegrationConfig(integration.config);
@@ -61,7 +86,8 @@ export class StripeConnectContextService {
         stripeAccountId: parsed?.stripeAccountId ?? null,
         publishableKey,
         defaultCurrency: parsed?.defaultCurrency ?? null,
-        livemode: parsed?.livemode ?? false,
+        livemode: paymentsMode === 'live',
+        paymentsMode,
       };
     }
   }

@@ -11,6 +11,7 @@ const LAYOUT_TYPES = new Set([
   "divider",
   "spacer",
   "image",
+  "collect_payment",
 ]);
 
 function isEmptyValue(value: unknown): boolean {

@@ -821,6 +821,20 @@ enum FormStatus {
   ARCHIVED
 }
 
+enum FormPaymentAttemptStatus {
+  CREATED
+  REQUIRES_ACTION
+  SUCCEEDED
+  FAILED
+  CANCELED
+  SUCCEEDED_PENDING_SUBMISSION
+}
+
+enum FormPaymentRail {
+  PLATFORM
+  CONNECT
+}
+
 enum ChatbotWidgetPosition {
   BOTTOM_RIGHT
   BOTTOM_LEFT
@@ -1133,6 +1147,7 @@ model Business {
   chatbots             Chatbot[]
   forms                Form[]
   formSubmissions      FormSubmission[]
+  formPaymentAttempts  FormPaymentAttempt[]
   chatbotRules         ChatbotRule[]
   chatbotSessions      ChatbotSession[]
   webhookEvents            WebhookEvent[]
@@ -4063,8 +4078,9 @@ model Form {
   updatedAt   DateTime   @updatedAt
   deletedAt   DateTime?
 
-  business    Business         @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  business    Business             @relation(fields: [businessId], references: [id], onDelete: Cascade)
   submissions FormSubmission[]
+  paymentAttempts FormPaymentAttempt[]
 
   @@unique([businessId, slug])
   @@index([businessId])
@@ -4082,14 +4098,50 @@ model FormSubmission {
   metadata   Json?
   createdAt  DateTime @default(now())
 
-  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  form     Form     @relation(fields: [formId], references: [id], onDelete: Cascade)
+  business        Business             @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  form            Form                 @relation(fields: [formId], references: [id], onDelete: Cascade)
+  paymentAttempts FormPaymentAttempt[]
 
   @@index([businessId])
   @@index([formId])
   @@index([formId, createdAt])
   @@index([publicKey])
   @@map("form_submissions")
+}
+
+model FormPaymentAttempt {
+  id                    String                   @id @default(uuid())
+  businessId            String
+  formId                String
+  publicKey             String
+  amountCents           Int
+  currency              String                   @default("USD")
+  livemode              Boolean                  @default(true)
+  rail                  FormPaymentRail
+  status                FormPaymentAttemptStatus @default(CREATED)
+  stripePaymentIntentId String                   @unique
+  stripeChargeId        String?
+  formSubmissionId      String?
+  paymentId             String?
+  payerEmail            String?
+  payerName             String?
+  payerPhone            String?
+  formDataSnapshot      Json?
+  metadata              Json?
+  createdAt             DateTime                 @default(now())
+  updatedAt             DateTime                 @updatedAt
+
+  business       Business        @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  form           Form            @relation(fields: [formId], references: [id], onDelete: Cascade)
+  formSubmission FormSubmission? @relation(fields: [formSubmissionId], references: [id], onDelete: SetNull)
+
+  @@index([businessId])
+  @@index([businessId, status])
+  @@index([businessId, rail])
+  @@index([formId])
+  @@index([formSubmissionId])
+  @@index([createdAt])
+  @@map("form_payment_attempts")
 }
 
 model ChatbotRule {

@@ -8,6 +8,7 @@ export const STRIPE_PAYMENT_PURPOSE = {
   PACKAGE: 'package',
   MEMBERSHIP: 'membership',
   BOOKING: 'booking',
+  FORM: 'form',
 } as const;
 
 export type StripePaymentPurpose =

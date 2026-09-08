@@ -9,6 +9,7 @@ import {
   CheckSquare,
   CircleDot,
   Columns2,
+  CreditCard,
   FileUp,
   Hash,
   Heading,
@@ -62,6 +63,7 @@ const FIELD_ICONS: Record<string, React.ComponentType<{ className?: string }>> =
   "sliders-horizontal": SlidersHorizontal,
   "eye-off": EyeOff,
   shield: Shield,
+  "credit-card": CreditCard,
   user: User,
   globe: Globe,
   heading: Heading,
@@ -72,7 +74,12 @@ const FIELD_ICONS: Record<string, React.ComponentType<{ className?: string }>> =
   "columns-2": Columns2,
 };
 
-const DISALLOWED_IN_COLUMN_TYPES = new Set<FieldType>(["columns", "hidden", "captcha"]);
+const DISALLOWED_IN_COLUMN_TYPES = new Set<FieldType>([
+  "columns",
+  "hidden",
+  "captcha",
+  "collect_payment",
+]);
 
 interface PaletteItemProps {
   type: FieldType;

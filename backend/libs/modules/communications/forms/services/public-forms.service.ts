@@ -21,14 +21,15 @@ import {
   sanitizeFormSubmissionData,
   validateFormSubmission,
 } from '../utils/form-submission-validation.util';
+import { getSingleCollectPaymentField } from '../utils/form-collect-payment.util';
+import { FormSubmissionConversationBridgeService } from './form-submission-conversation-bridge.service';
+import { FormPaymentService } from './form-payment.service';
 
 export interface FormSubmissionMetadata {
   ip?: string;
   userAgent?: string;
   referer?: string;
 }
-
-import { FormSubmissionConversationBridgeService } from './form-submission-conversation-bridge.service';
 
 @Injectable()
 export class PublicFormsService {
@@ -39,11 +40,16 @@ export class PublicFormsService {
     private readonly storageService: StorageService,
     private readonly conversationBridge: FormSubmissionConversationBridgeService,
     private readonly prisma: PrismaService,
+    private readonly formPaymentService: FormPaymentService,
   ) {}
 
   async getConfig(publicKey: string): Promise<PublicFormConfigDto> {
     const form = await this.requirePublishedForm(publicKey);
     return toPublicFormConfig(form);
+  }
+
+  createPaymentIntent(publicKey: string) {
+    return this.formPaymentService.createPaymentIntent(publicKey);
   }
 
   async submit(
@@ -70,7 +76,36 @@ export class PublicFormsService {
       );
     }
 
+    const paymentField = getSingleCollectPaymentField(definition);
+    let paymentMeta: Record<string, unknown> | null = null;
+    let verified: Awaited<
+      ReturnType<FormPaymentService['verifyPaymentForSubmission']>
+    > = null;
+
+    if (paymentField) {
+      verified = await this.formPaymentService.verifyPaymentForSubmission({
+        publicKey,
+        paymentIntentId: dto.paymentIntentId ?? '',
+        data,
+      });
+      if (verified) {
+        paymentMeta = {
+          paymentIntentId: verified.attempt.stripePaymentIntentId,
+          amount: verified.attempt.amountCents / 100,
+          amountCents: verified.attempt.amountCents,
+          currency: verified.attempt.currency,
+          status: 'SUCCEEDED',
+          livemode: verified.attempt.livemode,
+          attemptId: verified.attempt.id,
+        };
+      }
+    }
+
     const sanitized = sanitizeFormSubmissionData(definition.fields, data);
+    if (paymentField && paymentMeta) {
+      sanitized[paymentField.name] = paymentMeta;
+    }
+
     const submission = await this.submissionsRepository.create({
       business: { connect: { id: form.businessId } },
       form: { connect: { id: form.id } },
@@ -80,8 +115,24 @@ export class PublicFormsService {
         ip: metadata.ip ?? null,
         userAgent: metadata.userAgent ?? null,
         referer: metadata.referer ?? null,
-      },
+        ...(paymentMeta
+          ? {
+              paymentIntentId: String(paymentMeta.paymentIntentId),
+              paymentAttemptId: String(paymentMeta.attemptId),
+            }
+          : {}),
+      } as Prisma.InputJsonValue,
     });
+
+    if (verified) {
+      await this.formPaymentService.attachSubmissionToAttempt({
+        attemptId: verified.attempt.id,
+        submissionId: submission.id,
+        payer: verified.payer,
+        chargeId: verified.chargeId,
+        data: sanitized,
+      });
+    }
 
     await this.auditService.log({
       actorUserId: SYSTEM_AUDIT_ACTOR_SENTINEL,
@@ -94,6 +145,7 @@ export class PublicFormsService {
         submissionId: submission.id,
         submittedAt: submission.createdAt.toISOString(),
         formName: form.name,
+        ...(paymentMeta ?? {}),
       },
     });
 

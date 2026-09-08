@@ -617,6 +617,11 @@ export const queryKeys = {
         filters?: { page?: number; limit?: number; action?: string },
       ) => listKey(["platform", "business", id, "audit"], filters),
     },
+    payments: {
+      all: () => ["platform", "payments"] as const,
+      list: (filters?: ListFilters) =>
+        listKey(["platform", "payments", "list"], filters),
+    },
     auditLogs: {
       all: () => ["platform", "audit-logs"] as const,
       list: (filters: { page?: number; limit?: number; search?: string }) =>

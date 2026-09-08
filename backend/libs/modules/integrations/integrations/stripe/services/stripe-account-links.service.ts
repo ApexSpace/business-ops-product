@@ -1,10 +1,11 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { IntegrationStatus } from '@prisma/client';
+import { IntegrationStatus, Prisma } from '@prisma/client';
 import type { RequestUser } from '@app/common/decorators/current-user.decorator';
 import { AppException } from '@app/common/exceptions/app.exception';
 import { ErrorCode } from '@app/common/exceptions/error-code.enum';
 import { RootConfig } from '@app/core/config/configuration';
+import { PrismaService } from '@app/core/database/prisma.service';
 import { AuditService } from '@app/modules/platform/audit/services/audit.service';
 import { BusinessIntegrationRepository } from '../../repositories/business-integration.repository';
 import {
@@ -15,6 +16,11 @@ import {
   assertStripeReadyForPayments,
   parseStripeIntegrationConfig,
 } from '../utils/stripe-readiness.util';
+import {
+  isStripeModeConfigured,
+  mergePaymentsModeIntoSettings,
+  type StripePaymentsMode,
+} from '../utils/stripe-mode.util';
 import { StripeApiService } from './stripe-api.service';
 import { StripeConnectContextService } from './stripe-connect-context.service';
 
@@ -28,12 +34,17 @@ export class StripeAccountLinksService {
     private readonly businessIntegrationRepository: BusinessIntegrationRepository,
     private readonly stripeConnectContext: StripeConnectContextService,
     private readonly auditService: AuditService,
+    private readonly prisma: PrismaService,
   ) {}
 
   async getPrimaryAccountSummary(
     businessId: string,
   ): Promise<PrimaryPaymentAccountResponseDto> {
-    const publishableKey = this.stripeConnectContext.getPublishableKey();
+    const paymentsMode =
+      await this.stripeConnectContext.getPaymentsModeForBusiness(businessId);
+    const publishableKey =
+      this.stripeConnectContext.getPublishableKeyForMode(paymentsMode);
+    const testModeConfigured = isStripeModeConfigured('test');
     const integration =
       await this.businessIntegrationRepository.findByBusinessAndKey(
         businessId,
@@ -50,14 +61,17 @@ export class StripeAccountLinksService {
         modeLabel: null,
         defaultCurrency: null,
         country: null,
-        livemode: false,
+        livemode: paymentsMode === 'live',
+        paymentsMode,
+        testModeConfigured,
         publishableKey,
       };
     }
 
     const parsed = parseStripeIntegrationConfig(integration.config);
     const connectionStatus = this.resolveConnectionStatus(integration);
-    const modeLabel = parsed?.livemode ? 'Live mode' : 'Test mode';
+    const modeLabel =
+      paymentsMode === 'live' ? 'Live mode' : 'Test mode (sandbox)';
 
     return {
       connectionStatus,
@@ -68,9 +82,54 @@ export class StripeAccountLinksService {
       modeLabel,
       defaultCurrency: parsed?.defaultCurrency ?? null,
       country: parsed?.country ?? null,
-      livemode: parsed?.livemode ?? false,
+      livemode: paymentsMode === 'live',
+      paymentsMode,
+      testModeConfigured,
       publishableKey,
     };
+  }
+
+  async updatePaymentsMode(
+    businessId: string,
+    mode: StripePaymentsMode,
+    actor: RequestUser,
+  ): Promise<PrimaryPaymentAccountResponseDto> {
+    if (mode === 'test' && !isStripeModeConfigured('test')) {
+      throw new AppException(
+        ErrorCode.BAD_REQUEST,
+        'Stripe test mode is not configured. Set STRIPE_SECRET_KEY_TEST and STRIPE_PUBLISHABLE_KEY_TEST.',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const business = await this.prisma.business.findFirst({
+      where: { id: businessId, deletedAt: null },
+      select: { id: true, settings: true },
+    });
+    if (!business) {
+      throw new AppException(
+        ErrorCode.NOT_FOUND,
+        'Business not found',
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    const nextSettings = mergePaymentsModeIntoSettings(business.settings, mode);
+    await this.prisma.business.update({
+      where: { id: businessId },
+      data: { settings: nextSettings as Prisma.InputJsonValue },
+    });
+
+    await this.auditService.log({
+      actorUserId: actor.id,
+      businessId,
+      action: 'payments.mode.updated',
+      entityType: 'Business',
+      entityId: businessId,
+      metadata: { mode },
+    });
+
+    return this.getPrimaryAccountSummary(businessId);
   }
 
   async createOnboardingLink(

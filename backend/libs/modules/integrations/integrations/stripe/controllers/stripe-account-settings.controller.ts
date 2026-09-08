@@ -1,4 +1,4 @@
-import { Controller, Get, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Patch, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { BusinessMemberRole } from '@prisma/client';
 import { CurrentUser } from '@app/common/decorators/current-user.decorator';
@@ -12,6 +12,7 @@ import {
   PrimaryPaymentAccountResponseDto,
   StripeAccountLinkResponseDto,
 } from '../dto/stripe-account-links.dto';
+import { UpdatePaymentsModeDto } from '../dto/update-payments-mode.dto';
 import { StripeAccountLinksService } from '../services/stripe-account-links.service';
 
 @ApiTags('payment-accounts')
@@ -36,6 +37,20 @@ export class StripeAccountSettingsController {
   ): Promise<PrimaryPaymentAccountResponseDto> {
     return this.stripeAccountLinksService.getPrimaryAccountSummary(
       user.businessId!,
+    );
+  }
+
+  @Patch('payment-accounts/payments-mode')
+  @BusinessRoles(BusinessMemberRole.OWNER, BusinessMemberRole.ADMIN)
+  @StaffPermission('settings.integrations.manage')
+  updatePaymentsMode(
+    @CurrentUser() user: RequestUser,
+    @Body() dto: UpdatePaymentsModeDto,
+  ): Promise<PrimaryPaymentAccountResponseDto> {
+    return this.stripeAccountLinksService.updatePaymentsMode(
+      user.businessId!,
+      dto.mode,
+      user,
     );
   }
 

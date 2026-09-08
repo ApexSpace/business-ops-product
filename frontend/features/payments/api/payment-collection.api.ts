@@ -56,6 +56,7 @@ export interface StripeConnectContext {
   publishableKey?: string | null;
   defaultCurrency?: string | null;
   livemode: boolean;
+  paymentsMode?: "live" | "test";
 }
 
 export function getStripeConnectContext() {

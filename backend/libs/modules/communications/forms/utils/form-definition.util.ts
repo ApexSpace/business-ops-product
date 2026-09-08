@@ -58,6 +58,7 @@ export function sanitizeFormFields(fields: unknown[]): unknown[] {
   }
 
   const sanitized: unknown[] = [];
+  let collectPaymentSeen = false;
 
   for (const item of fields) {
     if (!isPersistableField(item)) {
@@ -65,6 +66,28 @@ export function sanitizeFormFields(fields: unknown[]): unknown[] {
     }
 
     const field = { ...item };
+    if (field.type === 'collect_payment') {
+      if (collectPaymentSeen) {
+        continue;
+      }
+      collectPaymentSeen = true;
+      const amountRaw = field.amount;
+      const amount =
+        typeof amountRaw === 'number'
+          ? amountRaw
+          : typeof amountRaw === 'string'
+            ? Number(amountRaw)
+            : NaN;
+      if (!Number.isFinite(amount) || amount <= 0) {
+        field.amount = 20;
+      } else {
+        field.amount = amount;
+      }
+      field.currency =
+        typeof field.currency === 'string' && field.currency.trim()
+          ? field.currency.trim().toUpperCase()
+          : 'USD';
+    }
     if (field.type === 'columns' && Array.isArray(field.columns)) {
       field.columns = field.columns.map((column) =>
         Array.isArray(column) ? sanitizeFormFields(column) : [],
