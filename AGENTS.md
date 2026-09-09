@@ -1,16 +1,31 @@
-# AGENTS.md — Business Automation Application
+# AGENTS.md — PandaCue (Business Automation Application)
 
 Guidance for AI agents and contributors working in this monorepo. Read this before adding or changing features.
 
+**Product:** PandaCue (`dev.pandacue.com`). npm / repo name may still say `business-automation` / `business-ops-product`.
+
+## Agent context map
+
+| Need | Read first |
+|------|------------|
+| Global law (stack, checklists, naming) | This file (`AGENTS.md`) |
+| Backend Nest conventions | `.cursor/rules/backend-conventions.mdc` |
+| Frontend UI / design system | `.cursor/rules/frontend-design-system.mdc` + `frontend/REUSE.md` |
+| Per-feature implementation map | `.approach/INDEX.md` → `.approach/features/<domain>/<feature>.md` |
+| Social OAuth / developer portals (deep) | `.approach/social-media-platforms.md` |
+| Platform entitlements testing | `docs/platform-operations-testing.md` |
+
+Linear / Cloud Agent tickets should **link** these paths — do not paste full rules into the issue.
+
 ## Project overview
 
-Multi-tenant business automation platform: CRM, communications, finance, operations, integrations, and platform admin.
+Multi-tenant business automation platform: CRM, communications, finance, operations, integrations, reports, storage, and platform admin.
 
 | Area | Stack | Port (dev) |
 |------|-------|------------|
 | **Backend** | NestJS 11, Prisma, PostgreSQL, Redis, BullMQ | API `3000` |
 | **Frontend** | Next.js 16 (App Router), React 19, TanStack Query, Zod, Tailwind | `3001` |
-| **Mobile** | Expo / React Native, Expo Router | Expo dev server |
+| **Mobile** | Expo / React Native (documented; app tree may be thin / placeholder) | Expo dev server |
 | **Shared** | `@business-automation/api-contract` (OpenAPI codegen) | — |
 
 ### Repository layout
@@ -29,7 +44,8 @@ Multi-tenant business automation platform: CRM, communications, finance, operati
 │   ├── features/     # domain UI, hooks, API, schemas
 │   ├── components/   # shared UI (shadcn-style primitives)
 │   └── lib/          # api client, query keys, auth, utils
-├── mobile/           # Expo app (subset of features; same backend)
+├── .approach/        # agent feature runbooks (INDEX.md)
+├── mobile/           # Expo app (subset; may be incomplete in this checkout)
 └── packages/
     └── api-contract/ # generated types from backend OpenAPI
 ```
@@ -39,16 +55,21 @@ Multi-tenant business automation platform: CRM, communications, finance, operati
 Modules live under `backend/libs/modules/` and are grouped into API bundles:
 
 - **crm** — contacts, leads, pipelines, notes, services, industries
-- **communications** — conversations, messages, email, forms, chatbots
-- **finance** — invoices, estimates, payments
-- **operations** — appointments, calendars, tasks, public booking
-- **integrations** — OAuth providers, webhooks, resource sync
-- **platform** — auth, business, membership, capabilities, snapshots, audit, files
+- **communications** — conversations, messages (worker), email, sms, forms, chatbots, social-planner, notifications, automations, webhooks (workers)
+- **finance** — invoices (incl. checkouts/sales), estimates, payments, products, packages, gift-cards, memberships, offers, custom-fees, checkout-advanced-settings
+- **operations** — appointments, calendars, scheduling-settings, public-booking, express-booking, online-booking-settings, tasks, work-items, waitlist, time-clock, resources
+- **integrations** — OAuth hub (Meta, Google, LinkedIn, X, Pinterest, TikTok, Stripe), WhatsApp, Twilio, Google Calendar sync
+- **platform** — auth, business, membership, capabilities, tiers, addons, plan-groups, billing, snapshots, data-io, trial-signup, jobs, audit, platform ops
+- **reports** — report providers / registry / API
+- **storage** — file assets (R2 / S3-compatible uploads)
 
 Each domain typically has: `controllers/`, `services/`, `repositories/`, `dto/`, `mappers/`, `utils/`, and a `*.module.ts`. Register new modules in the parent bundle (e.g. `crm.module.ts`) and ensure the bundle is imported by the correct app (`*-api.module.ts`, `*-worker.module.ts`).
 
----
+### Frontend features
 
+Domain UI lives under `frontend/features/<name>/` (api, hooks, components, schemas). Thin routes under `frontend/app/`. Full list and runbook links: [`.approach/INDEX.md`](.approach/INDEX.md).
+
+---
 ## Local development
 
 ```bash
@@ -204,6 +225,8 @@ Prefer generated types in clients over hand-maintained duplicates.
 ## Adding a frontend feature
 
 Use this checklist for new UI or API consumption in the web app.
+
+**UI law:** `.cursor/rules/frontend-design-system.mdc` (Reuse → Variant → Composite). **List/drawer patterns:** `frontend/REUSE.md`.
 
 ### 1. Feature folder
 
@@ -422,14 +445,16 @@ npm run dev
 
 ## Reference implementations
 
-When unsure, copy patterns from these well-established features:
+When unsure, copy patterns from these well-established features. Prefer the matching runbook under `.approach/features/` when present.
 
-| Concern | Backend | Frontend |
-|---------|---------|----------|
-| CRUD resource | `crm/contacts` | `features/contacts` |
-| Pipeline / stages | `crm/pipelines` | `features/pipelines` |
-| Complex forms | `communications/forms` | `features/forms` |
-| Public unauthenticated API | `operations/public-booking` | `features/public-booking` |
-| OAuth / webhooks | `integrations/integrations` | `features/integrations` |
-| Capability-gated | `communications/forms` | `features/forms` |
-| Background jobs | `communications/email/workers` | — |
+| Concern | Backend | Frontend | Runbook |
+|---------|---------|----------|---------|
+| CRUD resource | `crm/contacts` | `features/contacts` | `.approach/features/crm/contacts-leads-pipelines.md` |
+| Pipeline / stages | `crm/pipelines` | `features/pipelines` | same |
+| Complex forms | `communications/forms` | `features/forms` | `.approach/features/communications/forms.md` |
+| Public unauthenticated API | `operations/public-booking` | `features/public-booking` | `.approach/features/operations/public-booking.md` |
+| OAuth / webhooks | `integrations/integrations` | `features/integrations` | `.approach/features/integrations/oauth-integrations.md` |
+| Capability-gated | `communications/forms` | `features/forms` | forms runbook |
+| Background jobs | `communications/email/workers` | — | `.approach/features/communications/email-sms-notifications.md` |
+| Social planner | `communications/social-planner` | `features/social-planner` | `.approach/features/communications/social-planner.md` |
+| Payments / Stripe | `finance/payments` + Stripe under integrations | `features/payments`, `payment-accounts` | `.approach/features/finance/payments-and-stripe.md` |
