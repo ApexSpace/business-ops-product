@@ -1,5 +1,7 @@
 # PandaCue agent feature index
 
+**Product niche:** med spa / aesthetics operations (Mangomint-class). **Marketing site:** https://web.pandacue.com (separate from this repo). **This repo:** product app.
+
 Point Cursor / Linear agents at a runbook path instead of pasting domain lore into tickets.
 
 **Template:** [`_template-feature.md`](./_template-feature.md)  

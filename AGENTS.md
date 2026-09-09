@@ -2,7 +2,14 @@
 
 Guidance for AI agents and contributors working in this monorepo. Read this before adding or changing features.
 
-**Product:** PandaCue (`dev.pandacue.com`). npm / repo name may still say `business-automation` / `business-ops-product`.
+**Product:** PandaCue (`dev.pandacue.com` app / API). npm / repo name may still say `business-automation` / `business-ops-product`.
+
+### Product positioning (agents must know)
+
+- **Niche:** Day-to-day operations for **med spa** (and adjacent aesthetics / wellness) businesses — scheduling, CRM, checkout, memberships/packages, messaging, social, etc.
+- **Category peers:** Tools like [Mangomint](https://www.mangomint.com) (operations suite for med spas / salons). Prefer med-spa operational language and workflows over generic “any SMB” assumptions.
+- **Marketing site:** [https://web.pandacue.com](https://web.pandacue.com) — public marketing / acquisition. **Not** this monorepo’s Next app (that is the product app).
+- **Product app (this repo):** business app and related surfaces (e.g. `dev.pandacue.com` in lower environments). Do not implement marketing-site pages here unless explicitly asked.
 
 ## Agent context map
 
@@ -19,7 +26,7 @@ Linear / Cloud Agent tickets should **link** these paths — do not paste full r
 
 ## Project overview
 
-Multi-tenant business automation platform: CRM, communications, finance, operations, integrations, reports, storage, and platform admin.
+Multi-tenant **med spa operations** platform (PandaCue): CRM, communications, finance, operations, integrations, reports, storage, and platform admin — for businesses to run appointments, clients, sales, and marketing ops day to day.
 
 | Area | Stack | Port (dev) |
 |------|-------|------------|
