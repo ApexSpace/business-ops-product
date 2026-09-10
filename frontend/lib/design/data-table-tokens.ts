@@ -6,6 +6,7 @@
  *
  * PandaCue Figma “Sales Table” — used by DataTable, ListToolbar, SearchInput,
  * ListPagination, and entity workspaces. Colors reference CSS variables.
+ * Numbered entity lists must use ListPagination only (no feature-local pagers).
  */
 
 import { FILTER_ICON_BUTTON_CLASS } from "@/lib/ui/control-styles";

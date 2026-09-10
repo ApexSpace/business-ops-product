@@ -2,6 +2,10 @@
 
 This app uses a **single Next.js frontend** with strict tiers so shared UI can be copied into future niche apps without a monorepo split.
 
+**Mandatory decision order and tokens:** `.cursor/rules/frontend-design-system.mdc` (Reuse → Variant → Composite). This file adds **concrete layout recipes** (lists, drawers, tiers). If the two ever conflict, the design-system rule wins for visual/token decisions.
+
+**Feature maps for agents:** `.approach/INDEX.md`.
+
 ## Tiers
 
 | Tier | Path | May import |
@@ -57,6 +61,7 @@ Use `EntityListLayout` for every screen that shows a DataTable. Do not assemble 
 - Nested tabs: `hideHeader` + `flush` so parent chrome owns padding
 - Full width: `ENTITY_LIST_PAGE_INSET_CLASS` is `px-0`; toolbar and table span the content area
 - Tokens: `ENTITY_LIST_PAGE_INSET_CLASS`, `WORKSPACE_TABLE_CARD_CLASS` in `frontend/lib/design/workspace-tokens.ts`
+- **Numbered list pagination:** always use `ListPagination` from `components/ui/list-pagination` in the `footer` slot — do not invent a second pager
 
 ### Entity workspaces (list + detail drawer)
 

@@ -14,9 +14,7 @@ import { PrismaService } from '@app/core/database/prisma.service';
 import { AuditService } from '@app/modules/platform/audit/services/audit.service';
 import { ContactRepository } from '@app/modules/crm/contacts/repositories/contact.repository';
 import { DomainEventBusService } from '@app/modules/communications/automations/services/domain-event-bus.service';
-import { BusinessIntegrationRepository } from '@app/modules/integrations/integrations/repositories/business-integration.repository';
-import { assertStripeReadyForPayments } from '@app/modules/integrations/integrations/stripe/utils/stripe-readiness.util';
-import { StripeApiService } from '@app/modules/integrations/integrations/stripe/services/stripe-api.service';
+import { StripeConnectContextService } from '@app/modules/integrations/integrations/stripe/services/stripe-connect-context.service';
 import { StripeCustomerService } from '@app/modules/integrations/integrations/stripe/services/stripe-customer.service';
 import { WalletLedgerService } from '@app/modules/finance/payments/services/wallet-ledger.service';
 import {
@@ -44,8 +42,7 @@ export class ClientMembershipsService {
     private readonly contactRepository: ContactRepository,
     private readonly auditService: AuditService,
     private readonly stripeCustomerService: StripeCustomerService,
-    private readonly stripeApiService: StripeApiService,
-    private readonly businessIntegrationRepository: BusinessIntegrationRepository,
+    private readonly stripeConnectContext: StripeConnectContextService,
     private readonly walletLedger: WalletLedgerService,
     private readonly domainEventBus: DomainEventBusService,
   ) {}
@@ -457,12 +454,14 @@ export class ClientMembershipsService {
     membership: { id: string; stripeSubscriptionId: string | null },
   ) {
     if (membership.stripeSubscriptionId) {
-      const stripeAccountId = await this.getStripeAccountId(businessId);
-      const stripe = this.stripeApiService.getClient();
-      await stripe.subscriptions.update(
+      const chargeCtx =
+        await this.stripeConnectContext.resolveTenantStripeChargeContext(
+          businessId,
+        );
+      await chargeCtx.stripe.subscriptions.update(
         membership.stripeSubscriptionId,
         { pause_collection: { behavior: 'mark_uncollectible' } },
-        { stripeAccount: stripeAccountId },
+        { stripeAccount: chargeCtx.stripeAccountId },
       );
     }
     await this.clientMembershipRepository.update(membership.id, {
@@ -480,12 +479,14 @@ export class ClientMembershipsService {
     membership: { id: string; stripeSubscriptionId: string | null },
   ) {
     if (membership.stripeSubscriptionId) {
-      const stripeAccountId = await this.getStripeAccountId(businessId);
-      const stripe = this.stripeApiService.getClient();
-      await stripe.subscriptions.update(
+      const chargeCtx =
+        await this.stripeConnectContext.resolveTenantStripeChargeContext(
+          businessId,
+        );
+      await chargeCtx.stripe.subscriptions.update(
         membership.stripeSubscriptionId,
         { pause_collection: '' },
-        { stripeAccount: stripeAccountId },
+        { stripeAccount: chargeCtx.stripeAccountId },
       );
     }
     await this.clientMembershipRepository.update(membership.id, {
@@ -508,22 +509,24 @@ export class ClientMembershipsService {
     cancelAtPeriodEnd: boolean,
   ) {
     if (membership.stripeSubscriptionId) {
-      const stripeAccountId = await this.getStripeAccountId(businessId);
-      const stripe = this.stripeApiService.getClient();
+      const chargeCtx =
+        await this.stripeConnectContext.resolveTenantStripeChargeContext(
+          businessId,
+        );
       if (cancelAtPeriodEnd) {
-        await stripe.subscriptions.update(
+        await chargeCtx.stripe.subscriptions.update(
           membership.stripeSubscriptionId,
           { cancel_at_period_end: true },
-          { stripeAccount: stripeAccountId },
+          { stripeAccount: chargeCtx.stripeAccountId },
         );
         await this.clientMembershipRepository.update(membership.id, {
           cancelAtPeriodEnd: true,
         });
       } else {
-        await stripe.subscriptions.cancel(
+        await chargeCtx.stripe.subscriptions.cancel(
           membership.stripeSubscriptionId,
           {},
-          { stripeAccount: stripeAccountId },
+          { stripeAccount: chargeCtx.stripeAccountId },
         );
         await this.clientMembershipRepository.update(membership.id, {
           status: ClientMembershipStatus.CANCELED,
@@ -559,12 +562,14 @@ export class ClientMembershipsService {
         HttpStatus.BAD_REQUEST,
       );
     }
-    const stripeAccountId = await this.getStripeAccountId(businessId);
-    const stripe = this.stripeApiService.getClient();
-    await stripe.subscriptions.update(
+    const chargeCtx =
+      await this.stripeConnectContext.resolveTenantStripeChargeContext(
+        businessId,
+      );
+    await chargeCtx.stripe.subscriptions.update(
       membership.stripeSubscriptionId,
       { billing_cycle_anchor: 'now', proration_behavior: 'none' },
-      { stripeAccount: stripeAccountId },
+      { stripeAccount: chargeCtx.stripeAccountId },
     );
   }
 
@@ -607,10 +612,14 @@ export class ClientMembershipsService {
     stripeCustomerId: string,
     startDate: Date,
   ): Promise<string> {
-    const stripeAccountId = await this.getStripeAccountId(businessId);
-    const stripe = this.stripeApiService.getClient();
+    const chargeCtx =
+      await this.stripeConnectContext.resolveTenantStripeChargeContext(
+        businessId,
+      );
 
-    const params: Parameters<typeof stripe.subscriptions.create>[0] = {
+    const params: Parameters<
+      typeof chargeCtx.stripe.subscriptions.create
+    >[0] = {
       customer: stripeCustomerId,
       items: [{ price: plan.stripePriceId! }],
       metadata: {
@@ -626,21 +635,11 @@ export class ClientMembershipsService {
       params.trial_end = Math.floor(startDate.getTime() / 1000);
     }
 
-    const subscription = await stripe.subscriptions.create(params, {
-      stripeAccount: stripeAccountId,
+    const subscription = await chargeCtx.stripe.subscriptions.create(params, {
+      stripeAccount: chargeCtx.stripeAccountId,
     });
 
     return subscription.id;
-  }
-
-  private async getStripeAccountId(businessId: string): Promise<string> {
-    const integration =
-      await this.businessIntegrationRepository.findByBusinessAndKey(
-        businessId,
-        'stripe',
-      );
-    const config = assertStripeReadyForPayments(integration);
-    return config.stripeAccountId;
   }
 
   private async logBillingEvent(

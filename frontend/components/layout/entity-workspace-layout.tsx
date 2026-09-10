@@ -5,6 +5,7 @@ import { PageHeader } from "@/components/layout/page-header";
 import { ListToolbar } from "@/components/layout/list-toolbar";
 import { cn } from "@/lib/utils";
 import {
+  ENTITY_LIST_LEADING_CLASS,
   ENTITY_LIST_PAGE_INSET_CLASS,
   WORKSPACE_FILL_CLASS,
   WORKSPACE_FOOTER_CLASS,
@@ -82,7 +83,9 @@ export function EntityWorkspaceLayout({
       {hideHeader ? null : (
         <PageHeader title={title} description={description} />
       )}
-      {leading}
+      {leading ? (
+        <div className={ENTITY_LIST_LEADING_CLASS}>{leading}</div>
+      ) : null}
       <section className={WORKSPACE_TABLE_CARD_CLASS}>
         {toolbarNode}
         <div className={WORKSPACE_TABLE_BODY_CLASS}>{children}</div>

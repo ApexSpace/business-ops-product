@@ -20,8 +20,12 @@ backend/openapi.json
 # IDE / OS
 .idea
 .vscode
-.cursor
 .DS_Store
+
+# Cursor: keep shared agent rules in git; ignore local IDE state
+.cursor/*
+!.cursor/rules/
+!.cursor/rules/**
 
 # Logs
 *.log

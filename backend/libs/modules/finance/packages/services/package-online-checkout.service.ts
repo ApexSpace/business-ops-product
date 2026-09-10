@@ -4,9 +4,6 @@ import { AppException } from '@app/common/exceptions/app.exception';
 import { ErrorCode } from '@app/common/exceptions/error-code.enum';
 import { PrismaService } from '@app/core/database/prisma.service';
 import { ContactRepository } from '@app/modules/crm/contacts/repositories/contact.repository';
-import { BusinessIntegrationRepository } from '@app/modules/integrations/integrations/repositories/business-integration.repository';
-import { assertStripeReadyForPayments } from '@app/modules/integrations/integrations/stripe/utils/stripe-readiness.util';
-import { StripeApiService } from '@app/modules/integrations/integrations/stripe/services/stripe-api.service';
 import { StripeConnectContextService } from '@app/modules/integrations/integrations/stripe/services/stripe-connect-context.service';
 import { STRIPE_PAYMENT_PURPOSE } from '@app/modules/finance/payments/constants/stripe-payment-purpose.constants';
 import { InitiatePackageCheckoutDto } from '../dto/package.dto';
@@ -27,8 +24,6 @@ export class PackageOnlineCheckoutService {
     private readonly settingsRepository: PackageSettingsRepository,
     private readonly settingsService: PackageSettingsService,
     private readonly templateRepository: PackageTemplateRepository,
-    private readonly businessIntegrationRepository: BusinessIntegrationRepository,
-    private readonly stripeApiService: StripeApiService,
     private readonly stripeConnectContext: StripeConnectContextService,
     private readonly contactRepository: ContactRepository,
     private readonly clientPackageRepository: ClientPackageRepository,
@@ -140,20 +135,17 @@ export class PackageOnlineCheckoutService {
       );
     }
 
-    const integration =
-      await this.businessIntegrationRepository.findByBusinessAndKey(
+    const chargeCtx =
+      await this.stripeConnectContext.resolveTenantStripeChargeContext(
         business.id,
-        'stripe',
       );
-    const stripeConfig = assertStripeReadyForPayments(integration);
 
     const contact = await this.findOrCreateContact(business.id, dto);
     const amountCents = Math.round(
       Number(template.totalPrice.toString()) * 100,
     );
 
-    const stripe = this.stripeApiService.getClient();
-    const intent = await stripe.paymentIntents.create(
+    const intent = await chargeCtx.stripe.paymentIntents.create(
       {
         amount: amountCents,
         currency: 'usd',
@@ -169,7 +161,7 @@ export class PackageOnlineCheckoutService {
           purchaserName: `${dto.firstName} ${dto.lastName}`.trim(),
         },
       },
-      { stripeAccount: stripeConfig.stripeAccountId },
+      { stripeAccount: chargeCtx.stripeAccountId },
     );
 
     if (!intent.client_secret) {
@@ -183,8 +175,8 @@ export class PackageOnlineCheckoutService {
     return {
       clientSecret: intent.client_secret,
       paymentIntentId: intent.id,
-      publishableKey: this.stripeConnectContext.getPublishableKey(),
-      stripeAccountId: stripeConfig.stripeAccountId,
+      publishableKey: chargeCtx.publishableKey,
+      stripeAccountId: chargeCtx.stripeAccountId,
       totalPrice: template.totalPrice.toFixed(2),
     };
   }

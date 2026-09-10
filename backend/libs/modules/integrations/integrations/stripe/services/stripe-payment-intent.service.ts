@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PayableType } from '@prisma/client';
 import type { PaymentChannel } from '@app/modules/finance/payments/types/payable.types';
-import { StripeApiService } from './stripe-api.service';
 import { StripeConnectContextService } from './stripe-connect-context.service';
 import { StripeCustomerService } from './stripe-customer.service';
 
@@ -32,7 +31,6 @@ export interface CreatePaymentIntentResult {
 @Injectable()
 export class StripePaymentIntentService {
   constructor(
-    private readonly stripeApi: StripeApiService,
     private readonly connectContext: StripeConnectContextService,
     private readonly customerService: StripeCustomerService,
   ) {}
@@ -40,18 +38,18 @@ export class StripePaymentIntentService {
   async createForPayment(
     input: CreatePaymentIntentInput,
   ): Promise<CreatePaymentIntentResult> {
-    const stripeAccountId = await this.connectContext.requireStripeAccountId(
-      input.businessId,
-    );
+    const chargeCtx =
+      await this.connectContext.resolveTenantStripeChargeContext(
+        input.businessId,
+      );
     const { stripeCustomerId } =
       await this.customerService.getOrCreateForContact(
         input.businessId,
         input.contactId,
       );
 
-    const stripe = this.stripeApi.getClient();
     const cardOnly = input.channel !== 'CUSTOMER_SELF_CHECKOUT';
-    const intent = await stripe.paymentIntents.create(
+    const intent = await chargeCtx.stripe.paymentIntents.create(
       {
         amount: input.amountCents,
         currency: input.currency.toLowerCase(),
@@ -77,7 +75,7 @@ export class StripePaymentIntentService {
           provider: 'stripe',
         },
       },
-      { stripeAccount: stripeAccountId },
+      { stripeAccount: chargeCtx.stripeAccountId },
     );
 
     if (!intent.client_secret) {

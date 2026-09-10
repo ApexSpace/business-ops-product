@@ -24,9 +24,8 @@ import {
   computeInvoicePaymentSyncFields,
   sumPaymentAmounts,
 } from '../utils/invoice-payment-sync.util';
-import { BusinessIntegrationRepository } from '@app/modules/integrations/integrations/repositories/business-integration.repository';
 import { StripeApiService } from '@app/modules/integrations/integrations/stripe/services/stripe-api.service';
-import { assertStripeReadyForPayments } from '@app/modules/integrations/integrations/stripe/utils/stripe-readiness.util';
+import { StripeConnectContextService } from '@app/modules/integrations/integrations/stripe/services/stripe-connect-context.service';
 import { NotificationDispatchService } from '@app/modules/communications/notifications/services/notification-dispatch.service';
 import { formatPhone } from '@app/modules/crm/contacts/utils/contact-profile.util';
 import {
@@ -47,8 +46,8 @@ export class PaymentsService {
     private readonly invoiceRepository: InvoiceRepository,
     private readonly prisma: PrismaService,
     private readonly auditService: AuditService,
-    private readonly businessIntegrationRepository: BusinessIntegrationRepository,
     private readonly stripeApiService: StripeApiService,
+    private readonly stripeConnectContext: StripeConnectContextService,
     private readonly notificationDispatch: NotificationDispatchService,
     private readonly businessRepository: BusinessRepository,
     private readonly paymentOrchestrator: PaymentOrchestratorService,
@@ -535,18 +534,15 @@ export class PaymentsService {
     businessId: string,
     paymentIntentId: string,
   ): Promise<void> {
-    const integration =
-      await this.businessIntegrationRepository.findByBusinessAndKey(
+    const chargeCtx =
+      await this.stripeConnectContext.resolveTenantStripeChargeContext(
         businessId,
-        'stripe',
       );
-    const config = assertStripeReadyForPayments(integration);
-    const stripe = this.stripeApiService.getClient();
 
     try {
-      await stripe.refunds.create(
+      await chargeCtx.stripe.refunds.create(
         { payment_intent: paymentIntentId },
-        { stripeAccount: config.stripeAccountId },
+        { stripeAccount: chargeCtx.stripeAccountId },
       );
     } catch (error) {
       this.stripeApiService.logStripeError('refund.create', error);

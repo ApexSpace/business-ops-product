@@ -1,0 +1,108 @@
+---
+description: Frontend design system — search shared UI first; Reuse → Variant → Composite; Figma is the visual reference
+globs: frontend/**/*.{ts,tsx,css}
+alwaysApply: false
+---
+
+# Frontend design system rules
+
+These rules are mandatory for all frontend UI work. Prefer documentation and existing components over new code. Do not invent visual styles that are not already in Figma or the token system.
+
+For list/drawer/page reuse tiers and concrete layout examples, also see `frontend/REUSE.md`. Feature agent runbooks live under `.approach/features/` (index: `.approach/INDEX.md`).
+
+## Search first (mandatory)
+
+Before adding or restyling UI, search shared components:
+
+- `frontend/components/ui`
+- `frontend/components/layout`
+- `frontend/components/drawer`
+- `frontend/components/mobile`
+- `frontend/components/forms`
+- `frontend/components/data-display`
+- then `frontend/components/shell` and existing `frontend/features/<domain>/` only for domain composition
+
+Do not create a new primitive, shell, or token file because a feature folder is convenient.
+
+## Decision protocol (mandatory order)
+
+1. **Reuse** — an existing shared component already solves it.
+2. **Variant** — same component, small difference → CVA / prop / slot. Do not fork.
+3. **Composite** — repeated combination of shared pieces → one reusable composite under `components/`.
+4. **Feature component** — domain-specific, composed from the shared system → `features/<domain>/`.
+5. **Custom** — only when genuinely unique and no shared pattern exists.
+
+Order: **Reuse → Variant → Composite → Feature component → Custom.**
+
+Do not invent mega-prop “universal” components. Do not create a second visual system beside the one below.
+
+## Token ownership
+
+| Layer | Owns |
+|---|---|
+| `frontend/app/globals.css` + `frontend/lib/theme/` | Visual values (color, radius, `--control-height`, type) |
+| `frontend/lib/design/*` | Recipes and component contracts only (Tailwind compositions that reference CSS variables) |
+| `frontend/features/*` | Business logic and composition — **not** new raw color / radius / height values |
+
+Never hardcode brand colors, control heights, or radii. Use CSS variables (`--pc-violet-*`, `--radius-*`, `--control-height`, `--drawer-*`) or existing recipes in `lib/design`. If a value is missing, promote it into globals/theme first — do not scatter hex / `h-11` / `rounded-[10px]` in features.
+
+## Figma is the visual reference
+
+Match existing Figma patterns. Map new screens onto those patterns. Do not invent new chrome, empty states, pills, or toolbars for pixel-matching. Extend a variant or composite instead of a page-specific CSS file.
+
+## Canonical shared patterns (use these)
+
+| Need | Use |
+|---|---|
+| Entity list on **mobile** | `MobileEntityListScreen` (+ `MobileEntityListItem` / `MobileStatusPill` as needed) |
+| New **drawer** | `DrawerShell` (entity / spine / overlay) or `FormSheet` with `FormDrawerShell` recipes (forms) |
+| Primary action | `Button variant="brand"`, or `DrawerPrimaryButton` / `ListPrimaryAction` |
+| Status | `StatusPill` / `StatusBadge` / `MobileStatusPill` |
+| Empty / loading | `EmptyState` / `LoadingState` |
+| List toolbar filter / options icon | `ListFilterButton` in ListToolbar **`filters`** (right of search), not in `actions` |
+| Close / dismiss | `IconButton` or the `DrawerShell` close control — not a raw `<button>` + X |
+
+`EntityWorkspaceLayout` / `ListToolbar` is the desktop list chrome. Do not start a parallel toolbar.
+
+## Dependency direction
+
+```text
+Pages → Features → Shared components → lib/design → globals.css / theme
+```
+
+- `components/**` must **never** import `features/**` for styling, tokens, or visual configuration.
+- Features may import `components/**` and `lib/design/**`.
+- Feature `*-drawer-tokens.ts` / `*-mobile-tokens.ts` files may only alias or add **domain extras**. They are not a second brand palette.
+
+## Forbidden (parallel systems)
+
+- Feature-local drawer shells (e.g. `*-form-drawer-shell.ts`)
+- Feature-local mobile list screens when `MobileEntityListScreen` fits
+- Ad-hoc “Loading…” / empty copy instead of `EmptyState` / `LoadingState`
+- Custom status pills, brand CTA fills, or control heights that bypass shared components
+- New `lib/design` constants that duplicate globals/theme values
+
+## Legacy migration
+
+Variants named `legacy-*` are temporary:
+
+- Forbidden on new call sites.
+- Delete when unused.
+
+`legacy-gradient` drawer chrome has been removed — use default Figma header recipes from `lib/design/drawer-tokens` and `components/forms/form-drawer-shell`.
+
+Deprecated re-exports (`drawer-shell-tokens`, `appointment-drawer-tokens`, `sales-drawer-tokens` aliases) exist for call-site migration. New code must import `lib/design/drawer-tokens` (or the shared component) directly.
+
+## Scope
+
+Design-system / architecture refactors must not change business logic, APIs, workflows, or state semantics unless explicitly required and called out.
+
+Intentionally feature-specific (do not “fix” into the shared system without a product/Figma reason):
+
+- Appointments calendar filter chrome (transparent, page background)
+- Inline SearchableSelect / date filters on Estimates, Invoices, Tasks, Leads
+- Text “Settings” / “Manage plans” left actions (gift cards, memberships, packages)
+- `DataToolbar` + `FilterBar` on Notes, Forms, platform admin (older list pattern)
+- Figma mobile empty (title/description, no EmptyState icon box)
+- Drawer trash-remove on line cards
+- Drawer field radius 10px (no exact global token)

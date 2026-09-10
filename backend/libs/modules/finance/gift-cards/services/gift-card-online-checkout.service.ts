@@ -9,7 +9,6 @@ import {
   assertStripeReadyForPayments,
   parseStripeIntegrationConfig,
 } from '@app/modules/integrations/integrations/stripe/utils/stripe-readiness.util';
-import { StripeApiService } from '@app/modules/integrations/integrations/stripe/services/stripe-api.service';
 import { StripeConnectContextService } from '@app/modules/integrations/integrations/stripe/services/stripe-connect-context.service';
 import { STRIPE_PAYMENT_PURPOSE } from '@app/modules/finance/payments/constants/stripe-payment-purpose.constants';
 import {
@@ -32,7 +31,6 @@ export class GiftCardOnlineCheckoutService {
     private readonly settingsService: GiftCardSettingsService,
     private readonly promotionRepository: GiftCardPromotionRepository,
     private readonly businessIntegrationRepository: BusinessIntegrationRepository,
-    private readonly stripeApiService: StripeApiService,
     private readonly stripeConnectContext: StripeConnectContextService,
     private readonly configService: ConfigService<RootConfig, true>,
     private readonly giftCardsService: GiftCardsService,
@@ -120,12 +118,10 @@ export class GiftCardOnlineCheckoutService {
       );
     }
 
-    const integration =
-      await this.businessIntegrationRepository.findByBusinessAndKey(
+    const chargeCtx =
+      await this.stripeConnectContext.resolveTenantStripeChargeContext(
         business.id,
-        'stripe',
       );
-    const stripeConfig = assertStripeReadyForPayments(integration);
 
     let cardValue: number;
     let salePriceCents: number;
@@ -169,8 +165,7 @@ export class GiftCardOnlineCheckoutService {
       salePriceCents = Math.round(cardValue * 100);
     }
 
-    const stripe = this.stripeApiService.getClient();
-    const intent = await stripe.paymentIntents.create(
+    const intent = await chargeCtx.stripe.paymentIntents.create(
       {
         amount: salePriceCents,
         currency: 'usd',
@@ -191,7 +186,7 @@ export class GiftCardOnlineCheckoutService {
           ...(promotionId ? { promotionId } : {}),
         },
       },
-      { stripeAccount: stripeConfig.stripeAccountId },
+      { stripeAccount: chargeCtx.stripeAccountId },
     );
 
     if (!intent.client_secret) {
@@ -202,12 +197,10 @@ export class GiftCardOnlineCheckoutService {
       );
     }
 
-    const publishableKey = this.stripeConnectContext.getPublishableKey();
-
     return {
       clientSecret: intent.client_secret,
-      publishableKey,
-      stripeAccountId: stripeConfig.stripeAccountId,
+      publishableKey: chargeCtx.publishableKey,
+      stripeAccountId: chargeCtx.stripeAccountId,
       salePrice: (salePriceCents / 100).toFixed(2),
       cardValue: cardValue.toFixed(2),
     };

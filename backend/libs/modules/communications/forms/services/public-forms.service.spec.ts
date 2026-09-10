@@ -50,6 +50,10 @@ describe('PublicFormsService', () => {
         findFirst: jest.fn().mockResolvedValue({ type: 'TENANT' }),
       },
     };
+    const formPaymentService = {
+      verifyPaymentForSubmission: jest.fn(),
+      createPaymentIntent: jest.fn(),
+    };
     const service = new PublicFormsService(
       formsRepository as never,
       submissionsRepository as never,
@@ -57,6 +61,7 @@ describe('PublicFormsService', () => {
       storageService as never,
       conversationBridge as never,
       prisma as never,
+      formPaymentService as never,
     );
     return {
       service,

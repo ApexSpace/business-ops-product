@@ -208,6 +208,7 @@ export function createDefaultField(type: FieldType, index?: number): FormField {
         name: `payment${suffix}`,
         amount: 20,
         currency: "USD",
+        stripePaymentsMode: "test",
         helpText: "Amount due will be charged when the form is submitted.",
       };
     case "signature":

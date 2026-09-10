@@ -1,32 +1,17 @@
-import { HttpStatus, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import {
   MembershipBillingIntervalUnit,
   MembershipPlanType,
   Prisma,
 } from '@prisma/client';
-import { AppException } from '@app/common/exceptions/app.exception';
-import { ErrorCode } from '@app/common/exceptions/error-code.enum';
-import { BusinessIntegrationRepository } from '@app/modules/integrations/integrations/repositories/business-integration.repository';
-import { assertStripeReadyForPayments } from '@app/modules/integrations/integrations/stripe/utils/stripe-readiness.util';
-import { StripeApiService } from '@app/modules/integrations/integrations/stripe/services/stripe-api.service';
+import { StripeConnectContextService } from '@app/modules/integrations/integrations/stripe/services/stripe-connect-context.service';
 import type { MembershipPlanRow } from '../repositories/membership-plan.repository';
 
 @Injectable()
 export class MembershipStripeService {
   constructor(
-    private readonly businessIntegrationRepository: BusinessIntegrationRepository,
-    private readonly stripeApiService: StripeApiService,
+    private readonly stripeConnectContext: StripeConnectContextService,
   ) {}
-
-  private async getStripeAccountId(businessId: string): Promise<string> {
-    const integration =
-      await this.businessIntegrationRepository.findByBusinessAndKey(
-        businessId,
-        'stripe',
-      );
-    const config = assertStripeReadyForPayments(integration);
-    return config.stripeAccountId;
-  }
 
   private intervalToStripe(
     unit: MembershipBillingIntervalUnit,
@@ -54,10 +39,12 @@ export class MembershipStripeService {
       planType: MembershipPlanType;
     },
   ): Promise<{ stripeProductId: string; stripePriceId: string }> {
-    const stripeAccountId = await this.getStripeAccountId(businessId);
-    const stripe = this.stripeApiService.getClient();
+    const chargeCtx =
+      await this.stripeConnectContext.resolveTenantStripeChargeContext(
+        businessId,
+      );
 
-    const product = await stripe.products.create(
+    const product = await chargeCtx.stripe.products.create(
       {
         name: plan.name,
         metadata: {
@@ -66,7 +53,7 @@ export class MembershipStripeService {
           type: 'membership',
         },
       },
-      { stripeAccount: stripeAccountId },
+      { stripeAccount: chargeCtx.stripeAccountId },
     );
 
     const recurring = this.intervalToStripe(
@@ -74,7 +61,7 @@ export class MembershipStripeService {
       plan.billingIntervalCount,
     );
 
-    const price = await stripe.prices.create(
+    const price = await chargeCtx.stripe.prices.create(
       {
         product: product.id,
         unit_amount: Math.round(Number(plan.price.toString()) * 100),
@@ -86,7 +73,7 @@ export class MembershipStripeService {
           type: 'membership',
         },
       },
-      { stripeAccount: stripeAccountId },
+      { stripeAccount: chargeCtx.stripeAccountId },
     );
 
     return { stripeProductId: product.id, stripePriceId: price.id };
@@ -96,12 +83,14 @@ export class MembershipStripeService {
     businessId: string,
     stripeProductId: string,
   ): Promise<void> {
-    const stripeAccountId = await this.getStripeAccountId(businessId);
-    const stripe = this.stripeApiService.getClient();
-    await stripe.products.update(
+    const chargeCtx =
+      await this.stripeConnectContext.resolveTenantStripeChargeContext(
+        businessId,
+      );
+    await chargeCtx.stripe.products.update(
       stripeProductId,
       { active: false },
-      { stripeAccount: stripeAccountId },
+      { stripeAccount: chargeCtx.stripeAccountId },
     );
   }
 
@@ -110,15 +99,17 @@ export class MembershipStripeService {
     plan: MembershipPlanRow,
     newPrice: Prisma.Decimal,
   ): Promise<string> {
-    const stripeAccountId = await this.getStripeAccountId(businessId);
-    const stripe = this.stripeApiService.getClient();
+    const chargeCtx =
+      await this.stripeConnectContext.resolveTenantStripeChargeContext(
+        businessId,
+      );
 
     const recurring = this.intervalToStripe(
       plan.billingIntervalUnit,
       plan.billingIntervalCount,
     );
 
-    const price = await stripe.prices.create(
+    const price = await chargeCtx.stripe.prices.create(
       {
         product: plan.stripeProductId!,
         unit_amount: Math.round(Number(newPrice.toString()) * 100),
@@ -130,7 +121,7 @@ export class MembershipStripeService {
           type: 'membership',
         },
       },
-      { stripeAccount: stripeAccountId },
+      { stripeAccount: chargeCtx.stripeAccountId },
     );
 
     return price.id;

@@ -230,21 +230,21 @@ export function SalesPaymentDrawerForm({
 
   const visibleOptions = PAYMENT_UI_OPTIONS.filter((option) => {
     if (option.key === "check") return showCheckTile;
-    if (option.stripeOnly) return stripeReady || option.key === "credit_card";
-    if (option.method === "STRIPE" && !stripeReady) {
-      return option.key === "credit_card";
+    // Always show Credit card; Self checkout only when Connect is ready.
+    if (option.stripeOnly) {
+      return stripeReady || option.key === "credit_card";
     }
     return (
       methodItems.some((item) => item.value === option.method) ||
       (option.method === "STRIPE" &&
         methodItems.some((item) => item.value === "CARD"))
     );
-  }).map((option) => {
-    if (option.method === "STRIPE" && !stripeReady) {
-      return { ...option, method: "CARD" as PaymentMethod };
-    }
-    return option;
   });
+
+  const stripeConnectRequired =
+    !stripeReady &&
+    (primaryMethod === "STRIPE" ||
+      (splitEnabled && secondaryMethod === "STRIPE"));
 
   const selectUiMethod = (
     key: PaymentUiKey,
@@ -471,6 +471,22 @@ export function SalesPaymentDrawerForm({
         ) : null}
       </div>
 
+      {stripeConnectRequired ? (
+        <div className="space-y-1 rounded-[12px] border border-destructive/30 bg-destructive/5 px-3 py-3 text-[13px] text-destructive">
+          <p className="font-semibold">Stripe account is not connected</p>
+          <p className="text-destructive/90">
+            Connect your Stripe account under{" "}
+            <a
+              href="/business/settings/payment-account"
+              className="underline underline-offset-2"
+            >
+              Payments settings
+            </a>{" "}
+            before accepting card payments.
+          </p>
+        </div>
+      ) : null}
+
       {showChangeCalculator ? (
         <div className="space-y-2 rounded-[12px] border border-[#E8E4DC] bg-violet-primary-surface/40 p-4">
           <Label className={SALES_DRAWER_VIEW_FIELD_LABEL_CLASS}>
@@ -607,7 +623,7 @@ export function SalesPaymentDrawerForm({
           type="button"
           variant="brand"
           className={DRAWER_PRIMARY_BUTTON_CLASS}
-          disabled={submitDisabled}
+          disabled={submitDisabled || stripeConnectRequired}
           onClick={onSubmit}
         >
           {submitLabel}

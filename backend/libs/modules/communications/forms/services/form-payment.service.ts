@@ -23,7 +23,6 @@ import { FinancialSettingsService } from '@app/modules/platform/business/service
 import { BusinessIntegrationRepository } from '@app/modules/integrations/integrations/repositories/business-integration.repository';
 import { StripeApiService } from '@app/modules/integrations/integrations/stripe/services/stripe-api.service';
 import { StripePlatformApiService } from '@app/modules/platform/billing/stripe/services/stripe-platform-api.service';
-import { StripeConnectContextService } from '@app/modules/integrations/integrations/stripe/services/stripe-connect-context.service';
 import { assertStripeReadyForPayments } from '@app/modules/integrations/integrations/stripe/utils/stripe-readiness.util';
 import { isStripeModeConfigured } from '@app/modules/integrations/integrations/stripe/utils/stripe-mode.util';
 import { randomUUID } from 'crypto';
@@ -57,7 +56,6 @@ export class FormPaymentService {
     private readonly formsRepository: FormsRepository,
     private readonly stripeApi: StripeApiService,
     private readonly stripePlatformApi: StripePlatformApiService,
-    private readonly stripeConnectContext: StripeConnectContextService,
     private readonly businessIntegrationRepository: BusinessIntegrationRepository,
     private readonly financialSettingsService: FinancialSettingsService,
   ) {}
@@ -88,10 +86,7 @@ export class FormPaymentService {
       );
     }
 
-    const paymentsMode =
-      await this.stripeConnectContext.getPaymentsModeForBusiness(
-        form.businessId,
-      );
+    const paymentsMode = paymentField.stripePaymentsMode;
     if (!isStripeModeConfigured(paymentsMode)) {
       throw new AppException(
         ErrorCode.BAD_REQUEST,
@@ -250,10 +245,7 @@ export class FormPaymentService {
       );
     }
 
-    const paymentsMode =
-      await this.stripeConnectContext.getPaymentsModeForBusiness(
-        form.businessId,
-      );
+    const paymentsMode = attempt.livemode ? 'live' : 'test';
     const stripe =
       attempt.rail === FormPaymentRail.PLATFORM
         ? this.stripePlatformApi.getClientForMode(paymentsMode)

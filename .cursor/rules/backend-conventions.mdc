@@ -1,0 +1,48 @@
+---
+description: Backend NestJS conventions — businessId scoping, soft deletes, audit, DTOs, module layering
+globs: backend/**/*.ts
+alwaysApply: false
+---
+
+# Backend conventions (PandaCue)
+
+Mandatory for NestJS work under `backend/`. Full contributor guide: repo-root `AGENTS.md`. Feature details: `.approach/features/**` and `.approach/INDEX.md`.
+
+## Layering
+
+```
+controllers/ → services/ → repositories/ → prisma
+dto/ + mappers/ beside the resource
+```
+
+- Controllers: HTTP, guards, Swagger, `ParseUUIDPipe`, delegate to services. Pass `user.businessId!` — never trust business id from the body.
+- Services: business rules, validation, audit, job enqueue. Throw `AppException` + `ErrorCode`.
+- Repositories: Prisma only; always scope with `businessId` and `deletedAt: null` unless trash/archive is explicit. Prefer `findFirst` with `businessId` over `findUnique` on id alone.
+
+## Non-negotiables
+
+1. **Business scoping** — Almost all tenant data is scoped to `businessId` from `@CurrentUser()`.
+2. **Soft deletes** — Filter `deletedAt: null` on reads.
+3. **Audit** — Mutations that change business data should call `AuditService.log()`.
+4. **Response envelope** — List services return `{ items, meta: { total, page, limit } }`. Clients expect `{ data, meta, error }`.
+5. **DTOs** — `class-validator` + `@ApiProperty` / `@ApiPropertyOptional`.
+6. **Deletes** — Destructive endpoints require `?confirm=true` (`ConfirmDeleteQueryDto`).
+7. **Public routes** — Only with `@Public()` (auth, webhooks, public booking/forms, etc.).
+8. **Guards** — Business routes use `BusinessRolesGuard`; capability-gated features add `BusinessCapabilityGuard` / `@RequireModule` / `@RequireCapability` as existing modules do.
+9. **Jobs** — Long work via `JobEnqueueService` / worker processors — not in the request thread.
+10. **OpenAPI** — After public API shape changes: `npm run openapi:export --prefix backend` then codegen for `@business-automation/api-contract`.
+
+## Module registration
+
+Register in the domain `*.module.ts`, ensure the correct app bundle imports it (`*-api.module.ts`, `*-worker.module.ts`).
+
+## Copy nearby patterns
+
+| Concern | Reference |
+|---------|-----------|
+| CRUD | `crm/contacts` |
+| Pipelines | `crm/pipelines` |
+| Complex forms | `communications/forms` |
+| Public API | `operations/public-booking` |
+| OAuth / webhooks | `integrations/integrations` |
+| Capability-gated | `communications/forms` |

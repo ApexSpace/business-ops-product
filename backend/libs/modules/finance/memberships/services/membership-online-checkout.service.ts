@@ -11,12 +11,6 @@ import { ErrorCode } from '@app/common/exceptions/error-code.enum';
 import type { RootConfig } from '@app/core/config/configuration';
 import { PrismaService } from '@app/core/database/prisma.service';
 import { ContactRepository } from '@app/modules/crm/contacts/repositories/contact.repository';
-import { BusinessIntegrationRepository } from '@app/modules/integrations/integrations/repositories/business-integration.repository';
-import {
-  assertStripeReadyForPayments,
-  parseStripeIntegrationConfig,
-} from '@app/modules/integrations/integrations/stripe/utils/stripe-readiness.util';
-import { StripeApiService } from '@app/modules/integrations/integrations/stripe/services/stripe-api.service';
 import { StripeConnectContextService } from '@app/modules/integrations/integrations/stripe/services/stripe-connect-context.service';
 import { StripeCustomerService } from '@app/modules/integrations/integrations/stripe/services/stripe-customer.service';
 import { STRIPE_PAYMENT_PURPOSE } from '@app/modules/finance/payments/constants/stripe-payment-purpose.constants';
@@ -36,8 +30,6 @@ export class MembershipOnlineCheckoutService {
     private readonly settingsRepository: MembershipSettingsRepository,
     private readonly settingsService: MembershipSettingsService,
     private readonly planRepository: MembershipPlanRepository,
-    private readonly businessIntegrationRepository: BusinessIntegrationRepository,
-    private readonly stripeApiService: StripeApiService,
     private readonly stripeConnectContext: StripeConnectContextService,
     private readonly stripeCustomerService: StripeCustomerService,
     private readonly contactRepository: ContactRepository,
@@ -140,12 +132,10 @@ export class MembershipOnlineCheckoutService {
       );
     }
 
-    const integration =
-      await this.businessIntegrationRepository.findByBusinessAndKey(
+    const chargeCtx =
+      await this.stripeConnectContext.resolveTenantStripeChargeContext(
         business.id,
-        'stripe',
       );
-    const stripeConfig = assertStripeReadyForPayments(integration);
 
     const contact = await this.findOrCreateContact(business.id, dto);
     const { stripeCustomerId } =
@@ -157,9 +147,8 @@ export class MembershipOnlineCheckoutService {
     const frontendUrl = this.configService.get('app', {
       infer: true,
     }).frontendUrl;
-    const stripe = this.stripeApiService.getClient();
 
-    const session = await stripe.checkout.sessions.create(
+    const session = await chargeCtx.stripe.checkout.sessions.create(
       {
         mode: 'subscription',
         customer: stripeCustomerId,
@@ -185,7 +174,7 @@ export class MembershipOnlineCheckoutService {
           },
         },
       },
-      { stripeAccount: stripeConfig.stripeAccountId },
+      { stripeAccount: chargeCtx.stripeAccountId },
     );
 
     if (!session.url) {
