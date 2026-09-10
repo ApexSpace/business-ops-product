@@ -2,9 +2,6 @@ import { HttpStatus, Injectable } from '@nestjs/common';
 import { PayableType } from '@prisma/client';
 import { AppException } from '@app/common/exceptions/app.exception';
 import { ErrorCode } from '@app/common/exceptions/error-code.enum';
-import { BusinessIntegrationRepository } from '@app/modules/integrations/integrations/repositories/business-integration.repository';
-import { assertStripeReadyForPayments } from '@app/modules/integrations/integrations/stripe/utils/stripe-readiness.util';
-import { StripeApiService } from '@app/modules/integrations/integrations/stripe/services/stripe-api.service';
 import { StripeConnectContextService } from '@app/modules/integrations/integrations/stripe/services/stripe-connect-context.service';
 import { STRIPE_PAYMENT_PURPOSE } from '../constants/stripe-payment-purpose.constants';
 import { PayableHandlerRegistry } from '../registry/payable-handler.registry';
@@ -28,8 +25,6 @@ export class BookingDepositPaymentService {
   constructor(
     private readonly registry: PayableHandlerRegistry,
     private readonly holdStore: BookingDepositHoldStore,
-    private readonly businessIntegrationRepository: BusinessIntegrationRepository,
-    private readonly stripeApiService: StripeApiService,
     private readonly stripeConnectContext: StripeConnectContextService,
   ) {}
 
@@ -101,16 +96,13 @@ export class BookingDepositPaymentService {
       );
     }
 
-    const integration =
-      await this.businessIntegrationRepository.findByBusinessAndKey(
+    const chargeCtx =
+      await this.stripeConnectContext.resolveTenantStripeChargeContext(
         params.holdPayload.businessId,
-        'stripe',
       );
-    const stripeConfig = assertStripeReadyForPayments(integration);
-    const stripe = this.stripeApiService.getClient();
     const amountCents = Math.round(amountDue * 100);
 
-    const intent = await stripe.paymentIntents.create(
+    const intent = await chargeCtx.stripe.paymentIntents.create(
       {
         amount: amountCents,
         currency: snapshot.currency.toLowerCase(),
@@ -132,7 +124,7 @@ export class BookingDepositPaymentService {
           contactId: params.holdPayload.contactId ?? '',
         },
       },
-      { stripeAccount: stripeConfig.stripeAccountId },
+      { stripeAccount: chargeCtx.stripeAccountId },
     );
 
     if (!intent.client_secret) {
@@ -149,8 +141,8 @@ export class BookingDepositPaymentService {
       paymentIntentId: intent.id,
       amountCents,
       clientSecret: intent.client_secret,
-      publishableKey: this.stripeConnectContext.getPublishableKey(),
-      stripeAccountId: stripeConfig.stripeAccountId,
+      publishableKey: chargeCtx.publishableKey,
+      stripeAccountId: chargeCtx.stripeAccountId,
     };
   }
 
@@ -159,17 +151,14 @@ export class BookingDepositPaymentService {
     paymentIntentId: string,
     expected: { serviceId: string; holdToken?: string },
   ) {
-    const integration =
-      await this.businessIntegrationRepository.findByBusinessAndKey(
+    const chargeCtx =
+      await this.stripeConnectContext.resolveTenantStripeChargeContext(
         businessId,
-        'stripe',
       );
-    const stripeConfig = assertStripeReadyForPayments(integration);
-    const stripe = this.stripeApiService.getClient();
-    const intent = await stripe.paymentIntents.retrieve(
+    const intent = await chargeCtx.stripe.paymentIntents.retrieve(
       paymentIntentId,
       undefined,
-      { stripeAccount: stripeConfig.stripeAccountId },
+      { stripeAccount: chargeCtx.stripeAccountId },
     );
 
     if (intent.status !== 'succeeded' && intent.status !== 'processing') {

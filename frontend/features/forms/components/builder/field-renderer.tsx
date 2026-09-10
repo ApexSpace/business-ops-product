@@ -481,6 +481,9 @@ export function FieldRenderer({
           <div className="flex items-center gap-2 text-sm font-medium">
             <CreditCard className="size-4 text-muted-foreground" />
             <span>{field.label || "Payment"}</span>
+            <span className="ml-auto rounded-full border px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+              {(field.stripePaymentsMode ?? "test") === "live" ? "Live" : "Test"}
+            </span>
           </div>
           <p className="text-lg font-semibold tracking-tight">
             Amount due: {formatted}

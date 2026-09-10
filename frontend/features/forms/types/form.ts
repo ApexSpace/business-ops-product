@@ -114,6 +114,8 @@ export interface FormField {
   /** Fixed charge amount in major currency units (e.g. 20 for $20). */
   amount?: number;
   currency?: string;
+  /** Collect payment only: Live/Test Stripe keys (independent of business payments mode). */
+  stripePaymentsMode?: "live" | "test";
 }
 
 export interface FormStep {

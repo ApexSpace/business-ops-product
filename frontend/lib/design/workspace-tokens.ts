@@ -77,6 +77,13 @@ export const APPS_MASTER_DETAIL_CANVAS_SLOT_CLASS =
 export const ENTITY_LIST_PAGE_INSET_CLASS =
   "w-full min-w-0 px-0 pb-[var(--page-padding-y)] pt-[var(--cs-list-toolbar-gap)]";
 
+/**
+ * Chrome above the list toolbar (tabs, back links, summary cards).
+ * Same horizontal inset as `WORKSPACE_TOOLBAR_CLASS` / list toolbar.
+ */
+export const ENTITY_LIST_LEADING_CLASS =
+  "w-full min-w-0 px-[var(--cs-list-toolbar-padding-x)]";
+
 /** Workspace list surface — page white; table supplies its own border chrome */
 export const WORKSPACE_TABLE_CARD_CLASS =
   "flex h-0 min-h-0 w-full min-w-0 flex-1 flex-col gap-[var(--cs-list-toolbar-gap)] overflow-hidden rounded-none border-0 bg-white shadow-none";

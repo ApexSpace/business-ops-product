@@ -33,13 +33,12 @@ export class StripeContactPaymentMethodService {
     publishableKey: string | null;
     stripeAccountId: string;
   }> {
-    const stripeAccountId =
-      await this.connectContext.requireStripeAccountId(businessId);
+    const chargeCtx =
+      await this.connectContext.resolveTenantStripeChargeContext(businessId);
     const { stripeCustomerId } =
       await this.customerService.getOrCreateForContact(businessId, contactId);
 
-    const stripe = this.stripeApi.getClient();
-    const setupIntent = await stripe.setupIntents.create(
+    const setupIntent = await chargeCtx.stripe.setupIntents.create(
       {
         customer: stripeCustomerId,
         payment_method_types: ['card'],
@@ -49,7 +48,7 @@ export class StripeContactPaymentMethodService {
           purpose: STRIPE_PAYMENT_PURPOSE.SAVE_CARD,
         },
       },
-      { stripeAccount: stripeAccountId },
+      { stripeAccount: chargeCtx.stripeAccountId },
     );
 
     if (!setupIntent.client_secret) {
@@ -62,8 +61,8 @@ export class StripeContactPaymentMethodService {
 
     return {
       clientSecret: setupIntent.client_secret,
-      publishableKey: this.connectContext.getPublishableKey(),
-      stripeAccountId,
+      publishableKey: chargeCtx.publishableKey,
+      stripeAccountId: chargeCtx.stripeAccountId,
     };
   }
 
@@ -91,13 +90,12 @@ export class StripeContactPaymentMethodService {
       return;
     }
 
-    const stripeAccountId =
-      await this.connectContext.requireStripeAccountId(businessId);
-    const stripe = this.stripeApi.getClient();
-    const pm = await stripe.paymentMethods.retrieve(
+    const chargeCtx =
+      await this.connectContext.resolveTenantStripeChargeContext(businessId);
+    const pm = await chargeCtx.stripe.paymentMethods.retrieve(
       stripePaymentMethodId,
       {},
-      { stripeAccount: stripeAccountId },
+      { stripeAccount: chargeCtx.stripeAccountId },
     );
 
     const card = pm.card;
@@ -145,15 +143,14 @@ export class StripeContactPaymentMethodService {
       );
     }
 
-    const stripeAccountId =
-      await this.connectContext.requireStripeAccountId(businessId);
-    const stripe = this.stripeApi.getClient();
+    const chargeCtx =
+      await this.connectContext.resolveTenantStripeChargeContext(businessId);
 
     try {
-      await stripe.paymentMethods.detach(
+      await chargeCtx.stripe.paymentMethods.detach(
         row.stripePaymentMethodId,
         {},
-        { stripeAccount: stripeAccountId },
+        { stripeAccount: chargeCtx.stripeAccountId },
       );
     } catch (error) {
       this.stripeApi.logStripeError('paymentMethods.detach', error);

@@ -87,6 +87,8 @@ export function sanitizeFormFields(fields: unknown[]): unknown[] {
         typeof field.currency === 'string' && field.currency.trim()
           ? field.currency.trim().toUpperCase()
           : 'USD';
+      field.stripePaymentsMode =
+        field.stripePaymentsMode === 'live' ? 'live' : 'test';
     }
     if (field.type === 'columns' && Array.isArray(field.columns)) {
       field.columns = field.columns.map((column) =>

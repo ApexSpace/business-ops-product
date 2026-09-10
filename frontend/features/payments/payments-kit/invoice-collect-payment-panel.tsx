@@ -149,8 +149,7 @@ export function InvoiceCollectPaymentPanel({
     [savedCards],
   );
 
-  const normalizeMethod = (method: PaymentMethod): PaymentMethod =>
-    stripeReady && method === "CARD" ? "STRIPE" : method;
+  const normalizeMethod = (method: PaymentMethod): PaymentMethod => method;
 
   const { data: wallet } = useQuery({
     queryKey: queryKeys.contacts.wallet(contactId),
@@ -169,14 +168,14 @@ export function InvoiceCollectPaymentPanel({
 
   const methodItems = useMemo(() => {
     return COLLECT_PAYMENT_METHOD_OPTIONS.filter((o) => {
+      // Stripe card charges require Connect. Manual CARD stays available offline.
       if (o.value === "STRIPE") return stripeReady;
-      if (o.value === "CARD") return !stripeReady;
       return true;
     }).map((o) => ({
       value: o.value,
       label:
-        o.value === "STRIPE" && stripeReady
-          ? "Card"
+        o.value === "STRIPE"
+          ? "Card (Stripe)"
           : o.value === "CARD"
             ? "Card (manual entry)"
             : o.label,
@@ -682,7 +681,10 @@ export function InvoiceCollectPaymentPanel({
           Collecting {formatMoney(tenderTotal)} of {formatMoney(balanceDue)}
         </span>
         {hasStripeTender && !stripeReady ? (
-          <span className="text-destructive">Connect Stripe to accept cards</span>
+          <span className="text-destructive">
+            Your Stripe account is not connected. Connect Stripe under Payments
+            settings before accepting card payments.
+          </span>
         ) : null}
       </div>
 

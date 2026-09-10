@@ -2,14 +2,12 @@ import { HttpStatus, Injectable } from '@nestjs/common';
 import { PrismaService } from '@app/core/database/prisma.service';
 import { AppException } from '@app/common/exceptions/app.exception';
 import { ErrorCode } from '@app/common/exceptions/error-code.enum';
-import { StripeApiService } from './stripe-api.service';
 import { StripeConnectContextService } from './stripe-connect-context.service';
 
 @Injectable()
 export class StripeCustomerService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly stripeApi: StripeApiService,
     private readonly connectContext: StripeConnectContextService,
   ) {}
 
@@ -42,22 +40,21 @@ export class StripeCustomerService {
       );
     }
 
-    const stripeAccountId =
-      await this.connectContext.requireStripeAccountId(businessId);
-    const stripe = this.stripeApi.getClient();
+    const chargeCtx =
+      await this.connectContext.resolveTenantStripeChargeContext(businessId);
 
     const name =
       contact.displayName?.trim() ||
       [contact.firstName, contact.lastName].filter(Boolean).join(' ').trim() ||
       undefined;
 
-    const customer = await stripe.customers.create(
+    const customer = await chargeCtx.stripe.customers.create(
       {
         email: contact.email ?? undefined,
         name,
         metadata: { businessId, contactId },
       },
-      { stripeAccount: stripeAccountId },
+      { stripeAccount: chargeCtx.stripeAccountId },
     );
 
     await this.prisma.contactStripeCustomer.create({

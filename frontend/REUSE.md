@@ -61,6 +61,7 @@ Use `EntityListLayout` for every screen that shows a DataTable. Do not assemble 
 - Nested tabs: `hideHeader` + `flush` so parent chrome owns padding
 - Full width: `ENTITY_LIST_PAGE_INSET_CLASS` is `px-0`; toolbar and table span the content area
 - Tokens: `ENTITY_LIST_PAGE_INSET_CLASS`, `WORKSPACE_TABLE_CARD_CLASS` in `frontend/lib/design/workspace-tokens.ts`
+- **Numbered list pagination:** always use `ListPagination` from `components/ui/list-pagination` in the `footer` slot — do not invent a second pager
 
 ### Entity workspaces (list + detail drawer)
 

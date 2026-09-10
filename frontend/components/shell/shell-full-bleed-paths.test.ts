@@ -73,4 +73,12 @@ describe("isDataTableListPath", () => {
       false,
     );
   });
+
+  it("treats Social Planner posts as a DataTable list (inset on layout chrome)", () => {
+    expect(isDataTableListPath("/business/social-planner/posts")).toBe(true);
+    expect(isDataTableListPath("/business/social-planner")).toBe(false);
+    expect(isDataTableListPath("/business/social-planner/comments")).toBe(
+      false,
+    );
+  });
 });

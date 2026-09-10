@@ -1,4 +1,8 @@
 import type { FormDefinitionView } from '../utils/form-definition.util';
+import {
+  normalizeStripePaymentsMode,
+  type StripePaymentsMode,
+} from '@app/modules/integrations/integrations/stripe/utils/stripe-mode.util';
 
 export type CollectPaymentField = {
   id: string;
@@ -7,6 +11,8 @@ export type CollectPaymentField = {
   label?: string;
   amount: number;
   currency: string;
+  /** Field-level Live/Test — independent of business settings.payments.mode */
+  stripePaymentsMode: StripePaymentsMode;
 };
 
 export function flattenFormFields(fields: unknown[]): Record<string, unknown>[] {
@@ -50,6 +56,12 @@ export function findCollectPaymentFields(
         label: typeof field.label === 'string' ? field.label : undefined,
         amount,
         currency,
+        stripePaymentsMode: normalizeStripePaymentsMode(
+          field.stripePaymentsMode === 'live' ||
+            field.stripePaymentsMode === 'test'
+            ? field.stripePaymentsMode
+            : 'test',
+        ),
       };
     })
     .filter((field) => Number.isFinite(field.amount) && field.amount > 0);

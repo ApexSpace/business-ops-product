@@ -112,6 +112,7 @@ export const formFieldSchema: z.ZodType<{
   showLastName?: boolean;
   amount?: number;
   currency?: string;
+  stripePaymentsMode?: "live" | "test";
 }> = z.lazy(() =>
   z.object({
     id: z.string().min(1),
@@ -150,5 +151,6 @@ export const formFieldSchema: z.ZodType<{
     showLastName: z.boolean().optional(),
     amount: z.number().positive().optional(),
     currency: z.string().min(3).max(3).optional(),
+    stripePaymentsMode: z.enum(["live", "test"]).optional(),
   }),
 );

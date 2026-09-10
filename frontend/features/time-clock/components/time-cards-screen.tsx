@@ -29,6 +29,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ListPagination } from "@/components/ui/list-pagination";
 import {
   Select,
   SelectContent,
@@ -320,9 +321,16 @@ export function TimeCardsScreen() {
         filterAriaLabel="Time card options"
         onFilterClick={() => setOptionsOpen(true)}
         footer={
-          data?.items.length
-            ? `${data.items.length} of ${total} time card${total === 1 ? "" : "s"}`
-            : undefined
+          data?.meta ? (
+            <ListPagination
+              meta={data.meta}
+              page={filters.page ?? 1}
+              onPageChange={(page) => setFilters((prev) => ({ ...prev, page }))}
+              label="time cards"
+            />
+          ) : data?.items.length ? (
+            `${data.items.length} of ${total} time card${total === 1 ? "" : "s"}`
+          ) : undefined
         }
         error={
           isError ? (

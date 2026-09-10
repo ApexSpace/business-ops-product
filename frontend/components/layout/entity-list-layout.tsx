@@ -88,7 +88,8 @@ export interface EntityListLayoutProps<T> extends EntityListTableProps<T> {
  * Shared DataTable list-page chrome.
  * Toolbar (primary action left, search + filter right) + DataTable.
  * Vertical gap navbar → toolbar → table is `--cs-list-toolbar-gap`.
- * Horizontal: full content width (`px-0`) on every list page.
+ * Horizontal: full content width (`px-0`) on every list page; toolbar and
+ * `leading` chrome use `--cs-list-toolbar-padding-x`.
  */
 export function EntityListLayout<T>({
   title,

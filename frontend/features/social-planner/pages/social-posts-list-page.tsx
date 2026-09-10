@@ -1,22 +1,34 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ApiErrorState } from "@/components/data-display/api-error-state";
 import { type DataTableColumn } from "@/components/data-display/data-table";
 import { EntityListLayout } from "@/components/layout/entity-list-layout";
+import { ListPrimaryAction } from "@/components/layout/list-primary-action";
 import { ActionButton } from "@/components/ui/action-button";
 import { Button } from "@/components/ui/button";
+import { ListPagination } from "@/components/ui/list-pagination";
+import { SocialPlannerNav } from "@/features/social-planner/components/social-planner-shell";
 import { SocialPostStatusBadge } from "@/features/social-planner/components/social-post-status-badge";
 import { useSocialPostsList } from "@/features/social-planner/hooks/use-social-posts-list";
 import { useSocialPostMutations } from "@/features/social-planner/hooks/use-social-post-mutations";
 import type { SocialPost } from "@/features/social-planner/types";
+import {
+  socialProviderLabel,
+  socialTargetStatusLabel,
+} from "@/features/social-planner/utils/social-provider-label.util";
+import { humanizeEngagementWarning } from "@/features/social-planner/utils/humanize-engagement-warning.util";
+
+const PAGE_LIMIT = 25;
 
 export function SocialPostsListPage() {
   const router = useRouter();
+  const [page, setPage] = useState(1);
   const { data, isLoading, isError, error, refetch } = useSocialPostsList({
-    limit: 50,
+    page,
+    limit: PAGE_LIMIT,
   });
   const { cancel, retryTarget, remove } = useSocialPostMutations();
 
@@ -47,10 +59,15 @@ export function SocialPostsListPage() {
             {row.targets.map((target) => (
               <span
                 key={target.id}
-                className="rounded bg-muted px-1.5 py-0.5 text-xs"
-                title={target.errorMessage ?? target.status}
+                className="rounded-[var(--radius-sm)] bg-muted px-1.5 py-0.5 text-xs"
+                title={
+                  target.errorMessage
+                    ? humanizeEngagementWarning(target.errorMessage)
+                    : socialTargetStatusLabel(target.status)
+                }
               >
-                {target.providerKey}:{target.status.toLowerCase()}
+                {socialProviderLabel(target.providerKey)} ·{" "}
+                {socialTargetStatusLabel(target.status)}
                 {target.status === "FAILED" ? (
                   <Button
                     type="button"
@@ -59,7 +76,7 @@ export function SocialPostsListPage() {
                     className="ml-1 h-auto p-0 text-xs"
                     onClick={() => retryTarget.mutate(target.id)}
                   >
-                    retry
+                    Retry
                   </Button>
                 ) : null}
               </span>
@@ -128,25 +145,26 @@ export function SocialPostsListPage() {
     [cancel, remove, retryTarget],
   );
 
+  const meta = data?.meta ?? {
+    total: data?.items.length ?? 0,
+    page,
+    limit: PAGE_LIMIT,
+  };
+
   return (
     <EntityListLayout
       title="Social posts"
       description="Drafts, scheduled, and published posts"
-      addButtonLabel="Compose"
-      onAdd={() => router.push("/business/social-planner/new")}
-      extraActions={
-        <Button
-          variant="brand"
-          nativeButton={false}
-          render={<Link href="/business/social-planner" />}
-        >
-          Calendar
-        </Button>
-      }
-      error={
-        isError ? (
-          <ApiErrorState error={error} onRetry={() => void refetch()} />
-        ) : undefined
+      hideHeader
+      leading={
+        <SocialPlannerNav
+          actions={
+            <ListPrimaryAction
+              label="New Post"
+              onClick={() => router.push("/business/social-planner/new")}
+            />
+          }
+        />
       }
       columns={columns}
       data={data?.items ?? []}
@@ -161,6 +179,21 @@ export function SocialPostsListPage() {
         >
           Compose
         </ActionButton>
+      }
+      error={
+        isError ? (
+          <ApiErrorState error={error} onRetry={() => void refetch()} />
+        ) : undefined
+      }
+      footer={
+        (data?.items.length ?? 0) > 0 || (meta.total ?? 0) > 0 ? (
+          <ListPagination
+            meta={meta}
+            page={page}
+            onPageChange={setPage}
+            label="posts"
+          />
+        ) : null
       }
     />
   );

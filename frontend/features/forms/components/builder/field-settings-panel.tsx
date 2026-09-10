@@ -258,6 +258,38 @@ function FieldEditor({
                 }
               />
             </SettingRow>
+            <SettingRow label="Stripe mode">
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  className={cn(
+                    "flex-1 rounded-md border px-2 py-1.5 text-xs font-medium transition-colors",
+                    (field.stripePaymentsMode ?? "test") === "test"
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border hover:bg-accent",
+                  )}
+                  onClick={() => onUpdate({ stripePaymentsMode: "test" })}
+                >
+                  Test
+                </button>
+                <button
+                  type="button"
+                  className={cn(
+                    "flex-1 rounded-md border px-2 py-1.5 text-xs font-medium transition-colors",
+                    field.stripePaymentsMode === "live"
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border hover:bg-accent",
+                  )}
+                  onClick={() => onUpdate({ stripePaymentsMode: "live" })}
+                >
+                  Live
+                </button>
+              </div>
+              <p className="mt-1 text-[11px] text-muted-foreground">
+                Uses this field&apos;s mode only — not the business Payments
+                Live/Test setting.
+              </p>
+            </SettingRow>
             <SettingRow label="Help text">
               <SettingInput
                 value={field.helpText ?? ""}

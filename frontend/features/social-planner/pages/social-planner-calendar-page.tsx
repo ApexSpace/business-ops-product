@@ -5,11 +5,10 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ApiErrorState } from "@/components/data-display/api-error-state";
 import { LoadingState } from "@/components/data-display/loading-state";
-import { PageContainer } from "@/components/layout/page-container";
-import { PageHeader } from "@/components/layout/page-header";
 import { ListPrimaryAction } from "@/components/layout/list-primary-action";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { SocialPlannerShell } from "@/features/social-planner/components/social-planner-shell";
 import { SocialPostStatusBadge } from "@/features/social-planner/components/social-post-status-badge";
 import { useSocialCalendar } from "@/features/social-planner/hooks/use-social-calendar";
 
@@ -55,40 +54,20 @@ export function SocialPlannerCalendarPage() {
   ];
 
   return (
-    <PageContainer>
-      <PageHeader
-        title="Social Planner"
-        description="Calendar of scheduled and published posts"
-        actions={
-          <>
-            <Button
-              variant="brand"
-              nativeButton={false}
-              render={<Link href="/business/social-planner/posts" />}
-            >
-              Posts list
-            </Button>
-            <Button
-              variant="brand"
-              nativeButton={false}
-              render={<Link href="/business/social-planner/comments" />}
-            >
-              Engagement
-            </Button>
-            <ListPrimaryAction
-              label="Compose"
-              onClick={() => router.push("/business/social-planner/new")}
-            />
-          </>
-        }
-      />
-
+    <SocialPlannerShell
+      actions={
+        <ListPrimaryAction
+          label="New Post"
+          onClick={() => router.push("/business/social-planner/new")}
+        />
+      }
+    >
       {isError ? (
         <ApiErrorState error={error} onRetry={() => void refetch()} />
       ) : (
-        <Card>
+        <Card className="border-border shadow-none">
           <CardHeader className="flex flex-row items-center justify-between space-y-0">
-            <CardTitle>
+            <CardTitle className="text-base font-semibold">
               {month.toLocaleString(undefined, {
                 month: "long",
                 year: "numeric",
@@ -134,7 +113,7 @@ export function SocialPlannerCalendarPage() {
                 return (
                   <div
                     key={key}
-                    className="min-h-24 rounded-md border border-border/60 p-1.5"
+                    className="min-h-24 rounded-[var(--radius-md)] border border-border/60 p-1.5"
                   >
                     <div className="mb-1 text-xs font-medium">{day}</div>
                     <div className="space-y-1">
@@ -173,6 +152,6 @@ export function SocialPlannerCalendarPage() {
           </CardContent>
         </Card>
       )}
-    </PageContainer>
+    </SocialPlannerShell>
   );
 }
