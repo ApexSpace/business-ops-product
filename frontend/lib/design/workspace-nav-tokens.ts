@@ -15,6 +15,13 @@ export const WORKSPACE_NAV_ASIDE_CLASS =
   "flex h-full min-h-0 w-[var(--workspace-nav-width)] shrink-0 flex-col border-r border-border bg-muted/20 pt-[var(--workspace-nav-padding-y)]";
 
 /**
+ * Full-bleed aside when the nav is the only pane on mobile (list ↔ detail switch).
+ * Use instead of / with `WORKSPACE_NAV_ASIDE_CLASS` when `fullWidth` on small screens.
+ */
+export const WORKSPACE_NAV_ASIDE_MOBILE_FULL_CLASS =
+  "flex h-full min-h-0 w-full min-w-0 flex-1 flex-col border-r-0 bg-muted/20 pt-[var(--workspace-nav-padding-y)]";
+
+/**
  * Search (+ optional primary add) row — inset so the field fills ~284px in a 316px aside.
  * Forces SearchInput to full width (clears list-toolbar max-width).
  */

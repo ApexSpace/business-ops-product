@@ -251,7 +251,7 @@ export function OfferDiscountsSection({
           ) : null}
 
           {canManage ? (
-            <DrawerAddAction label="Add discount" onClick={startAdd} />
+            <DrawerAddAction label="Add Discount" onClick={startAdd} />
           ) : null}
         </div>
       ) : (
@@ -342,7 +342,7 @@ function DiscountForm({
 
       <div className="space-y-2">
         <Label>Amount</Label>
-        <div className="flex items-center gap-2">
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
           <Input
             type="number"
             min={0}
@@ -352,7 +352,7 @@ function DiscountForm({
               setDiscountForm({ ...discountForm, amount: e.target.value })
             }
             placeholder="Enter amount"
-            className="flex-1"
+            className="min-w-0 flex-1"
           />
           <AmountUnitToggle
             value={discountForm.amountType}

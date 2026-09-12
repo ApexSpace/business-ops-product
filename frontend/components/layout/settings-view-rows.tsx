@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { SETTINGS_VIEW_ROWS_CLASS } from "@/lib/design/settings-form-tokens";
 import { cn } from "@/lib/utils";
 
 export type SettingsViewRow = {
@@ -16,12 +17,7 @@ export function SettingsViewRows({
   className?: string;
 }) {
   return (
-    <div
-      className={cn(
-        "flex w-full min-w-0 flex-col gap-[var(--spacing-3)]",
-        className,
-      )}
-    >
+    <div className={cn(SETTINGS_VIEW_ROWS_CLASS, className)}>
       {rows.map((row) => (
         <div key={row.label} className="min-w-0 space-y-[var(--spacing-1)]">
           <p className="text-sm text-muted-foreground">{row.label}</p>

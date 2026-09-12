@@ -110,6 +110,7 @@ export function OffersSettingsScreen() {
           error={offersQuery.error}
           onRetry={() => void offersQuery.refetch()}
           selectedId={selectedId}
+          fullWidth={isMobile}
           onSelect={selectOffer}
           onCreate={async (values) => {
             await createMutation.mutateAsync(values);

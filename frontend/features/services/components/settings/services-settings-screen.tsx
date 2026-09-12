@@ -14,6 +14,7 @@ import {
   type ServicesSelection,
 } from "@/features/services/types/selection";
 import { SETTINGS_FORM_SURFACE_CLASS } from "@/lib/design/settings-form-tokens";
+import { useIsMobile } from "@/lib/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 
 function parseSelection(
@@ -29,6 +30,7 @@ export function ServicesSettingsScreen() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const isMobile = useIsMobile();
   const [search, setSearch] = useState("");
   const [createCategoryId, setCreateCategoryId] = useState<string | null>(null);
   const [selection, setSelection] = useState<ServicesSelection>(() =>
@@ -36,6 +38,13 @@ export function ServicesSettingsScreen() {
       searchParams.get("category"),
       searchParams.get("service"),
     ),
+  );
+  const [showListOnMobile, setShowListOnMobile] = useState(
+    () =>
+      !parseSelection(
+        searchParams.get("category"),
+        searchParams.get("service"),
+      ),
   );
 
   const tree = useServicesTree(search);
@@ -59,9 +68,29 @@ export function ServicesSettingsScreen() {
       setCreateCategoryId(null);
       setSelection(next);
       syncUrl(next);
+      if (next) {
+        setShowListOnMobile(false);
+      } else {
+        setShowListOnMobile(true);
+      }
     },
     [syncUrl],
   );
+
+  const openCreateService = useCallback(
+    (categoryId: string) => {
+      setCreateCategoryId(categoryId);
+      setSelection(null);
+      syncUrl(null);
+      setShowListOnMobile(false);
+    },
+    [syncUrl],
+  );
+
+  const backToList = useCallback(() => {
+    setCreateCategoryId(null);
+    setShowListOnMobile(true);
+  }, []);
 
   useEffect(() => {
     const fromUrl = parseSelection(
@@ -69,10 +98,7 @@ export function ServicesSettingsScreen() {
       searchParams.get("service"),
     );
     setSelection((prev) => {
-      if (
-        prev?.type === fromUrl?.type &&
-        prev?.id === fromUrl?.id
-      ) {
+      if (prev?.type === fromUrl?.type && prev?.id === fromUrl?.id) {
         return prev;
       }
       return fromUrl;
@@ -81,9 +107,14 @@ export function ServicesSettingsScreen() {
 
   const selectedCategory =
     selection?.type === "category"
-      ? tree.filteredCategories.find((c) => c.id === selection.id) ??
-        tree.categories.find((c) => c.id === selection.id)
+      ? (tree.filteredCategories.find((c) => c.id === selection.id) ??
+        tree.categories.find((c) => c.id === selection.id))
       : null;
+
+  const hasWorkspaceContent = Boolean(createCategoryId || selection);
+  const showSidebar = !isMobile || showListOnMobile || !hasWorkspaceContent;
+  const showWorkspace =
+    hasWorkspaceContent && (!isMobile || !showListOnMobile);
 
   return (
     <div
@@ -92,102 +123,128 @@ export function ServicesSettingsScreen() {
         SETTINGS_FORM_SURFACE_CLASS,
       )}
     >
-      <ServicesSidebar
-        search={search}
-        onSearchChange={setSearch}
-        filteredCategories={tree.filteredCategories}
-        isLoading={tree.isLoading}
-        isRefetching={tree.isRefetching}
-        isError={tree.isError}
-        error={tree.error}
-        onRetry={() => void tree.refetch()}
-        selection={selection}
-        onSelectCategory={(id) => select({ type: "category", id })}
-        onSelectService={(id) => select({ type: "service", id })}
-        onAddService={(categoryId) => {
-          setCreateCategoryId(categoryId);
-          setSelection(null);
-          syncUrl(null);
-        }}
-        onCreateCategory={async (name) => {
-          const created = await mutations.createCategory.mutateAsync({ name });
-          select({ type: "category", id: created.id });
-        }}
-        onDeleteCategory={(id) => {
-          mutations.removeCategory.mutate(id, {
-            onSuccess: () => {
-              if (selection?.type === "category" && selection.id === id) {
-                select(null);
-              }
-            },
-          });
-        }}
-        onReorderCategories={(orderedIds) =>
-          mutations.reorderCategories.mutate(orderedIds)
-        }
-        onReorderServices={(categoryId, orderedIds) =>
-          mutations.reorderServices.mutate({ categoryId, orderedIds })
-        }
-        createCategoryPending={mutations.createCategory.isPending}
-      />
+      {showSidebar ? (
+        <ServicesSidebar
+          search={search}
+          onSearchChange={setSearch}
+          filteredCategories={tree.filteredCategories}
+          isLoading={tree.isLoading}
+          isRefetching={tree.isRefetching}
+          isError={tree.isError}
+          error={tree.error}
+          onRetry={() => void tree.refetch()}
+          selection={selection}
+          fullWidth={isMobile}
+          onSelectCategory={(id) => select({ type: "category", id })}
+          onSelectService={(id) => select({ type: "service", id })}
+          onAddService={openCreateService}
+          onCreateCategory={async (name) => {
+            const created = await mutations.createCategory.mutateAsync({
+              name,
+            });
+            select({ type: "category", id: created.id });
+          }}
+          onDeleteCategory={(id) => {
+            mutations.removeCategory.mutate(id, {
+              onSuccess: () => {
+                if (selection?.type === "category" && selection.id === id) {
+                  select(null);
+                }
+              },
+            });
+          }}
+          onReorderCategories={(orderedIds) =>
+            mutations.reorderCategories.mutate(orderedIds)
+          }
+          onReorderServices={(categoryId, orderedIds) =>
+            mutations.reorderServices.mutate({ categoryId, orderedIds })
+          }
+          createCategoryPending={mutations.createCategory.isPending}
+        />
+      ) : null}
 
-      <main className="min-w-0 flex-1 overflow-y-auto p-[var(--settings-content-padding-y)] px-[var(--settings-content-padding-x)]">
-        {tree.isError ? (
-          <ApiErrorState
-            error={tree.error}
-            title="Could not load your service catalog"
-            onRetry={() => void tree.refetch()}
-          />
-        ) : createCategoryId ? (
-          <ServiceCreateForm
-            categoryId={createCategoryId}
-            categoryName={
-              tree.categories.find((c) => c.id === createCategoryId)?.name ?? ""
-            }
-            durationPresets={[...DURATION_PRESETS]}
-            isPending={mutations.createService.isPending}
-            onCancel={() => setCreateCategoryId(null)}
-            onSubmit={(body) =>
-              mutations.createService.mutate(body, {
-                onSuccess: (service) => {
-                  setCreateCategoryId(null);
-                  select({ type: "service", id: service.id });
-                },
-              })
-            }
-          />
-        ) : selection?.type === "service" ? (
-          <ServiceWorkspacePanel
-            serviceId={selection.id}
-            durationPresets={[...DURATION_PRESETS]}
-            onUpdated={() => void tree.refetch()}
-            onDeleted={() => select(null)}
-          />
-        ) : selectedCategory ? (
-          <CategoryDetailsPanel
-            category={selectedCategory}
-            isSaving={mutations.updateCategory.isPending}
-            onSave={async (name) => {
-              await mutations.updateCategory.mutateAsync({
-                id: selectedCategory.id,
-                body: { name },
-              });
-            }}
-            onDelete={() => {
-              mutations.removeCategory.mutate(selectedCategory.id, {
-                onSuccess: () => select(null),
-              });
-            }}
-          />
-        ) : (
-          <div className="flex h-full flex-col items-center justify-center text-center">
-            <h2 className="text-lg font-semibold">Manage your services</h2>
-            <p className="mt-2 max-w-md text-sm text-muted-foreground">
-              Select a category or service, or add a new one from the sidebar.
-            </p>
-          </div>
-        )}
-      </main>
+      {showWorkspace ? (
+        <main className="min-w-0 flex-1 overflow-y-auto p-[var(--settings-content-padding-y)] px-[var(--settings-content-padding-x)]">
+          {isMobile ? (
+            <button
+              type="button"
+              className="mb-4 text-sm font-medium text-primary"
+              onClick={backToList}
+            >
+              ← Back to services
+            </button>
+          ) : null}
+          {tree.isError ? (
+            <ApiErrorState
+              error={tree.error}
+              title="Could not load your service catalog"
+              onRetry={() => void tree.refetch()}
+            />
+          ) : createCategoryId ? (
+            <ServiceCreateForm
+              categoryId={createCategoryId}
+              categoryName={
+                tree.categories.find((c) => c.id === createCategoryId)?.name ??
+                ""
+              }
+              durationPresets={[...DURATION_PRESETS]}
+              isPending={mutations.createService.isPending}
+              onCancel={() => {
+                setCreateCategoryId(null);
+                if (isMobile) setShowListOnMobile(true);
+              }}
+              onSubmit={(body) =>
+                mutations.createService.mutate(body, {
+                  onSuccess: (service) => {
+                    setCreateCategoryId(null);
+                    select({ type: "service", id: service.id });
+                  },
+                })
+              }
+            />
+          ) : selection?.type === "service" ? (
+            <ServiceWorkspacePanel
+              serviceId={selection.id}
+              durationPresets={[...DURATION_PRESETS]}
+              onUpdated={() => void tree.refetch()}
+              onDeleted={() => select(null)}
+            />
+          ) : selectedCategory ? (
+            <CategoryDetailsPanel
+              category={selectedCategory}
+              isSaving={mutations.updateCategory.isPending}
+              onSave={async (name) => {
+                await mutations.updateCategory.mutateAsync({
+                  id: selectedCategory.id,
+                  body: { name },
+                });
+              }}
+              onDelete={() => {
+                mutations.removeCategory.mutate(selectedCategory.id, {
+                  onSuccess: () => select(null),
+                });
+              }}
+            />
+          ) : null}
+        </main>
+      ) : !isMobile ? (
+        <main className="min-w-0 flex-1 overflow-y-auto p-[var(--settings-content-padding-y)] px-[var(--settings-content-padding-x)]">
+          {tree.isError ? (
+            <ApiErrorState
+              error={tree.error}
+              title="Could not load your service catalog"
+              onRetry={() => void tree.refetch()}
+            />
+          ) : (
+            <div className="flex h-full flex-col items-center justify-center text-center">
+              <h2 className="text-lg font-semibold">Manage your services</h2>
+              <p className="mt-2 max-w-md text-sm text-muted-foreground">
+                Select a category or service, or add a new one from the sidebar.
+              </p>
+            </div>
+          )}
+        </main>
+      ) : null}
     </div>
   );
 }

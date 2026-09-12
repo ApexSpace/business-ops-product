@@ -23,6 +23,8 @@ import {
   TEAM_MEMBER_TABS,
   type TeamMemberTabId,
 } from "@/features/team/constants/team-member-tabs";
+import { SETTINGS_PANEL_TITLE_CLASS } from "@/lib/design/settings-form-tokens";
+import { cn } from "@/lib/utils";
 
 function formatMemberSince(joinedAt: string | null | undefined): string | null {
   if (!joinedAt) return null;
@@ -91,15 +93,17 @@ export function TeamMemberPanel({
   }
 
   return (
-    <div className="flex w-full min-w-0 max-w-4xl flex-col gap-[var(--spacing-6)]">
+    <div
+      className={cn(
+        "flex w-full min-w-0 max-w-4xl flex-col gap-[var(--spacing-6)]",
+      )}
+    >
       <div className="flex items-start justify-between gap-4">
         <div className="flex min-w-0 items-start gap-3">
           <ProfileAvatar name={name} size="lg" className="size-14" />
           <div className="min-w-0 space-y-1">
             <div className="flex min-w-0 flex-wrap items-center gap-2">
-              <h2 className="truncate text-2xl font-semibold tracking-tight">
-                {name}
-              </h2>
+              <h2 className={SETTINGS_PANEL_TITLE_CLASS}>{name}</h2>
               <StatusBadge
                 status={member.status}
                 domain="membership"

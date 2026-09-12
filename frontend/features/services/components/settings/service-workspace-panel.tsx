@@ -39,7 +39,7 @@ import {
   replaceServiceStaff,
   updateResourceRequirement,
 } from "@/features/services/api/service-workspace.api";
-import { SETTINGS_CONTENT_SHELL_CLASS } from "@/lib/design/settings-form-tokens";
+import { SETTINGS_CONTENT_SHELL_CLASS, SETTINGS_PANEL_TITLE_CLASS } from "@/lib/design/settings-form-tokens";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -146,12 +146,16 @@ export function ServiceWorkspacePanel({
   const { service } = data;
 
   return (
-    <div className={cn(SETTINGS_CONTENT_SHELL_CLASS, "max-w-4xl")}>
+    <div className={cn(SETTINGS_CONTENT_SHELL_CLASS, "w-full max-w-4xl")}>
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0 space-y-1">
-          <h2 className="truncate text-2xl font-semibold tracking-tight">
-            <span className="text-muted-foreground">{service.categoryName}</span>
-            <span className="mx-2 text-muted-foreground">|</span>
+          <h2 className={SETTINGS_PANEL_TITLE_CLASS}>
+            <span className="font-semibold text-violet-primary-dark/70">
+              {service.categoryName}
+            </span>
+            <span className="mx-2 font-semibold text-violet-primary-dark/40">
+              |
+            </span>
             <span>{service.name}</span>
           </h2>
           <div className="flex flex-wrap gap-2">

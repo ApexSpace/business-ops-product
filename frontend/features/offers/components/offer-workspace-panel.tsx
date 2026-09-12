@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { ApiErrorState } from "@/components/data-display/api-error-state";
@@ -29,7 +29,10 @@ import {
   OFFER_DETAIL_TABS,
   type OfferTabId,
 } from "@/features/offers/utils/offer-workspace-utils";
-import { SETTINGS_CONTENT_SHELL_CLASS } from "@/lib/design/settings-form-tokens";
+import {
+  SETTINGS_CONTENT_SHELL_CLASS,
+  SETTINGS_PANEL_TITLE_CLASS,
+} from "@/lib/design/settings-form-tokens";
 import { invalidateOffers } from "@/lib/query/invalidation";
 import { queryKeys } from "@/lib/query/keys";
 import { cn } from "@/lib/utils";
@@ -53,11 +56,15 @@ export function OfferWorkspacePanel({
 }: OfferWorkspacePanelProps) {
   const queryClient = useQueryClient();
   const [tab, setTab] = useState<OfferTabId>(initialTab);
+  const [syncedOfferId, setSyncedOfferId] = useState(offerId);
+  const [syncedInitialTab, setSyncedInitialTab] = useState(initialTab);
   const [deleteOpen, setDeleteOpen] = useState(false);
 
-  useEffect(() => {
+  if (offerId !== syncedOfferId || initialTab !== syncedInitialTab) {
+    setSyncedOfferId(offerId);
+    setSyncedInitialTab(initialTab);
     setTab(initialTab);
-  }, [initialTab, offerId]);
+  }
 
   const detailQuery = useQuery({
     queryKey: queryKeys.offers.detail(offerId),
@@ -129,12 +136,10 @@ export function OfferWorkspacePanel({
   const offer = detailQuery.data;
 
   return (
-    <div className={cn(SETTINGS_CONTENT_SHELL_CLASS, "max-w-4xl")}>
+    <div className={cn(SETTINGS_CONTENT_SHELL_CLASS, "w-full max-w-4xl")}>
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0 space-y-2">
-          <h2 className="truncate text-2xl font-semibold tracking-tight">
-            {offer.name}
-          </h2>
+          <h2 className={SETTINGS_PANEL_TITLE_CLASS}>{offer.name}</h2>
           <Badge variant={offer.isEnabled ? "success" : "neutral"}>
             {offer.isEnabled ? "Enabled" : "Disabled"}
           </Badge>

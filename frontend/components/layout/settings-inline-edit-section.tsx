@@ -8,6 +8,7 @@ import { useSettingsFormHeader } from "@/components/layout/settings-page-layout"
 import {
   SETTINGS_FORM_DESCRIPTION_CLASS,
   SETTINGS_FORM_SECTION_STACK_CLASS,
+  SETTINGS_INLINE_SECTION_TITLE_CLASS,
 } from "@/lib/design/settings-form-tokens";
 import { cn } from "@/lib/utils";
 
@@ -23,6 +24,7 @@ export interface SettingsInlineEditSectionProps {
   isSaving?: boolean;
   disabled?: boolean;
   editLabel?: string;
+  saveLabel?: string;
   children?: ReactNode;
   className?: string;
   /**
@@ -45,6 +47,7 @@ export function SettingsInlineEditSection({
   isSaving = false,
   disabled = false,
   editLabel = "Edit",
+  saveLabel = "Save",
   children,
   className,
   promoteEditToPageHeader = false,
@@ -107,7 +110,7 @@ export function SettingsInlineEditSection({
       {!promoteToPageHeader ? (
         <div className="flex items-start justify-between gap-[var(--spacing-4)]">
           <div className="min-w-0 space-y-[var(--spacing-1)]">
-            <h3 className="text-base font-medium">{title}</h3>
+            <h3 className={SETTINGS_INLINE_SECTION_TITLE_CLASS}>{title}</h3>
             {description ? (
               <p className={SETTINGS_FORM_DESCRIPTION_CLASS}>{description}</p>
             ) : null}
@@ -129,6 +132,7 @@ export function SettingsInlineEditSection({
           isDirty={isDirty}
           isSubmitting={isSaving}
           disabled={disabled}
+          saveLabel={saveLabel}
         />
       ) : null}
     </section>

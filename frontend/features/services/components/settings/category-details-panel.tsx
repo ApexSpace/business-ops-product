@@ -20,7 +20,7 @@ import {
   type CategoryNameFormValues,
 } from "@/features/services/schemas/category-name";
 import { useSettingsSectionEdit } from "@/lib/settings/use-settings-section-edit";
-import { SETTINGS_CONTENT_SHELL_CLASS } from "@/lib/design/settings-form-tokens";
+import { SETTINGS_CONTENT_SHELL_CLASS, SETTINGS_PANEL_TITLE_CLASS } from "@/lib/design/settings-form-tokens";
 import { cn } from "@/lib/utils";
 
 type CategoryDetailsPanelProps = {
@@ -52,11 +52,9 @@ export function CategoryDetailsPanel({
   }, [category.id, category.name]);
 
   return (
-    <div className={cn(SETTINGS_CONTENT_SHELL_CLASS, "max-w-3xl")}>
+    <div className={cn(SETTINGS_CONTENT_SHELL_CLASS, "w-full max-w-3xl")}>
       <div className="flex items-start justify-between gap-4">
-        <h2 className="text-2xl font-semibold tracking-tight text-foreground">
-          {category.name}
-        </h2>
+        <h2 className={SETTINGS_PANEL_TITLE_CLASS}>{category.name}</h2>
         <DropdownMenu>
           <DropdownMenuTrigger
             render={<MoreActionsButton aria-label="Category actions" />}
