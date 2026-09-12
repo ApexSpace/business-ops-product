@@ -28,6 +28,57 @@ export class StripePlatformCheckoutService {
     private readonly tierPriceSync: StripePlatformTierPriceSyncService,
   ) {}
 
+  /**
+   * ISO-04 / C-P1-08: tenant comes only from authenticated workspace context.
+   * A client-supplied businessId is ignored when it matches, and rejected when it does not.
+   */
+  resolvePublicCheckoutTenant(input: {
+    trustedBusinessId?: string | null;
+    claimedBusinessId?: string | null;
+  }): string {
+    const trusted = input.trustedBusinessId?.trim() || '';
+    if (!trusted) {
+      throw new AppException(
+        ErrorCode.UNAUTHORIZED,
+        'Authentication is required to start checkout',
+        HttpStatus.UNAUTHORIZED,
+      );
+    }
+
+    const claimed = input.claimedBusinessId?.trim() || '';
+    if (claimed && claimed !== trusted) {
+      throw new AppException(
+        ErrorCode.FORBIDDEN,
+        'Checkout business does not match the authenticated workspace',
+        HttpStatus.FORBIDDEN,
+      );
+    }
+
+    return trusted;
+  }
+
+  async createPublicCheckoutSession(input: {
+    trustedBusinessId?: string | null;
+    claimedBusinessId?: string | null;
+    planGroupId: string;
+    planTierId: string;
+    billingCycle: PlatformCheckoutMetadata['billingCycle'];
+    customerEmail?: string | null;
+  }): Promise<CheckoutSessionResponseDto> {
+    const businessId = this.resolvePublicCheckoutTenant({
+      trustedBusinessId: input.trustedBusinessId,
+      claimedBusinessId: input.claimedBusinessId,
+    });
+
+    return this.createCheckoutSession({
+      businessId,
+      planGroupId: input.planGroupId,
+      planTierId: input.planTierId,
+      billingCycle: input.billingCycle,
+      customerEmail: input.customerEmail,
+    });
+  }
+
   async createCheckoutSession(input: {
     businessId: string;
     planGroupId: string;
