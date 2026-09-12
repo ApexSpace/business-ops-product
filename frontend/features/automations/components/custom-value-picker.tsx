@@ -33,9 +33,10 @@ export function CustomValuePicker({
   buttonLabel = "Insert custom value",
 }: CustomValuePickerProps) {
   const [search, setSearch] = useState("");
-  const customValuesQuery = useAutomationCustomValues(
-    categories?.length ? { categories: categories.join(",") } : undefined,
-  );
+  const customValuesQuery = useAutomationCustomValues({
+    status: "implemented",
+    ...(categories?.length ? { categories: categories.join(",") } : {}),
+  });
 
   const filteredGroups = useMemo(() => {
     const needle = search.trim().toLowerCase();

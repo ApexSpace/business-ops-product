@@ -566,6 +566,9 @@ export class CustomValueResolverService {
         return entities.estimate?.status;
       case 'estimate.dueDate':
         return entities.estimate?.expiryDate?.toISOString();
+      case 'estimate.publicUrl':
+        // C-P0-01 waived: do not emit a client-facing /estimate/[token] URL.
+        return undefined;
       case 'invoice.number':
         return entities.invoice?.invoiceNumber;
       case 'invoice.total':

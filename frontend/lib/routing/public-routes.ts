@@ -44,7 +44,8 @@ export const PUBLIC_ROUTE_RESOURCES: PublicRouteResource[] = [
   },
   {
     prefix: "/estimate",
-    description: "Public estimate view (token-based)",
+    description:
+      "Public estimate path (C-P0-01 waived: unavailable state only, no client review)",
   },
   {
     prefix: "/chat",
