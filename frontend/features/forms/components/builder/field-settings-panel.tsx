@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Accordion } from "@/components/ui/accordion";
 import {
   Tabs,
@@ -153,6 +153,32 @@ function FieldEditor({
   const skipLabelStyle = meta ? !meta.supportsLabelStyle : false;
   const supportsLabel = meta?.supportsLabel ?? !isLayout;
 
+  const [paymentAmountDraft, setPaymentAmountDraft] = useState(() =>
+    typeof field.amount === "number" && Number.isFinite(field.amount)
+      ? String(field.amount)
+      : "20",
+  );
+
+  useEffect(() => {
+    setPaymentAmountDraft(
+      typeof field.amount === "number" && Number.isFinite(field.amount)
+        ? String(field.amount)
+        : "20",
+    );
+  }, [field.id]);
+
+  const commitPaymentAmount = () => {
+    const next = Number(paymentAmountDraft);
+    if (!Number.isFinite(next) || next <= 0) {
+      setPaymentAmountDraft("20");
+      onUpdate({ amount: 20 });
+      return;
+    }
+    const normalized = Math.round(next * 100) / 100;
+    setPaymentAmountDraft(String(normalized));
+    onUpdate({ amount: normalized });
+  };
+
   const widthValue = String(
     field.style?.width === "half"
       ? 50
@@ -239,13 +265,18 @@ function FieldEditor({
             <SettingRow label="Amount">
               <SettingInput
                 type="number"
-                value={field.amount ?? 20}
+                min={0.01}
+                step="0.01"
+                value={paymentAmountDraft}
                 onChange={(value) => {
+                  setPaymentAmountDraft(value);
+                  if (value.trim() === "") return;
                   const next = Number(value);
-                  onUpdate({
-                    amount: Number.isFinite(next) && next > 0 ? next : 20,
-                  });
+                  if (Number.isFinite(next) && next > 0) {
+                    onUpdate({ amount: next });
+                  }
                 }}
+                onBlur={commitPaymentAmount}
               />
             </SettingRow>
             <SettingRow label="Currency">

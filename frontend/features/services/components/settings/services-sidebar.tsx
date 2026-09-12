@@ -51,6 +51,7 @@ import {
   WORKSPACE_NAV_ITEM_IDLE_CLASS,
   WORKSPACE_NAV_NESTED_LIST_CLASS,
   WORKSPACE_NAV_ASIDE_CLASS,
+  WORKSPACE_NAV_ASIDE_MOBILE_FULL_CLASS,
   WORKSPACE_NAV_PRIMARY_ADD_CLASS,
   WORKSPACE_NAV_SCROLL_AREA_CLASS,
   WORKSPACE_NAV_SCROLL_INNER_CLASS,
@@ -68,6 +69,8 @@ type ServicesSidebarProps = {
   error: unknown;
   onRetry: () => void;
   selection: ServicesSelection;
+  /** Full-bleed aside when list is the only mobile pane. */
+  fullWidth?: boolean;
   onSelectCategory: (id: string) => void;
   onSelectService: (id: string) => void;
   onAddService: (categoryId: string) => void;
@@ -128,6 +131,7 @@ export function ServicesSidebar({
   error,
   onRetry,
   selection,
+  fullWidth = false,
   onSelectCategory,
   onSelectService,
   onAddService,
@@ -169,7 +173,13 @@ export function ServicesSidebar({
   };
 
   return (
-    <aside className={WORKSPACE_NAV_ASIDE_CLASS}>
+    <aside
+      className={
+        fullWidth
+          ? WORKSPACE_NAV_ASIDE_MOBILE_FULL_CLASS
+          : WORKSPACE_NAV_ASIDE_CLASS
+      }
+    >
       <div className={WORKSPACE_NAV_SEARCH_WRAP_CLASS}>
         <SearchInput
           value={search}

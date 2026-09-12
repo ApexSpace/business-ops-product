@@ -19,7 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { AmountUnitToggle } from "@/components/ui/amount-unit-toggle";
-import { SETTINGS_CONTENT_SHELL_CLASS, SETTINGS_FORM_DESCRIPTION_CLASS } from "@/lib/design/settings-form-tokens";
+import { SETTINGS_CONTENT_SHELL_CLASS, SETTINGS_FORM_DESCRIPTION_CLASS, SETTINGS_PANEL_TITLE_CLASS } from "@/lib/design/settings-form-tokens";
 import { DRAWER_SWITCH_CLASS } from "@/lib/design/drawer-tokens";
 import { cn } from "@/lib/utils";
 
@@ -103,9 +103,9 @@ export function ServiceCreateForm({
   };
 
   return (
-    <div className={cn(SETTINGS_CONTENT_SHELL_CLASS, "mx-auto max-w-lg")}>
+    <div className={cn(SETTINGS_CONTENT_SHELL_CLASS, "mx-auto w-full max-w-lg")}>
       <p className="text-sm text-muted-foreground">{categoryName}</p>
-      <h2 className="text-xl font-semibold">New service</h2>
+      <h2 className={SETTINGS_PANEL_TITLE_CLASS}>New service</h2>
 
       <form onSubmit={handleSubmit} className="mt-6 space-y-4">
         <div className="space-y-2">

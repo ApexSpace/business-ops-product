@@ -15,14 +15,17 @@ import { useResourceMutations } from "@/features/resources/hooks/use-resource-mu
 import { useResourcesList } from "@/features/resources/hooks/use-resources-list";
 import type { ResourceListItem } from "@/features/resources/types";
 import { SETTINGS_FORM_SURFACE_CLASS } from "@/lib/design/settings-form-tokens";
+import { useIsMobile } from "@/lib/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 
 export function ResourcesSettingsScreen() {
+  const isMobile = useIsMobile();
   const [search, setSearch] = useState("");
   const [selection, setSelection] = useState<ResourcesSelection>(null);
-  const [createGroupId, setCreateGroupId] = useState<string | null | "ungrouped">(
-    null,
-  );
+  const [createGroupId, setCreateGroupId] = useState<
+    string | null | "ungrouped"
+  >(null);
+  const [showListOnMobile, setShowListOnMobile] = useState(true);
 
   const {
     data: groups,
@@ -62,11 +65,27 @@ export function ResourcesSettingsScreen() {
   const select = useCallback((next: ResourcesSelection) => {
     setCreateGroupId(null);
     setSelection(next);
+    if (next) {
+      setShowListOnMobile(false);
+    } else {
+      setShowListOnMobile(true);
+    }
+  }, []);
+
+  const openCreateResource = useCallback((groupId: string | null) => {
+    setCreateGroupId(groupId ?? "ungrouped");
+    setSelection(null);
+    setShowListOnMobile(false);
+  }, []);
+
+  const backToList = useCallback(() => {
+    setCreateGroupId(null);
+    setShowListOnMobile(true);
   }, []);
 
   const selectedGroup =
     selection?.type === "group"
-      ? (groups ?? []).find((g) => g.id === selection.id) ?? null
+      ? ((groups ?? []).find((g) => g.id === selection.id) ?? null)
       : null;
 
   const createGroupLabel =
@@ -76,6 +95,10 @@ export function ResourcesSettingsScreen() {
 
   const isLoading = groupsLoading || resourcesLoading;
   const isError = groupsError || resourcesError;
+  const hasWorkspaceContent = Boolean(createGroupId != null || selection);
+  const showSidebar = !isMobile || showListOnMobile || !hasWorkspaceContent;
+  const showWorkspace =
+    hasWorkspaceContent && (!isMobile || !showListOnMobile);
 
   return (
     <div
@@ -84,94 +107,127 @@ export function ResourcesSettingsScreen() {
         SETTINGS_FORM_SURFACE_CLASS,
       )}
     >
-      <ResourcesSidebar
-        search={search}
-        onSearchChange={setSearch}
-        groups={groups ?? []}
-        resourcesByGroup={resourcesByGroup}
-        isLoading={isLoading}
-        isError={isError}
-        error={groupsError ? groupsErr : resourcesErr}
-        onRetry={() => {
-          void refetchGroups();
-          void refetchResources();
-        }}
-        selection={selection}
-        onSelectGroup={(id) => select({ type: "group", id })}
-        onSelectResource={(id) => select({ type: "resource", id })}
-        onAddResource={(groupId) => {
-          setCreateGroupId(groupId ?? "ungrouped");
-          setSelection(null);
-        }}
-        onCreateGroup={async (name) => {
-          const created = await mutations.createGroup.mutateAsync(name);
-          select({ type: "group", id: created.id });
-        }}
-        createGroupPending={mutations.createGroup.isPending}
-      />
+      {showSidebar ? (
+        <ResourcesSidebar
+          search={search}
+          onSearchChange={setSearch}
+          groups={groups ?? []}
+          resourcesByGroup={resourcesByGroup}
+          isLoading={isLoading}
+          isError={isError}
+          error={groupsError ? groupsErr : resourcesErr}
+          onRetry={() => {
+            void refetchGroups();
+            void refetchResources();
+          }}
+          selection={selection}
+          fullWidth={isMobile}
+          onSelectGroup={(id) => select({ type: "group", id })}
+          onSelectResource={(id) => select({ type: "resource", id })}
+          onAddResource={openCreateResource}
+          onCreateGroup={async (name) => {
+            const created = await mutations.createGroup.mutateAsync(name);
+            select({ type: "group", id: created.id });
+          }}
+          onReorderGroups={(orderedIds) =>
+            mutations.reorderGroups.mutate(orderedIds)
+          }
+          onReorderResources={(_groupId, orderedIds) =>
+            mutations.reorderResourcesInGroup.mutate(orderedIds)
+          }
+          createGroupPending={mutations.createGroup.isPending}
+        />
+      ) : null}
 
-      <main className="min-w-0 flex-1 overflow-y-auto p-[var(--settings-content-padding-y)] px-[var(--settings-content-padding-x)]">
-        {isError ? (
-          <ApiErrorState
-            error={groupsError ? groupsErr : resourcesErr}
-            title="Could not load your resource catalog"
-            onRetry={() => {
-              void refetchGroups();
-              void refetchResources();
-            }}
-          />
-        ) : createGroupId != null ? (
-          <ResourceCreateForm
-            groupLabel={createGroupLabel}
-            isPending={mutations.create.isPending}
-            onCancel={() => setCreateGroupId(null)}
-            onSubmit={(body) =>
-              mutations.create.mutate(
-                {
-                  ...body,
-                  groupId:
-                    createGroupId === "ungrouped" ? null : createGroupId,
-                },
-                {
-                  onSuccess: (resource) => {
-                    setCreateGroupId(null);
-                    select({ type: "resource", id: resource.id });
+      {showWorkspace ? (
+        <main className="min-w-0 flex-1 overflow-y-auto p-[var(--settings-content-padding-y)] px-[var(--settings-content-padding-x)]">
+          {isMobile ? (
+            <button
+              type="button"
+              className="mb-4 text-sm font-medium text-primary"
+              onClick={backToList}
+            >
+              ← Back to resources
+            </button>
+          ) : null}
+          {isError ? (
+            <ApiErrorState
+              error={groupsError ? groupsErr : resourcesErr}
+              title="Could not load your resource catalog"
+              onRetry={() => {
+                void refetchGroups();
+                void refetchResources();
+              }}
+            />
+          ) : createGroupId != null ? (
+            <ResourceCreateForm
+              groupLabel={createGroupLabel}
+              isPending={mutations.create.isPending}
+              onCancel={() => {
+                setCreateGroupId(null);
+                if (isMobile) setShowListOnMobile(true);
+              }}
+              onSubmit={(body) =>
+                mutations.create.mutate(
+                  {
+                    ...body,
+                    groupId:
+                      createGroupId === "ungrouped" ? null : createGroupId,
                   },
-                },
-              )
-            }
-          />
-        ) : selection?.type === "resource" ? (
-          <ResourceWorkspacePanel
-            resourceId={selection.id}
-            onDeleted={() => select(null)}
-          />
-        ) : selectedGroup ? (
-          <ResourceGroupDetailsPanel
-            group={selectedGroup}
-            isSaving={mutations.updateGroup.isPending}
-            onSave={async (name) => {
-              await mutations.updateGroup.mutateAsync({
-                id: selectedGroup.id,
-                name,
-              });
-            }}
-            onDelete={() => {
-              mutations.removeGroup.mutate(selectedGroup.id, {
-                onSuccess: () => select(null),
-              });
-            }}
-          />
-        ) : (
-          <div className="flex h-full flex-col items-center justify-center text-center">
-            <Warehouse className="mb-3 size-10 opacity-40" aria-hidden />
-            <h2 className="text-lg font-semibold">Manage your resources</h2>
-            <p className="mt-2 max-w-md text-sm text-muted-foreground">
-              Select a group or resource, or add a new one from the sidebar.
-            </p>
-          </div>
-        )}
-      </main>
+                  {
+                    onSuccess: (resource) => {
+                      setCreateGroupId(null);
+                      select({ type: "resource", id: resource.id });
+                    },
+                  },
+                )
+              }
+            />
+          ) : selection?.type === "resource" ? (
+            <ResourceWorkspacePanel
+              resourceId={selection.id}
+              onDeleted={() => select(null)}
+            />
+          ) : selectedGroup ? (
+            <ResourceGroupDetailsPanel
+              group={selectedGroup}
+              isSaving={mutations.updateGroup.isPending}
+              onSave={async (name) => {
+                await mutations.updateGroup.mutateAsync({
+                  id: selectedGroup.id,
+                  name,
+                });
+              }}
+              onDelete={() => {
+                mutations.removeGroup.mutate(selectedGroup.id, {
+                  onSuccess: () => select(null),
+                });
+              }}
+            />
+          ) : null}
+        </main>
+      ) : !isMobile ? (
+        <main className="min-w-0 flex-1 overflow-y-auto p-[var(--settings-content-padding-y)] px-[var(--settings-content-padding-x)]">
+          {isError ? (
+            <ApiErrorState
+              error={groupsError ? groupsErr : resourcesErr}
+              title="Could not load your resource catalog"
+              onRetry={() => {
+                void refetchGroups();
+                void refetchResources();
+              }}
+            />
+          ) : (
+            <div className="flex h-full flex-col items-center justify-center text-center">
+              <Warehouse className="mb-3 size-10 opacity-40" aria-hidden />
+              <h2 className="text-lg font-semibold">Manage your resources</h2>
+              <p className="mt-2 max-w-md text-sm text-muted-foreground">
+                Select a group or resource, or add a new one from the sidebar.
+              </p>
+            </div>
+          )}
+        </main>
+      ) : null}
     </div>
   );
 }

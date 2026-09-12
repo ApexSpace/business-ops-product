@@ -141,7 +141,7 @@ export function FormDialog<T extends FieldValues>({
                       ) : (
                         <span className="hidden sm:block sm:flex-1" />
                       )}
-                      <div className="flex w-full flex-col-reverse items-end gap-2 sm:w-auto sm:flex-row sm:items-center">
+                      <div className="flex w-auto flex-row flex-wrap items-center justify-end gap-2">
                         {!hideCancel ? (
                           <ActionButton
                             type="button"

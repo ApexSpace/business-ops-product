@@ -81,6 +81,7 @@ export function BusinessHoursWeekList({
 
   const weekNavigator = hideWeekNavigator ? null : (
     <WeekRangeHeader
+      className="w-full min-w-0 justify-between"
       anchorDate={anchorDate}
       onPrevious={() => setAnchorDate(addDays(anchorDate, -7))}
       onNext={() => setAnchorDate(addDays(anchorDate, 7))}
@@ -90,7 +91,9 @@ export function BusinessHoursWeekList({
   return (
     <div className={cn("flex w-full min-w-0 flex-col", className)}>
       {!hideWeekNavigator ? (
-        <div className="mb-[var(--spacing-4)] flex justify-end">{weekNavigator}</div>
+        <div className="mb-[var(--spacing-4)] flex w-full min-w-0 items-center justify-between">
+          {weekNavigator}
+        </div>
       ) : null}
 
       <div className="w-full min-w-0 overflow-hidden rounded-[var(--radius-control)] border border-border/60 bg-card">

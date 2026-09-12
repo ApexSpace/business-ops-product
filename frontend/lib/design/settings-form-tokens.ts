@@ -48,6 +48,20 @@ export const SETTINGS_FORM_SECTION_HEADER_CLASS =
 export const SETTINGS_GROUP_TITLE_CLASS =
   "text-lg font-bold text-violet-primary-dark";
 
+/**
+ * Master-detail panel page title (category / service name row).
+ * Figma primary/900 — larger than group subsection titles.
+ */
+export const SETTINGS_PANEL_TITLE_CLASS =
+  "truncate text-2xl font-bold tracking-tight text-violet-primary-dark";
+
+/** Inline-edit section heading (Details, Online Booking, …). */
+export const SETTINGS_INLINE_SECTION_TITLE_CLASS = SETTINGS_GROUP_TITLE_CLASS;
+
+/** View-mode label/value stack gap — Figma ~20px between rows. */
+export const SETTINGS_VIEW_ROWS_CLASS =
+  "flex w-full min-w-0 flex-col gap-[var(--spacing-5)]";
+
 /** Figma subheading — styled by `.settings-form-surface .settings-form-description`. */
 export const SETTINGS_FORM_DESCRIPTION_CLASS =
   "settings-form-description max-w-2xl";
@@ -55,10 +69,9 @@ export const SETTINGS_FORM_DESCRIPTION_CLASS =
 /** Discard CTA — styled by `button.settings-form-discard-button` in globals.css. */
 export const SETTINGS_FORM_DISCARD_BUTTON_CLASS = "settings-form-discard-button";
 
-/** Settings form action row — Figma 8px button gap. */
+/** Settings form action row — stacked full-width on mobile, end-aligned row from `sm`. */
 export const SETTINGS_FORM_ACTIONS_CLASS =
-  "flex flex-wrap items-center justify-end gap-[var(--spacing-2)]";
-  
+  "flex w-full flex-col items-stretch gap-[var(--spacing-4)] sm:flex-row sm:flex-wrap sm:items-center sm:justify-end";
 
 /** Vertical gap between subsections inside a settings form body. */
 export const SETTINGS_FORM_SECTION_STACK_CLASS =

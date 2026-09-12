@@ -10,6 +10,7 @@ import {
   WORKSPACE_NAV_ITEM_ACTIVE_CLASS,
   WORKSPACE_NAV_ITEM_IDLE_CLASS,
   WORKSPACE_NAV_ASIDE_CLASS,
+  WORKSPACE_NAV_ASIDE_MOBILE_FULL_CLASS,
   WORKSPACE_NAV_PERSON_ITEM_CLASS,
   WORKSPACE_NAV_PRIMARY_ADD_CLASS,
   WORKSPACE_NAV_SCROLL_AREA_CLASS,
@@ -33,6 +34,8 @@ type TeamSidebarProps = {
   onSelect: (userId: string) => void;
   onAdd: () => void;
   canManage: boolean;
+  /** Full-bleed aside when list is the only mobile pane. */
+  fullWidth?: boolean;
   isLoading?: boolean;
   isError?: boolean;
   errorMessage?: string;
@@ -46,12 +49,19 @@ export function TeamSidebar({
   onSelect,
   onAdd,
   canManage,
+  fullWidth = false,
   isLoading,
   isError,
   errorMessage,
 }: TeamSidebarProps) {
   return (
-    <aside className={WORKSPACE_NAV_ASIDE_CLASS}>
+    <aside
+      className={
+        fullWidth
+          ? WORKSPACE_NAV_ASIDE_MOBILE_FULL_CLASS
+          : WORKSPACE_NAV_ASIDE_CLASS
+      }
+    >
       <div className={WORKSPACE_NAV_SEARCH_WRAP_CLASS}>
         <SearchInput
           value={search}
@@ -104,7 +114,7 @@ export function TeamSidebar({
                       : WORKSPACE_NAV_ITEM_IDLE_CLASS,
                   )}
                 >
-                  <ProfileAvatar name={label} size="sm" className="size-8" />
+                  <ProfileAvatar name={label} size="sm" className="size-9" />
                   <span className="min-w-0 flex-1 truncate text-left font-medium">
                     {label}
                   </span>

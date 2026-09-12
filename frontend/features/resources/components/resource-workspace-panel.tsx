@@ -30,7 +30,7 @@ import type {
   DayOfWeek,
   ResourceAvailabilitySlot,
 } from "@/features/resources/types";
-import { SETTINGS_CONTENT_SHELL_CLASS } from "@/lib/design/settings-form-tokens";
+import { SETTINGS_CONTENT_SHELL_CLASS, SETTINGS_PANEL_TITLE_CLASS } from "@/lib/design/settings-form-tokens";
 import { cn } from "@/lib/utils";
 
 type ResourceWorkspacePanelProps = {
@@ -76,15 +76,23 @@ export function ResourceWorkspacePanel({
   }
 
   const { resource } = data;
-  const title = resource.groupName
-    ? `${resource.groupName} | ${resource.name}`
-    : resource.name;
+  const groupLabel = resource.groupName;
 
   return (
-    <div className={cn(SETTINGS_CONTENT_SHELL_CLASS, "max-w-4xl")}>
+    <div className={cn(SETTINGS_CONTENT_SHELL_CLASS, "w-full max-w-4xl")}>
       <div className="flex items-start justify-between gap-4">
-        <h2 className="truncate text-2xl font-semibold tracking-tight">
-          {title}
+        <h2 className={SETTINGS_PANEL_TITLE_CLASS}>
+          {groupLabel ? (
+            <>
+              <span className="font-semibold text-violet-primary-dark/70">
+                {groupLabel}
+              </span>
+              <span className="mx-2 font-semibold text-violet-primary-dark/40">
+                |
+              </span>
+            </>
+          ) : null}
+          <span>{resource.name}</span>
         </h2>
         <DropdownMenu>
           <DropdownMenuTrigger

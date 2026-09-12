@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
@@ -14,6 +14,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
+import { useIsMobile } from "@/lib/hooks/use-mobile";
 import { useEntitySelection } from "@/lib/routing/use-entity-selection";
 import { PERMISSIONS, useCan } from "@/features/auth/permissions";
 import { AddStaffMemberDialog } from "@/features/settings/components/add-staff-member-dialog";
@@ -45,6 +46,7 @@ const TEAM_LIST_LIMIT = 100;
 
 export function TeamWorkspace() {
   const queryClient = useQueryClient();
+  const isMobile = useIsMobile();
   const { user, jwt } = useAuth();
   const canInviteAsAdmin = useCan(PERMISSIONS["members.invite"]);
   const role = user?.businessRole ?? jwt?.businessRole;
@@ -64,6 +66,8 @@ export function TeamWorkspace() {
     legacyIdParams: ["member"],
     defaultTab: "details",
   });
+
+  const [showListOnMobile, setShowListOnMobile] = useState(!selectedId);
 
   const activeTab: TeamMemberTabId =
     tab && isTeamMemberTab(tab) ? tab : "details";
@@ -85,12 +89,25 @@ export function TeamWorkspace() {
   const members = membersData?.items ?? [];
 
   useEffect(() => {
+    if (isMobile) return;
     if (!selectedId && members.length > 0) {
       setSelectedId(members[0]!.userId);
     }
-  }, [members, selectedId, setSelectedId]);
+  }, [isMobile, members, selectedId, setSelectedId]);
 
-  const selectedUserId = selectedId ?? members[0]?.userId ?? null;
+  const selectedUserId = selectedId ?? (isMobile ? null : members[0]?.userId ?? null);
+
+  const selectMember = useCallback(
+    (userId: string) => {
+      setSelectedId(userId);
+      setShowListOnMobile(false);
+    },
+    [setSelectedId],
+  );
+
+  const backToList = useCallback(() => {
+    setShowListOnMobile(true);
+  }, []);
 
   const {
     data: memberDetail,
@@ -111,6 +128,7 @@ export function TeamWorkspace() {
       void invalidateBusinessMembers(queryClient);
       setArchiveTarget(null);
       setSelectedId(null);
+      setShowListOnMobile(true);
     },
     onError: (err: Error) => toast.error(err.message),
   });
@@ -136,6 +154,10 @@ export function TeamWorkspace() {
   const isAdminTarget =
     memberDetail?.role === "ADMIN" || memberDetail?.role === "OWNER";
 
+  const showSidebar = !isMobile || showListOnMobile || !selectedUserId;
+  const showWorkspace =
+    Boolean(selectedUserId) && (!isMobile || !showListOnMobile);
+
   return (
     <div className="relative flex h-full min-h-0 w-full min-w-0 flex-col">
       <div
@@ -144,56 +166,72 @@ export function TeamWorkspace() {
           SETTINGS_FORM_SURFACE_CLASS,
         )}
       >
-        <TeamSidebar
-          members={members}
-          selectedUserId={selectedUserId}
-          search={search}
-          onSearchChange={setSearch}
-          onSelect={setSelectedId}
-          onAdd={() => setAddOpen(true)}
-          canManage={canManageTeam}
-          isLoading={isLoading}
-          isError={isError}
-          errorMessage={error instanceof Error ? error.message : undefined}
-        />
+        {showSidebar ? (
+          <TeamSidebar
+            members={members}
+            selectedUserId={selectedUserId}
+            search={search}
+            onSearchChange={setSearch}
+            onSelect={selectMember}
+            onAdd={() => setAddOpen(true)}
+            canManage={canManageTeam}
+            fullWidth={isMobile}
+            isLoading={isLoading}
+            isError={isError}
+            errorMessage={error instanceof Error ? error.message : undefined}
+          />
+        ) : null}
 
-        <div className="min-h-0 min-w-0 flex-1 overflow-y-auto p-[var(--spacing-6)]">
-          {!selectedUserId ? (
-            <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-              Select a staff member to view details.
-            </div>
-          ) : detailLoading ? (
-            <TeamMemberPanelLoading />
-          ) : detailError || !memberDetail ? (
-            <div className="flex h-full items-center justify-center text-sm text-destructive">
-              {detailErrorValue instanceof Error
-                ? detailErrorValue.message
-                : "Unable to load this staff member."}
-            </div>
-          ) : (
-            <TeamMemberPanel
-              member={memberDetail}
-              activeTab={activeTab}
-              onTabChange={setTab}
-              canEditDetails={canEditDetails}
-              canManageAdmin={canManageAdmin}
-              hidePermissionsAndCompensation={isAdminTarget || !canManageAdmin}
-              onArchive={
-                canManageAdmin &&
-                selectedUserId &&
-                selectedUserId !== user?.id
-                  ? () => setArchiveTarget(selectedUserId)
-                  : undefined
-              }
-              onResendInvite={
-                canEditDetails && memberDetail.status === "INVITED"
-                  ? () => resendMutation.mutate()
-                  : undefined
-              }
-              isResendingInvite={resendMutation.isPending}
-            />
-          )}
-        </div>
+        {showWorkspace ? (
+          <div className="min-h-0 min-w-0 flex-1 overflow-y-auto p-[var(--spacing-6)]">
+            {isMobile ? (
+              <button
+                type="button"
+                className="mb-4 text-sm font-medium text-primary"
+                onClick={backToList}
+              >
+                ← Back to staff
+              </button>
+            ) : null}
+            {detailLoading ? (
+              <TeamMemberPanelLoading />
+            ) : detailError || !memberDetail ? (
+              <div className="flex h-full items-center justify-center text-sm text-destructive">
+                {detailErrorValue instanceof Error
+                  ? detailErrorValue.message
+                  : "Unable to load this staff member."}
+              </div>
+            ) : (
+              <TeamMemberPanel
+                member={memberDetail}
+                activeTab={activeTab}
+                onTabChange={setTab}
+                canEditDetails={canEditDetails}
+                canManageAdmin={canManageAdmin}
+                hidePermissionsAndCompensation={
+                  isAdminTarget || !canManageAdmin
+                }
+                onArchive={
+                  canManageAdmin &&
+                  selectedUserId &&
+                  selectedUserId !== user?.id
+                    ? () => setArchiveTarget(selectedUserId)
+                    : undefined
+                }
+                onResendInvite={
+                  canEditDetails && memberDetail.status === "INVITED"
+                    ? () => resendMutation.mutate()
+                    : undefined
+                }
+                isResendingInvite={resendMutation.isPending}
+              />
+            )}
+          </div>
+        ) : !isMobile ? (
+          <div className="flex min-h-0 min-w-0 flex-1 items-center justify-center overflow-y-auto p-[var(--spacing-6)] text-sm text-muted-foreground">
+            Select a staff member to view details.
+          </div>
+        ) : null}
       </div>
 
       <AddStaffMemberDialog open={addOpen} onOpenChange={setAddOpen} />

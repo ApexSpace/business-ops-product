@@ -1,3 +1,5 @@
+"use client";
+
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
@@ -8,6 +10,7 @@ import {
   deleteResourceGroup,
   deleteResourceScheduleException,
   replaceResourceAvailability,
+  reorderResourceGroups,
   updateResource,
   updateResourceGroup,
 } from "@/features/resources/api/resources.api";
@@ -30,8 +33,7 @@ export function useResourceMutations() {
   });
 
   const updateGroup = useMutation({
-    mutationFn: ({ id, name,
-}: { id: string; name: string }) =>
+    mutationFn: ({ id, name }: { id: string; name: string }) =>
       updateResourceGroup(id, { name }),
     onSuccess: () => {
       toast.success("Group updated");
@@ -45,6 +47,28 @@ export function useResourceMutations() {
       toast.success("Group deleted");
       void invalidateResourceGroups(queryClient);
     },
+  });
+
+  const reorderGroups = useMutation({
+    mutationFn: (orderedIds: string[]) => reorderResourceGroups(orderedIds),
+    onSuccess: () => {
+      void invalidateResourceGroups(queryClient);
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  const reorderResourcesInGroup = useMutation({
+    mutationFn: async (orderedIds: string[]) => {
+      await Promise.all(
+        orderedIds.map((id, index) =>
+          updateResource(id, { sortOrder: index }),
+        ),
+      );
+    },
+    onSuccess: () => {
+      void invalidateResources(queryClient);
+    },
+    onError: (err: Error) => toast.error(err.message),
   });
 
   const create = useMutation({
@@ -139,6 +163,8 @@ export function useResourceMutations() {
     createGroup,
     updateGroup,
     removeGroup,
+    reorderGroups,
+    reorderResourcesInGroup,
     create,
     update,
     remove,

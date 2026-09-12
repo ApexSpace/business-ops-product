@@ -41,6 +41,7 @@ import {
   WORKSPACE_NAV_ITEM_CLASS,
   WORKSPACE_NAV_ITEM_IDLE_CLASS,
   WORKSPACE_NAV_ASIDE_CLASS,
+  WORKSPACE_NAV_ASIDE_MOBILE_FULL_CLASS,
   WORKSPACE_NAV_PRIMARY_ADD_CLASS,
   WORKSPACE_NAV_SCROLL_AREA_CLASS,
   WORKSPACE_NAV_SCROLL_INNER_CLASS,
@@ -57,6 +58,8 @@ type OffersSidebarProps = {
   error: unknown;
   onRetry: () => void;
   selectedId: string | null;
+  /** Full-bleed aside when list is the only mobile pane. */
+  fullWidth?: boolean;
   onSelect: (id: string) => void;
   onCreate: (values: OfferCreateFormValues) => Promise<void> | void;
   onReorder: (orderedIds: string[]) => void;
@@ -134,6 +137,7 @@ export function OffersSidebar({
   error,
   onRetry,
   selectedId,
+  fullWidth = false,
   onSelect,
   onCreate,
   onReorder,
@@ -170,7 +174,13 @@ export function OffersSidebar({
   };
 
   return (
-    <aside className={WORKSPACE_NAV_ASIDE_CLASS}>
+    <aside
+      className={
+        fullWidth
+          ? WORKSPACE_NAV_ASIDE_MOBILE_FULL_CLASS
+          : WORKSPACE_NAV_ASIDE_CLASS
+      }
+    >
       <div className={WORKSPACE_NAV_SEARCH_WRAP_CLASS}>
         <SearchInput
           value={search}
