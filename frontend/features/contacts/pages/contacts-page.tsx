@@ -164,7 +164,7 @@ function BusinessContactsPageContent() {
               avatarUrl={row.avatarAssetId ? row.avatarUrl : null}
               size="sm"
             />
-            <span className="truncate font-medium text-[#4A4A4A]">
+            <span className="truncate font-medium text-violet-primary-darker">
               {row.label}
             </span>
           </div>
@@ -176,7 +176,7 @@ function BusinessContactsPageContent() {
         sortable: true,
         sortValue: (row) => row.email ?? "",
         cell: (row) => (
-          <span className="truncate text-[#4A4A4A]">
+          <span className="truncate text-[var(--drawer-text-secondary)]">
             {displayValue(row.email)}
           </span>
         ),
@@ -188,7 +188,9 @@ function BusinessContactsPageContent() {
         sortValue: (row) => row.phone ?? "",
         className: "whitespace-nowrap",
         cell: (row) => (
-          <span className="text-[#4A4A4A]">{displayValue(row.phone)}</span>
+          <span className="text-[var(--drawer-text-secondary)]">
+            {displayValue(row.phone)}
+          </span>
         ),
       },
     ],
