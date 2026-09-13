@@ -16,6 +16,8 @@ import { CurrentUser } from '@app/common/decorators/current-user.decorator';
 import type { RequestUser } from '@app/common/decorators/current-user.decorator';
 import { BusinessRoles } from '@app/common/decorators/business-roles.decorator';
 import { ConfirmDeleteQueryDto } from '@app/common/dto/confirm-delete-query.dto';
+import { RequireModule } from '@app/common/decorators/require-module.decorator';
+import { BusinessCapabilityGuard } from '@app/common/guards/business-capability.guard';
 import { BusinessRolesGuard } from '@app/common/guards/business-roles.guard';
 import {
   CreateCustomFeeDto,
@@ -38,7 +40,8 @@ const WRITE_ROLES = [
 @ApiTags('custom-fees')
 @ApiBearerAuth()
 @Controller('custom-fees')
-@UseGuards(BusinessRolesGuard)
+@UseGuards(BusinessRolesGuard, BusinessCapabilityGuard)
+@RequireModule('sales')
 export class CustomFeesController {
   constructor(private readonly customFeesService: CustomFeesService) {}
 
