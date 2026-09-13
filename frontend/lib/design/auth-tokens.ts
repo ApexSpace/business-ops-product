@@ -39,9 +39,9 @@ export const AUTH_FIELD_GROUP_CLASS =
 
 export const AUTH_FIELD_ROW_CLASS = "px-[var(--spacing-4)] py-[var(--spacing-2)]";
 
-/** Borderless control inside AUTH_FIELD_GROUP_CLASS (overrides glass-control). */
+/** Borderless control inside AUTH_FIELD_GROUP_CLASS (overrides glass-control). Body + placeholder roles. */
 export const AUTH_FIELD_INPUT_CLASS =
-  "h-[var(--control-height)] min-h-[var(--control-height)] rounded-none !border-0 !bg-transparent px-0 !shadow-none ring-0 ![backdrop-filter:none] text-foreground placeholder:text-muted-foreground focus-visible:!border-0 focus-visible:!ring-0 [&:-webkit-autofill]:[-webkit-text-fill-color:var(--foreground)] [&:-webkit-autofill]:[box-shadow:inset_0_0_0_1000px_var(--card)]";
+  "h-[var(--control-height)] min-h-[var(--control-height)] rounded-none !border-0 !bg-transparent px-0 !shadow-none ring-0 ![backdrop-filter:none] text-foreground placeholder:text-foreground-subtle focus-visible:!border-0 focus-visible:!ring-0 [&:-webkit-autofill]:[-webkit-text-fill-color:var(--foreground)] [&:-webkit-autofill]:[box-shadow:inset_0_0_0_1000px_var(--card)]";
 
 export const AUTH_FOOTER_LINK_CLASS =
   "font-semibold text-foreground no-underline hover:text-violet-primary-normal hover:underline";

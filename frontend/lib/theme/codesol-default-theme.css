@@ -8,6 +8,12 @@
  * Semantic variables in globals.css map to these values.
  *
  * Palettes: Violet-Primary, Black-Secondary, Grey-Tertiary, Green-Success
+ *
+ * Ink roles (consume these; do not paste specimen hex into features):
+ *   Body      --cs-ink / --foreground
+ *   Secondary --cs-ink-2 / --muted-foreground  (drawers: --drawer-text-secondary)
+ *   Placeholder / tertiary --cs-ink-3 / --foreground-subtle
+ *   Heading / entity name  --pc-violet-primary-dark / darker (not --foreground)
  */
 :root {
   /* ─── Violet-Primary ─── */
@@ -76,7 +82,7 @@
   --drawer-client-avatar-bg: #ffd9e5;
   --drawer-client-avatar-fg: #703253;
   --drawer-text-primary: #1a1a1a;
-  --drawer-text-secondary: #8a8a8a;
+  --drawer-text-secondary: #8a8a8a; /* drawer secondary + field labels */
   --drawer-text-body: #4a4a4a;
   --drawer-text-label: #524346;
   --drawer-text-meta: #6b6b6b;
@@ -107,9 +113,9 @@
   --cs-lilac: var(--pc-violet-primary-light-active);
   --cs-blue-tint: var(--pc-violet-primary-light);
   --cs-blue-text: var(--pc-violet-primary-dark);
-  --cs-ink: var(--pc-black-secondary-normal);
-  --cs-ink-2: var(--pc-grey-tertiary-normal);
-  --cs-ink-3: var(--pc-black-secondary-light-active);
+  --cs-ink: var(--pc-black-secondary-normal); /* body */
+  --cs-ink-2: var(--pc-grey-tertiary-normal); /* secondary */
+  --cs-ink-3: var(--pc-black-secondary-light-active); /* placeholder */
   --cs-border: var(--pc-black-secondary-light);
   --cs-page: var(--pc-grey-tertiary-light);
   --cs-green: var(--pc-green-success-normal);
