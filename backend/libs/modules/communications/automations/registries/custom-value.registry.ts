@@ -486,9 +486,9 @@ export const CUSTOM_VALUE_REGISTRY: CustomValueDefinition[] = [
     'estimate',
     'public_url',
     'Public URL',
-    'Customer-facing estimate link.',
+    'Waived for launch (C-P0-01). Public estimate links are disabled until a public API exists.',
     'estimate.publicUrl',
-    'implemented',
+    'stub',
   ),
 
   // Invoice (9)

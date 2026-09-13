@@ -78,7 +78,7 @@ These are defects or contract gaps found by comparing `.approach` runbooks to Ne
 
 | ID | Issue | Why it matters | Where |
 |----|--------|----------------|-------|
-| **C-P0-01** | Public estimate page is a stub; no public estimate API | Clients cannot view/accept an estimate by token. Runbook says public `estimate/[token]` is in scope. | FE `frontend/app/estimate/[token]/page.tsx` always “Estimate not found”. BE `finance/estimates` is staff CRUD only. |
+| **C-P0-01** | Public estimate page is a stub; no public estimate API | **WAIVED FOR LAUNCH** (tracked post-launch). Public `/estimate/[token]` is an unavailable state — not a working client review page. `estimate.publicUrl` merge tag is stubbed so automations/emails cannot send public estimate links. Staff estimate CRUD remains. | FE `frontend/app/estimate/[token]/page.tsx`; BE `finance/estimates` staff CRUD only (no public API). |
 | **C-P0-02** | Route capability map uses **staff** keys as if they were **capability** keys | Waiting-room, appointment-booked, cancel-reschedule, quick-tools, payment-account settings check `appointments.access` / `payments.access`. Those keys are **not** capability options. Exact match never hits; access falls back to “any `appointments.*` / `payments.*` module key”. Feature-level gating is wrong. | `frontend/lib/capabilities/route-capability-map.ts` |
 | **C-P0-03** | Shared API contract is empty | `@business-automation/api-contract` is a placeholder (`paths = Record<string, never>`). FE types are hand-copied. Drift is guaranteed as you ship. | `packages/api-contract`, missing `backend/openapi.json` |
 | **C-P0-04** | Almost no E2E coverage | Playwright has **one** file (`public-booking.spec.ts`) that only checks unavailable slug + redirects. Production flows below are unguarded. | `frontend/e2e/` |
@@ -229,7 +229,7 @@ These are the production “does the business work?” flows. Each journey is on
 | ID | Sev | Steps | Expect |
 |----|-----|-------|--------|
 | **J3-01** | P0 | Create estimate DRAFT with contact + lines (service/product) | Number unique per business |
-| **J3-02** | P0 | SENT → client public token | **Today fails (C-P0-01).** Production expect: `/estimate/{token}` shows lines, APPROVE/REJECT |
+| **J3-02** | P0 | SENT → client public token | **WAIVED FOR LAUNCH (C-P0-01).** SENT is staff-internal only; `/estimate/{token}` shows unavailable, not APPROVE/REJECT. Track post-launch. |
 | **J3-03** | P0 | APPROVED → convert to invoice | Estimate `CONVERTED`; invoice DRAFT/SENT with same lines |
 | **J3-04** | P0 | Send invoice; open `/invoice/{token}` | Public invoice; pay CTA |
 | **J3-05** | P0 | Checkout session / payment intent (Connect) | Webhook marks `PAID` / `PARTIAL`; staff list matches |
@@ -520,7 +520,7 @@ Run this table against staging with real slugs/tokens (not production customer d
 | Manage appointment | `/manage/[token]` | `public/appointments` | J2-08 |
 | Express | `/express/[token]` | `public/express` | J2-09 |
 | Invoice pay | `/invoice/[token]`, `/pay/invoice/[token]`, `/payment/[token]` | `public/invoices` | J3 |
-| Estimate | `/estimate/[token]` | **missing** | C-P0-01 |
+| Estimate | `/estimate/[token]` | **missing (waived for launch)** | C-P0-01 unavailable page; no public API |
 | Forms widget | `/widget/form/[publicKey]` | `public/forms` | J6 |
 | Chatbot | `/chat/[publicKey]`, `/widget/chat*`, `/widget/chatbot*` | `public/chatbots` | J8 |
 | Packages | `/packages/[slug]/…` | `public/packages` | J4 |
@@ -672,7 +672,7 @@ npm run redis:up
 
 - [ ] Release artifact is cut from `development` (or a frozen release branch), not stale `main`  
 - [ ] OpenAPI exported and `api-contract` generated  
-- [ ] C-P0-01 public estimates: implemented **or** hidden from nav/emails  
+- [x] C-P0-01 public estimates: **waived for launch** — public page unavailable; `estimate.publicUrl` stubbed; no staff/email CTAs send clients to `/estimate/[token]`; tracked post-launch  
 - [ ] C-P0-02 capability keys aligned to registry (not staff keys)  
 - [ ] Stripe Connect vs platform billing webhooks verified in test mode  
 - [ ] Tenant isolation ISO-01…07 passed on staging  
