@@ -59,8 +59,9 @@ export const WORKSPACE_NAV_PERSON_ITEM_CLASS =
 export const WORKSPACE_NAV_ITEM_ACTIVE_CLASS =
   "bg-violet-primary-surface font-medium text-violet-primary-normal";
 
+/** Idle labels — Figma Setting- grey; matches idle icons (`text-grey-tertiary-normal`). */
 export const WORKSPACE_NAV_ITEM_IDLE_CLASS =
-  "text-foreground hover:bg-muted/40";
+  "text-grey-tertiary-normal hover:bg-muted/40";
 
 /** Nested row glyph — 12px Figma box; hit target stays on the row. */
 export const WORKSPACE_NAV_ICON_CLASS =

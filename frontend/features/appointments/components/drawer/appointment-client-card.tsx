@@ -110,7 +110,7 @@ export function AppointmentClientCard({
         {onMessageClick ? (
           <button
             type="button"
-            className={APPOINTMENT_DRAWER_CLIENT_CREDIT_CARD_CLASS}
+            className={APPOINTMENT_DRAWER_CLIENT_CONTACT_ROW_CLASS}
             onClick={onMessageClick}
           >
             <MessageSquare
