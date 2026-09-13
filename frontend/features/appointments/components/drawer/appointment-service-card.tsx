@@ -180,7 +180,7 @@ export function AppointmentSelectionServiceCard({
       <div className={APPOINTMENT_DRAWER_SERVICE_META_ROW_CLASS}>
         {canChangeProvider ? (
           <div className="flex min-w-0 items-center gap-1">
-            <span className="shrink-0 text-[14px] font-medium leading-[18px] text-[#6B6B6B]">
+            <span className="shrink-0 text-[14px] font-medium leading-[18px] text-[var(--drawer-text-meta)]">
               Provider:
             </span>
             <Select

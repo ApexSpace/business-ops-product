@@ -148,7 +148,7 @@ export function ListPagination({
         item === "ellipsis" ? (
           <span
             key={`ellipsis-${index}`}
-            className="inline-flex size-8 items-center justify-center text-[14px] text-[#8A8A8A]"
+            className="inline-flex size-8 items-center justify-center text-[14px] text-[var(--drawer-text-secondary)]"
             aria-hidden
           >
             …
