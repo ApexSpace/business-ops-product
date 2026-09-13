@@ -67,7 +67,7 @@ function FormSubmissionsPageContent({ formId }: FormSubmissionsPageProps) {
         sortValue: (row) => row.createdAt,
         className: "whitespace-nowrap",
         cell: (row) => (
-          <span className="tabular-nums text-sm text-muted-foreground">
+          <span className="tabular-nums">
             {formatFormTableDate(row.createdAt)}
           </span>
         ),
@@ -76,7 +76,7 @@ function FormSubmissionsPageContent({ formId }: FormSubmissionsPageProps) {
         id: "summary",
         header: "Responses",
         cell: (row) => (
-          <p className="line-clamp-2 min-w-[240px] text-sm">
+          <p className="line-clamp-2 min-w-[240px]">
             {formatSubmissionSummary(row.data, { labelMap })}
           </p>
         ),
@@ -92,11 +92,10 @@ function FormSubmissionsPageContent({ formId }: FormSubmissionsPageProps) {
     <>
       <EntityListLayout
         title={`${formName} submissions`}
-        description="Review and manage responses collected from this form."
         leading={
           <Link
             href={basePath}
-            className="mb-1 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
+            className="mb-1 inline-flex items-center gap-2 text-sm font-medium text-violet-primary-normal hover:underline"
           >
             <ArrowLeft className="size-4" />
             Back to forms

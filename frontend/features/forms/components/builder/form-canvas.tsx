@@ -3,6 +3,16 @@
 import { useDroppable } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { Button } from "@/components/ui/button";
+import {
+  FORMS_BUILDER_CANVAS_SCROLL_CLASS,
+  FORMS_BUILDER_CANVAS_SECTION_CLASS,
+  FORMS_BUILDER_DROP_ACTIVE_CLASS,
+} from "@/lib/design/forms-builder-tokens";
+import {
+  SETTINGS_FORM_DESCRIPTION_CLASS,
+  SETTINGS_FORM_SECTION_HEADER_CLASS,
+  SETTINGS_PANEL_TITLE_CLASS,
+} from "@/lib/design/settings-form-tokens";
 import { cn } from "@/lib/utils";
 import type { FormDefinition } from "@/features/forms/types";
 import {
@@ -71,33 +81,30 @@ export function FormCanvas({
 
   return (
     <section
-      className={cn(
-        "flex h-full min-h-0 flex-col overflow-hidden bg-background",
-        className,
-      )}
+      className={cn(FORMS_BUILDER_CANVAS_SECTION_CLASS, className)}
     >
       <div
-        className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden p-4"
+        className={FORMS_BUILDER_CANVAS_SCROLL_CLASS}
         onPointerDown={() => onDeselectField?.()}
       >
         <div
-          className={cn("border shadow-sm", containerClass)}
+          className={cn("border border-border shadow-elevation-xs", containerClass)}
           style={containerStyle}
         >
-          <div className="mb-3 space-y-2">
-            <h2 className="text-lg font-semibold">
+          <div className={cn("mb-3", SETTINGS_FORM_SECTION_HEADER_CLASS)}>
+            <h2 className={SETTINGS_PANEL_TITLE_CLASS}>
               {settings.title || "Untitled form"}
             </h2>
             {settings.description ? (
-              <p className="text-sm text-muted-foreground">{settings.description}</p>
+              <p className={SETTINGS_FORM_DESCRIPTION_CLASS}>{settings.description}</p>
             ) : null}
           </div>
 
           {fields.length === 0 ? (
             <CanvasDropZone
               id={CANVAS_EMPTY_ID}
-              className="min-h-[200px] rounded-lg"
-              isOverClassName="ring-2 ring-primary/30 bg-primary/5"
+              className="min-h-[200px] rounded-[var(--radius-control)]"
+              isOverClassName={FORMS_BUILDER_DROP_ACTIVE_CLASS}
             >
               <BuilderEmptyState />
             </CanvasDropZone>
@@ -137,10 +144,10 @@ export function FormCanvas({
             <CanvasDropZone
               id={CANVAS_APPEND_ID}
               className={cn(
-                "mt-3 min-h-8 rounded-md border border-dashed border-transparent transition-colors",
+                "mt-3 min-h-8 rounded-[var(--radius-control)] border border-dashed border-transparent transition-colors",
                 isDraggingFromPalette && "min-h-12",
               )}
-              isOverClassName="border-primary/40 bg-primary/5"
+              isOverClassName={FORMS_BUILDER_DROP_ACTIVE_CLASS}
             >
               <span className="sr-only">Drop zone to append field</span>
             </CanvasDropZone>
@@ -155,7 +162,7 @@ export function FormCanvas({
           >
             <Button
               type="button"
-              variant="default"
+              variant="brand"
               className={getSubmitButtonClass(settings)}
               style={getSubmitButtonStyle(settings)}
             >

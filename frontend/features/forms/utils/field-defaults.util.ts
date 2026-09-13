@@ -5,6 +5,7 @@ import type {
   FormField,
   FormSettings,
 } from "@/features/forms/types";
+import { FORM_ACCENT_COLOR_HEX } from "@/lib/design/forms-builder-tokens";
 
 function generateId(): string {
   if (typeof crypto !== "undefined" && crypto.randomUUID) {
@@ -305,7 +306,7 @@ export function createDefaultFormSettings(): FormSettings {
     borderRadius: "lg",
     backgroundColor: "",
     textColor: "",
-    accentColor: "#6366f1",
+    accentColor: FORM_ACCENT_COLOR_HEX,
     labelFont: "system",
     inputFont: "system",
     multiStep: false,

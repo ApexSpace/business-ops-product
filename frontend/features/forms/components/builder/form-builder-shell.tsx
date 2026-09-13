@@ -31,6 +31,11 @@ import {
 import { FieldSettingsPanel } from "@/features/forms/components/builder/field-settings-panel";
 import { FormShareDialog } from "@/features/forms/components/form-share-dialog";
 import { FormPreviewModal } from "@/features/forms/components/builder/form-preview-modal";
+import {
+  FORMS_BUILDER_PALETTE_ITEM_CLASS,
+  FORMS_BUILDER_SHELL_GRID_CLASS,
+} from "@/lib/design/forms-builder-tokens";
+import { cn } from "@/lib/utils";
 
 interface FormBuilderShellProps {
   builder: FormBuilderStateApi;
@@ -242,7 +247,7 @@ export function FormBuilderShell({
         onDragCancel={handleDragCancel}
       >
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-          <div className="grid h-full min-h-0 flex-1 grid-cols-1 items-stretch overflow-hidden lg:grid-cols-[260px_minmax(0,1fr)_300px]">
+          <div className={FORMS_BUILDER_SHELL_GRID_CLASS}>
             <div ref={palettePanelRef} className="min-h-0">
               <FieldPalette
                 onAddField={handlePaletteAddField}
@@ -285,7 +290,7 @@ export function FormBuilderShell({
 
         <DragOverlay>
           {activePaletteType ? (
-            <div className="rounded-md border bg-card px-3 py-2 text-sm shadow-lg">
+            <div className={cn(FORMS_BUILDER_PALETTE_ITEM_CLASS, "bg-card shadow-lg")}>
               {getFieldTypeLabel(activePaletteType)}
             </div>
           ) : null}

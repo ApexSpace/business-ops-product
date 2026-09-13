@@ -47,13 +47,15 @@ export function FormPreviewModal({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent size="2xl" className="max-h-[90vh]">
         <DialogHeader className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-4">
-          <DialogTitle className="truncate">Form preview</DialogTitle>
+          <DialogTitle className="truncate text-violet-primary-darker">
+            Form preview
+          </DialogTitle>
 
           <div className="flex items-center gap-2">
             <Button
               type="button"
               size="icon"
-              variant={previewDevice === "desktop" ? "default" : "outline"}
+              variant={previewDevice === "desktop" ? "brand" : "outline"}
               aria-label="Desktop preview"
               onClick={() => onPreviewDeviceChange("desktop")}
             >
@@ -62,7 +64,7 @@ export function FormPreviewModal({
             <Button
               type="button"
               size="icon"
-              variant={previewDevice === "tablet" ? "default" : "outline"}
+              variant={previewDevice === "tablet" ? "brand" : "outline"}
               aria-label="Tablet preview"
               onClick={() => onPreviewDeviceChange("tablet")}
             >
@@ -71,7 +73,7 @@ export function FormPreviewModal({
             <Button
               type="button"
               size="icon"
-              variant={previewDevice === "mobile" ? "default" : "outline"}
+              variant={previewDevice === "mobile" ? "brand" : "outline"}
               aria-label="Mobile preview"
               onClick={() => onPreviewDeviceChange("mobile")}
             >
@@ -87,7 +89,7 @@ export function FormPreviewModal({
           <div className="flex justify-center py-4">
             <div
               className={cn(
-                "w-full border shadow-sm transition-all",
+                "w-full border border-border shadow-elevation-xs transition-all",
                 getPreviewDeviceWidth(previewDevice),
               )}
             >

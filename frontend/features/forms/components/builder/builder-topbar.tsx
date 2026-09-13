@@ -17,7 +17,6 @@ import {
   Undo2,
 } from "lucide-react";
 import { ActionButton } from "@/components/ui/action-button";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import {
   DropdownMenu,
@@ -30,7 +29,14 @@ import { IconButton } from "@/components/ui/icon-button";
 import { MoreActionsButton } from "@/components/ui/more-actions-button";
 import { useFormsHost } from "@/features/forms/forms-host-context";
 import type { FormStatus } from "@/features/forms/types";
-import { formStatusLabel, formStatusVariant } from "@/features/forms/utils/form-display.util";
+import { formStatusLabel } from "@/features/forms/utils/form-display.util";
+import { DATA_TABLE_STATUS_CLASS } from "@/lib/design/data-table-tokens";
+import {
+  FORMS_BUILDER_META_CLASS,
+  FORMS_BUILDER_TITLE_CLASS,
+  FORMS_BUILDER_TOPBAR_CLASS,
+} from "@/lib/design/forms-builder-tokens";
+import { cn } from "@/lib/utils";
 
 interface BuilderTopbarProps {
   formId?: string | null;
@@ -107,7 +113,7 @@ function FormNameEditor({
             cancel();
           }
         }}
-        className="max-w-md font-medium"
+        className={cn("max-w-md", FORMS_BUILDER_TITLE_CLASS)}
         aria-label="Form name"
       />
     );
@@ -115,7 +121,7 @@ function FormNameEditor({
 
   return (
     <div className="flex min-w-0 max-w-md items-center gap-1">
-      <span className="truncate font-medium" title={name}>
+      <span className={FORMS_BUILDER_TITLE_CLASS} title={name}>
         {name}
       </span>
       <IconButton
@@ -153,7 +159,7 @@ export function BuilderTopbar({
 }: BuilderTopbarProps) {
   const { basePath } = useFormsHost();
   return (
-    <header className="sticky top-0 z-20 flex flex-wrap items-center gap-3 border-b bg-background px-[var(--page-padding-x)] py-3">
+    <header className={FORMS_BUILDER_TOPBAR_CLASS}>
       <IconButton
         aria-label="Back to forms"
         className="size-9"
@@ -165,9 +171,9 @@ export function BuilderTopbar({
 
       <div className="flex min-w-0 flex-1 items-center gap-3">
         <FormNameEditor name={name} onNameChange={onNameChange} />
-        <Badge variant={formStatusVariant(status)}>{formStatusLabel(status)}</Badge>
+        <span className={DATA_TABLE_STATUS_CLASS}>{formStatusLabel(status)}</span>
         {isDirty ? (
-          <span className="text-xs text-muted-foreground">Unsaved changes</span>
+          <span className={FORMS_BUILDER_META_CLASS}>Unsaved changes</span>
         ) : null}
       </div>
 
@@ -196,7 +202,6 @@ export function BuilderTopbar({
         {formId ? (
           <ActionButton
             variant="outline"
-            size="sm"
             nativeButton={false}
             render={
               <Link href={`${basePath}/${formId}/submissions`} />
@@ -207,30 +212,30 @@ export function BuilderTopbar({
           </ActionButton>
         ) : null}
 
-        <ActionButton variant="outline" size="sm" onClick={onPreview}>
+        <ActionButton variant="outline" onClick={onPreview}>
           <Eye className="mr-2 size-4" />
           Preview
         </ActionButton>
 
-        <ActionButton size="default" onClick={onSave} disabled={!canSave || isSaving}>
+        <ActionButton onClick={onSave} disabled={!canSave || isSaving}>
           <Save className="mr-2 size-4" />
           {isSaving ? "Saving…" : "Save"}
         </ActionButton>
 
         {status === "published" ? (
-          <ActionButton size="sm" variant="secondary" onClick={onShare}>
+          <ActionButton variant="outline" onClick={onShare}>
             <Share2 className="mr-2 size-4" />
             Share
           </ActionButton>
         ) : null}
 
         {status !== "published" ? (
-          <ActionButton size="sm" variant="secondary" onClick={onPublish}>
+          <ActionButton variant="outline" onClick={onPublish}>
             <Send className="mr-2 size-4" />
             Publish
           </ActionButton>
         ) : (
-          <ActionButton size="sm" variant="outline" onClick={onMoveToDraft}>
+          <ActionButton variant="outline" onClick={onMoveToDraft}>
             Move to draft
           </ActionButton>
         )}
