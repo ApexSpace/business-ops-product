@@ -101,9 +101,9 @@ export const DATA_TABLE_FILTER_ICON_CLASS = FILTER_ICON_BUTTON_CLASS;
 export const DATA_TABLE_STATUS_CLASS =
   "text-[14px] font-bold leading-none text-violet-primary-normal";
 
-/** Sale number cell — Figma Spline/body bold 14 · neutral/700 */
+/** Sale number cell — Figma Sales primary/500 identifiers */
 export const DATA_TABLE_SALE_NUMBER_CLASS =
-  "text-[14px] font-bold leading-[21px] text-[var(--drawer-text-body)]";
+  "text-[14px] font-bold leading-[21px] text-violet-primary-normal";
 
 /**
  * Numbered pagination row — Figma Contacts/Sales footer:

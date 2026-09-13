@@ -134,7 +134,7 @@ export function PackageSaleDialog({
               onCheckedChange={(v) => setIsDemo(v === true)}
               className="size-5 rounded-[4px] border-violet-primary-normal data-[checked]:border-violet-primary-normal data-[checked]:bg-violet-primary-normal"
             />
-            <span className="text-[13px] font-medium leading-snug text-[#524346]">
+            <span className="text-[13px] font-medium leading-snug text-[var(--drawer-text-label)]">
               Mark as demo
             </span>
           </label>

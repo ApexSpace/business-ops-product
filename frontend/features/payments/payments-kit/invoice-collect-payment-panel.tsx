@@ -443,7 +443,7 @@ export function InvoiceCollectPaymentPanel({
             />
           </>
         ) : null}
-        <p className="text-[12px] font-medium text-[#8A8A8A]">
+        <p className="text-[12px] font-medium text-[var(--drawer-text-secondary)]">
           {(!savedCardId || savedCardId === "new") && savedCards.length > 0
             ? "Or enter a new card on the next step."
             : "Card details are collected on the next step via Stripe."}

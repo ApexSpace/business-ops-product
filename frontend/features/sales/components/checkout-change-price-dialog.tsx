@@ -136,7 +136,7 @@ export function CheckoutChangePriceDialog({
                 onChange={(event) => setDiscountPercent(event.target.value)}
                 className={cn(SALES_DRAWER_FIELD_CLASS, "pr-9")}
               />
-              <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-[13px] font-medium text-[#8A8A8A]">
+              <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-[13px] font-medium text-[var(--drawer-text-secondary)]">
                 %
               </span>
             </div>

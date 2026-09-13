@@ -192,7 +192,7 @@ export function CheckoutInlineAddSection({
           size="icon-sm"
           onClick={onClose}
           aria-label="Close add panel"
-          className="text-[#8A8A8A] hover:bg-white/70 hover:text-violet-primary-darker"
+          className="text-[var(--drawer-text-secondary)] hover:bg-white/70 hover:text-violet-primary-darker"
         >
           <X className="size-4" />
         </IconButton>
@@ -306,7 +306,7 @@ export function CheckoutInlineAddSection({
               <Label className={DRAWER_FIELD_LABEL_CLASS}>Gift card number</Label>
               <div className="relative">
                 {!autoGenerateGiftCardNumber ? (
-                  <ScanLine className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[#8A8A8A]" />
+                  <ScanLine className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[var(--drawer-text-secondary)]" />
                 ) : null}
                 <Input
                   className={cn(
@@ -348,7 +348,7 @@ export function CheckoutInlineAddSection({
                 onCheckedChange={(checked) => setSendDigital(checked === true)}
                 className="size-5 rounded-[4px] border-violet-primary-normal data-[checked]:border-violet-primary-normal data-[checked]:bg-violet-primary-normal"
               />
-              <span className="text-[13px] font-medium leading-snug text-[#524346]">
+              <span className="text-[13px] font-medium leading-snug text-[var(--drawer-text-label)]">
                 Email this gift card to the owner after checkout
               </span>
             </label>
@@ -406,7 +406,7 @@ export function CheckoutInlineAddSection({
                 onCheckedChange={(checked) => setIsDemoPackage(checked === true)}
                 className="size-5 rounded-[4px] border-violet-primary-normal data-[checked]:border-violet-primary-normal data-[checked]:bg-violet-primary-normal"
               />
-              <span className="text-[13px] font-medium leading-snug text-[#524346]">
+              <span className="text-[13px] font-medium leading-snug text-[var(--drawer-text-label)]">
                 Mark as demo
               </span>
             </label>

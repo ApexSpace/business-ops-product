@@ -107,7 +107,7 @@ export function NewCheckoutDrawer({
       <div className={SALES_DRAWER_BODY_INSET_CLASS}>
         <div className={SALES_DRAWER_FORM_FIELDS_CLASS}>
           <div className={SALES_DRAWER_FIELD_GROUP_CLASS}>
-            <Label className="text-[14px] font-medium leading-none text-[#524346]">
+            <Label className="text-[14px] font-medium leading-none text-[var(--drawer-text-label)]">
               Client
             </Label>
             <ContactPicker
