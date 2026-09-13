@@ -76,9 +76,15 @@ export class BusinessEffectiveCapabilitiesService {
           featureKeys.add(normalizeFeatureKey(assignment.featureKey));
         }
 
-        for (const assignment of bundle.moduleAssignments) {
-          for (const key of getFeatureKeysForModule(assignment.moduleKey)) {
-            featureKeys.add(normalizeFeatureKey(key));
+        // Explicit feature rows are the source of truth for option-level
+        // packaging (CAP-02). Expanding moduleAssignments would grant every
+        // option on that module — e.g. appointments.express_booking on a
+        // bundle that only listed appointments.list.
+        if (bundle.featureAssignments.length === 0) {
+          for (const assignment of bundle.moduleAssignments) {
+            for (const key of getFeatureKeysForModule(assignment.moduleKey)) {
+              featureKeys.add(normalizeFeatureKey(key));
+            }
           }
         }
 
