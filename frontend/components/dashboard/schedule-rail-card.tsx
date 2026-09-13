@@ -77,10 +77,10 @@ export function ScheduleRailCard({
                 aria-hidden
               />
               <div className="min-w-0">
-                <p className="truncate text-[12px] font-semibold text-[#12172b] dark:text-foreground">
+                <p className="truncate text-[12px] font-semibold text-foreground">
                   {contactName(appointment)} — {appointment.serviceName ?? "Treatment"}
                 </p>
-                <p className="mt-1 text-[10.5px] text-[#98a1b5] dark:text-muted-foreground">
+                <p className="mt-1 text-[10.5px] text-muted-foreground">
                   {formatTimeRange(appointment.startAt, appointment.endAt, timezone)}
                 </p>
               </div>

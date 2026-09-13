@@ -57,7 +57,7 @@ export function DashboardBreakdownCard({
             {items.map((item, index) => (
               <div
                 key={item.id}
-                className="flex items-center gap-2 text-[11.5px] text-[#12172b] dark:text-foreground"
+                className="flex items-center gap-2 text-[11.5px] text-foreground"
               >
                 <span
                   className={cn(
@@ -69,7 +69,7 @@ export function DashboardBreakdownCard({
                   )}
                 />
                 <span className="truncate">{item.label}</span>
-                <span className="ml-auto shrink-0 text-[#98a1b5]">
+                <span className="ml-auto shrink-0 text-foreground-subtle">
                   {item.value}
                 </span>
               </div>
@@ -83,11 +83,11 @@ export function DashboardBreakdownCard({
               key={item.id}
               className="flex items-center justify-between gap-3 text-[12px]"
             >
-              <span className="truncate text-[#12172b] dark:text-foreground">
+              <span className="truncate text-foreground">
                 {item.label}
               </span>
               <div className="shrink-0 text-right">
-                <span className="font-medium text-[#12172b] dark:text-foreground">
+                <span className="font-medium text-foreground">
                   {item.value}
                 </span>
                 {item.meta ? (
@@ -98,7 +98,7 @@ export function DashboardBreakdownCard({
                         ? "text-[#1f9d63]"
                         : item.meta.startsWith("↓")
                           ? "text-[#dc3545]"
-                          : "text-[#98a1b5]",
+                          : "text-foreground-subtle",
                     )}
                   >
                     {item.meta}

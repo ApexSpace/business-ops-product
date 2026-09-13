@@ -93,18 +93,18 @@ export function RecentConversationsCard({
               <div className="min-w-0 flex-1">
                 <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
                   <div className="min-w-0">
-                    <p className="truncate text-[12.5px] font-semibold text-[#12172b] dark:text-foreground">
+                    <p className="truncate text-[12.5px] font-semibold text-foreground">
                       {contactName(conversation)}{" "}
-                      <span className="font-normal text-[11px] text-[#98a1b5]">
+                      <span className="font-normal text-[11px] text-foreground-subtle">
                         via {channelLabel(conversation.channel)}
                       </span>
                     </p>
                   </div>
-                  <span className="shrink-0 text-[10.5px] text-[#98a1b5] sm:text-right">
+                  <span className="shrink-0 text-[10.5px] text-foreground-subtle sm:text-right">
                     {formatRelativeTime(conversation.lastMessageAt)}
                   </span>
                 </div>
-                <p className="mt-1 line-clamp-2 text-[11.5px] leading-relaxed text-[#5b6478] dark:text-muted-foreground">
+                <p className="mt-1 line-clamp-2 text-[11.5px] leading-relaxed text-muted-foreground">
                   {conversation.preview?.trim() || "No preview available yet."}
                 </p>
               </div>
