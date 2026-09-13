@@ -187,9 +187,9 @@ export function StaffDayCalendarView({
                       name={member.label}
                       avatarUrl={member.avatarUrl}
                       className="size-6 shrink-0"
-                      fallbackClassName="bg-[#FFD9E5] text-[9px] font-semibold text-[#703253]"
+                      fallbackClassName="bg-[var(--drawer-client-avatar-bg)] text-[9px] font-semibold text-[var(--drawer-client-avatar-fg)]"
                     />
-                    <span className="line-clamp-2 max-w-full text-center text-[11px] font-semibold leading-tight text-violet-primary-normal">
+                    <span className="line-clamp-2 max-w-full text-center text-[11px] font-semibold leading-tight text-violet-primary-darker">
                       {member.label}
                     </span>
                   </div>
@@ -208,13 +208,13 @@ export function StaffDayCalendarView({
                       name={member.label}
                       avatarUrl={member.avatarUrl}
                       className="size-8 shrink-0"
-                      fallbackClassName="bg-[#D1D1D1] text-[10px] font-semibold text-[#6B6B6B]"
+                      fallbackClassName="bg-grey-tertiary-light-active text-[10px] font-semibold text-grey-tertiary-normal"
                     />
-                    <span className="min-w-0 truncate text-sm font-semibold text-black-secondary-normal">
+                    <span className="min-w-0 truncate text-sm font-semibold text-violet-primary-darker">
                       {member.label}
                     </span>
                   </div>
-                  <span className="inline-flex h-6 shrink-0 items-center justify-center rounded-full bg-[#7E3BED] px-2 text-[11px] font-semibold leading-none text-white">
+                  <span className="inline-flex h-6 shrink-0 items-center justify-center rounded-full bg-violet-primary-normal px-2 text-[11px] font-semibold leading-none text-white">
                     {utilization}%
                   </span>
                 </div>

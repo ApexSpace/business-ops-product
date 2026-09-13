@@ -149,7 +149,7 @@ export function AppointmentGuestCard({
           fallbackClassName={APPOINTMENT_DRAWER_CLIENT_AVATAR_FALLBACK_CLASS}
         />
         <div className="min-w-0 flex-1">
-          <p className="truncate text-[14px] font-bold leading-5 text-[#1A1A1A]">
+          <p className={APPOINTMENT_DRAWER_CLIENT_NAME_CLASS}>
             {name}
           </p>
           <p className="mt-0.5 text-[12px] leading-[15px] text-muted-foreground">

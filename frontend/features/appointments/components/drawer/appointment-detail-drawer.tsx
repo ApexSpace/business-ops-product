@@ -701,10 +701,10 @@ export function AppointmentDetailDrawer({
 
                       {appointment.notes?.trim() ? (
                         <div>
-                          <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#9A9A9A]">
+                          <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-foreground-subtle">
                             Notes
                           </p>
-                          <p className="whitespace-pre-wrap text-[14px] leading-relaxed text-[#1A1A1A]">
+                          <p className="whitespace-pre-wrap text-[14px] leading-relaxed text-[var(--drawer-text-primary)]">
                             {appointment.notes}
                           </p>
                         </div>

@@ -26,9 +26,9 @@ const POSITION_PALETTE: PipelineStageAccent[] = [
     accentColor: "var(--primary)",
   },
   {
-    dotClass: "bg-[hsl(192_70%_40%)]",
-    pillClass: "bg-[hsl(192_70%_96%)] text-[hsl(192_70%_32%)]",
-    accentColor: "hsl(192 70% 40%)",
+    dotClass: "bg-violet-primary-dark",
+    pillClass: "bg-violet-primary-surface text-violet-primary-dark",
+    accentColor: "var(--pc-violet-primary-dark)",
   },
   {
     dotClass: "bg-success",

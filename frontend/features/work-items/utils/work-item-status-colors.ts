@@ -13,9 +13,9 @@ const STATUS_ACCENTS: Record<WorkItemStatus, WorkItemStatusAccent> = {
     accentColor: "var(--muted-foreground)",
   },
   SCHEDULED: {
-    dotClass: "bg-[hsl(192_70%_40%)]",
-    pillClass: "bg-[hsl(192_70%_96%)] text-[hsl(192_70%_32%)]",
-    accentColor: "hsl(192 70% 40%)",
+    dotClass: "bg-primary",
+    pillClass: "bg-primary-tint text-primary-text",
+    accentColor: "var(--primary)",
   },
   IN_PROGRESS: {
     dotClass: "bg-warning",
