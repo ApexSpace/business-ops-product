@@ -111,24 +111,29 @@ const ROUTE_CAPABILITY_MAP = new Map<string, RouteCapabilityEntry>([
     { moduleKey: "calendar", capabilityKeys: ["calendar.list"] },
   ],
   [
+    // Appointment settings pages share the list option — there is no dedicated
+    // registry key for waiting-room / booked / cancel-reschedule / quick-tools.
     "/business/settings/waiting-room",
-    { moduleKey: "appointments", capabilityKeys: ["appointments.access"] },
+    { moduleKey: "appointments", capabilityKeys: ["appointments.list"] },
   ],
   [
     "/business/settings/appointment-booked",
-    { moduleKey: "appointments", capabilityKeys: ["appointments.access"] },
+    { moduleKey: "appointments", capabilityKeys: ["appointments.list"] },
   ],
   [
     "/business/settings/cancel-reschedule",
-    { moduleKey: "appointments", capabilityKeys: ["appointments.access"] },
+    { moduleKey: "appointments", capabilityKeys: ["appointments.list"] },
   ],
   [
     "/business/settings/payment-account",
-    { moduleKey: "payments", capabilityKeys: ["payments.access"] },
+    {
+      moduleKey: "payments",
+      capabilityKeys: ["payments.transactions.list"],
+    },
   ],
   [
     "/business/settings/quick-tools",
-    { moduleKey: "appointments", capabilityKeys: ["appointments.access"] },
+    { moduleKey: "appointments", capabilityKeys: ["appointments.list"] },
   ],
   [
     "/business/settings/forms",
@@ -240,28 +245,12 @@ export function hasModuleForRoute(
   route: string,
   capabilityKeys: Set<string>,
 ): boolean {
-  const entry = getRouteCapabilityEntry(route);
+  const entry = resolveRouteCapability(route);
   if (!entry) return true;
 
-  if (entry.capabilityKeys.some((key) => capabilityKeys.has(key))) {
-    return true;
-  }
-
-  const moduleKeys = new Set<string>([entry.moduleKey]);
-  for (const key of entry.capabilityKeys) {
-    const moduleFromKey = key.split(".")[0];
-    if (moduleFromKey) moduleKeys.add(moduleFromKey);
-  }
-
-  for (const moduleKey of moduleKeys) {
-    if (capabilityKeys.has(moduleKey)) return true;
-    const prefix = `${moduleKey}.`;
-    for (const key of capabilityKeys) {
-      if (key.startsWith(prefix)) return true;
-    }
-  }
-
-  return false;
+  // Exact option keys only. Prefix fallback ("any appointments.*") treated staff
+  // keys like appointments.access as module access and broke feature gating.
+  return entry.capabilityKeys.some((key) => capabilityKeys.has(key));
 }
 
 /** Nav/route gate aligned with registry feature keys (not permission keys). */
