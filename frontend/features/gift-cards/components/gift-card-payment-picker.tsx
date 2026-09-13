@@ -72,10 +72,10 @@ function GiftCardOptionRow({
         <span className="block truncate text-[14px] font-bold tabular-nums leading-none text-violet-primary-darker">
           #{card.number}
         </span>
-        <span className="block truncate text-[13px] font-medium leading-snug text-[#524346]">
+        <span className="block truncate text-[13px] font-medium leading-snug text-[var(--drawer-text-label)]">
           {card.ownerContact.name}
         </span>
-        <span className="block text-[12px] font-medium leading-none text-[#8A8A8A]">
+        <span className="block text-[12px] font-medium leading-none text-[var(--drawer-text-secondary)]">
           Balance {formatMoney(card.currentBalance)}
         </span>
       </span>
@@ -158,7 +158,7 @@ export function GiftCardPaymentPicker({
         <p className="text-[13px] font-semibold leading-none text-violet-primary-darker">
           Gift card
         </p>
-        <p className="text-[12px] font-medium leading-snug text-[#8A8A8A]">
+        <p className="text-[12px] font-medium leading-snug text-[var(--drawer-text-secondary)]">
           {contactCards.length > 0
             ? `${contactCards.length} active card${contactCards.length === 1 ? "" : "s"} for this client`
             : "Search or scan a gift card to apply"}
@@ -173,7 +173,7 @@ export function GiftCardPaymentPicker({
           Search by number or client
         </Label>
         <div className="relative">
-          <ScanLine className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[#8A8A8A]" />
+          <ScanLine className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[var(--drawer-text-secondary)]" />
           <Input
             id="gift-card-search"
             className={cn(SALES_DRAWER_FIELD_CLASS, "pl-9")}
@@ -191,7 +191,7 @@ export function GiftCardPaymentPicker({
 
       {listCards.length > 0 ? (
         <div className="space-y-2">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#8A8A8A]">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--drawer-text-secondary)]">
             {showingSearchResults ? "Search results" : "Available cards"}
           </p>
           <div className="max-h-52 space-y-2 overflow-y-auto pr-0.5">
@@ -206,7 +206,7 @@ export function GiftCardPaymentPicker({
           </div>
         </div>
       ) : showingSearchResults && !searchQuery.isFetching ? (
-        <p className="rounded-[var(--radius-md)] border border-dashed border-[#E8E4DC] bg-[#FAFAF8] px-3 py-4 text-center text-[13px] font-medium text-[#8A8A8A]">
+        <p className="rounded-[var(--radius-md)] border border-dashed border-[#E8E4DC] bg-[#FAFAF8] px-3 py-4 text-center text-[13px] font-medium text-[var(--drawer-text-secondary)]">
           No redeemable gift cards found.
         </p>
       ) : null}
@@ -214,17 +214,17 @@ export function GiftCardPaymentPicker({
       {selectedCard ? (
         <div className="space-y-3 rounded-[10px] border border-violet-primary-normal/25 bg-violet-primary-surface/70 p-3.5">
           <div className="space-y-1.5">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#8A8A8A]">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--drawer-text-secondary)]">
               Selected card
             </p>
             <p className="text-[16px] font-bold tabular-nums leading-none text-violet-primary-darker">
               #{selectedCard.number}
             </p>
-            <p className="text-[13px] font-medium leading-snug text-[#524346]">
+            <p className="text-[13px] font-medium leading-snug text-[var(--drawer-text-label)]">
               {selectedCard.ownerContact.name}
             </p>
             <div className="flex items-center justify-between gap-3 pt-1 text-[13px] font-medium">
-              <span className="text-[#8A8A8A]">Available balance</span>
+              <span className="text-[var(--drawer-text-secondary)]">Available balance</span>
               <span className="tabular-nums text-violet-primary-darker">
                 {formatMoney(selectedCard.currentBalance)}
               </span>
@@ -239,7 +239,7 @@ export function GiftCardPaymentPicker({
               Amount to apply
             </Label>
             <div className="relative">
-              <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-[14px] font-semibold text-[#8A8A8A]">
+              <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-[14px] font-semibold text-[var(--drawer-text-secondary)]">
                 $
               </span>
               <Input
@@ -256,7 +256,7 @@ export function GiftCardPaymentPicker({
                 className={cn(SALES_DRAWER_FIELD_CLASS, "pl-7")}
               />
             </div>
-            <p className="text-[12px] font-medium text-[#8A8A8A]">
+            <p className="text-[12px] font-medium text-[var(--drawer-text-secondary)]">
               Max for this sale: {formatMoney(maxApply)}
             </p>
           </div>

@@ -343,7 +343,7 @@ export function SalesPaymentDrawerForm({
           Amount to Charge
         </Label>
         <div className="relative">
-          <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-[14px] font-semibold text-[#8A8A8A]">
+          <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-[14px] font-semibold text-[var(--drawer-text-secondary)]">
             $
           </span>
           <Input
@@ -390,14 +390,14 @@ export function SalesPaymentDrawerForm({
                 className={cn(
                   SALES_PAYMENT_METHOD_CARD_CLASS,
                   active && SALES_PAYMENT_METHOD_CARD_ACTIVE_CLASS,
-                  active ? "text-violet-primary-darker" : "text-[#6B6B6B]",
+                  active ? "text-violet-primary-darker" : "text-[var(--drawer-text-meta)]",
                 )}
                 onClick={() => selectUiMethod(option.key, option.method)}
               >
                 <Icon
                   className={cn(
                     "size-5",
-                    active ? "text-violet-primary-normal" : "text-[#8A8A8A]",
+                    active ? "text-violet-primary-normal" : "text-[var(--drawer-text-secondary)]",
                   )}
                   aria-hidden
                 />
@@ -418,14 +418,14 @@ export function SalesPaymentDrawerForm({
                 className={cn(
                   SALES_PAYMENT_METHOD_CARD_CLASS,
                   active && SALES_PAYMENT_METHOD_CARD_ACTIVE_CLASS,
-                  active ? "text-violet-primary-darker" : "text-[#6B6B6B]",
+                  active ? "text-violet-primary-darker" : "text-[var(--drawer-text-meta)]",
                 )}
                 onClick={() => selectUiMethod(key, "OTHER", label)}
               >
                 <Banknote
                   className={cn(
                     "size-5",
-                    active ? "text-violet-primary-normal" : "text-[#8A8A8A]",
+                    active ? "text-violet-primary-normal" : "text-[var(--drawer-text-secondary)]",
                   )}
                   aria-hidden
                 />
@@ -512,7 +512,7 @@ export function SalesPaymentDrawerForm({
       {savedCardSlot}
 
       {primaryMethod === "WALLET" && walletBalance != null ? (
-        <p className="text-[12px] font-medium text-[#8A8A8A]">
+        <p className="text-[12px] font-medium text-[var(--drawer-text-secondary)]">
           Wallet balance: {formatMoney(walletBalance)}
         </p>
       ) : null}
@@ -544,7 +544,7 @@ export function SalesPaymentDrawerForm({
           }}
           className="size-5 rounded-[4px] border-violet-primary-normal data-[checked]:border-violet-primary-normal data-[checked]:bg-violet-primary-normal"
         />
-        <span className="text-[13px] font-medium text-[#524346]">
+        <span className="text-[13px] font-medium text-[var(--drawer-text-label)]">
           Split payment (e.g. wallet + card)
         </span>
       </label>
@@ -574,7 +574,7 @@ export function SalesPaymentDrawerForm({
                 Second amount
               </Label>
               <div className="relative">
-                <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-[14px] font-semibold text-[#8A8A8A]">
+                <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-[14px] font-semibold text-[var(--drawer-text-secondary)]">
                   $
                 </span>
                 <Input
@@ -592,7 +592,7 @@ export function SalesPaymentDrawerForm({
           </div>
           {secondaryMethod === "WALLET" && walletBalance != null ? (
             <div className="flex items-center justify-between gap-3 rounded-[10px] border border-[#E8E4DC] bg-white px-3 py-2.5 text-[13px] font-medium">
-              <span className="text-[#8A8A8A]">Wallet balance</span>
+              <span className="text-[var(--drawer-text-secondary)]">Wallet balance</span>
               <span className="tabular-nums text-violet-primary-darker">
                 {formatMoney(walletBalance)}
               </span>
@@ -614,7 +614,7 @@ export function SalesPaymentDrawerForm({
         </div>
       ) : null}
 
-      <p className="text-[13px] font-medium text-[#8A8A8A]">
+      <p className="text-[13px] font-medium text-[var(--drawer-text-secondary)]">
         Collecting {formatMoney(tenderTotal)} of {formatMoney(chargeTotal)}
       </p>
 
