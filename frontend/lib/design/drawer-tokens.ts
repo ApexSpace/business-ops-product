@@ -427,10 +427,10 @@ export const DRAWER_CLIENT_CONTACT_ROW_CLASS =
 
 /**
  * Add credit card — matches phone/email row density (`DRAWER_CLIENT_CONTACT_ROW_CLASS`).
- * Hit-and-trial: `--drawer-client-credit-card-*` in globals.css.
+ * Figma Inbox-reply: danger red. Hit-and-trial size/weight: `--drawer-client-credit-card-*`.
  */
 export const DRAWER_CLIENT_CREDIT_CARD_CLASS =
-  "inline-flex min-w-0 cursor-pointer items-center gap-2 text-[length:var(--drawer-client-credit-card-size)] leading-[var(--drawer-client-credit-card-leading)] text-[var(--drawer-text-primary)] [font-weight:var(--drawer-client-credit-card-weight)] hover:underline";
+  "inline-flex min-w-0 cursor-pointer items-center gap-2 text-[length:var(--drawer-client-credit-card-size)] leading-[var(--drawer-client-credit-card-leading)] text-destructive [font-weight:var(--drawer-client-credit-card-weight)] hover:underline";
 
 export const DRAWER_CLIENT_CONTACT_ICON_CLASS =
   "size-4 shrink-0 stroke-[1.75] text-[var(--drawer-action-ink)]";
