@@ -11,7 +11,6 @@ import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { BusinessMemberRole, PlatformMemberRole } from '@prisma/client';
 import { CurrentUser } from '@app/common/decorators/current-user.decorator';
 import type { RequestUser } from '@app/common/decorators/current-user.decorator';
-import { Public } from '@app/common/decorators/public.decorator';
 import { BusinessRoles } from '@app/common/decorators/business-roles.decorator';
 import { PlatformRoles } from '@app/common/decorators/platform-roles.decorator';
 import { BusinessRolesGuard } from '@app/common/guards/business-roles.guard';
@@ -128,16 +127,21 @@ export class StripePlatformBillingController {
   }
 
   @Post('public/pricing/:planGroupId/stripe/checkout-session')
-  @Public()
+  @ApiBearerAuth()
+  @UseGuards(BusinessRolesGuard)
+  @BusinessRoles(BusinessMemberRole.OWNER, BusinessMemberRole.ADMIN)
   createPublicCheckoutSession(
+    @CurrentUser() user: RequestUser,
     @Param('planGroupId', ParseUUIDPipe) planGroupId: string,
     @Body() dto: CreatePublicCheckoutSessionDto,
   ): Promise<CheckoutSessionResponseDto> {
-    return this.checkoutService.createCheckoutSession({
-      businessId: dto.businessId,
+    return this.checkoutService.createPublicCheckoutSession({
+      trustedBusinessId: user.businessId,
+      claimedBusinessId: dto.businessId,
       planGroupId,
       planTierId: dto.planTierId,
       billingCycle: dto.billingCycle,
+      customerEmail: user.email,
     });
   }
 }

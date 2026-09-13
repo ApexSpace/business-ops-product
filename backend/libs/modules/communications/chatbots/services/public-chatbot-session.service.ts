@@ -331,23 +331,15 @@ export class PublicChatbotSessionService {
   }
 
   async sendMessage(
+    publicKey: string,
     sessionId: string,
     dto: SendChatbotMessageDto,
   ): Promise<PublicChatbotMessageDto> {
     const text = dto.text.trim().slice(0, CHATBOT_MAX_MESSAGE_LENGTH);
-    const session = await this.requireSession(sessionId);
-    const chatbot = await this.chatbotsRepository.findById(
-      session.businessId,
-      session.chatbotId,
+    const { chatbot, session } = await this.requireBoundSession(
+      publicKey,
+      sessionId,
     );
-    if (!chatbot) {
-      throw new AppException(
-        ErrorCode.CHATBOT_NOT_AVAILABLE,
-        'Chat widget is unavailable',
-        HttpStatus.NOT_FOUND,
-      );
-    }
-    await this.requirePublicChatbot(chatbot.publicKey);
 
     const conversationId = session.conversationId;
     if (!conversationId) {
@@ -392,21 +384,14 @@ export class PublicChatbotSessionService {
   }
 
   async updateSessionProfile(
+    publicKey: string,
     sessionId: string,
     dto: UpdateChatbotSessionProfileDto,
   ): Promise<{ contactId: string | null }> {
-    const session = await this.requireSession(sessionId);
-    const chatbot = await this.chatbotsRepository.findById(
-      session.businessId,
-      session.chatbotId,
+    const { chatbot, session } = await this.requireBoundSession(
+      publicKey,
+      sessionId,
     );
-    if (!chatbot) {
-      throw new AppException(
-        ErrorCode.CHATBOT_NOT_AVAILABLE,
-        'Chat widget is unavailable',
-        HttpStatus.NOT_FOUND,
-      );
-    }
 
     const conversationId = session.conversationId;
     if (!conversationId) {
@@ -463,11 +448,12 @@ export class PublicChatbotSessionService {
    * Claim-once: reject if already claimed by a different identity.
    */
   async claimSession(
+    publicKey: string,
     sessionId: string,
     dto: ClaimChatbotSessionDto,
     authHeaderToken?: string,
   ): Promise<PublicChatbotSessionDto> {
-    const session = await this.requireSession(sessionId);
+    const { session } = await this.requireBoundSession(publicKey, sessionId);
     const token = dto.authToken?.trim() || authHeaderToken?.trim();
     if (!token) {
       throw new AppException(
@@ -523,7 +509,10 @@ export class PublicChatbotSessionService {
   }
 
   /** Refresh rehydration — session metadata + message history. */
-  async getSession(sessionId: string): Promise<{
+  async getSession(
+    publicKey: string,
+    sessionId: string,
+  ): Promise<{
     sessionId: string;
     conversationId: string | null;
     visitorId: string;
@@ -535,8 +524,8 @@ export class PublicChatbotSessionService {
     status: ChatbotSessionStatus;
     messages: PublicChatbotMessageDto[];
   }> {
-    const session = await this.requireSession(sessionId);
-    const messages = await this.listMessages(sessionId);
+    const { session } = await this.requireBoundSession(publicKey, sessionId);
+    const messages = await this.listMessages(publicKey, sessionId);
     return {
       sessionId: session.id,
       conversationId: session.conversationId,
@@ -587,10 +576,11 @@ export class PublicChatbotSessionService {
   }
 
   async listMessages(
+    publicKey: string,
     sessionId: string,
     since?: string,
   ): Promise<PublicChatbotMessageDto[]> {
-    const session = await this.requireSession(sessionId);
+    const { session } = await this.requireBoundSession(publicKey, sessionId);
     if (!session.conversationId) {
       return [];
     }
@@ -628,9 +618,10 @@ export class PublicChatbotSessionService {
   }
 
   async endSession(
+    publicKey: string,
     sessionId: string,
   ): Promise<{ sessionId: string; status: string }> {
-    const session = await this.requireSession(sessionId);
+    const { session } = await this.requireBoundSession(publicKey, sessionId);
     if (session.status !== 'ACTIVE') {
       return { sessionId: session.id, status: session.status };
     }
@@ -931,16 +922,25 @@ export class PublicChatbotSessionService {
     return chatbot;
   }
 
-  private async requireSession(sessionId: string) {
+  /**
+   * ISO-05 / C-P1-09: session APIs fail closed unless publicKey binds to that session.
+   */
+  private async requireBoundSession(publicKey: string, sessionId: string) {
+    const chatbot = await this.requirePublicChatbot(publicKey);
     const session = await this.sessionsRepository.findById(sessionId);
-    if (!session || session.status !== 'ACTIVE') {
+    if (
+      !session ||
+      session.status !== 'ACTIVE' ||
+      session.chatbotId !== chatbot.id ||
+      session.businessId !== chatbot.businessId
+    ) {
       throw new AppException(
         ErrorCode.CHATBOT_SESSION_NOT_FOUND,
         'Chat session not found',
         HttpStatus.NOT_FOUND,
       );
     }
-    return session;
+    return { chatbot, session };
   }
 
   private hashIp(ip: string): string {

@@ -62,9 +62,11 @@ export class CreatePublicCheckoutSessionDto {
   @IsEnum(BusinessSubscriptionBillingCycle)
   billingCycle!: BusinessSubscriptionBillingCycle;
 
-  @ApiProperty()
+  /** Ignored as tenant authority. If sent, must match the authenticated workspace. */
+  @ApiPropertyOptional()
+  @IsOptional()
   @IsUUID()
-  businessId!: string;
+  businessId?: string;
 }
 
 export class CheckoutSessionResponseDto {

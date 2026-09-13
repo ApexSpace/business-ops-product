@@ -90,6 +90,7 @@ export function PublicChatbotWidget({
     const poll = async () => {
       try {
         const items = await listPublicChatbotMessages(
+          publicKey,
           sessionId,
           lastPollRef.current,
         );
@@ -104,7 +105,7 @@ export function PublicChatbotWidget({
     void poll();
     const id = window.setInterval(poll, POLL_MS);
     return () => window.clearInterval(id);
-  }, [sessionId, mergeMessages]);
+  }, [sessionId, publicKey, mergeMessages]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
@@ -129,7 +130,7 @@ export function PublicChatbotWidget({
       setSessionId(data.sessionId);
       setPhase("chat");
       try {
-        const items = await listPublicChatbotMessages(data.sessionId);
+        const items = await listPublicChatbotMessages(publicKey, data.sessionId);
         if (items.length > 0) {
           lastPollRef.current = items[items.length - 1]?.createdAt;
           mergeMessages(items);
@@ -162,22 +163,25 @@ export function PublicChatbotWidget({
   });
 
   const sendMutation = useMutation({
-    mutationFn: (text: string) => sendPublicChatbotMessage(sessionId!, text),
+    mutationFn: (text: string) =>
+      sendPublicChatbotMessage(publicKey, sessionId!, text),
     onSuccess: (msg) => {
       mergeMessages([msg]);
       setComposer("");
       if (msg.requiresProfile === "email") {
         setPhase("profile");
       }
-      void listPublicChatbotMessages(sessionId!, lastPollRef.current).then(
-        mergeMessages,
-      );
+      void listPublicChatbotMessages(
+        publicKey,
+        sessionId!,
+        lastPollRef.current,
+      ).then(mergeMessages);
     },
   });
 
   const profileMutation = useMutation({
     mutationFn: () =>
-      updatePublicChatbotSessionProfile(sessionId!, {
+      updatePublicChatbotSessionProfile(publicKey, sessionId!, {
         visitorEmail: profileEmail.trim(),
       }),
     onSuccess: () => {
@@ -194,11 +198,11 @@ export function PublicChatbotWidget({
   const endSessionIfNeeded = useCallback(async () => {
     if (!sessionId) return;
     try {
-      await endPublicChatbotSession(sessionId);
+      await endPublicChatbotSession(publicKey, sessionId);
     } catch {
       /* ignore */
     }
-  }, [sessionId]);
+  }, [sessionId, publicKey]);
 
   const handleCloseWidget = useCallback(() => {
     void endSessionIfNeeded();
