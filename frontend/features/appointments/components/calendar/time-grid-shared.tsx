@@ -181,7 +181,7 @@ export function TimeGridGutter({ className }: { className?: string }) {
           <div
             key={minutes}
             className={cn(
-              "box-border flex items-start justify-center bg-transparent px-0 pt-2 text-center text-[11px] font-medium leading-none text-[#6B6B6B]",
+              "box-border flex items-start justify-center bg-transparent px-0 pt-2 text-center text-[11px] font-medium leading-none text-[var(--drawer-text-meta)]",
               // Hour separators only — no 15-min grid through the time labels
               isHourEnd ? CALENDAR_GRID.slotHour : "border-b border-transparent",
             )}

@@ -5,6 +5,14 @@
  * - frontend/lib/design/* = recipes and component contracts only
  *   (Tailwind class compositions that reference these variables).
  * - Features must not introduce new raw color / radius / height values.
+ *
+ * Ink roles (do not invent hex; do not retune --foreground to Figma #131927):
+ *   Body / default ink     → text-foreground
+ *   Heading / entity name  → text-violet-primary-dark or text-violet-primary-darker
+ *   Secondary / caption    → text-muted-foreground
+ *                            (drawers: text-[var(--drawer-text-secondary)])
+ *   Placeholder / tertiary → text-foreground-subtle /
+ *                            placeholder:text-foreground-subtle
  */
 
 @import "tailwindcss";
@@ -202,11 +210,13 @@
   --spacing-drawer-spine-y: var(--drawer-spine-padding-y);
 }
 
-/* --- Light: PandaCue semantic tokens (mapped from Figma palettes in codesol-default-theme.css) ??? */
+/* --- Light: PandaCue semantic tokens (mapped from Figma palettes in codesol-default-theme.css)
+ * Ink: --foreground = body, --muted-foreground = secondary, --foreground-subtle = placeholder.
+ */
 :root {
   --background: var(--cs-page);
-  --foreground: var(--cs-ink);
-  --foreground-subtle: var(--cs-ink-3);
+  --foreground: var(--cs-ink); /* body */
+  --foreground-subtle: var(--cs-ink-3); /* placeholder / tertiary */
   --card: var(--cs-glass-surface-strong);
   --card-foreground: var(--cs-ink);
   --popover: var(--cs-glass-surface-strong);
@@ -220,7 +230,7 @@
   --secondary: color-mix(in srgb, var(--cs-glass-surface-soft) 85%, white);
   --secondary-foreground: var(--cs-ink);
   --muted: color-mix(in srgb, var(--cs-glass-surface-soft) 88%, white);
-  --muted-foreground: var(--cs-ink-2);
+  --muted-foreground: var(--cs-ink-2); /* secondary / caption */
   --accent: var(--cs-blue-tint);
   --accent-foreground: var(--cs-blue-text);
   --destructive: var(--cs-red);
@@ -784,7 +794,9 @@
     @apply font-sans;
   }
 
-  /* Semantic aliases ? closest Figma Montserrat styles */
+  /* Semantic type aliases. Color follows ink roles: body = foreground,
+   * caption = muted-foreground, placeholder/eyebrow = foreground-subtle,
+   * table header = heading-entity violet (not raw hex). */
   h1,
   .text-page-title {
     @apply text-heading-5 text-foreground;
@@ -833,11 +845,11 @@
   }
 
   .text-table-header {
-    @apply text-[14px] font-bold leading-none tracking-normal text-[#5F2CB2];
+    @apply text-[14px] font-bold leading-none tracking-normal text-violet-primary-dark;
   }
 
   .text-table-cell {
-    @apply text-[14px] font-normal leading-[21px] text-[#4A4A4A];
+    @apply text-[14px] font-normal leading-[21px] text-[var(--drawer-text-body)];
   }
 
   .text-drawer-section {

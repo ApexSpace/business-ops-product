@@ -148,7 +148,7 @@ export function AppointmentStatusBar({
             type="button"
             disabled={disabled}
             onClick={onNotify}
-            className="font-medium text-[#7E3BED] hover:underline disabled:opacity-50"
+            className="font-medium text-violet-primary-normal hover:underline disabled:opacity-50"
           >
             Send Again
           </button>

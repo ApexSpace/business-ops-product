@@ -291,7 +291,7 @@ export function AppointmentTimeBlockDrawer({
               placeholder="Add reason"
               className={cn(
                 APPOINTMENT_DRAWER_FIELD_CLASS,
-                "placeholder:text-[#9A9A9A]",
+                "placeholder:text-foreground-subtle",
               )}
             />
           </DrawerFormFieldGroup>

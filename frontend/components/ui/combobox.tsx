@@ -15,7 +15,7 @@ export const Combobox = ComboboxPrimitive;
  * Never render a second `<input>` inside `ComboboxPopup` — typing here filters the list.
  */
 export const COMBOBOX_INPUT_CLASS =
-  "glass-control h-[var(--control-height)] w-full min-w-0 cursor-pointer rounded-[var(--radius-control)] border border-input px-3 pr-8 text-sm transition-[border-color,box-shadow,background-color] duration-150 outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-primary-tint disabled:cursor-not-allowed disabled:opacity-50";
+  "glass-control h-[var(--control-height)] w-full min-w-0 cursor-pointer rounded-[var(--radius-control)] border border-input px-3 pr-8 text-sm transition-[border-color,box-shadow,background-color] duration-150 outline-none placeholder:text-foreground-subtle focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-primary-tint disabled:cursor-not-allowed disabled:opacity-50";
 
 export const COMBOBOX_POSITIONER_CLASS = "isolate z-[200]";
 

@@ -43,7 +43,7 @@ export const SETTINGS_FORM_SECTION_HEADER_CLASS =
 
 /**
  * In-panel group heading (Calendar, Appointments, Haircuts, …).
- * Figma primary/900 violet — shared by Team, Services, Resources, etc.
+ * Heading/entity role — Figma primary/900 violet.
  */
 export const SETTINGS_GROUP_TITLE_CLASS =
   "text-lg font-bold text-violet-primary-dark";

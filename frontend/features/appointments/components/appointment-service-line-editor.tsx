@@ -58,7 +58,7 @@ export interface AppointmentServiceLineEditorProps {
 }
 
 const INLINE_SELECT_TRIGGER_CLASS =
-  "h-auto w-auto min-w-0 cursor-pointer border-0 bg-transparent px-1 py-0.5 text-[13px] font-semibold text-[#7E3BED] shadow-none hover:bg-[#F6F1FE] focus-visible:ring-0";
+  "h-auto w-auto min-w-0 cursor-pointer border-0 bg-transparent px-1 py-0.5 text-[13px] font-semibold text-violet-primary-normal shadow-none hover:bg-violet-primary-surface focus-visible:ring-0";
 
 function ServiceLineCard({
   line,
@@ -91,9 +91,9 @@ function ServiceLineCard({
     <div className={APPOINTMENT_DRAWER_SERVICE_CARD_CLASS}>
       <div className="mb-1 flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-[14px] font-bold text-[#5C2BB5]">{line.name}</p>
+          <p className="text-[14px] font-bold text-violet-primary-dark">{line.name}</p>
           {line.price ? (
-            <p className="mt-0.5 text-[14px] font-bold tabular-nums text-[#1A1A1A]">
+            <p className="mt-0.5 text-[14px] font-bold tabular-nums text-[var(--drawer-text-primary)]">
               {formatMoney(line.price, currencyCode)}
             </p>
           ) : null}
@@ -109,7 +109,7 @@ function ServiceLineCard({
         </button>
       </div>
 
-      <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 text-[13px] text-[#9A9A9A]">
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 text-[13px] text-foreground-subtle">
         <span className="inline-flex items-center gap-1">
           <span>Provider:</span>
           <Select
@@ -329,7 +329,7 @@ export function AppointmentServiceLineEditor({
           <button
             type="button"
             disabled={disabled}
-            className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-[#7E3BED] hover:underline disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-violet-primary-normal hover:underline disabled:opacity-50"
             onClick={() => setPickerOpen(true)}
           >
             Add another service

@@ -70,8 +70,8 @@ export function WorkingHoursOverlays({
             className={cn(
               "pointer-events-none absolute inset-x-0 z-[2]",
               highContrastEnabled
-                ? "bg-[#8A8A8A]/35 dark:bg-neutral-700/55"
-                : "bg-[#BC9BF6]/15 dark:bg-neutral-800/40",
+                ? "bg-grey-tertiary-normal/35 dark:bg-neutral-700/55"
+                : "bg-violet-primary-normal/15 dark:bg-neutral-800/40",
             )}
             style={{ top, height }}
             aria-hidden

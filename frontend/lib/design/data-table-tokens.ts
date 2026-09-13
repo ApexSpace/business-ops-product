@@ -68,7 +68,7 @@ export const DATA_TABLE_EMPTY_FILL_CLASS = "flex items-center justify-center";
 export const DATA_TABLE_HEADER_CLASS =
   "sticky top-0 z-20 bg-[var(--drawer-tab-track)] [&_tr]:border-b-0 [&_th]:sticky [&_th]:top-0 [&_th]:z-20 [&_th]:bg-[var(--drawer-tab-track)]";
 
-/** Header cell typography — primary/800, 14px bold (Montserrat) */
+/** Header cell typography — heading/entity role, primary/800, 14px bold (Montserrat) */
 export const DATA_TABLE_HEAD_CELL_CLASS =
   "h-[var(--table-row-height)] px-[var(--table-column-padding-x)] text-left align-middle text-[14px] font-bold leading-none tracking-normal text-violet-primary-dark whitespace-nowrap";
 
@@ -90,9 +90,9 @@ export const DATA_TABLE_CELL_CLASS =
 export const DATA_TABLE_TOOLBAR_CLASS =
   "flex min-h-[var(--control-height)] w-full flex-row flex-wrap items-center gap-3 border-0 bg-transparent px-[var(--cs-list-toolbar-padding-x)] py-0 shadow-none sm:gap-8";
 
-/** Standalone search field — Figma h 44, max ~355, radius/md */
+/** Standalone search field — Figma h 44, max ~355, radius/md. Placeholder uses tertiary ink. */
 export const DATA_TABLE_SEARCH_STANDALONE_CLASS =
-  "h-[var(--control-height)] w-full min-w-0 max-w-[min(100%,355px)] rounded-[var(--radius-md)] border border-[var(--pc-black-secondary-light)] bg-white px-4 py-2 text-[14px] shadow-none placeholder:text-grey-tertiary-normal focus-visible:border-violet-primary-normal focus-visible:ring-2 focus-visible:ring-violet-primary-normal/20";
+  "h-[var(--control-height)] w-full min-w-0 max-w-[min(100%,355px)] rounded-[var(--radius-md)] border border-[var(--pc-black-secondary-light)] bg-white px-4 py-2 text-[14px] shadow-none placeholder:text-foreground-subtle focus-visible:border-violet-primary-normal focus-visible:ring-2 focus-visible:ring-violet-primary-normal/20";
 
 /** Same chrome as Appointments — see `FILTER_ICON_BUTTON_CLASS`. */
 export const DATA_TABLE_FILTER_ICON_CLASS = FILTER_ICON_BUTTON_CLASS;

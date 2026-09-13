@@ -51,10 +51,10 @@ export function HeroMetricCard({
       <CardContent className="p-4">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 space-y-1">
-            <p className="text-[10.5px] font-semibold tracking-[0.08em] text-[#98a1b5] uppercase">
+            <p className="text-[10.5px] font-semibold tracking-[0.08em] text-foreground-subtle uppercase">
               {label}
             </p>
-            <p className="text-[26px] font-bold tabular-nums tracking-tight text-[#12172b] dark:text-foreground">
+            <p className="text-[26px] font-bold tabular-nums tracking-tight text-foreground">
               {value}
             </p>
             {trendLabel ? (

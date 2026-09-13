@@ -63,7 +63,7 @@ export function ConversationListPanel({
   return (
     <aside className={cn(INBOX_LIST_PANEL_CLASS, className)}>
       <header className={INBOX_LIST_HEADER_CLASS}>
-        <h2 className="min-w-0 truncate text-heading-5 font-bold leading-none tracking-tight text-violet-primary-dark">
+        <h2 className="min-w-0 truncate text-heading-5 font-bold leading-none tracking-tight text-violet-primary-normal">
           Conversation
         </h2>
         {onNewConversation ? (

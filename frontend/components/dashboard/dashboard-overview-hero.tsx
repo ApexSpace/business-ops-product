@@ -27,10 +27,10 @@ export function DashboardOverviewHero({
           {avatarLabel}
         </div>
         <div>
-          <h1 className="text-[15px] font-bold leading-tight tracking-tight text-[#12172b] dark:text-foreground">
+          <h1 className="text-[15px] font-bold leading-tight tracking-tight text-foreground">
             {title}
           </h1>
-          <p className="mt-1 text-[11px] text-[#98a1b5] dark:text-muted-foreground">
+          <p className="mt-1 text-[11px] text-muted-foreground">
             {description}
           </p>
         </div>
