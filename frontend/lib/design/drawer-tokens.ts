@@ -7,6 +7,9 @@
  * Tailwind class compositions reference CSS variables (--drawer-*, --pc-violet-*).
  * Not a second brand-token system.
  *
+ * Ink: titles = violet-primary-normal; entity names = violet-primary-darker;
+ * field labels = --drawer-text-secondary; body = --drawer-text-body.
+ *
  * Density hit-and-trial (edit in frontend/app/globals.css :root):
  *   --drawer-section-gap        → gap-drawer-section     (major sections)
  *   --drawer-stack-gap          → gap-drawer-stack       (field-to-field)
@@ -130,9 +133,9 @@ export const DRAWER_SHELL_FOOTER_CLASS =
 export const DRAWER_FIELD_CONTROL_CLASS =
   "h-[var(--control-height)] min-h-[var(--control-height)] data-[size=default]:h-[var(--control-height)] data-[size=sm]:h-[var(--control-height)] rounded-[10px] border-[1.5px] text-[13.5px] shadow-none focus-visible:border-ring focus-visible:ring-[4px] focus-visible:ring-ring/15";
 
-/** Label recipe for FormSheet drawers (distinct from Figma DRAWER_FIELD_LABEL_CLASS). */
+/** Label recipe for FormSheet drawers — same secondary ink as DRAWER_FIELD_LABEL_CLASS. */
 export const DRAWER_FIELD_LABEL_SHELL_CLASS =
-  "flex items-center gap-1 text-[12.5px] font-semibold text-muted-foreground";
+  "flex items-center gap-1 text-[12.5px] font-semibold text-[var(--drawer-text-secondary)]";
 
 export const DRAWER_FORM_FIELD_CLASS = "flex flex-col gap-drawer-field";
 
