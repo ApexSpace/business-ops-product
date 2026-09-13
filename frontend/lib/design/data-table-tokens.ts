@@ -101,6 +101,10 @@ export const DATA_TABLE_FILTER_ICON_CLASS = FILTER_ICON_BUTTON_CLASS;
 export const DATA_TABLE_STATUS_CLASS =
   "text-[14px] font-bold leading-none text-violet-primary-normal";
 
+/** Entity name cell — Figma Clients/Sales primary/900 */
+export const DATA_TABLE_ENTITY_NAME_CLASS =
+  "truncate font-medium text-violet-primary-darker hover:underline";
+
 /** Sale number cell — Figma Sales primary/500 identifiers */
 export const DATA_TABLE_SALE_NUMBER_CLASS =
   "text-[14px] font-bold leading-[21px] text-violet-primary-normal";

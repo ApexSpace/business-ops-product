@@ -3,6 +3,7 @@ import {
   DATA_TABLE_CELL_CLASS,
   DATA_TABLE_COLUMN_CLASS,
   DATA_TABLE_COLUMN_INNER_CLASS,
+  DATA_TABLE_ENTITY_NAME_CLASS,
   DATA_TABLE_GRID_CLASS,
   DATA_TABLE_HEAD_CELL_CLASS,
   DATA_TABLE_SALE_NUMBER_CLASS,
@@ -41,6 +42,13 @@ describe("TXT-04 sale number color role", () => {
     expect(DATA_TABLE_SALE_NUMBER_CLASS).toContain("text-violet-primary-normal");
     expect(DATA_TABLE_SALE_NUMBER_CLASS).not.toContain("--drawer-text-body");
     expect(DATA_TABLE_STATUS_CLASS).toContain("text-violet-primary-normal");
+  });
+});
+
+describe("entity name color role", () => {
+  it("uses primary/900, matching Clients names", () => {
+    expect(DATA_TABLE_ENTITY_NAME_CLASS).toContain("text-violet-primary-darker");
+    expect(DATA_TABLE_ENTITY_NAME_CLASS).not.toContain("text-violet-primary-normal");
   });
 });
 
