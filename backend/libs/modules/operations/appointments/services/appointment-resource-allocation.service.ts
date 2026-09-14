@@ -1,5 +1,4 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
-import { ResourceStatus } from '@prisma/client';
 import { AppException } from '@app/common/exceptions/app.exception';
 import { ErrorCode } from '@app/common/exceptions/error-code.enum';
 import { PrismaService } from '@app/core/database/prisma.service';
@@ -10,6 +9,7 @@ import {
   resolveAppointmentBlockingWindow,
 } from '../utils/appointment-blocking.util';
 import {
+  mergeAssignmentQuantities,
   resolveRequiredResources,
   resourceCapacityExceeded,
   type AllocatableResource,
@@ -198,7 +198,7 @@ export class AppointmentResourceAllocationService {
               businessId,
               groupId: { in: groupIds },
               deletedAt: null,
-              status: ResourceStatus.ACTIVE,
+              status: 'ACTIVE',
             },
             select: {
               id: true,
