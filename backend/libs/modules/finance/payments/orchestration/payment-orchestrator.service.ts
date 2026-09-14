@@ -12,7 +12,10 @@ import { ErrorCode } from '@app/common/exceptions/error-code.enum';
 import { PrismaService } from '@app/core/database/prisma.service';
 import { AuditService } from '@app/modules/platform/audit/services/audit.service';
 import { StripeCheckoutService } from '@app/modules/integrations/integrations/stripe/services/stripe-checkout.service';
-import { StripePaymentIntentService } from '@app/modules/integrations/integrations/stripe/services/stripe-payment-intent.service';
+import {
+  StripePaymentIntentService,
+  type CreatePaymentIntentResult,
+} from '@app/modules/integrations/integrations/stripe/services/stripe-payment-intent.service';
 import { InvoiceRepository } from '@app/modules/finance/invoices/repositories/invoice.repository';
 import {
   buildInvoicePublicUrl,
@@ -24,6 +27,10 @@ import { ContactPaymentMethodsService } from '../services/contact-payment-method
 import { PaymentRealtimeService } from '../services/payment-realtime.service';
 import { WalletLedgerService } from '../services/wallet-ledger.service';
 import { GiftCardRedemptionService } from '@app/modules/finance/gift-cards/services/gift-card-redemption.service';
+import {
+  amountToCents,
+  buildStripeCollectIdempotencyKey,
+} from '../utils/stripe-collect-idempotency.util';
 import type {
   CollectPaymentInput,
   CollectPaymentResult,
@@ -458,6 +465,79 @@ export class PaymentOrchestratorService {
       params.input.payableId,
       params.snapshot.invoiceId,
     );
+    const amountCents = amountToCents(params.amount);
+    const purpose =
+      params.input.payableType === PayableType.INVOICE
+        ? STRIPE_PAYMENT_PURPOSE.INVOICE_COLLECT
+        : STRIPE_PAYMENT_PURPOSE.CHECKOUT;
+    const idempotencyKey = buildStripeCollectIdempotencyKey(
+      params.input.payableId,
+      amountCents,
+    );
+
+    const existingPending = await this.prisma.payment.findFirst({
+      where: {
+        businessId: params.input.businessId,
+        payableType: params.input.payableType,
+        payableId: params.input.payableId,
+        deletedAt: null,
+        status: PaymentStatus.PENDING,
+        method: PaymentMethod.STRIPE,
+        provider: PaymentProvider.STRIPE,
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+
+    if (existingPending) {
+      const existingCents = amountToCents(existingPending.amount);
+      if (existingCents !== amountCents) {
+        throw new AppException(
+          ErrorCode.BAD_REQUEST,
+          'A card payment is already pending for this sale. Finish or cancel it before collecting a different amount.',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      if (existingPending.stripePaymentIntentId) {
+        const existingIntent = await this.stripePaymentIntent.retrieveForPayment(
+          {
+            businessId: params.input.businessId,
+            paymentIntentId: existingPending.stripePaymentIntentId,
+          },
+        );
+        if (!existingIntent.canceled) {
+          return this.attachStripeIntentResult({
+            paymentId: existingPending.id,
+            businessId: params.input.businessId,
+            payableType: params.input.payableType,
+            payableId: params.input.payableId,
+            intent: existingIntent,
+          });
+        }
+      }
+
+      const intent = await this.createStripeIntentForTender({
+        params,
+        invoiceId,
+        paymentId: existingPending.id,
+        amountCents,
+        purpose,
+        idempotencyKey: existingPending.stripePaymentIntentId
+          ? buildStripeCollectIdempotencyKey(
+              params.input.payableId,
+              amountCents,
+              existingPending.id,
+            )
+          : idempotencyKey,
+      });
+      return this.attachStripeIntentResult({
+        paymentId: existingPending.id,
+        businessId: params.input.businessId,
+        payableType: params.input.payableType,
+        payableId: params.input.payableId,
+        intent,
+      });
+    }
 
     const payment = await this.prisma.payment.create({
       data: {
@@ -480,68 +560,127 @@ export class PaymentOrchestratorService {
       },
     });
 
+    const intent = await this.createStripeIntentForTender({
+      params,
+      invoiceId,
+      paymentId: payment.id,
+      amountCents,
+      purpose,
+      idempotencyKey,
+    });
+
+    return this.attachStripeIntentResult({
+      paymentId: payment.id,
+      businessId: params.input.businessId,
+      payableType: params.input.payableType,
+      payableId: params.input.payableId,
+      intent,
+    });
+  }
+
+  private async createStripeIntentForTender(args: {
+    params: {
+      input: CollectPaymentInput;
+      snapshot: {
+        contactId: string;
+        description: string;
+        currency: string;
+      };
+      contactPaymentMethodId?: string;
+    };
+    invoiceId: string;
+    paymentId: string;
+    amountCents: number;
+    purpose: string;
+    idempotencyKey: string;
+  }): Promise<CreatePaymentIntentResult> {
     let stripePaymentMethodId: string | undefined;
-    if (params.contactPaymentMethodId) {
+    if (args.params.contactPaymentMethodId) {
       const saved =
         await this.contactPaymentMethods.requirePaymentMethodForCharge(
-          params.input.businessId,
-          params.snapshot.contactId,
-          params.contactPaymentMethodId,
+          args.params.input.businessId,
+          args.params.snapshot.contactId,
+          args.params.contactPaymentMethodId,
         );
       stripePaymentMethodId = saved.stripePaymentMethodId;
     }
 
-    const amountCents = Math.round(Number(params.amount.toString()) * 100);
-    const purpose =
-      params.input.payableType === PayableType.INVOICE
-        ? STRIPE_PAYMENT_PURPOSE.INVOICE_COLLECT
-        : STRIPE_PAYMENT_PURPOSE.CHECKOUT;
-
-    const intent = await this.stripePaymentIntent.createForPayment({
-      businessId: params.input.businessId,
-      contactId: params.snapshot.contactId,
-      amountCents,
-      currency: params.snapshot.currency,
-      description: params.snapshot.description,
-      paymentId: payment.id,
-      payableType: params.input.payableType,
-      payableId: params.input.payableId,
-      purpose,
-      invoiceId,
-      channel: params.input.channel,
+    return this.stripePaymentIntent.createForPayment({
+      businessId: args.params.input.businessId,
+      contactId: args.params.snapshot.contactId,
+      amountCents: args.amountCents,
+      currency: args.params.snapshot.currency,
+      description: args.params.snapshot.description,
+      paymentId: args.paymentId,
+      payableType: args.params.input.payableType,
+      payableId: args.params.input.payableId,
+      purpose: args.purpose,
+      invoiceId: args.invoiceId,
+      channel: args.params.input.channel,
       stripePaymentMethodId,
+      idempotencyKey: args.idempotencyKey,
     });
+  }
 
-    await this.prisma.payment.update({
-      where: { id: payment.id },
-      data: { stripePaymentIntentId: intent.paymentIntentId },
-    });
-
-    if (intent.succeeded) {
+  private async attachStripeIntentResult(params: {
+    paymentId: string;
+    businessId: string;
+    payableType: PayableType;
+    payableId: string;
+    intent: CreatePaymentIntentResult;
+  }) {
+    try {
       await this.prisma.payment.update({
-        where: { id: payment.id },
-        data: { status: PaymentStatus.SUCCEEDED, paidAt: new Date() },
+        where: { id: params.paymentId },
+        data: {
+          stripePaymentIntentId: params.intent.paymentIntentId,
+          ...(params.intent.succeeded
+            ? { status: PaymentStatus.SUCCEEDED, paidAt: new Date() }
+            : {}),
+        },
       });
-      const handler = this.registry.get(params.input.payableType);
-      if (handler.syncPayablePayments) {
-        await handler.syncPayablePayments(
-          params.input.businessId,
-          params.input.payableId,
-        );
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        const winner = await this.prisma.payment.findFirst({
+          where: {
+            stripePaymentIntentId: params.intent.paymentIntentId,
+            deletedAt: null,
+          },
+        });
+        if (winner && winner.id !== params.paymentId) {
+          await this.prisma.payment.update({
+            where: { id: params.paymentId },
+            data: {
+              deletedAt: new Date(),
+              status: PaymentStatus.CANCELLED,
+            },
+          });
+          return {
+            paymentId: winner.id,
+            clientSecret: params.intent.clientSecret,
+            stripePaymentIntentId: params.intent.paymentIntentId,
+            succeededImmediately: Boolean(params.intent.succeeded),
+          };
+        }
       }
-      return {
-        paymentId: payment.id,
-        clientSecret: intent.clientSecret,
-        stripePaymentIntentId: intent.paymentIntentId,
-        succeededImmediately: true,
-      };
+      throw error;
+    }
+
+    if (params.intent.succeeded) {
+      const handler = this.registry.get(params.payableType);
+      if (handler.syncPayablePayments) {
+        await handler.syncPayablePayments(params.businessId, params.payableId);
+      }
     }
 
     return {
-      paymentId: payment.id,
-      clientSecret: intent.clientSecret,
-      stripePaymentIntentId: intent.paymentIntentId,
-      succeededImmediately: false,
+      paymentId: params.paymentId,
+      clientSecret: params.intent.clientSecret,
+      stripePaymentIntentId: params.intent.paymentIntentId,
+      succeededImmediately: Boolean(params.intent.succeeded),
     };
   }
 

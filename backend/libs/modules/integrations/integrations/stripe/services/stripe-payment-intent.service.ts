@@ -19,6 +19,11 @@ export interface CreatePaymentIntentInput {
   channel?: PaymentChannel;
   /** Charge a saved card on file (off-session when possible). */
   stripePaymentMethodId?: string;
+  /**
+   * Stripe Idempotency-Key so close/collect retries do not open a second PI
+   * (SALE-AUD-04). Must be stable for the same payable + amount.
+   */
+  idempotencyKey?: string;
 }
 
 export interface CreatePaymentIntentResult {
@@ -26,6 +31,7 @@ export interface CreatePaymentIntentResult {
   clientSecret: string;
   /** When saved card succeeds immediately without client confirmation. */
   succeeded?: boolean;
+  canceled?: boolean;
 }
 
 @Injectable()
@@ -75,17 +81,48 @@ export class StripePaymentIntentService {
           provider: 'stripe',
         },
       },
-      { stripeAccount: chargeCtx.stripeAccountId },
+      {
+        stripeAccount: chargeCtx.stripeAccountId,
+        ...(input.idempotencyKey
+          ? { idempotencyKey: input.idempotencyKey }
+          : {}),
+      },
     );
 
-    if (!intent.client_secret) {
+    return this.toCreatePaymentIntentResult(intent);
+  }
+
+  async retrieveForPayment(input: {
+    businessId: string;
+    paymentIntentId: string;
+  }): Promise<CreatePaymentIntentResult> {
+    const chargeCtx =
+      await this.connectContext.resolveTenantStripeChargeContext(
+        input.businessId,
+      );
+    const intent = await chargeCtx.stripe.paymentIntents.retrieve(
+      input.paymentIntentId,
+      { stripeAccount: chargeCtx.stripeAccountId },
+    );
+    return this.toCreatePaymentIntentResult(intent);
+  }
+
+  private toCreatePaymentIntentResult(intent: {
+    id: string;
+    client_secret: string | null;
+    status: string;
+  }): CreatePaymentIntentResult {
+    const succeeded = intent.status === 'succeeded';
+    const canceled = intent.status === 'canceled';
+    if (!intent.client_secret && !succeeded && !canceled) {
       throw new Error('Stripe PaymentIntent missing client_secret');
     }
 
     return {
       paymentIntentId: intent.id,
-      clientSecret: intent.client_secret,
-      succeeded: intent.status === 'succeeded',
+      clientSecret: intent.client_secret ?? '',
+      succeeded,
+      canceled,
     };
   }
 }
