@@ -21,6 +21,7 @@ export type CommitPublicBookingAppointmentParams<
       data: Omit<Prisma.AppointmentUncheckedCreateInput, 'businessId'>,
       serviceLines?: Prisma.AppointmentServiceLineUncheckedCreateWithoutAppointmentInput[],
       resourceAssignments?: Array<{ resourceId: string; quantity: number }>,
+      db?: unknown,
     ) => Promise<T>;
     update: (id: string, data: Prisma.AppointmentUpdateInput) => Promise<T>;
     softDelete: (id: string) => Promise<unknown>;
@@ -36,6 +37,11 @@ export type CommitPublicBookingAppointmentParams<
   serviceLines: Prisma.AppointmentServiceLineUncheckedCreateWithoutAppointmentInput[];
   resourceAssignments?: Array<{ resourceId: string; quantity: number }>;
   prepaid: Omit<CreatePrepaidCheckoutSaleParams, 'appointmentId'> | null;
+  /**
+   * When the appointment was already inserted (e.g. under a staff-slot lock
+   * transaction that has since committed), skip create and only attach prepaid.
+   */
+  existingAppointment?: T;
 };
 
 /**
@@ -46,14 +52,16 @@ export type CommitPublicBookingAppointmentParams<
 export async function commitPublicBookingAppointment<
   T extends AppointmentCommitRecord,
 >(params: CommitPublicBookingAppointmentParams<T>): Promise<T> {
-  const appointment = await params.appointmentRepository.create(
-    params.businessId,
-    params.appointmentData,
-    params.serviceLines,
-    ...(params.resourceAssignments?.length
-      ? [params.resourceAssignments]
-      : []),
-  );
+  const appointment =
+    params.existingAppointment ??
+    (await params.appointmentRepository.create(
+      params.businessId,
+      params.appointmentData,
+      params.serviceLines,
+      ...(params.resourceAssignments?.length
+        ? [params.resourceAssignments]
+        : []),
+    ));
 
   if (!params.prepaid) {
     return appointment;

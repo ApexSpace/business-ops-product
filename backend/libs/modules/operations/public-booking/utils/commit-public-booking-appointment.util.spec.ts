@@ -232,4 +232,36 @@ describe('commitPublicBookingAppointment', () => {
     });
     expect(appointmentRepository.softDelete).not.toHaveBeenCalled();
   });
+
+  it('skips create when existingAppointment is provided and still attaches prepaid', async () => {
+    const created = { id: 'apt-locked', metadata: appointmentData.metadata };
+    const { appointmentRepository, bookingLinkSale, logger } = createDeps({
+      saleImpl: jest.fn().mockResolvedValue({ checkoutId: 'inv-locked' }),
+      updateImpl: jest.fn().mockResolvedValue(created),
+    });
+
+    const result = await commitPublicBookingAppointment({
+      appointmentRepository,
+      bookingLinkSale,
+      logger,
+      businessId: 'biz-1',
+      appointmentData,
+      serviceLines,
+      existingAppointment: created,
+      prepaid,
+    });
+
+    expect(result).toBe(created);
+    expect(appointmentRepository.create).not.toHaveBeenCalled();
+    expect(bookingLinkSale.createPrepaidCheckoutSale).toHaveBeenCalledWith({
+      ...prepaid,
+      appointmentId: 'apt-locked',
+    });
+    expect(appointmentRepository.update).toHaveBeenCalledWith('apt-locked', {
+      metadata: {
+        publicSlug: 'demo',
+        prepaidCheckoutId: 'inv-locked',
+      },
+    });
+  });
 });

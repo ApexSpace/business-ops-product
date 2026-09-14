@@ -16,6 +16,7 @@ import { JobEnqueueService } from '@app/core/jobs/job-enqueue.service';
 import { formatPhone } from '@app/modules/crm/contacts/utils/contact-profile.util';
 import { AppointmentRepository } from '@app/modules/operations/appointments/repositories/appointment.repository';
 import { buildAppointmentManageFields } from '@app/modules/operations/appointments/utils/appointment-manage-token.util';
+import { uniqueSortedStaffIds } from '@app/modules/operations/appointments/utils/appointment-staff-ids.util';
 import { CancelRescheduleSettingsRepository } from '@app/modules/operations/appointments/cancel-reschedule-settings/repositories/cancel-reschedule-settings.repository';
 import { ServiceRepository } from '@app/modules/crm/services/repositories/service.repository';
 import { ServiceBookingTimingService } from '@app/modules/crm/services/services/service-booking-timing.service';
@@ -692,45 +693,91 @@ export class PublicBookingService {
       ? randomUUID()
       : null;
 
+    const appointmentData = {
+      calendarId: null,
+      contactId: contact.id,
+      serviceId: primaryServiceId,
+      assignedToId: assignedStaffId,
+      title,
+      startAt,
+      endAt,
+      status,
+      source,
+      locationType: bookingContext.locationType,
+      locationValue: bookingContext.locationValue,
+      notes: dto.notes?.trim() || null,
+      ...buildAppointmentManageFields({ source }),
+      metadata: {
+        publicSlug: slug,
+        formAnswers: dto.formAnswers ?? null,
+        customerTimezone: schedulingTimezone,
+        userAgent: context?.userAgent ?? null,
+        referrer: dto.referrer ?? null,
+        offerCode: dto.offerCode?.trim().toUpperCase() || null,
+        bookedForFirstName: dto.bookedForFirstName ?? null,
+        bookedForLastName: dto.bookedForLastName ?? null,
+        bookedForEmail: dto.bookedForEmail?.trim().toLowerCase() ?? null,
+        homeAddress: dto.homeAddress ?? null,
+        reminderOptIn: dto.reminderOptIn ?? null,
+        policyAgreed: dto.policyAgreed ?? null,
+        uploadToken,
+        paymentIntentId: dto.paymentIntentId ?? null,
+        ...(serviceMetadata ?? {}),
+      } as Prisma.InputJsonValue,
+    };
+
+    const staffIds = uniqueSortedStaffIds([
+      assignedStaffId,
+      ...builtLines.serviceLines.map((line) => line.assignedToId),
+    ]);
+
+    // Staff occupancy + nested lines/resources must commit under the same
+    // advisory lock. Prepaid checkout uses a separate Prisma connection and
+    // FKs appointmentId, so it attaches after this transaction commits.
+    const createdAppointment =
+      await this.appointmentRepository.runWithStaffSlotLock(
+        bookingContext.businessId,
+        staffIds,
+        async (tx) => {
+          for (const staffId of staffIds) {
+            const conflicts =
+              await this.appointmentRepository.findStaffBlockingInRange(
+                bookingContext.businessId,
+                null,
+                startAt,
+                endAt,
+                staffId,
+                undefined,
+                tx,
+              );
+            if (conflicts.length > 0) {
+              throw new AppException(
+                ErrorCode.BOOKING_SLOT_UNAVAILABLE,
+                'This time slot is no longer available',
+                HttpStatus.CONFLICT,
+              );
+            }
+          }
+
+          return this.appointmentRepository.create(
+            bookingContext.businessId,
+            appointmentData,
+            builtLines.serviceLines,
+            resourceAssignments,
+            tx,
+          );
+        },
+      );
+
     const appointment = await commitPublicBookingAppointment({
       appointmentRepository: this.appointmentRepository,
       bookingLinkSale: this.bookingLinkSale,
       logger: this.logger,
       businessId: bookingContext.businessId,
-      appointmentData: {
-        calendarId: null,
-        contactId: contact.id,
-        serviceId: primaryServiceId,
-        assignedToId: assignedStaffId,
-        title,
-        startAt,
-        endAt,
-        status,
-        source,
-        locationType: bookingContext.locationType,
-        locationValue: bookingContext.locationValue,
-        notes: dto.notes?.trim() || null,
-        ...buildAppointmentManageFields({ source }),
-        metadata: {
-          publicSlug: slug,
-          formAnswers: dto.formAnswers ?? null,
-          customerTimezone: schedulingTimezone,
-          userAgent: context?.userAgent ?? null,
-          referrer: dto.referrer ?? null,
-          offerCode: dto.offerCode?.trim().toUpperCase() || null,
-          bookedForFirstName: dto.bookedForFirstName ?? null,
-          bookedForLastName: dto.bookedForLastName ?? null,
-          bookedForEmail: dto.bookedForEmail?.trim().toLowerCase() ?? null,
-          homeAddress: dto.homeAddress ?? null,
-          reminderOptIn: dto.reminderOptIn ?? null,
-          policyAgreed: dto.policyAgreed ?? null,
-          uploadToken,
-          paymentIntentId: dto.paymentIntentId ?? null,
-          ...(serviceMetadata ?? {}),
-        } as Prisma.InputJsonValue,
-      },
+      appointmentData,
       serviceLines: builtLines.serviceLines,
       resourceAssignments,
+      existingAppointment: createdAppointment,
       prepaid: dto.paymentIntentId
         ? {
             businessId: bookingContext.businessId,

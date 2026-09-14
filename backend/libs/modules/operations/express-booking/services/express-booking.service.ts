@@ -8,6 +8,7 @@ import {
   AppointmentSource,
   AppointmentStatus,
   NotificationChannel,
+  Prisma,
 } from '@prisma/client';
 import { randomUUID } from 'crypto';
 import { AppException } from '@app/common/exceptions/app.exception';
@@ -284,40 +285,57 @@ export class ExpressBookingService {
     const expiresAt = new Date(Date.now() + timeLimitMinutes * 60_000);
     const title = `${guestFirstName} — ${service.name}`;
 
-    const appointment = await this.appointmentRepository.create(
+    const appointment = await this.appointmentRepository.runWithStaffSlotLock(
       businessId,
-      {
-        calendarId: dto.calendarId ?? null,
-        contactId,
-        serviceId: service.id,
-        assignedToId: dto.assignedToId,
-        title,
-        startAt,
-        endAt,
-        status: AppointmentStatus.PENDING_COMPLETION,
-        source: AppointmentSource.EXPRESS,
-        guestFirstName,
-        guestEmail,
-        guestPhone,
-        guestPhoneCountryCode,
-        expressBookingToken: token,
-        expressBookingExpiresAt: expiresAt,
-        expressRequireCard: dto.expressRequireCard ?? null,
-        expressRequireDeposit: dto.expressRequireDeposit ?? null,
-        expressTimeLimitMinutes: dto.expressTimeLimitMinutes ?? null,
-        createdById: actor.id,
-      },
-      [
-        {
-          serviceId: service.id,
-          assignedToId: dto.assignedToId,
+      [dto.assignedToId],
+      async (tx) => {
+        await this.assertStaffSlotAvailable({
+          businessId,
+          staffId: dto.assignedToId,
           startAt,
-          durationMinutes: timing.clientOccupancyMinutes,
-          price: service.price ?? undefined,
-          sortOrder: 0,
-        },
-      ],
-      resourceAssignments,
+          endAt,
+          bufferBeforeMinutes: timing.bufferBeforeMinutes,
+          bufferAfterMinutes: timing.bufferAfterMinutes,
+          db: tx,
+        });
+
+        return this.appointmentRepository.create(
+          businessId,
+          {
+            calendarId: dto.calendarId ?? null,
+            contactId,
+            serviceId: service.id,
+            assignedToId: dto.assignedToId,
+            title,
+            startAt,
+            endAt,
+            status: AppointmentStatus.PENDING_COMPLETION,
+            source: AppointmentSource.EXPRESS,
+            guestFirstName,
+            guestEmail,
+            guestPhone,
+            guestPhoneCountryCode,
+            expressBookingToken: token,
+            expressBookingExpiresAt: expiresAt,
+            expressRequireCard: dto.expressRequireCard ?? null,
+            expressRequireDeposit: dto.expressRequireDeposit ?? null,
+            expressTimeLimitMinutes: dto.expressTimeLimitMinutes ?? null,
+            createdById: actor.id,
+          },
+          [
+            {
+              serviceId: service.id,
+              assignedToId: dto.assignedToId,
+              startAt,
+              durationMinutes: timing.clientOccupancyMinutes,
+              price: service.price ?? undefined,
+              sortOrder: 0,
+            },
+          ],
+          resourceAssignments,
+          tx,
+        );
+      },
     );
 
     await this.auditService.log({
@@ -1295,6 +1313,7 @@ export class ExpressBookingService {
     bufferBeforeMinutes: number;
     bufferAfterMinutes: number;
     excludeAppointmentId?: string;
+    db?: Prisma.TransactionClient;
   }) {
     const candidate = resolveAppointmentBlockingWindow(
       { startAt: params.startAt, endAt: params.endAt },
@@ -1311,6 +1330,7 @@ export class ExpressBookingService {
         candidate.blockEnd,
         params.staffId,
         params.excludeAppointmentId,
+        params.db,
       );
     const overlapping = conflicts.filter((existing) =>
       appointmentBlocksOverlap(
