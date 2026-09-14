@@ -17,6 +17,7 @@ import { ConversationInternalNotesPanel } from "@/features/conversations/compone
 import { VirtualizedMessageList } from "@/features/conversations/components/virtualized-message-list";
 import { listConversationsByContact } from "@/features/conversations/api/conversations.api";
 import { useConversationsHost } from "@/features/conversations/conversations-host-context";
+import { INBOX_COMPOSER_SURFACE_CLASS } from "@/features/conversations/styles/inbox-tokens";
 import { useCurrentBusiness } from "@/features/settings/hooks/use-current-business";
 import { queryKeys } from "@/lib/query/keys";
 import { cn } from "@/lib/utils";
@@ -213,7 +214,12 @@ export function ContactConversationDrawer({
             </div>
 
             {hasChannels ? (
-              <div className="shrink-0 border-t border-border/60 bg-background">
+              <div
+                className={cn(
+                  "shrink-0 border-t border-border/60",
+                  INBOX_COMPOSER_SURFACE_CLASS,
+                )}
+              >
                 <MessageComposer
                   variant="thread"
                   composer={composer}

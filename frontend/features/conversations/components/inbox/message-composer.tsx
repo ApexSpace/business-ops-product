@@ -31,6 +31,7 @@ import {
   INBOX_COMPOSER_FIELD_ROW_CLASS,
   INBOX_COMPOSER_FOOTER_CLASS,
   INBOX_COMPOSER_NOTE_TOOLBAR_CLASS,
+  INBOX_COMPOSER_SURFACE_CLASS,
   INBOX_COMPOSER_TAB_LIST_CLASS,
   INBOX_COMPOSER_TAB_ROW_CLASS,
   INBOX_COMPOSER_TOOLBAR_CLASS,
@@ -125,7 +126,8 @@ function ComposerInputCard({
   return (
     <div
       className={cn(
-        "overflow-hidden rounded-xl border border-border/60 bg-card/40 shadow-sm",
+        "overflow-hidden rounded-xl border border-border/60 shadow-sm",
+        INBOX_COMPOSER_SURFACE_CLASS,
         className,
       )}
     >
@@ -778,7 +780,7 @@ export function MessageComposer({
               "overflow-hidden rounded-[var(--radius-xl)] border",
               composerTab === "note"
                 ? "border-warning/25 bg-warning-subtle"
-                : "border-border bg-background",
+                : cn("border-border", INBOX_COMPOSER_SURFACE_CLASS),
             )}
           >
             <Tabs
@@ -863,7 +865,12 @@ export function MessageComposer({
   if (isEmailComposer) {
     return (
       <>
-        <footer className="shrink-0 border-t border-border/80 bg-card p-3">
+        <footer
+          className={cn(
+            "shrink-0 border-t border-border/80 p-3",
+            INBOX_COMPOSER_SURFACE_CLASS,
+          )}
+        >
           {emailThreadComposer}
         </footer>
         {smsConfirmDialog}
@@ -873,7 +880,12 @@ export function MessageComposer({
 
   return (
     <>
-      <footer className="shrink-0 border-t border-border/80 bg-card p-3">
+      <footer
+        className={cn(
+          "shrink-0 border-t border-border/80 p-3",
+          INBOX_COMPOSER_SURFACE_CLASS,
+        )}
+      >
         {showWhatsAppTemplateComposer ? (
           <div className="space-y-2">
             <ComposerInputCard>

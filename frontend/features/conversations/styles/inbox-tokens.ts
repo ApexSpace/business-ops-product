@@ -35,6 +35,12 @@ export const INBOX_COMPOSER_FIELD_INPUT_CLASS =
 export const INBOX_COMPOSER_FOOTER_CLASS =
   "shrink-0 bg-white px-4 pb-[var(--inbox-composer-footer-padding-bottom)]";
 
+/**
+ * Composer panel fill — Figma white surface (same recipe family as drawers/tables).
+ * Do not use `bg-background` here: `--background` is page grey (`--cs-page`).
+ */
+export const INBOX_COMPOSER_SURFACE_CLASS = "bg-white";
+
 /** Reply composer footer (icons + Send) — `--inbox-composer-toolbar-padding-y`. */
 export const INBOX_COMPOSER_TOOLBAR_CLASS =
   "flex items-center gap-2 border-t border-border/50 px-4 py-[var(--inbox-composer-toolbar-padding-y)]";
