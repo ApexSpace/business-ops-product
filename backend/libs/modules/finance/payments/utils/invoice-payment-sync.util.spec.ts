@@ -103,4 +103,36 @@ describe('computeInvoicePaymentSyncFields for checkout sales', () => {
     expect(fields.status).toBe(InvoiceStatus.OPEN);
     expect(fields.balanceDue.toFixed(2)).toBe('50.00');
   });
+
+  it('reopens a paid checkout after all succeeded payments are refunded', () => {
+    const fields = computeInvoicePaymentSyncFields(
+      {
+        status: InvoiceStatus.PAID,
+        totalAmount: new Prisma.Decimal('50.00'),
+        kind: InvoiceKind.CHECKOUT,
+        closedAt: new Date('2026-07-31T12:00:00.000Z'),
+      },
+      [],
+    );
+
+    expect(fields.status).toBe(InvoiceStatus.OPEN);
+    expect(fields.paidAmount.toFixed(2)).toBe('0.00');
+    expect(fields.balanceDue.toFixed(2)).toBe('50.00');
+  });
+
+  it('marks a paid checkout PARTIAL when a refund leaves remaining tenders', () => {
+    const fields = computeInvoicePaymentSyncFields(
+      {
+        status: InvoiceStatus.PAID,
+        totalAmount: new Prisma.Decimal('50.00'),
+        kind: InvoiceKind.CHECKOUT,
+        closedAt: new Date('2026-07-31T12:00:00.000Z'),
+      },
+      [{ amount: new Prisma.Decimal('20.00'), paidAt: new Date('2026-07-20T12:00:00.000Z') }],
+    );
+
+    expect(fields.status).toBe(InvoiceStatus.PARTIAL);
+    expect(fields.paidAmount.toFixed(2)).toBe('20.00');
+    expect(fields.balanceDue.toFixed(2)).toBe('30.00');
+  });
 });
