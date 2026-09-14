@@ -112,7 +112,7 @@ export function WaitlistPanel({
     [dateFilter, staffId, calendarId, hasOpeningOnly],
   );
 
-  const { data, isLoading } = useWaitlistList(filters);
+  const { data, isLoading } = useWaitlistList(filters, { enabled: open });
   const entries = data?.items ?? [];
   const selectedEntry =
     entries.find((entry) => entry.id === selectedId) ?? entries[0] ?? null;

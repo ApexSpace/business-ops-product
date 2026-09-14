@@ -52,7 +52,7 @@ import { AppointmentBookingDetails } from "@/features/appointments/components/dr
 import { useAppointmentNotifyMutation } from "@/features/appointments/hooks/use-appointment-notify-mutation";
 import { useAppointmentStatusMutation } from "@/features/appointments/hooks/use-appointment-status-mutation";
 import {
-  APPOINTMENT_LIFECYCLE_STATUS_OPTIONS,
+  getAppointmentOverflowStatusOptions,
   CLOSED_SALE_EDIT_GUARD_COPY,
   getContactDisplayName,
   isAppointmentTimeBlock,
@@ -393,7 +393,7 @@ export function AppointmentDetailDrawer({
           />
           <DropdownMenuContent align="end" className="w-52">
             {!isTimeBlockView && allowStatusMenu
-              ? APPOINTMENT_LIFECYCLE_STATUS_OPTIONS.map((option) => {
+              ? getAppointmentOverflowStatusOptions(waitingStatusEnabled).map((option) => {
                   const isCurrent = appointment?.status === option.value;
                   return (
                     <DropdownMenuItem
