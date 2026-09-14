@@ -88,4 +88,17 @@ export class StripePaymentIntentService {
       succeeded: intent.status === 'succeeded',
     };
   }
+
+  async cancelForPayment(
+    businessId: string,
+    paymentIntentId: string,
+  ): Promise<void> {
+    const chargeCtx =
+      await this.connectContext.resolveTenantStripeChargeContext(businessId);
+    await chargeCtx.stripe.paymentIntents.cancel(
+      paymentIntentId,
+      undefined,
+      { stripeAccount: chargeCtx.stripeAccountId },
+    );
+  }
 }
