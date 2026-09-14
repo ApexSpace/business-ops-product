@@ -2,7 +2,6 @@
 
 import { useDroppable } from "@dnd-kit/core";
 import { cn } from "@/lib/utils";
-import { FORMS_BUILDER_DROP_ACTIVE_CLASS } from "@/lib/design/forms-builder-tokens";
 import { getColumnDropZoneId } from "@/features/forms/utils/column-fields.util";
 
 interface ColumnDropZoneProps {
@@ -31,9 +30,9 @@ export function ColumnDropZone({
     <div
       ref={setNodeRef}
       className={cn(
-        "min-w-0 rounded-[var(--radius-control)] transition-colors",
-        isTargetColumn && "ring-1 ring-violet-primary-normal/25",
-        isOver && FORMS_BUILDER_DROP_ACTIVE_CLASS,
+        "min-w-0 rounded-md transition-colors",
+        isTargetColumn && "ring-1 ring-primary/25",
+        isOver && "bg-primary/5 ring-2 ring-primary/40",
         className,
       )}
     >
@@ -41,10 +40,8 @@ export function ColumnDropZone({
       {isDraggingFromPalette ? (
         <div
           className={cn(
-            "mt-2 rounded-[var(--radius-control)] border border-dashed px-2 py-2 text-center text-[11px] text-[var(--drawer-text-secondary)]",
-            isOver
-              ? "border-violet-primary-normal bg-violet-primary-surface text-violet-primary-normal"
-              : "border-border",
+            "mt-2 rounded-md border border-dashed px-2 py-2 text-center text-[11px] text-muted-foreground",
+            isOver ? "border-primary/50 bg-primary/5 text-primary" : "border-border/80",
           )}
         >
           Drop field in column {columnIndex + 1}

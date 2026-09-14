@@ -11,6 +11,7 @@ import { EntityListLayout } from "@/components/layout/entity-list-layout";
 import { ListFilterCheckboxGroup } from "@/components/layout/list-filter-checkbox-group";
 import { ListPageSkeleton } from "@/components/layout/list-page";
 import { ActionButton } from "@/components/ui/action-button";
+import { Badge } from "@/components/ui/badge";
 import { FormCreateDialog } from "@/features/forms/components/form-create-dialog";
 import { FormShareDialog } from "@/features/forms/components/form-share-dialog";
 import { useFormMutations } from "@/features/forms/hooks/use-form-mutations";
@@ -23,12 +24,8 @@ import {
   downloadFormJson,
   formatFormTableDate,
   formStatusLabel,
+  formStatusVariant,
 } from "@/features/forms/utils/form-display.util";
-import {
-  DATA_TABLE_ENTITY_NAME_CLASS,
-  DATA_TABLE_SALE_NUMBER_CLASS,
-  DATA_TABLE_STATUS_CLASS,
-} from "@/lib/design/data-table-tokens";
 import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
 import {
   ALL_STATUSES_ALL_OPTION,
@@ -88,7 +85,7 @@ function FormsListPageContent() {
           <div className="min-w-[180px]">
             <Link
               href={`${basePath}/${row.id}/edit`}
-              className={DATA_TABLE_ENTITY_NAME_CLASS}
+              className="font-medium hover:underline"
             >
               {row.name}
             </Link>
@@ -101,9 +98,9 @@ function FormsListPageContent() {
         sortable: true,
         sortValue: (row) => row.status,
         cell: (row) => (
-          <span className={DATA_TABLE_STATUS_CLASS}>
+          <Badge variant={formStatusVariant(row.status)}>
             {formStatusLabel(row.status)}
-          </span>
+          </Badge>
         ),
       },
       {
@@ -112,7 +109,7 @@ function FormsListPageContent() {
         sortable: true,
         sortValue: (row) => row.fieldCount,
         className: "text-right tabular-nums",
-        cell: (row) => <span className="tabular-nums">{row.fieldCount}</span>,
+        cell: (row) => <span className="text-sm">{row.fieldCount}</span>,
       },
       {
         id: "submissions",
@@ -124,12 +121,12 @@ function FormsListPageContent() {
           row.submissionCount > 0 ? (
             <Link
               href={`${basePath}/${row.id}/submissions`}
-              className={DATA_TABLE_SALE_NUMBER_CLASS}
+              className="text-sm font-medium hover:underline"
             >
               {row.submissionCount}
             </Link>
           ) : (
-            <span className="tabular-nums">0</span>
+            <span className="text-sm text-muted-foreground">0</span>
           ),
       },
       {
@@ -139,7 +136,9 @@ function FormsListPageContent() {
         sortValue: (row) => row.updatedAt,
         className: "whitespace-nowrap",
         cell: (row) => (
-          <span className="tabular-nums">{formatFormTableDate(row.updatedAt)}</span>
+          <span className="tabular-nums text-sm text-muted-foreground">
+            {formatFormTableDate(row.updatedAt)}
+          </span>
         ),
       },
       {
@@ -149,7 +148,9 @@ function FormsListPageContent() {
         sortValue: (row) => row.createdAt,
         className: "whitespace-nowrap",
         cell: (row) => (
-          <span className="tabular-nums">{formatFormTableDate(row.createdAt)}</span>
+          <span className="tabular-nums text-sm text-muted-foreground">
+            {formatFormTableDate(row.createdAt)}
+          </span>
         ),
       },
     ],
@@ -162,6 +163,7 @@ function FormsListPageContent() {
     <>
       <EntityListLayout
         title="Forms"
+        description="Build lead capture forms for your website and landing pages."
         addButtonLabel="Create form"
         onAdd={canManageTemplates ? () => setCreateOpen(true) : undefined}
         searchPlaceholder="Search forms…"

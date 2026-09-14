@@ -39,22 +39,6 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { SearchInput } from "@/components/forms/search-input";
-import {
-  ENTITY_FILTER_PILL_ACTIVE_CLASS,
-  ENTITY_FILTER_PILL_CLASS,
-} from "@/lib/design/workspace-tokens";
-import {
-  FORMS_BUILDER_PALETTE_ASIDE_CLASS,
-  FORMS_BUILDER_PALETTE_HEADER_CLASS,
-  FORMS_BUILDER_PALETTE_ITEM_CLASS,
-  FORMS_BUILDER_PALETTE_SCROLL_CLASS,
-  FORMS_BUILDER_PALETTE_SECTION_TRIGGER_CLASS,
-} from "@/lib/design/forms-builder-tokens";
-import {
-  SETTINGS_FORM_DESCRIPTION_CLASS,
-  SETTINGS_GROUP_TITLE_CLASS,
-} from "@/lib/design/settings-form-tokens";
-import { WORKSPACE_NAV_ICON_CLASS } from "@/lib/design/workspace-nav-tokens";
 import { cn } from "@/lib/utils";
 import type { FieldType } from "@/features/forms/types";
 import { useFormFieldPalette } from "@/features/forms/hooks/use-form-metadata";
@@ -120,14 +104,14 @@ function PaletteItem({ type, label, icon, disabled, onAddField }: PaletteItemPro
       disabled={disabled}
       onClick={() => onAddField(type)}
       className={cn(
-        FORMS_BUILDER_PALETTE_ITEM_CLASS,
+        "flex w-full min-w-0 flex-row items-center gap-2 rounded-md border border-border p-2 text-xs transition-colors hover:bg-accent",
         isDragging && "opacity-50",
         disabled && "cursor-not-allowed opacity-50 hover:bg-transparent",
       )}
       {...listeners}
       {...attributes}
     >
-      <Icon className={cn(WORKSPACE_NAV_ICON_CLASS, "text-grey-tertiary-normal")} />
+      <Icon className="size-4 shrink-0 text-muted-foreground" />
       <span className="min-w-0 truncate">{label}</span>
     </button>
   );
@@ -181,32 +165,36 @@ export function FieldPalette({
 
   return (
     <aside
-      className={cn(FORMS_BUILDER_PALETTE_ASIDE_CLASS, className)}
+      className={cn(
+        "flex h-full min-h-0 flex-col overflow-hidden border-r bg-muted/20",
+        className,
+      )}
     >
-      <div className={FORMS_BUILDER_PALETTE_HEADER_CLASS}>
-        <h2 className={SETTINGS_GROUP_TITLE_CLASS}>Fields</h2>
-        <p className={SETTINGS_FORM_DESCRIPTION_CLASS}>
+      <div className="shrink-0 border-b py-2 pl-[var(--page-padding-x)] pr-2">
+        <h2 className="text-sm font-semibold">Field palette</h2>
+        <p className="mt-1 text-xs text-muted-foreground">
           {columnAddContext
             ? "Click or drag a field to add it to the selected column."
             : "Drag or click to add fields."}
         </p>
 
         {columnAddContext ? (
-          <div className="space-y-[var(--spacing-2)]">
-            <p className="text-[12px] font-medium leading-none text-[var(--drawer-text-secondary)]">
+          <div className="mt-3 space-y-2 rounded-md border border-primary/20 bg-primary/5 p-2">
+            <p className="text-[11px] font-medium uppercase tracking-wide text-primary">
               Add to column
             </p>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-1.5">
               {Array.from({ length: columnAddContext.columnCount }, (_, index) => (
                 <button
                   key={index}
                   type="button"
                   onClick={() => onTargetColumnChange?.(index)}
-                  className={
+                  className={cn(
+                    "rounded-md border px-2 py-1 text-xs transition-colors",
                     columnAddContext.targetColumnIndex === index
-                      ? ENTITY_FILTER_PILL_ACTIVE_CLASS
-                      : ENTITY_FILTER_PILL_CLASS
-                  }
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "border-border bg-background hover:bg-accent",
+                  )}
                 >
                   Column {index + 1}
                 </button>
@@ -215,7 +203,7 @@ export function FieldPalette({
           </div>
         ) : null}
 
-        <div>
+        <div className="mt-2">
           <SearchInput
             value={search}
             onChange={setSearch}
@@ -224,9 +212,9 @@ export function FieldPalette({
         </div>
       </div>
 
-      <div className={FORMS_BUILDER_PALETTE_SCROLL_CLASS}>
+      <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden py-1 pl-[var(--page-padding-x)] pr-2">
         {isLoading ? (
-          <div className="flex items-center gap-2 px-1 py-4 text-sm text-[var(--drawer-text-secondary)]">
+          <div className="flex items-center gap-2 px-1 py-4 text-sm text-muted-foreground">
             <Loader2 className="size-4 animate-spin" />
             Loading field types…
           </div>
@@ -237,11 +225,11 @@ export function FieldPalette({
           >
             {categories.map((category) => (
               <AccordionItem key={category.key} value={category.key}>
-                <AccordionTrigger className={FORMS_BUILDER_PALETTE_SECTION_TRIGGER_CLASS}>
+                <AccordionTrigger className="px-1 py-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                   {category.label}
                 </AccordionTrigger>
                 <AccordionContent className="px-0 pb-1.5">
-                  <div className="flex flex-col">
+                  <div className="grid grid-cols-2 gap-2">
                     {category.fields.map((field) => {
                       const type = field.key as FieldType;
                       const disabled =
@@ -265,7 +253,7 @@ export function FieldPalette({
         )}
 
         {!isLoading && categories.length === 0 ? (
-          <p className="px-1 py-2 text-sm text-[var(--drawer-text-secondary)]">
+          <p className="px-1 py-2 text-sm text-muted-foreground">
             No fields match your search.
           </p>
         ) : null}

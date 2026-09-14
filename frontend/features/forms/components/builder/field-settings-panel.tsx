@@ -9,19 +9,6 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
-import {
-  FORMS_BUILDER_PALETTE_HEADER_CLASS,
-  FORMS_BUILDER_PALETTE_SCROLL_CLASS,
-  FORMS_BUILDER_SETTINGS_ASIDE_CLASS,
-  FORMS_BUILDER_SETTINGS_TAB_ACTIVE_CLASS,
-  FORMS_BUILDER_SETTINGS_TAB_INACTIVE_CLASS,
-  FORMS_BUILDER_SETTINGS_TABS_CLASS,
-} from "@/lib/design/forms-builder-tokens";
-import { SETTINGS_GROUP_TITLE_CLASS } from "@/lib/design/settings-form-tokens";
-import {
-  ENTITY_FILTER_PILL_ACTIVE_CLASS,
-  ENTITY_FILTER_PILL_CLASS,
-} from "@/lib/design/workspace-tokens";
 import type {
   ColumnCount,
   ColumnHorizontalAlign,
@@ -202,7 +189,7 @@ function FieldEditor({
 
   return (
     <div>
-      <p className={cn("mb-2", SETTINGS_GROUP_TITLE_CLASS)}>
+      <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
         {getFieldTypeLabel(field.type)}
       </p>
 
@@ -307,10 +294,10 @@ function FieldEditor({
                 <button
                   type="button"
                   className={cn(
-                    "flex-1",
+                    "flex-1 rounded-md border px-2 py-1.5 text-xs font-medium transition-colors",
                     (field.stripePaymentsMode ?? "test") === "test"
-                      ? ENTITY_FILTER_PILL_ACTIVE_CLASS
-                      : ENTITY_FILTER_PILL_CLASS,
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border hover:bg-accent",
                   )}
                   onClick={() => onUpdate({ stripePaymentsMode: "test" })}
                 >
@@ -319,17 +306,17 @@ function FieldEditor({
                 <button
                   type="button"
                   className={cn(
-                    "flex-1",
+                    "flex-1 rounded-md border px-2 py-1.5 text-xs font-medium transition-colors",
                     field.stripePaymentsMode === "live"
-                      ? ENTITY_FILTER_PILL_ACTIVE_CLASS
-                      : ENTITY_FILTER_PILL_CLASS,
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border hover:bg-accent",
                   )}
                   onClick={() => onUpdate({ stripePaymentsMode: "live" })}
                 >
                   Live
                 </button>
               </div>
-              <p className="mt-1 text-[12px] text-[var(--drawer-text-secondary)]">
+              <p className="mt-1 text-[11px] text-muted-foreground">
                 Uses this field&apos;s mode only — not the business Payments
                 Live/Test setting.
               </p>
@@ -774,39 +761,28 @@ export function FieldSettingsPanel({
 
   return (
     <aside
-      className={cn(FORMS_BUILDER_SETTINGS_ASIDE_CLASS, className)}
+      className={cn(
+        "flex h-full min-h-0 flex-col overflow-hidden border-l bg-muted/20",
+        className,
+      )}
     >
       <Tabs
         value={activeTab}
         onValueChange={handleTabChange}
         className="flex h-full min-h-0 flex-col overflow-hidden"
       >
-        <div className={FORMS_BUILDER_PALETTE_HEADER_CLASS}>
-          <TabsList className={FORMS_BUILDER_SETTINGS_TABS_CLASS}>
-            <TabsTrigger
-              value="field"
-              className={
-                activeTab === "field"
-                  ? FORMS_BUILDER_SETTINGS_TAB_ACTIVE_CLASS
-                  : FORMS_BUILDER_SETTINGS_TAB_INACTIVE_CLASS
-              }
-            >
-              Field
+        <div className="shrink-0 border-b py-2 pl-2 pr-[var(--page-padding-x)]">
+          <TabsList className="w-full">
+            <TabsTrigger value="field" className="flex-1 px-2 text-xs">
+              Field Settings
             </TabsTrigger>
-            <TabsTrigger
-              value="form"
-              className={
-                activeTab === "form"
-                  ? FORMS_BUILDER_SETTINGS_TAB_ACTIVE_CLASS
-                  : FORMS_BUILDER_SETTINGS_TAB_INACTIVE_CLASS
-              }
-            >
-              Form
+            <TabsTrigger value="form" className="flex-1 px-2 text-xs">
+              Form Settings
             </TabsTrigger>
           </TabsList>
         </div>
 
-        <div className={FORMS_BUILDER_PALETTE_SCROLL_CLASS}>
+        <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden py-2 pl-2 pr-[var(--page-padding-x)]">
           <TabsContent value="field" className="mt-0">
             {selectedField ? (
               <div className="space-y-4">
@@ -824,7 +800,7 @@ export function FieldSettingsPanel({
                       Delete field
                     </Button>
                     {isNestedColumnField && !columnRemovalContext.canRemove ? (
-                      <p className="text-xs text-[var(--drawer-text-secondary)]">
+                      <p className="text-xs text-muted-foreground">
                         Each column must keep at least one field. Add another field
                         before deleting this one.
                       </p>
@@ -837,7 +813,7 @@ export function FieldSettingsPanel({
                 />
               </div>
             ) : (
-              <p className="text-sm text-[var(--drawer-text-secondary)]">
+              <p className="text-sm text-muted-foreground">
                 Select a field on the canvas to edit its settings.
               </p>
             )}

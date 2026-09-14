@@ -1,12 +1,13 @@
 "use client";
 
 import { Input } from "@/components/ui/input";
-import { FORM_ACCENT_COLOR_HEX } from "@/lib/design/forms-builder-tokens";
 import { cn } from "@/lib/utils";
+
+const DEFAULT_COLOR = "#6366f1";
 
 export function toColorInputValue(
   hex: string | undefined,
-  fallback = FORM_ACCENT_COLOR_HEX,
+  fallback = DEFAULT_COLOR,
 ): string {
   if (!hex) return fallback;
   const normalized = hex.trim();
@@ -33,13 +34,13 @@ export function ColorInput({ value, onChange, className }: ColorInputProps) {
         type="color"
         value={toColorInputValue(value)}
         onChange={(event) => onChange(event.target.value)}
-        className="size-9 shrink-0 cursor-pointer rounded-[var(--radius-control)] border border-[var(--drawer-field-border)] bg-transparent p-0.5"
+        className="size-9 shrink-0 cursor-pointer rounded border border-input bg-transparent p-0.5"
         aria-label="Pick color"
       />
       <Input
         value={display}
         onChange={(event) => onChange(event.target.value)}
-        placeholder={FORM_ACCENT_COLOR_HEX}
+        placeholder="#6366f1"
         className="text-sm font-mono"
       />
     </div>

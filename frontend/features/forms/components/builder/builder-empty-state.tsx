@@ -1,17 +1,13 @@
 "use client";
 
-import { cn } from "@/lib/utils";
-import {
-  SETTINGS_FORM_DESCRIPTION_CLASS,
-  SETTINGS_GROUP_TITLE_CLASS,
-} from "@/lib/design/settings-form-tokens";
-import { FORMS_BUILDER_EMPTY_CLASS } from "@/lib/design/forms-builder-tokens";
+import { MousePointerClick } from "lucide-react";
 
 export function BuilderEmptyState() {
   return (
-    <div className={FORMS_BUILDER_EMPTY_CLASS}>
-      <p className={SETTINGS_GROUP_TITLE_CLASS}>Your form is empty</p>
-      <p className={cn("mt-2 max-w-sm", SETTINGS_FORM_DESCRIPTION_CLASS)}>
+    <div className="flex min-h-[280px] flex-col items-center justify-center rounded-lg border border-dashed bg-muted/30 px-6 py-12 text-center">
+      <MousePointerClick className="mb-3 size-8 text-muted-foreground" />
+      <p className="text-sm font-medium">Your form is empty</p>
+      <p className="mt-1 max-w-sm text-sm text-muted-foreground">
         Add fields from the palette on the left to start building your lead
         capture form.
       </p>

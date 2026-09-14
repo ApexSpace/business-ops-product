@@ -8,13 +8,6 @@ import type { FormDefinition, FormField } from "@/features/forms/types";
 import { FieldRenderer } from "@/features/forms/components/builder/field-renderer";
 import { EmbeddedStripePayment } from "@/features/payments/payments-kit/embedded-stripe-payment";
 import {
-  SETTINGS_FORM_DESCRIPTION_CLASS,
-  SETTINGS_FORM_SECTION_HEADER_CLASS,
-  SETTINGS_FORM_SURFACE_CLASS,
-  SETTINGS_GROUP_TITLE_CLASS,
-  SETTINGS_PANEL_TITLE_CLASS,
-} from "@/lib/design/settings-form-tokens";
-import {
   getFormContainerClass,
   getFormContainerStyle,
   getSubmitButtonClass,
@@ -90,18 +83,13 @@ export function FormRuntimeView({
 
   return (
     <div
-      className={cn(
-        "w-full",
-        SETTINGS_FORM_SURFACE_CLASS,
-        getFormContainerClass(settings),
-        className,
-      )}
+      className={cn("w-full", getFormContainerClass(settings), className)}
       style={getFormContainerStyle(settings)}
     >
       {submitted ? (
         <div className="space-y-4 py-8 text-center">
-          <CheckCircle2 className="mx-auto size-12 text-success" />
-          <p className={SETTINGS_GROUP_TITLE_CLASS}>{settings.successMessage}</p>
+          <CheckCircle2 className="mx-auto size-12 text-green-600" />
+          <p className="text-lg font-medium">{settings.successMessage}</p>
           {onResetSubmitted ? (
             <Button
               type="button"
@@ -116,8 +104,8 @@ export function FormRuntimeView({
       ) : paymentCheckout && pendingData ? (
         <div className="space-y-4">
           <div className="space-y-1">
-            <h2 className={SETTINGS_GROUP_TITLE_CLASS}>Complete payment</h2>
-            <p className={SETTINGS_FORM_DESCRIPTION_CLASS}>
+            <h2 className="text-xl font-semibold">Complete payment</h2>
+            <p className="text-sm text-muted-foreground">
               Amount due:{" "}
               {new Intl.NumberFormat(undefined, {
                 style: "currency",
@@ -171,10 +159,10 @@ export function FormRuntimeView({
         </div>
       ) : (
         <>
-          <div className={cn("mb-6", SETTINGS_FORM_SECTION_HEADER_CLASS)}>
-            <h2 className={SETTINGS_PANEL_TITLE_CLASS}>{settings.title}</h2>
+          <div className="mb-6 space-y-2">
+            <h2 className="text-2xl font-semibold">{settings.title}</h2>
             {settings.description ? (
-              <p className={SETTINGS_FORM_DESCRIPTION_CLASS}>{settings.description}</p>
+              <p className="text-sm text-muted-foreground">{settings.description}</p>
             ) : null}
           </div>
 
@@ -259,7 +247,6 @@ export function FormRuntimeView({
             >
               <Button
                 type="submit"
-                variant="brand"
                 disabled={busy}
                 className={getSubmitButtonClass(settings)}
                 style={getSubmitButtonStyle(settings)}

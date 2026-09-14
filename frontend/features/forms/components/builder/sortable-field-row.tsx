@@ -11,10 +11,6 @@ import {
   Trash2,
 } from "lucide-react";
 import { IconButton } from "@/components/ui/icon-button";
-import {
-  FORMS_BUILDER_FIELD_CARD_CLASS,
-  FORMS_BUILDER_FIELD_CARD_SELECTED_CLASS,
-} from "@/lib/design/forms-builder-tokens";
 import { cn } from "@/lib/utils";
 import type { FormField, FormSettings } from "@/features/forms/types";
 import {
@@ -168,9 +164,9 @@ export function SortableFieldRow({
       <div
         style={getFieldSizeStyle(field.style)}
         className={cn(
-          FORMS_BUILDER_FIELD_CARD_CLASS,
+          "flex items-center gap-2 rounded-lg border bg-card p-5 transition-colors",
           getFieldLayoutClassName(field.style),
-          isRowSelected && FORMS_BUILDER_FIELD_CARD_SELECTED_CLASS,
+          isRowSelected ? "border-primary ring-2 ring-primary/30" : "border-border",
           isDragging && "opacity-80 shadow-md",
         )}
         onClick={onSelect}
@@ -186,7 +182,7 @@ export function SortableFieldRow({
         <button
           type="button"
           className={cn(
-            "shrink-0 self-center cursor-grab touch-none text-[var(--drawer-text-secondary)] hover:text-foreground",
+            "shrink-0 self-center cursor-grab touch-none text-muted-foreground hover:text-foreground",
             chromeVisibilityClass,
             isDragging && "cursor-grabbing",
           )}
