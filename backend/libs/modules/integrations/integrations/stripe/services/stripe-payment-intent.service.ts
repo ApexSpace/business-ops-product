@@ -102,6 +102,7 @@ export class StripePaymentIntentService {
       );
     const intent = await chargeCtx.stripe.paymentIntents.retrieve(
       input.paymentIntentId,
+      undefined,
       { stripeAccount: chargeCtx.stripeAccountId },
     );
     return this.toCreatePaymentIntentResult(intent);
