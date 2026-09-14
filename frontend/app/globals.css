@@ -303,10 +303,11 @@
   --radius-nav: 7px;
   /* Figma radius/radius/xs — 4px when --radius is 8px */
   --radius-xs: 0.25rem;
-  /* Figma spacing/spacing scale (4px base): /2=8, /3=12, /4=16, /6=24 */
+  /* Figma spacing/spacing scale (4px base): /2=8, /3=12, /4=16, /5=20, /6=24 */
   --spacing-2: 0.5rem;
   --spacing-3: 0.75rem;
   --spacing-4: 1rem;
+  --spacing-5: 1.25rem;
   --spacing-6: 1.5rem;
   /*
    * Settings form shell — hit-and-trial density (recipes in settings-form-tokens.ts).
@@ -324,6 +325,14 @@
    */
   --automated-message-content-max-width: 33.75rem;
   --automated-message-card-max-width: 28rem;
+  /*
+   * Forms builder — hit-and-trial (recipes in forms-builder-tokens.ts).
+   * Screenshot: 680px cards, 57px header, ~360px settings, 24px insert control.
+   */
+  --forms-builder-canvas-max-width: 42.5rem;
+  --forms-builder-header-height: 3.5625rem;
+  --forms-builder-settings-width: 22.5rem;
+  --forms-builder-insert-size: 1.5rem;
   /* Settings form violet subheading — hit-and-trial (`.settings-form-description`). */
   --settings-form-description-size: 15px;
   --settings-form-description-line-height: 20px;
