@@ -9,6 +9,7 @@ describe('ExpressBookingService', () => {
     findByExpressToken: jest.fn(),
     findExpiredPendingExpress: jest.fn(),
     findStaffBlockingInRange: jest.fn().mockResolvedValue([]),
+    runWithStaffSlotLock: jest.fn(async (_biz, _ids, fn) => fn({})),
   };
   const settingsRepository = {
     ensureSettings: jest.fn(),
@@ -218,6 +219,7 @@ describe('ExpressBookingService', () => {
         expressTimeLimitMinutes: null,
       }),
       expect.any(Array),
+      {},
     );
     expect(notificationDispatch.dispatch).toHaveBeenCalledWith(
       expect.objectContaining({

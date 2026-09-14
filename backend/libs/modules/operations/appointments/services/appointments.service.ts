@@ -51,10 +51,13 @@ import { AppointmentAutomatedMessagesService } from '../automated-messages/servi
 import { matchingImmediateNotificationKeys } from '../automated-messages/utils/message-resolver.util';
 import { classifyStaffCancellation } from '../cancel-reschedule-settings/utils/cancel-reschedule-behavior.util';
 import { buildAppointmentManageFields } from '../utils/appointment-manage-token.util';
+import { uniqueSortedStaffIds } from '../utils/appointment-staff-ids.util';
+import { assertAllowedAppointmentStatusTransition } from '../utils/appointment-status-transitions.util';
 import {
   canNotifyWaitingClient,
   canTransitionToWaiting,
 } from '../waiting-room-settings/utils/waiting-room-gate.util';
+import type { AppointmentDbClient } from '../repositories/appointment.repository';
 
 @Injectable()
 export class AppointmentsService {
@@ -176,6 +179,7 @@ export class AppointmentsService {
       bufferAfterMinutes: number;
     },
     excludeAppointmentId?: string,
+    db?: AppointmentDbClient,
   ): Promise<string | null> {
     const timezone =
       await this.workingHoursService.resolveAppointmentTimezone(businessId);
@@ -223,6 +227,7 @@ export class AppointmentsService {
           candidate.blockEnd,
           staffId,
           excludeAppointmentId,
+          db,
         );
 
       const overlapping = conflicts.filter((existing) =>
@@ -433,27 +438,6 @@ export class AppointmentsService {
     const scheduleTimezone =
       await this.workingHoursService.resolveAppointmentTimezone(businessId);
 
-    const conflictWarning =
-      serviceLines.length > 0
-        ? await this.detectScheduleConflicts(
-            businessId,
-            dto.calendarId,
-            serviceLines,
-            {
-              bufferBeforeMinutes: calendar?.bufferBeforeMinutes ?? 0,
-              bufferAfterMinutes: calendar?.bufferAfterMinutes ?? 0,
-            },
-          )
-        : null;
-
-    if (conflictWarning) {
-      throw new AppException(
-        ErrorCode.APPOINTMENT_SCHEDULE_CONFLICT,
-        conflictWarning,
-        HttpStatus.CONFLICT,
-      );
-    }
-
     const outsideHoursWarning =
       serviceLines.length > 0
         ? await this.detectOutsideWorkingHours(
@@ -477,31 +461,66 @@ export class AppointmentsService {
       ? AppointmentStatus.UNCONFIRMED
       : (dto.status ?? bookedDefaultStatus);
 
-    const appointment = await this.appointmentRepository.create(
+    const staffIds = uniqueSortedStaffIds([
+      dto.assignedToId,
+      ...serviceLines.map((line) => line.assignedToId),
+    ]);
+
+    const appointment = await this.appointmentRepository.runWithStaffSlotLock(
       businessId,
-      {
-        calendarId: dto.calendarId ?? null,
-        contactId: dto.contactId ?? null,
-        serviceId: primaryServiceId,
-        workItemId: dto.workItemId ?? null,
-        assignedToId: dto.assignedToId ?? null,
-        title: dto.title.trim(),
-        description: dto.description?.trim() || null,
-        startAt,
-        endAt,
-        status: resolvedStatus,
-        source: dto.source,
-        locationType: dto.locationType ?? null,
-        locationValue: dto.locationValue?.trim() || null,
-        notes: dto.notes?.trim() || null,
-        metadata: isTimeBlock ? { kind: 'TIME_BLOCK' } : undefined,
-        createdById: actor.id,
-        ...buildAppointmentManageFields({
-          source: dto.source ?? AppointmentSource.INTERNAL,
-          isTimeBlock,
-        }),
+      staffIds,
+      async (tx) => {
+        const conflictWarning =
+          serviceLines.length > 0
+            ? await this.detectScheduleConflicts(
+                businessId,
+                dto.calendarId,
+                serviceLines,
+                {
+                  bufferBeforeMinutes: calendar?.bufferBeforeMinutes ?? 0,
+                  bufferAfterMinutes: calendar?.bufferAfterMinutes ?? 0,
+                },
+                undefined,
+                tx,
+              )
+            : null;
+
+        if (conflictWarning) {
+          throw new AppException(
+            ErrorCode.APPOINTMENT_SCHEDULE_CONFLICT,
+            conflictWarning,
+            HttpStatus.CONFLICT,
+          );
+        }
+
+        return this.appointmentRepository.create(
+          businessId,
+          {
+            calendarId: dto.calendarId ?? null,
+            contactId: dto.contactId ?? null,
+            serviceId: primaryServiceId,
+            workItemId: dto.workItemId ?? null,
+            assignedToId: dto.assignedToId ?? null,
+            title: dto.title.trim(),
+            description: dto.description?.trim() || null,
+            startAt,
+            endAt,
+            status: resolvedStatus,
+            source: dto.source,
+            locationType: dto.locationType ?? null,
+            locationValue: dto.locationValue?.trim() || null,
+            notes: dto.notes?.trim() || null,
+            metadata: isTimeBlock ? { kind: 'TIME_BLOCK' } : undefined,
+            createdById: actor.id,
+            ...buildAppointmentManageFields({
+              source: dto.source ?? AppointmentSource.INTERNAL,
+              isTimeBlock,
+            }),
+          },
+          serviceLines,
+          tx,
+        );
       },
-      serviceLines,
     );
 
     await this.auditService.log({
@@ -947,8 +966,12 @@ export class AppointmentsService {
     }
 
     assertCanChangeAppointmentStatus(actor, existing, dto.status);
+    assertAllowedAppointmentStatusTransition(existing.status, dto.status);
 
-    if (dto.status === AppointmentStatus.WAITING) {
+    if (
+      dto.status === AppointmentStatus.WAITING &&
+      existing.status !== AppointmentStatus.WAITING
+    ) {
       const waitingStatusEnabled =
         await this.waitingRoomSettingsService.isWaitingStatusEnabled(
           businessId,

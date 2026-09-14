@@ -1,6 +1,15 @@
 import { Injectable } from '@nestjs/common';
 import { Appointment, AppointmentStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '@app/core/database/prisma.service';
+import { uniqueSortedStaffIds } from '../utils/appointment-staff-ids.util';
+import { acquireStaffSlotLocks } from '../utils/appointment-staff-slot-lock.util';
+
+export type AppointmentDbClient = PrismaService | Prisma.TransactionClient;
+
+const STAFF_SLOT_LOCK_TX_OPTIONS = {
+  maxWait: 10_000,
+  timeout: 15_000,
+} as const;
 
 const BLOCKING_STATUSES: AppointmentStatus[] = [
   AppointmentStatus.PENDING_COMPLETION,
@@ -75,12 +84,25 @@ export class AppointmentRepository {
     return { businessId, deletedAt: null, ...extra };
   }
 
+  async runWithStaffSlotLock<T>(
+    businessId: string,
+    staffIds: Array<string | null | undefined>,
+    fn: (tx: Prisma.TransactionClient) => Promise<T>,
+  ): Promise<T> {
+    const uniqueStaffIds = uniqueSortedStaffIds(staffIds);
+    return this.prisma.$transaction(async (tx) => {
+      await acquireStaffSlotLocks(tx, businessId, uniqueStaffIds);
+      return fn(tx);
+    }, STAFF_SLOT_LOCK_TX_OPTIONS);
+  }
+
   create(
     businessId: string,
     data: Omit<Prisma.AppointmentUncheckedCreateInput, 'businessId'>,
     serviceLines?: Prisma.AppointmentServiceLineUncheckedCreateWithoutAppointmentInput[],
+    db: AppointmentDbClient = this.prisma,
   ): Promise<AppointmentWithRelations> {
-    return this.prisma.appointment.create({
+    return db.appointment.create({
       data: {
         businessId,
         ...data,
@@ -271,10 +293,11 @@ export class AppointmentRepository {
     rangeEnd: Date,
     staffUserId: string,
     excludeAppointmentId?: string,
+    db: AppointmentDbClient = this.prisma,
   ): Promise<
     Array<{ id: string; startAt: Date; endAt: Date; metadata: unknown }>
   > {
-    return this.prisma.appointment.findMany({
+    return db.appointment.findMany({
       where: {
         ...this.activeWhere(businessId, {
           status: { in: BLOCKING_STATUSES },
