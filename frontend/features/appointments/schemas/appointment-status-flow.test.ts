@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
+  APPOINTMENT_FILTER_STATUS_OPTIONS,
+  APPOINTMENT_LIFECYCLE_STATUS_OPTIONS,
   formatAppointmentStatus,
+  getAppointmentOverflowStatusOptions,
   getAppointmentStatusDisplayLabel,
   isCheckoutOpen,
   requiresClosedSaleEditAcknowledgement,
@@ -44,5 +47,30 @@ describe("appointment status flow helpers", () => {
         relatedCheckoutStatus: null,
       }),
     ).toBe(false);
+  });
+
+  it("includes No Show in staff lifecycle options without Cancelled", () => {
+    const values = APPOINTMENT_LIFECYCLE_STATUS_OPTIONS.map((o) => o.value);
+    expect(values).toContain("NO_SHOW");
+    expect(values).not.toContain("CANCELLED");
+    expect(formatAppointmentStatus("NO_SHOW")).toBe("No Show");
+  });
+
+  it("keeps Cancelled and No Show in filters without duplicating No Show", () => {
+    const values = APPOINTMENT_FILTER_STATUS_OPTIONS.map((o) => o.value);
+    expect(values.filter((value) => value === "NO_SHOW")).toHaveLength(1);
+    expect(values).toContain("CANCELLED");
+  });
+
+  it("hides WAITING from overflow options when waiting room is off", () => {
+    expect(
+      getAppointmentOverflowStatusOptions(true).map((o) => o.value),
+    ).toContain("WAITING");
+    expect(
+      getAppointmentOverflowStatusOptions(false).map((o) => o.value),
+    ).not.toContain("WAITING");
+    expect(
+      getAppointmentOverflowStatusOptions(false).map((o) => o.value),
+    ).toContain("NO_SHOW");
   });
 });

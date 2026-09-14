@@ -1,4 +1,5 @@
-import { InvoiceStatus } from '@prisma/client';
+import { InvoiceKind, InvoiceStatus } from '@prisma/client';
+import { ErrorCode } from '@app/common/exceptions/error-code.enum';
 import * as invoiceMapper from '../mappers/invoice.mapper';
 import { InvoicesService } from './invoices.service';
 import { buildInvoicePublicUrl } from '../utils/invoice-public-token.util';
@@ -182,6 +183,94 @@ describe('InvoicesService invoice.sent', () => {
 
     expect(sendSpy).toHaveBeenCalled();
     sendSpy.mockRestore();
+    jest.restoreAllMocks();
+  });
+});
+
+describe('InvoicesService checkout mutations (SALE-AUD-03)', () => {
+  const businessId = 'biz-1';
+  const actor = { id: 'user-1' } as never;
+
+  function buildService() {
+    const invoiceRepository = {
+      findById: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+      softDelete: jest.fn(),
+    };
+    const service = new InvoicesService(
+      invoiceRepository as never,
+      { findById: jest.fn() } as never,
+      { findById: jest.fn() } as never,
+      { findById: jest.fn() } as never,
+      { findById: jest.fn() } as never,
+      { log: jest.fn() } as never,
+      {
+        getSettingsForBusiness: jest.fn(),
+        allocateInvoiceNumber: jest.fn(),
+      } as never,
+      { dispatch: jest.fn() } as never,
+      { findById: jest.fn() } as never,
+      { get: jest.fn() } as never,
+    );
+    return { service, invoiceRepository };
+  }
+
+  it('rejects updateStatus on kind=CHECKOUT', async () => {
+    const { service, invoiceRepository } = buildService();
+    invoiceRepository.findById.mockResolvedValue(
+      buildInvoiceMock({ kind: InvoiceKind.CHECKOUT, status: InvoiceStatus.OPEN }),
+    );
+
+    await expect(
+      service.updateStatus(
+        businessId,
+        'sale-1',
+        { status: InvoiceStatus.VOID },
+        actor,
+      ),
+    ).rejects.toMatchObject({ code: ErrorCode.BAD_REQUEST });
+    expect(invoiceRepository.update).not.toHaveBeenCalled();
+  });
+
+  it('rejects PATCH update on kind=CHECKOUT including status PAID', async () => {
+    const { service, invoiceRepository } = buildService();
+    invoiceRepository.findById.mockResolvedValue(
+      buildInvoiceMock({ kind: InvoiceKind.CHECKOUT, status: InvoiceStatus.OPEN }),
+    );
+
+    await expect(
+      service.update(businessId, 'sale-1', { status: InvoiceStatus.PAID }, actor),
+    ).rejects.toMatchObject({ code: ErrorCode.BAD_REQUEST });
+    expect(invoiceRepository.update).not.toHaveBeenCalled();
+  });
+
+  it('still allows updateStatus SENT on STANDARD invoices', async () => {
+    const { service, invoiceRepository } = buildService();
+    jest
+      .spyOn(invoiceMapper, 'toInvoiceResponse')
+      .mockReturnValue({ id: 'inv-1' } as never);
+    invoiceRepository.findById.mockResolvedValue(
+      buildInvoiceMock({
+        kind: InvoiceKind.STANDARD,
+        status: InvoiceStatus.DRAFT,
+      }),
+    );
+    invoiceRepository.update.mockResolvedValue(
+      buildInvoiceMock({
+        kind: InvoiceKind.STANDARD,
+        status: InvoiceStatus.SENT,
+      }),
+    );
+
+    await service.updateStatus(
+      businessId,
+      'inv-1',
+      { status: InvoiceStatus.SENT },
+      actor,
+    );
+
+    expect(invoiceRepository.update).toHaveBeenCalled();
     jest.restoreAllMocks();
   });
 });

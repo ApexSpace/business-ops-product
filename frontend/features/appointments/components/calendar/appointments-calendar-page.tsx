@@ -23,6 +23,7 @@ import { CalendarDisplayRuntimeProvider } from "@/features/calendar-display-sett
 import { getAppointment } from "@/features/appointments/api/appointments.api";
 import { WaitlistPanel } from "@/features/waitlist/components/waitlist-panel";
 import { WaitlistToolbarButton } from "@/features/waitlist/components/waitlist-toolbar-button";
+import { useCanShowWaitlistChrome } from "@/features/waitlist/hooks/use-can-show-waitlist-chrome";
 import { useIsMobile } from "@/lib/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 
@@ -89,6 +90,7 @@ function AppointmentsCalendarPageBody({
   cal: ReturnType<typeof useAppointmentsCalendarPage>;
 }) {
   const isMobile = useIsMobile();
+  const canShowWaitlist = useCanShowWaitlistChrome();
   const [waitlistOpen, setWaitlistOpen] = useState(false);
   const drag = useAppointmentCalendarDrag({
     timezone: cal.displayTimezone,
@@ -267,16 +269,17 @@ function AppointmentsCalendarPageBody({
           </div>
         ) : null}
 
-        {/* Figma: Waitlist floats bottom-right over the calendar grid */}
-        <WaitlistToolbarButton
-          onClick={() => setWaitlistOpen(true)}
-          className={cn(
-            "absolute z-20",
-            isMobile
-              ? "bottom-3 right-3"
-              : "bottom-4 right-4 sm:bottom-5 sm:right-5",
-          )}
-        />
+        {canShowWaitlist ? (
+          <WaitlistToolbarButton
+            onClick={() => setWaitlistOpen(true)}
+            className={cn(
+              "absolute z-20",
+              isMobile
+                ? "bottom-3 right-3"
+                : "bottom-4 right-4 sm:bottom-5 sm:right-5",
+            )}
+          />
+        ) : null}
       </div>
 
       <AppointmentCreateDrawer
@@ -363,16 +366,18 @@ function AppointmentsCalendarPageBody({
         }
       />
 
-      <WaitlistPanel
-        open={waitlistOpen}
-        onOpenChange={setWaitlistOpen}
-        anchorDateKey={cal.anchorDateKey}
-        timezone={cal.displayTimezone}
-        onBooked={(appointmentId) => {
-          setWaitlistOpen(false);
-          cal.drawer.openDetail(appointmentId);
-        }}
-      />
+      {canShowWaitlist ? (
+        <WaitlistPanel
+          open={waitlistOpen}
+          onOpenChange={setWaitlistOpen}
+          anchorDateKey={cal.anchorDateKey}
+          timezone={cal.displayTimezone}
+          onBooked={(appointmentId) => {
+            setWaitlistOpen(false);
+            cal.drawer.openDetail(appointmentId);
+          }}
+        />
+      ) : null}
     </div>
   );
 }

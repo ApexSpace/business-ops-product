@@ -47,8 +47,13 @@ export function SaleClosePanel({
       if (result.completed) {
         try {
           await waitForCheckoutSettled(checkoutId);
-        } catch {
-          // Sale may already be settled synchronously for $0 closes.
+        } catch (err) {
+          toast.error(
+            err instanceof Error
+              ? err.message
+              : "Sale is still open. Payment may still be processing.",
+          );
+          return;
         }
         toast.success("Sale closed");
         onComplete();

@@ -6,6 +6,7 @@ import type {
   CloseCheckoutResult,
 } from "@/features/sales/types/checkout";
 import type { CollectPaymentTender } from "@/features/payments/api/payment-collection.api";
+import { pollUntilCheckoutSettled } from "@/features/sales/utils/checkout-settlement";
 
 export type ListCheckoutsFilters = {
   page?: number;
@@ -106,7 +107,7 @@ export function addPackageLine(
 }
 
 export function voidCheckout(checkoutId: string) {
-  return api.delete<Checkout>(`checkouts/${checkoutId}`);
+  return api.delete<Checkout>(`checkouts/${checkoutId}?confirm=true`);
 }
 
 export function closeCheckout(
@@ -166,27 +167,10 @@ export function removeCheckoutOffer(checkoutId: string, offerId: string) {
   return api.post<Checkout>(`checkouts/${checkoutId}/remove-offer`, { offerId });
 }
 
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
 /** Poll until webhook/settlement updates the sale (card payments are async). */
 export async function waitForCheckoutSettled(
   checkoutId: string,
   options?: { maxAttempts?: number; intervalMs?: number },
 ): Promise<Checkout> {
-  const maxAttempts = options?.maxAttempts ?? 30;
-  const intervalMs = options?.intervalMs ?? 500;
-
-  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
-    const checkout = await getCheckout(checkoutId);
-    if (!checkout.isOpen) {
-      return checkout;
-    }
-    if (attempt < maxAttempts - 1) {
-      await sleep(intervalMs);
-    }
-  }
-
-  return getCheckout(checkoutId);
+  return pollUntilCheckoutSettled(() => getCheckout(checkoutId), options);
 }

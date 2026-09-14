@@ -35,11 +35,22 @@ describe('AppointmentNotificationService', () => {
           { userId: 'owner-1', user: { email: 'owner@example.com' } },
         ]),
     };
+    const cancelRescheduleSettingsRepository = {
+      ensureSettings: jest.fn().mockResolvedValue({
+        cancellationPolicyHtml: null,
+        cancellationPolicySms: null,
+      }),
+    };
+    const configService = {
+      get: jest.fn().mockReturnValue(''),
+    };
 
     const service = new AppointmentNotificationService(
       notificationDispatch as never,
       businessRepository as never,
       membershipRepository as never,
+      cancelRescheduleSettingsRepository as never,
+      configService as never,
     );
 
     return { service, notificationDispatch, membershipRepository };

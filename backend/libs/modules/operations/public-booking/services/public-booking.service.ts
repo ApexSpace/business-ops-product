@@ -61,6 +61,7 @@ import { CreateUploadDto } from '@app/modules/storage/dto/create-upload.dto';
 import { FileCategory, FileAssetStatus, FileVisibility } from '@prisma/client';
 import { BookingLinkSaleService } from '@app/modules/finance/payments/services/booking-link-sale.service';
 import { AppointmentResourceAllocationService } from '@app/modules/operations/appointments/services/appointment-resource-allocation.service';
+import { commitPublicBookingAppointment } from '@app/modules/operations/public-booking/utils/commit-public-booking-appointment.util';
 
 @Injectable()
 export class PublicBookingService {
@@ -691,9 +692,12 @@ export class PublicBookingService {
       ? randomUUID()
       : null;
 
-    const appointment = await this.appointmentRepository.create(
-      bookingContext.businessId,
-      {
+    const appointment = await commitPublicBookingAppointment({
+      appointmentRepository: this.appointmentRepository,
+      bookingLinkSale: this.bookingLinkSale,
+      logger: this.logger,
+      businessId: bookingContext.businessId,
+      appointmentData: {
         calendarId: null,
         contactId: contact.id,
         serviceId: primaryServiceId,
@@ -725,59 +729,20 @@ export class PublicBookingService {
           ...(serviceMetadata ?? {}),
         } as Prisma.InputJsonValue,
       },
-      undefined,
+      serviceLines: builtLines.serviceLines,
       resourceAssignments,
-    );
-
-    for (const line of builtLines.serviceLines) {
-      await this.prisma.appointmentServiceLine.create({
-        data: {
-          appointmentId: appointment.id,
-          serviceId: line.serviceId,
-          assignedToId: line.assignedToId,
-          startAt: line.startAt,
-          durationMinutes: line.durationMinutes,
-          price: line.price,
-          sortOrder: line.sortOrder,
-        },
-      });
-    }
-
-    if (dto.paymentIntentId) {
-      try {
-        const sale = await this.bookingLinkSale.createPrepaidCheckoutSale({
-          businessId: bookingContext.businessId,
-          appointmentId: appointment.id,
-          contactId: contact.id,
-          serviceId: primaryServiceId!,
-          serviceName: primaryService?.name ?? serviceName,
-          staffUserId: assignedStaffId ?? undefined,
-          amount: primaryService?.price?.toString() ?? '0',
-          paymentIntentId: dto.paymentIntentId,
-        });
-        const previousMetadata =
-          appointment.metadata && typeof appointment.metadata === 'object'
-            ? (appointment.metadata as Record<string, unknown>)
-            : {};
-        await this.appointmentRepository.update(appointment.id, {
-          metadata: {
-            ...previousMetadata,
-            prepaidCheckoutId: sale.checkoutId,
-          },
-        });
-      } catch (error) {
-        this.logger.error(
-          `Failed to create prepaid checkout sale for appointment ${appointment.id}: ${
-            error instanceof Error ? error.message : String(error)
-          }`,
-        );
-        throw new AppException(
-          ErrorCode.BAD_REQUEST,
-          'Payment succeeded but sale could not be recorded. Please contact the business.',
-          HttpStatus.BAD_REQUEST,
-        );
-      }
-    }
+      prepaid: dto.paymentIntentId
+        ? {
+            businessId: bookingContext.businessId,
+            contactId: contact.id,
+            serviceId: primaryServiceId!,
+            serviceName: primaryService?.name ?? serviceName,
+            staffUserId: assignedStaffId ?? undefined,
+            amount: primaryService?.price?.toString() ?? '0',
+            paymentIntentId: dto.paymentIntentId,
+          }
+        : null,
+    });
 
     const confirmationLines = builtLines.serviceLines.map((line, index) => ({
       serviceId: line.serviceId,
