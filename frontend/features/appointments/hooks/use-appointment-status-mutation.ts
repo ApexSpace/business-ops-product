@@ -18,5 +18,10 @@ export function useAppointmentStatusMutation(appointmentId?: string | null) {
       });
       toast.success("Status updated");
     },
+    onError: (error) => {
+      toast.error(
+        error instanceof Error ? error.message : "Could not update status",
+      );
+    },
   });
 }
