@@ -123,6 +123,7 @@ describe('StripePaymentIntentService', () => {
     expect(result.clientSecret).toBe('secret_1');
     expect(chargeCtx.stripe.paymentIntents.retrieve).toHaveBeenCalledWith(
       'pi_1',
+      undefined,
       { stripeAccount: 'acct_connected' },
     );
   });
