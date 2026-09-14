@@ -90,6 +90,12 @@ export function invoiceStatusFromPayments(
     return status;
   }
 
+  // All succeeded tenders reversed (full refund). Reopen POS sales;
+  // standard invoices return to SENT.
+  if (options.kind === InvoiceKind.CHECKOUT) {
+    return InvoiceStatus.OPEN;
+  }
+
   if (status === InvoiceStatus.PARTIAL || status === InvoiceStatus.PAID) {
     return InvoiceStatus.SENT;
   }

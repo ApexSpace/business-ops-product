@@ -13,7 +13,8 @@ describe('StripeWebhookService ingress dedup', () => {
   };
   const jobEnqueue = { enqueueStripeWebhook: jest.fn() };
   const stripeApiService = {
-    getPlatformWebhookSecret: () => 'whsec_test',
+    getPlatformWebhookSecret: () => 'whsec_platform',
+    getConnectedAccountWebhookSecret: () => 'whsec_connect',
     constructWebhookEvent: jest.fn(),
   };
 
@@ -76,6 +77,24 @@ describe('StripeWebhookService ingress dedup', () => {
     expect(jobEnqueue.enqueueStripeWebhook).toHaveBeenCalledWith({
       webhookEventId: 'we_2',
       source: 'platform',
+    });
+  });
+
+  it('verifies Connect webhooks with the connected-account secret', async () => {
+    const rawBody = Buffer.from('{}');
+    webhookEventsRepository.findByProviderAndExternalId.mockResolvedValue(null);
+    webhookEventsRepository.create.mockResolvedValue({ id: 'we_c' });
+
+    await service.handleConnectedAccountWebhook(rawBody, 'sig');
+
+    expect(stripeApiService.constructWebhookEvent).toHaveBeenCalledWith(
+      rawBody,
+      'sig',
+      'whsec_connect',
+    );
+    expect(jobEnqueue.enqueueStripeWebhook).toHaveBeenCalledWith({
+      webhookEventId: 'we_c',
+      source: 'connected',
     });
   });
 });

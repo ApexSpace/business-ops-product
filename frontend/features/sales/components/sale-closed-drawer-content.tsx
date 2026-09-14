@@ -22,6 +22,7 @@ import {
   merchandiseSubtotalFromCheckout,
 } from "@/features/sales/utils/checkout-custom-fees";
 import type { Checkout } from "@/features/sales/types/checkout";
+import { saleStatusLabel } from "@/features/sales/utils/sales-list-format";
 import { queryKeys } from "@/lib/query/keys";
 import { cn } from "@/lib/utils";
 
@@ -36,9 +37,7 @@ function money(value: string | number) {
 }
 
 function statusSuffix(sale: Checkout) {
-  if (sale.status === "VOID") return "Void";
-  if (!sale.isOpen) return "Closed";
-  return "Open";
+  return saleStatusLabel(sale);
 }
 
 export function saleDrawerTitle(sale: Checkout) {

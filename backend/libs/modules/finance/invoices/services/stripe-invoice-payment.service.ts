@@ -316,19 +316,23 @@ export class StripeInvoicePaymentService {
           ? (Number(refundedCents) / 100).toFixed(2)
           : payment.amount.toFixed(2);
 
-      await this.prisma.payment.update({
-        where: { id: payment.id },
-        data: {
-          stripeRefundId: charge.id ?? payment.stripeRefundId,
-          providerMetadata: {
-            ...(typeof payment.providerMetadata === 'object' &&
-            payment.providerMetadata !== null
-              ? (payment.providerMetadata as Record<string, unknown>)
-              : {}),
-            refundedAt: new Date().toISOString(),
-            amountRefunded,
+      await this.prisma.$transaction(async (tx) => {
+        await tx.payment.update({
+          where: { id: payment.id },
+          data: {
+            status: PaymentStatus.REFUNDED,
+            stripeRefundId: charge.id ?? payment.stripeRefundId,
+            providerMetadata: {
+              ...(typeof payment.providerMetadata === 'object' &&
+              payment.providerMetadata !== null
+                ? (payment.providerMetadata as Record<string, unknown>)
+                : {}),
+              refundedAt: new Date().toISOString(),
+              amountRefunded,
+            },
           },
-        },
+        });
+        await this.syncInvoicePayments(tx, businessId, invoiceId);
       });
     }
 

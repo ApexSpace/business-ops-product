@@ -24,6 +24,7 @@ import {
   computeInvoicePaymentSyncFields,
   sumPaymentAmounts,
 } from '../utils/invoice-payment-sync.util';
+import { syncInvoicePaymentFields } from '../utils/sync-invoice-payment-fields.util';
 import { StripeApiService } from '@app/modules/integrations/integrations/stripe/services/stripe-api.service';
 import { StripeConnectContextService } from '@app/modules/integrations/integrations/stripe/services/stripe-connect-context.service';
 import { NotificationDispatchService } from '@app/modules/communications/notifications/services/notification-dispatch.service';
@@ -444,8 +445,8 @@ export class PaymentsService {
         existing.stripePaymentIntentId,
       );
       await this.markPaymentRefunded(
-        id,
-        existing.providerMetadata,
+        businessId,
+        existing,
         refundedAmount,
       );
       await this.auditService.log({
@@ -461,8 +462,8 @@ export class PaymentsService {
     }
 
     await this.markPaymentRefunded(
-      id,
-      existing.providerMetadata,
+      businessId,
+      existing,
       refundedAmount,
     );
 
@@ -480,19 +481,31 @@ export class PaymentsService {
   }
 
   private async markPaymentRefunded(
-    paymentId: string,
-    existingMetadata: Prisma.JsonValue | null,
+    businessId: string,
+    payment: {
+      id: string;
+      invoiceId: string | null;
+      providerMetadata: Prisma.JsonValue | null;
+    },
     amountRefunded: string,
   ): Promise<void> {
     await this.prisma.payment.update({
-      where: { id: paymentId },
+      where: { id: payment.id },
       data: {
+        status: PaymentStatus.REFUNDED,
         providerMetadata: this.buildRefundedMetadata(
-          existingMetadata,
+          payment.providerMetadata,
           amountRefunded,
         ),
       },
     });
+    if (payment.invoiceId) {
+      await syncInvoicePaymentFields(
+        this.prisma,
+        businessId,
+        payment.invoiceId,
+      );
+    }
   }
 
   private buildRefundedMetadata(
@@ -513,9 +526,13 @@ export class PaymentsService {
   }
 
   private isPaymentRefunded(payment: {
+    status?: PaymentStatus;
     stripeRefundId: string | null;
     providerMetadata: Prisma.JsonValue | null;
   }): boolean {
+    if (payment.status === PaymentStatus.REFUNDED) {
+      return true;
+    }
     if (payment.stripeRefundId) {
       return true;
     }
