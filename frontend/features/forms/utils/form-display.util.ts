@@ -35,6 +35,22 @@ export function formatFormTableDate(iso: string | null | undefined): string {
   return dt.toLocaleString(DateTime.DATETIME_MED);
 }
 
+export function formatFormSavedAgo(
+  iso: string | null | undefined,
+  now: DateTime = DateTime.now(),
+): string {
+  if (!iso) return "Saved just now";
+  const dt = DateTime.fromISO(iso);
+  if (!dt.isValid) return "Saved just now";
+  const minutes = Math.max(0, Math.floor(now.diff(dt, "minutes").minutes));
+  if (minutes < 1) return "Saved just now";
+  if (minutes < 60) return `Saved ${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `Saved ${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  return `Saved ${days}d ago`;
+}
+
 export function countFormFields(fields: FormField[]): number {
   let count = 0;
   for (const field of fields) {

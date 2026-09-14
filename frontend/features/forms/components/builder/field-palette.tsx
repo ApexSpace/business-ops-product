@@ -2,36 +2,7 @@
 
 import { useDraggable } from "@dnd-kit/core";
 import { useMemo, useState } from "react";
-import {
-  AlignLeft,
-  Calendar,
-  CalendarClock,
-  CheckSquare,
-  CircleDot,
-  Columns2,
-  CreditCard,
-  FileUp,
-  Hash,
-  Heading,
-  Image,
-  KeyRound,
-  List,
-  Loader2,
-  Mail,
-  Minus,
-  PenLine,
-  Phone,
-  Shield,
-  SlidersHorizontal,
-  Space,
-  Star,
-  TextCursorInput,
-  ToggleLeft,
-  Type,
-  User,
-  Globe,
-  EyeOff,
-} from "lucide-react";
+import { getFieldTypeIcon } from "@/features/forms/utils/field-type-icons";
 import {
   Accordion,
   AccordionContent,
@@ -43,36 +14,7 @@ import { cn } from "@/lib/utils";
 import type { FieldType } from "@/features/forms/types";
 import { useFormFieldPalette } from "@/features/forms/hooks/use-form-metadata";
 import type { ColumnAddContext } from "@/features/forms/utils/column-fields.util";
-
-const FIELD_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
-  type: Type,
-  mail: Mail,
-  phone: Phone,
-  hash: Hash,
-  "key-round": KeyRound,
-  "align-left": AlignLeft,
-  list: List,
-  "circle-dot": CircleDot,
-  "check-square": CheckSquare,
-  "toggle-left": ToggleLeft,
-  calendar: Calendar,
-  "calendar-clock": CalendarClock,
-  "file-up": FileUp,
-  "pen-line": PenLine,
-  star: Star,
-  "sliders-horizontal": SlidersHorizontal,
-  "eye-off": EyeOff,
-  shield: Shield,
-  "credit-card": CreditCard,
-  user: User,
-  globe: Globe,
-  heading: Heading,
-  "text-cursor-input": TextCursorInput,
-  minus: Minus,
-  space: Space,
-  image: Image,
-  "columns-2": Columns2,
-};
+import { Loader2 } from "lucide-react";
 
 const DISALLOWED_IN_COLUMN_TYPES = new Set<FieldType>([
   "columns",
@@ -90,7 +32,7 @@ interface PaletteItemProps {
 }
 
 function PaletteItem({ type, label, icon, disabled, onAddField }: PaletteItemProps) {
-  const Icon = (icon ? FIELD_ICONS[icon] : undefined) ?? Type;
+  const Icon = getFieldTypeIcon(type, icon);
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: `palette-${type}`,
     data: { type, source: "palette" as const },

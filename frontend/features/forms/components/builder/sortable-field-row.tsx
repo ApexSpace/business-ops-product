@@ -2,25 +2,35 @@
 
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import {
-  ArrowDown,
-  ArrowUp,
-  Copy,
-  GripVertical,
-  Settings2,
-  Trash2,
-} from "lucide-react";
+import { Copy, GripVertical, Trash2 } from "lucide-react";
 import { IconButton } from "@/components/ui/icon-button";
-import { cn } from "@/lib/utils";
-import type { FormField, FormSettings } from "@/features/forms/types";
+import { MoreActionsButton } from "@/components/ui/more-actions-button";
 import {
-  getFieldLayoutClassName,
-  getFieldMarginStyle,
-  getFieldSizeStyle,
-} from "@/features/forms/utils/field-style.util";
-import { FieldRenderer } from "@/features/forms/components/builder/field-renderer";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { cn } from "@/lib/utils";
+import type { FieldType, FormField, FormSettings } from "@/features/forms/types";
+import { getFieldMarginStyle } from "@/features/forms/utils/field-style.util";
 import { formFieldContainsId } from "@/features/forms/utils/form-field-contains-id.util";
 import { getColumnFieldRemovalContext } from "@/features/forms/utils/column-fields.util";
+import {
+  getBuilderFieldChipLabel,
+} from "@/features/forms/utils/field-defaults.util";
+import { getFieldTypeIcon } from "@/features/forms/utils/field-type-icons";
+import { useFormFieldTypeMap } from "@/features/forms/hooks/use-form-metadata";
+import { BuilderFieldPreview } from "@/features/forms/components/builder/builder-field-preview";
+import {
+  FORMS_BUILDER_ACTIVE_PILL_CLASS,
+  FORMS_BUILDER_CARD_CLASS,
+  FORMS_BUILDER_CARD_IDLE_CLASS,
+  FORMS_BUILDER_CARD_SELECTED_CLASS,
+  FORMS_BUILDER_FIELD_LABEL_CLASS,
+  FORMS_BUILDER_TYPE_CHIP_CLASS,
+} from "@/lib/design/forms-builder-tokens";
 
 interface SortableFieldRowProps {
   field: FormField;
@@ -40,10 +50,12 @@ interface SortableFieldRowProps {
   onMoveDown: () => void;
   onOpenSettings: () => void;
   onSelectNestedField?: (fieldId: string) => void;
+  onAddFieldToColumn?: (
+    columnsFieldId: string,
+    columnIndex: number,
+    type: FieldType,
+  ) => void;
 }
-
-const chromeVisibilityClass =
-  "pointer-events-none opacity-0 transition-opacity group-hover:pointer-events-auto group-focus-within:pointer-events-auto group-hover:opacity-100 group-focus-within:opacity-100 group-data-[selected=true]:pointer-events-auto group-data-[selected=true]:opacity-100";
 
 export function SortableFieldRow({
   field,
@@ -63,7 +75,11 @@ export function SortableFieldRow({
   onMoveDown,
   onOpenSettings,
   onSelectNestedField,
+  onAddFieldToColumn,
 }: SortableFieldRowProps) {
+  const { byKey } = useFormFieldTypeMap({ status: "implemented" });
+  const meta = byKey.get(field.type);
+  const Icon = getFieldTypeIcon(field.type, meta?.icon);
   const isRowSelected = selected || formFieldContainsId(field, selectedFieldId);
   const nestedSelectionActive =
     selectedFieldId != null &&
@@ -76,6 +92,9 @@ export function SortableFieldRow({
   const canDelete = nestedSelectionActive
     ? (columnRemovalContext?.canRemove ?? false)
     : true;
+  const required = Boolean(
+    showRequiredIndicator && field.validation?.required,
+  );
 
   const {
     attributes,
@@ -84,7 +103,10 @@ export function SortableFieldRow({
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: field.id, data: { source: "canvas" as const, fieldId: field.id } });
+  } = useSortable({
+    id: field.id,
+    data: { source: "canvas" as const, fieldId: field.id },
+  });
 
   return (
     <div
@@ -94,80 +116,25 @@ export function SortableFieldRow({
         transition,
         ...getFieldMarginStyle(field.style),
       }}
-      className={cn("group relative w-full pt-8", isDragging && "z-10")}
+      className={cn("relative w-full", isDragging && "z-10")}
       data-selected={isRowSelected ? "true" : undefined}
       onPointerDown={(event) => event.stopPropagation()}
     >
-      <div
-        className={cn(
-          "absolute right-2 top-0 z-20 flex items-center gap-px rounded-md border bg-card p-0.5 shadow-sm",
-          chromeVisibilityClass,
-        )}
-        onClick={(event) => event.stopPropagation()}
-        onKeyDown={(event) => event.stopPropagation()}
-      >
-        <IconButton
-          aria-label="Move field up"
-          className="size-7"
-          disabled={isFirst}
-          onClick={(event) => {
-            event.stopPropagation();
-            onMoveUp();
-          }}
-        >
-          <ArrowUp className="size-3.5" />
-        </IconButton>
-        <IconButton
-          aria-label="Move field down"
-          className="size-7"
-          disabled={isLast}
-          onClick={(event) => {
-            event.stopPropagation();
-            onMoveDown();
-          }}
-        >
-          <ArrowDown className="size-3.5" />
-        </IconButton>
-        <IconButton
-          aria-label="Duplicate field"
-          className="size-7"
-          onClick={(event) => {
-            event.stopPropagation();
-            onDuplicate();
-          }}
-        >
-          <Copy className="size-3.5" />
-        </IconButton>
-        <IconButton
-          aria-label="Field settings"
-          className="size-7"
-          onClick={(event) => {
-            event.stopPropagation();
-            onOpenSettings();
-          }}
-        >
-          <Settings2 className="size-3.5" />
-        </IconButton>
-        <IconButton
-          aria-label={nestedSelectionActive ? "Delete selected field" : "Remove field"}
-          className="size-7 text-destructive hover:text-destructive"
-          disabled={!canDelete}
-          onClick={(event) => {
-            event.stopPropagation();
-            onRemoveField(deleteTargetId);
-          }}
-        >
-          <Trash2 className="size-3.5" />
-        </IconButton>
-      </div>
+      {isRowSelected ? (
+        <span className={FORMS_BUILDER_ACTIVE_PILL_CLASS}>
+          <span className="size-1.5 rounded-full bg-white" aria-hidden />
+          Active Selection
+        </span>
+      ) : null}
 
       <div
-        style={getFieldSizeStyle(field.style)}
         className={cn(
-          "flex items-center gap-2 rounded-lg border bg-card p-5 transition-colors",
-          getFieldLayoutClassName(field.style),
-          isRowSelected ? "border-primary ring-2 ring-primary/30" : "border-border",
-          isDragging && "opacity-80 shadow-md",
+          FORMS_BUILDER_CARD_CLASS,
+          "flex flex-col gap-[var(--spacing-2)]",
+          isRowSelected
+            ? FORMS_BUILDER_CARD_SELECTED_CLASS
+            : FORMS_BUILDER_CARD_IDLE_CLASS,
+          isDragging && "opacity-80",
         )}
         onClick={onSelect}
         onKeyDown={(event) => {
@@ -179,34 +146,109 @@ export function SortableFieldRow({
         role="button"
         tabIndex={0}
       >
-        <button
-          type="button"
-          className={cn(
-            "shrink-0 self-center cursor-grab touch-none text-muted-foreground hover:text-foreground",
-            chromeVisibilityClass,
-            isDragging && "cursor-grabbing",
-          )}
-          aria-label="Drag to reorder"
-          onClick={(event) => event.stopPropagation()}
-          {...attributes}
-          {...listeners}
-        >
-          <GripVertical className="size-4" />
-        </button>
+        <div className="flex items-start gap-[var(--spacing-2)]">
+          <button
+            type="button"
+            className={cn(
+              "mt-0.5 shrink-0 cursor-grab touch-none text-muted-foreground hover:text-foreground",
+              isDragging && "cursor-grabbing",
+            )}
+            aria-label="Drag to reorder"
+            onClick={(event) => event.stopPropagation()}
+            {...attributes}
+            {...listeners}
+          >
+            <GripVertical className="size-4" />
+          </button>
 
-        <div className="min-w-0 flex-1">
-          <FieldRenderer
-            field={field}
-            settings={settings}
-            showRequiredIndicator={showRequiredIndicator}
-            mode="builder"
-            embedInBuilderRow
-            selectedFieldId={selectedFieldId}
-            onSelectField={onSelectNestedField}
-            isDraggingFromPalette={isDraggingFromPalette}
-            activeColumnTargetIndex={activeColumnTargetIndex}
-          />
+          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-[var(--spacing-2)]">
+            <span className={FORMS_BUILDER_TYPE_CHIP_CLASS}>
+              <Icon className="size-3 shrink-0" />
+              <span className="truncate">{getBuilderFieldChipLabel(field.type)}</span>
+            </span>
+            <span className={cn(FORMS_BUILDER_FIELD_LABEL_CLASS, "min-w-0 truncate")}>
+              {field.label || "Untitled field"}
+              {required ? <span className="text-destructive"> *</span> : null}
+            </span>
+          </div>
+
+          <div
+            className="flex shrink-0 items-center"
+            onClick={(event) => event.stopPropagation()}
+            onKeyDown={(event) => event.stopPropagation()}
+          >
+            {isRowSelected ? (
+              <>
+                <IconButton
+                  aria-label="Duplicate field"
+                  className="size-8"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onDuplicate();
+                  }}
+                >
+                  <Copy className="size-3.5" />
+                </IconButton>
+                <IconButton
+                  aria-label={
+                    nestedSelectionActive
+                      ? "Delete selected field"
+                      : "Remove field"
+                  }
+                  className="size-8 text-destructive hover:text-destructive"
+                  disabled={!canDelete}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onRemoveField(deleteTargetId);
+                  }}
+                >
+                  <Trash2 className="size-3.5" />
+                </IconButton>
+              </>
+            ) : null}
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                render={<MoreActionsButton aria-label="Field actions" />}
+              />
+              <DropdownMenuContent align="end" className="w-44">
+                <DropdownMenuItem
+                  onClick={() => {
+                    onSelect();
+                    onOpenSettings();
+                  }}
+                >
+                  Edit settings
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={onDuplicate}>Duplicate</DropdownMenuItem>
+                <DropdownMenuItem disabled={isFirst} onClick={onMoveUp}>
+                  Move up
+                </DropdownMenuItem>
+                <DropdownMenuItem disabled={isLast} onClick={onMoveDown}>
+                  Move down
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  variant="destructive"
+                  disabled={!canDelete}
+                  onClick={() => onRemoveField(deleteTargetId)}
+                >
+                  Delete field
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
+
+        <BuilderFieldPreview
+          field={field}
+          settings={settings}
+          showRequiredIndicator={showRequiredIndicator}
+          selectedFieldId={selectedFieldId}
+          isDraggingFromPalette={isDraggingFromPalette}
+          activeColumnTargetIndex={activeColumnTargetIndex}
+          onSelectNestedField={onSelectNestedField}
+          onAddFieldToColumn={onAddFieldToColumn}
+        />
       </div>
     </div>
   );

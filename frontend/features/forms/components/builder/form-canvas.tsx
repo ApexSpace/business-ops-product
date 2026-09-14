@@ -3,16 +3,31 @@
 import { useDroppable } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
-import type { FormDefinition } from "@/features/forms/types";
+import { MoreActionsButton } from "@/components/ui/more-actions-button";
 import {
-  getFormContainerClass,
-  getFormContainerStyle,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { cn } from "@/lib/utils";
+import type { FieldType, FormDefinition } from "@/features/forms/types";
+import {
   getSubmitButtonClass,
   getSubmitButtonStyle,
 } from "@/features/forms/utils/field-style.util";
-import { BuilderEmptyState } from "@/features/forms/components/builder/builder-empty-state";
 import { SortableFieldRow } from "@/features/forms/components/builder/sortable-field-row";
+import { InsertFieldPopover } from "@/features/forms/components/builder/insert-field-popover";
+import {
+  FORMS_BUILDER_CANVAS_CLASS,
+  FORMS_BUILDER_CANVAS_COLUMN_CLASS,
+  FORMS_BUILDER_CANVAS_SCROLL_CLASS,
+  FORMS_BUILDER_CARD_CLASS,
+  FORMS_BUILDER_INSERT_ROW_CLASS,
+  FORMS_BUILDER_TITLE_CLASS,
+  FORMS_BUILDER_TITLE_DESCRIPTION_CLASS,
+  FORMS_BUILDER_TITLE_EYEBROW_CLASS,
+} from "@/lib/design/forms-builder-tokens";
 
 export const CANVAS_EMPTY_ID = "canvas-empty";
 export const CANVAS_APPEND_ID = "canvas-append";
@@ -27,6 +42,12 @@ interface FormCanvasProps {
   onDuplicateField: (fieldId: string) => void;
   onRemoveField: (fieldId: string) => void;
   onMoveField: (fieldId: string, direction: "up" | "down") => void;
+  onAddField: (type: FieldType, index?: number) => void;
+  onAddFieldToColumn: (
+    columnsFieldId: string,
+    columnIndex: number,
+    type: FieldType,
+  ) => void;
   className?: string;
 }
 
@@ -63,53 +84,82 @@ export function FormCanvas({
   onDuplicateField,
   onRemoveField,
   onMoveField,
+  onAddField,
+  onAddFieldToColumn,
   className,
 }: FormCanvasProps) {
   const { fields, settings } = definition;
-  const containerStyle = getFormContainerStyle(settings);
-  const containerClass = getFormContainerClass(settings);
 
   return (
-    <section
-      className={cn(
-        "flex h-full min-h-0 flex-col overflow-hidden bg-background",
-        className,
-      )}
-    >
+    <section className={cn(FORMS_BUILDER_CANVAS_CLASS, className)}>
       <div
-        className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden p-4"
+        className={FORMS_BUILDER_CANVAS_SCROLL_CLASS}
         onPointerDown={() => onDeselectField?.()}
       >
-        <div
-          className={cn("border shadow-sm", containerClass)}
-          style={containerStyle}
-        >
-          <div className="mb-3 space-y-2">
-            <h2 className="text-lg font-semibold">
-              {settings.title || "Untitled form"}
-            </h2>
-            {settings.description ? (
-              <p className="text-sm text-muted-foreground">{settings.description}</p>
-            ) : null}
+        <div className={FORMS_BUILDER_CANVAS_COLUMN_CLASS}>
+          <div
+            className={cn(
+              FORMS_BUILDER_CARD_CLASS,
+              "flex flex-col gap-[var(--spacing-2)]",
+            )}
+            onPointerDown={(event) => event.stopPropagation()}
+            onClick={() => onDeselectField?.()}
+          >
+            <div className="flex items-start justify-between gap-[var(--spacing-2)]">
+              <div className="min-w-0 space-y-[var(--spacing-2)]">
+                <p className={FORMS_BUILDER_TITLE_EYEBROW_CLASS}>
+                  Form title & welcome
+                </p>
+                <h2 className={FORMS_BUILDER_TITLE_CLASS}>
+                  {settings.title || "Untitled form"}
+                </h2>
+                {settings.description ? (
+                  <p className={FORMS_BUILDER_TITLE_DESCRIPTION_CLASS}>
+                    {settings.description}
+                  </p>
+                ) : null}
+              </div>
+              <DropdownMenu>
+                <DropdownMenuTrigger
+                  render={<MoreActionsButton aria-label="Title card actions" />}
+                />
+                <DropdownMenuContent align="end" className="w-44">
+                  <DropdownMenuItem onClick={() => onDeselectField?.()}>
+                    Edit in settings
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
+
+          <div
+            className={FORMS_BUILDER_INSERT_ROW_CLASS}
+            onPointerDown={(event) => event.stopPropagation()}
+          >
+            <InsertFieldPopover
+              onAddField={(type) => onAddField(type, 0)}
+              ariaLabel="Add field at start"
+            />
           </div>
 
           {fields.length === 0 ? (
             <CanvasDropZone
               id={CANVAS_EMPTY_ID}
-              className="min-h-[200px] rounded-lg"
-              isOverClassName="ring-2 ring-primary/30 bg-primary/5"
+              className="min-h-[var(--spacing-6)]"
+              isOverClassName="rounded-[var(--radius-card)] bg-violet-primary-light/40"
             >
-              <BuilderEmptyState />
+              <p className="text-center text-sm text-muted-foreground">
+                Use + to add your first field.
+              </p>
             </CanvasDropZone>
           ) : (
             <SortableContext
               items={fields.map((field) => field.id)}
               strategy={verticalListSortingStrategy}
             >
-              <div>
-                {fields.map((field, index) => (
+              {fields.map((field, index) => (
+                <div key={field.id} className="flex flex-col">
                   <SortableFieldRow
-                    key={field.id}
                     field={field}
                     settings={settings}
                     selected={selectedFieldId === field.id}
@@ -126,21 +176,28 @@ export function FormCanvas({
                     onMoveUp={() => onMoveField(field.id, "up")}
                     onMoveDown={() => onMoveField(field.id, "down")}
                     onOpenSettings={() => onSelectField(field.id)}
+                    onAddFieldToColumn={onAddFieldToColumn}
                     allFields={fields}
                   />
-                ))}
-              </div>
+                  <div
+                    className={FORMS_BUILDER_INSERT_ROW_CLASS}
+                    onPointerDown={(event) => event.stopPropagation()}
+                  >
+                    <InsertFieldPopover
+                      onAddField={(type) => onAddField(type, index + 1)}
+                      ariaLabel={`Add field after ${field.label || "field"}`}
+                    />
+                  </div>
+                </div>
+              ))}
             </SortableContext>
           )}
 
           {fields.length > 0 ? (
             <CanvasDropZone
               id={CANVAS_APPEND_ID}
-              className={cn(
-                "mt-3 min-h-8 rounded-md border border-dashed border-transparent transition-colors",
-                isDraggingFromPalette && "min-h-12",
-              )}
-              isOverClassName="border-primary/40 bg-primary/5"
+              className="sr-only"
+              isOverClassName=""
             >
               <span className="sr-only">Drop zone to append field</span>
             </CanvasDropZone>
@@ -148,14 +205,14 @@ export function FormCanvas({
 
           <div
             className={cn(
-              "mt-4 flex",
+              "flex pt-[var(--spacing-2)]",
               settings.submitButtonAlign === "center" && "justify-center",
               settings.submitButtonAlign === "right" && "justify-end",
             )}
           >
             <Button
               type="button"
-              variant="default"
+              variant="brand"
               className={getSubmitButtonClass(settings)}
               style={getSubmitButtonStyle(settings)}
             >

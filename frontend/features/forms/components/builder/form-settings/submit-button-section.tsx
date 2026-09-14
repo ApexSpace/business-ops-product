@@ -11,6 +11,7 @@ import { SettingToggle } from "@/features/forms/components/builder/settings-cont
 interface SubmitButtonSectionProps {
   settings: FormSettings;
   onUpdate: (patch: Partial<FormSettings>) => void;
+  includeLabel?: boolean;
 }
 
 const RADIUS_OPTIONS = [
@@ -27,15 +28,21 @@ const ALIGN_OPTIONS = [
   { value: "right", label: "Right" },
 ];
 
-export function SubmitButtonSection({ settings, onUpdate }: SubmitButtonSectionProps) {
+export function SubmitButtonSection({
+  settings,
+  onUpdate,
+  includeLabel = true,
+}: SubmitButtonSectionProps) {
   return (
     <SectionHeader title="Submit Button">
-      <SettingRow label="Button text">
-        <SettingInput
-          value={settings.submitButtonLabel}
-          onChange={(value) => onUpdate({ submitButtonLabel: value })}
-        />
-      </SettingRow>
+      {includeLabel ? (
+        <SettingRow label="Submit Button Text">
+          <SettingInput
+            value={settings.submitButtonLabel}
+            onChange={(value) => onUpdate({ submitButtonLabel: value })}
+          />
+        </SettingRow>
+      ) : null}
       <SettingRow label="Border radius">
         <SettingSelect
           value={settings.submitButtonRadius ?? "md"}

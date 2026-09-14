@@ -15,7 +15,7 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
-import type { ColumnCount, FormField, FormSettings } from "@/features/forms/types";
+import type { ColumnCount, FieldType, FormField, FormSettings } from "@/features/forms/types";
 import { FormFileUploadControl } from "@/features/forms/components/form-file-upload-control";
 import { FormImageDisplay } from "@/features/forms/components/form-image-display";
 import { resizeFormFieldColumns } from "@/features/forms/utils/field-defaults.util";
@@ -55,6 +55,11 @@ interface FieldRendererProps {
   inColumnLayout?: boolean;
   isDraggingFromPalette?: boolean;
   activeColumnTargetIndex?: number | null;
+  onAddFieldToColumn?: (
+    columnsFieldId: string,
+    columnIndex: number,
+    type: FieldType,
+  ) => void;
 }
 
 function fieldLayoutProps(
@@ -250,6 +255,7 @@ export function FieldRenderer({
   inColumnLayout = false,
   isDraggingFromPalette = false,
   activeColumnTargetIndex = null,
+  onAddFieldToColumn,
 }: FieldRendererProps) {
   const disabled = !interactive;
   const required = field.validation?.required;
@@ -383,6 +389,11 @@ export function FieldRenderer({
             isTargetColumn={
               mode === "builder" && activeColumnTargetIndex === columnIndex
             }
+            onInsertField={
+              mode === "builder" && onAddFieldToColumn
+                ? (type) => onAddFieldToColumn(field.id, columnIndex, type)
+                : undefined
+            }
             className={cn(columnLayout.column, hasTallColumn ? "gap-3" : "gap-4")}
           >
             {column.map((nested) => (
@@ -433,6 +444,7 @@ export function FieldRenderer({
                   inColumnLayout
                   isDraggingFromPalette={isDraggingFromPalette}
                   activeColumnTargetIndex={activeColumnTargetIndex}
+                  onAddFieldToColumn={onAddFieldToColumn}
                 />
               </div>
             ))}
