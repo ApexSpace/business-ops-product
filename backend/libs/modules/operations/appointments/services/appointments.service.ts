@@ -25,6 +25,7 @@ import { JobEnqueueService } from '@app/core/jobs/job-enqueue.service';
 import { ClientPackagesService } from '@app/modules/finance/packages/services/client-packages.service';
 import { AppointmentRepository } from '../repositories/appointment.repository';
 import { AppointmentNotificationService } from './appointment-notification.service';
+import { AppointmentResourceAllocationService } from './appointment-resource-allocation.service';
 import { resolveServiceTiming } from '@app/modules/crm/services/utils/service-timing.util';
 import {
   appointmentBlocksOverlap,
@@ -79,6 +80,7 @@ export class AppointmentsService {
     private readonly waitingRoomSettingsService: WaitingRoomSettingsService,
     private readonly cancelRescheduleSettingsService: CancelRescheduleSettingsService,
     private readonly appointmentAutomatedMessagesService: AppointmentAutomatedMessagesService,
+    private readonly resourceAllocation: AppointmentResourceAllocationService,
   ) {}
 
   private scheduleGoogleCalendarSync(
@@ -454,6 +456,24 @@ export class AppointmentsService {
       );
     }
 
+    const resourceAssignments =
+      serviceLines.length > 0
+        ? await this.resourceAllocation.allocateForCreate({
+            businessId,
+            lines: serviceLines
+              .filter((line) => line.serviceId && line.startAt)
+              .map((line) => ({
+                serviceId: line.serviceId,
+                startAt:
+                  line.startAt instanceof Date
+                    ? line.startAt
+                    : new Date(line.startAt),
+                durationMinutes: line.durationMinutes ?? null,
+              })),
+            conflictCode: ErrorCode.APPOINTMENT_SCHEDULE_CONFLICT,
+          })
+        : [];
+
     const outsideHoursWarning =
       serviceLines.length > 0
         ? await this.detectOutsideWorkingHours(
@@ -502,6 +522,7 @@ export class AppointmentsService {
         }),
       },
       serviceLines,
+      resourceAssignments,
     );
 
     await this.auditService.log({

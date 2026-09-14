@@ -80,6 +80,32 @@ describe('commitPublicBookingAppointment', () => {
     expect(appointmentRepository.softDelete).not.toHaveBeenCalled();
   });
 
+  it('writes resource assignments in the same nested create', async () => {
+    const created = { id: 'apt-1', metadata: appointmentData.metadata };
+    const { appointmentRepository, bookingLinkSale, logger } = createDeps({
+      createImpl: jest.fn().mockResolvedValue(created),
+    });
+    const resourceAssignments = [{ resourceId: 'room-a', quantity: 1 }];
+
+    await commitPublicBookingAppointment({
+      appointmentRepository,
+      bookingLinkSale,
+      logger,
+      businessId: 'biz-1',
+      appointmentData,
+      serviceLines,
+      resourceAssignments,
+      prepaid: null,
+    });
+
+    expect(appointmentRepository.create).toHaveBeenCalledWith(
+      'biz-1',
+      appointmentData,
+      serviceLines,
+      resourceAssignments,
+    );
+  });
+
   it('does not leave a live appointment when nested create fails after insert', async () => {
     const { appointmentRepository, bookingLinkSale, logger } = createDeps({
       createImpl: jest

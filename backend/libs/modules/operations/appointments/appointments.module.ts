@@ -22,6 +22,7 @@ import { AppointmentAutomatedMessagesRepository } from './automated-messages/rep
 import { AppointmentNotificationService } from './services/appointment-notification.service';
 import { AppointmentReminderService } from './services/appointment-reminder.service';
 import { AppointmentsService } from './services/appointments.service';
+import { AppointmentResourceAllocationService } from './services/appointment-resource-allocation.service';
 import { WaitingRoomSettingsService } from './waiting-room-settings/services/waiting-room-settings.service';
 import { CancelRescheduleSettingsService } from './cancel-reschedule-settings/services/cancel-reschedule-settings.service';
 import { AppointmentAutomatedMessagesService } from './automated-messages/services/appointment-automated-messages.service';
@@ -53,6 +54,7 @@ import { AppointmentAutomatedMessagesService } from './automated-messages/servic
     CancelRescheduleSettingsRepository,
     AppointmentAutomatedMessagesRepository,
     AppointmentsService,
+    AppointmentResourceAllocationService,
     AppointmentNotificationService,
     AppointmentReminderService,
     WaitingRoomSettingsService,
@@ -65,6 +67,7 @@ import { AppointmentAutomatedMessagesService } from './automated-messages/servic
     CancelRescheduleSettingsRepository,
     AppointmentAutomatedMessagesRepository,
     AppointmentsService,
+    AppointmentResourceAllocationService,
     AppointmentNotificationService,
     AppointmentReminderService,
     WaitingRoomSettingsService,

@@ -20,6 +20,7 @@ export type CommitPublicBookingAppointmentParams<
       businessId: string,
       data: Omit<Prisma.AppointmentUncheckedCreateInput, 'businessId'>,
       serviceLines?: Prisma.AppointmentServiceLineUncheckedCreateWithoutAppointmentInput[],
+      resourceAssignments?: Array<{ resourceId: string; quantity: number }>,
     ) => Promise<T>;
     update: (id: string, data: Prisma.AppointmentUpdateInput) => Promise<T>;
     softDelete: (id: string) => Promise<unknown>;
@@ -33,6 +34,7 @@ export type CommitPublicBookingAppointmentParams<
   businessId: string;
   appointmentData: Omit<Prisma.AppointmentUncheckedCreateInput, 'businessId'>;
   serviceLines: Prisma.AppointmentServiceLineUncheckedCreateWithoutAppointmentInput[];
+  resourceAssignments?: Array<{ resourceId: string; quantity: number }>;
   prepaid: Omit<CreatePrepaidCheckoutSaleParams, 'appointmentId'> | null;
 };
 
@@ -48,6 +50,9 @@ export async function commitPublicBookingAppointment<
     params.businessId,
     params.appointmentData,
     params.serviceLines,
+    ...(params.resourceAssignments?.length
+      ? [params.resourceAssignments]
+      : []),
   );
 
   if (!params.prepaid) {
