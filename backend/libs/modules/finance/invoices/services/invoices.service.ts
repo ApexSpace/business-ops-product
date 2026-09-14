@@ -1,6 +1,6 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { InvoiceStatus, Prisma } from '@prisma/client';
+import { InvoiceKind, InvoiceStatus, Prisma } from '@prisma/client';
 import type { RootConfig } from '@app/core/config/configuration';
 import { RequestUser } from '@app/common/decorators/current-user.decorator';
 import { AppException } from '@app/common/exceptions/app.exception';
@@ -222,6 +222,7 @@ export class InvoicesService {
         HttpStatus.NOT_FOUND,
       );
     }
+    this.assertNotCheckoutInvoice(existing);
 
     const contactId = dto.contactId ?? existing.contactId;
     if (dto.contactId) {
@@ -377,6 +378,7 @@ export class InvoicesService {
         HttpStatus.NOT_FOUND,
       );
     }
+    this.assertNotCheckoutInvoice(existing);
 
     const balanceDue = balanceDueForStatus(dto.status, existing.totalAmount);
 
@@ -488,6 +490,7 @@ export class InvoicesService {
         HttpStatus.NOT_FOUND,
       );
     }
+    this.assertNotCheckoutInvoice(existing);
 
     const invoiceNumber =
       await this.financialSettingsService.allocateInvoiceNumber(businessId);
@@ -547,6 +550,7 @@ export class InvoicesService {
         HttpStatus.NOT_FOUND,
       );
     }
+    this.assertNotCheckoutInvoice(existing);
 
     await this.invoiceRepository.softDelete(businessId, id);
 
@@ -586,6 +590,16 @@ export class InvoicesService {
     const d = new Date();
     d.setHours(0, 0, 0, 0);
     return d;
+  }
+
+  private assertNotCheckoutInvoice(invoice: { kind?: InvoiceKind }): void {
+    if (invoice.kind === InvoiceKind.CHECKOUT) {
+      throw new AppException(
+        ErrorCode.BAD_REQUEST,
+        'POS sales must be voided or closed from checkout, not the invoices API',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
   }
 
   private async assertContact(

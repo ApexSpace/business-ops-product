@@ -106,7 +106,7 @@ export function addPackageLine(
 }
 
 export function voidCheckout(checkoutId: string) {
-  return api.delete<Checkout>(`checkouts/${checkoutId}`);
+  return api.delete<Checkout>(`checkouts/${checkoutId}?confirm=true`);
 }
 
 export function closeCheckout(

@@ -1,10 +1,11 @@
-import { HttpStatus, Injectable } from '@nestjs/common';
+import { HttpStatus, Injectable, Logger } from '@nestjs/common';
 import {
   BusinessMemberRole,
   InvoiceLineType,
   InvoiceStatus,
   MembershipStatus,
   PayableType,
+  PaymentStatus,
   Prisma,
   ProductType,
   ServiceStatus,
@@ -57,9 +58,12 @@ import { CustomFeeEvaluationService } from '@app/modules/finance/custom-fees/ser
 import { CustomFeeApplicationScope } from '@prisma/client';
 import { CheckoutAdvancedSettingsService } from '@app/modules/finance/checkout-advanced-settings/services/checkout-advanced-settings.service';
 import { CheckoutAdvancedSettingsResponseDto } from '@app/modules/finance/checkout-advanced-settings/dto/checkout-advanced-settings.dto';
+import { StripePaymentIntentService } from '@app/modules/integrations/integrations/stripe/services/stripe-payment-intent.service';
 
 @Injectable()
 export class CheckoutsService {
+  private readonly logger = new Logger(CheckoutsService.name);
+
   constructor(
     private readonly checkoutRepository: CheckoutRepository,
     private readonly contactRepository: ContactRepository,
@@ -79,6 +83,7 @@ export class CheckoutsService {
     private readonly offerRepository: OfferRepository,
     private readonly customFeeEvaluation: CustomFeeEvaluationService,
     private readonly checkoutAdvancedSettings: CheckoutAdvancedSettingsService,
+    private readonly stripePaymentIntent: StripePaymentIntentService,
   ) {}
 
   private async mapCheckoutResponse(
@@ -711,6 +716,10 @@ export class CheckoutsService {
     actor: RequestUser,
   ): Promise<CheckoutResponseDto> {
     const checkout = await this.requireEditableCheckout(businessId, id);
+    await this.assertCheckoutCanBeVoided(businessId, id);
+    await this.cancelPendingCheckoutPayments(businessId, id);
+    await this.assertCheckoutCanBeVoided(businessId, id);
+
     const updated = await this.checkoutRepository.update(businessId, id, {
       status: InvoiceStatus.VOID,
       balanceDue: new Prisma.Decimal(0),
@@ -1503,6 +1512,62 @@ export class CheckoutsService {
     }
     const pct = Number(discount.productDiscountPercent) / 100;
     return unitPrice * (1 - pct);
+  }
+
+  private async assertCheckoutCanBeVoided(
+    businessId: string,
+    checkoutId: string,
+  ): Promise<void> {
+    const succeededCount = await this.prisma.payment.count({
+      where: {
+        businessId,
+        invoiceId: checkoutId,
+        deletedAt: null,
+        status: PaymentStatus.SUCCEEDED,
+      },
+    });
+    if (succeededCount > 0) {
+      throw new AppException(
+        ErrorCode.BAD_REQUEST,
+        'Cannot void a sale with successful payments. Refund those tenders first.',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+  }
+
+  private async cancelPendingCheckoutPayments(
+    businessId: string,
+    checkoutId: string,
+  ): Promise<void> {
+    const pending = await this.prisma.payment.findMany({
+      where: {
+        businessId,
+        invoiceId: checkoutId,
+        deletedAt: null,
+        status: PaymentStatus.PENDING,
+      },
+      select: { id: true, stripePaymentIntentId: true },
+    });
+
+    for (const payment of pending) {
+      if (payment.stripePaymentIntentId) {
+        try {
+          await this.stripePaymentIntent.cancelForPayment(
+            businessId,
+            payment.stripePaymentIntentId,
+          );
+        } catch (error) {
+          this.logger.warn(
+            `Could not cancel PaymentIntent ${payment.stripePaymentIntentId} while voiding checkout ${checkoutId}`,
+            error instanceof Error ? error.stack : undefined,
+          );
+        }
+      }
+      await this.prisma.payment.update({
+        where: { id: payment.id },
+        data: { status: PaymentStatus.CANCELLED },
+      });
+    }
   }
 
   private async requireEditableCheckout(businessId: string, id: string) {
