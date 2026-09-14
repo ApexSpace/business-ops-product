@@ -60,6 +60,7 @@ import { StorageService } from '@app/modules/storage/services/storage.service';
 import { CreateUploadDto } from '@app/modules/storage/dto/create-upload.dto';
 import { FileCategory, FileAssetStatus, FileVisibility } from '@prisma/client';
 import { BookingLinkSaleService } from '@app/modules/finance/payments/services/booking-link-sale.service';
+import { AppointmentResourceAllocationService } from '@app/modules/operations/appointments/services/appointment-resource-allocation.service';
 
 @Injectable()
 export class PublicBookingService {
@@ -84,6 +85,7 @@ export class PublicBookingService {
     private readonly storageService: StorageService,
     private readonly bookingLinkSale: BookingLinkSaleService,
     private readonly cancelRescheduleSettingsRepository: CancelRescheduleSettingsRepository,
+    private readonly resourceAllocation: AppointmentResourceAllocationService,
   ) {}
 
   async getBusinessBySlug(slug: string) {
@@ -553,6 +555,16 @@ export class PublicBookingService {
     const primaryServiceId = builtLines.serviceLines[0]?.serviceId ?? null;
     const assignedStaffId = builtLines.serviceLines[0]?.assignedToId ?? null;
 
+    const resourceAssignments = await this.resourceAllocation.allocateForCreate({
+      businessId: bookingContext.businessId,
+      lines: builtLines.serviceLines.map((line) => ({
+        serviceId: line.serviceId,
+        startAt: line.startAt,
+        durationMinutes: line.durationMinutes,
+      })),
+      conflictCode: ErrorCode.BOOKING_SLOT_UNAVAILABLE,
+    });
+
     const formSettings = toPublicBookingBusiness(bookingContext).formSettings;
     const serviceOnlineSettings =
       await this.workspaceRepository.findOnlineBookingSettings(
@@ -713,6 +725,8 @@ export class PublicBookingService {
           ...(serviceMetadata ?? {}),
         } as Prisma.InputJsonValue,
       },
+      undefined,
+      resourceAssignments,
     );
 
     for (const line of builtLines.serviceLines) {

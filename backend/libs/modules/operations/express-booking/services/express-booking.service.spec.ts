@@ -1,4 +1,7 @@
 import { AppointmentSource, AppointmentStatus } from '@prisma/client';
+import { HttpStatus } from '@nestjs/common';
+import { AppException } from '@app/common/exceptions/app.exception';
+import { ErrorCode } from '@app/common/exceptions/error-code.enum';
 import { ExpressBookingService } from './express-booking.service';
 
 describe('ExpressBookingService', () => {
@@ -73,6 +76,9 @@ describe('ExpressBookingService', () => {
       requirePolicyAgreement: false,
     }),
   };
+  const resourceAllocation = {
+    allocateForCreate: jest.fn().mockResolvedValue([]),
+  };
 
   const service = new ExpressBookingService(
     appointmentRepository as never,
@@ -92,12 +98,14 @@ describe('ExpressBookingService', () => {
     notificationChannelPreference as never,
     notificationDispatch as never,
     cancelRescheduleSettingsRepository as never,
+    resourceAllocation as never,
   );
 
   const actor = { id: 'user-1', businessId: 'biz-1' } as never;
 
   beforeEach(() => {
     jest.clearAllMocks();
+    resourceAllocation.allocateForCreate.mockResolvedValue([]);
     notificationChannelPreference.getChannel.mockResolvedValue('EMAIL');
     settingsRepository.ensureSettings.mockResolvedValue({
       expressBookingEnabled: true,
@@ -218,6 +226,19 @@ describe('ExpressBookingService', () => {
         expressTimeLimitMinutes: null,
       }),
       expect.any(Array),
+      [],
+    );
+    expect(resourceAllocation.allocateForCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        businessId: 'biz-1',
+        conflictCode: 'APPOINTMENT_SCHEDULE_CONFLICT',
+        lines: [
+          expect.objectContaining({
+            serviceId: 'svc-1',
+            durationMinutes: 30,
+          }),
+        ],
+      }),
     );
     expect(notificationDispatch.dispatch).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -227,6 +248,33 @@ describe('ExpressBookingService', () => {
       }),
     );
     expect(result.status).toBe(AppointmentStatus.PENDING_COMPLETION);
+  });
+
+  it('does not create when a required resource is busy', async () => {
+    resourceAllocation.allocateForCreate.mockRejectedValue(
+      new AppException(
+        ErrorCode.APPOINTMENT_SCHEDULE_CONFLICT,
+        'A required resource is already booked during this time',
+        HttpStatus.CONFLICT,
+      ),
+    );
+
+    await expect(
+      service.create(
+        'biz-1',
+        {
+          guestFirstName: 'Alex',
+          guestEmail: 'alex@example.com',
+          serviceId: 'svc-1',
+          startAt: '2030-01-01T15:00:00.000Z',
+          assignedToId: 'staff-1',
+        },
+        actor,
+      ),
+    ).rejects.toMatchObject({
+      code: ErrorCode.APPOINTMENT_SCHEDULE_CONFLICT,
+    });
+    expect(appointmentRepository.create).not.toHaveBeenCalled();
   });
 
   it('creates a pending express appointment and texts the completion link', async () => {
