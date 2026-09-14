@@ -135,7 +135,7 @@ import type {
   CheckoutProductPickerItem,
 } from "@/features/sales/types/checkout";
 
-type StatusFilter = "all" | "OPEN" | "PAID" | "VOID";
+type StatusFilter = "all" | "OPEN" | "PAID" | "PARTIAL" | "VOID";
 
 const PAGE_LIMIT = 25;
 
@@ -536,11 +536,7 @@ export function SalesWorkspace() {
         header: "Status",
         cell: (row) => (
           <span className={DATA_TABLE_STATUS_CLASS}>
-            {row.status === "VOID"
-              ? "Void"
-              : row.isOpen
-                ? "Open"
-                : "Closed"}
+            {saleStatusLabel(row)}
           </span>
         ),
       },
@@ -1050,8 +1046,9 @@ export function SalesWorkspace() {
 function saleStatusKey(args: {
   status: string;
   isOpen: boolean;
-}): "VOID" | "OPEN" | "CLOSED" {
+}): "VOID" | "OPEN" | "PARTIAL" | "CLOSED" {
   if (args.status === "VOID") return "VOID";
+  if (args.status === "PARTIAL") return "PARTIAL";
   if (args.isOpen) return "OPEN";
   return "CLOSED";
 }

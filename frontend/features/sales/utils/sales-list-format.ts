@@ -21,8 +21,9 @@ export function formatSalesListDate(iso: string | null | undefined): string {
 export function saleStatusLabel(args: {
   status: string;
   isOpen: boolean;
-}): "Void" | "Open" | "Closed" {
+}): "Void" | "Open" | "Partial" | "Closed" {
   if (args.status === "VOID") return "Void";
+  if (args.status === "PARTIAL") return "Partial";
   if (args.isOpen) return "Open";
   return "Closed";
 }
@@ -30,8 +31,9 @@ export function saleStatusLabel(args: {
 export function saleStatusTone(args: {
   status: string;
   isOpen: boolean;
-}): "void" | "open" | "closed" {
+}): "void" | "open" | "neutral" | "closed" {
   if (args.status === "VOID") return "void";
+  if (args.status === "PARTIAL") return "neutral";
   if (args.isOpen) return "open";
   return "closed";
 }
