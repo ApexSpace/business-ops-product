@@ -164,6 +164,7 @@ export const APPOINTMENT_LIFECYCLE_STATUS_OPTIONS: {
   { value: "WAITING", label: "Waiting" },
   { value: "IN_SERVICE", label: "In Service" },
   { value: "COMPLETED", label: "Closed" },
+  { value: "NO_SHOW", label: "No Show" },
 ];
 
 export const APPOINTMENT_STATUS_OPTIONS = APPOINTMENT_LIFECYCLE_STATUS_OPTIONS;
@@ -174,8 +175,16 @@ export const APPOINTMENT_FILTER_STATUS_OPTIONS: {
 }[] = [
   ...APPOINTMENT_LIFECYCLE_STATUS_OPTIONS,
   { value: "CANCELLED", label: "Cancelled" },
-  { value: "NO_SHOW", label: "No Show" },
 ];
+
+export function getAppointmentOverflowStatusOptions(
+  waitingStatusEnabled = true,
+): { value: AppointmentStatus; label: string }[] {
+  if (waitingStatusEnabled) return APPOINTMENT_LIFECYCLE_STATUS_OPTIONS;
+  return APPOINTMENT_LIFECYCLE_STATUS_OPTIONS.filter(
+    (option) => option.value !== "WAITING",
+  );
+}
 
 export const appointmentServiceLineSchema = z.object({
   serviceId: z.string().uuid(),

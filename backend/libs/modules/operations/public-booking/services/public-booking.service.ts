@@ -61,6 +61,8 @@ import { StorageService } from '@app/modules/storage/services/storage.service';
 import { CreateUploadDto } from '@app/modules/storage/dto/create-upload.dto';
 import { FileCategory, FileAssetStatus, FileVisibility } from '@prisma/client';
 import { BookingLinkSaleService } from '@app/modules/finance/payments/services/booking-link-sale.service';
+import { AppointmentResourceAllocationService } from '@app/modules/operations/appointments/services/appointment-resource-allocation.service';
+import { commitPublicBookingAppointment } from '@app/modules/operations/public-booking/utils/commit-public-booking-appointment.util';
 
 @Injectable()
 export class PublicBookingService {
@@ -85,6 +87,7 @@ export class PublicBookingService {
     private readonly storageService: StorageService,
     private readonly bookingLinkSale: BookingLinkSaleService,
     private readonly cancelRescheduleSettingsRepository: CancelRescheduleSettingsRepository,
+    private readonly resourceAllocation: AppointmentResourceAllocationService,
   ) {}
 
   async getBusinessBySlug(slug: string) {
@@ -554,6 +557,16 @@ export class PublicBookingService {
     const primaryServiceId = builtLines.serviceLines[0]?.serviceId ?? null;
     const assignedStaffId = builtLines.serviceLines[0]?.assignedToId ?? null;
 
+    const resourceAssignments = await this.resourceAllocation.allocateForCreate({
+      businessId: bookingContext.businessId,
+      lines: builtLines.serviceLines.map((line) => ({
+        serviceId: line.serviceId,
+        startAt: line.startAt,
+        durationMinutes: line.durationMinutes,
+      })),
+      conflictCode: ErrorCode.BOOKING_SLOT_UNAVAILABLE,
+    });
+
     const formSettings = toPublicBookingBusiness(bookingContext).formSettings;
     const serviceOnlineSettings =
       await this.workspaceRepository.findOnlineBookingSettings(
@@ -680,124 +693,103 @@ export class PublicBookingService {
       ? randomUUID()
       : null;
 
+    const appointmentData = {
+      calendarId: null,
+      contactId: contact.id,
+      serviceId: primaryServiceId,
+      assignedToId: assignedStaffId,
+      title,
+      startAt,
+      endAt,
+      status,
+      source,
+      locationType: bookingContext.locationType,
+      locationValue: bookingContext.locationValue,
+      notes: dto.notes?.trim() || null,
+      ...buildAppointmentManageFields({ source }),
+      metadata: {
+        publicSlug: slug,
+        formAnswers: dto.formAnswers ?? null,
+        customerTimezone: schedulingTimezone,
+        userAgent: context?.userAgent ?? null,
+        referrer: dto.referrer ?? null,
+        offerCode: dto.offerCode?.trim().toUpperCase() || null,
+        bookedForFirstName: dto.bookedForFirstName ?? null,
+        bookedForLastName: dto.bookedForLastName ?? null,
+        bookedForEmail: dto.bookedForEmail?.trim().toLowerCase() ?? null,
+        homeAddress: dto.homeAddress ?? null,
+        reminderOptIn: dto.reminderOptIn ?? null,
+        policyAgreed: dto.policyAgreed ?? null,
+        uploadToken,
+        paymentIntentId: dto.paymentIntentId ?? null,
+        ...(serviceMetadata ?? {}),
+      } as Prisma.InputJsonValue,
+    };
+
     const staffIds = uniqueSortedStaffIds([
       assignedStaffId,
       ...builtLines.serviceLines.map((line) => line.assignedToId),
     ]);
 
-    const appointment = await this.appointmentRepository.runWithStaffSlotLock(
-      bookingContext.businessId,
-      staffIds,
-      async (tx) => {
-        for (const staffId of staffIds) {
-          const conflicts =
-            await this.appointmentRepository.findStaffBlockingInRange(
-              bookingContext.businessId,
-              null,
-              startAt,
-              endAt,
-              staffId,
-              undefined,
-              tx,
-            );
-          if (conflicts.length > 0) {
-            throw new AppException(
-              ErrorCode.BOOKING_SLOT_UNAVAILABLE,
-              'This time slot is no longer available',
-              HttpStatus.CONFLICT,
-            );
+    // Staff occupancy + nested lines/resources must commit under the same
+    // advisory lock. Prepaid checkout uses a separate Prisma connection and
+    // FKs appointmentId, so it attaches after this transaction commits.
+    const createdAppointment =
+      await this.appointmentRepository.runWithStaffSlotLock(
+        bookingContext.businessId,
+        staffIds,
+        async (tx) => {
+          for (const staffId of staffIds) {
+            const conflicts =
+              await this.appointmentRepository.findStaffBlockingInRange(
+                bookingContext.businessId,
+                null,
+                startAt,
+                endAt,
+                staffId,
+                undefined,
+                tx,
+              );
+            if (conflicts.length > 0) {
+              throw new AppException(
+                ErrorCode.BOOKING_SLOT_UNAVAILABLE,
+                'This time slot is no longer available',
+                HttpStatus.CONFLICT,
+              );
+            }
           }
-        }
 
-        return this.appointmentRepository.create(
-          bookingContext.businessId,
-          {
-            calendarId: null,
-            contactId: contact.id,
-            serviceId: primaryServiceId,
-            assignedToId: assignedStaffId,
-            title,
-            startAt,
-            endAt,
-            status,
-            source,
-            locationType: bookingContext.locationType,
-            locationValue: bookingContext.locationValue,
-            notes: dto.notes?.trim() || null,
-            ...buildAppointmentManageFields({ source }),
-            metadata: {
-              publicSlug: slug,
-              formAnswers: dto.formAnswers ?? null,
-              customerTimezone: schedulingTimezone,
-              userAgent: context?.userAgent ?? null,
-              referrer: dto.referrer ?? null,
-              offerCode: dto.offerCode?.trim().toUpperCase() || null,
-              bookedForFirstName: dto.bookedForFirstName ?? null,
-              bookedForLastName: dto.bookedForLastName ?? null,
-              bookedForEmail: dto.bookedForEmail?.trim().toLowerCase() ?? null,
-              homeAddress: dto.homeAddress ?? null,
-              reminderOptIn: dto.reminderOptIn ?? null,
-              policyAgreed: dto.policyAgreed ?? null,
-              uploadToken,
-              paymentIntentId: dto.paymentIntentId ?? null,
-              ...(serviceMetadata ?? {}),
-            } as Prisma.InputJsonValue,
-          },
-          undefined,
-          tx,
-        );
-      },
-    );
-
-    for (const line of builtLines.serviceLines) {
-      await this.prisma.appointmentServiceLine.create({
-        data: {
-          appointmentId: appointment.id,
-          serviceId: line.serviceId,
-          assignedToId: line.assignedToId,
-          startAt: line.startAt,
-          durationMinutes: line.durationMinutes,
-          price: line.price,
-          sortOrder: line.sortOrder,
+          return this.appointmentRepository.create(
+            bookingContext.businessId,
+            appointmentData,
+            builtLines.serviceLines,
+            resourceAssignments,
+            tx,
+          );
         },
-      });
-    }
+      );
 
-    if (dto.paymentIntentId) {
-      try {
-        const sale = await this.bookingLinkSale.createPrepaidCheckoutSale({
-          businessId: bookingContext.businessId,
-          appointmentId: appointment.id,
-          contactId: contact.id,
-          serviceId: primaryServiceId!,
-          serviceName: primaryService?.name ?? serviceName,
-          staffUserId: assignedStaffId ?? undefined,
-          amount: primaryService?.price?.toString() ?? '0',
-          paymentIntentId: dto.paymentIntentId,
-        });
-        const previousMetadata =
-          appointment.metadata && typeof appointment.metadata === 'object'
-            ? (appointment.metadata as Record<string, unknown>)
-            : {};
-        await this.appointmentRepository.update(appointment.id, {
-          metadata: {
-            ...previousMetadata,
-            prepaidCheckoutId: sale.checkoutId,
-          },
-        });
-      } catch (error) {
-        this.logger.error(
-          `Failed to create prepaid checkout sale for appointment ${appointment.id}: ${
-            error instanceof Error ? error.message : String(error)
-          }`,
-        );
-        throw new AppException(
-          ErrorCode.BAD_REQUEST,
-          'Payment succeeded but sale could not be recorded. Please contact the business.',
-          HttpStatus.BAD_REQUEST,
-        );
-      }
-    }
+    const appointment = await commitPublicBookingAppointment({
+      appointmentRepository: this.appointmentRepository,
+      bookingLinkSale: this.bookingLinkSale,
+      logger: this.logger,
+      businessId: bookingContext.businessId,
+      appointmentData,
+      serviceLines: builtLines.serviceLines,
+      resourceAssignments,
+      existingAppointment: createdAppointment,
+      prepaid: dto.paymentIntentId
+        ? {
+            businessId: bookingContext.businessId,
+            contactId: contact.id,
+            serviceId: primaryServiceId!,
+            serviceName: primaryService?.name ?? serviceName,
+            staffUserId: assignedStaffId ?? undefined,
+            amount: primaryService?.price?.toString() ?? '0',
+            paymentIntentId: dto.paymentIntentId,
+          }
+        : null,
+    });
 
     const confirmationLines = builtLines.serviceLines.map((line, index) => ({
       serviceId: line.serviceId,

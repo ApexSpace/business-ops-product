@@ -100,6 +100,7 @@ export class AppointmentRepository {
     businessId: string,
     data: Omit<Prisma.AppointmentUncheckedCreateInput, 'businessId'>,
     serviceLines?: Prisma.AppointmentServiceLineUncheckedCreateWithoutAppointmentInput[],
+    resourceAssignments?: Array<{ resourceId: string; quantity: number }>,
     db: AppointmentDbClient = this.prisma,
   ): Promise<AppointmentWithRelations> {
     return db.appointment.create({
@@ -110,6 +111,17 @@ export class AppointmentRepository {
           ? {
               serviceLines: {
                 create: serviceLines,
+              },
+            }
+          : {}),
+        ...(resourceAssignments?.length
+          ? {
+              resourceAssignments: {
+                create: resourceAssignments.map((assignment) => ({
+                  businessId,
+                  resourceId: assignment.resourceId,
+                  quantity: assignment.quantity,
+                })),
               },
             }
           : {}),
@@ -284,6 +296,61 @@ export class AppointmentRepository {
       where: { id },
       data: { deletedAt: new Date() },
     });
+  }
+
+  findResourceBlockingInRange(
+    businessId: string,
+    resourceId: string,
+    rangeStart: Date,
+    rangeEnd: Date,
+    excludeAppointmentId?: string,
+  ): Promise<
+    Array<{
+      id: string;
+      startAt: Date;
+      endAt: Date;
+      metadata: unknown;
+      usedQuantity: number;
+    }>
+  > {
+    return this.prisma.appointment
+      .findMany({
+        where: {
+          ...this.activeWhere(businessId, {
+            status: { in: BLOCKING_STATUSES },
+            startAt: { lt: rangeEnd },
+            endAt: { gt: rangeStart },
+            ...(excludeAppointmentId
+              ? { id: { not: excludeAppointmentId } }
+              : {}),
+            resourceAssignments: {
+              some: { resourceId },
+            },
+          }),
+        },
+        select: {
+          id: true,
+          startAt: true,
+          endAt: true,
+          metadata: true,
+          resourceAssignments: {
+            where: { resourceId },
+            select: { quantity: true },
+          },
+        },
+      })
+      .then((rows) =>
+        rows.map((row) => ({
+          id: row.id,
+          startAt: row.startAt,
+          endAt: row.endAt,
+          metadata: row.metadata,
+          usedQuantity: row.resourceAssignments.reduce(
+            (sum, assignment) => sum + assignment.quantity,
+            0,
+          ),
+        })),
+      );
   }
 
   findStaffBlockingInRange(

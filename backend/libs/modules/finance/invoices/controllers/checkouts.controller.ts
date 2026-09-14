@@ -10,8 +10,13 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiQuery,
+  ApiTags,
+} from '@nestjs/swagger';
 import { BusinessMemberRole } from '@prisma/client';
+import { ConfirmDeleteQueryDto } from '@app/common/dto/confirm-delete-query.dto';
 import { CurrentUser } from '@app/common/decorators/current-user.decorator';
 import type { RequestUser } from '@app/common/decorators/current-user.decorator';
 import { BusinessRoles } from '@app/common/decorators/business-roles.decorator';
@@ -131,10 +136,17 @@ export class CheckoutsController {
 
   @Delete(':id')
   @BusinessRoles(BusinessMemberRole.OWNER, BusinessMemberRole.ADMIN)
+  @ApiQuery({
+    name: 'confirm',
+    required: true,
+    type: Boolean,
+    description: 'Must be true to confirm voiding this sale',
+  })
   @StaffPermission('sales.checkout')
   voidCheckout(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
+    @Query() _query: ConfirmDeleteQueryDto,
   ) {
     return this.checkoutsService.voidCheckout(user.businessId!, id, user);
   }

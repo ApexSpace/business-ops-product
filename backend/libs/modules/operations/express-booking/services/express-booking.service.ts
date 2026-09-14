@@ -48,6 +48,7 @@ import { resolveExpressDeposit } from '../utils/express-deposit.util';
 import type { BusinessOnlineBookingSettings } from '@prisma/client';
 import { stripHtmlToPlainText } from '@app/modules/operations/appointments/cancel-reschedule-settings/utils/cancel-reschedule-behavior.util';
 import { AppointmentNotificationService } from '@app/modules/operations/appointments/services/appointment-notification.service';
+import { AppointmentResourceAllocationService } from '@app/modules/operations/appointments/services/appointment-resource-allocation.service';
 import { ContactRepository } from '@app/modules/crm/contacts/repositories/contact.repository';
 import {
   CreateExpressAppointmentDto,
@@ -105,6 +106,7 @@ export class ExpressBookingService {
     private readonly notificationChannelPreference: NotificationChannelPreferenceService,
     private readonly notificationDispatch: NotificationDispatchService,
     private readonly cancelRescheduleSettingsRepository: CancelRescheduleSettingsRepository,
+    private readonly resourceAllocation: AppointmentResourceAllocationService,
   ) {}
 
   async create(
@@ -191,6 +193,19 @@ export class ExpressBookingService {
       endAt,
       bufferBeforeMinutes: timing.bufferBeforeMinutes,
       bufferAfterMinutes: timing.bufferAfterMinutes,
+    });
+
+    const resourceAssignments = await this.resourceAllocation.allocateForCreate({
+      businessId,
+      lines: [
+        {
+          serviceId: service.id,
+          startAt,
+          durationMinutes: timing.clientOccupancyMinutes,
+          endAt,
+        },
+      ],
+      conflictCode: ErrorCode.APPOINTMENT_SCHEDULE_CONFLICT,
     });
 
     let contactId: string | null = null;
@@ -317,6 +332,7 @@ export class ExpressBookingService {
               sortOrder: 0,
             },
           ],
+          resourceAssignments,
           tx,
         );
       },

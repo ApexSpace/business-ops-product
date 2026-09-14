@@ -1,5 +1,6 @@
 "use client";
 
+import { useCanShowWaitlistChrome } from "@/features/waitlist/hooks/use-can-show-waitlist-chrome";
 import { useWaitlistSummary } from "@/features/waitlist/hooks/use-waitlist-summary";
 import { cn } from "@/lib/utils";
 
@@ -17,11 +18,14 @@ export function WaitlistToolbarButton({
   onClick,
   className,
 }: WaitlistToolbarButtonProps) {
+  const allowed = useCanShowWaitlistChrome();
   const { data: summary } = useWaitlistSummary();
   const matchedCount = summary?.matchedCount ?? 0;
   const waitingCount = summary?.waitingCount ?? 0;
   const totalCount = matchedCount + waitingCount;
   const badgeLabel = matchedCount > 0 ? matchedCount : totalCount;
+
+  if (!allowed) return null;
 
   return (
     <button

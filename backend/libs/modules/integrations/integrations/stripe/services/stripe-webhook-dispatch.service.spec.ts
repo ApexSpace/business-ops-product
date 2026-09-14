@@ -5,6 +5,10 @@ describe('StripeWebhookDispatchService platform branching', () => {
   const platformHandler = {
     handleEvent: jest.fn().mockResolvedValue(true),
   };
+  const stripeInvoicePaymentService = {
+    handleCheckoutSessionCompleted: jest.fn().mockResolvedValue(undefined),
+    handlePaymentIntentSucceeded: jest.fn().mockResolvedValue(undefined),
+  };
 
   const service = new StripeWebhookDispatchService(
     {} as never,
@@ -12,7 +16,8 @@ describe('StripeWebhookDispatchService platform branching', () => {
     {} as never,
     { log: jest.fn() } as never,
     {} as never,
-    { handleCheckoutSessionCompleted: jest.fn() } as never,
+    stripeInvoicePaymentService as never,
+    {} as never,
     platformHandler as never,
   );
 
@@ -39,6 +44,9 @@ describe('StripeWebhookDispatchService platform branching', () => {
     );
 
     expect(platformHandler.handleEvent).toHaveBeenCalled();
+    expect(
+      stripeInvoicePaymentService.handleCheckoutSessionCompleted,
+    ).not.toHaveBeenCalled();
   });
 
   it('routes invoice events without purpose to connect path when not handled', async () => {
@@ -59,5 +67,33 @@ describe('StripeWebhookDispatchService platform branching', () => {
     );
 
     expect(platformHandler.handleEvent).not.toHaveBeenCalled();
+    expect(
+      stripeInvoicePaymentService.handleCheckoutSessionCompleted,
+    ).toHaveBeenCalled();
+  });
+
+  it('does not send connected-account events to platform billing (PAY-05)', async () => {
+    await service.dispatchEvent(
+      {
+        id: 'evt_3',
+        type: 'checkout.session.completed',
+        livemode: false,
+        data: {
+          object: {
+            metadata: {
+              purpose: PLATFORM_SUBSCRIPTION_PURPOSE,
+              businessId: 'b1',
+              invoiceId: 'inv_sale',
+            },
+          },
+        },
+      },
+      'connected',
+    );
+
+    expect(platformHandler.handleEvent).not.toHaveBeenCalled();
+    expect(
+      stripeInvoicePaymentService.handleCheckoutSessionCompleted,
+    ).toHaveBeenCalled();
   });
 });

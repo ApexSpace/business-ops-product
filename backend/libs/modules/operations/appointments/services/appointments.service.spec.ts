@@ -120,6 +120,7 @@ describe('AppointmentsService create + updateStatus', () => {
   let waitingRoomSettingsService: { isWaitingStatusEnabled: jest.Mock };
   let cancelRescheduleSettingsService: { getBehaviorSettings: jest.Mock };
   let appointmentAutomatedMessagesService: { ensureBookedSettings: jest.Mock };
+  let resourceAllocation: { allocateForCreate: jest.Mock };
   let service: AppointmentsService;
 
   beforeEach(() => {
@@ -197,6 +198,9 @@ describe('AppointmentsService create + updateStatus', () => {
         triggers: [],
       }),
     };
+    resourceAllocation = {
+      allocateForCreate: jest.fn().mockResolvedValue([]),
+    };
 
     service = new AppointmentsService(
       appointmentRepository as never,
@@ -216,6 +220,7 @@ describe('AppointmentsService create + updateStatus', () => {
       waitingRoomSettingsService as never,
       cancelRescheduleSettingsService as never,
       appointmentAutomatedMessagesService as never,
+      resourceAllocation as never,
     );
   });
 
@@ -257,8 +262,10 @@ describe('AppointmentsService create + updateStatus', () => {
           title: 'Botox',
         }),
         expect.any(Array),
+        [],
         fakeTx,
       );
+      expect(resourceAllocation.allocateForCreate).toHaveBeenCalled();
       expect(result.status).toBe(AppointmentStatus.CONFIRMED);
     });
 

@@ -137,6 +137,7 @@ describe('AppointmentRepository staff slot lock (BOOK-06)', () => {
             status: AppointmentStatus.CONFIRMED,
           },
           undefined,
+          undefined,
           tx,
         );
       });
