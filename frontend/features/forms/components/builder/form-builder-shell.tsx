@@ -22,7 +22,6 @@ import {
 } from "@/features/forms/utils/column-fields.util";
 import type { FormBuilderStateApi } from "@/features/forms/hooks/use-form-builder-state";
 import { BuilderTopbar } from "@/features/forms/components/builder/builder-topbar";
-import { FieldPalette } from "@/features/forms/components/builder/field-palette";
 import {
   CANVAS_APPEND_ID,
   CANVAS_EMPTY_ID,
@@ -31,6 +30,7 @@ import {
 import { FieldSettingsPanel } from "@/features/forms/components/builder/field-settings-panel";
 import { FormShareDialog } from "@/features/forms/components/form-share-dialog";
 import { FormPreviewModal } from "@/features/forms/components/builder/form-preview-modal";
+import { FORMS_BUILDER_SHELL_GRID_CLASS } from "@/lib/design/forms-builder-tokens";
 
 interface FormBuilderShellProps {
   builder: FormBuilderStateApi;
@@ -60,7 +60,6 @@ export function FormBuilderShell({
   const [activePaletteType, setActivePaletteType] = useState<FieldType | null>(null);
   const [targetColumnIndex, setTargetColumnIndex] = useState(0);
   const canvasColumnRef = useRef<HTMLDivElement>(null);
-  const palettePanelRef = useRef<HTMLDivElement>(null);
   const settingsPanelRef = useRef<HTMLDivElement>(null);
 
   const columnAddContext = useMemo(
@@ -84,18 +83,6 @@ export function FormBuilderShell({
     }
   }, [builder.selectedFieldId, builder.definition.fields]);
 
-  const handlePaletteAddField = (type: FieldType) => {
-    if (columnAddContext) {
-      builder.addFieldToColumn(
-        columnAddContext.columnsFieldId,
-        columnAddContext.targetColumnIndex,
-        type,
-      );
-      return;
-    }
-    builder.addField(type);
-  };
-
   const handleDeselectField = () => {
     builder.setSelectedFieldId(null);
   };
@@ -104,7 +91,6 @@ export function FormBuilderShell({
     const target = event.target;
     if (!(target instanceof Node)) return;
     if (canvasColumnRef.current?.contains(target)) return;
-    if (palettePanelRef.current?.contains(target)) return;
     if (settingsPanelRef.current?.contains(target)) return;
     if (
       target instanceof Element &&
@@ -212,18 +198,12 @@ export function FormBuilderShell({
           name={builder.name}
           status={builder.status}
           isDirty={builder.isDirty}
-          isSaving={builder.isSaving}
-          canSave={builder.isDirty || builder.mode === "create"}
-          canUndo={builder.canUndo}
-          canRedo={builder.canRedo}
+          savedAt={builder.savedAt}
           onNameChange={(value) => {
             builder.setName(value);
             builder.markDirty();
           }}
-          onSave={onSave}
           onPreview={() => builder.setPreviewOpen(true)}
-          onUndo={builder.undo}
-          onRedo={builder.redo}
           onPublish={onPublish}
           onMoveToDraft={onMoveToDraft}
           onDuplicate={onDuplicate}
@@ -242,15 +222,7 @@ export function FormBuilderShell({
         onDragCancel={handleDragCancel}
       >
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-          <div className="grid h-full min-h-0 flex-1 grid-cols-1 items-stretch overflow-hidden lg:grid-cols-[260px_minmax(0,1fr)_300px]">
-            <div ref={palettePanelRef} className="min-h-0">
-              <FieldPalette
-                onAddField={handlePaletteAddField}
-                columnAddContext={columnAddContext}
-                onTargetColumnChange={setTargetColumnIndex}
-                className="hidden min-h-0 lg:flex"
-              />
-            </div>
+          <div className={FORMS_BUILDER_SHELL_GRID_CLASS}>
             <div ref={canvasColumnRef} className="min-h-0">
               <FormCanvas
                 definition={builder.definition}
@@ -262,6 +234,8 @@ export function FormBuilderShell({
                 onDuplicateField={builder.duplicateField}
                 onRemoveField={builder.removeField}
                 onMoveField={builder.moveField}
+                onAddField={builder.addField}
+                onAddFieldToColumn={builder.addFieldToColumn}
                 className="min-h-0"
               />
             </div>
@@ -277,7 +251,12 @@ export function FormBuilderShell({
                 onUpdateField={builder.updateField}
                 onRemoveField={builder.removeField}
                 onUpdateSettings={builder.updateSettings}
-                className="hidden min-h-0 lg:flex"
+                onClose={handleDeselectField}
+                onSave={onSave}
+                onDiscard={builder.discardChanges}
+                isDirty={builder.isDirty}
+                isSaving={builder.isSaving}
+                className="min-h-0"
               />
             </div>
           </div>

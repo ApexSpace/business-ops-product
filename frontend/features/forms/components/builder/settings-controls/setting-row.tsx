@@ -12,8 +12,8 @@ interface SettingRowProps {
 
 export function SettingRow({ label, htmlFor, children, className }: SettingRowProps) {
   return (
-    <div className={cn("space-y-1.5", className)}>
-      <Label htmlFor={htmlFor} className="text-xs text-muted-foreground">
+    <div className={cn("space-y-[var(--spacing-2)]", className)}>
+      <Label htmlFor={htmlFor} className="text-sm font-medium text-foreground">
         {label}
       </Label>
       {children}

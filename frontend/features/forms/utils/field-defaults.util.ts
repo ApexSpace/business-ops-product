@@ -69,6 +69,22 @@ export function getFieldTypeLabel(type: FieldType): string {
   return FIELD_LABELS[type] ?? "Field";
 }
 
+/** Canvas type-chip labels that match the Forms builder reference. */
+export function getBuilderFieldChipLabel(type: FieldType): string {
+  switch (type) {
+    case "text":
+      return "Short text";
+    case "email":
+      return "Email address";
+    case "select":
+      return "Dropdown select";
+    case "radio":
+      return "Multiple choice";
+    default:
+      return getFieldTypeLabel(type);
+  }
+}
+
 export function resizeFormFieldColumns(
   columns: FormField[][] | undefined,
   count: ColumnCount,

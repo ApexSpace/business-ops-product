@@ -3,12 +3,16 @@
 import { useDroppable } from "@dnd-kit/core";
 import { cn } from "@/lib/utils";
 import { getColumnDropZoneId } from "@/features/forms/utils/column-fields.util";
+import type { FieldType } from "@/features/forms/types";
+import { InsertFieldPopover } from "@/features/forms/components/builder/insert-field-popover";
+import { FORMS_BUILDER_INSERT_ROW_CLASS } from "@/lib/design/forms-builder-tokens";
 
 interface ColumnDropZoneProps {
   columnsFieldId: string;
   columnIndex: number;
   isDraggingFromPalette?: boolean;
   isTargetColumn?: boolean;
+  onInsertField?: (type: FieldType) => void;
   children: React.ReactNode;
   className?: string;
 }
@@ -18,6 +22,7 @@ export function ColumnDropZone({
   columnIndex,
   isDraggingFromPalette = false,
   isTargetColumn = false,
+  onInsertField,
   children,
   className,
 }: ColumnDropZoneProps) {
@@ -37,6 +42,15 @@ export function ColumnDropZone({
       )}
     >
       {children}
+      {onInsertField && !isDraggingFromPalette ? (
+        <div className={FORMS_BUILDER_INSERT_ROW_CLASS}>
+          <InsertFieldPopover
+            columnAdd
+            onAddField={onInsertField}
+            ariaLabel={`Add field to column ${columnIndex + 1}`}
+          />
+        </div>
+      ) : null}
       {isDraggingFromPalette ? (
         <div
           className={cn(

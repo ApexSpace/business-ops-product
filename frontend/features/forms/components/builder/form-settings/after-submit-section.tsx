@@ -11,21 +11,28 @@ import { useFormsHost } from "@/features/forms/forms-host-context";
 interface AfterSubmitSectionProps {
   settings: FormSettings;
   onUpdate: (patch: Partial<FormSettings>) => void;
+  includeSuccessMessage?: boolean;
 }
 
-export function AfterSubmitSection({ settings, onUpdate }: AfterSubmitSectionProps) {
+export function AfterSubmitSection({
+  settings,
+  onUpdate,
+  includeSuccessMessage = true,
+}: AfterSubmitSectionProps) {
   const { mode } = useFormsHost();
 
   return (
     <SectionHeader title="After Submit">
-      <SettingRow label="Success message">
-        <SettingInput
-          value={settings.successMessage}
-          onChange={(value) => onUpdate({ successMessage: value })}
-          multiline
-          rows={3}
-        />
-      </SettingRow>
+      {includeSuccessMessage ? (
+        <SettingRow label="Confirmation Message">
+          <SettingInput
+            value={settings.successMessage}
+            onChange={(value) => onUpdate({ successMessage: value })}
+            multiline
+            rows={3}
+          />
+        </SettingRow>
+      ) : null}
       <SettingRow label="Redirect URL">
         <SettingInput
           value={settings.redirectUrl ?? ""}

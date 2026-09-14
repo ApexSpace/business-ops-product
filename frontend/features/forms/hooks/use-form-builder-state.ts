@@ -93,6 +93,16 @@ export function useFormBuilderState({
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewDevice, setPreviewDevice] = useState<PreviewDevice>("desktop");
   const [activeStepIndex, setActiveStepIndex] = useState(0);
+  const [savedAt, setSavedAt] = useState(
+    initialRecord?.updatedAt ?? new Date().toISOString(),
+  );
+
+  const lastSavedRef = useRef({
+    name: initialRecord?.name ?? "Untitled form",
+    definition: initialRecord
+      ? normalizeFormDefinition(cloneDefinition(initialRecord.definition))
+      : createBlankDefinition(),
+  });
 
   const historyRef = useRef<FormField[][]>([]);
   const historyIndexRef = useRef(0);
@@ -311,11 +321,28 @@ export function useFormBuilderState({
     setStatus(record.status);
     const cloned = normalizeFormDefinition(cloneDefinition(record.definition));
     setDefinition(cloned);
+    lastSavedRef.current = {
+      name: record.name,
+      definition: cloneDefinition(cloned),
+    };
+    setSavedAt(record.updatedAt ?? new Date().toISOString());
     historyRef.current = [structuredClone(cloned.fields)];
     historyIndexRef.current = 0;
     setHistoryMeta({ index: 0, length: 1 });
     setIsDirty(false);
     setIsSaving(false);
+  }, []);
+
+  const discardChanges = useCallback(() => {
+    const snapshot = lastSavedRef.current;
+    setName(snapshot.name);
+    const cloned = cloneDefinition(snapshot.definition);
+    setDefinition(cloned);
+    historyRef.current = [structuredClone(cloned.fields)];
+    historyIndexRef.current = 0;
+    setHistoryMeta({ index: 0, length: 1 });
+    setSelectedFieldId(null);
+    setIsDirty(false);
   }, []);
 
   const resetDirty = useCallback(() => setIsDirty(false), []);
@@ -362,6 +389,8 @@ export function useFormBuilderState({
     updateSettings,
     getDefinitionForSave,
     applySavedRecord,
+    discardChanges,
+    savedAt,
     resetDirty,
     markDirty,
     undo,

@@ -14,7 +14,6 @@ import type {
   ColumnHorizontalAlign,
   ColumnVerticalAlign,
   FieldStyle,
-  FieldType,
   FormField,
   FormSettings,
   FormStatus,
@@ -33,6 +32,7 @@ import { SettingToggle } from "@/features/forms/components/builder/settings-cont
 import { ColorInput } from "@/features/forms/components/builder/settings-controls/color-input";
 import { OptionsEditor } from "@/features/forms/components/builder/settings-controls/options-editor";
 import { ColumnsFieldEditor } from "@/features/forms/components/builder/settings-controls/columns-field-editor";
+import { FieldValidationSettings } from "@/features/forms/components/builder/field-validation-settings";
 import { FormInfoSection } from "@/features/forms/components/builder/form-settings/form-info-section";
 import { SubmitButtonSection } from "@/features/forms/components/builder/form-settings/submit-button-section";
 import { AfterSubmitSection } from "@/features/forms/components/builder/form-settings/after-submit-section";
@@ -42,9 +42,21 @@ import { ShareFormSection } from "@/features/forms/components/builder/form-setti
 import { FormFileUploadControl } from "@/features/forms/components/form-file-upload-control";
 import { FORM_IMAGE_ACCEPT } from "@/features/forms/utils/form-upload.util";
 import { parseFieldWidth } from "@/features/forms/utils/field-style.util";
-import { getColumnFieldRemovalContext } from "@/features/forms/utils/column-fields.util";
 import { Button } from "@/components/ui/button";
-import { Trash2 } from "lucide-react";
+import { SlidersHorizontal, X } from "lucide-react";
+import { IconButton } from "@/components/ui/icon-button";
+import {
+  FORMS_BUILDER_EMPTY_HINT_CLASS,
+  FORMS_BUILDER_SETTINGS_BODY_CLASS,
+  FORMS_BUILDER_SETTINGS_CLASS,
+  FORMS_BUILDER_SETTINGS_FOOTER_CLASS,
+  FORMS_BUILDER_SETTINGS_HEADER_CLASS,
+  FORMS_BUILDER_SETTINGS_STACK_CLASS,
+  FORMS_BUILDER_SETTINGS_TAB_CLASS,
+  FORMS_BUILDER_SETTINGS_TABS_CLASS,
+  FORMS_BUILDER_SETTINGS_TITLE_CLASS,
+} from "@/lib/design/forms-builder-tokens";
+import { SETTINGS_FORM_DISCARD_BUTTON_CLASS } from "@/lib/design/settings-form-tokens";
 
 interface FieldSettingsPanelProps {
   selectedField: FormField | null;
@@ -57,6 +69,11 @@ interface FieldSettingsPanelProps {
   onUpdateField: (fieldId: string, patch: Partial<FormField>) => void;
   onRemoveField?: (fieldId: string) => void;
   onUpdateSettings: (patch: Partial<FormSettings>) => void;
+  onClose?: () => void;
+  onSave?: () => void;
+  onDiscard?: () => void;
+  isDirty?: boolean;
+  isSaving?: boolean;
   className?: string;
 }
 
@@ -140,9 +157,11 @@ function updateStyle(
 function FieldEditor({
   field,
   onUpdate,
+  showValidation = false,
 }: {
   field: FormField;
   onUpdate: (patch: Partial<FormField>) => void;
+  showValidation?: boolean;
 }) {
   const { byKey } = useFormFieldTypeMap({ status: "implemented" });
   const meta = byKey.get(field.type);
@@ -520,81 +539,9 @@ function FieldEditor({
         </SectionHeader>
       ) : null}
 
-      {!skipValidation ? (
+      {!skipValidation && showValidation ? (
         <SectionHeader title="Validation">
-          <SettingToggle
-            label="Required"
-            checked={field.validation?.required ?? false}
-            onChange={(checked) =>
-              onUpdate({
-                validation: { ...field.validation, required: checked },
-              })
-            }
-          />
-          <SettingRow label="Min length">
-            <SettingInput
-              type="number"
-              value={field.validation?.minLength ?? ""}
-              onChange={(value) =>
-                onUpdate({
-                  validation: {
-                    ...field.validation,
-                    minLength: value ? Number(value) : undefined,
-                  },
-                })
-              }
-            />
-          </SettingRow>
-          <SettingRow label="Max length">
-            <SettingInput
-              type="number"
-              value={field.validation?.maxLength ?? ""}
-              onChange={(value) =>
-                onUpdate({
-                  validation: {
-                    ...field.validation,
-                    maxLength: value ? Number(value) : undefined,
-                  },
-                })
-              }
-            />
-          </SettingRow>
-          <SettingRow label="Pattern (regex)">
-            <SettingInput
-              value={field.validation?.pattern ?? ""}
-              onChange={(value) =>
-                onUpdate({
-                  validation: { ...field.validation, pattern: value || undefined },
-                })
-              }
-            />
-          </SettingRow>
-          <SettingRow label="Pattern message">
-            <SettingInput
-              value={field.validation?.patternMessage ?? ""}
-              onChange={(value) =>
-                onUpdate({
-                  validation: {
-                    ...field.validation,
-                    patternMessage: value || undefined,
-                  },
-                })
-              }
-            />
-          </SettingRow>
-          <SettingRow label="Custom message">
-            <SettingInput
-              value={field.validation?.customMessage ?? ""}
-              onChange={(value) =>
-                onUpdate({
-                  validation: {
-                    ...field.validation,
-                    customMessage: value || undefined,
-                  },
-                })
-              }
-            />
-          </SettingRow>
+          <FieldValidationSettings field={field} onUpdate={onUpdate} />
         </SectionHeader>
       ) : null}
 
@@ -721,7 +668,7 @@ function FieldEditor({
   );
 }
 
-type SettingsTab = "field" | "form";
+type SettingsTab = "general" | "field" | "validation" | "form";
 
 export function FieldSettingsPanel({
   selectedField,
@@ -731,114 +678,156 @@ export function FieldSettingsPanel({
   formStatus = "draft",
   onOpenShareDialog,
   onUpdateField,
-  onRemoveField,
   onUpdateSettings,
+  onClose,
+  onSave,
+  onDiscard,
+  isDirty = false,
+  isSaving = false,
   className,
 }: FieldSettingsPanelProps) {
-  const selectedFieldId = selectedField?.id ?? null;
-  const columnRemovalContext = selectedFieldId
-    ? getColumnFieldRemovalContext(fields, selectedFieldId)
-    : null;
-  const isNestedColumnField = columnRemovalContext != null;
-  const [tabOverride, setTabOverride] = useState<{
-    fieldId: string | null;
-    tab: SettingsTab;
-  } | null>(null);
-
-  const activeTab: SettingsTab =
-    tabOverride?.fieldId === selectedFieldId
-      ? tabOverride.tab
-      : selectedField
-        ? "field"
-        : "form";
-
-  const handleTabChange = (value: string) => {
-    setTabOverride({
-      fieldId: selectedFieldId,
-      tab: value as SettingsTab,
-    });
-  };
+  const { byKey } = useFormFieldTypeMap({ status: "implemented" });
+  const skipValidation = selectedField
+    ? (byKey.get(selectedField.type)?.supportsValidation === false)
+    : false;
+  const [tab, setTab] = useState<SettingsTab>("general");
 
   return (
-    <aside
-      className={cn(
-        "flex h-full min-h-0 flex-col overflow-hidden border-l bg-muted/20",
-        className,
-      )}
-    >
-      <Tabs
-        value={activeTab}
-        onValueChange={handleTabChange}
-        className="flex h-full min-h-0 flex-col overflow-hidden"
-      >
-        <div className="shrink-0 border-b py-2 pl-2 pr-[var(--page-padding-x)]">
-          <TabsList className="w-full">
-            <TabsTrigger value="field" className="flex-1 px-2 text-xs">
-              Field Settings
-            </TabsTrigger>
-            <TabsTrigger value="form" className="flex-1 px-2 text-xs">
-              Form Settings
-            </TabsTrigger>
-          </TabsList>
+    <aside className={cn(FORMS_BUILDER_SETTINGS_CLASS, className)}>
+      <div className={FORMS_BUILDER_SETTINGS_HEADER_CLASS}>
+        <div className="flex min-w-0 items-center gap-[var(--spacing-2)]">
+          <SlidersHorizontal className="size-4 text-violet-primary-normal" />
+          <h2 className={FORMS_BUILDER_SETTINGS_TITLE_CLASS}>Settings</h2>
         </div>
+        {onClose ? (
+          <IconButton size="header" aria-label="Deselect field" onClick={onClose}>
+            <X className="size-4" />
+          </IconButton>
+        ) : null}
+      </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden py-2 pl-2 pr-[var(--page-padding-x)]">
+      <Tabs
+        value={tab}
+        onValueChange={(value) => setTab(value as SettingsTab)}
+        className="flex min-h-0 flex-1 flex-col overflow-hidden gap-0"
+      >
+        <TabsList variant="line" className={FORMS_BUILDER_SETTINGS_TABS_CLASS}>
+          <TabsTrigger value="general" className={FORMS_BUILDER_SETTINGS_TAB_CLASS}>
+            General
+          </TabsTrigger>
+          <TabsTrigger value="field" className={FORMS_BUILDER_SETTINGS_TAB_CLASS}>
+            Field
+          </TabsTrigger>
+          <TabsTrigger value="validation" className={FORMS_BUILDER_SETTINGS_TAB_CLASS}>
+            Validation
+          </TabsTrigger>
+          <TabsTrigger value="form" className={FORMS_BUILDER_SETTINGS_TAB_CLASS}>
+            Form
+          </TabsTrigger>
+        </TabsList>
+
+        <div className={FORMS_BUILDER_SETTINGS_BODY_CLASS}>
+          <TabsContent value="general" className="mt-0">
+            <FormInfoSection settings={settings} onUpdate={onUpdateSettings} />
+          </TabsContent>
+
           <TabsContent value="field" className="mt-0">
             {selectedField ? (
-              <div className="space-y-4">
-                {onRemoveField ? (
-                  <div className="space-y-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="w-full text-destructive hover:text-destructive"
-                      disabled={isNestedColumnField && !columnRemovalContext.canRemove}
-                      onClick={() => onRemoveField(selectedField.id)}
-                    >
-                      <Trash2 className="mr-2 size-4" />
-                      Delete field
-                    </Button>
-                    {isNestedColumnField && !columnRemovalContext.canRemove ? (
-                      <p className="text-xs text-muted-foreground">
-                        Each column must keep at least one field. Add another field
-                        before deleting this one.
-                      </p>
-                    ) : null}
-                  </div>
-                ) : null}
-                <FieldEditor
-                  field={selectedField}
-                  onUpdate={(patch) => onUpdateField(selectedField.id, patch)}
-                />
-              </div>
+              <FieldEditor
+                field={selectedField}
+                onUpdate={(patch) => onUpdateField(selectedField.id, patch)}
+              />
             ) : (
-              <p className="text-sm text-muted-foreground">
+              <p className={FORMS_BUILDER_EMPTY_HINT_CLASS}>
                 Select a field on the canvas to edit its settings.
               </p>
             )}
           </TabsContent>
 
+          <TabsContent value="validation" className="mt-0">
+            {!selectedField ? (
+              <p className={FORMS_BUILDER_EMPTY_HINT_CLASS}>
+                Select a field on the canvas to edit validation.
+              </p>
+            ) : skipValidation ? (
+              <p className={FORMS_BUILDER_EMPTY_HINT_CLASS}>
+                This field does not use validation.
+              </p>
+            ) : (
+              <FieldValidationSettings
+                field={selectedField}
+                onUpdate={(patch) => onUpdateField(selectedField.id, patch)}
+              />
+            )}
+          </TabsContent>
+
           <TabsContent value="form" className="mt-0">
-            <Accordion defaultValue={["Share & Embed", "Form Info"]}>
-              <ShareFormSection
-                formId={formId}
-                status={formStatus}
-                onOpenShareDialog={onOpenShareDialog ?? (() => undefined)}
-              />
-              <FormInfoSection settings={settings} onUpdate={onUpdateSettings} />
-              <SubmitButtonSection settings={settings} onUpdate={onUpdateSettings} />
-              <AfterSubmitSection settings={settings} onUpdate={onUpdateSettings} />
-              <FormStylingSection settings={settings} onUpdate={onUpdateSettings} />
-              <MultiStepSection
-                settings={settings}
-                fields={fields}
-                onUpdate={onUpdateSettings}
-              />
-            </Accordion>
+            <div className={FORMS_BUILDER_SETTINGS_STACK_CLASS}>
+              <SettingRow label="Confirmation Message">
+                <SettingInput
+                  value={settings.successMessage}
+                  onChange={(value) => onUpdateSettings({ successMessage: value })}
+                  multiline
+                  rows={3}
+                />
+              </SettingRow>
+              <SettingRow label="Submit Button Text">
+                <SettingInput
+                  value={settings.submitButtonLabel}
+                  onChange={(value) =>
+                    onUpdateSettings({ submitButtonLabel: value })
+                  }
+                />
+              </SettingRow>
+              <Accordion defaultValue={["Share & Embed"]}>
+                <ShareFormSection
+                  formId={formId}
+                  status={formStatus}
+                  onOpenShareDialog={onOpenShareDialog ?? (() => undefined)}
+                />
+                <SubmitButtonSection
+                  settings={settings}
+                  onUpdate={onUpdateSettings}
+                  includeLabel={false}
+                />
+                <AfterSubmitSection
+                  settings={settings}
+                  onUpdate={onUpdateSettings}
+                  includeSuccessMessage={false}
+                />
+                <FormStylingSection settings={settings} onUpdate={onUpdateSettings} />
+                <MultiStepSection
+                  settings={settings}
+                  fields={fields}
+                  onUpdate={onUpdateSettings}
+                />
+              </Accordion>
+            </div>
           </TabsContent>
         </div>
       </Tabs>
+
+      {onSave && onDiscard ? (
+        <div className={FORMS_BUILDER_SETTINGS_FOOTER_CLASS}>
+          <Button
+            type="button"
+            variant="outline"
+            className={SETTINGS_FORM_DISCARD_BUTTON_CLASS}
+            onClick={onDiscard}
+            disabled={isSaving || !isDirty}
+          >
+            Discard
+          </Button>
+          <Button
+            type="button"
+            variant="brand"
+            onClick={onSave}
+            disabled={isSaving || (!isDirty && Boolean(formId))}
+          >
+            {isSaving ? "Saving…" : "Save"}
+          </Button>
+        </div>
+      ) : null}
     </aside>
   );
 }
