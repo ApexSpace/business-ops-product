@@ -18,7 +18,7 @@ import {
 } from "@/lib/design/drawer-tokens";
 import { cn } from "@/lib/utils";
 
-export type SalesOptionsStatus = "all" | "OPEN" | "PAID" | "VOID";
+export type SalesOptionsStatus = "all" | "OPEN" | "PAID" | "PARTIAL" | "VOID";
 
 export interface SalesOptionsValues {
   status: SalesOptionsStatus;
@@ -161,6 +161,7 @@ export function SalesOptionsDrawer({
               <SelectItem value="all">All</SelectItem>
               <SelectItem value="OPEN">Open</SelectItem>
               <SelectItem value="PAID">Closed</SelectItem>
+              <SelectItem value="PARTIAL">Partial</SelectItem>
               <SelectItem value="VOID">Void</SelectItem>
             </SelectContent>
           </Select>
