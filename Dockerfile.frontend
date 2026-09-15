@@ -1,13 +1,14 @@
 ### Frontend image — COPY paths assume the Docker context is the monorepo root.
 ###
-### Dokploy (this is the file the production frontend app should use):
-###   GitHub Build Path: leave empty
+### Dokploy (production frontend app):
+###   GitHub Build Path: leave EMPTY (do not set "/". Node path.join treats "/" as
+###     filesystem root and looks for /Dockerfile.frontend, which is the 2-byte miss.)
 ###   Docker File: Dockerfile.frontend
-###   Docker Context Path: .     (dot = repo root; do not leave blank if Build Path is "frontend")
+###   Docker Context Path: .
 ###   Docker Build Stage: runtime
 ###
-### If GitHub Build Path is set to "frontend", Dokploy looks for frontend/Dockerfile.frontend
-### instead of this file. Use that copy, and still set Docker Context Path to "."
+### If GitHub Build Path is "frontend", Dokploy loads frontend/Dockerfile.frontend
+### instead. Still set Docker Context Path to "." so COPY frontend/... sees the repo root.
 FROM node:22.13-bookworm-slim AS build
 WORKDIR /app
 

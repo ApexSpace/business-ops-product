@@ -1,7 +1,7 @@
 ### Backend image — COPY paths assume the Docker context is the monorepo root.
 ###
 ### Dokploy:
-###   GitHub Build Path: leave empty
+###   GitHub Build Path: leave EMPTY (not "/").
 ###   Docker File: Dockerfile.backend
 ###   Docker Context Path: .
 ###   Docker Build Stage: runtime
