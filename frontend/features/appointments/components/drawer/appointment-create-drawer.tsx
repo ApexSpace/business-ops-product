@@ -16,7 +16,6 @@ import { DrawerFormFields } from "@/components/drawer/drawer-form-fields";
 import { DrawerHeaderContent } from "@/components/drawer/drawer-header-content";
 import { DrawerPrimaryButton } from "@/components/drawer/drawer-primary-button";
 import { DrawerSettingsIcon } from "@/components/drawer/drawer-icons";
-import { ActionButton } from "@/components/ui/action-button";
 import {
   DrawerShell,
 } from "@/components/layout/drawer-shell";
@@ -28,7 +27,6 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Switch } from "@/components/ui/switch";
-import { Textarea } from "@/components/ui/textarea";
 import { ContactPicker } from "@/features/contacts/components/contact-picker";
 import type { Contact } from "@/features/contacts/types";
 import {
@@ -36,6 +34,11 @@ import {
   createExpressAppointment,
 } from "@/features/appointments/api/appointments.api";
 import { AppointmentDateTimeFields } from "@/features/appointments/components/drawer/appointment-datetime-fields";
+import { AppointmentDrawerNotesField } from "@/features/appointments/components/drawer/appointment-drawer-notes-field";
+import {
+  canCollapseAppointmentFormNotes,
+  isAppointmentFormNotesVisible,
+} from "@/features/appointments/components/drawer/appointment-drawer-notes.util";
 import { AppointmentClientCard } from "@/features/appointments/components/drawer/appointment-client-card";
 import { AppointmentTypeTabs } from "@/features/appointments/components/drawer/appointment-type-tabs";
 import {
@@ -85,8 +88,6 @@ import {
   APPOINTMENT_DRAWER_SWITCH_CLASS,
 } from "@/features/appointments/styles/appointment-drawer-tokens";
 import { cn } from "@/lib/utils";
-
-const NOTES_MAX_LENGTH = 400;
 
 function contactHasPhone(contact: Contact | null | undefined): boolean {
   if (!contact) return false;
@@ -190,7 +191,6 @@ export function AppointmentCreateDrawer({
   const [expressRequireDeposit, setExpressRequireDeposit] = useState(false);
   const [expressOverridesOpen, setExpressOverridesOpen] = useState(false);
   const [notesOpen, setNotesOpen] = useState(false);
-  const [draftNotes, setDraftNotes] = useState("");
   const [servicePickerOpen, setServicePickerOpen] = useState(false);
 
   const { data: onlineBookingSettings } = useExpressBookingSettings(open);
@@ -261,7 +261,6 @@ export function AppointmentCreateDrawer({
     if (!open) return;
     setExpressOverridesOpen(false);
     setNotesOpen(false);
-    setDraftNotes("");
     setServicePickerOpen(false);
   }, [open]);
 
@@ -433,21 +432,15 @@ export function AppointmentCreateDrawer({
     : null;
 
   const hasFilledServices = services.length > 0;
+  const notesVisible = isAppointmentFormNotesVisible(notesOpen, notes);
 
-  const openNotesEditor = () => {
-    setDraftNotes(notes);
+  const openNotesField = () => {
     setNotesOpen(true);
   };
 
-  const confirmNotes = () => {
-    setNotes(draftNotes.trim());
+  const collapseEmptyNotes = () => {
+    if (!canCollapseAppointmentFormNotes(notes)) return;
     setNotesOpen(false);
-    setDraftNotes("");
-  };
-
-  const cancelNotes = () => {
-    setNotesOpen(false);
-    setDraftNotes("");
   };
 
   const handleAddService = (service: Service) => {
@@ -692,73 +685,30 @@ export function AppointmentCreateDrawer({
 
           <DrawerItemAddLayout
             items={
-              !notesOpen && notes.trim() ? (
-                <Textarea
-                  value={notes}
-                  onChange={(event) => setNotes(event.target.value)}
-                  placeholder="Add a description to the client"
-                  rows={3}
-                  maxLength={NOTES_MAX_LENGTH}
-                  className={cn(
-                    APPOINTMENT_DRAWER_FIELD_CLASS,
-                    "min-h-[88px] resize-none py-3",
-                  )}
-                />
-              ) : null
+              <AppointmentDrawerNotesField
+                value={notes}
+                onChange={setNotes}
+                expanded={notesOpen}
+                onCollapseEmpty={collapseEmptyNotes}
+              />
             }
             editor={
-              <>
-                {servicePickerOpen && hasFilledServices ? (
-                  <AppointmentServiceCombobox
-                    excludedIds={services.map((line) => line.serviceId)}
-                    onAdd={(service) => {
-                      handleAddService(service);
-                      setServicePickerOpen(false);
-                    }}
-                    currencyCode={currencyCode}
-                    placeholder="Search services…"
-                    triggerClassName={cn(
-                      APPOINTMENT_DRAWER_FIELD_CLASS,
-                      "font-normal",
-                    )}
-                    defaultOpen
-                  />
-                ) : null}
-                {notesOpen ? (
-                <div className="flex flex-col gap-2">
-                  <Textarea
-                    value={draftNotes}
-                    onChange={(event) => setDraftNotes(event.target.value)}
-                    placeholder="Add a description to the client"
-                    rows={3}
-                    maxLength={NOTES_MAX_LENGTH}
-                    className={cn(
-                      APPOINTMENT_DRAWER_FIELD_CLASS,
-                      "min-h-[88px] resize-none py-3",
-                    )}
-                  />
-                  <div className="flex items-center justify-end gap-2">
-                    <ActionButton
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="h-9 min-w-[72px] px-4"
-                      onClick={cancelNotes}
-                    >
-                      Cancel
-                    </ActionButton>
-                    <ActionButton
-                      type="button"
-                      size="sm"
-                      className="h-9 min-w-[72px] border-0 bg-violet-primary-normal px-4 text-white hover:bg-violet-primary-normal-hover"
-                      onClick={confirmNotes}
-                    >
-                      Add
-                    </ActionButton>
-                  </div>
-                </div>
-                ) : null}
-              </>
+              servicePickerOpen && hasFilledServices ? (
+                <AppointmentServiceCombobox
+                  excludedIds={services.map((line) => line.serviceId)}
+                  onAdd={(service) => {
+                    handleAddService(service);
+                    setServicePickerOpen(false);
+                  }}
+                  currencyCode={currencyCode}
+                  placeholder="Search services…"
+                  triggerClassName={cn(
+                    APPOINTMENT_DRAWER_FIELD_CLASS,
+                    "font-normal",
+                  )}
+                  defaultOpen
+                />
+              ) : null
             }
             actions={
               hasFilledServices ? (
@@ -773,15 +723,15 @@ export function AppointmentCreateDrawer({
                       trigger={<DrawerAddAction label="Add Service" />}
                     />
                   ) : null}
-                  {!notesOpen ? (
+                  {!notesVisible ? (
                     <DrawerAddAction
                       label="Add Note"
-                      onClick={openNotesEditor}
+                      onClick={openNotesField}
                     />
                   ) : null}
                 </div>
-              ) : !notesOpen ? (
-                <DrawerAddAction label="Add Note" onClick={openNotesEditor} />
+              ) : !notesVisible ? (
+                <DrawerAddAction label="Add Note" onClick={openNotesField} />
               ) : null
             }
           />
